@@ -52,7 +52,6 @@ SETTINGS_MAP = {
         "TYPING OPTIONS": [
             "ModernStyle",
             "FreeMarking",
-            "FixUinputWithAck",
             "DoubleSpaceToPeriod",
             "DoubleHyphenToEmDash",
             "AutoCapitalizeAfterPunctuation",

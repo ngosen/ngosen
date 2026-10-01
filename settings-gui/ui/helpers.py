@@ -12,9 +12,6 @@ from ui.components import HelpIcon
 # Tooltip text for specific settings keys
 HELPERS = {
     "FreeMarking": N_("You can type tone marks at the end of the word or anywhere inside."),
-    "FixUinputWithAck": N_(
-        "Fix typing issues in Uinput mode for Chromium-based browsers like Chrome or Edge."
-    ),
     "CapitalizeMacro": N_(
         "Automatically match expansion case to trigger key case.\n\n"
         "Example if 'kg' is 'Khô gà':\n"

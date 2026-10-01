@@ -9,6 +9,11 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
 
 ## [Chưa phát hành]
 
+### Bỏ
+
+- Giao diện cài đặt: bỏ dòng và lời giải thích còn sót của tuỳ chọn `FixUinputWithAck` đã gỡ. Giao
+  diện vốn không hiện tuỳ chọn này, vì addon không còn khai báo nó.
+
 ## Mốc khởi đầu của fork — 26/09/2026
 
 `ban-dung` ở commit `b121f3c`, dựa trên nhánh `dev` của bản gốc tại `79d5706` (15/09/2026), cộng

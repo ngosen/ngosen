@@ -1,0 +1,60 @@
+# Nhật ký thay đổi
+
+Mọi thay đổi đáng kể của LotusVibe, bản fork của
+[fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), được ghi ở đây. Cách ghi theo
+[Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Mỗi dòng nói người dùng thấy gì thay đổi;
+lý do và số đo của từng miếng vá nằm trong [KHAC-GI-SO-VOI-BAN-GOC.md](KHAC-GI-SO-VOI-BAN-GOC.md).
+
+Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiên bản của bản gốc lúc tách ra.
+
+## [Chưa phát hành]
+
+## Mốc khởi đầu của fork — 26/09/2026
+
+`ban-dung` ở commit `b121f3c`, dựa trên nhánh `dev` của bản gốc tại `79d5706` (15/09/2026), cộng
+các commit lấy thêm từ bản gốc ngày 24/09/2026. Mọi mục dưới đây là chỗ fork khác bản gốc đó.
+
+### Thay đổi
+
+- Gộp ba chế độ uinput (Slow, Smooth, Super Smooth) thành một chế độ **Uinput**. Cấu hình cũ, luật
+  theo app (chế độ 1–3) và thứ tự chế độ tự chuyển sang; menu chế độ chỉ hiện nó một lần (#6).
+- Ở chế độ Uinput, sau khi gửi backspace, bộ gõ chờ app báo surrounding text đã đổi (bằng timer)
+  thay vì ngủ một khoảng cố định (`WaitSurroundingEvent`, bật sẵn).
+- App không báo surrounding text (terminal, Chromium) bỏ qua bước chờ thử lại.
+- Server gửi backspace liền nhau; `LOTUS_BACKSPACE_GAP_MS` (0–50) để chèn khoảng nghỉ.
+- Các bản sửa cho Messenger và ô soạn bài Facebook bật sẵn (#5).
+- Tên biến, comment và log trong mã riêng của fork viết tiếng Anh, theo [AGENTS.md](AGENTS.md) (#4).
+
+### Thêm
+
+- Messenger và ô soạn bài Facebook: bôi đen chữ cũ bằng Shift phải + mũi tên trái rồi gõ đè, thay
+  vì xoá trước, nên ô không bao giờ bị trống (`MessengerSelectOvertype`). Phím gõ trong lúc bôi đen
+  bị quá giờ được gõ lại.
+- Messenger: không commit khi surrounding text mới cập nhật một nửa, và chờ thêm một chút sau khi đã
+  xoá xong (`WaitSurroundingSettleMs` 40 ms, chữ đầu tiên của tin nhắn 60 ms).
+- LibreOffice: chế độ Uinput xoá qua surrounding text thay vì gửi phím backspace.
+- Icon khay đổi màu theo thanh trên cùng của GNOME Shell. Khôi phục cách tìm đường dẫn icon (bản gốc
+  đã bỏ) cho panel của KDE Plasma.
+- Unit systemd của server được siết quyền.
+- Server nhận `LOTUS_SOCKET_NAMESPACE` như addon; `LOTUS_SERVER_PATH` chỉ định server mà monitor chờ
+  (lấy từ CMake thay vì ghi cứng `/usr/bin`).
+- Test: kiểm bất biến trên chuỗi phím ngẫu nhiên, giữ phím ở Smooth
+  (LotusInputMethod/fcitx5-lotus#472), icon trên panel KDE (LotusInputMethod/fcitx5-lotus#374), và
+  kiểm chính tả bằng từ điển trong mã nguồn thay vì từ điển cài trên máy.
+
+### Bỏ
+
+- `FixUinputWithAck` và cách lách gợi ý của Chromium.
+
+### Sửa lỗi
+
+- Server xử lý hết hàng sự kiện libinput ở mỗi vòng lặp, không để sự kiện nằm chờ
+  (LotusInputMethod/fcitx5-lotus#507).
+- Lá chắn chống lặp chữ do gợi ý tự điền chỉ bật ở thanh địa chỉ trình duyệt.
+
+### Tài liệu
+
+- [KHAC-GI-SO-VOI-BAN-GOC.md](KHAC-GI-SO-VOI-BAN-GOC.md): từng miếng vá, vì sao có, đã gửi lên bản
+  gốc chưa.
+- [AGENTS.md](AGENTS.md): quy định khi sửa fork và khi gửi vá lên bản gốc (#3).
+- README: cài sang máy khác, chế độ Uinput duy nhất, khởi động lại server sau khi cập nhật.

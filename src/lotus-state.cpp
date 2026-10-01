@@ -656,7 +656,18 @@ namespace fcitx {
         if (!fromTimer && surr_wait_timer_) {
             surr_wait_timer_.reset(); // never reset a timer from inside its own callback
         }
-        if (!pending_commit_string_.empty()) {
+        // A previous replacement still waiting for its turn goes out first, keeping the text in order.
+        flushDeferredCommit();
+        // Focus loss is not inside a key event, and the field is going away, so it commits at once.
+        const bool defer = getFrontendName(ic_) == "dbus" && std::string(reason) != "focus lost";
+        if (defer) {
+            deferred_commit_text_    = pending_commit_string_;
+            deferred_commit_pending_ = true;
+            deferred_commit_timer_   = engine_->instance()->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC), 0, [this](EventSourceTime*, uint64_t) {
+                flushDeferredCommit();
+                return false; // never reset a timer from inside its own callback
+            });
+        } else if (!pending_commit_string_.empty()) {
             ic_->commitString(pending_commit_string_);
             LOTUS_INFO("Commit: " + pending_commit_string_);
         }
@@ -664,6 +675,22 @@ namespace fcitx {
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
         is_deleting_.store(false);
+        if (!defer) {
+            replayBufferedKeys();
+        }
+    }
+
+    void LotusState::flushDeferredCommit() {
+        if (!deferred_commit_pending_) {
+            return;
+        }
+        deferred_commit_pending_ = false;
+        std::string text         = std::move(deferred_commit_text_);
+        deferred_commit_text_.clear();
+        if (!text.empty()) {
+            ic_->commitString(text);
+            LOTUS_INFO("Commit (deferred): " + text);
+        }
         replayBufferedKeys();
     }
 
@@ -1508,6 +1535,8 @@ namespace fcitx {
             needEngineReset.store(false);
         }
 
+        // A key that beats the deferred commit must not land before it.
+        flushDeferredCommit();
         if (g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire)) {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();

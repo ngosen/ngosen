@@ -168,6 +168,13 @@ namespace fcitx {
         const char*                      settle_reason_ = "";
 
         void                             finishReplacement(const char* reason, bool fromTimer);
+        // fcitx5-gtk sends text committed while it processes a key event in the reply to that key.
+        // The sentinel Backspace is consumed, and some clients (ghostty, foot) then drop the text.
+        // Commit on the next event loop turn instead. Upstream fcitx5-lotus 2ca89a5.
+        void                             flushDeferredCommit();
+        std::unique_ptr<EventSourceTime> deferred_commit_timer_;
+        std::string                      deferred_commit_text_;
+        bool                             deferred_commit_pending_ = false;
 
         // --- Select and overtype (Facebook composers) ---
         // Select with Shift+Left, wait for the snapshot to show the selection, then commit over it.

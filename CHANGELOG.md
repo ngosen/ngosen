@@ -9,10 +9,21 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Cập nhật bamboo-core (lõi bộ gõ Telex/VNI) theo bản gốc (#11).
+
 ### Bỏ
 
 - Giao diện cài đặt: bỏ dòng và lời giải thích còn sót của tuỳ chọn `FixUinputWithAck` đã gỡ. Giao
-  diện vốn không hiện tuỳ chọn này, vì addon không còn khai báo nó.
+  diện vốn không hiện tuỳ chọn này, vì addon không còn khai báo nó (#14).
+
+### Sửa lỗi
+
+- Chế độ Preedit: bấm phím mở menu chế độ khi đang gõ dở một chữ thì chữ đó được commit và bộ gõ về
+  trạng thái đầu. Lấy từ bản gốc (#11).
+- Chế độ Preedit: xử lý phím theo độ dài chữ đang soạn thay vì độ dài phím vừa bấm, và chặn lỗi ở
+  macro Tab. Lấy từ bản gốc (#11).
 
 ## Mốc khởi đầu của fork — 26/09/2026
 

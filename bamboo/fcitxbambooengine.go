@@ -109,7 +109,6 @@ var strftimeReplacer = strings.NewReplacer(
 )
 
 func (e *FcitxBambooEngine) formatTime(format string) string {
-	now := time.Now()
 	if format == "" {
 		return ""
 	}
@@ -118,6 +117,7 @@ func (e *FcitxBambooEngine) formatTime(format string) string {
 		return ""
 	}
 	// If layout was not changed (no placeholders found), default to standard format
+	now := time.Now()
 	if layout == format && strings.Contains(format, "%") {
 		// Fallback to something reasonable if it looks like they tried to use placeholders
 		return now.Format("15:04:05 02/01/2006")
@@ -167,7 +167,6 @@ func (e *FcitxBambooEngine) shouldFallbackToEnglish(checkVnRune bool) bool {
 		return false
 	}
 	if e.macroEnabled && !e.macroTable.Empty() {
-		// Use macrotable.Get instead of getMacroText to avoid unnecessary expandMacro
 		if _, ok := e.macroTable.Get(e.getProcessedString(bamboo.PunctuationMode)); ok {
 			return false
 		}
@@ -293,13 +292,14 @@ func (e *FcitxBambooEngine) getCommitText(keyVal, state uint32, oldText string) 
 		}
 		e.preeditor.ProcessKey(keyRune, e.getBambooInputMode())
 		if inKeyList(e.preeditor.GetInputMethod().AppendingKeys, keyRune) {
+			var fullSeq = e.getProcessedString(bamboo.VietnameseMode)
 			var newText string
 			if e.shouldFallbackToEnglish(true) {
 				newText = e.getProcessedString(bamboo.EnglishMode | bamboo.FullText)
 			} else {
-				newText = e.getProcessedString(bamboo.VietnameseMode)
+				newText = fullSeq
 			}
-			if fullSeq := e.getProcessedString(bamboo.VietnameseMode); len(fullSeq) > 0 && getLastRune(fullSeq) == keyRune {
+			if len(fullSeq) > 0 && getLastRune(fullSeq) == keyRune {
 				// [[ => [
 				var ret = e.getPreeditString()
 				var lastRune = getLastRune(ret)
@@ -328,7 +328,6 @@ func (e *FcitxBambooEngine) getCommitText(keyVal, state uint32, oldText string) 
 	} else if bamboo.IsWordBreakSymbol(keyRune) {
 		// macro processing
 		if e.macroEnabled {
-			// Use macrotable.Get instead of getMacroText to avoid unnecessary preeditor processing
 			if macroVal, ok := e.macroTable.Get(oldText); ok {
 				e.preeditor.Reset()
 				return e.expandMacro(oldText, macroVal) + string(keyRune), true
@@ -373,8 +372,7 @@ func (e *FcitxBambooEngine) canProcessKey(keyVal uint32) bool {
 		return true
 	}
 	if keyVal == FcitxTab {
-		if e.macroEnabled && !e.macroTable.Empty() {
-			// Use macrotable.Get instead of getMacroText to avoid unnecessary expandMacro
+		if e.macroEnabled && !e.macroTable.Empty() && len(e.preeditText) > 0 {
 			if _, ok := e.macroTable.Get(e.getProcessedString(bamboo.PunctuationMode)); ok {
 				return true
 			}
@@ -395,36 +393,35 @@ func (e *FcitxBambooEngine) getComposedString(oldText string) string {
 }
 
 func (e *FcitxBambooEngine) preeditProcessKeyEvent(keyVal uint32, state uint32) bool {
-	var rawKeyLen = e.getRawKeyLen()
 	var keyRune = rune(keyVal)
 	defer e.updateLastKeyWithShift(keyVal, state)
+	var hasPreedit = len(e.preeditText) > 0
 
 	// workaround for chrome's address bar and Google SpreadSheets
 	if !e.shouldRestoreKeyStrokes {
 		if !e.isValidState(state) || !e.canProcessKey(keyVal) ||
-			(!e.macroEnabled && rawKeyLen == 0 && !e.preeditor.CanProcessKey(keyRune)) {
-			if rawKeyLen > 0 {
+			(!e.macroEnabled && !hasPreedit && !e.preeditor.CanProcessKey(keyRune)) {
+			if hasPreedit {
 				e.commitPreeditAndReset(e.getPreeditString())
 			}
 			return false
 		}
 	}
 
-	var oldText = e.getPreeditString()
-
 	if keyVal == FcitxBackSpace {
+		if !hasPreedit {
+			return false
+		}
 		if e.runeCount() == 1 {
 			e.commitPreeditAndReset("")
 			return true
 		}
-		if rawKeyLen > 0 {
-			e.preeditor.RemoveLastChar(true)
-			e.updatePreedit(e.getPreeditString())
-			return true
-		} else {
-			return false
-		}
+		e.preeditor.RemoveLastChar(true)
+		e.updatePreedit(e.getPreeditString())
+		return true
 	}
+
+	var oldText = e.getPreeditString()
 	if keyVal == FcitxTab {
 		if ok, macText := e.getMacroText(); ok {
 			e.commitPreeditAndReset(macText)

@@ -4,7 +4,7 @@
 
 Name:           fcitx5-ngosen
 Version:        3.5.10
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
 URL:            https://github.com/ngosen/ngosen
@@ -32,6 +32,7 @@ Requires:       python3-QtPy
 Requires:       (python3-pyqt6 or python3-pyside6)
 Requires:       python3-dbus
 Requires:       acl
+Requires(post): shadow-utils
 
 %description
 Ngó Sen is a Vietnamese input method for fcitx5, forked from fcitx5-lotus.
@@ -94,6 +95,17 @@ Ngó Sen is a Vietnamese input method for fcitx5, forked from fcitx5-lotus.
 %post
 %systemd_post fcitx5-lotus-server@.service
 
+# Earlier packages put the service user in group input, which can read every keyboard.
+if id -nG uinput_proxy 2>/dev/null | tr ' ' '\n' | grep -qx input; then
+    gpasswd -d uinput_proxy input >/dev/null 2>&1 || :
+fi
+# The ACLs come from udev rules, which otherwise only reach devices plugged in later. Only the
+# devices those rules act on are replayed.
+udevadm control --reload-rules >/dev/null 2>&1 || :
+udevadm trigger --subsystem-match=misc --sysname-match=uinput >/dev/null 2>&1 || :
+udevadm trigger --subsystem-match=input --property-match=ID_INPUT_MOUSE=1 \
+    --property-match=ID_INPUT_TOUCHPAD=1 --property-match=ID_INPUT_POINTINGSTICK=1 >/dev/null 2>&1 || :
+
 if [ $1 -eq 1 ]; then
     echo "--- Cấu hình Ngó Sen ---"
     echo "Hướng dẫn sau cài đặt:"
@@ -124,6 +136,12 @@ fi
 %systemd_postun_with_restart fcitx5-lotus-server@.service
 
 %changelog
+* Sat Oct 03 2026 Nguyen Phi <nguyenphidt@gmail.com> - 3.5.10-3
+- Take the service user out of group input on upgrade and apply the pointer ACLs to plugged-in devices.
+- The server ignores key counts out of range, opens pointer devices only, and caps its backspace queue.
+- The server and the addon identify each other by uid; CAP_SYS_PTRACE is dropped.
+- udev no longer gives group input access to /dev/uinput and input devices.
+
 * Sat Oct 03 2026 Nguyen Phi <nguyenphidt@gmail.com> - 3.5.10-2
 - Rename the package to fcitx5-ngosen; it replaces fcitx5-lotus builds of this fork.
 

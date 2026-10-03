@@ -143,15 +143,18 @@ Cả hai nằm ở [PR #492](https://github.com/LotusInputMethod/fcitx5-lotus/pu
 ### Dọn dẹp và hạ tầng
 
 - Siết dịch vụ systemd của máy chủ: `systemd-analyze security` từ 7.0 xuống 2.0.
+- Máy chủ bàn phím ảo chỉ mở chuột và bàn chạm, không còn đọc được bàn phím; ra khỏi nhóm `input`.
+- Máy chủ và mô-đun kiểm nhau bằng tài khoản thay vì tên chương trình; bỏ `CAP_SYS_PTRACE`.
+- Máy chủ bỏ qua con số ngoài khoảng ±1024 thay vì xin bộ nhớ tuỳ ý.
 - Gỡ công tắc `FixUinputWithAck` vốn mặc định tắt.
-- Đường dẫn máy chủ lấy từ CMake thay vì viết cứng; thêm biến môi trường `LOTUS_SERVER_PATH`,
-  `LOTUS_SOCKET_NAMESPACE` cho máy chủ, `LOTUS_BACKSPACE_GAP_MS`.
+- Biến môi trường `LOTUS_SOCKET_NAMESPACE` cho máy chủ, `LOTUS_BACKSPACE_GAP_MS`.
 - Khoảng cách giữa hai phím xoá mặc định 0 ms thay vì 5 ms. Đây là lựa chọn riêng của bản này.
 
 ### Kiểm thử
 
-- 21 bài kiểm thay vì 9: thêm kiểm bất biến trên chuỗi phím ngẫu nhiên, kiểm màu panel KDE và GNOME, tái
-  hiện lỗi giữ phím của issue #472, và tám bài cho lỗi Messenger trên Facebook.
+- 26 bài kiểm thay vì 9: thêm kiểm bất biến trên chuỗi phím ngẫu nhiên, kiểm màu panel KDE và GNOME, tái
+  hiện lỗi giữ phím của issue #472, tám bài cho lỗi Messenger trên Facebook, và ba bài cho máy chủ
+  bàn phím ảo.
 
 ## Bản này KHÔNG sửa
 

@@ -1,5 +1,3 @@
-set(LOTUS_UINPUT_PROXY_USER "uinput_proxy" CACHE STRING
-    "System user granted rw ACL on /dev/uinput (udev rules, sysusers.d, service scripts)")
 
 option(INSTALL_OPENRC "Install OpenRC script" OFF)
 option(INSTALL_RUNIT "Install Runit script" OFF)

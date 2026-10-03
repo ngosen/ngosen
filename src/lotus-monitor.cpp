@@ -21,53 +21,9 @@
 #include <unistd.h>
 #include <limits.h>
 
-// Server path from CMake, so installs outside /usr (local builds, Nix, other bindirs) still pass
-// the peer check.
-#ifndef FCITX5_LOTUS_SERVER_PATH
-#define FCITX5_LOTUS_SERVER_PATH "/usr/bin/fcitx5-lotus-server"
-#endif
-
 std::thread mouse_thread = std::thread();
 
-static bool authenticateMouseSocketPeer(int sock, std::string& out_exe_path) {
-    struct ucred cred{};
-    socklen_t    cred_len = sizeof(cred);
-
-    if (getsockopt(sock, SOL_SOCKET, SO_PEERCRED, &cred, &cred_len) != 0) {
-        LOTUS_ERROR("Failed to get peer credentials: " + std::string(strerror(errno)));
-        return false;
-    }
-
-    char proc_path[64];
-    snprintf(proc_path, sizeof(proc_path), "/proc/%d/cmdline", cred.pid);
-
-    int fd = open(proc_path, O_RDONLY);
-    if (fd < 0) {
-        LOTUS_ERROR("Failed to open cmdline: " + std::string(strerror(errno)));
-        return false;
-    }
-
-    char    exe_path[PATH_MAX] = {0};
-    ssize_t bytes_read         = read(fd, exe_path, sizeof(exe_path) - 1);
-    close(fd);
-
-    if (bytes_read <= 0) {
-        LOTUS_ERROR("Failed to read cmdline: " + std::string(strerror(errno)));
-        return false;
-    }
-
-    out_exe_path = exe_path;
-
-    // Tests run a private server outside any install prefix (LOTUS_SOCKET_NAMESPACE). The socket is
-    // per-user, so accepting it opens nothing to other users.
-    const char* expected = std::getenv("LOTUS_SERVER_PATH");
-    if (expected == nullptr || *expected == '\0') {
-        expected = FCITX5_LOTUS_SERVER_PATH;
-    }
-    return strcmp(exe_path, expected) == 0;
-}
-
-void mousePressResetThread() {
+void        mousePressResetThread() {
     const std::string mouse_socket_path = buildSocketPath("mouse_socket");
     LOTUS_INFO("Mouse press reset thread started.");
 
@@ -93,9 +49,7 @@ void mousePressResetThread() {
         }
         LOTUS_INFO("Mouse socket connected.");
 
-        std::string peer_exe_path;
-        if (!authenticateMouseSocketPeer(sock, peer_exe_path)) {
-            LOTUS_WARN("Unauthorized connection attempt from: " + peer_exe_path);
+        if (!isTrustedServerSocket(sock)) {
             close(sock);
             sleep(1);
             continue;

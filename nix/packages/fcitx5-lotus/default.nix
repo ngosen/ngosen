@@ -92,14 +92,6 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   postPatch = ''
-    substituteInPlace src/lotus-monitor.cpp \
-      --replace-fail 'strcmp(exe_path, "/usr/bin/fcitx5-lotus-server") == 0' \
-                     '(strncmp(exe_path, "/nix/store/", 11) == 0 && strlen(exe_path) >= 24 && strcmp(exe_path + strlen(exe_path) - 24, "/bin/fcitx5-lotus-server") == 0)'
-
-    substituteInPlace server/lotus-server.cpp \
-      --replace-fail 'strcmp(exe_path, "/usr/bin/fcitx5") == 0' \
-                     '(strncmp(exe_path, "/nix/store/", 11) == 0 && strlen(exe_path) >= 11 && strcmp(exe_path + strlen(exe_path) - 11, "/bin/fcitx5") == 0)'
-
     substituteInPlace src/lotus-engine.cpp \
       --replace-fail '/usr/share/icons/hicolor' '/run/current-system/sw/share/icons/hicolor'
 

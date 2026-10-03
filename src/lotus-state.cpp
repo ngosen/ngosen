@@ -98,6 +98,11 @@ namespace fcitx {
         socklen_t len = offsetof(struct sockaddr_un, sun_path) + current_path.length() + 1;
 
         if (connect(current_fd, (struct sockaddr*)&addr, len) == 0) {
+            // The socket name is guessable, so whoever binds it first would learn word lengths.
+            if (!isTrustedServerSocket(current_fd)) {
+                close(current_fd);
+                return false;
+            }
             uinput_client_fd_ = current_fd;
             return true;
         }

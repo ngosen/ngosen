@@ -54,6 +54,21 @@ extern std::atomic<int>              mouse_socket_fd;   ///< Mouse socket file d
 std::string buildSocketPath(const char* base_path_suffix);
 
 /**
+ * @brief Whether a socket peer with this uid may act as the uinput server.
+ *
+ * The installed server runs as the proxy user. A private pair started with LOTUS_SOCKET_NAMESPACE
+ * (tests, dev builds) runs as the user, which gains nothing a same-user process cannot already do.
+ */
+bool isTrustedServerUid(uid_t peer, uid_t proxy, uid_t self, bool privateNamespace);
+
+/**
+ * @brief Checks the peer of a connected server socket with SO_PEERCRED.
+ * @param fd Connected socket.
+ * @return True if the peer is a trusted uinput server.
+ */
+bool isTrustedServerSocket(int fd);
+
+/**
  * @brief Gets current time in milliseconds.
  * @return Timestamp in milliseconds.
  */

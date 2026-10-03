@@ -105,6 +105,22 @@ set_tests_properties(server_device_filter PROPERTIES
     TIMEOUT 20
 )
 
+add_executable(server_peer_trust
+    server-peer-trust.cpp
+    ${PROJECT_SOURCE_DIR}/src/lotus-utils.cpp
+)
+target_include_directories(server_peer_trust PRIVATE
+    ${PROJECT_SOURCE_DIR}/src
+)
+target_link_libraries(server_peer_trust PRIVATE
+    Fcitx5::Core
+)
+add_test(NAME server_peer_trust COMMAND server_peer_trust)
+set_tests_properties(server_peer_trust PROPERTIES
+    LABELS "unit;server"
+    TIMEOUT 20
+)
+
 add_executable(emoji_backspace_utf8
     test-emoji-backspace.cpp
     ${PROJECT_SOURCE_DIR}/src/lotus-utils.cpp

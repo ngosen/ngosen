@@ -15,7 +15,7 @@ target_include_directories(lotus PRIVATE
 )
 target_compile_definitions(lotus PRIVATE
     FCITX5_LOTUS_SETTINGS_PATH=\"${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-lotus-settings\"
-    FCITX5_LOTUS_SERVER_PATH=\"${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-lotus-server\"
+    LOTUS_UINPUT_PROXY_USER=\"${LOTUS_UINPUT_PROXY_USER}\"
     FCITX_LOTUS_ICON_DIR=\"${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps\"
 )
 install(TARGETS lotus DESTINATION "${CMAKE_INSTALL_LIBDIR}/fcitx5")

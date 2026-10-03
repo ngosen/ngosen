@@ -19,7 +19,7 @@ exec setpriv \
     --reuid=@LOTUS_UINPUT_PROXY_USER@ \
     --regid=@LOTUS_UINPUT_PROXY_USER@ \
     --init-groups \
-    --bounding-set -all,+sys_nice,+sys_ptrace \
-    --inh-caps +sys_nice,+sys_ptrace \
-    --ambient-caps +sys_nice,+sys_ptrace \
+    --bounding-set -all,+sys_nice \
+    --inh-caps +sys_nice \
+    --ambient-caps +sys_nice \
     /usr/bin/fcitx5-lotus-server -u "$user" 2>&1

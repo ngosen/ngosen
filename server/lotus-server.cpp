@@ -229,6 +229,22 @@ const struct libinput_interface interface = {
     .close_restricted = close_restricted,
 };
 
+// Only the target user's processes may drive the keyboard. Checking the executable adds nothing:
+// the user can start /usr/bin/fcitx5 with any addon, and reading it needs CAP_SYS_PTRACE.
+static bool is_trusted_client(int fd, uid_t expected_uid, const char* socket_name) {
+    struct ucred cred{};
+    socklen_t    len = sizeof(struct ucred);
+    if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) != 0) {
+        LotusLogger::instance().warn(std::string("Failed to get peer credentials for ") + socket_name + " socket");
+        return false;
+    }
+    if (cred.uid != expected_uid) {
+        LotusLogger::instance().warn(std::string("Unauthorized UID connection attempt to ") + socket_name + " socket from UID: " + std::to_string(cred.uid));
+        return false;
+    }
+    return true;
+}
+
 int main(int argc, char* argv[]) {
     std::string target_user;
     if (argc == 3 && strcmp(argv[1], "-u") == 0) { // NOLINT
@@ -374,35 +390,8 @@ int main(int argc, char* argv[]) {
         if ((fds[0].revents & POLLIN) != 0) {
             int client_fd = accept4(server_fd.get(), nullptr, nullptr, SOCK_NONBLOCK);
             if (client_fd >= 0) {
-                struct ucred cred{};
-                socklen_t    len                = sizeof(struct ucred);
-                char         exe_path[PATH_MAX] = {0};
-
-                bool         authorized = false;
-                if (getsockopt(client_fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0) {
-                    if (cred.uid == expected_uid) {
-                        char path[64];
-                        snprintf(path, sizeof(path), "/proc/%d/exe", cred.pid);
-
-                        ssize_t ret = readlink(path, exe_path, sizeof(exe_path) - 1);
-                        if (ret != -1) {
-                            exe_path[ret] = '\0'; // NOLINT
-                        }
-
-                        if (strcmp(exe_path, "/usr/bin/fcitx5") == 0) {
-                            authorized = true;
-                        } else {
-                            LotusLogger::instance().warn("Unauthorized executable connection attempt to keyboard socket from: " + std::string(exe_path));
-                        }
-                    } else {
-                        LotusLogger::instance().warn("Unauthorized UID connection attempt to keyboard socket from UID: " + std::to_string(cred.uid));
-                    }
-                } else {
-                    LotusLogger::instance().warn("Failed to get peer credentials for keyboard socket");
-                }
-
-                if (authorized) {
-                    LotusLogger::instance().info("Fcitx5 connected to keyboard socket (PID: " + std::to_string(cred.pid) + ")");
+                if (is_trusted_client(client_fd, expected_uid, "keyboard")) {
+                    LotusLogger::instance().info("Fcitx5 connected to keyboard socket");
                     kb_client_fd.reset(client_fd);
                     fds[KB_CLIENT_INDEX].fd = kb_client_fd.get();
                 } else {
@@ -437,34 +426,7 @@ int main(int argc, char* argv[]) {
         if ((fds[2].revents & POLLIN) != 0) {
             int new_fd = accept4(mouse_server_fd.get(), nullptr, nullptr, SOCK_NONBLOCK);
             if (new_fd >= 0) {
-                struct ucred cred{};
-                socklen_t    len                = sizeof(struct ucred);
-                char         exe_path[PATH_MAX] = {0};
-
-                bool         authorized = false;
-                if (getsockopt(new_fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0) {
-                    if (cred.uid == expected_uid) {
-                        char path[64];
-                        snprintf(path, sizeof(path), "/proc/%d/exe", cred.pid);
-
-                        ssize_t ret = readlink(path, exe_path, sizeof(exe_path) - 1);
-                        if (ret != -1) {
-                            exe_path[ret] = '\0'; // NOLINT
-                        }
-
-                        if (strcmp(exe_path, "/usr/bin/fcitx5") == 0) {
-                            authorized = true;
-                        } else {
-                            LotusLogger::instance().warn("Unauthorized executable connection attempt to mouse socket from: " + std::string(exe_path));
-                        }
-                    } else {
-                        LotusLogger::instance().warn("Unauthorized UID connection attempt to mouse socket from UID: " + std::to_string(cred.uid));
-                    }
-                } else {
-                    LotusLogger::instance().warn("Failed to get peer credentials for mouse socket");
-                }
-
-                if (authorized) {
+                if (is_trusted_client(new_fd, expected_uid, "mouse")) {
                     LotusLogger::instance().info("New mouse flag client connected");
                     addon_fd.reset(new_fd);
                 } else {

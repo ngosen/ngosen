@@ -15,11 +15,15 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
 
 ### Bỏ
 
+- Biến môi trường `LOTUS_SERVER_PATH`: mô-đun không còn kiểm đường dẫn của máy chủ nền (#9).
 - Giao diện cài đặt: bỏ dòng và lời giải thích còn sót của tuỳ chọn `FixUinputWithAck` đã gỡ. Giao
   diện vốn không hiện tuỳ chọn này, vì addon không còn khai báo nó (#14).
 
 ### Sửa lỗi
 
+- Máy chủ nền và mô-đun bộ gõ nhận nhau theo tài khoản (uid) của tiến trình bên kia, thay cho đường
+  dẫn chương trình. Máy chủ không còn giữ quyền `CAP_SYS_PTRACE`. Mô-đun nay kiểm cả socket phím
+  xoá, nên chương trình chiếm tên socket trước không đọc được độ dài từng từ (#9).
 - Máy chủ nền chỉ mở chuột, bàn chạm và núm trỏ, ở chế độ chỉ đọc; không mở bàn phím nữa, và tài
   khoản `uinput_proxy` ra khỏi nhóm `input`. Chuột kiêm bàn phím mất tính năng bấm chuột để ngắt từ.
   Máy đã cài từ trước cần chạy một lần `sudo gpasswd -d uinput_proxy input` (#8).

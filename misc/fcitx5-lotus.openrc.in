@@ -9,7 +9,7 @@ respawn_max=0
 
 name="fcitx5-lotus-server"
 description="Fcitx5 Lotus Server for $user"
-capabilities="^cap_sys_nice,^cap_sys_ptrace"
+capabilities="^cap_sys_nice"
 command="/usr/bin/fcitx5-lotus-server"
 command_args="-u $user"
 command_user="@LOTUS_UINPUT_PROXY_USER@:@LOTUS_UINPUT_PROXY_USER@"

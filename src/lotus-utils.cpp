@@ -12,10 +12,13 @@
 #include <cstdlib>
 #include <fcitx-utils/utf8.h>
 #include <pwd.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <chrono>
+#include <cstring>
 
 // Global variables
 std::atomic<fcitx::LotusMode> realMode{fcitx::LotusMode::Uinput};
@@ -60,6 +63,41 @@ std::string buildSocketPath(const char* base_path_suffix) {
     const size_t max_socket_path_length = UNIX_PATH_MAX - 1;
     path.resize(std::min(path.length(), max_socket_path_length));
     return path;
+}
+
+#ifndef LOTUS_UINPUT_PROXY_USER
+#define LOTUS_UINPUT_PROXY_USER "uinput_proxy"
+#endif
+
+bool isTrustedServerUid(uid_t peer, uid_t proxy, uid_t self, bool privateNamespace) {
+    if (peer == proxy && proxy != static_cast<uid_t>(-1)) {
+        return true;
+    }
+    return privateNamespace && peer == self;
+}
+
+bool isTrustedServerSocket(int fd) {
+    struct ucred cred{};
+    socklen_t    len = sizeof(cred);
+    if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) != 0) {
+        LOTUS_ERROR("Failed to get peer credentials: " + std::string(strerror(errno)));
+        return false;
+    }
+
+    uid_t          proxy = static_cast<uid_t>(-1);
+    struct passwd  pwd{};
+    struct passwd* result = nullptr;
+    char           buf[1024];
+    if (getpwnam_r(LOTUS_UINPUT_PROXY_USER, &pwd, buf, sizeof(buf), &result) == 0 && result != nullptr) {
+        proxy = result->pw_uid;
+    }
+
+    const char* ns      = std::getenv("LOTUS_SOCKET_NAMESPACE");
+    const bool  trusted = isTrustedServerUid(cred.uid, proxy, getuid(), ns != nullptr && *ns != '\0');
+    if (!trusted) {
+        LOTUS_WARN("Refusing uinput server socket owned by UID " + std::to_string(cred.uid));
+    }
+    return trusted;
 }
 
 int64_t now_ms() {

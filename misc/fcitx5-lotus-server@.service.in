@@ -7,8 +7,8 @@ Wants=systemd-modules-load.service
 User=@LOTUS_UINPUT_PROXY_USER@
 Group=@LOTUS_UINPUT_PROXY_USER@
 
-CapabilityBoundingSet=CAP_SYS_NICE CAP_SYS_PTRACE
-AmbientCapabilities=CAP_SYS_NICE CAP_SYS_PTRACE
+CapabilityBoundingSet=CAP_SYS_NICE
+AmbientCapabilities=CAP_SYS_NICE
 
 Type=simple
 
@@ -18,6 +18,8 @@ Type=simple
 NoNewPrivileges=yes
 PrivateTmp=yes
 PrivateUsers=no
+# Clients are checked by uid (SO_PEERCRED), so other users' processes can stay hidden.
+ProtectProc=invisible
 ProtectSystem=strict
 ProtectHome=yes
 ProtectClock=yes
@@ -46,10 +48,7 @@ DeviceAllow=char-input r
 # Deliberately NOT set:
 #   PrivateNetwork  - udev delivers uevents over netlink, and netlink is
 #                     per network namespace, so this loses hot-plug detection.
-#   ProtectProc     - the client authentication gate reads /proc/<pid>/exe of
-#                     another user's process; this would block it.
-# CAP_SYS_NICE and CAP_SYS_PTRACE stay: setpriority() in lotus-server.cpp and
-# the readlink /proc/<pid>/exe check that authenticates clients.
+# CAP_SYS_NICE stays for setpriority() in lotus-server.cpp.
 
 # The pointer ACLs come from udev rules; without them libinput skips the device until replug.
 ExecStartPre=+/usr/bin/udevadm settle --timeout=30

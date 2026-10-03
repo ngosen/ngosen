@@ -1,168 +1,201 @@
-[English](README.en.md) | [Tiếng Việt](README.md)
+# Ngó Sen — bộ gõ tiếng Việt cho fcitx5
 
-<a id="readme-top"></a>
+Người giữ dự án chỉ **vibecode** dự án này: nêu việc cho trợ lý AI viết mã, rồi đo và dùng thử hằng
+ngày.
 
-<div align="center">
-  <a href="https://lotusinputmethod.github.io/">
-    <img src="data/fcitx-lotus-README.svg" alt="Logo" width="80" height="80">
-  </a>
+Ngó Sen tách ra từ [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus); fcitx5-lotus lại
+là bản fork của [bộ gõ VMK](https://github.com/thanhpy2009/VMK). Ngó sen là mầm mọc ra từ cây sen:
+cùng gốc với Lotus nhưng đi hướng riêng. Giấy phép vẫn là GPL-3.0-or-later, và tệp nào còn trong
+kho thì giữ nguyên dòng bản quyền của tác giả trước.
 
-<h2 align="center">Fcitx5 Lotus</h2>
+Bản này dùng hằng ngày trên Fedora 44 + KDE Plasma Wayland và CachyOS + KDE Plasma Wayland. Trên
+Ubuntu 24.04 + GNOME X11 mới dùng sơ, chưa dùng hằng ngày và chưa thử kỹ. Kho để công khai cho ai cần
+thì lấy dùng, **không hứa hỗ trợ**: mục Issues tắt và không có lịch phát hành.
 
-<p align="center">
-    <b>Bộ gõ tiếng Việt đơn giản, hiệu năng cao cho Linux</b>
-    <br />
-    <a href="https://lotusinputmethod.github.io/"><strong>Khám phá trang chủ »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/LotusInputMethod/fcitx5-lotus/releases">
-      <img src="https://img.shields.io/github/v/release/LotusInputMethod/fcitx5-lotus?style=flat&color=success" alt="Release">
-    </a>
-    <a href="https://github.com/LotusInputMethod/fcitx5-lotus/blob/main/LICENSE">
-      <img src="https://img.shields.io/github/license/LotusInputMethod/fcitx5-lotus?style=flat&color=blue" alt="License">
-    </a>
-    <a href="https://lotusinputmethod.github.io/">
-      <img src="https://img.shields.io/badge/website-live-brightgreen?style=flat&logo=firefox&logoColor=white" alt="Website">
-    </a>
-    <a href="https://github.com/LotusInputMethod/fcitx5-lotus/stargazers">
-      <img src="https://img.shields.io/github/stars/LotusInputMethod/fcitx5-lotus?style=flat&color=yellow" alt="Stars">
-    </a>
-    <a href="https://github.com/LotusInputMethod/fcitx5-lotus/network/members">
-      <img src="https://img.shields.io/github/forks/LotusInputMethod/fcitx5-lotus?style=flat&color=orange" alt="Forks">
-    </a>
-    <a href="https://github.com/LotusInputMethod/fcitx5-lotus/issues">
-      <img src="https://img.shields.io/github/issues/LotusInputMethod/fcitx5-lotus?style=flat&color=red" alt="Issues">
-    </a>
-    <a href="#contributors-">
-      <img src="https://img.shields.io/badge/all_contributors-16-orange.svg?style=flat-square" alt="All Contributors">
-    </a>
-    <a href="https://deepwiki.com/LotusInputMethod/fcitx5-lotus"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
-  </p>
+Tên cũ của kho là `nguyenphivn/fcitx5-lotus`, rồi `nguyenphivn/LotusVibe` (từ 17/09/2026); link cũ
+vẫn tự chuyển về đây. Bên trong mã vẫn giữ tên `lotus` (tệp cấu hình, dịch vụ nền, icon) để nhặt được
+bản vá của bản gốc và để cấu hình cũ dùng tiếp. Vì vậy cài Ngó Sen là thay cho Lotus gốc, không cài
+song song được.
 
-<p align="center">
-    <a href="https://lotusinputmethod.github.io/#installation"><strong>Cài đặt »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/LotusInputMethod/fcitx5-lotus/issues/new?template=bug_report.yml">Báo lỗi</a>
-    ·
-    <a href="https://github.com/LotusInputMethod/fcitx5-lotus/issues/new?template=feature_request.yml">Yêu cầu tính năng</a>
-  </p>
-</div>
+Trang này chỉ ghi **những gì khác với bản gốc**. Hướng dẫn dùng bộ gõ nói chung xem
+[README của bản gốc](https://github.com/LotusInputMethod/fcitx5-lotus#readme) hoặc
+[trang chủ Lotus](https://lotusinputmethod.github.io/); phần cài đặt ở đó là cài bản gốc, còn cài Ngó
+Sen thì xem [mục Cài](#cài).
 
-<br />
+- **Tên mới (03/10):** trong fcitx5 bộ gõ hiện tên **Ngó Sen**, gói Fedora tên `fcitx5-ngosen`. Cấu
+  hình cũ dùng tiếp, không phải chỉnh gì.
+- **Mới (24/09): chỉ còn một chế độ uinput.** Ba chế độ `Uinput (Smooth)`, `Uinput (Super Smooth)`
+  và `Uinput (Slow)` gộp thành một chế độ `Uinput`, chạy như Super Smooth. Cấu hình cũ tự chuyển,
+  không phải chỉnh gì. [Xem bên dưới](#nên-dùng-chế-độ-nào).
+- **Vá Messenger (20/09): Messenger trên Facebook hết mất chữ** — bộ gõ bôi đen chữ cần bỏ bằng
+  Shift+Mũi tên trái rồi gõ đè, thay vì xoá trước rồi gõ sau. Đo 861 lần thay chữ, 0 lần mất. Bật sẵn từ 26/09.
+  [Xem bên dưới](#messenger-trên-facebook-bôi-đen-rồi-gõ-đè-thay-vì-xoá-rồi-gõ-2009).
+- **Cài hoặc cập nhật xong phải khởi động lại máy chủ nền:**
+  `sudo systemctl restart fcitx5-lotus-server@$(whoami).service`, rồi khởi động lại fcitx5.
+  [Vì sao](#cài).
+- **Nhánh để dùng:** `ban-dung` (nhánh mặc định). Tách từ nhánh `dev` của bản gốc; từ 03/10/2026 chỉ
+  nhặt vá của bản gốc có chọn lọc, không gộp cả nhánh.
+- **Chi tiết từng vá, số đo, tác giả gốc trả lời ra sao, và hướng dẫn cài:**
+  [KHAC-GI-SO-VOI-BAN-GOC.md](KHAC-GI-SO-VOI-BAN-GOC.md)
 
-Dự án này là bản fork được tối ưu hóa từ [bộ gõ VMK](https://github.com/thanhpy2009/VMK). Chân thành cảm ơn tác giả Thành đã đặt nền móng cho bộ gõ này.
+## Nên dùng chế độ nào
 
-## Cài đặt & Hướng dẫn sử dụng
+**Khuyên dùng `Uinput` làm chế độ gõ chính.** Đây là chế độ bản này dùng hằng ngày cho trình duyệt
+(Firefox, Edge), web app như Lark, và terminal như Alacritty.
 
-Để có trải nghiệm tốt nhất và nhận được các hướng dẫn cài đặt, cấu hình chi tiết, chính xác cho từng bản phân phối Linux (Arch, Debian, Ubuntu, Fedora, NixOS...), vui lòng truy cập trang chủ của dự án:
+- Đặt chung: trong cài đặt Ngó Sen chọn chế độ mặc định là `Uinput`. Nếu sửa tay
+  `~/.config/fcitx5/conf/lotus.conf` thì ghi `Mode=Uinput`; ghi sai tên thì bộ gõ lặng lẽ quay về
+  Preedit.
+- Đặt theo từng app: trong `~/.config/fcitx5/conf/lotus-app-rules.conf` dùng số `2`, ví dụ
+  `firefox=2`.
+- Kiểu gõ chính là **Telex** (`InputMethod=Telex` trong `lotus.conf`). Mọi lượt đo và dùng hằng ngày
+  của bản này đều gõ Telex; VNI và các kiểu gõ khác chưa kiểm.
+- Không khuyên chế độ Surrounding Text: bản này không sửa chế độ đó.
+- Lời khuyên này chỉ đúng cho Ngó Sen. Super Smooth của bản gốc chưa có vá chống lặp chữ ở thanh
+  địa chỉ trình duyệt.
 
-**[Xem Hướng dẫn cài đặt chi tiết tại đây](https://lotusinputmethod.github.io/#installation)**
+**Chỉ còn một chế độ uinput (24/09).** Ba chế độ `Uinput (Smooth)`, `Uinput (Super Smooth)` và
+`Uinput (Slow)` của bản gốc đã gộp thành một chế độ `Uinput`, chạy đúng như Super Smooth. Cấu hình cũ
+tự chuyển: tên chế độ cũ trong `lotus.conf` và số `1`, `2`, `3` trong `lotus-app-rules.conf` đều đọc
+thành `Uinput`. Ai đang dùng Slow sẽ chờ 4 ms mỗi phím xoá thay vì 8 ms.
 
----
+## Gõ nhanh hơn bản gốc ở đâu (chế độ uinput)
 
-## Biên dịch từ mã nguồn (Dành cho nhà phát triển)
+Cải thiện chính của bản này nằm ở **chế độ uinput**: thay chữ nhanh hơn và
+không lặp chữ. Chế độ Surrounding Text **không** được sửa.
 
-Nếu bạn muốn tự biên dịch bộ gõ từ mã nguồn để đóng góp hoặc tuỳ chỉnh (chưa hỗ trợ musl vì [CGo](https://github.com/golang/go/issues/13492)):
+Mọi số trong bảng dưới đây đo trên máy gốc (CachyOS, KDE Plasma Wayland). Mỗi dòng đo riêng một thay đổi, ở
+thời điểm và app khác nhau, nên **không cộng dồn** thành một con số chung. Chưa có phép đo trọn vẹn
+so nhánh `ban-dung` hiện tại với bản gốc.
 
-### Yêu cầu hệ thống
+| Đo cái gì                                             | Bản gốc → bản này                             | Đo ở đâu                                                                        |
+| ----------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------- |
+| Thời gian thay một từ, xoá 2 / 3 / 4 chữ              | 14,5 / 21,8 / 31,2 ms → 12,4 / 16,3 / 20,5 ms | Konsole, Smooth, 8/8 mỗi mức, bản trước khi gom (khoảng cách phím xoá còn 2 ms) |
+| Khoảng cách giữa hai phím xoá (trung vị)              | 5,2 ms → 0,1 ms                               | Konsole, ô soạn Edge, Firefox, Edge qua XWayland, 8/8                           |
+| Chờ vô ích ở app không có surrounding text (trung vị) | 12,8 ms → 6,9 ms                              | Edge chạy qua XWayland, 16/16                                                   |
 
-- **Debian/Ubuntu:** `sudo apt-get install cmake extra-cmake-modules libfcitx5core-dev libfcitx5config-dev libfcitx5utils-dev libinput-dev libudev-dev g++ golang hicolor-icon-theme pkg-config fcitx5-modules-dev python3-qtpy python3-dbus acl librsvg2-bin`
-- **Fedora/RHEL:** `sudo dnf install cmake extra-cmake-modules fcitx5-devel libinput-devel libudev-devel gcc-c++ golang hicolor-icon-theme systemd-devel python3-pyside6 python3-QtPy python3-dbus acl librsvg2-tools`
-- **openSUSE:** `sudo zypper install cmake kf6-extra-cmake-modules fcitx5-devel libinput-devel systemd-devel gcc-c++ go hicolor-icon-theme systemd-devel python3-pyside6 python3-QtPy python3-dbus-python acl rsvg-convert`
-- **Arch:** `sudo pacman -S --needed cmake extra-cmake-modules gcc go git python make pkgconf acl fcitx5 libinput hicolor-icon-theme python-qtpy python-dbus librsvg`
+Nói cho đúng:
 
-### Cài đặt
+- Từng lần chỉ chênh vài mili giây, dưới ngưỡng cảm nhận của một lần gõ.
+- App Wayland thuần không đi qua dòng thứ ba nên không đổi.
+- Khoảng cách phím xoá 0 ms là lựa chọn riêng của bản này. Máy đo chưa kiểm được trường hợp phím
+  xoá chen vào đúng lúc đang gõ nhanh; bằng chứng cho mức này là dùng tay hằng ngày.
+- Chế độ uinput chờ app bằng hẹn giờ thay vì bắt cả fcitx5 đứng chờ. Ở bản gốc, khoảng 4% số phím
+  làm fcitx5 đứng từ 8 ms trở lên, lâu nhất 22 ms (đo 428 phím). Mức cải thiện của đúng thay đổi này
+  chưa đo riêng.
+- Trình duyệt dùng Super Smooth. Chủ máy gõ tay thấy nhanh hơn Smooth; chưa có số đo thời gian.
 
-```bash
-git clone --recurse-submodules https://github.com/LotusInputMethod/fcitx5-lotus.git
-cd fcitx5-lotus
-cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=/usr/lib . #LIBDIR tuỳ vào distro
-make
-sudo make install
+## Khác gì bản gốc
+
+### Messenger trên Facebook: bôi đen rồi gõ đè thay vì xoá rồi gõ (20/09)
+
+Gõ Telex trong ô soạn tin Messenger ở chế độ uinput thì mất chữ: `tieengs vieetj` ra `iếngiệt`
+(issue #267 của bản gốc, mở từ 05/2026). Bộ gõ vốn làm hai bước — xoá chữ cũ, rồi gõ chữ có dấu vào.
+Giữa hai bước đó Facebook vẽ lại ô soạn tin và nuốt mất chữ vừa gõ vào.
+
+Chữa bằng cách chờ thêm vài chục mili giây rồi mới gõ thì đỡ, nhưng không dứt: máy càng bận càng dễ
+lọt, và chờ bao nhiêu là đủ thì không có câu trả lời cố định.
+
+**Cách hiện tại bỏ hẳn bước xoá.** Bộ gõ bấm Shift+Mũi tên trái để bôi đen đúng số chữ cần bỏ, rồi gõ
+chữ mới đè lên vùng bôi đen. Ô soạn tin không lúc nào trống và không có khe hở giữa xoá với gõ, nên
+Facebook không còn chỗ chen vào. Quan trọng hơn: Edge **báo lại** "đang bôi đen N chữ", nên bộ gõ chờ
+đúng tín hiệu đó rồi mới gõ, thay vì chờ đồng hồ.
+
+Đo 20/09 bằng máy gõ tự động, lúc máy bận:
+
+|                              | Chờ theo đồng hồ (40/60 ms) | Bôi đen rồi gõ đè    |
+| ---------------------------- | --------------------------- | -------------------- |
+| 100 từ đầu tiên của tin nhắn | sai 0                       | sai 0                |
+| 50 câu đầy đủ                | sai 1                       | sai 0                |
+| Chờ mỗi lần bỏ dấu           | 40 ms, từ đầu 60 ms         | 3–20 ms, thường 6 ms |
+
+Bật sẵn từ 26/09 (`MessengerSelectOvertype` và `WaitSurroundingEvent` mặc định `True`). Muốn tắt thì đặt
+`MessengerSelectOvertype=False` trong `~/.config/fcitx5/conf/lotus.conf`. Ba điều cần biết:
+
+- **Chỉ dùng cho ô soạn tin Messenger.** Đo cho thấy các ô khác có khai chữ chung quanh con trỏ nhưng
+  không khai lại khi chỉ bôi đen, nên bật ra toàn máy là mất dấu khắp nơi.
+- **Ô không xác nhận thì bộ gõ không gõ đè**, mà trả con trỏ về chỗ cũ rồi bỏ lần bỏ dấu đó. Mất dấu
+  một chữ thì thấy ngay; gõ đè khi con trỏ đang lùi thì chữ chèn sai chỗ, rối và khó phát hiện.
+- **Phần bấm Shift+Mũi tên nằm ở máy chủ nền**, nên cài gói mới phải khởi động lại
+  `fcitx5-lotus-server@<user>`. Tắt công tắc trên thì quay về cách chờ theo đồng hồ.
+- **Bấm Shift phải, không phải Shift trái (23/09).** fcitx5 mặc định coi chạm Shift trái một mình là
+  chuyển sang tiếng Anh, và bản đầu dùng Shift trái thỉnh thoảng làm bộ gõ rơi về tiếng Anh giữa lúc gõ.
+
+Chưa đo Firefox và Chrome. Đã báo cả hai cách ở #267, chưa gửi mã.
+
+### Sửa lỗi gặp thật
+
+- **Hết lặp chữ đầu ở thanh địa chỉ trình duyệt với chế độ uinput** (gõ `tôi` ra `toôi`, `ê` ra
+  `eê`, kiểu issue #190). Ở Chromium/Edge đã sửa triệt để, vì trình duyệt báo đúng phần tự điền. Ở
+  Firefox sửa theo hình dạng ô nhập, đo 7/7 lần có gợi ý ra đúng. Mọi ô khác vẫn bỏ lá chắn
+  để gõ nhanh như Super Smooth của bản gốc. Chưa gửi lên bản gốc.
+- **Bỏ khoảng chờ vô ích ở app không có surrounding text.** Edge chạy qua XWayland: độ trễ trung vị
+  12,8 → 6,9 ms. Bản gốc từ chối (#490).
+- **Chữ V hết màu đen trên panel tối của KDE** (issue #374, gặp ngay với giao diện mặc định Fedora
+  44). Bộ gõ đọc màu của panel thay vì màu cửa sổ ứng dụng. Chụp trước và sau trên máy thật: V đen
+  thành V trắng. Mã sửa đã vào bản gốc (PR #497); bản này chỉ giữ thêm bài kiểm.
+- **Chữ V hết màu đen trên thanh trên cùng của GNOME** (Ubuntu Yaru, theme WhiteSur). Cùng lỗi với
+  KDE: bộ gõ hỏi màu ứng dụng thay vì màu thanh. Giờ đọc thẳng theme của GNOME Shell. Chưa gửi lên bản
+  gốc.
+- **Gõ đúng trong LibreOffice với chế độ uinput** (issue #162: `chao` + `f` ra `chaà`). Nguyên nhân
+  không phải máy chậm: LibreOffice xử lý phím xoá theo kiểu hẹn sau, còn chữ mới chèn ngay nên vượt
+  mặt. Bản này xoá bằng surrounding text riêng cho LibreOffice. Đo trên Writer: 30–36/60 từ sai →
+  0/60; Calc, Impress 0/60. Đã báo ở #162, chưa gửi mã.
+- **Gõ được Messenger trên Facebook với chế độ uinput** — bốn nguyên nhân và cách chữa ở
+  [mục trên](#messenger-trên-facebook-bôi-đen-rồi-gõ-đè-thay-vì-xoá-rồi-gõ-2009).
+- **Chờ 4 ms mỗi phím xoá thay vì 2** ở chế độ uinput. Máy tải nặng: 2 ms đúng 39–46/60
+  câu, 4 ms đúng 58–60/60. Máy rảnh không khác.
+
+### Đang chờ tác giả gốc trả lời
+
+- **Chờ sự kiện surrounding text thay vì ngủ theo một hằng số đoán trước** — mặc định TẮT.
+- **Chế độ Smooth chờ bằng hẹn giờ** thay vì chặn cả vòng lặp của fcitx5.
+
+Cả hai nằm ở [PR #492](https://github.com/LotusInputMethod/fcitx5-lotus/pull/492).
+
+### Dọn dẹp và hạ tầng
+
+- Siết dịch vụ systemd của máy chủ: `systemd-analyze security` từ 7.0 xuống 2.0.
+- Máy chủ bàn phím ảo chỉ mở chuột và bàn chạm, không còn đọc được bàn phím; ra khỏi nhóm `input`.
+- Máy chủ và mô-đun kiểm nhau bằng tài khoản thay vì tên chương trình; bỏ `CAP_SYS_PTRACE`.
+- Máy chủ bỏ qua con số ngoài khoảng ±1024 thay vì xin bộ nhớ tuỳ ý.
+- Gỡ công tắc `FixUinputWithAck` vốn mặc định tắt.
+- Biến môi trường `LOTUS_SOCKET_NAMESPACE` cho máy chủ, `LOTUS_BACKSPACE_GAP_MS`.
+- Khoảng cách giữa hai phím xoá mặc định 0 ms thay vì 5 ms. Đây là lựa chọn riêng của bản này.
+
+### Kiểm thử
+
+- 26 bài kiểm thay vì 9: thêm kiểm bất biến trên chuỗi phím ngẫu nhiên, kiểm màu panel KDE và GNOME, tái
+  hiện lỗi giữ phím của issue #472, tám bài cho lỗi Messenger trên Facebook, và ba bài cho máy chủ
+  bàn phím ảo.
+
+## Bản này KHÔNG sửa
+
+- Chế độ Surrounding Text vẫn lỗi, nhất là trên Firefox và LibreOffice Writer (60/60 từ sai).
+- Máy chủ bàn phím ảo chết giữa lúc thay chữ thì bàn phím chết theo.
+
+## Cài
+
+Làm theo mục
+[Cài sang máy khác](KHAC-GI-SO-VOI-BAN-GOC.md#cài-sang-máy-khác).
+Nhớ gỡ bản Lotus đóng gói sẵn trước, và cài vào `/usr`.
+
+**Cài xong, hoặc mỗi lần cập nhật, phải khởi động lại máy chủ nền** (chương trình chạy ngầm bấm
+phím xoá thay bộ gõ), rồi khởi động lại fcitx5:
+
+```
+sudo systemctl restart fcitx5-lotus-server@$(whoami).service
+fcitx5 -rd
 ```
 
----
+Cài gói mới chỉ thay tệp trên đĩa. Máy chủ đang chạy vẫn là bản cũ cho tới khi khởi động lại. Ngó
+Sen thêm lệnh bôi đen cho vá Messenger; máy chủ bản gốc không hiểu lệnh này, nó xoá nhầm một chữ
+rồi đếm sai số phím xoá, làm chữ bị sai ở mọi ứng dụng cho tới khi khởi động lại.
 
-<a id="đóng-góp"></a>
+## English
 
-## 🤝 Đóng góp
-
-Đóng góp là điều làm cho cộng đồng mã nguồn mở trở thành một nơi tuyệt vời để học hỏi, truyền cảm hứng và sáng tạo. Mọi đóng góp của bạn đều được **đánh giá cao**.
-
-Vui lòng xem hướng dẫn chi tiết [tại đây](CONTRIBUTING.md) để biết cách tham gia phát triển dự án, quy trình Pull Request, quy tắc code style và **quy tắc ứng xử**.
-
-Đừng quên tặng dự án một ⭐! Cảm ơn bạn rất nhiều!
-
----
-
-## Những người đóng góp ✨
-
-Cảm ơn những con người tuyệt vời ([chú thích emoji](https://allcontributors.org/en/reference/emoji-key)):
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/nhktmdzhg"><img src="https://avatars.githubusercontent.com/u/57983253?v=4?s=100" width="100px;" alt="Nguyen Hoang Ky"/><br /><sub><b>Nguyen Hoang Ky</b></sub></a><br /><a href="#blog-nhktmdzhg" title="Blogposts">📝</a> <a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=nhktmdzhg" title="Code">💻</a> <a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=nhktmdzhg" title="Documentation">📖</a> <a href="#projectManagement-nhktmdzhg" title="Project Management">📆</a> <a href="https://github.com/LotusInputMethod/fcitx5-lotus/pulls?q=is%3Apr+reviewed-by%3Anhktmdzhg" title="Reviewed Pull Requests">👀</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/hthienloc"><img src="https://avatars.githubusercontent.com/u/148019203?v=4?s=100" width="100px;" alt="Huỳnh Thiện Lộc"/><br /><sub><b>Huỳnh Thiện Lộc</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/issues?q=author%3Ahthienloc" title="Bug reports">🐛</a> <a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=hthienloc" title="Documentation">📖</a> <a href="#design-hthienloc" title="Design">🎨</a> <a href="#translation-hthienloc" title="Translation">🌍</a> <a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=hthienloc" title="Code">💻</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/justanoobcoder"><img src="https://avatars.githubusercontent.com/u/57614330?v=4?s=100" width="100px;" alt="Nguyễn Hồng Hiệp"/><br /><sub><b>Nguyễn Hồng Hiệp</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=justanoobcoder" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/Miho1254"><img src="https://avatars.githubusercontent.com/u/83270073?v=4?s=100" width="100px;" alt="Đặng Quang Hiển"/><br /><sub><b>Đặng Quang Hiển</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=Miho1254" title="Documentation">📖</a> <a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=Miho1254" title="Code">💻</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/Zebra2711"><img src="https://avatars.githubusercontent.com/u/89755535?v=4?s=100" width="100px;" alt="Zebra2711"/><br /><sub><b>Zebra2711</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/issues?q=author%3AZebra2711" title="Bug reports">🐛</a> <a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=Zebra2711" title="Code">💻</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/hien-ngo29"><img src="https://avatars.githubusercontent.com/u/98635550?v=4?s=100" width="100px;" alt="Ngo Phu Hien"/><br /><sub><b>Ngo Phu Hien</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=hien-ngo29" title="Code">💻</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/minhtrancccp"><img src="https://avatars.githubusercontent.com/u/33189614?v=4?s=100" width="100px;" alt="Minh Tran"/><br /><sub><b>Minh Tran</b></sub></a><br /><a href="#platform-minhtrancccp" title="Packaging/porting to new platform">📦</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/hieutran21198"><img src="https://avatars.githubusercontent.com/u/87953912?v=4?s=100" width="100px;" alt="Trần Minh Hiếu (Cirius)"/><br /><sub><b>Trần Minh Hiếu (Cirius)</b></sub></a><br /><a href="#platform-hieutran21198" title="Packaging/porting to new platform">📦</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/namtao"><img src="https://avatars.githubusercontent.com/u/48555338?v=4?s=100" width="100px;" alt="namtao"/><br /><sub><b>namtao</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=namtao" title="Code">💻</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/minhdaolesoez"><img src="https://avatars.githubusercontent.com/u/70090530?v=4?s=100" width="100px;" alt="Dao Le Minh"/><br /><sub><b>Dao Le Minh</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=minhdaolesoez" title="Code">💻</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/xoaiPro235"><img src="https://avatars.githubusercontent.com/u/145014259?v=4?s=100" width="100px;" alt="Mai Văn Lực"/><br /><sub><b>Mai Văn Lực</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=xoaiPro235" title="Code">💻</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/dismonjames"><img src="https://avatars.githubusercontent.com/u/158133523?v=4?s=100" width="100px;" alt="Lê Hùng Quang Minh"/><br /><sub><b>Lê Hùng Quang Minh</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=dismonjames" title="Code">💻</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/naoNao89"><img src="https://avatars.githubusercontent.com/u/90588855?v=4?s=100" width="100px;" alt="Cả thế giới là Rust"/><br /><sub><b>Cả thế giới là Rust</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=naoNao89" title="Code">💻</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/collyn"><img src="https://avatars.githubusercontent.com/u/13034759?v=4?s=100" width="100px;" alt="Nguyen Tien Huy"/><br /><sub><b>Nguyen Tien Huy</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=collyn" title="Code">💻</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/ducky-duke"><img src="https://avatars.githubusercontent.com/u/96020037?v=4?s=100" width="100px;" alt="ducky-duke"/><br /><sub><b>ducky-duke</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=ducky-duke" title="Code">💻</a></td>
-      <td align="center" valign="top" width="25%"><a href="https://github.com/Leanhduc-linux"><img src="https://avatars.githubusercontent.com/u/259352926?v=4?s=100" width="100px;" alt="nothing"/><br /><sub><b>nothing</b></sub></a><br /><a href="https://github.com/LotusInputMethod/fcitx5-lotus/commits?author=Leanhduc-linux" title="Code">💻</a> <a href="https://github.com/LotusInputMethod/fcitx5-lotus/issues?q=author%3ALeanhduc-linux" title="Bug reports">🐛</a> <a href="#platform-Leanhduc-linux" title="Packaging/porting to new platform">📦</a></td>
-    </tr>
-  </tbody>
-  <tfoot>
-    <tr>
-      <td align="center" size="13px" colspan="4">
-        <img src="https://raw.githubusercontent.com/all-contributors/all-contributors-cli/1b8533af435da9854653492b1327a23a4dbd0a10/assets/logo-small.svg">
-          <a href="https://all-contributors.js.org/docs/en/bot/usage">Add your contributions</a>
-        </img>
-      </td>
-    </tr>
-  </tfoot>
-</table>
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-Dự án này tuân thủ cấu trúc của [all-contributors](https://github.com/all-contributors/all-contributors). Mọi đóng góp đều được hoan nghênh!
-
----
-
-<a id="giấy-phép"></a>
-
-## 📃 Giấy phép
-
-Dự án được phân phối dưới giấy phép GNU General Public License v3. Xem [`LICENSE`](LICENSE) để biết thêm chi tiết.
-
----
-
-## ✨ Lịch sử sao
-
-<a href="https://github.com/LotusInputMethod/fcitx5-lotus">
-  <img
-    src="https://lotusinputmethod.github.io/starcharts.svg"
-    alt="Star History Chart"
-  />
-</a>
+Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: most
+of the code is written with an AI coding agent, then measured and used daily by the maintainer. It is
+a fork of [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), itself a fork of
+[VMK](https://github.com/thanhpy2009/VMK), and stays under GPL-3.0-or-later. It is published as is,
+with no promise of support. The rest of this page is in Vietnamese.

@@ -1,6 +1,6 @@
 # Nhật ký thay đổi
 
-Mọi thay đổi đáng kể của LotusVibe, bản fork của
+Mọi thay đổi đáng kể của Ngó Sen (tên cũ LotusVibe), tách ra từ
 [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), được ghi ở đây. Cách ghi theo
 [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Mỗi dòng nói người dùng thấy gì thay đổi;
 lý do và số đo của từng miếng vá nằm trong [KHAC-GI-SO-VOI-BAN-GOC.md](KHAC-GI-SO-VOI-BAN-GOC.md).
@@ -16,6 +16,9 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
   giữ nguyên, nên cấu hình cũ dùng tiếp được (#15).
 - Gói Fedora đổi tên thành `fcitx5-ngosen`. Cài gói này thì bản `fcitx5-lotus` cũ của fork được thay
   tự động; gói này và `fcitx5-lotus` của bản gốc không cài chung được (#16).
+- Kho chuyển về địa chỉ `github.com/ngosen/ngosen` (link cũ tự chuyển). Trang giới thiệu viết lại theo
+  tên Ngó Sen và nằm ở `README.md`; README của bản gốc không còn trong kho, xem ở kho fcitx5-lotus
+  (#17).
 - Cập nhật bamboo-core (lõi bộ gõ Telex/VNI) theo bản gốc (#11).
 
 ### Bỏ

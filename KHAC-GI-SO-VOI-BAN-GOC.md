@@ -1,22 +1,24 @@
-# LotusVibe khác gì so với Lotus gốc
+# Ngó Sen khác gì so với Lotus gốc
 
-LotusVibe là bản fork của [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), dùng hằng
-ngày trên hai máy: CachyOS + KDE Plasma Wayland, và một iMac chạy Ubuntu 24.04 + GNOME X11 (máy tính
-tiền kiêm máy chạy CI). Tệp này ghi lại **từng miếng vá**: vá gì, vì sao, đã
-gửi ngược lên chưa, và tác giả trả lời ra sao.
+Ngó Sen (tên cũ LotusVibe) tách ra từ
+[fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), dùng hằng ngày trên Fedora 44 + KDE
+Plasma Wayland và CachyOS + KDE Plasma Wayland. Trên một iMac chạy Ubuntu 24.04 + GNOME X11 (máy tính
+tiền kiêm máy chạy CI) thì mới dùng sơ, chưa thử kỹ. Tệp này ghi lại **từng miếng vá**: vá gì, vì
+sao, đã gửi ngược lên chưa, và tác giả trả lời ra sao.
 
 ## Lấy bản nào
 
 **Nhánh `ban-dung`.** Đó là nhánh duy nhất nên lấy để dùng hoặc để thử trên máy khác.
 
 ```
-git clone https://github.com/nguyenphivn/LotusVibe.git
-cd LotusVibe
+git clone https://github.com/ngosen/ngosen.git
+cd ngosen
 git checkout ban-dung
 ```
 
-`ban-dung` = `upstream/dev` + đúng **23 miếng vá**, không thiếu commit nào của tác giả. Từ
-13/09/2026 đây cũng là **nhánh mặc định** của fork.
+`ban-dung` tách từ `upstream/dev` (lần gom cuối 16/09/2026, lần nhặt cuối 24/09/2026) và mang các
+miếng vá ghi trong tệp này. Từ 13/09/2026 đây là **nhánh mặc định**. Từ 03/10/2026 chỉ nhặt vá của
+bản gốc có chọn lọc, nên nhánh này không còn chứa đủ mọi commit của tác giả.
 
 Mấy nhánh khác là nhánh làm việc, **đừng lấy**:
 
@@ -32,7 +34,8 @@ còn giá trị của chúng đều nằm trong `ban-dung`.
 ## Cài sang máy khác
 
 Các bước dưới đây cho Arch và CachyOS. Distro khác thì gói cần cài lấy ở mục "Yêu cầu hệ thống"
-trong `README.md`, các bước còn lại giống hệt.
+trong [README của bản gốc](https://github.com/LotusInputMethod/fcitx5-lotus#readme), các bước còn
+lại giống hệt.
 
 **1. Gỡ bản Lotus đóng gói sẵn, nếu máy đã có.** Không gỡ thì tệp của hai bản đè lên nhau, và lần
 cập nhật hệ thống sau sẽ báo lỗi tệp xung đột.
@@ -53,8 +56,8 @@ sudo pacman -S --needed cmake extra-cmake-modules gcc go git python make pkgconf
 `--recurse-submodules`, vì lõi bộ gõ nằm ở kho con `bamboo-core`.
 
 ```
-git clone --recurse-submodules -b ban-dung https://github.com/nguyenphivn/LotusVibe.git
-cd LotusVibe
+git clone --recurse-submodules -b ban-dung https://github.com/ngosen/ngosen.git
+cd ngosen
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=/usr/lib
 cmake --build build -j8
 sudo cmake --install build
@@ -90,10 +93,10 @@ sudo gpasswd -d uinput_proxy input
 ```
 
 **5. Thêm bộ gõ.** Khởi động lại fcitx5 (hoặc đăng xuất rồi vào lại), mở "Fcitx5 Configuration" và
-thêm Lotus. Trên KDE Wayland: System Settings → Virtual Keyboard → chọn "Fcitx 5".
+thêm Ngó Sen. Trên KDE Wayland: System Settings → Virtual Keyboard → chọn "Fcitx 5".
 
 **6. Đặt luật theo app giống máy gốc.** Sửa `~/.config/fcitx5/conf/lotus-app-rules.conf` (hoặc đặt
-trong cửa sổ cài đặt Lotus), rồi khởi động lại fcitx5:
+trong cửa sổ cài đặt Ngó Sen), rồi khởi động lại fcitx5:
 
 ```
 firefox=2
@@ -111,7 +114,7 @@ Từ 26/09 các tuỳ chọn cho Messenger bật sẵn, không cần đặt tron
 `WaitSurroundingSettleMs=40` và `WaitSurroundingSettleFirstWordMs=60` (đường lùi khi tắt bôi đen).
 Vá thanh địa chỉ không phụ thuộc các tuỳ chọn này.
 
-**Cập nhật bản mới về sau:** trong thư mục `LotusVibe`, chạy `git pull --recurse-submodules`,
+**Cập nhật bản mới về sau:** trong thư mục `ngosen`, chạy `git pull --recurse-submodules`,
 lặp lại bước 3, rồi `sudo systemctl restart fcitx5-lotus-server@$(whoami).service` và khởi động lại
 fcitx5.
 
@@ -138,7 +141,7 @@ file đỏ 5/5, có file xanh 5/5. Đây không phải lỗi giờ giấc, nới
 
 ## Hiệu năng so với bản gốc (chế độ uinput)
 
-Bảng này cũng có ở trang đầu `.github/README.md`; sửa số thì sửa cả hai. Mã trong ngoặc là mục
+Bảng này cũng có ở trang đầu `README.md`; sửa số thì sửa cả hai. Mã trong ngoặc là mục
 trong `RADAR.md` của repo workbench, nơi ghi cách đo.
 
 | Đo cái gì | Bản gốc → bản này | Điều kiện |
@@ -755,15 +758,18 @@ Nói rõ để khỏi mất công thử lại:
 
 ## Quy ước khi gom lại lần sau
 
+Từ 03/10/2026 dự án không gom lại từ `upstream/dev` nữa, chỉ nhặt từng vá của bản gốc bằng
+`cherry-pick -x`. Phần dưới đây giữ lại làm nhật ký các lần gom trước.
+
 Tác giả đẩy mã rất nhanh, khoảng 163 commit mỗi 30 ngày. Khi cần cập nhật:
 
 **Dựng nhánh MỚI từ `upstream/dev` rồi nhặt lại từng vá.** Đừng gộp chồng lên nhánh cũ. Gộp
 chồng làm bản mình tụt lại sau upstream mà không ai để ý, đúng như nhánh `tong-hop` cũ: nó hơn
 `dev` 27 commit nhưng lại THIẾU 1 commit của tác giả.
 
-**Trang đầu của fork là `.github/README.md`**, không phải `README.md`. GitHub ưu tiên hiện tệp trong
-`.github`, nhờ vậy `README.md` của tác giả giữ nguyên và không gây xung đột mỗi lần gom lại. Trang
-đầu chỉ tóm tắt mỗi vá một dòng. **Thêm hoặc bỏ vá thì sửa cả tệp này lẫn trang đầu, trong cùng
+**Trang đầu là `README.md`.** Tới 03/10/2026 trang đầu nằm ở `.github/README.md` để `README.md` của
+tác giả giữ nguyên, khỏi xung đột mỗi lần gom lại; nay không gom lại nữa nên chỉ còn một tệp, và
+README của bản gốc xem ở kho fcitx5-lotus. Trang đầu chỉ tóm tắt mỗi vá một dòng. **Thêm hoặc bỏ vá thì sửa cả tệp này lẫn trang đầu, trong cùng
 commit.**
 
 Sau khi gom xong, phép kiểm bắt buộc là **so mã băm cây mã** với nhánh trước đó. Giống nhau thì
@@ -804,8 +810,9 @@ chữa được trường hợp này.
 
 Mã băm commit trong tệp này đổi theo mỗi lần gom; tìm theo tiêu đề commit nếu không khớp.
 
-**Không đổi tên trong mã.** Ngày 17/09/2026 chỉ đổi tên KHO trên GitHub thành `LotusVibe` (link cũ tự
-chuyển); mọi tên bên trong mã, gói, dịch vụ vẫn là `lotus`. Chữ `lotus` nằm 1592 chỗ ở 95 tệp, và 4 tệp tác giả sửa nhiều nhất
-chính là 4 tệp việc đổi tên phải cày nát, nên đổi tên là tự chuốc xung đột mỗi lần cập nhật.
-Gói Nix dùng `--replace-fail` nên đổi tên là gãy bản dựng chứ không phải cảnh báo. Tính lại khi
-số vá bị từ chối vượt 8 đến 10 cái.
+**Tên bên trong mã giữ nguyên.** Ngày 03/10/2026 dự án đổi tên thành Ngó Sen: đổi tên hiển thị, tên
+gói Fedora (`fcitx5-ngosen`) và địa chỉ kho (`ngosen/ngosen`; trước đó là `nguyenphivn/LotusVibe` từ
+17/09/2026, link cũ tự chuyển). Tên bên trong mã, tệp cấu hình và dịch vụ vẫn là `lotus`. Đếm ngày
+17/09/2026, chữ `lotus` nằm 1592 chỗ ở 95 tệp, và 4 tệp tác giả sửa nhiều nhất chính là 4 tệp việc
+đổi tên phải cày nát, nên đổi tên bên trong là tự chuốc xung đột mỗi lần nhặt vá của bản gốc. Gói Nix
+dùng `--replace-fail` nên đổi tên là gãy bản dựng chứ không phải cảnh báo.

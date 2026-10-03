@@ -139,6 +139,7 @@ fi
 * Sat Oct 03 2026 Nguyen Phi <nguyenphidt@gmail.com> - 3.5.10-3
 - Take the service user out of group input on upgrade and apply the pointer ACLs to plugged-in devices.
 - The server ignores key counts out of range, opens pointer devices only, and caps its backspace queue.
+- The server no longer drops a client that connects as the previous one hangs up.
 - The server and the addon identify each other by uid; CAP_SYS_PTRACE is dropped.
 - udev no longer gives group input access to /dev/uinput and input devices.
 - The About page links to this repository and no longer opens upstream's bug tracker.

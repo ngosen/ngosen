@@ -8,6 +8,7 @@
 
 #include <climits>
 #include <iostream>
+#include <poll.h>
 #include <string>
 
 namespace {
@@ -52,6 +53,19 @@ int main() {
     expectQueue("requests add up", queueBackspaces(4, 3), 6);
     expectQueue("full queue stays full", queueBackspaces(kMaxKeysPerRequest, kMaxKeysPerRequest), kMaxKeysPerRequest);
     expectQueue("queue stops at the limit", queueBackspaces(kMaxKeysPerRequest - 24, 100), kMaxKeysPerRequest);
+
+    // A connection that replaces another must not inherit what poll() reported for the old one,
+    // nor the backspaces the old one still had queued.
+    pollfd slot{};
+    slot.fd      = 7;
+    slot.events  = POLLIN;
+    slot.revents = POLLIN | POLLHUP;
+    int pending  = 12;
+    adoptKeyboardClient(slot, 9, pending);
+    expectQueue("new connection takes the slot", slot.fd, 9);
+    expectQueue("slot keeps listening for requests", slot.events, POLLIN);
+    expectQueue("old poll results are dropped", slot.revents, 0);
+    expectQueue("old queue is dropped", pending, 0);
 
     return failures == 0 ? 0 : 1;
 }

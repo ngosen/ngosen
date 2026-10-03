@@ -5,6 +5,7 @@
 #ifndef _LOTUS_KEY_REQUEST_H_
 #define _LOTUS_KEY_REQUEST_H_
 
+#include <poll.h>
 #include <sys/types.h>
 
 /**
@@ -38,6 +39,14 @@ inline KeyRequest parseKeyRequest(ssize_t bytes, int value) {
 inline int queueBackspaces(int pending, int count) {
     const int total = pending + count - 1;
     return total > kMaxKeysPerRequest ? kMaxKeysPerRequest : total;
+}
+
+// Hands the keyboard slot to a new connection. What poll() reported and what is still queued belong
+// to the connection it replaces: carried over, they would drop the new client or delete its text.
+inline void adoptKeyboardClient(pollfd& slot, int fd, int& pending_backspaces) {
+    slot.fd            = fd;
+    slot.revents       = 0;
+    pending_backspaces = 0;
 }
 
 #endif // _LOTUS_KEY_REQUEST_H_

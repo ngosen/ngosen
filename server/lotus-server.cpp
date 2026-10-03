@@ -393,7 +393,7 @@ int main(int argc, char* argv[]) {
                 if (is_trusted_client(client_fd, expected_uid, "keyboard")) {
                     LotusLogger::instance().info("Fcitx5 connected to keyboard socket");
                     kb_client_fd.reset(client_fd);
-                    fds[KB_CLIENT_INDEX].fd = kb_client_fd.get();
+                    adoptKeyboardClient(fds[KB_CLIENT_INDEX], kb_client_fd.get(), pending_backspaces);
                 } else {
                     close(client_fd);
                 }

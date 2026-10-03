@@ -409,12 +409,13 @@ int main(int argc, char* argv[]) {
                 LotusLogger::instance().warn("Keyboard client disconnected or connection error");
                 kb_client_fd.reset(-1);
                 fds[KB_CLIENT_INDEX].fd = -1;
+                pending_backspaces      = 0;
             } else {
                 const KeyRequest request = parseKeyRequest(n, count);
                 if (request.kind == KeyRequest::Kind::Select) {
                     uinput.send_select(request.count);
                 } else if (request.kind == KeyRequest::Kind::Backspace) {
-                    pending_backspaces += request.count - 1;
+                    pending_backspaces = queueBackspaces(pending_backspaces, request.count);
                     uinput.send_backspace();
                 } else {
                     LotusLogger::instance().warn("Ignoring invalid key request: " + std::to_string(count) + " (" + std::to_string(n) + " bytes)");

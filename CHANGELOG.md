@@ -29,6 +29,8 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
 
 ### Sửa lỗi
 
+- Máy chủ nền giữ tối đa 1024 phím xoá trong hàng chờ và bỏ hàng chờ khi bộ gõ ngắt kết nối. Trước đây
+  một chương trình gửi dồn dập có thể khiến máy chủ tiếp tục xoá chữ rất lâu sau khi nó đã dừng (#18).
 - Luật udev không còn cấp `/dev/uinput` và mọi thiết bị nhập cho cả nhóm `input`, khớp bản gốc
   (LotusInputMethod/fcitx5-lotus#525) (#10).
 - Máy chủ nền và mô-đun bộ gõ nhận nhau theo tài khoản (uid) của tiến trình bên kia, thay cho đường

@@ -33,4 +33,11 @@ inline KeyRequest parseKeyRequest(ssize_t bytes, int value) {
     return {KeyRequest::Kind::Select, -value};
 }
 
+// Backspaces left to send after a request's first one. Capped, so a flood of requests cannot keep
+// deleting text long after its sender has stopped.
+inline int queueBackspaces(int pending, int count) {
+    const int total = pending + count - 1;
+    return total > kMaxKeysPerRequest ? kMaxKeysPerRequest : total;
+}
+
 #endif // _LOTUS_KEY_REQUEST_H_

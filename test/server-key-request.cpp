@@ -21,6 +21,13 @@ namespace {
         }
     }
 
+    void expectQueue(const std::string& name, int got, int want) {
+        if (got != want) {
+            std::cerr << "FAIL: " << name << ": got " << got << ", want " << want << '\n';
+            ++failures;
+        }
+    }
+
 } // namespace
 
 int main() {
@@ -39,6 +46,12 @@ int main() {
     expect("INT_MIN", parseKeyRequest(intSize, INT_MIN), Kind::Invalid, 0);
     expect("short message", parseKeyRequest(2, 1), Kind::Invalid, 0);
     expect("long message", parseKeyRequest(8, 1), Kind::Invalid, 0);
+
+    expectQueue("single backspace queues nothing", queueBackspaces(0, 1), 0);
+    expectQueue("five backspaces queue four", queueBackspaces(0, 5), 4);
+    expectQueue("requests add up", queueBackspaces(4, 3), 6);
+    expectQueue("full queue stays full", queueBackspaces(kMaxKeysPerRequest, kMaxKeysPerRequest), kMaxKeysPerRequest);
+    expectQueue("queue stops at the limit", queueBackspaces(kMaxKeysPerRequest - 24, 100), kMaxKeysPerRequest);
 
     return failures == 0 ? 0 : 1;
 }

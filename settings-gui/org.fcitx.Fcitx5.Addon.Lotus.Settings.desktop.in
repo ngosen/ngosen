@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=Fcitx5 Lotus Settings
-Comment=Configure Fcitx5 Lotus Input Method
+Name=Ngó Sen Settings
+Comment=Configure the Ngó Sen input method
 Exec=fcitx5-lotus-settings
 Icon=fcitx-lotus
 StartupWMClass=org.fcitx.Fcitx5.Addon.Lotus.Settings

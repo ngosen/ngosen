@@ -62,7 +62,7 @@ class AboutPage(QWidget):
 
         layout.addWidget(logo, alignment=Qt.AlignCenter)
 
-        title = QLabel("Fcitx5 Lotus")
+        title = QLabel("Ngó Sen")
         title.setObjectName("AboutTitle")
         layout.addWidget(title, alignment=Qt.AlignCenter)
 

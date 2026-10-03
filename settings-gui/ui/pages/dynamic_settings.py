@@ -75,7 +75,7 @@ SETTINGS_MAP = {
 CATEGORY_DESCRIPTIONS = {
     SettingsCategory.GENERAL: _("Configure basic input method settings and behaviors."),
     SettingsCategory.APPEARANCE: _(
-        "Customize the look and feel of the Lotus status icons and theme."
+        "Customize the look and feel of the Ngó Sen status icons and theme."
     ),
     SettingsCategory.TYPING: _("Fine-tune spelling corrections and advanced typing options."),
     SettingsCategory.SHORTCUTS: _("Manage input mode shortcuts, display order, and fast cycling."),

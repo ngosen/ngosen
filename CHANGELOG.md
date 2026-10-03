@@ -11,6 +11,9 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
 
 ### Thay đổi
 
+- Bộ gõ đổi tên hiển thị thành **Ngó Sen**: tên trong danh sách bộ gõ và addon của fcitx5, nhãn "Ngó
+  Sen - Tắt", cửa sổ và mục menu "Cài đặt Ngó Sen", trang Giới thiệu. Tệp cấu hình và tên bên trong
+  giữ nguyên, nên cấu hình cũ dùng tiếp được (#15).
 - Cập nhật bamboo-core (lõi bộ gõ Telex/VNI) theo bản gốc (#11).
 
 ### Bỏ

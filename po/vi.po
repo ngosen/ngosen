@@ -184,8 +184,8 @@ msgid "Fix Uinput Mode With Ack"
 msgstr "Sửa lỗi chế độ Uinput với Ack"
 
 #: src/lotus-config.h:244
-msgid "Use Lotus Status Icons"
-msgstr "Sử dụng biểu tượng trạng thái Lotus"
+msgid "Use Ngó Sen Status Icons"
+msgstr "Sử dụng biểu tượng trạng thái Ngó Sen"
 
 #: src/lotus-config.h:246 src/lotus-engine.cpp:248 src/lotus-engine.cpp:386
 msgid "Custom Dictionary"
@@ -304,29 +304,29 @@ msgid "Unknown Mode"
 msgstr "Không rõ chế độ"
 
 #: src/lotus-engine.cpp:1204
-msgid "Lotus - Off"
-msgstr "Lotus - Tắt"
+msgid "Ngó Sen - Off"
+msgstr "Ngó Sen - Tắt"
 
 #: src/lotus-state.cpp:241
 msgid "Page "
 msgstr "Trang "
 
 #: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:7
-msgid "Lotus"
-msgstr "Lotus"
+msgid "Ngó Sen"
+msgstr "Ngó Sen"
 
 #: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:8
-msgid "Vietnamese input method (Lotus)"
-msgstr "Bộ gõ tiếng Việt (Lotus)"
+msgid "Vietnamese input method (Ngó Sen)"
+msgstr "Bộ gõ tiếng Việt (Ngó Sen)"
 
 #: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:10
 msgid ""
-"Lotus is a Vietnamese input method for Fcitx5, supporting multiple typing "
+"Ngó Sen is a Vietnamese input method for Fcitx5, supporting multiple typing "
 "modes and input methods."
-msgstr "Lotus là bộ gõ tiếng Việt cho Fcitx5, hỗ trợ nhiều chế độ và kiểu gõ."
+msgstr "Ngó Sen là bộ gõ tiếng Việt cho Fcitx5, hỗ trợ nhiều chế độ và kiểu gõ."
 
-msgid "Lotus Wrapper For Fcitx"
-msgstr "Bộ gõ Lotus cho Fcitx"
+msgid "Ngó Sen Wrapper For Fcitx"
+msgstr "Bộ gõ Ngó Sen cho Fcitx"
 
 #: settings-gui/ui/pages/about.py:75
 #, python-brace-format
@@ -584,8 +584,8 @@ msgid "Configure basic input method settings and behaviors."
 msgstr "Thiết lập các cài đặt và hành vi cơ bản của bộ gõ."
 
 #: settings-gui/ui/pages/dynamic_settings.py:81
-msgid "Customize the look and feel of the Lotus status icons and theme."
-msgstr "Tùy chỉnh giao diện, biểu tượng trạng thái và chủ đề của Lotus."
+msgid "Customize the look and feel of the Ngó Sen status icons and theme."
+msgstr "Tùy chỉnh giao diện, biểu tượng trạng thái và chủ đề của Ngó Sen."
 
 #: settings-gui/ui/pages/dynamic_settings.py:83
 msgid "Fine-tune spelling corrections and advanced typing options."
@@ -887,8 +887,9 @@ msgstr ""
 "huỷ."
 
 #: settings-gui/ui/main_window.py:33
-msgid "Lotus Settings"
-msgstr "Cài đặt Lotus"
+#: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:2
+msgid "Ngó Sen Settings"
+msgstr "Cài đặt Ngó Sen"
 
 #: settings-gui/ui/main_window.py:142
 msgid "&Reset"
@@ -950,13 +951,9 @@ msgstr "Lưu cài đặt thất bại. Hãy kiểm tra xem Fcitx5 có đang ch�
 msgid "Settings saved."
 msgstr "Cài đặt đã được lưu."
 
-#: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:2
-msgid "Fcitx5 Lotus Settings"
-msgstr "Cài đặt Fcitx5 Lotus"
-
 #: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:3
-msgid "Configure Fcitx5 Lotus Input Method"
-msgstr "Tuỳ chỉnh bộ gõ Fcitx5 Lotus"
+msgid "Configure the Ngó Sen input method"
+msgstr "Tuỳ chỉnh bộ gõ Ngó Sen"
 
 #~ msgid "MAIN SHORTCUTS"
 #~ msgstr "PHÍM TẮT CHÍNH"

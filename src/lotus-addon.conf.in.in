@@ -1,5 +1,5 @@
 [Addon]
-Name=Lotus Wrapper For Fcitx
+Name=Ngó Sen Wrapper For Fcitx
 Category=InputMethod
 Version=@PROJECT_VERSION@
 Enabled=True

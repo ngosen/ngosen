@@ -183,7 +183,7 @@ msgid "Fix Uinput Mode With Ack"
 msgstr ""
 
 #: src/lotus-config.h:244
-msgid "Use Lotus Status Icons"
+msgid "Use Ngó Sen Status Icons"
 msgstr ""
 
 #: src/lotus-config.h:246 src/lotus-engine.cpp:248 src/lotus-engine.cpp:386
@@ -303,7 +303,7 @@ msgid "Unknown Mode"
 msgstr ""
 
 #: src/lotus-engine.cpp:1204
-msgid "Lotus - Off"
+msgid "Ngó Sen - Off"
 msgstr ""
 
 #: src/lotus-state.cpp:241
@@ -311,20 +311,20 @@ msgid "Page "
 msgstr ""
 
 #: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:7
-msgid "Lotus"
+msgid "Ngó Sen"
 msgstr ""
 
 #: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:8
-msgid "Vietnamese input method (Lotus)"
+msgid "Vietnamese input method (Ngó Sen)"
 msgstr ""
 
 #: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:10
 msgid ""
-"Lotus is a Vietnamese input method for Fcitx5, supporting multiple typing "
+"Ngó Sen is a Vietnamese input method for Fcitx5, supporting multiple typing "
 "modes and input methods."
 msgstr ""
 
-msgid "Lotus Wrapper For Fcitx"
+msgid "Ngó Sen Wrapper For Fcitx"
 msgstr ""
 
 #: settings-gui/ui/pages/about.py:75
@@ -570,7 +570,7 @@ msgid "Configure basic input method settings and behaviors."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py:81
-msgid "Customize the look and feel of the Lotus status icons and theme."
+msgid "Customize the look and feel of the Ngó Sen status icons and theme."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py:83
@@ -852,7 +852,8 @@ msgid ""
 msgstr ""
 
 #: settings-gui/ui/main_window.py:33
-msgid "Lotus Settings"
+#: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:2
+msgid "Ngó Sen Settings"
 msgstr ""
 
 #: settings-gui/ui/main_window.py:142
@@ -915,10 +916,6 @@ msgstr ""
 msgid "Settings saved."
 msgstr ""
 
-#: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:2
-msgid "Fcitx5 Lotus Settings"
-msgstr ""
-
 #: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:3
-msgid "Configure Fcitx5 Lotus Input Method"
+msgid "Configure the Ngó Sen input method"
 msgstr ""

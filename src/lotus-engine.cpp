@@ -926,7 +926,7 @@ namespace fcitx {
         if (!file.is_open())
             return;
 
-        file << "# Lotus Per-App Configuration\n";
+        file << "# Ngó Sen Per-App Configuration\n";
         file << "# 0 = Off, 2 = Uinput (1 and 3 are read as Uinput too), 4 = Surrounding Text, 5 = Preedit, 6 = Emoji Picker, 8 = Minecraft\n";
         std::lock_guard<std::mutex> lock(appRulesMutex_);
         for (const auto& pair : appRules_) {
@@ -1251,7 +1251,7 @@ namespace fcitx {
 
     std::string LotusEngine::subModeLabelImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
         switch (realMode) {
-            case LotusMode::Off: return _("Lotus - Off");
+            case LotusMode::Off: return _("Ngó Sen - Off");
             case LotusMode::Emoji: return "😄";
             default: return isGnome_ ? "vi" : "🪷";
         }

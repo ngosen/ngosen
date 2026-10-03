@@ -30,7 +30,7 @@ class LotusSettingsWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(_("Lotus Settings"))
+        self.setWindowTitle(_("Ngó Sen Settings"))
 
         self.dbus_handler = LotusDBusHandler()
 

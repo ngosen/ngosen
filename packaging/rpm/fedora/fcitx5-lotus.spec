@@ -141,6 +141,7 @@ fi
 - The server ignores key counts out of range, opens pointer devices only, and caps its backspace queue.
 - The server and the addon identify each other by uid; CAP_SYS_PTRACE is dropped.
 - udev no longer gives group input access to /dev/uinput and input devices.
+- The About page links to this repository and no longer opens upstream's bug tracker.
 
 * Sat Oct 03 2026 Nguyen Phi <nguyenphidt@gmail.com> - 3.5.10-2
 - Rename the package to fcitx5-ngosen; it replaces fcitx5-lotus builds of this fork.

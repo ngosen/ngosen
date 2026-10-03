@@ -10,8 +10,7 @@
     <p>Ngó Sen is a Vietnamese input method for Fcitx5, supporting multiple typing modes and input
       methods.</p>
   </description>
-  <url type="homepage">https://fcitx-im.org</url>
-  <url type="bugtracker">https://github.com/LotusInputMethod/fcitx5-lotus/issues</url>
+  <url type="homepage">https://github.com/ngosen/ngosen</url>
   <project_group>Fcitx</project_group>
   <releases>
     <release version="@PROJECT_VERSION@" date="2026-02-26" />

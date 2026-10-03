@@ -3,13 +3,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from i18n import _
-from qtpy.QtCore import Qt, QUrl
-from qtpy.QtGui import QDesktopServices, QIcon
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import (
     QFrame,
-    QHBoxLayout,
     QLabel,
-    QPushButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -90,41 +88,10 @@ class AboutPage(QWidget):
 
         # GitHub Project Link
         github_link = QLabel(
-            '<a href="https://github.com/LotusInputMethod/fcitx5-lotus" style="text-decoration: none;">https://github.com/LotusInputMethod/fcitx5-lotus</a>'
+            '<a href="https://github.com/ngosen/ngosen" style="text-decoration: none;">https://github.com/ngosen/ngosen</a>'
         )
         github_link.setOpenExternalLinks(True)
         layout.addWidget(github_link, alignment=Qt.AlignCenter)
-
-        # Support Buttons Row
-        support_layout = QHBoxLayout()
-        support_layout.setSpacing(15)
-        support_layout.setAlignment(Qt.AlignCenter)
-
-        btn_bug = QPushButton(_("Report Bug"))
-        btn_bug.setObjectName("BugReport")
-        btn_bug.setFixedWidth(200)
-        btn_bug.clicked.connect(
-            lambda: QDesktopServices.openUrl(
-                QUrl(
-                    "https://github.com/LotusInputMethod/fcitx5-lotus/issues/new?template=bug_report.yml"
-                )
-            )
-        )
-
-        btn_feature = QPushButton(_("Request Feature"))
-        btn_feature.setObjectName("FeatureRequest")
-        btn_feature.setFixedWidth(200)
-        btn_feature.clicked.connect(
-            lambda: QDesktopServices.openUrl(
-                QUrl(
-                    "https://github.com/LotusInputMethod/fcitx5-lotus/issues/new?template=feature_request.yml"
-                )
-            )
-        )
-
-        support_layout.addWidget(btn_bug)
-        support_layout.addWidget(btn_feature)
-        layout.addLayout(support_layout)
 
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
@@ -132,7 +99,7 @@ class AboutPage(QWidget):
         layout.addWidget(line)
 
         # Credits Section
-        credits_title = QLabel(_("Developed by"))
+        credits_title = QLabel(_("Based on fcitx5-lotus by"))
         credits_title.setObjectName("CreditsTitle")
         layout.addWidget(credits_title, alignment=Qt.AlignCenter)
 

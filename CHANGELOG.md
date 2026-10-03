@@ -11,6 +11,9 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
 
 ### Thay đổi
 
+- Trang Giới thiệu trong cửa sổ cài đặt trỏ về kho `ngosen/ngosen` và ghi "Dựa trên fcitx5-lotus của"
+  kèm tên các tác giả gốc. Bỏ hai nút "Báo cáo lỗi" và "Đề xuất tính năng", vì chúng mở trang báo lỗi
+  của bản gốc (#20).
 - Bộ gõ đổi tên hiển thị thành **Ngó Sen**: tên trong danh sách bộ gõ và addon của fcitx5, nhãn "Ngó
   Sen - Tắt", cửa sổ và mục menu "Cài đặt Ngó Sen", trang Giới thiệu. Tệp cấu hình và tên bên trong
   giữ nguyên, nên cấu hình cũ dùng tiếp được (#15).

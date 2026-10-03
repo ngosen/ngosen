@@ -1,10 +1,18 @@
-Name:           fcitx5-lotus
+# Ngó Sen is a fork of fcitx5-lotus. Installed paths, the gettext domain and
+# the source directory keep the upstream name so upstream patches still apply.
+%global upstream_name fcitx5-lotus
+
+Name:           fcitx5-ngosen
 Version:        3.5.10
-Release:        1
-Summary:        Vietnamese input method for fcitx5
+Release:        2%{?dist}
+Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
-URL:            https://github.com/LotusInputMethod/fcitx5-lotus
-Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
+URL:            https://github.com/ngosen/ngosen
+Source0:        %{url}/archive/v%{version}/%{upstream_name}-%{version}.tar.gz
+
+# Both packages install the same files, so they cannot be installed together.
+Conflicts:      %{upstream_name}
+Obsoletes:      %{upstream_name} < %{version}-%{release}
 
 BuildRequires:  cmake
 BuildRequires:  extra-cmake-modules
@@ -26,10 +34,10 @@ Requires:       python3-dbus
 Requires:       acl
 
 %description
-Vietnamese input method for fcitx5
+Ngó Sen is a Vietnamese input method for fcitx5, forked from fcitx5-lotus.
 
 %prep
-%setup -q
+%setup -q -n %{upstream_name}-%{version}
 
 %build
 %cmake -DLOTUS_BYTECOMPILE_PYTHON:BOOL=OFF -DBUILD_TESTING:BOOL=ON
@@ -37,17 +45,17 @@ Vietnamese input method for fcitx5
 
 %install
 %cmake_install
-%find_lang %{name}
+%find_lang %{upstream_name}
 %py_byte_compile %{__python3} %{buildroot}%{_datadir}/fcitx5-lotus
 
 %check
 %ctest
 
-%files -f %{name}.lang
-%{_datadir}/licenses/%{name}/GPL-3.0-or-later.txt
-%{_datadir}/licenses/%{name}/LGPL-2.1-or-later.txt
+%files -f %{upstream_name}.lang
+%{_datadir}/licenses/%{upstream_name}/GPL-3.0-or-later.txt
+%{_datadir}/licenses/%{upstream_name}/LGPL-2.1-or-later.txt
 
-%dir %{_datadir}/licenses/%{name}
+%dir %{_datadir}/licenses/%{upstream_name}
 %dir %{_modulesloaddir}
 %{_bindir}/fcitx5-lotus-server
 %{_bindir}/fcitx5-lotus-settings
@@ -87,19 +95,19 @@ Vietnamese input method for fcitx5
 %systemd_post fcitx5-lotus-server@.service
 
 if [ $1 -eq 1 ]; then
-    echo "--- Cấu hình Lotus ---"
+    echo "--- Cấu hình Ngó Sen ---"
     echo "Hướng dẫn sau cài đặt:"
     echo "1. Kích hoạt Server cho user của bạn:"
     echo "   sudo systemctl enable --now fcitx5-lotus-server@\$(whoami).service"
     echo ""
     echo "2. Cấu hình Fcitx5:"
-    echo "   - Mở 'Fcitx5 Configuration', thêm bộ gõ Lotus"
+    echo "   - Mở 'Fcitx5 Configuration', thêm bộ gõ Ngó Sen"
     echo ""
     echo "3. Lưu ý cho Wayland (KDE):"
     echo "   - Hãy chọn 'Fcitx 5' trong phần Virtual Keyboard của hệ thống."
     echo "------------------------------------------------"
 elif [ $1 -eq 2 ]; then
-    echo "--- Cấu hình Lotus ---"
+    echo "--- Cấu hình Ngó Sen ---"
     echo "Hướng dẫn sau cập nhật:"
     echo "1. Khởi động lại Server cho user của bạn:"
     echo "   sudo systemctl restart fcitx5-lotus-server@\$(whoami).service"
@@ -116,6 +124,9 @@ fi
 %systemd_postun_with_restart fcitx5-lotus-server@.service
 
 %changelog
+* Sat Oct 03 2026 Nguyen Phi <nguyenphidt@gmail.com> - 3.5.10-2
+- Rename the package to fcitx5-ngosen; it replaces fcitx5-lotus builds of this fork.
+
 * Sat Sep 19 2026 Nguyen Hoang Ky <nhktmdzhg@gmail.com> - 3.5.10-1
 - Added desktop notifications when switching typing modes via the mode menu.
 - Fixed typing and key event handling for GTK4 applications on Wayland.

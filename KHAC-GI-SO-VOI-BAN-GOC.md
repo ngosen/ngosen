@@ -814,5 +814,4 @@ Mã băm commit trong tệp này đổi theo mỗi lần gom; tìm theo tiêu đ
 gói Fedora (`fcitx5-ngosen`) và địa chỉ kho (`ngosen/ngosen`; trước đó là `nguyenphivn/LotusVibe` từ
 17/09/2026, link cũ tự chuyển). Tên bên trong mã, tệp cấu hình và dịch vụ vẫn là `lotus`. Đếm ngày
 17/09/2026, chữ `lotus` nằm 1592 chỗ ở 95 tệp, và 4 tệp tác giả sửa nhiều nhất chính là 4 tệp việc
-đổi tên phải cày nát, nên đổi tên bên trong là tự chuốc xung đột mỗi lần nhặt vá của bản gốc. Gói Nix
-dùng `--replace-fail` nên đổi tên là gãy bản dựng chứ không phải cảnh báo.
+đổi tên phải cày nát, nên đổi tên bên trong là tự chuốc xung đột mỗi lần nhặt vá của bản gốc.

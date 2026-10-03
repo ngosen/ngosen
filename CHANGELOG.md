@@ -26,6 +26,8 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
 
 ### Bỏ
 
+- Gói Nix (`flake.nix`, thư mục `nix/`) và hai quy trình kiểm Nix. Công thức này tải mã của bản gốc
+  về dựng chứ không dựng mã của Ngó Sen, nên chưa bao giờ cho ra đúng bản này (#21).
 - Biến môi trường `LOTUS_SERVER_PATH`: mô-đun không còn kiểm đường dẫn của máy chủ nền (#9).
 - Giao diện cài đặt: bỏ dòng và lời giải thích còn sót của tuỳ chọn `FixUinputWithAck` đã gỡ. Giao
   diện vốn không hiện tuỳ chọn này, vì addon không còn khai báo nó (#14).

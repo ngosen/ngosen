@@ -180,6 +180,9 @@ Làm theo mục
 [Cài sang máy khác](KHAC-GI-SO-VOI-BAN-GOC.md#cài-sang-máy-khác).
 Nhớ gỡ bản Lotus đóng gói sẵn trước, và cài vào `/usr`.
 
+Kho này không có gói Nix. Công thức Nix thừa hưởng từ bản gốc tải mã của bản gốc về dựng, không dựng
+mã ở đây, nên đã gỡ. Trên NixOS hãy dùng bản gốc.
+
 **Cài xong, hoặc mỗi lần cập nhật, phải khởi động lại máy chủ nền** (chương trình chạy ngầm bấm
 phím xoá thay bộ gõ), rồi khởi động lại fcitx5:
 

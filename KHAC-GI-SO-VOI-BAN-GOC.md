@@ -249,6 +249,11 @@ Vá bỏ phụ thuộc X11 từng nằm ở đây đã vào bản gốc, nên kh
   mạng) và `ProtectProc` (cổng xác thực phải đọc `/proc/<pid>/exe` của tiến trình thuộc người
   dùng khác). Lưu ý `PrivateTmp` làm nhật ký chuyển vào `/tmp/systemd-private-*/`, đọc phải có
   quyền root và đường cũ ngừng cập nhật.
+- **Máy chủ kiểm con số nhận từ mô-đun (26/09, issue #463).** Chỉ nhận đúng một số nguyên từ 1 tới
+  1024 (phím xoá) hoặc từ -1 tới -1024 (bôi đen); số khác bị bỏ qua kèm cảnh báo. Đọc mã thì
+  trước đó một số âm khổng lồ khiến máy chủ xin bộ nhớ cho hàng trăm triệu phím và sẽ chết, kéo
+  bàn phím chết theo (chưa chạy thử đầu-cuối). Đã soi 7
+  chỗ mô-đun gửi: không chỗ nào gửi 0. Bài `server_key_request` đỏ 4 ca khi gỡ giới hạn.
 - **`4a54d17` gỡ `FixUinputWithAck`, cờ Chromium và tệp `src/ack-apps.h`.** Công tắc này vốn mặc
   định TẮT nên gỡ đi hành vi không đổi. Đã soi cả 5 chỗ dùng để chắc mỗi chỗ đặc biệt hoá đúng
   cho nhánh tắt.

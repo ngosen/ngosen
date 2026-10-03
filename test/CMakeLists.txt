@@ -89,6 +89,14 @@ add_lotus_headless_test(property_invariants
 add_bamboo_test(numeric_macro_case_preservation
     numeric-macro-case-preservation.cpp "unit;macro")
 
+add_executable(server_key_request server-key-request.cpp)
+target_include_directories(server_key_request PRIVATE ${PROJECT_SOURCE_DIR}/server)
+add_test(NAME server_key_request COMMAND server_key_request)
+set_tests_properties(server_key_request PROPERTIES
+    LABELS "unit;server"
+    TIMEOUT 20
+)
+
 add_executable(emoji_backspace_utf8
     test-emoji-backspace.cpp
     ${PROJECT_SOURCE_DIR}/src/lotus-utils.cpp

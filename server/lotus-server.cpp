@@ -7,6 +7,7 @@
  */
 
 #include "lotus-server.h"
+#include "lotus-key-request.h"
 #include "lotus-logger.h"
 
 #include <cstdlib>
@@ -385,17 +386,23 @@ int main(int argc, char* argv[]) {
 
         // handle connect from addon
         if (fds[KB_CLIENT_INDEX].fd >= 0 && (fds[KB_CLIENT_INDEX].revents & (POLLIN | POLLHUP | POLLERR)) != 0) {
-            int     count = 0;
-            ssize_t n     = recv(fds[KB_CLIENT_INDEX].fd, &count, sizeof(count), 0);
+            int count = 0;
+            // MSG_TRUNC returns the real packet length, so an oversized request is seen as such.
+            ssize_t n = recv(fds[KB_CLIENT_INDEX].fd, &count, sizeof(count), MSG_TRUNC);
             if (n <= 0) {
                 LotusLogger::instance().warn("Keyboard client disconnected or connection error");
                 kb_client_fd.reset(-1);
                 fds[KB_CLIENT_INDEX].fd = -1;
-            } else if (count < 0) {
-                uinput.send_select(-count); // negative = select |count| chars
             } else {
-                pending_backspaces += count - 1;
-                uinput.send_backspace();
+                const KeyRequest request = parseKeyRequest(n, count);
+                if (request.kind == KeyRequest::Kind::Select) {
+                    uinput.send_select(request.count);
+                } else if (request.kind == KeyRequest::Kind::Backspace) {
+                    pending_backspaces += request.count - 1;
+                    uinput.send_backspace();
+                } else {
+                    LotusLogger::instance().warn("Ignoring invalid key request: " + std::to_string(count) + " (" + std::to_string(n) + " bytes)");
+                }
             }
         }
 

@@ -1,3 +1,7 @@
 KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", MODE="0660", GROUP="input"
 ACTION=="add|change", KERNEL=="uinput", SUBSYSTEM=="misc", RUN+="/usr/bin/setfacl -m u:@LOTUS_UINPUT_PROXY_USER@:rw /dev/uinput"
 SUBSYSTEM=="input", MODE="0660", GROUP="input"
+# The server reads pointer buttons only, so it gets no access to anything that reports typed keys.
+ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}!="1", ENV{ID_INPUT_MOUSE}=="1", RUN+="/usr/bin/setfacl -m u:@LOTUS_UINPUT_PROXY_USER@:r $env{DEVNAME}"
+ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}!="1", ENV{ID_INPUT_TOUCHPAD}=="1", RUN+="/usr/bin/setfacl -m u:@LOTUS_UINPUT_PROXY_USER@:r $env{DEVNAME}"
+ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}!="1", ENV{ID_INPUT_POINTINGSTICK}=="1", RUN+="/usr/bin/setfacl -m u:@LOTUS_UINPUT_PROXY_USER@:r $env{DEVNAME}"

@@ -81,8 +81,9 @@ in
 
     users.users.uinput_proxy = {
       isSystemUser = true;
-      group = "input";
+      group = "uinput_proxy";
     };
+    users.groups.uinput_proxy = { };
 
     services.udev.packages = [ cfg.package ];
     systemd.packages = [ cfg.package ];

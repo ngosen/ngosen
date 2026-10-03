@@ -97,6 +97,14 @@ set_tests_properties(server_key_request PROPERTIES
     TIMEOUT 20
 )
 
+add_executable(server_device_filter server-device-filter.cpp)
+target_include_directories(server_device_filter PRIVATE ${PROJECT_SOURCE_DIR}/server)
+add_test(NAME server_device_filter COMMAND server_device_filter)
+set_tests_properties(server_device_filter PROPERTIES
+    LABELS "unit;server"
+    TIMEOUT 20
+)
+
 add_executable(emoji_backspace_utf8
     test-emoji-backspace.cpp
     ${PROJECT_SOURCE_DIR}/src/lotus-utils.cpp

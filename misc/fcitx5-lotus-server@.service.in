@@ -5,7 +5,7 @@ Wants=systemd-modules-load.service
 
 [Service]
 User=@LOTUS_UINPUT_PROXY_USER@
-Group=input
+Group=@LOTUS_UINPUT_PROXY_USER@
 
 CapabilityBoundingSet=CAP_SYS_NICE CAP_SYS_PTRACE
 AmbientCapabilities=CAP_SYS_NICE CAP_SYS_PTRACE
@@ -41,7 +41,7 @@ RemoveIPC=yes
 UMask=0077
 DevicePolicy=closed
 DeviceAllow=/dev/uinput rw
-DeviceAllow=char-input rw
+DeviceAllow=char-input r
 
 # Deliberately NOT set:
 #   PrivateNetwork  - udev delivers uevents over netlink, and netlink is
@@ -51,6 +51,8 @@ DeviceAllow=char-input rw
 # CAP_SYS_NICE and CAP_SYS_PTRACE stay: setpriority() in lotus-server.cpp and
 # the readlink /proc/<pid>/exe check that authenticates clients.
 
+# The pointer ACLs come from udev rules; without them libinput skips the device until replug.
+ExecStartPre=+/usr/bin/udevadm settle --timeout=30
 ExecStartPre=+/usr/bin/setfacl -m u:@LOTUS_UINPUT_PROXY_USER@:rw /dev/uinput
 ExecStart=/usr/bin/fcitx5-lotus-server -u %i
 

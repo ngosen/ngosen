@@ -20,6 +20,9 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
 
 ### Sửa lỗi
 
+- Máy chủ nền chỉ mở chuột, bàn chạm và núm trỏ, ở chế độ chỉ đọc; không mở bàn phím nữa, và tài
+  khoản `uinput_proxy` ra khỏi nhóm `input`. Chuột kiêm bàn phím mất tính năng bấm chuột để ngắt từ.
+  Máy đã cài từ trước cần chạy một lần `sudo gpasswd -d uinput_proxy input` (#8).
 - Máy chủ nền chỉ nhận số phím từ 1 tới 1024 (backspace) hoặc từ -1 tới -1024 (bôi đen); số khác bị
   bỏ qua và ghi log. Trước đây một số âm rất lớn làm máy chủ chết, bàn phím chết theo (#7).
 - Chế độ Uinput, app nhận chữ qua dbus (fcitx5-gtk): chữ thay thế được commit ngay sau khi phím xoá

@@ -12,7 +12,7 @@ description="Fcitx5 Lotus Server for $user"
 capabilities="^cap_sys_nice,^cap_sys_ptrace"
 command="/usr/bin/fcitx5-lotus-server"
 command_args="-u $user"
-command_user="@LOTUS_UINPUT_PROXY_USER@:input"
+command_user="@LOTUS_UINPUT_PROXY_USER@:@LOTUS_UINPUT_PROXY_USER@"
 pidfile="/run/${RC_SVCNAME}.pid"
 depend() {
     need localmount

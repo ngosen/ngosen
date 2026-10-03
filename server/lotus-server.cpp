@@ -7,6 +7,7 @@
  */
 
 #include "lotus-server.h"
+#include "lotus-device-filter.h"
 #include "lotus-key-request.h"
 #include "lotus-logger.h"
 
@@ -18,6 +19,7 @@
 
 #include <climits> // IWYU pragma: keep
 #include <sched.h>
+#include <sys/stat.h>
 #include <sys/un.h>
 #include <unistd.h>
 
@@ -120,7 +122,7 @@ void UinputDevice::send_select(int charCount) {
 
 LibinputContext::LibinputContext(const struct libinput_interface* interface) : udev_(udev_new()) {
     if (udev_ != nullptr) {
-        li_ = libinput_udev_create_context(interface, nullptr, udev_);
+        li_ = libinput_udev_create_context(interface, udev_, udev_);
         if (li_ != nullptr) {
             if (libinput_udev_assign_seat(li_, "seat0") != 0) {
                 libinput_unref(li_);
@@ -188,9 +190,34 @@ void pin_to_pcore() {
     }
 }
 
-int open_restricted(const char* path, int flags, void* /*user_data*/) {
-    int fd = open(path, flags);
-    return fd < 0 ? -errno : fd;
+int open_restricted(const char* path, int flags, void* user_data) {
+    auto* udev = static_cast<struct udev*>(user_data);
+    if (udev == nullptr) {
+        return -EACCES;
+    }
+    // Reading button presses needs no write access.
+    int fd = open(path, (flags & ~O_ACCMODE) | O_RDONLY);
+    if (fd < 0) {
+        return -errno;
+    }
+    // Check the node that was opened, so the path cannot be swapped after the check.
+    struct stat st{};
+    if (fstat(fd, &st) != 0 || !S_ISCHR(st.st_mode)) {
+        close(fd);
+        return -EACCES;
+    }
+    struct udev_device* device = udev_device_new_from_devnum(udev, 'c', st.st_rdev);
+    if (device == nullptr) {
+        close(fd);
+        return -ENODEV;
+    }
+    const bool allowed = shouldOpenInputDevice([device](const char* key) { return udev_device_get_property_value(device, key); });
+    udev_device_unref(device);
+    if (!allowed) {
+        close(fd);
+        return -EACCES;
+    }
+    return fd;
 }
 
 void close_restricted(int fd, void* /*user_data*/) {

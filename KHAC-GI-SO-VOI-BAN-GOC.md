@@ -82,6 +82,13 @@ Lệnh `restart` là bắt buộc nếu máy từng chạy Lotus: `enable --now`
 nên máy chủ bản gốc cũ vẫn ở lại. Máy chủ đó không hiểu lệnh bôi đen của vá Messenger, xoá nhầm chữ
 rồi đếm sai số phím xoá ở mọi ứng dụng. Mỗi lần cập nhật bản fork cũng chạy lại lệnh `restart` này.
 
+Máy từng cài Lotus (bản gốc hoặc fork trước 26/09) còn để `uinput_proxy` trong nhóm `input`, nhóm đọc
+được mọi bàn phím; `systemd-sysusers` chỉ thêm chứ không gỡ. Gỡ một lần, trước lệnh `restart`:
+
+```
+sudo gpasswd -d uinput_proxy input
+```
+
 **5. Thêm bộ gõ.** Khởi động lại fcitx5 (hoặc đăng xuất rồi vào lại), mở "Fcitx5 Configuration" và
 thêm Lotus. Trên KDE Wayland: System Settings → Virtual Keyboard → chọn "Fcitx 5".
 
@@ -254,6 +261,14 @@ Vá bỏ phụ thuộc X11 từng nằm ở đây đã vào bản gốc, nên kh
   trước đó một số âm khổng lồ khiến máy chủ xin bộ nhớ cho hàng trăm triệu phím và sẽ chết, kéo
   bàn phím chết theo (chưa chạy thử đầu-cuối). Đã soi 7
   chỗ mô-đun gửi: không chỗ nào gửi 0. Bài `server_key_request` đỏ 4 ca khi gỡ giới hạn.
+- **Máy chủ chỉ mở chuột, bàn chạm và núm trỏ (26/09).** Máy chủ dùng libinput để bắt cú bấm chuột,
+  và libinput mở MỌI thiết bị nhập, kể cả bàn phím: máy chủ cầm sẵn một đường đọc mọi phím gõ. Đo
+  bằng một máy chủ chạy riêng dưới tài khoản người dùng: trước khi sửa mở 12 thiết bị gồm
+  `AT Translated Set 2 keyboard`, sau khi sửa còn đúng bàn chạm và phần chuột của nó. Hai lớp: máy
+  chủ lọc theo thuộc tính udev (bỏ mọi nút có `ID_INPUT_KEYBOARD`, kể cả chuột kiêm bàn phím, nên
+  bấm chuột ngắt từ không chạy trên loại đó) và mở chỉ-đọc; luật udev cấp quyền đọc riêng trên chuột
+  và bàn chạm, `uinput_proxy` ra khỏi nhóm `input`. Sửa cả systemd, OpenRC, runit và Nix. Mới đo lớp
+  lọc trong mã; luật udev và việc đổi nhóm **chưa chạy thật**, OpenRC/runit/Nix chưa thử. Bài `server_device_filter` đỏ 2 ca khi bỏ luật cấm bàn phím.
 - **`4a54d17` gỡ `FixUinputWithAck`, cờ Chromium và tệp `src/ack-apps.h`.** Công tắc này vốn mặc
   định TẮT nên gỡ đi hành vi không đổi. Đã soi cả 5 chỗ dùng để chắc mỗi chỗ đặc biệt hoá đúng
   cho nhánh tắt.

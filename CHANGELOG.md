@@ -19,6 +19,9 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
   giữ nguyên, nên cấu hình cũ dùng tiếp được (#15).
 - Gói Fedora đổi tên thành `fcitx5-ngosen`. Cài gói này thì bản `fcitx5-lotus` cũ của fork được thay
   tự động; gói này và `fcitx5-lotus` của bản gốc không cài chung được (#16).
+- Gói Debian/Ubuntu đổi tên thành `fcitx5-ngosen` và thay gói `fcitx5-lotus` khi cài. Khi cài hoặc
+  cập nhật, gói tự gỡ tài khoản `uinput_proxy` khỏi nhóm `input` và áp luật quyền cho chuột, bàn chạm
+  đang cắm, giống gói Fedora (#23).
 - Kho chuyển về địa chỉ `github.com/ngosen/ngosen` (link cũ tự chuyển). Trang giới thiệu viết lại theo
   tên Ngó Sen và nằm ở `README.md`; README của bản gốc không còn trong kho, xem ở kho fcitx5-lotus
   (#17).

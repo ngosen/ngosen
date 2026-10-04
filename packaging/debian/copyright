@@ -1,7 +1,8 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: fcitx5-lotus
 Upstream-Contact: Nguyen Hoang Ky <nhktmdzhg@gmail.com>
-Source: https://github.com/LotusInputMethod/fcitx5-lotus
+Source: https://github.com/ngosen/ngosen
+Comment: Ngó Sen is a fork of https://github.com/LotusInputMethod/fcitx5-lotus
 
 Files: *
 Copyright: 2022 CSSlayer <wengxt@gmail.com>

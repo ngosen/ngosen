@@ -1,3 +1,16 @@
+fcitx5-ngosen (3.5.10-3) unstable; urgency=medium
+
+  * Rename the package to fcitx5-ngosen; it replaces fcitx5-lotus.
+  * Take the service user out of group input on upgrade and apply the device
+    ACLs to plugged-in pointer devices.
+  * The server ignores key counts out of range, opens pointer devices only,
+    and caps its backspace queue.
+  * The server and the addon identify each other by uid; CAP_SYS_PTRACE is
+    dropped.
+  * udev no longer gives group input access to /dev/uinput and input devices.
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 04 Oct 2026 12:00:00 +0700
+
 fcitx5-lotus (3.5.10-1) unstable; urgency=medium
 
   * Added desktop notifications when switching typing modes via the mode menu.

@@ -1,7 +1,7 @@
-Source: fcitx5-lotus
+Source: fcitx5-ngosen
 Section: utils
 Priority: optional
-Maintainer: Nguyen Hoang Ky <nhktmdzhg@gmail.com>
+Maintainer: Nguyen Phi <nguyenphidt@gmail.com>
 Build-Depends: debhelper-compat (= 13),
                dh-python,
                dh-sequence-python3,
@@ -19,8 +19,13 @@ Build-Depends: debhelper-compat (= 13),
                python3,
                librsvg2-bin
 Standards-Version: 4.6.0
+Homepage: https://github.com/ngosen/ngosen
 
-Package: fcitx5-lotus
+Package: fcitx5-ngosen
 Architecture: any
-Depends: acl, fcitx5, fcitx5-data, udev, python3-qtpy, python3-dbus, python3-qtpy-pyqt6 | python3-qtpy-pyside6 | python3-qtpy-pyqt5 | python3-pyqt5, ${misc:Depends}, ${shlibs:Depends}, ${python3:Depends}
-Description: Vietnamese input method for fcitx5
+Conflicts: fcitx5-lotus
+Replaces: fcitx5-lotus
+Depends: acl, passwd, fcitx5, fcitx5-data, udev, python3-qtpy, python3-dbus, python3-qtpy-pyqt6 | python3-qtpy-pyside6 | python3-qtpy-pyqt5 | python3-pyqt5, ${misc:Depends}, ${shlibs:Depends}, ${python3:Depends}
+Description: Ngó Sen, a Vietnamese input method for fcitx5
+ Ngó Sen is a fork of fcitx5-lotus. It installs the same files, so the two
+ cannot be installed together.

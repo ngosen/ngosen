@@ -58,6 +58,9 @@ Bản phát hành đầu tiên có gói dựng sẵn:
 
 ### Bỏ
 
+- Chế độ Minecraft. Đặt nhầm chế độ này cho app thường thì app còn sót một chữ cũ. Cấu hình cũ đặt
+  Minecraft (`Mode=Minecraft`, số `8` trong luật theo app) tự đọc thành `Uinput`; chế độ này cũng biến
+  khỏi bảng chọn chế độ và cửa sổ cài đặt (#29).
 - Gói Nix (`flake.nix`, thư mục `nix/`) và hai quy trình kiểm Nix. Công thức này tải mã của bản gốc
   về dựng chứ không dựng mã của Ngó Sen, nên chưa bao giờ cho ra đúng bản này (#21).
 - Biến môi trường `LOTUS_SERVER_PATH`: mô-đun không còn kiểm đường dẫn của máy chủ nền (#9).

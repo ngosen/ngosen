@@ -38,12 +38,17 @@ MODE_UINPUT = 2
 MODE_SURROUNDING = 4
 MODE_PREEDIT = 5
 MODE_EMOJI = 6
-MODE_MINECRAFT = 8
 MODE_DEFAULT = -1  # UI special value for "Use Global Default"
 
-# Former Smooth (1) and Super Smooth (3) rules load as the single Uinput mode, as in the addon.
-LEGACY_UINPUT_MODES = {1, 3}
-LEGACY_UINPUT_MODE_NAMES = {"Uinput (Smooth)", "Uinput (Slow)", "Uinput (Super Smooth)"}
+# Former Smooth (1), Super Smooth (3) and Minecraft (8) rules load as the single Uinput mode, as in
+# the addon.
+LEGACY_UINPUT_MODES = {1, 3, 8}
+LEGACY_UINPUT_MODE_NAMES = {
+    "Uinput (Smooth)",
+    "Uinput (Slow)",
+    "Uinput (Super Smooth)",
+    "Minecraft",
+}
 
 MODE_INFO = {
     MODE_DEFAULT: {"title": "Default Typing", "icon": "preferences-system"},
@@ -52,7 +57,6 @@ MODE_INFO = {
     MODE_SURROUNDING: {"title": "Surrounding Text", "icon": "text-field"},
     MODE_PREEDIT: {"title": "Preedit", "icon": "text-field"},
     MODE_EMOJI: {"title": "Emoji Picker", "icon": "face-smile"},
-    MODE_MINECRAFT: {"title": "Minecraft", "icon": "onboard"},
 }
 
 
@@ -448,7 +452,6 @@ class ModeManagerPage(QWidget):
         self.combo_global_mode = QComboBox()
         global_modes = [
             MODE_UINPUT,
-            MODE_MINECRAFT,
             MODE_SURROUNDING,
             MODE_PREEDIT,
             MODE_EMOJI,
@@ -485,7 +488,6 @@ class ModeManagerPage(QWidget):
 
         grid_modes = [
             MODE_UINPUT,
-            MODE_MINECRAFT,
             MODE_SURROUNDING,
             MODE_PREEDIT,
             MODE_EMOJI,

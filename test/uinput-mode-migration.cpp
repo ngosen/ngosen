@@ -50,7 +50,7 @@ int main() {
     TestInstance       testInstance;
     fcitx::LotusEngine engine(&testInstance.instance);
     check("lotus.conf with \"Uinput (Super Smooth)\" loads as Uinput", engine.config().mode.value() == fcitx::LotusMode::Uinput);
-    check("pre-merge ModeOrder lists Uinput once", *engine.config().modeOrder == "Uinput,Minecraft,SurroundingText,Preedit,Emoji,Off,Default");
+    check("pre-merge ModeOrder lists Uinput once", *engine.config().modeOrder == "Uinput,SurroundingText,Preedit,Emoji,Off,Default");
 
     {
         fcitx::RawConfig config;
@@ -60,15 +60,15 @@ int main() {
     }
 
     // setConfig is the path the settings GUI and fcitx5-configtool use.
-    for (const char* legacy : {"Uinput (Smooth)", "Uinput (Slow)", "Uinput (Super Smooth)"}) {
+    for (const char* legacy : {"Uinput (Smooth)", "Uinput (Slow)", "Uinput (Super Smooth)", "Minecraft"}) {
         fcitx::RawConfig config;
         config.setValueByPath("Mode", legacy);
         engine.setConfig(config);
         check(std::string("setConfig Mode=\"") + legacy + "\" gives Uinput", engine.config().mode.value() == fcitx::LotusMode::Uinput);
     }
 
-    // Per-app rules store the mode as a number: 1 = Smooth, 2 = Slow, 3 = Super Smooth.
-    for (int legacy : {1, 2, 3}) {
+    // Per-app rules store the mode as a number: 1 = Smooth, 2 = Slow, 3 = Super Smooth, 8 = Minecraft.
+    for (int legacy : {1, 2, 3, 8}) {
         check("app rule mode " + std::to_string(legacy) + " gives Uinput", fcitx::intToMode(legacy) == fcitx::LotusMode::Uinput);
     }
 

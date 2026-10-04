@@ -981,17 +981,17 @@ namespace fcitx {
         const std::string surrText    = surrounding.text();
         // Facebook composers only: other fields do not report a selection-only change, so the
         // overtype would time out and drop the tone mark.
-        if (engine_->config().messengerSelectOvertype.value() && realMode != LotusMode::Minecraft && looksLikeFacebookComposer(surrounding)) {
+        if (engine_->config().messengerSelectOvertype.value() && looksLikeFacebookComposer(surrounding)) {
             selectAndOvertype(addedPart, static_cast<int>(utf8::length(deletedPart)));
             return;
         }
         // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it. Its
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
-        const bool isLibreOffice = ic_->program() == "soffice" && realMode != LotusMode::Minecraft;
+        const bool isLibreOffice = ic_->program() == "soffice";
         bool       isSurrText    = isLibreOffice ? ic_->capabilityFlags().test(CapabilityFlag::SurroundingText) :
                                                    engine_->config().useSurroundingTextIfPossible.value() && ic_->capabilityFlags().test(CapabilityFlag::SurroundingText) &&
                 surrounding.isValid() && !surrText.empty() && surrounding.cursor() == utf8::length(surrText);
-        if (!isSurrText && realMode != LotusMode::Minecraft) {
+        if (!isSurrText) {
             ++expected_backspaces_;
             // Uinput skips the autofill guard except in address bars (#190): the Url flag on Chromium,
             // the autofill shape on Firefox.
@@ -1600,7 +1600,7 @@ namespace fcitx {
             if (isBackspace(currentSym)) {
                 if (realtextLen.load(std::memory_order_acquire) > 0)
                     realtextLen.fetch_sub(1, std::memory_order_acq_rel);
-                if (handleUInputKeyPress(keyEvent, currentSym, realMode == LotusMode::Uinput ? 4 : 8)) {
+                if (handleUInputKeyPress(keyEvent, currentSym, 4)) {
                     return;
                 }
             } else {
@@ -1645,7 +1645,6 @@ namespace fcitx {
         }
 
         switch (realMode) {
-            case LotusMode::Minecraft:
             case LotusMode::Uinput: {
                 handleUinputMode(keyEvent, currentSym);
                 break;
@@ -1710,7 +1709,6 @@ namespace fcitx {
                 break;
             }
             case LotusMode::SurroundingText:
-            case LotusMode::Minecraft:
             case LotusMode::Uinput: {
                 ic_->inputPanel().reset();
                 break;
@@ -1743,7 +1741,6 @@ namespace fcitx {
                 break;
             }
             case LotusMode::SurroundingText:
-            case LotusMode::Minecraft:
             case LotusMode::Uinput: {
                 if (lotusEngine_) {
                     ResetEngine(lotusEngine_.handle());

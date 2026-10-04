@@ -311,6 +311,12 @@ Vá bỏ phụ thuộc X11 từng nằm ở đây đã vào bản gốc, nên kh
   định của `Uinput` thành `1`. Không gửi upstream: bản gốc giữ ba chế độ. Sửa 26/09: `ModeOrder` cũ
   đổi ba tên thành ba chữ `Uinput` nên bảng chọn chế độ hiện `Uinput` ba lần; nay bỏ tên trùng
   ngay lúc nạp, bài `uinput_mode_migration` đỏ đúng 2 chỗ mới trên mã trước đó.
+- **Bỏ chế độ Minecraft (04/10).** Chế độ này là Uinput bỏ đi phím xoá dư cuối cùng, vì Minecraft
+  nhận cả phím mà bộ gõ đã giữ lại. Bản gốc thêm nó "cho vui, trước khi tìm ra lý do tại sao"
+  (LotusInputMethod/fcitx5-lotus#29); lý do chưa ai tìm ra. Đặt nhầm cho app thường thì app còn sót
+  một chữ cũ. Cấu hình cũ tự chuyển sang `Uinput`: `Mode=Minecraft`, số `8` trong luật theo app, tên
+  trong `ModeOrder`. Bỏ tuỳ chọn `ShowModeMinecraft`, `ShortcutMinecraft`. Ai gõ trong Minecraft sẽ
+  bị xoá dư một chữ mỗi lần thay dấu. Không gửi upstream.
 - **`42d7529` khoảng cách phím xoá mặc định 0 ms thay vì 5.** Đo `khoang_cach_xoa.py macdinh`:
   0,10 ms, 8/8 trên bốn đích. **Đây là lựa chọn riêng của máy này, không phải đề xuất cho
   upstream** — mức đề xuất cho upstream là 2 ms, vì mức 0 bỏ hẳn yêu cầu khe im lặng. Dấu hiệu

@@ -62,7 +62,6 @@ SETTINGS_MAP = {
         "MAIN SHORTCUTS": ["ModeMenuKey", "CycleModeKey"],
         "MODE SWITCHING": [
             "ShortcutUinput",
-            "ShortcutMinecraft",
             "ShortcutSurroundingText",
             "ShortcutPreedit",
             "ShortcutEmoji",
@@ -90,7 +89,6 @@ GROUP_DESCRIPTIONS = {
 
 MODE_SHORTCUT_TO_VISIBILITY = {
     "ShortcutUinput": "ShowModeUinput",
-    "ShortcutMinecraft": "ShowModeMinecraft",
     "ShortcutSurroundingText": "ShowModeSurroundingText",
     "ShortcutPreedit": "ShowModePreedit",
     "ShortcutEmoji": "ShowModeEmoji",
@@ -100,7 +98,6 @@ MODE_SHORTCUT_TO_VISIBILITY = {
 
 MODE_KEY_TO_INTERNAL_NAME = {
     "ShortcutUinput": "Uinput",
-    "ShortcutMinecraft": "Minecraft",
     "ShortcutSurroundingText": "SurroundingText",
     "ShortcutPreedit": "Preedit",
     "ShortcutEmoji": "Emoji",
@@ -447,12 +444,12 @@ class DynamicSettingsPage(QWidget):
         # Get current order from config
         order_str = self.current_values.get(
             "ModeOrder",
-            "Uinput,Minecraft,SurroundingText,Preedit,Emoji,Off,Default",
+            "Uinput,SurroundingText,Preedit,Emoji,Off,Default",
         )
-        # Former Smooth and Super Smooth entries are the single Uinput mode now.
+        # Former Smooth, Super Smooth and Minecraft entries are the single Uinput mode now.
         order = []
         for name in order_str.split(","):
-            name = "Uinput" if name in ("Smooth", "SuperSmooth") else name
+            name = "Uinput" if name in ("Smooth", "SuperSmooth", "Minecraft") else name
             if name not in order:
                 order.append(name)
 

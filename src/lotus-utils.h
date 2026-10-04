@@ -84,7 +84,7 @@ bool isBackspace(uint32_t sym);
 /**
  * @brief Whether a mode delivers text through the uinput (fake backspace) path.
  * @param mode Mode to check.
- * @return True for Uinput and Minecraft.
+ * @return True for Uinput.
  */
 bool isUinputMode(fcitx::LotusMode mode);
 

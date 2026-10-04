@@ -32,10 +32,9 @@ namespace fcitx {
         SurroundingText,
         Preedit,
         Emoji,
-        Minecraft,
     };
 
-    FCITX_CONFIG_ENUM_NAME_WITH_I18N(LotusMode, N_("OFF"), N_("Uinput"), N_("Surrounding Text"), N_("Preedit"), N_("Emoji Picker"), N_("Minecraft"));
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(LotusMode, N_("OFF"), N_("Uinput"), N_("Surrounding Text"), N_("Preedit"), N_("Emoji Picker"));
 
     /**
      * @brief Converts LotusMode to int and vice versa.
@@ -256,8 +255,6 @@ namespace fcitx {
         Option<bool> enableCustomKeymap{this, "EnableCustomKeymap", _("Custom Keymap"), false};
 
         Option<bool> showModeUinput{this, "ShowModeUinput", _("Show Uinput"), true}; Option<std::string> shortcutUinput{this, "ShortcutUinput", _("Shortcut for Uinput"), "1"};
-        Option<bool>                                                                                     showModeMinecraft{this, "ShowModeMinecraft", _("Show Minecraft"), true};
-        Option<std::string> shortcutMinecraft{this, "ShortcutMinecraft", _("Shortcut for Minecraft"), "3"};
         Option<bool>        showModeSurroundingText{this, "ShowModeSurroundingText", _("Show Surrounding Text"), true};
         Option<std::string> shortcutSurroundingText{this, "ShortcutSurroundingText", _("Shortcut for Surrounding Text"), "4"};
         Option<bool>        showModePreedit{this, "ShowModePreedit", _("Show Preedit"), true};
@@ -270,7 +267,7 @@ namespace fcitx {
 
         Option<bool>                                             useSurroundingTextIfPossible{this, "useSurroundingTextIfPossible", _("Use Surrounding Text if possible"), false};
 
-        Option<std::string>                                      modeOrder{this, "ModeOrder", _("Mode Order"), "Uinput,Minecraft,SurroundingText,Preedit,Emoji,Off,Default"};
+        Option<std::string>                                      modeOrder{this, "ModeOrder", _("Mode Order"), "Uinput,SurroundingText,Preedit,Emoji,Off,Default"};
 
         OptionWithAnnotation<std::string, TimeFormatAnnotation>  timeFormat{this, "TimeFormat", _("Time Format ($TIME in macro)"), "%H:%M", {}, {}, TimeFormatAnnotation()};
         OptionWithAnnotation<std::string, DateFormatAnnotation>  dateFormat{this, "DateFormat", _("Date Format ($DATE in macro)"), "%d/%m/%Y", {}, {}, DateFormatAnnotation()};

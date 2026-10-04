@@ -38,10 +38,6 @@ msgstr "Gạch chân"
 msgid "Emoji Picker"
 msgstr "Chọn Emoji"
 
-#: src/lotus-config.h:41 src/lotus-engine.cpp:985 src/lotus-engine.cpp:1093
-msgid "Minecraft"
-msgstr "Minecraft"
-
 #: src/lotus-config.h:58 src/lotus-config.h:69 src/lotus-config.h:81
 msgid "Disabled"
 msgstr "Tắt"
@@ -198,14 +194,6 @@ msgstr "Hiển thị chế độ Uinput"
 #: src/lotus-config.h:250
 msgid "Shortcut for Uinput"
 msgstr "Phím tắt cho Uinput"
-
-#: src/lotus-config.h:255
-msgid "Show Minecraft"
-msgstr "Hiển thị chế độ Minecraft"
-
-#: src/lotus-config.h:256
-msgid "Shortcut for Minecraft"
-msgstr "Phím tắt cho Minecraft"
 
 #: src/lotus-config.h:257
 msgid "Show Surrounding Text"

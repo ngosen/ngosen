@@ -49,7 +49,6 @@ namespace fcitx {
             case LotusMode::SurroundingText: return 4;
             case LotusMode::Preedit: return 5;
             case LotusMode::Emoji: return 6;
-            case LotusMode::Minecraft: return 8;
             default: return 0;
         }
     }
@@ -60,24 +59,24 @@ namespace fcitx {
             case 1: // former Uinput (Smooth)
             case 2:
             case 3: // former Uinput (Super Smooth)
+            case 8: // former Minecraft
                 return LotusMode::Uinput;
             case 4: return LotusMode::SurroundingText;
             case 5: return LotusMode::Preedit;
             case 6: return LotusMode::Emoji;
-            case 8: return LotusMode::Minecraft;
             default: return LotusMode::Off;
         }
     }
 
     namespace {
-        // The former Smooth, Slow and Super Smooth modes are now the single Uinput mode. Their
-        // stored names would not parse, and fcitx would silently fall back to the Preedit default.
+        // The former Smooth, Slow, Super Smooth and Minecraft modes are now the single Uinput mode.
+        // Their stored names would not parse, and fcitx would silently fall back to the Preedit default.
         bool isLegacyUinputModeName(const std::string& name) {
-            return name == "Uinput (Smooth)" || name == "Uinput (Slow)" || name == "Uinput (Super Smooth)";
+            return name == "Uinput (Smooth)" || name == "Uinput (Slow)" || name == "Uinput (Super Smooth)" || name == "Minecraft";
         }
 
-        // A pre-merge ModeOrder lists Smooth, Uinput and SuperSmooth, which all become Uinput;
-        // keeping all three would show Uinput three times in the mode menu.
+        // An older ModeOrder lists Smooth, Uinput, SuperSmooth and Minecraft, which all become Uinput;
+        // keeping them would show Uinput several times in the mode menu.
         void migrateLegacyModeOrder(RawConfig& config) {
             const auto* order = config.valueByPath("ModeOrder");
             if (order == nullptr) {
@@ -85,7 +84,7 @@ namespace fcitx {
             }
             std::vector<std::string> migrated;
             for (auto name : stringutils::split(*order, ",")) {
-                if (name == "Smooth" || name == "SuperSmooth") {
+                if (name == "Smooth" || name == "SuperSmooth" || name == "Minecraft") {
                     name = "Uinput";
                 }
                 if (std::find(migrated.begin(), migrated.end(), name) == migrated.end()) {
@@ -107,9 +106,8 @@ namespace fcitx {
     // menu.  If the hotkey itself conflicts with a reserved menu key, falls back
     // to FcitxKey_f.
     static bool isAppModeMenuReservedKey(KeySym sym, const lotusConfig& config) {
-        if (sym == Key(*config.shortcutUinput).sym() || sym == Key(*config.shortcutMinecraft).sym() || sym == Key(*config.shortcutSurroundingText).sym() ||
-            sym == Key(*config.shortcutPreedit).sym() || sym == Key(*config.shortcutEmoji).sym() || sym == Key(*config.shortcutOff).sym() ||
-            sym == Key(*config.shortcutDefault).sym()) {
+        if (sym == Key(*config.shortcutUinput).sym() || sym == Key(*config.shortcutSurroundingText).sym() || sym == Key(*config.shortcutPreedit).sym() ||
+            sym == Key(*config.shortcutEmoji).sym() || sym == Key(*config.shortcutOff).sym() || sym == Key(*config.shortcutDefault).sym()) {
             return true;
         }
 
@@ -691,12 +689,11 @@ namespace fcitx {
             LotusMode                                 realMode = getAppRule(appName);
 
             auto                                      order      = stringutils::split(*config_.modeOrder, ",");
-            std::vector<std::pair<std::string, bool>> visibility = {
-                {"Uinput", *config_.showModeUinput},   {"Minecraft", *config_.showModeMinecraft}, {"SurroundingText", *config_.showModeSurroundingText},
-                {"Preedit", *config_.showModePreedit}, {"Emoji", *config_.showModeEmoji},         {"Off", *config_.showModeOff},
-                {"Default", *config_.showModeDefault}};
+            std::vector<std::pair<std::string, bool>> visibility = {{"Uinput", *config_.showModeUinput},   {"SurroundingText", *config_.showModeSurroundingText},
+                                                                    {"Preedit", *config_.showModePreedit}, {"Emoji", *config_.showModeEmoji},
+                                                                    {"Off", *config_.showModeOff},         {"Default", *config_.showModeDefault}};
 
-            std::vector<LotusMode> enabledModes;
+            std::vector<LotusMode>                    enabledModes;
             for (const auto& name : order) {
                 bool visible = false;
                 for (const auto& v : visibility) {
@@ -709,8 +706,6 @@ namespace fcitx {
                     std::optional<LotusMode> mode = std::nullopt;
                     if (name == "Uinput")
                         mode = LotusMode::Uinput;
-                    else if (name == "Minecraft")
-                        mode = LotusMode::Minecraft;
                     else if (name == "SurroundingText")
                         mode = LotusMode::SurroundingText;
                     else if (name == "Preedit")
@@ -927,7 +922,7 @@ namespace fcitx {
             return;
 
         file << "# Ngó Sen Per-App Configuration\n";
-        file << "# 0 = Off, 2 = Uinput (1 and 3 are read as Uinput too), 4 = Surrounding Text, 5 = Preedit, 6 = Emoji Picker, 8 = Minecraft\n";
+        file << "# 0 = Off, 2 = Uinput (1, 3 and 8 are read as Uinput too), 4 = Surrounding Text, 5 = Preedit, 6 = Emoji Picker\n";
         std::lock_guard<std::mutex> lock(appRulesMutex_);
         for (const auto& pair : appRules_) {
             bool currentIsCtx = isStartsWith(pair.first, "ctx_");
@@ -1037,7 +1032,6 @@ namespace fcitx {
 
         std::unordered_map<std::string, ModeInfo> modeMap = {
             {"Uinput", {LotusMode::Uinput, _("Uinput"), getShortcut(*config_.shortcutUinput), *config_.showModeUinput}},
-            {"Minecraft", {LotusMode::Minecraft, _("Minecraft"), getShortcut(*config_.shortcutMinecraft), *config_.showModeMinecraft}},
             {"SurroundingText", {LotusMode::SurroundingText, _("Surrounding Text"), getShortcut(*config_.shortcutSurroundingText), *config_.showModeSurroundingText}},
             {"Preedit", {LotusMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
             {"Emoji", {LotusMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
@@ -1143,7 +1137,6 @@ namespace fcitx {
         std::string modeLabel;
         switch (mode) {
             case LotusMode::Uinput: modeLabel = _("Uinput"); break;
-            case LotusMode::Minecraft: modeLabel = _("Minecraft"); break;
             case LotusMode::SurroundingText: modeLabel = _("Surrounding Text"); break;
             case LotusMode::Preedit: modeLabel = _("Preedit"); break;
             case LotusMode::Emoji: modeLabel = _("Emoji Picker"); break;

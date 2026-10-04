@@ -109,7 +109,7 @@ bool isBackspace(uint32_t sym) {
 }
 
 bool isUinputMode(fcitx::LotusMode mode) {
-    return mode == fcitx::LotusMode::Uinput || mode == fcitx::LotusMode::Minecraft;
+    return mode == fcitx::LotusMode::Uinput;
 }
 
 int compareAndSplitStrings(const std::string& A, const std::string& B, std::string& deletedPart, std::string& addedPart) {

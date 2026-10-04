@@ -54,6 +54,9 @@ Sen thì xem [mục Cài](#cài).
 - Lời khuyên này chỉ đúng cho Ngó Sen. Super Smooth của bản gốc chưa có vá chống lặp chữ ở thanh
   địa chỉ trình duyệt.
 
+**Bỏ chế độ Minecraft (04/10).** Cấu hình cũ đặt chế độ Minecraft (tên `Minecraft` trong
+`lotus.conf`, số `8` trong `lotus-app-rules.conf`) tự đọc thành `Uinput`.
+
 **Chỉ còn một chế độ uinput (24/09).** Ba chế độ `Uinput (Smooth)`, `Uinput (Super Smooth)` và
 `Uinput (Slow)` của bản gốc đã gộp thành một chế độ `Uinput`, chạy đúng như Super Smooth. Cấu hình cũ
 tự chuyển: tên chế độ cũ trong `lotus.conf` và số `1`, `2`, `3` trong `lotus-app-rules.conf` đều đọc

@@ -15,6 +15,8 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
   nhất, đối chiếu mã băm, hỏi lại rồi cài và bật máy chủ nền. Thay được gói `fcitx5-lotus` đang có,
   kể cả bản gốc số cao hơn, và ghi đè được bản cài từ mã trên Arch. README hướng dẫn cài theo cách
   này; hướng dẫn cập nhật bản tự dựng được bổ sung các lệnh nạp lại luật quyền (#26).
+- README có mục "Gỡ": tắt máy chủ nền trước, lệnh gỡ gói cho từng bản phân phối, lệnh gỡ bản tự dựng,
+  và hai thứ còn lại trên máy sau khi gỡ là tệp cấu hình và tài khoản `uinput_proxy` (#27).
 
 ### Thay đổi
 

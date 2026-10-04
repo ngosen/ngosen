@@ -213,6 +213,36 @@ Cài gói mới chỉ thay tệp trên đĩa. Máy chủ đang chạy vẫn là 
 Sen thêm lệnh bôi đen cho vá Messenger; máy chủ bản gốc không hiểu lệnh này, nó xoá nhầm một chữ
 rồi đếm sai số phím xoá, làm chữ bị sai ở mọi ứng dụng cho tới khi khởi động lại.
 
+## Gỡ
+
+Bỏ Ngó Sen khỏi danh sách bộ gõ trong "Fcitx5 Configuration", rồi tắt máy chủ nền **trước** khi gỡ
+gói, vì không phải gói nào cũng tự dừng nó:
+
+```
+sudo systemctl disable --now fcitx5-lotus-server@$(whoami).service
+```
+
+Gỡ gói bằng trình quản lý gói của máy, rồi khởi động lại fcitx5:
+
+```
+sudo dnf remove fcitx5-ngosen       # Fedora
+sudo apt remove fcitx5-ngosen       # Ubuntu, Debian
+sudo pacman -R fcitx5-ngosen        # Arch, CachyOS
+sudo zypper remove fcitx5-ngosen    # openSUSE
+fcitx5 -rd
+```
+
+Trên Fedora, `dnf` gỡ luôn những gói được kéo theo lúc cài mà nay không còn gói nào cần; nó in danh
+sách ra trước khi làm. Bản tự dựng từ mã thì gỡ trong thư mục đã dựng bằng
+`sudo cmake --build build --target uninstall`.
+
+Hai thứ còn lại trên máy: cấu hình (các tệp `lotus*.conf` trong `~/.config/fcitx5/conf/`, giữ lại thì
+lần cài sau dùng tiếp) và tài khoản hệ thống `uinput_proxy` (để lại không sao; muốn xoá thì
+`sudo userdel uinput_proxy`).
+
+Lệnh gỡ gói đã thử với gói `3.5.10-4` trong container Fedora 44, Ubuntu 24.04, Arch và openSUSE
+Tumbleweed: cả bốn gỡ sạch tệp của gói. Bước tắt máy chủ nền và lệnh gỡ bản tự dựng chưa thử.
+
 ## English
 
 Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: most

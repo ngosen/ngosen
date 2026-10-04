@@ -156,7 +156,7 @@ jobs:
           path: output/*.rpm
           retention-days: 3
   build-arch:
-    name: Arch Linux (zstd)
+    name: Arch Linux (pacman)
     runs-on: ubuntu-latest
 
     steps:
@@ -164,49 +164,27 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Build on Arch Linux
+      - name: Build Arch package
         uses: addnab/docker-run-action@v3
         with:
           image: archlinux:latest
           options: -v ${{ github.workspace }}:/work
           run: |
             set -euo pipefail
-            pacman -Syu --noconfirm \
-              cmake extra-cmake-modules gcc go \
-              fcitx5 libinput systemd python \
-              make pkgconf zstd librsvg
-
-            cd /work
-            export LDFLAGS="-Wl,-O1 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,-z,pack-relative-relocs"
-            export CGO_LDFLAGS="-Wl,-O1 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,-z,pack-relative-relocs"
-            cmake \
-              -DCMAKE_INSTALL_PREFIX=/usr \
-              -DCMAKE_INSTALL_LIBDIR=/usr/lib \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
-              -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS" \
-              -DCMAKE_SHARED_LINKER_FLAGS="$LDFLAGS" \
-              -DCMAKE_MODULE_LINKER_FLAGS="$LDFLAGS" \
-              -DINSTALL_OPENRC=ON \
-              -DINSTALL_RUNIT=ON \
-              -DRUNIT_SV_DIR=/etc/runit/sv \
-              -B build .
-            cmake --build build
-            DESTDIR=/work/arch-dist cmake --install build
-            find /work/arch-dist/usr/bin -type f \
-              -exec strip --strip-all {} + 2>/dev/null || true
-            find /work/arch-dist/usr/lib -name "*.so*" -type f \
-              -exec strip --strip-unneeded {} + 2>/dev/null || true
-
-      - name: Package as tar.zst
-        run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION//\//-}"
-          tar -c -I 'zstd -19 -T0' -f "fcitx5-lotus-${VERSION}-x86_64-archlinux.tar.zst" -C arch-dist .
+            pacman -Syu --noconfirm --needed base-devel
+            # makepkg refuses to run as root.
+            useradd -m builder
+            echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
+            cp -r /work /home/builder/src
+            chown -R builder /home/builder/src
+            cd /home/builder/src/packaging/arch
+            sudo -u builder makepkg -s --noconfirm
+            mkdir -p /work/output
+            cp ./*.pkg.tar.zst /work/output/
 
       - name: Upload Arch artifact
         uses: actions/upload-artifact@v7
         with:
-          name: arch-tar-zst
-          path: fcitx5-lotus-*-x86_64-archlinux.tar.zst
+          name: arch-pkg
+          path: output/*.pkg.tar.zst
           retention-days: 3

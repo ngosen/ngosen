@@ -1,0 +1,36 @@
+# Maintainer: Nguyen Phi <nguyenphidt at gmail dot com>
+#
+# Builds the checked-out tree this file sits in, so nothing is downloaded:
+#   cd packaging/arch && makepkg -si
+
+pkgname=fcitx5-ngosen
+pkgver=3.5.10
+pkgrel=3
+pkgdesc="Ngó Sen, a Vietnamese input method for fcitx5 (fork of fcitx5-lotus)"
+arch=('x86_64')
+url="https://github.com/ngosen/ngosen"
+license=('GPL-3.0-or-later')
+depends=('acl' 'fcitx5' 'fcitx5-configtool' 'fcitx5-gtk' 'fcitx5-qt' 'libinput' 'hicolor-icon-theme'
+         'glibc' 'libstdc++' 'libgcc' 'libudev.so' 'python-qtpy' 'python-pyqt6' 'python-dbus')
+makedepends=('cmake' 'extra-cmake-modules' 'go' 'librsvg')
+# Installs the same files as fcitx5-lotus; installed paths keep the upstream name.
+conflicts=('fcitx5-lotus')
+options=('!debug')
+install=fcitx5-ngosen.install
+
+build() {
+    cmake -S "$startdir/../.." -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+        -DBUILD_TESTING=ON
+    cmake --build build
+}
+
+check() {
+    ctest --test-dir build --output-on-failure
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

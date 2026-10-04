@@ -5,9 +5,25 @@ Mọi thay đổi đáng kể của Ngó Sen (tên cũ LotusVibe), tách ra từ
 [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Mỗi dòng nói người dùng thấy gì thay đổi;
 lý do và số đo của từng miếng vá nằm trong [KHAC-GI-SO-VOI-BAN-GOC.md](KHAC-GI-SO-VOI-BAN-GOC.md).
 
-Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiên bản của bản gốc lúc tách ra.
+Số phiên bản gồm hai phần: `3.5.10` là số của bản gốc lúc tách ra, còn nằm trong `CMakeLists.txt`; số
+sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang nhãn `ngosen-<phiên bản>`.
 
 ## [Chưa phát hành]
+
+### Thêm
+
+- README có mục "Gỡ": tắt máy chủ nền trước, lệnh gỡ gói cho từng bản phân phối, lệnh gỡ bản tự dựng,
+  và hai thứ còn lại trên máy sau khi gỡ là tệp cấu hình và tài khoản `uinput_proxy` (#27).
+
+### Tài liệu
+
+- Nhật ký thay đổi có mục riêng cho bản `3.5.10-4`; những gì gộp sau bản đó nằm dưới "Chưa phát hành"
+  (#28).
+
+## [3.5.10-4] — 04/10/2026
+
+Bản phát hành đầu tiên có gói dựng sẵn:
+[ngosen-3.5.10-4](https://github.com/ngosen/ngosen/releases/tag/ngosen-3.5.10-4).
 
 ### Thêm
 
@@ -15,8 +31,6 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
   nhất, đối chiếu mã băm, hỏi lại rồi cài và bật máy chủ nền. Thay được gói `fcitx5-lotus` đang có,
   kể cả bản gốc số cao hơn, và ghi đè được bản cài từ mã trên Arch. README hướng dẫn cài theo cách
   này; hướng dẫn cập nhật bản tự dựng được bổ sung các lệnh nạp lại luật quyền (#26).
-- README có mục "Gỡ": tắt máy chủ nền trước, lệnh gỡ gói cho từng bản phân phối, lệnh gỡ bản tự dựng,
-  và hai thứ còn lại trên máy sau khi gỡ là tệp cấu hình và tài khoản `uinput_proxy` (#27).
 
 ### Thay đổi
 

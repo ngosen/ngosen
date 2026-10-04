@@ -4,7 +4,7 @@
 
 Name:           fcitx5-ngosen
 Version:        3.5.10
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
 URL:            https://github.com/ngosen/ngosen
@@ -136,6 +136,9 @@ fi
 %systemd_postun_with_restart fcitx5-lotus-server@.service
 
 %changelog
+* Sun Oct 04 2026 Nguyen Phi <nguyenphidt@gmail.com> - 3.5.10-4
+- First build published on the GitHub Releases page.
+
 * Sat Oct 03 2026 Nguyen Phi <nguyenphidt@gmail.com> - 3.5.10-3
 - Take the service user out of group input on upgrade and apply the pointer ACLs to plugged-in devices.
 - The server ignores key counts out of range, opens pointer devices only, and caps its backspace queue.

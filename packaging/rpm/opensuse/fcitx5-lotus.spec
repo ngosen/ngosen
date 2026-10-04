@@ -4,7 +4,7 @@
 
 Name:           fcitx5-ngosen
 Version:        3.5.10
-Release:        3
+Release:        4
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
 URL:            https://github.com/ngosen/ngosen
@@ -139,6 +139,9 @@ fi
 %service_del_postun fcitx5-lotus-server@.service
 
 %changelog
+* Sun Oct 04 2026 Nguyen Phi <nguyenphidt@gmail.com> - 3.5.10-4
+- First build published on the GitHub Releases page.
+
 * Sun Oct 04 2026 Nguyen Phi <nguyenphidt@gmail.com> - 3.5.10-3
 - Rename the package to fcitx5-ngosen; it replaces fcitx5-lotus.
 - Take the service user out of group input on upgrade and apply the device ACLs to plugged-in pointer devices.

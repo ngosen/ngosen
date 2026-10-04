@@ -2,7 +2,11 @@ name: Test Packaging Build
 
 on:
   push:
+    # Tags are built by the release workflow, which calls this one.
+    branches:
+      - '**'
   pull_request:
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) && github.run_id || (github.head_ref || github.ref) }}
@@ -43,7 +47,7 @@ jobs:
         run: cp -r packaging/debian debian
 
       - name: Build DEB
-        uses: jtdor/build-deb-action@v1
+        uses: jtdor/build-deb-action@473136f14a42a231124c1f7cefaedfe941203c38 # v1.9.1
         with:
           docker-image: ${{ matrix.distro }}
           buildpackage-opts: --build=binary --no-sign
@@ -76,7 +80,7 @@ jobs:
           submodules: recursive
 
       - name: Build Fedora RPM
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: ${{ matrix.distro }}
           options: -v ${{ github.workspace }}:/work
@@ -123,7 +127,7 @@ jobs:
           submodules: recursive
 
       - name: Build openSUSE RPM
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: ${{ matrix.distro }}
           options: -v ${{ github.workspace }}:/work
@@ -165,7 +169,7 @@ jobs:
           submodules: recursive
 
       - name: Build Arch package
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: archlinux:latest
           options: -v ${{ github.workspace }}:/work

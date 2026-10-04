@@ -5,7 +5,7 @@
 
 pkgname=fcitx5-ngosen
 pkgver=3.5.10
-pkgrel=3
+pkgrel=4
 pkgdesc="Ngó Sen, a Vietnamese input method for fcitx5 (fork of fcitx5-lotus)"
 arch=('x86_64')
 url="https://github.com/ngosen/ngosen"

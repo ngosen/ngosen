@@ -1,3 +1,9 @@
+fcitx5-ngosen (3.5.10-4) unstable; urgency=medium
+
+  * First build published on the GitHub Releases page.
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 04 Oct 2026 16:00:00 +0700
+
 fcitx5-ngosen (3.5.10-3) unstable; urgency=medium
 
   * Rename the package to fcitx5-ngosen; it replaces fcitx5-lotus.

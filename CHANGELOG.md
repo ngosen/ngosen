@@ -25,6 +25,9 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
 - Gói openSUSE đổi tên thành `fcitx5-ngosen`, có cùng các bước sau cài như gói Fedora. Thêm công thức
   gói Arch (`packaging/arch/PKGBUILD`) cho ra gói pacman `fcitx5-ngosen`; quy trình dựng thử trên
   GitHub nay dựng gói này thay cho tệp nén thô (#24).
+- Quy trình phát hành viết lại: gắn nhãn `ngosen-<phiên bản>` thì GitHub kiểm số phiên bản trong các
+  tệp đóng gói, dựng gói cho Fedora, Debian, Ubuntu, openSUSE và Arch, rồi tạo bản phát hành nháp kèm
+  `SHA256SUMS`. Bỏ kho gói có chữ ký và chìa khoá công khai của bản gốc. Các gói lên `3.5.10-4` (#25).
 - Kho chuyển về địa chỉ `github.com/ngosen/ngosen` (link cũ tự chuyển). Trang giới thiệu viết lại theo
   tên Ngó Sen và nằm ở `README.md`; README của bản gốc không còn trong kho, xem ở kho fcitx5-lotus
   (#17).

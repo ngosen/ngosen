@@ -33,6 +33,9 @@ còn giá trị của chúng đều nằm trong `ban-dung`.
 
 ## Cài sang máy khác
 
+Đây là cách tự dựng từ mã. Cách nhanh hơn là gói dựng sẵn, xem mục "Cài" trong
+[README](README.md#cài).
+
 Các bước dưới đây cho Arch và CachyOS. Distro khác thì gói cần cài lấy ở mục "Yêu cầu hệ thống"
 trong [README của bản gốc](https://github.com/LotusInputMethod/fcitx5-lotus#readme), các bước còn
 lại giống hệt.
@@ -114,9 +117,17 @@ Từ 26/09 các tuỳ chọn cho Messenger bật sẵn, không cần đặt tron
 `WaitSurroundingSettleMs=40` và `WaitSurroundingSettleFirstWordMs=60` (đường lùi khi tắt bôi đen).
 Vá thanh địa chỉ không phụ thuộc các tuỳ chọn này.
 
-**Cập nhật bản mới về sau:** trong thư mục `ngosen`, chạy `git pull --recurse-submodules`,
-lặp lại bước 3, rồi `sudo systemctl restart fcitx5-lotus-server@$(whoami).service` và khởi động lại
-fcitx5.
+**Cập nhật bản mới về sau:** trong thư mục `ngosen`, chạy `git pull --recurse-submodules`, lặp lại
+bước 3, rồi nạp lại luật quyền và dịch vụ trước khi khởi động lại máy chủ nền. Thiếu ba lệnh đầu thì
+luật quyền và tệp dịch vụ của bản mới chưa có hiệu lực cho tới lần khởi động máy sau:
+
+```
+sudo udevadm control --reload-rules
+sudo udevadm trigger --subsystem-match=misc --subsystem-match=input
+sudo systemctl daemon-reload
+sudo systemctl restart fcitx5-lotus-server@$(whoami).service
+fcitx5 -rd
+```
 
 ## Dựng và chạy bộ kiểm
 

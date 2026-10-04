@@ -9,6 +9,13 @@ Fork chưa có số phiên bản riêng. `CMakeLists.txt` vẫn giữ số phiê
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Kịch bản cài một dòng `install.sh`: nhận ra bản phân phối, tải gói dựng sẵn từ bản phát hành mới
+  nhất, đối chiếu mã băm, hỏi lại rồi cài và bật máy chủ nền. Thay được gói `fcitx5-lotus` đang có,
+  kể cả bản gốc số cao hơn, và ghi đè được bản cài từ mã trên Arch. README hướng dẫn cài theo cách
+  này; hướng dẫn cập nhật bản tự dựng được bổ sung các lệnh nạp lại luật quyền (#26).
+
 ### Thay đổi
 
 - Trang Giới thiệu trong cửa sổ cài đặt trỏ về kho `ngosen/ngosen` và ghi "Dựa trên fcitx5-lotus của"

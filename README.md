@@ -176,9 +176,27 @@ Cả hai nằm ở [PR #492](https://github.com/LotusInputMethod/fcitx5-lotus/pu
 
 ## Cài
 
-Làm theo mục
-[Cài sang máy khác](KHAC-GI-SO-VOI-BAN-GOC.md#cài-sang-máy-khác).
-Nhớ gỡ bản Lotus đóng gói sẵn trước, và cài vào `/usr`.
+Một dòng lệnh, cho Fedora 43 và 44, Ubuntu 22.04, 24.04 và 26.04, Debian 12 và 13, Arch, CachyOS và
+openSUSE Tumbleweed (máy x86_64):
+
+```
+curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/ban-dung/install.sh | bash
+```
+
+Lệnh này tải gói dựng sẵn cho đúng bản phân phối từ
+[bản phát hành mới nhất](https://github.com/ngosen/ngosen/releases/latest), đối chiếu mã băm, hỏi lại
+rồi mới cài bằng trình quản lý gói của máy, sau đó bật máy chủ nền cho tài khoản đang dùng. Gói
+`fcitx5-lotus` nếu có sẽ bị thay; cấu hình trong `~/.config/fcitx5` giữ nguyên. Muốn lên bản mới thì
+chạy lại đúng lệnh đó. Nó làm gì thì đọc được trong [`install.sh`](install.sh).
+
+Không muốn chạy kịch bản tải từ mạng thì tải gói ở trang
+[Releases](https://github.com/ngosen/ngosen/releases) rồi cài bằng tay; ghi chú của mỗi bản phát hành
+có bảng tệp nào dành cho bản phân phối nào và mức đã thử của từng gói. Chỉ Fedora 44 và CachyOS là
+dùng hằng ngày; các gói còn lại mới dựng được và cài thử trong container.
+
+Bản phân phối khác, hoặc muốn tự dựng từ mã: làm theo mục
+[Cài sang máy khác](KHAC-GI-SO-VOI-BAN-GOC.md#cài-sang-máy-khác). Nhớ gỡ bản Lotus đóng gói sẵn trước,
+và cài vào `/usr`.
 
 Kho này không có gói Nix. Công thức Nix thừa hưởng từ bản gốc tải mã của bản gốc về dựng, không dựng
 mã ở đây, nên đã gỡ. Trên NixOS hãy dùng bản gốc.

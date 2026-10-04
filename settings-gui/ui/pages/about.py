@@ -3,11 +3,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from i18n import _
-from qtpy.QtCore import Qt
-from qtpy.QtGui import QIcon
+from qtpy.QtCore import Qt, QUrl
+from qtpy.QtGui import QDesktopServices, QIcon
 from qtpy.QtWidgets import (
     QFrame,
+    QHBoxLayout,
     QLabel,
+    QPushButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -92,6 +94,33 @@ class AboutPage(QWidget):
         )
         github_link.setOpenExternalLinks(True)
         layout.addWidget(github_link, alignment=Qt.AlignCenter)
+
+        # Support Buttons Row
+        support_layout = QHBoxLayout()
+        support_layout.setSpacing(15)
+        support_layout.setAlignment(Qt.AlignCenter)
+
+        btn_bug = QPushButton(_("Report Bug"))
+        btn_bug.setObjectName("BugReport")
+        btn_bug.setFixedWidth(200)
+        btn_bug.clicked.connect(
+            lambda: QDesktopServices.openUrl(
+                QUrl("https://github.com/ngosen/ngosen/issues/new?template=bug_report.yml")
+            )
+        )
+
+        btn_feature = QPushButton(_("Request Feature"))
+        btn_feature.setObjectName("FeatureRequest")
+        btn_feature.setFixedWidth(200)
+        btn_feature.clicked.connect(
+            lambda: QDesktopServices.openUrl(
+                QUrl("https://github.com/ngosen/ngosen/issues/new?template=feature_request.yml")
+            )
+        )
+
+        support_layout.addWidget(btn_bug)
+        support_layout.addWidget(btn_feature)
+        layout.addLayout(support_layout)
 
         line = QFrame()
         line.setFrameShape(QFrame.HLine)

@@ -11,6 +11,7 @@
       methods.</p>
   </description>
   <url type="homepage">https://github.com/ngosen/ngosen</url>
+  <url type="bugtracker">https://github.com/ngosen/ngosen/issues</url>
   <project_group>Fcitx</project_group>
   <releases>
     <release version="@PROJECT_VERSION@" date="2026-02-26" />

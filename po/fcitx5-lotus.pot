@@ -324,6 +324,14 @@ msgstr ""
 msgid "Modern, fast, and stable Vietnamese input method for Linux."
 msgstr ""
 
+#: settings-gui/ui/pages/about.py:103
+msgid "Report Bug"
+msgstr ""
+
+#: settings-gui/ui/pages/about.py:112
+msgid "Request Feature"
+msgstr ""
+
 #: settings-gui/ui/pages/about.py:136
 msgid "Export Debug Logs"
 msgstr ""

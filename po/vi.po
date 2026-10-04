@@ -325,6 +325,14 @@ msgstr "Phiên bản {}"
 msgid "Modern, fast, and stable Vietnamese input method for Linux."
 msgstr "Bộ gõ tiếng việt hiện đại, nhanh và ổn định cho Linux."
 
+#: settings-gui/ui/pages/about.py:103
+msgid "Report Bug"
+msgstr "Báo cáo lỗi"
+
+#: settings-gui/ui/pages/about.py:112
+msgid "Request Feature"
+msgstr "Đề xuất tính năng"
+
 #: settings-gui/ui/pages/about.py:136
 msgid "Export Debug Logs"
 msgstr "Xuất nhật ký gỡ lỗi"

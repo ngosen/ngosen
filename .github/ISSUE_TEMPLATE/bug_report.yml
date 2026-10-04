@@ -7,6 +7,9 @@ body:
       value: |
         Cảm ơn bạn đã dành thời gian báo cáo lỗi! Vui lòng điền đầy đủ thông tin bên dưới.
 
+        Đây là nơi báo lỗi của Ngó Sen. Nếu bạn đang dùng bản gốc fcitx5-lotus, hãy báo ở
+        [kho của bản gốc](https://github.com/LotusInputMethod/fcitx5-lotus/issues).
+
   - type: textarea
     id: description
     attributes:
@@ -50,9 +53,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: Phiên bản fcitx5-lotus
-      description: Bạn đang sử dụng phiên bản nào?
-      placeholder: 'ví dụ: 1.2.3'
+      label: Phiên bản Ngó Sen
+      description: Số phiên bản của gói `fcitx5-ngosen` đã cài. Bản tự build thì ghi mã commit.
+      placeholder: 'ví dụ: 3.5.10-4'
     validations:
       required: true
 
@@ -60,15 +63,10 @@ body:
     id: install_method
     attributes:
       label: Cách cài đặt
-      description: Bạn đã cài đặt fcitx5-lotus bằng cách nào?
+      description: Bạn đã cài đặt Ngó Sen bằng cách nào?
       options:
-        - AUR (fcitx5-lotus)
-        - AUR (fcitx5-lotus-bin)
-        - AUR (fcitx5-lotus-git)
-        - Cloudflare Pages (Debian/Ubuntu/Fedora/OpenSUSE)
-        - NixOS
-        - VUR (Void Linux)
-        - GURU (Gentoo)
+        - Lệnh cài một dòng (install.sh)
+        - Gói tải từ trang Releases
         - Tự build từ source
         - Khác
     validations:

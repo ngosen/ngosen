@@ -10,7 +10,8 @@ kho thì giữ nguyên dòng bản quyền của tác giả trước.
 
 Bản này dùng hằng ngày trên Fedora 44 + KDE Plasma Wayland và CachyOS + KDE Plasma Wayland. Trên
 Ubuntu 24.04 + GNOME X11 mới dùng sơ, chưa dùng hằng ngày và chưa thử kỹ. Kho để công khai cho ai cần
-thì lấy dùng, **không hứa hỗ trợ**: mục Issues tắt và không có lịch phát hành.
+thì lấy dùng, **không hứa hỗ trợ** và không có lịch phát hành. Gặp lỗi thì báo ở mục
+[Issues](https://github.com/ngosen/ngosen/issues).
 
 Tên cũ của kho là `nguyenphivn/fcitx5-lotus`, rồi `nguyenphivn/LotusVibe` (từ 17/09/2026); link cũ
 vẫn tự chuyển về đây. Bên trong mã vẫn giữ tên `lotus` (tệp cấu hình, dịch vụ nền, icon) để nhặt được

@@ -15,6 +15,11 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 - README có mục "Gỡ": tắt máy chủ nền trước, lệnh gỡ gói cho từng bản phân phối, lệnh gỡ bản tự dựng,
   và hai thứ còn lại trên máy sau khi gỡ là tệp cấu hình và tài khoản `uinput_proxy` (#27).
 
+### Thay đổi
+
+- Mục Issues của kho được bật để nhận báo lỗi. Mẫu báo lỗi hỏi phiên bản và cách cài của Ngó Sen thay
+  cho các cách cài của bản gốc; README chỉ tới mục Issues (#30).
+
 ### Tài liệu
 
 - Nhật ký thay đổi có mục riêng cho bản `3.5.10-4`; những gì gộp sau bản đó nằm dưới "Chưa phát hành"

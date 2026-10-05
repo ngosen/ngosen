@@ -56,6 +56,7 @@ endfunction()
 
 add_lotus_headless_test(preedit_lifecycle preedit-lifecycle.cpp "integration;preedit")
 add_lotus_headless_test(app_rule_reset app-rule-reset.cpp "integration;apprule")
+add_lotus_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp "integration;apprule;gnome")
 add_lotus_headless_test(uinput_mode_migration uinput-mode-migration.cpp "integration;mode")
 add_lotus_headless_test(messenger_defaults messenger-defaults.cpp "integration;mode")
 add_lotus_headless_test(preedit_smoke_client preedit-smoke-client.cpp "integration;preedit")
@@ -70,6 +71,10 @@ add_lotus_headless_test(super_smooth_half_updated_mid_word
     super-smooth-half-updated-mid-word.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_settle_wait
     super-smooth-settle-wait.cpp "integration;smooth")
+add_lotus_headless_test(wayland_forward_backspaces
+    wayland-forward-backspaces.cpp "integration;smooth")
+add_lotus_headless_test(xim_forward_handback
+    xim-forward-handback.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_settle_wait_immediate
     super-smooth-settle-wait-immediate.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_settle_plain_field
@@ -78,6 +83,8 @@ add_lotus_headless_test(super_smooth_settle_empty_composer
     super-smooth-settle-empty-composer.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_messenger_select_overtype
     super-smooth-messenger-select-overtype.cpp "integration;smooth")
+add_lotus_headless_test(replay_single_commit
+    replay-single-commit.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_settle_first_word
     super-smooth-settle-first-word.cpp "integration;smooth")
 add_lotus_headless_test(modifier_key_bypasses_surrounding_text

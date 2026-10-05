@@ -139,6 +139,7 @@ namespace fcitx {
         // --- Uinput mode: wait for the app instead of sleeping (see handleUInputKeyPress) ---
         std::unique_ptr<HandlerTableEntry<EventHandler>> surr_wait_watcher_;
         std::unique_ptr<EventSourceTime>                 surr_wait_timer_;
+        std::unique_ptr<EventSourceTime>                 xim_forward_timer_; ///< forwards after the XIM sync reply
         uint64_t                                         surr_wait_started_at_    = 0;
         uint64_t                                         surr_wait_deliver_at_    = 0; ///< planned commit time, CLOCK_MONOTONIC us
         bool                                             surr_wait_pending_       = false;
@@ -230,6 +231,12 @@ namespace fcitx {
          * @return True if event was handled.
          */
         bool handleUInputKeyPress(KeyEvent& event, KeySym currentSym, int sleepTime);
+        bool waitForDeletion(KeyEvent* event, int sleepTime);
+        void forwardBackspaces(int count);
+        // True when a replacement can delete text: forwarded by the frontend or sent to the uinput server.
+        bool canSendBackspaces() const;
+        // Moves the commit of a timer-only wait later, never earlier.
+        void deferTimedCommit(uint64_t deliverAtUs);
 
         /**
          * @brief Performs text replacement via uinput.
@@ -291,8 +298,9 @@ namespace fcitx {
          * When is_deleting_ is true, non-special keystrokes are buffered
          * instead of being discarded. This method replays them after the
          * replacement completes.
+         * @param committed Text to commit first; it goes out in the same commit as the replayed keys.
          */
-        void replayBufferedKeys();
+        void replayBufferedKeys(std::string committed = {});
 
         /**
          * @brief Checks if the key symbol matches the configured macro-skip modifier.

@@ -124,6 +124,42 @@ bool isStartsWith(const std::string& str, const std::string& prefix);
 std::string getFrontendName(fcitx::InputContext* ic);
 
 /**
+ * @brief Drop surrounding text the client cannot have sent.
+ *
+ * GNOME Shell multiplexes every window through one IBus input context, and
+ * fcitx5 keeps the last SetSurroundingText when focus moves to a client that
+ * does not advertise surrounding support (e.g. kitty). Without this, the
+ * engine reads the previous window's text as if it belonged to the current one.
+ * @param ic Input context.
+ * @return True if stale text was dropped.
+ */
+bool dropStaleSurroundingText(fcitx::InputContext* ic);
+
+/**
+ * @brief Strip the ".desktop" suffix GNOME adds to program names.
+ *
+ * Under GNOME's IBus path a window reports "firefox.desktop" where KDE reports
+ * "firefox"; rules and app checks are written against the bare name.
+ * @param program Program name as reported by the frontend.
+ * @return Program name without a trailing ".desktop".
+ */
+std::string stripDesktopSuffix(const std::string& program);
+
+/**
+ * @brief Whether surrounding-text updates for this context arrive too late to wait on.
+ *
+ * Under GNOME, apps reach fcitx5 through GNOME Shell's IBus bridge, which forwards the
+ * client's surrounding text tens of milliseconds late and often one edit behind.
+ * @param ic Input context.
+ * @return True for contexts served by the IBus frontend.
+ */
+bool surroundingTextLags(fcitx::InputContext* ic);
+
+// True when the frontend can deliver backspaces itself, so the uinput server is not needed: the
+// Wayland input-method frontend, and XIM clients running under XWayland.
+bool forwardsBackspaces(fcitx::InputContext* ic);
+
+/**
  * @brief Key event entry for replay buffer.
  */
 struct KeyEntry {

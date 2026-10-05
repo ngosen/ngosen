@@ -477,7 +477,9 @@ namespace fcitx {
     }
 
     void LotusEngine::activate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
-        auto*                    ic        = event.inputContext();
+        auto* ic = event.inputContext();
+        if (dropStaleSurroundingText(ic))
+            LOTUS_INFO("Dropped stale surrounding text");
         const bool               surrvalid = ic->surroundingText().isValid();
         const bool               is_dbus   = getFrontendName(ic) == "dbus";
         static std::atomic<bool> mouseThreadStarted{false};
@@ -539,6 +541,7 @@ namespace fcitx {
 
     void LotusEngine::keyEvent(const InputMethodEntry& /*entry*/, KeyEvent& keyEvent) {
         auto* ic = keyEvent.inputContext();
+        dropStaleSurroundingText(ic);
 
         if (isSelectingAppMode_ && g_mouse_clicked.load(std::memory_order_acquire)) {
             closeAppModeMenu();
@@ -936,6 +939,10 @@ namespace fcitx {
     LotusMode LotusEngine::getAppRule(const std::string& appName) const {
         std::lock_guard<std::mutex> lock(appRulesMutex_);
         auto                        it = appRules_.find(appName);
+        if (it == appRules_.end()) {
+            // Exact match wins so a "foo.desktop" rule can still override "foo".
+            it = appRules_.find(stripDesktopSuffix(appName));
+        }
         if (it != appRules_.end()) {
             return it->second;
         }

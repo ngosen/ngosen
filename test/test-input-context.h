@@ -83,7 +83,8 @@
  */
 class TestInputContext final : public fcitx::InputContext {
   public:
-    explicit TestInputContext(fcitx::Instance* instance) : InputContext(instance->inputContextManager(), "test") {
+    explicit TestInputContext(fcitx::Instance* instance, const std::string& program = "test", std::string frontend = "test") :
+        InputContext(instance->inputContextManager(), program), frontend_(std::move(frontend)) {
         // Fcitx5 lifecycle contract: notifies the InputContextManager that
         // this context is initialized and ready to receive events.
         created();
@@ -95,7 +96,7 @@ class TestInputContext final : public fcitx::InputContext {
     }
 
     const char* frontend() const override {
-        return "test";
+        return frontend_.c_str();
     }
 
     // Called by the engine when text is committed to the client application.
@@ -138,6 +139,7 @@ class TestInputContext final : public fcitx::InputContext {
     }
 
   private:
+    std::string                               frontend_;
     std::vector<std::string>                  commits_;
     std::vector<std::pair<int, unsigned int>> deletes_;
     std::vector<fcitx::ForwardKeyEvent>       forwarded_;

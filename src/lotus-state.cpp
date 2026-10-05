@@ -28,7 +28,12 @@
 #include <thread>
 
 namespace fcitx {
-    constexpr int      MAX_SCAN_LENGTH = 15;
+    constexpr int MAX_SCAN_LENGTH = 15;
+    // XKB keycode of BackSpace: evdev KEY_BACKSPACE (14) + 8.
+    constexpr int BackSpaceKeycode = 22;
+    // XIM clients may hand a forwarded key back up to ~11 ms later (measured on XWayland GTK3); the
+    // commit must wait for it.
+    constexpr uint64_t XimForwardWaitUs = 15000;
 
     static inline bool isWordBreak(uint32_t ucs4) {
         // Space, tab, newline, carriage return, null, or punctuation/symbols (: ; < = > ? @)
@@ -672,16 +677,14 @@ namespace fcitx {
                 flushDeferredCommit();
                 return false; // never reset a timer from inside its own callback
             });
-        } else if (!pending_commit_string_.empty()) {
-            ic_->commitString(pending_commit_string_);
-            LOTUS_INFO("Commit: " + pending_commit_string_);
         }
+        std::string text         = defer ? std::string() : std::move(pending_commit_string_);
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
         is_deleting_.store(false);
         if (!defer) {
-            replayBufferedKeys();
+            replayBufferedKeys(std::move(text));
         }
     }
 
@@ -692,11 +695,7 @@ namespace fcitx {
         deferred_commit_pending_ = false;
         std::string text         = std::move(deferred_commit_text_);
         deferred_commit_text_.clear();
-        if (!text.empty()) {
-            ic_->commitString(text);
-            LOTUS_INFO("Commit (deferred): " + text);
-        }
-        replayBufferedKeys();
+        replayBufferedKeys(std::move(text));
     }
 
     bool LotusState::handleUInputKeyPress(KeyEvent& event, KeySym currentSym, int sleepTime) {
@@ -708,154 +707,185 @@ namespace fcitx {
             if (current_backspace_count_ < expected_backspaces_) {
                 return false; // Allow intermediate backspaces to reach the app to clear autofill/old text.
             }
-            // Some apps (Konsole) declare surrounding text but always send it empty; nothing can match,
-            // so use the sleeping path.
-            const bool emptySnapshot = ic_->surroundingText().text().empty();
-            if (engine_->config().waitSurroundingEvent.value() && emptySnapshot) {
-                LOTUS_INFO("Surr wait skip: empty snapshot");
+            return waitForDeletion(&event, sleepTime);
+        }
+        return false;
+    }
+
+    // Waits until the app has applied the backspaces, then commits. `event` is the returning sentinel
+    // backspace on the uinput path, or null when the backspaces were forwarded.
+    bool LotusState::waitForDeletion(KeyEvent* event, int sleepTime) {
+        // Some apps (Konsole) declare surrounding text but always send it empty; nothing can match,
+        // so use the sleeping path.
+        const bool emptySnapshot = ic_->surroundingText().text().empty();
+        // GNOME Shell relays surrounding text late and one step behind (or not at all), so an
+        // event-driven wait times out and commits ahead of the backspaces. Use the timed path there.
+        const bool waitEvent = engine_->config().waitSurroundingEvent.value() && !surroundingTextLags(ic_);
+        if (waitEvent && emptySnapshot) {
+            LOTUS_INFO("Surr wait skip: empty snapshot");
+        }
+        bool skipFrozenWait = false;
+        if (waitEvent && !emptySnapshot && surr_frozen_) {
+            const int probeEvery = std::max(engine_->config().waitSurroundingProbeEvery.value(), 1);
+            ++surr_frozen_probe_count_;
+            if (surr_frozen_probe_count_ % probeEvery != 0) {
+                skipFrozenWait = true;
             }
-            bool skipFrozenWait = false;
-            if (engine_->config().waitSurroundingEvent.value() && !emptySnapshot && surr_frozen_) {
-                const int probeEvery = std::max(engine_->config().waitSurroundingProbeEvery.value(), 1);
-                ++surr_frozen_probe_count_;
-                if (surr_frozen_probe_count_ % probeEvery != 0) {
-                    skipFrozenWait = true;
-                }
+        }
+        if (waitEvent && !emptySnapshot && !skipFrozenWait) {
+            // Sleeping blocks the single event loop, so no update could arrive. Return to the loop
+            // and watch for updates from now on; a fresh watcher ignores the previous replacement's
+            // late events. Keys typed meanwhile go to buffered_keys_.
+            if (event != nullptr) {
+                event->filterAndAccept();
             }
-            if (engine_->config().waitSurroundingEvent.value() && !emptySnapshot && !skipFrozenWait) {
-                // Sleeping blocks the single event loop, so no update could arrive. Return to the loop
-                // and watch for updates from now on; a fresh watcher ignores the previous replacement's
-                // late events. Keys typed meanwhile go to buffered_keys_.
-                event.filterAndAccept();
-                surr_wait_started_at_ = ::fcitx::now(CLOCK_MONOTONIC);
-                // After a timeout the app is lagging (Firefox) and its snapshot is stale: skip the
-                // immediate check.
-                if (surr_snapshot_trusted_ && deletionLooksDone()) {
-                    LOTUS_INFO("Skip retry");
-                    deliverAfterSettle("immediate", false);
-                    return true;
+            surr_wait_started_at_ = ::fcitx::now(CLOCK_MONOTONIC);
+            // After a timeout the app is lagging (Firefox) and its snapshot is stale: skip the
+            // immediate check.
+            if (surr_snapshot_trusted_ && deletionLooksDone()) {
+                LOTUS_INFO("Skip retry");
+                deliverAfterSettle("immediate", false);
+                return true;
+            }
+            auto* instance                = engine_->instance();
+            surr_wait_pending_            = true;
+            surr_wait_event_count_        = 0;
+            surr_wait_saw_other_snapshot_ = false;
+            surr_wait_watcher_.reset(); // safe: we are outside its dispatch
+            surr_wait_watcher_ = instance->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& e) {
+                auto& ice = static_cast<InputContextEvent&>(e);
+                if (!surr_wait_pending_ || surr_wait_timer_only_ || ice.inputContext() != ic_ || !is_deleting_.load()) {
+                    return;
                 }
-                auto* instance                = engine_->instance();
-                surr_wait_pending_            = true;
-                surr_wait_event_count_        = 0;
-                surr_wait_saw_other_snapshot_ = false;
-                surr_wait_watcher_.reset(); // safe: we are outside its dispatch
-                surr_wait_watcher_ = instance->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& e) {
-                    auto& ice = static_cast<InputContextEvent&>(e);
-                    if (!surr_wait_pending_ || surr_wait_timer_only_ || ice.inputContext() != ic_ || !is_deleting_.load()) {
-                        return;
-                    }
-                    // After a timeout, an early event is the app's stale buffer catching up, not the
-                    // finished deletion. Ignore events before WaitSurroundingMinPerKeyMs per backspace.
-                    const auto waitedUs = ::fcitx::now(CLOCK_MONOTONIC) - surr_wait_started_at_;
-                    const auto minimumUs =
-                        static_cast<uint64_t>(engine_->config().waitSurroundingMinPerKeyMs.value()) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
-                    {
-                        const auto& current = ic_->surroundingText();
-                        ++surr_wait_event_count_;
-                        if (current.text() + "\x1f" + std::to_string(current.cursor()) != surr_wait_sent_snapshot_) {
-                            surr_wait_saw_other_snapshot_ = true;
-                        }
-                    }
-                    if (!surr_snapshot_trusted_ && waitedUs < minimumUs) {
-                        // Stale buffer catching up after a timeout: ignore.
-                    } else if (deletionLooksDone()) {
-                        deliverAfterSettle("event", false);
-                    }
-                    // Not done yet: keep waiting silently. Anything worth printing here is text the user
-                    // just typed, which must not go into the log.
-                });
-                // Two timeouts in a row: this app does not update while deleting. Use the short timeout
-                // until an event matches again.
-                const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->config().waitSurroundingShortMs.value() : engine_->config().waitSurroundingTimeoutMs.value();
-                const auto timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
-                // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms. Check once at the
-                // threshold first: many apps report "done" before it and then go quiet.
-                const auto threshold =
+                // After a timeout, an early event is the app's stale buffer catching up, not the
+                // finished deletion. Ignore events before WaitSurroundingMinPerKeyMs per backspace.
+                const auto waitedUs = ::fcitx::now(CLOCK_MONOTONIC) - surr_wait_started_at_;
+                const auto minimumUs =
                     static_cast<uint64_t>(engine_->config().waitSurroundingMinPerKeyMs.value()) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
-                const auto firstDeadline = threshold < timeout ? surr_wait_started_at_ + threshold : surr_wait_started_at_ + timeout;
-                surr_wait_timer_         = instance->eventLoop().addTimeEvent(CLOCK_MONOTONIC, firstDeadline, 1000, [this, timeout](EventSourceTime* t, uint64_t) {
-                    if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
+                {
+                    const auto& current = ic_->surroundingText();
+                    ++surr_wait_event_count_;
+                    if (current.text() + "\x1f" + std::to_string(current.cursor()) != surr_wait_sent_snapshot_) {
+                        surr_wait_saw_other_snapshot_ = true;
+                    }
+                }
+                if (!surr_snapshot_trusted_ && waitedUs < minimumUs) {
+                    // Stale buffer catching up after a timeout: ignore.
+                } else if (deletionLooksDone()) {
+                    deliverAfterSettle("event", false);
+                }
+                // Not done yet: keep waiting silently. Anything worth printing here is text the user
+                // just typed, which must not go into the log.
+            });
+            // Two timeouts in a row: this app does not update while deleting. Use the short timeout
+            // until an event matches again.
+            const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->config().waitSurroundingShortMs.value() : engine_->config().waitSurroundingTimeoutMs.value();
+            const auto timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
+            // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms. Check once at the
+            // threshold first: many apps report "done" before it and then go quiet.
+            const auto threshold = static_cast<uint64_t>(engine_->config().waitSurroundingMinPerKeyMs.value()) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
+            const auto firstDeadline = threshold < timeout ? surr_wait_started_at_ + threshold : surr_wait_started_at_ + timeout;
+            surr_wait_timer_         = instance->eventLoop().addTimeEvent(CLOCK_MONOTONIC, firstDeadline, 1000, [this, timeout](EventSourceTime* t, uint64_t) {
+                if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
+                    return false;
+                }
+                const auto waited = ::fcitx::now(CLOCK_MONOTONIC) - surr_wait_started_at_;
+                if (waited + 1000 < timeout) {
+                    if (deletionLooksDone()) {
+                        deliverAfterSettle("threshold", true);
                         return false;
                     }
-                    const auto waited = ::fcitx::now(CLOCK_MONOTONIC) - surr_wait_started_at_;
-                    if (waited + 1000 < timeout) {
-                        if (deletionLooksDone()) {
-                            deliverAfterSettle("threshold", true);
-                            return false;
-                        }
-                        t->setTime(surr_wait_started_at_ + timeout);
-                        t->setOneShot();
-                        return true;
-                    }
-                    finishReplacement("timeout", true);
-                    return false;
-                });
-                return true;
-            }
-            // Frozen snapshot: sleep at least WaitSurroundingMinPerKeyMs x (N - 1) instead of, not on
-            // top of, the normal sleep.
-            const int perKeyMs = skipFrozenWait ? std::max(sleepTime, engine_->config().waitSurroundingMinPerKeyMs.value()) : sleepTime;
-            int       waitMs   = perKeyMs * (expected_backspaces_ - 1);
-            // Validate surr cursor pos should match realtextLen after all BS applied
-            const auto& surr = ic_->surroundingText();
-            if (skipFrozenWait) {
-                LOTUS_INFO("Skip retry (frozen)"); // retrying 3 x 2 ms is pointless on a frozen snapshot
-            } else if (surr.isValid() && surr.cursor() == realtextLen.load(std::memory_order_acquire)) {
-                LOTUS_INFO("Skip retry");
-            } else if (!ic_->capabilityFlags().test(CapabilityFlag::SurroundingText)) {
-                // No surrounding text capability (gnome-terminal, Chromium on X11): retrying cannot help.
-                LOTUS_INFO("Skip retry (no surrounding capability)");
-            } else {
-                // Retry x3 (2 ms each) for apps whose snapshot is not valid yet. Use a timer, not
-                // sleep_for, so the event loop can deliver a fresh snapshot.
-                waitMs += 3 * 2;
-            }
-            event.filterAndAccept(); // Filter out the final trigger backspace.
-            if (waitMs <= 0) {
-                finishReplacement("immediate", false);
-                return true;
-            }
-            // Wait on a timer rather than sleep_for, which would block the fcitx5 event loop. Keys
-            // arriving meanwhile go to buffered_keys_ because is_deleting_ is set.
-            surr_wait_pending_       = true;
-            surr_wait_timer_only_    = true;
-            surr_wait_focus_retries_ = 0;
-            surr_wait_started_at_    = ::fcitx::now(CLOCK_MONOTONIC);
-            surr_wait_deliver_at_    = surr_wait_started_at_ + (static_cast<uint64_t>(waitMs) * 1000ULL);
-            surr_wait_timer_         = engine_->instance()->eventLoop().addTimeEvent(CLOCK_MONOTONIC, surr_wait_deliver_at_, 1000, [this](EventSourceTime* t, uint64_t) {
-                if (!surr_wait_pending_ || !surr_wait_timer_only_) {
-                    return false;
+                    t->setTime(surr_wait_started_at_ + timeout);
+                    t->setOneShot();
+                    return true;
                 }
-                if (!is_deleting_.load()) { // the replacement was cancelled elsewhere (navigation key...)
-                    surr_wait_pending_    = false;
-                    surr_wait_timer_only_ = false;
-                    return false;
-                }
-                if (!ic_->hasFocus()) {
-                    // Chromium X11 leaves and re-enters the field within ~0.3 ms; a commit in that gap is
-                    // lost. Give it a moment to come back.
-                    if (++surr_wait_focus_retries_ <= 5) {
-                        t->setTime(::fcitx::now(CLOCK_MONOTONIC) + 2000);
-                        t->setOneShot();
-                        return true;
-                    }
-                    // The user really switched windows: the old field can no longer take the text. Reset
-                    // only this field's state; is_deleting_ is shared and the new field may be replacing.
-                    LOTUS_INFO("Timer: input context lost focus, dropping text");
-                    surr_wait_pending_       = false;
-                    surr_wait_timer_only_    = false;
-                    expected_backspaces_     = 0;
-                    current_backspace_count_ = 0;
-                    pending_commit_string_.clear();
-                    return false;
-                }
-                finishReplacement("timer", true);
+                finishReplacement("timeout", true);
                 return false;
             });
             return true;
         }
-        return false;
+        // Frozen snapshot: sleep at least WaitSurroundingMinPerKeyMs x (N - 1) instead of, not on
+        // top of, the normal sleep.
+        const int perKeyMs = skipFrozenWait ? std::max(sleepTime, engine_->config().waitSurroundingMinPerKeyMs.value()) : sleepTime;
+        int       waitMs   = perKeyMs * (expected_backspaces_ - 1);
+        // Validate surr cursor pos should match realtextLen after all BS applied
+        const auto& surr = ic_->surroundingText();
+        if (skipFrozenWait) {
+            LOTUS_INFO("Skip retry (frozen)"); // retrying 3 x 2 ms is pointless on a frozen snapshot
+        } else if (surr.isValid() && surr.cursor() == realtextLen.load(std::memory_order_acquire)) {
+            LOTUS_INFO("Skip retry");
+        } else if (!ic_->capabilityFlags().test(CapabilityFlag::SurroundingText)) {
+            // No surrounding text capability (gnome-terminal, Chromium on X11): retrying cannot help.
+            LOTUS_INFO("Skip retry (no surrounding capability)");
+        } else {
+            // Retry x3 (2 ms each) for apps whose snapshot is not valid yet. Use a timer, not
+            // sleep_for, so the event loop can deliver a fresh snapshot.
+            waitMs += 3 * 2;
+        }
+        if (event != nullptr) {
+            event->filterAndAccept(); // filter out the returning sentinel backspace
+        }
+        if (waitMs <= 0) {
+            finishReplacement("immediate", false);
+            return true;
+        }
+        // Wait on a timer rather than sleep_for, which would block the fcitx5 event loop. Keys
+        // arriving meanwhile go to buffered_keys_ because is_deleting_ is set.
+        surr_wait_pending_       = true;
+        surr_wait_timer_only_    = true;
+        surr_wait_focus_retries_ = 0;
+        surr_wait_started_at_    = ::fcitx::now(CLOCK_MONOTONIC);
+        surr_wait_deliver_at_    = surr_wait_started_at_ + (static_cast<uint64_t>(waitMs) * 1000ULL);
+        surr_wait_timer_         = engine_->instance()->eventLoop().addTimeEvent(CLOCK_MONOTONIC, surr_wait_deliver_at_, 1000, [this](EventSourceTime* t, uint64_t) {
+            if (!surr_wait_pending_ || !surr_wait_timer_only_) {
+                return false;
+            }
+            if (!is_deleting_.load()) { // the replacement was cancelled elsewhere (navigation key...)
+                surr_wait_pending_    = false;
+                surr_wait_timer_only_ = false;
+                return false;
+            }
+            if (!ic_->hasFocus()) {
+                // Chromium X11 leaves and re-enters the field within ~0.3 ms; a commit in that gap is
+                // lost. Give it a moment to come back.
+                if (++surr_wait_focus_retries_ <= 5) {
+                    t->setTime(::fcitx::now(CLOCK_MONOTONIC) + 2000);
+                    t->setOneShot();
+                    return true;
+                }
+                // The user really switched windows: the old field can no longer take the text. Reset
+                // only this field's state; is_deleting_ is shared and the new field may be replacing.
+                LOTUS_INFO("Timer: input context lost focus, dropping text");
+                surr_wait_pending_       = false;
+                surr_wait_timer_only_    = false;
+                expected_backspaces_     = 0;
+                current_backspace_count_ = 0;
+                pending_commit_string_.clear();
+                return false;
+            }
+            finishReplacement("timer", true);
+            return false;
+        });
+        return true;
+    }
+
+    void LotusState::forwardBackspaces(int count) {
+        for (int i = 0; i < count; ++i) {
+            ic_->forwardKey(Key(FcitxKey_BackSpace, KeyStates(), BackSpaceKeycode), false);
+            ic_->forwardKey(Key(FcitxKey_BackSpace, KeyStates(), BackSpaceKeycode), true);
+        }
+    }
+
+    bool LotusState::canSendBackspaces() const {
+        return forwardsBackspaces(ic_) || uinput_client_fd_ >= 0;
+    }
+
+    void LotusState::deferTimedCommit(uint64_t deliverAtUs) {
+        if (surr_wait_timer_ && deliverAtUs > surr_wait_deliver_at_) {
+            surr_wait_deliver_at_ = deliverAtUs;
+            surr_wait_timer_->setTime(deliverAtUs);
+            surr_wait_timer_->setOneShot();
+        }
     }
 
     void LotusState::send_select_uinput(int charCount) const {
@@ -939,15 +969,12 @@ namespace fcitx {
         if (!fromTimer && overtype_timer_) {
             overtype_timer_.reset(); // never reset a timer from inside its own callback
         }
-        if (!pending_commit_string_.empty()) {
-            ic_->commitString(pending_commit_string_);
-            LOTUS_INFO("Commit: " + pending_commit_string_);
-        }
+        std::string text = std::move(pending_commit_string_);
         pending_commit_string_.clear();
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         is_deleting_.store(false);
-        replayBufferedKeys();
+        replayBufferedKeys(std::move(text));
     }
 
     void LotusState::performReplacement(const std::string& deletedPart, const std::string& addedPart) {
@@ -981,13 +1008,13 @@ namespace fcitx {
         const std::string surrText    = surrounding.text();
         // Facebook composers only: other fields do not report a selection-only change, so the
         // overtype would time out and drop the tone mark.
-        if (engine_->config().messengerSelectOvertype.value() && looksLikeFacebookComposer(surrounding)) {
+        if (engine_->config().messengerSelectOvertype.value() && !forwardsBackspaces(ic_) && looksLikeFacebookComposer(surrounding)) {
             selectAndOvertype(addedPart, static_cast<int>(utf8::length(deletedPart)));
             return;
         }
         // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it. Its
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
-        const bool isLibreOffice = ic_->program() == "soffice";
+        const bool isLibreOffice = stripDesktopSuffix(ic_->program()) == "soffice";
         bool       isSurrText    = isLibreOffice ? ic_->capabilityFlags().test(CapabilityFlag::SurroundingText) :
                                                    engine_->config().useSurroundingTextIfPossible.value() && ic_->capabilityFlags().test(CapabilityFlag::SurroundingText) &&
                 surrounding.isValid() && !surrText.empty() && surrounding.cursor() == utf8::length(surrText);
@@ -995,7 +1022,7 @@ namespace fcitx {
             ++expected_backspaces_;
             // Uinput skips the autofill guard except in address bars (#190): the Url flag on Chromium,
             // the autofill shape on Firefox.
-            const bool isFirefoxAddressBar = ic_->program() == "firefox" && textAfterCursorLooksLikeUrl(surrounding);
+            const bool isFirefoxAddressBar = stripDesktopSuffix(ic_->program()) == "firefox" && textAfterCursorLooksLikeUrl(surrounding);
             const bool checkAutofill       = realMode != LotusMode::Uinput || ic_->capabilityFlags().test(CapabilityFlag::Url) || isFirefoxAddressBar;
             if (checkAutofill) {
                 // Enable Autofill detection for all frontends (Wayland/IBus).
@@ -1023,6 +1050,29 @@ namespace fcitx {
             pending_commit_string_.clear();
             is_deleting_.store(false);
             replayBufferedKeys();
+            return;
+        }
+        if (forwardsBackspaces(ic_)) {
+            // The uinput count includes a sentinel that comes back to us; forwarded keys never do.
+            const int count = expected_backspaces_ - 1;
+            if (getFrontendName(ic_) == "xim") {
+                // We are inside the client's synchronous XIM request for the key that triggered this
+                // replacement. Keys forwarded now reach the client before its reply, and libX11 may
+                // hand them back to us unprocessed. Forward them once the reply has gone out.
+                xim_forward_timer_ = engine_->instance()->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC), 0, [this, count](EventSourceTime*, uint64_t) {
+                    if (is_deleting_.load()) {
+                        forwardBackspaces(count);
+                    }
+                    return false;
+                });
+            } else {
+                forwardBackspaces(count);
+            }
+            LOTUS_INFO("Forward " + std::to_string(count) + " backspaces");
+            waitForDeletion(nullptr, 4);
+            if (getFrontendName(ic_) == "xim" && surr_wait_timer_only_ && surr_wait_timer_) {
+                deferTimedCommit(surr_wait_started_at_ + XimForwardWaitUs);
+            }
             return;
         }
         send_backspace_uinput(expected_backspaces_);
@@ -1095,7 +1145,7 @@ namespace fcitx {
             return;
         }
 
-        if (uinput_client_fd_ < 0) {
+        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_)) {
             setup_uinput();
         }
 
@@ -1196,7 +1246,7 @@ namespace fcitx {
                     keyEvent.forward();
                 }
             } else {
-                if (uinput_client_fd_ < 0) {
+                if (!canSendBackspaces()) {
                     LOTUS_ERROR("Cannot connect to uinput server, commit rawkey");
                     std::string rawKey = keyEvent.key().toString();
                     if (!rawKey.empty()) {
@@ -1403,7 +1453,7 @@ namespace fcitx {
             return;
         }
 
-        if (uinput_client_fd_ < 0) {
+        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_)) {
             connect_uinput_server();
         }
 
@@ -1443,7 +1493,7 @@ namespace fcitx {
             if (isMacroExpansion) {
                 LOTUS_INFO("Macro expansion: '" + oldPreBuffer_ + "' -> '" + commitStr + "'");
                 // Try uinput replacement first, fallback to deleteSurroundingText, then plain commit
-                if (uinput_client_fd_ >= 0 && !oldPreBuffer_.empty()) {
+                if (canSendBackspaces() && !oldPreBuffer_.empty()) {
                     performReplacement(oldPreBuffer_, commitStr);
                 } else if (ic_->capabilityFlags().test(CapabilityFlag::SurroundingText)) {
                     const auto& surrounding = ic_->surroundingText();
@@ -1513,7 +1563,7 @@ namespace fcitx {
             keyEvent.forward();
             return;
         }
-        if (uinput_client_fd_ < 0) {
+        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_)) {
             LOTUS_WARN("Cannot connect to uinput server, reconnecting....");
             connect_uinput_server();
         }
@@ -1587,6 +1637,13 @@ namespace fcitx {
             }
         }
 
+        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_ && isBackspace(currentSym) && getFrontendName(ic_) == "xim" && forwardsBackspaces(ic_)) {
+            // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
+            // client applies it, and commit after it.
+            LOTUS_INFO("XIM handed back a forwarded backspace");
+            deferTimedCommit(::fcitx::now(CLOCK_MONOTONIC) + XimForwardWaitUs);
+            return;
+        }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_) {
             // A key arrived during a timer-only wait. Replaying it via commitString loses text on
             // Chromium X11, so finish the wait, commit, then handle the key normally.
@@ -1595,6 +1652,11 @@ namespace fcitx {
                 std::this_thread::sleep_for(std::chrono::microseconds(surr_wait_deliver_at_ - nowUs));
             }
             finishReplacement("key arrived", false);
+        }
+        if (is_deleting_.load(std::memory_order_acquire) && isBackspace(currentSym) && forwardsBackspaces(ic_) && surr_wait_pending_) {
+            // Forwarded backspaces never come back, so this one is the user's: finish the replacement
+            // first, then handle it normally.
+            finishReplacement("backspace arrived", false);
         }
         if (is_deleting_.load(std::memory_order_acquire)) {
             if (isBackspace(currentSym)) {
@@ -1781,9 +1843,21 @@ namespace fcitx {
         return !hasHistory_;
     }
 
-    void LotusState::replayBufferedKeys() {
+    void LotusState::replayBufferedKeys(std::string committed) {
+        // Under GNOME, mutter sends one text-input "done" per main-loop turn and clients keep only the
+        // last commit_string before it, so back-to-back commits lose all but the last ("đ" then "i"
+        // shows "i"). Send the replacement and the replayed keys as one commit.
+        std::string out   = std::move(committed);
+        auto        flush = [&] {
+            if (!out.empty()) {
+                ic_->commitString(out);
+                LOTUS_INFO("Commit: " + out);
+                out.clear();
+            }
+        };
         LOTUS_INFO("Starting replay buffered keys");
         if (buffered_keys_.empty()) {
+            flush();
             return;
         }
         auto keys = std::move(buffered_keys_);
@@ -1812,6 +1886,7 @@ namespace fcitx {
                             buffered_keys_.push_back(keys[j]);
                         }
                     }
+                    flush();
                     performReplacement(deletedPart, addedPart);
                     hasHistory_ = false;
                     ResetEngine(lotusEngine_.handle());
@@ -1819,7 +1894,7 @@ namespace fcitx {
                     return;
                 }
                 if (!addedPart.empty()) {
-                    ic_->commitString(addedPart);
+                    out += addedPart;
                 }
 
                 hasHistory_ = false;
@@ -1829,7 +1904,7 @@ namespace fcitx {
             }
 
             if (!processed) {
-                ic_->commitString(keyUtf8);
+                out += keyUtf8;
                 continue;
             }
 
@@ -1844,12 +1919,12 @@ namespace fcitx {
             if (compareAndSplitStrings(oldPreBuffer_, preeditStr, deletedPart, addedPart) != 0) {
                 if (deletedPart.empty()) {
                     if (!addedPart.empty()) {
-                        ic_->commitString(addedPart);
+                        out += addedPart;
                         oldPreBuffer_ = preeditStr;
                     }
                 } else {
-                    if (uinput_client_fd_ < 0) {
-                        ic_->commitString(keyUtf8);
+                    if (!canSendBackspaces()) {
+                        out += keyUtf8;
                         continue;
                     }
 
@@ -1863,12 +1938,14 @@ namespace fcitx {
                             buffered_keys_.push_back(keys[j]);
                         }
                     }
+                    flush();
                     performReplacement(deletedPart, addedPart);
                     oldPreBuffer_ = preeditStr;
                     return;
                 }
             }
         }
+        flush();
         LOTUS_INFO("Replay buffered keys done");
     }
 

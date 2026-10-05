@@ -31,9 +31,9 @@ namespace fcitx {
     constexpr int MAX_SCAN_LENGTH = 15;
     // XKB keycode of BackSpace: evdev KEY_BACKSPACE (14) + 8.
     constexpr int BackSpaceKeycode = 22;
-    // XIM clients may hand a forwarded key back up to ~11 ms later (measured on XWayland GTK3); the
-    // commit must wait for it.
-    constexpr uint64_t XimForwardWaitUs = 15000;
+    // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
+    // surrounding text report the commit waits this long for them.
+    constexpr uint64_t ForwardWaitUs = 15000;
 
     static inline bool isWordBreak(uint32_t ucs4) {
         // Space, tab, newline, carriage return, null, or punctuation/symbols (: ; < = > ? @)
@@ -1014,9 +1014,10 @@ namespace fcitx {
         }
         // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it. Its
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
-        const bool isLibreOffice = stripDesktopSuffix(ic_->program()) == "soffice";
-        bool       isSurrText    = isLibreOffice ? ic_->capabilityFlags().test(CapabilityFlag::SurroundingText) :
-                                                   engine_->config().useSurroundingTextIfPossible.value() && ic_->capabilityFlags().test(CapabilityFlag::SurroundingText) &&
+        const bool isLibreOffice   = stripDesktopSuffix(ic_->program()) == "soffice";
+        const bool mustUseSurrText = isLibreOffice || ignoresForwardedKeys(ic_);
+        bool       isSurrText      = mustUseSurrText ? ic_->capabilityFlags().test(CapabilityFlag::SurroundingText) :
+                                                       engine_->config().useSurroundingTextIfPossible.value() && ic_->capabilityFlags().test(CapabilityFlag::SurroundingText) &&
                 surrounding.isValid() && !surrText.empty() && surrounding.cursor() == utf8::length(surrText);
         if (!isSurrText) {
             ++expected_backspaces_;
@@ -1070,8 +1071,9 @@ namespace fcitx {
             }
             LOTUS_INFO("Forward " + std::to_string(count) + " backspaces");
             waitForDeletion(nullptr, 4);
-            if (getFrontendName(ic_) == "xim" && surr_wait_timer_only_ && surr_wait_timer_) {
-                deferTimedCommit(surr_wait_started_at_ + XimForwardWaitUs);
+            // XIM, IBus and D-Bus clients queue forwarded keys, and the commit can overtake them.
+            if (getFrontendName(ic_) != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
+                deferTimedCommit(surr_wait_started_at_ + ForwardWaitUs);
             }
             return;
         }
@@ -1641,7 +1643,7 @@ namespace fcitx {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
             LOTUS_INFO("XIM handed back a forwarded backspace");
-            deferTimedCommit(::fcitx::now(CLOCK_MONOTONIC) + XimForwardWaitUs);
+            deferTimedCommit(::fcitx::now(CLOCK_MONOTONIC) + ForwardWaitUs);
             return;
         }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_) {

@@ -33,6 +33,12 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 - Nhật ký thay đổi có mục riêng cho bản `3.5.10-4`; những gì gộp sau bản đó nằm dưới "Chưa phát hành"
   (#28).
 
+### Kiểm thử
+
+- Bốn bài kiểm thử khoảng chờ của Messenger không còn hỏng khi máy chạy thử bị khựng vài chục phần
+  nghìn giây: khoảng chờ trong bài nới từ 40 lên 500 ms, và vòng lặp sự kiện của bài chạy nốt việc
+  đã tới hạn trước khi kiểm. Không đổi gì ở bộ gõ (#32).
+
 ## [3.5.10-4] — 04/10/2026
 
 Bản phát hành đầu tiên có gói dựng sẵn:

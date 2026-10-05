@@ -197,7 +197,7 @@ struct TestInstance {
 };
 
 /**
- * @brief Runs the instance's event loop for `ms` milliseconds.
+ * @brief Runs the instance's event loop for `ms` milliseconds, then anything already due.
  *
  * Tests call `keyEvent()` directly, so timers the engine schedules with
  * `addTimeEvent()` (Uinput mode waits for the app between the last backspace
@@ -228,6 +228,16 @@ inline void pumpEventLoop(fcitx::Instance& instance, int ms) {
                 std::cerr << "pumpEventLoop: sd_event_run failed\n";
                 std::abort();
             }
+        }
+        // The deadline can pass while the process is not scheduled; what is due by now still runs.
+        for (int i = 0; i < 64; ++i) {
+            const int dispatched = run(handle, 0);
+            if (dispatched < 0) {
+                std::cerr << "pumpEventLoop: sd_event_run failed\n";
+                std::abort();
+            }
+            if (dispatched == 0)
+                break;
         }
         return;
     }

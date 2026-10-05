@@ -112,7 +112,10 @@ int main() {
     // Covers the delete-then-commit fallback, not the default select-and-overtype path.
     config.setValueByPath("MessengerSelectOvertype", "False");
     config.setValueByPath("WaitSurroundingSettleMs", "20");
-    config.setValueByPath("WaitSurroundingSettleFirstWordMs", "80");
+    // Far apart, so a stalled machine cannot make the first-word wait look like the ordinary one.
+    config.setValueByPath("WaitSurroundingSettleFirstWordMs", "500");
+    // The snapshot arrives a few ms into the wait for it; a stall must not let that wait time out first.
+    config.setValueByPath("WaitSurroundingTimeoutMs", "5000");
     engine.setConfig(config);
     if (engine.config().mode.value() != fcitx::LotusMode::Uinput || !engine.config().waitSurroundingEvent.value()) {
         reportFailure("configure Uinput", "mode=Uinput, WaitSurroundingEvent=True", "config differs");
@@ -165,10 +168,10 @@ int main() {
         return 1;
     pumpEventLoop(testInstance.instance, 45);
     if (!context->commits().empty()) {
-        reportFailure("first word: no commit 45 ms after the deletion shows done (first-word settle 80 ms)", "commits=(none)", "commits=" + joinCommits(*context));
+        reportFailure("first word: no commit 45 ms after the deletion shows done (first-word settle 500 ms)", "commits=(none)", "commits=" + joinCommits(*context));
         return 1;
     }
-    pumpEventLoop(testInstance.instance, 70);
+    pumpEventLoop(testInstance.instance, 600);
     if (context->commits() != std::vector<std::string>{"ư"}) {
         reportFailure("first word: commit once the first-word settle is over", "commits=['ư']", "commits=" + joinCommits(*context));
         return 1;
@@ -178,9 +181,10 @@ int main() {
 
     if (!typeLetters(" cu") || !replaceU("second word u -> ư"))
         return 1;
-    pumpEventLoop(testInstance.instance, 45);
+    // Well under the first-word settle, so a commit here proves the ordinary one was used.
+    pumpEventLoop(testInstance.instance, 150);
     if (context->commits() != std::vector<std::string>{"ư", "ư"}) {
-        reportFailure("second word: commit within 45 ms (ordinary settle 20 ms)", "commits=['ư']['ư']", "commits=" + joinCommits(*context));
+        reportFailure("second word: commit within 150 ms (ordinary settle 20 ms)", "commits=['ư']['ư']", "commits=" + joinCommits(*context));
         return 1;
     }
     return 0;

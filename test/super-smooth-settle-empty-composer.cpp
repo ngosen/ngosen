@@ -109,7 +109,10 @@ int main() {
     config.setValueByPath("WaitSurroundingEvent", "True");
     // Covers the delete-then-commit fallback, not the default select-and-overtype path.
     config.setValueByPath("MessengerSelectOvertype", "False");
-    config.setValueByPath("WaitSurroundingSettleMs", "40");
+    // Long enough that a stalled machine cannot let the wait expire before the "no commit" check.
+    config.setValueByPath("WaitSurroundingSettleMs", "500");
+    // The snapshot arrives a few ms into the wait for it; a stall must not let that wait time out first.
+    config.setValueByPath("WaitSurroundingTimeoutMs", "5000");
     engine.setConfig(config);
     if (engine.config().mode.value() != fcitx::LotusMode::Uinput || !engine.config().waitSurroundingEvent.value()) {
         reportFailure("configure Uinput", "mode=Uinput, WaitSurroundingEvent=True", "config differs");
@@ -155,11 +158,11 @@ int main() {
     setSnapshot(*context, "\n", 0);
     pumpEventLoop(testInstance.instance, 15);
     if (!context->commits().empty()) {
-        reportFailure("no commit within WaitSurroundingSettleMs=40 after the snapshot shows the deletion done", "commits=(none)", "commits=" + joinCommits(*context));
+        reportFailure("no commit while the settle wait runs, after the snapshot shows the deletion done", "commits=(none)", "commits=" + joinCommits(*context));
         return 1;
     }
 
-    pumpEventLoop(testInstance.instance, 60);
+    pumpEventLoop(testInstance.instance, 600);
     if (context->commits() != std::vector<std::string>{"ê"}) {
         reportFailure("commit once the settle wait is over", "commits=['ê']", "commits=" + joinCommits(*context));
         return 1;

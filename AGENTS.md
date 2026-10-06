@@ -32,6 +32,11 @@ a careful human wrote it, and the person sending it must be able to explain ever
   a test harness triggers it, file a low-priority issue instead of changing core code.
 - **Match surrounding code.** clang-format (`.clang-format`), ruff for `settings-gui/`, existing
   naming (`camelCase` functions, `snake_case_` members). Functions under ~50 lines.
+- **No "lotus" in new names.** The project is Ngó Sen; a new file, class, function, constant,
+  macro or environment variable uses `ngosen`/`NgoSen`/`NGOSEN_` or a plain descriptive name.
+  Existing lotus names stay until a change has another reason to touch them, and calling them is
+  fine. Runtime names users already have (addon id, config files, `fcitx5-lotus-server`) change only
+  together with a migration step. `misc/check-new-names.sh` enforces this in CI.
 - **Run clang-format before pushing.** CI fails on any formatting diff, including alignment of
   neighbouring declarations.
 - **Build as C++17.** The Ubuntu 22.04 package compiles in C++17, so no `std::string::starts_with`

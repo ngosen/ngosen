@@ -24,6 +24,18 @@ jobs:
       - uses: actions/checkout@v7
       - uses: fcitx/github-actions@clang-format
 
+  new-names:
+    name: Check new names
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Self-test
+        run: misc/check-new-names.sh --self-test
+      - name: No lotus in new names
+        run: misc/check-new-names.sh origin/main
+
   check:
     name: Build and test
     runs-on: ubuntu-latest

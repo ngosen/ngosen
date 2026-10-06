@@ -51,6 +51,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 
 ### Tài liệu
 
+- Tên mới trong mã (tệp, hàm, lớp, hằng, biến môi trường) không còn chữ "lotus"; tên cũ giữ nguyên
+  tới khi cần sửa chỗ đó. CI kiểm tra mỗi lần đẩy mã (#37).
 - Nhật ký thay đổi có mục riêng cho bản `3.5.10-4`; những gì gộp sau bản đó nằm dưới "Chưa phát hành"
   (#28).
 

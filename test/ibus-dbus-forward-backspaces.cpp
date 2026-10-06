@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// On the ibus and dbus frontends a replacement does not need the uinput server: the backspaces go to
-// the app through forwardKey, or through deleteSurroundingText for GTK4 clients, which drop forwarded
-// keys. SDL clients take neither and keep the server path.
+// On the ibus, dbus and fcitx4 frontends a replacement does not need the uinput server: the backspaces
+// go to the app through forwardKey, or through deleteSurroundingText for GTK4 clients, which drop
+// forwarded keys. SDL clients take neither and keep the server path.
 #include "lotus-engine.h"
 #include "lotus-utils.h"
 #include "test-input-context.h"
@@ -198,10 +198,11 @@ namespace {
         return true;
     }
 
-    // Firefox over IBus reports no surrounding text; its forwarded keys queue behind the commit unless
-    // the commit waits.
-    bool ibusWithoutSurroundingWaits(Harness& h) {
-        auto context = h.open("gtk3-im:firefox", "ibus", fcitx::CapabilityFlags{});
+    // Firefox over IBus and Chromium over the fcitx4 GTK module report no surrounding text; their
+    // forwarded keys queue behind the commit unless the commit waits.
+    bool forwardWithoutSurroundingWaits(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+        auto              context = h.open(program, frontend, caps);
+        const std::string where   = frontend + " " + program + ": ";
         if (!h.typeTie(*context))
             return false;
         // libuv dates a new timer from the loop's last run, and a real key arrives inside one.
@@ -210,16 +211,37 @@ namespace {
         if (!h.type(*context, FcitxKey_e, true))
             return false;
         if (!forwardedOneBackspace(*context)) {
-            reportFailure("ibus: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
+            reportFailure(where + "forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
             return false;
         }
         const uint64_t committedAt = h.pumpUntil([&] { return !context->commits().empty(); }, replacedAt + 500000);
         if (context->commits() != std::vector<std::string>{"ê"}) {
-            reportFailure("ibus: commit e -> ê", "['ê']", joinCommits(*context));
+            reportFailure(where + "commit e -> ê", "['ê']", joinCommits(*context));
             return false;
         }
         if (committedAt - replacedAt + ClockSlackUs < WaitUs) {
-            reportFailure("ibus: commit at least 15 ms after the forward", ">= 15000 us", std::to_string(committedAt - replacedAt) + " us");
+            reportFailure(where + "commit at least 15 ms after the forward", ">= 15000 us", std::to_string(committedAt - replacedAt) + " us");
+            return false;
+        }
+        return true;
+    }
+
+    // Snap apps load the fcitx4 GTK module, which keeps forwarded keys ahead of commits it reports
+    // surrounding text for.
+    bool fcitx4ForwardsWithSurroundingText(Harness& h) {
+        const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit, fcitx::CapabilityFlag::SurroundingText};
+        auto       context = h.open("firefox", "fcitx4", caps);
+        if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, true))
+            return false;
+        if (!forwardedOneBackspace(*context)) {
+            reportFailure("fcitx4 firefox: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
+            return false;
+        }
+        Harness::setSnapshot(*context, "ti", 2);
+        const uint64_t start = nowUs();
+        h.pumpUntil([&] { return !context->commits().empty(); }, start + 500000);
+        if (context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure("fcitx4 firefox: commit e -> ê", "['ê']", joinCommits(*context));
             return false;
         }
         return true;
@@ -292,7 +314,11 @@ int main() {
         return 1;
     if (!gtk4DeletesThroughSurroundingText(h, "gtk4-im:gtk4app", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
         return 1;
-    if (!ibusWithoutSurroundingWaits(h))
+    if (!forwardWithoutSurroundingWaits(h, "gtk3-im:firefox", "ibus", fcitx::CapabilityFlags{}))
+        return 1;
+    if (!forwardWithoutSurroundingWaits(h, "chrome", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}))
+        return 1;
+    if (!fcitx4ForwardsWithSurroundingText(h))
         return 1;
     if (const int requests = server.requests(); requests != 0) {
         reportFailure("no request reaches the uinput server", "0", std::to_string(requests));
@@ -302,6 +328,9 @@ int main() {
     if (!sdlKeepsServer(h, server, "Medieval2", "dbus", sdlCaps))
         return 1;
     if (!sdlKeepsServer(h, server, "SDL2_Application", "ibus", fcitx::CapabilityFlags{}))
+        return 1;
+    // SDL 2.0.12 and older speak the fcitx4 protocol and set at most Preedit.
+    if (!sdlKeepsServer(h, server, "Medieval2", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit}))
         return 1;
     if (!gnomeIbusForwards(h, server))
         return 1;

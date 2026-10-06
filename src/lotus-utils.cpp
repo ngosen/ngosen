@@ -167,13 +167,8 @@ bool surroundingTextLags(fcitx::InputContext* ic) {
 
 bool forwardsBackspaces(fcitx::InputContext* ic) {
     const std::string frontend = getFrontendName(ic);
-    if (frontend == "wayland") {
+    if (frontend == "wayland" || frontend == "xim") {
         return true;
-    }
-    // Over XWayland the uinput keys can lose a press and leave the sentinel wait stuck forever.
-    static const bool underWayland = std::getenv("WAYLAND_DISPLAY") != nullptr;
-    if (frontend == "xim") {
-        return underWayland;
     }
     if (frontend == "ibus") {
         // SDL takes only commits and preedit from the IM.
@@ -183,6 +178,12 @@ bool forwardsBackspaces(fcitx::InputContext* ic) {
         // fcitx5-gtk and fcitx5-qt set one of these; SDL sets neither and handles only commits and preedit.
         const auto& caps = ic->capabilityFlags();
         return caps.test(fcitx::CapabilityFlag::KeyEventOrderFix) || caps.test(fcitx::CapabilityFlag::SurroundingText);
+    }
+    if (frontend == "fcitx4") {
+        // Snap apps bundle the fcitx4 GTK module, which sets one of these; SDL 2.0.12 and older speak
+        // this protocol too and set at most Preedit.
+        const auto& caps = ic->capabilityFlags();
+        return caps.test(fcitx::CapabilityFlag::FormattedPreedit) || caps.test(fcitx::CapabilityFlag::SurroundingText);
     }
     return false;
 }

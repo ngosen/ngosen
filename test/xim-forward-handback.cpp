@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// An XIM client under XWayland sometimes hands a forwarded backspace back unprocessed. It must reach
+// An XIM client sometimes hands a forwarded backspace back unprocessed. It must reach
 // the client again and the commit must wait for it, or the new text lands before the deletion.
 #include "lotus-engine.h"
 #include "lotus-utils.h"
@@ -160,8 +160,8 @@ namespace {
 int main() {
     const std::string socketNamespace = "test-" + std::to_string(getpid());
     setenv("LOTUS_SOCKET_NAMESPACE", socketNamespace.c_str(), 1);
-    // XIM forwards only under XWayland.
-    setenv("WAYLAND_DISPLAY", "wayland-test", 1);
+    // A plain X11 session: XIM forwards there as well as under XWayland.
+    unsetenv("WAYLAND_DISPLAY");
 
     configureTestPaths("fcitx5-lotus-xim-forward-handback");
     TestInstance       testInstance;

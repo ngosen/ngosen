@@ -23,6 +23,11 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
   đã tải mã về máy thì chạy `git branch -m ban-dung main && git fetch origin && git branch -u origin/main main` (#36).
 - Mục Issues của kho được bật để nhận báo lỗi. Mẫu báo lỗi hỏi phiên bản và cách cài của Ngó Sen thay
   cho các cách cài của bản gốc; README chỉ tới mục Issues (#30).
+- Trên phiên X11 thật (Xfce, Cinnamon, MATE…), app nối với bộ gõ qua XIM cũng xoá chữ bằng phím gửi hộ,
+  không cần máy chủ uinput; trước đây chỉ làm vậy dưới XWayland (#35).
+- App cài bằng snap (Firefox, Chromium…) nối với bộ gõ qua mô-đun fcitx đời cũ có sẵn trong gói snap;
+  giờ chúng cũng xoá chữ bằng phím gửi hộ, không cần máy chủ uinput. Game dùng SDL 2.0.12 trở về trước
+  nói cùng giao thức đó vẫn đi máy chủ (#35).
 
 ### Bỏ
 

@@ -20,15 +20,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # Full history, so the tag can be compared with ban-dung.
+          # Full history, so the tag can be compared with main.
           fetch-depth: 0
 
       # A tag on a commit that was never merged would publish packages built from unreviewed code.
-      - name: Refuse a tag that is not on ban-dung
+      - name: Refuse a tag that is not on main
         run: |
-          git fetch --quiet origin +refs/heads/ban-dung:refs/remotes/origin/ban-dung
-          if ! git merge-base --is-ancestor HEAD origin/ban-dung; then
-            echo "::error::$GITHUB_REF_NAME points at a commit that is not on ban-dung"
+          git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::$GITHUB_REF_NAME points at a commit that is not on main"
             exit 1
           fi
 

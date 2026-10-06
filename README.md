@@ -34,8 +34,8 @@ Sen thì xem [mục Cài](#cài).
 - **Cài hoặc cập nhật xong phải khởi động lại máy chủ nền:**
   `sudo systemctl restart fcitx5-lotus-server@$(whoami).service`, rồi khởi động lại fcitx5.
   [Vì sao](#cài).
-- **Nhánh để dùng:** `ban-dung` (nhánh mặc định). Tách từ nhánh `dev` của bản gốc; từ 03/10/2026 chỉ
-  nhặt vá của bản gốc có chọn lọc, không gộp cả nhánh.
+- **Nhánh để dùng:** `main` (tên cũ `ban-dung`, đổi ngày 07/10/2026). Tách từ nhánh `dev` của bản
+  gốc; từ 03/10/2026 chỉ nhặt vá của bản gốc có chọn lọc, không gộp cả nhánh.
 - **Chi tiết từng vá, số đo, tác giả gốc trả lời ra sao, và hướng dẫn cài:**
   [KHAC-GI-SO-VOI-BAN-GOC.md](KHAC-GI-SO-VOI-BAN-GOC.md)
 
@@ -70,7 +70,7 @@ không lặp chữ. Chế độ Surrounding Text **không** được sửa.
 
 Mọi số trong bảng dưới đây đo trên máy gốc (CachyOS, KDE Plasma Wayland). Mỗi dòng đo riêng một thay đổi, ở
 thời điểm và app khác nhau, nên **không cộng dồn** thành một con số chung. Chưa có phép đo trọn vẹn
-so nhánh `ban-dung` hiện tại với bản gốc.
+so nhánh `main` hiện tại với bản gốc.
 
 | Đo cái gì                                             | Bản gốc → bản này                             | Đo ở đâu                                                                        |
 | ----------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -184,7 +184,7 @@ Một dòng lệnh, cho Fedora 43 và 44, Ubuntu 22.04, 24.04 và 26.04, Debian 
 openSUSE Tumbleweed (máy x86_64):
 
 ```
-curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/ban-dung/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash
 ```
 
 Lệnh này tải gói dựng sẵn cho đúng bản phân phối từ

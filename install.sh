@@ -1,14 +1,14 @@
 #!/bin/bash
 # Installs the Ngó Sen package built for this distribution from the latest GitHub release.
 #
-#   curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/ban-dung/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash
 #
 # Everything lives in functions and main runs on the last line, so a download that is cut short
 # cannot run half a script.
 set -euo pipefail
 
 RELEASE_URL=${NGOSEN_RELEASE_URL:-https://github.com/ngosen/ngosen/releases/latest/download}
-SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/ban-dung/KHAC-GI-SO-VOI-BAN-GOC.md#cài-sang-máy-khác"
+SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/KHAC-GI-SO-VOI-BAN-GOC.md#cài-sang-máy-khác"
 SERVICE=fcitx5-lotus-server
 
 assume_yes=0

@@ -32,6 +32,15 @@ a careful human wrote it, and the person sending it must be able to explain ever
   a test harness triggers it, file a low-priority issue instead of changing core code.
 - **Match surrounding code.** clang-format (`.clang-format`), ruff for `settings-gui/`, existing
   naming (`camelCase` functions, `snake_case_` members). Functions under ~50 lines.
+- **Run clang-format before pushing.** CI fails on any formatting diff, including alignment of
+  neighbouring declarations.
+- **Build as C++17.** The Ubuntu 22.04 package compiles in C++17, so no `std::string::starts_with`
+  and the like; use `isStartsWith` (`src/lotus-utils.h`).
+- **A bug fix comes with a test that fails without it.** Check this by undoing the fix (or breaking
+  its guard) and watching that test, and only that test, fail.
+- **Keep SDL games on the uinput server.** SDL takes only commits and preedit, so forwarded
+  backspaces never reach it. When changing which frontends forward backspaces, keep the
+  `sdlKeepsServer` checks in `test/ibus-dbus-forward-backspaces.cpp` passing.
 
 ## Commits
 
@@ -44,7 +53,7 @@ right Shift`.
 
 ## Pull requests
 
-Inside this fork: every change goes through a PR into `ban-dung` (branches are deleted on merge).
+Inside this fork: every change goes through a PR into `main` (branches are deleted on merge).
 Each such PR adds a line under `## [Chưa phát hành]` in [CHANGELOG.md](CHANGELOG.md): what
 changed for the user, with the PR number. The changelog is written in Vietnamese, since most of its
 readers are Vietnamese users; keep English tech terms as in "Writing issues and PR text" below.

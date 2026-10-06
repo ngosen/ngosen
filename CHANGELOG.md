@@ -19,6 +19,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 
 ### Thay đổi
 
+- Nhánh chính đổi tên từ `ban-dung` thành `main`. Đường dẫn cũ trên GitHub tự chuyển sang tên mới. Ai
+  đã tải mã về máy thì chạy `git branch -m ban-dung main && git fetch origin && git branch -u origin/main main` (#36).
 - Mục Issues của kho được bật để nhận báo lỗi. Mẫu báo lỗi hỏi phiên bản và cách cài của Ngó Sen thay
   cho các cách cài của bản gốc; README chỉ tới mục Issues (#30).
 

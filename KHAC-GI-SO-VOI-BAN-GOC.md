@@ -8,15 +8,15 @@ sao, đã gửi ngược lên chưa, và tác giả trả lời ra sao.
 
 ## Lấy bản nào
 
-**Nhánh `ban-dung`.** Đó là nhánh duy nhất nên lấy để dùng hoặc để thử trên máy khác.
+**Nhánh `main`.** Đó là nhánh duy nhất nên lấy để dùng hoặc để thử trên máy khác.
 
 ```
 git clone https://github.com/ngosen/ngosen.git
 cd ngosen
-git checkout ban-dung
+git checkout main
 ```
 
-`ban-dung` tách từ `upstream/dev` (lần gom cuối 16/09/2026, lần nhặt cuối 24/09/2026) và mang các
+`main` tách từ `upstream/dev` (lần gom cuối 16/09/2026, lần nhặt cuối 24/09/2026) và mang các
 miếng vá ghi trong tệp này. Từ 13/09/2026 đây là **nhánh mặc định**. Từ 03/10/2026 chỉ nhặt vá của
 bản gốc có chọn lọc, nên nhánh này không còn chứa đủ mọi commit của tác giả.
 
@@ -24,12 +24,12 @@ Mấy nhánh khác là nhánh làm việc, **đừng lấy**:
 
 | Nhánh | Là gì | Có nên lấy |
 | --- | --- | --- |
-| `ban-dung` | Bản gom gọn, đang dùng hằng ngày | **Có** |
+| `main` | Bản gom gọn, đang dùng hằng ngày | **Có** |
 | `pr/*`, `fix/*`, `do/*`, `proto/*` | Từng nhánh nhỏ để gửi PR hoặc để đo | Không |
 | `main`, `dev` | Chép theo kho gốc | Không |
 
 Các nhánh gom cũ `tong-hop`, `tong-hop-v2` và `thu/bo-fixack` **đã xoá ngày 13/09/2026**. Mọi vá
-còn giá trị của chúng đều nằm trong `ban-dung`.
+còn giá trị của chúng đều nằm trong `main`.
 
 ## Cài sang máy khác
 
@@ -59,7 +59,7 @@ sudo pacman -S --needed cmake extra-cmake-modules gcc go git python make pkgconf
 `--recurse-submodules`, vì lõi bộ gõ nằm ở kho con `bamboo-core`.
 
 ```
-git clone --recurse-submodules -b ban-dung https://github.com/ngosen/ngosen.git
+git clone --recurse-submodules -b main https://github.com/ngosen/ngosen.git
 cd ngosen
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=/usr/lib
 cmake --build build -j8
@@ -162,7 +162,7 @@ trong `RADAR.md` của repo workbench, nơi ghi cách đo.
 | Chờ vô ích ở app không khai surrounding text, trung vị | 12,8 → 6,9 ms (xoá 4 chữ: 21,2 → 14,9 ms) | Edge qua XWayland, 16/16 lượt vào đúng nhánh vá; app Wayland thuần 0/16 nên không đổi (B43ae bị B43ag lật) |
 
 **Không cộng dồn các dòng trên:** mỗi dòng đo một thay đổi, ở bản dựng và app khác nhau. **Chưa có
-phép đo trọn vẹn** so nhánh `ban-dung` hiện tại (khoảng cách 0 ms) với bản gốc.
+phép đo trọn vẹn** so nhánh `main` hiện tại (khoảng cách 0 ms) với bản gốc.
 
 **Lời khai kèm:** từng lần chênh vài mili giây, dưới ngưỡng cảm nhận. Mức 0 ms là lựa chọn riêng của
 máy này (đề xuất cho bản gốc là 2 ms); bàn phím ảo trong bộ đo gõ khoảng 25 ms một phím nên chưa bao
@@ -178,7 +178,7 @@ dưới là một miếng vá **đã bị rút lại** vì mình báo sai — gi
 
 ### ĐÃ RÚT LẠI — `769caad` máy chủ đừng tự bật chạm-để-bấm (issue #494)
 
-**Miếng vá này đã bị gỡ khỏi `ban-dung`.** Giữ mục này lại làm bài học, đừng làm lại.
+**Miếng vá này đã bị gỡ khỏi `main`.** Giữ mục này lại làm bài học, đừng làm lại.
 
 Mình báo issue #494 với tiền đề "máy mình tắt chạm-để-bấm", rồi viết thêm một bình luận phản biện
 cũng dựa trên tiền đề đó. **Tiền đề đó SAI.** Chủ máy chưa bao giờ tắt chạm-để-bấm; mình tự suy
@@ -261,7 +261,7 @@ Hai commit, gửi chung ở [PR #492](https://github.com/LotusInputMethod/fcitx5
 
 ## Nhóm C — dọn dẹp và hạ tầng, chưa gửi upstream
 
-Vá bỏ phụ thuộc X11 từng nằm ở đây đã vào bản gốc, nên không còn trong `ban-dung`.
+Vá bỏ phụ thuộc X11 từng nằm ở đây đã vào bản gốc, nên không còn trong `main`.
 
 
 - **`5563540` siết cứng dịch vụ systemd.** `systemd-analyze security` từ 7.0 MEDIUM xuống 2.0
@@ -461,7 +461,7 @@ Preedit/Slow thật ra chạy Smooth. Bộ đo mới sửa thẳng luật rồi 
 
 ### ĐÃ BỎ — máy chủ gửi phím xoá qua đúng bàn phím người dùng đang gõ (`c4dc98d`, issue #506)
 
-**Gỡ khỏi `ban-dung` ngày 17/09/2026** bằng commit revert. Giữ mục này để khỏi ai làm lại.
+**Gỡ khỏi `main` ngày 17/09/2026** bằng commit revert. Giữ mục này để khỏi ai làm lại.
 
 **Lỗi có thật, nhưng chỉ trên GNOME X11:** gõ tiếng Việt làm cửa sổ GTK3 đứng 2–3 giây, vì mỗi lần phím
 đổi qua lại giữa bàn phím thật và bàn phím ảo của Lotus thì gnome-shell nạp lại bảng phím (~300 ms).
@@ -793,7 +793,7 @@ Sau khi gom xong, phép kiểm bắt buộc là **so mã băm cây mã** với n
 việc gom đúng, khác một byte cũng là hỏng:
 
 ```
-git rev-parse ban-dung^{tree}
+git rev-parse main^{tree}
 git rev-parse <nhánh cũ>^{tree}
 ```
 
@@ -809,7 +809,7 @@ dựng mới khớp 0 dòng khác với mã máy chủ đang cài và mô-đun �
 Lần lấy 24/09/2026 — **ngoại lệ, không dựng lại từ `dev`:** dựng từ `dev` sẽ kéo theo hai thứ chủ fork chọn
 bỏ: chế độ gõ mới *Uinput (Surrounding Text)* (`90beecd`, xoá luôn tuỳ chọn `useSurroundingTextIfPossible`
 mà vá LibreOffice đang dùng) và vá hoãn giao chữ cho GTK4 qua dbus (`2ca89a5`, đụng đúng chỗ giao chữ
-fork đã viết lại). Nên nhặt thẳng 11 commit của `dev` vào `ban-dung` bằng `cherry-pick -x`: đóng gói
+fork đã viết lại). Nên nhặt thẳng 11 commit của `dev` vào `main` bằng `cherry-pick -x`: đóng gói
 chạy bài kiểm, bản 3.5.10, nix, CI, dọn mã máy chủ, nhật ký qua `syslog()`, tài liệu musl, bỏ bộ
 chọn icon riêng. Commit rút hàng libinput ra rỗng (fork đã có). Hai chỗ xung đột: `lotus-logger.cpp`
 (lấy của bản gốc) và dòng `#include` ở `lotus-engine.cpp` (giữ `lotus-gnome-theme.h`, bỏ

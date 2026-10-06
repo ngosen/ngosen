@@ -1,4 +1,4 @@
-Thay đổi của bản này: xem [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/ban-dung/CHANGELOG.md).
+Thay đổi của bản này: xem [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
 
 ## Chọn tệp theo bản phân phối
 

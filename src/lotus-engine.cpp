@@ -16,6 +16,7 @@
 #include "lotus-gnome-theme.h"
 #include "lotus-icon-resolver.h"
 #include "lotus-plasma-theme.h"
+#include "ngosen-fcitx-host.h"
 #include <optional>
 #include <utility>
 
@@ -820,8 +821,9 @@ namespace fcitx {
             keyEvent.filterAndAccept();
             return;
         }
-        auto* state = keyEvent.inputContext()->propertyFor(&factory_);
-        state->keyEvent(keyEvent);
+        auto*                 state = keyEvent.inputContext()->propertyFor(&factory_);
+        ngosen::FcitxKeyPress press(keyEvent);
+        state->keyEvent(press);
         const auto&  s       = ic->surroundingText();
         const auto&  text    = s.text();
         size_t       textLen = fcitx_utf8_strlen(text.c_str());

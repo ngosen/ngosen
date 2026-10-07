@@ -219,9 +219,9 @@ namespace fcitx {
         return false;
     }
 
-    void LotusState::handlePreeditMode(KeyEvent& keyEvent, KeySym currentSym) {
-        if (EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.rawKey().states()) != 0U)
-            keyEvent.filterAndAccept();
+    void LotusState::handlePreeditMode(ngosen::KeyPress& keyEvent, KeySym currentSym) {
+        if (EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.states()) != 0U)
+            keyEvent.accept();
         if (auto commit = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()))) {
             if (commit && (*commit.get() != 0)) {
                 NGOSEN_INFO("Commit: " + std::string(commit.get()));
@@ -271,12 +271,12 @@ namespace fcitx {
         updateEmojiPreedit();
     }
 
-    void LotusState::handleEmojiMode(KeyEvent& keyEvent) {
-        const KeySym currentSym      = keyEvent.rawKey().sym();
-        bool         isCtrlBackspace = isBackspace(currentSym) && ((keyEvent.rawKey().states() & KeyState::Ctrl) != 0U);
+    void LotusState::handleEmojiMode(ngosen::KeyPress& keyEvent) {
+        const KeySym currentSym      = static_cast<KeySym>(keyEvent.sym());
+        bool         isCtrlBackspace = isBackspace(currentSym) && ((keyEvent.states() & static_cast<uint32_t>(KeyState::Ctrl)) != 0U);
 
-        if (keyEvent.key().hasModifier() && !isCtrlBackspace) {
-            keyEvent.forward();
+        if (keyEvent.hasModifier() && !isCtrlBackspace) {
+            keyEvent.passToApp();
             return;
         }
 
@@ -287,7 +287,7 @@ namespace fcitx {
 
             if (globalIndex < list->total) {
                 host_->pickCandidate(globalIndex);
-                keyEvent.filterAndAccept();
+                keyEvent.accept();
                 return;
             }
         }
@@ -350,7 +350,7 @@ namespace fcitx {
             if (handled) {
                 updateEmojiPageStatus();
                 host_->refreshPanel();
-                keyEvent.filterAndAccept();
+                keyEvent.accept();
                 return;
             }
         }
@@ -362,9 +362,9 @@ namespace fcitx {
                 } else {
                     eraseLastUtf8Codepoint(emojiBuffer_);
                 }
-                keyEvent.filterAndAccept();
+                keyEvent.accept();
             } else {
-                keyEvent.forward();
+                keyEvent.passToApp();
             }
             updateEmojiPreedit();
             return;
@@ -375,14 +375,14 @@ namespace fcitx {
             case FcitxKey_Return: {
                 if (list && list->total > 0) {
                     host_->pickCandidate(list->cursor);
-                    keyEvent.filterAndAccept();
+                    keyEvent.accept();
                 } else if (currentSym == FcitxKey_Return && !emojiBuffer_.empty()) {
                     host_->commitText(emojiBuffer_);
                     emojiBuffer_.clear();
                     updateEmojiPreedit();
-                    keyEvent.filterAndAccept();
+                    keyEvent.accept();
                 } else {
-                    keyEvent.forward();
+                    keyEvent.passToApp();
                 }
                 return;
             }
@@ -392,7 +392,7 @@ namespace fcitx {
                 emojiCandidates_.clear();
                 host_->resetPanel();
                 host_->refreshPanel();
-                keyEvent.filterAndAccept();
+                keyEvent.accept();
                 return;
             }
 
@@ -400,13 +400,13 @@ namespace fcitx {
         }
 
         {
-            std::string utf8Char = Key::keySymToUTF8(currentSym);
+            std::string utf8Char = host_->keyText(currentSym);
             if (!utf8Char.empty()) {
                 emojiBuffer_.append(utf8Char);
-                keyEvent.filterAndAccept();
+                keyEvent.accept();
                 updateEmojiPreedit();
             } else {
-                keyEvent.forward();
+                keyEvent.passToApp();
             }
         }
     }
@@ -638,7 +638,7 @@ namespace fcitx {
         replayBufferedKeys(std::move(text));
     }
 
-    bool LotusState::handleUInputKeyPress(KeyEvent& event, KeySym currentSym, int sleepTime) {
+    bool LotusState::handleUInputKeyPress(ngosen::KeyPress& event, KeySym currentSym, int sleepTime) {
         if (!is_deleting_.load()) {
             return false;
         }
@@ -654,7 +654,7 @@ namespace fcitx {
 
     // Waits until the app has applied the backspaces, then commits. `event` is the returning sentinel
     // backspace on the XTEST path, or null when the backspaces were forwarded.
-    bool LotusState::waitForDeletion(KeyEvent* event, int sleepTime) {
+    bool LotusState::waitForDeletion(ngosen::KeyPress* event, int sleepTime) {
         // Some apps (Konsole) declare surrounding text but always send it empty; nothing can match,
         // so use the sleeping path.
         const bool emptySnapshot = host_->surrounding().text().empty();
@@ -677,7 +677,7 @@ namespace fcitx {
             // and watch for updates from now on; a fresh watcher ignores the previous replacement's
             // late events. Keys typed meanwhile go to buffered_keys_.
             if (event != nullptr) {
-                event->filterAndAccept();
+                event->accept();
             }
             surr_wait_started_at_ = ngosen::monotonicUs();
             // After a timeout the app is lagging (Firefox) and its snapshot is stale: skip the
@@ -736,7 +736,7 @@ namespace fcitx {
             waitMs += 3 * 2;
         }
         if (event != nullptr) {
-            event->filterAndAccept(); // filter out the returning sentinel backspace
+            event->accept(); // filter out the returning sentinel backspace
         }
         if (waitMs <= 0) {
             finishReplacement("immediate", false);
@@ -1071,9 +1071,9 @@ namespace fcitx {
         NGOSEN_INFO("Send " + std::to_string(expected_backspaces_) + " backspaces");
     }
 
-    bool LotusState::checkForwardSpecialKey(KeyEvent& keyEvent, KeySym& currentSym) {
-        if (keyEvent.key().isCursorMove() || currentSym == FcitxKey_Tab || currentSym == FcitxKey_KP_Tab || currentSym == FcitxKey_ISO_Left_Tab || currentSym == FcitxKey_Escape ||
-            keyEvent.key().hasModifier()) {
+    bool LotusState::checkForwardSpecialKey(ngosen::KeyPress& keyEvent, KeySym& currentSym) {
+        if (keyEvent.isCursorMove() || currentSym == FcitxKey_Tab || currentSym == FcitxKey_KP_Tab || currentSym == FcitxKey_ISO_Left_Tab || currentSym == FcitxKey_Escape ||
+            keyEvent.hasModifier()) {
             is_deleting_.store(false, std::memory_order_release);
             expected_backspaces_     = 0;
             current_backspace_count_ = 0;
@@ -1131,9 +1131,9 @@ namespace fcitx {
         return false;
     }
 
-    void LotusState::handleUinputMode(KeyEvent& keyEvent, KeySym currentSym) {
+    void LotusState::handleUinputMode(ngosen::KeyPress& keyEvent, KeySym currentSym) {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
-            keyEvent.forward();
+            keyEvent.passToApp();
             return;
         }
 
@@ -1148,17 +1148,17 @@ namespace fcitx {
                 ResetEngine(lotusEngine_.handle());
                 oldPreBuffer_.clear();
             }
-            keyEvent.forward();
+            keyEvent.passToApp();
             return;
         }
 
-        std::string keyUtf8 = Key::keySymToUTF8(currentSym);
+        std::string keyUtf8 = host_->keyText(currentSym);
         if (keyUtf8.empty()) {
-            keyEvent.forward();
+            keyEvent.passToApp();
             return;
         }
 
-        bool processed = EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.rawKey().states()) != 0U;
+        bool processed = EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
         auto commitF = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
         if (commitF && (*commitF.get() != 0)) {
@@ -1169,9 +1169,9 @@ namespace fcitx {
 
             if (!deletedPart.empty()) {
                 performReplacement(deletedPart, addedPart);
-                keyEvent.filterAndAccept();
+                keyEvent.accept();
             } else {
-                bool wasAutoCapitalized = (currentSym != keyEvent.rawKey().sym());
+                bool wasAutoCapitalized = (currentSym != keyEvent.sym());
                 if (!addedPart.empty() && (keyUtf8 != addedPart || wasAutoCapitalized)) {
                     // Prevent auto-capitalized character replacement from stripping out Vietnamese chars
                     if (addedPart.size() > 1 && addedPart.back() == ' ') {
@@ -1184,9 +1184,9 @@ namespace fcitx {
                     }
                     host_->commitText(addedPart);
                     NGOSEN_INFO("Commit: " + addedPart);
-                    keyEvent.filterAndAccept();
+                    keyEvent.accept();
                 } else {
-                    keyEvent.forward();
+                    keyEvent.passToApp();
                 }
             }
 
@@ -1203,7 +1203,7 @@ namespace fcitx {
                 hasHistory_ = false;
                 ResetEngine(lotusEngine_.handle());
                 oldPreBuffer_.clear();
-                keyEvent.forward();
+                keyEvent.passToApp();
             }
             return;
         }
@@ -1220,23 +1220,23 @@ namespace fcitx {
         if (compareAndSplitStrings(oldPreBuffer_, preeditStr, deletedPart, addedPart) != 0) {
             if (deletedPart.empty()) {
                 bool isCommit           = false;
-                bool wasAutoCapitalized = (currentSym != keyEvent.rawKey().sym());
+                bool wasAutoCapitalized = (currentSym != keyEvent.sym());
                 if (!addedPart.empty()) {
                     oldPreBuffer_ = preeditStr;
                     if (wasAutoCapitalized || addedPart != keyUtf8) {
                         host_->commitText(addedPart);
                         NGOSEN_INFO("Commit: " + addedPart);
-                        keyEvent.filterAndAccept();
+                        keyEvent.accept();
                         isCommit = true;
                     }
                 }
                 if (!isCommit) {
-                    keyEvent.forward();
+                    keyEvent.passToApp();
                 }
             } else {
                 if (!canSendBackspaces()) {
                     NGOSEN_ERROR("Cannot send backspaces here, commit rawkey");
-                    std::string rawKey = keyEvent.key().toString();
+                    std::string rawKey = keyEvent.name();
                     if (!rawKey.empty()) {
                         host_->commitText(rawKey);
                     }
@@ -1247,7 +1247,7 @@ namespace fcitx {
                     is_deleting_.store(false, std::memory_order_release);
                 }
 
-                keyEvent.filterAndAccept();
+                keyEvent.accept();
                 performReplacement(deletedPart, addedPart);
                 oldPreBuffer_ = preeditStr;
             }
@@ -1270,9 +1270,9 @@ namespace fcitx {
         NGOSEN_INFO("Commit: — (em-dash)");
     }
 
-    void LotusState::handleOffModeMacro(KeyEvent& keyEvent, KeySym currentSym) {
+    void LotusState::handleOffModeMacro(ngosen::KeyPress& keyEvent, KeySym currentSym) {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
-            keyEvent.forward();
+            keyEvent.passToApp();
             return;
         }
 
@@ -1280,7 +1280,7 @@ namespace fcitx {
             EngineProcessKeyEvent(lotusEngine_.handle(), FcitxKey_BackSpace, 0);
             auto preeditC = UniqueCPtr<char>(EnginePullPreedit(lotusEngine_.handle()));
             oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
-            keyEvent.forward();
+            keyEvent.passToApp();
             return;
         }
 
@@ -1289,13 +1289,13 @@ namespace fcitx {
                 ResetEngine(lotusEngine_.handle());
                 oldPreBuffer_.clear();
             }
-            keyEvent.forward();
+            keyEvent.passToApp();
             return;
         }
 
-        std::string keyUtf8 = Key::keySymToUTF8(currentSym);
+        std::string keyUtf8 = host_->keyText(currentSym);
 
-        bool        processed = EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.rawKey().states()) != 0U;
+        bool        processed = EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
         auto        commitPtr = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
         if (processed && commitPtr && (*commitPtr.get() != 0)) {
@@ -1328,10 +1328,10 @@ namespace fcitx {
                 } else {
                     host_->commitText(commitStr);
                 }
-                keyEvent.filterAndAccept();
+                keyEvent.accept();
             } else {
                 // No macro: typed text confirmed by engine, just forward trigger key
-                keyEvent.forward();
+                keyEvent.passToApp();
             }
 
             oldPreBuffer_.clear();
@@ -1350,22 +1350,22 @@ namespace fcitx {
                 oldPreBuffer_.clear();
                 hasHistory_ = false;
             }
-            keyEvent.forward();
+            keyEvent.passToApp();
         } else {
             // Engine didn't handle this key
             if (!oldPreBuffer_.empty()) {
                 ResetEngine(lotusEngine_.handle());
                 oldPreBuffer_.clear();
             }
-            keyEvent.forward();
+            keyEvent.passToApp();
         }
     }
 
-    void LotusState::keyEvent(KeyEvent& keyEvent) {
+    void LotusState::keyEvent(ngosen::KeyPress& keyEvent) {
         if (!lotusEngine_)
             return;
-        if (overtype_pending_ && overtype_via_xtest_ && keyEvent.rawKey().sym() == FcitxKey_Shift_R) {
-            keyEvent.forward();
+        if (overtype_pending_ && overtype_via_xtest_ && keyEvent.sym() == FcitxKey_Shift_R) {
+            keyEvent.passToApp();
             if (keyEvent.isRelease() && !overtype_shift_released_ && overtype_timer_) {
                 overtype_shift_released_ = true;
                 overtype_timer_->rearm(ngosen::monotonicUs() + XTestSelectSettleUs);
@@ -1373,10 +1373,10 @@ namespace fcitx {
             return;
         }
         if (realMode == LotusMode::Preedit) {
-            if (keyEvent.rawKey().check(FcitxKey_Shift_L) || keyEvent.rawKey().check(FcitxKey_Shift_R))
+            if (keyEvent.isBareShift())
                 return;
         } else {
-            if (keyEvent.rawKey().isModifier()) {
+            if (keyEvent.isModifier()) {
                 handleModifierTap(keyEvent);
                 return;
             }
@@ -1384,10 +1384,10 @@ namespace fcitx {
         }
         if (keyEvent.isRelease())
             return;
-        if (const KeySym rawSym = keyEvent.rawKey().sym(); overtype_pending_ && (rawSym == FcitxKey_Left || rawSym == FcitxKey_Shift_L || rawSym == FcitxKey_Shift_R)) {
+        if (const KeySym rawSym = static_cast<KeySym>(keyEvent.sym()); overtype_pending_ && (rawSym == FcitxKey_Left || rawSym == FcitxKey_Shift_L || rawSym == FcitxKey_Shift_R)) {
             // Our own Shift+Left selection: it must reach the app and must not be treated as the user
             // moving the cursor (that would discard the pending commit).
-            keyEvent.forward();
+            keyEvent.passToApp();
             return;
         }
         // This safety valve silently clears the flag on the next key. Skip it while a wait is pending,
@@ -1419,7 +1419,7 @@ namespace fcitx {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
         }
-        KeySym currentSym = keyEvent.rawKey().sym();
+        KeySym currentSym = static_cast<KeySym>(keyEvent.sym());
         if (engine_->options().autoCapitalizeAfterPunctuation && realMode != LotusMode::Off) {
             // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
             bool isAutomatedBackspace = is_deleting_.load(std::memory_order_acquire) && isBackspace(currentSym);
@@ -1429,7 +1429,7 @@ namespace fcitx {
                     if (currentSym >= FcitxKey_a && currentSym <= FcitxKey_z) {
                         auto upperSym = static_cast<KeySym>(currentSym - (FcitxKey_a - FcitxKey_A));
                         currentSym    = upperSym;
-                        keyEvent.setKey(Key(upperSym, keyEvent.rawKey().states()));
+                        keyEvent.replaceSym(upperSym);
                         shouldCapitalize_ = false;
                     } else if (currentSym != FcitxKey_space) {
                         shouldCapitalize_ = false;
@@ -1490,21 +1490,21 @@ namespace fcitx {
                     return;
                 }
             } else {
-                std::string keyUtf8Check = Key::keySymToUTF8(currentSym);
+                std::string keyUtf8Check = host_->keyText(currentSym);
                 if (!keyUtf8Check.empty() && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                     NGOSEN_WARN("Typing so fast, add key to queue");
-                    buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.rawKey().states()});
+                    buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
                 }
-                keyEvent.filterAndAccept();
+                keyEvent.accept();
             }
             return;
         }
 
         if (engine_->options().doubleSpaceToPeriod && realMode != LotusMode::Off) {
             bool isSpaceKey = (currentSym == FcitxKey_space || currentSym == FcitxKey_KP_Space);
-            if (isSpaceKey && !keyEvent.key().hasModifier()) {
+            if (isSpaceKey && !keyEvent.hasModifier()) {
                 if (isPrevSpace_) {
-                    keyEvent.filterAndAccept();
+                    keyEvent.accept();
                     handleDoubleSpaceReplacement();
                     isPrevSpace_ = false;
                     return;
@@ -1517,9 +1517,9 @@ namespace fcitx {
 
         if (engine_->options().doubleHyphenToEmDash && realMode != LotusMode::Off) {
             bool isHyphenKey = (currentSym == FcitxKey_minus || currentSym == FcitxKey_KP_Subtract);
-            if (isHyphenKey && !keyEvent.key().hasModifier()) {
+            if (isHyphenKey && !keyEvent.hasModifier()) {
                 if (isPrevHyphen_) {
-                    keyEvent.filterAndAccept();
+                    keyEvent.accept();
                     handleDoubleHyphenReplacement();
                     isPrevHyphen_ = false;
                     return;
@@ -1683,7 +1683,7 @@ namespace fcitx {
         for (size_t i = 0; i < keys.size(); ++i) {
             auto        sym     = static_cast<KeySym>(keys[i].sym);
             uint32_t    state   = keys[i].state;
-            std::string keyUtf8 = Key::keySymToUTF8(sym);
+            std::string keyUtf8 = host_->keyText(sym);
             if (keyUtf8.empty()) {
                 continue;
             }
@@ -1778,12 +1778,12 @@ namespace fcitx {
         }
     }
 
-    void LotusState::handleModifierTap(const KeyEvent& keyEvent) {
+    void LotusState::handleModifierTap(const ngosen::KeyPress& keyEvent) {
         const auto trigger = engine_->options().macroSkipKey;
         if (trigger == ngosen::MacroSkipKey::None || !engine_->options().enableMacro) {
             return;
         }
-        if (!isMacroSkipModifier(keyEvent.rawKey().sym())) {
+        if (!isMacroSkipModifier(static_cast<KeySym>(keyEvent.sym()))) {
             tracking_modifier_tap_ = false;
             return;
         }

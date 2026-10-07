@@ -19,6 +19,7 @@
 #include "emoji-entry.h"
 #include "lotus-utils.h"
 #include "ngosen-host.h"
+#include "ngosen-key.h"
 
 #include <cstddef>
 #include <fcitx-utils/misc.h>
@@ -63,7 +64,7 @@ namespace fcitx {
          * @brief Main key event handler.
          * @param keyEvent The key event to process.
          */
-        void keyEvent(KeyEvent& keyEvent);
+        void keyEvent(ngosen::KeyPress& keyEvent);
 
         /**
          * @brief Resets the input state.
@@ -214,7 +215,7 @@ namespace fcitx {
          * @param keyEvent The key event to process.
          * @param currentSym Current key symbol.
          */
-        void handlePreeditMode(KeyEvent& keyEvent, KeySym currentSym);
+        void handlePreeditMode(ngosen::KeyPress& keyEvent, KeySym currentSym);
 
         /**
          * @brief Updates emoji page status in candidate list.
@@ -227,7 +228,7 @@ namespace fcitx {
          * @brief Handles key events in emoji mode.
          * @param keyEvent The key event to process.
          */
-        void handleEmojiMode(KeyEvent& keyEvent);
+        void handleEmojiMode(ngosen::KeyPress& keyEvent);
 
         /**
          * @brief Updates preedit display for emoji mode.
@@ -241,8 +242,8 @@ namespace fcitx {
          * @param sleepTime Delay in microseconds.
          * @return True if event was handled.
          */
-        bool handleUInputKeyPress(KeyEvent& event, KeySym currentSym, int sleepTime);
-        bool waitForDeletion(KeyEvent* event, int sleepTime);
+        bool handleUInputKeyPress(ngosen::KeyPress& event, KeySym currentSym, int sleepTime);
+        bool waitForDeletion(ngosen::KeyPress* event, int sleepTime);
         void forwardBackspaces(int count);
         // True when a replacement can delete text: forwarded by the frontend or pressed through XTEST.
         bool canSendBackspaces() const;
@@ -272,7 +273,7 @@ namespace fcitx {
          * @param currentSym Current key symbol (may be modified).
          * @return True if key was forwarded.
          */
-        bool checkForwardSpecialKey(KeyEvent& keyEvent, KeySym& currentSym);
+        bool checkForwardSpecialKey(ngosen::KeyPress& keyEvent, KeySym& currentSym);
 
         /**
          * @brief Handles Sen mode processing.
@@ -280,14 +281,14 @@ namespace fcitx {
          * @param currentSym Current key symbol.
          * @param sleepTime Delay in microseconds.
          */
-        void handleUinputMode(KeyEvent& keyEvent, KeySym currentSym);
+        void handleUinputMode(ngosen::KeyPress& keyEvent, KeySym currentSym);
 
         /**
          * @brief Handles Off mode with macro shadow processing.
          * @param keyEvent The key event.
          * @param currentSym Current key symbol.
          */
-        void handleOffModeMacro(KeyEvent& keyEvent, KeySym currentSym);
+        void handleOffModeMacro(ngosen::KeyPress& keyEvent, KeySym currentSym);
 
         /**
          * @brief Replays keystrokes buffered during replacement.
@@ -310,7 +311,7 @@ namespace fcitx {
          * @brief Tracks a modifier tap (keydown then consecutive keyup) to skip macro.
          * @param keyEvent The modifier key event.
          */
-        void handleModifierTap(const KeyEvent& keyEvent);
+        void handleModifierTap(const ngosen::KeyPress& keyEvent);
 
         /**
          * @brief Cancels an in-progress modifier tap when another key arrives.

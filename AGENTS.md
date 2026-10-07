@@ -49,7 +49,8 @@ a careful human wrote it, and the person sending it must be able to explain ever
   reports tells it apart, and say in a comment what behaviour the name stands for.
 - **Keep fcitx5 out of the typing logic.** Text, keys and deletions go to the app through
   `ngosen::Host` (`src/ngosen-host.h`), so the same logic can later run under another input method
-  framework. New code in `lotus-state.cpp` calls `host_` instead of the `InputContext`, and checks
+  framework. Key presses arrive as `ngosen::KeyPress` (`src/ngosen-key.h`). New code in
+  `lotus-state.cpp` calls `host_` instead of the `InputContext`, and checks
   for how an app behaves go in `src/ngosen-app-quirks.cpp`, reading the field `host_` reports. Settings
   come from `engine_->options()`; a new setting is added to `ngosen::Options` and copied in
   `LotusEngine::syncOptions`. UTF-8, the clock and logging use `src/ngosen-utf8.h`,

@@ -6,6 +6,7 @@
 #pragma once
 
 #include "ngosen-host.h"
+#include "ngosen-key.h"
 
 #include <memory>
 
@@ -13,6 +14,7 @@ namespace fcitx {
     class CommonCandidateList;
     class InputContext;
     class Instance;
+    class KeyEvent;
 }
 
 namespace ngosen {
@@ -47,11 +49,32 @@ namespace ngosen {
 
         std::unique_ptr<Timer>       startTimer(uint64_t deadlineUs, uint64_t accuracyUs, std::function<bool(Timer&)> onTime) override;
 
+        std::string                  keyText(uint32_t sym) const override;
+
       private:
         std::shared_ptr<fcitx::CommonCandidateList> candidateList() const;
 
         fcitx::InputContext*                        ic_;
         fcitx::Instance*                            instance_;
+    };
+
+    class FcitxKeyPress final : public KeyPress {
+      public:
+        explicit FcitxKeyPress(fcitx::KeyEvent& event) : event_(event) {}
+
+        uint32_t    sym() const override;
+        uint32_t    states() const override;
+        bool        isRelease() const override;
+        bool        isModifier() const override;
+        bool        isBareShift() const override;
+        bool        hasModifier() const override;
+        bool        isCursorMove() const override;
+        std::string name() const override;
+        void        replaceSym(uint32_t sym) override;
+        void        accept() override;
+
+      private:
+        fcitx::KeyEvent& event_;
     };
 
 } // namespace ngosen

@@ -9,6 +9,7 @@
 
 #include <fcitx-utils/key.h>
 #include <fcitx/candidatelist.h>
+#include <fcitx/event.h>
 #include <fcitx/instance.h>
 #include <fcitx-utils/event.h>
 #include <fcitx/inputcontext.h>
@@ -190,6 +191,50 @@ namespace ngosen {
         timer->source_ = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, deadlineUs, accuracyUs,
                                                              [self, onTime = std::move(onTime)](fcitx::EventSourceTime*, uint64_t) { return onTime(*self); });
         return timer;
+    }
+
+    std::string FcitxHost::keyText(uint32_t sym) const {
+        return fcitx::Key::keySymToUTF8(static_cast<fcitx::KeySym>(sym));
+    }
+
+    uint32_t FcitxKeyPress::sym() const {
+        return event_.rawKey().sym();
+    }
+
+    uint32_t FcitxKeyPress::states() const {
+        return event_.rawKey().states();
+    }
+
+    bool FcitxKeyPress::isRelease() const {
+        return event_.isRelease();
+    }
+
+    bool FcitxKeyPress::isModifier() const {
+        return event_.rawKey().isModifier();
+    }
+
+    bool FcitxKeyPress::isBareShift() const {
+        return event_.rawKey().check(FcitxKey_Shift_L) || event_.rawKey().check(FcitxKey_Shift_R);
+    }
+
+    bool FcitxKeyPress::hasModifier() const {
+        return event_.key().hasModifier();
+    }
+
+    bool FcitxKeyPress::isCursorMove() const {
+        return event_.key().isCursorMove();
+    }
+
+    std::string FcitxKeyPress::name() const {
+        return event_.key().toString();
+    }
+
+    void FcitxKeyPress::replaceSym(uint32_t sym) {
+        event_.setKey(fcitx::Key(static_cast<fcitx::KeySym>(sym), event_.rawKey().states()));
+    }
+
+    void FcitxKeyPress::accept() {
+        event_.filterAndAccept();
     }
 
 } // namespace ngosen

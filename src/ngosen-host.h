@@ -121,6 +121,9 @@ namespace ngosen {
         // Calls onTime at deadlineUs on the CLOCK_MONOTONIC clock, give or take accuracyUs, from the
         // input method's event loop. onTime returns false unless it rearmed the timer.
         virtual std::unique_ptr<Timer> startTimer(uint64_t deadlineUs, uint64_t accuracyUs, std::function<bool(Timer&)> onTime) = 0;
+
+        // The text a key symbol types, empty for keys that type none.
+        virtual std::string keyText(uint32_t sym) const = 0;
     };
 
 } // namespace ngosen

@@ -2,11 +2,13 @@
 //
 // FcitxHost hands the typing logic plain copies of what fcitx5 knows about the field, and the app
 // checks read only those copies. Each capability flag must land in its own Field member, and the
-// preedit must reach the app or the panel as before.
+// preedit must reach the app or the panel as before. A key press must read and change the fcitx5
+// key event the way the typing logic used to.
 #include "ngosen-app-quirks.h"
 #include "ngosen-fcitx-host.h"
 #include "test-input-context.h"
 
+#include <fcitx/event.h>
 #include <fcitx/inputpanel.h>
 #include <fcitx/text.h>
 
@@ -103,6 +105,47 @@ namespace {
         check("resetting empties the panel", plain.inputPanel().preedit().toString().empty());
     }
 
+    void checkKeys(TestInstance& testInstance) {
+        TestInputContext  context(&testInstance.instance);
+        ngosen::FcitxHost host(&context, &testInstance.instance);
+        auto              press = [&](fcitx::Key key, bool release, auto&& onPress) {
+            fcitx::KeyEvent       event(&context, key, release);
+            ngosen::FcitxKeyPress p(event);
+            onPress(p, event);
+        };
+        using fcitx::KeyState;
+        press(fcitx::Key(FcitxKey_a, KeyState::Ctrl), true, [](ngosen::KeyPress& p, fcitx::KeyEvent&) {
+            check("symbol, modifiers and release are copied", p.sym() == FcitxKey_a && p.states() == static_cast<uint32_t>(KeyState::Ctrl) && p.isRelease());
+            check("Ctrl+a has a modifier", p.hasModifier());
+            check("Ctrl+a is named as fcitx5 normalizes it", p.name() == "Control+A");
+            check("a letter is no modifier key", !p.isModifier() && !p.isBareShift());
+            check("a letter does not move the cursor", !p.isCursorMove());
+        });
+        press(fcitx::Key(FcitxKey_a), false, [](ngosen::KeyPress& p, fcitx::KeyEvent& e) {
+            check("a has no modifier", !p.hasModifier() && !p.isRelease());
+            p.replaceSym(FcitxKey_A);
+            check("replacing changes the key the app gets", e.key().sym() == FcitxKey_A && p.name() == "A");
+            check("replacing keeps the key as pressed", p.sym() == FcitxKey_a && e.rawKey().sym() == FcitxKey_a);
+            check("a key is left for the app by default", !e.filtered() && !e.accepted());
+            p.passToApp();
+            check("passing to the app changes nothing", !e.filtered() && !e.accepted());
+            p.accept();
+            check("accepting keeps the key from the app", e.filtered() && e.accepted());
+        });
+        press(fcitx::Key(FcitxKey_a, KeyState::Super), false, [](ngosen::KeyPress& p, fcitx::KeyEvent& e) {
+            p.replaceSym(FcitxKey_A);
+            check("replacing keeps the modifiers", e.key().states() == KeyState::Super && p.hasModifier());
+        });
+        press(fcitx::Key(FcitxKey_Shift_L), false, [](ngosen::KeyPress& p, fcitx::KeyEvent&) { check("left Shift alone is bare", p.isBareShift() && p.isModifier()); });
+        press(fcitx::Key(FcitxKey_Shift_R, KeyState::Shift), true, [](ngosen::KeyPress& p, fcitx::KeyEvent&) { check("releasing right Shift is bare", p.isBareShift()); });
+        press(fcitx::Key(FcitxKey_Shift_L, KeyState::Ctrl), false, [](ngosen::KeyPress& p, fcitx::KeyEvent&) { check("Shift with Ctrl held is not bare", !p.isBareShift()); });
+        press(fcitx::Key(FcitxKey_Control_L), false, [](ngosen::KeyPress& p, fcitx::KeyEvent&) { check("Ctrl is a modifier key", p.isModifier() && !p.isBareShift()); });
+        press(fcitx::Key(FcitxKey_Left), false, [](ngosen::KeyPress& p, fcitx::KeyEvent&) { check("Left moves the cursor", p.isCursorMove()); });
+        check("a letter types itself", host.keyText(FcitxKey_a) == "a");
+        check("a Vietnamese keysym types its letter", host.keyText(0x1001ea1) == "ạ");
+        check("Shift types nothing", host.keyText(FcitxKey_Shift_L).empty());
+    }
+
     void checkQuirks() {
         auto gtk             = field("dbus", "gedit");
         gtk.keyEventOrderFix = true;
@@ -136,6 +179,7 @@ int main() {
     checkSurrounding(testInstance);
     checkFocus(testInstance);
     checkPreedit(testInstance);
+    checkKeys(testInstance);
     checkQuirks();
     return failures == 0 ? 0 : 1;
 }

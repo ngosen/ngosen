@@ -64,6 +64,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 
 - README viết lại cho người dùng: lộ trình Ngó Sen 1.0 ở đầu, rồi cách chọn chế độ, cài và gỡ. Chi tiết
   từng vá không còn trong kho; hướng dẫn tự dựng từ mã chuyển sang `TU-DUNG.md` (#42).
+- README: mục lộ trình đổi tên thành "Roadmap", ghi rõ lõi ghép dấu là bamboo-core; phần nguồn gốc
+  (vibecode, tách từ fcitx5-lotus) chuyển xuống cuối; ghi thêm các máy ảo dùng để thử (#44).
 - Tên mới trong mã (tệp, hàm, lớp, hằng, biến môi trường) không còn chữ "lotus"; tên cũ giữ nguyên
   tới khi cần sửa chỗ đó. CI kiểm tra mỗi lần đẩy mã (#37).
 - Nhật ký thay đổi có mục riêng cho bản `3.5.10-4`; những gì gộp sau bản đó nằm dưới "Chưa phát hành"

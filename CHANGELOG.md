@@ -29,6 +29,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
   mũi tên, lật trang, Enter, Esc). Người dùng không thấy gì khác (#50).
 - Phần gõ đọc cài đặt từ một bản sao riêng, cập nhật mỗi khi đổi cài đặt (cửa sổ cài đặt, nút bật/tắt
   trên menu, menu bảng mã). Người dùng không thấy gì khác (#51).
+- Hẹn giờ và việc nghe app báo chữ quanh con trỏ cũng đi qua lớp trung gian. Người dùng không thấy gì
+  khác (#52).
 - Chế độ `Uinput` đổi tên thành **Gõ Sen** (`Mode=Sen` trong `lotus.conf`). Cấu hình cũ, thứ tự chế độ,
   phím tắt và tuỳ chọn ẩn/hiện của chế độ cũ tự chuyển sang tên mới (#43).
 - Nhánh chính đổi tên từ `ban-dung` thành `main`. Đường dẫn cũ trên GitHub tự chuyển sang tên mới. Ai

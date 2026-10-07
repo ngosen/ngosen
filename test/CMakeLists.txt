@@ -72,6 +72,8 @@ add_lotus_headless_test(super_smooth_half_updated_snapshot
     super-smooth-half-updated-snapshot.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_half_updated_mid_word
     super-smooth-half-updated-mid-word.cpp "integration;smooth")
+add_lotus_headless_test(surrounding_wait_event
+    surrounding-wait-event.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_settle_wait
     super-smooth-settle-wait.cpp "integration;smooth")
 add_lotus_headless_test(wayland_forward_backspaces

@@ -42,7 +42,7 @@ namespace fcitx {
         return ucs4 == ' ' || ucs4 == '\t' || ucs4 == '\n' || ucs4 == '\r' || ucs4 == 0 || (ucs4 >= 58 && ucs4 <= 64);
     }
 
-    LotusState::LotusState(LotusEngine* engine, InputContext* ic) : engine_(engine), ic_(ic), host_(std::make_unique<ngosen::FcitxHost>(ic)) {
+    LotusState::LotusState(LotusEngine* engine, InputContext* ic) : engine_(engine), ic_(ic), host_(std::make_unique<ngosen::FcitxHost>(ic, engine->instance())) {
         setEngine();
     }
 
@@ -566,7 +566,7 @@ namespace fcitx {
         surr_wait_focus_retries_ = 0;
         settle_reason_           = reason;
         surr_wait_deliver_at_    = ::fcitx::now(CLOCK_MONOTONIC) + (static_cast<uint64_t>(settleMs) * 1000ULL);
-        settle_timer_            = engine_->instance()->eventLoop().addTimeEvent(CLOCK_MONOTONIC, surr_wait_deliver_at_, 1000, [this](EventSourceTime*, uint64_t) {
+        settle_timer_            = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer&) {
             if (!surr_wait_pending_ || !surr_wait_timer_only_ || !is_deleting_.load()) {
                 return false;
             }
@@ -613,7 +613,7 @@ namespace fcitx {
         if (defer) {
             deferred_commit_text_    = pending_commit_string_;
             deferred_commit_pending_ = true;
-            deferred_commit_timer_   = engine_->instance()->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC), 0, [this](EventSourceTime*, uint64_t) {
+            deferred_commit_timer_   = host_->startTimer(::fcitx::now(CLOCK_MONOTONIC), 0, [this](ngosen::Timer&) {
                 flushDeferredCommit();
                 return false; // never reset a timer from inside its own callback
             });
@@ -687,35 +687,10 @@ namespace fcitx {
                 deliverAfterSettle("immediate", false);
                 return true;
             }
-            auto* instance                = engine_->instance();
             surr_wait_pending_            = true;
             surr_wait_event_count_        = 0;
             surr_wait_saw_other_snapshot_ = false;
-            surr_wait_watcher_.reset(); // safe: we are outside its dispatch
-            surr_wait_watcher_ = instance->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& e) {
-                auto& ice = static_cast<InputContextEvent&>(e);
-                if (!surr_wait_pending_ || surr_wait_timer_only_ || ice.inputContext() != ic_ || !is_deleting_.load()) {
-                    return;
-                }
-                // After a timeout, an early event is the app's stale buffer catching up, not the
-                // finished deletion. Ignore events before WaitSurroundingMinPerKeyMs per backspace.
-                const auto waitedUs  = ::fcitx::now(CLOCK_MONOTONIC) - surr_wait_started_at_;
-                const auto minimumUs = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
-                {
-                    const auto current = host_->surrounding();
-                    ++surr_wait_event_count_;
-                    if (current.text() + "\x1f" + std::to_string(current.cursor()) != surr_wait_sent_snapshot_) {
-                        surr_wait_saw_other_snapshot_ = true;
-                    }
-                }
-                if (!surr_snapshot_trusted_ && waitedUs < minimumUs) {
-                    // Stale buffer catching up after a timeout: ignore.
-                } else if (deletionLooksDone()) {
-                    deliverAfterSettle("event", false);
-                }
-                // Not done yet: keep waiting silently. Anything worth printing here is text the user
-                // just typed, which must not go into the log.
-            });
+            surr_wait_watching_           = true;
             // Two timeouts in a row: this app does not update while deleting. Use the short timeout
             // until an event matches again.
             const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->options().waitSurroundingShortMs : engine_->options().waitSurroundingTimeoutMs;
@@ -724,7 +699,7 @@ namespace fcitx {
             // threshold first: many apps report "done" before it and then go quiet.
             const auto threshold     = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
             const auto firstDeadline = threshold < timeout ? surr_wait_started_at_ + threshold : surr_wait_started_at_ + timeout;
-            surr_wait_timer_         = instance->eventLoop().addTimeEvent(CLOCK_MONOTONIC, firstDeadline, 1000, [this, timeout](EventSourceTime* t, uint64_t) {
+            surr_wait_timer_         = host_->startTimer(firstDeadline, 1000, [this, timeout](ngosen::Timer& t) {
                 if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
                     return false;
                 }
@@ -734,8 +709,7 @@ namespace fcitx {
                         deliverAfterSettle("threshold", true);
                         return false;
                     }
-                    t->setTime(surr_wait_started_at_ + timeout);
-                    t->setOneShot();
+                    t.rearm(surr_wait_started_at_ + timeout);
                     return true;
                 }
                 finishReplacement("timeout", true);
@@ -775,7 +749,7 @@ namespace fcitx {
         surr_wait_focus_retries_ = 0;
         surr_wait_started_at_    = ::fcitx::now(CLOCK_MONOTONIC);
         surr_wait_deliver_at_    = surr_wait_started_at_ + (static_cast<uint64_t>(waitMs) * 1000ULL);
-        surr_wait_timer_         = engine_->instance()->eventLoop().addTimeEvent(CLOCK_MONOTONIC, surr_wait_deliver_at_, 1000, [this](EventSourceTime* t, uint64_t) {
+        surr_wait_timer_         = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer& t) {
             if (!surr_wait_pending_ || !surr_wait_timer_only_) {
                 return false;
             }
@@ -788,8 +762,7 @@ namespace fcitx {
                 // Chromium X11 leaves and re-enters the field within ~0.3 ms; a commit in that gap is
                 // lost. Give it a moment to come back.
                 if (++surr_wait_focus_retries_ <= 5) {
-                    t->setTime(::fcitx::now(CLOCK_MONOTONIC) + 2000);
-                    t->setOneShot();
+                    t.rearm(::fcitx::now(CLOCK_MONOTONIC) + 2000);
                     return true;
                 }
                 // The user really switched windows: the old field can no longer take the text. Reset
@@ -822,9 +795,59 @@ namespace fcitx {
     void LotusState::deferTimedCommit(uint64_t deliverAtUs) {
         if (surr_wait_timer_ && deliverAtUs > surr_wait_deliver_at_) {
             surr_wait_deliver_at_ = deliverAtUs;
-            surr_wait_timer_->setTime(deliverAtUs);
-            surr_wait_timer_->setOneShot();
+            surr_wait_timer_->rearm(deliverAtUs);
         }
+    }
+
+    void LotusState::surroundingUpdated() {
+        // A wait that starts while this report is handled sees only the next report.
+        const bool waiting    = surr_wait_watching_;
+        const bool overtyping = overtype_watching_;
+        if (host_->hasFocus())
+            checkCursorJump();
+        if (waiting)
+            onWaitSurroundingUpdated();
+        if (overtyping)
+            onOvertypeSurroundingUpdated();
+    }
+
+    void LotusState::onWaitSurroundingUpdated() {
+        if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
+            return;
+        }
+        // After a timeout, an early event is the app's stale buffer catching up, not the
+        // finished deletion. Ignore events before WaitSurroundingMinPerKeyMs per backspace.
+        const auto waitedUs  = ::fcitx::now(CLOCK_MONOTONIC) - surr_wait_started_at_;
+        const auto minimumUs = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
+        {
+            const auto current = host_->surrounding();
+            ++surr_wait_event_count_;
+            if (current.text() + "\x1f" + std::to_string(current.cursor()) != surr_wait_sent_snapshot_) {
+                surr_wait_saw_other_snapshot_ = true;
+            }
+        }
+        if (!surr_snapshot_trusted_ && waitedUs < minimumUs) {
+            // Stale buffer catching up after a timeout: ignore.
+        } else if (deletionLooksDone()) {
+            deliverAfterSettle("event", false);
+        }
+        // Not done yet: keep waiting silently. Anything worth printing here is text the user
+        // just typed, which must not go into the log.
+    }
+
+    void LotusState::onOvertypeSurroundingUpdated() {
+        if (!overtype_pending_ || !is_deleting_.load()) {
+            return;
+        }
+        const auto s = host_->surrounding();
+        if (!s.isValid()) {
+            return;
+        }
+        const int selected = static_cast<int>(s.anchor()) - static_cast<int>(s.cursor());
+        if (selected != overtype_char_count_ && selected != -overtype_char_count_) {
+            return;
+        }
+        finishOvertype("selected", false);
     }
 
     // Wayland apps report a click only as a cursor move; the IM gets no reset or mouse event.
@@ -876,26 +899,10 @@ namespace fcitx {
             overtype_had_snapshot_  = snapshot.isValid();
             overtype_cursor_before_ = overtype_had_snapshot_ ? snapshot.cursor() : 0;
         }
-        overtype_started_at_ = ::fcitx::now(CLOCK_MONOTONIC);
-        auto* instance       = engine_->instance();
-        overtype_watcher_.reset(); // safe: we are outside its dispatch
-        overtype_watcher_        = instance->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& e) {
-            auto& ice = static_cast<InputContextEvent&>(e);
-            if (!overtype_pending_ || ice.inputContext() != ic_ || !is_deleting_.load()) {
-                return;
-            }
-            const auto s = host_->surrounding();
-            if (!s.isValid()) {
-                return;
-            }
-            const int selected = static_cast<int>(s.anchor()) - static_cast<int>(s.cursor());
-            if (selected != overtype_char_count_ && selected != -overtype_char_count_) {
-                return;
-            }
-            finishOvertype("selected", false);
-        });
+        overtype_started_at_     = ::fcitx::now(CLOCK_MONOTONIC);
+        overtype_watching_       = true;
         const uint64_t timeoutUs = viaXTest ? XTestSelectTimeoutUs : 150000ULL;
-        overtype_timer_          = instance->eventLoop().addTimeEvent(CLOCK_MONOTONIC, overtype_started_at_ + timeoutUs, 1000, [this](EventSourceTime*, uint64_t) {
+        overtype_timer_          = host_->startTimer(overtype_started_at_ + timeoutUs, 1000, [this](ngosen::Timer&) {
             if (overtype_pending_ && is_deleting_.load()) {
                 if (overtype_shift_released_) {
                     finishOvertype("selection settled", true);
@@ -1044,7 +1051,7 @@ namespace fcitx {
                 // We are inside the client's synchronous XIM request for the key that triggered this
                 // replacement. Keys forwarded now reach the client before its reply, and libX11 may
                 // hand them back to us unprocessed. Forward them once the reply has gone out.
-                xim_forward_timer_ = engine_->instance()->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC), 0, [this, count](EventSourceTime*, uint64_t) {
+                xim_forward_timer_ = host_->startTimer(::fcitx::now(CLOCK_MONOTONIC), 0, [this, count](ngosen::Timer&) {
                     if (is_deleting_.load()) {
                         forwardBackspaces(count);
                     }
@@ -1362,8 +1369,7 @@ namespace fcitx {
             keyEvent.forward();
             if (keyEvent.isRelease() && !overtype_shift_released_ && overtype_timer_) {
                 overtype_shift_released_ = true;
-                overtype_timer_->setTime(::fcitx::now(CLOCK_MONOTONIC) + XTestSelectSettleUs);
-                overtype_timer_->setOneShot();
+                overtype_timer_->rearm(::fcitx::now(CLOCK_MONOTONIC) + XTestSelectSettleUs);
             }
             return;
         }

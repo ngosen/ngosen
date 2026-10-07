@@ -5,7 +5,9 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -67,6 +69,14 @@ namespace ngosen {
         bool hasPrev  = false;
     };
 
+    // A timer from Host::startTimer. Destroying it cancels it; never destroy it from its own callback.
+    class Timer {
+      public:
+        virtual ~Timer() = default;
+        // Runs the callback once more at deadlineUs; the callback then returns true to keep the timer.
+        virtual void rearm(uint64_t deadlineUs) = 0;
+    };
+
     // What the typing logic needs from the input method framework for one text field, so that the
     // logic does not depend on fcitx5 and can be reused by another framework.
     class Host {
@@ -107,6 +117,10 @@ namespace ngosen {
         virtual void                         pickCandidate(int index)      = 0;
         // A line under the candidates, such as the page number.
         virtual void setStatus(const std::string& text) = 0;
+
+        // Calls onTime at deadlineUs on the CLOCK_MONOTONIC clock, give or take accuracyUs, from the
+        // input method's event loop. onTime returns false unless it rearmed the timer.
+        virtual std::unique_ptr<Timer> startTimer(uint64_t deadlineUs, uint64_t accuracyUs, std::function<bool(Timer&)> onTime) = 0;
     };
 
 } // namespace ngosen

@@ -71,6 +71,9 @@ namespace fcitx {
          */
         void reset(bool isFocusOut = false);
 
+        // Called for every surrounding text report of this input context.
+        void surroundingUpdated();
+
         /**
          * @brief Treats a cursor move within unchanged surrounding text as a mouse click.
          */
@@ -130,21 +133,25 @@ namespace fcitx {
         // Presses real keys through XTEST, for frontends that cannot forward them.
         void sendBackspaceKeys(int count) const;
 
+        // A report while waiting for the app to apply backspaces or show a selection.
+        void onWaitSurroundingUpdated();
+        void onOvertypeSurroundingUpdated();
+
         // --- Sen mode: wait for the app instead of sleeping (see handleUInputKeyPress) ---
-        std::unique_ptr<HandlerTableEntry<EventHandler>> surr_wait_watcher_;
-        std::unique_ptr<EventSourceTime>                 surr_wait_timer_;
-        std::unique_ptr<EventSourceTime>                 xim_forward_timer_; ///< forwards after the XIM sync reply
-        uint64_t                                         surr_wait_started_at_    = 0;
-        uint64_t                                         surr_wait_deliver_at_    = 0; ///< planned commit time, CLOCK_MONOTONIC us
-        bool                                             surr_wait_pending_       = false;
-        bool                                             surr_wait_timer_only_    = false; ///< waiting on a plain timer that replaces sleep_for
-        int                                              surr_wait_focus_retries_ = 0;     ///< timer fired while the field had lost focus
-        std::string                                      surr_wait_prefix_;                ///< part of the word kept after deletion
-        std::string                                      surr_wait_deleted_;               ///< part that must disappear
-        std::string                                      surr_wait_sent_snapshot_;         ///< "text\x1fcursor" when the backspaces were sent
-        int                                              surr_wait_event_count_         = 0;
-        bool                                             surr_wait_saw_other_snapshot_  = false; ///< an event differed from the send-time snapshot
-        bool                                             surr_wait_sent_snapshot_fresh_ = false; ///< send-time snapshot still showed the text to delete
+        std::unique_ptr<ngosen::Timer> surr_wait_timer_;
+        bool                           surr_wait_watching_ = false; ///< reports go to onWaitSurroundingUpdated once a wait has started
+        std::unique_ptr<ngosen::Timer> xim_forward_timer_;          ///< forwards after the XIM sync reply
+        uint64_t                       surr_wait_started_at_    = 0;
+        uint64_t                       surr_wait_deliver_at_    = 0; ///< planned commit time, CLOCK_MONOTONIC us
+        bool                           surr_wait_pending_       = false;
+        bool                           surr_wait_timer_only_    = false; ///< waiting on a plain timer that replaces sleep_for
+        int                            surr_wait_focus_retries_ = 0;     ///< timer fired while the field had lost focus
+        std::string                    surr_wait_prefix_;                ///< part of the word kept after deletion
+        std::string                    surr_wait_deleted_;               ///< part that must disappear
+        std::string                    surr_wait_sent_snapshot_;         ///< "text\x1fcursor" when the backspaces were sent
+        int                            surr_wait_event_count_         = 0;
+        bool                           surr_wait_saw_other_snapshot_  = false; ///< an event differed from the send-time snapshot
+        bool                           surr_wait_sent_snapshot_fresh_ = false; ///< send-time snapshot still showed the text to delete
 
         // "Frozen": a wait timed out and every event matched the send-time snapshot. After two in a
         // row, sleep instead and probe again every WaitSurroundingProbeEvery replacements.
@@ -158,18 +165,18 @@ namespace fcitx {
         // Messenger repaints its composer a few ms after the snapshot shows the deletion done, and
         // text committed before that repaint is overwritten. Delay the commit by
         // WaitSurroundingSettleMs (0 = commit immediately).
-        void                             deliverAfterSettle(const char* reason, bool fromTimer);
-        std::unique_ptr<EventSourceTime> settle_timer_;
-        const char*                      settle_reason_ = "";
+        void                           deliverAfterSettle(const char* reason, bool fromTimer);
+        std::unique_ptr<ngosen::Timer> settle_timer_;
+        const char*                    settle_reason_ = "";
 
-        void                             finishReplacement(const char* reason, bool fromTimer);
+        void                           finishReplacement(const char* reason, bool fromTimer);
         // fcitx5-gtk sends text committed while it processes a key event in the reply to that key.
         // The sentinel Backspace is consumed, and some clients (ghostty, foot) then drop the text.
         // Commit on the next event loop turn instead. Upstream fcitx5-lotus 2ca89a5.
-        void                             flushDeferredCommit();
-        std::unique_ptr<EventSourceTime> deferred_commit_timer_;
-        std::string                      deferred_commit_text_;
-        bool                             deferred_commit_pending_ = false;
+        void                           flushDeferredCommit();
+        std::unique_ptr<ngosen::Timer> deferred_commit_timer_;
+        std::string                    deferred_commit_text_;
+        bool                           deferred_commit_pending_ = false;
 
         // Last surrounding text the app reported, to tell a click from an edit.
         std::string  lastSurroundingText_;
@@ -181,19 +188,19 @@ namespace fcitx {
         // --- Select and overtype (Facebook composers) ---
         // Select with Shift+Left, wait for the snapshot to show the selection, then commit over it.
         // The field never becomes empty, so Messenger does not reload its placeholder.
-        void                                             sendSelectKeys(int charCount) const; // sent as a negative count
-        void                                             selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest = false);
-        void                                             finishOvertype(const char* reason, bool fromTimer);
-        void                                             abandonOvertype();
-        std::unique_ptr<HandlerTableEntry<EventHandler>> overtype_watcher_;
-        std::unique_ptr<EventSourceTime>                 overtype_timer_;
-        bool                                             overtype_pending_        = false;
-        unsigned int                                     overtype_cursor_before_  = 0;
-        bool                                             overtype_had_snapshot_   = false;
-        int                                              overtype_char_count_     = 0;
-        uint64_t                                         overtype_started_at_     = 0;
-        bool                                             overtype_via_xtest_      = false;
-        bool                                             overtype_shift_released_ = false;
+        void                           sendSelectKeys(int charCount) const; // sent as a negative count
+        void                           selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest = false);
+        void                           finishOvertype(const char* reason, bool fromTimer);
+        void                           abandonOvertype();
+        std::unique_ptr<ngosen::Timer> overtype_timer_;
+        bool                           overtype_watching_       = false; ///< reports go to onOvertypeSurroundingUpdated once an overtype has started
+        bool                           overtype_pending_        = false;
+        unsigned int                   overtype_cursor_before_  = 0;
+        bool                           overtype_had_snapshot_   = false;
+        int                            overtype_char_count_     = 0;
+        uint64_t                       overtype_started_at_     = 0;
+        bool                           overtype_via_xtest_      = false;
+        bool                           overtype_shift_released_ = false;
 
         /**
          * @brief Checks if autofill is certain for surrounding text.

@@ -12,13 +12,14 @@
 namespace fcitx {
     class CommonCandidateList;
     class InputContext;
+    class Instance;
 }
 
 namespace ngosen {
 
     class FcitxHost final : public Host {
       public:
-        explicit FcitxHost(fcitx::InputContext* ic) : ic_(ic) {}
+        FcitxHost(fcitx::InputContext* ic, fcitx::Instance* instance) : ic_(ic), instance_(instance) {}
 
         void                         commitText(const std::string& text) override;
         void                         forwardKey(EditKey key, bool release) override;
@@ -44,10 +45,13 @@ namespace ngosen {
         void                         pickCandidate(int index) override;
         void                         setStatus(const std::string& text) override;
 
+        std::unique_ptr<Timer>       startTimer(uint64_t deadlineUs, uint64_t accuracyUs, std::function<bool(Timer&)> onTime) override;
+
       private:
         std::shared_ptr<fcitx::CommonCandidateList> candidateList() const;
 
         fcitx::InputContext*                        ic_;
+        fcitx::Instance*                            instance_;
     };
 
 } // namespace ngosen

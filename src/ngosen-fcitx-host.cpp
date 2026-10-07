@@ -9,6 +9,8 @@
 
 #include <fcitx-utils/key.h>
 #include <fcitx/candidatelist.h>
+#include <fcitx/instance.h>
+#include <fcitx-utils/event.h>
 #include <fcitx/inputcontext.h>
 #include <fcitx/inputpanel.h>
 #include <fcitx/text.h>
@@ -27,6 +29,16 @@ namespace ngosen {
             }
             return fcitx::Key();
         }
+
+        class FcitxTimer : public Timer {
+          public:
+            void rearm(uint64_t deadlineUs) override {
+                source_->setTime(deadlineUs);
+                source_->setOneShot();
+            }
+
+            std::unique_ptr<fcitx::EventSourceTime> source_;
+        };
 
         class PickableCandidate : public fcitx::CandidateWord {
           public:
@@ -170,6 +182,14 @@ namespace ngosen {
 
     void FcitxHost::setStatus(const std::string& text) {
         ic_->inputPanel().setAuxDown(fcitx::Text(text));
+    }
+
+    std::unique_ptr<Timer> FcitxHost::startTimer(uint64_t deadlineUs, uint64_t accuracyUs, std::function<bool(Timer&)> onTime) {
+        auto  timer    = std::make_unique<FcitxTimer>();
+        auto* self     = timer.get();
+        timer->source_ = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, deadlineUs, accuracyUs,
+                                                             [self, onTime = std::move(onTime)](fcitx::EventSourceTime*, uint64_t) { return onTime(*self); });
+        return timer;
     }
 
 } // namespace ngosen

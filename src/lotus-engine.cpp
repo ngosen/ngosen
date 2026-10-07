@@ -267,8 +267,7 @@ namespace fcitx {
         config_.inputMethod.annotation().setList(imNames_);
         cursorJumpWatcher_ = instance_->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& event) {
             auto* ic = static_cast<InputContextEvent&>(event).inputContext();
-            if (ic->hasFocus())
-                ic->propertyFor(&factory_)->checkCursorJump();
+            ic->propertyFor(&factory_)->surroundingUpdated();
         });
         commitWatcher_     = instance_->watchEvent(EventType::InputContextCommitString, EventWatcherPhase::Default, [this](Event& event) {
             auto& commit = static_cast<CommitStringEvent&>(event);

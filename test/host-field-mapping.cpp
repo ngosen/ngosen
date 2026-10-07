@@ -46,7 +46,7 @@ namespace {
         for (const auto& [flag, expected] : cases) {
             TestInputContext context(&testInstance.instance, "gedit", "dbus");
             context.setCapabilityFlags(fcitx::CapabilityFlags{flag});
-            const auto f = ngosen::FcitxHost(&context).field();
+            const auto f = ngosen::FcitxHost(&context, &testInstance.instance).field();
             check("flag " + expected + " maps alone, got " + describe(f), describe(f) == expected);
             check("frontend and program are copied", f.frontend == "dbus" && f.program == "gedit");
         }
@@ -54,7 +54,7 @@ namespace {
 
     void checkSurrounding(TestInstance& testInstance) {
         TestInputContext  context(&testInstance.instance);
-        ngosen::FcitxHost host(&context);
+        ngosen::FcitxHost host(&context, &testInstance.instance);
         check("no report yet reads as invalid", !host.surrounding().isValid());
         context.surroundingText().setText("chào bạn", 2, 5);
         const auto s = host.surrounding();
@@ -68,7 +68,7 @@ namespace {
 
     void checkFocus(TestInstance& testInstance) {
         TestInputContext  context(&testInstance.instance);
-        ngosen::FcitxHost host(&context);
+        ngosen::FcitxHost host(&context, &testInstance.instance);
         context.focusIn();
         check("focus in is seen", host.hasFocus());
         context.focusOut();
@@ -78,7 +78,7 @@ namespace {
     void checkPreedit(TestInstance& testInstance) {
         TestInputContext context(&testInstance.instance);
         context.setCapabilityFlags(fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit});
-        ngosen::FcitxHost host(&context);
+        ngosen::FcitxHost host(&context, &testInstance.instance);
         auto&             panel = context.inputPanel();
         host.showPreedit("tiếng", true);
         check("the app draws the preedit when it can", panel.clientPreedit().toString() == "tiếng" && panel.preedit().toString().empty());
@@ -93,7 +93,7 @@ namespace {
         check("clearing empties the app's preedit", panel.clientPreedit().toString().empty());
 
         TestInputContext  plain(&testInstance.instance);
-        ngosen::FcitxHost plainHost(&plain);
+        ngosen::FcitxHost plainHost(&plain, &testInstance.instance);
         plainHost.showPreedit("a", false);
         check("the panel draws the preedit otherwise", plain.inputPanel().preedit().toString() == "a" && plain.inputPanel().clientPreedit().toString().empty());
         plainHost.clearPreedit();

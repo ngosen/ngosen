@@ -23,6 +23,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 - Phần mã đọc chữ quanh con trỏ, loại ô nhập và tên app cũng đi qua lớp trung gian đó; các chỗ nhận
   diện app riêng (LibreOffice, Firefox, Chromium, SDL, GTK4) gom về một tệp. Người dùng không thấy gì
   khác (#48).
+- Chữ tạm (chế độ Preedit và Emoji) và việc làm mới bảng gợi ý cũng đi qua lớp trung gian. Người dùng
+  không thấy gì khác (#49).
 - Chế độ `Uinput` đổi tên thành **Gõ Sen** (`Mode=Sen` trong `lotus.conf`). Cấu hình cũ, thứ tự chế độ,
   phím tắt và tuỳ chọn ẩn/hiện của chế độ cũ tự chuyển sang tên mới (#43).
 - Nhánh chính đổi tên từ `ban-dung` thành `main`. Đường dẫn cũ trên GitHub tự chuyển sang tên mới. Ai

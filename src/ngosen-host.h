@@ -71,6 +71,15 @@ namespace ngosen {
         virtual Surrounding surrounding() const = 0;
         virtual Field       field() const       = 0;
         virtual bool        hasFocus() const    = 0;
+
+        // Shows text not committed yet: in the app when it can draw it, otherwise in the panel.
+        virtual void showPreedit(const std::string& text, bool underline) = 0;
+        virtual void clearPreedit()                                       = 0;
+        // Clears the preedit, the candidates and the status line of the panel.
+        virtual void resetPanel() = 0;
+        // Changes above reach the app and the panel only when refreshed.
+        virtual void refreshPreedit() = 0;
+        virtual void refreshPanel()   = 0;
     };
 
 } // namespace ngosen

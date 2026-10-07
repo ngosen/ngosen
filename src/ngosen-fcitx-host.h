@@ -26,6 +26,12 @@ namespace ngosen {
         Field       field() const override;
         bool        hasFocus() const override;
 
+        void        showPreedit(const std::string& text, bool underline) override;
+        void        clearPreedit() override;
+        void        resetPanel() override;
+        void        refreshPreedit() override;
+        void        refreshPanel() override;
+
       private:
         fcitx::InputContext* ic_;
     };

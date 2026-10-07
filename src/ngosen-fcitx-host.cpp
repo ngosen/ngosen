@@ -9,6 +9,9 @@
 
 #include <fcitx-utils/key.h>
 #include <fcitx/inputcontext.h>
+#include <fcitx/inputpanel.h>
+#include <fcitx/text.h>
+#include <fcitx/userinterface.h>
 
 namespace ngosen {
 
@@ -64,6 +67,34 @@ namespace ngosen {
 
     bool FcitxHost::hasFocus() const {
         return ic_->hasFocus();
+    }
+
+    void FcitxHost::showPreedit(const std::string& text, bool underline) {
+        fcitx::Text preedit;
+        if (!text.empty())
+            preedit.append(text, underline ? fcitx::TextFormatFlag::Underline : fcitx::TextFormatFlag::NoFlag);
+        preedit.setCursor(static_cast<int>(preedit.textLength()));
+        if (ic_->capabilityFlags().test(fcitx::CapabilityFlag::Preedit))
+            ic_->inputPanel().setClientPreedit(preedit);
+        else
+            ic_->inputPanel().setPreedit(preedit);
+    }
+
+    void FcitxHost::clearPreedit() {
+        ic_->inputPanel().setClientPreedit(fcitx::Text());
+        ic_->inputPanel().setPreedit(fcitx::Text());
+    }
+
+    void FcitxHost::resetPanel() {
+        ic_->inputPanel().reset();
+    }
+
+    void FcitxHost::refreshPreedit() {
+        ic_->updatePreedit();
+    }
+
+    void FcitxHost::refreshPanel() {
+        ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
     }
 
 } // namespace ngosen

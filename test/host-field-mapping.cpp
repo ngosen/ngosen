@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // FcitxHost hands the typing logic plain copies of what fcitx5 knows about the field, and the app
-// checks read only those copies. Each capability flag must land in its own Field member.
+// checks read only those copies. Each capability flag must land in its own Field member, and the
+// preedit must reach the app or the panel as before.
 #include "ngosen-app-quirks.h"
 #include "ngosen-fcitx-host.h"
 #include "test-input-context.h"
+
+#include <fcitx/inputpanel.h>
+#include <fcitx/text.h>
 
 #include <iostream>
 #include <string>
@@ -71,6 +75,34 @@ namespace {
         check("focus out is seen", !host.hasFocus());
     }
 
+    void checkPreedit(TestInstance& testInstance) {
+        TestInputContext context(&testInstance.instance);
+        context.setCapabilityFlags(fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit});
+        ngosen::FcitxHost host(&context);
+        auto&             panel = context.inputPanel();
+        host.showPreedit("tiếng", true);
+        check("the app draws the preedit when it can", panel.clientPreedit().toString() == "tiếng" && panel.preedit().toString().empty());
+        check("underlined preedit", panel.clientPreedit().size() == 1 && panel.clientPreedit().formatAt(0) == fcitx::TextFormatFlag::Underline);
+        check("cursor at the end of the preedit", panel.clientPreedit().cursor() == static_cast<int>(std::string("tiếng").size()));
+        const unsigned int updates = context.preeditUpdates();
+        host.refreshPreedit();
+        check("refreshing sends the preedit", context.preeditUpdates() == updates + 1);
+        host.showPreedit("a", false);
+        check("plain preedit", panel.clientPreedit().formatAt(0) == fcitx::TextFormatFlag::NoFlag);
+        host.clearPreedit();
+        check("clearing empties the app's preedit", panel.clientPreedit().toString().empty());
+
+        TestInputContext  plain(&testInstance.instance);
+        ngosen::FcitxHost plainHost(&plain);
+        plainHost.showPreedit("a", false);
+        check("the panel draws the preedit otherwise", plain.inputPanel().preedit().toString() == "a" && plain.inputPanel().clientPreedit().toString().empty());
+        plainHost.clearPreedit();
+        check("clearing empties the panel's preedit", plain.inputPanel().preedit().toString().empty());
+        plainHost.showPreedit("a", false);
+        plainHost.resetPanel();
+        check("resetting empties the panel", plain.inputPanel().preedit().toString().empty());
+    }
+
     void checkQuirks() {
         auto gtk             = field("dbus", "gedit");
         gtk.keyEventOrderFix = true;
@@ -103,6 +135,7 @@ int main() {
     checkFlags(testInstance);
     checkSurrounding(testInstance);
     checkFocus(testInstance);
+    checkPreedit(testInstance);
     checkQuirks();
     return failures == 0 ? 0 : 1;
 }

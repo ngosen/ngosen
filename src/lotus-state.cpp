@@ -230,22 +230,14 @@ namespace fcitx {
                 host_->commitText(commit.get());
             }
         }
-        ic_->inputPanel().reset();
+        host_->resetPanel();
         UniqueCPtr<char> preedit(EnginePullPreedit(lotusEngine_.handle()));
         if (preedit && (*preedit.get() != 0)) {
             std::string_view view = preedit.get();
-            Text             text;
-            TextFormatFlags  fmt = TextFormatFlag::NoFlag;
-            if (utf8::validate(view))
-                text.append(std::string(view), fmt);
-            text.setCursor(static_cast<int>(text.textLength()));
-            if (host_->field().preedit)
-                ic_->inputPanel().setClientPreedit(text);
-            else
-                ic_->inputPanel().setPreedit(text);
+            host_->showPreedit(utf8::validate(view) ? std::string(view) : std::string(), false);
         }
-        ic_->updatePreedit();
-        ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
+        host_->refreshPreedit();
+        host_->refreshPanel();
     }
 
     void LotusState::updateEmojiPageStatus(CommonCandidateList* commonList) {
@@ -345,7 +337,7 @@ namespace fcitx {
 
             if (handled) {
                 updateEmojiPageStatus(commonList.get());
-                ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
+                host_->refreshPanel();
                 keyEvent.filterAndAccept();
                 return;
             }
@@ -387,8 +379,8 @@ namespace fcitx {
             case FcitxKey_Escape: {
                 emojiBuffer_.clear();
                 emojiCandidates_.clear();
-                ic_->inputPanel().reset();
-                ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
+                host_->resetPanel();
+                host_->refreshPanel();
                 keyEvent.filterAndAccept();
                 return;
             }
@@ -411,9 +403,9 @@ namespace fcitx {
         if (emojiBuffer_.empty()) {
             emojiCandidates_ = engine_->emojiLoader().history();
             if (emojiCandidates_.empty()) {
-                ic_->inputPanel().reset();
-                ic_->updatePreedit();
-                ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
+                host_->resetPanel();
+                host_->refreshPreedit();
+                host_->refreshPanel();
                 return;
             }
         } else {
@@ -421,16 +413,9 @@ namespace fcitx {
         }
 
         if (!emojiBuffer_.empty()) {
-            Text preeditText;
-            preeditText.append(emojiBuffer_, TextFormatFlag::Underline);
-            preeditText.setCursor(static_cast<int>(preeditText.textLength()));
-            if (host_->field().preedit)
-                ic_->inputPanel().setClientPreedit(preeditText);
-            else
-                ic_->inputPanel().setPreedit(preeditText);
+            host_->showPreedit(emojiBuffer_, true);
         } else {
-            ic_->inputPanel().setClientPreedit(Text());
-            ic_->inputPanel().setPreedit(Text());
+            host_->clearPreedit();
         }
 
         if (!emojiCandidates_.empty()) {
@@ -457,8 +442,8 @@ namespace fcitx {
             ic_->inputPanel().setCandidateList(nullptr);
         }
 
-        ic_->updatePreedit();
-        ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
+        host_->refreshPreedit();
+        host_->refreshPanel();
     }
 
     bool LotusState::deletionLooksDone() const {
@@ -1591,19 +1576,19 @@ namespace fcitx {
 
         switch (realMode) {
             case LotusMode::Preedit: {
-                ic_->inputPanel().reset();
-                ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
-                ic_->updatePreedit();
+                host_->resetPanel();
+                host_->refreshPanel();
+                host_->refreshPreedit();
                 break;
             }
             case LotusMode::Sen: {
-                ic_->inputPanel().reset();
+                host_->resetPanel();
                 break;
             }
             case LotusMode::Emoji: {
-                ic_->inputPanel().reset();
-                ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
-                ic_->updatePreedit();
+                host_->resetPanel();
+                host_->refreshPanel();
+                host_->refreshPreedit();
                 break;
             }
             default: {
@@ -1615,7 +1600,7 @@ namespace fcitx {
     void LotusState::commitBuffer() {
         switch (realMode) {
             case LotusMode::Preedit: {
-                ic_->inputPanel().reset();
+                host_->resetPanel();
                 if (lotusEngine_) {
                     EngineCommitPreedit(lotusEngine_.handle());
                     UniqueCPtr<char> commit(EnginePullCommit(lotusEngine_.handle()));
@@ -1623,8 +1608,8 @@ namespace fcitx {
                         host_->commitText(commit.get());
                     ResetEngine(lotusEngine_.handle());
                 }
-                ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
-                ic_->updatePreedit();
+                host_->refreshPanel();
+                host_->refreshPreedit();
                 break;
             }
             case LotusMode::Sen: {

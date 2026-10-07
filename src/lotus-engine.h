@@ -231,6 +231,7 @@ namespace fcitx {
         std::unordered_map<KeySym, LotusMode> modeMenuMapping_;
         // A Wayland click reaches the IM only as a surrounding text update.
         std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
+        std::unique_ptr<HandlerTableEntry<EventHandler>> commitWatcher_;
 
         /**
          * @brief Refreshes the bamboo engine with current settings.

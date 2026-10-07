@@ -77,6 +77,11 @@ namespace fcitx {
         void checkCursorJump();
 
         /**
+         * @brief Records text sent to the app, so its cursor moving past it is not taken for a click.
+         */
+        void noteCommit(const std::string& text);
+
+        /**
          * @brief Commits the current buffer.
          */
         void commitBuffer();
@@ -184,9 +189,10 @@ namespace fcitx {
 
         // Last surrounding text the app reported, to tell a click from an edit.
         std::string  lastSurroundingText_;
-        unsigned int lastSurroundingCursor_ = 0;
-        unsigned int lastSurroundingAnchor_ = 0;
-        bool         hasLastSurrounding_    = false;
+        unsigned int lastSurroundingCursor_  = 0;
+        unsigned int lastSurroundingAnchor_  = 0;
+        bool         hasLastSurrounding_     = false;
+        unsigned int unreportedCommitLength_ = 0;
 
         // --- Select and overtype (Facebook composers) ---
         // Select with Shift+Left, wait for the snapshot to show the selection, then commit over it.

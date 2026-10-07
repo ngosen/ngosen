@@ -263,6 +263,10 @@ namespace fcitx {
             if (ic->hasFocus())
                 ic->propertyFor(&factory_)->checkCursorJump();
         });
+        commitWatcher_     = instance_->watchEvent(EventType::InputContextCommitString, EventWatcherPhase::Default, [this](Event& event) {
+            auto& commit = static_cast<CommitStringEvent&>(event);
+            commit.inputContext()->propertyFor(&factory_)->noteCommit(commit.text());
+        });
 
         auto& uiManager = instance_->userInterfaceManager();
 

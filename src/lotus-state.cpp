@@ -906,7 +906,14 @@ namespace fcitx {
             hasLastSurrounding_ = false;
             return;
         }
-        const bool jumped      = hasLastSurrounding_ && s.text() == lastSurroundingText_ && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
+        const bool sameText = hasLastSurrounding_ && s.text() == lastSurroundingText_;
+        bool       jumped   = sameText && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
+        // Some editors (Lark in Firefox) report the cursor past our commit before the committed text.
+        const bool echo = jumped && unreportedCommitLength_ > 0 && s.cursor() == s.anchor() && s.cursor() == lastSurroundingCursor_ + unreportedCommitLength_;
+        // Firefox repeats the old state before the echo, so only a change ends the wait.
+        if (jumped || !sameText)
+            unreportedCommitLength_ = 0;
+        jumped                 = jumped && !echo;
         lastSurroundingText_   = s.text();
         lastSurroundingCursor_ = s.cursor();
         lastSurroundingAnchor_ = s.anchor();
@@ -917,6 +924,10 @@ namespace fcitx {
         LOTUS_INFO("Cursor moved without an edit");
         needEngineReset.store(true, std::memory_order_release);
         g_mouse_clicked.store(true, std::memory_order_release);
+    }
+
+    void LotusState::noteCommit(const std::string& text) {
+        unreportedCommitLength_ += utf8::length(text);
     }
 
     void LotusState::send_select_uinput(int charCount) const {

@@ -3,268 +3,102 @@
 Người giữ dự án chỉ **vibecode** dự án này: nêu việc cho trợ lý AI viết mã, rồi đo và dùng thử hằng
 ngày.
 
-Ngó Sen tách ra từ [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus); fcitx5-lotus lại
-là bản fork của [bộ gõ VMK](https://github.com/thanhpy2009/VMK). Ngó sen là mầm mọc ra từ cây sen:
-cùng gốc với Lotus nhưng đi hướng riêng. Giấy phép vẫn là GPL-3.0-or-later, và tệp nào còn trong
-kho thì giữ nguyên dòng bản quyền của tác giả trước.
+Ngó Sen tách ra từ [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), vốn là bản fork
+của [bộ gõ VMK](https://github.com/thanhpy2009/VMK). Ngó sen là mầm mọc ra từ cây sen: cùng gốc với
+Lotus nhưng đi hướng riêng. Giấy phép vẫn là GPL-3.0-or-later.
 
-Bản này dùng hằng ngày trên Fedora 44 + KDE Plasma Wayland và CachyOS + KDE Plasma Wayland. Trên
-Ubuntu 24.04 + GNOME X11 mới dùng sơ, chưa dùng hằng ngày và chưa thử kỹ. Kho để công khai cho ai cần
-thì lấy dùng, **không hứa hỗ trợ** và không có lịch phát hành. Gặp lỗi thì báo ở mục
-[Issues](https://github.com/ngosen/ngosen/issues).
+Bản này dùng hằng ngày trên Fedora 44 và CachyOS (KDE Plasma Wayland). Kho để công khai cho ai cần thì
+lấy dùng, **không hứa hỗ trợ**. Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues).
 
-Tên cũ của kho là `nguyenphivn/fcitx5-lotus`, rồi `nguyenphivn/LotusVibe` (từ 17/09/2026); link cũ
-vẫn tự chuyển về đây. Bên trong mã vẫn giữ tên `lotus` (tệp cấu hình, dịch vụ nền, icon) để nhặt được
-bản vá của bản gốc và để cấu hình cũ dùng tiếp. Vì vậy cài Ngó Sen là thay cho Lotus gốc, không cài
-song song được.
+## Lộ trình: Ngó Sen 1.0
 
-Trang này chỉ ghi **những gì khác với bản gốc**. Hướng dẫn dùng bộ gõ nói chung xem
-[README của bản gốc](https://github.com/LotusInputMethod/fcitx5-lotus#readme) hoặc
-[trang chủ Lotus](https://lotusinputmethod.github.io/); phần cài đặt ở đó là cài bản gốc, còn cài Ngó
-Sen thì xem [mục Cài](#cài).
+Bản 1.0 nhắm bốn thay đổi lớn. Chưa có ngày phát hành.
 
-- **Tên mới (03/10):** trong fcitx5 bộ gõ hiện tên **Ngó Sen**, gói Fedora tên `fcitx5-ngosen`. Cấu
-  hình cũ dùng tiếp, không phải chỉnh gì.
-- **Mới (24/09): chỉ còn một chế độ uinput.** Ba chế độ `Uinput (Smooth)`, `Uinput (Super Smooth)`
-  và `Uinput (Slow)` gộp thành một chế độ `Uinput`, chạy như Super Smooth. Cấu hình cũ tự chuyển,
-  không phải chỉnh gì. [Xem bên dưới](#nên-dùng-chế-độ-nào).
-- **Vá Messenger (20/09): Messenger trên Facebook hết mất chữ** — bộ gõ bôi đen chữ cần bỏ bằng
-  Shift+Mũi tên trái rồi gõ đè, thay vì xoá trước rồi gõ sau. Đo 861 lần thay chữ, 0 lần mất. Bật sẵn từ 26/09.
-  [Xem bên dưới](#messenger-trên-facebook-bôi-đen-rồi-gõ-đè-thay-vì-xoá-rồi-gõ-2009).
-- **Cài hoặc cập nhật xong phải khởi động lại máy chủ nền:**
-  `sudo systemctl restart fcitx5-lotus-server@$(whoami).service`, rồi khởi động lại fcitx5.
-  [Vì sao](#cài).
-- **Nhánh để dùng:** `main` (tên cũ `ban-dung`, đổi ngày 07/10/2026). Tách từ nhánh `dev` của bản
-  gốc; từ 03/10/2026 chỉ nhặt vá của bản gốc có chọn lọc, không gộp cả nhánh.
-- **Chi tiết từng vá, số đo, tác giả gốc trả lời ra sao, và hướng dẫn cài:**
-  [KHAC-GI-SO-VOI-BAN-GOC.md](KHAC-GI-SO-VOI-BAN-GOC.md)
+- **Bỏ máy chủ nền uinput.** Hiện bộ gõ cần một chương trình chạy ngầm có quyền đặc biệt để xoá chữ cũ.
+  Bản 1.0 không cần nó nữa: cài xong là gõ, không phải bật dịch vụ, không cần quyền thiết bị. Phần lớn
+  việc này đã xong trên nhánh `main`: KDE, GNOME, X11 và app snap đều gõ được khi tắt máy chủ; còn lại một số game.
+- **Chỉ còn hai chế độ gõ: Gõ Sen và Preedit.** Gõ Sen là chế độ dùng cho mọi chỗ: gõ nhanh không mất
+  chữ, gõ đúng trong trình duyệt, thanh địa chỉ, Facebook, app Electron như Zalo, và terminal.
+  Preedit là chế độ hiện chữ gạch chân trong lúc gõ, dành cho app không hợp với Gõ Sen. Người dùng không
+  còn phải chọn giữa nhiều chế độ khó hiểu.
+- **Lõi ghép dấu chuyển sang Rust.** Phần biến `tieengs` thành `tiếng` đang viết bằng Go, sẽ đổi sang
+  bản viết bằng Rust. Chỉ đổi khi bản mới gõ ra y hệt bản cũ.
+- **Tách lõi Ngó Sen để dùng được ở nhiều nơi.** Ngoài fcitx5, Ngó Sen sẽ có bản cho IBus (bộ gõ mặc
+  định của GNOME và Ubuntu) và cho các môi trường dùng wlroots như Sway.
 
 ## Nên dùng chế độ nào
 
-**Khuyên dùng `Uinput` làm chế độ gõ chính.** Đây là chế độ bản này dùng hằng ngày cho trình duyệt
-(Firefox, Edge), web app như Lark, và terminal như Alacritty.
+Dùng **`Uinput`** làm chế độ gõ chính: chọn trong cửa sổ cài đặt Ngó Sen, mục chế độ mặc định. Bản 1.0
+sẽ đổi tên chế độ này thành Gõ Sen.
 
-- Đặt chung: trong cài đặt Ngó Sen chọn chế độ mặc định là `Uinput`. Nếu sửa tay
-  `~/.config/fcitx5/conf/lotus.conf` thì ghi `Mode=Uinput`; ghi sai tên thì bộ gõ lặng lẽ quay về
-  Preedit.
-- Đặt theo từng app: trong `~/.config/fcitx5/conf/lotus-app-rules.conf` dùng số `2`, ví dụ
-  `firefox=2`.
-- Kiểu gõ chính là **Telex** (`InputMethod=Telex` trong `lotus.conf`). Mọi lượt đo và dùng hằng ngày
-  của bản này đều gõ Telex; VNI và các kiểu gõ khác chưa kiểm.
-- Không khuyên chế độ Surrounding Text: bản này không sửa chế độ đó.
-- Lời khuyên này chỉ đúng cho Ngó Sen. Super Smooth của bản gốc chưa có vá chống lặp chữ ở thanh
-  địa chỉ trình duyệt.
-
-**Bỏ chế độ Minecraft (04/10).** Cấu hình cũ đặt chế độ Minecraft (tên `Minecraft` trong
-`lotus.conf`, số `8` trong `lotus-app-rules.conf`) tự đọc thành `Uinput`.
-
-**Chỉ còn một chế độ uinput (24/09).** Ba chế độ `Uinput (Smooth)`, `Uinput (Super Smooth)` và
-`Uinput (Slow)` của bản gốc đã gộp thành một chế độ `Uinput`, chạy đúng như Super Smooth. Cấu hình cũ
-tự chuyển: tên chế độ cũ trong `lotus.conf` và số `1`, `2`, `3` trong `lotus-app-rules.conf` đều đọc
-thành `Uinput`. Ai đang dùng Slow sẽ chờ 4 ms mỗi phím xoá thay vì 8 ms.
-
-## Gõ nhanh hơn bản gốc ở đâu (chế độ uinput)
-
-Cải thiện chính của bản này nằm ở **chế độ uinput**: thay chữ nhanh hơn và
-không lặp chữ. Chế độ Surrounding Text **không** được sửa.
-
-Mọi số trong bảng dưới đây đo trên máy gốc (CachyOS, KDE Plasma Wayland). Mỗi dòng đo riêng một thay đổi, ở
-thời điểm và app khác nhau, nên **không cộng dồn** thành một con số chung. Chưa có phép đo trọn vẹn
-so nhánh `main` hiện tại với bản gốc.
-
-| Đo cái gì                                             | Bản gốc → bản này                             | Đo ở đâu                                                                        |
-| ----------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------- |
-| Thời gian thay một từ, xoá 2 / 3 / 4 chữ              | 14,5 / 21,8 / 31,2 ms → 12,4 / 16,3 / 20,5 ms | Konsole, Smooth, 8/8 mỗi mức, bản trước khi gom (khoảng cách phím xoá còn 2 ms) |
-| Khoảng cách giữa hai phím xoá (trung vị)              | 5,2 ms → 0,1 ms                               | Konsole, ô soạn Edge, Firefox, Edge qua XWayland, 8/8                           |
-| Chờ vô ích ở app không có surrounding text (trung vị) | 12,8 ms → 6,9 ms                              | Edge chạy qua XWayland, 16/16                                                   |
-
-Nói cho đúng:
-
-- Từng lần chỉ chênh vài mili giây, dưới ngưỡng cảm nhận của một lần gõ.
-- App Wayland thuần không đi qua dòng thứ ba nên không đổi.
-- Khoảng cách phím xoá 0 ms là lựa chọn riêng của bản này. Máy đo chưa kiểm được trường hợp phím
-  xoá chen vào đúng lúc đang gõ nhanh; bằng chứng cho mức này là dùng tay hằng ngày.
-- Chế độ uinput chờ app bằng hẹn giờ thay vì bắt cả fcitx5 đứng chờ. Ở bản gốc, khoảng 4% số phím
-  làm fcitx5 đứng từ 8 ms trở lên, lâu nhất 22 ms (đo 428 phím). Mức cải thiện của đúng thay đổi này
-  chưa đo riêng.
-- Trình duyệt dùng Super Smooth. Chủ máy gõ tay thấy nhanh hơn Smooth; chưa có số đo thời gian.
-
-## Khác gì bản gốc
-
-### Messenger trên Facebook: bôi đen rồi gõ đè thay vì xoá rồi gõ (20/09)
-
-Gõ Telex trong ô soạn tin Messenger ở chế độ uinput thì mất chữ: `tieengs vieetj` ra `iếngiệt`
-(issue #267 của bản gốc, mở từ 05/2026). Bộ gõ vốn làm hai bước — xoá chữ cũ, rồi gõ chữ có dấu vào.
-Giữa hai bước đó Facebook vẽ lại ô soạn tin và nuốt mất chữ vừa gõ vào.
-
-Chữa bằng cách chờ thêm vài chục mili giây rồi mới gõ thì đỡ, nhưng không dứt: máy càng bận càng dễ
-lọt, và chờ bao nhiêu là đủ thì không có câu trả lời cố định.
-
-**Cách hiện tại bỏ hẳn bước xoá.** Bộ gõ bấm Shift+Mũi tên trái để bôi đen đúng số chữ cần bỏ, rồi gõ
-chữ mới đè lên vùng bôi đen. Ô soạn tin không lúc nào trống và không có khe hở giữa xoá với gõ, nên
-Facebook không còn chỗ chen vào. Quan trọng hơn: Edge **báo lại** "đang bôi đen N chữ", nên bộ gõ chờ
-đúng tín hiệu đó rồi mới gõ, thay vì chờ đồng hồ.
-
-Đo 20/09 bằng máy gõ tự động, lúc máy bận:
-
-|                              | Chờ theo đồng hồ (40/60 ms) | Bôi đen rồi gõ đè    |
-| ---------------------------- | --------------------------- | -------------------- |
-| 100 từ đầu tiên của tin nhắn | sai 0                       | sai 0                |
-| 50 câu đầy đủ                | sai 1                       | sai 0                |
-| Chờ mỗi lần bỏ dấu           | 40 ms, từ đầu 60 ms         | 3–20 ms, thường 6 ms |
-
-Bật sẵn từ 26/09 (`MessengerSelectOvertype` và `WaitSurroundingEvent` mặc định `True`). Muốn tắt thì đặt
-`MessengerSelectOvertype=False` trong `~/.config/fcitx5/conf/lotus.conf`. Ba điều cần biết:
-
-- **Chỉ dùng cho ô soạn tin Messenger.** Đo cho thấy các ô khác có khai chữ chung quanh con trỏ nhưng
-  không khai lại khi chỉ bôi đen, nên bật ra toàn máy là mất dấu khắp nơi.
-- **Ô không xác nhận thì bộ gõ không gõ đè**, mà trả con trỏ về chỗ cũ rồi bỏ lần bỏ dấu đó. Mất dấu
-  một chữ thì thấy ngay; gõ đè khi con trỏ đang lùi thì chữ chèn sai chỗ, rối và khó phát hiện.
-- **Phần bấm Shift+Mũi tên nằm ở máy chủ nền**, nên cài gói mới phải khởi động lại
-  `fcitx5-lotus-server@<user>`. Tắt công tắc trên thì quay về cách chờ theo đồng hồ.
-- **Bấm Shift phải, không phải Shift trái (23/09).** fcitx5 mặc định coi chạm Shift trái một mình là
-  chuyển sang tiếng Anh, và bản đầu dùng Shift trái thỉnh thoảng làm bộ gõ rơi về tiếng Anh giữa lúc gõ.
-
-Chưa đo Firefox và Chrome. Đã báo cả hai cách ở #267, chưa gửi mã.
-
-### Sửa lỗi gặp thật
-
-- **Hết lặp chữ đầu ở thanh địa chỉ trình duyệt với chế độ uinput** (gõ `tôi` ra `toôi`, `ê` ra
-  `eê`, kiểu issue #190). Ở Chromium/Edge đã sửa triệt để, vì trình duyệt báo đúng phần tự điền. Ở
-  Firefox sửa theo hình dạng ô nhập, đo 7/7 lần có gợi ý ra đúng. Mọi ô khác vẫn bỏ lá chắn
-  để gõ nhanh như Super Smooth của bản gốc. Chưa gửi lên bản gốc.
-- **Bỏ khoảng chờ vô ích ở app không có surrounding text.** Edge chạy qua XWayland: độ trễ trung vị
-  12,8 → 6,9 ms. Bản gốc từ chối (#490).
-- **Chữ V hết màu đen trên panel tối của KDE** (issue #374, gặp ngay với giao diện mặc định Fedora
-  44). Bộ gõ đọc màu của panel thay vì màu cửa sổ ứng dụng. Chụp trước và sau trên máy thật: V đen
-  thành V trắng. Mã sửa đã vào bản gốc (PR #497); bản này chỉ giữ thêm bài kiểm.
-- **Chữ V hết màu đen trên thanh trên cùng của GNOME** (Ubuntu Yaru, theme WhiteSur). Cùng lỗi với
-  KDE: bộ gõ hỏi màu ứng dụng thay vì màu thanh. Giờ đọc thẳng theme của GNOME Shell. Chưa gửi lên bản
-  gốc.
-- **Gõ đúng trong LibreOffice với chế độ uinput** (issue #162: `chao` + `f` ra `chaà`). Nguyên nhân
-  không phải máy chậm: LibreOffice xử lý phím xoá theo kiểu hẹn sau, còn chữ mới chèn ngay nên vượt
-  mặt. Bản này xoá bằng surrounding text riêng cho LibreOffice. Đo trên Writer: 30–36/60 từ sai →
-  0/60; Calc, Impress 0/60. Đã báo ở #162, chưa gửi mã.
-- **Gõ được Messenger trên Facebook với chế độ uinput** — bốn nguyên nhân và cách chữa ở
-  [mục trên](#messenger-trên-facebook-bôi-đen-rồi-gõ-đè-thay-vì-xoá-rồi-gõ-2009).
-- **Chờ 4 ms mỗi phím xoá thay vì 2** ở chế độ uinput. Máy tải nặng: 2 ms đúng 39–46/60
-  câu, 4 ms đúng 58–60/60. Máy rảnh không khác.
-
-### Đang chờ tác giả gốc trả lời
-
-- **Chờ sự kiện surrounding text thay vì ngủ theo một hằng số đoán trước** — mặc định TẮT.
-- **Chế độ Smooth chờ bằng hẹn giờ** thay vì chặn cả vòng lặp của fcitx5.
-
-Cả hai nằm ở [PR #492](https://github.com/LotusInputMethod/fcitx5-lotus/pull/492).
-
-### Dọn dẹp và hạ tầng
-
-- Siết dịch vụ systemd của máy chủ: `systemd-analyze security` từ 7.0 xuống 2.0.
-- Máy chủ bàn phím ảo chỉ mở chuột và bàn chạm, không còn đọc được bàn phím; ra khỏi nhóm `input`.
-- Máy chủ và mô-đun kiểm nhau bằng tài khoản thay vì tên chương trình; bỏ `CAP_SYS_PTRACE`.
-- Máy chủ bỏ qua con số ngoài khoảng ±1024 thay vì xin bộ nhớ tuỳ ý.
-- Gỡ công tắc `FixUinputWithAck` vốn mặc định tắt.
-- Biến môi trường `LOTUS_SOCKET_NAMESPACE` cho máy chủ, `LOTUS_BACKSPACE_GAP_MS`.
-- Khoảng cách giữa hai phím xoá mặc định 0 ms thay vì 5 ms. Đây là lựa chọn riêng của bản này.
-
-### Kiểm thử
-
-- 26 bài kiểm thay vì 9: thêm kiểm bất biến trên chuỗi phím ngẫu nhiên, kiểm màu panel KDE và GNOME, tái
-  hiện lỗi giữ phím của issue #472, tám bài cho lỗi Messenger trên Facebook, và ba bài cho máy chủ
-  bàn phím ảo.
-
-## Bản này KHÔNG sửa
-
-- Chế độ Surrounding Text vẫn lỗi, nhất là trên Firefox và LibreOffice Writer (60/60 từ sai).
-- Máy chủ bàn phím ảo chết giữa lúc thay chữ thì bàn phím chết theo.
+Kiểu gõ được dùng và kiểm hằng ngày là **Telex**. VNI và các kiểu khác dùng được nhưng chưa kiểm kỹ.
 
 ## Cài
 
-Một dòng lệnh, cho Fedora 43 và 44, Ubuntu 22.04, 24.04 và 26.04, Debian 12 và 13, Arch, CachyOS và
-openSUSE Tumbleweed (máy x86_64):
+Một dòng lệnh, cho Fedora, Ubuntu, Debian, Arch, CachyOS và openSUSE Tumbleweed (máy x86_64):
 
 ```
 curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash
 ```
 
-Lệnh này tải gói dựng sẵn cho đúng bản phân phối từ
-[bản phát hành mới nhất](https://github.com/ngosen/ngosen/releases/latest), đối chiếu mã băm, hỏi lại
-rồi mới cài bằng trình quản lý gói của máy, sau đó bật máy chủ nền cho tài khoản đang dùng. Gói
-`fcitx5-lotus` nếu có sẽ bị thay; cấu hình trong `~/.config/fcitx5` giữ nguyên. Muốn lên bản mới thì
-chạy lại đúng lệnh đó. Nó làm gì thì đọc được trong [`install.sh`](install.sh).
+Lệnh này tải gói cho đúng bản phân phối từ
+[bản phát hành mới nhất](https://github.com/ngosen/ngosen/releases/latest), hỏi lại rồi mới cài. Nếu
+máy đang có Lotus thì Ngó Sen sẽ thay nó; cấu hình cũ giữ nguyên. Muốn lên bản mới thì chạy lại đúng
+lệnh đó.
 
-Không muốn chạy kịch bản tải từ mạng thì tải gói ở trang
-[Releases](https://github.com/ngosen/ngosen/releases) rồi cài bằng tay; ghi chú của mỗi bản phát hành
-có bảng tệp nào dành cho bản phân phối nào và mức đã thử của từng gói. Chỉ Fedora 44 và CachyOS là
-dùng hằng ngày; các gói còn lại mới dựng được và cài thử trong container.
+Không muốn chạy lệnh tải từ mạng thì tải gói ở trang
+[Releases](https://github.com/ngosen/ngosen/releases) rồi cài bằng tay. Muốn tự dựng từ mã thì xem
+[TU-DUNG.md](TU-DUNG.md).
 
-Bản phân phối khác, hoặc muốn tự dựng từ mã: làm theo mục
-[Cài sang máy khác](KHAC-GI-SO-VOI-BAN-GOC.md#cài-sang-máy-khác). Nhớ gỡ bản Lotus đóng gói sẵn trước,
-và cài vào `/usr`.
-
-Kho này không có gói Nix. Công thức Nix thừa hưởng từ bản gốc tải mã của bản gốc về dựng, không dựng
-mã ở đây, nên đã gỡ. Trên NixOS hãy dùng bản gốc.
-
-**Cài xong, hoặc mỗi lần cập nhật, phải khởi động lại máy chủ nền** (chương trình chạy ngầm bấm
-phím xoá thay bộ gõ), rồi khởi động lại fcitx5:
+**Cài xong, hoặc mỗi lần cập nhật,** khởi động lại máy chủ nền rồi khởi động lại fcitx5:
 
 ```
 sudo systemctl restart fcitx5-lotus-server@$(whoami).service
 fcitx5 -rd
 ```
 
-Cài gói mới chỉ thay tệp trên đĩa. Máy chủ đang chạy vẫn là bản cũ cho tới khi khởi động lại. Ngó
-Sen thêm lệnh bôi đen cho vá Messenger; máy chủ bản gốc không hiểu lệnh này, nó xoá nhầm một chữ
-rồi đếm sai số phím xoá, làm chữ bị sai ở mọi ứng dụng cho tới khi khởi động lại.
+### Ubuntu 26.04: bật extension sửa lỗi gõ
 
-### Ubuntu 26.04: bật extension sửa phím xoá
-
-GNOME 50.0 tới 50.3 làm rơi phím xoá mà bộ gõ gửi qua GNOME Shell
-([mutter#4853](https://gitlab.gnome.org/GNOME/mutter/-/issues/4853),
-[Launchpad #2169784](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784)). Chrome, Chromium,
-Edge và ứng dụng Electron chạy Wayland khi đó gõ `tieengs` ra `tieêngếng`. Gói có kèm extension sửa
-lỗi này. Cài xong, đăng xuất rồi đăng nhập lại, sau đó bật một lần:
+Có từ bản phát hành sau `3.5.10-4`. Cài xong, đăng xuất rồi đăng nhập lại, sau đó chạy một lần:
 
 ```
 gnome-extensions enable forward-keys@ngosen.github.io
 ```
 
-Khi Ubuntu đưa bản sửa của GNOME xuống thì tắt nó bằng `gnome-extensions disable` cùng tên.
+Khi Ubuntu tự sửa lỗi này ([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784))
+thì tắt extension bằng `gnome-extensions disable forward-keys@ngosen.github.io`.
 
 ## Gỡ
 
-Bỏ Ngó Sen khỏi danh sách bộ gõ trong "Fcitx5 Configuration", rồi tắt máy chủ nền **trước** khi gỡ
-gói, vì không phải gói nào cũng tự dừng nó:
+1. Bỏ Ngó Sen khỏi danh sách bộ gõ trong "Fcitx5 Configuration".
+2. Tắt máy chủ nền:
 
-```
-sudo systemctl disable --now fcitx5-lotus-server@$(whoami).service
-```
+   ```
+   sudo systemctl disable --now fcitx5-lotus-server@$(whoami).service
+   ```
 
-Gỡ gói bằng trình quản lý gói của máy, rồi khởi động lại fcitx5:
+3. Gỡ gói rồi khởi động lại fcitx5:
 
-```
-sudo dnf remove fcitx5-ngosen       # Fedora
-sudo apt remove fcitx5-ngosen       # Ubuntu, Debian
-sudo pacman -R fcitx5-ngosen        # Arch, CachyOS
-sudo zypper remove fcitx5-ngosen    # openSUSE
-fcitx5 -rd
-```
+   ```
+   sudo dnf remove fcitx5-ngosen       # Fedora
+   sudo apt remove fcitx5-ngosen       # Ubuntu, Debian
+   sudo pacman -R fcitx5-ngosen        # Arch, CachyOS
+   sudo zypper remove fcitx5-ngosen    # openSUSE
+   fcitx5 -rd
+   ```
 
-Trên Fedora, `dnf` gỡ luôn những gói được kéo theo lúc cài mà nay không còn gói nào cần; nó in danh
-sách ra trước khi làm. Bản tự dựng từ mã thì gỡ trong thư mục đã dựng bằng
-`sudo cmake --build build --target uninstall`.
-
-Hai thứ còn lại trên máy: cấu hình (các tệp `lotus*.conf` trong `~/.config/fcitx5/conf/`, giữ lại thì
-lần cài sau dùng tiếp) và tài khoản hệ thống `uinput_proxy` (để lại không sao; muốn xoá thì
-`sudo userdel uinput_proxy`).
-
-Lệnh gỡ gói đã thử với gói `3.5.10-4` trong container Fedora 44, Ubuntu 24.04, Arch và openSUSE
-Tumbleweed: cả bốn gỡ sạch tệp của gói. Bước tắt máy chủ nền và lệnh gỡ bản tự dựng chưa thử.
+Cấu hình (các tệp `lotus*.conf` trong `~/.config/fcitx5/conf/`) vẫn ở lại máy, để lần cài sau dùng
+tiếp. Muốn xoá sạch thì xoá các tệp đó và chạy `sudo userdel uinput_proxy`.
 
 ## English
 
-Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: most
-of the code is written with an AI coding agent, then measured and used daily by the maintainer. It is
-a fork of [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), itself a fork of
-[VMK](https://github.com/thanhpy2009/VMK), and stays under GPL-3.0-or-later. It is published as is,
-with no promise of support. The rest of this page is in Vietnamese.
+Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: the
+code is written with an AI coding agent, then measured and used daily by the maintainer. It is a fork of
+[fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), itself a fork of
+[VMK](https://github.com/thanhpy2009/VMK), under GPL-3.0-or-later, published as is with no promise of
+support.
+
+Planned for 1.0: no background uinput server; two typing modes, Gõ Sen (one mode that works for fast
+typing, browsers and Electron apps) and Preedit; the Bamboo composition core ported from Go to Rust; and
+a shared core that can plug into fcitx5, IBus and wlroots compositors. The rest of this page is in
+Vietnamese.

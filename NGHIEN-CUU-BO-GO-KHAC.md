@@ -11,7 +11,7 @@ commit ghi trong bảng cuối. Số đo do tác giả khác tự công bố th�
 
 Chế độ Super Smooth của Ngó Sen (uinput) đi **hai đường**: bàn phím ảo bấm phím xoá, còn chữ mới
 đi đường riêng của bộ gõ (commit). Mọi lỗi mất chữ ở Messenger và ô đăng bài Facebook đều từ chuyện
-hai đường này lệch nhịp (xem [KHAC-GI-SO-VOI-BAN-GOC.md](KHAC-GI-SO-VOI-BAN-GOC.md)). Bộ gõ nào
+hai đường này lệch nhịp. Bộ gõ nào
 làm được mà **chỉ một đường** là thứ đáng học.
 
 ## Tóm tắt: 18 bộ gõ chia làm 5 cách

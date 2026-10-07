@@ -8,7 +8,7 @@
 set -euo pipefail
 
 RELEASE_URL=${NGOSEN_RELEASE_URL:-https://github.com/ngosen/ngosen/releases/latest/download}
-SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/KHAC-GI-SO-VOI-BAN-GOC.md#cài-sang-máy-khác"
+SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/TU-DUNG.md"
 SERVICE=fcitx5-lotus-server
 
 assume_yes=0

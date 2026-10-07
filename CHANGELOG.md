@@ -2,8 +2,7 @@
 
 Mọi thay đổi đáng kể của Ngó Sen (tên cũ LotusVibe), tách ra từ
 [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), được ghi ở đây. Cách ghi theo
-[Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Mỗi dòng nói người dùng thấy gì thay đổi;
-lý do và số đo của từng miếng vá nằm trong [KHAC-GI-SO-VOI-BAN-GOC.md](KHAC-GI-SO-VOI-BAN-GOC.md).
+[Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Mỗi dòng nói người dùng thấy gì thay đổi.
 
 Số phiên bản gồm hai phần: `3.5.10` là số của bản gốc lúc tách ra, còn nằm trong `CMakeLists.txt`; số
 sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang nhãn `ngosen-<phiên bản>`.
@@ -63,6 +62,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 
 ### Tài liệu
 
+- README viết lại cho người dùng: lộ trình Ngó Sen 1.0 ở đầu, rồi cách chọn chế độ, cài và gỡ. Chi tiết
+  từng vá không còn trong kho; hướng dẫn tự dựng từ mã chuyển sang `TU-DUNG.md` (#42).
 - Tên mới trong mã (tệp, hàm, lớp, hằng, biến môi trường) không còn chữ "lotus"; tên cũ giữ nguyên
   tới khi cần sửa chỗ đó. CI kiểm tra mỗi lần đẩy mã (#37).
 - Nhật ký thay đổi có mục riêng cho bản `3.5.10-4`; những gì gộp sau bản đó nằm dưới "Chưa phát hành"
@@ -189,7 +190,7 @@ các commit lấy thêm từ bản gốc ngày 24/09/2026. Mọi mục dưới �
 
 ### Tài liệu
 
-- [KHAC-GI-SO-VOI-BAN-GOC.md](KHAC-GI-SO-VOI-BAN-GOC.md): từng miếng vá, vì sao có, đã gửi lên bản
-  gốc chưa.
+- Tệp `KHAC-GI-SO-VOI-BAN-GOC.md`: từng miếng vá, vì sao có, đã gửi lên bản gốc chưa (không còn trong kho từ
+  #42).
 - [AGENTS.md](AGENTS.md): quy định khi sửa fork và khi gửi vá lên bản gốc (#3).
 - README: cài sang máy khác, chế độ Uinput duy nhất, khởi động lại server sau khi cập nhật.

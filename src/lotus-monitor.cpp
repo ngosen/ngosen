@@ -7,6 +7,7 @@
  */
 #include "lotus-monitor.h"
 #include "lotus-utils.h"
+#include "ngosen-pointer.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -23,7 +24,16 @@
 
 std::thread mouse_thread = std::thread();
 
-void        mousePressResetThread() {
+namespace {
+    void markMouseClick() {
+        needEngineReset.store(true, std::memory_order_release);
+        g_mouse_clicked.store(true, std::memory_order_release);
+    }
+} // namespace
+
+void mousePressResetThread() {
+    if (watchX11PointerClicks(stop_flag_monitor, markMouseClick))
+        return;
     const std::string mouse_socket_path = buildSocketPath("mouse_socket");
     LOTUS_INFO("Mouse press reset thread started.");
 
@@ -75,8 +85,7 @@ void        mousePressResetThread() {
 
                 if (n >= 1 && buf[0] == 'C') {
                     LOTUS_DEBUG("Mouse click detected from server. Resetting engine.");
-                    needEngineReset.store(true, std::memory_order_release);
-                    g_mouse_clicked.store(true, std::memory_order_release);
+                    markMouseClick();
                 } else {
                     // Clamp for the compiler's benefit: n is already known to be in [1, sizeof(buf)]
                     // here, but GCC cannot prove it and warns that the length may be a huge size_t.

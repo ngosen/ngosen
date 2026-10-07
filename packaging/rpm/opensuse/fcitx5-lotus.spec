@@ -36,6 +36,7 @@ Requires:       acl
 # Loaded with dlopen at runtime, so the automatic soname requires miss them.
 Requires:       libxcb1
 Requires:       libxcb-xtest0
+Requires:       libxcb-xinput0
 Requires(post): shadow
 
 %description

@@ -56,6 +56,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
   gợi ý. Ngó Sen nay bôi đen cả chữ cũ bằng Shift+Mũi tên trái qua XTEST rồi gõ đè. Các app khác trên X11
   cũng xoá qua XTEST khi không gửi phím hộ được, không cần máy chủ uinput. Gói nay kéo theo thư viện
   `libxcb-xtest`, vì Linux Mint không cài sẵn nó (#38).
+- Trên X11, bấm chuột sang chỗ khác giữa lúc gõ không còn làm từ mới dính vào từ cũ khi máy chủ uinput
+  không chạy: Ngó Sen nghe cú bấm chuột qua XInput2 của X server. Gói kéo theo thư viện `libxcb-xinput` (#39).
 
 ### Tài liệu
 

@@ -255,10 +255,10 @@ namespace fcitx {
         return macroTableObject_.handle();
     }
 
-    LotusEngine::LotusEngine(Instance* instance) : instance_(instance), factory_([this](InputContext& ic) { return new LotusState(this, &ic); }) { //NOLINT
+    LotusEngine::LotusEngine(Instance* instance) :
+        instance_(instance), factory_([this](InputContext& ic) { return new LotusState(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_)); }) { //NOLINT
         std::string desktop = getEnv("XDG_CURRENT_DESKTOP");
         isGnome_            = (!desktop.empty()) && desktop.find("GNOME") != std::string::npos;
-        // emptyCustomKeymap_.customKeymap is implicitly initialized to empty by fcitx::Option default value macro.
         Init();
         {
             auto imNames = convertToStringList(GetInputMethodNames());
@@ -370,11 +370,14 @@ namespace fcitx {
         LOTUS_INFO("Engine destroyed.");
     }
 
-    const lotusCustomKeymap& LotusEngine::customKeymap() const {
+    std::vector<ngosen::KeymapEntry> LotusEngine::customKeymap() const {
+        std::vector<ngosen::KeymapEntry> entries;
         if (config_.enableCustomKeymap.value()) {
-            return customKeymap_;
+            for (const auto& keymap : *customKeymap_.customKeymap) {
+                entries.push_back({*keymap.key, *keymap.value});
+            }
         }
-        return emptyCustomKeymap_;
+        return entries;
     }
 
     void LotusEngine::reloadConfig() {

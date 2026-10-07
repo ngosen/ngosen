@@ -18,6 +18,7 @@
 #include "lotus.h"
 #include "emoji-entry.h"
 #include "lotus-utils.h"
+#include "ngosen-engine-resources.h"
 #include "ngosen-host.h"
 #include "ngosen-key.h"
 
@@ -45,10 +46,10 @@ namespace fcitx {
       public:
         /**
          * @brief Constructs a new state instance.
-         * @param engine Pointer to the Lotus engine.
-         * @param ic Pointer to the input context.
+         * @param engine What all fields share through the engine.
+         * @param host The input field this state types into.
          */
-        LotusState(LotusEngine* engine, InputContext* ic);
+        LotusState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host);
 
         /**
          * @brief Initializes the bamboo engine for this state.
@@ -109,27 +110,26 @@ namespace fcitx {
         void flushPendingReplacement();
 
       private:
-        static constexpr size_t MAX_BUFFERED_KEYS = 50;
+        static constexpr size_t  MAX_BUFFERED_KEYS = 50;
 
-        LotusEngine*            engine_;
-        InputContext*           ic_;
-        CGoObject               lotusEngine_;
-        std::string             oldPreBuffer_;
-        bool                    hasHistory_              = false;
-        int                     expected_backspaces_     = 0;
-        int                     current_backspace_count_ = 0;
-        std::string             pending_commit_string_;
-        std::string             emojiBuffer_;
-        std::vector<EmojiEntry> emojiCandidates_;
-        std::vector<KeyEntry>   buffered_keys_; ///< Keystrokes buffered during replacement
-        bool                    isPrevSpace_           = false;
-        bool                    isPrevHyphen_          = false;
-        bool                    shouldCapitalize_      = false;
-        bool                    isPrevPunctuation_     = false;
-        int64_t                 lastDeactivateTime_    = 0;
-        int64_t                 deletionInterruptedAt_ = 0;     ///< when deactivate() cut an in-flight replacement (0 = none)
-        bool                    tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
-        bool                    macro_skip_            = false; ///< Macro disabled for the current word
+        ngosen::EngineResources* engine_;
+        CGoObject                lotusEngine_;
+        std::string              oldPreBuffer_;
+        bool                     hasHistory_              = false;
+        int                      expected_backspaces_     = 0;
+        int                      current_backspace_count_ = 0;
+        std::string              pending_commit_string_;
+        std::string              emojiBuffer_;
+        std::vector<EmojiEntry>  emojiCandidates_;
+        std::vector<KeyEntry>    buffered_keys_; ///< Keystrokes buffered during replacement
+        bool                     isPrevSpace_           = false;
+        bool                     isPrevHyphen_          = false;
+        bool                     shouldCapitalize_      = false;
+        bool                     isPrevPunctuation_     = false;
+        int64_t                  lastDeactivateTime_    = 0;
+        int64_t                  deletionInterruptedAt_ = 0;     ///< when deactivate() cut an in-flight replacement (0 = none)
+        bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
+        bool                     macro_skip_            = false; ///< Macro disabled for the current word
 
         // Presses real keys through XTEST, for frontends that cannot forward them.
         void sendBackspaceKeys(int count) const;

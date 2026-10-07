@@ -16,6 +16,7 @@
 #define _FCITX5_LOTUS_ENGINE_H_
 
 #include "lotus-config.h"
+#include "ngosen-engine-resources.h"
 #include "emoji.h"
 #include "ngosen-options.h"
 #include "lotus.h"
@@ -40,7 +41,7 @@ namespace fcitx {
      * Handles input processing, configuration management, and UI actions.
      * Implements fcitx InputMethodEngine interface.
      */
-    class LotusEngine final : public InputMethodEngineV2 {
+    class LotusEngine final : public InputMethodEngineV2, public ngosen::EngineResources {
       public:
         /**
          * @brief Gets the fcitx instance.
@@ -161,21 +162,17 @@ namespace fcitx {
         }
 
         // The settings the typing logic reads, kept in step with config().
-        const ngosen::Options& options() const {
+        const ngosen::Options& options() const override {
             return options_;
         }
 
-        /**
-         * @brief Gets the custom keymap configuration.
-         * @return Reference to custom keymap.
-         */
-        const lotusCustomKeymap& customKeymap() const;
+        std::vector<ngosen::KeymapEntry> customKeymap() const override;
 
         /**
          * @brief Gets the dictionary handle.
          * @return CGo handle for the dictionary.
          */
-        uintptr_t dictionary() const {
+        uintptr_t dictionary() const override {
             return dictionary_.handle();
         }
 
@@ -183,7 +180,7 @@ namespace fcitx {
          * @brief Gets the macro table handle.
          * @return CGo handle for the macro table.
          */
-        uintptr_t macroTable() const;
+        uintptr_t macroTable() const override;
 
         /**
          * @brief Gets the emoji loader.
@@ -196,12 +193,21 @@ namespace fcitx {
             return *emojiLoader_;
         }
 
+        std::vector<EmojiEntry> emojiHistory() override {
+            return emojiLoader().history();
+        }
+        std::vector<EmojiEntry> searchEmoji(const std::string& prefix) override {
+            return emojiLoader().search(prefix);
+        }
+        void recordEmoji(const EmojiEntry& entry) override {
+            emojiLoader().recordHistory(entry);
+        }
+
       private:
         Instance*                                  instance_;
         lotusConfig                                config_;
         ngosen::Options                            options_;
         lotusCustomKeymap                          customKeymap_;
-        lotusCustomKeymap                          emptyCustomKeymap_;
 
         lotusMacroTable                            macroTables_;
         CGoObject                                  macroTableObject_;

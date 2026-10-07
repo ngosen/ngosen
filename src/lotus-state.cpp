@@ -7,7 +7,6 @@
  *
  */
 #include "lotus-state.h"
-#include "lotus-engine.h"
 #include "lotus-utils.h"
 #include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
@@ -44,7 +43,7 @@ namespace fcitx {
         return ucs4 == ' ' || ucs4 == '\t' || ucs4 == '\n' || ucs4 == '\r' || ucs4 == 0 || (ucs4 >= 58 && ucs4 <= 64);
     }
 
-    LotusState::LotusState(LotusEngine* engine, InputContext* ic) : engine_(engine), ic_(ic), host_(std::make_unique<ngosen::FcitxHost>(ic, engine->instance())) {
+    LotusState::LotusState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host) : engine_(engine), host_(std::move(host)) {
         setEngine();
     }
 
@@ -52,12 +51,12 @@ namespace fcitx {
         lotusEngine_.reset();
 
         if (engine_->options().inputMethod == "Custom") {
-            const auto&        keymaps = *engine_->customKeymap().customKeymap;
+            const auto         keymaps = engine_->customKeymap();
             std::vector<char*> charArray;
             charArray.reserve((keymaps.size() * 2) + 1);
             for (const auto& keymap : keymaps) {
-                charArray.push_back(const_cast<char*>(keymap.key->data()));   //NOLINT
-                charArray.push_back(const_cast<char*>(keymap.value->data())); //NOLINT
+                charArray.push_back(const_cast<char*>(keymap.key.data()));   //NOLINT
+                charArray.push_back(const_cast<char*>(keymap.value.data())); //NOLINT
             }
             charArray.push_back(nullptr);
             lotusEngine_.reset(NewCustomEngine(charArray.data(), engine_->dictionary(), engine_->macroTable()));
@@ -261,7 +260,7 @@ namespace fcitx {
         host_->commitText(entry.output);
         NGOSEN_INFO("Emoji committed: " + entry.output);
 
-        engine_->emojiLoader().recordHistory(entry);
+        engine_->recordEmoji(entry);
 
         emojiBuffer_.clear();
         emojiCandidates_.clear();
@@ -412,7 +411,7 @@ namespace fcitx {
     }
     void LotusState::updateEmojiPreedit() {
         if (emojiBuffer_.empty()) {
-            emojiCandidates_ = engine_->emojiLoader().history();
+            emojiCandidates_ = engine_->emojiHistory();
             if (emojiCandidates_.empty()) {
                 host_->resetPanel();
                 host_->refreshPreedit();
@@ -420,7 +419,7 @@ namespace fcitx {
                 return;
             }
         } else {
-            emojiCandidates_ = engine_->emojiLoader().search(emojiBuffer_);
+            emojiCandidates_ = engine_->searchEmoji(emojiBuffer_);
         }
 
         if (!emojiBuffer_.empty()) {

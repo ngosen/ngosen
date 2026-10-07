@@ -22,8 +22,23 @@ check() {
         echo "$files" | sed 's/^/  /'
         status=1
     fi
-    local decls
-    decls=$(git diff -U0 "$base"...HEAD -- '*.c' '*.cpp' '*.h' '*.hpp' | grep -iE "$decl" | grep -vE "$notDecl" | grep -v '^+++' || true)
+    local diff decls removed line word kept
+    diff=$(git diff -U0 "$base"...HEAD -- '*.c' '*.cpp' '*.h' '*.hpp')
+    decls=$(echo "$diff" | grep -iE "$decl" | grep -vE "$notDecl" | grep -v '^+++' || true)
+    # A declaration rewritten in place, such as a class gaining a base, keeps its old name: drop added
+    # lines whose lotus names all come from a removed declaration.
+    removed=$(echo "$diff" | sed -n 's/^-//p' | grep -v '^--' | sed 's/^/+/' | grep -iE "$decl" | grep -oiE '[[:alnum:]_]*lotus[[:alnum:]_]*' | sort -u || true)
+    kept=""
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        for word in $(echo "$line" | grep -oiE '[[:alnum:]_]*lotus[[:alnum:]_]*' | sort -u); do
+            if ! grep -qxF "$word" <<< "$removed"; then
+                kept+="$line"$'\n'
+                break
+            fi
+        done
+    done <<< "$decls"
+    decls=${kept%$'\n'}
     if [ -n "$decls" ]; then
         echo "New declarations must not be named lotus (calling existing ones is fine):"
         echo "$decls" | sed 's/^/  /'
@@ -41,7 +56,7 @@ selfTest() {
     git -C "$dir" init -q
     git -C "$dir" config user.email t@t
     git -C "$dir" config user.name t
-    printf 'void LotusState::reset();\n' > "$dir/old.cpp"
+    printf 'void LotusState::reset();\nclass LotusEngine : public Base {};\n' > "$dir/old.cpp"
     git -C "$dir" add . && git -C "$dir" commit -qm base
     local base
     base=$(git -C "$dir" rev-parse HEAD)
@@ -67,6 +82,12 @@ selfTest() {
         git -C "$dir" commit -qam decl
         expect fail "declaration: $line"
     done
+    sed -i 's/public Base {}/public Base, public Other {}/' "$dir/old.cpp"
+    git -C "$dir" commit -qam rewrite
+    expect pass "an existing declaration rewritten in place"
+    sed -i 's/class LotusEngine : public Base {};/class LotusHelper : public Base {};/' "$dir/old.cpp"
+    git -C "$dir" commit -qam rename
+    expect fail "an old declaration replaced by a new lotus name"
     if [ $failed -eq 0 ]; then
         echo "self-test: ok"
     fi

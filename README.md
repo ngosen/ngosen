@@ -64,6 +64,21 @@ gnome-extensions enable forward-keys@ngosen.github.io
 Khi Ubuntu tự sửa lỗi này ([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784))
 thì tắt extension bằng `gnome-extensions disable forward-keys@ngosen.github.io`.
 
+### Ubuntu: VS Code cài bằng snap
+
+VS Code bản snap không mang theo phần nối với fcitx5, nên gõ ra chữ Telex thô (`tieengs`). Cho nó đi
+qua XIM (đường nối kiểu cũ của X11) bằng cách chép lối tắt của nó vào thư mục nhà rồi sửa dòng mở app:
+
+```
+cp /var/lib/snapd/desktop/applications/code_code.desktop ~/.local/share/applications/
+sed -i 's|^Exec=/snap/bin/code|Exec=env GTK_IM_MODULE=xim XMODIFIERS=@im=fcitx /snap/bin/code|' \
+  ~/.local/share/applications/code_code.desktop
+```
+
+Tắt hẳn VS Code rồi mở lại từ menu. Qua XIM thỉnh thoảng một chữ bị bỏ dấu khi gõ rất nhanh. Muốn bỏ
+cách này thì xoá tệp `~/.local/share/applications/code_code.desktop`. VS Code cài từ gói `.deb` của
+Microsoft chưa được thử trên Ubuntu.
+
 ## Gỡ
 
 1. Bỏ Ngó Sen khỏi danh sách bộ gõ trong "Fcitx5 Configuration".

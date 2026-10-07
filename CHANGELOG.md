@@ -37,6 +37,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 
 ### Sửa
 
+- Trên Wayland, bấm chuột sang chỗ khác trong ô rồi gõ tiếp giờ bắt đầu từ mới ngay cả khi máy chủ
+  nền không chạy: bộ gõ nhận ra cú bấm qua việc con trỏ đổi chỗ mà chữ không đổi (#40).
 - Ubuntu 26.04 (GNOME 50.0 tới 50.3): gói kèm extension `forward-keys@ngosen.github.io` sửa lỗi GNOME làm
   rơi phím xoá bộ gõ gửi qua GNOME Shell, khiến Chrome, Edge và app Electron chạy Wayland gõ ra
   `tieêngếng`. Bật bằng `gnome-extensions enable forward-keys@ngosen.github.io` (#41).

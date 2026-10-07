@@ -72,6 +72,11 @@ namespace fcitx {
         void reset(bool isFocusOut = false);
 
         /**
+         * @brief Treats a cursor move within unchanged surrounding text as a mouse click.
+         */
+        void checkCursorJump();
+
+        /**
          * @brief Commits the current buffer.
          */
         void commitBuffer();
@@ -176,6 +181,12 @@ namespace fcitx {
         std::unique_ptr<EventSourceTime> deferred_commit_timer_;
         std::string                      deferred_commit_text_;
         bool                             deferred_commit_pending_ = false;
+
+        // Last surrounding text the app reported, to tell a click from an edit.
+        std::string  lastSurroundingText_;
+        unsigned int lastSurroundingCursor_ = 0;
+        unsigned int lastSurroundingAnchor_ = 0;
+        bool         hasLastSurrounding_    = false;
 
         // --- Select and overtype (Facebook composers) ---
         // Select with Shift+Left, wait for the snapshot to show the selection, then commit over it.

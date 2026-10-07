@@ -899,6 +899,26 @@ namespace fcitx {
         }
     }
 
+    // Wayland apps report a click only as a cursor move; the IM gets no reset or mouse event.
+    void LotusState::checkCursorJump() {
+        const auto& s = ic_->surroundingText();
+        if (!s.isValid()) {
+            hasLastSurrounding_ = false;
+            return;
+        }
+        const bool jumped      = hasLastSurrounding_ && s.text() == lastSurroundingText_ && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
+        lastSurroundingText_   = s.text();
+        lastSurroundingCursor_ = s.cursor();
+        lastSurroundingAnchor_ = s.anchor();
+        hasLastSurrounding_    = true;
+        // Our own selection for overtyping moves the anchor too.
+        if (!jumped || is_deleting_.load(std::memory_order_acquire))
+            return;
+        LOTUS_INFO("Cursor moved without an edit");
+        needEngineReset.store(true, std::memory_order_release);
+        g_mouse_clicked.store(true, std::memory_order_release);
+    }
+
     void LotusState::send_select_uinput(int charCount) const {
         send_backspace_uinput(-charCount);
     }

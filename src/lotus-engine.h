@@ -229,6 +229,8 @@ namespace fcitx {
         bool                                  isGnome_ = false;
         mutable std::mutex                    appRulesMutex_;
         std::unordered_map<KeySym, LotusMode> modeMenuMapping_;
+        // A Wayland click reaches the IM only as a surrounding text update.
+        std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
 
         /**
          * @brief Refreshes the bamboo engine with current settings.

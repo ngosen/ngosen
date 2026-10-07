@@ -258,6 +258,11 @@ namespace fcitx {
             imNames_ = std::move(imNames);
         }
         config_.inputMethod.annotation().setList(imNames_);
+        cursorJumpWatcher_ = instance_->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& event) {
+            auto* ic = static_cast<InputContextEvent&>(event).inputContext();
+            if (ic->hasFocus())
+                ic->propertyFor(&factory_)->checkCursorJump();
+        });
 
         auto& uiManager = instance_->userInterfaceManager();
 

@@ -202,7 +202,7 @@ namespace fcitx {
          * @param s The surrounding text.
          * @return True if autofill should proceed.
          */
-        bool isAutofillCertain(const SurroundingText& s);
+        bool isAutofillCertain(const ngosen::Surrounding& s);
 
         /**
          * @brief Handles key events in preedit mode.

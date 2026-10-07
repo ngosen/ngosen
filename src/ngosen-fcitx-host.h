@@ -17,10 +17,14 @@ namespace ngosen {
       public:
         explicit FcitxHost(fcitx::InputContext* ic) : ic_(ic) {}
 
-        void commitText(const std::string& text) override;
-        void forwardKey(EditKey key, bool release) override;
-        void deleteSurrounding(int offset, unsigned int size) override;
-        bool pressSystemKeys(int count) override;
+        void        commitText(const std::string& text) override;
+        void        forwardKey(EditKey key, bool release) override;
+        void        deleteSurrounding(int offset, unsigned int size) override;
+        bool        pressSystemKeys(int count) override;
+
+        Surrounding surrounding() const override;
+        Field       field() const override;
+        bool        hasFocus() const override;
 
       private:
         fcitx::InputContext* ic_;

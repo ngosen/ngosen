@@ -6,6 +6,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 
 namespace ngosen {
 
@@ -13,6 +14,43 @@ namespace ngosen {
     enum class EditKey {
         BackSpace,
         Right,
+    };
+
+    // The text around the cursor as the app last reported it. Positions count characters.
+    class Surrounding {
+      public:
+        Surrounding() = default;
+        Surrounding(std::string text, unsigned int cursor, unsigned int anchor) : valid_(true), text_(std::move(text)), cursor_(cursor), anchor_(anchor) {}
+
+        bool isValid() const {
+            return valid_;
+        }
+        const std::string& text() const {
+            return text_;
+        }
+        unsigned int cursor() const {
+            return cursor_;
+        }
+        unsigned int anchor() const {
+            return anchor_;
+        }
+
+      private:
+        bool         valid_ = false;
+        std::string  text_;
+        unsigned int cursor_ = 0;
+        unsigned int anchor_ = 0;
+    };
+
+    // What the app told the input method about the focused field.
+    struct Field {
+        std::string frontend; // how the app talks to the input method: wayland, xim, ibus, dbus, fcitx4
+        std::string program;
+        bool        surroundingText  = false; // the app reports the text around the cursor
+        bool        preedit          = false; // the app can show uncommitted text
+        bool        formattedPreedit = false;
+        bool        url              = false; // the field is an address bar
+        bool        keyEventOrderFix = false;
     };
 
     // What the typing logic needs from the input method framework for one text field, so that the
@@ -28,6 +66,11 @@ namespace ngosen {
         // Presses keys at the X server: count > 0 presses BackSpace count times, count < 0 selects
         // -count characters with Shift+Left. False when that is unavailable.
         virtual bool pressSystemKeys(int count) = 0;
+
+        // Read fresh on every call: the app may report a new state between two calls.
+        virtual Surrounding surrounding() const = 0;
+        virtual Field       field() const       = 0;
+        virtual bool        hasFocus() const    = 0;
     };
 
 } // namespace ngosen

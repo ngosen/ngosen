@@ -10,6 +10,7 @@
 #include "lotus-engine.h"
 #include "lotus-candidates.h"
 #include "lotus-utils.h"
+#include "ngosen-app-quirks.h"
 #include "ngosen-fcitx-host.h"
 #include "ngosen-xtest.h"
 #include "lotus.h"
@@ -129,7 +130,7 @@ namespace fcitx {
             }
         }
 
-        bool textAfterCursorLooksLikeUrl(const SurroundingText& s) {
+        bool textAfterCursorLooksLikeUrl(const ngosen::Surrounding& s) {
             if (!s.isValid() || s.cursor() != s.anchor()) {
                 return false;
             }
@@ -155,7 +156,7 @@ namespace fcitx {
     namespace {
         // The word being typed starts the field, so an extra backspace for a wrong autofill guess
         // deletes nothing. realtextLen is stale here after the address bar is cleared.
-        bool onlyCurrentWordBeforeCursor(const SurroundingText& s, const std::string& buff) {
+        bool onlyCurrentWordBeforeCursor(const ngosen::Surrounding& s, const std::string& buff) {
             if (!s.isValid() || buff.empty() || s.cursor() != utf8::length(buff)) {
                 return false;
             }
@@ -164,7 +165,7 @@ namespace fcitx {
         }
     } // namespace
 
-    bool LotusState::isAutofillCertain(const SurroundingText& s) {
+    bool LotusState::isAutofillCertain(const ngosen::Surrounding& s) {
         if (!s.isValid() || oldPreBuffer_.empty()) {
             return false;
         }
@@ -238,7 +239,7 @@ namespace fcitx {
             if (utf8::validate(view))
                 text.append(std::string(view), fmt);
             text.setCursor(static_cast<int>(text.textLength()));
-            if (ic_->capabilityFlags().test(CapabilityFlag::Preedit))
+            if (host_->field().preedit)
                 ic_->inputPanel().setClientPreedit(text);
             else
                 ic_->inputPanel().setPreedit(text);
@@ -423,7 +424,7 @@ namespace fcitx {
             Text preeditText;
             preeditText.append(emojiBuffer_, TextFormatFlag::Underline);
             preeditText.setCursor(static_cast<int>(preeditText.textLength()));
-            if (ic_->capabilityFlags().test(CapabilityFlag::Preedit))
+            if (host_->field().preedit)
                 ic_->inputPanel().setClientPreedit(preeditText);
             else
                 ic_->inputPanel().setPreedit(preeditText);
@@ -461,7 +462,7 @@ namespace fcitx {
     }
 
     bool LotusState::deletionLooksDone() const {
-        const auto& s = ic_->surroundingText();
+        const auto s = host_->surrounding();
         if (!s.isValid()) {
             return false;
         }
@@ -521,7 +522,7 @@ namespace fcitx {
     namespace {
         // The Messenger composer has "\n\n" right after the cursor, or is just "\n" when empty. Only
         // this field repaints over fresh text, so only it waits to settle.
-        bool looksLikeMessengerComposer(const SurroundingText& s) {
+        bool looksLikeMessengerComposer(const ngosen::Surrounding& s) {
             if (!s.isValid()) {
                 return false;
             }
@@ -538,7 +539,7 @@ namespace fcitx {
 
         // Facebook composers (message and post box) report text ending in "\n\n" wherever the cursor
         // is, or just "\n" when empty. Check the whole field so mid-text edits match too.
-        bool looksLikeFacebookComposer(const SurroundingText& s) {
+        bool looksLikeFacebookComposer(const ngosen::Surrounding& s) {
             if (!s.isValid()) {
                 return false;
             }
@@ -547,7 +548,7 @@ namespace fcitx {
         }
 
         // No space or newline before the cursor: the first word of the message is being typed.
-        bool isFirstWordOfMessage(const SurroundingText& s) {
+        bool isFirstWordOfMessage(const ngosen::Surrounding& s) {
             const std::string& t   = s.text();
             auto               end = t.begin();
             for (unsigned int i = 0; i < s.cursor() && end != t.end(); ++i) {
@@ -558,8 +559,8 @@ namespace fcitx {
     } // namespace
 
     void LotusState::deliverAfterSettle(const char* reason, bool fromTimer) {
-        const auto& snapshot = ic_->surroundingText();
-        int         settleMs = engine_->config().waitSurroundingSettleMs.value();
+        const auto snapshot = host_->surrounding();
+        int        settleMs = engine_->config().waitSurroundingSettleMs.value();
         if (settleMs <= 0 || !looksLikeMessengerComposer(snapshot)) {
             finishReplacement(reason, fromTimer);
             return;
@@ -618,7 +619,7 @@ namespace fcitx {
         // A previous replacement still waiting for its turn goes out first, keeping the text in order.
         flushDeferredCommit();
         // Focus loss is not inside a key event, and the field is going away, so it commits at once.
-        const bool defer = getFrontendName(ic_) == "dbus" && std::string(reason) != "focus lost";
+        const bool defer = host_->field().frontend == "dbus" && std::string(reason) != "focus lost";
         if (defer) {
             deferred_commit_text_    = pending_commit_string_;
             deferred_commit_pending_ = true;
@@ -666,10 +667,10 @@ namespace fcitx {
     bool LotusState::waitForDeletion(KeyEvent* event, int sleepTime) {
         // Some apps (Konsole) declare surrounding text but always send it empty; nothing can match,
         // so use the sleeping path.
-        const bool emptySnapshot = ic_->surroundingText().text().empty();
+        const bool emptySnapshot = host_->surrounding().text().empty();
         // GNOME Shell relays surrounding text late and one step behind (or not at all), so an
         // event-driven wait times out and commits ahead of the backspaces. Use the timed path there.
-        const bool waitEvent = engine_->config().waitSurroundingEvent.value() && !surroundingTextLags(ic_);
+        const bool waitEvent = engine_->config().waitSurroundingEvent.value() && !ngosen::surroundingTextLags(host_->field());
         if (waitEvent && emptySnapshot) {
             LOTUS_INFO("Surr wait skip: empty snapshot");
         }
@@ -712,7 +713,7 @@ namespace fcitx {
                 const auto minimumUs =
                     static_cast<uint64_t>(engine_->config().waitSurroundingMinPerKeyMs.value()) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
                 {
-                    const auto& current = ic_->surroundingText();
+                    const auto current = host_->surrounding();
                     ++surr_wait_event_count_;
                     if (current.text() + "\x1f" + std::to_string(current.cursor()) != surr_wait_sent_snapshot_) {
                         surr_wait_saw_other_snapshot_ = true;
@@ -758,12 +759,12 @@ namespace fcitx {
         const int perKeyMs = skipFrozenWait ? std::max(sleepTime, engine_->config().waitSurroundingMinPerKeyMs.value()) : sleepTime;
         int       waitMs   = perKeyMs * (expected_backspaces_ - 1);
         // Validate surr cursor pos should match realtextLen after all BS applied
-        const auto& surr = ic_->surroundingText();
+        const auto surr = host_->surrounding();
         if (skipFrozenWait) {
             LOTUS_INFO("Skip retry (frozen)"); // retrying 3 x 2 ms is pointless on a frozen snapshot
         } else if (surr.isValid() && surr.cursor() == realtextLen.load(std::memory_order_acquire)) {
             LOTUS_INFO("Skip retry");
-        } else if (!ic_->capabilityFlags().test(CapabilityFlag::SurroundingText)) {
+        } else if (!host_->field().surroundingText) {
             // No surrounding text capability (gnome-terminal, Chromium on X11): retrying cannot help.
             LOTUS_INFO("Skip retry (no surrounding capability)");
         } else {
@@ -794,7 +795,7 @@ namespace fcitx {
                 surr_wait_timer_only_ = false;
                 return false;
             }
-            if (!ic_->hasFocus()) {
+            if (!host_->hasFocus()) {
                 // Chromium X11 leaves and re-enters the field within ~0.3 ms; a commit in that gap is
                 // lost. Give it a moment to come back.
                 if (++surr_wait_focus_retries_ <= 5) {
@@ -826,7 +827,7 @@ namespace fcitx {
     }
 
     bool LotusState::canSendBackspaces() const {
-        return forwardsBackspaces(ic_) || xtestAvailable();
+        return ngosen::forwardsBackspaces(host_->field()) || xtestAvailable();
     }
 
     void LotusState::deferTimedCommit(uint64_t deliverAtUs) {
@@ -839,7 +840,7 @@ namespace fcitx {
 
     // Wayland apps report a click only as a cursor move; the IM gets no reset or mouse event.
     void LotusState::checkCursorJump() {
-        const auto& s = ic_->surroundingText();
+        const auto s = host_->surrounding();
         if (!s.isValid()) {
             hasLastSurrounding_ = false;
             return;
@@ -882,7 +883,7 @@ namespace fcitx {
         overtype_char_count_     = charCount;
         overtype_pending_        = true;
         {
-            const auto& snapshot    = ic_->surroundingText();
+            const auto snapshot     = host_->surrounding();
             overtype_had_snapshot_  = snapshot.isValid();
             overtype_cursor_before_ = overtype_had_snapshot_ ? snapshot.cursor() : 0;
         }
@@ -894,7 +895,7 @@ namespace fcitx {
             if (!overtype_pending_ || ice.inputContext() != ic_ || !is_deleting_.load()) {
                 return;
             }
-            const auto& s = ic_->surroundingText();
+            const auto s = host_->surrounding();
             if (!s.isValid()) {
                 return;
             }
@@ -924,8 +925,8 @@ namespace fcitx {
     // the text would land in the wrong place. Move the cursor back and drop this replacement; the
     // user loses one tone mark and sees it immediately.
     void LotusState::abandonOvertype() {
-        const auto& snapshot     = ic_->surroundingText();
-        int         rightPresses = 1; // a real but unreported selection collapses with one Right
+        const auto snapshot     = host_->surrounding();
+        int        rightPresses = 1; // a real but unreported selection collapses with one Right
         if (overtype_had_snapshot_ && snapshot.isValid() && snapshot.cursor() == snapshot.anchor() &&
             snapshot.cursor() + static_cast<unsigned int>(overtype_char_count_) == overtype_cursor_before_) {
             rightPresses = overtype_char_count_; // the field only moved the cursor, nothing selected
@@ -972,7 +973,7 @@ namespace fcitx {
         expected_backspaces_     = static_cast<int>(utf8::length(deletedPart));
         surr_wait_deleted_       = deletedPart;
         {
-            const auto& snapshot     = ic_->surroundingText();
+            const auto snapshot      = host_->surrounding();
             surr_wait_sent_snapshot_ = snapshot.isValid() ? snapshot.text() + "\x1f" + std::to_string(snapshot.cursor()) : std::string();
         }
         surr_wait_prefix_ = (oldPreBuffer_.size() >= deletedPart.size()) ? oldPreBuffer_.substr(0, oldPreBuffer_.size() - deletedPart.size()) : std::string();
@@ -980,7 +981,7 @@ namespace fcitx {
             // Only a fresh send-time snapshot (text before the cursor ends with prefix + deleted) may
             // count towards "frozen"; a lagging app sends a stale one.
             surr_wait_sent_snapshot_fresh_ = false;
-            const auto& snapshot           = ic_->surroundingText();
+            const auto snapshot            = host_->surrounding();
             if (snapshot.isValid()) {
                 const std::string& t  = snapshot.text();
                 auto               it = t.begin();
@@ -992,33 +993,33 @@ namespace fcitx {
                 surr_wait_sent_snapshot_fresh_ = before.size() >= expected.size() && before.compare(before.size() - expected.size(), expected.size(), expected) == 0;
             }
         }
-        const auto&       surrounding = ic_->surroundingText();
+        const auto        surrounding = host_->surrounding();
         const std::string surrText    = surrounding.text();
         // Facebook composers only: other fields do not report a selection-only change, so the
         // overtype would time out and drop the tone mark.
         // A BackSpace in the Chromium address bar would only remove the selected autocompletion. XTEST,
         // unlike forwardKey, keeps Shift, so widen the selection over the old text and type over both.
-        if (xtestAvailable() && selectsOverAutocompletion(ic_) && !deletedPart.empty()) {
+        if (xtestAvailable() && ngosen::selectsOverAutocompletion(host_->field()) && !deletedPart.empty()) {
             selectAndOvertype(addedPart, static_cast<int>(utf8::length(deletedPart)), true);
             return;
         }
-        if (engine_->config().messengerSelectOvertype.value() && !forwardsBackspaces(ic_) && looksLikeFacebookComposer(surrounding)) {
+        if (engine_->config().messengerSelectOvertype.value() && !ngosen::forwardsBackspaces(host_->field()) && looksLikeFacebookComposer(surrounding)) {
             selectAndOvertype(addedPart, static_cast<int>(utf8::length(deletedPart)));
             return;
         }
         // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it. Its
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
-        const bool isLibreOffice   = stripDesktopSuffix(ic_->program()) == "soffice";
-        const bool mustUseSurrText = isLibreOffice || ignoresForwardedKeys(ic_);
-        bool       isSurrText      = mustUseSurrText ? ic_->capabilityFlags().test(CapabilityFlag::SurroundingText) :
-                                                       engine_->config().useSurroundingTextIfPossible.value() && ic_->capabilityFlags().test(CapabilityFlag::SurroundingText) &&
-                surrounding.isValid() && !surrText.empty() && surrounding.cursor() == utf8::length(surrText);
+        const bool isLibreOffice   = ngosen::appliesBackspacesLate(host_->field());
+        const bool mustUseSurrText = isLibreOffice || ngosen::ignoresForwardedKeys(host_->field());
+        bool       isSurrText      = mustUseSurrText ? host_->field().surroundingText :
+                                                       engine_->config().useSurroundingTextIfPossible.value() && host_->field().surroundingText && surrounding.isValid() &&
+                !surrText.empty() && surrounding.cursor() == utf8::length(surrText);
         if (!isSurrText) {
             ++expected_backspaces_;
             // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
             // the autofill shape on Firefox.
-            const bool isFirefoxAddressBar = stripDesktopSuffix(ic_->program()) == "firefox" && textAfterCursorLooksLikeUrl(surrounding);
-            const bool checkAutofill       = realMode != LotusMode::Sen || ic_->capabilityFlags().test(CapabilityFlag::Url) || isFirefoxAddressBar;
+            const bool isFirefoxAddressBar = ngosen::hidesAddressBarFlag(host_->field()) && textAfterCursorLooksLikeUrl(surrounding);
+            const bool checkAutofill       = realMode != LotusMode::Sen || host_->field().url || isFirefoxAddressBar;
             if (checkAutofill) {
                 // Enable Autofill detection for all frontends (Wayland/IBus).
                 // This fixes the "toôi" duplication bug in Chromium-based search bars.
@@ -1047,10 +1048,10 @@ namespace fcitx {
             replayBufferedKeys();
             return;
         }
-        if (forwardsBackspaces(ic_)) {
+        if (ngosen::forwardsBackspaces(host_->field())) {
             // The XTEST count includes a sentinel that comes back to us; forwarded keys never do.
             const int count = expected_backspaces_ - 1;
-            if (getFrontendName(ic_) == "xim") {
+            if (host_->field().frontend == "xim") {
                 // We are inside the client's synchronous XIM request for the key that triggered this
                 // replacement. Keys forwarded now reach the client before its reply, and libX11 may
                 // hand them back to us unprocessed. Forward them once the reply has gone out.
@@ -1066,7 +1067,7 @@ namespace fcitx {
             LOTUS_INFO("Forward " + std::to_string(count) + " backspaces");
             waitForDeletion(nullptr, 4);
             // XIM, IBus and D-Bus clients queue forwarded keys, and the commit can overtake them.
-            if (getFrontendName(ic_) != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
+            if (host_->field().frontend != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
                 deferTimedCommit(surr_wait_started_at_ + ForwardWaitUs);
             }
             return;
@@ -1318,8 +1319,8 @@ namespace fcitx {
                 // Try backspaces first, fallback to deleteSurroundingText, then plain commit
                 if (canSendBackspaces() && !oldPreBuffer_.empty()) {
                     performReplacement(oldPreBuffer_, commitStr);
-                } else if (ic_->capabilityFlags().test(CapabilityFlag::SurroundingText)) {
-                    const auto& surrounding = ic_->surroundingText();
+                } else if (host_->field().surroundingText) {
+                    const auto surrounding = host_->surrounding();
                     if (surrounding.isValid()) {
                         size_t oldLen = utf8::length(oldPreBuffer_);
                         if (oldLen > 0) {
@@ -1465,7 +1466,8 @@ namespace fcitx {
             }
         }
 
-        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_ && isBackspace(currentSym) && getFrontendName(ic_) == "xim" && forwardsBackspaces(ic_)) {
+        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_ && isBackspace(currentSym) && host_->field().frontend == "xim" &&
+            ngosen::forwardsBackspaces(host_->field())) {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
             LOTUS_INFO("XIM handed back a forwarded backspace");
@@ -1481,7 +1483,7 @@ namespace fcitx {
             }
             finishReplacement("key arrived", false);
         }
-        if (is_deleting_.load(std::memory_order_acquire) && isBackspace(currentSym) && forwardsBackspaces(ic_) && surr_wait_pending_) {
+        if (is_deleting_.load(std::memory_order_acquire) && isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_pending_) {
             // Forwarded backspaces never come back, so this one is the user's: finish the replacement
             // first, then handle it normally.
             finishReplacement("backspace arrived", false);
@@ -1558,7 +1560,7 @@ namespace fcitx {
     }
 
     void LotusState::reset(bool isFocusOut) {
-        const auto& surrounding = ic_->surroundingText();
+        const auto  surrounding = host_->surrounding();
         const auto& text        = surrounding.text();
         size_t      textLen     = utf8::length(text);
         realtextLen.store(textLen, std::memory_order_release);
@@ -1584,7 +1586,7 @@ namespace fcitx {
             oldPreBuffer_.clear();
             hasHistory_ = false;
         }
-        if (getFrontendName(ic_) != "dbus")
+        if (host_->field().frontend != "dbus")
             clearAllBuffers();
 
         switch (realMode) {

@@ -89,57 +89,6 @@ bool dropStaleSurroundingText(fcitx::InputContext* ic) {
     return true;
 }
 
-bool surroundingTextLags(fcitx::InputContext* ic) {
-    return getFrontendName(ic) == "ibus";
-}
-
-bool forwardsBackspaces(fcitx::InputContext* ic) {
-    const std::string frontend = getFrontendName(ic);
-    if (frontend == "wayland" || frontend == "xim") {
-        return true;
-    }
-    if (frontend == "ibus") {
-        // SDL takes only commits and preedit from the IM.
-        return !isStartsWith(ic->program(), "SDL");
-    }
-    if (frontend == "dbus") {
-        // fcitx5-gtk and fcitx5-qt set one of these; SDL sets neither and handles only commits and preedit.
-        const auto& caps = ic->capabilityFlags();
-        return caps.test(fcitx::CapabilityFlag::KeyEventOrderFix) || caps.test(fcitx::CapabilityFlag::SurroundingText);
-    }
-    if (frontend == "fcitx4") {
-        // Snap apps bundle the fcitx4 GTK module, which sets one of these; SDL 2.0.12 and older speak
-        // this protocol too and set at most Preedit.
-        const auto& caps = ic->capabilityFlags();
-        return caps.test(fcitx::CapabilityFlag::FormattedPreedit) || caps.test(fcitx::CapabilityFlag::SurroundingText);
-    }
-    return false;
-}
-
-bool ignoresForwardedKeys(fcitx::InputContext* ic) {
-    const std::string frontend = getFrontendName(ic);
-    if (frontend == "ibus") {
-        // IBus for GTK4 feeds forwarded keys back into the IM instead of the widget.
-        return isStartsWith(ic->program(), "gtk4-im:");
-    }
-    // fcitx5-gtk4 discards forwarded keys, and is the D-Bus client that leaves this flag unset.
-    const auto& caps = ic->capabilityFlags();
-    return frontend == "dbus" && !caps.test(fcitx::CapabilityFlag::KeyEventOrderFix) && caps.test(fcitx::CapabilityFlag::SurroundingText);
-}
-
-bool selectsOverAutocompletion(fcitx::InputContext* ic) {
-    const std::string frontend = getFrontendName(ic);
-    if ((frontend != "dbus" && frontend != "fcitx4") || !forwardsBackspaces(ic) || ic->capabilityFlags().test(fcitx::CapabilityFlag::SurroundingText))
-        return false;
-    // Terminals match the checks above too, and print Shift+Left instead of selecting.
-    const std::string program = stripDesktopSuffix(ic->program());
-    for (const char* browser : {"chromium", "chrome", "google-chrome", "microsoft-edge", "msedge", "brave", "vivaldi", "opera"}) {
-        if (isStartsWith(program, browser))
-            return true;
-    }
-    return false;
-}
-
 std::string stripDesktopSuffix(const std::string& program) {
     static constexpr std::string_view suffix = ".desktop";
     if (program.size() > suffix.size() && program.compare(program.size() - suffix.size(), suffix.size(), suffix) == 0) {

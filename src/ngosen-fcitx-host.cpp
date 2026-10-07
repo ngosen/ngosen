@@ -41,4 +41,29 @@ namespace ngosen {
         return xtestSendKeys(count);
     }
 
+    Surrounding FcitxHost::surrounding() const {
+        const auto& s = ic_->surroundingText();
+        if (!s.isValid()) {
+            return {};
+        }
+        return {s.text(), s.cursor(), s.anchor()};
+    }
+
+    Field FcitxHost::field() const {
+        const auto& caps = ic_->capabilityFlags();
+        Field       f;
+        f.frontend         = ic_->frontend();
+        f.program          = ic_->program();
+        f.surroundingText  = caps.test(fcitx::CapabilityFlag::SurroundingText);
+        f.preedit          = caps.test(fcitx::CapabilityFlag::Preedit);
+        f.formattedPreedit = caps.test(fcitx::CapabilityFlag::FormattedPreedit);
+        f.url              = caps.test(fcitx::CapabilityFlag::Url);
+        f.keyEventOrderFix = caps.test(fcitx::CapabilityFlag::KeyEventOrderFix);
+        return f;
+    }
+
+    bool FcitxHost::hasFocus() const {
+        return ic_->hasFocus();
+    }
+
 } // namespace ngosen

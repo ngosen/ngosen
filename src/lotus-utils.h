@@ -116,27 +116,6 @@ bool dropStaleSurroundingText(fcitx::InputContext* ic);
 std::string stripDesktopSuffix(const std::string& program);
 
 /**
- * @brief Whether surrounding-text updates for this context arrive too late to wait on.
- *
- * Under GNOME, apps reach fcitx5 through GNOME Shell's IBus bridge, which forwards the
- * client's surrounding text tens of milliseconds late and often one edit behind.
- * @param ic Input context.
- * @return True for contexts served by the IBus frontend.
- */
-bool surroundingTextLags(fcitx::InputContext* ic);
-
-// True when the frontend can deliver backspaces itself, so XTEST is not needed: the
-// Wayland input-method frontend, XIM clients, and IBus, D-Bus and fcitx4 clients other than SDL.
-bool forwardsBackspaces(fcitx::InputContext* ic);
-
-// True for GTK4 clients, whose IM modules drop forwarded keys; delete through surrounding text there.
-bool ignoresForwardedKeys(fcitx::InputContext* ic);
-
-// True for Chromium-based browsers on the D-Bus and fcitx4 frontends: they take forwarded keys but report
-// no surrounding text, and their address bar selects an inline autocompletion after the typed text.
-bool selectsOverAutocompletion(fcitx::InputContext* ic);
-
-/**
  * @brief Key event entry for replay buffer.
  */
 struct KeyEntry {

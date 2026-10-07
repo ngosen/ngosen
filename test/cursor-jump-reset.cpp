@@ -10,7 +10,6 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include <unistd.h>
 
 namespace {
     const std::string zeroWidthTail = "\u200b\u200b\u200b\u200b";
@@ -119,13 +118,11 @@ namespace {
 } // namespace
 
 int main() {
-    const std::string socketNamespace = "test-" + std::to_string(getpid());
-    setenv("LOTUS_SOCKET_NAMESPACE", socketNamespace.c_str(), 1);
     configureTestPaths("fcitx5-lotus-cursor-jump-reset");
     TestInstance       testInstance;
     fcitx::LotusEngine engine(&testInstance.instance);
     fcitx::RawConfig   config;
-    config.setValueByPath("Mode", "Uinput");
+    config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
     engine.setConfig(config);

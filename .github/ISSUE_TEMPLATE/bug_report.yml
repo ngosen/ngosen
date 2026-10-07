@@ -116,17 +116,6 @@ body:
       render: shell
 
   - type: textarea
-    id: log_server
-    attributes:
-      label: Log của Uinput server
-      description: |
-        Log của uinput server (server ghi qua syslog). Cách lấy tuỳ daemon log của máy:
-        - systemd/journald: `journalctl -t fcitx5-lotus-server -n 200`
-        - rsyslog / syslog-ng: xem file log tương ứng (ví dụ `/var/log/messages`, `/var/log/daemon.log`)
-        - distro khác: xem log hệ thống do daemon log của máy quản lý
-      placeholder: Dán nội dung file log vào đây
-
-  - type: textarea
     id: log_fcitx5
     attributes:
       label: Log của fcitx5

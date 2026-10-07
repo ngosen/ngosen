@@ -8,7 +8,7 @@
 #include <functional>
 
 // Presses keys through the X server's XTEST extension. They travel like real keys, through the input
-// method and then to the focused window, so the uinput bookkeeping applies unchanged. Only on an X11
+// method and then to the focused window, so the backspace bookkeeping applies unchanged. Only on an X11
 // session: Xwayland either drops XTEST input or asks the user first.
 
 // True on an X11 session once libxcb-xtest is loaded and the display is reachable.

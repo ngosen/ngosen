@@ -6,22 +6,15 @@
 // fast in the Facebook composer showed "i" instead of "đi". They must go out as one commit.
 #include "lotus-engine.h"
 #include "lotus-utils.h"
+#include "key-sender-probe.h"
 #include "test-input-context.h"
 
 #include <fcitx-utils/utf8.h>
 
-#include <cerrno>
-#include <cstddef>
 #include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <memory>
 #include <string>
-
-#include <poll.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
 
 namespace {
 
@@ -35,53 +28,6 @@ namespace {
             out += "['" + commit + "']";
         return out.empty() ? "(none)" : out;
     }
-
-    class RequestListener {
-      public:
-        RequestListener() {
-            fd_ = socket(AF_UNIX, SOCK_SEQPACKET, 0);
-            sockaddr_un address{};
-            address.sun_family    = AF_UNIX;
-            const auto socketPath = buildSocketPath("kb_socket");
-            address.sun_path[0]   = '\0';
-            std::memcpy(&address.sun_path[1], socketPath.data(), socketPath.size());
-            const auto length = static_cast<socklen_t>(offsetof(sockaddr_un, sun_path) + socketPath.size() + 1);
-            if (fd_ < 0 || bind(fd_, reinterpret_cast<const sockaddr*>(&address), length) < 0 || listen(fd_, 1) < 0) {
-                reportFailure("bind replacement socket", "bind succeeds", std::strerror(errno));
-                if (fd_ >= 0)
-                    close(fd_);
-                fd_ = -1;
-            }
-        }
-        ~RequestListener() {
-            if (client_ >= 0)
-                close(client_);
-            if (fd_ >= 0)
-                close(fd_);
-        }
-        bool valid() const {
-            return fd_ >= 0;
-        }
-        bool receive(int& count) {
-            if (client_ < 0) {
-                pollfd p{fd_, POLLIN, 0};
-                if (poll(&p, 1, 2000) <= 0 || (client_ = accept(fd_, nullptr, nullptr)) < 0) {
-                    reportFailure("accept replacement socket", "connection within 2000 ms", "none");
-                    return false;
-                }
-            }
-            pollfd p{client_, POLLIN, 0};
-            if (poll(&p, 1, 2000) <= 0 || recv(client_, &count, sizeof(count), 0) != sizeof(count)) {
-                reportFailure("receive replacement request", "request within 2000 ms", "none");
-                return false;
-            }
-            return true;
-        }
-
-      private:
-        int fd_     = -1;
-        int client_ = -1;
-    };
 
     void setSnapshot(TestInputContext& context, const std::string& text, unsigned int cursor) {
         context.surroundingText().setText(text, cursor, cursor);
@@ -101,23 +47,18 @@ namespace {
 } // namespace
 
 int main() {
-    const std::string socketNamespace = "test-" + std::to_string(getpid());
-    setenv("LOTUS_SOCKET_NAMESPACE", socketNamespace.c_str(), 1);
-
     configureTestPaths("fcitx5-lotus-replay-single-commit");
     TestInstance       testInstance;
     fcitx::LotusEngine engine(&testInstance.instance);
     fcitx::RawConfig   config;
-    config.setValueByPath("Mode", "Uinput");
+    config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
     config.setValueByPath("MessengerSelectOvertype", "True");
     engine.setConfig(config);
 
-    RequestListener listener;
-    if (!listener.valid())
-        return 1;
-    auto context = std::make_unique<TestInputContext>(&testInstance.instance);
+    KeySenderProbe listener;
+    auto           context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
     context->focusIn();
     fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");

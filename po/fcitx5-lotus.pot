@@ -22,11 +22,7 @@ msgid "OFF"
 msgstr ""
 
 #: src/lotus-config.h:40 src/lotus-engine.cpp:983 src/lotus-engine.cpp:1091
-msgid "Uinput"
-msgstr ""
-
-#: src/lotus-config.h:40 src/lotus-engine.cpp:986 src/lotus-engine.cpp:1094
-msgid "Surrounding Text"
+msgid "Sen"
 msgstr ""
 
 #: src/lotus-config.h:40 src/lotus-engine.cpp:987 src/lotus-engine.cpp:1095
@@ -187,19 +183,11 @@ msgid "Custom Dictionary"
 msgstr ""
 
 #: src/lotus-config.h:249
-msgid "Show Uinput"
+msgid "Show Sen"
 msgstr ""
 
 #: src/lotus-config.h:250
-msgid "Shortcut for Uinput"
-msgstr ""
-
-#: src/lotus-config.h:257
-msgid "Show Surrounding Text"
-msgstr ""
-
-#: src/lotus-config.h:258
-msgid "Shortcut for Surrounding Text"
+msgid "Shortcut for Sen"
 msgstr ""
 
 #: src/lotus-config.h:259
@@ -795,6 +783,10 @@ msgstr ""
 
 #: settings-gui/ui/components.py:450
 msgid "[ Press Key... ]"
+msgstr ""
+
+#: settings-gui/ui/helpers.py:14
+msgid "Text goes straight into the field, without an underline."
 msgstr ""
 
 #: settings-gui/ui/helpers.py:14

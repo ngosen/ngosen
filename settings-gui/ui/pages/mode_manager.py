@@ -34,27 +34,27 @@ from ui.pages.dynamic_settings import CardWidget
 
 # Mode constants as defined in C++ LotusEngine
 MODE_OFF = 0
-MODE_UINPUT = 2
-MODE_SURROUNDING = 4
+MODE_SEN = 2
 MODE_PREEDIT = 5
 MODE_EMOJI = 6
 MODE_DEFAULT = -1  # UI special value for "Use Global Default"
 
-# Former Smooth (1), Super Smooth (3) and Minecraft (8) rules load as the single Uinput mode, as in
+# Former Smooth (1), Super Smooth (3), Surrounding Text (4) and Minecraft (8) rules load as Sen, as in
 # the addon.
-LEGACY_UINPUT_MODES = {1, 3, 8}
-LEGACY_UINPUT_MODE_NAMES = {
+FORMER_SEN_MODES = {1, 3, 4, 8}
+FORMER_SEN_MODE_NAMES = {
+    "Uinput",
     "Uinput (Smooth)",
     "Uinput (Slow)",
     "Uinput (Super Smooth)",
     "Minecraft",
+    "Surrounding Text",
 }
 
 MODE_INFO = {
     MODE_DEFAULT: {"title": "Default Typing", "icon": "preferences-system"},
     MODE_OFF: {"title": "OFF", "icon": "input-keyboard"},
-    MODE_UINPUT: {"title": "Uinput", "icon": "input-keyboard"},
-    MODE_SURROUNDING: {"title": "Surrounding Text", "icon": "text-field"},
+    MODE_SEN: {"title": "Sen", "icon": "input-keyboard"},
     MODE_PREEDIT: {"title": "Preedit", "icon": "text-field"},
     MODE_EMOJI: {"title": "Emoji Picker", "icon": "face-smile"},
 }
@@ -451,8 +451,7 @@ class ModeManagerPage(QWidget):
         global_layout.addWidget(QLabel(_("Global Default Mode:")))
         self.combo_global_mode = QComboBox()
         global_modes = [
-            MODE_UINPUT,
-            MODE_SURROUNDING,
+            MODE_SEN,
             MODE_PREEDIT,
             MODE_EMOJI,
             MODE_OFF,
@@ -487,8 +486,7 @@ class ModeManagerPage(QWidget):
         self.mode_cards = {}
 
         grid_modes = [
-            MODE_UINPUT,
-            MODE_SURROUNDING,
+            MODE_SEN,
             MODE_PREEDIT,
             MODE_EMOJI,
             MODE_OFF,
@@ -524,15 +522,15 @@ class ModeManagerPage(QWidget):
                     print(f"Skipping malformed app rule: {item!r}")
                     continue
                 if app:
-                    self.app_rules[app] = MODE_UINPUT if mode in LEGACY_UINPUT_MODES else mode
+                    self.app_rules[app] = MODE_SEN if mode in FORMER_SEN_MODES else mode
         except Exception as e:
             print(f"Error loading app rules via DBus: {e}")
 
         # Sync Global Mode
         config = self.dbus.get_config()
-        mode_str = config.get("values", {}).get("Mode", "Uinput")
-        if mode_str in LEGACY_UINPUT_MODE_NAMES:
-            mode_str = "Uinput"
+        mode_str = config.get("values", {}).get("Mode", "Sen")
+        if mode_str in FORMER_SEN_MODE_NAMES:
+            mode_str = "Sen"
         self.combo_global_mode.blockSignals(True)
         idx = self.combo_global_mode.findData(mode_str)
         if idx >= 0:
@@ -552,7 +550,7 @@ class ModeManagerPage(QWidget):
 
         for app in sorted(apps_to_show):
             mode = self.app_rules.get(app, MODE_DEFAULT)
-            mode_text = _(MODE_INFO.get(mode, MODE_INFO[MODE_UINPUT])["title"])
+            mode_text = _(MODE_INFO.get(mode, MODE_INFO[MODE_SEN])["title"])
 
             item = QListWidgetItem()
             item.setText(f"{app}\n{mode_text}")
@@ -701,7 +699,7 @@ class ModeManagerPage(QWidget):
         if dialog.exec():
             new_app = dialog.selected_app
             if new_app not in self.app_rules:
-                self.app_rules[new_app] = MODE_UINPUT
+                self.app_rules[new_app] = MODE_SEN
             self.selected_app = new_app
             self._populate_app_list()
             self._notify_changed()
@@ -742,7 +740,7 @@ class ModeManagerPage(QWidget):
 
     def is_modified_from_default(self):
         """Returns True if the current state differs from the default state."""
-        return len(self.app_rules) > 0 or self.combo_global_mode.currentData() != "Uinput"
+        return len(self.app_rules) > 0 or self.combo_global_mode.currentData() != "Sen"
 
     def save_data(self) -> bool:
         try:

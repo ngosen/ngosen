@@ -44,15 +44,10 @@ else()
 endif()
 fcitx5_add_i18n_definition()
 
-set(LOTUS_UINPUT_PROXY_USER "uinput_proxy" CACHE STRING
-    "System user the uinput server runs as (udev rules, sysusers.d, service scripts, addon peer check)")
-
 add_subdirectory(po)
 add_subdirectory(bamboo)
 add_subdirectory(src)
 add_subdirectory(data)
-add_subdirectory(server)
-add_subdirectory(misc)
 add_subdirectory(settings-gui)
 
 if (BUILD_TESTING)

@@ -39,8 +39,7 @@ namespace {
         switch (mode) {
             case fcitx::LotusMode::Off: return "Off";
             case fcitx::LotusMode::Preedit: return "Preedit";
-            case fcitx::LotusMode::Uinput: return "Uinput";
-            case fcitx::LotusMode::SurroundingText: return "SurroundingText";
+            case fcitx::LotusMode::Sen: return "Sen";
             case fcitx::LotusMode::Emoji: return "Emoji";
             default: return "Unknown";
         }
@@ -80,7 +79,7 @@ int main() {
     fcitx::LotusEngine engine(&testInstance.instance);
 
     fcitx::RawConfig   config;
-    config.setValueByPath("Mode", "Uinput");
+    config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     engine.setConfig(config);
 

@@ -23,12 +23,8 @@ msgid "OFF"
 msgstr "Tắt"
 
 #: src/lotus-config.h:40 src/lotus-engine.cpp:983 src/lotus-engine.cpp:1091
-msgid "Uinput"
-msgstr "Uinput"
-
-#: src/lotus-config.h:40 src/lotus-engine.cpp:986 src/lotus-engine.cpp:1094
-msgid "Surrounding Text"
-msgstr "Văn bản xung quanh"
+msgid "Sen"
+msgstr "Gõ Sen"
 
 #: src/lotus-config.h:40 src/lotus-engine.cpp:987 src/lotus-engine.cpp:1095
 msgid "Preedit"
@@ -188,20 +184,12 @@ msgid "Custom Dictionary"
 msgstr "Từ điển tuỳ chỉnh"
 
 #: src/lotus-config.h:249
-msgid "Show Uinput"
-msgstr "Hiển thị chế độ Uinput"
+msgid "Show Sen"
+msgstr "Hiển thị chế độ Gõ Sen"
 
 #: src/lotus-config.h:250
-msgid "Shortcut for Uinput"
-msgstr "Phím tắt cho Uinput"
-
-#: src/lotus-config.h:257
-msgid "Show Surrounding Text"
-msgstr "Hiển thị chế độ Văn bản xung quanh"
-
-#: src/lotus-config.h:258
-msgid "Shortcut for Surrounding Text"
-msgstr "Phím tắt cho Văn bản xung quanh"
+msgid "Shortcut for Sen"
+msgstr "Phím tắt cho Gõ Sen"
 
 #: src/lotus-config.h:259
 msgid "Show Preedit"
@@ -815,6 +803,10 @@ msgstr "[ Đang ghi lại... ]"
 #: settings-gui/ui/components.py:450
 msgid "[ Press Key... ]"
 msgstr "[ Nhấn phím... ]"
+
+#: settings-gui/ui/helpers.py:14
+msgid "Text goes straight into the field, without an underline."
+msgstr "Chữ hiện thẳng vào ô, không gạch chân."
 
 #: settings-gui/ui/helpers.py:14
 msgid "You can type tone marks at the end of the word or anywhere inside."

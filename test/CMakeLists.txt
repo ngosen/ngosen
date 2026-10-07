@@ -58,7 +58,7 @@ endfunction()
 add_lotus_headless_test(preedit_lifecycle preedit-lifecycle.cpp "integration;preedit")
 add_lotus_headless_test(app_rule_reset app-rule-reset.cpp "integration;apprule")
 add_lotus_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp "integration;apprule;gnome")
-add_lotus_headless_test(uinput_mode_migration uinput-mode-migration.cpp "integration;mode")
+add_lotus_headless_test(mode_name_migration mode-name-migration.cpp "integration;mode")
 add_lotus_headless_test(messenger_defaults messenger-defaults.cpp "integration;mode")
 add_lotus_headless_test(preedit_smoke_client preedit-smoke-client.cpp "integration;preedit")
 add_lotus_headless_test(preedit_smoke_server preedit-smoke-server.cpp "integration;preedit")
@@ -96,46 +96,12 @@ add_lotus_headless_test(replay_single_commit
     replay-single-commit.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_settle_first_word
     super-smooth-settle-first-word.cpp "integration;smooth")
-add_lotus_headless_test(modifier_key_bypasses_surrounding_text
-    modifier-key-bypasses-surrounding-text.cpp "integration;surrounding")
 add_lotus_headless_test(emoji_history_page_navigation
     emoji-history-page-navigation.cpp "integration;emoji")
 add_lotus_headless_test(property_invariants
     property-invariants.cpp "integration;property")
 add_bamboo_test(numeric_macro_case_preservation
     numeric-macro-case-preservation.cpp "unit;macro")
-
-add_executable(server_key_request server-key-request.cpp)
-target_include_directories(server_key_request PRIVATE ${PROJECT_SOURCE_DIR}/server)
-add_test(NAME server_key_request COMMAND server_key_request)
-set_tests_properties(server_key_request PROPERTIES
-    LABELS "unit;server"
-    TIMEOUT 20
-)
-
-add_executable(server_device_filter server-device-filter.cpp)
-target_include_directories(server_device_filter PRIVATE ${PROJECT_SOURCE_DIR}/server)
-add_test(NAME server_device_filter COMMAND server_device_filter)
-set_tests_properties(server_device_filter PROPERTIES
-    LABELS "unit;server"
-    TIMEOUT 20
-)
-
-add_executable(server_peer_trust
-    server-peer-trust.cpp
-    ${PROJECT_SOURCE_DIR}/src/lotus-utils.cpp
-)
-target_include_directories(server_peer_trust PRIVATE
-    ${PROJECT_SOURCE_DIR}/src
-)
-target_link_libraries(server_peer_trust PRIVATE
-    Fcitx5::Core
-)
-add_test(NAME server_peer_trust COMMAND server_peer_trust)
-set_tests_properties(server_peer_trust PROPERTIES
-    LABELS "unit;server"
-    TIMEOUT 20
-)
 
 add_executable(emoji_backspace_utf8
     test-emoji-backspace.cpp

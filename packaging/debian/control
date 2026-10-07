@@ -13,8 +13,6 @@ Build-Depends: debhelper-compat (= 13),
                libfcitx5core-dev,
                libfcitx5config-dev,
                libfcitx5utils-dev,
-               libinput-dev,
-               libudev-dev,
                pkg-config,
                python3,
                librsvg2-bin
@@ -26,7 +24,7 @@ Architecture: any
 Conflicts: fcitx5-lotus
 Replaces: fcitx5-lotus
 # libxcb, libxcb-xtest and libxcb-xinput are loaded with dlopen at runtime, so shlibs cannot see them.
-Depends: acl, passwd, fcitx5, fcitx5-data, udev, libxcb1, libxcb-xtest0, libxcb-xinput0, python3-qtpy, python3-dbus, python3-qtpy-pyqt6 | python3-qtpy-pyside6 | python3-qtpy-pyqt5 | python3-pyqt5, ${misc:Depends}, ${shlibs:Depends}, ${python3:Depends}
+Depends: passwd, fcitx5, fcitx5-data, libxcb1, libxcb-xtest0, libxcb-xinput0, python3-qtpy, python3-dbus, python3-qtpy-pyqt6 | python3-qtpy-pyside6 | python3-qtpy-pyqt5 | python3-pyqt5, ${misc:Depends}, ${shlibs:Depends}, ${python3:Depends}
 Description: Ngó Sen, a Vietnamese input method for fcitx5
  Ngó Sen is a fork of fcitx5-lotus. It installs the same files, so the two
  cannot be installed together.

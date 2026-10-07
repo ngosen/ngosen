@@ -15,16 +15,10 @@
 #define _FCITX5_LOTUS_UTILS_H_
 
 #include <atomic>
-#include <sys/un.h>
 #include <fcitx-utils/log.h>
 #include <fcitx/inputcontext.h>
 
 #include "lotus-config.h"
-
-/**
- * @brief Maximum length of Unix socket paths.
-*/
-#define UNIX_PATH_MAX sizeof(((struct sockaddr_un*)0)->sun_path)
 
 FCITX_DECLARE_LOG_CATEGORY(lotus);
 
@@ -42,31 +36,7 @@ extern std::atomic<bool>             needEngineReset;   ///< Flag to trigger eng
 extern std::atomic<bool>             g_mouse_clicked;   ///< Mouse click detection flag
 extern std::atomic<bool>             is_deleting_;      ///< Deletion in progress flag
 extern std::atomic<bool>             stop_flag_monitor; ///< Signal to stop monitor threads
-extern std::atomic<int>              uinput_client_fd_; ///< Uinput client file descriptor
 extern std::atomic<unsigned int>     realtextLen;       ///< Current text length
-extern std::atomic<int>              mouse_socket_fd;   ///< Mouse socket file descriptor
-
-/**
- * @brief Builds socket path from base suffix.
- * @param base_path_suffix Suffix to append to base path.
- * @return Full socket path.
- */
-std::string buildSocketPath(const char* base_path_suffix);
-
-/**
- * @brief Whether a socket peer with this uid may act as the uinput server.
- *
- * The installed server runs as the proxy user. A private pair started with LOTUS_SOCKET_NAMESPACE
- * (tests, dev builds) runs as the user, which gains nothing a same-user process cannot already do.
- */
-bool isTrustedServerUid(uid_t peer, uid_t proxy, uid_t self, bool privateNamespace);
-
-/**
- * @brief Checks the peer of a connected server socket with SO_PEERCRED.
- * @param fd Connected socket.
- * @return True if the peer is a trusted uinput server.
- */
-bool isTrustedServerSocket(int fd);
 
 /**
  * @brief Gets current time in milliseconds.
@@ -84,7 +54,7 @@ bool isBackspace(uint32_t sym);
 /**
  * @brief Whether a mode delivers text through the uinput (fake backspace) path.
  * @param mode Mode to check.
- * @return True for Uinput.
+ * @return True for Sen.
  */
 bool isUinputMode(fcitx::LotusMode mode);
 
@@ -155,7 +125,7 @@ std::string stripDesktopSuffix(const std::string& program);
  */
 bool surroundingTextLags(fcitx::InputContext* ic);
 
-// True when the frontend can deliver backspaces itself, so the uinput server is not needed: the
+// True when the frontend can deliver backspaces itself, so XTEST is not needed: the
 // Wayland input-method frontend, XIM clients, and IBus, D-Bus and fcitx4 clients other than SDL.
 bool forwardsBackspaces(fcitx::InputContext* ic);
 

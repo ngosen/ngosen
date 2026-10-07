@@ -18,6 +18,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 
 ### Thay đổi
 
+- Chế độ `Uinput` đổi tên thành **Gõ Sen** (`Mode=Sen` trong `lotus.conf`). Cấu hình cũ, thứ tự chế độ,
+  phím tắt và tuỳ chọn ẩn/hiện của chế độ cũ tự chuyển sang tên mới (#43).
 - Nhánh chính đổi tên từ `ban-dung` thành `main`. Đường dẫn cũ trên GitHub tự chuyển sang tên mới. Ai
   đã tải mã về máy thì chạy `git branch -m ban-dung main && git fetch origin && git branch -u origin/main main` (#36).
 - Mục Issues của kho được bật để nhận báo lỗi. Mẫu báo lỗi hỏi phiên bản và cách cài của Ngó Sen thay
@@ -30,6 +32,13 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 
 ### Bỏ
 
+- Máy chủ nền `fcitx5-lotus-server`. Bộ gõ xoá chữ cũ bằng phím gửi hộ qua fcitx5, hoặc bấm phím qua
+  XTEST trên phiên X11, nên không còn chương trình chạy ngầm, tài khoản `uinput_proxy` hay quyền thiết
+  bị. Cập nhật từ bản cũ thì gói tự tắt dịch vụ cũ và xoá tài khoản đó. Game dùng SDL ngoài X11 không
+  nhận phím gửi hộ nên gõ ra chữ không dấu (#43).
+- Chế độ Surrounding Text, gộp vào Gõ Sen: Gõ Sen đã tự xoá chữ qua surrounding text ở app cần cách
+  đó. Cấu hình cũ đặt Surrounding Text (`Mode=Surrounding Text`, số `4` trong luật theo app) tự đọc
+  thành Gõ Sen. Còn lại các chế độ Gõ Sen, Preedit, Emoji và OFF (#43).
 - Chế độ Minecraft. Đặt nhầm chế độ này cho app thường thì app còn sót một chữ cũ. Cấu hình cũ đặt
   Minecraft (`Mode=Minecraft`, số `8` trong luật theo app) tự đọc thành `Uinput`; chế độ này cũng biến
   khỏi bảng chọn chế độ và cửa sổ cài đặt (#29).

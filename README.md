@@ -9,12 +9,14 @@ ai cần thì lấy dùng, **không hứa hỗ trợ**. Gặp lỗi thì báo �
 
 Bản 1.0 nhắm bốn thay đổi lớn. Chưa có ngày phát hành.
 
-- **Bỏ máy chủ nền uinput.** Hiện bộ gõ cần một chương trình chạy ngầm có quyền đặc biệt để xoá chữ cũ.
-  Bản 1.0 không cần nó nữa: cài xong là gõ, không phải bật dịch vụ, không cần quyền thiết bị.
-- **Chỉ còn hai chế độ gõ: Gõ Sen và Preedit.** Gõ Sen là chế độ dùng cho mọi chỗ: gõ nhanh không mất
-  chữ, gõ đúng trong trình duyệt, thanh địa chỉ, Facebook, app Electron như Zalo, và terminal.
-  Preedit là chế độ hiện chữ gạch chân trong lúc gõ, dành cho app không hợp với Gõ Sen. Người dùng không
-  còn phải chọn giữa nhiều chế độ khó hiểu.
+- **Bỏ máy chủ nền uinput.** Xong: bộ gõ không còn chương trình chạy ngầm có quyền đặc biệt. Cài xong
+  là gõ, không phải bật dịch vụ, không cần quyền thiết bị. Cập nhật từ bản cũ thì gói tự tắt và dọn
+  dịch vụ cũ.
+- **Chỉ còn hai chế độ gõ: Gõ Sen và Preedit**, cùng chế độ Emoji để chọn biểu tượng cảm xúc. Gõ Sen là
+  chế độ dùng cho mọi chỗ: gõ nhanh không mất chữ, gõ đúng trong trình duyệt, thanh địa chỉ, Facebook,
+  app Electron như Zalo, và terminal. Preedit là chế độ hiện chữ gạch chân trong lúc gõ, dành cho app
+  không hợp với Gõ Sen. Người dùng không còn phải chọn giữa nhiều chế độ khó hiểu. Xong: chế độ
+  Surrounding Text đã gộp vào Gõ Sen.
 - **Lõi ghép dấu (bamboo-core) chuyển sang Rust.** Phần biến `tieengs` thành `tiếng` đang viết bằng
   Go, sẽ đổi sang bản viết bằng Rust. Chỉ đổi khi bản mới gõ ra y hệt bản cũ.
 - **Tách lõi Ngó Sen để dùng được ở nhiều nơi.** Ngoài fcitx5, Ngó Sen sẽ có bản cho IBus (bộ gõ mặc
@@ -22,8 +24,9 @@ Bản 1.0 nhắm bốn thay đổi lớn. Chưa có ngày phát hành.
 
 ## Nên dùng chế độ nào
 
-Dùng **`Uinput`** làm chế độ gõ chính: chọn trong cửa sổ cài đặt Ngó Sen, mục chế độ mặc định. Bản 1.0
-sẽ đổi tên chế độ này thành Gõ Sen.
+Dùng **Gõ Sen** làm chế độ gõ chính: chọn trong cửa sổ cài đặt Ngó Sen, mục chế độ mặc định. Chế độ
+này trước tên là `Uinput`; cấu hình cũ tự chuyển sang tên mới. Chế độ Surrounding Text cũ cũng tự chuyển
+thành Gõ Sen.
 
 Kiểu gõ được dùng và kiểm hằng ngày là **Telex**. VNI và các kiểu khác dùng được nhưng chưa kiểm kỹ.
 
@@ -44,10 +47,9 @@ Không muốn chạy lệnh tải từ mạng thì tải gói ở trang
 [Releases](https://github.com/ngosen/ngosen/releases) rồi cài bằng tay. Muốn tự dựng từ mã thì xem
 [TU-DUNG.md](TU-DUNG.md).
 
-**Cài xong, hoặc mỗi lần cập nhật,** khởi động lại máy chủ nền rồi khởi động lại fcitx5:
+**Cài xong, hoặc mỗi lần cập nhật,** khởi động lại fcitx5:
 
 ```
-sudo systemctl restart fcitx5-lotus-server@$(whoami).service
 fcitx5 -rd
 ```
 
@@ -65,13 +67,7 @@ thì tắt extension bằng `gnome-extensions disable forward-keys@ngosen.github
 ## Gỡ
 
 1. Bỏ Ngó Sen khỏi danh sách bộ gõ trong "Fcitx5 Configuration".
-2. Tắt máy chủ nền:
-
-   ```
-   sudo systemctl disable --now fcitx5-lotus-server@$(whoami).service
-   ```
-
-3. Gỡ gói rồi khởi động lại fcitx5:
+2. Gỡ gói rồi khởi động lại fcitx5:
 
    ```
    sudo dnf remove fcitx5-ngosen       # Fedora
@@ -82,7 +78,7 @@ thì tắt extension bằng `gnome-extensions disable forward-keys@ngosen.github
    ```
 
 Cấu hình (các tệp `lotus*.conf` trong `~/.config/fcitx5/conf/`) vẫn ở lại máy, để lần cài sau dùng
-tiếp. Muốn xoá sạch thì xoá các tệp đó và chạy `sudo userdel uinput_proxy`.
+tiếp. Muốn xoá sạch thì xoá các tệp đó.
 
 ## Nguồn gốc
 

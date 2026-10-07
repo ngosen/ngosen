@@ -9,19 +9,6 @@
 #include "lotus-utils.h"
 #include "ngosen-pointer.h"
 
-#include <algorithm>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <string>
-
-#include <fcntl.h>
-#include <poll.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <limits.h>
-
 std::thread mouse_thread = std::thread();
 
 namespace {
@@ -32,75 +19,8 @@ namespace {
 } // namespace
 
 void mousePressResetThread() {
-    if (watchX11PointerClicks(stop_flag_monitor, markMouseClick))
-        return;
-    const std::string mouse_socket_path = buildSocketPath("mouse_socket");
-    LOTUS_INFO("Mouse press reset thread started.");
-
-    while (!stop_flag_monitor.load(std::memory_order_acquire)) {
-        int sock = socket(AF_UNIX, SOCK_SEQPACKET | SOCK_NONBLOCK, 0);
-        if (sock < 0) {
-            LOTUS_ERROR("Failed to create socket: " + std::string(strerror(errno)));
-            sleep(1);
-            continue;
-        }
-
-        struct sockaddr_un addr{};
-        addr.sun_family  = AF_UNIX;
-        addr.sun_path[0] = '\0';
-        memcpy(&addr.sun_path[1], mouse_socket_path.c_str(), mouse_socket_path.length());
-        socklen_t len = offsetof(struct sockaddr_un, sun_path) + mouse_socket_path.length() + 1;
-
-        if (connect(sock, (struct sockaddr*)&addr, len) < 0) {
-            LOTUS_ERROR("Failed to connect to socket: " + std::string(strerror(errno)));
-            close(sock);
-            sleep(1);
-            continue;
-        }
-        LOTUS_INFO("Mouse socket connected.");
-
-        if (!isTrustedServerSocket(sock)) {
-            close(sock);
-            sleep(1);
-            continue;
-        }
-
-        mouse_socket_fd.store(sock, std::memory_order_release);
-
-        struct pollfd pfd{};
-        pfd.fd     = sock;
-        pfd.events = POLLIN;
-
-        while (!stop_flag_monitor.load(std::memory_order_acquire)) {
-            int ret = poll(&pfd, 1, -1);
-
-            if (ret > 0 && ((pfd.revents & POLLIN) != 0)) {
-                char    buf[16];
-                ssize_t n = recv(sock, buf, sizeof(buf), 0);
-
-                if (n <= 0) {
-                    LOTUS_ERROR("Mouse socket recv error: " + std::string(strerror(errno)));
-                    break;
-                }
-
-                if (n >= 1 && buf[0] == 'C') {
-                    LOTUS_DEBUG("Mouse click detected from server. Resetting engine.");
-                    markMouseClick();
-                } else {
-                    // Clamp for the compiler's benefit: n is already known to be in [1, sizeof(buf)]
-                    // here, but GCC cannot prove it and warns that the length may be a huge size_t.
-                    const size_t len = std::min(static_cast<size_t>(n), sizeof(buf));
-                    LOTUS_WARN("Unexpected message received from mouse socket: " + std::string(buf, len));
-                }
-
-            } else if (ret < 0 && errno != EINTR) {
-                LOTUS_ERROR("Mouse socket poll error: " + std::string(strerror(errno)));
-                break;
-            }
-        }
-        mouse_socket_fd.store(-1, std::memory_order_release);
-        close(sock);
-    }
+    // Wayland reports clicks to no one but the app; checkCursorJump covers that case.
+    watchX11PointerClicks(stop_flag_monitor, markMouseClick);
 }
 
 void startMouseReset() {

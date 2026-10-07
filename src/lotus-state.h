@@ -128,25 +128,10 @@ namespace fcitx {
         bool                    tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                    macro_skip_            = false; ///< Macro disabled for the current word
 
-        /**
-         * @brief Connects to the uinput server.
-         * @return True if connection successful.
-         */
-        static bool connect_uinput_server();
+        // Presses real keys through XTEST, for frontends that cannot forward them.
+        void sendBackspaceKeys(int count) const;
 
-        /**
-         * @brief Sets up uinput device.
-         * @return File descriptor or -1 on error.
-         */
-        static int setup_uinput();
-
-        /**
-         * @brief Sends backspace key events via uinput.
-         * @param count Number of backspaces to send.
-         */
-        void send_backspace_uinput(int count) const;
-
-        // --- Uinput mode: wait for the app instead of sleeping (see handleUInputKeyPress) ---
+        // --- Sen mode: wait for the app instead of sleeping (see handleUInputKeyPress) ---
         std::unique_ptr<HandlerTableEntry<EventHandler>> surr_wait_watcher_;
         std::unique_ptr<EventSourceTime>                 surr_wait_timer_;
         std::unique_ptr<EventSourceTime>                 xim_forward_timer_; ///< forwards after the XIM sync reply
@@ -197,7 +182,7 @@ namespace fcitx {
         // --- Select and overtype (Facebook composers) ---
         // Select with Shift+Left, wait for the snapshot to show the selection, then commit over it.
         // The field never becomes empty, so Messenger does not reload its placeholder.
-        void                                             send_select_uinput(int charCount) const; // sent as a negative count
+        void                                             sendSelectKeys(int charCount) const; // sent as a negative count
         void                                             selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest = false);
         void                                             finishOvertype(const char* reason, bool fromTimer);
         void                                             abandonOvertype();
@@ -243,7 +228,7 @@ namespace fcitx {
         void updateEmojiPreedit();
 
         /**
-         * @brief Handles key press in uinput mode.
+         * @brief Handles key press in Sen mode.
          * @param event The key event.
          * @param currentSym Current key symbol.
          * @param sleepTime Delay in microseconds.
@@ -252,13 +237,13 @@ namespace fcitx {
         bool handleUInputKeyPress(KeyEvent& event, KeySym currentSym, int sleepTime);
         bool waitForDeletion(KeyEvent* event, int sleepTime);
         void forwardBackspaces(int count);
-        // True when a replacement can delete text: forwarded by the frontend or sent to the uinput server.
+        // True when a replacement can delete text: forwarded by the frontend or pressed through XTEST.
         bool canSendBackspaces() const;
         // Moves the commit of a timer-only wait later, never earlier.
         void deferTimedCommit(uint64_t deliverAtUs);
 
         /**
-         * @brief Performs text replacement via uinput.
+         * @brief Replaces text by sending backspaces, then committing.
          * @param deletedPart Text to delete.
          * @param addedPart Text to insert.
          */
@@ -283,7 +268,7 @@ namespace fcitx {
         bool checkForwardSpecialKey(KeyEvent& keyEvent, KeySym& currentSym);
 
         /**
-         * @brief Handles uinput mode processing.
+         * @brief Handles Sen mode processing.
          * @param keyEvent The key event.
          * @param currentSym Current key symbol.
          * @param sleepTime Delay in microseconds.
@@ -291,25 +276,11 @@ namespace fcitx {
         void handleUinputMode(KeyEvent& keyEvent, KeySym currentSym);
 
         /**
-         * @brief Handles surrounding text mode.
-         * @param keyEvent The key event.
-         * @param currentSym Current key symbol.
-         */
-        void handleSurroundingText(KeyEvent& keyEvent, KeySym currentSym);
-
-        /**
          * @brief Handles Off mode with macro shadow processing.
          * @param keyEvent The key event.
          * @param currentSym Current key symbol.
          */
         void handleOffModeMacro(KeyEvent& keyEvent, KeySym currentSym);
-
-        /**
-         * @brief Handles processing normal key events.
-         * @param keyEvent The key event.
-         * @param currentSym Current key symbol.
-         */
-        void processNormalKey(KeyEvent& keyEvent, KeySym currentSym);
 
         /**
          * @brief Replays keystrokes buffered during replacement.

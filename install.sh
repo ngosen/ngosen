@@ -9,7 +9,6 @@ set -euo pipefail
 
 RELEASE_URL=${NGOSEN_RELEASE_URL:-https://github.com/ngosen/ngosen/releases/latest/download}
 SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/TU-DUNG.md"
-SERVICE=fcitx5-lotus-server
 
 assume_yes=0
 manager=
@@ -152,7 +151,8 @@ install_with_pacman() {
 
     # A build installed with "cmake --install" left the same files owned by no package. Only the
     # paths this package ships may be overwritten.
-    if [ -e "/usr/bin/$SERVICE" ] && ! pacman -Qo "/usr/bin/$SERVICE" >/dev/null 2>&1; then
+    local addon=/usr/lib/fcitx5/liblotus.so
+    if [ -e "$addon" ] && ! pacman -Qo "$addon" >/dev/null 2>&1; then
         say "Máy có bản cài từ mã; gói sẽ ghi đè các tệp của bản đó."
         mapfile -t path_list < <(bsdtar -tf "$package" | grep -v -E '^\.|/$')
         local path
@@ -193,34 +193,6 @@ install_package() {
             install_with_pacman "$package"
             ;;
     esac
-}
-
-# The server is a per-user service; installing the package neither enables nor restarts it.
-start_server() {
-    local user
-    user=$(id -un)
-    # SUDO_USER says who called sudo; it means nothing unless this really runs as root.
-    if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ] && id -u -- "$SUDO_USER" >/dev/null 2>&1; then
-        user=$SUDO_USER
-    fi
-    if [ "$user" = root ]; then
-        say "Đang chạy bằng root nên chưa bật máy chủ nền cho tài khoản nào. Bằng tài khoản thường, chạy:"
-        say "  sudo systemctl enable --now $SERVICE@\$(whoami).service"
-        return
-    fi
-    if [ ! -d /run/systemd/system ]; then
-        say "Máy không chạy systemd; tự bật dịch vụ $SERVICE theo hệ thống khởi động của máy."
-        return
-    fi
-    # A server left running from an older version keeps serving until it is restarted. The package
-    # is already installed at this point, so a failure here is reported, not fatal.
-    if as_root systemctl daemon-reload &&
-        as_root systemctl enable "$SERVICE@$user.service" &&
-        as_root systemctl restart "$SERVICE@$user.service"; then
-        say "Máy chủ nền cho $user: $(systemctl is-active "$SERVICE@$user.service" || true)"
-    else
-        say "Chưa bật được máy chủ nền cho $user. Xem lý do: journalctl -u $SERVICE@$user.service -n 20"
-    fi
 }
 
 main() {
@@ -272,7 +244,6 @@ main() {
 
     download_package "$hash" "$file"
     install_package "$workdir/$file"
-    start_server
 
     say ""
     say "Xong. Việc còn lại:"

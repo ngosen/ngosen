@@ -11,6 +11,7 @@ from ui.components import HelpIcon
 
 # Tooltip text for specific settings keys
 HELPERS = {
+    "ShortcutSen": N_("Text goes straight into the field, without an underline."),
     "FreeMarking": N_("You can type tone marks at the end of the word or anywhere inside."),
     "CapitalizeMacro": N_(
         "Automatically match expansion case to trigger key case.\n\n"

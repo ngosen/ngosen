@@ -11,8 +11,7 @@
 #include <utility>
 
 namespace {
-    // Loaded at run time so the packages need no new dependency, and a system without the library
-    // falls back to the uinput server.
+    // Loaded at run time so a system without the library still builds and runs.
     struct XcbConnection;
     struct XcbVoidCookie {
         unsigned int sequence;

@@ -1,42 +1,41 @@
 #!/bin/sh
 set -e
 
-if [ "$1" = "configure" ]; then
-    if command -v systemd-sysusers >/dev/null 2>&1; then
-        systemd-sysusers lotus.conf
+# Earlier versions ran fcitx5-lotus-server@<user>.service as the uinput_proxy user, with udev rules
+# granting it /dev/uinput and the pointer devices. This version needs none of it.
+remove_uinput_server() {
+    if [ -d /run/systemd/system ]; then
+        for unit in $(systemctl list-units --all --plain --no-legend 'fcitx5-lotus-server@*' 2>/dev/null | awk '{print $1}'); do
+            systemctl stop "$unit" >/dev/null 2>&1 || :
+        done
     fi
-
-    # Earlier packages put the service user in group input, which can read every keyboard.
-    if id -nG uinput_proxy 2>/dev/null | tr ' ' '\n' | grep -qx input; then
-        gpasswd -d uinput_proxy input >/dev/null 2>&1 || :
+    # The unit file is gone, so systemctl disable no longer finds the instances.
+    find /etc/systemd/system -name 'fcitx5-lotus-server@*.service' -type l -delete 2>/dev/null || :
+    if [ -d /run/systemd/system ]; then
+        systemctl daemon-reload >/dev/null 2>&1 || :
+        systemctl reset-failed 'fcitx5-lotus-server@*' >/dev/null 2>&1 || :
     fi
-    # The ACLs come from udev rules, which otherwise only reach devices plugged in later. Only the
-    # devices those rules act on are replayed.
+    if getent passwd uinput_proxy >/dev/null; then
+        for dev in /dev/uinput /dev/input/event*; do
+            [ -e "$dev" ] && setfacl -x u:uinput_proxy "$dev" >/dev/null 2>&1 || :
+        done
+        userdel uinput_proxy >/dev/null 2>&1 || :
+    fi
+    if getent group uinput_proxy >/dev/null; then
+        groupdel uinput_proxy >/dev/null 2>&1 || :
+    fi
     udevadm control --reload-rules >/dev/null 2>&1 || :
-    udevadm trigger --subsystem-match=misc --sysname-match=uinput >/dev/null 2>&1 || :
-    udevadm trigger --subsystem-match=input --property-match=ID_INPUT_MOUSE=1 \
-        --property-match=ID_INPUT_TOUCHPAD=1 --property-match=ID_INPUT_POINTINGSTICK=1 >/dev/null 2>&1 || :
+}
 
+if [ "$1" = "configure" ]; then
+    remove_uinput_server
+
+    echo "--- Cấu hình Ngó Sen ---"
     if [ -z "$2" ]; then
-        echo "--- Cấu hình Ngó Sen ---"
-        echo "Hướng dẫn sau cài đặt:"
-        echo "1. Kích hoạt Server cho user của bạn:"
-        echo "   sudo systemctl enable --now fcitx5-lotus-server@\$(whoami).service"
-        echo ""
-        echo "2. Cấu hình Fcitx5:"
-        echo "   - Mở 'Fcitx5 Configuration', thêm bộ gõ Ngó Sen"
-        echo ""
-        echo "3. Lưu ý cho Wayland (KDE):"
-        echo "   - Hãy chọn 'Fcitx 5' trong phần Virtual Keyboard của hệ thống."
-        echo "------------------------------------------------"
+        echo "Mở 'Fcitx5 Configuration' và thêm bộ gõ Ngó Sen."
+        echo "KDE Wayland: chọn 'Fcitx 5' trong System Settings → Virtual Keyboard."
     else
-        echo "--- Cấu hình Ngó Sen ---"
-        echo "Hướng dẫn sau cập nhật:"
-        echo "1. Khởi động lại Server cho user của bạn:"
-        echo "   sudo systemctl restart fcitx5-lotus-server@\$(whoami).service"
-        echo ""
-        echo "2. Cấu hình Fcitx5:"
-        echo "   - Mở 'Fcitx5 Configuration', nhấn restart để khởi động lại."
+        echo "Khởi động lại fcitx5 để dùng bản mới: fcitx5 -rd"
     fi
 fi
 

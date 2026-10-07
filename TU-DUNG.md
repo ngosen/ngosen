@@ -17,10 +17,10 @@ sudo pacman -R fcitx5-lotus
 **2. Cài công cụ dựng.**
 
 ```
-sudo pacman -S --needed cmake extra-cmake-modules gcc go git python make pkgconf acl fcitx5 libinput hicolor-icon-theme python-qtpy python-dbus librsvg libxcb
+sudo pacman -S --needed cmake extra-cmake-modules gcc go git python make pkgconf fcitx5 hicolor-icon-theme python-qtpy python-dbus librsvg libxcb
 ```
 
-**3. Tải mã và dựng.** Phải cài vào `/usr`, vì dịch vụ nền tìm chương trình ở đó. Nhớ
+**3. Tải mã và dựng.** Phải cài vào `/usr`, vì fcitx5 tìm bộ gõ ở đó. Nhớ
 `--recurse-submodules`, vì lõi ghép dấu nằm ở kho con `bamboo-core`.
 
 ```
@@ -33,36 +33,24 @@ sudo cmake --install build
 
 Trên Fedora và openSUSE dùng `-DCMAKE_INSTALL_LIBDIR=lib64` thay cho `/usr/lib`.
 
-**4. Bật máy chủ nền cho tài khoản của mình.**
+**4. Máy từng chạy máy chủ nền của Lotus hoặc Ngó Sen bản cũ:** tắt nó và xoá các tệp nó để lại, vì
+`cmake --install` chỉ thêm tệp chứ không xoá. Máy chưa từng cài thì bỏ qua bước này.
 
 ```
-sudo systemd-sysusers
-sudo modprobe uinput
-sudo udevadm control --reload-rules
-sudo udevadm trigger --subsystem-match=misc --subsystem-match=input
+sudo systemctl disable --now fcitx5-lotus-server@$(whoami).service
+sudo rm -f /usr/bin/fcitx5-lotus-server /usr/lib/systemd/system/fcitx5-lotus-server@.service \
+    /usr/lib/udev/rules.d/99-lotus.rules /usr/lib/sysusers.d/lotus.conf /usr/lib/modules-load.d/fcitx5-lotus.conf
+sudo userdel uinput_proxy
 sudo systemctl daemon-reload
-sudo systemctl enable --now fcitx5-lotus-server@$(whoami).service
-sudo systemctl restart fcitx5-lotus-server@$(whoami).service
-systemctl status fcitx5-lotus-server@$(whoami).service       # phải thấy active (running)
-```
-
-Máy từng cài Lotus thì chạy thêm lệnh này một lần, trước lệnh `restart`:
-
-```
-sudo gpasswd -d uinput_proxy input
 ```
 
 **5. Thêm bộ gõ.** Khởi động lại fcitx5 (hoặc đăng xuất rồi đăng nhập lại), mở "Fcitx5 Configuration"
 và thêm Ngó Sen. Trên KDE Wayland: System Settings → Virtual Keyboard → chọn "Fcitx 5".
 
 **Cập nhật bản mới về sau:** trong thư mục `ngosen`, chạy `git pull --recurse-submodules`, lặp lại
-bước 3, rồi chạy:
+bước 3, rồi khởi động lại fcitx5:
 
 ```
-sudo udevadm control --reload-rules
-sudo udevadm trigger --subsystem-match=misc --subsystem-match=input
-sudo systemctl daemon-reload
-sudo systemctl restart fcitx5-lotus-server@$(whoami).service
 fcitx5 -rd
 ```
 

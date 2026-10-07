@@ -23,8 +23,6 @@
 
 #include <algorithm>
 #include <string>
-#include <sys/socket.h>
-#include <sys/un.h>
 
 #include <thread>
 
@@ -91,68 +89,9 @@ namespace fcitx {
         EngineSetOption(lotusEngine_.handle(), &option);
     }
 
-    bool LotusState::connect_uinput_server() {
-        if (uinput_client_fd_ >= 0)
-            return true;
-        const std::string current_path = buildSocketPath("kb_socket");
-        int               current_fd   = socket(AF_UNIX, SOCK_SEQPACKET | SOCK_NONBLOCK, 0);
-        if (current_fd < 0) {
-            LOTUS_ERROR("Failed to create socket: " + std::string(strerror(errno)));
-            return false;
-        }
-
-        struct sockaddr_un addr{};
-        addr.sun_family = AF_UNIX;
-
-        addr.sun_path[0] = '\0';
-        memcpy(&addr.sun_path[1], current_path.c_str(), current_path.length());
-        socklen_t len = offsetof(struct sockaddr_un, sun_path) + current_path.length() + 1;
-
-        if (connect(current_fd, (struct sockaddr*)&addr, len) == 0) {
-            // The socket name is guessable, so whoever binds it first would learn word lengths.
-            if (!isTrustedServerSocket(current_fd)) {
-                close(current_fd);
-                return false;
-            }
-            uinput_client_fd_ = current_fd;
-            return true;
-        }
-        LOTUS_ERROR("Failed to connect to socket: " + std::string(strerror(errno)));
-        close(current_fd);
-        int old_fd = uinput_client_fd_.exchange(-1);
-        if (old_fd != -1) {
-            close(old_fd);
-        }
-        return false;
-    }
-
-    int LotusState::setup_uinput() {
-        return connect_uinput_server() ? uinput_client_fd_.load(std::memory_order_acquire) : -1;
-    }
-
-    void LotusState::send_backspace_uinput(int count) const {
-        // On X11, XTEST presses the keys the uinput server would, without the server.
-        if (xtestAvailable()) {
-            xtestSendKeys(count);
-            return;
-        }
-        if (uinput_client_fd_ < 0 && !connect_uinput_server()) {
-            LOTUS_ERROR("Cannot send backspace since cannot connect to uinput server");
-            return;
-        }
-
-        ssize_t n = send(uinput_client_fd_, &count, sizeof(count), MSG_NOSIGNAL);
-
-        if (n < 0) {
-            LOTUS_WARN("Failed to send backspace: " + std::string(strerror(errno)));
-            int old_fd = uinput_client_fd_.exchange(-1);
-            if (old_fd != -1) {
-                close(old_fd);
-            }
-            if (connect_uinput_server()) {
-                LOTUS_INFO("Reconnected to uinput server successfully");
-                send(uinput_client_fd_, &count, sizeof(count), MSG_NOSIGNAL);
-            }
+    void LotusState::sendBackspaceKeys(int count) const {
+        if (!xtestSendKeys(count)) {
+            LOTUS_ERROR("Cannot send backspaces: XTEST is unavailable");
         }
     }
 
@@ -724,7 +663,7 @@ namespace fcitx {
     }
 
     // Waits until the app has applied the backspaces, then commits. `event` is the returning sentinel
-    // backspace on the uinput path, or null when the backspaces were forwarded.
+    // backspace on the XTEST path, or null when the backspaces were forwarded.
     bool LotusState::waitForDeletion(KeyEvent* event, int sleepTime) {
         // Some apps (Konsole) declare surrounding text but always send it empty; nothing can match,
         // so use the sleeping path.
@@ -888,7 +827,7 @@ namespace fcitx {
     }
 
     bool LotusState::canSendBackspaces() const {
-        return forwardsBackspaces(ic_) || uinput_client_fd_ >= 0 || xtestAvailable();
+        return forwardsBackspaces(ic_) || xtestAvailable();
     }
 
     void LotusState::deferTimedCommit(uint64_t deliverAtUs) {
@@ -930,8 +869,8 @@ namespace fcitx {
         unreportedCommitLength_ += utf8::length(text);
     }
 
-    void LotusState::send_select_uinput(int charCount) const {
-        send_backspace_uinput(-charCount);
+    void LotusState::sendSelectKeys(int charCount) const {
+        sendBackspaceKeys(-charCount);
     }
 
     void LotusState::selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest) {
@@ -977,9 +916,8 @@ namespace fcitx {
             }
             return false;
         });
-        // forwardKey does not carry Shift into the selection, so send the keys through the uinput
-        // server like a real keyboard.
-        send_select_uinput(charCount);
+        // forwardKey does not carry Shift into the selection, so press the keys like a real keyboard.
+        sendSelectKeys(charCount);
         LOTUS_INFO("Select " + std::to_string(charCount) + " chars");
     }
 
@@ -1078,10 +1016,10 @@ namespace fcitx {
                 surrounding.isValid() && !surrText.empty() && surrounding.cursor() == utf8::length(surrText);
         if (!isSurrText) {
             ++expected_backspaces_;
-            // Uinput skips the autofill guard except in address bars (#190): the Url flag on Chromium,
+            // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
             // the autofill shape on Firefox.
             const bool isFirefoxAddressBar = stripDesktopSuffix(ic_->program()) == "firefox" && textAfterCursorLooksLikeUrl(surrounding);
-            const bool checkAutofill       = realMode != LotusMode::Uinput || ic_->capabilityFlags().test(CapabilityFlag::Url) || isFirefoxAddressBar;
+            const bool checkAutofill       = realMode != LotusMode::Sen || ic_->capabilityFlags().test(CapabilityFlag::Url) || isFirefoxAddressBar;
             if (checkAutofill) {
                 // Enable Autofill detection for all frontends (Wayland/IBus).
                 // This fixes the "toôi" duplication bug in Chromium-based search bars.
@@ -1111,7 +1049,7 @@ namespace fcitx {
             return;
         }
         if (forwardsBackspaces(ic_)) {
-            // The uinput count includes a sentinel that comes back to us; forwarded keys never do.
+            // The XTEST count includes a sentinel that comes back to us; forwarded keys never do.
             const int count = expected_backspaces_ - 1;
             if (getFrontendName(ic_) == "xim") {
                 // We are inside the client's synchronous XIM request for the key that triggered this
@@ -1134,7 +1072,7 @@ namespace fcitx {
             }
             return;
         }
-        send_backspace_uinput(expected_backspaces_);
+        sendBackspaceKeys(expected_backspaces_);
         LOTUS_INFO("Send " + std::to_string(expected_backspaces_) + " backspaces");
     }
 
@@ -1202,10 +1140,6 @@ namespace fcitx {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
             keyEvent.forward();
             return;
-        }
-
-        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_) && !xtestAvailable()) {
-            setup_uinput();
         }
 
         if (isBackspace(currentSym) || currentSym == FcitxKey_Return) {
@@ -1306,7 +1240,7 @@ namespace fcitx {
                 }
             } else {
                 if (!canSendBackspaces()) {
-                    LOTUS_ERROR("Cannot connect to uinput server, commit rawkey");
+                    LOTUS_ERROR("Cannot send backspaces here, commit rawkey");
                     std::string rawKey = keyEvent.key().toString();
                     if (!rawKey.empty()) {
                         ic_->commitString(rawKey);
@@ -1325,163 +1259,9 @@ namespace fcitx {
         }
     }
 
-    void LotusState::handleSurroundingText(KeyEvent& keyEvent, KeySym currentSym) {
-        if (checkForwardSpecialKey(keyEvent, currentSym)) {
-            keyEvent.forward();
-            return;
-        }
-        auto* ic = keyEvent.inputContext();
-        if ((ic == nullptr) || !ic->capabilityFlags().test(CapabilityFlag::SurroundingText)) {
-            LOTUS_WARN("Surrounding text not supported");
-            keyEvent.forward();
-            return;
-        }
-
-        const auto& surrounding = ic->surroundingText();
-        if (!surrounding.isValid()) {
-            LOTUS_WARN("Surrounding text is invalid");
-            keyEvent.forward();
-            return;
-        }
-
-        if (isBackspace(keyEvent.rawKey().sym())) {
-            ResetEngine(lotusEngine_.handle());
-            keyEvent.forward();
-            return;
-        }
-
-        const std::string& text   = surrounding.text();
-        unsigned int       cursor = std::min(surrounding.anchor(), surrounding.cursor());
-
-        size_t             textLen = utf8::lengthValidated(text);
-
-        if (textLen == utf8::INVALID_LENGTH || cursor <= 0 || cursor > textLen) {
-            processNormalKey(keyEvent, currentSym);
-            return;
-        }
-
-        {
-            auto startIter = utf8::nextNChar(text.begin(), cursor);
-            auto endIter   = startIter;
-
-            int  scanCount = 0;
-            while (startIter != text.begin() && scanCount < MAX_SCAN_LENGTH) {
-                auto prev = startIter;
-                if (prev != text.begin()) {
-                    --prev;
-                    while (prev != text.begin() && ((*prev & 0xC0) == 0x80)) {
-                        --prev;
-                    }
-                }
-
-                uint32_t ucs4 = utf8::getChar(prev, text.end());
-
-                if (isWordBreak(ucs4))
-                    break;
-
-                startIter = prev;
-                ++scanCount;
-            }
-
-            std::string oldWord(startIter, endIter);
-
-            if (oldWord.empty()) {
-                processNormalKey(keyEvent, currentSym);
-                return;
-            }
-
-            EngineRebuildFromText(lotusEngine_.handle(), oldWord.c_str());
-
-            bool processed = EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.rawKey().states()) != 0U;
-
-            if (!processed) {
-                keyEvent.forward();
-                ResetEngine(lotusEngine_.handle());
-                return;
-            }
-
-            auto        commitPtr  = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
-            auto        preeditPtr = UniqueCPtr<char>(EnginePullPreedit(lotusEngine_.handle()));
-
-            std::string newWord;
-            if (commitPtr && (*commitPtr.get() != 0))
-                newWord += commitPtr.get();
-            if (preeditPtr && (*preeditPtr.get() != 0))
-                newWord += preeditPtr.get();
-
-            std::string deletedPart;
-            std::string addedPart;
-            compareAndSplitStrings(oldWord, newWord, deletedPart, addedPart);
-            if ((deletedPart.empty() || deletedPart == oldWord) && addedPart == keyEvent.key().toString()) {
-                ResetEngine(lotusEngine_.handle());
-                keyEvent.forward();
-                return;
-            }
-
-            if (!deletedPart.empty() || !addedPart.empty()) {
-                size_t charsToDelete = utf8::length(deletedPart);
-
-                if (charsToDelete > 0) {
-                    ic->deleteSurroundingText(-static_cast<int>(charsToDelete), static_cast<int>(charsToDelete));
-                    std::this_thread::sleep_for(std::chrono::milliseconds(engine_->config().surrDeleteSleepMs.value() * charsToDelete));
-                }
-
-                if (!addedPart.empty()) {
-                    ic->commitString(addedPart);
-                    LOTUS_INFO("Commit: " + addedPart);
-                }
-
-                ResetEngine(lotusEngine_.handle());
-                keyEvent.filterAndAccept();
-                return;
-            }
-
-            ResetEngine(lotusEngine_.handle());
-            keyEvent.filterAndAccept();
-            return;
-        }
-    }
-
-    void LotusState::processNormalKey(KeyEvent& keyEvent, KeySym currentSym) {
-        auto* ic = keyEvent.inputContext();
-        ResetEngine(lotusEngine_.handle());
-        bool processed = EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.rawKey().states()) != 0U;
-        if (processed) {
-            auto        commitPtr  = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
-            auto        preeditPtr = UniqueCPtr<char>(EnginePullPreedit(lotusEngine_.handle()));
-            std::string out;
-            if (commitPtr && (*commitPtr.get() != 0))
-                out += commitPtr.get();
-            if (preeditPtr && (*preeditPtr.get() != 0))
-                out += preeditPtr.get();
-
-            if (!out.empty()) {
-                LOTUS_INFO("Commit: " + out);
-                ic->commitString(out);
-            }
-
-            ResetEngine(lotusEngine_.handle());
-            keyEvent.filterAndAccept();
-        } else {
-            keyEvent.forward();
-        }
-    }
-
     void LotusState::handleDoubleSpaceReplacement() {
-        switch (realMode) {
-            case LotusMode::SurroundingText: {
-                ic_->deleteSurroundingText(-1, 1);
-                ic_->commitString(". ");
-                LOTUS_INFO("Commit: . ");
-
-                break;
-            }
-            default: { // Uinput, Preedit, etc.
-                performReplacement(" ", ". ");
-                LOTUS_INFO("Commit: . ");
-                break;
-            }
-        }
+        performReplacement(" ", ". ");
+        LOTUS_INFO("Commit: . ");
         if (*engine_->config().autoCapitalizeAfterPunctuation) {
             isPrevPunctuation_ = true;
             shouldCapitalize_  = true;
@@ -1491,29 +1271,14 @@ namespace fcitx {
     void LotusState::handleDoubleHyphenReplacement() {
         // Em-dash (U+2014)
         std::string emDash = "—";
-        switch (realMode) {
-            case LotusMode::SurroundingText: {
-                ic_->deleteSurroundingText(-1, 1);
-                ic_->commitString(emDash);
-                LOTUS_INFO("Commit: — (em-dash)");
-                break;
-            }
-            default: { // Uinput, Preedit, etc.
-                performReplacement("-", emDash);
-                LOTUS_INFO("Commit: — (em-dash)");
-                break;
-            }
-        }
+        performReplacement("-", emDash);
+        LOTUS_INFO("Commit: — (em-dash)");
     }
 
     void LotusState::handleOffModeMacro(KeyEvent& keyEvent, KeySym currentSym) {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
             keyEvent.forward();
             return;
-        }
-
-        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_) && !xtestAvailable()) {
-            connect_uinput_server();
         }
 
         if (isBackspace(currentSym)) {
@@ -1551,7 +1316,7 @@ namespace fcitx {
 
             if (isMacroExpansion) {
                 LOTUS_INFO("Macro expansion: '" + oldPreBuffer_ + "' -> '" + commitStr + "'");
-                // Try uinput replacement first, fallback to deleteSurroundingText, then plain commit
+                // Try backspaces first, fallback to deleteSurroundingText, then plain commit
                 if (canSendBackspaces() && !oldPreBuffer_.empty()) {
                     performReplacement(oldPreBuffer_, commitStr);
                 } else if (ic_->capabilityFlags().test(CapabilityFlag::SurroundingText)) {
@@ -1630,10 +1395,6 @@ namespace fcitx {
             // moving the cursor (that would discard the pending commit).
             keyEvent.forward();
             return;
-        }
-        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_) && !xtestAvailable()) {
-            LOTUS_WARN("Cannot connect to uinput server, reconnecting....");
-            connect_uinput_server();
         }
         // This safety valve silently clears the flag on the next key. Skip it while a wait is pending,
         // otherwise the pending commit is thrown away.
@@ -1775,12 +1536,8 @@ namespace fcitx {
         }
 
         switch (realMode) {
-            case LotusMode::Uinput: {
+            case LotusMode::Sen: {
                 handleUinputMode(keyEvent, currentSym);
-                break;
-            }
-            case LotusMode::SurroundingText: {
-                handleSurroundingText(keyEvent, currentSym);
                 break;
             }
             case LotusMode::Preedit: {
@@ -1838,8 +1595,7 @@ namespace fcitx {
                 ic_->updatePreedit();
                 break;
             }
-            case LotusMode::SurroundingText:
-            case LotusMode::Uinput: {
+            case LotusMode::Sen: {
                 ic_->inputPanel().reset();
                 break;
             }
@@ -1870,8 +1626,7 @@ namespace fcitx {
                 ic_->updatePreedit();
                 break;
             }
-            case LotusMode::SurroundingText:
-            case LotusMode::Uinput: {
+            case LotusMode::Sen: {
                 if (lotusEngine_) {
                     ResetEngine(lotusEngine_.handle());
                 }

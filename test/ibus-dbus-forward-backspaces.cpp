@@ -1,25 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// On the ibus, dbus and fcitx4 frontends a replacement does not need the uinput server: the backspaces
-// go to the app through forwardKey, or through deleteSurroundingText for GTK4 clients, which drop
-// forwarded keys. SDL clients take neither and keep the server path.
+// On the ibus, dbus and fcitx4 frontends the backspaces of a replacement go to the app through
+// forwardKey, or through deleteSurroundingText for GTK4 clients, which drop forwarded keys. SDL clients
+// take neither, so they get nothing; on X11 they get XTEST keys (x11-xtest-replacement.cpp).
 #include "lotus-engine.h"
 #include "lotus-utils.h"
 #include "test-input-context.h"
 
-#include <cerrno>
 #include <cstddef>
 #include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <poll.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
 
 namespace {
 
@@ -40,52 +33,6 @@ namespace {
             out += "[" + event.key().toString() + (event.isRelease() ? " up" : " down") + "]";
         return out.empty() ? "(none)" : out;
     }
-
-    // Stands in for the uinput server and records whether any request reached it.
-    class ServerProbe {
-      public:
-        ServerProbe() {
-            fd_ = socket(AF_UNIX, SOCK_SEQPACKET | SOCK_NONBLOCK, 0);
-            sockaddr_un address{};
-            address.sun_family    = AF_UNIX;
-            const auto socketPath = buildSocketPath("kb_socket");
-            address.sun_path[0]   = '\0';
-            std::memcpy(&address.sun_path[1], socketPath.data(), socketPath.size());
-            const auto length = static_cast<socklen_t>(offsetof(sockaddr_un, sun_path) + socketPath.size() + 1);
-            if (fd_ < 0 || bind(fd_, reinterpret_cast<const sockaddr*>(&address), length) < 0 || listen(fd_, 4) < 0) {
-                reportFailure("bind server socket", "bind succeeds", std::strerror(errno));
-                if (fd_ >= 0)
-                    close(fd_);
-                fd_ = -1;
-            }
-        }
-        ~ServerProbe() {
-            for (int client : clients_)
-                close(client);
-            if (fd_ >= 0)
-                close(fd_);
-        }
-        bool valid() const {
-            return fd_ >= 0;
-        }
-        // Number of replacement requests received so far; connecting alone is not a request.
-        int requests() {
-            for (int client = accept(fd_, nullptr, nullptr); client >= 0; client = accept(fd_, nullptr, nullptr))
-                clients_.push_back(client);
-            for (int client : clients_) {
-                int    value = 0;
-                pollfd p{client, POLLIN, 0};
-                while (poll(&p, 1, 0) > 0 && recv(client, &value, sizeof(value), MSG_DONTWAIT) == sizeof(value))
-                    ++count_;
-            }
-            return count_;
-        }
-
-      private:
-        int              fd_    = -1;
-        int              count_ = 0;
-        std::vector<int> clients_;
-    };
 
     uint64_t nowUs() {
         return fcitx::now(CLOCK_MONOTONIC);
@@ -248,11 +195,10 @@ namespace {
     }
 
     // SDL handles only commits and preedit from the IM, so neither forwarded keys nor surrounding text
-    // deletes anything there.
-    bool sdlKeepsServer(Harness& h, ServerProbe& server, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
-        const int before  = server.requests();
-        auto      context = h.open(program, frontend, caps);
-        if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, true))
+    // deletes anything there. Without XTEST nothing can delete, and the key goes through unchanged.
+    bool sdlGetsNoDeletion(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+        auto context = h.open(program, frontend, caps);
+        if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, false))
             return false;
         pumpEventLoop(h.testInstance.instance, 20);
         const std::string where = frontend + " " + program + ": ";
@@ -260,18 +206,13 @@ namespace {
             reportFailure(where + "no forwarded key or surrounding delete", "(none)", describeForwarded(*context) + ", " + std::to_string(context->deletes().size()) + " deletes");
             return false;
         }
-        if (server.requests() == before) {
-            reportFailure(where + "the replacement goes to the uinput server", ">= 1 request", "0");
-            return false;
-        }
         return true;
     }
 
     // GNOME Shell is the IBus client there and forwards the keys to the app like any other client.
-    bool gnomeIbusForwards(Harness& h, ServerProbe& server) {
+    bool gnomeIbusForwards(Harness& h) {
         setenv("XDG_CURRENT_DESKTOP", "GNOME", 1);
-        const int before  = server.requests();
-        auto      context = h.open("gnome-shell", "ibus", fcitx::CapabilityFlags{});
+        auto context = h.open("gnome-shell", "ibus", fcitx::CapabilityFlags{});
         if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, true))
             return false;
         if (!forwardedOneBackspace(*context)) {
@@ -279,32 +220,23 @@ namespace {
             return false;
         }
         pumpEventLoop(h.testInstance.instance, 40);
-        if (server.requests() != before) {
-            reportFailure("GNOME ibus: no request reaches the uinput server", "0", std::to_string(server.requests() - before));
-            return false;
-        }
         return true;
     }
 
 } // namespace
 
 int main() {
-    const std::string socketNamespace = "test-" + std::to_string(getpid());
-    setenv("LOTUS_SOCKET_NAMESPACE", socketNamespace.c_str(), 1);
     setenv("XDG_CURRENT_DESKTOP", "KDE", 1);
 
     configureTestPaths("fcitx5-lotus-ibus-dbus-forward-backspaces");
     TestInstance       testInstance;
     fcitx::LotusEngine engine(&testInstance.instance);
     fcitx::RawConfig   config;
-    config.setValueByPath("Mode", "Uinput");
+    config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
     engine.setConfig(config);
 
-    ServerProbe server;
-    if (!server.valid())
-        return 1;
     fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
     Harness                 h{testInstance, engine, entry};
 
@@ -320,19 +252,15 @@ int main() {
         return 1;
     if (!fcitx4ForwardsWithSurroundingText(h))
         return 1;
-    if (const int requests = server.requests(); requests != 0) {
-        reportFailure("no request reaches the uinput server", "0", std::to_string(requests));
-        return 1;
-    }
     const auto sdlCaps = fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit};
-    if (!sdlKeepsServer(h, server, "Medieval2", "dbus", sdlCaps))
+    if (!sdlGetsNoDeletion(h, "Medieval2", "dbus", sdlCaps))
         return 1;
-    if (!sdlKeepsServer(h, server, "SDL2_Application", "ibus", fcitx::CapabilityFlags{}))
+    if (!sdlGetsNoDeletion(h, "SDL2_Application", "ibus", fcitx::CapabilityFlags{}))
         return 1;
     // SDL 2.0.12 and older speak the fcitx4 protocol and set at most Preedit.
-    if (!sdlKeepsServer(h, server, "Medieval2", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit}))
+    if (!sdlGetsNoDeletion(h, "Medieval2", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit}))
         return 1;
-    if (!gnomeIbusForwards(h, server))
+    if (!gnomeIbusForwards(h))
         return 1;
     return 0;
 }

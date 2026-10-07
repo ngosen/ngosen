@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// On an X11 session XTEST takes the uinput server's place. Clients whose existing path works keep it;
+// On an X11 session XTEST presses the keys a frontend cannot forward. Clients whose forwarding works keep it;
 // Chromium-based clients, which report no surrounding text and whose address bar selects an inline
 // autocompletion, select the old text with Shift+Left and type over it.
 #include "lotus-engine.h"
@@ -8,19 +8,11 @@
 #include "ngosen-xtest.h"
 #include "test-input-context.h"
 
-#include <cerrno>
-#include <cstddef>
 #include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <poll.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
 
 namespace {
 
@@ -42,51 +34,6 @@ namespace {
         return out.empty() ? "(none)" : out;
     }
 
-    // Stands in for the uinput server and counts the requests that reach it.
-    class ServerProbe {
-      public:
-        ServerProbe() {
-            fd_ = socket(AF_UNIX, SOCK_SEQPACKET | SOCK_NONBLOCK, 0);
-            sockaddr_un address{};
-            address.sun_family    = AF_UNIX;
-            const auto socketPath = buildSocketPath("kb_socket");
-            address.sun_path[0]   = '\0';
-            std::memcpy(&address.sun_path[1], socketPath.data(), socketPath.size());
-            const auto length = static_cast<socklen_t>(offsetof(sockaddr_un, sun_path) + socketPath.size() + 1);
-            if (fd_ < 0 || bind(fd_, reinterpret_cast<const sockaddr*>(&address), length) < 0 || listen(fd_, 4) < 0) {
-                reportFailure("bind server socket", "bind succeeds", std::strerror(errno));
-                if (fd_ >= 0)
-                    close(fd_);
-                fd_ = -1;
-            }
-        }
-        ~ServerProbe() {
-            for (int client : clients_)
-                close(client);
-            if (fd_ >= 0)
-                close(fd_);
-        }
-        bool valid() const {
-            return fd_ >= 0;
-        }
-        int requests() {
-            for (int client = accept(fd_, nullptr, nullptr); client >= 0; client = accept(fd_, nullptr, nullptr))
-                clients_.push_back(client);
-            for (int client : clients_) {
-                int    value = 0;
-                pollfd p{client, POLLIN, 0};
-                while (poll(&p, 1, 0) > 0 && recv(client, &value, sizeof(value), MSG_DONTWAIT) == sizeof(value))
-                    ++count_;
-            }
-            return count_;
-        }
-
-      private:
-        int              fd_    = -1;
-        int              count_ = 0;
-        std::vector<int> clients_;
-    };
-
     uint64_t nowUs() {
         return fcitx::now(CLOCK_MONOTONIC);
     }
@@ -99,7 +46,6 @@ namespace {
         TestInstance&                     testInstance;
         fcitx::LotusEngine&               engine;
         fcitx::InputMethodEntry&          entry;
-        ServerProbe&                      server;
         std::vector<int>&                 sent;
 
         std::unique_ptr<TestInputContext> open(const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
@@ -154,7 +100,6 @@ namespace {
     // would only remove that. Widening the selection with Shift+Left and typing over it replaces both.
     bool chromiumSelectsAndOvertypes(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, bool bounceFocus = false) {
         const std::string where   = frontend + " " + program + (bounceFocus ? " with focus bounce" : "") + ": ";
-        const int         before  = h.server.requests();
         auto              context = h.open(program, frontend, caps);
         if (!h.typeTieE(*context))
             return false;
@@ -191,18 +136,13 @@ namespace {
             reportFailure(where + "commit at least 50 ms after Shift is released", ">= 50000 us", std::to_string(committedAt - releasedAt) + " us");
             return false;
         }
-        if (h.server.requests() != before) {
-            reportFailure(where + "nothing reaches the uinput server", "0", std::to_string(h.server.requests() - before));
-            return false;
-        }
         return true;
     }
 
-    // SDL takes neither forwarded keys nor surrounding text; XTEST presses BackSpace like the server did,
-    // and the last one comes back to the input method as the sentinel.
+    // SDL takes neither forwarded keys nor surrounding text; XTEST presses BackSpace like a keyboard, and
+    // the last one comes back to the input method as the sentinel.
     bool sdlPressesBackSpaceThroughXTest(Harness& h) {
-        const int before  = h.server.requests();
-        auto      context = h.open("Medieval2", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit});
+        auto context = h.open("Medieval2", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit});
         if (!h.typeTieE(*context))
             return false;
         if (h.sent != std::vector<int>{2}) {
@@ -214,10 +154,6 @@ namespace {
         h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 500000);
         if (context->commits() != std::vector<std::string>{"ê"}) {
             reportFailure("SDL: commit once the sentinel is back", "['ê']", joinCommits(*context));
-            return false;
-        }
-        if (h.server.requests() != before) {
-            reportFailure("SDL: nothing reaches the uinput server", "0", std::to_string(h.server.requests() - before));
             return false;
         }
         return true;
@@ -245,8 +181,6 @@ namespace {
 } // namespace
 
 int main() {
-    const std::string socketNamespace = "test-" + std::to_string(getpid());
-    setenv("LOTUS_SOCKET_NAMESPACE", socketNamespace.c_str(), 1);
     setenv("XDG_CURRENT_DESKTOP", "XFCE", 1);
     setenv("DISPLAY", ":0", 1);
     unsetenv("WAYLAND_DISPLAY");
@@ -261,16 +195,13 @@ int main() {
     TestInstance       testInstance;
     fcitx::LotusEngine engine(&testInstance.instance);
     fcitx::RawConfig   config;
-    config.setValueByPath("Mode", "Uinput");
+    config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
     engine.setConfig(config);
 
-    ServerProbe server;
-    if (!server.valid())
-        return 1;
     fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
-    Harness                 h{testInstance, engine, entry, server, sent};
+    Harness                 h{testInstance, engine, entry, sent};
 
     const auto              chromeCaps = fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit, fcitx::CapabilityFlag::KeyEventOrderFix};
     if (!chromiumSelectsAndOvertypes(h, "microsoft-edge", "dbus", chromeCaps))

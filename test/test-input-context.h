@@ -48,7 +48,7 @@
  *
  *     // 3. Set engine mode and input method
  *     fcitx::RawConfig config;
- *     config.setValueByPath("Mode", "Preedit"); // or "Surrounding", "Uinput", "Off"
+ *     config.setValueByPath("Mode", "Preedit"); // or "Surrounding", "Sen", "Off"
  *     config.setValueByPath("InputMethod", "Telex");
  *     engine.setConfig(config);
  *

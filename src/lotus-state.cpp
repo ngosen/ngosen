@@ -49,7 +49,7 @@ namespace fcitx {
     void LotusState::setEngine() {
         lotusEngine_.reset();
 
-        if (engine_->config().inputMethod.value() == "Custom") {
+        if (engine_->options().inputMethod == "Custom") {
             const auto&        keymaps = *engine_->customKeymap().customKeymap;
             std::vector<char*> charArray;
             charArray.reserve((keymaps.size() * 2) + 1);
@@ -60,7 +60,7 @@ namespace fcitx {
             charArray.push_back(nullptr);
             lotusEngine_.reset(NewCustomEngine(charArray.data(), engine_->dictionary(), engine_->macroTable()));
         } else {
-            lotusEngine_.reset(NewEngine(engine_->config().inputMethod->data(), engine_->dictionary(), engine_->macroTable()));
+            lotusEngine_.reset(NewEngine(engine_->options().inputMethod.data(), engine_->dictionary(), engine_->macroTable()));
         }
         setOption();
         resetMacroSkip();
@@ -70,18 +70,18 @@ namespace fcitx {
         if (!lotusEngine_)
             return;
         FcitxBambooEngineOption option = {
-            .autoNonVnRestore    = *engine_->config().autoNonVnRestore,
-            .ddFreeStyle         = *engine_->config().ddFreeStyle,
-            .macroEnabled        = *engine_->config().enableMacro,
-            .autoCapitalizeMacro = *engine_->config().capitalizeMacro,
-            .spellCheckWithDicts = *engine_->config().spellCheck,
-            .outputCharset       = engine_->config().outputCharset->data(),
-            .modernStyle         = *engine_->config().modernStyle,
-            .freeMarking         = *engine_->config().freeMarking,
-            .w2u                 = static_cast<int>(*engine_->config().w2u),
-            .bracketTransform    = static_cast<int>(*engine_->config().bracketTransform),
-            .timeFormat          = engine_->config().timeFormat->data(),
-            .dateFormat          = engine_->config().dateFormat->data(),
+            .autoNonVnRestore    = engine_->options().autoNonVnRestore,
+            .ddFreeStyle         = engine_->options().ddFreeStyle,
+            .macroEnabled        = engine_->options().enableMacro,
+            .autoCapitalizeMacro = engine_->options().capitalizeMacro,
+            .spellCheckWithDicts = engine_->options().spellCheck,
+            .outputCharset       = engine_->options().outputCharset.data(),
+            .modernStyle         = engine_->options().modernStyle,
+            .freeMarking         = engine_->options().freeMarking,
+            .w2u                 = static_cast<int>(engine_->options().w2u),
+            .bracketTransform    = static_cast<int>(engine_->options().bracketTransform),
+            .timeFormat          = engine_->options().timeFormat.data(),
+            .dateFormat          = engine_->options().dateFormat.data(),
         };
 
         EngineSetOption(lotusEngine_.handle(), &option);
@@ -464,7 +464,7 @@ namespace fcitx {
             // Firefox may never send another state, so accept it after WaitSurroundingMinPerKeyMs per
             // backspace, as long as a plain sleep. The immediate check still rejects it.
             const auto waited  = (::fcitx::now(CLOCK_MONOTONIC) - surr_wait_started_at_) / 1000;
-            const auto minimum = static_cast<uint64_t>(engine_->config().waitSurroundingMinPerKeyMs.value()) * static_cast<uint64_t>(std::max(expected_backspaces_, 1));
+            const auto minimum = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1));
             if (waited < minimum) {
                 return false;
             }
@@ -550,14 +550,14 @@ namespace fcitx {
 
     void LotusState::deliverAfterSettle(const char* reason, bool fromTimer) {
         const auto snapshot = host_->surrounding();
-        int        settleMs = engine_->config().waitSurroundingSettleMs.value();
+        int        settleMs = engine_->options().waitSurroundingSettleMs;
         if (settleMs <= 0 || !looksLikeMessengerComposer(snapshot)) {
             finishReplacement(reason, fromTimer);
             return;
         }
         // A just-emptied composer is still reloading its placeholder, so the first word waits longer.
         if (isFirstWordOfMessage(snapshot)) {
-            settleMs = std::max(settleMs, engine_->config().waitSurroundingSettleFirstWordMs.value());
+            settleMs = std::max(settleMs, engine_->options().waitSurroundingSettleFirstWordMs);
         }
         // Reuse the timer-only wait state: a key arriving mid-wait finishes the wait first, focus loss
         // leaves the commit to the timer, and the snapshot watcher and timeout stay quiet.
@@ -660,13 +660,13 @@ namespace fcitx {
         const bool emptySnapshot = host_->surrounding().text().empty();
         // GNOME Shell relays surrounding text late and one step behind (or not at all), so an
         // event-driven wait times out and commits ahead of the backspaces. Use the timed path there.
-        const bool waitEvent = engine_->config().waitSurroundingEvent.value() && !ngosen::surroundingTextLags(host_->field());
+        const bool waitEvent = engine_->options().waitSurroundingEvent && !ngosen::surroundingTextLags(host_->field());
         if (waitEvent && emptySnapshot) {
             LOTUS_INFO("Surr wait skip: empty snapshot");
         }
         bool skipFrozenWait = false;
         if (waitEvent && !emptySnapshot && surr_frozen_) {
-            const int probeEvery = std::max(engine_->config().waitSurroundingProbeEvery.value(), 1);
+            const int probeEvery = std::max(engine_->options().waitSurroundingProbeEvery, 1);
             ++surr_frozen_probe_count_;
             if (surr_frozen_probe_count_ % probeEvery != 0) {
                 skipFrozenWait = true;
@@ -699,9 +699,8 @@ namespace fcitx {
                 }
                 // After a timeout, an early event is the app's stale buffer catching up, not the
                 // finished deletion. Ignore events before WaitSurroundingMinPerKeyMs per backspace.
-                const auto waitedUs = ::fcitx::now(CLOCK_MONOTONIC) - surr_wait_started_at_;
-                const auto minimumUs =
-                    static_cast<uint64_t>(engine_->config().waitSurroundingMinPerKeyMs.value()) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
+                const auto waitedUs  = ::fcitx::now(CLOCK_MONOTONIC) - surr_wait_started_at_;
+                const auto minimumUs = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
                 {
                     const auto current = host_->surrounding();
                     ++surr_wait_event_count_;
@@ -719,11 +718,11 @@ namespace fcitx {
             });
             // Two timeouts in a row: this app does not update while deleting. Use the short timeout
             // until an event matches again.
-            const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->config().waitSurroundingShortMs.value() : engine_->config().waitSurroundingTimeoutMs.value();
+            const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->options().waitSurroundingShortMs : engine_->options().waitSurroundingTimeoutMs;
             const auto timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
             // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms. Check once at the
             // threshold first: many apps report "done" before it and then go quiet.
-            const auto threshold = static_cast<uint64_t>(engine_->config().waitSurroundingMinPerKeyMs.value()) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
+            const auto threshold     = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
             const auto firstDeadline = threshold < timeout ? surr_wait_started_at_ + threshold : surr_wait_started_at_ + timeout;
             surr_wait_timer_         = instance->eventLoop().addTimeEvent(CLOCK_MONOTONIC, firstDeadline, 1000, [this, timeout](EventSourceTime* t, uint64_t) {
                 if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
@@ -746,7 +745,7 @@ namespace fcitx {
         }
         // Frozen snapshot: sleep at least WaitSurroundingMinPerKeyMs x (N - 1) instead of, not on
         // top of, the normal sleep.
-        const int perKeyMs = skipFrozenWait ? std::max(sleepTime, engine_->config().waitSurroundingMinPerKeyMs.value()) : sleepTime;
+        const int perKeyMs = skipFrozenWait ? std::max(sleepTime, engine_->options().waitSurroundingMinPerKeyMs) : sleepTime;
         int       waitMs   = perKeyMs * (expected_backspaces_ - 1);
         // Validate surr cursor pos should match realtextLen after all BS applied
         const auto surr = host_->surrounding();
@@ -993,7 +992,7 @@ namespace fcitx {
             selectAndOvertype(addedPart, static_cast<int>(utf8::length(deletedPart)), true);
             return;
         }
-        if (engine_->config().messengerSelectOvertype.value() && !ngosen::forwardsBackspaces(host_->field()) && looksLikeFacebookComposer(surrounding)) {
+        if (engine_->options().messengerSelectOvertype && !ngosen::forwardsBackspaces(host_->field()) && looksLikeFacebookComposer(surrounding)) {
             selectAndOvertype(addedPart, static_cast<int>(utf8::length(deletedPart)));
             return;
         }
@@ -1001,9 +1000,9 @@ namespace fcitx {
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
         const bool isLibreOffice   = ngosen::appliesBackspacesLate(host_->field());
         const bool mustUseSurrText = isLibreOffice || ngosen::ignoresForwardedKeys(host_->field());
-        bool       isSurrText      = mustUseSurrText ? host_->field().surroundingText :
-                                                       engine_->config().useSurroundingTextIfPossible.value() && host_->field().surroundingText && surrounding.isValid() &&
-                !surrText.empty() && surrounding.cursor() == utf8::length(surrText);
+        bool       isSurrText = mustUseSurrText ? host_->field().surroundingText :
+                                                  engine_->options().useSurroundingTextIfPossible && host_->field().surroundingText && surrounding.isValid() && !surrText.empty() &&
+                surrounding.cursor() == utf8::length(surrText);
         if (!isSurrText) {
             ++expected_backspaces_;
             // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
@@ -1025,11 +1024,11 @@ namespace fcitx {
         if (isSurrText) {
             host_->deleteSurrounding(-expected_backspaces_, expected_backspaces_);
             LOTUS_INFO("Delete using surrounding text");
-            std::this_thread::sleep_for(std::chrono::milliseconds(engine_->config().surrDeleteSleepMs.value() * expected_backspaces_));
+            std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrDeleteSleepMs * expected_backspaces_));
             if (!pending_commit_string_.empty()) {
                 host_->commitText(pending_commit_string_);
                 LOTUS_INFO("Commit: " + pending_commit_string_);
-                std::this_thread::sleep_for(std::chrono::milliseconds(engine_->config().surrCommitSleepMs.value() * utf8::length(addedPart)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrCommitSleepMs * utf8::length(addedPart)));
             }
             expected_backspaces_     = 0;
             current_backspace_count_ = 0;
@@ -1252,7 +1251,7 @@ namespace fcitx {
     void LotusState::handleDoubleSpaceReplacement() {
         performReplacement(" ", ". ");
         LOTUS_INFO("Commit: . ");
-        if (*engine_->config().autoCapitalizeAfterPunctuation) {
+        if (engine_->options().autoCapitalizeAfterPunctuation) {
             isPrevPunctuation_ = true;
             shouldCapitalize_  = true;
         }
@@ -1416,7 +1415,7 @@ namespace fcitx {
             clearAllBuffers();
         }
         KeySym currentSym = keyEvent.rawKey().sym();
-        if (*engine_->config().autoCapitalizeAfterPunctuation && realMode != LotusMode::Off) {
+        if (engine_->options().autoCapitalizeAfterPunctuation && realMode != LotusMode::Off) {
             // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
             bool isAutomatedBackspace = is_deleting_.load(std::memory_order_acquire) && isBackspace(currentSym);
 
@@ -1496,7 +1495,7 @@ namespace fcitx {
             return;
         }
 
-        if (*engine_->config().doubleSpaceToPeriod && realMode != LotusMode::Off) {
+        if (engine_->options().doubleSpaceToPeriod && realMode != LotusMode::Off) {
             bool isSpaceKey = (currentSym == FcitxKey_space || currentSym == FcitxKey_KP_Space);
             if (isSpaceKey && !keyEvent.key().hasModifier()) {
                 if (isPrevSpace_) {
@@ -1511,7 +1510,7 @@ namespace fcitx {
             }
         }
 
-        if (*engine_->config().doubleHyphenToEmDash && realMode != LotusMode::Off) {
+        if (engine_->options().doubleHyphenToEmDash && realMode != LotusMode::Off) {
             bool isHyphenKey = (currentSym == FcitxKey_minus || currentSym == FcitxKey_KP_Subtract);
             if (isHyphenKey && !keyEvent.key().hasModifier()) {
                 if (isPrevHyphen_) {
@@ -1540,7 +1539,7 @@ namespace fcitx {
                 break;
             }
             default: {
-                if (*engine_->config().enableMacroInOffMode && *engine_->config().enableMacro) {
+                if (engine_->options().enableMacroInOffMode && engine_->options().enableMacro) {
                     handleOffModeMacro(keyEvent, currentSym);
                 }
                 break;
@@ -1764,19 +1763,19 @@ namespace fcitx {
     }
 
     bool LotusState::isMacroSkipModifier(KeySym sym) const {
-        const auto trigger = engine_->config().macroSkipTriggerModifier.value();
+        const auto trigger = engine_->options().macroSkipKey;
         switch (trigger) {
-            case MacroSkipTriggerModifier::Shift: return sym == FcitxKey_Shift_L || sym == FcitxKey_Shift_R;
-            case MacroSkipTriggerModifier::Ctrl: return sym == FcitxKey_Control_L || sym == FcitxKey_Control_R;
-            case MacroSkipTriggerModifier::Alt: return sym == FcitxKey_Alt_L || sym == FcitxKey_Alt_R;
-            case MacroSkipTriggerModifier::Disabled:
+            case ngosen::MacroSkipKey::Shift: return sym == FcitxKey_Shift_L || sym == FcitxKey_Shift_R;
+            case ngosen::MacroSkipKey::Ctrl: return sym == FcitxKey_Control_L || sym == FcitxKey_Control_R;
+            case ngosen::MacroSkipKey::Alt: return sym == FcitxKey_Alt_L || sym == FcitxKey_Alt_R;
+            case ngosen::MacroSkipKey::None:
             default: return false;
         }
     }
 
     void LotusState::handleModifierTap(const KeyEvent& keyEvent) {
-        const auto trigger = engine_->config().macroSkipTriggerModifier.value();
-        if (trigger == MacroSkipTriggerModifier::Disabled || !*engine_->config().enableMacro) {
+        const auto trigger = engine_->options().macroSkipKey;
+        if (trigger == ngosen::MacroSkipKey::None || !engine_->options().enableMacro) {
             return;
         }
         if (!isMacroSkipModifier(keyEvent.rawKey().sym())) {
@@ -1808,14 +1807,14 @@ namespace fcitx {
             return;
         }
         macro_skip_ = false;
-        EngineSetMacroEnabled(lotusEngine_.handle(), *engine_->config().enableMacro ? 1 : 0);
+        EngineSetMacroEnabled(lotusEngine_.handle(), engine_->options().enableMacro ? 1 : 0);
     }
 
     void LotusState::resetMacroSkip() {
         tracking_modifier_tap_ = false;
         macro_skip_            = false;
         if (lotusEngine_) {
-            EngineSetMacroEnabled(lotusEngine_.handle(), *engine_->config().enableMacro ? 1 : 0);
+            EngineSetMacroEnabled(lotusEngine_.handle(), engine_->options().enableMacro ? 1 : 0);
         }
     }
 } // namespace fcitx

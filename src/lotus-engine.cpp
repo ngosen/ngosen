@@ -295,6 +295,7 @@ namespace fcitx {
                 if (config_.outputCharset.value() == charset)
                     return;
                 config_.outputCharset.setValue(charset);
+                syncOptions();
                 saveConfig();
                 refreshEngine();
                 updateCharsetAction(ic);
@@ -346,6 +347,7 @@ namespace fcitx {
         action->setCheckable(false);
         connections_.emplace_back(action->connect<SimpleAction::Activated>([this, &action, &option, textOnOff](InputContext* ic) {
             option.setValue(!option.value());
+            syncOptions();
             saveConfig();
             refreshOption();
             updateAction(ic, action, option, textOnOff);
@@ -439,7 +441,47 @@ namespace fcitx {
         populateConfig();
     }
 
+    void LotusEngine::syncOptions() {
+        auto& o                            = options_;
+        o.inputMethod                      = config_.inputMethod.value();
+        o.outputCharset                    = config_.outputCharset.value();
+        o.spellCheck                       = config_.spellCheck.value();
+        o.modernStyle                      = config_.modernStyle.value();
+        o.freeMarking                      = config_.freeMarking.value();
+        o.w2u                              = static_cast<int>(config_.w2u.value());
+        o.bracketTransform                 = static_cast<int>(config_.bracketTransform.value());
+        o.timeFormat                       = config_.timeFormat.value();
+        o.dateFormat                       = config_.dateFormat.value();
+        o.autoNonVnRestore                 = config_.autoNonVnRestore.value();
+        o.ddFreeStyle                      = config_.ddFreeStyle.value();
+        o.enableMacro                      = config_.enableMacro.value();
+        o.enableMacroInOffMode             = config_.enableMacroInOffMode.value();
+        o.capitalizeMacro                  = config_.capitalizeMacro.value();
+        o.autoCapitalizeAfterPunctuation   = config_.autoCapitalizeAfterPunctuation.value();
+        o.doubleSpaceToPeriod              = config_.doubleSpaceToPeriod.value();
+        o.doubleHyphenToEmDash             = config_.doubleHyphenToEmDash.value();
+        o.useSurroundingTextIfPossible     = config_.useSurroundingTextIfPossible.value();
+        o.messengerSelectOvertype          = config_.messengerSelectOvertype.value();
+        o.waitSurroundingEvent             = config_.waitSurroundingEvent.value();
+        o.waitSurroundingMinPerKeyMs       = config_.waitSurroundingMinPerKeyMs.value();
+        o.waitSurroundingTimeoutMs         = config_.waitSurroundingTimeoutMs.value();
+        o.waitSurroundingShortMs           = config_.waitSurroundingShortMs.value();
+        o.waitSurroundingSettleMs          = config_.waitSurroundingSettleMs.value();
+        o.waitSurroundingSettleFirstWordMs = config_.waitSurroundingSettleFirstWordMs.value();
+        o.waitSurroundingProbeEvery        = config_.waitSurroundingProbeEvery.value();
+        o.surrDeleteSleepMs                = config_.surrDeleteSleepMs.value();
+        o.surrCommitSleepMs                = config_.surrCommitSleepMs.value();
+        switch (config_.macroSkipTriggerModifier.value()) {
+            case MacroSkipTriggerModifier::Shift: o.macroSkipKey = ngosen::MacroSkipKey::Shift; break;
+            case MacroSkipTriggerModifier::Ctrl: o.macroSkipKey = ngosen::MacroSkipKey::Ctrl; break;
+            case MacroSkipTriggerModifier::Alt: o.macroSkipKey = ngosen::MacroSkipKey::Alt; break;
+            case MacroSkipTriggerModifier::Disabled:
+            default: o.macroSkipKey = ngosen::MacroSkipKey::None; break;
+        }
+    }
+
     void LotusEngine::populateConfig() {
+        syncOptions();
         refreshEngine();
         refreshOption();
         updateCharsetAction(nullptr);

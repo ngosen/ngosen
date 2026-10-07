@@ -17,6 +17,7 @@
 
 #include "lotus-config.h"
 #include "emoji.h"
+#include "ngosen-options.h"
 #include "lotus.h"
 #include <mutex>
 #include <memory>
@@ -159,6 +160,11 @@ namespace fcitx {
             return config_;
         }
 
+        // The settings the typing logic reads, kept in step with config().
+        const ngosen::Options& options() const {
+            return options_;
+        }
+
         /**
          * @brief Gets the custom keymap configuration.
          * @return Reference to custom keymap.
@@ -193,6 +199,7 @@ namespace fcitx {
       private:
         Instance*                                  instance_;
         lotusConfig                                config_;
+        ngosen::Options                            options_;
         lotusCustomKeymap                          customKeymap_;
         lotusCustomKeymap                          emptyCustomKeymap_;
 
@@ -283,6 +290,9 @@ namespace fcitx {
          * @brief Populates input method names from bamboo core.
          */
         void populateConfig();
+
+        // Copies config_ into options_; call after every change to config_.
+        void syncOptions();
 
         /**
          * @brief Loads application-specific mode rules.

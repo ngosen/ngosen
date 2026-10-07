@@ -49,7 +49,9 @@ a careful human wrote it, and the person sending it must be able to explain ever
 - **Keep fcitx5 out of the typing logic.** Text, keys and deletions go to the app through
   `ngosen::Host` (`src/ngosen-host.h`), so the same logic can later run under another input method
   framework. New code in `lotus-state.cpp` calls `host_` instead of the `InputContext`, and checks
-  for how an app behaves go in `src/ngosen-app-quirks.cpp`, reading the field `host_` reports.
+  for how an app behaves go in `src/ngosen-app-quirks.cpp`, reading the field `host_` reports. Settings
+  come from `engine_->options()`; a new setting is added to `ngosen::Options` and copied in
+  `LotusEngine::syncOptions`.
 - **Never forward backspaces to SDL games.** SDL takes only commits and preedit, so forwarded
   backspaces never reach it; it needs real key presses, which only XTEST on an X11 session provides.
   When changing which frontends forward backspaces, keep the `sdlGetsNoDeletion` checks in

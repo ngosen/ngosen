@@ -161,3 +161,10 @@ set_tests_properties(gnome_panel_theme PROPERTIES
     LABELS "unit;icon"
     TIMEOUT 20
 )
+
+# Compares the typing logic's own UTF-8 helpers with the fcitx5 ones they replace.
+add_executable(utf8_matches_fcitx utf8-matches-fcitx.cpp ${PROJECT_SOURCE_DIR}/src/ngosen-utf8.cpp)
+target_include_directories(utf8_matches_fcitx PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(utf8_matches_fcitx PRIVATE Fcitx5::Utils)
+add_test(NAME utf8_matches_fcitx COMMAND utf8_matches_fcitx)
+set_tests_properties(utf8_matches_fcitx PROPERTIES LABELS "unit" TIMEOUT 60)

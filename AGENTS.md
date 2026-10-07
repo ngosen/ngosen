@@ -26,8 +26,9 @@ a careful human wrote it, and the person sending it must be able to explain ever
 - **No measurements, dates or history in code.** "Measured 0/60 wrong at 70 ms", "the old path
   slept here", "since 20/09" belong in the commit message or PR. Refer to a real issue as `#123`.
   No internal labels (`v7`, `B33`, `AF-0012`, session names) anywhere in the repo.
-- **Reuse what exists.** Log with `LOTUS_DEBUG/INFO/WARN/ERROR` (`src/lotus-utils.h`); use fcitx5 and
-  libc facilities (event loop timers, `syslog()`) before writing a new mechanism.
+- **Reuse what exists.** Log with `NGOSEN_DEBUG/INFO/WARN/ERROR` (`src/ngosen-log.h`) in the typing
+  logic and `LOTUS_DEBUG/INFO/WARN/ERROR` (`src/lotus-utils.h`) elsewhere; use fcitx5 and libc
+  facilities (event loop timers, `syslog()`) before writing a new mechanism.
 - **Fix reported problems.** Do not add code for cases no user hits ("200 keys per second"). If only
   a test harness triggers it, file a low-priority issue instead of changing core code.
 - **Match surrounding code.** clang-format (`.clang-format`), ruff for `settings-gui/`, existing
@@ -51,7 +52,8 @@ a careful human wrote it, and the person sending it must be able to explain ever
   framework. New code in `lotus-state.cpp` calls `host_` instead of the `InputContext`, and checks
   for how an app behaves go in `src/ngosen-app-quirks.cpp`, reading the field `host_` reports. Settings
   come from `engine_->options()`; a new setting is added to `ngosen::Options` and copied in
-  `LotusEngine::syncOptions`.
+  `LotusEngine::syncOptions`. UTF-8, the clock and logging use `src/ngosen-utf8.h`,
+  `src/ngosen-clock.h` and `src/ngosen-log.h`.
 - **Never forward backspaces to SDL games.** SDL takes only commits and preedit, so forwarded
   backspaces never reach it; it needs real key presses, which only XTEST on an X11 session provides.
   When changing which frontends forward backspaces, keep the `sdlGetsNoDeletion` checks in

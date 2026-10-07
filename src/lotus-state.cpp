@@ -10,6 +10,7 @@
 #include "lotus-engine.h"
 #include "lotus-candidates.h"
 #include "lotus-utils.h"
+#include "ngosen-fcitx-host.h"
 #include "ngosen-xtest.h"
 #include "lotus.h"
 
@@ -28,8 +29,6 @@
 
 namespace fcitx {
     constexpr int MAX_SCAN_LENGTH = 15;
-    // XKB keycode of BackSpace: evdev KEY_BACKSPACE (14) + 8.
-    constexpr int BackSpaceKeycode = 22;
     // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
     // surrounding text report the commit waits this long for them.
     constexpr uint64_t ForwardWaitUs = 15000;
@@ -44,7 +43,7 @@ namespace fcitx {
         return ucs4 == ' ' || ucs4 == '\t' || ucs4 == '\n' || ucs4 == '\r' || ucs4 == 0 || (ucs4 >= 58 && ucs4 <= 64);
     }
 
-    LotusState::LotusState(LotusEngine* engine, InputContext* ic) : engine_(engine), ic_(ic) {
+    LotusState::LotusState(LotusEngine* engine, InputContext* ic) : engine_(engine), ic_(ic), host_(std::make_unique<ngosen::FcitxHost>(ic)) {
         setEngine();
     }
 
@@ -90,7 +89,7 @@ namespace fcitx {
     }
 
     void LotusState::sendBackspaceKeys(int count) const {
-        if (!xtestSendKeys(count)) {
+        if (!host_->pressSystemKeys(count)) {
             LOTUS_ERROR("Cannot send backspaces: XTEST is unavailable");
         }
     }
@@ -227,7 +226,7 @@ namespace fcitx {
         if (auto commit = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()))) {
             if (commit && (*commit.get() != 0)) {
                 LOTUS_INFO("Commit: " + std::string(commit.get()));
-                ic_->commitString(commit.get());
+                host_->commitText(commit.get());
             }
         }
         ic_->inputPanel().reset();
@@ -374,7 +373,7 @@ namespace fcitx {
                     commonList->candidateFromAll(globalIdx).select(ic_);
                     keyEvent.filterAndAccept();
                 } else if (currentSym == FcitxKey_Return && !emojiBuffer_.empty()) {
-                    ic_->commitString(emojiBuffer_);
+                    host_->commitText(emojiBuffer_);
                     emojiBuffer_.clear();
                     updateEmojiPreedit();
                     keyEvent.filterAndAccept();
@@ -821,8 +820,8 @@ namespace fcitx {
 
     void LotusState::forwardBackspaces(int count) {
         for (int i = 0; i < count; ++i) {
-            ic_->forwardKey(Key(FcitxKey_BackSpace, KeyStates(), BackSpaceKeycode), false);
-            ic_->forwardKey(Key(FcitxKey_BackSpace, KeyStates(), BackSpaceKeycode), true);
+            host_->forwardKey(ngosen::EditKey::BackSpace, false);
+            host_->forwardKey(ngosen::EditKey::BackSpace, true);
         }
     }
 
@@ -932,8 +931,8 @@ namespace fcitx {
             rightPresses = overtype_char_count_; // the field only moved the cursor, nothing selected
         }
         for (int i = 0; i < rightPresses; ++i) {
-            ic_->forwardKey(Key(FcitxKey_Right), false);
-            ic_->forwardKey(Key(FcitxKey_Right), true);
+            host_->forwardKey(ngosen::EditKey::Right, false);
+            host_->forwardKey(ngosen::EditKey::Right, true);
         }
         LOTUS_INFO("Overtype gave up after " + std::to_string((::fcitx::now(CLOCK_MONOTONIC) - overtype_started_at_) / 1000) + " ms, moved cursor right " +
                    std::to_string(rightPresses));
@@ -1033,11 +1032,11 @@ namespace fcitx {
         }
         is_deleting_.store(true, std::memory_order_release);
         if (isSurrText) {
-            ic_->deleteSurroundingText(-expected_backspaces_, expected_backspaces_);
+            host_->deleteSurrounding(-expected_backspaces_, expected_backspaces_);
             LOTUS_INFO("Delete using surrounding text");
             std::this_thread::sleep_for(std::chrono::milliseconds(engine_->config().surrDeleteSleepMs.value() * expected_backspaces_));
             if (!pending_commit_string_.empty()) {
-                ic_->commitString(pending_commit_string_);
+                host_->commitText(pending_commit_string_);
                 LOTUS_INFO("Commit: " + pending_commit_string_);
                 std::this_thread::sleep_for(std::chrono::milliseconds(engine_->config().surrCommitSleepMs.value() * utf8::length(addedPart)));
             }
@@ -1187,7 +1186,7 @@ namespace fcitx {
                         addedPart = addedPart.substr(0, addedPart.size() - 1);
 #endif
                     }
-                    ic_->commitString(addedPart);
+                    host_->commitText(addedPart);
                     LOTUS_INFO("Commit: " + addedPart);
                     keyEvent.filterAndAccept();
                 } else {
@@ -1229,7 +1228,7 @@ namespace fcitx {
                 if (!addedPart.empty()) {
                     oldPreBuffer_ = preeditStr;
                     if (wasAutoCapitalized || addedPart != keyUtf8) {
-                        ic_->commitString(addedPart);
+                        host_->commitText(addedPart);
                         LOTUS_INFO("Commit: " + addedPart);
                         keyEvent.filterAndAccept();
                         isCommit = true;
@@ -1243,7 +1242,7 @@ namespace fcitx {
                     LOTUS_ERROR("Cannot send backspaces here, commit rawkey");
                     std::string rawKey = keyEvent.key().toString();
                     if (!rawKey.empty()) {
-                        ic_->commitString(rawKey);
+                        host_->commitText(rawKey);
                     }
                     return;
                 }
@@ -1324,14 +1323,14 @@ namespace fcitx {
                     if (surrounding.isValid()) {
                         size_t oldLen = utf8::length(oldPreBuffer_);
                         if (oldLen > 0) {
-                            ic_->deleteSurroundingText(-static_cast<int>(oldLen), static_cast<int>(oldLen));
+                            host_->deleteSurrounding(-static_cast<int>(oldLen), static_cast<int>(oldLen));
                         }
-                        ic_->commitString(commitStr);
+                        host_->commitText(commitStr);
                     } else {
-                        ic_->commitString(commitStr);
+                        host_->commitText(commitStr);
                     }
                 } else {
-                    ic_->commitString(commitStr);
+                    host_->commitText(commitStr);
                 }
                 keyEvent.filterAndAccept();
             } else {
@@ -1577,7 +1576,7 @@ namespace fcitx {
                 EngineCommitPreedit(lotusEngine_.handle());
                 UniqueCPtr<char> commit(EnginePullCommit(lotusEngine_.handle()));
                 if (commit && (*commit.get() != 0)) {
-                    ic_->commitString(commit.get());
+                    host_->commitText(commit.get());
                     LOTUS_INFO("Commit: " + std::string(commit.get()));
                 }
             }
@@ -1619,7 +1618,7 @@ namespace fcitx {
                     EngineCommitPreedit(lotusEngine_.handle());
                     UniqueCPtr<char> commit(EnginePullCommit(lotusEngine_.handle()));
                     if (commit && (*commit.get() != 0))
-                        ic_->commitString(commit.get());
+                        host_->commitText(commit.get());
                     ResetEngine(lotusEngine_.handle());
                 }
                 ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
@@ -1673,7 +1672,7 @@ namespace fcitx {
         std::string out   = std::move(committed);
         auto        flush = [&] {
             if (!out.empty()) {
-                ic_->commitString(out);
+                host_->commitText(out);
                 LOTUS_INFO("Commit: " + out);
                 out.clear();
             }

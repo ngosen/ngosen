@@ -146,6 +146,14 @@ int main() {
         reportFailure("give the cursor back when the selection is never confirmed", "a forwarded key", "no forwarded key");
         return 1;
     }
+    // Any other key would edit the text instead of moving the cursor.
+    for (size_t i = forwardedBefore; i < context->forwarded().size(); ++i) {
+        const auto& key = context->forwarded()[i].key();
+        if (key.sym() != FcitxKey_Right || key.states() != fcitx::KeyStates()) {
+            reportFailure("give the cursor back with Right", "only Right", "forwarded " + key.toString());
+            return 1;
+        }
+    }
     {
         std::string typedBack;
         for (size_t i = 1; i < context->commits().size(); ++i)

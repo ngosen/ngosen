@@ -18,6 +18,7 @@
 #include "lotus.h"
 #include "emoji-entry.h"
 #include "lotus-utils.h"
+#include "ngosen-host.h"
 
 #include <cstddef>
 #include <fcitx-utils/misc.h>
@@ -319,6 +320,9 @@ namespace fcitx {
          * @brief Clears the macro-skip state and re-syncs the engine.
          */
         void resetMacroSkip();
+
+        // Everything sent to the app goes through here, so the typing logic does not call fcitx5 directly.
+        std::unique_ptr<ngosen::Host> host_;
     };
 
 } // namespace fcitx

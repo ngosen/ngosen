@@ -18,6 +18,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 
 ### Thay đổi
 
+- Phần mã gửi chữ, phím và lệnh xoá ra app đi qua một lớp trung gian riêng, bước đầu để sau này chạy
+  được trên IBus. Người dùng không thấy gì khác (#47).
 - Chế độ `Uinput` đổi tên thành **Gõ Sen** (`Mode=Sen` trong `lotus.conf`). Cấu hình cũ, thứ tự chế độ,
   phím tắt và tuỳ chọn ẩn/hiện của chế độ cũ tự chuyển sang tên mới (#43).
 - Nhánh chính đổi tên từ `ban-dung` thành `main`. Đường dẫn cũ trên GitHub tự chuyển sang tên mới. Ai

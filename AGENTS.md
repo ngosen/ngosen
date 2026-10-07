@@ -43,6 +43,12 @@ a careful human wrote it, and the person sending it must be able to explain ever
   and the like; use `isStartsWith` (`src/lotus-utils.h`).
 - **A bug fix comes with a test that fails without it.** Check this by undoing the fix (or breaking
   its guard) and watching that test, and only that test, fail.
+- **Handle apps by how they behave, not by name.** Check what the field reports (capability flags,
+  surrounding text, frontend) before matching a program name; match a name only when nothing the app
+  reports tells it apart, and say in a comment what behaviour the name stands for.
+- **Keep fcitx5 out of the typing logic.** Text, keys and deletions go to the app through
+  `ngosen::Host` (`src/ngosen-host.h`), so the same logic can later run under another input method
+  framework. New code in `lotus-state.cpp` calls `host_` instead of the `InputContext`.
 - **Never forward backspaces to SDL games.** SDL takes only commits and preedit, so forwarded
   backspaces never reach it; it needs real key presses, which only XTEST on an X11 session provides.
   When changing which frontends forward backspaces, keep the `sdlGetsNoDeletion` checks in

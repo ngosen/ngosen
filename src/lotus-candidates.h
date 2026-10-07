@@ -15,37 +15,8 @@
 
 #include <fcitx/candidatelist.h>
 #include <functional>
-#include "emoji-entry.h"
 
 namespace fcitx {
-
-    class LotusState;
-
-    /**
-     * @brief Candidate word for emoji selection.
-     *
-     * Displays emoji candidates and commits selected emoji to input.
-     */
-    class EmojiCandidateWord : public CandidateWord {
-      public:
-        /**
-         * @brief Constructs an emoji candidate.
-         * @param text Display text for the candidate.
-         * @param state Pointer to LotusState.
-         * @param entry The emoji entry.
-         */
-        EmojiCandidateWord(Text text, LotusState* state, EmojiEntry entry);
-
-        /**
-         * @brief Handles candidate selection.
-         * @param inputContext Current input context.
-         */
-        void select(InputContext* inputContext) const override;
-
-      private:
-        LotusState* state_;
-        EmojiEntry  entry_;
-    };
 
     /**
      * @brief Candidate word for application mode selection.

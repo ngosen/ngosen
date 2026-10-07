@@ -8,6 +8,7 @@
 #include "ngosen-xtest.h"
 
 #include <fcitx-utils/key.h>
+#include <fcitx/candidatelist.h>
 #include <fcitx/inputcontext.h>
 #include <fcitx/inputpanel.h>
 #include <fcitx/text.h>
@@ -26,6 +27,20 @@ namespace ngosen {
             }
             return fcitx::Key();
         }
+
+        class PickableCandidate : public fcitx::CandidateWord {
+          public:
+            PickableCandidate(fcitx::Text text, std::function<void(size_t)> onPick, size_t index) :
+                fcitx::CandidateWord(std::move(text)), onPick_(std::move(onPick)), index_(index) {}
+
+            void select(fcitx::InputContext* /*inputContext*/) const override {
+                onPick_(index_);
+            }
+
+          private:
+            std::function<void(size_t)> onPick_;
+            size_t                      index_;
+        };
     } // namespace
 
     void FcitxHost::commitText(const std::string& text) {
@@ -95,6 +110,66 @@ namespace ngosen {
 
     void FcitxHost::refreshPanel() {
         ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
+    }
+
+    void FcitxHost::showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick) {
+        auto list = std::make_unique<fcitx::CommonCandidateList>();
+        list->setLayoutHint(fcitx::CandidateLayoutHint::Vertical);
+        list->setPageSize(pageSize);
+        for (size_t i = 0; i < labels.size(); ++i) {
+            fcitx::Text label;
+            label.append(labels[i], fcitx::TextFormatFlag::NoFlag);
+            list->append(std::make_unique<PickableCandidate>(std::move(label), onPick, i));
+        }
+        list->setGlobalCursorIndex(0);
+        ic_->inputPanel().setCandidateList(std::move(list));
+    }
+
+    void FcitxHost::hideCandidates() {
+        ic_->inputPanel().setCandidateList(nullptr);
+    }
+
+    std::shared_ptr<fcitx::CommonCandidateList> FcitxHost::candidateList() const {
+        return std::dynamic_pointer_cast<fcitx::CommonCandidateList>(ic_->inputPanel().candidateList());
+    }
+
+    std::optional<CandidatePage> FcitxHost::candidates() const {
+        auto list = candidateList();
+        if (!list) {
+            return std::nullopt;
+        }
+        CandidatePage page;
+        page.total    = list->totalSize();
+        page.page     = list->currentPage();
+        page.pageSize = list->pageSize();
+        page.cursor   = list->globalCursorIndex();
+        page.hasNext  = list->hasNext();
+        page.hasPrev  = list->hasPrev();
+        return page;
+    }
+
+    void FcitxHost::highlightCandidate(int index) {
+        if (auto list = candidateList())
+            list->setGlobalCursorIndex(index);
+    }
+
+    void FcitxHost::nextCandidatePage() {
+        if (auto list = candidateList())
+            list->next();
+    }
+
+    void FcitxHost::prevCandidatePage() {
+        if (auto list = candidateList())
+            list->prev();
+    }
+
+    void FcitxHost::pickCandidate(int index) {
+        if (auto list = candidateList())
+            list->candidateFromAll(index).select(ic_);
+    }
+
+    void FcitxHost::setStatus(const std::string& text) {
+        ic_->inputPanel().setAuxDown(fcitx::Text(text));
     }
 
 } // namespace ngosen

@@ -25,6 +25,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
   khác (#48).
 - Chữ tạm (chế độ Preedit và Emoji) và việc làm mới bảng gợi ý cũng đi qua lớp trung gian. Người dùng
   không thấy gì khác (#49).
+- Bảng chọn emoji cũng đi qua lớp trung gian, kèm bài kiểm cho các phím của bảng chọn (số, Space, Tab,
+  mũi tên, lật trang, Enter, Esc). Người dùng không thấy gì khác (#50).
 - Chế độ `Uinput` đổi tên thành **Gõ Sen** (`Mode=Sen` trong `lotus.conf`). Cấu hình cũ, thứ tự chế độ,
   phím tắt và tuỳ chọn ẩn/hiện của chế độ cũ tự chuyển sang tên mới (#43).
 - Nhánh chính đổi tên từ `ban-dung` thành `main`. Đường dẫn cũ trên GitHub tự chuyển sang tên mới. Ai

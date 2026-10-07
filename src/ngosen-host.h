@@ -5,8 +5,11 @@
  */
 #pragma once
 
+#include <functional>
+#include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace ngosen {
 
@@ -53,6 +56,17 @@ namespace ngosen {
         bool        keyEventOrderFix = false;
     };
 
+    // Where the user is in the candidate list shown in the panel. Indexes count from the first
+    // candidate of the whole list; cursor is -1 when nothing is highlighted.
+    struct CandidatePage {
+        int  total    = 0;
+        int  page     = 0;
+        int  pageSize = 0;
+        int  cursor   = -1;
+        bool hasNext  = false;
+        bool hasPrev  = false;
+    };
+
     // What the typing logic needs from the input method framework for one text field, so that the
     // logic does not depend on fcitx5 and can be reused by another framework.
     class Host {
@@ -80,6 +94,19 @@ namespace ngosen {
         // Changes above reach the app and the panel only when refreshed.
         virtual void refreshPreedit() = 0;
         virtual void refreshPanel()   = 0;
+
+        // Shows labels as a vertical list, pageSize per page, with the first highlighted. Picking one,
+        // by key or by mouse, calls onPick with its index.
+        virtual void showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick) = 0;
+        virtual void hideCandidates()                                                                                         = 0;
+        // Empty when the panel shows no candidate list.
+        virtual std::optional<CandidatePage> candidates() const            = 0;
+        virtual void                         highlightCandidate(int index) = 0;
+        virtual void                         nextCandidatePage()           = 0;
+        virtual void                         prevCandidatePage()           = 0;
+        virtual void                         pickCandidate(int index)      = 0;
+        // A line under the candidates, such as the page number.
+        virtual void setStatus(const std::string& text) = 0;
     };
 
 } // namespace ngosen

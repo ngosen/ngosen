@@ -97,6 +97,7 @@ add_lotus_headless_test(replay_single_commit
     replay-single-commit.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_settle_first_word
     super-smooth-settle-first-word.cpp "integration;smooth")
+add_lotus_headless_test(emoji_candidate_keys emoji-candidate-keys.cpp "integration;emoji")
 add_lotus_headless_test(emoji_history_page_navigation
     emoji-history-page-navigation.cpp "integration;emoji")
 add_lotus_headless_test(property_invariants

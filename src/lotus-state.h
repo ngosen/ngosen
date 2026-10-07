@@ -33,7 +33,6 @@ struct EmojiEntry;
 
 namespace fcitx {
     class LotusEngine;
-    class CommonCandidateList;
     class SurroundingText;
 
     /**
@@ -97,7 +96,6 @@ namespace fcitx {
          * @return True if no history.
          */
         bool isEmptyHistory() const;
-        friend class EmojiCandidateWord;
         friend class LotusEngine;
 
         /**
@@ -213,9 +211,10 @@ namespace fcitx {
 
         /**
          * @brief Updates emoji page status in candidate list.
-         * @param commonList The candidate list to update.
          */
-        void updateEmojiPageStatus(CommonCandidateList* commonList);
+        void updateEmojiPageStatus();
+        // Commits a picked emoji and records it in the history.
+        void pickEmoji(const EmojiEntry& entry);
 
         /**
          * @brief Handles key events in emoji mode.

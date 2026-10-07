@@ -8,7 +8,6 @@
  */
 #include "lotus-state.h"
 #include "lotus-engine.h"
-#include "lotus-candidates.h"
 #include "lotus-utils.h"
 #include "ngosen-app-quirks.h"
 #include "ngosen-fcitx-host.h"
@@ -18,7 +17,6 @@
 #include <cstddef>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/utf8.h>
-#include <fcitx/candidatelist.h>
 #include <fcitx/inputpanel.h>
 #include <fcitx/menu.h>
 #include <fcitx/userinterface.h>
@@ -240,22 +238,37 @@ namespace fcitx {
         host_->refreshPanel();
     }
 
-    void LotusState::updateEmojiPageStatus(CommonCandidateList* commonList) {
-        if ((commonList == nullptr) || commonList->empty()) {
+    void LotusState::updateEmojiPageStatus() {
+        const auto list = host_->candidates();
+        if (!list || list->total == 0) {
             return;
         }
 
-        int pageSize = commonList->pageSize();
+        int pageSize = list->pageSize;
         if (pageSize <= 0) {
             pageSize = 9;
         }
 
-        int         totalItems  = commonList->totalSize();
-        int         currentPage = commonList->currentPage() + 1;
+        int         totalItems  = list->total;
+        int         currentPage = list->page + 1;
         int         totalPages  = (totalItems + pageSize - 1) / pageSize;
 
         std::string status = _("Page ") + std::to_string(currentPage) + "/" + std::to_string(totalPages);
-        ic_->inputPanel().setAuxDown(Text(status));
+        host_->setStatus(status);
+    }
+
+    void LotusState::pickEmoji(const EmojiEntry& entry) {
+        host_->commitText(entry.output);
+        LOTUS_INFO("Emoji committed: " + entry.output);
+
+        engine_->emojiLoader().recordHistory(entry);
+
+        emojiBuffer_.clear();
+        emojiCandidates_.clear();
+
+        host_->resetPanel();
+        host_->refreshPanel();
+        updateEmojiPreedit();
     }
 
     void LotusState::handleEmojiMode(KeyEvent& keyEvent) {
@@ -267,24 +280,23 @@ namespace fcitx {
             return;
         }
 
-        auto baseList   = ic_->inputPanel().candidateList();
-        auto commonList = std::dynamic_pointer_cast<CommonCandidateList>(baseList);
-        if (commonList && currentSym >= FcitxKey_1 && currentSym <= FcitxKey_9) {
+        const auto list = host_->candidates();
+        if (list && currentSym >= FcitxKey_1 && currentSym <= FcitxKey_9) {
             int offset      = currentSym - FcitxKey_1;
-            int globalIndex = (commonList->currentPage() * commonList->pageSize()) + offset;
+            int globalIndex = (list->page * list->pageSize) + offset;
 
-            if (globalIndex < commonList->totalSize()) {
-                commonList->candidateFromAll(globalIndex).select(ic_);
+            if (globalIndex < list->total) {
+                host_->pickCandidate(globalIndex);
                 keyEvent.filterAndAccept();
                 return;
             }
         }
 
-        if (commonList && !commonList->empty()) {
-            int  globalCursorIndex = commonList->globalCursorIndex();
-            int  totalSize         = commonList->totalSize();
-            int  currentPage       = commonList->currentPage();
-            int  pageSize          = commonList->pageSize();
+        if (list && list->total > 0) {
+            int  globalCursorIndex = list->cursor;
+            int  totalSize         = list->total;
+            int  currentPage       = list->page;
+            int  pageSize          = list->pageSize;
             int  localCursorIndex  = globalCursorIndex - (currentPage * pageSize);
 
             bool handled = false;
@@ -293,9 +305,9 @@ namespace fcitx {
                 case FcitxKey_Tab:
                 case FcitxKey_Down: {
                     if (localCursorIndex < pageSize - 1 && globalCursorIndex < totalSize - 1) {
-                        commonList->setGlobalCursorIndex(globalCursorIndex + 1);
+                        host_->highlightCandidate(globalCursorIndex + 1);
                     } else {
-                        commonList->setGlobalCursorIndex(currentPage * pageSize);
+                        host_->highlightCandidate(currentPage * pageSize);
                     }
                     handled = true;
                     break;
@@ -304,30 +316,30 @@ namespace fcitx {
                 case FcitxKey_ISO_Left_Tab:
                 case FcitxKey_Up: {
                     if (localCursorIndex > 0) {
-                        commonList->setGlobalCursorIndex(globalCursorIndex - 1);
+                        host_->highlightCandidate(globalCursorIndex - 1);
                     } else {
                         int lastIndex = std::min((currentPage * pageSize) + pageSize - 1, totalSize - 1);
-                        commonList->setGlobalCursorIndex(lastIndex);
+                        host_->highlightCandidate(lastIndex);
                     }
                     handled = true;
                     break;
                 }
                 case FcitxKey_Page_Down:
                 case FcitxKey_Right: {
-                    if (commonList->hasNext()) {
-                        commonList->next();
-                        int newPage = commonList->currentPage();
-                        commonList->setGlobalCursorIndex(newPage * pageSize);
+                    if (list->hasNext) {
+                        host_->nextCandidatePage();
+                        int newPage = host_->candidates()->page;
+                        host_->highlightCandidate(newPage * pageSize);
                         handled = true;
                     }
                     break;
                 }
                 case FcitxKey_Page_Up:
                 case FcitxKey_Left: {
-                    if (commonList->hasPrev()) {
-                        commonList->prev();
-                        int newPage = commonList->currentPage();
-                        commonList->setGlobalCursorIndex(newPage * pageSize);
+                    if (list->hasPrev) {
+                        host_->prevCandidatePage();
+                        int newPage = host_->candidates()->page;
+                        host_->highlightCandidate(newPage * pageSize);
                         handled = true;
                     }
                     break;
@@ -336,7 +348,7 @@ namespace fcitx {
             }
 
             if (handled) {
-                updateEmojiPageStatus(commonList.get());
+                updateEmojiPageStatus();
                 host_->refreshPanel();
                 keyEvent.filterAndAccept();
                 return;
@@ -361,9 +373,8 @@ namespace fcitx {
         switch (currentSym) {
             case FcitxKey_space:
             case FcitxKey_Return: {
-                if (commonList && !commonList->empty()) {
-                    int globalIdx = commonList->globalCursorIndex();
-                    commonList->candidateFromAll(globalIdx).select(ic_);
+                if (list && list->total > 0) {
+                    host_->pickCandidate(list->cursor);
                     keyEvent.filterAndAccept();
                 } else if (currentSym == FcitxKey_Return && !emojiBuffer_.empty()) {
                     host_->commitText(emojiBuffer_);
@@ -419,27 +430,21 @@ namespace fcitx {
         }
 
         if (!emojiCandidates_.empty()) {
-            auto candidateList = std::make_unique<CommonCandidateList>();
-            candidateList->setLayoutHint(CandidateLayoutHint::Vertical);
-            candidateList->setPageSize(9);
-
+            std::vector<std::string> labels;
+            labels.reserve(emojiCandidates_.size());
             for (size_t i = 0; i < emojiCandidates_.size(); ++i) {
                 size_t localIndex = (i % 9) + 1;
-                Text   displayLabel;
                 if (emojiBuffer_.empty()) {
-                    displayLabel.append(std::to_string(localIndex) + ": " + emojiCandidates_[i].output, TextFormatFlag::NoFlag);
+                    labels.push_back(std::to_string(localIndex) + ": " + emojiCandidates_[i].output);
                 } else {
-                    displayLabel.append(std::to_string(localIndex) + ": " + emojiCandidates_[i].trigger + " " + emojiCandidates_[i].output, TextFormatFlag::NoFlag);
+                    labels.push_back(std::to_string(localIndex) + ": " + emojiCandidates_[i].trigger + " " + emojiCandidates_[i].output);
                 }
-                candidateList->append(std::make_unique<EmojiCandidateWord>(displayLabel, this, emojiCandidates_[i]));
             }
-            candidateList->setGlobalCursorIndex(0);
-
-            ic_->inputPanel().setCandidateList(std::move(candidateList));
-            auto currentList = std::dynamic_pointer_cast<CommonCandidateList>(ic_->inputPanel().candidateList());
-            updateEmojiPageStatus(currentList.get());
+            // The list keeps its own copy: emojiCandidates_ may change while it is still shown.
+            host_->showCandidates(labels, 9, [this, entries = emojiCandidates_](size_t index) { pickEmoji(entries[index]); });
+            updateEmojiPageStatus();
         } else {
-            ic_->inputPanel().setCandidateList(nullptr);
+            host_->hideCandidates();
         }
 
         host_->refreshPreedit();

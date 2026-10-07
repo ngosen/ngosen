@@ -201,7 +201,15 @@ bool ignoresForwardedKeys(fcitx::InputContext* ic) {
 
 bool selectsOverAutocompletion(fcitx::InputContext* ic) {
     const std::string frontend = getFrontendName(ic);
-    return (frontend == "dbus" || frontend == "fcitx4") && forwardsBackspaces(ic) && !ic->capabilityFlags().test(fcitx::CapabilityFlag::SurroundingText);
+    if ((frontend != "dbus" && frontend != "fcitx4") || !forwardsBackspaces(ic) || ic->capabilityFlags().test(fcitx::CapabilityFlag::SurroundingText))
+        return false;
+    // Terminals match the checks above too, and print Shift+Left instead of selecting.
+    const std::string program = stripDesktopSuffix(ic->program());
+    for (const char* browser : {"chromium", "chrome", "google-chrome", "microsoft-edge", "msedge", "brave", "vivaldi", "opera"}) {
+        if (isStartsWith(program, browser))
+            return true;
+    }
+    return false;
 }
 
 std::string stripDesktopSuffix(const std::string& program) {

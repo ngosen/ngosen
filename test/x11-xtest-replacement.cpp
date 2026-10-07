@@ -281,6 +281,11 @@ int main() {
         return 1;
     if (!sdlPressesBackSpaceThroughXTest(h))
         return 1;
+    // VTE terminals report no surrounding text either, but print Shift+Left as an escape sequence.
+    if (!keepsForwarding(h, "gnome-terminal-server", "dbus", chromeCaps))
+        return 1;
+    if (!keepsForwarding(h, "xfce4-terminal", "dbus", chromeCaps))
+        return 1;
     if (!keepsForwarding(h, "gtk3app", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix}))
         return 1;
     if (!keepsForwarding(h, "geany", "xim", fcitx::CapabilityFlags{}))

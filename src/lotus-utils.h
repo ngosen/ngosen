@@ -162,7 +162,7 @@ bool forwardsBackspaces(fcitx::InputContext* ic);
 // True for GTK4 clients, whose IM modules drop forwarded keys; delete through surrounding text there.
 bool ignoresForwardedKeys(fcitx::InputContext* ic);
 
-// True for Chromium-based clients on the D-Bus and fcitx4 frontends: they take forwarded keys but report
+// True for Chromium-based browsers on the D-Bus and fcitx4 frontends: they take forwarded keys but report
 // no surrounding text, and their address bar selects an inline autocompletion after the typed text.
 bool selectsOverAutocompletion(fcitx::InputContext* ic);
 

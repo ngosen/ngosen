@@ -41,6 +41,9 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 - Lark (Messenger web) trên Firefox gõ đúng dấu trở lại ("về" thay cho "vêf", "nấu" thay cho "nâú").
   Ô soạn tin này báo con trỏ đã tiến qua chữ vừa gõ trước khi báo chữ đó, và bộ gõ tưởng là một cú
   bấm chuột nên bỏ dở từ đang gõ (#45).
+- Trên X11, gõ trong terminal (gnome-terminal, xfce4-terminal…) không còn ra chữ rác như "ngayDDày".
+  Cách bôi đen chữ cũ rồi gõ đè dành cho thanh địa chỉ Chrome (#38) nay chỉ áp dụng cho trình duyệt họ
+  Chromium; terminal in Shift+Mũi tên trái ra thành ký tự thay vì bôi đen (#46).
 - Ubuntu 26.04 (GNOME 50.0 tới 50.3): gói kèm extension `forward-keys@ngosen.github.io` sửa lỗi GNOME làm
   rơi phím xoá bộ gõ gửi qua GNOME Shell, khiến Chrome, Edge và app Electron chạy Wayland gõ ra
   `tieêngếng`. Bật bằng `gnome-extensions enable forward-keys@ngosen.github.io` (#41).

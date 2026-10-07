@@ -32,6 +32,8 @@ Requires:       python3-QtPy
 Requires:       (python3-pyqt6 or python3-pyside6)
 Requires:       python3-dbus
 Requires:       acl
+# Loaded with dlopen at runtime, so the automatic soname requires miss it.
+Requires:       libxcb
 Requires(post): shadow-utils
 
 %description

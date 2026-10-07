@@ -181,16 +181,18 @@ namespace fcitx {
         // Select with Shift+Left, wait for the snapshot to show the selection, then commit over it.
         // The field never becomes empty, so Messenger does not reload its placeholder.
         void                                             send_select_uinput(int charCount) const; // sent as a negative count
-        void                                             selectAndOvertype(const std::string& addedPart, int charCount);
+        void                                             selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest = false);
         void                                             finishOvertype(const char* reason, bool fromTimer);
         void                                             abandonOvertype();
         std::unique_ptr<HandlerTableEntry<EventHandler>> overtype_watcher_;
         std::unique_ptr<EventSourceTime>                 overtype_timer_;
-        bool                                             overtype_pending_       = false;
-        unsigned int                                     overtype_cursor_before_ = 0;
-        bool                                             overtype_had_snapshot_  = false;
-        int                                              overtype_char_count_    = 0;
-        uint64_t                                         overtype_started_at_    = 0;
+        bool                                             overtype_pending_        = false;
+        unsigned int                                     overtype_cursor_before_  = 0;
+        bool                                             overtype_had_snapshot_   = false;
+        int                                              overtype_char_count_     = 0;
+        uint64_t                                         overtype_started_at_     = 0;
+        bool                                             overtype_via_xtest_      = false;
+        bool                                             overtype_shift_released_ = false;
 
         /**
          * @brief Checks if autofill is certain for surrounding text.

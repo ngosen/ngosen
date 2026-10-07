@@ -43,7 +43,8 @@ function(add_lotus_headless_test target source labels)
         Pthread::Pthread
     )
     add_test(NAME ${target} COMMAND ${target})
-    set_tests_properties(${target} PROPERTIES LABELS "${labels}" TIMEOUT 20)
+    # An empty DISPLAY keeps XTEST off, so no test presses keys in the developer's X session.
+    set_tests_properties(${target} PROPERTIES LABELS "${labels}" TIMEOUT 20 ENVIRONMENT "DISPLAY=")
 endfunction()
 
 # Helper macro to compile lightweight unit test linked with Bamboo engine core.
@@ -77,6 +78,8 @@ add_lotus_headless_test(xim_forward_handback
     xim-forward-handback.cpp "integration;smooth")
 add_lotus_headless_test(ibus_dbus_forward_backspaces
     ibus-dbus-forward-backspaces.cpp "integration;smooth")
+add_lotus_headless_test(x11_xtest_replacement
+    x11-xtest-replacement.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_settle_wait_immediate
     super-smooth-settle-wait-immediate.cpp "integration;smooth")
 add_lotus_headless_test(super_smooth_settle_plain_field

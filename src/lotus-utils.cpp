@@ -199,6 +199,11 @@ bool ignoresForwardedKeys(fcitx::InputContext* ic) {
     return frontend == "dbus" && !caps.test(fcitx::CapabilityFlag::KeyEventOrderFix) && caps.test(fcitx::CapabilityFlag::SurroundingText);
 }
 
+bool selectsOverAutocompletion(fcitx::InputContext* ic) {
+    const std::string frontend = getFrontendName(ic);
+    return (frontend == "dbus" || frontend == "fcitx4") && forwardsBackspaces(ic) && !ic->capabilityFlags().test(fcitx::CapabilityFlag::SurroundingText);
+}
+
 std::string stripDesktopSuffix(const std::string& program) {
     static constexpr std::string_view suffix = ".desktop";
     if (program.size() > suffix.size() && program.compare(program.size() - suffix.size(), suffix.size(), suffix) == 0) {

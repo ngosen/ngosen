@@ -48,6 +48,11 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
   app Electron chạy X11), và mọi app trên GNOME, gõ được mà không cần máy chủ uinput. App GTK4 xoá chữ
   bằng surrounding text vì mô-đun GTK4 bỏ qua phím gửi hộ. Game dùng SDL vẫn đi máy chủ vì SDL chỉ
   nhận chữ ghi và chữ gạch chân (#34).
+- Trên X11, thanh địa chỉ Chrome, Edge và Chromium không còn giữ dấu cũ khi gõ một địa chỉ đã từng vào
+  ("tiêng" thay cho "tiếng"). Trình duyệt tự gợi ý phần đuôi và bôi đen nó, nên phím xoá đầu chỉ xoá phần
+  gợi ý. Ngó Sen nay bôi đen cả chữ cũ bằng Shift+Mũi tên trái qua XTEST rồi gõ đè. Các app khác trên X11
+  cũng xoá qua XTEST khi không gửi phím hộ được, không cần máy chủ uinput. Gói nay kéo theo thư viện
+  `libxcb-xtest`, vì Linux Mint không cài sẵn nó (#38).
 
 ### Tài liệu
 

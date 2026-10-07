@@ -10,6 +10,7 @@
 #include "lotus-engine.h"
 #include "lotus-candidates.h"
 #include "lotus-utils.h"
+#include "ngosen-xtest.h"
 #include "lotus.h"
 
 #include <cstddef>
@@ -34,6 +35,11 @@ namespace fcitx {
     // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
     // surrounding text report the commit waits this long for them.
     constexpr uint64_t ForwardWaitUs = 15000;
+    // Chromium asks the input method about each key before it handles the key, so our Shift release
+    // coming back does not mean the Left presses before it have moved the selection yet.
+    constexpr uint64_t XTestSelectSettleUs = 50000;
+    // Gives up on a selection whose Shift release never comes back.
+    constexpr uint64_t XTestSelectTimeoutUs = 500000;
 
     static inline bool isWordBreak(uint32_t ucs4) {
         // Space, tab, newline, carriage return, null, or punctuation/symbols (: ; < = > ? @)
@@ -125,6 +131,11 @@ namespace fcitx {
     }
 
     void LotusState::send_backspace_uinput(int count) const {
+        // On X11, XTEST presses the keys the uinput server would, without the server.
+        if (xtestAvailable()) {
+            xtestSendKeys(count);
+            return;
+        }
         if (uinput_client_fd_ < 0 && !connect_uinput_server()) {
             LOTUS_ERROR("Cannot send backspace since cannot connect to uinput server");
             return;
@@ -877,7 +888,7 @@ namespace fcitx {
     }
 
     bool LotusState::canSendBackspaces() const {
-        return forwardsBackspaces(ic_) || uinput_client_fd_ >= 0;
+        return forwardsBackspaces(ic_) || uinput_client_fd_ >= 0 || xtestAvailable();
     }
 
     void LotusState::deferTimedCommit(uint64_t deliverAtUs) {
@@ -892,8 +903,10 @@ namespace fcitx {
         send_backspace_uinput(-charCount);
     }
 
-    void LotusState::selectAndOvertype(const std::string& addedPart, int charCount) {
+    void LotusState::selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest) {
         is_deleting_.store(true, std::memory_order_release);
+        overtype_via_xtest_      = viaXTest;
+        overtype_shift_released_ = false;
         pending_commit_string_   = addedPart;
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
@@ -907,7 +920,7 @@ namespace fcitx {
         overtype_started_at_ = ::fcitx::now(CLOCK_MONOTONIC);
         auto* instance       = engine_->instance();
         overtype_watcher_.reset(); // safe: we are outside its dispatch
-        overtype_watcher_ = instance->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& e) {
+        overtype_watcher_        = instance->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& e) {
             auto& ice = static_cast<InputContextEvent&>(e);
             if (!overtype_pending_ || ice.inputContext() != ic_ || !is_deleting_.load()) {
                 return;
@@ -922,9 +935,14 @@ namespace fcitx {
             }
             finishOvertype("selected", false);
         });
-        overtype_timer_   = instance->eventLoop().addTimeEvent(CLOCK_MONOTONIC, overtype_started_at_ + 150000ULL, 1000, [this](EventSourceTime*, uint64_t) {
+        const uint64_t timeoutUs = viaXTest ? XTestSelectTimeoutUs : 150000ULL;
+        overtype_timer_          = instance->eventLoop().addTimeEvent(CLOCK_MONOTONIC, overtype_started_at_ + timeoutUs, 1000, [this](EventSourceTime*, uint64_t) {
             if (overtype_pending_ && is_deleting_.load()) {
-                abandonOvertype();
+                if (overtype_shift_released_) {
+                    finishOvertype("selection settled", true);
+                } else {
+                    abandonOvertype();
+                }
             }
             return false;
         });
@@ -950,7 +968,8 @@ namespace fcitx {
         }
         LOTUS_INFO("Overtype gave up after " + std::to_string((::fcitx::now(CLOCK_MONOTONIC) - overtype_started_at_) / 1000) + " ms, moved cursor right " +
                    std::to_string(rightPresses));
-        overtype_pending_ = false;
+        overtype_pending_   = false;
+        overtype_via_xtest_ = false;
         pending_commit_string_.clear();
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
@@ -965,7 +984,8 @@ namespace fcitx {
     void LotusState::finishOvertype(const char* reason, bool fromTimer) {
         const auto elapsedMs = (::fcitx::now(CLOCK_MONOTONIC) - overtype_started_at_) / 1000;
         LOTUS_INFO("Overtype " + std::string(reason) + " after " + std::to_string(elapsedMs) + " ms");
-        overtype_pending_ = false;
+        overtype_pending_   = false;
+        overtype_via_xtest_ = false;
         if (!fromTimer && overtype_timer_) {
             overtype_timer_.reset(); // never reset a timer from inside its own callback
         }
@@ -1008,6 +1028,12 @@ namespace fcitx {
         const std::string surrText    = surrounding.text();
         // Facebook composers only: other fields do not report a selection-only change, so the
         // overtype would time out and drop the tone mark.
+        // A BackSpace in the Chromium address bar would only remove the selected autocompletion. XTEST,
+        // unlike forwardKey, keeps Shift, so widen the selection over the old text and type over both.
+        if (xtestAvailable() && selectsOverAutocompletion(ic_) && !deletedPart.empty()) {
+            selectAndOvertype(addedPart, static_cast<int>(utf8::length(deletedPart)), true);
+            return;
+        }
         if (engine_->config().messengerSelectOvertype.value() && !forwardsBackspaces(ic_) && looksLikeFacebookComposer(surrounding)) {
             selectAndOvertype(addedPart, static_cast<int>(utf8::length(deletedPart)));
             return;
@@ -1147,7 +1173,7 @@ namespace fcitx {
             return;
         }
 
-        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_)) {
+        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_) && !xtestAvailable()) {
             setup_uinput();
         }
 
@@ -1455,7 +1481,7 @@ namespace fcitx {
             return;
         }
 
-        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_)) {
+        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_) && !xtestAvailable()) {
             connect_uinput_server();
         }
 
@@ -1547,6 +1573,15 @@ namespace fcitx {
     void LotusState::keyEvent(KeyEvent& keyEvent) {
         if (!lotusEngine_)
             return;
+        if (overtype_pending_ && overtype_via_xtest_ && keyEvent.rawKey().sym() == FcitxKey_Shift_R) {
+            keyEvent.forward();
+            if (keyEvent.isRelease() && !overtype_shift_released_ && overtype_timer_) {
+                overtype_shift_released_ = true;
+                overtype_timer_->setTime(::fcitx::now(CLOCK_MONOTONIC) + XTestSelectSettleUs);
+                overtype_timer_->setOneShot();
+            }
+            return;
+        }
         if (realMode == LotusMode::Preedit) {
             if (keyEvent.rawKey().check(FcitxKey_Shift_L) || keyEvent.rawKey().check(FcitxKey_Shift_R))
                 return;
@@ -1565,7 +1600,7 @@ namespace fcitx {
             keyEvent.forward();
             return;
         }
-        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_)) {
+        if (uinput_client_fd_ < 0 && !forwardsBackspaces(ic_) && !xtestAvailable()) {
             LOTUS_WARN("Cannot connect to uinput server, reconnecting....");
             connect_uinput_server();
         }

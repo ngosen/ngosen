@@ -11,7 +11,7 @@ arch=('x86_64')
 url="https://github.com/ngosen/ngosen"
 license=('GPL-3.0-or-later')
 depends=('acl' 'fcitx5' 'fcitx5-configtool' 'fcitx5-gtk' 'fcitx5-qt' 'libinput' 'hicolor-icon-theme'
-         'glibc' 'libstdc++' 'libgcc' 'libudev.so' 'python-qtpy' 'python-pyqt6' 'python-dbus')
+         'glibc' 'libstdc++' 'libgcc' 'libudev.so' 'libxcb' 'python-qtpy' 'python-pyqt6' 'python-dbus')
 makedepends=('cmake' 'extra-cmake-modules' 'go' 'librsvg')
 # Installs the same files as fcitx5-lotus; installed paths keep the upstream name.
 conflicts=('fcitx5-lotus')

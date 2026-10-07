@@ -811,7 +811,8 @@ namespace fcitx {
                     state->clearAllBuffers();
             }
             const bool uinputMode = isUinputMode(realMode);
-            if (uinputMode && is_deleting_.load() && state->expected_backspaces_ > 0) {
+            // A selection waiting to be typed over has no backspaces left, but is just as unfinished.
+            if (uinputMode && is_deleting_.load() && (state->expected_backspaces_ > 0 || state->overtype_pending_)) {
                 state->deletionInterruptedAt_ = now_ms();
                 LOTUS_INFO("Replacement interrupted by focus out");
             } else {

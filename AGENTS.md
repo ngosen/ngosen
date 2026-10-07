@@ -43,9 +43,11 @@ a careful human wrote it, and the person sending it must be able to explain ever
   and the like; use `isStartsWith` (`src/lotus-utils.h`).
 - **A bug fix comes with a test that fails without it.** Check this by undoing the fix (or breaking
   its guard) and watching that test, and only that test, fail.
-- **Keep SDL games on the uinput server.** SDL takes only commits and preedit, so forwarded
-  backspaces never reach it. When changing which frontends forward backspaces, keep the
-  `sdlKeepsServer` checks in `test/ibus-dbus-forward-backspaces.cpp` passing.
+- **Never forward backspaces to SDL games.** SDL takes only commits and preedit, so forwarded
+  backspaces never reach it; it needs real key presses, through XTEST on an X11 session and the
+  uinput server elsewhere. When changing which frontends forward backspaces, keep the
+  `sdlKeepsServer` checks in `test/ibus-dbus-forward-backspaces.cpp` and the SDL case in
+  `test/x11-xtest-replacement.cpp` passing.
 
 ## Commits
 

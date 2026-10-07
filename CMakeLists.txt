@@ -73,6 +73,9 @@ fcitx5_translate_desktop_file(
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml" DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
 
+# GNOME 50.0-50.3 drop keys an input method forwards; the user enables this extension there.
+install(DIRECTORY gnome-shell/forward-keys@ngosen.github.io DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions)
+
 install(FILES 
         LICENSES/GPL-3.0-or-later.txt
         LICENSES/LGPL-2.1-or-later.txt

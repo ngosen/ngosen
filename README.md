@@ -217,6 +217,20 @@ Cài gói mới chỉ thay tệp trên đĩa. Máy chủ đang chạy vẫn là 
 Sen thêm lệnh bôi đen cho vá Messenger; máy chủ bản gốc không hiểu lệnh này, nó xoá nhầm một chữ
 rồi đếm sai số phím xoá, làm chữ bị sai ở mọi ứng dụng cho tới khi khởi động lại.
 
+### Ubuntu 26.04: bật extension sửa phím xoá
+
+GNOME 50.0 tới 50.3 làm rơi phím xoá mà bộ gõ gửi qua GNOME Shell
+([mutter#4853](https://gitlab.gnome.org/GNOME/mutter/-/issues/4853),
+[Launchpad #2169784](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784)). Chrome, Chromium,
+Edge và ứng dụng Electron chạy Wayland khi đó gõ `tieengs` ra `tieêngếng`. Gói có kèm extension sửa
+lỗi này. Cài xong, đăng xuất rồi đăng nhập lại, sau đó bật một lần:
+
+```
+gnome-extensions enable forward-keys@ngosen.github.io
+```
+
+Khi Ubuntu đưa bản sửa của GNOME xuống thì tắt nó bằng `gnome-extensions disable` cùng tên.
+
 ## Gỡ
 
 Bỏ Ngó Sen khỏi danh sách bộ gõ trong "Fcitx5 Configuration", rồi tắt máy chủ nền **trước** khi gỡ

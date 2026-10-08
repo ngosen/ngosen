@@ -471,7 +471,8 @@ namespace fcitx {
             }
             NGOSEN_INFO("Forward " + std::to_string(count) + " backspaces");
             waitForDeletion(nullptr, 4);
-            // XIM, IBus and D-Bus clients queue forwarded keys, and the commit can overtake them.
+            // XIM, IBus and D-Bus clients queue forwarded keys, and on wayland_v2 they travel apart from the
+            // commit, so the commit can overtake them.
             if (host_->field().frontend != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
                 deferTimedCommit(surr_wait_started_at_ + ForwardWaitUs);
             }

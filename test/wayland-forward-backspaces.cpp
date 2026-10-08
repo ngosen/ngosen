@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// On the Wayland frontend the backspaces of a replacement go to the app through forwardKey instead of
-// real key presses, and the commit still waits until the app reports the deletion done.
+// On the Wayland frontends ("wayland" is input-method-v1 as in KWin, "wayland_v2" is v2 as in Sway and
+// Hyprland) the backspaces of a replacement go through forwardKey instead of real key presses, and the
+// commit still waits until the app reports the deletion done.
 #include "lotus-engine.h"
 #include "lotus-utils.h"
 #include "key-sender-probe.h"
@@ -49,6 +50,47 @@ namespace {
         return out.empty() ? "(none)" : out;
     }
 
+    bool replacesThroughForward(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInstance& testInstance, const std::string& frontend) {
+        auto context = std::make_unique<TestInputContext>(&testInstance.instance, "test", frontend);
+        context->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
+        context->focusIn();
+        fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, focus);
+
+        setSnapshot(*context, "\n\n", 0);
+        const std::string word = "tie";
+        for (size_t i = 0; i < word.size(); ++i) {
+            if (!type(engine, entry, *context, static_cast<fcitx::KeySym>(word[i]), false))
+                return false;
+            setSnapshot(*context, word.substr(0, i + 1) + "\n\n", static_cast<unsigned int>(i + 1));
+        }
+
+        // Telex "e" again: e -> ê deletes one character.
+        if (!type(engine, entry, *context, FcitxKey_e, true))
+            return false;
+        const auto& forwarded = context->forwarded();
+        if (forwarded.size() != 2 || forwarded[0].key().sym() != FcitxKey_BackSpace || forwarded[0].isRelease() || forwarded[1].key().sym() != FcitxKey_BackSpace ||
+            !forwarded[1].isRelease()) {
+            reportFailure(frontend + ": forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
+            return false;
+        }
+
+        // The app has not reported the deletion yet, so nothing may be committed.
+        pumpEventLoop(testInstance.instance, 3);
+        if (!context->commits().empty()) {
+            reportFailure(frontend + ": no commit before the app reports the deletion", "commits=(none)", "commits=" + joinCommits(*context));
+            return false;
+        }
+
+        setSnapshot(*context, "ti\n\n", 2);
+        pumpEventLoop(testInstance.instance, 120);
+        if (context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure(frontend + ": commit once the app reports the deletion", "commits=['ê']", "commits=" + joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
 } // namespace
 
 int main() {
@@ -60,48 +102,15 @@ int main() {
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
     // Left at its default on purpose: the "\n\n" snapshot below looks like a Facebook composer, whose
-    // Shift+Left overtype needs real key presses and must not run on this frontend.
+    // Shift+Left overtype needs real key presses and must not run on these frontends.
     config.setValueByPath("MessengerSelectOvertype", "True");
     engine.setConfig(config);
 
-    KeySenderProbe keys;
-    auto           context = std::make_unique<TestInputContext>(&testInstance.instance, "test", "wayland");
-    context->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
-    context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
-    fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
-    engine.activate(entry, focus);
-
-    setSnapshot(*context, "\n\n", 0);
-    const std::string word = "tie";
-    for (size_t i = 0; i < word.size(); ++i) {
-        if (!type(engine, entry, *context, static_cast<fcitx::KeySym>(word[i]), false))
+    KeySenderProbe          keys;
+    fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
+    for (const char* frontend : {"wayland", "wayland_v2"}) {
+        if (!replacesThroughForward(engine, entry, testInstance, frontend))
             return 1;
-        setSnapshot(*context, word.substr(0, i + 1) + "\n\n", static_cast<unsigned int>(i + 1));
-    }
-
-    // Telex "e" again: e -> ê deletes one character.
-    if (!type(engine, entry, *context, FcitxKey_e, true))
-        return 1;
-    const auto& forwarded = context->forwarded();
-    if (forwarded.size() != 2 || forwarded[0].key().sym() != FcitxKey_BackSpace || forwarded[0].isRelease() || forwarded[1].key().sym() != FcitxKey_BackSpace ||
-        !forwarded[1].isRelease()) {
-        reportFailure("forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
-        return 1;
-    }
-
-    // The app has not reported the deletion yet, so nothing may be committed.
-    pumpEventLoop(testInstance.instance, 3);
-    if (!context->commits().empty()) {
-        reportFailure("no commit before the app reports the deletion", "commits=(none)", "commits=" + joinCommits(*context));
-        return 1;
-    }
-
-    setSnapshot(*context, "ti\n\n", 2);
-    pumpEventLoop(testInstance.instance, 120);
-    if (context->commits() != std::vector<std::string>{"ê"}) {
-        reportFailure("commit once the app reports the deletion", "commits=['ê']", "commits=" + joinCommits(*context));
-        return 1;
     }
 
     if (const int requests = keys.requests(); requests != 0) {

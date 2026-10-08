@@ -10,7 +10,8 @@
 namespace ngosen {
 
     bool forwardsBackspaces(const Field& field) {
-        if (field.frontend == "wayland" || field.frontend == "xim") {
+        // On wayland_v2 (input-method-v2: Sway, Hyprland) fcitx5 sends forwarded keys through a virtual keyboard.
+        if (field.frontend == "wayland" || field.frontend == "wayland_v2" || field.frontend == "xim") {
             return true;
         }
         if (field.frontend == "ibus") {

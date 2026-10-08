@@ -9,7 +9,7 @@
 #include "lotus-engine.h"
 #include "fcitx-utils/keysym.h"
 #include "lotus-config.h"
-#include "lotus-state.h"
+#include "ngosen-state.h"
 #include "lotus-candidates.h"
 #include "lotus-monitor.h"
 #include "lotus-utils.h"

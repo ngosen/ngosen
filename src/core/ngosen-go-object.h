@@ -8,8 +8,8 @@
  */
 
 /**
- * @file lotus.h
- * @brief Main header file for fcitx5-lotus Vietnamese input method.
+ * @file ngosen-go-object.h
+ * @brief Owners for objects and strings handed over by the Go composition engine.
  */
 
 #ifndef _FCITX5_LOTUS_H_

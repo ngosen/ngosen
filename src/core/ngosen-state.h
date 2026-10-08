@@ -8,14 +8,14 @@
  */
 
 /**
- * @file lotus-state.h
+ * @file ngosen-state.h
  * @brief Input context state management for fcitx5-lotus.
  */
 
 #ifndef _FCITX5_LOTUS_STATE_H_
 #define _FCITX5_LOTUS_STATE_H_
 
-#include "lotus.h"
+#include "ngosen-go-object.h"
 #include "emoji-entry.h"
 #include "ngosen-globals.h"
 #include "ngosen-engine-resources.h"

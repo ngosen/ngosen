@@ -11,6 +11,7 @@ target_compile_definitions(lotus_test_core PRIVATE
     FCITX_LOTUS_ICON_DIR="${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps"
 )
 target_link_libraries(lotus_test_core PRIVATE
+    ngosen_core
     Fcitx5::Core
     Fcitx5::Config
     Fcitx5::Module::Emoji
@@ -36,6 +37,7 @@ function(add_lotus_headless_test target source labels)
         LOTUS_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
     )
     target_link_libraries(${target} PRIVATE
+        ngosen_core
         Fcitx5::Core
         Fcitx5::Config
         Fcitx5::Module::Emoji
@@ -114,10 +116,10 @@ add_bamboo_test(numeric_macro_case_preservation
 
 add_executable(emoji_backspace_utf8
     test-emoji-backspace.cpp
-    ${PROJECT_SOURCE_DIR}/src/ngosen-utf8.cpp
+    ${PROJECT_SOURCE_DIR}/src/core/ngosen-utf8.cpp
 )
 target_include_directories(emoji_backspace_utf8 PRIVATE
-    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/src/core
 )
 target_link_libraries(emoji_backspace_utf8 PRIVATE
     Fcitx5::Core
@@ -136,6 +138,7 @@ add_executable(plasma_panel_theme
 target_include_directories(plasma_panel_theme PRIVATE
     ${PROJECT_BINARY_DIR}
     ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/src/core
 )
 target_link_libraries(plasma_panel_theme PRIVATE
     Fcitx5::Core
@@ -155,6 +158,7 @@ add_executable(gnome_panel_theme
 target_include_directories(gnome_panel_theme PRIVATE
     ${PROJECT_BINARY_DIR}
     ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/src/core
 )
 target_link_libraries(gnome_panel_theme PRIVATE
     Fcitx5::Core
@@ -167,8 +171,8 @@ set_tests_properties(gnome_panel_theme PROPERTIES
 )
 
 # Compares the typing logic's own UTF-8 helpers with the fcitx5 ones they replace.
-add_executable(utf8_matches_fcitx utf8-matches-fcitx.cpp ${PROJECT_SOURCE_DIR}/src/ngosen-utf8.cpp)
-target_include_directories(utf8_matches_fcitx PRIVATE ${PROJECT_SOURCE_DIR}/src)
+add_executable(utf8_matches_fcitx utf8-matches-fcitx.cpp ${PROJECT_SOURCE_DIR}/src/core/ngosen-utf8.cpp)
+target_include_directories(utf8_matches_fcitx PRIVATE ${PROJECT_SOURCE_DIR}/src/core)
 target_link_libraries(utf8_matches_fcitx PRIVATE Fcitx5::Utils)
 add_test(NAME utf8_matches_fcitx COMMAND utf8_matches_fcitx)
 set_tests_properties(utf8_matches_fcitx PROPERTIES LABELS "unit" TIMEOUT 60)

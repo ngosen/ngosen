@@ -19,7 +19,7 @@
 #include "ngosen-engine-resources.h"
 #include "emoji.h"
 #include "ngosen-options.h"
-#include "lotus.h"
+#include "ngosen-go-object.h"
 #include <mutex>
 #include <memory>
 #include <fcitx-config/iniparser.h>

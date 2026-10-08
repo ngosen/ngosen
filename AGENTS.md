@@ -26,7 +26,7 @@ a careful human wrote it, and the person sending it must be able to explain ever
 - **No measurements, dates or history in code.** "Measured 0/60 wrong at 70 ms", "the old path
   slept here", "since 20/09" belong in the commit message or PR. Refer to a real issue as `#123`.
   No internal labels (`v7`, `B33`, `AF-0012`, session names) anywhere in the repo.
-- **Reuse what exists.** Log with `NGOSEN_DEBUG/INFO/WARN/ERROR` (`src/ngosen-log.h`) in the typing
+- **Reuse what exists.** Log with `NGOSEN_DEBUG/INFO/WARN/ERROR` (`src/core/ngosen-log.h`) in the typing
   logic and `LOTUS_DEBUG/INFO/WARN/ERROR` (`src/lotus-utils.h`) elsewhere; use fcitx5 and libc
   facilities (event loop timers, `syslog()`) before writing a new mechanism.
 - **Fix reported problems.** Do not add code for cases no user hits ("200 keys per second"). If only
@@ -41,21 +41,23 @@ a careful human wrote it, and the person sending it must be able to explain ever
 - **Run clang-format before pushing.** CI fails on any formatting diff, including alignment of
   neighbouring declarations.
 - **Build as C++17.** The Ubuntu 22.04 package compiles in C++17, so no `std::string::starts_with`
-  and the like; use `isStartsWith` (`src/ngosen-strings.h`).
+  and the like; use `isStartsWith` (`src/core/ngosen-strings.h`).
 - **A bug fix comes with a test that fails without it.** Check this by undoing the fix (or breaking
   its guard) and watching that test, and only that test, fail.
 - **Handle apps by how they behave, not by name.** Check what the field reports (capability flags,
   surrounding text, frontend) before matching a program name; match a name only when nothing the app
   reports tells it apart, and say in a comment what behaviour the name stands for.
-- **Keep fcitx5 out of the typing logic.** Text, keys and deletions go to the app through
-  `ngosen::Host` (`src/ngosen-host.h`), so the same logic can later run under another input method
-  framework. Key presses arrive as `ngosen::KeyPress` (`src/ngosen-key.h`). New code in
-  `lotus-state.cpp` calls `host_` instead of the `InputContext`, and checks for how an app behaves
-  go in `src/ngosen-app-quirks.cpp`, reading the field `host_` reports. Settings and what all fields
-  share (dictionary, macro table, custom keymap, emoji list) come from `engine_`, an
-  `ngosen::EngineResources` (`src/ngosen-engine-resources.h`); a new setting is added to
-  `ngosen::Options` and copied in `LotusEngine::syncOptions`. UTF-8, the clock and logging use
-  `src/ngosen-utf8.h`, `src/ngosen-clock.h` and `src/ngosen-log.h`.
+- **Keep fcitx5 out of the typing logic.** It lives in `src/core/`, built as `ngosen_core` with no
+  fcitx5 include path, so an fcitx5 include there fails the build. Text, keys and deletions go to
+  the app through `ngosen::Host` (`src/core/ngosen-host.h`), so the same logic can later run under
+  another input method framework. Key presses arrive as `ngosen::KeyPress`
+  (`src/core/ngosen-key.h`). New code in `src/core/ngosen-state.cpp` calls `host_` instead of the
+  `InputContext`, and checks for how an app behaves go in `src/core/ngosen-app-quirks.cpp`, reading
+  the field `host_` reports. Settings and what all fields share (dictionary, macro table, custom
+  keymap, emoji list) come from `engine_`, an `ngosen::EngineResources`
+  (`src/core/ngosen-engine-resources.h`); a new setting is added to `ngosen::Options` and copied in
+  `LotusEngine::syncOptions`. UTF-8, the clock and logging use `src/core/ngosen-utf8.h`,
+  `src/core/ngosen-clock.h` and `src/core/ngosen-log.h`.
 - **Never forward backspaces to SDL games.** SDL takes only commits and preedit, so forwarded
   backspaces never reach it; it needs real key presses, which only XTEST on an X11 session provides.
   When changing which frontends forward backspaces, keep the `sdlGetsNoDeletion` checks in

@@ -4,13 +4,19 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "ngosen-xtest.h"
-#include "lotus-utils.h"
+#include "ngosen-log.h"
 
 #include <cstdint>
+#include <cstdlib>
 #include <dlfcn.h>
 #include <utility>
 
 namespace {
+    bool envSet(const char* name) {
+        const char* value = std::getenv(name);
+        return value != nullptr && *value != 0;
+    }
+
     // Loaded at run time so a system without the library still builds and runs.
     struct XcbConnection;
     struct XcbVoidCookie {
@@ -32,13 +38,13 @@ namespace {
     class XTest {
       public:
         XTest() {
-            if (getEnv("DISPLAY").empty() || !getEnv("WAYLAND_DISPLAY").empty()) {
+            if (!envSet("DISPLAY") || envSet("WAYLAND_DISPLAY")) {
                 return;
             }
             void* xcb   = dlopen("libxcb.so.1", RTLD_NOW | RTLD_LOCAL);
             void* xtest = dlopen("libxcb-xtest.so.0", RTLD_NOW | RTLD_LOCAL);
             if (xcb == nullptr || xtest == nullptr) {
-                LOTUS_WARN("XTEST unavailable: cannot load libxcb-xtest");
+                NGOSEN_WARN("XTEST unavailable: cannot load libxcb-xtest");
                 return;
             }
             auto connect  = reinterpret_cast<ConnectFn>(dlsym(xcb, "xcb_connect"));
@@ -46,12 +52,12 @@ namespace {
             auto flush    = reinterpret_cast<FlushFn>(dlsym(xcb, "xcb_flush"));
             auto fake     = reinterpret_cast<FakeInputFn>(dlsym(xtest, "xcb_test_fake_input"));
             if (connect == nullptr || hasError == nullptr || flush == nullptr || fake == nullptr) {
-                LOTUS_WARN("XTEST unavailable: missing xcb symbols");
+                NGOSEN_WARN("XTEST unavailable: missing xcb symbols");
                 return;
             }
             XcbConnection* conn = connect(nullptr, nullptr);
             if (conn == nullptr || hasError(conn) != 0) {
-                LOTUS_WARN("XTEST unavailable: cannot open the display");
+                NGOSEN_WARN("XTEST unavailable: cannot open the display");
                 return;
             }
             conn_      = conn;

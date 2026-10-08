@@ -6,14 +6,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-#include "lotus-state.h"
+#include "ngosen-state.h"
 #include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
 #include "ngosen-utf8.h"
 #include "ngosen-xtest.h"
-#include "lotus.h"
+#include "ngosen-go-object.h"
 
 #include <cstddef>
 

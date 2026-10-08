@@ -1,8 +1,11 @@
+add_subdirectory(core)
+
 add_library(lotus MODULE lotus.cpp ${fcitx_lotus_core_sources})
 set_target_properties(lotus PROPERTIES OUTPUT_NAME "lotus")
 set_target_properties(lotus PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_options(lotus PRIVATE "-Wl,-exclude-libs,ALL")
 target_link_libraries(lotus
+	ngosen_core
 	Fcitx5::Core
 	Fcitx5::Config
   Fcitx5::Module::Emoji

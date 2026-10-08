@@ -4,21 +4,14 @@ project(fcitx5-lotus VERSION 3.5.10)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(BUILD_TESTING "Build Lotus tests" OFF)
 
-# The addon entry point is intentionally excluded: each headless test links
-# the production implementation directly, without a reusable archive/object
-# target that could differ from the module build.
+# The fcitx5 shell around the typing logic (src/core, built as ngosen_core). The addon entry point
+# is excluded so the headless tests can link the same sources the module does.
 set(fcitx_lotus_core_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lotus-engine.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/lotus-state.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lotus-candidates.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lotus-utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-xtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-fcitx-host.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-fcitx-log.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-app-quirks.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-utf8.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-globals.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-strings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-pointer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lotus-monitor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lotus-icon-resolver.cpp

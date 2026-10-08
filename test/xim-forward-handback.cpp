@@ -49,7 +49,7 @@ namespace {
     // libuv timers count whole milliseconds from the loop's cached time, so a commit may land up to
     // this much before its deadline. Only lower bounds on time are checked.
     constexpr uint64_t ClockSlackUs = 3000;
-    constexpr uint64_t WaitUs       = 60000;
+    constexpr uint64_t WaitUs       = 15000;
 
     struct Harness {
         fcitx::Instance&               instance;

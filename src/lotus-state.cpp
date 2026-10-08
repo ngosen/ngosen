@@ -32,9 +32,6 @@ namespace fcitx {
     // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
     // surrounding text report the commit waits this long for them.
     constexpr uint64_t ForwardWaitUs = 15000;
-    // Chromium over XIM handles forwarded keys on its own schedule and applies a commit that arrives
-    // first before backspaces it has not handled yet.
-    constexpr uint64_t XimForwardWaitUs = 60000;
     // Chromium asks the input method about each key before it handles the key, so our Shift release
     // coming back does not mean the Left presses before it have moved the selection yet.
     constexpr uint64_t XTestSelectSettleUs = 50000;
@@ -1070,7 +1067,7 @@ namespace fcitx {
             waitForDeletion(nullptr, 4);
             // XIM, IBus and D-Bus clients queue forwarded keys, and the commit can overtake them.
             if (host_->field().frontend != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
-                deferTimedCommit(surr_wait_started_at_ + (host_->field().frontend == "xim" ? XimForwardWaitUs : ForwardWaitUs));
+                deferTimedCommit(surr_wait_started_at_ + ForwardWaitUs);
             }
             return;
         }
@@ -1483,7 +1480,7 @@ namespace fcitx {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
             NGOSEN_INFO("XIM handed back a forwarded backspace");
-            deferTimedCommit(ngosen::monotonicUs() + XimForwardWaitUs);
+            deferTimedCommit(ngosen::monotonicUs() + ForwardWaitUs);
             return;
         }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_) {

@@ -11,7 +11,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 
 ### Thêm
 
-- README có mục cho VS Code bản snap trên Ubuntu: sửa lối tắt để VS Code gõ được tiếng Việt qua XIM (#56).
+- README có mục cho VS Code trên Ubuntu: nên cài bằng gói `.deb` hoặc Flatpak; bản snap cần sửa lối tắt
+  để gõ được tiếng Việt qua XIM (#56, #62).
 - README có mục "Gỡ": tắt máy chủ nền trước, lệnh gỡ gói cho từng bản phân phối, lệnh gỡ bản tự dựng,
   và hai thứ còn lại trên máy sau khi gỡ là tệp cấu hình và tài khoản `uinput_proxy` (#27).
 - Trang Giới thiệu trong cửa sổ cài đặt có lại hai nút "Báo cáo lỗi" và "Đề xuất tính năng"; chúng mở
@@ -67,8 +68,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 
 - VS Code bản Flatpak, và bản `.deb` chạy Wayland, gõ được tiếng Việt: bộ gõ không còn coi việc VS Code
   nhích con trỏ ngay sau mỗi phím là một cú bấm chuột (#58).
-- VS Code bản snap (gõ qua XIM) không còn thỉnh thoảng gõ sai như "nười", "đôồn": bộ gõ không đếm hai
-  lần một phím mà VS Code gửi lại, và chờ VS Code xoá xong chữ cũ rồi mới đưa chữ mới vào (#60, #61).
+- VS Code bản snap (gõ qua XIM) ít gõ sai hơn, như "nười", "đôồn": bộ gõ không đếm hai lần một phím mà
+  VS Code gửi lại (#60, #61, #62).
 - Cửa sổ không báo tên app: chế độ gõ chọn riêng cho cửa sổ đó giờ được xoá khi đóng cửa sổ, nên cửa
   sổ mở sau không còn có thể nhận nhầm chế độ ấy, và danh sách quy tắc không dài thêm suốt phiên (#59).
 - Trên Wayland, bấm chuột sang chỗ khác trong ô rồi gõ tiếp giờ bắt đầu từ mới ngay cả khi máy chủ

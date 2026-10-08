@@ -75,7 +75,8 @@ right Shift`.
 
 ## Pull requests
 
-Inside this fork: every change goes through a PR into `main` (branches are deleted on merge).
+Inside this fork: every change goes through a PR into `main` (branches are deleted on merge). What to update
+after a merge and for a release is listed in [RELEASING.md](RELEASING.md).
 Each such PR adds a line under `## [Chưa phát hành]` in [CHANGELOG.md](CHANGELOG.md): what
 changed for the user, with the PR number. The changelog is written in Vietnamese, since most of its
 readers are Vietnamese users; keep English tech terms as in "Writing issues and PR text" below.

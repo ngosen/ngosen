@@ -20,10 +20,9 @@
 
 # Checklist
 
-- [ ] Nhánh đích là `dev` (KHÔNG phải `main`)
+- [ ] Nhánh đích là `main`
 - [ ] Đã chạy `clang-format` (tuân thủ `.clang-format`)
-- [ ] Đã kiểm tra `ruff check` và `ruff format` (cho phần Python `settings-gui`)
-- [ ] Build C++ thành công (`cmake .. && make`)
-- [ ] Test pass (`cd bamboo/ && go test -race ./...`)
-- [ ] Đã rebase với nhánh `dev` mới nhất
-- [ ] Các CI checks pass:
+- [ ] Đã kiểm tra `ruff check` và `ruff format` (nếu sửa `settings-gui`)
+- [ ] Build và test pass (`cmake -B build -DBUILD_TESTING=ON && cmake --build build && ctest --test-dir build`)
+- [ ] Sửa lỗi thì có test hỏng khi bỏ bản sửa
+- [ ] Đã thêm một dòng vào `CHANGELOG.md` mục `[Chưa phát hành]` (xem `RELEASING.md`)

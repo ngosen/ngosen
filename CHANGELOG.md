@@ -16,6 +16,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Phần xử lý gõ được tách khỏi fcitx5 và sắp xếp lại để chuẩn bị bản chạy trên IBus. Người dùng không thấy
   gì khác; phần này giờ có test riêng, chạy được trên máy không cài fcitx5 (#77, #78, #79).
 
+### Tài liệu
+
+- Thêm `RELEASING.md`: những chỗ cần cập nhật sau mỗi PR và mỗi lần ra bản mới; mẫu PR nay đúng với
+  fork (nhánh `main`, `ctest`, dòng CHANGELOG) (#80).
+
 ## [0.5.1-1] — 09/10/2026
 
 Sửa lỗi Gõ Sen trên Sway và Hyprland, và cài mới thì dùng Gõ Sen luôn. Tải ở

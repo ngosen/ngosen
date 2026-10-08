@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -141,6 +142,13 @@ namespace ngosen {
         // surrounding text report the commit waits this long for them.
         static constexpr uint64_t ForwardWaitUs = 15000;
 
+        // The steps of keyEvent, in order. A true result means the key needs nothing more.
+        bool     skipsKey(ngosen::KeyPress& keyEvent);
+        void     settleBeforeKey();
+        uint32_t trackCapitalization(ngosen::KeyPress& keyEvent);
+        bool     handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool     handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+
         // Presses real keys through XTEST, for frontends that cannot forward them.
         void sendBackspaceKeys(int count) const;
 
@@ -245,6 +253,11 @@ namespace ngosen {
          */
         void handleEmojiMode(ngosen::KeyPress& keyEvent);
 
+        // Moves the highlight or the page for navigation keys; false for any other key.
+        bool moveInEmojiList(const ngosen::CandidatePage& list, uint32_t currentSym);
+        // Picks, commits, cancels or adds to the search text.
+        void handleEmojiTextKey(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::optional<ngosen::CandidatePage>& list);
+
         /**
          * @brief Updates preedit display for emoji mode.
          */
@@ -259,6 +272,11 @@ namespace ngosen {
          */
         bool handleUInputKeyPress(ngosen::KeyPress& event, uint32_t currentSym, int sleepTime);
         bool waitForDeletion(ngosen::KeyPress* event, int sleepTime);
+        // Commits once the app reports the deletion, or at a timeout.
+        bool startSurroundingWait(ngosen::KeyPress* event);
+        // Commits after a fixed delay, for apps whose reports cannot be trusted.
+        bool startTimedWait(ngosen::KeyPress* event, int sleepTime, bool skipFrozenWait);
+        bool onTimedWaitTimer(ngosen::Timer& t);
         void forwardBackspaces(int count);
         // True when a replacement can delete text: forwarded by the frontend or pressed through XTEST.
         bool canSendBackspaces() const;
@@ -271,6 +289,12 @@ namespace ngosen {
          * @param addedPart Text to insert.
          */
         void performReplacement(const std::string& deletedPart, const std::string& addedPart);
+        // Remembers what the app showed when the replacement started, to tell when it is done.
+        void recordSendSnapshot(const std::string& deletedPart);
+        // True to delete through the surrounding text; otherwise counts the backspaces to send.
+        bool deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
+        void replaceThroughSurrounding(const std::string& addedPart);
+        void replaceThroughForwardedKeys();
 
         /**
          * @brief Handles the double space to period replacement.
@@ -297,6 +321,10 @@ namespace ngosen {
          * @param sleepTime Delay in microseconds.
          */
         void handleUinputMode(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        // The engine finished a word: send what differs from the text already typed.
+        void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr);
+        // The word is still open: bring the app's text in line with the new preedit.
+        void replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8);
 
         /**
          * @brief Handles Off mode with macro shadow processing.
@@ -304,6 +332,8 @@ namespace ngosen {
          * @param currentSym Current key symbol.
          */
         void handleOffModeMacro(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        // Replaces the typed abbreviation when the engine expanded a macro; otherwise lets the key through.
+        void expandOffModeMacro(ngosen::KeyPress& keyEvent, const std::string& keyUtf8, const std::string& commitStr);
 
         /**
          * @brief Replays keystrokes buffered during replacement.
@@ -314,6 +344,10 @@ namespace ngosen {
          * @param committed Text to commit first; it goes out in the same commit as the replayed keys.
          */
         void replayBufferedKeys(std::string committed = {});
+        void commitReplayed(std::string& out);
+        // Replays keys[i]; true when it started a replacement, which replays the rest later.
+        bool replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
+        void replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart);
 
         /**
          * @brief Checks if the key symbol matches the configured macro-skip modifier.

@@ -62,41 +62,7 @@ namespace ngosen {
 
         auto        commitPtr = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
         if (processed && commitPtr && (*commitPtr.get() != 0)) {
-            std::string commitStr = commitPtr.get();
-
-            // Determine if this is a macro expansion or just confirmed typed text
-            bool isMacroExpansion = false;
-            if (keyUtf8.empty()) {
-                isMacroExpansion = (commitStr != oldPreBuffer_);
-            } else {
-                isMacroExpansion = (commitStr != oldPreBuffer_ + keyUtf8);
-            }
-
-            if (isMacroExpansion) {
-                NGOSEN_INFO("Macro expansion: '" + oldPreBuffer_ + "' -> '" + commitStr + "'");
-                // Try backspaces first, fallback to deleteSurroundingText, then plain commit
-                if (canSendBackspaces() && !oldPreBuffer_.empty()) {
-                    performReplacement(oldPreBuffer_, commitStr);
-                } else if (host_->field().surroundingText) {
-                    const auto surrounding = host_->surrounding();
-                    if (surrounding.isValid()) {
-                        size_t oldLen = ngosen::utf8::length(oldPreBuffer_);
-                        if (oldLen > 0) {
-                            host_->deleteSurrounding(-static_cast<int>(oldLen), static_cast<int>(oldLen));
-                        }
-                        host_->commitText(commitStr);
-                    } else {
-                        host_->commitText(commitStr);
-                    }
-                } else {
-                    host_->commitText(commitStr);
-                }
-                keyEvent.accept();
-            } else {
-                // No macro: typed text confirmed by engine, just forward trigger key
-                keyEvent.passToApp();
-            }
-
+            expandOffModeMacro(keyEvent, keyUtf8, commitPtr.get());
             oldPreBuffer_.clear();
             hasHistory_ = false;
             return;
@@ -120,6 +86,41 @@ namespace ngosen {
                 ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
             }
+            keyEvent.passToApp();
+        }
+    }
+
+    void TypingState::expandOffModeMacro(ngosen::KeyPress& keyEvent, const std::string& keyUtf8, const std::string& commitStr) {
+        // Determine if this is a macro expansion or just confirmed typed text
+        bool isMacroExpansion = false;
+        if (keyUtf8.empty()) {
+            isMacroExpansion = (commitStr != oldPreBuffer_);
+        } else {
+            isMacroExpansion = (commitStr != oldPreBuffer_ + keyUtf8);
+        }
+
+        if (isMacroExpansion) {
+            NGOSEN_INFO("Macro expansion: '" + oldPreBuffer_ + "' -> '" + commitStr + "'");
+            // Try backspaces first, fallback to deleteSurroundingText, then plain commit
+            if (canSendBackspaces() && !oldPreBuffer_.empty()) {
+                performReplacement(oldPreBuffer_, commitStr);
+            } else if (host_->field().surroundingText) {
+                const auto surrounding = host_->surrounding();
+                if (surrounding.isValid()) {
+                    size_t oldLen = ngosen::utf8::length(oldPreBuffer_);
+                    if (oldLen > 0) {
+                        host_->deleteSurrounding(-static_cast<int>(oldLen), static_cast<int>(oldLen));
+                    }
+                    host_->commitText(commitStr);
+                } else {
+                    host_->commitText(commitStr);
+                }
+            } else {
+                host_->commitText(commitStr);
+            }
+            keyEvent.accept();
+        } else {
+            // No macro: typed text confirmed by engine, just forward trigger key
             keyEvent.passToApp();
         }
     }

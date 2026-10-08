@@ -376,30 +376,8 @@ namespace ngosen {
         current_backspace_count_ = 0;
         pending_commit_string_   = addedPart;
         expected_backspaces_     = static_cast<int>(ngosen::utf8::length(deletedPart));
-        surr_wait_deleted_       = deletedPart;
-        {
-            const auto snapshot      = host_->surrounding();
-            surr_wait_sent_snapshot_ = snapshot.isValid() ? snapshot.text() + "\x1f" + std::to_string(snapshot.cursor()) : std::string();
-        }
-        surr_wait_prefix_ = (oldPreBuffer_.size() >= deletedPart.size()) ? oldPreBuffer_.substr(0, oldPreBuffer_.size() - deletedPart.size()) : std::string();
-        {
-            // Only a fresh send-time snapshot (text before the cursor ends with prefix + deleted) may
-            // count towards "frozen"; a lagging app sends a stale one.
-            surr_wait_sent_snapshot_fresh_ = false;
-            const auto snapshot            = host_->surrounding();
-            if (snapshot.isValid()) {
-                const std::string& t  = snapshot.text();
-                auto               it = t.begin();
-                for (unsigned int i = 0; i < snapshot.cursor() && it != t.end(); ++i) {
-                    it = ngosen::utf8::nextChar(it, t.end());
-                }
-                const std::string before(t.begin(), it);
-                const std::string expected     = surr_wait_prefix_ + surr_wait_deleted_;
-                surr_wait_sent_snapshot_fresh_ = before.size() >= expected.size() && before.compare(before.size() - expected.size(), expected.size(), expected) == 0;
-            }
-        }
-        const auto        surrounding = host_->surrounding();
-        const std::string surrText    = surrounding.text();
+        recordSendSnapshot(deletedPart);
+        const auto surrounding = host_->surrounding();
         // Facebook composers only: other fields do not report a selection-only change, so the
         // overtype would time out and drop the tone mark.
         // A BackSpace in the Chromium address bar would only remove the selected autocompletion. XTEST,
@@ -412,6 +390,42 @@ namespace ngosen {
             selectAndOvertype(addedPart, static_cast<int>(ngosen::utf8::length(deletedPart)));
             return;
         }
+        const bool isSurrText = deletesThroughSurrounding(surrounding);
+        is_deleting_.store(true, std::memory_order_release);
+        if (isSurrText) {
+            replaceThroughSurrounding(addedPart);
+            return;
+        }
+        if (ngosen::forwardsBackspaces(host_->field())) {
+            replaceThroughForwardedKeys();
+            return;
+        }
+        sendBackspaceKeys(expected_backspaces_);
+        NGOSEN_INFO("Send " + std::to_string(expected_backspaces_) + " backspaces");
+    }
+
+    void TypingState::recordSendSnapshot(const std::string& deletedPart) {
+        surr_wait_deleted_       = deletedPart;
+        const auto snapshot      = host_->surrounding();
+        surr_wait_sent_snapshot_ = snapshot.isValid() ? snapshot.text() + "\x1f" + std::to_string(snapshot.cursor()) : std::string();
+        surr_wait_prefix_        = (oldPreBuffer_.size() >= deletedPart.size()) ? oldPreBuffer_.substr(0, oldPreBuffer_.size() - deletedPart.size()) : std::string();
+        // Only a fresh send-time snapshot (text before the cursor ends with prefix + deleted) may
+        // count towards "frozen"; a lagging app sends a stale one.
+        surr_wait_sent_snapshot_fresh_ = false;
+        if (snapshot.isValid()) {
+            const std::string& t  = snapshot.text();
+            auto               it = t.begin();
+            for (unsigned int i = 0; i < snapshot.cursor() && it != t.end(); ++i) {
+                it = ngosen::utf8::nextChar(it, t.end());
+            }
+            const std::string before(t.begin(), it);
+            const std::string expected     = surr_wait_prefix_ + surr_wait_deleted_;
+            surr_wait_sent_snapshot_fresh_ = before.size() >= expected.size() && before.compare(before.size() - expected.size(), expected.size(), expected) == 0;
+        }
+    }
+
+    bool TypingState::deletesThroughSurrounding(const ngosen::Surrounding& surrounding) {
+        const std::string surrText = surrounding.text();
         // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it. Its
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
         const bool isLibreOffice   = ngosen::appliesBackspacesLate(host_->field());
@@ -419,173 +433,165 @@ namespace ngosen {
         bool       isSurrText = mustUseSurrText ? host_->field().surroundingText :
                                                   engine_->options().useSurroundingTextIfPossible && host_->field().surroundingText && surrounding.isValid() && !surrText.empty() &&
                 surrounding.cursor() == ngosen::utf8::length(surrText);
-        if (!isSurrText) {
-            ++expected_backspaces_;
-            // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
-            // the autofill shape on Firefox.
-            const bool isFirefoxAddressBar = ngosen::hidesAddressBarFlag(host_->field()) && textAfterCursorLooksLikeUrl(surrounding);
-            const bool checkAutofill       = realMode != ngosen::Mode::Sen || host_->field().url || isFirefoxAddressBar;
-            if (checkAutofill) {
-                // Enable Autofill detection for all frontends (Wayland/IBus).
-                // This fixes the "toôi" duplication bug in Chromium-based search bars.
-                // The isAutofillCertain function has been optimized to differentiate
-                // between browser autofill and AI ghost text.
-                // isAutofillCertain runs first so its realtextLen update still happens.
-                if (isAutofillCertain(surrounding) || (isFirefoxAddressBar && onlyCurrentWordBeforeCursor(surrounding, oldPreBuffer_))) {
-                    ++expected_backspaces_;
+        if (isSurrText)
+            return true;
+        ++expected_backspaces_;
+        // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
+        // the autofill shape on Firefox.
+        const bool isFirefoxAddressBar = ngosen::hidesAddressBarFlag(host_->field()) && textAfterCursorLooksLikeUrl(surrounding);
+        const bool checkAutofill       = realMode != ngosen::Mode::Sen || host_->field().url || isFirefoxAddressBar;
+        if (checkAutofill) {
+            // Enable Autofill detection for all frontends (Wayland/IBus).
+            // This fixes the "toôi" duplication bug in Chromium-based search bars.
+            // The isAutofillCertain function has been optimized to differentiate
+            // between browser autofill and AI ghost text.
+            // isAutofillCertain runs first so its realtextLen update still happens.
+            if (isAutofillCertain(surrounding) || (isFirefoxAddressBar && onlyCurrentWordBeforeCursor(surrounding, oldPreBuffer_))) {
+                ++expected_backspaces_;
+            }
+        }
+        return false;
+    }
+
+    void TypingState::replaceThroughSurrounding(const std::string& addedPart) {
+        host_->deleteSurrounding(-expected_backspaces_, expected_backspaces_);
+        NGOSEN_INFO("Delete using surrounding text");
+        std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrDeleteSleepMs * expected_backspaces_));
+        if (!pending_commit_string_.empty()) {
+            host_->commitText(pending_commit_string_);
+            NGOSEN_INFO("Commit: " + pending_commit_string_);
+            std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrCommitSleepMs * ngosen::utf8::length(addedPart)));
+        }
+        expected_backspaces_     = 0;
+        current_backspace_count_ = 0;
+        pending_commit_string_.clear();
+        is_deleting_.store(false);
+        replayBufferedKeys();
+    }
+
+    void TypingState::replaceThroughForwardedKeys() {
+        // The XTEST count includes a sentinel that comes back to us; forwarded keys never do.
+        const int count = expected_backspaces_ - 1;
+        if (host_->field().frontend == "xim") {
+            // We are inside the client's synchronous XIM request for the key that triggered this
+            // replacement. Keys forwarded now reach the client before its reply, and libX11 may
+            // hand them back to us unprocessed. Forward them once the reply has gone out.
+            xim_forward_timer_ = host_->startTimer(ngosen::monotonicUs(), 0, [this, count](ngosen::Timer&) {
+                if (is_deleting_.load()) {
+                    forwardBackspaces(count);
                 }
-            }
+                return false;
+            });
+        } else {
+            forwardBackspaces(count);
         }
-        is_deleting_.store(true, std::memory_order_release);
-        if (isSurrText) {
-            host_->deleteSurrounding(-expected_backspaces_, expected_backspaces_);
-            NGOSEN_INFO("Delete using surrounding text");
-            std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrDeleteSleepMs * expected_backspaces_));
-            if (!pending_commit_string_.empty()) {
-                host_->commitText(pending_commit_string_);
-                NGOSEN_INFO("Commit: " + pending_commit_string_);
-                std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrCommitSleepMs * ngosen::utf8::length(addedPart)));
-            }
-            expected_backspaces_     = 0;
-            current_backspace_count_ = 0;
-            pending_commit_string_.clear();
-            is_deleting_.store(false);
-            replayBufferedKeys();
-            return;
+        NGOSEN_INFO("Forward " + std::to_string(count) + " backspaces");
+        waitForDeletion(nullptr, 4);
+        // XIM, IBus and D-Bus clients queue forwarded keys, and on wayland_v2 they travel apart from the
+        // commit, so the commit can overtake them.
+        if (host_->field().frontend != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
+            deferTimedCommit(surr_wait_started_at_ + ForwardWaitUs);
         }
-        if (ngosen::forwardsBackspaces(host_->field())) {
-            // The XTEST count includes a sentinel that comes back to us; forwarded keys never do.
-            const int count = expected_backspaces_ - 1;
-            if (host_->field().frontend == "xim") {
-                // We are inside the client's synchronous XIM request for the key that triggered this
-                // replacement. Keys forwarded now reach the client before its reply, and libX11 may
-                // hand them back to us unprocessed. Forward them once the reply has gone out.
-                xim_forward_timer_ = host_->startTimer(ngosen::monotonicUs(), 0, [this, count](ngosen::Timer&) {
-                    if (is_deleting_.load()) {
-                        forwardBackspaces(count);
-                    }
-                    return false;
-                });
-            } else {
-                forwardBackspaces(count);
-            }
-            NGOSEN_INFO("Forward " + std::to_string(count) + " backspaces");
-            waitForDeletion(nullptr, 4);
-            // XIM, IBus and D-Bus clients queue forwarded keys, and on wayland_v2 they travel apart from the
-            // commit, so the commit can overtake them.
-            if (host_->field().frontend != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
-                deferTimedCommit(surr_wait_started_at_ + ForwardWaitUs);
-            }
-            return;
-        }
-        sendBackspaceKeys(expected_backspaces_);
-        NGOSEN_INFO("Send " + std::to_string(expected_backspaces_) + " backspaces");
     }
 
     void TypingState::replayBufferedKeys(std::string committed) {
         // Under GNOME, mutter sends one text-input "done" per main-loop turn and clients keep only the
         // last commit_string before it, so back-to-back commits lose all but the last ("đ" then "i"
         // shows "i"). Send the replacement and the replayed keys as one commit.
-        std::string out   = std::move(committed);
-        auto        flush = [&] {
-            if (!out.empty()) {
-                host_->commitText(out);
-                NGOSEN_INFO("Commit: " + out);
-                out.clear();
-            }
-        };
+        std::string out = std::move(committed);
         NGOSEN_INFO("Starting replay buffered keys");
         if (buffered_keys_.empty()) {
-            flush();
+            commitReplayed(out);
             return;
         }
         auto keys = std::move(buffered_keys_);
         buffered_keys_.clear();
         for (size_t i = 0; i < keys.size(); ++i) {
-            auto        sym     = keys[i].sym;
-            uint32_t    state   = keys[i].state;
-            std::string keyUtf8 = host_->keyText(sym);
-            if (keyUtf8.empty()) {
-                continue;
-            }
+            if (replayKey(keys, i, out))
+                return;
+        }
+        commitReplayed(out);
+        NGOSEN_INFO("Replay buffered keys done");
+    }
 
-            bool processed = EngineProcessKeyEvent(bambooEngine_.handle(), sym, state) != 0U;
+    void TypingState::commitReplayed(std::string& out) {
+        if (!out.empty()) {
+            host_->commitText(out);
+            NGOSEN_INFO("Commit: " + out);
+            out.clear();
+        }
+    }
 
-            auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
-            if (commitF && (*commitF.get() != 0)) {
-                std::string commitStr = commitF.get();
-                std::string deletedPart;
-                std::string addedPart;
-                ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
-
-                if (!deletedPart.empty()) {
-                    // Re-buffer remaining keys for next replay cycle.
-                    for (size_t j = i + 1; j < keys.size(); ++j) {
-                        if (buffered_keys_.size() < MAX_BUFFERED_KEYS) {
-                            buffered_keys_.push_back(keys[j]);
-                        }
-                    }
-                    flush();
-                    performReplacement(deletedPart, addedPart);
-                    hasHistory_ = false;
-                    ResetEngine(bambooEngine_.handle());
-                    oldPreBuffer_.clear();
-                    return;
-                }
-                if (!addedPart.empty()) {
-                    out += addedPart;
-                }
-
-                hasHistory_ = false;
-                ResetEngine(bambooEngine_.handle());
-                oldPreBuffer_.clear();
-                continue;
-            }
-
-            if (!processed) {
-                out += keyUtf8;
-                continue;
-            }
-
-            hasHistory_ = true;
-            realtextLen.fetch_add(1, std::memory_order_acq_rel);
-
-            ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
-            std::string              preeditStr = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
-
-            std::string              deletedPart;
-            std::string              addedPart;
-            if (ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, preeditStr, deletedPart, addedPart) != 0) {
-                if (deletedPart.empty()) {
-                    if (!addedPart.empty()) {
-                        out += addedPart;
-                        oldPreBuffer_ = preeditStr;
-                    }
-                } else {
-                    if (!canSendBackspaces()) {
-                        out += keyUtf8;
-                        continue;
-                    }
-
-                    if (is_deleting_.load()) {
-                        is_deleting_.store(false, std::memory_order_release);
-                    }
-
-                    // Re-buffer remaining keys for next replay cycle.
-                    for (size_t j = i + 1; j < keys.size(); ++j) {
-                        if (buffered_keys_.size() < MAX_BUFFERED_KEYS) {
-                            buffered_keys_.push_back(keys[j]);
-                        }
-                    }
-                    flush();
-                    performReplacement(deletedPart, addedPart);
-                    oldPreBuffer_ = preeditStr;
-                    return;
-                }
+    void TypingState::replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart) {
+        // Re-buffer remaining keys for next replay cycle.
+        for (size_t j = i + 1; j < keys.size(); ++j) {
+            if (buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+                buffered_keys_.push_back(keys[j]);
             }
         }
-        flush();
-        NGOSEN_INFO("Replay buffered keys done");
+        commitReplayed(out);
+        performReplacement(deletedPart, addedPart);
+    }
+
+    bool TypingState::replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
+        auto        sym     = keys[i].sym;
+        uint32_t    state   = keys[i].state;
+        std::string keyUtf8 = host_->keyText(sym);
+        if (keyUtf8.empty()) {
+            return false;
+        }
+
+        bool processed = EngineProcessKeyEvent(bambooEngine_.handle(), sym, state) != 0U;
+
+        auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
+        if (commitF && (*commitF.get() != 0)) {
+            std::string deletedPart;
+            std::string addedPart;
+            ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitF.get(), deletedPart, addedPart);
+            const bool replacing = !deletedPart.empty();
+            if (replacing) {
+                replaceDuringReplay(keys, i, out, deletedPart, addedPart);
+            } else {
+                out += addedPart;
+            }
+            hasHistory_ = false;
+            ResetEngine(bambooEngine_.handle());
+            oldPreBuffer_.clear();
+            return replacing;
+        }
+
+        if (!processed) {
+            out += keyUtf8;
+            return false;
+        }
+
+        hasHistory_ = true;
+        realtextLen.fetch_add(1, std::memory_order_acq_rel);
+
+        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
+        std::string              preeditStr = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+
+        std::string              deletedPart;
+        std::string              addedPart;
+        if (ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, preeditStr, deletedPart, addedPart) == 0)
+            return false;
+        if (deletedPart.empty()) {
+            if (!addedPart.empty()) {
+                out += addedPart;
+                oldPreBuffer_ = preeditStr;
+            }
+            return false;
+        }
+        if (!canSendBackspaces()) {
+            out += keyUtf8;
+            return false;
+        }
+        if (is_deleting_.load()) {
+            is_deleting_.store(false, std::memory_order_release);
+        }
+        replaceDuringReplay(keys, i, out, deletedPart, addedPart);
+        oldPreBuffer_ = preeditStr;
+        return true;
     }
 
 } // namespace ngosen

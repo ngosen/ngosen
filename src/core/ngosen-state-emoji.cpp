@@ -72,67 +72,11 @@ namespace ngosen {
             }
         }
 
-        if (list && list->total > 0) {
-            int  globalCursorIndex = list->cursor;
-            int  totalSize         = list->total;
-            int  currentPage       = list->page;
-            int  pageSize          = list->pageSize;
-            int  localCursorIndex  = globalCursorIndex - (currentPage * pageSize);
-
-            bool handled = false;
-
-            switch (currentSym) {
-                case ngosen::key::Tab:
-                case ngosen::key::Down: {
-                    if (localCursorIndex < pageSize - 1 && globalCursorIndex < totalSize - 1) {
-                        host_->highlightCandidate(globalCursorIndex + 1);
-                    } else {
-                        host_->highlightCandidate(currentPage * pageSize);
-                    }
-                    handled = true;
-                    break;
-                }
-
-                case ngosen::key::ISO_Left_Tab:
-                case ngosen::key::Up: {
-                    if (localCursorIndex > 0) {
-                        host_->highlightCandidate(globalCursorIndex - 1);
-                    } else {
-                        int lastIndex = std::min((currentPage * pageSize) + pageSize - 1, totalSize - 1);
-                        host_->highlightCandidate(lastIndex);
-                    }
-                    handled = true;
-                    break;
-                }
-                case ngosen::key::Page_Down:
-                case ngosen::key::Right: {
-                    if (list->hasNext) {
-                        host_->nextCandidatePage();
-                        int newPage = host_->candidates()->page;
-                        host_->highlightCandidate(newPage * pageSize);
-                        handled = true;
-                    }
-                    break;
-                }
-                case ngosen::key::Page_Up:
-                case ngosen::key::Left: {
-                    if (list->hasPrev) {
-                        host_->prevCandidatePage();
-                        int newPage = host_->candidates()->page;
-                        host_->highlightCandidate(newPage * pageSize);
-                        handled = true;
-                    }
-                    break;
-                }
-                default: break;
-            }
-
-            if (handled) {
-                updateEmojiPageStatus();
-                host_->refreshPanel();
-                keyEvent.accept();
-                return;
-            }
+        if (list && list->total > 0 && moveInEmojiList(*list, currentSym)) {
+            updateEmojiPageStatus();
+            host_->refreshPanel();
+            keyEvent.accept();
+            return;
         }
 
         if (ngosen::key::isBackspace(currentSym)) {
@@ -149,7 +93,58 @@ namespace ngosen {
             updateEmojiPreedit();
             return;
         }
+        handleEmojiTextKey(keyEvent, currentSym, list);
+    }
 
+    bool TypingState::moveInEmojiList(const ngosen::CandidatePage& list, uint32_t currentSym) {
+        int globalCursorIndex = list.cursor;
+        int totalSize         = list.total;
+        int currentPage       = list.page;
+        int pageSize          = list.pageSize;
+        int localCursorIndex  = globalCursorIndex - (currentPage * pageSize);
+
+        switch (currentSym) {
+            case ngosen::key::Tab:
+            case ngosen::key::Down: {
+                if (localCursorIndex < pageSize - 1 && globalCursorIndex < totalSize - 1) {
+                    host_->highlightCandidate(globalCursorIndex + 1);
+                } else {
+                    host_->highlightCandidate(currentPage * pageSize);
+                }
+                return true;
+            }
+
+            case ngosen::key::ISO_Left_Tab:
+            case ngosen::key::Up: {
+                if (localCursorIndex > 0) {
+                    host_->highlightCandidate(globalCursorIndex - 1);
+                } else {
+                    int lastIndex = std::min((currentPage * pageSize) + pageSize - 1, totalSize - 1);
+                    host_->highlightCandidate(lastIndex);
+                }
+                return true;
+            }
+            case ngosen::key::Page_Down:
+            case ngosen::key::Right: {
+                if (!list.hasNext)
+                    return false;
+                host_->nextCandidatePage();
+                host_->highlightCandidate(host_->candidates()->page * pageSize);
+                return true;
+            }
+            case ngosen::key::Page_Up:
+            case ngosen::key::Left: {
+                if (!list.hasPrev)
+                    return false;
+                host_->prevCandidatePage();
+                host_->highlightCandidate(host_->candidates()->page * pageSize);
+                return true;
+            }
+            default: return false;
+        }
+    }
+
+    void TypingState::handleEmojiTextKey(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::optional<ngosen::CandidatePage>& list) {
         switch (currentSym) {
             case ngosen::key::space:
             case ngosen::key::Return: {
@@ -179,17 +174,16 @@ namespace ngosen {
             default: break;
         }
 
-        {
-            std::string utf8Char = host_->keyText(currentSym);
-            if (!utf8Char.empty()) {
-                emojiBuffer_.append(utf8Char);
-                keyEvent.accept();
-                updateEmojiPreedit();
-            } else {
-                keyEvent.passToApp();
-            }
+        std::string utf8Char = host_->keyText(currentSym);
+        if (!utf8Char.empty()) {
+            emojiBuffer_.append(utf8Char);
+            keyEvent.accept();
+            updateEmojiPreedit();
+        } else {
+            keyEvent.passToApp();
         }
     }
+
     void TypingState::updateEmojiPreedit() {
         if (emojiBuffer_.empty()) {
             emojiCandidates_ = engine_->emojiHistory();

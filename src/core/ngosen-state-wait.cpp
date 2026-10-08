@@ -104,51 +104,58 @@ namespace ngosen {
                 skipFrozenWait = true;
             }
         }
-        if (waitEvent && !emptySnapshot && !skipFrozenWait) {
-            // Sleeping blocks the single event loop, so no update could arrive. Return to the loop
-            // and watch for updates from now on; a fresh watcher ignores the previous replacement's
-            // late events. Keys typed meanwhile go to buffered_keys_.
-            if (event != nullptr) {
-                event->accept();
-            }
-            surr_wait_started_at_ = ngosen::monotonicUs();
-            // After a timeout the app is lagging (Firefox) and its snapshot is stale: skip the
-            // immediate check.
-            if (surr_snapshot_trusted_ && deletionLooksDone()) {
-                NGOSEN_INFO("Skip retry");
-                deliverAfterSettle("immediate", false);
-                return true;
-            }
-            surr_wait_pending_            = true;
-            surr_wait_event_count_        = 0;
-            surr_wait_saw_other_snapshot_ = false;
-            surr_wait_watching_           = true;
-            // Two timeouts in a row: this app does not update while deleting. Use the short timeout
-            // until an event matches again.
-            const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->options().waitSurroundingShortMs : engine_->options().waitSurroundingTimeoutMs;
-            const auto timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
-            // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms. Check once at the
-            // threshold first: many apps report "done" before it and then go quiet.
-            const auto threshold     = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
-            const auto firstDeadline = threshold < timeout ? surr_wait_started_at_ + threshold : surr_wait_started_at_ + timeout;
-            surr_wait_timer_         = host_->startTimer(firstDeadline, 1000, [this, timeout](ngosen::Timer& t) {
-                if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
-                    return false;
-                }
-                const auto waited = ngosen::monotonicUs() - surr_wait_started_at_;
-                if (waited + 1000 < timeout) {
-                    if (deletionLooksDone()) {
-                        deliverAfterSettle("threshold", true);
-                        return false;
-                    }
-                    t.rearm(surr_wait_started_at_ + timeout);
-                    return true;
-                }
-                finishReplacement("timeout", true);
-                return false;
-            });
+        if (waitEvent && !emptySnapshot && !skipFrozenWait)
+            return startSurroundingWait(event);
+        return startTimedWait(event, sleepTime, skipFrozenWait);
+    }
+
+    bool TypingState::startSurroundingWait(ngosen::KeyPress* event) {
+        // Sleeping blocks the single event loop, so no update could arrive. Return to the loop
+        // and watch for updates from now on; a fresh watcher ignores the previous replacement's
+        // late events. Keys typed meanwhile go to buffered_keys_.
+        if (event != nullptr) {
+            event->accept();
+        }
+        surr_wait_started_at_ = ngosen::monotonicUs();
+        // After a timeout the app is lagging (Firefox) and its snapshot is stale: skip the
+        // immediate check.
+        if (surr_snapshot_trusted_ && deletionLooksDone()) {
+            NGOSEN_INFO("Skip retry");
+            deliverAfterSettle("immediate", false);
             return true;
         }
+        surr_wait_pending_            = true;
+        surr_wait_event_count_        = 0;
+        surr_wait_saw_other_snapshot_ = false;
+        surr_wait_watching_           = true;
+        // Two timeouts in a row: this app does not update while deleting. Use the short timeout
+        // until an event matches again.
+        const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->options().waitSurroundingShortMs : engine_->options().waitSurroundingTimeoutMs;
+        const auto timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
+        // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms. Check once at the
+        // threshold first: many apps report "done" before it and then go quiet.
+        const auto threshold     = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
+        const auto firstDeadline = threshold < timeout ? surr_wait_started_at_ + threshold : surr_wait_started_at_ + timeout;
+        surr_wait_timer_         = host_->startTimer(firstDeadline, 1000, [this, timeout](ngosen::Timer& t) {
+            if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
+                return false;
+            }
+            const auto waited = ngosen::monotonicUs() - surr_wait_started_at_;
+            if (waited + 1000 < timeout) {
+                if (deletionLooksDone()) {
+                    deliverAfterSettle("threshold", true);
+                    return false;
+                }
+                t.rearm(surr_wait_started_at_ + timeout);
+                return true;
+            }
+            finishReplacement("timeout", true);
+            return false;
+        });
+        return true;
+    }
+
+    bool TypingState::startTimedWait(ngosen::KeyPress* event, int sleepTime, bool skipFrozenWait) {
         // Frozen snapshot: sleep at least WaitSurroundingMinPerKeyMs x (N - 1) instead of, not on
         // top of, the normal sleep.
         const int perKeyMs = skipFrozenWait ? std::max(sleepTime, engine_->options().waitSurroundingMinPerKeyMs) : sleepTime;
@@ -181,36 +188,38 @@ namespace ngosen {
         surr_wait_focus_retries_ = 0;
         surr_wait_started_at_    = ngosen::monotonicUs();
         surr_wait_deliver_at_    = surr_wait_started_at_ + (static_cast<uint64_t>(waitMs) * 1000ULL);
-        surr_wait_timer_         = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer& t) {
-            if (!surr_wait_pending_ || !surr_wait_timer_only_) {
-                return false;
-            }
-            if (!is_deleting_.load()) { // the replacement was cancelled elsewhere (navigation key...)
-                surr_wait_pending_    = false;
-                surr_wait_timer_only_ = false;
-                return false;
-            }
-            if (!host_->hasFocus()) {
-                // Chromium X11 leaves and re-enters the field within ~0.3 ms; a commit in that gap is
-                // lost. Give it a moment to come back.
-                if (++surr_wait_focus_retries_ <= 5) {
-                    t.rearm(ngosen::monotonicUs() + 2000);
-                    return true;
-                }
-                // The user really switched windows: the old field can no longer take the text. Reset
-                // only this field's state; is_deleting_ is shared and the new field may be replacing.
-                NGOSEN_INFO("Timer: input context lost focus, dropping text");
-                surr_wait_pending_       = false;
-                surr_wait_timer_only_    = false;
-                expected_backspaces_     = 0;
-                current_backspace_count_ = 0;
-                pending_commit_string_.clear();
-                return false;
-            }
-            finishReplacement("timer", true);
-            return false;
-        });
+        surr_wait_timer_         = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); });
         return true;
+    }
+
+    bool TypingState::onTimedWaitTimer(ngosen::Timer& t) {
+        if (!surr_wait_pending_ || !surr_wait_timer_only_) {
+            return false;
+        }
+        if (!is_deleting_.load()) { // the replacement was cancelled elsewhere (navigation key...)
+            surr_wait_pending_    = false;
+            surr_wait_timer_only_ = false;
+            return false;
+        }
+        if (!host_->hasFocus()) {
+            // Chromium X11 leaves and re-enters the field within ~0.3 ms; a commit in that gap is
+            // lost. Give it a moment to come back.
+            if (++surr_wait_focus_retries_ <= 5) {
+                t.rearm(ngosen::monotonicUs() + 2000);
+                return true;
+            }
+            // The user really switched windows: the old field can no longer take the text. Reset
+            // only this field's state; is_deleting_ is shared and the new field may be replacing.
+            NGOSEN_INFO("Timer: input context lost focus, dropping text");
+            surr_wait_pending_       = false;
+            surr_wait_timer_only_    = false;
+            expected_backspaces_     = 0;
+            current_backspace_count_ = 0;
+            pending_commit_string_.clear();
+            return false;
+        }
+        finishReplacement("timer", true);
+        return false;
     }
 
     void TypingState::forwardBackspaces(int count) {

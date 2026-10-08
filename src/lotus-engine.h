@@ -26,6 +26,7 @@
 #include <fcitx/action.h>
 #include <fcitx/addonfactory.h>
 #include <fcitx/addonmanager.h>
+#include <fcitx/candidatelist.h>
 #include <fcitx/inputmethodengine.h>
 #include <fcitx/instance.h>
 #include <fcitx-utils/event.h>
@@ -347,6 +348,28 @@ namespace fcitx {
          * @param ic Current input context.
          */
         void showAppModeMenu(InputContext* ic);
+
+        // One line of the mode menu, before the menu drops hidden modes.
+        struct ModeMenuItem {
+            LotusMode   mode;
+            std::string label;
+            KeySym      key;
+            bool        visible;
+        };
+        // Every mode in the configured order, then the ones the order leaves out.
+        std::vector<ModeMenuItem> modeMenuItems();
+        // Adds the item that types the menu hotkey's own character, when it is a plain key.
+        void appendTypeHotkeyItem(CommonCandidateList& candidateList);
+        void handleModeMenuKey(KeyEvent& keyEvent);
+        void moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
+        // Hides the menu; resetState also commits and clears what the field was typing.
+        void closeModeMenuPanel(InputContext* ic, bool resetState);
+        // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.
+        void pickMenuMode(InputContext* ic, LotusMode mode, bool isDefault);
+        void openModeMenu(InputContext* ic);
+        // The modes the cycle key steps through, in the configured order.
+        std::vector<LotusMode> cycleModes();
+        void                   cycleMode(InputContext* ic);
 
         /**
          * @brief Shows a brief notification of the cycled mode.

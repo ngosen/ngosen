@@ -178,38 +178,7 @@ namespace ngosen {
 
         auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
         if (commitF && (*commitF.get() != 0)) {
-            std::string commitStr = commitF.get();
-            std::string deletedPart;
-            std::string addedPart;
-            ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
-
-            if (!deletedPart.empty()) {
-                performReplacement(deletedPart, addedPart);
-                keyEvent.accept();
-            } else {
-                bool wasAutoCapitalized = (currentSym != keyEvent.sym());
-                if (!addedPart.empty() && (keyUtf8 != addedPart || wasAutoCapitalized)) {
-                    // Prevent auto-capitalized character replacement from stripping out Vietnamese chars
-                    if (addedPart.size() > 1 && addedPart.back() == ' ') {
-                        // Stripping the trigger key (space) from addedPart
-#if __cplusplus >= 202002L
-                        addedPart.resize(addedPart.size() - 1);
-#else
-                        addedPart = addedPart.substr(0, addedPart.size() - 1);
-#endif
-                    }
-                    host_->commitText(addedPart);
-                    NGOSEN_INFO("Commit: " + addedPart);
-                    keyEvent.accept();
-                } else {
-                    keyEvent.passToApp();
-                }
-            }
-
-            hasHistory_ = false;
-            ResetEngine(bambooEngine_.handle());
-            oldPreBuffer_.clear();
-
+            commitWord(keyEvent, currentSym, keyUtf8, commitF.get());
             return;
         }
 
@@ -224,6 +193,43 @@ namespace ngosen {
             return;
         }
 
+        replaceFromPreedit(keyEvent, currentSym, keyUtf8);
+    }
+
+    void TypingState::commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr) {
+        std::string deletedPart;
+        std::string addedPart;
+        ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
+
+        if (!deletedPart.empty()) {
+            performReplacement(deletedPart, addedPart);
+            keyEvent.accept();
+        } else {
+            bool wasAutoCapitalized = (currentSym != keyEvent.sym());
+            if (!addedPart.empty() && (keyUtf8 != addedPart || wasAutoCapitalized)) {
+                // Prevent auto-capitalized character replacement from stripping out Vietnamese chars
+                if (addedPart.size() > 1 && addedPart.back() == ' ') {
+                    // Stripping the trigger key (space) from addedPart
+#if __cplusplus >= 202002L
+                    addedPart.resize(addedPart.size() - 1);
+#else
+                    addedPart = addedPart.substr(0, addedPart.size() - 1);
+#endif
+                }
+                host_->commitText(addedPart);
+                NGOSEN_INFO("Commit: " + addedPart);
+                keyEvent.accept();
+            } else {
+                keyEvent.passToApp();
+            }
+        }
+
+        hasHistory_ = false;
+        ResetEngine(bambooEngine_.handle());
+        oldPreBuffer_.clear();
+    }
+
+    void TypingState::replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8) {
         hasHistory_ = true;
         realtextLen.fetch_add(1, std::memory_order_acq_rel);
 
@@ -271,28 +277,57 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
-        if (!bambooEngine_)
+        if (!bambooEngine_ || skipsKey(keyEvent))
             return;
+        settleBeforeKey();
+        const uint32_t currentSym = trackCapitalization(keyEvent);
+        if (handleKeyDuringReplacement(keyEvent, currentSym) || handleDoubledKey(keyEvent, currentSym))
+            return;
+
+        switch (realMode) {
+            case ngosen::Mode::Sen: {
+                handleUinputMode(keyEvent, currentSym);
+                break;
+            }
+            case ngosen::Mode::Preedit: {
+                handlePreeditMode(keyEvent, currentSym);
+                break;
+            }
+            case ngosen::Mode::Emoji: {
+                handleEmojiMode(keyEvent);
+                break;
+            }
+            default: {
+                if (engine_->options().enableMacroInOffMode && engine_->options().enableMacro) {
+                    handleOffModeMacro(keyEvent, currentSym);
+                }
+                break;
+            }
+        }
+        reEnableMacroAfterWordEnd();
+    }
+
+    bool TypingState::skipsKey(ngosen::KeyPress& keyEvent) {
         if (overtype_pending_ && overtype_via_xtest_ && keyEvent.sym() == ngosen::key::Shift_R) {
             keyEvent.passToApp();
             if (keyEvent.isRelease() && !overtype_shift_released_ && overtype_timer_) {
                 overtype_shift_released_ = true;
                 overtype_timer_->rearm(ngosen::monotonicUs() + XTestSelectSettleUs);
             }
-            return;
+            return true;
         }
         if (realMode == ngosen::Mode::Preedit) {
             if (keyEvent.isBareShift())
-                return;
+                return true;
         } else {
             if (keyEvent.isModifier()) {
                 handleModifierTap(keyEvent);
-                return;
+                return true;
             }
             cancelModifierTap();
         }
         if (keyEvent.isRelease())
-            return;
+            return true;
         lastInputAtUs_ = ngosen::monotonicUs();
         // An XIM client sometimes sends a key we let through back to us instead of typing it. Let it
         // through again rather than type it twice. Our own XTEST backspaces share one time, so they
@@ -300,7 +335,7 @@ namespace ngosen {
         if (!is_deleting_.load(std::memory_order_acquire) && keyEvent.time() != 0 && keyEvent.time() == lastPressTime_ && keyEvent.code() == lastPressCode_) {
             NGOSEN_INFO("App sent a key back: " + keyEvent.name());
             keyEvent.passToApp();
-            return;
+            return true;
         }
         lastPressCode_ = keyEvent.code();
         lastPressTime_ = keyEvent.time();
@@ -308,8 +343,12 @@ namespace ngosen {
             // Our own Shift+Left selection: it must reach the app and must not be treated as the user
             // moving the cursor (that would discard the pending commit).
             keyEvent.passToApp();
-            return;
+            return true;
         }
+        return false;
+    }
+
+    void TypingState::settleBeforeKey() {
         // This safety valve silently clears the flag on the next key. Skip it while a wait is pending,
         // otherwise the pending commit is thrown away.
         if (!surr_wait_pending_ && !overtype_pending_ && current_backspace_count_ >= expected_backspaces_ && is_deleting_.load()) {
@@ -339,54 +378,55 @@ namespace ngosen {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
         }
+    }
+
+    uint32_t TypingState::trackCapitalization(ngosen::KeyPress& keyEvent) {
         uint32_t currentSym = keyEvent.sym();
-        if (engine_->options().autoCapitalizeAfterPunctuation && realMode != ngosen::Mode::Off) {
-            // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
-            bool isAutomatedBackspace = is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym);
+        if (!engine_->options().autoCapitalizeAfterPunctuation || realMode == ngosen::Mode::Off)
+            return currentSym;
+        // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
+        if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym))
+            return currentSym;
 
-            if (!isAutomatedBackspace) {
-                if (shouldCapitalize_) {
-                    if (currentSym >= ngosen::key::a && currentSym <= ngosen::key::z) {
-                        auto upperSym = currentSym - (ngosen::key::a - ngosen::key::A);
-                        currentSym    = upperSym;
-                        keyEvent.replaceSym(upperSym);
-                        shouldCapitalize_ = false;
-                    } else if (currentSym != ngosen::key::space) {
-                        shouldCapitalize_ = false;
-                    }
-                }
-
-                switch (currentSym) {
-                    case ngosen::key::period:
-                    case ngosen::key::exclam:
-                    case ngosen::key::question: isPrevPunctuation_ = true; break;
-                    case ngosen::key::Return:
-                    case ngosen::key::KP_Enter:
-                        shouldCapitalize_  = true;
-                        isPrevPunctuation_ = false;
-                        break;
-                    case ngosen::key::space:
-                        if (isPrevPunctuation_) {
-                            shouldCapitalize_  = true;
-                            isPrevPunctuation_ = false;
-                        }
-                        break;
-                    default:
-                        if (currentSym != ngosen::key::space) {
-                            isPrevPunctuation_ = false;
-                        }
-                        break;
-                }
+        if (shouldCapitalize_) {
+            if (currentSym >= ngosen::key::a && currentSym <= ngosen::key::z) {
+                auto upperSym = currentSym - (ngosen::key::a - ngosen::key::A);
+                currentSym    = upperSym;
+                keyEvent.replaceSym(upperSym);
+                shouldCapitalize_ = false;
+            } else if (currentSym != ngosen::key::space) {
+                shouldCapitalize_ = false;
             }
         }
 
+        switch (currentSym) {
+            case ngosen::key::period:
+            case ngosen::key::exclam:
+            case ngosen::key::question: isPrevPunctuation_ = true; break;
+            case ngosen::key::Return:
+            case ngosen::key::KP_Enter:
+                shouldCapitalize_  = true;
+                isPrevPunctuation_ = false;
+                break;
+            case ngosen::key::space:
+                if (isPrevPunctuation_) {
+                    shouldCapitalize_  = true;
+                    isPrevPunctuation_ = false;
+                }
+                break;
+            default: isPrevPunctuation_ = false; break;
+        }
+        return currentSym;
+    }
+
+    bool TypingState::handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_ && ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" &&
             ngosen::forwardsBackspaces(host_->field())) {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
             NGOSEN_INFO("XIM handed back a forwarded backspace");
             deferTimedCommit(ngosen::monotonicUs() + ForwardWaitUs);
-            return;
+            return true;
         }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_) {
             // A key arrived during a timer-only wait. Replaying it via commitString loses text on
@@ -402,32 +442,34 @@ namespace ngosen {
             // first, then handle it normally.
             finishReplacement("backspace arrived", false);
         }
-        if (is_deleting_.load(std::memory_order_acquire)) {
-            if (ngosen::key::isBackspace(currentSym)) {
-                if (realtextLen.load(std::memory_order_acquire) > 0)
-                    realtextLen.fetch_sub(1, std::memory_order_acq_rel);
-                if (handleUInputKeyPress(keyEvent, currentSym, 4)) {
-                    return;
-                }
-            } else {
-                std::string keyUtf8Check = host_->keyText(currentSym);
-                if (!keyUtf8Check.empty() && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
-                    NGOSEN_WARN("Typing so fast, add key to queue");
-                    buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
-                }
-                keyEvent.accept();
+        if (!is_deleting_.load(std::memory_order_acquire))
+            return false;
+        if (ngosen::key::isBackspace(currentSym)) {
+            if (realtextLen.load(std::memory_order_acquire) > 0)
+                realtextLen.fetch_sub(1, std::memory_order_acq_rel);
+            handleUInputKeyPress(keyEvent, currentSym, 4);
+        } else {
+            std::string keyUtf8Check = host_->keyText(currentSym);
+            if (!keyUtf8Check.empty() && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+                NGOSEN_WARN("Typing so fast, add key to queue");
+                buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
             }
-            return;
+            keyEvent.accept();
         }
+        return true;
+    }
 
-        if (engine_->options().doubleSpaceToPeriod && realMode != ngosen::Mode::Off) {
+    bool TypingState::handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (realMode == ngosen::Mode::Off)
+            return false;
+        if (engine_->options().doubleSpaceToPeriod) {
             bool isSpaceKey = (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);
             if (isSpaceKey && !keyEvent.hasModifier()) {
                 if (isPrevSpace_) {
                     keyEvent.accept();
                     handleDoubleSpaceReplacement();
                     isPrevSpace_ = false;
-                    return;
+                    return true;
                 }
                 isPrevSpace_ = true;
             } else {
@@ -435,42 +477,21 @@ namespace ngosen {
             }
         }
 
-        if (engine_->options().doubleHyphenToEmDash && realMode != ngosen::Mode::Off) {
+        if (engine_->options().doubleHyphenToEmDash) {
             bool isHyphenKey = (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract);
             if (isHyphenKey && !keyEvent.hasModifier()) {
                 if (isPrevHyphen_) {
                     keyEvent.accept();
                     handleDoubleHyphenReplacement();
                     isPrevHyphen_ = false;
-                    return;
+                    return true;
                 }
                 isPrevHyphen_ = true;
             } else {
                 isPrevHyphen_ = false;
             }
         }
-
-        switch (realMode) {
-            case ngosen::Mode::Sen: {
-                handleUinputMode(keyEvent, currentSym);
-                break;
-            }
-            case ngosen::Mode::Preedit: {
-                handlePreeditMode(keyEvent, currentSym);
-                break;
-            }
-            case ngosen::Mode::Emoji: {
-                handleEmojiMode(keyEvent);
-                break;
-            }
-            default: {
-                if (engine_->options().enableMacroInOffMode && engine_->options().enableMacro) {
-                    handleOffModeMacro(keyEvent, currentSym);
-                }
-                break;
-            }
-        }
-        reEnableMacroAfterWordEnd();
+        return false;
     }
 
     void TypingState::reset(bool isFocusOut) {

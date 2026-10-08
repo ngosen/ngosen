@@ -119,6 +119,25 @@ namespace {
         check(join(host->commits()) == "['ê']", what + "commits ê", join(host->commits()));
     }
 
+    // A key typed while the app has not yet applied the backspaces waits and goes out with the
+    // replacement in one commit.
+    void testKeyDuringReplacement() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        typeTie(state, *host, loop, true);
+        press(state, static_cast<uint32_t>('e'));
+        check(press(state, static_cast<uint32_t>('n')), "key during replacement: n is held back", "not accepted");
+        host->setSurrounding("ti", 2);
+        state.surroundingUpdated();
+        loop.pump(150);
+        check(join(host->commits()) == "['ên']", "key during replacement: one commit with the held key", join(host->commits()));
+    }
+
     // GTK4 drops forwarded keys, so the deletion goes through the surrounding text.
     void testGtk4DeletesSurrounding() {
         realMode = ngosen::Mode::Sen;
@@ -171,6 +190,7 @@ int main() {
     testSenForwards("wayland", true);
     testSenForwards("wayland_v2", true);
     testSenForwards("xim", false);
+    testKeyDuringReplacement();
     testGtk4DeletesSurrounding();
     testSdlGetsNoForwardedBackspace();
     if (failures == 0)

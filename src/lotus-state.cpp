@@ -10,7 +10,6 @@
 #include "lotus-utils.h"
 #include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
-#include "ngosen-fcitx-host.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
 #include "ngosen-utf8.h"
@@ -18,10 +17,6 @@
 #include "lotus.h"
 
 #include <cstddef>
-#include <fcitx-utils/log.h>
-#include <fcitx/inputpanel.h>
-#include <fcitx/menu.h>
-#include <fcitx/userinterface.h>
 
 #include <algorithm>
 #include <string>

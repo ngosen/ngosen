@@ -35,6 +35,20 @@ namespace fcitx {
     class CGoObject;
     class LotusState;
 
+    // Hangs one typing state on each fcitx5 input context; the state itself does not depend on fcitx5.
+    class TypingStateProperty final : public InputContextProperty {
+      public:
+        explicit TypingStateProperty(std::unique_ptr<LotusState> state);
+        ~TypingStateProperty() override;
+
+        LotusState& state() {
+            return *state_;
+        }
+
+      private:
+        std::unique_ptr<LotusState> state_;
+    };
+
     /**
      * @brief Main engine class for Lotus input method.
      *
@@ -204,6 +218,8 @@ namespace fcitx {
         }
 
       private:
+        LotusState*                                stateFor(InputContext* ic);
+
         Instance*                                  instance_;
         lotusConfig                                config_;
         ngosen::Options                            options_;
@@ -213,7 +229,7 @@ namespace fcitx {
         CGoObject                                  macroTableObject_;
         lotusAppRules                              appRulesTables_;
 
-        FactoryFor<LotusState>                     factory_;
+        FactoryFor<TypingStateProperty>            factory_;
         std::vector<std::string>                   imNames_;
 
         std::unique_ptr<SimpleAction>              charsetAction_;

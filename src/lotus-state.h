@@ -23,12 +23,6 @@
 #include "ngosen-key.h"
 
 #include <cstddef>
-#include <fcitx-utils/misc.h>
-#include <fcitx/inputcontext.h>
-#include <fcitx-utils/event.h>
-#include <fcitx-utils/handlertable.h>
-#include <fcitx/instance.h>
-#include <fcitx/event.h>
 #include <memory>
 
 struct EmojiEntry;
@@ -42,7 +36,7 @@ namespace fcitx {
      *
      * Manages the input state, buffers, and mode-specific handling for each input context.
      */
-    class LotusState final : public InputContextProperty {
+    class LotusState final {
       public:
         /**
          * @brief Constructs a new state instance.

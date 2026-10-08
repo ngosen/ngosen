@@ -255,8 +255,17 @@ namespace fcitx {
         return macroTableObject_.handle();
     }
 
+    TypingStateProperty::TypingStateProperty(std::unique_ptr<LotusState> state) : state_(std::move(state)) {}
+
+    TypingStateProperty::~TypingStateProperty() = default;
+
+    LotusState* LotusEngine::stateFor(InputContext* ic) {
+        return &ic->propertyFor(&factory_)->state();
+    }
+
     LotusEngine::LotusEngine(Instance* instance) :
-        instance_(instance), factory_([this](InputContext& ic) { return new LotusState(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_)); }) { //NOLINT
+        instance_(instance),
+        factory_([this](InputContext& ic) { return new TypingStateProperty(std::make_unique<LotusState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_))); }) { //NOLINT
         std::string desktop = getEnv("XDG_CURRENT_DESKTOP");
         isGnome_            = (!desktop.empty()) && desktop.find("GNOME") != std::string::npos;
         Init();
@@ -268,11 +277,11 @@ namespace fcitx {
         config_.inputMethod.annotation().setList(imNames_);
         cursorJumpWatcher_ = instance_->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& event) {
             auto* ic = static_cast<InputContextEvent&>(event).inputContext();
-            ic->propertyFor(&factory_)->surroundingUpdated();
+            stateFor(ic)->surroundingUpdated();
         });
         commitWatcher_     = instance_->watchEvent(EventType::InputContextCommitString, EventWatcherPhase::Default, [this](Event& event) {
             auto& commit = static_cast<CommitStringEvent&>(event);
-            commit.inputContext()->propertyFor(&factory_)->noteCommit(commit.text());
+            stateFor(commit.inputContext())->noteCommit(commit.text());
         });
         // A ctx_ rule names a context address, which a later window may reuse.
         contextDestroyedWatcher_ = instance_->watchEvent(EventType::InputContextDestroyed, EventWatcherPhase::Default, [this](Event& event) {
@@ -557,7 +566,7 @@ namespace fcitx {
 
         updateCharsetAction(event.inputContext());
 
-        auto*      state = ic->propertyFor(&factory_);
+        auto*      state = stateFor(ic);
 
         const bool uinputMode         = isUinputMode(targetMode);
         const bool focusBounce        = uinputMode && state->lastDeactivateTime_ > 0 && now_ms() - state->lastDeactivateTime_ < 100;
@@ -606,7 +615,7 @@ namespace fcitx {
             closeAppModeMenu();
             ic->inputPanel().reset();
             ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-            auto* state = ic->propertyFor(&factory_);
+            auto* state = stateFor(ic);
             state->commitBuffer();
             state->reset();
         }
@@ -697,7 +706,7 @@ namespace fcitx {
                                     isSelectingAppMode_ = false;
                                     ic->inputPanel().reset();
                                     ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-                                    auto* state = ic->propertyFor(&factory_);
+                                    auto* state = stateFor(ic);
                                     state->commitBuffer();
                                     state->reset();
                                     ic->commitString(charStr);
@@ -729,7 +738,7 @@ namespace fcitx {
                 isSelectingAppMode_ = false;
                 ic->inputPanel().reset();
                 ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-                auto* state = ic->propertyFor(&factory_);
+                auto* state = stateFor(ic);
 
                 if (selectedMode != std::nullopt) {
                     state->commitBuffer();
@@ -817,7 +826,7 @@ namespace fcitx {
 
         if (!keyEvent.isRelease() && !config_.modeMenuKey->empty() && keyEvent.key().checkKeyList(*config_.modeMenuKey)) {
             LOTUS_INFO("Mode menu key pressed");
-            auto* state = ic->propertyFor(&factory_);
+            auto* state = stateFor(ic);
             if (state != nullptr) {
                 state->commitBuffer();
                 state->reset();
@@ -830,7 +839,7 @@ namespace fcitx {
             keyEvent.filterAndAccept();
             return;
         }
-        auto*                 state = keyEvent.inputContext()->propertyFor(&factory_);
+        auto*                 state = stateFor(keyEvent.inputContext());
         ngosen::FcitxKeyPress press(keyEvent);
         state->keyEvent(press);
         const auto&  s       = ic->surroundingText();
@@ -843,7 +852,7 @@ namespace fcitx {
 
     void LotusEngine::reset(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
         LOTUS_INFO("Reset engine");
-        auto* state = event.inputContext()->propertyFor(&factory_);
+        auto* state = stateFor(event.inputContext());
         if (!state->isEmptyHistory() && event.type() != EventType::InputContextFocusOut) {
             return;
         }
@@ -855,7 +864,7 @@ namespace fcitx {
 
     void LotusEngine::deactivate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
         auto*      ic        = event.inputContext();
-        auto*      state     = ic->propertyFor(&factory_);
+        auto*      state     = stateFor(ic);
         const bool surrvalid = ic->surroundingText().isValid();
         const bool is_dbus   = getFrontendName(ic) == "dbus";
         state->flushPendingReplacement(); // commit pending text into the field we are leaving
@@ -890,7 +899,7 @@ namespace fcitx {
         if (!factory_.registered())
             return;
         instance_->inputContextManager().foreach ([this](InputContext* ic) {
-            auto* state = ic->propertyFor(&factory_);
+            auto* state = stateFor(ic);
             state->setEngine();
             if (ic->hasFocus()) {
                 // Re-resolve the focused window's rule; setEngine() must not
@@ -906,7 +915,7 @@ namespace fcitx {
         if (!factory_.registered())
             return;
         instance_->inputContextManager().foreach ([this](InputContext* ic) {
-            auto* state = ic->propertyFor(&factory_);
+            auto* state = stateFor(ic);
             state->setOption();
             if (ic->hasFocus())
                 state->reset();
@@ -1060,7 +1069,7 @@ namespace fcitx {
             isSelectingAppMode_ = false;
             ic->inputPanel().reset();
             ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-            auto* state = ic->propertyFor(&factory_);
+            auto* state = stateFor(ic);
             state->commitBuffer();
             state->reset();
         };
@@ -1081,7 +1090,7 @@ namespace fcitx {
                 cleanup(ic);
                 setMode(mode, ic);
                 if (mode == LotusMode::Emoji) {
-                    auto* state = ic->propertyFor(&factory_);
+                    auto* state = stateFor(ic);
                     state->updateEmojiPreedit();
                 } else {
                     showCycleModeNotification(mode, ic);
@@ -1240,7 +1249,7 @@ namespace fcitx {
     void LotusEngine::setMode(LotusMode mode, InputContext* ic) {
         realMode = mode;
         if (ic != nullptr) {
-            if (auto* state = ic->propertyFor(&factory_)) {
+            if (auto* state = stateFor(ic)) {
                 state->clearAllBuffers();
             }
             ic->updateUserInterface(UserInterfaceComponent::StatusArea);

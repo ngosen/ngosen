@@ -185,3 +185,6 @@ if (NGOSEN_RUST_CORE)
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bamboo-rs)
     set_tests_properties(bamboo_rs_cargo_test PROPERTIES LABELS "unit;core" TIMEOUT 600)
 endif()
+
+# Tests of the typing logic alone; NGOSEN_CORE_ONLY builds just these.
+add_subdirectory(core)

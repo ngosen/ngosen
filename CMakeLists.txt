@@ -4,6 +4,23 @@ project(fcitx5-lotus VERSION 0.5.1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(BUILD_TESTING "Build Lotus tests" OFF)
 option(NGOSEN_RUST_CORE "Build the typing core from bamboo-rs/ (Rust) instead of the Go sources in bamboo/" OFF)
+option(NGOSEN_CORE_ONLY "Build only the typing logic and its tests, without fcitx5" OFF)
+
+if (NGOSEN_CORE_ONLY)
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+    find_package(Pthread REQUIRED)
+    if (NGOSEN_RUST_CORE)
+        add_subdirectory(bamboo-rs)
+    else()
+        add_subdirectory(bamboo)
+    endif()
+    add_subdirectory(src/core)
+    enable_testing()
+    add_subdirectory(test/core)
+    return()
+endif()
 
 # The fcitx5 shell around the typing logic (src/core, built as ngosen_core). The addon entry point
 # is excluded so the headless tests can link the same sources the module does.

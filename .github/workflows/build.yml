@@ -111,6 +111,29 @@ jobs:
         with:
           checkout_path: fcitx5-lotus
 
+  # The typing logic must build and pass its tests with no fcitx5 installed. Ubuntu 22.04 is the
+  # oldest system we package for, so this also keeps it building as C++17 with GCC 11.
+  core-only:
+    name: Typing logic without fcitx5
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates g++ cmake make golang-go git
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+      - name: No fcitx5 package
+        run: "! dpkg -l | grep -i fcitx"
+      - name: Build
+        run: |
+          cmake -S . -B build -DNGOSEN_CORE_ONLY=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)"
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --no-tests=error
+
   go-test:
     name: Go test
     runs-on: ubuntu-latest

@@ -55,7 +55,7 @@ body:
     attributes:
       label: Phiên bản Ngó Sen
       description: Số phiên bản của gói `fcitx5-ngosen` đã cài. Bản tự build thì ghi mã commit.
-      placeholder: 'ví dụ: 0.5.0-1'
+      placeholder: 'ví dụ: 0.5.1-1'
     validations:
       required: true
 

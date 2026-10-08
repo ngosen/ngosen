@@ -11,6 +11,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [0.5.1-1] — 09/10/2026
+
+Sửa lỗi Gõ Sen trên Sway và Hyprland, và cài mới thì dùng Gõ Sen luôn. Tải ở
+[ngosen-0.5.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-0.5.1-1).
+
 ### Thay đổi
 
 - Cài mới thì chế độ mặc định là Gõ Sen thay cho Preedit, khớp với cửa sổ cài đặt. Ai đã chọn chế độ thì
@@ -24,7 +29,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Tài liệu
 
 - README mở đầu bằng những điểm chính của Ngó Sen và roadmap tới bản IBus và bản cho wlroots không cần
-  fcitx5 (#75).
+  fcitx5 (#75). README gọi máy chủ cũ là uinput server, như trên website (#76).
 
 ## [0.5.0-1] — 08/10/2026
 

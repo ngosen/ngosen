@@ -14,6 +14,6 @@
   <url type="bugtracker">https://github.com/ngosen/ngosen/issues</url>
   <project_group>Fcitx</project_group>
   <releases>
-    <release version="@PROJECT_VERSION@" date="2026-10-08" />
+    <release version="@PROJECT_VERSION@" date="2026-10-09" />
   </releases>
 </component>

@@ -1,3 +1,9 @@
+fcitx5-ngosen (1:0.5.1-1) unstable; urgency=medium
+
+  * Sen mode types on Sway and Hyprland; a fresh install starts in Sen mode.
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Fri, 09 Oct 2026 09:00:00 +0700
+
 fcitx5-ngosen (1:0.5.0-1) unstable; urgency=medium
 
   * Ngó Sen's own version numbers; the epoch keeps them above the 3.5.10 builds.

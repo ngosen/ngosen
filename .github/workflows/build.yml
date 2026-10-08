@@ -37,7 +37,8 @@ jobs:
         run: misc/check-new-names.sh origin/main
 
   check:
-    name: Build and test
+    # The Go builds keep the names that branch protection requires.
+    name: Build and test (${{ matrix.compiler }}${{ matrix.core == 'rust' && ', rust core' || '' }})
     runs-on: ubuntu-latest
     container: archlinux:latest
 
@@ -45,18 +46,22 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [gcc, clang]
+        core: [go]
         include:
           - compiler: gcc
             cxx_compiler: g++
           - compiler: clang
             cxx_compiler: clang++
+          - compiler: gcc
+            cxx_compiler: g++
+            core: rust
     env:
       CC: ${{ matrix.compiler }}
       CXX: ${{ matrix.cxx_compiler }}
     steps:
       - name: Install dependencies
         run: |
-          pacman -Syu --noconfirm base-devel clang cmake ninja extra-cmake-modules fmt libuv boost git go systemd-libs extra-cmake-modules python librsvg
+          pacman -Syu --noconfirm base-devel clang cmake ninja extra-cmake-modules fmt libuv boost git go systemd-libs extra-cmake-modules python librsvg rust
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global --add safe.directory "$GITHUB_WORKSPACE/fcitx5-lotus"
           git config --global --add safe.directory "$GITHUB_WORKSPACE/fcitx5"
@@ -83,7 +88,7 @@ jobs:
           path: fcitx5-lotus
           submodules: true
       - name: Init CodeQL
-        if: matrix.compiler == 'gcc'
+        if: matrix.compiler == 'gcc' && matrix.core == 'go'
         uses: github/codeql-action/init@v4.38.1
         with:
           languages: cpp,go
@@ -92,7 +97,8 @@ jobs:
         uses: fcitx/github-actions@cmake
         with:
           path: fcitx5-lotus
-          cmake-option: -DBUILD_TESTING=ON
+          cmake-option: >-
+            -DBUILD_TESTING=ON ${{ matrix.core == 'rust' && '-DNGOSEN_RUST_CORE=ON' || '' }}
       - name: Discover tests
         run: |
           ctest --test-dir fcitx5-lotus/build -N
@@ -100,7 +106,7 @@ jobs:
         run: |
           ctest --test-dir fcitx5-lotus/build --output-on-failure --no-tests=error
       - name: CodeQL Analysis
-        if: matrix.compiler == 'gcc'
+        if: matrix.compiler == 'gcc' && matrix.core == 'go'
         uses: github/codeql-action/analyze@v4.38.1
         with:
           checkout_path: fcitx5-lotus
@@ -125,6 +131,23 @@ jobs:
         working-directory: bamboo
         run: |
           test -z "$(gofmt -l *_test.go)"
+
+  rust-check:
+    name: Rust core lint and minimum version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bamboo-rs
+    steps:
+      - uses: actions/checkout@v7
+      - name: rustfmt
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --offline --locked --all-targets -- -D warnings
+      - name: Test with the minimum Rust
+        run: |
+          rustup toolchain install 1.88 --profile minimal
+          cargo +1.88 test --offline --locked
 
   python-lint:
     name: Python lint

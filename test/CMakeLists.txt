@@ -176,3 +176,12 @@ target_include_directories(utf8_matches_fcitx PRIVATE ${PROJECT_SOURCE_DIR}/src/
 target_link_libraries(utf8_matches_fcitx PRIVATE Fcitx5::Utils)
 add_test(NAME utf8_matches_fcitx COMMAND utf8_matches_fcitx)
 set_tests_properties(utf8_matches_fcitx PROPERTIES LABELS "unit" TIMEOUT 60)
+
+# The Rust typing core's own tests, ported from the Go core's.
+if (NGOSEN_RUST_CORE)
+    add_test(NAME bamboo_rs_cargo_test
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${NGOSEN_CARGO_TARGET_DIR}
+                ${CARGO_EXECUTABLE} test --offline --locked
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bamboo-rs)
+    set_tests_properties(bamboo_rs_cargo_test PROPERTIES LABELS "unit;core" TIMEOUT 600)
+endif()

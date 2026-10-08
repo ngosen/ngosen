@@ -6,8 +6,7 @@ use std::io::{self, BufRead, BufWriter, Write};
 
 const VOWELS: &str = "aàáảãạăằắẳẵặâầấẩẫậeèéẻẽẹêềếểễệiìíỉĩịoòóỏõọôồốổỗộơờớởỡợuùúủũụưừứửữựyỳýỷỹỵ";
 
-// The crate has no w2u setting; it behaves like Go with w2u off, so cases
-// for the comparison use w2u 0.
+// Runs with w2u off, the crate's default; the cases use w2u 0.
 fn new_engine(im: &str, modern: bool, free: bool, auto_correct: bool) -> Engine {
     let method = match im {
         "Telex" => InputMethod::telex(),
@@ -54,9 +53,8 @@ fn must_fallback_to_english(e: &Engine, dictionary: &HashSet<String>) -> bool {
     !dictionary.contains(&vn)
 }
 
-// The crate has no raw text for committed words, only for the active one.
 fn raw(e: &Engine) -> String {
-    e.get_processed_str(OutputOptions::RAW)
+    e.get_processed_str(OutputOptions::RAW | OutputOptions::FULL_TEXT)
 }
 
 fn shown_and_committed(e: &Engine, dictionary: &HashSet<String>) -> (String, String) {
@@ -93,10 +91,10 @@ fn row(id: &str, step: usize, op: &str, e: &Engine, dictionary: &HashSet<String>
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let Some(path) = args.get(1) else {
-        panic!("usage: core-compare DICTIONARY [--no-auto-correct] < cases");
+        panic!("usage: core-compare DICTIONARY [--auto-correct] < cases");
     };
-    // Go leaves invalid words to the caller; the crate can do the same.
-    let auto_correct = args.get(2).map(String::as_str) != Some("--no-auto-correct");
+    // Off like in bamboo-rs: Go leaves invalid words to the caller.
+    let auto_correct = args.get(2).map(String::as_str) == Some("--auto-correct");
     let dictionary: HashSet<String> = std::fs::read_to_string(path)
         .expect("read dictionary")
         .split('\n')

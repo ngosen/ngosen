@@ -39,3 +39,8 @@ lotus-version.h
 # Logs
 *.log
 __pycache__/
+
+# Rust typing core: cargo config and vendored crates are committed as cargo wrote them
+!/bamboo-rs/.cargo/
+!/bamboo-rs/vendor/**
+/bamboo-rs/target/

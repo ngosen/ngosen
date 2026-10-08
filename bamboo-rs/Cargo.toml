@@ -1,0 +1,21 @@
+[package]
+name = "ngosen-bamboo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "LGPL-2.1-or-later"
+description = "C interface of the Ngó Sen typing core, built on bamboo-core"
+publish = false
+
+[lib]
+name = "ngosen_bamboo"
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+bamboo-core = { git = "https://github.com/ngosen/bamboo_core", rev = "e8ebe4a818d82611a6e69fd0eba22c75b26d831f" }
+libc = "0.2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"

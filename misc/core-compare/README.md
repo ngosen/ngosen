@@ -1,14 +1,15 @@
 # core-compare
 
-Types the same key sequences into the Go bamboo-core in `bamboo/` and the Rust
-[bamboo-core](https://crates.io/crates/bamboo-core) crate (0.3.25), and reports where the results
-differ. It is a check for replacing the Go core; nothing here is built or installed with the addon.
+Types the same key sequences into the Go bamboo-core in `bamboo/` and the Rust bamboo-core that
+`bamboo-rs/` uses ([ngosen/bamboo_core](https://github.com/ngosen/bamboo_core), same revision),
+and reports where the results differ. It is a check for replacing the Go core; nothing here is
+built or installed with the addon.
 
 ```sh
 misc/core-compare/run.sh /tmp/core-compare
 ```
 
-Needs Go, Cargo with network access (to fetch the crate) and Python 3.
+Needs Go, Cargo with network access (to fetch the crate from GitHub) and Python 3.
 
 - `cases.py` writes the cases: every syllable in `data/dictionaries/vietnamese.cm.dict` typed in
   Telex and VNI (marks inline or last, tone last or right after the vowels, capitalised, all caps,
@@ -21,8 +22,8 @@ Needs Go, Cargo with network access (to fetch the crate) and Python 3.
 - `compare.py` splits the differing cases into three levels: the committed word differs, only the
   preedit while typing differs, or only engine state the user does not see differs.
 
-After `run.sh OUT`, running `OUT/target/release/core-compare DICT --no-auto-correct <OUT/cases.tsv`
-turns off the crate's own spelling
-correction, which is closer to Go: Go leaves invalid words to the caller.
+The Rust runner keeps the crate's own spelling correction off, as `bamboo-rs/` does. After
+`run.sh OUT`, running `OUT/target/release/core-compare DICT --auto-correct <OUT/cases.tsv` turns it
+on.
 
-The crate has no "w types ư" setting, so the cases turn it off for Go too.
+The Rust runner leaves "w types ư" off, so the cases turn it off for Go too.

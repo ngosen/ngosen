@@ -21,7 +21,7 @@ Cảm ơn bạn quan tâm đến việc đóng góp cho dự án fcitx5-lotus! T
 
 - GCC hoặc Clang với hỗ trợ C++17
 - CMake >= 3.16
-- Go 1.20+ (cho bamboo engine)
+- Go 1.20+ (cho bamboo engine); Rust 1.88+ và cargo chỉ khi thử lõi Rust bằng `-DNGOSEN_RUST_CORE=ON`
 - Fcitx5 development headers
 - Git
 

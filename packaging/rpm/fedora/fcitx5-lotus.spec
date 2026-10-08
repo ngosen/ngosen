@@ -20,7 +20,8 @@ BuildRequires:  gcc-c++
 BuildRequires:  gettext-devel
 BuildRequires:  cmake(Fcitx5Core)
 
-BuildRequires:  golang
+BuildRequires:  cargo
+BuildRequires:  rust >= 1.88
 BuildRequires:  python3-devel
 BuildRequires:  librsvg2-tools
 
@@ -39,7 +40,7 @@ Ngó Sen is a Vietnamese input method for fcitx5, forked from fcitx5-lotus.
 %setup -q -n %{upstream_name}-%{version}
 
 %build
-%cmake -DLOTUS_BYTECOMPILE_PYTHON:BOOL=OFF -DBUILD_TESTING:BOOL=ON
+%cmake -DLOTUS_BYTECOMPILE_PYTHON:BOOL=OFF -DBUILD_TESTING:BOOL=ON -DNGOSEN_RUST_CORE:BOOL=ON
 %cmake_build
 
 %install

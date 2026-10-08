@@ -57,6 +57,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
   thử thì dựng với `-DNGOSEN_RUST_CORE=ON` (cần Rust 1.88+, không cần mạng vì thư viện phụ thuộc nằm sẵn
   trong `bamboo-rs/vendor`). Người dùng không thấy gì khác
   (#69).
+- Gói cho Arch, Fedora và openSUSE dùng lõi ghép dấu Rust, không cần Go để dựng nữa. Gói Debian và
+  Ubuntu vẫn dùng lõi Go vì Rust có sẵn ở đó còn cũ. Gõ chữ không khác gì (#70).
 - Chế độ `Uinput` đổi tên thành **Gõ Sen** (`Mode=Sen` trong `lotus.conf`). Cấu hình cũ, thứ tự chế độ,
   phím tắt và tuỳ chọn ẩn/hiện của chế độ cũ tự chuyển sang tên mới (#43).
 - Nhánh chính đổi tên từ `ban-dung` thành `main`. Đường dẫn cũ trên GitHub tự chuyển sang tên mới. Ai

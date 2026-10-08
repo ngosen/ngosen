@@ -59,6 +59,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
   (#69).
 - Gói cho Arch, Fedora và openSUSE dùng lõi ghép dấu Rust, không cần Go để dựng nữa. Gói Debian và
   Ubuntu vẫn dùng lõi Go vì Rust có sẵn ở đó còn cũ. Gõ chữ không khác gì (#70).
+- Gói `.deb` cho Ubuntu 24.04, 25.10, 26.04 và Debian testing/unstable cũng dùng lõi Rust. Debian 12, 13
+  và Ubuntu 22.04 vẫn dùng lõi Go (#71).
 - Chế độ `Uinput` đổi tên thành **Gõ Sen** (`Mode=Sen` trong `lotus.conf`). Cấu hình cũ, thứ tự chế độ,
   phím tắt và tuỳ chọn ẩn/hiện của chế độ cũ tự chuyển sang tên mới (#43).
 - Nhánh chính đổi tên từ `ban-dung` thành `main`. Đường dẫn cũ trên GitHub tự chuyển sang tên mới. Ai

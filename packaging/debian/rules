@@ -1,6 +1,13 @@
 #!/usr/bin/make -f
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
+# Older Ubuntu releases ship a new enough Rust only as versioned packages (cargo-1.91).
+export PATH := /usr/lib/rust-1.91/bin:$(PATH)
+
+ifneq ($(filter pkg.ngosen.rust,$(DEB_BUILD_PROFILES)),)
+CORE_FLAGS = -DNGOSEN_RUST_CORE=ON
+endif
+
 %:
 	dh $@ --buildsystem=cmake
 
@@ -11,4 +18,8 @@ override_dh_dwz:
 	@echo "Skipping dh_dwz (incompatible with Go/mixed debug sections)"
 
 override_dh_auto_configure:
-	dh_auto_configure -- -DLOTUS_BYTECOMPILE_PYTHON=OFF -DBUILD_TESTING=ON
+	dh_auto_configure -- -DLOTUS_BYTECOMPILE_PYTHON=OFF -DBUILD_TESTING=ON $(CORE_FLAGS)
+
+# dh_clean deletes *.orig files, but the vendored crates' checksums cover Cargo.toml.orig.
+override_dh_clean:
+	dh_clean -XCargo.toml.orig

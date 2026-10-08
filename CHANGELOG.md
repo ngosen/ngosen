@@ -17,6 +17,9 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
   và hai thứ còn lại trên máy sau khi gỡ là tệp cấu hình và tài khoản `uinput_proxy` (#27).
 - Trang Giới thiệu trong cửa sổ cài đặt có lại hai nút "Báo cáo lỗi" và "Đề xuất tính năng"; chúng mở
   mẫu tương ứng ở mục Issues của kho `ngosen/ngosen` (#31).
+- Công cụ `misc/core-compare` gõ cùng một bộ phím vào lõi ghép dấu hiện tại (Go) và bản Rust
+  `bamboo-core`, rồi chỉ ra chỗ hai bên ra chữ khác nhau. Chỉ dùng khi phát triển, không đi kèm bộ gõ
+  (#68).
 
 ### Thay đổi
 

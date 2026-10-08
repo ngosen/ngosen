@@ -220,7 +220,7 @@ namespace fcitx {
          * @param keyEvent The key event to process.
          * @param currentSym Current key symbol.
          */
-        void handlePreeditMode(ngosen::KeyPress& keyEvent, KeySym currentSym);
+        void handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym);
 
         /**
          * @brief Updates emoji page status in candidate list.
@@ -247,7 +247,7 @@ namespace fcitx {
          * @param sleepTime Delay in microseconds.
          * @return True if event was handled.
          */
-        bool handleUInputKeyPress(ngosen::KeyPress& event, KeySym currentSym, int sleepTime);
+        bool handleUInputKeyPress(ngosen::KeyPress& event, uint32_t currentSym, int sleepTime);
         bool waitForDeletion(ngosen::KeyPress* event, int sleepTime);
         void forwardBackspaces(int count);
         // True when a replacement can delete text: forwarded by the frontend or pressed through XTEST.
@@ -278,7 +278,7 @@ namespace fcitx {
          * @param currentSym Current key symbol (may be modified).
          * @return True if key was forwarded.
          */
-        bool checkForwardSpecialKey(ngosen::KeyPress& keyEvent, KeySym& currentSym);
+        bool checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym);
 
         /**
          * @brief Handles Sen mode processing.
@@ -286,14 +286,14 @@ namespace fcitx {
          * @param currentSym Current key symbol.
          * @param sleepTime Delay in microseconds.
          */
-        void handleUinputMode(ngosen::KeyPress& keyEvent, KeySym currentSym);
+        void handleUinputMode(ngosen::KeyPress& keyEvent, uint32_t currentSym);
 
         /**
          * @brief Handles Off mode with macro shadow processing.
          * @param keyEvent The key event.
          * @param currentSym Current key symbol.
          */
-        void handleOffModeMacro(ngosen::KeyPress& keyEvent, KeySym currentSym);
+        void handleOffModeMacro(ngosen::KeyPress& keyEvent, uint32_t currentSym);
 
         /**
          * @brief Replays keystrokes buffered during replacement.
@@ -310,7 +310,7 @@ namespace fcitx {
          * @param sym Key symbol to check.
          * @return True if the key is the configured trigger modifier (left/right same).
          */
-        bool isMacroSkipModifier(KeySym sym) const;
+        bool isMacroSkipModifier(uint32_t sym) const;
 
         /**
          * @brief Tracks a modifier tap (keydown then consecutive keyup) to skip macro.

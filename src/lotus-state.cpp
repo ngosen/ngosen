@@ -11,6 +11,7 @@
 #include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
 #include "ngosen-fcitx-host.h"
+#include "ngosen-keysym.h"
 #include "ngosen-log.h"
 #include "ngosen-utf8.h"
 #include "ngosen-xtest.h"
@@ -221,7 +222,7 @@ namespace fcitx {
         return false;
     }
 
-    void LotusState::handlePreeditMode(ngosen::KeyPress& keyEvent, KeySym currentSym) {
+    void LotusState::handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.states()) != 0U)
             keyEvent.accept();
         if (auto commit = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()))) {
@@ -274,8 +275,8 @@ namespace fcitx {
     }
 
     void LotusState::handleEmojiMode(ngosen::KeyPress& keyEvent) {
-        const KeySym currentSym      = static_cast<KeySym>(keyEvent.sym());
-        bool         isCtrlBackspace = isBackspace(currentSym) && ((keyEvent.states() & static_cast<uint32_t>(KeyState::Ctrl)) != 0U);
+        const uint32_t currentSym      = keyEvent.sym();
+        bool           isCtrlBackspace = isBackspace(currentSym) && ((keyEvent.states() & ngosen::modifier::Ctrl) != 0U);
 
         if (keyEvent.hasModifier() && !isCtrlBackspace) {
             keyEvent.passToApp();
@@ -283,8 +284,8 @@ namespace fcitx {
         }
 
         const auto list = host_->candidates();
-        if (list && currentSym >= FcitxKey_1 && currentSym <= FcitxKey_9) {
-            int offset      = currentSym - FcitxKey_1;
+        if (list && currentSym >= ngosen::key::Digit1 && currentSym <= ngosen::key::Digit9) {
+            int offset      = currentSym - ngosen::key::Digit1;
             int globalIndex = (list->page * list->pageSize) + offset;
 
             if (globalIndex < list->total) {
@@ -304,8 +305,8 @@ namespace fcitx {
             bool handled = false;
 
             switch (currentSym) {
-                case FcitxKey_Tab:
-                case FcitxKey_Down: {
+                case ngosen::key::Tab:
+                case ngosen::key::Down: {
                     if (localCursorIndex < pageSize - 1 && globalCursorIndex < totalSize - 1) {
                         host_->highlightCandidate(globalCursorIndex + 1);
                     } else {
@@ -315,8 +316,8 @@ namespace fcitx {
                     break;
                 }
 
-                case FcitxKey_ISO_Left_Tab:
-                case FcitxKey_Up: {
+                case ngosen::key::ISO_Left_Tab:
+                case ngosen::key::Up: {
                     if (localCursorIndex > 0) {
                         host_->highlightCandidate(globalCursorIndex - 1);
                     } else {
@@ -326,8 +327,8 @@ namespace fcitx {
                     handled = true;
                     break;
                 }
-                case FcitxKey_Page_Down:
-                case FcitxKey_Right: {
+                case ngosen::key::Page_Down:
+                case ngosen::key::Right: {
                     if (list->hasNext) {
                         host_->nextCandidatePage();
                         int newPage = host_->candidates()->page;
@@ -336,8 +337,8 @@ namespace fcitx {
                     }
                     break;
                 }
-                case FcitxKey_Page_Up:
-                case FcitxKey_Left: {
+                case ngosen::key::Page_Up:
+                case ngosen::key::Left: {
                     if (list->hasPrev) {
                         host_->prevCandidatePage();
                         int newPage = host_->candidates()->page;
@@ -373,12 +374,12 @@ namespace fcitx {
         }
 
         switch (currentSym) {
-            case FcitxKey_space:
-            case FcitxKey_Return: {
+            case ngosen::key::space:
+            case ngosen::key::Return: {
                 if (list && list->total > 0) {
                     host_->pickCandidate(list->cursor);
                     keyEvent.accept();
-                } else if (currentSym == FcitxKey_Return && !emojiBuffer_.empty()) {
+                } else if (currentSym == ngosen::key::Return && !emojiBuffer_.empty()) {
                     host_->commitText(emojiBuffer_);
                     emojiBuffer_.clear();
                     updateEmojiPreedit();
@@ -389,7 +390,7 @@ namespace fcitx {
                 return;
             }
 
-            case FcitxKey_Escape: {
+            case ngosen::key::Escape: {
                 emojiBuffer_.clear();
                 emojiCandidates_.clear();
                 host_->resetPanel();
@@ -640,7 +641,7 @@ namespace fcitx {
         replayBufferedKeys(std::move(text));
     }
 
-    bool LotusState::handleUInputKeyPress(ngosen::KeyPress& event, KeySym currentSym, int sleepTime) {
+    bool LotusState::handleUInputKeyPress(ngosen::KeyPress& event, uint32_t currentSym, int sleepTime) {
         if (!is_deleting_.load()) {
             return false;
         }
@@ -1075,9 +1076,9 @@ namespace fcitx {
         NGOSEN_INFO("Send " + std::to_string(expected_backspaces_) + " backspaces");
     }
 
-    bool LotusState::checkForwardSpecialKey(ngosen::KeyPress& keyEvent, KeySym& currentSym) {
-        if (keyEvent.isCursorMove() || currentSym == FcitxKey_Tab || currentSym == FcitxKey_KP_Tab || currentSym == FcitxKey_ISO_Left_Tab || currentSym == FcitxKey_Escape ||
-            keyEvent.hasModifier()) {
+    bool LotusState::checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym) {
+        if (keyEvent.isCursorMove() || currentSym == ngosen::key::Tab || currentSym == ngosen::key::KP_Tab || currentSym == ngosen::key::ISO_Left_Tab ||
+            currentSym == ngosen::key::Escape || keyEvent.hasModifier()) {
             is_deleting_.store(false, std::memory_order_release);
             expected_backspaces_     = 0;
             current_backspace_count_ = 0;
@@ -1088,46 +1089,46 @@ namespace fcitx {
             return true;
         }
 
-        if (currentSym == FcitxKey_Delete) {
+        if (currentSym == ngosen::key::Delete) {
             return true;
         }
 
-        if (currentSym >= FcitxKey_KP_0 && currentSym <= FcitxKey_KP_9) {
-            currentSym = static_cast<KeySym>(FcitxKey_0 + (currentSym - FcitxKey_KP_0));
+        if (currentSym >= ngosen::key::KP_0 && currentSym <= ngosen::key::KP_9) {
+            currentSym = ngosen::key::Digit0 + (currentSym - ngosen::key::KP_0);
             return false;
         }
 
         switch (currentSym) {
-            case FcitxKey_KP_Add: {
-                currentSym = FcitxKey_plus;
+            case ngosen::key::KP_Add: {
+                currentSym = ngosen::key::plus;
                 break;
             }
-            case FcitxKey_KP_Subtract: {
-                currentSym = FcitxKey_minus;
+            case ngosen::key::KP_Subtract: {
+                currentSym = ngosen::key::minus;
                 break;
             }
-            case FcitxKey_KP_Divide: {
-                currentSym = FcitxKey_slash;
+            case ngosen::key::KP_Divide: {
+                currentSym = ngosen::key::slash;
                 break;
             }
-            case FcitxKey_KP_Multiply: {
-                currentSym = FcitxKey_asterisk;
+            case ngosen::key::KP_Multiply: {
+                currentSym = ngosen::key::asterisk;
                 break;
             }
-            case FcitxKey_KP_Decimal: {
-                currentSym = FcitxKey_period;
+            case ngosen::key::KP_Decimal: {
+                currentSym = ngosen::key::period;
                 break;
             }
-            case FcitxKey_KP_Enter: {
-                currentSym = FcitxKey_Return;
+            case ngosen::key::KP_Enter: {
+                currentSym = ngosen::key::Return;
                 break;
             }
-            case FcitxKey_KP_Equal: {
-                currentSym = FcitxKey_equal;
+            case ngosen::key::KP_Equal: {
+                currentSym = ngosen::key::equal;
                 break;
             }
-            case FcitxKey_KP_Space: {
-                currentSym = FcitxKey_space;
+            case ngosen::key::KP_Space: {
+                currentSym = ngosen::key::space;
                 break;
             }
             default: break;
@@ -1135,16 +1136,16 @@ namespace fcitx {
         return false;
     }
 
-    void LotusState::handleUinputMode(ngosen::KeyPress& keyEvent, KeySym currentSym) {
+    void LotusState::handleUinputMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
             keyEvent.passToApp();
             return;
         }
 
-        if (isBackspace(currentSym) || currentSym == FcitxKey_Return) {
+        if (isBackspace(currentSym) || currentSym == ngosen::key::Return) {
             if (isBackspace(currentSym)) {
                 hasHistory_ = true;
-                EngineProcessKeyEvent(lotusEngine_.handle(), FcitxKey_BackSpace, 0);
+                EngineProcessKeyEvent(lotusEngine_.handle(), ngosen::key::BackSpace, 0);
                 UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
                 oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
             } else {
@@ -1274,21 +1275,21 @@ namespace fcitx {
         NGOSEN_INFO("Commit: — (em-dash)");
     }
 
-    void LotusState::handleOffModeMacro(ngosen::KeyPress& keyEvent, KeySym currentSym) {
+    void LotusState::handleOffModeMacro(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
             keyEvent.passToApp();
             return;
         }
 
         if (isBackspace(currentSym)) {
-            EngineProcessKeyEvent(lotusEngine_.handle(), FcitxKey_BackSpace, 0);
+            EngineProcessKeyEvent(lotusEngine_.handle(), ngosen::key::BackSpace, 0);
             auto preeditC = UniqueCPtr<char>(EnginePullPreedit(lotusEngine_.handle()));
             oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
             keyEvent.passToApp();
             return;
         }
 
-        if (currentSym == FcitxKey_Return) {
+        if (currentSym == ngosen::key::Return) {
             if (!oldPreBuffer_.empty()) {
                 ResetEngine(lotusEngine_.handle());
                 oldPreBuffer_.clear();
@@ -1368,7 +1369,7 @@ namespace fcitx {
     void LotusState::keyEvent(ngosen::KeyPress& keyEvent) {
         if (!lotusEngine_)
             return;
-        if (overtype_pending_ && overtype_via_xtest_ && keyEvent.sym() == FcitxKey_Shift_R) {
+        if (overtype_pending_ && overtype_via_xtest_ && keyEvent.sym() == ngosen::key::Shift_R) {
             keyEvent.passToApp();
             if (keyEvent.isRelease() && !overtype_shift_released_ && overtype_timer_) {
                 overtype_shift_released_ = true;
@@ -1399,7 +1400,7 @@ namespace fcitx {
         }
         lastPressCode_ = keyEvent.code();
         lastPressTime_ = keyEvent.time();
-        if (const KeySym rawSym = static_cast<KeySym>(keyEvent.sym()); overtype_pending_ && (rawSym == FcitxKey_Left || rawSym == FcitxKey_Shift_L || rawSym == FcitxKey_Shift_R)) {
+        if (const uint32_t rawSym = keyEvent.sym(); overtype_pending_ && (rawSym == ngosen::key::Left || rawSym == ngosen::key::Shift_L || rawSym == ngosen::key::Shift_R)) {
             // Our own Shift+Left selection: it must reach the app and must not be treated as the user
             // moving the cursor (that would discard the pending commit).
             keyEvent.passToApp();
@@ -1434,40 +1435,40 @@ namespace fcitx {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
         }
-        KeySym currentSym = static_cast<KeySym>(keyEvent.sym());
+        uint32_t currentSym = keyEvent.sym();
         if (engine_->options().autoCapitalizeAfterPunctuation && realMode != LotusMode::Off) {
             // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
             bool isAutomatedBackspace = is_deleting_.load(std::memory_order_acquire) && isBackspace(currentSym);
 
             if (!isAutomatedBackspace) {
                 if (shouldCapitalize_) {
-                    if (currentSym >= FcitxKey_a && currentSym <= FcitxKey_z) {
-                        auto upperSym = static_cast<KeySym>(currentSym - (FcitxKey_a - FcitxKey_A));
+                    if (currentSym >= ngosen::key::a && currentSym <= ngosen::key::z) {
+                        auto upperSym = currentSym - (ngosen::key::a - ngosen::key::A);
                         currentSym    = upperSym;
                         keyEvent.replaceSym(upperSym);
                         shouldCapitalize_ = false;
-                    } else if (currentSym != FcitxKey_space) {
+                    } else if (currentSym != ngosen::key::space) {
                         shouldCapitalize_ = false;
                     }
                 }
 
                 switch (currentSym) {
-                    case FcitxKey_period:
-                    case FcitxKey_exclam:
-                    case FcitxKey_question: isPrevPunctuation_ = true; break;
-                    case FcitxKey_Return:
-                    case FcitxKey_KP_Enter:
+                    case ngosen::key::period:
+                    case ngosen::key::exclam:
+                    case ngosen::key::question: isPrevPunctuation_ = true; break;
+                    case ngosen::key::Return:
+                    case ngosen::key::KP_Enter:
                         shouldCapitalize_  = true;
                         isPrevPunctuation_ = false;
                         break;
-                    case FcitxKey_space:
+                    case ngosen::key::space:
                         if (isPrevPunctuation_) {
                             shouldCapitalize_  = true;
                             isPrevPunctuation_ = false;
                         }
                         break;
                     default:
-                        if (currentSym != FcitxKey_space) {
+                        if (currentSym != ngosen::key::space) {
                             isPrevPunctuation_ = false;
                         }
                         break;
@@ -1516,7 +1517,7 @@ namespace fcitx {
         }
 
         if (engine_->options().doubleSpaceToPeriod && realMode != LotusMode::Off) {
-            bool isSpaceKey = (currentSym == FcitxKey_space || currentSym == FcitxKey_KP_Space);
+            bool isSpaceKey = (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);
             if (isSpaceKey && !keyEvent.hasModifier()) {
                 if (isPrevSpace_) {
                     keyEvent.accept();
@@ -1531,7 +1532,7 @@ namespace fcitx {
         }
 
         if (engine_->options().doubleHyphenToEmDash && realMode != LotusMode::Off) {
-            bool isHyphenKey = (currentSym == FcitxKey_minus || currentSym == FcitxKey_KP_Subtract);
+            bool isHyphenKey = (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract);
             if (isHyphenKey && !keyEvent.hasModifier()) {
                 if (isPrevHyphen_) {
                     keyEvent.accept();
@@ -1696,7 +1697,7 @@ namespace fcitx {
         auto keys = std::move(buffered_keys_);
         buffered_keys_.clear();
         for (size_t i = 0; i < keys.size(); ++i) {
-            auto        sym     = static_cast<KeySym>(keys[i].sym);
+            auto        sym     = keys[i].sym;
             uint32_t    state   = keys[i].state;
             std::string keyUtf8 = host_->keyText(sym);
             if (keyUtf8.empty()) {
@@ -1782,12 +1783,12 @@ namespace fcitx {
         NGOSEN_INFO("Replay buffered keys done");
     }
 
-    bool LotusState::isMacroSkipModifier(KeySym sym) const {
+    bool LotusState::isMacroSkipModifier(uint32_t sym) const {
         const auto trigger = engine_->options().macroSkipKey;
         switch (trigger) {
-            case ngosen::MacroSkipKey::Shift: return sym == FcitxKey_Shift_L || sym == FcitxKey_Shift_R;
-            case ngosen::MacroSkipKey::Ctrl: return sym == FcitxKey_Control_L || sym == FcitxKey_Control_R;
-            case ngosen::MacroSkipKey::Alt: return sym == FcitxKey_Alt_L || sym == FcitxKey_Alt_R;
+            case ngosen::MacroSkipKey::Shift: return sym == ngosen::key::Shift_L || sym == ngosen::key::Shift_R;
+            case ngosen::MacroSkipKey::Ctrl: return sym == ngosen::key::Control_L || sym == ngosen::key::Control_R;
+            case ngosen::MacroSkipKey::Alt: return sym == ngosen::key::Alt_L || sym == ngosen::key::Alt_R;
             case ngosen::MacroSkipKey::None:
             default: return false;
         }
@@ -1798,7 +1799,7 @@ namespace fcitx {
         if (trigger == ngosen::MacroSkipKey::None || !engine_->options().enableMacro) {
             return;
         }
-        if (!isMacroSkipModifier(static_cast<KeySym>(keyEvent.sym()))) {
+        if (!isMacroSkipModifier(keyEvent.sym())) {
             tracking_modifier_tap_ = false;
             return;
         }

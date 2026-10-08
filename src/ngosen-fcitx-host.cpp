@@ -5,6 +5,7 @@
  */
 #include "ngosen-fcitx-host.h"
 
+#include "ngosen-keysym.h"
 #include "ngosen-xtest.h"
 
 #include <fcitx-utils/key.h>
@@ -18,6 +19,53 @@
 #include <fcitx/userinterface.h>
 
 namespace ngosen {
+
+    // The typing logic compares keys against its own numbers, so they must match what fcitx5 sends.
+    static_assert(key::space == FcitxKey_space);
+    static_assert(key::exclam == FcitxKey_exclam);
+    static_assert(key::asterisk == FcitxKey_asterisk);
+    static_assert(key::plus == FcitxKey_plus);
+    static_assert(key::minus == FcitxKey_minus);
+    static_assert(key::period == FcitxKey_period);
+    static_assert(key::slash == FcitxKey_slash);
+    static_assert(key::Digit0 == FcitxKey_0);
+    static_assert(key::Digit1 == FcitxKey_1);
+    static_assert(key::Digit9 == FcitxKey_9);
+    static_assert(key::equal == FcitxKey_equal);
+    static_assert(key::question == FcitxKey_question);
+    static_assert(key::A == FcitxKey_A);
+    static_assert(key::a == FcitxKey_a);
+    static_assert(key::z == FcitxKey_z);
+    static_assert(key::ISO_Left_Tab == FcitxKey_ISO_Left_Tab);
+    static_assert(key::BackSpace == FcitxKey_BackSpace);
+    static_assert(key::Tab == FcitxKey_Tab);
+    static_assert(key::Return == FcitxKey_Return);
+    static_assert(key::Escape == FcitxKey_Escape);
+    static_assert(key::Left == FcitxKey_Left);
+    static_assert(key::Up == FcitxKey_Up);
+    static_assert(key::Right == FcitxKey_Right);
+    static_assert(key::Down == FcitxKey_Down);
+    static_assert(key::Page_Up == FcitxKey_Page_Up);
+    static_assert(key::Page_Down == FcitxKey_Page_Down);
+    static_assert(key::KP_Space == FcitxKey_KP_Space);
+    static_assert(key::KP_Tab == FcitxKey_KP_Tab);
+    static_assert(key::KP_Enter == FcitxKey_KP_Enter);
+    static_assert(key::KP_Multiply == FcitxKey_KP_Multiply);
+    static_assert(key::KP_Add == FcitxKey_KP_Add);
+    static_assert(key::KP_Subtract == FcitxKey_KP_Subtract);
+    static_assert(key::KP_Decimal == FcitxKey_KP_Decimal);
+    static_assert(key::KP_Divide == FcitxKey_KP_Divide);
+    static_assert(key::KP_0 == FcitxKey_KP_0);
+    static_assert(key::KP_9 == FcitxKey_KP_9);
+    static_assert(key::KP_Equal == FcitxKey_KP_Equal);
+    static_assert(key::Shift_L == FcitxKey_Shift_L);
+    static_assert(key::Shift_R == FcitxKey_Shift_R);
+    static_assert(key::Control_L == FcitxKey_Control_L);
+    static_assert(key::Control_R == FcitxKey_Control_R);
+    static_assert(key::Alt_L == FcitxKey_Alt_L);
+    static_assert(key::Alt_R == FcitxKey_Alt_R);
+    static_assert(key::Delete == FcitxKey_Delete);
+    static_assert(modifier::Ctrl == static_cast<uint32_t>(fcitx::KeyState::Ctrl));
 
     namespace {
         // XKB keycode of BackSpace: evdev KEY_BACKSPACE (14) + 8.

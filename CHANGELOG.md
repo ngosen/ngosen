@@ -39,6 +39,8 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
   đọc và đổi phím (phím bổ trợ, Shift, tên phím, tự viết hoa). Người dùng không thấy gì khác (#54).
 - Phần gõ lấy từ điển, bảng gõ tắt, bảng phím tự đặt và danh sách emoji qua lớp trung gian thay vì đọc
   thẳng từ engine fcitx5; kèm bài kiểm cho bảng phím tự đặt. Người dùng không thấy gì khác (#55).
+- Phần gõ dùng tên phím riêng thay cho tên phím của fcitx5; lúc dựng, máy tự so từng phím với số của
+  fcitx5. Người dùng không thấy gì khác (#63).
 - Chế độ `Uinput` đổi tên thành **Gõ Sen** (`Mode=Sen` trong `lotus.conf`). Cấu hình cũ, thứ tự chế độ,
   phím tắt và tuỳ chọn ẩn/hiện của chế độ cũ tự chuyển sang tên mới (#43).
 - Nhánh chính đổi tên từ `ban-dung` thành `main`. Đường dẫn cũ trên GitHub tự chuyển sang tên mới. Ai

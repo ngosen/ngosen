@@ -7,6 +7,7 @@
  */
 #include "lotus-utils.h"
 #include "lotus-config.h"
+#include "ngosen-keysym.h"
 
 #include <cstddef>
 #include <cstdlib>
@@ -34,7 +35,7 @@ int64_t now_ms() {
 }
 
 bool isBackspace(uint32_t sym) {
-    return sym == 65288 || sym == 8 || sym == FcitxKey_BackSpace;
+    return sym == 65288 || sym == 8 || sym == ngosen::key::BackSpace;
 }
 
 bool isUinputMode(fcitx::LotusMode mode) {

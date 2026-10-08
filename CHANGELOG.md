@@ -21,6 +21,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Chế độ Gõ Sen gõ được trên Sway, Hyprland và các WM dùng input-method-v2. Trước đây chữ đầu tiên cần
   thêm dấu làm bộ gõ kẹt, mọi phím sau đó không ra chữ (#73).
 
+### Tài liệu
+
+- README mở đầu bằng những điểm chính của Ngó Sen và roadmap tới bản IBus và bản cho wlroots không cần
+  fcitx5 (#75).
+
 ## [0.5.0-1] — 08/10/2026
 
 Bản đầu tiên đánh số riêng; số `0.5` ứng với khoảng nửa chặng đường tới bản 1.0 có bản IBus cho GNOME. Tải ở

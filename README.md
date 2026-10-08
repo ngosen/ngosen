@@ -1,26 +1,28 @@
-# Ngó Sen — bộ gõ tiếng Việt cho fcitx5
+# Ngó Sen
 
-Ngó Sen được dùng hằng ngày trên Fedora 44 và CachyOS (KDE Plasma Wayland), và được thử thêm trên máy ảo
-Ubuntu 26.04 (GNOME, Wayland), CachyOS (Hyprland), MX Linux (Xfce, X11) và Linux Mint (Cinnamon, X11). Kho để công khai cho
-ai cần thì lấy dùng, **không hứa hỗ trợ**. Gặp lỗi thì báo ở mục
-[Issues](https://github.com/ngosen/ngosen/issues).
+**Bộ gõ tiếng Việt tối ưu cho Linux.**
 
-## Roadmap: Ngó Sen 1.0
+- **Không chạy ngầm với quyền root.** Bỏ hẳn máy chủ uinput, Ngó Sen chỉ dùng đúng quyền của fcitx5. Cài
+  xong là gõ, không bật dịch vụ, không cấp quyền thiết bị.
+- **Gõ thẳng, không gạch chân.** Chế độ Gõ Sen đưa chữ vào app ngay khi gõ. Ô gợi ý của thanh địa chỉ hay
+  ô tìm kiếm chạy theo từng phím.
+- **Một chế độ cho mọi app.** Trình duyệt, terminal, Zalo, LibreOffice đều dùng Gõ Sen. Ngó Sen tự nhận ra
+  app nhận chữ kiểu gì, không phải đổi chế độ.
+- **Lõi Rust.** Phần biến `tieengs` thành `tiếng` được viết lại bằng Rust. Gói cho Fedora, Arch, openSUSE
+  và Ubuntu 24.04 trở lên dùng lõi Rust.
+- **Cài bằng một dòng lệnh** trên Fedora, Ubuntu, Debian, Arch, CachyOS, openSUSE; script kiểm hash trước
+  khi cài.
+- **Chuyển từ fcitx5-lotus không mất gì.** Gói tự thay bản cũ, giữ nguyên cấu hình, chế độ cũ tự chuyển
+  sang Gõ Sen.
 
-Bản 1.0 nhắm bốn thay đổi lớn. Chưa có ngày phát hành.
+Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues).
 
-- **Bỏ máy chủ nền uinput.** Xong: bộ gõ không còn chương trình chạy ngầm có quyền đặc biệt. Cài xong
-  là gõ, không phải bật dịch vụ, không cần quyền thiết bị. Cập nhật từ bản cũ thì gói tự tắt và dọn
-  dịch vụ cũ.
-- **Chỉ còn hai chế độ gõ: Gõ Sen và Preedit**, cùng chế độ Emoji để chọn biểu tượng cảm xúc. Gõ Sen là
-  chế độ dùng cho mọi chỗ: gõ nhanh không mất chữ, gõ đúng trong trình duyệt, thanh địa chỉ, Facebook,
-  app Electron như Zalo, và terminal. Preedit là chế độ hiện chữ gạch chân trong lúc gõ, dành cho app
-  không hợp với Gõ Sen. Người dùng không còn phải chọn giữa nhiều chế độ khó hiểu. Xong: chế độ
-  Surrounding Text đã gộp vào Gõ Sen.
-- **Lõi ghép dấu (bamboo-core) chuyển sang Rust.** Phần biến `tieengs` thành `tiếng` đang viết bằng
-  Go, sẽ đổi sang bản viết bằng Rust. Chỉ đổi khi bản mới gõ ra y hệt bản cũ.
-- **Tách lõi Ngó Sen để dùng được ở nhiều nơi.** Ngoài fcitx5, Ngó Sen sẽ có bản cho IBus (bộ gõ mặc
-  định của GNOME và Ubuntu) và cho các môi trường dùng wlroots như Sway.
+## Roadmap
+
+- **IBus:** bản cho GNOME và Ubuntu, nơi IBus là bộ gõ mặc định, không phải cài thêm fcitx5. Gói
+  `ibus-ngosen`; `install.sh` sẽ hỏi chọn bản nào.
+- **wlroots, không cần fcitx5:** Ngó Sen chạy thẳng trên Sway, Hyprland, river, labwc, Wayfire, gọn nhẹ
+  hơn cài cả fcitx5.
 
 ## Nên dùng chế độ nào
 

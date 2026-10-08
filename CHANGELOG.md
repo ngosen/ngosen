@@ -68,7 +68,7 @@ sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang 
 - VS Code bản Flatpak, và bản `.deb` chạy Wayland, gõ được tiếng Việt: bộ gõ không còn coi việc VS Code
   nhích con trỏ ngay sau mỗi phím là một cú bấm chuột (#58).
 - VS Code bản snap (gõ qua XIM) không còn thỉnh thoảng gõ sai như "nười", "đôồn": bộ gõ không đếm hai
-  lần một phím mà VS Code gửi lại, và chờ VS Code xoá xong chữ cũ rồi mới đưa chữ mới vào (#60).
+  lần một phím mà VS Code gửi lại, và chờ VS Code xoá xong chữ cũ rồi mới đưa chữ mới vào (#60, #61).
 - Cửa sổ không báo tên app: chế độ gõ chọn riêng cho cửa sổ đó giờ được xoá khi đóng cửa sổ, nên cửa
   sổ mở sau không còn có thể nhận nhầm chế độ ấy, và danh sách quy tắc không dài thêm suốt phiên (#59).
 - Trên Wayland, bấm chuột sang chỗ khác trong ô rồi gõ tiếp giờ bắt đầu từ mới ngay cả khi máy chủ

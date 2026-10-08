@@ -1393,8 +1393,9 @@ namespace fcitx {
             return;
         lastInputAtUs_ = ngosen::monotonicUs();
         // An XIM client sometimes sends a key we let through back to us instead of typing it. Let it
-        // through again rather than type it twice.
-        if (keyEvent.time() != 0 && keyEvent.time() == lastPressTime_ && keyEvent.code() == lastPressCode_) {
+        // through again rather than type it twice. Our own XTEST backspaces share one time, so they
+        // are exempt.
+        if (!is_deleting_.load(std::memory_order_acquire) && keyEvent.time() != 0 && keyEvent.time() == lastPressTime_ && keyEvent.code() == lastPressCode_) {
             NGOSEN_INFO("App sent a key back: " + keyEvent.name());
             keyEvent.passToApp();
             return;

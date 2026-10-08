@@ -59,8 +59,8 @@ namespace {
         }
 
         // Feeds a key as the X server would deliver it back to the input method.
-        bool key(TestInputContext& context, fcitx::Key key, bool release, bool accepted) {
-            fcitx::KeyEvent event(&context, key, release);
+        bool key(TestInputContext& context, fcitx::Key key, bool release, bool accepted, int time = 0) {
+            fcitx::KeyEvent event(&context, key, release, time);
             engine.keyEvent(entry, event);
             if (event.accepted() != accepted) {
                 reportFailure("key " + key.toString() + (release ? " up" : " down"), "accepted=" + std::to_string(accepted), "accepted=" + std::to_string(event.accepted()));
@@ -149,7 +149,11 @@ namespace {
             reportFailure("SDL: press one BackSpace plus the sentinel through XTEST", "[2]", joinCounts(h.sent));
             return false;
         }
-        if (!h.key(*context, fcitx::Key(FcitxKey_BackSpace), false, false) || !h.key(*context, fcitx::Key(FcitxKey_BackSpace), false, true))
+        // XTEST sends the presses in one burst, so the X server gives them the same time.
+        constexpr int CodeBackSpace = 22;
+        constexpr int BurstTime     = 5000;
+        const auto    backSpace     = fcitx::Key(FcitxKey_BackSpace, fcitx::KeyStates(), CodeBackSpace);
+        if (!h.key(*context, backSpace, false, false, BurstTime) || !h.key(*context, backSpace, false, true, BurstTime))
             return false;
         h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 500000);
         if (context->commits() != std::vector<std::string>{"ê"}) {

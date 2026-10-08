@@ -136,6 +136,10 @@ namespace fcitx {
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     macro_skip_            = false; ///< Macro disabled for the current word
 
+        // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
+        // surrounding text report the commit waits this long for them.
+        static constexpr uint64_t ForwardWaitUs = 15000;
+
         // Presses real keys through XTEST, for frontends that cannot forward them.
         void sendBackspaceKeys(int count) const;
 

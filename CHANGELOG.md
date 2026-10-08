@@ -4,10 +4,17 @@ Mọi thay đổi đáng kể của Ngó Sen (tên cũ LotusVibe), tách ra từ
 [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), được ghi ở đây. Cách ghi theo
 [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Mỗi dòng nói người dùng thấy gì thay đổi.
 
-Số phiên bản gồm hai phần: `3.5.10` là số của bản gốc lúc tách ra, còn nằm trong `CMakeLists.txt`; số
-sau dấu gạch là lần đóng gói của fork. Mỗi bản phát hành mang nhãn `ngosen-<phiên bản>`.
+Số phiên bản gồm hai phần: phần trước dấu gạch là số của Ngó Sen (nằm trong `CMakeLists.txt`), phần sau
+là lần đóng gói. Từ `0.5.0` Ngó Sen đánh số riêng; các bản trước mang số `3.5.10` của bản gốc lúc tách ra.
+Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới hơn `3.5.10`. Mỗi bản phát hành mang nhãn
+`ngosen-<phiên bản>`.
 
 ## [Chưa phát hành]
+
+## [0.5.0-1] — 08/10/2026
+
+Bản đầu tiên đánh số riêng; số `0.5` ứng với khoảng nửa chặng đường tới bản 1.0 có bản IBus cho GNOME. Tải ở
+[ngosen-0.5.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-0.5.0-1).
 
 ### Thêm
 

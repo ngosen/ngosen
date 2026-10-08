@@ -191,7 +191,11 @@ jobs:
             cd /home/builder/src/packaging/arch
             sudo -u builder makepkg -s --noconfirm
             mkdir -p /work/output
-            cp ./*.pkg.tar.zst /work/output/
+            # makepkg names it fcitx5-ngosen-1:0.5.0-1-…; artifact and release asset names may not
+            # contain a colon. pacman reads the epoch from inside the package.
+            for pkg in ./*.pkg.tar.zst; do
+                cp "$pkg" "/work/output/$(basename "$pkg" | sed 's/^fcitx5-ngosen-[0-9]*:/fcitx5-ngosen-/')"
+            done
 
       - name: Upload Arch artifact
         uses: actions/upload-artifact@v7

@@ -3,8 +3,10 @@
 %global upstream_name fcitx5-lotus
 
 Name:           fcitx5-ngosen
-Version:        3.5.10
-Release:        4%{?dist}
+# Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
+Epoch:          1
+Version:        0.5.0
+Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
 URL:            https://github.com/ngosen/ngosen
@@ -12,7 +14,7 @@ Source0:        %{url}/archive/v%{version}/%{upstream_name}-%{version}.tar.gz
 
 # Both packages install the same files, so they cannot be installed together.
 Conflicts:      %{upstream_name}
-Obsoletes:      %{upstream_name} < %{version}-%{release}
+Obsoletes:      %{upstream_name} < %{epoch}:%{version}-%{release}
 
 BuildRequires:  cmake
 BuildRequires:  extra-cmake-modules
@@ -116,6 +118,9 @@ echo "Mở 'Fcitx5 Configuration' và thêm bộ gõ Ngó Sen, hoặc khởi đ�
 echo "KDE Wayland: chọn 'Fcitx 5' trong System Settings → Virtual Keyboard."
 
 %changelog
+* Thu Oct 08 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:0.5.0-1
+- Ngó Sen's own version numbers; the typing core is now the Rust port.
+
 * Sun Oct 04 2026 Nguyen Phi <nguyenphidt@gmail.com> - 3.5.10-4
 - First build published on the GitHub Releases page.
 

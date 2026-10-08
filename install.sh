@@ -171,8 +171,7 @@ install_package() {
     local package=$1
     case "$manager" in
         dnf)
-            # --allowerasing lets dnf remove fcitx5-lotus in the same transaction; a newer upstream
-            # version is not obsoleted by this package and would otherwise block the install.
+            # --allowerasing lets dnf remove fcitx5-lotus in the same transaction.
             if rpm -q fcitx5-lotus >/dev/null 2>&1; then
                 as_root dnf install -y --allowerasing "$package"
             else

@@ -1,7 +1,7 @@
 # Ngó Sen — bộ gõ tiếng Việt cho fcitx5
 
 Ngó Sen được dùng hằng ngày trên Fedora 44 và CachyOS (KDE Plasma Wayland), và được thử thêm trên máy ảo
-Ubuntu 26.04 (GNOME, Wayland), MX Linux (Xfce, X11) và Linux Mint (Cinnamon, X11). Kho để công khai cho
+Ubuntu 26.04 (GNOME, Wayland), CachyOS (Hyprland), MX Linux (Xfce, X11) và Linux Mint (Cinnamon, X11). Kho để công khai cho
 ai cần thì lấy dùng, **không hứa hỗ trợ**. Gặp lỗi thì báo ở mục
 [Issues](https://github.com/ngosen/ngosen/issues).
 
@@ -55,7 +55,7 @@ fcitx5 -rd
 
 ### Ubuntu 26.04: bật extension sửa lỗi gõ
 
-Có từ bản phát hành sau `3.5.10-4`. Cài xong, đăng xuất rồi đăng nhập lại, sau đó chạy một lần:
+Có từ bản `0.5.0-1`. Cài xong, đăng xuất rồi đăng nhập lại, sau đó chạy một lần:
 
 ```
 gnome-extensions enable forward-keys@ngosen.github.io

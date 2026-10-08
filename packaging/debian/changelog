@@ -1,3 +1,10 @@
+fcitx5-ngosen (1:0.5.0-1) unstable; urgency=medium
+
+  * Ngó Sen's own version numbers; the epoch keeps them above the 3.5.10 builds.
+  * The typing core is the Rust port where the release ships Rust 1.88.
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Thu, 08 Oct 2026 20:00:00 +0700
+
 fcitx5-ngosen (3.5.10-4) unstable; urgency=medium
 
   * First build published on the GitHub Releases page.

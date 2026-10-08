@@ -2,7 +2,7 @@
 //
 // Unit regression test for ngosen::utf8::eraseLastCodepoint().
 //
-// The backspace branch in LotusState::handleEmojiMode must erase the
+// The backspace branch in TypingState::handleEmojiMode must erase the
 // last *codepoint* (1-4 UTF-8 bytes) so the preedit buffer stays valid
 // UTF-8. The helper that does the work is eraseLastCodepoint() in
 // ngosen-utf8; this test calls that same helper, so the test cannot

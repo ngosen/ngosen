@@ -17,18 +17,18 @@
 #include <string>
 #include <thread>
 
-namespace fcitx {
+namespace ngosen {
 
     // Chromium asks the input method about each key before it handles the key, so our Shift release
     // coming back does not mean the Left presses before it have moved the selection yet.
     constexpr uint64_t XTestSelectSettleUs = 50000;
 
-    LotusState::LotusState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host) : engine_(engine), host_(std::move(host)) {
+    TypingState::TypingState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host) : engine_(engine), host_(std::move(host)) {
         setEngine();
     }
 
-    void LotusState::setEngine() {
-        lotusEngine_.reset();
+    void TypingState::setEngine() {
+        bambooEngine_.reset();
 
         if (engine_->options().inputMethod == "Custom") {
             const auto         keymaps = engine_->customKeymap();
@@ -39,16 +39,16 @@ namespace fcitx {
                 charArray.push_back(const_cast<char*>(keymap.value.data())); //NOLINT
             }
             charArray.push_back(nullptr);
-            lotusEngine_.reset(NewCustomEngine(charArray.data(), engine_->dictionary(), engine_->macroTable()));
+            bambooEngine_.reset(NewCustomEngine(charArray.data(), engine_->dictionary(), engine_->macroTable()));
         } else {
-            lotusEngine_.reset(NewEngine(engine_->options().inputMethod.data(), engine_->dictionary(), engine_->macroTable()));
+            bambooEngine_.reset(NewEngine(engine_->options().inputMethod.data(), engine_->dictionary(), engine_->macroTable()));
         }
         setOption();
         resetMacroSkip();
     }
 
-    void LotusState::setOption() {
-        if (!lotusEngine_)
+    void TypingState::setOption() {
+        if (!bambooEngine_)
             return;
         FcitxBambooEngineOption option = {
             .autoNonVnRestore    = engine_->options().autoNonVnRestore,
@@ -65,20 +65,20 @@ namespace fcitx {
             .dateFormat          = engine_->options().dateFormat.data(),
         };
 
-        EngineSetOption(lotusEngine_.handle(), &option);
+        EngineSetOption(bambooEngine_.handle(), &option);
     }
 
-    void LotusState::handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.states()) != 0U)
+    void TypingState::handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U)
             keyEvent.accept();
-        if (auto commit = ngosen::UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()))) {
+        if (auto commit = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()))) {
             if (commit && (*commit.get() != 0)) {
                 NGOSEN_INFO("Commit: " + std::string(commit.get()));
                 host_->commitText(commit.get());
             }
         }
         host_->resetPanel();
-        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(lotusEngine_.handle()));
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         if (preedit && (*preedit.get() != 0)) {
             std::string_view view = preedit.get();
             host_->showPreedit(ngosen::utf8::validate(view) ? std::string(view) : std::string(), false);
@@ -87,7 +87,7 @@ namespace fcitx {
         host_->refreshPanel();
     }
 
-    bool LotusState::checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym) {
+    bool TypingState::checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym) {
         if (keyEvent.isCursorMove() || currentSym == ngosen::key::Tab || currentSym == ngosen::key::KP_Tab || currentSym == ngosen::key::ISO_Left_Tab ||
             currentSym == ngosen::key::Escape || keyEvent.hasModifier()) {
             is_deleting_.store(false, std::memory_order_release);
@@ -95,7 +95,7 @@ namespace fcitx {
             current_backspace_count_ = 0;
             pending_commit_string_.clear();
             hasHistory_ = false;
-            ResetEngine(lotusEngine_.handle());
+            ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             return true;
         }
@@ -147,7 +147,7 @@ namespace fcitx {
         return false;
     }
 
-    void LotusState::handleUinputMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+    void TypingState::handleUinputMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
             keyEvent.passToApp();
             return;
@@ -156,12 +156,12 @@ namespace fcitx {
         if (ngosen::key::isBackspace(currentSym) || currentSym == ngosen::key::Return) {
             if (ngosen::key::isBackspace(currentSym)) {
                 hasHistory_ = true;
-                EngineProcessKeyEvent(lotusEngine_.handle(), ngosen::key::BackSpace, 0);
-                ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
+                EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::BackSpace, 0);
+                ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
                 oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
             } else {
                 hasHistory_ = false;
-                ResetEngine(lotusEngine_.handle());
+                ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
             }
             keyEvent.passToApp();
@@ -174,9 +174,9 @@ namespace fcitx {
             return;
         }
 
-        bool processed = EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.states()) != 0U;
+        bool processed = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
-        auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
+        auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
         if (commitF && (*commitF.get() != 0)) {
             std::string commitStr = commitF.get();
             std::string deletedPart;
@@ -207,17 +207,17 @@ namespace fcitx {
             }
 
             hasHistory_ = false;
-            ResetEngine(lotusEngine_.handle());
+            ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
 
             return;
         }
 
         if (!processed) {
-            ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
+            ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
             if (!preeditC || (*preeditC.get() == 0)) {
                 hasHistory_ = false;
-                ResetEngine(lotusEngine_.handle());
+                ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
                 keyEvent.passToApp();
             }
@@ -227,7 +227,7 @@ namespace fcitx {
         hasHistory_ = true;
         realtextLen.fetch_add(1, std::memory_order_acq_rel);
 
-        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
+        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
         std::string              preeditStr = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
 
         std::string              deletedPart;
@@ -270,8 +270,8 @@ namespace fcitx {
         }
     }
 
-    void LotusState::keyEvent(ngosen::KeyPress& keyEvent) {
-        if (!lotusEngine_)
+    void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        if (!bambooEngine_)
             return;
         if (overtype_pending_ && overtype_via_xtest_ && keyEvent.sym() == ngosen::key::Shift_R) {
             keyEvent.passToApp();
@@ -324,7 +324,7 @@ namespace fcitx {
             NGOSEN_INFO("Need engine reset");
             oldPreBuffer_.clear();
             hasHistory_ = false;
-            ResetEngine(lotusEngine_.handle());
+            ResetEngine(bambooEngine_.handle());
             is_deleting_.store(false);
             current_backspace_count_ = 0;
             isPrevSpace_             = false;
@@ -473,7 +473,7 @@ namespace fcitx {
         reEnableMacroAfterWordEnd();
     }
 
-    void LotusState::reset(bool isFocusOut) {
+    void TypingState::reset(bool isFocusOut) {
         const auto  surrounding = host_->surrounding();
         const auto& text        = surrounding.text();
         size_t      textLen     = ngosen::utf8::length(text);
@@ -483,20 +483,20 @@ namespace fcitx {
         }
         resetMacroSkip();
 
-        if (lotusEngine_) {
+        if (bambooEngine_) {
             isPrevSpace_       = false;
             isPrevHyphen_      = false;
             shouldCapitalize_  = false;
             isPrevPunctuation_ = false;
             if (realMode == ngosen::Mode::Preedit && isFocusOut) {
-                EngineCommitPreedit(lotusEngine_.handle());
-                ngosen::UniqueCPtr<char> commit(EnginePullCommit(lotusEngine_.handle()));
+                EngineCommitPreedit(bambooEngine_.handle());
+                ngosen::UniqueCPtr<char> commit(EnginePullCommit(bambooEngine_.handle()));
                 if (commit && (*commit.get() != 0)) {
                     host_->commitText(commit.get());
                     NGOSEN_INFO("Commit: " + std::string(commit.get()));
                 }
             }
-            ResetEngine(lotusEngine_.handle());
+            ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             hasHistory_ = false;
         }
@@ -526,24 +526,24 @@ namespace fcitx {
         }
     }
 
-    void LotusState::commitBuffer() {
+    void TypingState::commitBuffer() {
         switch (realMode) {
             case ngosen::Mode::Preedit: {
                 host_->resetPanel();
-                if (lotusEngine_) {
-                    EngineCommitPreedit(lotusEngine_.handle());
-                    ngosen::UniqueCPtr<char> commit(EnginePullCommit(lotusEngine_.handle()));
+                if (bambooEngine_) {
+                    EngineCommitPreedit(bambooEngine_.handle());
+                    ngosen::UniqueCPtr<char> commit(EnginePullCommit(bambooEngine_.handle()));
                     if (commit && (*commit.get() != 0))
                         host_->commitText(commit.get());
-                    ResetEngine(lotusEngine_.handle());
+                    ResetEngine(bambooEngine_.handle());
                 }
                 host_->refreshPanel();
                 host_->refreshPreedit();
                 break;
             }
             case ngosen::Mode::Sen: {
-                if (lotusEngine_) {
-                    ResetEngine(lotusEngine_.handle());
+                if (bambooEngine_) {
+                    ResetEngine(bambooEngine_.handle());
                 }
                 break;
             }
@@ -553,7 +553,7 @@ namespace fcitx {
         }
     }
 
-    void LotusState::clearAllBuffers() {
+    void TypingState::clearAllBuffers() {
         NGOSEN_DEBUG("Clear all buffers");
         if (is_deleting_.load(std::memory_order_acquire)) {
             return;
@@ -573,12 +573,12 @@ namespace fcitx {
         isPrevSpace_       = false;
         isPrevHyphen_      = false;
         isPrevPunctuation_ = false;
-        if (lotusEngine_)
-            ResetEngine(lotusEngine_.handle());
+        if (bambooEngine_)
+            ResetEngine(bambooEngine_.handle());
     }
 
-    bool LotusState::isEmptyHistory() const {
+    bool TypingState::isEmptyHistory() const {
         return !hasHistory_;
     }
 
-} // namespace fcitx
+} // namespace ngosen

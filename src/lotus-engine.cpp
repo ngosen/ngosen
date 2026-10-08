@@ -255,17 +255,18 @@ namespace fcitx {
         return macroTableObject_.handle();
     }
 
-    TypingStateProperty::TypingStateProperty(std::unique_ptr<LotusState> state) : state_(std::move(state)) {}
+    TypingStateProperty::TypingStateProperty(std::unique_ptr<ngosen::TypingState> state) : state_(std::move(state)) {}
 
     TypingStateProperty::~TypingStateProperty() = default;
 
-    LotusState* LotusEngine::stateFor(InputContext* ic) {
+    ngosen::TypingState* LotusEngine::stateFor(InputContext* ic) {
         return &ic->propertyFor(&factory_)->state();
     }
 
     LotusEngine::LotusEngine(Instance* instance) :
-        instance_(instance),
-        factory_([this](InputContext& ic) { return new TypingStateProperty(std::make_unique<LotusState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_))); }) { //NOLINT
+        instance_(instance), factory_([this](InputContext& ic) {
+            return new TypingStateProperty(std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_)));
+        }) { //NOLINT
         std::string desktop = getEnv("XDG_CURRENT_DESKTOP");
         isGnome_            = (!desktop.empty()) && desktop.find("GNOME") != std::string::npos;
         Init();

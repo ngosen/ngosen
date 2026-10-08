@@ -30,23 +30,24 @@
 #include <fcitx/instance.h>
 #include <fcitx-utils/event.h>
 
-namespace fcitx {
+namespace ngosen {
+    class TypingState;
+}
 
-    class CGoObject;
-    class LotusState;
+namespace fcitx {
 
     // Hangs one typing state on each fcitx5 input context; the state itself does not depend on fcitx5.
     class TypingStateProperty final : public InputContextProperty {
       public:
-        explicit TypingStateProperty(std::unique_ptr<LotusState> state);
+        explicit TypingStateProperty(std::unique_ptr<ngosen::TypingState> state);
         ~TypingStateProperty() override;
 
-        LotusState& state() {
+        ngosen::TypingState& state() {
             return *state_;
         }
 
       private:
-        std::unique_ptr<LotusState> state_;
+        std::unique_ptr<ngosen::TypingState> state_;
     };
 
     /**
@@ -218,7 +219,7 @@ namespace fcitx {
         }
 
       private:
-        LotusState*                                stateFor(InputContext* ic);
+        ngosen::TypingState*                       stateFor(InputContext* ic);
 
         Instance*                                  instance_;
         lotusConfig                                config_;
@@ -226,7 +227,7 @@ namespace fcitx {
         lotusCustomKeymap                          customKeymap_;
 
         lotusMacroTable                            macroTables_;
-        CGoObject                                  macroTableObject_;
+        ngosen::CGoObject                          macroTableObject_;
         lotusAppRules                              appRulesTables_;
 
         FactoryFor<TypingStateProperty>            factory_;
@@ -244,7 +245,7 @@ namespace fcitx {
         std::unique_ptr<SimpleAction>              settingsAction_;
         std::vector<SimpleAction*>                 toggleActions_;
         std::vector<ScopedConnection>              connections_;
-        CGoObject                                  dictionary_;
+        ngosen::CGoObject                          dictionary_;
         std::unordered_map<std::string, LotusMode> appRules_;
         std::string                                appRulesPath_;
         bool                                       isSelectingAppMode_ = false;

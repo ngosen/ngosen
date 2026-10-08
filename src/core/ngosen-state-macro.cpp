@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-// LotusState: macros, double space to period, double hyphen to em dash, and the macro skip key.
+// TypingState: macros, double space to period, double hyphen to em dash, and the macro skip key.
 #include "ngosen-state.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
@@ -15,9 +15,9 @@
 #include <cstddef>
 #include <string>
 
-namespace fcitx {
+namespace ngosen {
 
-    void LotusState::handleDoubleSpaceReplacement() {
+    void TypingState::handleDoubleSpaceReplacement() {
         performReplacement(" ", ". ");
         NGOSEN_INFO("Commit: . ");
         if (engine_->options().autoCapitalizeAfterPunctuation) {
@@ -26,22 +26,22 @@ namespace fcitx {
         }
     }
 
-    void LotusState::handleDoubleHyphenReplacement() {
+    void TypingState::handleDoubleHyphenReplacement() {
         // Em-dash (U+2014)
         std::string emDash = "—";
         performReplacement("-", emDash);
         NGOSEN_INFO("Commit: — (em-dash)");
     }
 
-    void LotusState::handleOffModeMacro(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+    void TypingState::handleOffModeMacro(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
             keyEvent.passToApp();
             return;
         }
 
         if (ngosen::key::isBackspace(currentSym)) {
-            EngineProcessKeyEvent(lotusEngine_.handle(), ngosen::key::BackSpace, 0);
-            auto preeditC = ngosen::UniqueCPtr<char>(EnginePullPreedit(lotusEngine_.handle()));
+            EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::BackSpace, 0);
+            auto preeditC = ngosen::UniqueCPtr<char>(EnginePullPreedit(bambooEngine_.handle()));
             oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
             keyEvent.passToApp();
             return;
@@ -49,7 +49,7 @@ namespace fcitx {
 
         if (currentSym == ngosen::key::Return) {
             if (!oldPreBuffer_.empty()) {
-                ResetEngine(lotusEngine_.handle());
+                ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
             }
             keyEvent.passToApp();
@@ -58,9 +58,9 @@ namespace fcitx {
 
         std::string keyUtf8 = host_->keyText(currentSym);
 
-        bool        processed = EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.states()) != 0U;
+        bool        processed = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
-        auto        commitPtr = ngosen::UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
+        auto        commitPtr = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
         if (processed && commitPtr && (*commitPtr.get() != 0)) {
             std::string commitStr = commitPtr.get();
 
@@ -106,7 +106,7 @@ namespace fcitx {
         if (processed || (commitPtr && (*commitPtr.get() != 0))) {
             // Engine processed the key (building shadow state)
             // OR engine rejected the key but committed old text (non-processable key)
-            auto preeditPtr = ngosen::UniqueCPtr<char>(EnginePullPreedit(lotusEngine_.handle()));
+            auto preeditPtr = ngosen::UniqueCPtr<char>(EnginePullPreedit(bambooEngine_.handle()));
             oldPreBuffer_   = (preeditPtr && (*preeditPtr.get() != 0)) ? preeditPtr.get() : "";
             if (!processed) {
                 // Engine committed old text but didn't process the new key → forward the key
@@ -117,14 +117,14 @@ namespace fcitx {
         } else {
             // Engine didn't handle this key
             if (!oldPreBuffer_.empty()) {
-                ResetEngine(lotusEngine_.handle());
+                ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
             }
             keyEvent.passToApp();
         }
     }
 
-    bool LotusState::isMacroSkipModifier(uint32_t sym) const {
+    bool TypingState::isMacroSkipModifier(uint32_t sym) const {
         const auto trigger = engine_->options().macroSkipKey;
         switch (trigger) {
             case ngosen::MacroSkipKey::Shift: return sym == ngosen::key::Shift_L || sym == ngosen::key::Shift_R;
@@ -135,7 +135,7 @@ namespace fcitx {
         }
     }
 
-    void LotusState::handleModifierTap(const ngosen::KeyPress& keyEvent) {
+    void TypingState::handleModifierTap(const ngosen::KeyPress& keyEvent) {
         const auto trigger = engine_->options().macroSkipKey;
         if (trigger == ngosen::MacroSkipKey::None || !engine_->options().enableMacro) {
             return;
@@ -148,7 +148,7 @@ namespace fcitx {
             if (tracking_modifier_tap_) {
                 tracking_modifier_tap_ = false;
                 macro_skip_            = true;
-                EngineSetMacroEnabled(lotusEngine_.handle(), 0);
+                EngineSetMacroEnabled(bambooEngine_.handle(), 0);
                 NGOSEN_INFO("Macro skip enabled for next word");
             }
         } else {
@@ -156,28 +156,28 @@ namespace fcitx {
         }
     }
 
-    void LotusState::cancelModifierTap() {
+    void TypingState::cancelModifierTap() {
         tracking_modifier_tap_ = false;
     }
 
-    void LotusState::reEnableMacroAfterWordEnd() {
+    void TypingState::reEnableMacroAfterWordEnd() {
         if (!macro_skip_) {
             return;
         }
-        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(lotusEngine_.handle()));
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         if (preedit && *preedit.get() != 0) {
             return;
         }
         macro_skip_ = false;
-        EngineSetMacroEnabled(lotusEngine_.handle(), engine_->options().enableMacro ? 1 : 0);
+        EngineSetMacroEnabled(bambooEngine_.handle(), engine_->options().enableMacro ? 1 : 0);
     }
 
-    void LotusState::resetMacroSkip() {
+    void TypingState::resetMacroSkip() {
         tracking_modifier_tap_ = false;
         macro_skip_            = false;
-        if (lotusEngine_) {
-            EngineSetMacroEnabled(lotusEngine_.handle(), engine_->options().enableMacro ? 1 : 0);
+        if (bambooEngine_) {
+            EngineSetMacroEnabled(bambooEngine_.handle(), engine_->options().enableMacro ? 1 : 0);
         }
     }
 
-} // namespace fcitx
+} // namespace ngosen

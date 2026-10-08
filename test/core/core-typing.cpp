@@ -50,7 +50,7 @@ namespace {
         return field;
     }
 
-    bool press(fcitx::LotusState& state, uint32_t sym) {
+    bool press(ngosen::TypingState& state, uint32_t sym) {
         FakeKey down(sym);
         state.keyEvent(down);
         FakeKey up(sym, true);
@@ -59,7 +59,7 @@ namespace {
     }
 
     // Types "tie" as plain keys, with the app reporting each letter when it reports surrounding text.
-    void typeTie(fcitx::LotusState& state, FakeHost& host, FakeLoop& loop, bool appReports) {
+    void typeTie(ngosen::TypingState& state, FakeHost& host, FakeLoop& loop, bool appReports) {
         host.setSurrounding("", 0);
         const std::string word = "tie";
         for (size_t i = 0; i < word.size(); ++i) {
@@ -73,11 +73,11 @@ namespace {
 
     void testPreeditTelex() {
         realMode = ngosen::Mode::Preedit;
-        FakeLoop          loop;
-        FakeResources     resources;
-        auto              owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
-        FakeHost*         host  = owned.get();
-        fcitx::LotusState state(&resources, std::move(owned));
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
 
         for (char c : std::string("vieetj"))
             press(state, static_cast<uint32_t>(c));
@@ -90,13 +90,13 @@ namespace {
 
     void testSenForwards(const std::string& frontend, bool surroundingText) {
         realMode = ngosen::Mode::Sen;
-        FakeLoop          loop;
-        FakeResources     resources;
-        Field             field = makeField(frontend, surroundingText);
+        FakeLoop            loop;
+        FakeResources       resources;
+        Field               field = makeField(frontend, surroundingText);
 
-        auto              owned = std::make_unique<FakeHost>(loop, field);
-        FakeHost*         host  = owned.get();
-        fcitx::LotusState state(&resources, std::move(owned));
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
 
         typeTie(state, *host, loop, surroundingText);
         const std::string what = "sen " + frontend + ": ";
@@ -122,11 +122,11 @@ namespace {
     // GTK4 drops forwarded keys, so the deletion goes through the surrounding text.
     void testGtk4DeletesSurrounding() {
         realMode = ngosen::Mode::Sen;
-        FakeLoop          loop;
-        FakeResources     resources;
-        auto              owned = std::make_unique<FakeHost>(loop, makeField("dbus", true));
-        FakeHost*         host  = owned.get();
-        fcitx::LotusState state(&resources, std::move(owned));
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("dbus", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
 
         typeTie(state, *host, loop, true);
         press(state, static_cast<uint32_t>('e'));
@@ -140,11 +140,11 @@ namespace {
     // SDL takes only commits and preedit; forwarded backspaces never reach it.
     void testSdlGetsNoForwardedBackspace() {
         realMode = ngosen::Mode::Sen;
-        FakeLoop          loop;
-        FakeResources     resources;
-        auto              owned = std::make_unique<FakeHost>(loop, makeField("ibus", false, "SDL_App"));
-        FakeHost*         host  = owned.get();
-        fcitx::LotusState state(&resources, std::move(owned));
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", false, "SDL_App"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
 
         for (char c : std::string("tiee"))
             press(state, static_cast<uint32_t>(c));

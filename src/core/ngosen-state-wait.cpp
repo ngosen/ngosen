@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-// LotusState: sending backspaces and waiting for the app to apply them.
+// Sending backspaces and waiting for the app to apply them.
 #include "ngosen-state.h"
 #include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
@@ -18,15 +18,15 @@
 #include <algorithm>
 #include <string>
 
-namespace fcitx {
+namespace ngosen {
 
-    void LotusState::sendBackspaceKeys(int count) const {
+    void TypingState::sendBackspaceKeys(int count) const {
         if (!host_->pressSystemKeys(count)) {
             NGOSEN_ERROR("Cannot send backspaces: XTEST is unavailable");
         }
     }
 
-    bool LotusState::deletionLooksDone() const {
+    bool TypingState::deletionLooksDone() const {
         const auto s = host_->surrounding();
         if (!s.isValid()) {
             return false;
@@ -70,7 +70,7 @@ namespace fcitx {
         return endsWith(before, surr_wait_prefix_);
     }
 
-    bool LotusState::handleUInputKeyPress(ngosen::KeyPress& event, uint32_t currentSym, int sleepTime) {
+    bool TypingState::handleUInputKeyPress(ngosen::KeyPress& event, uint32_t currentSym, int sleepTime) {
         if (!is_deleting_.load()) {
             return false;
         }
@@ -86,7 +86,7 @@ namespace fcitx {
 
     // Waits until the app has applied the backspaces, then commits. `event` is the returning sentinel
     // backspace on the XTEST path, or null when the backspaces were forwarded.
-    bool LotusState::waitForDeletion(ngosen::KeyPress* event, int sleepTime) {
+    bool TypingState::waitForDeletion(ngosen::KeyPress* event, int sleepTime) {
         // Some apps (Konsole) declare surrounding text but always send it empty; nothing can match,
         // so use the sleeping path.
         const bool emptySnapshot = host_->surrounding().text().empty();
@@ -213,25 +213,25 @@ namespace fcitx {
         return true;
     }
 
-    void LotusState::forwardBackspaces(int count) {
+    void TypingState::forwardBackspaces(int count) {
         for (int i = 0; i < count; ++i) {
             host_->forwardKey(ngosen::EditKey::BackSpace, false);
             host_->forwardKey(ngosen::EditKey::BackSpace, true);
         }
     }
 
-    bool LotusState::canSendBackspaces() const {
+    bool TypingState::canSendBackspaces() const {
         return ngosen::forwardsBackspaces(host_->field()) || xtestAvailable();
     }
 
-    void LotusState::deferTimedCommit(uint64_t deliverAtUs) {
+    void TypingState::deferTimedCommit(uint64_t deliverAtUs) {
         if (surr_wait_timer_ && deliverAtUs > surr_wait_deliver_at_) {
             surr_wait_deliver_at_ = deliverAtUs;
             surr_wait_timer_->rearm(deliverAtUs);
         }
     }
 
-    void LotusState::surroundingUpdated() {
+    void TypingState::surroundingUpdated() {
         // A wait that starts while this report is handled sees only the next report.
         const bool waiting    = surr_wait_watching_;
         const bool overtyping = overtype_watching_;
@@ -243,7 +243,7 @@ namespace fcitx {
             onOvertypeSurroundingUpdated();
     }
 
-    void LotusState::onWaitSurroundingUpdated() {
+    void TypingState::onWaitSurroundingUpdated() {
         if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
             return;
         }
@@ -267,7 +267,7 @@ namespace fcitx {
         // just typed, which must not go into the log.
     }
 
-    void LotusState::onOvertypeSurroundingUpdated() {
+    void TypingState::onOvertypeSurroundingUpdated() {
         if (!overtype_pending_ || !is_deleting_.load()) {
             return;
         }
@@ -286,7 +286,7 @@ namespace fcitx {
     constexpr uint64_t CaretSettleUs = 30000;
 
     // Wayland apps report a click only as a cursor move; the IM gets no reset or mouse event.
-    void LotusState::checkCursorJump() {
+    void TypingState::checkCursorJump() {
         const auto s = host_->surrounding();
         if (!s.isValid()) {
             hasLastSurrounding_ = false;
@@ -313,9 +313,9 @@ namespace fcitx {
         g_mouse_clicked.store(true, std::memory_order_release);
     }
 
-    void LotusState::noteCommit(const std::string& text) {
+    void TypingState::noteCommit(const std::string& text) {
         unreportedCommitLength_ += ngosen::utf8::length(text);
         lastInputAtUs_ = ngosen::monotonicUs();
     }
 
-} // namespace fcitx
+} // namespace ngosen

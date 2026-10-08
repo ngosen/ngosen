@@ -9,11 +9,10 @@
 
 /**
  * @file ngosen-state.h
- * @brief Input context state management for fcitx5-lotus.
+ * @brief The typing state of one input field.
  */
 
-#ifndef _FCITX5_LOTUS_STATE_H_
-#define _FCITX5_LOTUS_STATE_H_
+#pragma once
 
 #include "ngosen-go-object.h"
 #include "emoji-entry.h"
@@ -40,21 +39,23 @@ struct KeyEntry {
 
 namespace fcitx {
     class LotusEngine;
-    class SurroundingText;
+}
+
+namespace ngosen {
 
     /**
-     * @brief Per-input-context state for Lotus input method.
+     * @brief Per-field typing state.
      *
      * Manages the input state, buffers, and mode-specific handling for each input context.
      */
-    class LotusState final {
+    class TypingState final {
       public:
         /**
          * @brief Constructs a new state instance.
          * @param engine What all fields share through the engine.
          * @param host The input field this state types into.
          */
-        LotusState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host);
+        TypingState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host);
 
         /**
          * @brief Initializes the bamboo engine for this state.
@@ -106,7 +107,7 @@ namespace fcitx {
          * @return True if no history.
          */
         bool isEmptyHistory() const;
-        friend class LotusEngine;
+        friend class fcitx::LotusEngine;
 
         /**
          * @brief Commits text still waiting for the app before the input context loses focus.
@@ -118,7 +119,7 @@ namespace fcitx {
         static constexpr size_t  MAX_BUFFERED_KEYS = 50;
 
         ngosen::EngineResources* engine_;
-        CGoObject                lotusEngine_;
+        CGoObject                bambooEngine_;
         std::string              oldPreBuffer_;
         bool                     hasHistory_              = false;
         int                      expected_backspaces_     = 0;
@@ -346,6 +347,4 @@ namespace fcitx {
         std::unique_ptr<ngosen::Host> host_;
     };
 
-} // namespace fcitx
-
-#endif // _FCITX5_LOTUS_STATE_H_
+} // namespace ngosen

@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-// LotusState: replacing the typed word in the app, by backspaces or by selecting over it.
+// TypingState: replacing the typed word in the app, by backspaces or by selecting over it.
 #include "ngosen-state.h"
 #include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
@@ -19,7 +19,7 @@
 #include <string>
 #include <thread>
 
-namespace fcitx {
+namespace ngosen {
 
     // Gives up on a selection whose Shift release never comes back.
     constexpr uint64_t XTestSelectTimeoutUs = 500000;
@@ -94,7 +94,7 @@ namespace fcitx {
         }
     } // namespace
 
-    bool LotusState::isAutofillCertain(const ngosen::Surrounding& s) {
+    bool TypingState::isAutofillCertain(const ngosen::Surrounding& s) {
         if (!s.isValid() || oldPreBuffer_.empty()) {
             return false;
         }
@@ -150,7 +150,7 @@ namespace fcitx {
 
     // The wait returns to the event loop, so focus can move while a commit is pending. deactivate()
     // clears is_deleting_ and a later timer would drop the text, so commit now.
-    void LotusState::flushPendingReplacement() {
+    void TypingState::flushPendingReplacement() {
         if (!surr_wait_pending_) {
             return;
         }
@@ -201,7 +201,7 @@ namespace fcitx {
         }
     } // namespace
 
-    void LotusState::deliverAfterSettle(const char* reason, bool fromTimer) {
+    void TypingState::deliverAfterSettle(const char* reason, bool fromTimer) {
         const auto snapshot = host_->surrounding();
         int        settleMs = engine_->options().waitSurroundingSettleMs;
         if (settleMs <= 0 || !looksLikeMessengerComposer(snapshot)) {
@@ -228,7 +228,7 @@ namespace fcitx {
         });
     }
 
-    void LotusState::finishReplacement(const char* reason, bool fromTimer) {
+    void TypingState::finishReplacement(const char* reason, bool fromTimer) {
         const auto elapsedMs = (ngosen::monotonicUs() - surr_wait_started_at_) / 1000;
         NGOSEN_INFO("Surr wait " + std::string(reason) + " after " + std::to_string(elapsedMs) + " ms");
         if (std::string(reason) == "timeout") {
@@ -281,7 +281,7 @@ namespace fcitx {
         }
     }
 
-    void LotusState::flushDeferredCommit() {
+    void TypingState::flushDeferredCommit() {
         if (!deferred_commit_pending_) {
             return;
         }
@@ -291,11 +291,11 @@ namespace fcitx {
         replayBufferedKeys(std::move(text));
     }
 
-    void LotusState::sendSelectKeys(int charCount) const {
+    void TypingState::sendSelectKeys(int charCount) const {
         sendBackspaceKeys(-charCount);
     }
 
-    void LotusState::selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest) {
+    void TypingState::selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest) {
         is_deleting_.store(true, std::memory_order_release);
         overtype_via_xtest_      = viaXTest;
         overtype_shift_released_ = false;
@@ -330,7 +330,7 @@ namespace fcitx {
     // The field did not report the selection in time. Do not type over it: the cursor has moved and
     // the text would land in the wrong place. Move the cursor back and drop this replacement; the
     // user loses one tone mark and sees it immediately.
-    void LotusState::abandonOvertype() {
+    void TypingState::abandonOvertype() {
         const auto snapshot     = host_->surrounding();
         int        rightPresses = 1; // a real but unreported selection collapses with one Right
         if (overtype_had_snapshot_ && snapshot.isValid() && snapshot.cursor() == snapshot.anchor() &&
@@ -348,14 +348,14 @@ namespace fcitx {
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         hasHistory_              = false;
-        ResetEngine(lotusEngine_.handle());
+        ResetEngine(bambooEngine_.handle());
         oldPreBuffer_.clear();
         is_deleting_.store(false);
         // Keys typed during the wait are user input; the cursor is back, so replay them.
         replayBufferedKeys();
     }
 
-    void LotusState::finishOvertype(const char* reason, bool fromTimer) {
+    void TypingState::finishOvertype(const char* reason, bool fromTimer) {
         const auto elapsedMs = (ngosen::monotonicUs() - overtype_started_at_) / 1000;
         NGOSEN_INFO("Overtype " + std::string(reason) + " after " + std::to_string(elapsedMs) + " ms");
         overtype_pending_   = false;
@@ -371,7 +371,7 @@ namespace fcitx {
         replayBufferedKeys(std::move(text));
     }
 
-    void LotusState::performReplacement(const std::string& deletedPart, const std::string& addedPart) {
+    void TypingState::performReplacement(const std::string& deletedPart, const std::string& addedPart) {
         NGOSEN_INFO("Perform replacement: " + deletedPart + " -> " + addedPart); //NOLINT
         current_backspace_count_ = 0;
         pending_commit_string_   = addedPart;
@@ -482,7 +482,7 @@ namespace fcitx {
         NGOSEN_INFO("Send " + std::to_string(expected_backspaces_) + " backspaces");
     }
 
-    void LotusState::replayBufferedKeys(std::string committed) {
+    void TypingState::replayBufferedKeys(std::string committed) {
         // Under GNOME, mutter sends one text-input "done" per main-loop turn and clients keep only the
         // last commit_string before it, so back-to-back commits lose all but the last ("đ" then "i"
         // shows "i"). Send the replacement and the replayed keys as one commit.
@@ -509,9 +509,9 @@ namespace fcitx {
                 continue;
             }
 
-            bool processed = EngineProcessKeyEvent(lotusEngine_.handle(), sym, state) != 0U;
+            bool processed = EngineProcessKeyEvent(bambooEngine_.handle(), sym, state) != 0U;
 
-            auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
+            auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
             if (commitF && (*commitF.get() != 0)) {
                 std::string commitStr = commitF.get();
                 std::string deletedPart;
@@ -528,7 +528,7 @@ namespace fcitx {
                     flush();
                     performReplacement(deletedPart, addedPart);
                     hasHistory_ = false;
-                    ResetEngine(lotusEngine_.handle());
+                    ResetEngine(bambooEngine_.handle());
                     oldPreBuffer_.clear();
                     return;
                 }
@@ -537,7 +537,7 @@ namespace fcitx {
                 }
 
                 hasHistory_ = false;
-                ResetEngine(lotusEngine_.handle());
+                ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
                 continue;
             }
@@ -550,7 +550,7 @@ namespace fcitx {
             hasHistory_ = true;
             realtextLen.fetch_add(1, std::memory_order_acq_rel);
 
-            ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
+            ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
             std::string              preeditStr = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
 
             std::string              deletedPart;
@@ -588,4 +588,4 @@ namespace fcitx {
         NGOSEN_INFO("Replay buffered keys done");
     }
 
-} // namespace fcitx
+} // namespace ngosen

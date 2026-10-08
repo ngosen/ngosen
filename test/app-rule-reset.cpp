@@ -4,7 +4,7 @@
  * @brief Headless regression test: a per-app mode rule must survive a config
  *        reload / new input context for the focused window.
  *
- * Bug: LotusState::setEngine() wrote the global `realMode` from the global Mode
+ * Bug: TypingState::setEngine() wrote the global `realMode` from the global Mode
  * option without resolving the per-app rule.  setEngine() runs on every new
  * input context and for every input context on config reload (refreshEngine),
  * so a focused app with its own rule (e.g. Off) silently dropped back to the

@@ -12,8 +12,7 @@
  * @brief Owners for objects and strings handed over by the Go composition engine.
  */
 
-#ifndef _FCITX5_LOTUS_H_
-#define _FCITX5_LOTUS_H_
+#pragma once
 
 #include "bamboo-core.h"
 #include <cstdlib>
@@ -31,13 +30,6 @@ namespace ngosen {
     // Owns memory the Go side handed over (it allocates with malloc).
     template <typename T>
     using UniqueCPtr = std::unique_ptr<T, FreeDeleter>;
-
-} // namespace ngosen
-
-namespace fcitx {
-
-    class LotusEngine;
-    class LotusState;
 
     /**
      * @brief RAII wrapper for CGo handles.
@@ -130,6 +122,4 @@ namespace fcitx {
         std::optional<uintptr_t> handle_;
     };
 
-} // namespace fcitx
-
-#endif // _FCITX5_LOTUS_H_
+} // namespace ngosen

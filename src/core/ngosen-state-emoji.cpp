@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-// LotusState: the emoji picker mode.
+// TypingState: the emoji picker mode.
 #include "ngosen-state.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
@@ -16,9 +16,9 @@
 #include <algorithm>
 #include <string>
 
-namespace fcitx {
+namespace ngosen {
 
-    void LotusState::updateEmojiPageStatus() {
+    void TypingState::updateEmojiPageStatus() {
         const auto list = host_->candidates();
         if (!list || list->total == 0) {
             return;
@@ -37,7 +37,7 @@ namespace fcitx {
         host_->setStatus(status);
     }
 
-    void LotusState::pickEmoji(const EmojiEntry& entry) {
+    void TypingState::pickEmoji(const EmojiEntry& entry) {
         host_->commitText(entry.output);
         NGOSEN_INFO("Emoji committed: " + entry.output);
 
@@ -51,7 +51,7 @@ namespace fcitx {
         updateEmojiPreedit();
     }
 
-    void LotusState::handleEmojiMode(ngosen::KeyPress& keyEvent) {
+    void TypingState::handleEmojiMode(ngosen::KeyPress& keyEvent) {
         const uint32_t currentSym      = keyEvent.sym();
         bool           isCtrlBackspace = ngosen::key::isBackspace(currentSym) && ((keyEvent.states() & ngosen::modifier::Ctrl) != 0U);
 
@@ -190,7 +190,7 @@ namespace fcitx {
             }
         }
     }
-    void LotusState::updateEmojiPreedit() {
+    void TypingState::updateEmojiPreedit() {
         if (emojiBuffer_.empty()) {
             emojiCandidates_ = engine_->emojiHistory();
             if (emojiCandidates_.empty()) {
@@ -231,4 +231,4 @@ namespace fcitx {
         host_->refreshPanel();
     }
 
-} // namespace fcitx
+} // namespace ngosen

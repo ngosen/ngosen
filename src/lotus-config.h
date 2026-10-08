@@ -211,7 +211,7 @@ namespace fcitx {
     FCITX_CONFIGURATION(
         lotusConfig,
 
-        OptionWithAnnotation<LotusMode, ngosen::ModeI18NAnnotation>                                      mode{this, "Mode", _("Mode"), LotusMode::Preedit};
+        OptionWithAnnotation<LotusMode, ngosen::ModeI18NAnnotation>                                      mode{this, "Mode", _("Mode"), LotusMode::Sen};
         Option<std::string, InputMethodConstrain, DefaultMarshaller<std::string>, InputMethodAnnotation> inputMethod{
             this, "InputMethod", _("Input Method"), "Telex", InputMethodConstrain(&inputMethod), {}, InputMethodAnnotation()};
         OptionWithAnnotation<std::string, StringListAnnotation> outputCharset{this, "OutputCharset", _("Output Charset"), "Unicode", {}, {}, StringListAnnotation()};

@@ -38,6 +38,14 @@ int main() {
 
     // lotus.conf on disk is read by the engine constructor: the upgrade path of an installed user.
     const auto confFile = std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf/lotus.conf";
+
+    // A fresh install has no lotus.conf yet.
+    std::filesystem::remove(confFile);
+    {
+        TestInstance       freshInstance;
+        fcitx::LotusEngine freshEngine(&freshInstance.instance);
+        check("a fresh install starts in Sen", freshEngine.config().mode.value() == fcitx::LotusMode::Sen);
+    }
     {
         std::ofstream file(confFile, std::ios::trunc);
         if (!file.is_open()) {

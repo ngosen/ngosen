@@ -274,6 +274,12 @@ namespace fcitx {
             auto& commit = static_cast<CommitStringEvent&>(event);
             commit.inputContext()->propertyFor(&factory_)->noteCommit(commit.text());
         });
+        // A ctx_ rule names a context address, which a later window may reuse.
+        contextDestroyedWatcher_ = instance_->watchEvent(EventType::InputContextDestroyed, EventWatcherPhase::Default, [this](Event& event) {
+            auto appName = getProgramName(static_cast<InputContextEvent&>(event).inputContext());
+            if (isStartsWith(appName, "ctx_"))
+                clearAppRule(appName);
+        });
 
         auto& uiManager = instance_->userInterfaceManager();
 

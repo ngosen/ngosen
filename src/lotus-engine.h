@@ -245,6 +245,7 @@ namespace fcitx {
         // A Wayland click reaches the IM only as a surrounding text update.
         std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> commitWatcher_;
+        std::unique_ptr<HandlerTableEntry<EventHandler>> contextDestroyedWatcher_;
 
         /**
          * @brief Refreshes the bamboo engine with current settings.

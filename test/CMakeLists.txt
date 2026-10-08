@@ -57,6 +57,7 @@ endfunction()
 
 add_lotus_headless_test(preedit_lifecycle preedit-lifecycle.cpp "integration;preedit")
 add_lotus_headless_test(app_rule_reset app-rule-reset.cpp "integration;apprule")
+add_lotus_headless_test(ctx_rule_cleanup ctx-rule-cleanup.cpp "integration;apprule")
 add_lotus_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp "integration;apprule;gnome")
 add_lotus_headless_test(mode_name_migration mode-name-migration.cpp "integration;mode")
 add_lotus_headless_test(messenger_defaults messenger-defaults.cpp "integration;mode")

@@ -32,6 +32,9 @@ namespace fcitx {
     // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
     // surrounding text report the commit waits this long for them.
     constexpr uint64_t ForwardWaitUs = 15000;
+    // Chromium over XIM handles forwarded keys on its own schedule and applies a commit that arrives
+    // first before backspaces it has not handled yet.
+    constexpr uint64_t XimForwardWaitUs = 60000;
     // Chromium asks the input method about each key before it handles the key, so our Shift release
     // coming back does not mean the Left presses before it have moved the selection yet.
     constexpr uint64_t XTestSelectSettleUs = 50000;
@@ -1062,7 +1065,7 @@ namespace fcitx {
             waitForDeletion(nullptr, 4);
             // XIM, IBus and D-Bus clients queue forwarded keys, and the commit can overtake them.
             if (host_->field().frontend != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
-                deferTimedCommit(surr_wait_started_at_ + ForwardWaitUs);
+                deferTimedCommit(surr_wait_started_at_ + (host_->field().frontend == "xim" ? XimForwardWaitUs : ForwardWaitUs));
             }
             return;
         }
@@ -1383,6 +1386,15 @@ namespace fcitx {
         }
         if (keyEvent.isRelease())
             return;
+        // An XIM client sometimes sends a key we let through back to us instead of typing it. Let it
+        // through again rather than type it twice.
+        if (keyEvent.time() != 0 && keyEvent.time() == lastPressTime_ && keyEvent.code() == lastPressCode_) {
+            NGOSEN_INFO("App sent a key back: " + keyEvent.name());
+            keyEvent.passToApp();
+            return;
+        }
+        lastPressCode_ = keyEvent.code();
+        lastPressTime_ = keyEvent.time();
         if (const KeySym rawSym = static_cast<KeySym>(keyEvent.sym()); overtype_pending_ && (rawSym == FcitxKey_Left || rawSym == FcitxKey_Shift_L || rawSym == FcitxKey_Shift_R)) {
             // Our own Shift+Left selection: it must reach the app and must not be treated as the user
             // moving the cursor (that would discard the pending commit).
@@ -1464,7 +1476,7 @@ namespace fcitx {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
             NGOSEN_INFO("XIM handed back a forwarded backspace");
-            deferTimedCommit(ngosen::monotonicUs() + ForwardWaitUs);
+            deferTimedCommit(ngosen::monotonicUs() + XimForwardWaitUs);
             return;
         }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_) {

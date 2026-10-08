@@ -217,6 +217,14 @@ namespace ngosen {
         return event_.rawKey().check(FcitxKey_Shift_L) || event_.rawKey().check(FcitxKey_Shift_R);
     }
 
+    uint32_t FcitxKeyPress::code() const {
+        return static_cast<uint32_t>(event_.rawKey().code());
+    }
+
+    uint32_t FcitxKeyPress::time() const {
+        return static_cast<uint32_t>(event_.time());
+    }
+
     bool FcitxKeyPress::hasModifier() const {
         return event_.key().hasModifier();
     }

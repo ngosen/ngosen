@@ -24,6 +24,9 @@ namespace ngosen {
         virtual bool isModifier() const = 0;
         // Left or right Shift with no other modifier held.
         virtual bool isBareShift() const = 0;
+        // The hardware keycode, and the app's timestamp of the key in ms or 0 if it sends none.
+        virtual uint32_t code() const = 0;
+        virtual uint32_t time() const = 0;
 
         // These describe the key the app will get, which replaceSym changes.
         virtual bool        hasModifier() const  = 0;

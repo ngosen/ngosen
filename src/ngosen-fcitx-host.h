@@ -67,6 +67,8 @@ namespace ngosen {
         bool        isRelease() const override;
         bool        isModifier() const override;
         bool        isBareShift() const override;
+        uint32_t    code() const override;
+        uint32_t    time() const override;
         bool        hasModifier() const override;
         bool        isCursorMove() const override;
         std::string name() const override;

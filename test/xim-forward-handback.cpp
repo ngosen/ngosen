@@ -49,7 +49,7 @@ namespace {
     // libuv timers count whole milliseconds from the loop's cached time, so a commit may land up to
     // this much before its deadline. Only lower bounds on time are checked.
     constexpr uint64_t ClockSlackUs = 3000;
-    constexpr uint64_t WaitUs       = 15000;
+    constexpr uint64_t WaitUs       = 60000;
 
     struct Harness {
         fcitx::Instance&               instance;
@@ -107,7 +107,7 @@ namespace {
         const uint64_t stoppedAt = h.pumpUntil(committed, replacedAt + 8000);
         if (committed()) {
             if (stoppedAt - replacedAt + ClockSlackUs < WaitUs) {
-                reportFailure("no commit before the 15 ms wait ends", ">= 15000 us", std::to_string(stoppedAt - replacedAt) + " us");
+                reportFailure("no commit before the wait ends", ">= " + std::to_string(WaitUs) + " us", std::to_string(stoppedAt - replacedAt) + " us");
                 return Outcome::Fail;
             }
             return Outcome::Stalled; // the machine stalled past the wait before the hand-back
@@ -125,13 +125,13 @@ namespace {
             return Outcome::Fail;
         }
         if (committedAt - handedBackAt + ClockSlackUs < WaitUs) {
-            reportFailure("commit at least 15 ms after the handed-back backspace", ">= 15000 us", std::to_string(committedAt - handedBackAt) + " us");
+            reportFailure("commit a full wait after the handed-back backspace", ">= " + std::to_string(WaitUs) + " us", std::to_string(committedAt - handedBackAt) + " us");
             return Outcome::Fail;
         }
         return Outcome::Pass;
     }
 
-    // Without a hand-back the commit still waits 15 ms, long enough for one that is on its way.
+    // Without a hand-back the commit still waits the full time, long enough for one on its way.
     bool waitWithoutHandBack(Harness& h) {
         if (!h.type(FcitxKey_space, true) || !h.type(FcitxKey_a, false))
             return false;
@@ -147,7 +147,7 @@ namespace {
             return false;
         }
         if (committedAt - replacedAt + ClockSlackUs < WaitUs) {
-            reportFailure("commit at least 15 ms after the forward", ">= 15000 us", std::to_string(committedAt - replacedAt) + " us");
+            reportFailure("commit a full wait after the forward", ">= " + std::to_string(WaitUs) + " us", std::to_string(committedAt - replacedAt) + " us");
             return false;
         }
         return true;

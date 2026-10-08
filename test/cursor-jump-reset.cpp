@@ -44,6 +44,8 @@ namespace {
                         eraseBeforeCursor();
                 }
                 report();
+                if (caretBounce_)
+                    bounceCaret();
                 pumpEventLoop(testInstance_.instance, 60);
                 if (context_->commits().size() > commits) {
                     for (size_t i = commits; i < context_->commits().size(); ++i) {
@@ -66,6 +68,12 @@ namespace {
 
         void repeatReport() {
             report();
+        }
+
+        // VS Code's EditContext on Wayland reports the typed char twice with the caret one step back,
+        // then the caret back in place, a few ms after each key.
+        void bounceCaretAfterKeys() {
+            caretBounce_ = true;
         }
 
         // Firefox in some web editors repeats the old state, then reports the cursor after a commit
@@ -92,6 +100,20 @@ namespace {
             text_.insert(cursor_, s);
             cursor_ += s.size();
         }
+        void bounceCaret() {
+            if (cursor_ == 0)
+                return;
+            size_t start = cursor_;
+            while (start > 0 && (static_cast<unsigned char>(text_[--start]) & 0xC0) == 0x80) {}
+            const std::string doubled = text_.substr(0, cursor_) + text_.substr(start);
+            const auto        back    = fcitx::utf8::length(text_.substr(0, start));
+            context_->surroundingText().setText(doubled, back, back);
+            context_->updateSurroundingText();
+            pumpEventLoop(testInstance_.instance, 1);
+            context_->surroundingText().setText(doubled, back + 1, back + 1);
+            context_->updateSurroundingText();
+            pumpEventLoop(testInstance_.instance, 1);
+        }
         // advance moves the reported cursor ahead of the text the app has applied so far.
         void report(size_t advance = 0) {
             const auto cursor = fcitx::utf8::length(text_.substr(0, cursor_)) + advance;
@@ -107,6 +129,7 @@ namespace {
         std::string                       text_;
         size_t                            cursor_           = 0;
         bool                              cursorBeforeText_ = false;
+        bool                              caretBounce_      = false;
     };
 
     bool expectText(const std::string& step, const FakeApp& app, const std::string& expected) {
@@ -152,6 +175,14 @@ int main() {
         app.reportCursorBeforeText();
         app.type("veef naaus");
         if (!expectText("type \"veef naaus\" with the cursor reported before the text", app, "về nấu" + zeroWidthTail))
+            return 1;
+    }
+    // A caret that bounces right after a key is the app settling, not a click.
+    {
+        FakeApp app(testInstance, engine, entry);
+        app.bounceCaretAfterKeys();
+        app.type("veef naaus");
+        if (!expectText("type \"veef naaus\" with the caret bouncing after each key", app, "về nấu"))
             return 1;
     }
     return 0;

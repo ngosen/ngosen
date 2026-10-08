@@ -185,6 +185,7 @@ namespace fcitx {
         unsigned int lastSurroundingAnchor_  = 0;
         bool         hasLastSurrounding_     = false;
         unsigned int unreportedCommitLength_ = 0;
+        uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
 
         // Last key press seen, to spot one the app sends twice.
         uint32_t lastPressCode_ = 0;

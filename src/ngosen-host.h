@@ -117,6 +117,8 @@ namespace ngosen {
         virtual void                         pickCandidate(int index)      = 0;
         // A line under the candidates, such as the page number.
         virtual void setStatus(const std::string& text) = 0;
+        // text in the user's language. Messages.sh collects the literals passed here.
+        virtual std::string translate(const char* text) const = 0;
 
         // Calls onTime at deadlineUs on the CLOCK_MONOTONIC clock, give or take accuracyUs, from the
         // input method's event loop. onTime returns false unless it rearmed the timer.

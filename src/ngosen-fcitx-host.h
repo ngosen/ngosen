@@ -46,6 +46,7 @@ namespace ngosen {
         void                         prevCandidatePage() override;
         void                         pickCandidate(int index) override;
         void                         setStatus(const std::string& text) override;
+        std::string                  translate(const char* text) const override;
 
         std::unique_ptr<Timer>       startTimer(uint64_t deadlineUs, uint64_t accuracyUs, std::function<bool(Timer&)> onTime) override;
 

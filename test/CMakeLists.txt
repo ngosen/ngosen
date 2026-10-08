@@ -114,7 +114,7 @@ add_bamboo_test(numeric_macro_case_preservation
 
 add_executable(emoji_backspace_utf8
     test-emoji-backspace.cpp
-    ${PROJECT_SOURCE_DIR}/src/lotus-utils.cpp
+    ${PROJECT_SOURCE_DIR}/src/ngosen-utf8.cpp
 )
 target_include_directories(emoji_backspace_utf8 PRIVATE
     ${PROJECT_SOURCE_DIR}/src

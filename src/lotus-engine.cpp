@@ -562,7 +562,7 @@ namespace fcitx {
         LOTUS_INFO("App name: " + appName);
 
         const LotusMode targetMode = getAppRule(appName);
-        LOTUS_INFO("Target mode: " + LotusModeI18NAnnotation::toString(targetMode));
+        LOTUS_INFO("Target mode: " + ngosen::ModeI18NAnnotation::toString(targetMode));
 
         updateCharsetAction(event.inputContext());
 
@@ -720,7 +720,7 @@ namespace fcitx {
             }
 
             if (selectedMode != std::nullopt) {
-                LOTUS_INFO("Selected mode: " + LotusModeI18NAnnotation::toString(selectedMode.value()));
+                LOTUS_INFO("Selected mode: " + ngosen::ModeI18NAnnotation::toString(selectedMode.value()));
                 if (selectedMode != LotusMode::Emoji) {
                     if (keySym == Key(*config_.shortcutDefault).sym()) { // Default Typing key
                         clearAppRule(currentConfigureApp_);

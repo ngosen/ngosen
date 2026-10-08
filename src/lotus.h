@@ -16,7 +16,23 @@
 #define _FCITX5_LOTUS_H_
 
 #include "bamboo-core.h"
+#include <cstdlib>
+#include <memory>
 #include <optional>
+
+namespace ngosen {
+
+    struct FreeDeleter {
+        void operator()(void* p) const {
+            std::free(p);
+        }
+    };
+
+    // Owns memory the Go side handed over (it allocates with malloc).
+    template <typename T>
+    using UniqueCPtr = std::unique_ptr<T, FreeDeleter>;
+
+} // namespace ngosen
 
 namespace fcitx {
 

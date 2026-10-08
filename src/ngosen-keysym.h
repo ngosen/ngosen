@@ -56,6 +56,11 @@ namespace ngosen::key {
     inline constexpr uint32_t Alt_R        = 0xffea;
     inline constexpr uint32_t Delete       = 0xffff;
 
+    // Some apps report BackSpace as the ASCII control code instead of the keysym.
+    inline bool isBackspace(uint32_t sym) {
+        return sym == BackSpace || sym == 8;
+    }
+
 } // namespace ngosen::key
 
 namespace ngosen::modifier {

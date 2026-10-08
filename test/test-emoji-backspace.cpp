@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Unit regression test for eraseLastUtf8Codepoint().
+// Unit regression test for ngosen::utf8::eraseLastCodepoint().
 //
 // The backspace branch in LotusState::handleEmojiMode must erase the
 // last *codepoint* (1-4 UTF-8 bytes) so the preedit buffer stays valid
-// UTF-8. The helper that does the work is eraseLastUtf8Codepoint() in
-// lotus-utils; this test calls that same helper, so the test cannot
+// UTF-8. The helper that does the work is eraseLastCodepoint() in
+// ngosen-utf8; this test calls that same helper, so the test cannot
 // drift from production behavior.
 //
 // Each case asserts both:
 //   - the buffer is truncated to the expected substring, and
 //   - the result is well-formed UTF-8 (using fcitx::utf8::validate).
 //
-#include "lotus-utils.h"
+#include "ngosen-utf8.h"
 
 #include <cstdio>
 #include <string>
@@ -55,7 +55,7 @@ int main() {
     int failures = 0;
     for (const auto& tc : cases) {
         std::string buffer = tc.input;
-        eraseLastUtf8Codepoint(buffer);
+        ngosen::utf8::eraseLastCodepoint(buffer);
         const bool matches = (buffer == tc.expected);
         const bool valid   = buffer.empty() || fcitx::utf8::validate(buffer);
         const bool ok      = matches && valid;

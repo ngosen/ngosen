@@ -7,7 +7,6 @@
  *
  */
 #include "lotus-state.h"
-#include "lotus-utils.h"
 #include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
 #include "ngosen-keysym.h"
@@ -220,14 +219,14 @@ namespace fcitx {
     void LotusState::handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.states()) != 0U)
             keyEvent.accept();
-        if (auto commit = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()))) {
+        if (auto commit = ngosen::UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()))) {
             if (commit && (*commit.get() != 0)) {
                 NGOSEN_INFO("Commit: " + std::string(commit.get()));
                 host_->commitText(commit.get());
             }
         }
         host_->resetPanel();
-        UniqueCPtr<char> preedit(EnginePullPreedit(lotusEngine_.handle()));
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(lotusEngine_.handle()));
         if (preedit && (*preedit.get() != 0)) {
             std::string_view view = preedit.get();
             host_->showPreedit(ngosen::utf8::validate(view) ? std::string(view) : std::string(), false);
@@ -251,7 +250,7 @@ namespace fcitx {
         int         currentPage = list->page + 1;
         int         totalPages  = (totalItems + pageSize - 1) / pageSize;
 
-        std::string status = _("Page ") + std::to_string(currentPage) + "/" + std::to_string(totalPages);
+        std::string status = host_->translate("Page ") + std::to_string(currentPage) + "/" + std::to_string(totalPages);
         host_->setStatus(status);
     }
 
@@ -271,7 +270,7 @@ namespace fcitx {
 
     void LotusState::handleEmojiMode(ngosen::KeyPress& keyEvent) {
         const uint32_t currentSym      = keyEvent.sym();
-        bool           isCtrlBackspace = isBackspace(currentSym) && ((keyEvent.states() & ngosen::modifier::Ctrl) != 0U);
+        bool           isCtrlBackspace = ngosen::key::isBackspace(currentSym) && ((keyEvent.states() & ngosen::modifier::Ctrl) != 0U);
 
         if (keyEvent.hasModifier() && !isCtrlBackspace) {
             keyEvent.passToApp();
@@ -353,12 +352,12 @@ namespace fcitx {
             }
         }
 
-        if (isBackspace(currentSym)) {
+        if (ngosen::key::isBackspace(currentSym)) {
             if (!emojiBuffer_.empty()) {
                 if (isCtrlBackspace) {
                     emojiBuffer_.clear();
                 } else {
-                    eraseLastUtf8Codepoint(emojiBuffer_);
+                    ngosen::utf8::eraseLastCodepoint(emojiBuffer_);
                 }
                 keyEvent.accept();
             } else {
@@ -640,7 +639,7 @@ namespace fcitx {
         if (!is_deleting_.load()) {
             return false;
         }
-        if (isBackspace(currentSym)) {
+        if (ngosen::key::isBackspace(currentSym)) {
             current_backspace_count_ += 1;
             if (current_backspace_count_ < expected_backspaces_) {
                 return false; // Allow intermediate backspaces to reach the app to clear autofill/old text.
@@ -1014,7 +1013,7 @@ namespace fcitx {
             // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
             // the autofill shape on Firefox.
             const bool isFirefoxAddressBar = ngosen::hidesAddressBarFlag(host_->field()) && textAfterCursorLooksLikeUrl(surrounding);
-            const bool checkAutofill       = realMode != LotusMode::Sen || host_->field().url || isFirefoxAddressBar;
+            const bool checkAutofill       = realMode != ngosen::Mode::Sen || host_->field().url || isFirefoxAddressBar;
             if (checkAutofill) {
                 // Enable Autofill detection for all frontends (Wayland/IBus).
                 // This fixes the "toôi" duplication bug in Chromium-based search bars.
@@ -1137,11 +1136,11 @@ namespace fcitx {
             return;
         }
 
-        if (isBackspace(currentSym) || currentSym == ngosen::key::Return) {
-            if (isBackspace(currentSym)) {
+        if (ngosen::key::isBackspace(currentSym) || currentSym == ngosen::key::Return) {
+            if (ngosen::key::isBackspace(currentSym)) {
                 hasHistory_ = true;
                 EngineProcessKeyEvent(lotusEngine_.handle(), ngosen::key::BackSpace, 0);
-                UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
+                ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
                 oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
             } else {
                 hasHistory_ = false;
@@ -1160,12 +1159,12 @@ namespace fcitx {
 
         bool processed = EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
-        auto commitF = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
+        auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
         if (commitF && (*commitF.get() != 0)) {
             std::string commitStr = commitF.get();
             std::string deletedPart;
             std::string addedPart;
-            compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
+            ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
 
             if (!deletedPart.empty()) {
                 performReplacement(deletedPart, addedPart);
@@ -1198,7 +1197,7 @@ namespace fcitx {
         }
 
         if (!processed) {
-            UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
+            ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
             if (!preeditC || (*preeditC.get() == 0)) {
                 hasHistory_ = false;
                 ResetEngine(lotusEngine_.handle());
@@ -1211,13 +1210,13 @@ namespace fcitx {
         hasHistory_ = true;
         realtextLen.fetch_add(1, std::memory_order_acq_rel);
 
-        UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
-        std::string      preeditStr = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
+        std::string              preeditStr = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
 
-        std::string      deletedPart;
-        std::string      addedPart;
+        std::string              deletedPart;
+        std::string              addedPart;
 
-        if (compareAndSplitStrings(oldPreBuffer_, preeditStr, deletedPart, addedPart) != 0) {
+        if (ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, preeditStr, deletedPart, addedPart) != 0) {
             if (deletedPart.empty()) {
                 bool isCommit           = false;
                 bool wasAutoCapitalized = (currentSym != keyEvent.sym());
@@ -1276,9 +1275,9 @@ namespace fcitx {
             return;
         }
 
-        if (isBackspace(currentSym)) {
+        if (ngosen::key::isBackspace(currentSym)) {
             EngineProcessKeyEvent(lotusEngine_.handle(), ngosen::key::BackSpace, 0);
-            auto preeditC = UniqueCPtr<char>(EnginePullPreedit(lotusEngine_.handle()));
+            auto preeditC = ngosen::UniqueCPtr<char>(EnginePullPreedit(lotusEngine_.handle()));
             oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
             keyEvent.passToApp();
             return;
@@ -1297,7 +1296,7 @@ namespace fcitx {
 
         bool        processed = EngineProcessKeyEvent(lotusEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
-        auto        commitPtr = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
+        auto        commitPtr = ngosen::UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
         if (processed && commitPtr && (*commitPtr.get() != 0)) {
             std::string commitStr = commitPtr.get();
 
@@ -1343,7 +1342,7 @@ namespace fcitx {
         if (processed || (commitPtr && (*commitPtr.get() != 0))) {
             // Engine processed the key (building shadow state)
             // OR engine rejected the key but committed old text (non-processable key)
-            auto preeditPtr = UniqueCPtr<char>(EnginePullPreedit(lotusEngine_.handle()));
+            auto preeditPtr = ngosen::UniqueCPtr<char>(EnginePullPreedit(lotusEngine_.handle()));
             oldPreBuffer_   = (preeditPtr && (*preeditPtr.get() != 0)) ? preeditPtr.get() : "";
             if (!processed) {
                 // Engine committed old text but didn't process the new key → forward the key
@@ -1372,7 +1371,7 @@ namespace fcitx {
             }
             return;
         }
-        if (realMode == LotusMode::Preedit) {
+        if (realMode == ngosen::Mode::Preedit) {
             if (keyEvent.isBareShift())
                 return;
         } else {
@@ -1411,7 +1410,7 @@ namespace fcitx {
                 replayBufferedKeys();
             }
         }
-        if (needEngineReset.load() && realMode != LotusMode::Off) {
+        if (needEngineReset.load() && realMode != ngosen::Mode::Off) {
             NGOSEN_INFO("Need engine reset");
             oldPreBuffer_.clear();
             hasHistory_ = false;
@@ -1431,9 +1430,9 @@ namespace fcitx {
             clearAllBuffers();
         }
         uint32_t currentSym = keyEvent.sym();
-        if (engine_->options().autoCapitalizeAfterPunctuation && realMode != LotusMode::Off) {
+        if (engine_->options().autoCapitalizeAfterPunctuation && realMode != ngosen::Mode::Off) {
             // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
-            bool isAutomatedBackspace = is_deleting_.load(std::memory_order_acquire) && isBackspace(currentSym);
+            bool isAutomatedBackspace = is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym);
 
             if (!isAutomatedBackspace) {
                 if (shouldCapitalize_) {
@@ -1471,7 +1470,7 @@ namespace fcitx {
             }
         }
 
-        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_ && isBackspace(currentSym) && host_->field().frontend == "xim" &&
+        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_ && ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" &&
             ngosen::forwardsBackspaces(host_->field())) {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
@@ -1488,13 +1487,13 @@ namespace fcitx {
             }
             finishReplacement("key arrived", false);
         }
-        if (is_deleting_.load(std::memory_order_acquire) && isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_pending_) {
+        if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_pending_) {
             // Forwarded backspaces never come back, so this one is the user's: finish the replacement
             // first, then handle it normally.
             finishReplacement("backspace arrived", false);
         }
         if (is_deleting_.load(std::memory_order_acquire)) {
-            if (isBackspace(currentSym)) {
+            if (ngosen::key::isBackspace(currentSym)) {
                 if (realtextLen.load(std::memory_order_acquire) > 0)
                     realtextLen.fetch_sub(1, std::memory_order_acq_rel);
                 if (handleUInputKeyPress(keyEvent, currentSym, 4)) {
@@ -1511,7 +1510,7 @@ namespace fcitx {
             return;
         }
 
-        if (engine_->options().doubleSpaceToPeriod && realMode != LotusMode::Off) {
+        if (engine_->options().doubleSpaceToPeriod && realMode != ngosen::Mode::Off) {
             bool isSpaceKey = (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);
             if (isSpaceKey && !keyEvent.hasModifier()) {
                 if (isPrevSpace_) {
@@ -1526,7 +1525,7 @@ namespace fcitx {
             }
         }
 
-        if (engine_->options().doubleHyphenToEmDash && realMode != LotusMode::Off) {
+        if (engine_->options().doubleHyphenToEmDash && realMode != ngosen::Mode::Off) {
             bool isHyphenKey = (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract);
             if (isHyphenKey && !keyEvent.hasModifier()) {
                 if (isPrevHyphen_) {
@@ -1542,15 +1541,15 @@ namespace fcitx {
         }
 
         switch (realMode) {
-            case LotusMode::Sen: {
+            case ngosen::Mode::Sen: {
                 handleUinputMode(keyEvent, currentSym);
                 break;
             }
-            case LotusMode::Preedit: {
+            case ngosen::Mode::Preedit: {
                 handlePreeditMode(keyEvent, currentSym);
                 break;
             }
-            case LotusMode::Emoji: {
+            case ngosen::Mode::Emoji: {
                 handleEmojiMode(keyEvent);
                 break;
             }
@@ -1579,9 +1578,9 @@ namespace fcitx {
             isPrevHyphen_      = false;
             shouldCapitalize_  = false;
             isPrevPunctuation_ = false;
-            if (realMode == LotusMode::Preedit && isFocusOut) {
+            if (realMode == ngosen::Mode::Preedit && isFocusOut) {
                 EngineCommitPreedit(lotusEngine_.handle());
-                UniqueCPtr<char> commit(EnginePullCommit(lotusEngine_.handle()));
+                ngosen::UniqueCPtr<char> commit(EnginePullCommit(lotusEngine_.handle()));
                 if (commit && (*commit.get() != 0)) {
                     host_->commitText(commit.get());
                     NGOSEN_INFO("Commit: " + std::string(commit.get()));
@@ -1595,17 +1594,17 @@ namespace fcitx {
             clearAllBuffers();
 
         switch (realMode) {
-            case LotusMode::Preedit: {
+            case ngosen::Mode::Preedit: {
                 host_->resetPanel();
                 host_->refreshPanel();
                 host_->refreshPreedit();
                 break;
             }
-            case LotusMode::Sen: {
+            case ngosen::Mode::Sen: {
                 host_->resetPanel();
                 break;
             }
-            case LotusMode::Emoji: {
+            case ngosen::Mode::Emoji: {
                 host_->resetPanel();
                 host_->refreshPanel();
                 host_->refreshPreedit();
@@ -1619,11 +1618,11 @@ namespace fcitx {
 
     void LotusState::commitBuffer() {
         switch (realMode) {
-            case LotusMode::Preedit: {
+            case ngosen::Mode::Preedit: {
                 host_->resetPanel();
                 if (lotusEngine_) {
                     EngineCommitPreedit(lotusEngine_.handle());
-                    UniqueCPtr<char> commit(EnginePullCommit(lotusEngine_.handle()));
+                    ngosen::UniqueCPtr<char> commit(EnginePullCommit(lotusEngine_.handle()));
                     if (commit && (*commit.get() != 0))
                         host_->commitText(commit.get());
                     ResetEngine(lotusEngine_.handle());
@@ -1632,7 +1631,7 @@ namespace fcitx {
                 host_->refreshPreedit();
                 break;
             }
-            case LotusMode::Sen: {
+            case ngosen::Mode::Sen: {
                 if (lotusEngine_) {
                     ResetEngine(lotusEngine_.handle());
                 }
@@ -1701,12 +1700,12 @@ namespace fcitx {
 
             bool processed = EngineProcessKeyEvent(lotusEngine_.handle(), sym, state) != 0U;
 
-            auto commitF = UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
+            auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(lotusEngine_.handle()));
             if (commitF && (*commitF.get() != 0)) {
                 std::string commitStr = commitF.get();
                 std::string deletedPart;
                 std::string addedPart;
-                compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
+                ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
 
                 if (!deletedPart.empty()) {
                     // Re-buffer remaining keys for next replay cycle.
@@ -1740,12 +1739,12 @@ namespace fcitx {
             hasHistory_ = true;
             realtextLen.fetch_add(1, std::memory_order_acq_rel);
 
-            UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
-            std::string      preeditStr = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+            ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(lotusEngine_.handle()));
+            std::string              preeditStr = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
 
-            std::string      deletedPart;
-            std::string      addedPart;
-            if (compareAndSplitStrings(oldPreBuffer_, preeditStr, deletedPart, addedPart) != 0) {
+            std::string              deletedPart;
+            std::string              addedPart;
+            if (ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, preeditStr, deletedPart, addedPart) != 0) {
                 if (deletedPart.empty()) {
                     if (!addedPart.empty()) {
                         out += addedPart;
@@ -1818,7 +1817,7 @@ namespace fcitx {
         if (!macro_skip_) {
             return;
         }
-        UniqueCPtr<char> preedit(EnginePullPreedit(lotusEngine_.handle()));
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(lotusEngine_.handle()));
         if (preedit && *preedit.get() != 0) {
             return;
         }

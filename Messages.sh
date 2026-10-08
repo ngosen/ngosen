@@ -5,6 +5,7 @@ xgettext \
 --from-code=UTF-8 \
 --keyword=_ \
 --keyword=N_ \
+--keyword=translate \
 -o /tmp/lotus-cpp.pot \
 $(find . \( -name "*.cpp" -o -name "*.h" \))
 

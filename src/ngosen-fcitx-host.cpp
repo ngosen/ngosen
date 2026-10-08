@@ -8,6 +8,7 @@
 #include "ngosen-keysym.h"
 #include "ngosen-xtest.h"
 
+#include <fcitx-utils/i18n.h>
 #include <fcitx-utils/key.h>
 #include <fcitx/candidatelist.h>
 #include <fcitx/event.h>
@@ -231,6 +232,10 @@ namespace ngosen {
 
     void FcitxHost::setStatus(const std::string& text) {
         ic_->inputPanel().setAuxDown(fcitx::Text(text));
+    }
+
+    std::string FcitxHost::translate(const char* text) const {
+        return _(text);
     }
 
     std::unique_ptr<Timer> FcitxHost::startTimer(uint64_t deadlineUs, uint64_t accuracyUs, std::function<bool(Timer&)> onTime) {

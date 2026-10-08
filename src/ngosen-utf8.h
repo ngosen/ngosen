@@ -28,6 +28,13 @@ namespace ngosen::utf8 {
     // callers rule out by reading only text the app reported as valid.
     std::u32string decode(std::string_view s);
 
+    // Removes the last character of buffer, if any, so it stays valid UTF-8.
+    void eraseLastCodepoint(std::string& buffer);
+
+    // Splits a and b after their longest common run of whole characters: deletedPart gets the rest of a,
+    // addedPart the rest of b. Returns 1 when the strings are equal, otherwise 2.
+    int compareAndSplitStrings(const std::string& a, const std::string& b, std::string& deletedPart, std::string& addedPart);
+
     // The iterator one character past it.
     template <typename Iter>
     Iter nextChar(Iter it, Iter end) {

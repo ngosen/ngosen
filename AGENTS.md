@@ -41,7 +41,7 @@ a careful human wrote it, and the person sending it must be able to explain ever
 - **Run clang-format before pushing.** CI fails on any formatting diff, including alignment of
   neighbouring declarations.
 - **Build as C++17.** The Ubuntu 22.04 package compiles in C++17, so no `std::string::starts_with`
-  and the like; use `isStartsWith` (`src/lotus-utils.h`).
+  and the like; use `isStartsWith` (`src/ngosen-strings.h`).
 - **A bug fix comes with a test that fails without it.** Check this by undoing the fix (or breaking
   its guard) and watching that test, and only that test, fail.
 - **Handle apps by how they behave, not by name.** Check what the field reports (capability flags,

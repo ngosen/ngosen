@@ -5,7 +5,7 @@
  */
 #include "ngosen-app-quirks.h"
 
-#include "lotus-utils.h"
+#include "ngosen-strings.h"
 
 namespace ngosen {
 

@@ -6,6 +6,7 @@
 #include "ngosen-utf8.h"
 
 #include <cstdint>
+#include <cstring>
 #include <stdexcept>
 
 namespace ngosen::utf8 {
@@ -144,6 +145,44 @@ namespace ngosen::utf8 {
             s.remove_prefix(n);
         }
         return out;
+    }
+
+    void eraseLastCodepoint(std::string& buffer) {
+        if (buffer.empty()) {
+            return;
+        }
+        size_t pos = buffer.size() - 1;
+        while (pos > 0 && (static_cast<unsigned char>(buffer[pos]) & 0xC0) == 0x80) {
+            --pos;
+        }
+        buffer.erase(pos);
+    }
+
+    int compareAndSplitStrings(const std::string& a, const std::string& b, std::string& deletedPart, std::string& addedPart) {
+        // A byte that cannot start a character counts as one, as in fcitx5's fcitx_utf8_char_len.
+        const auto leadBytes = [](char c) {
+            const size_t n = announcedBytes(static_cast<unsigned char>(c));
+            return n == 0 ? size_t{1} : n;
+        };
+        size_t i = 0;
+        size_t j = 0;
+        while (i < a.size() && j < b.size()) {
+            const size_t lenA = leadBytes(a[i]);
+            const size_t lenB = leadBytes(b[j]);
+            if (i + lenA > a.size() || j + lenB > b.size()) {
+                break;
+            }
+            if (lenA == lenB && std::strncmp(&a[i], &b[j], lenA) == 0) {
+                i += lenA;
+                j += lenB;
+            } else {
+                break;
+            }
+        }
+
+        deletedPart.assign(a, i);
+        addedPart.assign(b, j);
+        return (deletedPart.empty() && addedPart.empty()) ? 1 : 2;
     }
 
 } // namespace ngosen::utf8

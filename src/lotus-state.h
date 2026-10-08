@@ -17,15 +17,26 @@
 
 #include "lotus.h"
 #include "emoji-entry.h"
-#include "lotus-utils.h"
+#include "ngosen-globals.h"
 #include "ngosen-engine-resources.h"
 #include "ngosen-host.h"
 #include "ngosen-key.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <vector>
 
 struct EmojiEntry;
+
+/**
+ * @brief Key event entry for replay buffer.
+ */
+struct KeyEntry {
+    uint32_t sym;   ///< Key symbol
+    uint32_t state; ///< Key state (modifiers)
+};
 
 namespace fcitx {
     class LotusEngine;

@@ -21,19 +21,18 @@
 #include <fcitx-utils/i18n.h>
 #include <fcitx-utils/stringutils.h>
 
+#include "ngosen-mode.h"
+
+namespace ngosen {
+
+    // Config reads and writes find these helpers by argument-dependent lookup, so they sit next to Mode.
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(Mode, N_("OFF"), N_("Sen"), N_("Preedit"), N_("Emoji Picker"));
+
+} // namespace ngosen
+
 namespace fcitx {
 
-    /**
-     * @brief Operating modes for the Lotus input method.
-     */
-    enum class LotusMode : std::uint8_t {
-        Off,
-        Sen,
-        Preedit,
-        Emoji,
-    };
-
-    FCITX_CONFIG_ENUM_NAME_WITH_I18N(LotusMode, N_("OFF"), N_("Sen"), N_("Preedit"), N_("Emoji Picker"));
+    using LotusMode = ngosen::Mode;
 
     /**
      * @brief Converts LotusMode to int and vice versa.
@@ -212,7 +211,7 @@ namespace fcitx {
     FCITX_CONFIGURATION(
         lotusConfig,
 
-        OptionWithAnnotation<LotusMode, LotusModeI18NAnnotation>                                         mode{this, "Mode", _("Mode"), LotusMode::Preedit};
+        OptionWithAnnotation<LotusMode, ngosen::ModeI18NAnnotation>                                      mode{this, "Mode", _("Mode"), LotusMode::Preedit};
         Option<std::string, InputMethodConstrain, DefaultMarshaller<std::string>, InputMethodAnnotation> inputMethod{
             this, "InputMethod", _("Input Method"), "Telex", InputMethodConstrain(&inputMethod), {}, InputMethodAnnotation()};
         OptionWithAnnotation<std::string, StringListAnnotation> outputCharset{this, "OutputCharset", _("Output Charset"), "Unicode", {}, {}, StringListAnnotation()};

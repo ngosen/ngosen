@@ -49,8 +49,8 @@ a careful human wrote it, and the person sending it must be able to explain ever
   reports tells it apart, and say in a comment what behaviour the name stands for.
 - **Keep fcitx5 out of the typing logic.** It lives in `src/core/`, built as `ngosen_core` with no
   fcitx5 include path, so an fcitx5 include there fails the build. Text, keys and deletions go to
-  the app through `ngosen::Host` (`src/core/ngosen-host.h`), so the same logic can later run under
-  another input method framework. Key presses arrive as `ngosen::KeyPress`
+  the app through `ngosen::Host` (`src/core/ngosen-host.h`), so tests can drive the same logic
+  through a fake app field. Key presses arrive as `ngosen::KeyPress`
   (`src/core/ngosen-key.h`). New code in `src/core/ngosen-state.cpp` calls `host_` instead of the
   `InputContext`, and checks for how an app behaves go in `src/core/ngosen-app-quirks.cpp`, reading
   the field `host_` reports. Settings and what all fields share (dictionary, macro table, custom

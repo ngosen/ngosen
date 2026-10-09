@@ -12,8 +12,6 @@
   và Ubuntu 24.04 trở lên dùng lõi Rust.
 - **Cài bằng một dòng lệnh** trên Fedora, Ubuntu, Debian, Arch, CachyOS, openSUSE; script kiểm hash trước
   khi cài.
-- **Chuyển từ fcitx5-lotus không mất gì.** Gói tự thay bản cũ, giữ nguyên cấu hình, chế độ cũ tự chuyển
-  sang Gõ Sen.
 
 Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues).
 

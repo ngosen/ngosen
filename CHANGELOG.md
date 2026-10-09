@@ -38,6 +38,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   có giao thức input-method-v2 mà Ngó Sen cần (#81).
 - README bỏ câu "không chạy ngầm với quyền root": uinput server của bản cũ chạy bằng tài khoản
   `uinput_proxy`, không phải root. Điểm đầu tiên nay chỉ ghi "Bỏ hẳn uinput server" (#85).
+- README bỏ điểm "Chuyển từ fcitx5-lotus không mất gì" khỏi danh sách đầu trang; mục Cài vẫn ghi gói tự
+  thay bản cũ và giữ cấu hình (#88).
 
 ## [0.5.1-1] — 09/10/2026
 

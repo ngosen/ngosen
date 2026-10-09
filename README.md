@@ -21,7 +21,7 @@ Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues
 
 - **IBus:** bản cho GNOME và Ubuntu, nơi IBus là bộ gõ mặc định, không phải cài thêm fcitx5. Gói
   `ibus-ngosen`; `install.sh` sẽ hỏi chọn bản nào.
-- **wlroots, không cần fcitx5:** Ngó Sen chạy thẳng trên Sway, Hyprland, river, labwc, Wayfire, gọn nhẹ
+- **Sway, Hyprland, không cần fcitx5:** Ngó Sen chạy thẳng trên Sway, Hyprland, river, labwc, Wayfire, gọn nhẹ
   hơn cài cả fcitx5.
 
 ## Nên dùng chế độ nào
@@ -120,5 +120,5 @@ support.
 
 Planned for 1.0: no background uinput server; two typing modes, Gõ Sen (one mode that works for fast
 typing, browsers and Electron apps) and Preedit; the Bamboo composition core ported from Go to Rust; and
-a shared core that can plug into fcitx5, IBus and wlroots compositors. The rest of this page is in
+a shared core that can plug into fcitx5, IBus and Wayland compositors such as Sway and Hyprland. The rest of this page is in
 Vietnamese.

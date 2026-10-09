@@ -119,6 +119,7 @@ namespace {
 
     void setContentType(IBusEngine* engine, guint purpose, guint hints) {
         IBUS_ENGINE_CLASS(ngosen_engine_parent_class)->set_content_type(engine, purpose, hints);
+        NGOSEN_DEBUG("Content type: purpose " << purpose << ", hints " << hints);
         if (Session* session = sessionOf(engine))
             session->host->setPurpose(purpose);
     }

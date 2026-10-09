@@ -8,8 +8,10 @@
 #include <cstdio>
 #include <cstring>
 #include <ibus.h>
+#include <syslog.h>
 
 int main(int argc, char** argv) {
+    openlog("ibus-engine-ngosen", LOG_PID, LOG_USER);
     ibus_init();
     IBusBus* bus = ibus_bus_new();
     if (!ibus_bus_is_connected(bus)) {

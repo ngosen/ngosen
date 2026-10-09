@@ -227,6 +227,20 @@ namespace ngosen {
         bool                           overtype_via_xtest_      = false;
         bool                           overtype_shift_released_ = false;
 
+        // --- Wait for the app's report on a key before deleting ---
+        // LibreOffice over the fcitx Qt module drops the surrounding text capability before each key
+        // and reports the field right after it. A click on another cell shows only in that report.
+        bool                           waitsForKeyReport() const;
+        void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart);
+        void                           finishKeyReportWait(bool sameField, bool fromTimer);
+        void                           deleteAndCommit(const std::string& deletedPart, const std::string& addedPart);
+        std::unique_ptr<ngosen::Timer> key_report_timer_;
+        bool                           key_report_pending_ = false;
+        std::optional<KeyEntry>        live_key_; ///< key being handled, replayed if it landed in another field
+        KeyEntry                       key_report_key_{};
+        std::string                    key_report_deleted_;
+        std::string                    key_report_added_;
+
         /**
          * @brief Checks if autofill is certain for surrounding text.
          * @param s The surrounding text.

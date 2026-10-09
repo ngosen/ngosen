@@ -377,6 +377,14 @@ namespace ngosen {
         pending_commit_string_   = addedPart;
         expected_backspaces_     = static_cast<int>(ngosen::utf8::length(deletedPart));
         recordSendSnapshot(deletedPart);
+        if (live_key_ && waitsForKeyReport()) {
+            startKeyReportWait(deletedPart, addedPart);
+            return;
+        }
+        deleteAndCommit(deletedPart, addedPart);
+    }
+
+    void TypingState::deleteAndCommit(const std::string& deletedPart, const std::string& addedPart) {
         const auto surrounding = host_->surrounding();
         // Facebook composers only: other fields do not report a selection-only change, so the
         // overtype would time out and drop the tone mark.

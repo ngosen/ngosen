@@ -246,10 +246,55 @@ namespace ngosen {
         const bool overtyping = overtype_watching_;
         if (host_->hasFocus())
             checkCursorJump();
+        if (key_report_pending_)
+            finishKeyReportWait(host_->surrounding().isValid(), false);
         if (waiting)
             onWaitSurroundingUpdated();
         if (overtyping)
             onOvertypeSurroundingUpdated();
+    }
+
+    constexpr uint64_t KeyReportWaitUs = 20000;
+
+    // The app reported text before this key but not with it: it reports the field only after the key.
+    bool TypingState::waitsForKeyReport() const {
+        return !host_->field().surroundingText && hasLastSurrounding_;
+    }
+
+    void TypingState::startKeyReportWait(const std::string& deletedPart, const std::string& addedPart) {
+        key_report_key_     = *live_key_;
+        key_report_deleted_ = deletedPart;
+        key_report_added_   = addedPart;
+        key_report_pending_ = true;
+        is_deleting_.store(true, std::memory_order_release);
+        key_report_timer_ = host_->startTimer(ngosen::monotonicUs() + KeyReportWaitUs, 0, [this](ngosen::Timer&) {
+            finishKeyReportWait(true, true);
+            return false;
+        });
+    }
+
+    // A field with no text to edit means the key went to a cell that is not being edited, so the word
+    // before it is gone.
+    void TypingState::finishKeyReportWait(bool sameField, bool fromTimer) {
+        if (!key_report_pending_)
+            return;
+        key_report_pending_ = false;
+        if (!fromTimer)
+            key_report_timer_.reset(); // never reset a timer from inside its own callback
+        if (sameField) {
+            deleteAndCommit(key_report_deleted_, key_report_added_);
+            return;
+        }
+        NGOSEN_INFO("Key went to another field, starting a new word");
+        pending_commit_string_.clear();
+        expected_backspaces_     = 0;
+        current_backspace_count_ = 0;
+        hasHistory_              = false;
+        ResetEngine(bambooEngine_.handle());
+        oldPreBuffer_.clear();
+        is_deleting_.store(false, std::memory_order_release);
+        buffered_keys_.insert(buffered_keys_.begin(), key_report_key_);
+        replayBufferedKeys();
     }
 
     void TypingState::onWaitSurroundingUpdated() {

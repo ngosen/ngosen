@@ -134,6 +134,16 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure --no-tests=error
 
+  # Builds this checkout, so a change that breaks the NixOS package fails here.
+  nix:
+    name: Nix flake
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+      - name: Build, test and load into fcitx5
+        run: nix flake check -L
+
   go-test:
     name: Go test
     runs-on: ubuntu-latest

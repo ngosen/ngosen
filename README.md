@@ -49,6 +49,24 @@ Không muốn chạy lệnh tải từ mạng thì tải gói ở trang
 [Releases](https://github.com/ngosen/ngosen/releases) rồi cài bằng tay. Muốn tự dựng từ mã thì xem
 [TU-DUNG.md](TU-DUNG.md).
 
+Trên NixOS, thêm flake của kho này vào cấu hình rồi đưa gói vào addon của fcitx5. Gói được dựng từ mã
+trong kho:
+
+```nix
+# flake.nix
+inputs.ngosen.url = "github:ngosen/ngosen";
+
+# configuration.nix, với inputs truyền qua specialArgs
+i18n.inputMethod = {
+  enable = true;
+  type = "fcitx5";
+  fcitx5.addons = [ inputs.ngosen.packages.${pkgs.stdenv.hostPlatform.system}.default ];
+};
+```
+
+CI dựng gói này, chạy test và nạp nó vào fcitx5 trên một màn hình X ảo, nhưng chưa ai thử trên máy
+NixOS thật. Gặp lỗi xin mở issue.
+
 **Cài xong, hoặc mỗi lần cập nhật,** khởi động lại fcitx5:
 
 ```

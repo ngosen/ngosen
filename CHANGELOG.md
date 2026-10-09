@@ -11,6 +11,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Gói Nix cho NixOS, dựng từ mã của Ngó Sen (gói Nix cũ tải mã bản gốc nên đã gỡ ở #21). Cách cài nằm
+  trong README. CI dựng gói, chạy test và nạp nó vào fcitx5 trên màn hình X ảo (#82).
+
 ### Thay đổi
 
 - Phần xử lý gõ được tách khỏi fcitx5 và sắp xếp lại để chuẩn bị bản chạy trên IBus. Người dùng không thấy

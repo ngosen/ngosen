@@ -2,8 +2,8 @@
 
 **Bộ gõ tiếng Việt tối ưu cho Linux.**
 
-- **Không chạy ngầm với quyền root.** Bỏ hẳn uinput server, Ngó Sen chỉ dùng đúng quyền của fcitx5. Cài
-  xong là gõ, không bật dịch vụ, không cấp quyền thiết bị.
+- **Bỏ hẳn uinput server.** Ngó Sen chỉ dùng đúng quyền của fcitx5. Cài xong là gõ, không bật dịch vụ,
+  không cấp quyền thiết bị.
 - **Gõ thẳng, không gạch chân.** Chế độ Gõ Sen đưa chữ vào app ngay khi gõ. Ô gợi ý của thanh địa chỉ hay
   ô tìm kiếm chạy theo từng phím.
 - **Một chế độ cho mọi app.** Trình duyệt, terminal, Zalo, LibreOffice đều dùng Gõ Sen. Ngó Sen tự nhận ra
@@ -21,7 +21,7 @@ Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues
 
 - **IBus:** bản cho GNOME và Ubuntu, nơi IBus là bộ gõ mặc định, không phải cài thêm fcitx5. Gói
   `ibus-ngosen`; `install.sh` sẽ hỏi chọn bản nào.
-- **wlroots, không cần fcitx5:** Ngó Sen chạy thẳng trên Sway, Hyprland, river, labwc, Wayfire, gọn nhẹ
+- **Sway, Hyprland, không cần fcitx5:** Ngó Sen chạy thẳng trên Sway, Hyprland, river, labwc, Wayfire, gọn nhẹ
   hơn cài cả fcitx5.
 
 ## Nên dùng chế độ nào
@@ -48,6 +48,25 @@ lệnh đó.
 Không muốn chạy lệnh tải từ mạng thì tải gói ở trang
 [Releases](https://github.com/ngosen/ngosen/releases) rồi cài bằng tay. Muốn tự dựng từ mã thì xem
 [TU-DUNG.md](TU-DUNG.md).
+
+Trên NixOS, thêm flake của kho này vào cấu hình rồi đưa gói vào addon của fcitx5. Gói được dựng từ mã
+trong kho:
+
+```nix
+# flake.nix
+inputs.ngosen.url = "github:ngosen/ngosen";
+
+# configuration.nix, với inputs truyền qua specialArgs
+i18n.inputMethod = {
+  enable = true;
+  type = "fcitx5";
+  fcitx5.addons = [ inputs.ngosen.packages.${pkgs.stdenv.hostPlatform.system}.default ];
+};
+```
+
+CI dựng gói này, chạy test và nạp nó vào fcitx5 trên một màn hình X ảo, nhưng chưa ai thử trên máy
+NixOS thật. Gặp lỗi xin mở issue. Tự dựng từ bản clone trên máy: xem mục NixOS trong
+[TU-DUNG.md](TU-DUNG.md#nixos).
 
 **Cài xong, hoặc mỗi lần cập nhật,** khởi động lại fcitx5:
 
@@ -120,5 +139,5 @@ support.
 
 Planned for 1.0: no background uinput server; two typing modes, Gõ Sen (one mode that works for fast
 typing, browsers and Electron apps) and Preedit; the Bamboo composition core ported from Go to Rust; and
-a shared core that can plug into fcitx5, IBus and wlroots compositors. The rest of this page is in
+a shared core that can plug into fcitx5, IBus and Wayland compositors such as Sway and Hyprland. The rest of this page is in
 Vietnamese.

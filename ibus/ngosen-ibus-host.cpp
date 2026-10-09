@@ -20,9 +20,10 @@ namespace ngosen {
     static_assert(modifier::Ctrl == IBUS_CONTROL_MASK);
 
     namespace {
-        // evdev KEY_BACKSPACE and KEY_RIGHT; IBus keycodes are evdev codes.
+        // evdev KEY_BACKSPACE, KEY_RIGHT and KEY_LEFTSHIFT; IBus keycodes are evdev codes.
         constexpr guint BackSpaceKeycode = 14;
         constexpr guint RightKeycode     = 106;
+        constexpr guint ShiftKeycode     = 42;
 
         constexpr guint SimpleModifiers = IBUS_SHIFT_MASK | IBUS_CONTROL_MASK | IBUS_MOD1_MASK | IBUS_MOD4_MASK | IBUS_SUPER_MASK | IBUS_HYPER_MASK | IBUS_META_MASK;
 
@@ -82,6 +83,7 @@ namespace ngosen {
         switch (key) {
             case EditKey::BackSpace: ibus_engine_forward_key_event(engine_, IBUS_KEY_BackSpace, BackSpaceKeycode, state); break;
             case EditKey::Right: ibus_engine_forward_key_event(engine_, IBUS_KEY_Right, RightKeycode, state); break;
+            case EditKey::Shift: ibus_engine_forward_key_event(engine_, IBUS_KEY_Shift_L, ShiftKeycode, state); break;
         }
     }
 

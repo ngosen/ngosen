@@ -54,6 +54,29 @@ bước 3, rồi khởi động lại fcitx5:
 fcitx5 -rd
 ```
 
+## NixOS
+
+Trên NixOS không cài vào `/usr` được, nên các bước ở trên không dùng được. Hãy dựng bằng flake trong
+kho:
+
+```
+git clone -b main https://github.com/ngosen/ngosen.git
+cd ngosen
+nix build              # dựng gói và chạy test, kết quả ở ./result
+nix flake check        # thêm bài thử nạp bộ gõ vào fcitx5 trên màn hình X ảo
+```
+
+Muốn dùng bản vừa dựng thì trỏ input của cấu hình vào thư mục đó, phần còn lại giống mục Cài trong
+README, rồi `sudo nixos-rebuild switch`:
+
+```nix
+inputs.ngosen.url = "git+file:///home/ten-ban/ngosen";
+```
+
+Flake chỉ thấy các tệp git đang theo dõi, nên tệp mới phải `git add` trước khi dựng. Đang sửa mã mà
+muốn dựng lại nhanh thì chạy `nix develop` để mở shell có đủ công cụ, rồi dựng và chạy test như mục
+Chạy bộ kiểm bên dưới, thêm `-DNGOSEN_RUST_CORE=ON` vì gói Nix dùng lõi Rust.
+
 ## Chạy bộ kiểm
 
 Bộ kiểm mặc định tắt, bật bằng `-DBUILD_TESTING=ON`:

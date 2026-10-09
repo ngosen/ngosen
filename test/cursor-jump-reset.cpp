@@ -56,7 +56,8 @@ namespace {
                         }
                         insert(context_->commits()[i]);
                     }
-                    report();
+                    if (!holdCommitReport_)
+                        report();
                 }
             }
         }
@@ -64,6 +65,20 @@ namespace {
         void click(size_t cursor) {
             cursor_ = cursor;
             report();
+        }
+
+        // A spreadsheet click on another cell reports only that cell's editor text with the cursor at its start.
+        void switchField(const std::string& text) {
+            text_   = text;
+            cursor_ = 0;
+            report();
+        }
+
+        // Firefox may not report our last commit before the user clicks another cell.
+        void typeWithoutCommitReport(const std::string& keys) {
+            holdCommitReport_ = true;
+            type(keys);
+            holdCommitReport_ = false;
         }
 
         void repeatReport() {
@@ -130,6 +145,7 @@ namespace {
         size_t                            cursor_           = 0;
         bool                              cursorBeforeText_ = false;
         bool                              caretBounce_      = false;
+        bool                              holdCommitReport_ = false;
     };
 
     bool expectText(const std::string& step, const FakeApp& app, const std::string& expected) {
@@ -167,6 +183,24 @@ int main() {
         app.click(0);
         app.type("as");
         if (!expectText("type \"tieng\", click at the start, type \"as\"", app, "átieng"))
+            return 1;
+    }
+    // Clicking another spreadsheet cell must start a new word there.
+    {
+        FakeApp app(testInstance, engine, entry);
+        app.type("chaof");
+        app.switchField("\n\n");
+        app.type("chafo");
+        if (!expectText("type \"chaof\", click another cell, type \"chafo\"", app, "chào\n\n"))
+            return 1;
+    }
+    // The click may come before the app reports the last word's tone mark.
+    {
+        FakeApp app(testInstance, engine, entry);
+        app.typeWithoutCommitReport("dduwowcj");
+        app.switchField("\n\n");
+        app.type("tieengs");
+        if (!expectText("type \"dduwowcj\" with no report of its commit, click another cell, type \"tieengs\"", app, "tiếng\n\n"))
             return 1;
     }
     // The early cursor report is the echo of our own commit, not a click.

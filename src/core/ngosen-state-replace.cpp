@@ -377,6 +377,14 @@ namespace ngosen {
         pending_commit_string_   = addedPart;
         expected_backspaces_     = static_cast<int>(ngosen::utf8::length(deletedPart));
         recordSendSnapshot(deletedPart);
+        if (live_key_ && waitsForKeyReport()) {
+            startKeyReportWait(deletedPart, addedPart);
+            return;
+        }
+        deleteAndCommit(deletedPart, addedPart);
+    }
+
+    void TypingState::deleteAndCommit(const std::string& deletedPart, const std::string& addedPart) {
         const auto surrounding = host_->surrounding();
         // Facebook composers only: other fields do not report a selection-only change, so the
         // overtype would time out and drop the tone mark.
@@ -428,7 +436,8 @@ namespace ngosen {
         const std::string surrText = surrounding.text();
         // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it. Its
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
-        const bool isLibreOffice   = ngosen::appliesBackspacesLate(host_->field());
+        // A Backspace on a Calc cell that is not being edited opens the Delete Contents dialog.
+        const bool isLibreOffice   = ngosen::appliesBackspacesLate(host_->field()) || ngosen::reportsFieldOnlyOnKey(host_->field());
         const bool mustUseSurrText = isLibreOffice || ngosen::ignoresForwardedKeys(host_->field());
         bool       isSurrText = mustUseSurrText ? host_->field().surroundingText :
                                                   engine_->options().useSurroundingTextIfPossible && host_->field().surroundingText && surrounding.isValid() && !surrText.empty() &&

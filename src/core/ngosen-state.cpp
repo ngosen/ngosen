@@ -253,6 +253,7 @@ namespace ngosen {
                     }
                 }
                 if (!isCommit) {
+                    passed_key_ = live_key_;
                     keyEvent.passToApp();
                 }
             } else {
@@ -286,7 +287,10 @@ namespace ngosen {
 
         switch (realMode) {
             case ngosen::Mode::Sen: {
+                live_key_ = KeyEntry{.sym = currentSym, .state = keyEvent.states()};
+                passed_key_.reset();
                 handleUinputMode(keyEvent, currentSym);
+                live_key_.reset();
                 break;
             }
             case ngosen::Mode::Preedit: {
@@ -331,8 +335,9 @@ namespace ngosen {
         lastInputAtUs_ = ngosen::monotonicUs();
         // An XIM client sometimes sends a key we let through back to us instead of typing it. Let it
         // through again rather than type it twice. Our own XTEST backspaces share one time, so they
-        // are exempt.
-        if (!is_deleting_.load(std::memory_order_acquire) && keyEvent.time() != 0 && keyEvent.time() == lastPressTime_ && keyEvent.code() == lastPressCode_) {
+        // are exempt. Other frontends never do this, and some stamp keys in whole seconds.
+        if (!is_deleting_.load(std::memory_order_acquire) && keyEvent.time() != 0 && keyEvent.time() == lastPressTime_ && keyEvent.code() == lastPressCode_ &&
+            host_->field().frontend == "xim") {
             NGOSEN_INFO("App sent a key back: " + keyEvent.name());
             keyEvent.passToApp();
             return true;

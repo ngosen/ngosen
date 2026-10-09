@@ -19,7 +19,8 @@ namespace {
 } // namespace
 
 void mousePressResetThread() {
-    // Wayland reports clicks to no one but the app; checkCursorJump covers that case.
+    // Wayland reports clicks to no one but the app; checkCursorJump covers that case. Xwayland still
+    // reports clicks on X11 windows.
     watchX11PointerClicks(stop_flag_monitor, markMouseClick);
 }
 

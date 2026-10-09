@@ -84,9 +84,10 @@ namespace ngosen {
         void surroundingUpdated();
 
         /**
-         * @brief Treats a cursor move within unchanged surrounding text as a mouse click.
+         * @brief Treats a cursor move within unchanged surrounding text, or a jump into another spreadsheet cell, as a mouse click.
          */
         void checkCursorJump();
+        bool textAfterCursorChanged(const Surrounding& s) const;
 
         /**
          * @brief Records text sent to the app, so its cursor moving past it is not taken for a click.
@@ -225,6 +226,23 @@ namespace ngosen {
         uint64_t                       overtype_started_at_     = 0;
         bool                           overtype_via_xtest_      = false;
         bool                           overtype_shift_released_ = false;
+
+        // --- Wait for the app's report on a key before deleting ---
+        // LibreOffice over the fcitx Qt module drops the surrounding text capability before each key
+        // and reports the field right after it; over Wayland it reports only when a key reaches it. A
+        // click on another cell shows only in that report.
+        bool                           waitsForKeyReport() const;
+        void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart);
+        void                           finishKeyReportWait(bool sameField, bool fromTimer);
+        void                           deleteAndCommit(const std::string& deletedPart, const std::string& addedPart);
+        std::unique_ptr<ngosen::Timer> key_report_timer_;
+        bool                           key_report_pending_ = false;
+        std::optional<KeyEntry>        live_key_;   ///< key being handled, replayed if it landed in another field
+        std::optional<KeyEntry>        passed_key_; ///< last key let through to the app as typed
+        void                           startWordWithKey(const KeyEntry& key);
+        KeyEntry                       key_report_key_{};
+        std::string                    key_report_deleted_;
+        std::string                    key_report_added_;
 
         /**
          * @brief Checks if autofill is certain for surrounding text.

@@ -11,6 +11,27 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Gói Nix cho NixOS, dựng từ mã của Ngó Sen (gói Nix cũ tải mã bản gốc nên đã gỡ ở #21). Cách cài nằm
+  trong README. CI dựng gói, chạy test và nạp nó vào fcitx5 trên màn hình X ảo (#82).
+- Hướng dẫn tự dựng trên NixOS trong `TU-DUNG.md`, và `nix develop` mở shell có đủ công cụ dựng (#83).
+
+### Sửa
+
+- Google Sheets trên Wayland: click chuột sang ô khác rồi gõ, sau vài ô thì chữ ra lẫn chữ của ô trước và
+  không thành tiếng Việt (vd. `afoc`, `ieengs`). Nay mỗi ô mới bắt đầu một chữ mới (#86).
+- LibreOffice Calc trên Wayland: click chuột sang ô khác rồi gõ, sau chữ có dấu thì bộ gõ xoá nhầm và mở
+  hộp thoại "Delete Contents", từ đó không gõ được tiếng Việt nữa. Nay phím đầu ở ô mới bắt đầu một chữ
+  mới (#87).
+- LibreOffice Calc mở thẳng trên Wayland (không qua module Qt của fcitx): click sang ô khác rồi gõ thì chữ
+  ra lẫn chữ của ô trước, hoặc mở hộp thoại "Delete Contents". Nay bộ gõ hỏi Calc đang ở ô nào trước khi
+  sửa chữ, nên mỗi ô mới bắt đầu một chữ mới (#PR).
+- WPS Office: gõ hai phím giống nhau liền nhau (`dd`, `ee`, `oo`, `aa`, `ww`) thì phím thứ hai bị mất, nên
+  `dd` không ra `đ` và `oo` không ra `ô`. Nay chỉ app gõ qua XIM mới bị coi là "gửi trả phím" (#PR).
+- App X11 chạy trên phiên Wayland (WPS Office qua Xwayland): click chuột sang ô khác rồi gõ thì chữ ra lẫn
+  chữ của ô trước. Nay bộ gõ nghe cú click trên cửa sổ Xwayland như trên phiên X11 (#PR).
+
 ### Thay đổi
 
 - Phần xử lý gõ được tách khỏi fcitx5 và sắp xếp lại để chuẩn bị bản chạy trên IBus. Người dùng không thấy
@@ -20,6 +41,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Thêm `RELEASING.md`: những chỗ cần cập nhật sau mỗi PR và mỗi lần ra bản mới; mẫu PR nay đúng với
   fork (nhánh `main`, `ctest`, dòng CHANGELOG) (#80).
+- README không còn gọi Hyprland là compositor wlroots: Hyprland đã bỏ wlroots từ bản 0.42, nhưng vẫn
+  có giao thức input-method-v2 mà Ngó Sen cần (#81).
+- README bỏ câu "không chạy ngầm với quyền root": uinput server của bản cũ chạy bằng tài khoản
+  `uinput_proxy`, không phải root. Điểm đầu tiên nay chỉ ghi "Bỏ hẳn uinput server" (#85).
 
 ## [0.5.1-1] — 09/10/2026
 

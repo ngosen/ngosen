@@ -71,11 +71,14 @@ namespace ngosen {
     namespace {
         // XKB keycode of BackSpace: evdev KEY_BACKSPACE (14) + 8.
         constexpr int BackSpaceKeycode = 22;
+        // XKB keycode of left Shift: evdev KEY_LEFTSHIFT (42) + 8.
+        constexpr int ShiftKeycode = 50;
 
         fcitx::Key    toFcitxKey(EditKey key) {
             switch (key) {
                 case EditKey::BackSpace: return fcitx::Key(FcitxKey_BackSpace, fcitx::KeyStates(), BackSpaceKeycode);
                 case EditKey::Right: return fcitx::Key(FcitxKey_Right);
+                case EditKey::Shift: return fcitx::Key(FcitxKey_Shift_L, fcitx::KeyStates(), ShiftKeycode);
             }
             return fcitx::Key();
         }

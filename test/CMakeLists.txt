@@ -93,6 +93,8 @@ add_lotus_headless_test(cursor_jump_reset
     cursor-jump-reset.cpp "integration;surrounding")
 add_lotus_headless_test(cell_click_key_report
     cell-click-key-report.cpp "integration;surrounding")
+add_lotus_headless_test(calc_text_input_cell_click
+    calc-text-input-cell-click.cpp "integration;surrounding")
 add_lotus_headless_test(x11_pointer_click
     x11-pointer-click.cpp "unit;x11")
 add_lotus_headless_test(x11_xtest_replacement

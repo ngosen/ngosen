@@ -29,6 +29,10 @@ namespace ngosen {
     // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it.
     bool appliesBackspacesLate(const Field& field);
 
+    // LibreOffice Calc over Wayland text-input tells the input method nothing when another cell is
+    // selected; it reports the field only when a key reaches it, a lone Shift included.
+    bool reportsFieldOnlyOnKey(const Field& field);
+
     // Firefox's address bar sets no Url flag; callers recognise it by the text after the cursor.
     bool hidesAddressBarFlag(const Field& field);
 

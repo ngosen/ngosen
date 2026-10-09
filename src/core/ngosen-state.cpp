@@ -253,6 +253,7 @@ namespace ngosen {
                     }
                 }
                 if (!isCommit) {
+                    passed_key_ = live_key_;
                     keyEvent.passToApp();
                 }
             } else {
@@ -287,6 +288,7 @@ namespace ngosen {
         switch (realMode) {
             case ngosen::Mode::Sen: {
                 live_key_ = KeyEntry{.sym = currentSym, .state = keyEvent.states()};
+                passed_key_.reset();
                 handleUinputMode(keyEvent, currentSym);
                 live_key_.reset();
                 break;

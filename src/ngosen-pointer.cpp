@@ -118,7 +118,7 @@ bool isRawClickEvent(const uint8_t* event, uint8_t xinputOpcode) {
 }
 
 bool watchX11PointerClicks(const std::atomic<bool>& stop, const std::function<void()>& onClick) {
-    if (getEnv("DISPLAY").empty() || !getEnv("WAYLAND_DISPLAY").empty())
+    if (getEnv("DISPLAY").empty())
         return false;
     void* xcb    = dlopen("libxcb.so.1", RTLD_NOW | RTLD_LOCAL);
     void* xinput = dlopen("libxcb-xinput.so.0", RTLD_NOW | RTLD_LOCAL);

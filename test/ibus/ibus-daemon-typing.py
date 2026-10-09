@@ -7,7 +7,7 @@ import time
 import gi
 
 gi.require_version("IBus", "1.0")
-from gi.repository import GLib, IBus
+from gi.repository import GLib, IBus  # noqa: E402
 
 failures = 0
 
@@ -119,7 +119,11 @@ app = App("test-surrounding", True)
 app.type("tiee")
 check(app.text == "tiê", "sen with surrounding text: field", repr(app.text))
 check(app.commits == ["ê"], "sen with surrounding text: commits", app.commits)
-check(app.forwarded == [("BackSpace", False), ("BackSpace", True)], "sen with surrounding text: forwarded", app.forwarded)
+check(
+    app.forwarded == [("BackSpace", False), ("BackSpace", True)],
+    "sen with surrounding text: forwarded",
+    app.forwarded,
+)
 app.close()
 
 app = App("test-plain", False)

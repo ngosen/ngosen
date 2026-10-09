@@ -17,9 +17,8 @@ Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues
 
 ## Chỉ cho fcitx5
 
-Ngó Sen chỉ làm cho fcitx5. Bản IBus và bản chạy thẳng trên Sway, Hyprland đã thôi làm: mỗi bộ gõ nền
-cần thử lại từng app, và một người không giữ nổi hai ba bản cùng lúc. Trên GNOME và Ubuntu, cài fcitx5
-cùng Ngó Sen là gõ được. Mã bản IBus dở dang vẫn nằm ở nhánh `feat/ibus-engine`, không cập nhật nữa.
+Ngó Sen chỉ làm cho fcitx5. Bản IBus và bản chạy thẳng trên Sway, Hyprland đã bỏ. Mã bản IBus vẫn còn ở
+nhánh `feat/ibus-engine`.
 
 ## Nên dùng chế độ nào
 

@@ -28,6 +28,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   fork (nhánh `main`, `ctest`, dòng CHANGELOG) (#80).
 - README không còn gọi Hyprland là compositor wlroots: Hyprland đã bỏ wlroots từ bản 0.42, nhưng vẫn
   có giao thức input-method-v2 mà Ngó Sen cần (#81).
+- README bỏ câu "không chạy ngầm với quyền root": uinput server của bản cũ chạy bằng tài khoản
+  `uinput_proxy`, không phải root. Điểm đầu tiên nay chỉ ghi "Bỏ hẳn uinput server" (#85).
 
 ## [0.5.1-1] — 09/10/2026
 

@@ -2,8 +2,8 @@
 
 **Bộ gõ tiếng Việt tối ưu cho Linux.**
 
-- **Không chạy ngầm với quyền root.** Bỏ hẳn uinput server, Ngó Sen chỉ dùng đúng quyền của fcitx5. Cài
-  xong là gõ, không bật dịch vụ, không cấp quyền thiết bị.
+- **Bỏ hẳn uinput server.** Ngó Sen chỉ dùng đúng quyền của fcitx5. Cài xong là gõ, không bật dịch vụ,
+  không cấp quyền thiết bị.
 - **Gõ thẳng, không gạch chân.** Chế độ Gõ Sen đưa chữ vào app ngay khi gõ. Ô gợi ý của thanh địa chỉ hay
   ô tìm kiếm chạy theo từng phím.
 - **Một chế độ cho mọi app.** Trình duyệt, terminal, Zalo, LibreOffice đều dùng Gõ Sen. Ngó Sen tự nhận ra

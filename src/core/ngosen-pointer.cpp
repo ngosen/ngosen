@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "ngosen-pointer.h"
-#include "lotus-utils.h"
+#include "ngosen-log.h"
 
 #include <cerrno>
 #include <cstdlib>
@@ -68,13 +68,13 @@ namespace {
         auto  select       = symbol<SelectEventsFn>(xinput, "xcb_input_xi_select_events_checked");
         auto* inputId      = symbol<XcbExtension*>(xinput, "xcb_input_id");
         if (!connect || !disconnect || !hasError || !getSetup || !roots || !extData || !requestCheck || !queryVersion || !versionReply || !select || !inputId) {
-            LOTUS_WARN("XInput2 unavailable: missing xcb symbols");
+            NGOSEN_WARN("XInput2 unavailable: missing xcb symbols");
             return nullptr;
         }
 
         XcbConnection* conn = connect(nullptr, nullptr);
         if (conn == nullptr || hasError(conn) != 0) {
-            LOTUS_WARN("XInput2 unavailable: cannot open the display");
+            NGOSEN_WARN("XInput2 unavailable: cannot open the display");
             if (conn != nullptr)
                 disconnect(conn);
             return nullptr;
@@ -89,7 +89,7 @@ namespace {
             std::memcpy(&major, version + 8, sizeof(major));
         std::free(version);
         if (major < 2) {
-            LOTUS_WARN("XInput2 unavailable: the X server lacks XInput 2");
+            NGOSEN_WARN("XInput2 unavailable: the X server lacks XInput 2");
             disconnect(conn);
             return nullptr;
         }
@@ -98,7 +98,7 @@ namespace {
         void*              error = requestCheck(conn, select(conn, *roots(getSetup(conn)).data, 1, &mask));
         if (error != nullptr) {
             std::free(error);
-            LOTUS_WARN("XInput2 unavailable: cannot select raw button events");
+            NGOSEN_WARN("XInput2 unavailable: cannot select raw button events");
             disconnect(conn);
             return nullptr;
         }
@@ -118,12 +118,13 @@ bool isRawClickEvent(const uint8_t* event, uint8_t xinputOpcode) {
 }
 
 bool watchX11PointerClicks(const std::atomic<bool>& stop, const std::function<void()>& onClick) {
-    if (getEnv("DISPLAY").empty())
+    const char* display = std::getenv("DISPLAY");
+    if (display == nullptr || *display == 0)
         return false;
     void* xcb    = dlopen("libxcb.so.1", RTLD_NOW | RTLD_LOCAL);
     void* xinput = dlopen("libxcb-xinput.so.0", RTLD_NOW | RTLD_LOCAL);
     if (xcb == nullptr || xinput == nullptr) {
-        LOTUS_WARN("XInput2 unavailable: cannot load libxcb-xinput");
+        NGOSEN_WARN("XInput2 unavailable: cannot load libxcb-xinput");
         return false;
     }
     uint8_t        opcode = 0;
@@ -134,7 +135,7 @@ bool watchX11PointerClicks(const std::atomic<bool>& stop, const std::function<vo
     auto pollForEvent = symbol<PollForEventFn>(xcb, "xcb_poll_for_event");
     auto hasError     = symbol<HasErrorFn>(xcb, "xcb_connection_has_error");
     auto disconnect   = symbol<DisconnectFn>(xcb, "xcb_disconnect");
-    LOTUS_INFO("Watching mouse clicks through XInput2.");
+    NGOSEN_INFO("Watching mouse clicks through XInput2.");
 
     pollfd pfd{getFd(conn), POLLIN, 0};
     // The timeout bounds how long shutdown waits for this thread.

@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+#include "ngosen-ibus-clicks.h"
 #include "ngosen-ibus-engine.h"
 
 #include <cstdio>
@@ -36,6 +37,7 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
+    ngosen::ClickWatch clicks;
     ibus_main();
     return 0;
 }

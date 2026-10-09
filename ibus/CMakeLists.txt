@@ -7,6 +7,7 @@ include(GNUInstallDirs)
 set(NGOSEN_IBUS_DATADIR "${CMAKE_INSTALL_FULL_DATADIR}/ibus-ngosen")
 
 add_library(ngosen_ibus STATIC
+    ngosen-ibus-clicks.cpp
     ngosen-ibus-config.cpp
     ngosen-ibus-engine.cpp
     ngosen-ibus-host.cpp

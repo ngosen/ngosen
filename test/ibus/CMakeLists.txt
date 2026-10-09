@@ -3,6 +3,11 @@ target_link_libraries(ibus_shell PRIVATE ngosen_ibus)
 add_test(NAME ibus_shell COMMAND ibus_shell)
 set_tests_properties(ibus_shell PROPERTIES LABELS "unit;ibus" TIMEOUT 60)
 
+add_executable(ibus_click_watch ibus-click-watch.cpp)
+target_link_libraries(ibus_click_watch PRIVATE ngosen_ibus)
+add_test(NAME ibus_click_watch COMMAND ibus_click_watch)
+set_tests_properties(ibus_click_watch PROPERTIES LABELS "unit;ibus;x11" TIMEOUT 60)
+
 # Needs ibus-daemon, dbus-run-session and Python's IBus bindings; skipped without them.
 find_program(IBUS_DAEMON ibus-daemon)
 find_program(DBUS_RUN_SESSION dbus-run-session)

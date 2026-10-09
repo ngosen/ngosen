@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component>
+  <name>org.freedesktop.IBus.NgoSen</name>
+  <description>Ngó Sen Vietnamese input method</description>
+  <exec>@NGOSEN_IBUS_EXEC@ --ibus</exec>
+  <version>@PROJECT_VERSION@</version>
+  <author>Ngó Sen contributors</author>
+  <license>GPL-3.0-or-later</license>
+  <homepage>https://github.com/ngosen/ngosen</homepage>
+  <textdomain>ibus-ngosen</textdomain>
+  <engines>
+    <engine>
+      <name>ngosen</name>
+      <language>vi</language>
+      <license>GPL-3.0-or-later</license>
+      <author>Ngó Sen contributors</author>
+      <layout>us</layout>
+      <longname>Ngó Sen</longname>
+      <description>Vietnamese input method</description>
+      <rank>0</rank>
+    </engine>
+  </engines>
+</component>

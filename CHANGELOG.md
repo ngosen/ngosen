@@ -26,11 +26,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   mới (#87).
 - LibreOffice Calc mở thẳng trên Wayland (không qua module Qt của fcitx): click sang ô khác rồi gõ thì chữ
   ra lẫn chữ của ô trước, hoặc mở hộp thoại "Delete Contents". Nay bộ gõ hỏi Calc đang ở ô nào trước khi
-  sửa chữ, nên mỗi ô mới bắt đầu một chữ mới (#PR).
+  sửa chữ, nên mỗi ô mới bắt đầu một chữ mới (#90).
 - WPS Office: gõ hai phím giống nhau liền nhau (`dd`, `ee`, `oo`, `aa`, `ww`) thì phím thứ hai bị mất, nên
-  `dd` không ra `đ` và `oo` không ra `ô`. Nay chỉ app gõ qua XIM mới bị coi là "gửi trả phím" (#PR).
+  `dd` không ra `đ` và `oo` không ra `ô`. Nay chỉ app gõ qua XIM mới bị coi là "gửi trả phím" (#90).
 - App X11 chạy trên phiên Wayland (WPS Office qua Xwayland): click chuột sang ô khác rồi gõ thì chữ ra lẫn
-  chữ của ô trước. Nay bộ gõ nghe cú click trên cửa sổ Xwayland như trên phiên X11 (#PR).
+  chữ của ô trước. Nay bộ gõ nghe cú click trên cửa sổ Xwayland như trên phiên X11 (#90).
 
 ### Thay đổi
 

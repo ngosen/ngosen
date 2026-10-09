@@ -2,6 +2,8 @@
 //
 // An XIM client sometimes sends a key we let through back to us instead of typing it: the same
 // keycode with the same timestamp. It must go to the app again, not be typed a second time.
+// Other frontends never do that, and WPS's fcitx4 plugin stamps keys in whole seconds, so there two
+// quick presses of one key share a time and both must be typed.
 #include "lotus-engine.h"
 #include "lotus-utils.h"
 #include "test-input-context.h"
@@ -79,6 +81,25 @@ int main() {
     pumpEventLoop(testInstance.instance, 100);
     if (context->commits().empty() || context->commits().back() != "ô") {
         reportFailure("co + o", "last commit 'ô'", joinCommits(*context));
+        return 1;
+    }
+    context->focusOut();
+
+    auto wps = std::make_unique<TestInputContext>(&testInstance.instance, "wps", "fcitx4");
+    // What WPS sets, though it never reports any text.
+    wps->setCapabilityFlags(fcitx::CapabilityFlags{fcitx::CapabilityFlag::ClientUnfocusCommit, fcitx::CapabilityFlag::SurroundingText});
+    wps->focusIn();
+    fcitx::InputContextEvent wpsFocus(wps.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, wpsFocus);
+    Harness       w{engine, entry, *wps};
+    constexpr int Second = 1791536707;
+    if (!w.press(FcitxKey_c, CodeC, Second, false, "fcitx4: type c") || !w.press(FcitxKey_o, CodeO, Second, false, "fcitx4: type o"))
+        return 1;
+    if (!w.press(FcitxKey_o, CodeO, Second, true, "fcitx4: type o again in the same second"))
+        return 1;
+    pumpEventLoop(testInstance.instance, 100);
+    if (wps->commits().empty() || wps->commits().back() != "ô") {
+        reportFailure("fcitx4: co + o", "last commit 'ô'", joinCommits(*wps));
         return 1;
     }
     return 0;

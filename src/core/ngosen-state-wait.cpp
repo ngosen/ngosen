@@ -294,6 +294,13 @@ namespace ngosen {
     // Wayland). Nobody clicks that soon after typing, so such moves are not clicks.
     constexpr uint64_t CaretSettleUs = 30000;
 
+    // Our own edits only touch the text before the cursor, even while their report is still on the way.
+    bool TypingState::textAfterCursorChanged(const Surrounding& s) const {
+        const std::u32string before = ngosen::utf8::decode(lastSurroundingText_);
+        const std::u32string now    = ngosen::utf8::decode(s.text());
+        return before.substr(std::min<size_t>(lastSurroundingCursor_, before.size())) != now.substr(std::min<size_t>(s.cursor(), now.size()));
+    }
+
     // Wayland apps report a click only as a cursor move; the IM gets no reset or mouse event.
     void TypingState::checkCursorJump() {
         const auto s = host_->surrounding();
@@ -305,11 +312,14 @@ namespace ngosen {
         bool       jumped   = sameText && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
         // Some editors (Lark in Firefox) report the cursor past our commit before the committed text.
         const bool echo = jumped && unreportedCommitLength_ > 0 && s.cursor() == s.anchor() && s.cursor() == lastSurroundingCursor_ + unreportedCommitLength_;
+        // A spreadsheet reports a click on another cell only as that cell's text with the cursor at its start.
+        const bool newField =
+            hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() && (unreportedCommitLength_ == 0 || textAfterCursorChanged(s));
         // Firefox repeats the old state before the echo, so only a change ends the wait.
         if (jumped || !sameText)
             unreportedCommitLength_ = 0;
         const bool settling    = ngosen::monotonicUs() - lastInputAtUs_ < CaretSettleUs;
-        jumped                 = jumped && !echo && !settling;
+        jumped                 = ((jumped && !echo) || newField) && !settling;
         lastSurroundingText_   = s.text();
         lastSurroundingCursor_ = s.cursor();
         lastSurroundingAnchor_ = s.anchor();

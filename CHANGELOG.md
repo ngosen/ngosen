@@ -17,6 +17,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   trong README. CI dựng gói, chạy test và nạp nó vào fcitx5 trên màn hình X ảo (#82).
 - Hướng dẫn tự dựng trên NixOS trong `TU-DUNG.md`, và `nix develop` mở shell có đủ công cụ dựng (#83).
 
+### Sửa
+
+- Google Sheets trên Wayland: click chuột sang ô khác rồi gõ, sau vài ô thì chữ ra lẫn chữ của ô trước và
+  không thành tiếng Việt (vd. `afoc`, `ieengs`). Nay mỗi ô mới bắt đầu một chữ mới (#86).
+
 ### Thay đổi
 
 - Phần xử lý gõ được tách khỏi fcitx5 và sắp xếp lại để chuẩn bị bản chạy trên IBus. Người dùng không thấy

@@ -84,9 +84,10 @@ namespace ngosen {
         void surroundingUpdated();
 
         /**
-         * @brief Treats a cursor move within unchanged surrounding text as a mouse click.
+         * @brief Treats a cursor move within unchanged surrounding text, or a jump into another spreadsheet cell, as a mouse click.
          */
         void checkCursorJump();
+        bool textAfterCursorChanged(const Surrounding& s) const;
 
         /**
          * @brief Records text sent to the app, so its cursor moving past it is not taken for a click.

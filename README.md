@@ -133,7 +133,7 @@ code is written with an AI coding agent, then measured and used daily by the mai
 [VMK](https://github.com/thanhpy2009/VMK), under GPL-3.0-or-later, published as is with no promise of
 support.
 
-Planned for 1.0: no background uinput server; two typing modes, Gõ Sen (one mode that works for fast
+Ngó Sen 1.0 has no background uinput server; two typing modes, Gõ Sen (one mode that works for fast
 typing, browsers and Electron apps) and Preedit; and the Bamboo composition core ported from Go to Rust.
 Ngó Sen targets fcitx5 only; the IBus engine was dropped and stays unmaintained on the
 `feat/ibus-engine` branch. The rest of this page is in Vietnamese.

@@ -18,6 +18,9 @@ bản này mới hơn `3.5.10-4`, nên cập nhật như thường.
 
 "Chỉ dựng" nghĩa là gói dựng được và qua bộ kiểm lúc dựng, chưa ai gõ thử trên bản phân phối đó.
 
+Cột "Mức đã thử" là lần gõ thử bản 0.5. Các bản sửa bảng tính mới trong 1.0 được gõ thử trên máy ảo CachyOS
+(KDE Wayland): LibreOffice Calc, WPS Office và Google Sheets trong Firefox.
+
 Lõi ghép dấu viết bằng Rust có trong gói Fedora, Arch, openSUSE và Ubuntu 24.04 trở lên. Debian 12, 13 và
 Ubuntu 22.04 vẫn dùng lõi Go, vì Rust có sẵn ở đó quá cũ. Hai lõi gõ ra chữ như nhau.
 

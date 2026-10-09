@@ -11,6 +11,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.0.0-1] — 09/10/2026
+
+Bản 1.0: Ngó Sen chỉ làm cho fcitx5. Click sang ô khác rồi gõ nay ra đúng trong LibreOffice Calc, WPS Office
+và Google Sheets. Tải ở [ngosen-1.0.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.0.0-1).
+
 ### Thêm
 
 - Gói Nix cho NixOS, dựng từ mã của Ngó Sen (gói Nix cũ tải mã bản gốc nên đã gỡ ở #21). Cách cài nằm

@@ -5,7 +5,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        0.5.1
+Version:        1.0.0
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -118,6 +118,9 @@ echo "Mở 'Fcitx5 Configuration' và thêm bộ gõ Ngó Sen, hoặc khởi đ�
 echo "KDE Wayland: chọn 'Fcitx 5' trong System Settings → Virtual Keyboard."
 
 %changelog
+* Fri Oct 09 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.0.0-1
+- Fixes for Calc, WPS Office and Google Sheets when clicking another cell; fcitx5 only from now on.
+
 * Fri Oct 09 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:0.5.1-1
 - Sen mode types on Sway and Hyprland; a fresh install starts in Sen mode.
 

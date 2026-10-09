@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(fcitx5-lotus VERSION 0.5.1)
+project(fcitx5-lotus VERSION 1.0.0)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(BUILD_TESTING "Build Lotus tests" OFF)
 option(NGOSEN_RUST_CORE "Build the typing core from bamboo-rs/ (Rust) instead of the Go sources in bamboo/" OFF)

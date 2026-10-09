@@ -1,3 +1,9 @@
+fcitx5-ngosen (1:1.0.0-1) unstable; urgency=medium
+
+  * Fixes for Calc, WPS Office and Google Sheets when clicking another cell; fcitx5 only from now on.
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Fri, 09 Oct 2026 20:00:00 +0700
+
 fcitx5-ngosen (1:0.5.1-1) unstable; urgency=medium
 
   * Sen mode types on Sway and Hyprland; a fresh install starts in Sen mode.

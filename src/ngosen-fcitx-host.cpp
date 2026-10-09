@@ -124,6 +124,10 @@ namespace ngosen {
         return xtestSendKeys(count);
     }
 
+    bool FcitxHost::canPressSystemKeys() const {
+        return xtestAvailable();
+    }
+
     Surrounding FcitxHost::surrounding() const {
         const auto& s = ic_->surroundingText();
         if (!s.isValid()) {

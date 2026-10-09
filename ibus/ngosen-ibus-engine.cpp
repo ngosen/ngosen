@@ -58,6 +58,7 @@ namespace {
         Session* session = sessionOf(engine);
         if (session == nullptr)
             return FALSE;
+        session->host->refreshWindow();
         ngosen::IBusKeyPress key(keyval, keycode, state);
         session->state->keyEvent(key);
         if (key.accepted())

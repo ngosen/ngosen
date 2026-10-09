@@ -15,6 +15,10 @@ namespace ngosen {
     // input-method frontend, XIM clients, and IBus, D-Bus and fcitx4 clients other than SDL.
     bool forwardsBackspaces(const Field& field);
 
+    // True for WPS Office under IBus: its editors drop forwarded keys and surrounding text deletions, so
+    // only real key presses edit the text, and its surrounding text looks done before a deletion is applied.
+    bool takesOnlyRealKeys(const Field& field);
+
     // True for GTK4 clients, whose IM modules drop forwarded keys; delete through surrounding text there.
     bool ignoresForwardedKeys(const Field& field);
 

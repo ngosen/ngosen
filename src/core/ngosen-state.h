@@ -290,13 +290,15 @@ namespace ngosen {
          */
         bool handleUInputKeyPress(ngosen::KeyPress& event, uint32_t currentSym, int sleepTime);
         bool waitForDeletion(ngosen::KeyPress* event, int sleepTime);
+        // The surrounding text a wait reads, empty for apps where it looks done too early.
+        ngosen::Surrounding deletionSnapshot() const;
         // Commits once the app reports the deletion, or at a timeout.
         bool startSurroundingWait(ngosen::KeyPress* event);
         // Commits after a fixed delay, for apps whose reports cannot be trusted.
         bool startTimedWait(ngosen::KeyPress* event, int sleepTime, bool skipFrozenWait);
         bool onTimedWaitTimer(ngosen::Timer& t);
         void forwardBackspaces(int count);
-        // True when a replacement can delete text: forwarded by the frontend or pressed through XTEST.
+        // True when a replacement can delete text: forwarded by the frontend or pressed by the host.
         bool canSendBackspaces() const;
         // Moves the commit of a timer-only wait later, never earlier.
         void deferTimedCommit(uint64_t deliverAtUs);

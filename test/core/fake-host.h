@@ -55,6 +55,9 @@ namespace ngosen::test {
             systemKeys_.push_back(count);
             return systemKeysWork_;
         }
+        bool canPressSystemKeys() const override {
+            return systemKeysWork_;
+        }
 
         Surrounding surrounding() const override {
             return surrounding_;

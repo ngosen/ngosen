@@ -83,7 +83,8 @@ gnome-extensions enable forward-keys@ngosen.github.io
 ```
 
 Khi Ubuntu tự sửa lỗi này ([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784))
-thì tắt extension bằng `gnome-extensions disable forward-keys@ngosen.github.io`.
+thì tắt extension bằng `gnome-extensions disable forward-keys@ngosen.github.io`. Riêng bản IBus cần
+extension này để gõ trong WPS Office, nên dùng WPS với bản IBus thì cứ để bật.
 
 ### Ubuntu: VS Code
 

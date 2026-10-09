@@ -57,6 +57,7 @@ namespace ngosen {
         bool        formattedPreedit = false;
         bool        url              = false; // the field is an address bar
         bool        keyEventOrderFix = false;
+        std::string x11Class; // WM_CLASS of the focused window when the desktop reports it and it is X11
     };
 
     // Where the user is in the candidate list shown in the panel. Indexes count from the first
@@ -91,6 +92,8 @@ namespace ngosen {
         // Presses keys at the X server: count > 0 presses BackSpace count times, count < 0 selects
         // -count characters with Shift+Left. False when that is unavailable.
         virtual bool pressSystemKeys(int count) = 0;
+        // True when pressSystemKeys can press BackSpace for the focused field.
+        virtual bool canPressSystemKeys() const = 0;
 
         // Read fresh on every call: the app may report a new state between two calls.
         virtual Surrounding surrounding() const = 0;

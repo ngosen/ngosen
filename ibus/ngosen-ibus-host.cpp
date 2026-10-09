@@ -7,6 +7,7 @@
 
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
+#include "ngosen-shell-keys.h"
 #include "ngosen-xtest.h"
 
 #include <libintl.h>
@@ -92,7 +93,21 @@ namespace ngosen {
     }
 
     bool IBusHost::pressSystemKeys(int count) {
-        return xtestSendKeys(count);
+        if (xtestAvailable())
+            return xtestSendKeys(count);
+        return count > 0 && !x11Class_.empty() && shell::pressBackSpace(count);
+    }
+
+    bool IBusHost::canPressSystemKeys() const {
+        return xtestAvailable() || !x11Class_.empty();
+    }
+
+    void IBusHost::refreshWindow() {
+        if (x11ClassKnown_)
+            return;
+        // GNOME Shell's own context serves Wayland windows only.
+        x11Class_      = client_ == "gnome-shell" ? std::string() : shell::focusedX11Class();
+        x11ClassKnown_ = true;
     }
 
     Surrounding IBusHost::surrounding() const {
@@ -115,6 +130,7 @@ namespace ngosen {
         f.surroundingText = (engine_->client_capabilities & IBUS_CAP_SURROUNDING_TEXT) != 0;
         f.preedit         = (engine_->client_capabilities & IBUS_CAP_PREEDIT_TEXT) != 0;
         f.url             = purpose_ == IBUS_INPUT_PURPOSE_URL;
+        f.x11Class        = x11Class_;
         return f;
     }
 

@@ -27,6 +27,7 @@ namespace ngosen {
         void                         forwardKey(EditKey key, bool release) override;
         void                         deleteSurrounding(int offset, unsigned int size) override;
         bool                         pressSystemKeys(int count) override;
+        bool                         canPressSystemKeys() const override;
 
         Surrounding                  surrounding() const override;
         Field                        field() const override;

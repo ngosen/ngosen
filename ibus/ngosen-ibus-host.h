@@ -22,10 +22,17 @@ namespace ngosen {
         // IBus tells the engine about the field piece by piece; the engine passes each piece on.
         void setFocus(bool focus) {
             focus_ = focus;
+            x11Class_.clear();
+            x11ClassKnown_ = false;
         }
         void setClient(std::string client) {
             client_ = std::move(client);
+            x11Class_.clear();
+            x11ClassKnown_ = false;
         }
+        // Asks GNOME Shell which window has focus, once per focus and only on a key: at focus-in the
+        // shell may not have moved its own focus yet.
+        void refreshWindow();
         void setPurpose(guint purpose) {
             purpose_ = purpose;
         }
@@ -37,6 +44,7 @@ namespace ngosen {
         void                         forwardKey(EditKey key, bool release) override;
         void                         deleteSurrounding(int offset, unsigned int size) override;
         bool                         pressSystemKeys(int count) override;
+        bool                         canPressSystemKeys() const override;
 
         Surrounding                  surrounding() const override;
         Field                        field() const override;
@@ -67,6 +75,8 @@ namespace ngosen {
         bool                                    focus_   = false;
         guint                                   purpose_ = IBUS_INPUT_PURPOSE_FREE_FORM;
         std::string                             client_;
+        std::string                             x11Class_;
+        bool                                    x11ClassKnown_ = false;
         std::string                             preedit_;
         bool                                    underline_ = false;
         std::string                             status_;

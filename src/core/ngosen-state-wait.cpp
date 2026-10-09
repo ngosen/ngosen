@@ -26,6 +26,11 @@ namespace ngosen {
         }
     }
 
+    ngosen::Surrounding TypingState::deletionSnapshot() const {
+        // WPS's surrounding text looks done before its editor applies the deletion.
+        return ngosen::takesOnlyRealKeys(host_->field()) ? ngosen::Surrounding() : host_->surrounding();
+    }
+
     bool TypingState::deletionLooksDone() const {
         const auto s = host_->surrounding();
         if (!s.isValid()) {
@@ -89,7 +94,7 @@ namespace ngosen {
     bool TypingState::waitForDeletion(ngosen::KeyPress* event, int sleepTime) {
         // Some apps (Konsole) declare surrounding text but always send it empty; nothing can match,
         // so use the sleeping path.
-        const bool emptySnapshot = host_->surrounding().text().empty();
+        const bool emptySnapshot = deletionSnapshot().text().empty();
         // GNOME Shell relays surrounding text late and one step behind (or not at all), so an
         // event-driven wait times out and commits ahead of the backspaces. Use the timed path there.
         const bool waitEvent = engine_->options().waitSurroundingEvent && !ngosen::surroundingTextLags(host_->field());
@@ -161,7 +166,7 @@ namespace ngosen {
         const int perKeyMs = skipFrozenWait ? std::max(sleepTime, engine_->options().waitSurroundingMinPerKeyMs) : sleepTime;
         int       waitMs   = perKeyMs * (expected_backspaces_ - 1);
         // Validate surr cursor pos should match realtextLen after all BS applied
-        const auto surr = host_->surrounding();
+        const auto surr = deletionSnapshot();
         if (skipFrozenWait) {
             NGOSEN_INFO("Skip retry (frozen)"); // retrying 3 x 2 ms is pointless on a frozen snapshot
         } else if (surr.isValid() && surr.cursor() == realtextLen.load(std::memory_order_acquire)) {
@@ -230,7 +235,7 @@ namespace ngosen {
     }
 
     bool TypingState::canSendBackspaces() const {
-        return ngosen::forwardsBackspaces(host_->field()) || xtestAvailable();
+        return ngosen::forwardsBackspaces(host_->field()) || host_->canPressSystemKeys();
     }
 
     void TypingState::deferTimedCommit(uint64_t deliverAtUs) {

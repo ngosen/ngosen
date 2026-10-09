@@ -16,7 +16,7 @@ namespace ngosen {
         }
         if (field.frontend == "ibus") {
             // SDL takes only commits and preedit from the IM.
-            return !isStartsWith(field.program, "SDL");
+            return !isStartsWith(field.program, "SDL") && !takesOnlyRealKeys(field);
         }
         if (field.frontend == "dbus") {
             // fcitx5-gtk and fcitx5-qt set one of these; SDL sets neither and handles only commits and preedit.
@@ -28,6 +28,11 @@ namespace ngosen {
             return field.formattedPreedit || field.surroundingText;
         }
         return false;
+    }
+
+    bool takesOnlyRealKeys(const Field& field) {
+        // Its bundled Qt IBus module reports the same as any Qt app, so only the window tells it apart.
+        return field.frontend == "ibus" && field.x11Class == "wpsoffice";
     }
 
     bool ignoresForwardedKeys(const Field& field) {

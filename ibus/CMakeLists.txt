@@ -13,6 +13,7 @@ add_library(ngosen_ibus STATIC
     ngosen-ibus-host.cpp
     ngosen-ibus-log.cpp
     ngosen-ibus-resources.cpp
+    ngosen-shell-keys.cpp
 )
 target_include_directories(ngosen_ibus PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(ngosen_ibus PRIVATE NGOSEN_IBUS_DICTIONARY="${NGOSEN_IBUS_DATADIR}/vietnamese.cm.dict")
@@ -26,5 +27,7 @@ set(NGOSEN_IBUS_EXEC "${CMAKE_INSTALL_FULL_LIBEXECDIR}/ibus-engine-ngosen")
 configure_file(ngosen.xml.in ${CMAKE_CURRENT_BINARY_DIR}/ngosen.xml @ONLY)
 
 install(TARGETS ibus-engine-ngosen DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
+# The engine presses keys through it in apps that drop what the input method sends.
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/gnome-shell/forward-keys@ngosen.github.io DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ngosen.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/ibus/component)
 install(FILES ${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict DESTINATION ${NGOSEN_IBUS_DATADIR})

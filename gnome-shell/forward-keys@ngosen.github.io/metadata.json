@@ -1,7 +1,7 @@
 {
   "uuid": "forward-keys@ngosen.github.io",
-  "name": "Ngó Sen forward-key fix",
-  "description": "Delivers keys that an input method forwards to the app. GNOME 50.0 to 50.3 drop them (mutter#4853), which breaks Vietnamese typing with Ngó Sen and other IBus engines.",
+  "name": "Ngó Sen key fixes",
+  "description": "Delivers keys that an input method forwards to the app, which GNOME 50.0 to 50.3 drop (mutter#4853). Also lets the Ngó Sen IBus engine press BackSpace in WPS Office, which ignores the input method's own edits.",
   "shell-version": ["50"],
   "url": "https://github.com/ngosen/ngosen"
 }

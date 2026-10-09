@@ -172,6 +172,35 @@ namespace {
         check(host->deletes().empty(), "sdl: no surrounding text deletion", std::to_string(host->deletes().size()));
     }
 
+    // WPS drops forwarded keys and surrounding deletions, so it gets real key presses. Its surrounding
+    // text looks done before the editor applies the deletion, so it must not cut the wait short.
+    void testWpsGetsRealKeys() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field = makeField("ibus", true, "QIBusInputContext");
+        field.x11Class      = "wpsoffice";
+        auto      owned     = std::make_unique<FakeHost>(loop, field);
+        FakeHost* host      = owned.get();
+        host->setSystemKeysWork(true);
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        typeTie(state, *host, loop, false);
+        press(state, static_cast<uint32_t>('e'));
+        check(host->forwarded().empty(), "wps: no forwarded keys", std::to_string(host->forwarded().size()));
+        check(host->deletes().empty(), "wps: no surrounding text deletion", std::to_string(host->deletes().size()));
+        check(host->systemKeys().size() == 1 && host->systemKeys()[0] == 2, "wps: presses the deleted letter and one returning backspace",
+              std::to_string(host->systemKeys().size()) + " presses");
+        press(state, ngosen::key::BackSpace);
+        // WPS reports no text, with the cursor where it will be once the returning backspace is counted.
+        host->setSurrounding("", realtextLen.load() - 1);
+        press(state, ngosen::key::BackSpace);
+        loop.pump(5);
+        check(host->commits().empty(), "wps: waits after the returning backspace", join(host->commits()));
+        loop.pump(150);
+        check(join(host->commits()) == "['ê']", "wps: commits ê", join(host->commits()));
+    }
+
     void testQuirks() {
         check(ngosen::forwardsBackspaces(makeField("wayland_v2", false)), "quirks: wayland_v2 forwards backspaces", "false");
         check(ngosen::forwardsBackspaces(makeField("xim", false)), "quirks: xim forwards backspaces", "false");
@@ -193,6 +222,7 @@ int main() {
     testKeyDuringReplacement();
     testGtk4DeletesSurrounding();
     testSdlGetsNoForwardedBackspace();
+    testWpsGetsRealKeys();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";
     return failures == 0 ? 0 : 1;

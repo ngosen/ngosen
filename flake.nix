@@ -18,6 +18,12 @@
         default = fcitx5-ngosen;
       });
 
+      devShells = forAllSystems (pkgs: {
+        default = pkgs.mkShell {
+          inputsFrom = [ self.packages.${pkgs.stdenv.hostPlatform.system}.fcitx5-ngosen ];
+        };
+      });
+
       overlays.default = final: prev: {
         fcitx5-ngosen = final.callPackage ./nix/package.nix { src = self; };
       };

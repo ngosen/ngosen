@@ -65,7 +65,8 @@ i18n.inputMethod = {
 ```
 
 CI dựng gói này, chạy test và nạp nó vào fcitx5 trên một màn hình X ảo, nhưng chưa ai thử trên máy
-NixOS thật. Gặp lỗi xin mở issue.
+NixOS thật. Gặp lỗi xin mở issue. Tự dựng từ bản clone trên máy: xem mục NixOS trong
+[TU-DUNG.md](TU-DUNG.md#nixos).
 
 **Cài xong, hoặc mỗi lần cập nhật,** khởi động lại fcitx5:
 

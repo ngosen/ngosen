@@ -15,6 +15,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Gói Nix cho NixOS, dựng từ mã của Ngó Sen (gói Nix cũ tải mã bản gốc nên đã gỡ ở #21). Cách cài nằm
   trong README. CI dựng gói, chạy test và nạp nó vào fcitx5 trên màn hình X ảo (#82).
+- Hướng dẫn tự dựng trên NixOS trong `TU-DUNG.md`, và `nix develop` mở shell có đủ công cụ dựng (#83).
 
 ### Thay đổi
 

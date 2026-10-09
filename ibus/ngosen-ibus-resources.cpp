@@ -8,6 +8,7 @@
 #include "bamboo-core.h"
 #include "ngosen-log.h"
 
+#include <cstdlib>
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -17,12 +18,15 @@ namespace ngosen {
         Init();
         char* empty[] = {nullptr};
         macroTable_   = NewMacroTable(empty);
-        // The spell check reads this even with the custom dictionary off.
-        const int fd = ::open(NGOSEN_IBUS_DICTIONARY, O_RDONLY | O_CLOEXEC);
+        // The spell check reads this even with the custom dictionary off. The variable lets the
+        // tests run the engine from the build tree.
+        const char* override = std::getenv("NGOSEN_IBUS_DICTIONARY");
+        const char* path     = override != nullptr ? override : NGOSEN_IBUS_DICTIONARY;
+        const int   fd       = ::open(path, O_RDONLY | O_CLOEXEC);
         if (fd != -1)
             dictionary_ = NewDictionary(static_cast<uintptr_t>(fd));
         else
-            NGOSEN_WARN("No dictionary at " NGOSEN_IBUS_DICTIONARY);
+            NGOSEN_WARN("No dictionary at " << path);
         reload();
     }
 

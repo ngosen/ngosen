@@ -134,6 +134,29 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure --no-tests=error
 
+  ibus-engine:
+    name: IBus engine
+    runs-on: ubuntu-latest
+    container: ubuntu:26.04
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates g++ cmake make golang-go git pkg-config \
+            libibus-1.0-dev ibus python3-gi gir1.2-ibus-1.0 dbus
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+      - name: Build
+        run: |
+          cmake -S . -B build -DNGOSEN_IBUS=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)"
+      - name: Test
+        run: |
+          ctest --test-dir build --output-on-failure --no-tests=error
+          # Fails if the daemon test was skipped for a missing dependency.
+          ctest --test-dir build -R ibus_daemon_typing --no-tests=error
+
   go-test:
     name: Go test
     runs-on: ubuntu-latest

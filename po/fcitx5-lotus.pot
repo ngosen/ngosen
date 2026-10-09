@@ -899,3 +899,12 @@ msgstr ""
 #: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:3
 msgid "Configure the Ngó Sen input method"
 msgstr ""
+
+msgid "Save typing log"
+msgstr ""
+
+msgid "Typing log saved: "
+msgstr ""
+
+msgid "Could not save the typing log to "
+msgstr ""

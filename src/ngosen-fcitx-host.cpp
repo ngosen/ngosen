@@ -142,6 +142,7 @@ namespace ngosen {
         f.formattedPreedit = caps.test(fcitx::CapabilityFlag::FormattedPreedit);
         f.url              = caps.test(fcitx::CapabilityFlag::Url);
         f.keyEventOrderFix = caps.test(fcitx::CapabilityFlag::KeyEventOrderFix);
+        f.password         = caps.test(fcitx::CapabilityFlag::Password) || caps.test(fcitx::CapabilityFlag::Sensitive);
         return f;
     }
 

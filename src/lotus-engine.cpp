@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdlib>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <unordered_set>
@@ -338,6 +339,12 @@ namespace fcitx {
         connections_.emplace_back(settingsAction_->connect<SimpleAction::Activated>([](InputContext*) { startProcess({FCITX5_LOTUS_SETTINGS_PATH}); }));
         uiManager.registerAction("lotus-settings", settingsAction_.get());
 
+        saveLogAction_ = std::make_unique<SimpleAction>();
+        saveLogAction_->setShortText(_("Save typing log"));
+        saveLogAction_->setIcon("document-save");
+        connections_.emplace_back(saveLogAction_->connect<SimpleAction::Activated>([this](InputContext* ic) { saveTypingLog(ic); }));
+        uiManager.registerAction("ngosen-save-log", saveLogAction_.get());
+
 #if LOTUS_USE_MODERN_FCITX_API
         std::string configDir = (StandardPaths::global().userDirectory(StandardPathsType::Config) / "fcitx5" / "conf").string();
 #else
@@ -353,7 +360,7 @@ namespace fcitx {
         appRulesPath_ = configDir + "/lotus-app-rules.conf";
         loadAppRules();
         toggleActions_ = {charsetAction_.get(),          spellCheckAction_.get(),       macroAction_.get(),   capitalizeMacroAction_.get(),
-                          autoNonVnRestoreAction_.get(), enableDictionaryAction_.get(), settingsAction_.get()};
+                          autoNonVnRestoreAction_.get(), enableDictionaryAction_.get(), saveLogAction_.get(), settingsAction_.get()};
     }
 
     void LotusEngine::initToggleAction(std::unique_ptr<SimpleAction>& action, Option<bool>& option, const std::string& actionId, const std::string& iconName,
@@ -1145,21 +1152,48 @@ namespace fcitx {
         ic->inputPanel().setCandidateList(std::move(candidateList));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
 
-        // Cancel previous timer if any
+        clearPanelLater(ic, CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC);
+    }
+
+    void LotusEngine::clearPanelLater(InputContext* ic, uint64_t delayUs) {
         cycleModeNotificationTimer_.reset();
+        cycleModeNotificationTimer_ =
+            instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [icRef = ic->watch()](EventSourceTime*, uint64_t) {
+                if (auto* ic = icRef.get(); ic && ic->hasFocus()) {
+                    ic->inputPanel().reset();
+                    ic->updateUserInterface(UserInterfaceComponent::InputPanel);
+                }
+                return false;
+            });
+    }
 
-        // Schedule auto-close using EventLoop::addTimeEvent
-        auto& eventLoop    = instance_->eventLoop();
-        auto  now_time     = ::fcitx::now(CLOCK_MONOTONIC);
-        auto  timeout_time = now_time + CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC;
+    void LotusEngine::saveTypingLog(InputContext* ic) {
+        const std::string     stateHome = getEnv("XDG_STATE_HOME");
+        std::filesystem::path dir       = stateHome.empty() ? std::filesystem::path(getEnv("HOME")) / ".local" / "state" : std::filesystem::path(stateHome);
+        dir /= "ngosen";
+        std::error_code error;
+        std::filesystem::create_directories(dir, error);
 
-        cycleModeNotificationTimer_ = eventLoop.addTimeEvent(CLOCK_MONOTONIC, timeout_time, 0, [icRef = ic->watch()](EventSourceTime*, uint64_t) {
-            if (auto* ic = icRef.get(); ic && ic->hasFocus()) {
-                ic->inputPanel().reset();
-                ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-            }
-            return false;
-        });
+        char       stamp[32];
+        const auto now = std::time(nullptr);
+        std::tm    local{};
+        localtime_r(&now, &local);
+        std::strftime(stamp, sizeof(stamp), "%Y%m%d-%H%M%S", &local);
+        const auto    path = dir / (std::string("typing-") + stamp + ".log");
+        std::ofstream out(path);
+        out << "# Ngó Sen " << NGOSEN_VERSION << " typing log. It holds what you typed just before saving; read it before sharing.\n"
+            << "# desktop=" << getEnv("XDG_CURRENT_DESKTOP") << " session=" << getEnv("XDG_SESSION_TYPE") << "\n"
+            << recorder_.dump();
+        out.close();
+
+        const std::string message = out ? _("Typing log saved: ") + path.string() : _("Could not save the typing log to ") + dir.string();
+        LOTUS_INFO(message);
+        if (ic == nullptr)
+            return;
+        ic->inputPanel().reset();
+        ic->inputPanel().setAuxUp(Text(message));
+        ic->updateUserInterface(UserInterfaceComponent::InputPanel);
+        clearPanelLater(ic, 5000000);
     }
 
     void LotusEngine::setMode(LotusMode mode, InputContext* ic) {

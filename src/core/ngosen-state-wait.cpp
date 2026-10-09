@@ -241,6 +241,7 @@ namespace ngosen {
     }
 
     void TypingState::surroundingUpdated() {
+        engine_->recorder().add("app", host_->field().password ? "hidden" : ngosen::describeSurrounding(host_->surrounding()));
         // A wait that starts while this report is handled sees only the next report.
         const bool waiting    = surr_wait_watching_;
         const bool overtyping = overtype_watching_;

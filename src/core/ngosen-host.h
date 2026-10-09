@@ -57,6 +57,7 @@ namespace ngosen {
         bool        formattedPreedit = false;
         bool        url              = false; // the field is an address bar
         bool        keyEventOrderFix = false;
+        bool        password         = false; // what is typed here must not be logged
     };
 
     // Where the user is in the candidate list shown in the panel. Indexes count from the first

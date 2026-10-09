@@ -11,6 +11,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Nhật ký gõ: vừa gõ ra chữ sai thì chọn "Lưu nhật ký gõ" trong menu fcitx5 ở khay hệ thống. Ngó Sen lưu
+  vài trăm phím gần nhất, những gì bộ gõ gửi cho app và những gì app báo lại vào một file trong
+  `~/.local/state/ngosen/`, để gửi kèm khi báo lỗi. Nhật ký chỉ nằm trong bộ nhớ cho tới lúc lưu, và
+  không ghi gì gõ trong ô mật khẩu (#93).
+
 ## [1.0.0-1] — 09/10/2026
 
 Bản 1.0: Ngó Sen chỉ làm cho fcitx5. Click sang ô khác rồi gõ nay ra đúng trong LibreOffice Calc, WPS Office

@@ -38,12 +38,16 @@ namespace ngosen::test {
         std::vector<EmojiEntry> searchEmoji(const std::string& /*prefix*/) override {
             return {};
         }
-        void recordEmoji(const EmojiEntry& /*entry*/) override {}
+        void      recordEmoji(const EmojiEntry& /*entry*/) override {}
+        Recorder& recorder() override {
+            return recorder_;
+        }
 
       private:
         Options   options_;
         uintptr_t dictionary_ = 0;
         uintptr_t macroTable_ = 0;
+        Recorder  recorder_;
     };
 
     class FakeKey final : public KeyPress {

@@ -218,6 +218,9 @@ namespace fcitx {
         void recordEmoji(const EmojiEntry& entry) override {
             emojiLoader().recordHistory(entry);
         }
+        ngosen::Recorder& recorder() override {
+            return recorder_;
+        }
 
       private:
         ngosen::TypingState*                       stateFor(InputContext* ic);
@@ -244,6 +247,8 @@ namespace fcitx {
         std::unique_ptr<SimpleAction>              autoNonVnRestoreAction_;
         std::unique_ptr<SimpleAction>              enableDictionaryAction_;
         std::unique_ptr<SimpleAction>              settingsAction_;
+        std::unique_ptr<SimpleAction>              saveLogAction_;
+        ngosen::Recorder                           recorder_;
         std::vector<SimpleAction*>                 toggleActions_;
         std::vector<ScopedConnection>              connections_;
         ngosen::CGoObject                          dictionary_;
@@ -360,6 +365,11 @@ namespace fcitx {
         std::vector<ModeMenuItem> modeMenuItems();
         // Adds the item that types the menu hotkey's own character, when it is a plain key.
         void appendTypeHotkeyItem(CommonCandidateList& candidateList);
+
+        // Writes the recorder to a new file under the user's state directory and shows its path.
+        void saveTypingLog(InputContext* ic);
+        void clearPanelLater(InputContext* ic, uint64_t delayUs);
+
         void handleModeMenuKey(KeyEvent& keyEvent);
         void moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
         // Hides the menu; resetState also commits and clears what the field was typing.

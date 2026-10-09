@@ -14,6 +14,7 @@
 #include "ngosen-utf8.h"
 
 #include <cstddef>
+#include <cstdio>
 #include <string>
 #include <thread>
 
@@ -23,7 +24,8 @@ namespace ngosen {
     // coming back does not mean the Left presses before it have moved the selection yet.
     constexpr uint64_t XTestSelectSettleUs = 50000;
 
-    TypingState::TypingState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host) : engine_(engine), host_(std::move(host)) {
+    TypingState::TypingState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host) :
+        engine_(engine), host_(ngosen::recordingHost(std::move(host), engine->recorder())) {
         setEngine();
     }
 
@@ -277,7 +279,34 @@ namespace ngosen {
         }
     }
 
+    void TypingState::recordKey(const ngosen::KeyPress& keyEvent) {
+        static const char* const modeNames[] = {"Off", "Sen", "Preedit", "Emoji"};
+        const auto               f           = host_->field();
+        std::string field = "frontend=" + f.frontend + " program=" + f.program + " surrounding=" + (f.surroundingText ? "1" : "0") + " preedit=" + (f.preedit ? "1" : "0") +
+            (f.password ? " password=1" : "") + " mode=" + modeNames[static_cast<int>(realMode.load())];
+        auto& recorder = engine_->recorder();
+        if (field != recordedField_) {
+            recorder.add("field", field);
+            recordedField_ = std::move(field);
+        }
+        if (f.password) {
+            recorder.add("key", "hidden");
+            return;
+        }
+        char sym[16];
+        std::snprintf(sym, sizeof(sym), "0x%04x", keyEvent.sym());
+        std::string detail = std::string(keyEvent.isRelease() ? "up " : "down ") + sym;
+        if (const auto text = host_->keyText(keyEvent.sym()); !text.empty() && text != " ")
+            detail += " " + text;
+        if (keyEvent.states() != 0)
+            detail += " states=" + std::to_string(keyEvent.states());
+        if (g_mouse_clicked.load(std::memory_order_acquire))
+            detail += " after-click";
+        recorder.add("key", detail);
+    }
+
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        recordKey(keyEvent);
         if (!bambooEngine_ || skipsKey(keyEvent))
             return;
         settleBeforeKey();

@@ -967,3 +967,12 @@ msgstr "Tuỳ chỉnh bộ gõ Ngó Sen"
 
 #~ msgid "Enable/disable input modes and assign single-key shortcuts."
 #~ msgstr "Bật/tắt các chế độ gõ và gán phím tắt nhanh bằng một ký tự."
+
+msgid "Save typing log"
+msgstr "Lưu nhật ký gõ"
+
+msgid "Typing log saved: "
+msgstr "Đã lưu nhật ký gõ: "
+
+msgid "Could not save the typing log to "
+msgstr "Không lưu được nhật ký gõ vào "

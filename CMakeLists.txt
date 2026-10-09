@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
 project(fcitx5-lotus VERSION 1.0.0)
+# The typing log names the version it came from.
+add_definitions(-DNGOSEN_VERSION=\"${PROJECT_VERSION}\")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(BUILD_TESTING "Build Lotus tests" OFF)
 option(NGOSEN_RUST_CORE "Build the typing core from bamboo-rs/ (Rust) instead of the Go sources in bamboo/" OFF)

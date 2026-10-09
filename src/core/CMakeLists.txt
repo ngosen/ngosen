@@ -8,6 +8,7 @@ add_library(ngosen_core STATIC
     ngosen-state-wait.cpp
     ngosen-app-quirks.cpp
     ngosen-globals.cpp
+    ngosen-recorder.cpp
     ngosen-strings.cpp
     ngosen-utf8.cpp
     ngosen-xtest.cpp

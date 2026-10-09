@@ -19,6 +19,7 @@ namespace ngosen {
     enum class EditKey {
         BackSpace,
         Right,
+        Shift,
     };
 
     // The text around the cursor as the app last reported it. Positions count characters.

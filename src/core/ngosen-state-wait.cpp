@@ -246,8 +246,11 @@ namespace ngosen {
         const bool overtyping = overtype_watching_;
         if (host_->hasFocus())
             checkCursorJump();
-        if (key_report_pending_)
-            finishKeyReportWait(host_->surrounding().isValid(), false);
+        if (key_report_pending_) {
+            // Calc answers our Shift with an empty field when the key went to a cell not being edited.
+            const auto s = host_->surrounding();
+            finishKeyReportWait(s.isValid() && !(ngosen::reportsFieldOnlyOnKey(host_->field()) && s.text().empty()), false);
+        }
         if (waiting)
             onWaitSurroundingUpdated();
         if (overtyping)
@@ -256,9 +259,9 @@ namespace ngosen {
 
     constexpr uint64_t KeyReportWaitUs = 20000;
 
-    // The app reported text before this key but not with it: it reports the field only after the key.
+    // The app reported text before this key but not with it, or it reports the field only on a key.
     bool TypingState::waitsForKeyReport() const {
-        return !host_->field().surroundingText && hasLastSurrounding_;
+        return hasLastSurrounding_ && (!host_->field().surroundingText || ngosen::reportsFieldOnlyOnKey(host_->field()));
     }
 
     void TypingState::startKeyReportWait(const std::string& deletedPart, const std::string& addedPart) {
@@ -267,6 +270,11 @@ namespace ngosen {
         key_report_added_   = addedPart;
         key_report_pending_ = true;
         is_deleting_.store(true, std::memory_order_release);
+        if (ngosen::reportsFieldOnlyOnKey(host_->field())) {
+            // The key itself never reaches the app, so give it one that types nothing.
+            host_->forwardKey(ngosen::EditKey::Shift, false);
+            host_->forwardKey(ngosen::EditKey::Shift, true);
+        }
         key_report_timer_ = host_->startTimer(ngosen::monotonicUs() + KeyReportWaitUs, 0, [this](ngosen::Timer&) {
             finishKeyReportWait(true, true);
             return false;
@@ -363,18 +371,36 @@ namespace ngosen {
         // Firefox repeats the old state before the echo, so only a change ends the wait.
         if (jumped || !sameText)
             unreportedCommitLength_ = 0;
-        const bool settling    = ngosen::monotonicUs() - lastInputAtUs_ < CaretSettleUs;
-        jumped                 = ((jumped && !echo) || newField) && !settling;
-        lastSurroundingText_   = s.text();
-        lastSurroundingCursor_ = s.cursor();
-        lastSurroundingAnchor_ = s.anchor();
-        hasLastSurrounding_    = true;
+        const bool settling = ngosen::monotonicUs() - lastInputAtUs_ < CaretSettleUs;
+        // Calc reports the new cell empty just before the key we let through lands in it.
+        // Our unreported commits do not matter here: in the same cell the key would follow them.
+        const bool keyStartedCell = settling && passed_key_ && !sameText && s.text().empty() && !oldPreBuffer_.empty() && ngosen::reportsFieldOnlyOnKey(host_->field());
+        jumped                    = ((jumped && !echo) || newField) && !settling;
+        lastSurroundingText_      = s.text();
+        lastSurroundingCursor_    = s.cursor();
+        lastSurroundingAnchor_    = s.anchor();
+        hasLastSurrounding_       = true;
+        if (keyStartedCell && !is_deleting_.load(std::memory_order_acquire)) {
+            startWordWithKey(*passed_key_);
+            return;
+        }
         // Our own selection for overtyping moves the anchor too.
         if (!jumped || is_deleting_.load(std::memory_order_acquire))
             return;
         NGOSEN_INFO("Cursor moved without an edit");
         needEngineReset.store(true, std::memory_order_release);
         g_mouse_clicked.store(true, std::memory_order_release);
+    }
+
+    // The key is already in the app; only the engine has to forget the word before it.
+    void TypingState::startWordWithKey(const KeyEntry& key) {
+        NGOSEN_INFO("Key went to another cell, starting a new word");
+        clearAllBuffers();
+        if (EngineProcessKeyEvent(bambooEngine_.handle(), key.sym, key.state) == 0U)
+            return;
+        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
+        oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+        hasHistory_   = true;
     }
 
     void TypingState::noteCommit(const std::string& text) {

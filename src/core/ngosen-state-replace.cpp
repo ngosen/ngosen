@@ -436,7 +436,8 @@ namespace ngosen {
         const std::string surrText = surrounding.text();
         // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it. Its
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
-        const bool isLibreOffice   = ngosen::appliesBackspacesLate(host_->field());
+        // A Backspace on a Calc cell that is not being edited opens the Delete Contents dialog.
+        const bool isLibreOffice   = ngosen::appliesBackspacesLate(host_->field()) || ngosen::reportsFieldOnlyOnKey(host_->field());
         const bool mustUseSurrText = isLibreOffice || ngosen::ignoresForwardedKeys(host_->field());
         bool       isSurrText = mustUseSurrText ? host_->field().surroundingText :
                                                   engine_->options().useSurroundingTextIfPossible && host_->field().surroundingText && surrounding.isValid() && !surrText.empty() &&

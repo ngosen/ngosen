@@ -59,6 +59,11 @@ namespace ngosen {
         return stripDesktopSuffix(field.program) == "soffice";
     }
 
+    bool reportsFieldOnlyOnKey(const Field& field) {
+        // Nothing Calc reports sets it apart from a text field that keeps its text.
+        return field.frontend == "wayland" && stripDesktopSuffix(field.program) == "libreoffice-calc";
+    }
+
     bool hidesAddressBarFlag(const Field& field) {
         return stripDesktopSuffix(field.program) == "firefox";
     }

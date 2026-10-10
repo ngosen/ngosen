@@ -42,6 +42,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   này trỏ về đó (#1).
 - Câu giới thiệu trong README nay là "Bộ gõ tiếng Việt cho fcitx5 trên Linux." thay cho "tối ưu cho
   Linux", và điểm đầu tiên nay là "Không cần quyền đặc biệt" (#3).
+- README sửa chữ ở đầu trang: Gõ Sen dùng được cho "hầu hết app" thay cho "mọi app", ghi rõ Sway và
+  Hyprland vẫn gõ được qua fcitx5, và dùng "test", "so hash" như trang web (#6).
 
 ## [1.0.0-1] — 09/10/2026
 

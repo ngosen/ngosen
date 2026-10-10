@@ -477,6 +477,15 @@ namespace ngosen {
             if (surr_wait_deliver_at_ > nowUs) {
                 std::this_thread::sleep_for(std::chrono::microseconds(surr_wait_deliver_at_ - nowUs));
             }
+            // A dbus client gets the commit after this key's reply and may type a key let through
+            // first, so a typing key goes out inside the commit.
+            const bool typesText = !host_->keyText(currentSym).empty() && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt)) == 0U;
+            if (host_->field().frontend == "dbus" && typesText && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+                buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
+                keyEvent.accept();
+                finishReplacement("key arrived", false);
+                return true;
+            }
             finishReplacement("key arrived", false);
         }
         if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_pending_) {

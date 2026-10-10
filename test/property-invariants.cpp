@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * @file property-invariants.cpp
- * @brief Property-based invariant test for the Lotus engine composition state.
+ * @brief Property-based invariant test for the engine composition state.
  *
  * Why this test exists:
  * The existing headless tests each pin one concrete scenario ("type a, then s,
  * expect á"). Concrete scenarios only cover the inputs someone thought of. Most
- * reported Lotus defects were triggered by inputs nobody wrote a case for:
+ * reported engine defects were triggered by inputs nobody wrote a case for:
  * duplicated characters after a retro-edit ("toôi"), UTF-8 corruption when
  * backspacing over multi-byte text, and a crash on an unexpected key sequence.
  *

@@ -28,7 +28,7 @@ Requires:       libxcb
 Requires(posttrans): shadow-utils
 
 %description
-Ngó Sen is a Vietnamese input method for fcitx5, forked from fcitx5-lotus.
+Ngó Sen is a Vietnamese input method for fcitx5.
 
 %prep
 %setup -q -n %{name}-%{version}

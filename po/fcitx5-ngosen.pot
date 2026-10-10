@@ -325,6 +325,10 @@ msgid "Export Debug Logs"
 msgstr ""
 
 #: settings-gui/ui/pages/about.py:148
+msgid "Developed by Nguyen Phi"
+msgstr ""
+
+#: settings-gui/ui/pages/about.py
 #, python-brace-format
 msgid "Based on the code of {lotus} and {vmk}."
 msgstr ""

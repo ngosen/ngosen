@@ -1,8 +1,8 @@
 # AGENTS.md
 
 Rules for anyone (human or coding agent) changing this repository. [CONTRIBUTING](CONTRIBUTING.en.md)
-still applies; this file adds what it leaves out. Outside the code, fcitx5-lotus is named once, in the
-README credit line; do not add comparisons or "forked from" lines elsewhere.
+still applies; this file adds what it leaves out. Outside the code, fcitx5-lotus is named only in the
+README credit line and the credit line on the settings About page; do not add comparisons or "forked from" lines elsewhere.
 
 These rules exist because upstream reviewers said our patches were hard to read: Vietnamese
 identifiers, too many core changes at once, long AI-sounding PR text, and claims they could not

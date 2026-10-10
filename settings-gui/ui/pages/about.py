@@ -127,6 +127,10 @@ class AboutPage(QWidget):
         line.setObjectName("AboutLine")
         layout.addWidget(line)
 
+        developer = QLabel(_("Developed by Nguyen Phi"))
+        developer.setObjectName("DeveloperLine")
+        layout.addWidget(developer, alignment=Qt.AlignCenter)
+
         # One credit line; the authors are named in the copyright notices.
         credits = QLabel(
             _("Based on the code of {lotus} and {vmk}.").format(
@@ -136,6 +140,7 @@ class AboutPage(QWidget):
         )
         credits.setOpenExternalLinks(True)
         credits.setObjectName("CreditsLine")
+        credits.setStyleSheet("font-size: 11px;")
         layout.addWidget(credits, alignment=Qt.AlignCenter)
         layout.addStretch()
 

@@ -11,7 +11,7 @@ import re
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import QSize, Qt, Signal
-from qtpy.QtGui import QIcon
+from qtpy.QtGui import QIcon, QPalette
 from qtpy.QtWidgets import (
     QDialog,
     QFrame,
@@ -30,6 +30,7 @@ from qtpy.QtWidgets import (
 )
 
 from ui.pages.dynamic_settings import CardWidget
+from ui.typography import emphasize, mute, page_title
 
 # Mode constants as defined in C++ NgoSenEngine
 MODE_OFF = 0
@@ -75,32 +76,16 @@ class ModeCard(QFrame):
         title_label.setObjectName("ModeCardTitle")
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setWordWrap(True)
-        title_label.setStyleSheet("font-weight: bold; font-size: 13px;")
+        emphasize(title_label)
 
         layout.addWidget(title_label)
 
     def update_style(self):
-        if self.selected:
-            self.setStyleSheet(
-                """
-                QFrame#ModeCard {
-                    border: 1.5px solid palette(highlight);
-                    background: palette(highlight);
-                    border-radius: 8px;
-                }
-                QLabel { color: palette(highlighted-text); }
-            """
-            )
-        else:
-            self.setStyleSheet(
-                """
-                QFrame#ModeCard {
-                    border: 1.5px solid palette(mid);
-                    background: palette(alternate-base);
-                    border-radius: 8px;
-                }
-            """
-            )
+        self.setFrameShape(QFrame.StyledPanel)
+        self.setAutoFillBackground(True)
+        self.setBackgroundRole(QPalette.Highlight if self.selected else QPalette.Base)
+        for label in self.findChildren(QLabel):
+            label.setForegroundRole(QPalette.HighlightedText if self.selected else QPalette.Text)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -126,9 +111,9 @@ class AddAppDialog(QDialog):
         layout.setSpacing(15)
 
         header_title = QLabel(_("Add Application"))
-        header_title.setStyleSheet("font-size: 18px; font-weight: bold;")
+        emphasize(header_title, 1.3)
         header_subtitle = QLabel(_("Assign an input mode to a specific application."))
-        header_subtitle.setStyleSheet("opacity: 0.7;")
+        mute(header_subtitle)
 
         layout.addWidget(header_title)
         layout.addWidget(header_subtitle)
@@ -175,7 +160,7 @@ class AddAppDialog(QDialog):
         # Bottom Buttons
         bottom_layout = QHBoxLayout()
         self.selection_label = QLabel(_("No application selected"))
-        self.selection_label.setStyleSheet("opacity: 0.7;")
+        mute(self.selection_label)
 
         self.btn_cancel = QPushButton(QIcon.fromTheme("dialog-cancel"), _("&Cancel"))
         self.btn_cancel.clicked.connect(self.reject)
@@ -431,8 +416,7 @@ class ModeManagerPage(QWidget):
         self.main_layout.setContentsMargins(30, 20, 30, 30)
         self.main_layout.setSpacing(20)
 
-        title = QLabel(_("Applications"))
-        title.setObjectName("CategoryTitle")
+        title = page_title(_("Applications"))
         self.main_layout.addWidget(title)
 
         # Selected App Card (Empty Title)
@@ -444,7 +428,7 @@ class ModeManagerPage(QWidget):
         self.app_icon_label = QLabel()
         self.app_icon_label.setFixedSize(48, 48)
         self.app_name_label = QLabel(_("Select an application"))
-        self.app_name_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        emphasize(self.app_name_label, 1.15)
         self.app_header_layout.addWidget(self.app_icon_label)
         self.app_header_layout.addWidget(self.app_name_label)
         self.app_header_layout.addStretch()

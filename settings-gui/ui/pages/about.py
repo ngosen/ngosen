@@ -15,6 +15,9 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
+from ui import brand
+from ui.typography import mute
+
 try:
     from version import __version__
 except ImportError:
@@ -46,39 +49,21 @@ class AboutPage(QWidget):
         layout.setSpacing(20)
         layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
-        # Logo/Icon
-        try:
-            pixmap = QIcon.fromTheme("fcitx-ngosen").pixmap(80, 80)
-            if pixmap.isNull():
-                logo = QLabel("🪷")
-                logo.setStyleSheet("font-size: 64px; margin-bottom: 5px;")
-            else:
-                logo = QLabel()
-                logo.setPixmap(pixmap)
-                logo.setStyleSheet("margin-bottom: 5px;")
-        except Exception:
-            logo = QLabel("🪷")
-            logo.setStyleSheet("font-size: 64px; margin-bottom: 5px;")
-
-        layout.addWidget(logo, alignment=Qt.AlignCenter)
+        pixmap = QIcon.fromTheme("fcitx-ngosen").pixmap(80, 80)
+        if not pixmap.isNull():
+            logo = QLabel()
+            logo.setPixmap(pixmap)
+            layout.addWidget(logo, alignment=Qt.AlignCenter)
 
         title = QLabel("Ngó Sen")
-        title.setObjectName("AboutTitle")
+        title.setObjectName("Wordmark")
+        title.setFont(brand.wordmark_font(30))
         layout.addWidget(title, alignment=Qt.AlignCenter)
 
         version = QLabel(_("Version {}").format(__version__))
         version.setObjectName("VersionTag")
         version.setAlignment(Qt.AlignCenter)
-        version.setStyleSheet("""
-            QLabel#VersionTag {
-                background-color: palette(highlight);
-                color: palette(highlighted-text);
-                border-radius: 10px;
-                padding: 2px 10px;
-                font-size: 11px;
-                font-weight: bold;
-            }
-        """)
+        mute(version)
         layout.addWidget(version, alignment=Qt.AlignCenter)
 
         desc = QLabel(_("Modern, fast, and stable Vietnamese input method for Linux."))
@@ -140,7 +125,7 @@ class AboutPage(QWidget):
         )
         credits.setOpenExternalLinks(True)
         credits.setObjectName("CreditsLine")
-        credits.setStyleSheet("font-size: 11px;")
+        mute(credits)
         layout.addWidget(credits, alignment=Qt.AlignCenter)
         layout.addStretch()
 
@@ -152,6 +137,7 @@ class AboutPage(QWidget):
 
         license_info = QLabel(_("Licensed under the GNU General Public License v3.0"))
         license_info.setObjectName("LicenseInfo")
+        mute(license_info)
         layout.addWidget(license_info, alignment=Qt.AlignCenter)
 
         scroll.setWidget(content_widget)

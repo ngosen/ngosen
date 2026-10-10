@@ -27,6 +27,7 @@ from qtpy.QtWidgets import (
 
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
+from ui.typography import mute, page_title
 
 
 class WordListModel(QStringListModel):
@@ -86,8 +87,7 @@ class DictEditorPage(BaseEditorPage):
         main_layout.setContentsMargins(30, 20, 30, 20)
         main_layout.setSpacing(15)
 
-        title = QLabel(_("Custom Dictionary"))
-        title.setObjectName("CategoryTitle")
+        title = page_title(_("Custom Dictionary"))
         main_layout.addWidget(title)
 
         explanation = QLabel(
@@ -96,7 +96,7 @@ class DictEditorPage(BaseEditorPage):
             )
         )
         explanation.setWordWrap(True)
-        explanation.setStyleSheet("color: gray; font-size: 13px;")
+        mute(explanation)
         main_layout.addWidget(explanation)
 
         # Dictionary behavior toggles

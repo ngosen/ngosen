@@ -30,6 +30,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt mang dấu hiệu Ngó Sen: biểu tượng và chữ "Ngó Sen" đầu thanh bên, chế độ gõ là một hàng
   nút với nút đang chọn màu xanh men, chữ ví dụ (`vieetj → việt`) và ô Gõ thử dùng phông Xanh Mono đi kèm
   gói (giấy phép OFL) (#18).
+- Cửa sổ cài đặt dùng giao diện của hệ thống (KDE, GNOME, sáng hay tối) thay cho màu và viền tự vẽ: danh
+  sách, bảng, thẻ chế độ của app và trang Giới thiệu theo theme đang dùng. Trang nằm trong tab không còn
+  lặp lại tên tab làm tiêu đề (#19).
 
 ### Sửa
 

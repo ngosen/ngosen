@@ -10,7 +10,7 @@ from enum import Enum
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import N_, _
 from qtpy.QtCore import QSize, Qt, QTimer
-from qtpy.QtGui import QIcon, QPalette
+from qtpy.QtGui import QColor, QIcon, QPalette
 from qtpy.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -33,6 +33,7 @@ from ui.components import (
     HotkeyEditorWidget,
     SingleKeyCaptureWidget,
 )
+from ui.typography import emphasize, mute, page_title
 
 
 class SettingsCategory(Enum):
@@ -232,9 +233,8 @@ class DynamicSettingsPage(QWidget):
                 for item in group[1]:
                     self.all_metadata[item[0]] = item
 
-            title = QLabel(_(self.category.name.capitalize()))
-            title.setObjectName("CategoryTitle")
-            self.container_layout.addWidget(title)
+            if not self.property("inTab"):
+                self.container_layout.addWidget(page_title(_(self.category.name.capitalize())))
 
             form_widget = QWidget()
             self.form = QFormLayout(form_widget)
@@ -312,18 +312,6 @@ class DynamicSettingsPage(QWidget):
         line.setFrameShadow(QFrame.Sunken)
         return line
 
-    @staticmethod
-    def _mute(label):
-        # Some themes leave the placeholder colour unset, so fade the theme's own text colour.
-        palette = label.palette()
-        color = palette.color(QPalette.WindowText)
-        color.setAlphaF(0.65)
-        palette.setColor(QPalette.WindowText, color)
-        label.setPalette(palette)
-        font = label.font()
-        font.setPointSizeF(font.pointSizeF() * 0.9)
-        label.setFont(font)
-
     def _with_hint(self, widget, key):
         hint_text = HINTS.get(key)
         if not hint_text:
@@ -335,7 +323,7 @@ class DynamicSettingsPage(QWidget):
         layout.addWidget(widget)
         hint = QLabel(_(hint_text))
         hint.setWordWrap(True)
-        self._mute(hint)
+        mute(hint)
         if isinstance(widget, QCheckBox):
             # Line the hint up with the checkbox text, not its box.
             style = widget.style()
@@ -496,6 +484,9 @@ class DynamicSettingsPage(QWidget):
         if key in MODE_SHORTCUT_KEYS:
             warning = QLabel()
             warning.setObjectName("ShortcutWarning")
+            palette = warning.palette()
+            palette.setColor(QPalette.WindowText, QColor(brand.pick(self, brand.ERROR_BORDER)))
+            warning.setPalette(palette)
             warning.setWordWrap(True)
             warning.hide()
             wrapper.addWidget(warning)
@@ -519,9 +510,7 @@ class DynamicSettingsPage(QWidget):
         list_widget.setFrameShape(QFrame.NoFrame)
         list_widget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        list_widget.setStyleSheet(
-            "QListWidget { background: transparent; } QListWidget::item { margin: 2px 0; }"
-        )
+        list_widget.viewport().setAutoFillBackground(False)
 
         # Get current order from config
         order_str = self.current_values.get(
@@ -577,7 +566,7 @@ class DynamicSettingsPage(QWidget):
                 handle.setPixmap(icon.pixmap(16, 16))
             else:
                 handle.setText("☰")
-                handle.setStyleSheet("font-size: 14px; color: palette(mid); font-weight: bold;")
+                mute(handle)
 
             handle.setFixedSize(24, 24)
             handle.setAlignment(Qt.AlignCenter)
@@ -609,7 +598,7 @@ class DynamicSettingsPage(QWidget):
             )
         )
         instructions.setWordWrap(True)
-        self._mute(instructions)
+        mute(instructions)
         card.content_layout.addWidget(instructions)
         self.form.addRow(label, card)
 
@@ -630,7 +619,7 @@ class DynamicSettingsPage(QWidget):
             if key in self.shortcut_warning_labels:
                 self.shortcut_warning_labels[key].hide()
             if key in self.shortcut_labels:
-                self.shortcut_labels[key].setStyleSheet("")
+                self.shortcut_labels[key].setFont(self.font())
 
         # Only check enabled modes
         enabled_shortcuts = {}
@@ -671,9 +660,7 @@ class DynamicSettingsPage(QWidget):
                         self.shortcut_warning_labels[key].setText(error_msg)
                         self.shortcut_warning_labels[key].show()
                     if key in self.shortcut_labels:
-                        self.shortcut_labels[key].setStyleSheet(
-                            "color: palette(highlight); font-weight: bold;"
-                        )
+                        emphasize(self.shortcut_labels[key])
 
     def load_data(self):
         """Standardized reload method (alias for load_config)."""

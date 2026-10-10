@@ -15,6 +15,8 @@ from qtpy.QtCore import QEvent, Qt, Signal
 from qtpy.QtGui import QIcon, QKeySequence
 from qtpy.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
+from ui.typography import emphasize, mute
+
 libxkb = None
 libxkb_path = ctypes.util.find_library("xkbcommon")
 if libxkb_path:
@@ -208,6 +210,11 @@ class KeyCap(QLabel):
         super().__init__(text, parent)
         self.setAlignment(Qt.AlignCenter)
         self.setObjectName("KeyCap")
+        self.setStyleSheet(
+            "QLabel#KeyCap { background-color: palette(button); color: palette(button-text);"
+            " border: 1px solid palette(mid); border-bottom: 2px solid palette(dark);"
+            " border-radius: 4px; padding: 2px 6px; font-weight: bold; font-family: monospace; }"
+        )
 
 
 class HelpIcon(QLabel):
@@ -320,7 +327,7 @@ class HotkeyCaptureWidget(QPushButton):
         if self.isChecked():
             if not self.record_mods:
                 lbl = QLabel(_("[ Recording... ]"))
-                lbl.setStyleSheet("color: palette(highlight); font-weight: bold;")
+                emphasize(lbl)
                 self.main_layout.addWidget(lbl)
             else:
                 # Show current active modifiers
@@ -330,11 +337,11 @@ class HotkeyCaptureWidget(QPushButton):
                         self.main_layout.addWidget(KeyCap(HOTKEY_SYM_MAP.get(mod, mod)))
                 # Add a pulsing placeholder for the next key
                 lbl = QLabel("...")
-                lbl.setStyleSheet("color: palette(highlight);")
+                emphasize(lbl)
                 self.main_layout.addWidget(lbl)
         elif not self.current_key:
             lbl = QLabel(_("None"))
-            lbl.setStyleSheet("color: palette(mid);")
+            mute(lbl)
             self.main_layout.addWidget(lbl)
         else:
             parts = pretty_format_hotkey_parts(self.current_key)
@@ -448,11 +455,11 @@ class SingleKeyCaptureWidget(HotkeyCaptureWidget):
 
         if self.isChecked():
             lbl = QLabel(_("[ Press Key... ]"))
-            lbl.setStyleSheet("color: palette(highlight); font-weight: bold;")
+            emphasize(lbl)
             self.main_layout.addWidget(lbl)
         elif not self.current_key:
             lbl = QLabel(_("None"))
-            lbl.setStyleSheet("color: palette(mid);")
+            mute(lbl)
             self.main_layout.addWidget(lbl)
         else:
             # For single key, we just show it directly or via map

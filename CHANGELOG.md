@@ -36,9 +36,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Tài liệu
 
 - Repo được tạo lại ngoài mạng fork của fcitx5-lotus, giữ nguyên lịch sử commit và các bản phát hành.
-  Pull request và issue đến #98 nằm ở kho lưu
+  Pull request và issue đến số 98 nằm ở kho lưu
   [ngosen/ngosen-fork-archive](https://github.com/ngosen/ngosen-fork-archive); các link PR cũ trong file
   này trỏ về đó (#1).
+- Câu giới thiệu trong README nay là "Bộ gõ tiếng Việt cho fcitx5 trên Linux." thay cho "tối ưu cho
+  Linux", và điểm đầu tiên nay là "Không cần quyền đặc biệt" (#3).
 
 ## [1.0.0-1] — 09/10/2026
 

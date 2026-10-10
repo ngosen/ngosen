@@ -53,7 +53,7 @@ namespace {
 } // namespace
 
 int main() {
-    char      dictionaryPath[] = "/tmp/fcitx5-lotus-numeric-macro-XXXXXX";
+    char      dictionaryPath[] = "/tmp/fcitx5-ngosen-numeric-macro-XXXXXX";
     const int dictionaryFd     = mkstemp(dictionaryPath);
     if (dictionaryFd < 0) {
         reportFailure("create empty temporary dictionary", "mkstemp succeeds", std::strerror(errno), "the test cannot construct a production dictionary handle");

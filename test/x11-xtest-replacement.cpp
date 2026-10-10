@@ -3,8 +3,8 @@
 // On an X11 session XTEST presses the keys a frontend cannot forward. Clients whose forwarding works keep it;
 // Chromium-based clients, which report no surrounding text and whose address bar selects an inline
 // autocompletion, select the old text with Shift+Left and type over it.
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "ngosen-xtest.h"
 #include "test-input-context.h"
 
@@ -44,7 +44,7 @@ namespace {
 
     struct Harness {
         TestInstance&                     testInstance;
-        fcitx::LotusEngine&               engine;
+        fcitx::NgoSenEngine&              engine;
         fcitx::InputMethodEntry&          entry;
         std::vector<int>&                 sent;
 
@@ -196,15 +196,15 @@ int main() {
     });
 
     configureTestPaths("ngosen-x11-xtest-replacement");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
     engine.setConfig(config);
 
-    fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
     Harness                 h{testInstance, engine, entry, sent};
 
     const auto              chromeCaps = fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit, fcitx::CapabilityFlag::KeyEventOrderFix};

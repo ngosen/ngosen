@@ -6,12 +6,12 @@
  */
 
 /**
- * @file lotus-candidates.h
- * @brief Candidate word classes for Lotus input method UI.
+ * @file ngosen-candidates.h
+ * @brief Candidate word classes for the Ngó Sen input method UI.
  */
 
-#ifndef _FCITX5_LOTUS_CANDIDATES_H_
-#define _FCITX5_LOTUS_CANDIDATES_H_
+#ifndef _FCITX5_NGOSEN_CANDIDATES_H_
+#define _FCITX5_NGOSEN_CANDIDATES_H_
 
 #include <fcitx/candidatelist.h>
 #include <functional>
@@ -44,4 +44,4 @@ namespace fcitx {
 
 } // namespace fcitx
 
-#endif // _FCITX5_LOTUS_CANDIDATES_H_
+#endif // _FCITX5_NGOSEN_CANDIDATES_H_

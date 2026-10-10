@@ -22,7 +22,7 @@
 #include <fcitx-utils/event.h>
 
 /**
- * @brief Headless Mock InputContext for Fcitx5-Lotus Integration Testing.
+ * @brief Headless Mock InputContext for Ngó Sen Integration Testing.
  *
  * Architecture & Rationale:
  * Fcitx5 input method engines interact with client applications (text editors,
@@ -39,12 +39,12 @@
  * Example — Writing a new integration test:
  * @code
  * int main() {
- *     // 1. Sandbox filesystem paths to /tmp/fcitx5-lotus-my-test
- *     configureTestPaths("fcitx5-lotus-my-test");
+ *     // 1. Sandbox filesystem paths to /tmp/fcitx5-ngosen-my-test
+ *     configureTestPaths("fcitx5-ngosen-my-test");
  *
- *     // 2. Initialize headless Fcitx instance and Lotus engine
+ *     // 2. Initialize headless Fcitx instance and the engine
  *     TestInstance testInstance;
- *     fcitx::LotusEngine engine(&testInstance.instance);
+ *     fcitx::NgoSenEngine engine(&testInstance.instance);
  *
  *     // 3. Set engine mode and input method
  *     fcitx::RawConfig config;
@@ -56,7 +56,7 @@
  *     auto context = std::make_unique<TestInputContext>(&testInstance.instance);
  *     context->setCapabilityFlags(fcitx::CapabilityFlag::Preedit);
  *     context->focusIn();
- *     fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
+ *     fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
  *     fcitx::InputContextEvent in(context.get(), fcitx::EventType::InputContextFocusIn);
  *     engine.activate(entry, in);
  *
@@ -78,7 +78,7 @@
  *
  * CMake Registration (test/CMakeLists.txt):
  * @code
- * add_lotus_headless_test(my_test my-test.cpp "integration;myfeature")
+ * add_ngosen_headless_test(my_test my-test.cpp "integration;myfeature")
  * @endcode
  */
 class TestInputContext final : public fcitx::InputContext {
@@ -175,7 +175,7 @@ inline void configureTestPaths(const char* name) {
     // the package %check.
     // Copy the source tree's dictionary so every run spell-checks against the code under test.
     std::filesystem::create_directories(root / "data/fcitx5/ngosen");
-    std::filesystem::copy_file(LOTUS_TEST_DICTIONARY, root / "data/fcitx5/ngosen/vietnamese.cm.dict");
+    std::filesystem::copy_file(NGOSEN_TEST_DICTIONARY, root / "data/fcitx5/ngosen/vietnamese.cm.dict");
 }
 
 /**
@@ -192,7 +192,7 @@ struct TestInstance {
         instance.addonManager().registerDefaultLoader(nullptr);
         instance.initialize();
     }
-    char            program[64]    = "lotus-headless-test";
+    char            program[64]    = "ngosen-headless-test";
     char            disableAll[16] = "--disable=all";
     char*           argv[3]        = {program, disableAll, nullptr};
     fcitx::Instance instance;

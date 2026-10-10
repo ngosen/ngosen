@@ -2,8 +2,8 @@
 //
 // After sending backspaces, Sen mode waits for the app to report the deletion and commits on that
 // report, long before the timers would fire.
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "key-sender-probe.h"
 #include "test-input-context.h"
 
@@ -31,7 +31,7 @@ namespace {
         context.updateSurroundingText();
     }
 
-    bool type(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool accepted) {
+    bool type(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool accepted) {
         fcitx::KeyEvent event(&context, fcitx::Key(symbol), false);
         engine.keyEvent(entry, event);
         if (event.accepted() != accepted) {
@@ -44,10 +44,10 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-surrounding-wait-event");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    configureTestPaths("fcitx5-ngosen-surrounding-wait-event");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
@@ -61,7 +61,7 @@ int main() {
     auto           context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 

@@ -63,7 +63,7 @@ stdenv.mkDerivation {
   cmakeFlags = [
     (lib.cmakeBool "NGOSEN_RUST_CORE" true)
     (lib.cmakeBool "BUILD_TESTING" true)
-    (lib.cmakeBool "LOTUS_BYTECOMPILE_PYTHON" false)
+    (lib.cmakeBool "NGOSEN_BYTECOMPILE_PYTHON" false)
   ];
 
   doCheck = true;

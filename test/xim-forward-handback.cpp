@@ -2,8 +2,8 @@
 //
 // An XIM client sometimes hands a forwarded backspace back unprocessed. It must reach
 // the client again and the commit must wait for it, or the new text lands before the deletion.
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "test-input-context.h"
 
 #include <cstdint>
@@ -25,7 +25,7 @@ namespace {
         return out.empty() ? "(none)" : out;
     }
 
-    bool type(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool accepted) {
+    bool type(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool accepted) {
         fcitx::KeyEvent event(&context, fcitx::Key(symbol), false);
         engine.keyEvent(entry, event);
         if (event.accepted() != accepted) {
@@ -53,7 +53,7 @@ namespace {
 
     struct Harness {
         fcitx::Instance&               instance;
-        fcitx::LotusEngine&            engine;
+        fcitx::NgoSenEngine&           engine;
         const fcitx::InputMethodEntry& entry;
         TestInputContext&              context;
 
@@ -159,10 +159,10 @@ int main() {
     // A plain X11 session: XIM forwards there as well as under XWayland.
     unsetenv("WAYLAND_DISPLAY");
 
-    configureTestPaths("fcitx5-lotus-xim-forward-handback");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    configureTestPaths("fcitx5-ngosen-xim-forward-handback");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     engine.setConfig(config);
@@ -170,7 +170,7 @@ int main() {
     // XIM clients declare no surrounding text, so the wait is timer-only.
     auto context = std::make_unique<TestInputContext>(&testInstance.instance, "test", "xim");
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 

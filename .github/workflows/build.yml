@@ -63,7 +63,7 @@ jobs:
         run: |
           pacman -Syu --noconfirm base-devel clang cmake ninja extra-cmake-modules fmt libuv boost git go systemd-libs extra-cmake-modules python librsvg rust
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE/fcitx5-lotus"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/ngosen"
           git config --global --add safe.directory "$GITHUB_WORKSPACE/fcitx5"
       - uses: actions/checkout@v7
         with:
@@ -85,31 +85,31 @@ jobs:
             -DENABLE_DBUS=Off -DENABLE_SERVER=Off -DUSE_SYSTEMD=Off -DENABLE_EMOJI=On
       - uses: actions/checkout@v7
         with:
-          path: fcitx5-lotus
+          path: ngosen
           submodules: true
       - name: Init CodeQL
         if: matrix.compiler == 'gcc' && matrix.core == 'go'
         uses: github/codeql-action/init@v4.38.1
         with:
           languages: cpp,go
-          source-root: fcitx5-lotus
-      - name: Build and Install fcitx5-lotus
+          source-root: ngosen
+      - name: Build and Install Ngó Sen
         uses: fcitx/github-actions@cmake
         with:
-          path: fcitx5-lotus
+          path: ngosen
           cmake-option: >-
             -DBUILD_TESTING=ON ${{ matrix.core == 'rust' && '-DNGOSEN_RUST_CORE=ON' || '' }}
       - name: Discover tests
         run: |
-          ctest --test-dir fcitx5-lotus/build -N
+          ctest --test-dir ngosen/build -N
       - name: Test
         run: |
-          ctest --test-dir fcitx5-lotus/build --output-on-failure --no-tests=error
+          ctest --test-dir ngosen/build --output-on-failure --no-tests=error
       - name: CodeQL Analysis
         if: matrix.compiler == 'gcc' && matrix.core == 'go'
         uses: github/codeql-action/analyze@v4.38.1
         with:
-          checkout_path: fcitx5-lotus
+          checkout_path: ngosen
 
   # The typing logic must build and pass its tests with no fcitx5 installed. Ubuntu 22.04 is the
   # oldest system we package for, so this also keeps it building as C++17 with GCC 11.

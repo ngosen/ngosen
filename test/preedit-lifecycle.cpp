@@ -20,7 +20,7 @@
  * state transitions without a running X11/Wayland desktop session.
  */
 
-#include "lotus-engine.h"
+#include "ngosen-engine.h"
 #include "test-input-context.h"
 
 #include <fcitx-utils/utf8.h>
@@ -41,17 +41,17 @@ namespace {
 } // namespace
 
 int main() {
-    // Step 0: Sandbox filesystem paths to /tmp/fcitx5-lotus-preedit-lifecycle
-    configureTestPaths("fcitx5-lotus-preedit-lifecycle");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
+    // Step 0: Sandbox filesystem paths to /tmp/fcitx5-ngosen-preedit-lifecycle
+    configureTestPaths("fcitx5-ngosen-preedit-lifecycle");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
 
-    // Step 1: Configure Lotus in Preedit mode with Telex input method
+    // Step 1: Configure the engine in Preedit mode with Telex input method
     fcitx::RawConfig config;
     config.setValueByPath("Mode", "Preedit");
     config.setValueByPath("InputMethod", "Telex");
     engine.setConfig(config);
-    if (engine.config().mode.value() != fcitx::LotusMode::Preedit || engine.config().inputMethod.value() != "Telex") {
+    if (engine.config().mode.value() != fcitx::NgoSenMode::Preedit || engine.config().inputMethod.value() != "Telex") {
         reportFailure("configure Preedit/Telex", "mode=Preedit, input method=Telex", "configured mode or input method differs",
                       "the lifecycle test cannot exercise client preedit behavior");
         return 1;
@@ -61,7 +61,7 @@ int main() {
     auto context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->setCapabilityFlags(fcitx::CapabilityFlag::Preedit);
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
 
     fcitx::InputContextEvent in(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, in);
@@ -72,7 +72,7 @@ int main() {
         fcitx::KeyEvent event(context.get(), fcitx::Key(sym), false);
         engine.keyEvent(entry, event);
         if (!event.accepted()) {
-            reportFailure("type Telex key", "key event accepted", "key " + std::to_string(sym) + " was not accepted", "Lotus did not process the Telex input");
+            reportFailure("type Telex key", "key event accepted", "key " + std::to_string(sym) + " was not accepted", "the engine did not process the Telex input");
             return 1;
         }
     }

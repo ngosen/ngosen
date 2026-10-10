@@ -17,268 +17,268 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/lotus-config.h:40 src/lotus-engine.cpp:989 src/lotus-engine.cpp:1097
+#: src/ngosen-config.h:40 src/ngosen-engine.cpp:989 src/ngosen-engine.cpp:1097
 msgid "OFF"
 msgstr ""
 
-#: src/lotus-config.h:40 src/lotus-engine.cpp:983 src/lotus-engine.cpp:1091
+#: src/ngosen-config.h:40 src/ngosen-engine.cpp:983 src/ngosen-engine.cpp:1091
 msgid "Sen"
 msgstr ""
 
-#: src/lotus-config.h:40 src/lotus-engine.cpp:987 src/lotus-engine.cpp:1095
+#: src/ngosen-config.h:40 src/ngosen-engine.cpp:987 src/ngosen-engine.cpp:1095
 msgid "Preedit"
 msgstr ""
 
-#: src/lotus-config.h:41 src/lotus-engine.cpp:988 src/lotus-engine.cpp:1096
+#: src/ngosen-config.h:41 src/ngosen-engine.cpp:988 src/ngosen-engine.cpp:1096
 msgid "Emoji Picker"
 msgstr ""
 
-#: src/lotus-config.h:58 src/lotus-config.h:69 src/lotus-config.h:81
+#: src/ngosen-config.h:58 src/ngosen-config.h:69 src/ngosen-config.h:81
 msgid "Disabled"
 msgstr ""
 
-#: src/lotus-config.h:58 src/lotus-config.h:69
+#: src/ngosen-config.h:58 src/ngosen-config.h:69
 msgid "Non-Start"
 msgstr ""
 
-#: src/lotus-config.h:58 src/lotus-config.h:69
+#: src/ngosen-config.h:58 src/ngosen-config.h:69
 msgid "Everywhere"
 msgstr ""
 
-#: src/lotus-config.h:81
+#: src/ngosen-config.h:81
 msgid "Shift"
 msgstr ""
 
-#: src/lotus-config.h:81
+#: src/ngosen-config.h:81
 msgid "Ctrl"
 msgstr ""
 
-#: src/lotus-config.h:81
+#: src/ngosen-config.h:81
 msgid "Alt"
 msgstr ""
 
-#: src/lotus-config.h:92
+#: src/ngosen-config.h:92
 msgid "Auto"
 msgstr ""
 
-#: src/lotus-config.h:92
+#: src/ngosen-config.h:92
 msgid "Light"
 msgstr ""
 
-#: src/lotus-config.h:92
+#: src/ngosen-config.h:92
 msgid "Dark"
 msgstr ""
 
-#: src/lotus-config.h:199
+#: src/ngosen-config.h:199
 msgid "Key"
 msgstr ""
 
-#: src/lotus-config.h:199
+#: src/ngosen-config.h:199
 msgid "Value"
 msgstr ""
 
-#: src/lotus-config.h:203 src/lotus-config.h:274 src/lotus-engine.cpp:243
-#: src/lotus-engine.cpp:383
+#: src/ngosen-config.h:203 src/ngosen-config.h:274 src/ngosen-engine.cpp:243
+#: src/ngosen-engine.cpp:383
 msgid "Macro"
 msgstr ""
 
-#: src/lotus-config.h:207 src/lotus-config.h:247 src/lotus-config.h:275
+#: src/ngosen-config.h:207 src/ngosen-config.h:247 src/ngosen-config.h:275
 msgid "Custom Keymap"
 msgstr ""
 
-#: src/lotus-config.h:209
+#: src/ngosen-config.h:209
 msgid "App"
 msgstr ""
 
-#: src/lotus-config.h:209 src/lotus-config.h:220
+#: src/ngosen-config.h:209 src/ngosen-config.h:220
 msgid "Mode"
 msgstr ""
 
-#: src/lotus-config.h:212
+#: src/ngosen-config.h:212
 msgid "Rules"
 msgstr ""
 
-#: src/lotus-config.h:222
+#: src/ngosen-config.h:222
 msgid "Input Method"
 msgstr ""
 
-#: src/lotus-config.h:223
+#: src/ngosen-config.h:223
 msgid "Output Charset"
 msgstr ""
 
-#: src/lotus-config.h:225
+#: src/ngosen-config.h:225
 msgid "Mode Menu Hotkey"
 msgstr ""
 
-#: src/lotus-config.h:226
+#: src/ngosen-config.h:226
 msgid "Cycle Mode Hotkey"
 msgstr ""
 
-#: src/lotus-config.h:227
+#: src/ngosen-config.h:227
 msgid "App Rules"
 msgstr ""
 
-#: src/lotus-config.h:228
+#: src/ngosen-config.h:228
 msgid "Type w to Produce ư"
 msgstr ""
 
-#: src/lotus-config.h:229
+#: src/ngosen-config.h:229
 msgid "Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"
 msgstr ""
 
-#: src/lotus-config.h:232
+#: src/ngosen-config.h:232
 msgid "Enable Spell Check Using Dictionary"
 msgstr ""
 
-#: src/lotus-config.h:232
+#: src/ngosen-config.h:232
 msgid "Enable Macro"
 msgstr ""
 
-#: src/lotus-config.h:233 src/lotus-engine.cpp:244 src/lotus-engine.cpp:384
+#: src/ngosen-config.h:233 src/ngosen-engine.cpp:244 src/ngosen-engine.cpp:384
 msgid "Capitalize Macro"
 msgstr ""
 
-#: src/lotus-config.h:235
+#: src/ngosen-config.h:235
 msgid "Modifier to Skip Macro for Next Word"
 msgstr ""
 
-#: src/lotus-config.h:236
+#: src/ngosen-config.h:236
 msgid "Auto capitalize after sentence-ending punctuation (. ! ? Enter)"
 msgstr ""
 
-#: src/lotus-config.h:237
+#: src/ngosen-config.h:237
 msgid "Double Space to Period"
 msgstr ""
 
-#: src/lotus-config.h:238
+#: src/ngosen-config.h:238
 msgid "Double Hyphen to Em-Dash (--)"
 msgstr ""
 
-#: src/lotus-config.h:239 src/lotus-engine.cpp:246
+#: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
 msgstr ""
 
-#: src/lotus-config.h:240
+#: src/ngosen-config.h:240
 msgid "Use oà, uý (Instead Of òa, úy)"
 msgstr ""
 
-#: src/lotus-config.h:241
+#: src/ngosen-config.h:241
 msgid "Allow Type With More Freedom"
 msgstr ""
 
-#: src/lotus-config.h:242
+#: src/ngosen-config.h:242
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
 msgstr ""
 
-#: src/lotus-config.h:243
+#: src/ngosen-config.h:243
 msgid "Fix Uinput Mode With Ack"
 msgstr ""
 
-#: src/lotus-config.h:244
+#: src/ngosen-config.h:244
 msgid "Use Ngó Sen Status Icons"
 msgstr ""
 
-#: src/lotus-config.h:246 src/lotus-engine.cpp:248 src/lotus-engine.cpp:386
+#: src/ngosen-config.h:246 src/ngosen-engine.cpp:248 src/ngosen-engine.cpp:386
 msgid "Custom Dictionary"
 msgstr ""
 
-#: src/lotus-config.h:249
+#: src/ngosen-config.h:249
 msgid "Show Sen"
 msgstr ""
 
-#: src/lotus-config.h:250
+#: src/ngosen-config.h:250
 msgid "Shortcut for Sen"
 msgstr ""
 
-#: src/lotus-config.h:259
+#: src/ngosen-config.h:259
 msgid "Show Preedit"
 msgstr ""
 
-#: src/lotus-config.h:260
+#: src/ngosen-config.h:260
 msgid "Shortcut for Preedit"
 msgstr ""
 
-#: src/lotus-config.h:261
+#: src/ngosen-config.h:261
 msgid "Show Emoji Picker"
 msgstr ""
 
-#: src/lotus-config.h:262
+#: src/ngosen-config.h:262
 msgid "Shortcut for Emoji Picker"
 msgstr ""
 
-#: src/lotus-config.h:262
+#: src/ngosen-config.h:262
 msgid "Show OFF"
 msgstr ""
 
-#: src/lotus-config.h:263
+#: src/ngosen-config.h:263
 msgid "Shortcut for OFF"
 msgstr ""
 
-#: src/lotus-config.h:263
+#: src/ngosen-config.h:263
 msgid "Show Default Typing"
 msgstr ""
 
-#: src/lotus-config.h:264
+#: src/ngosen-config.h:264
 msgid "Shortcut for Default Typing"
 msgstr ""
 
-#: src/lotus-config.h:265
+#: src/ngosen-config.h:265
 msgid "Allow Macro in Off Mode"
 msgstr ""
 
-#: src/lotus-config.h:267
+#: src/ngosen-config.h:267
 msgid "Use Surrounding Text if possible"
 msgstr ""
 
-#: src/lotus-config.h:269
+#: src/ngosen-config.h:269
 msgid "Mode Order"
 msgstr ""
 
-#: src/lotus-config.h:271
+#: src/ngosen-config.h:271
 msgid "Time Format ($TIME in macro)"
 msgstr ""
 
-#: src/lotus-config.h:272
+#: src/ngosen-config.h:272
 msgid "Date Format ($DATE in macro)"
 msgstr ""
 
-#: src/lotus-config.h:276
+#: src/ngosen-config.h:276
 msgid "Icon Color"
 msgstr ""
 
-#: src/lotus-engine.cpp:215
+#: src/ngosen-engine.cpp:215
 msgid "Charset"
 msgstr ""
 
-#: src/lotus-engine.cpp:242 src/lotus-engine.cpp:382
+#: src/ngosen-engine.cpp:242 src/ngosen-engine.cpp:382
 msgid "Spell Check"
 msgstr ""
 
-#: src/lotus-engine.cpp:246 src/lotus-engine.cpp:385
+#: src/ngosen-engine.cpp:246 src/ngosen-engine.cpp:385
 msgid "Auto Non-VN Restore"
 msgstr ""
 
-#: src/lotus-engine.cpp:252
+#: src/ngosen-engine.cpp:252
 msgid "Settings"
 msgstr ""
 
-#: src/lotus-engine.cpp:991 src/lotus-engine.cpp:1030
+#: src/ngosen-engine.cpp:991 src/ngosen-engine.cpp:1030
 msgid "Default Typing"
 msgstr ""
 
-#: src/lotus-engine.cpp:1057
+#: src/ngosen-engine.cpp:1057
 msgid "Type"
 msgstr ""
 
-#: src/lotus-engine.cpp:1074
+#: src/ngosen-engine.cpp:1074
 msgid "App: "
 msgstr ""
 
-#: src/lotus-engine.cpp:1099
+#: src/ngosen-engine.cpp:1099
 msgid "Unknown Mode"
 msgstr ""
 
-#: src/lotus-engine.cpp:1204
+#: src/ngosen-engine.cpp:1204
 msgid "Ngó Sen - Off"
 msgstr ""
 

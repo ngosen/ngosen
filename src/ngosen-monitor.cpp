@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-#include "lotus-monitor.h"
-#include "lotus-utils.h"
+#include "ngosen-monitor.h"
+#include "ngosen-utils.h"
 #include "ngosen-pointer.h"
 
 std::thread mouse_thread = std::thread();

@@ -10,8 +10,8 @@
  * mode the user never chose for it.
  */
 
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "test-input-context.h"
 
 #include <iostream>
@@ -20,7 +20,7 @@
 
 namespace {
 
-    int countCtxRules(const fcitx::LotusEngine& engine) {
+    int countCtxRules(const fcitx::NgoSenEngine& engine) {
         fcitx::RawConfig raw;
         engine.getSubConfig("app_rules")->save(raw);
         int  count = 0;
@@ -39,12 +39,12 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-ctx-rule-cleanup");
+    configureTestPaths("fcitx5-ngosen-ctx-rule-cleanup");
 
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
 
-    fcitx::RawConfig   config;
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Preedit");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("CycleModeKey/0", "F12");
@@ -52,7 +52,7 @@ int main() {
 
     auto context = std::make_unique<TestInputContext>(&testInstance.instance, "");
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 

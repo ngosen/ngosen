@@ -5,7 +5,7 @@
  */
 #include "ngosen-log.h"
 
-#include "lotus-utils.h"
+#include "ngosen-utils.h"
 
 #include <cstring>
 #include <fcitx-utils/log.h>
@@ -25,7 +25,7 @@ namespace ngosen {
     } // namespace
 
     bool logEnabled(LogLevel level) {
-        return lotus().checkLogLevel(toFcitx(level));
+        return ngosenLog().checkLogLevel(toFcitx(level));
     }
 
     // fcitx5 prints only the file's base name.

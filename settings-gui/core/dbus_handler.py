@@ -8,7 +8,7 @@ D-Bus handler to communicate with Fcitx5 Controller.
 import dbus
 
 
-class LotusDBusHandler:
+class NgoSenDBusHandler:
     def __init__(self):
         self.addon_name = "fcitx://config/addon/ngosen"
         try:

@@ -8,14 +8,14 @@
  */
 
 /**
- * @file lotus-engine.h
- * @brief Main engine implementation for fcitx5-lotus Vietnamese input method.
+ * @file ngosen-engine.h
+ * @brief Main engine implementation for the Ngó Sen Vietnamese input method.
  */
 
-#ifndef _FCITX5_LOTUS_ENGINE_H_
-#define _FCITX5_LOTUS_ENGINE_H_
+#ifndef _FCITX5_NGOSEN_ENGINE_H_
+#define _FCITX5_NGOSEN_ENGINE_H_
 
-#include "lotus-config.h"
+#include "ngosen-config.h"
 #include "ngosen-engine-resources.h"
 #include "emoji.h"
 #include "ngosen-options.h"
@@ -52,12 +52,12 @@ namespace fcitx {
     };
 
     /**
-     * @brief Main engine class for Lotus input method.
+     * @brief Main engine class for the Ngó Sen input method.
      *
      * Handles input processing, configuration management, and UI actions.
      * Implements fcitx InputMethodEngine interface.
      */
-    class LotusEngine final : public InputMethodEngineV2, public ngosen::EngineResources {
+    class NgoSenEngine final : public InputMethodEngineV2, public ngosen::EngineResources {
       public:
         /**
          * @brief Gets the fcitx instance.
@@ -68,21 +68,21 @@ namespace fcitx {
         }
 
         /**
-         * @brief Constructs the Lotus engine.
+         * @brief Constructs the engine.
          * @param instance Pointer to fcitx instance.
          */
-        LotusEngine(Instance* instance);
+        NgoSenEngine(Instance* instance);
 
         /**
          * @brief Destroys the engine and releases resources.
          */
-        ~LotusEngine();
+        ~NgoSenEngine();
 
         // Rule of five
-        LotusEngine(const LotusEngine&)            = delete;
-        LotusEngine& operator=(const LotusEngine&) = delete;
-        LotusEngine(LotusEngine&&)                 = delete;
-        LotusEngine& operator=(LotusEngine&&)      = delete;
+        NgoSenEngine(const NgoSenEngine&)            = delete;
+        NgoSenEngine& operator=(const NgoSenEngine&) = delete;
+        NgoSenEngine(NgoSenEngine&&)                 = delete;
+        NgoSenEngine& operator=(NgoSenEngine&&)      = delete;
 
         /**
          * @brief Activates the input method for an input context.
@@ -171,7 +171,7 @@ namespace fcitx {
 
         /**
          * @brief Gets the current configuration.
-         * @return Reference to lotus configuration.
+         * @return Reference to the configuration.
          */
         const auto& config() const {
             return config_;
@@ -223,48 +223,48 @@ namespace fcitx {
         }
 
       private:
-        ngosen::TypingState*                       stateFor(InputContext* ic);
+        ngosen::TypingState*                        stateFor(InputContext* ic);
 
-        Instance*                                  instance_;
-        lotusConfig                                config_;
-        ngosen::Options                            options_;
-        lotusCustomKeymap                          customKeymap_;
+        Instance*                                   instance_;
+        ngosenConfig                                config_;
+        ngosen::Options                             options_;
+        ngosenCustomKeymap                          customKeymap_;
 
-        lotusMacroTable                            macroTables_;
-        ngosen::CGoObject                          macroTableObject_;
-        lotusAppRules                              appRulesTables_;
+        ngosenMacroTable                            macroTables_;
+        ngosen::CGoObject                           macroTableObject_;
+        ngosenAppRules                              appRulesTables_;
 
-        FactoryFor<TypingStateProperty>            factory_;
-        std::vector<std::string>                   imNames_;
+        FactoryFor<TypingStateProperty>             factory_;
+        std::vector<std::string>                    imNames_;
 
-        std::unique_ptr<SimpleAction>              charsetAction_;
-        std::vector<std::unique_ptr<SimpleAction>> charsetSubAction_;
-        std::unique_ptr<Menu>                      charsetMenu_;
+        std::unique_ptr<SimpleAction>               charsetAction_;
+        std::vector<std::unique_ptr<SimpleAction>>  charsetSubAction_;
+        std::unique_ptr<Menu>                       charsetMenu_;
 
-        std::unique_ptr<SimpleAction>              spellCheckAction_;
-        std::unique_ptr<SimpleAction>              macroAction_;
-        std::unique_ptr<SimpleAction>              capitalizeMacroAction_;
-        std::unique_ptr<SimpleAction>              autoNonVnRestoreAction_;
-        std::unique_ptr<SimpleAction>              enableDictionaryAction_;
-        std::unique_ptr<SimpleAction>              settingsAction_;
-        std::unique_ptr<SimpleAction>              saveLogAction_;
-        ngosen::Recorder                           recorder_;
-        std::vector<SimpleAction*>                 toggleActions_;
-        std::vector<ScopedConnection>              connections_;
-        ngosen::CGoObject                          dictionary_;
-        std::unordered_map<std::string, LotusMode> appRules_;
-        std::string                                appRulesPath_;
-        bool                                       isSelectingAppMode_ = false;
-        std::string                                currentConfigureApp_;
-        std::unique_ptr<EventSourceTime>           cycleModeNotificationTimer_;
-        std::string                                iconCacheName_;
-        std::string                                iconCachePath_;
-        static constexpr uint64_t                  CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
+        std::unique_ptr<SimpleAction>               spellCheckAction_;
+        std::unique_ptr<SimpleAction>               macroAction_;
+        std::unique_ptr<SimpleAction>               capitalizeMacroAction_;
+        std::unique_ptr<SimpleAction>               autoNonVnRestoreAction_;
+        std::unique_ptr<SimpleAction>               enableDictionaryAction_;
+        std::unique_ptr<SimpleAction>               settingsAction_;
+        std::unique_ptr<SimpleAction>               saveLogAction_;
+        ngosen::Recorder                            recorder_;
+        std::vector<SimpleAction*>                  toggleActions_;
+        std::vector<ScopedConnection>               connections_;
+        ngosen::CGoObject                           dictionary_;
+        std::unordered_map<std::string, NgoSenMode> appRules_;
+        std::string                                 appRulesPath_;
+        bool                                        isSelectingAppMode_ = false;
+        std::string                                 currentConfigureApp_;
+        std::unique_ptr<EventSourceTime>            cycleModeNotificationTimer_;
+        std::string                                 iconCacheName_;
+        std::string                                 iconCachePath_;
+        static constexpr uint64_t                   CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
         FCITX_ADDON_DEPENDENCY_LOADER(emoji, instance_->addonManager());
-        std::unique_ptr<EmojiLoader>          emojiLoader_;
-        bool                                  isGnome_ = false;
-        mutable std::mutex                    appRulesMutex_;
-        std::unordered_map<KeySym, LotusMode> modeMenuMapping_;
+        std::unique_ptr<EmojiLoader>           emojiLoader_;
+        bool                                   isGnome_ = false;
+        mutable std::mutex                     appRulesMutex_;
+        std::unordered_map<KeySym, NgoSenMode> modeMenuMapping_;
         // A Wayland click reaches the IM only as a surrounding text update.
         std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> commitWatcher_;
@@ -339,14 +339,14 @@ namespace fcitx {
          * @return Current application-specific mode rules
         */
 
-        LotusMode getAppRule(const std::string& appName) const;
+        NgoSenMode getAppRule(const std::string& appName) const;
 
         /**
          * @brief Set application-specific mode rules
          * @param appName The application name
          * @param mode The mode to set
          */
-        void setAppRule(const std::string& appName, LotusMode mode);
+        void setAppRule(const std::string& appName, NgoSenMode mode);
 
         /**
          * @brief Shows the application mode selection menu.
@@ -356,7 +356,7 @@ namespace fcitx {
 
         // One line of the mode menu, before the menu drops hidden modes.
         struct ModeMenuItem {
-            LotusMode   mode;
+            NgoSenMode  mode;
             std::string label;
             KeySym      key;
             bool        visible;
@@ -375,18 +375,18 @@ namespace fcitx {
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
         // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.
-        void pickMenuMode(InputContext* ic, LotusMode mode, bool isDefault);
+        void pickMenuMode(InputContext* ic, NgoSenMode mode, bool isDefault);
         void openModeMenu(InputContext* ic);
         // The modes the cycle key steps through, in the configured order.
-        std::vector<LotusMode> cycleModes();
-        void                   cycleMode(InputContext* ic);
+        std::vector<NgoSenMode> cycleModes();
+        void                    cycleMode(InputContext* ic);
 
         /**
          * @brief Shows a brief notification of the cycled mode.
          * @param mode The mode that was cycled to.
          * @param ic Current input context.
          */
-        void showCycleModeNotification(LotusMode mode, InputContext* ic);
+        void showCycleModeNotification(NgoSenMode mode, InputContext* ic);
 
         /**
          * @brief Closes the application mode selection menu.
@@ -398,7 +398,7 @@ namespace fcitx {
          * @param mode The mode to set.
          * @param ic Current input context.
          */
-        void setMode(LotusMode mode, InputContext* ic);
+        void setMode(NgoSenMode mode, InputContext* ic);
 
         /**
          * @brief Get name of current program
@@ -422,21 +422,21 @@ namespace fcitx {
     };
 
     /**
-     * @brief Factory class for creating LotusEngine instances.
+     * @brief Factory class for creating NgoSenEngine instances.
      */
-    class LotusFactory : public AddonFactory {
+    class NgoSenFactory : public AddonFactory {
       public:
         /**
-         * @brief Creates a new LotusEngine instance.
+         * @brief Creates a new NgoSenEngine instance.
          * @param manager Pointer to addon manager.
          * @return New engine instance.
          */
         AddonInstance* create(AddonManager* manager) override {
             registerDomain("fcitx5-ngosen", FCITX_INSTALL_LOCALEDIR);
-            return new LotusEngine(manager->instance()); // NOLINT
+            return new NgoSenEngine(manager->instance()); // NOLINT
         }
     };
 
 } // namespace fcitx
 
-#endif // _FCITX5_LOTUS_ENGINE_H_
+#endif // _FCITX5_NGOSEN_ENGINE_H_

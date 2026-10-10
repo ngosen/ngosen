@@ -8,7 +8,7 @@
  * consequences:
  *
  * 1. A client without surrounding support (kitty) never sends surrounding text,
- *    so fcitx5 keeps the previous window's snapshot as valid. Lotus read it as
+ *    so fcitx5 keeps the previous window's snapshot as valid. The engine read it as
  *    the terminal's text and took the wrong replacement path. The engine must
  *    drop surrounding text the client does not advertise.
  * 2. Program names carry a ".desktop" suffix, so per-app rules written as
@@ -16,8 +16,8 @@
  *    an exact "foo.desktop" rule still wins.
  */
 
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "test-input-context.h"
 
 #include <filesystem>
@@ -35,12 +35,12 @@ namespace {
         std::cerr << "Meaning: " << meaning << '\n';
     }
 
-    std::string modeName(fcitx::LotusMode mode) {
+    std::string modeName(fcitx::NgoSenMode mode) {
         switch (mode) {
-            case fcitx::LotusMode::Off: return "Off";
-            case fcitx::LotusMode::Preedit: return "Preedit";
-            case fcitx::LotusMode::Sen: return "Sen";
-            case fcitx::LotusMode::Emoji: return "Emoji";
+            case fcitx::NgoSenMode::Off: return "Off";
+            case fcitx::NgoSenMode::Preedit: return "Preedit";
+            case fcitx::NgoSenMode::Sen: return "Sen";
+            case fcitx::NgoSenMode::Emoji: return "Emoji";
             default: return "Unknown";
         }
     }
@@ -57,7 +57,7 @@ namespace {
 } // namespace
 
 int main() {
-    const char* testName = "fcitx5-lotus-gnome-shared-ibus-context";
+    const char* testName = "fcitx5-ngosen-gnome-shared-ibus-context";
     configureTestPaths(testName);
 
     if (!checkStrip("firefox.desktop", "firefox") || !checkStrip("org.gnome.TextEditor.desktop", "org.gnome.TextEditor") || !checkStrip("firefox", "firefox") ||
@@ -75,15 +75,15 @@ int main() {
         file << "firefox=0\nkitty=0\nkitty.desktop=5\n";
     }
 
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
 
-    fcitx::RawConfig   config;
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     engine.setConfig(config);
 
-    fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
 
     // Rule lookup: "firefox.desktop" falls back to the "firefox" rule.
     {
@@ -92,7 +92,7 @@ int main() {
         context->focusIn();
         fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
         engine.activate(entry, focus);
-        if (::realMode.load() != fcitx::LotusMode::Off) {
+        if (::realMode.load() != fcitx::NgoSenMode::Off) {
             reportFailure("rule for firefox.desktop", "realMode=Off", "realMode=" + modeName(::realMode.load()), "a \"firefox\" rule must apply to GNOME's \"firefox.desktop\"");
             return 1;
         }
@@ -114,7 +114,7 @@ int main() {
         context->focusIn();
         fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
         engine.activate(entry, focus);
-        if (::realMode.load() != fcitx::LotusMode::Preedit) {
+        if (::realMode.load() != fcitx::NgoSenMode::Preedit) {
             reportFailure("exact rule for kitty.desktop", "realMode=Preedit", "realMode=" + modeName(::realMode.load()),
                           "an exact \".desktop\" rule must override the bare-name rule");
             return 1;

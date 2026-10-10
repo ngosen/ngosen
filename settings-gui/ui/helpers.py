@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-Helper utilities and shared mappings for the Lotus settings GUI.
+Helper utilities and shared mappings for the Ngó Sen settings window.
 """
 
 from i18n import N_, _

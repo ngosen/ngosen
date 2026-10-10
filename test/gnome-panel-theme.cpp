@@ -4,11 +4,11 @@
 //
 // The reported machine runs Ubuntu 24.04 with the WhiteSur-Dark shell theme
 // through the User Themes extension and color-scheme 'default': the portal
-// says light, so Lotus drew a black icon, while the top bar is translucent
+// says light, so the engine drew a black icon, while the top bar is translucent
 // with white text.  Ubuntu's own Yaru bar is near-black under the light
 // scheme too.  The CSS snippets below are copied from those themes.
 //
-#include "lotus-gnome-theme.h"
+#include "ngosen-gnome-theme.h"
 
 #include <cstdio>
 #include <filesystem>
@@ -80,7 +80,7 @@ int main() {
     check("D5 empty", !fcitx::isGnomeShellSession(""), "empty desktop taken for GNOME Shell");
 
     // ── Finding the stylesheet ───────────────────────────────────────────
-    char        tmpl[] = "/tmp/lotus-gnome-theme-XXXXXX";
+    char        tmpl[] = "/tmp/ngosen-gnome-theme-XXXXXX";
     const char* dir    = mkdtemp(tmpl);
     if (dir == nullptr) {
         std::printf("FAIL mkdtemp\n");

@@ -1,16 +1,16 @@
-# Reusable object library compiling the 7 core Lotus sources once per compiler build,
+# Reusable object library compiling the fcitx5-side sources once per compiler build,
 # shared across all headless integration test executables.
-add_library(lotus_test_core OBJECT ${fcitx_lotus_core_sources})
-set_target_properties(lotus_test_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_include_directories(lotus_test_core PRIVATE
+add_library(ngosen_test_core OBJECT ${ngosen_fcitx_sources})
+set_target_properties(ngosen_test_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(ngosen_test_core PRIVATE
     ${PROJECT_BINARY_DIR}
     ${PROJECT_SOURCE_DIR}/src
 )
-target_compile_definitions(lotus_test_core PRIVATE
-    FCITX5_LOTUS_SETTINGS_PATH="${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-ngosen-settings"
-    FCITX_LOTUS_ICON_DIR="${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps"
+target_compile_definitions(ngosen_test_core PRIVATE
+    NGOSEN_SETTINGS_PATH="${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-ngosen-settings"
+    NGOSEN_ICON_DIR="${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps"
 )
-target_link_libraries(lotus_test_core PRIVATE
+target_link_libraries(ngosen_test_core PRIVATE
     ngosen_core
     Fcitx5::Core
     Fcitx5::Config
@@ -19,22 +19,22 @@ target_link_libraries(lotus_test_core PRIVATE
     Pthread::Pthread
 )
 
-# Helper macro to compile standalone headless integration test linked with Lotus engine.
+# Helper macro to compile standalone headless integration test linked with the engine.
 #
 # Usage:
-#   add_lotus_headless_test(<target_name> <source_file> "<labels>")
+#   add_ngosen_headless_test(<target_name> <source_file> "<labels>")
 # Example:
-#   add_lotus_headless_test(my_test my-test.cpp "integration;myfeature")
-function(add_lotus_headless_test target source labels)
-    add_executable(${target} ${source} $<TARGET_OBJECTS:lotus_test_core>)
+#   add_ngosen_headless_test(my_test my-test.cpp "integration;myfeature")
+function(add_ngosen_headless_test target source labels)
+    add_executable(${target} ${source} $<TARGET_OBJECTS:ngosen_test_core>)
     target_include_directories(${target} PRIVATE
         ${PROJECT_BINARY_DIR}
         ${PROJECT_SOURCE_DIR}/src
     )
     target_compile_definitions(${target} PRIVATE
-        FCITX5_LOTUS_SETTINGS_PATH="${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-ngosen-settings"
-        FCITX_LOTUS_ICON_DIR="${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps"
-        LOTUS_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+        NGOSEN_SETTINGS_PATH="${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-ngosen-settings"
+        NGOSEN_ICON_DIR="${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps"
+        NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
     )
     target_link_libraries(${target} PRIVATE
         ngosen_core
@@ -57,67 +57,67 @@ function(add_bamboo_test target source labels)
     set_tests_properties(${target} PROPERTIES LABELS "${labels}" TIMEOUT 20)
 endfunction()
 
-add_lotus_headless_test(preedit_lifecycle preedit-lifecycle.cpp "integration;preedit")
-add_lotus_headless_test(app_rule_reset app-rule-reset.cpp "integration;apprule")
-add_lotus_headless_test(ctx_rule_cleanup ctx-rule-cleanup.cpp "integration;apprule")
-add_lotus_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule")
-add_lotus_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp "integration;apprule;gnome")
-add_lotus_headless_test(mode_name_migration mode-name-migration.cpp "integration;mode")
-add_lotus_headless_test(messenger_defaults messenger-defaults.cpp "integration;mode")
-add_lotus_headless_test(options_sync options-sync.cpp "integration;config")
-add_lotus_headless_test(host_field_mapping host-field-mapping.cpp "unit;host")
-add_lotus_headless_test(custom_keymap custom-keymap.cpp "integration;keymap")
-add_lotus_headless_test(preedit_smoke_client preedit-smoke-client.cpp "integration;preedit")
-add_lotus_headless_test(preedit_smoke_server preedit-smoke-server.cpp "integration;preedit")
-add_lotus_headless_test(smooth_buffered_key_replay
+add_ngosen_headless_test(preedit_lifecycle preedit-lifecycle.cpp "integration;preedit")
+add_ngosen_headless_test(app_rule_reset app-rule-reset.cpp "integration;apprule")
+add_ngosen_headless_test(ctx_rule_cleanup ctx-rule-cleanup.cpp "integration;apprule")
+add_ngosen_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule")
+add_ngosen_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp "integration;apprule;gnome")
+add_ngosen_headless_test(mode_name_migration mode-name-migration.cpp "integration;mode")
+add_ngosen_headless_test(messenger_defaults messenger-defaults.cpp "integration;mode")
+add_ngosen_headless_test(options_sync options-sync.cpp "integration;config")
+add_ngosen_headless_test(host_field_mapping host-field-mapping.cpp "unit;host")
+add_ngosen_headless_test(custom_keymap custom-keymap.cpp "integration;keymap")
+add_ngosen_headless_test(preedit_smoke_client preedit-smoke-client.cpp "integration;preedit")
+add_ngosen_headless_test(preedit_smoke_server preedit-smoke-server.cpp "integration;preedit")
+add_ngosen_headless_test(smooth_buffered_key_replay
     smooth-buffered-key-replay.cpp "integration;smooth")
-add_lotus_headless_test(held_key_repeat
+add_ngosen_headless_test(held_key_repeat
     held-key-repeat.cpp "integration;smooth")
-add_lotus_headless_test(super_smooth_half_updated_snapshot
+add_ngosen_headless_test(super_smooth_half_updated_snapshot
     super-smooth-half-updated-snapshot.cpp "integration;smooth")
-add_lotus_headless_test(super_smooth_half_updated_mid_word
+add_ngosen_headless_test(super_smooth_half_updated_mid_word
     super-smooth-half-updated-mid-word.cpp "integration;smooth")
-add_lotus_headless_test(surrounding_wait_event
+add_ngosen_headless_test(surrounding_wait_event
     surrounding-wait-event.cpp "integration;smooth")
-add_lotus_headless_test(super_smooth_settle_wait
+add_ngosen_headless_test(super_smooth_settle_wait
     super-smooth-settle-wait.cpp "integration;smooth")
-add_lotus_headless_test(wayland_forward_backspaces
+add_ngosen_headless_test(wayland_forward_backspaces
     wayland-forward-backspaces.cpp "integration;smooth")
-add_lotus_headless_test(xim_key_handback
+add_ngosen_headless_test(xim_key_handback
     xim-key-handback.cpp "integration;smooth")
-add_lotus_headless_test(xim_forward_handback
+add_ngosen_headless_test(xim_forward_handback
     xim-forward-handback.cpp "integration;smooth")
-add_lotus_headless_test(ibus_dbus_forward_backspaces
+add_ngosen_headless_test(ibus_dbus_forward_backspaces
     ibus-dbus-forward-backspaces.cpp "integration;smooth")
-add_lotus_headless_test(cursor_jump_reset
+add_ngosen_headless_test(cursor_jump_reset
     cursor-jump-reset.cpp "integration;surrounding")
-add_lotus_headless_test(click_switch_fuzz
+add_ngosen_headless_test(click_switch_fuzz
     click-switch-fuzz.cpp "integration;surrounding")
 set_tests_properties(click_switch_fuzz PROPERTIES TIMEOUT 120)
-add_lotus_headless_test(cell_click_key_report
+add_ngosen_headless_test(cell_click_key_report
     cell-click-key-report.cpp "integration;surrounding")
-add_lotus_headless_test(calc_text_input_cell_click
+add_ngosen_headless_test(calc_text_input_cell_click
     calc-text-input-cell-click.cpp "integration;surrounding")
-add_lotus_headless_test(x11_pointer_click
+add_ngosen_headless_test(x11_pointer_click
     x11-pointer-click.cpp "unit;x11")
-add_lotus_headless_test(x11_xtest_replacement
+add_ngosen_headless_test(x11_xtest_replacement
     x11-xtest-replacement.cpp "integration;smooth")
-add_lotus_headless_test(super_smooth_settle_wait_immediate
+add_ngosen_headless_test(super_smooth_settle_wait_immediate
     super-smooth-settle-wait-immediate.cpp "integration;smooth")
-add_lotus_headless_test(super_smooth_settle_plain_field
+add_ngosen_headless_test(super_smooth_settle_plain_field
     super-smooth-settle-plain-field.cpp "integration;smooth")
-add_lotus_headless_test(super_smooth_settle_empty_composer
+add_ngosen_headless_test(super_smooth_settle_empty_composer
     super-smooth-settle-empty-composer.cpp "integration;smooth")
-add_lotus_headless_test(super_smooth_messenger_select_overtype
+add_ngosen_headless_test(super_smooth_messenger_select_overtype
     super-smooth-messenger-select-overtype.cpp "integration;smooth")
-add_lotus_headless_test(replay_single_commit
+add_ngosen_headless_test(replay_single_commit
     replay-single-commit.cpp "integration;smooth")
-add_lotus_headless_test(super_smooth_settle_first_word
+add_ngosen_headless_test(super_smooth_settle_first_word
     super-smooth-settle-first-word.cpp "integration;smooth")
-add_lotus_headless_test(emoji_candidate_keys emoji-candidate-keys.cpp "integration;emoji")
-add_lotus_headless_test(emoji_history_page_navigation
+add_ngosen_headless_test(emoji_candidate_keys emoji-candidate-keys.cpp "integration;emoji")
+add_ngosen_headless_test(emoji_history_page_navigation
     emoji-history-page-navigation.cpp "integration;emoji")
-add_lotus_headless_test(property_invariants
+add_ngosen_headless_test(property_invariants
     property-invariants.cpp "integration;property")
 add_bamboo_test(numeric_macro_case_preservation
     numeric-macro-case-preservation.cpp "unit;macro")
@@ -140,8 +140,8 @@ set_tests_properties(emoji_backspace_utf8 PROPERTIES
 
 add_executable(plasma_panel_theme
     plasma-panel-theme.cpp
-    ${PROJECT_SOURCE_DIR}/src/lotus-plasma-theme.cpp
-    ${PROJECT_SOURCE_DIR}/src/lotus-utils.cpp
+    ${PROJECT_SOURCE_DIR}/src/ngosen-plasma-theme.cpp
+    ${PROJECT_SOURCE_DIR}/src/ngosen-utils.cpp
 )
 target_include_directories(plasma_panel_theme PRIVATE
     ${PROJECT_BINARY_DIR}
@@ -160,8 +160,8 @@ set_tests_properties(plasma_panel_theme PROPERTIES
 
 add_executable(gnome_panel_theme
     gnome-panel-theme.cpp
-    ${PROJECT_SOURCE_DIR}/src/lotus-gnome-theme.cpp
-    ${PROJECT_SOURCE_DIR}/src/lotus-utils.cpp
+    ${PROJECT_SOURCE_DIR}/src/ngosen-gnome-theme.cpp
+    ${PROJECT_SOURCE_DIR}/src/ngosen-utils.cpp
 )
 target_include_directories(gnome_panel_theme PRIVATE
     ${PROJECT_BINARY_DIR}

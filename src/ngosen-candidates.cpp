@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-#include "lotus-candidates.h"
+#include "ngosen-candidates.h"
 
 namespace fcitx {
 

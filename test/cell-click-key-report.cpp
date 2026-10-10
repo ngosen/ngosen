@@ -3,7 +3,7 @@
 // LibreOffice Calc over the fcitx Qt module sends nothing when the user clicks another cell. It drops
 // the surrounding text capability before each key and reports the field right after it, and a
 // backspace on a cell that is not being edited opens the Delete Contents dialog.
-#include "lotus-engine.h"
+#include "ngosen-engine.h"
 #include "test-input-context.h"
 
 #include <fcitx-utils/utf8.h>
@@ -19,7 +19,7 @@ namespace {
 
     class FakeCalc {
       public:
-        FakeCalc(TestInstance& testInstance, fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry) :
+        FakeCalc(TestInstance& testInstance, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry) :
             testInstance_(testInstance), engine_(engine), entry_(entry), context_(std::make_unique<TestInputContext>(&testInstance.instance, "soffice.bin", "dbus")) {
             context_->setCapabilityFlags(withSurrounding);
             context_->focusIn();
@@ -90,7 +90,7 @@ namespace {
         }
 
         TestInstance&                     testInstance_;
-        fcitx::LotusEngine&               engine_;
+        fcitx::NgoSenEngine&              engine_;
         const fcitx::InputMethodEntry&    entry_;
         std::unique_ptr<TestInputContext> context_;
         std::string                       text_;
@@ -102,13 +102,13 @@ namespace {
 
 int main() {
     configureTestPaths("fcitx5-ngosen-cell-click-key-report");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     engine.setConfig(config);
-    fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
 
     FakeCalc                calc(testInstance, engine, entry);
     calc.type("dduwowcj");

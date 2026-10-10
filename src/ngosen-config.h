@@ -8,12 +8,12 @@
  */
 
 /**
- * @file lotus-config.h
- * @brief Configuration definitions for fcitx5-lotus input method.
+ * @file ngosen-config.h
+ * @brief Configuration definitions for the Ngó Sen input method.
  */
 
-#ifndef _FCITX5_LOTUS_CONFIG_H_
-#define _FCITX5_LOTUS_CONFIG_H_
+#ifndef _FCITX5_NGOSEN_CONFIG_H_
+#define _FCITX5_NGOSEN_CONFIG_H_
 
 #include <cstdint>
 #include <fcitx-config/configuration.h>
@@ -32,13 +32,13 @@ namespace ngosen {
 
 namespace fcitx {
 
-    using LotusMode = ngosen::Mode;
+    using NgoSenMode = ngosen::Mode;
 
     /**
-     * @brief Converts LotusMode to int and vice versa.
+     * @brief Converts NgoSenMode to int and vice versa.
      */
-    int       modeToInt(LotusMode mode);
-    LotusMode intToMode(int mode);
+    int        modeToInt(NgoSenMode mode);
+    NgoSenMode intToMode(int mode);
 
     /**
      * @brief W2U mode for w to ư conversion.
@@ -190,28 +190,28 @@ namespace fcitx {
         const InputMethodOption* option_;
     };
 
-    FCITX_CONFIGURATION(lotusKeymap, Option<std::string> key{this, "Key", _("Key"), ""}; Option<std::string> value{this, "Value", _("Value"), ""};);
+    FCITX_CONFIGURATION(ngosenKeymap, Option<std::string> key{this, "Key", _("Key"), ""}; Option<std::string> value{this, "Value", _("Value"), ""};);
 
-    FCITX_CONFIGURATION(lotusMacroTable,
-                        OptionWithAnnotation<std::vector<lotusKeymap>, ListDisplayOptionAnnotation> macros{
+    FCITX_CONFIGURATION(ngosenMacroTable,
+                        OptionWithAnnotation<std::vector<ngosenKeymap>, ListDisplayOptionAnnotation> macros{
                             this, "Macro", _("Macro"), {}, {}, {}, ListDisplayOptionAnnotation("Key")};);
 
-    FCITX_CONFIGURATION(lotusCustomKeymap,
-                        OptionWithAnnotation<std::vector<lotusKeymap>, ListDisplayOptionAnnotation> customKeymap{
+    FCITX_CONFIGURATION(ngosenCustomKeymap,
+                        OptionWithAnnotation<std::vector<ngosenKeymap>, ListDisplayOptionAnnotation> customKeymap{
                             this, "CustomKeymap", _("Custom Keymap"), {}, {}, {}, ListDisplayOptionAnnotation("Key")};);
 
-    FCITX_CONFIGURATION(lotusAppRule, Option<std::string> app{this, "App", _("App"), ""}; Option<int> mode{this, "Mode", _("Mode"), 0};);
-    FCITX_CONFIGURATION(lotusAppRules,
-                        OptionWithAnnotation<std::vector<lotusAppRule>, ListDisplayOptionAnnotation> rules{
+    FCITX_CONFIGURATION(ngosenAppRule, Option<std::string> app{this, "App", _("App"), ""}; Option<int> mode{this, "Mode", _("Mode"), 0};);
+    FCITX_CONFIGURATION(ngosenAppRules,
+                        OptionWithAnnotation<std::vector<ngosenAppRule>, ListDisplayOptionAnnotation> rules{
                             this, "Rules", _("Rules"), {}, {}, {}, ListDisplayOptionAnnotation("App")};);
 
     /**
-     * @brief Main configuration structure for Lotus input method.
+     * @brief Main configuration structure for the Ngó Sen input method.
      */
     FCITX_CONFIGURATION(
-        lotusConfig,
+        ngosenConfig,
 
-        OptionWithAnnotation<LotusMode, ngosen::ModeI18NAnnotation>                                      mode{this, "Mode", _("Mode"), LotusMode::Sen};
+        OptionWithAnnotation<NgoSenMode, ngosen::ModeI18NAnnotation>                                     mode{this, "Mode", _("Mode"), NgoSenMode::Sen};
         Option<std::string, InputMethodConstrain, DefaultMarshaller<std::string>, InputMethodAnnotation> inputMethod{
             this, "InputMethod", _("Input Method"), "Telex", InputMethodConstrain(&inputMethod), {}, InputMethodAnnotation()};
         OptionWithAnnotation<std::string, StringListAnnotation> outputCharset{this, "OutputCharset", _("Output Charset"), "Unicode", {}, {}, StringListAnnotation()};
@@ -247,7 +247,8 @@ namespace fcitx {
                                                 _("Experiment: a snapshot identical to the one at send time counts as done only after this many ms per backspace"), 8};
         Option<int>  surrDeleteSleepMs{this, "SurrDeleteSleepMs", _("Experiment: ms per deleted char to sleep after deleteSurroundingText"), 4};
         Option<int>  surrCommitSleepMs{this, "SurrCommitSleepMs", _("Experiment: ms per committed char to sleep after commitString on the surrounding-text path"), 3};
-        Option<bool> useLotusIcons{this, "UseLotusIcons", _("Use Ngó Sen Status Icons"), false};
+        // The key keeps its old name so saved settings still load.
+        Option<bool> useNgoSenIcons{this, "UseLotusIcons", _("Use Ngó Sen Status Icons"), false};
 
         Option<bool> enableDictionary{this, "EnableDictionary", _("Custom Dictionary"), false};
         Option<bool> enableCustomKeymap{this, "EnableCustomKeymap", _("Custom Keymap"), false};

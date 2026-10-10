@@ -8,7 +8,7 @@ Mode Manager Page for per-application input mode configuration.
 import os
 import re
 
-from core.dbus_handler import LotusDBusHandler
+from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import QSize, Qt, Signal
 from qtpy.QtGui import QIcon
@@ -32,7 +32,7 @@ from qtpy.QtWidgets import (
 
 from ui.pages.dynamic_settings import CardWidget
 
-# Mode constants as defined in C++ LotusEngine
+# Mode constants as defined in C++ NgoSenEngine
 MODE_OFF = 0
 MODE_SEN = 2
 MODE_PREEDIT = 5
@@ -385,7 +385,7 @@ class AddAppDialog(QDialog):
 class ModeManagerPage(QWidget):
     """Main Mode Manager page."""
 
-    def __init__(self, dbus_handler: LotusDBusHandler, parent=None):
+    def __init__(self, dbus_handler: NgoSenDBusHandler, parent=None):
         super().__init__(parent)
         self.dbus = dbus_handler
         self.app_rules = {}

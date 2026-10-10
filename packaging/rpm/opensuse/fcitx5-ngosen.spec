@@ -36,7 +36,7 @@ Ngó Sen is a Vietnamese input method for fcitx5, forked from fcitx5-lotus.
 find . -type f -name '*.py' -exec sed -i '1s|^#!.*env python3|#!/usr/bin/python3|' {} +
 
 %build
-%cmake -DLOTUS_BYTECOMPILE_PYTHON:BOOL=OFF -DBUILD_TESTING:BOOL=ON -DNGOSEN_RUST_CORE:BOOL=ON
+%cmake -DNGOSEN_BYTECOMPILE_PYTHON:BOOL=OFF -DBUILD_TESTING:BOOL=ON -DNGOSEN_RUST_CORE:BOOL=ON
 %cmake_build
 
 %install

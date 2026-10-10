@@ -6,16 +6,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-#include "lotus-engine.h"
+#include "ngosen-engine.h"
 #include "fcitx-utils/keysym.h"
-#include "lotus-config.h"
+#include "ngosen-config.h"
 #include "ngosen-state.h"
-#include "lotus-candidates.h"
-#include "lotus-monitor.h"
-#include "lotus-utils.h"
-#include "lotus-gnome-theme.h"
-#include "lotus-icon-resolver.h"
-#include "lotus-plasma-theme.h"
+#include "ngosen-candidates.h"
+#include "ngosen-monitor.h"
+#include "ngosen-utils.h"
+#include "ngosen-gnome-theme.h"
+#include "ngosen-icon-resolver.h"
+#include "ngosen-plasma-theme.h"
 #include "ngosen-fcitx-host.h"
 #include <optional>
 #include <utility>
@@ -44,28 +44,28 @@ namespace fcitx {
     const std::string     CustomKeymapFile    = "conf/ngosen-custom-keymap.conf";
     const std::string     MacroTableFile      = "conf/ngosen-macro-table.conf";
 
-    int                   modeToInt(LotusMode mode) {
+    int                   modeToInt(NgoSenMode mode) {
         switch (mode) {
-            case LotusMode::Off: return 0;
-            case LotusMode::Sen: return 2;
-            case LotusMode::Preedit: return 5;
-            case LotusMode::Emoji: return 6;
+            case NgoSenMode::Off: return 0;
+            case NgoSenMode::Sen: return 2;
+            case NgoSenMode::Preedit: return 5;
+            case NgoSenMode::Emoji: return 6;
             default: return 0;
         }
     }
 
-    LotusMode intToMode(int mode) {
+    NgoSenMode intToMode(int mode) {
         switch (mode) {
-            case 0: return LotusMode::Off;
+            case 0: return NgoSenMode::Off;
             case 1: // former Smooth
             case 2:
             case 3: // former Super Smooth
             case 4: // former Surrounding Text
             case 8: // former Minecraft
-                return LotusMode::Sen;
-            case 5: return LotusMode::Preedit;
-            case 6: return LotusMode::Emoji;
-            default: return LotusMode::Off;
+                return NgoSenMode::Sen;
+            case 5: return NgoSenMode::Preedit;
+            case 6: return NgoSenMode::Emoji;
+            default: return NgoSenMode::Off;
         }
     }
 
@@ -115,7 +115,7 @@ namespace fcitx {
     // Returns the KeySym that triggers the "Type hotkey char" action in the mode
     // menu.  If the hotkey itself conflicts with a reserved menu key, falls back
     // to FcitxKey_f.
-    static bool isAppModeMenuReservedKey(KeySym sym, const lotusConfig& config) {
+    static bool isAppModeMenuReservedKey(KeySym sym, const ngosenConfig& config) {
         if (sym == Key(*config.shortcutSen).sym() || sym == Key(*config.shortcutPreedit).sym() || sym == Key(*config.shortcutEmoji).sym() ||
             sym == Key(*config.shortcutOff).sym() || sym == Key(*config.shortcutDefault).sym()) {
             return true;
@@ -133,11 +133,11 @@ namespace fcitx {
         }
     }
 
-    static KeySym typeKeyForModeMenuHotkey(KeySym hotkeySym, const lotusConfig& config) {
+    static KeySym typeKeyForModeMenuHotkey(KeySym hotkeySym, const ngosenConfig& config) {
         return isAppModeMenuReservedKey(hotkeySym, config) ? FcitxKey_f : hotkeySym;
     }
 
-    bool LotusEngine::isDarkMode() {
+    bool NgoSenEngine::isDarkMode() {
         // Each probe spawns subprocesses, and subModeIconImpl calls this on
         // every tray update while IconTheme is Auto.  Cache the result briefly
         // so the cost is paid at most once per few seconds.
@@ -225,7 +225,7 @@ namespace fcitx {
         return cachedValue;
     }
 
-    static inline uintptr_t newMacroTable(const lotusMacroTable& macroTable) {
+    static inline uintptr_t newMacroTable(const ngosenMacroTable& macroTable) {
         const auto&        macros = *macroTable.macros;
         std::vector<char*> charArray;
         charArray.reserve((macros.size() * 2) + 1);
@@ -250,7 +250,7 @@ namespace fcitx {
         return result;
     }
 
-    uintptr_t LotusEngine::macroTable() const {
+    uintptr_t NgoSenEngine::macroTable() const {
         if (config_.inputMethod.value().empty()) {
             return 0;
         }
@@ -261,11 +261,11 @@ namespace fcitx {
 
     TypingStateProperty::~TypingStateProperty() = default;
 
-    ngosen::TypingState* LotusEngine::stateFor(InputContext* ic) {
+    ngosen::TypingState* NgoSenEngine::stateFor(InputContext* ic) {
         return &ic->propertyFor(&factory_)->state();
     }
 
-    LotusEngine::LotusEngine(Instance* instance) :
+    NgoSenEngine::NgoSenEngine(Instance* instance) :
         instance_(instance), factory_([this](InputContext& ic) {
             return new TypingStateProperty(std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_)));
         }) { //NOLINT
@@ -336,7 +336,7 @@ namespace fcitx {
         settingsAction_ = std::make_unique<SimpleAction>();
         settingsAction_->setShortText(_("Settings"));
         settingsAction_->setIcon("configure");
-        connections_.emplace_back(settingsAction_->connect<SimpleAction::Activated>([](InputContext*) { startProcess({FCITX5_LOTUS_SETTINGS_PATH}); }));
+        connections_.emplace_back(settingsAction_->connect<SimpleAction::Activated>([](InputContext*) { startProcess({NGOSEN_SETTINGS_PATH}); }));
         uiManager.registerAction("ngosen-settings", settingsAction_.get());
 
         saveLogAction_ = std::make_unique<SimpleAction>();
@@ -345,7 +345,7 @@ namespace fcitx {
         connections_.emplace_back(saveLogAction_->connect<SimpleAction::Activated>([this](InputContext* ic) { saveTypingLog(ic); }));
         uiManager.registerAction("ngosen-save-log", saveLogAction_.get());
 
-#if LOTUS_USE_MODERN_FCITX_API
+#if NGOSEN_USE_MODERN_FCITX_API
         std::string configDir = (StandardPaths::global().userDirectory(StandardPathsType::Config) / "fcitx5" / "conf").string();
 #else
         std::string configDir = StandardPath::global().userDirectory(StandardPath::Type::Config) + "/fcitx5/conf";
@@ -356,15 +356,15 @@ namespace fcitx {
         }
         reloadConfig();
         realMode = config_.mode.value();
-        instance_->inputContextManager().registerProperty("LotusState", &factory_);
+        instance_->inputContextManager().registerProperty("NgoSenState", &factory_);
         appRulesPath_ = configDir + "/ngosen-app-rules.conf";
         loadAppRules();
         toggleActions_ = {charsetAction_.get(),          spellCheckAction_.get(),       macroAction_.get(),   capitalizeMacroAction_.get(),
                           autoNonVnRestoreAction_.get(), enableDictionaryAction_.get(), saveLogAction_.get(), settingsAction_.get()};
     }
 
-    void LotusEngine::initToggleAction(std::unique_ptr<SimpleAction>& action, Option<bool>& option, const std::string& actionId, const std::string& iconName,
-                                       const std::string& textLong, const std::string& textOnOff, UserInterfaceManager& uiManager) {
+    void NgoSenEngine::initToggleAction(std::unique_ptr<SimpleAction>& action, Option<bool>& option, const std::string& actionId, const std::string& iconName,
+                                        const std::string& textLong, const std::string& textOnOff, UserInterfaceManager& uiManager) {
         action = std::make_unique<SimpleAction>();
         action->setShortText(textLong);
         action->setIcon(iconName);
@@ -379,22 +379,22 @@ namespace fcitx {
         uiManager.registerAction(actionId, action.get());
     }
 
-    void LotusEngine::updateAction(InputContext* ic, std::unique_ptr<SimpleAction>& action, Option<bool>& option, const std::string& textOnOff) {
+    void NgoSenEngine::updateAction(InputContext* ic, std::unique_ptr<SimpleAction>& action, Option<bool>& option, const std::string& textOnOff) {
         action->setShortText((option.value() ? "✔ " : "✖ ") + textOnOff);
         if (ic != nullptr) {
             action->update(ic);
         }
     }
 
-    LotusEngine::~LotusEngine() {
+    NgoSenEngine::~NgoSenEngine() {
         stop_flag_monitor.store(true, std::memory_order_release);
         if (mouse_thread.joinable()) {
             mouse_thread.join();
         }
-        LOTUS_INFO("Engine destroyed.");
+        NGOSEN_INFO("Engine destroyed.");
     }
 
-    std::vector<ngosen::KeymapEntry> LotusEngine::customKeymap() const {
+    std::vector<ngosen::KeymapEntry> NgoSenEngine::customKeymap() const {
         std::vector<ngosen::KeymapEntry> entries;
         if (config_.enableCustomKeymap.value()) {
             for (const auto& keymap : *customKeymap_.customKeymap) {
@@ -404,7 +404,7 @@ namespace fcitx {
         return entries;
     }
 
-    void LotusEngine::reloadConfig() {
+    void NgoSenEngine::reloadConfig() {
         RawConfig raw;
         readAsIni(raw, "conf/ngosen.conf");
         migrateLegacyMode(raw);
@@ -413,7 +413,7 @@ namespace fcitx {
         readAsIni(macroTables_, MacroTableFile);
         macroTableObject_.reset(newMacroTable(macroTables_));
         if (config_.enableDictionary.value()) {
-#if LOTUS_USE_MODERN_FCITX_API
+#if NGOSEN_USE_MODERN_FCITX_API
             auto fd = StandardPaths::global().open(StandardPathsType::PkgData, "ngosen/vietnamese.cm.dict");
 #else
             auto fd = StandardPath::global().open(StandardPath::Type::PkgData, "ngosen/vietnamese.cm.dict", O_RDONLY);
@@ -422,13 +422,13 @@ namespace fcitx {
                 dictionary_.reset(NewDictionary(fd.release()));
             }
         } else {
-#if LOTUS_USE_MODERN_FCITX_API
+#if NGOSEN_USE_MODERN_FCITX_API
             auto paths = StandardPaths::global().locateAll(StandardPathsType::PkgData, "ngosen/vietnamese.cm.dict");
 #else
             auto paths = StandardPath::global().locateAll(StandardPath::Type::PkgData, "ngosen/vietnamese.cm.dict");
 #endif
             for (const auto& p : paths) {
-#if LOTUS_USE_MODERN_FCITX_API
+#if NGOSEN_USE_MODERN_FCITX_API
                 if (!isStartsWith(p.string(), "/home/")) {
                     auto fd = fcitx::UnixFD(::open(p.c_str(), O_RDONLY));
                     if (fd.isValid()) {
@@ -448,7 +448,7 @@ namespace fcitx {
         populateConfig();
     }
 
-    const Configuration* LotusEngine::getSubConfig(const std::string& path) const {
+    const Configuration* NgoSenEngine::getSubConfig(const std::string& path) const {
         if (path == "custom_keymap")
             return &customKeymap_;
         if (path == "ngosen-macro") {
@@ -460,7 +460,7 @@ namespace fcitx {
         return nullptr;
     }
 
-    void LotusEngine::setConfig(const RawConfig& config) {
+    void NgoSenEngine::setConfig(const RawConfig& config) {
         RawConfig migrated = config;
         migrateLegacyMode(migrated);
         config_.load(migrated, true);
@@ -468,7 +468,7 @@ namespace fcitx {
         populateConfig();
     }
 
-    void LotusEngine::syncOptions() {
+    void NgoSenEngine::syncOptions() {
         auto& o                            = options_;
         o.inputMethod                      = config_.inputMethod.value();
         o.outputCharset                    = config_.outputCharset.value();
@@ -507,7 +507,7 @@ namespace fcitx {
         }
     }
 
-    void LotusEngine::populateConfig() {
+    void NgoSenEngine::populateConfig() {
         syncOptions();
         refreshEngine();
         refreshOption();
@@ -519,7 +519,7 @@ namespace fcitx {
         updateAction(nullptr, enableDictionaryAction_, config_.enableDictionary, _("Custom Dictionary"));
     }
 
-    void LotusEngine::setSubConfig(const std::string& path, const RawConfig& config) {
+    void NgoSenEngine::setSubConfig(const std::string& path, const RawConfig& config) {
         if (path == "custom_keymap") {
             customKeymap_.load(config, true);
             safeSaveAsIni(customKeymap_, CustomKeymapFile);
@@ -549,14 +549,14 @@ namespace fcitx {
         }
     }
 
-    std::string LotusEngine::subMode(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
+    std::string NgoSenEngine::subMode(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
         return *config_.inputMethod;
     }
 
-    void LotusEngine::activate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
+    void NgoSenEngine::activate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
         auto* ic = event.inputContext();
         if (dropStaleSurroundingText(ic))
-            LOTUS_INFO("Dropped stale surrounding text");
+            NGOSEN_INFO("Dropped stale surrounding text");
         static std::atomic<bool> mouseThreadStarted{false};
         if (!mouseThreadStarted.exchange(true))
             startMouseReset();
@@ -566,22 +566,22 @@ namespace fcitx {
             instance_->inputContextManager().setPreeditEnabledByDefault(true);
 
         std::string appName = getProgramName(ic);
-        LOTUS_INFO("App name: " + appName);
+        NGOSEN_INFO("App name: " + appName);
 
-        const LotusMode targetMode = getAppRule(appName);
-        LOTUS_INFO("Target mode: " + ngosen::ModeI18NAnnotation::toString(targetMode));
+        const NgoSenMode targetMode = getAppRule(appName);
+        NGOSEN_INFO("Target mode: " + ngosen::ModeI18NAnnotation::toString(targetMode));
 
         updateCharsetAction(event.inputContext());
 
         auto* state = stateFor(ic);
         state->activate(targetMode, event.type() == EventType::InputContextFocusIn);
         ic->updateUserInterface(UserInterfaceComponent::StatusArea);
-        if (targetMode == LotusMode::Emoji) {
+        if (targetMode == NgoSenMode::Emoji) {
             state->updateEmojiPreedit();
         } else {
             ic->inputPanel().reset();
             ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-            if (realMode == LotusMode::Preedit)
+            if (realMode == NgoSenMode::Preedit)
                 ic->updatePreedit();
         }
         for (const auto& action : toggleActions_) {
@@ -589,7 +589,7 @@ namespace fcitx {
         }
     }
 
-    void LotusEngine::keyEvent(const InputMethodEntry& /*entry*/, KeyEvent& keyEvent) {
+    void NgoSenEngine::keyEvent(const InputMethodEntry& /*entry*/, KeyEvent& keyEvent) {
         auto* ic = keyEvent.inputContext();
         dropStaleSurroundingText(ic);
 
@@ -619,7 +619,7 @@ namespace fcitx {
         state->keyEvent(press);
     }
 
-    void LotusEngine::handleModeMenuKey(KeyEvent& keyEvent) {
+    void NgoSenEngine::handleModeMenuKey(KeyEvent& keyEvent) {
         if (keyEvent.isRelease())
             return;
         auto*  ic       = keyEvent.inputContext();
@@ -648,7 +648,7 @@ namespace fcitx {
         }
 
         if (auto it = modeMenuMapping_.find(keySym); it != modeMenuMapping_.end()) {
-            LOTUS_INFO("Selected mode: " + ngosen::ModeI18NAnnotation::toString(it->second));
+            NGOSEN_INFO("Selected mode: " + ngosen::ModeI18NAnnotation::toString(it->second));
             pickMenuMode(ic, it->second, keySym == Key(*config_.shortcutDefault).sym());
             return;
         }
@@ -662,7 +662,7 @@ namespace fcitx {
         }
     }
 
-    void LotusEngine::moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta) {
+    void NgoSenEngine::moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta) {
         if (!menuList || menuList->empty()) {
             return;
         }
@@ -688,7 +688,7 @@ namespace fcitx {
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
     }
 
-    void LotusEngine::closeModeMenuPanel(InputContext* ic, bool resetState) {
+    void NgoSenEngine::closeModeMenuPanel(InputContext* ic, bool resetState) {
         isSelectingAppMode_ = false;
         ic->inputPanel().reset();
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
@@ -699,8 +699,8 @@ namespace fcitx {
         }
     }
 
-    void LotusEngine::pickMenuMode(InputContext* ic, LotusMode mode, bool isDefault) {
-        if (mode != LotusMode::Emoji) {
+    void NgoSenEngine::pickMenuMode(InputContext* ic, NgoSenMode mode, bool isDefault) {
+        if (mode != NgoSenMode::Emoji) {
             if (isDefault) {
                 clearAppRule(currentConfigureApp_);
             } else {
@@ -713,14 +713,14 @@ namespace fcitx {
 
         closeModeMenuPanel(ic, true);
         setMode(mode, ic);
-        if (mode == LotusMode::Emoji) {
+        if (mode == NgoSenMode::Emoji) {
             stateFor(ic)->updateEmojiPreedit();
         } else {
             showCycleModeNotification(mode, ic);
         }
     }
 
-    std::vector<LotusMode> LotusEngine::cycleModes() {
+    std::vector<NgoSenMode> NgoSenEngine::cycleModes() {
         auto                                      order      = stringutils::split(*config_.modeOrder, ",");
         std::vector<std::pair<std::string, bool>> visibility = {{"Sen", *config_.showModeSen},
                                                                 {"Preedit", *config_.showModePreedit},
@@ -728,7 +728,7 @@ namespace fcitx {
                                                                 {"Off", *config_.showModeOff},
                                                                 {"Default", *config_.showModeDefault}};
 
-        std::vector<LotusMode>                    enabledModes;
+        std::vector<NgoSenMode>                   enabledModes;
         for (const auto& name : order) {
             bool visible = false;
             for (const auto& v : visibility) {
@@ -739,15 +739,15 @@ namespace fcitx {
             }
             if (!visible)
                 continue;
-            std::optional<LotusMode> mode = std::nullopt;
+            std::optional<NgoSenMode> mode = std::nullopt;
             if (name == "Sen")
-                mode = LotusMode::Sen;
+                mode = NgoSenMode::Sen;
             else if (name == "Preedit")
-                mode = LotusMode::Preedit;
+                mode = NgoSenMode::Preedit;
             else if (name == "Emoji")
-                mode = LotusMode::Emoji;
+                mode = NgoSenMode::Emoji;
             else if (name == "Off")
-                mode = LotusMode::Off;
+                mode = NgoSenMode::Off;
             else if (name == "Default")
                 mode = config().mode.value();
             else
@@ -760,23 +760,23 @@ namespace fcitx {
         return enabledModes;
     }
 
-    void LotusEngine::cycleMode(InputContext* ic) {
-        LOTUS_INFO("Cycle mode key pressed");
+    void NgoSenEngine::cycleMode(InputContext* ic) {
+        NGOSEN_INFO("Cycle mode key pressed");
         const std::string appName      = getProgramName(ic);
-        const LotusMode   current      = getAppRule(appName);
+        const NgoSenMode  current      = getAppRule(appName);
         const auto        enabledModes = cycleModes();
         if (enabledModes.empty())
             return;
 
-        auto      it       = std::find(enabledModes.begin(), enabledModes.end(), current);
-        LotusMode nextMode = it == enabledModes.end() ? enabledModes[0] : enabledModes[(static_cast<size_t>(it - enabledModes.begin()) + 1) % enabledModes.size()];
+        auto       it       = std::find(enabledModes.begin(), enabledModes.end(), current);
+        NgoSenMode nextMode = it == enabledModes.end() ? enabledModes[0] : enabledModes[(static_cast<size_t>(it - enabledModes.begin()) + 1) % enabledModes.size()];
         setMode(nextMode, ic);
         setAppRule(appName, nextMode);
         showCycleModeNotification(nextMode, ic);
     }
 
-    void LotusEngine::openModeMenu(InputContext* ic) {
-        LOTUS_INFO("Mode menu key pressed");
+    void NgoSenEngine::openModeMenu(InputContext* ic) {
+        NGOSEN_INFO("Mode menu key pressed");
         auto* state = stateFor(ic);
         if (state != nullptr) {
             state->commitBuffer();
@@ -788,8 +788,8 @@ namespace fcitx {
         showAppModeMenu(ic);
     }
 
-    void LotusEngine::reset(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
-        LOTUS_INFO("Reset engine");
+    void NgoSenEngine::reset(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
+        NGOSEN_INFO("Reset engine");
         auto* state = stateFor(event.inputContext());
         if (!state->isEmptyHistory() && event.type() != EventType::InputContextFocusOut) {
             return;
@@ -800,11 +800,11 @@ namespace fcitx {
         }
     }
 
-    void LotusEngine::deactivate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
+    void NgoSenEngine::deactivate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
         stateFor(event.inputContext())->deactivate(event.type() == EventType::InputContextFocusOut);
     }
 
-    void LotusEngine::refreshEngine() {
+    void NgoSenEngine::refreshEngine() {
         if (!factory_.registered())
             return;
         instance_->inputContextManager().foreach ([this](InputContext* ic) {
@@ -820,7 +820,7 @@ namespace fcitx {
         });
     }
 
-    void LotusEngine::refreshOption() {
+    void NgoSenEngine::refreshOption() {
         if (!factory_.registered())
             return;
         instance_->inputContextManager().foreach ([this](InputContext* ic) {
@@ -832,7 +832,7 @@ namespace fcitx {
         });
     }
 
-    void LotusEngine::updateCharsetAction(InputContext* ic) {
+    void NgoSenEngine::updateCharsetAction(InputContext* ic) {
         auto name = stringutils::concat(CharsetActionPrefix, *config_.outputCharset);
         for (const auto& action : charsetSubAction_) {
             action->setChecked(action->name() == name);
@@ -841,10 +841,10 @@ namespace fcitx {
         }
     }
 
-    void LotusEngine::loadAppRules() {
+    void NgoSenEngine::loadAppRules() {
         {
-            std::lock_guard<std::mutex>                lock(appRulesMutex_);
-            std::unordered_map<std::string, LotusMode> ctxRules;
+            std::lock_guard<std::mutex>                 lock(appRulesMutex_);
+            std::unordered_map<std::string, NgoSenMode> ctxRules;
             for (const auto& [app, mode] : appRules_) {
                 if (isStartsWith(app, "ctx_")) {
                     ctxRules[app] = mode;
@@ -854,15 +854,15 @@ namespace fcitx {
         }
         auto loadFromFile = [this](const std::string& path) {
             if (path.empty()) {
-                LOTUS_WARN("App rules path is empty, skipping load");
+                NGOSEN_WARN("App rules path is empty, skipping load");
                 return;
             }
             std::ifstream file(path);
             if (!file.is_open())
                 return;
 
-            std::unordered_map<std::string, LotusMode> tempRules;
-            std::string                                line;
+            std::unordered_map<std::string, NgoSenMode> tempRules;
+            std::string                                 line;
             while (std::getline(file, line)) {
                 if (line.empty() || line[0] == '#')
                     continue;
@@ -872,7 +872,7 @@ namespace fcitx {
                     std::string mode = line.substr(delimiterPos + 1);
                     try {
                         tempRules[app] = intToMode(std::stoi(mode));
-                    } catch (const std::exception&) { LOTUS_WARN("Invalid mode value for app: " + app); }
+                    } catch (const std::exception&) { NGOSEN_WARN("Invalid mode value for app: " + app); }
                 }
             }
             file.close();
@@ -885,11 +885,11 @@ namespace fcitx {
         loadFromFile(appRulesPath_);
 
         std::lock_guard<std::mutex> lock(appRulesMutex_);
-        std::vector<lotusAppRule>   rules;
+        std::vector<ngosenAppRule>  rules;
         for (const auto& pair : appRules_) {
             if (pair.first.find("ctx_") == 0)
                 continue;
-            lotusAppRule rule;
+            ngosenAppRule rule;
             rule.app.setValue(pair.first);
             rule.mode.setValue(modeToInt(pair.second));
             rules.push_back(std::move(rule));
@@ -897,7 +897,7 @@ namespace fcitx {
         appRulesTables_.rules.setValue(std::move(rules));
     }
 
-    void LotusEngine::saveAppRules() const {
+    void NgoSenEngine::saveAppRules() const {
         // Method is const but locks mutable appRulesMutex_ to safely read appRules_ state
         std::ofstream file(appRulesPath_, std::ios::trunc);
         if (!file.is_open())
@@ -915,7 +915,7 @@ namespace fcitx {
         file.close();
     }
 
-    LotusMode LotusEngine::getAppRule(const std::string& appName) const {
+    NgoSenMode NgoSenEngine::getAppRule(const std::string& appName) const {
         std::lock_guard<std::mutex> lock(appRulesMutex_);
         auto                        it = appRules_.find(appName);
         if (it == appRules_.end()) {
@@ -928,7 +928,7 @@ namespace fcitx {
         return config_.mode.value();
     }
 
-    void LotusEngine::setAppRule(const std::string& appName, LotusMode mode) {
+    void NgoSenEngine::setAppRule(const std::string& appName, NgoSenMode mode) {
         auto rules = *appRulesTables_.rules;
 
         bool found = false;
@@ -941,7 +941,7 @@ namespace fcitx {
         }
 
         if (!found) {
-            lotusAppRule newRule;
+            ngosenAppRule newRule;
             newRule.app.setValue(appName);
             newRule.mode.setValue(modeToInt(mode));
             rules.push_back(std::move(newRule));
@@ -954,19 +954,19 @@ namespace fcitx {
         appRulesTables_.rules.setValue(std::move(rules));
     }
 
-    void LotusEngine::closeAppModeMenu() {
+    void NgoSenEngine::closeAppModeMenu() {
         isSelectingAppMode_ = false;
         g_mouse_clicked.store(false, std::memory_order_release);
     }
 
-    std::vector<LotusEngine::ModeMenuItem> LotusEngine::modeMenuItems() {
+    std::vector<NgoSenEngine::ModeMenuItem> NgoSenEngine::modeMenuItems() {
         auto                                          getShortcut = [](const std::string& shortcut) { return Key(shortcut).sym(); };
 
         std::unordered_map<std::string, ModeMenuItem> modeMap = {
-            {"Sen", {LotusMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
-            {"Preedit", {LotusMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
-            {"Emoji", {LotusMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
-            {"Off", {LotusMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
+            {"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
+            {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
+            {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
+            {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
             {"Default", {config_.mode.value(), _("Default Typing"), getShortcut(*config_.shortcutDefault), *config_.showModeDefault}}};
 
         std::vector<ModeMenuItem> allModes;
@@ -987,7 +987,7 @@ namespace fcitx {
         return allModes;
     }
 
-    void LotusEngine::showAppModeMenu(InputContext* ic) {
+    void NgoSenEngine::showAppModeMenu(InputContext* ic) {
         isSelectingAppMode_ = true;
 
         auto candidateList = std::make_unique<CommonCandidateList>();
@@ -995,7 +995,7 @@ namespace fcitx {
         candidateList->setLayoutHint(CandidateLayoutHint::Vertical);
         candidateList->setPageSize(10);
 
-        auto getLabel = [&](const LotusMode& modeName, const std::string& modeLabel) {
+        auto getLabel = [&](const NgoSenMode& modeName, const std::string& modeLabel) {
             if (modeName == realMode) {
                 return Text(">> " + modeLabel);
             }
@@ -1007,7 +1007,7 @@ namespace fcitx {
         std::unordered_set<KeySym> usedModeKeys;
 
         modeMenuMapping_.clear();
-        const LotusMode defaultMode = config_.mode.value();
+        const NgoSenMode defaultMode = config_.mode.value();
 
         for (const auto& info : modeMenuItems()) {
             if (!info.visible)
@@ -1044,7 +1044,7 @@ namespace fcitx {
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
     }
 
-    void LotusEngine::appendTypeHotkeyItem(CommonCandidateList& candidateList) {
+    void NgoSenEngine::appendTypeHotkeyItem(CommonCandidateList& candidateList) {
         const auto& kl = *config_.modeMenuKey;
         if (kl.size() != 1 || kl[0].hasModifier())
             return;
@@ -1060,7 +1060,7 @@ namespace fcitx {
         }));
     }
 
-    void LotusEngine::showCycleModeNotification(LotusMode mode, InputContext* ic) {
+    void NgoSenEngine::showCycleModeNotification(NgoSenMode mode, InputContext* ic) {
         auto candidateList = std::make_unique<CommonCandidateList>();
         candidateList->setLayoutHint(CandidateLayoutHint::Vertical);
         candidateList->setPageSize(1);
@@ -1073,14 +1073,14 @@ namespace fcitx {
         // Map mode to label
         std::string modeLabel;
         switch (mode) {
-            case LotusMode::Sen: modeLabel = _("Sen"); break;
-            case LotusMode::Preedit: modeLabel = _("Preedit"); break;
-            case LotusMode::Emoji: modeLabel = _("Emoji Picker"); break;
-            case LotusMode::Off: modeLabel = _("OFF"); break;
+            case NgoSenMode::Sen: modeLabel = _("Sen"); break;
+            case NgoSenMode::Preedit: modeLabel = _("Preedit"); break;
+            case NgoSenMode::Emoji: modeLabel = _("Emoji Picker"); break;
+            case NgoSenMode::Off: modeLabel = _("OFF"); break;
             default: modeLabel = _("Unknown Mode"); break;
         }
 
-        auto setCurrentMode = [cleanup](LotusMode) { return [cleanup](InputContext* ic) { cleanup(ic); }; };
+        auto setCurrentMode = [cleanup](NgoSenMode) { return [cleanup](InputContext* ic) { cleanup(ic); }; };
 
         candidateList->append(std::make_unique<AppModeCandidateWord>(Text("✓ " + modeLabel), setCurrentMode(mode)));
 
@@ -1093,7 +1093,7 @@ namespace fcitx {
         clearPanelLater(ic, CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC);
     }
 
-    void LotusEngine::clearPanelLater(InputContext* ic, uint64_t delayUs) {
+    void NgoSenEngine::clearPanelLater(InputContext* ic, uint64_t delayUs) {
         cycleModeNotificationTimer_.reset();
         cycleModeNotificationTimer_ =
             instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [icRef = ic->watch()](EventSourceTime*, uint64_t) {
@@ -1105,7 +1105,7 @@ namespace fcitx {
             });
     }
 
-    void LotusEngine::saveTypingLog(InputContext* ic) {
+    void NgoSenEngine::saveTypingLog(InputContext* ic) {
         const std::string     stateHome = getEnv("XDG_STATE_HOME");
         std::filesystem::path dir       = stateHome.empty() ? std::filesystem::path(getEnv("HOME")) / ".local" / "state" : std::filesystem::path(stateHome);
         dir /= "ngosen";
@@ -1125,7 +1125,7 @@ namespace fcitx {
         out.close();
 
         const std::string message = out ? _("Typing log saved: ") + path.string() : _("Could not save the typing log to ") + dir.string();
-        LOTUS_INFO(message);
+        NGOSEN_INFO(message);
         if (ic == nullptr)
             return;
         ic->inputPanel().reset();
@@ -1134,7 +1134,7 @@ namespace fcitx {
         clearPanelLater(ic, 5000000);
     }
 
-    void LotusEngine::setMode(LotusMode mode, InputContext* ic) {
+    void NgoSenEngine::setMode(NgoSenMode mode, InputContext* ic) {
         realMode = mode;
         if (ic != nullptr) {
             if (auto* state = stateFor(ic)) {
@@ -1144,16 +1144,16 @@ namespace fcitx {
         }
     }
 
-    std::string LotusEngine::subModeIconImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
+    std::string NgoSenEngine::subModeIconImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
         std::string baseIconName;
         switch (realMode) {
-            case LotusMode::Off: baseIconName = "fcitx-ngosen-off"; break;
-            case LotusMode::Emoji: baseIconName = "fcitx-ngosen-emoji"; break;
+            case NgoSenMode::Off: baseIconName = "fcitx-ngosen-off"; break;
+            case NgoSenMode::Emoji: baseIconName = "fcitx-ngosen-emoji"; break;
             default: baseIconName = "fcitx-ngosen"; break;
         }
 
         std::string iconName;
-        if (*config_.useLotusIcons) {
+        if (*config_.useNgoSenIcons) {
             iconName = baseIconName;
         } else {
             const auto& iconTheme = config_.iconTheme.value();
@@ -1195,25 +1195,25 @@ namespace fcitx {
         // Return absolute path to bypass XDG icon theme lookup, which fails on
         // many non-Breeze icon themes despite the icon being installed in
         // hicolor and breeze fallback directories.
-        LotusIconSearchPaths paths;
+        NgoSenIconSearchPaths paths;
         // hicolor status/apps dirs; SVG preferred, PNG only as raster fallback.
         paths.systemDirs  = {"/usr/share/icons/hicolor/scalable/apps", "/usr/share/icons/hicolor/scalable/status", "/usr/share/icons/hicolor/22x22/status",
                              "/usr/share/icons/hicolor/24x24/status"};
-        paths.fallbackDir = FCITX_LOTUS_ICON_DIR; // compile-time install dir
+        paths.fallbackDir = NGOSEN_ICON_DIR; // compile-time install dir
 
-        iconCachePath_ = resolveLotusIconPath({iconName, baseIconName}, paths);
+        iconCachePath_ = resolveNgoSenIconPath({iconName, baseIconName}, paths);
         return iconCachePath_;
     }
 
-    std::string LotusEngine::subModeLabelImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
+    std::string NgoSenEngine::subModeLabelImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
         switch (realMode) {
-            case LotusMode::Off: return _("Ngó Sen - Off");
-            case LotusMode::Emoji: return "😄";
+            case NgoSenMode::Off: return _("Ngó Sen - Off");
+            case NgoSenMode::Emoji: return "😄";
             default: return isGnome_ ? "vi" : "🪷";
         }
     }
 
-    std::string LotusEngine::getProgramName(InputContext* ic) {
+    std::string NgoSenEngine::getProgramName(InputContext* ic) {
         if (ic == nullptr) {
             return "unknown-app";
         }
@@ -1228,7 +1228,7 @@ namespace fcitx {
         return programName;
     }
 
-    void LotusEngine::clearAppRule(const std::string& appName) {
+    void NgoSenEngine::clearAppRule(const std::string& appName) {
         {
             std::lock_guard<std::mutex> lock(appRulesMutex_);
             appRules_.erase(appName);

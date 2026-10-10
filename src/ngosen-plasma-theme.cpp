@@ -3,8 +3,8 @@
  *
  */
 
-#include "lotus-plasma-theme.h"
-#include "lotus-utils.h"
+#include "ngosen-plasma-theme.h"
+#include "ngosen-utils.h"
 
 #include <algorithm>
 #include <array>

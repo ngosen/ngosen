@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-Backup and Restore page for Lotus settings.
+Backup and Restore page for Ngó Sen settings.
 Supports JSON-based backups and selective export/import.
 """
 
@@ -10,7 +10,7 @@ import json
 import os
 from datetime import datetime
 
-from core.dbus_handler import LotusDBusHandler
+from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import (
@@ -31,7 +31,7 @@ from ui.pages.dynamic_settings import CardWidget
 
 
 class BackupPage(QWidget):
-    def __init__(self, dbus_handler: LotusDBusHandler, parent=None):
+    def __init__(self, dbus_handler: NgoSenDBusHandler, parent=None):
         super().__init__(parent)
         self.dbus = dbus_handler
         self.restore_data = None  # Stores data from opened backup for selective restore

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "test-input-context.h"
 
 #include <fcitx/candidatelist.h>
@@ -21,7 +21,7 @@ namespace {
         std::cerr << "Meaning: " << meaning << '\n';
     }
 
-    bool send(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol) {
+    bool send(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol) {
         fcitx::KeyEvent event(&context, fcitx::Key(symbol), false);
         engine.keyEvent(entry, event);
         if (!event.accepted()) {
@@ -34,7 +34,7 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-emoji-history-page-navigation");
+    configureTestPaths("fcitx5-ngosen-emoji-history-page-navigation");
     const auto    historyPath = std::filesystem::path(getEnv("XDG_CONFIG_HOME")) / "fcitx5/conf/ngosen-emoji-history.conf";
     std::ofstream history(historyPath);
     const char*   emoji[] = {"😀", "😁", "😂", "😃", "😄", "😅", "😆", "😉", "😊", "😋", "😎", "😍", "😘", "😗", "😙", "😚", "🙂", "🤗"};
@@ -42,19 +42,19 @@ int main() {
         history << "history" << i << '=' << emoji[i] << '\n';
     history.close();
 
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Emoji Picker");
     engine.setConfig(config);
-    if (engine.config().mode.value() != fcitx::LotusMode::Emoji) {
+    if (engine.config().mode.value() != fcitx::NgoSenMode::Emoji) {
         reportFailure("configure Emoji Picker", "mode=Emoji Picker", "configured mode differs", "the test cannot enter the real emoji history mode");
         return 1;
     }
 
     auto context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 

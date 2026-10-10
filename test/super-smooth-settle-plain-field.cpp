@@ -3,8 +3,8 @@
 // WaitSurroundingSettleMs is for the Messenger composer only: its snapshot keeps "\n\n" right after
 // the cursor. A plain field (no "\n\n" after the cursor) must get the commit as soon as the
 // snapshot shows the deletion done, or every app pays the Messenger wait on each replacement.
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "key-sender-probe.h"
 #include "test-input-context.h"
 
@@ -32,7 +32,7 @@ namespace {
         context.updateSurroundingText();
     }
 
-    bool type(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool accepted) {
+    bool type(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool accepted) {
         fcitx::KeyEvent event(&context, fcitx::Key(symbol), false);
         engine.keyEvent(entry, event);
         if (event.accepted() != accepted) {
@@ -45,16 +45,16 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-super-smooth-settle-plain-field");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    configureTestPaths("fcitx5-ngosen-super-smooth-settle-plain-field");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
     config.setValueByPath("WaitSurroundingSettleMs", "40");
     engine.setConfig(config);
-    if (engine.config().mode.value() != fcitx::LotusMode::Sen || !engine.config().waitSurroundingEvent.value()) {
+    if (engine.config().mode.value() != fcitx::NgoSenMode::Sen || !engine.config().waitSurroundingEvent.value()) {
         reportFailure("configure Uinput", "mode=Uinput, WaitSurroundingEvent=True", "config differs");
         return 1;
     }
@@ -63,7 +63,7 @@ int main() {
     auto           context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 

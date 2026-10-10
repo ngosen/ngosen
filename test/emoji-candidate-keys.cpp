@@ -2,8 +2,8 @@
 //
 // The emoji picker's keys: digits and Space pick a candidate, Tab/arrows move within a page,
 // Left/Right and Page_Up/Page_Down change page, Return commits the typed text, Escape closes.
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "test-input-context.h"
 
 #include <fcitx/candidatelist.h>
@@ -28,7 +28,7 @@ namespace {
     }
 
     struct Picker {
-        fcitx::LotusEngine&      engine;
+        fcitx::NgoSenEngine&     engine;
         fcitx::InputMethodEntry& entry;
         TestInputContext&        context;
 
@@ -63,7 +63,7 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-emoji-candidate-keys");
+    configureTestPaths("fcitx5-ngosen-emoji-candidate-keys");
     const auto    historyPath = std::filesystem::path(getEnv("XDG_CONFIG_HOME")) / "fcitx5/conf/ngosen-emoji-history.conf";
     std::ofstream history(historyPath);
     const char*   emoji[] = {"😀", "😁", "😂", "😃", "😄", "😅", "😆", "😉", "😊", "😋", "😎", "😍", "😘", "😗", "😙", "😚", "🙂", "🤗"};
@@ -71,16 +71,16 @@ int main() {
         history << "history" << i << '=' << emoji[i] << '\n';
     history.close();
 
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Emoji Picker");
     engine.setConfig(config);
 
     auto context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->setCapabilityFlags(fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit});
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
     Picker p{engine, entry, *context};

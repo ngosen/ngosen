@@ -4,7 +4,7 @@
 // the field only when a key reaches it: first the state the key found, then the state after it. Our
 // commits and deletions show only in its next report, and a backspace on a cell that is not being
 // edited opens the Delete Contents dialog.
-#include "lotus-engine.h"
+#include "ngosen-engine.h"
 #include "test-input-context.h"
 
 #include <fcitx-utils/utf8.h>
@@ -18,7 +18,7 @@ namespace {
 
     class FakeCalc {
       public:
-        FakeCalc(TestInstance& testInstance, fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry) :
+        FakeCalc(TestInstance& testInstance, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry) :
             testInstance_(testInstance), engine_(engine), entry_(entry), context_(std::make_unique<TestInputContext>(&testInstance.instance, "libreoffice-calc", "wayland")) {
             context_->setCapabilityFlags(withSurrounding);
             context_->focusIn();
@@ -101,7 +101,7 @@ namespace {
         }
 
         TestInstance&                     testInstance_;
-        fcitx::LotusEngine&               engine_;
+        fcitx::NgoSenEngine&              engine_;
         const fcitx::InputMethodEntry&    entry_;
         std::unique_ptr<TestInputContext> context_;
         std::string                       text_;
@@ -116,13 +116,13 @@ namespace {
 
 int main() {
     configureTestPaths("fcitx5-ngosen-calc-text-input-cell-click");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     engine.setConfig(config);
-    fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
 
     FakeCalc                calc(testInstance, engine, entry);
     // The first key in the next cell is a replacement in the old word, then one typed as is, then one

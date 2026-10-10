@@ -123,6 +123,28 @@ namespace {
         return true;
     }
 
+    // fcitx5-gtk (GTK3) gets the commit after the reply to the key event, and puts back a key we let
+    // through on its own queue, so the two race: typing "roofi" fast in gnome-terminal showed "riồ".
+    // A key typed during the wait must go out inside the commit.
+    bool dbusKeyDuringWaitJoinsCommit(Harness& h) {
+        auto context = h.open("gnome-terminal-server", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::KeyEventOrderFix});
+        if (!h.type(*context, FcitxKey_r, false) || !h.type(*context, FcitxKey_o, false))
+            return false;
+        pumpEventLoop(h.testInstance.instance, 1);
+        if (!h.type(*context, FcitxKey_o, true))
+            return false;
+        h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 500000);
+        pumpEventLoop(h.testInstance.instance, 1);
+        if (!h.type(*context, FcitxKey_f, true) || !h.type(*context, FcitxKey_i, true))
+            return false;
+        h.pumpUntil([&] { return context->commits().size() > 1; }, nowUs() + 500000);
+        if (context->commits() != std::vector<std::string>{"ô", "ồi"}) {
+            reportFailure("dbus: a key typed during the wait goes out with the replacement", "['ô']['ồi']", joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
     // GTK4 clients drop forwarded keys, so the replacement deletes through surrounding text.
     bool gtk4DeletesThroughSurroundingText(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
         auto context = h.open(program, frontend, caps);
@@ -241,6 +263,8 @@ int main() {
     Harness                 h{testInstance, engine, entry};
 
     if (!dbusForwardsAndWaitsForDeletion(h))
+        return 1;
+    if (!dbusKeyDuringWaitJoinsCommit(h))
         return 1;
     if (!gtk4DeletesThroughSurroundingText(h, "gtk4app", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
         return 1;

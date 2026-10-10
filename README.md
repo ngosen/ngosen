@@ -40,9 +40,8 @@ curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bas
 ```
 
 Lệnh này tải gói cho đúng bản phân phối từ
-[bản phát hành mới nhất](https://github.com/ngosen/ngosen/releases/latest), hỏi lại rồi mới cài. Nếu
-máy đang có Lotus thì Ngó Sen sẽ thay nó; cấu hình cũ giữ nguyên. Muốn lên bản mới thì chạy lại đúng
-lệnh đó.
+[bản phát hành mới nhất](https://github.com/ngosen/ngosen/releases/latest), hỏi lại rồi mới cài. Muốn lên bản
+mới thì chạy lại đúng lệnh đó; cấu hình cũ giữ nguyên.
 
 Không muốn chạy lệnh tải từ mạng thì tải gói ở trang
 [Releases](https://github.com/ngosen/ngosen/releases) rồi cài bằng tay. Muốn tự dựng từ mã thì xem
@@ -116,8 +115,8 @@ cách này thì xoá tệp `~/.local/share/applications/code_code.desktop`.
    fcitx5 -rd
    ```
 
-Cấu hình (các tệp `lotus*.conf` trong `~/.config/fcitx5/conf/`) vẫn ở lại máy, để lần cài sau dùng
-tiếp. Muốn xoá sạch thì xoá các tệp đó.
+Cấu hình (các tệp `ngosen*.conf` trong `~/.config/fcitx5/conf/`, và `lotus*.conf` nếu từng dùng bản trước
+1.1.0) vẫn ở lại máy, để lần cài sau dùng tiếp. Muốn xoá sạch thì xoá các tệp đó.
 
 ## Nguồn gốc
 

@@ -55,7 +55,7 @@ body:
     attributes:
       label: Phiên bản Ngó Sen
       description: Số phiên bản của gói `fcitx5-ngosen` đã cài. Bản tự build thì ghi mã commit.
-      placeholder: 'ví dụ: 1.0.0-1'
+      placeholder: 'ví dụ: 1.1.0-1'
     validations:
       required: true
 
@@ -120,7 +120,7 @@ body:
     attributes:
       label: Log của fcitx5
       description: |
-        Log của fcitx5 (Chạy lệnh `fcitx5 --verbose lotus=4` ở terminal trong quá trình tái hiện lỗi)
+        Log của fcitx5 (Chạy lệnh `fcitx5 --verbose ngosen=4` ở terminal trong quá trình tái hiện lỗi)
       render: shell
 
   - type: textarea

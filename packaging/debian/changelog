@@ -1,3 +1,9 @@
+fcitx5-ngosen (1:1.1.0-1) unstable; urgency=medium
+
+  * Installs under ngosen names and carries settings over; new tray icon; a typing log for bug reports.
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sat, 10 Oct 2026 20:00:00 +0700
+
 fcitx5-ngosen (1:1.0.0-1) unstable; urgency=medium
 
   * Fixes for Calc, WPS Office and Google Sheets when clicking another cell; fcitx5 only from now on.

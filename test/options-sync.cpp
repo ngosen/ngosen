@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// The typing logic reads ngosen::Options, a copy of lotus.conf. Every way the configuration changes
+// The typing logic reads ngosen::Options, a copy of ngosen.conf. Every way the configuration changes
 // (settings window, a menu toggle, the charset menu) must update that copy.
 #include "lotus-engine.h"
 #include "test-input-context.h"
@@ -112,7 +112,7 @@ int main() {
 
     TestInputContext context(&testInstance.instance);
     auto&            ui    = testInstance.instance.userInterfaceManager();
-    auto*            macro = ui.lookupAction("lotus-macro");
+    auto*            macro = ui.lookupAction("ngosen-macro");
     check("macro toggle exists", macro != nullptr);
     if (macro != nullptr) {
         const bool before = engine.options().enableMacro;
@@ -121,12 +121,12 @@ int main() {
         checkMatches("menu toggle", engine);
     }
 
-    auto* charsetMenu = ui.lookupAction("lotus-charset");
+    auto* charsetMenu = ui.lookupAction("ngosen-charset");
     check("charset menu exists", charsetMenu != nullptr && charsetMenu->menu() != nullptr);
     if (charsetMenu != nullptr && charsetMenu->menu() != nullptr) {
         const std::string before = engine.options().outputCharset;
         for (auto* action : charsetMenu->menu()->actions()) {
-            if (action->name() != "lotus-charset-" + before) {
+            if (action->name() != "ngosen-charset-" + before) {
                 action->activate(&context);
                 break;
             }

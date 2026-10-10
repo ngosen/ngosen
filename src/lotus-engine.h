@@ -284,7 +284,7 @@ namespace fcitx {
          * @brief Saves current configuration to disk.
          */
         void saveConfig() {
-            safeSaveAsIni(config_, "conf/lotus.conf");
+            safeSaveAsIni(config_, "conf/ngosen.conf");
         }
 
         /**
@@ -432,7 +432,7 @@ namespace fcitx {
          * @return New engine instance.
          */
         AddonInstance* create(AddonManager* manager) override {
-            registerDomain("fcitx5-lotus", FCITX_INSTALL_LOCALEDIR);
+            registerDomain("fcitx5-ngosen", FCITX_INSTALL_LOCALEDIR);
             return new LotusEngine(manager->instance()); // NOLINT
         }
     };

@@ -42,7 +42,7 @@ int main() {
     const char* testName = "ngosen-custom-keymap";
     configureTestPaths(testName);
     // The keymap is read when the engine starts, so it must be on disk first.
-    const auto keymapFile = std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf/lotus-custom-keymap.conf";
+    const auto keymapFile = std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf/ngosen-custom-keymap.conf";
     {
         std::ofstream file(keymapFile, std::ios::trunc);
         file << "[CustomKeymap]\n[CustomKeymap/0]\nKey=q\nValue=DauSac\n";

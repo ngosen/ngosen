@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(fcitx5-lotus VERSION 1.0.0)
+project(fcitx5-ngosen VERSION 1.0.0)
 # The typing log names the version it came from.
 add_definitions(-DNGOSEN_VERSION=\"${PROJECT_VERSION}\")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -53,7 +53,7 @@ find_package(Pthread REQUIRED)
 find_package(Gettext REQUIRED)
 
 include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
-add_definitions(-DFCITX_GETTEXT_DOMAIN=\"fcitx5-lotus\") 
+add_definitions(-DFCITX_GETTEXT_DOMAIN=\"fcitx5-ngosen\") 
 
 if (Fcitx5Utils_VERSION VERSION_GREATER_EQUAL "5.1.13")
     add_definitions(-DLOTUS_USE_MODERN_FCITX_API)
@@ -79,18 +79,18 @@ if (BUILD_TESTING)
 endif()
 
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/io.github.ngosen.NgoSen.metainfo.xml.in.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/io.github.ngosen.NgoSen.metainfo.xml.in"
     @ONLY
 )
 
 fcitx5_translate_desktop_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in"
-    org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml
+    "${CMAKE_CURRENT_BINARY_DIR}/io.github.ngosen.NgoSen.metainfo.xml.in"
+    io.github.ngosen.NgoSen.metainfo.xml
     XML
 )
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml" DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/io.github.ngosen.NgoSen.metainfo.xml" DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
 
 # GNOME 50.0-50.3 drop keys an input method forwards; the user enables this extension there.
 install(DIRECTORY gnome-shell/forward-keys@ngosen.github.io DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions)

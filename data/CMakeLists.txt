@@ -7,10 +7,10 @@ install(DIRECTORY icons/ DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/"
 # subModeIconImpl) to bypass XDG icon theme lookup on non-Breeze themes.
 # Install copies of every variant into hicolor status dirs (SVG + PNG).
 set(LOTUS_STATUS_ICONS
-    fcitx-lotus fcitx-lotus-off fcitx-lotus-emoji
-    fcitx-lotus-default fcitx-lotus-default-black
-    fcitx-lotus-off-default fcitx-lotus-off-default-black
-    fcitx-lotus-emoji-default fcitx-lotus-emoji-default-black)
+    fcitx-ngosen fcitx-ngosen-off fcitx-ngosen-emoji
+    fcitx-ngosen-default fcitx-ngosen-default-black
+    fcitx-ngosen-off-default fcitx-ngosen-off-default-black
+    fcitx-ngosen-emoji-default fcitx-ngosen-emoji-default-black)
 
 foreach(ICON ${LOTUS_STATUS_ICONS})
     # status/ — system tray (SVG, renderable by most compositors)
@@ -43,4 +43,4 @@ endforeach()
 
 add_custom_target(lotus_icons ALL DEPENDS ${LOTUS_PNG_OUTPUTS})
 
-install(FILES dictionaries/vietnamese.cm.dict DESTINATION "${FCITX_INSTALL_PKGDATADIR}/lotus")
+install(FILES dictionaries/vietnamese.cm.dict DESTINATION "${FCITX_INSTALL_PKGDATADIR}/ngosen")

@@ -24,8 +24,7 @@ Cột "Mức đã thử" là lần gõ thử bản 0.5. Các bản sửa bảng 
 Lõi ghép dấu viết bằng Rust có trong gói Fedora, Arch, openSUSE và Ubuntu 24.04 trở lên. Debian 12, 13 và
 Ubuntu 22.04 vẫn dùng lõi Go, vì Rust có sẵn ở đó quá cũ. Hai lõi gõ ra chữ như nhau.
 
-Gói này thay cho `fcitx5-lotus`; hai gói không cài chung được. Cài xong, hoặc mỗi lần cập nhật, khởi động
-lại fcitx5:
+Gói này cài chung được với `fcitx5-lotus`. Cài xong, hoặc mỗi lần cập nhật, khởi động lại fcitx5:
 
 ```
 fcitx5 -rd

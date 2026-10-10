@@ -26,7 +26,7 @@ let
 
   cmakeLists = builtins.readFile ../CMakeLists.txt;
   version = builtins.head (
-    builtins.match ".*project\\(fcitx5-lotus VERSION ([0-9.]+)\\).*" (
+    builtins.match ".*project\\(fcitx5-ngosen VERSION ([0-9.]+)\\).*" (
       builtins.replaceStrings [ "\n" ] [ " " ] cmakeLists
     )
   );
@@ -73,8 +73,8 @@ stdenv.mkDerivation {
     substituteInPlace settings-gui/i18n.py \
       --replace-fail '"/usr/share/locale"' "\"$out/share/locale\""
     substituteInPlace settings-gui/ui/pages/dict_editor.py \
-      --replace-fail '"/usr/share/fcitx5/lotus/vietnamese.cm.dict"' \
-                     "\"$out/share/fcitx5/lotus/vietnamese.cm.dict\""
+      --replace-fail '"/usr/share/fcitx5/ngosen/vietnamese.cm.dict"' \
+                     "\"$out/share/fcitx5/ngosen/vietnamese.cm.dict\""
   '';
 
   preConfigure = ''
@@ -84,8 +84,8 @@ stdenv.mkDerivation {
   # XTest replacement and the pointer watcher dlopen libxcb, so it has to be on the module's
   # runpath; patchelf --shrink-rpath would drop it as unused if it were added before fixup.
   postFixup = ''
-    patchelf --add-rpath ${lib.makeLibraryPath [ libxcb ]} $out/lib/fcitx5/liblotus.so
-    wrapQtApp $out/bin/fcitx5-lotus-settings \
+    patchelf --add-rpath ${lib.makeLibraryPath [ libxcb ]} $out/lib/fcitx5/libngosen.so
+    wrapQtApp $out/bin/fcitx5-ngosen-settings \
       --prefix XDG_DATA_DIRS : "${hicolor-icon-theme}/share:$out/share"
   '';
 

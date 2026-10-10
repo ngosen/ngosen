@@ -1,1 +1,1 @@
-fcitx5_install_translation(fcitx5-lotus)
+fcitx5_install_translation(fcitx5-ngosen)

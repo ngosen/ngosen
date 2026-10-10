@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * @file messenger-defaults.cpp
- * @brief Headless test: a fresh install enables the Messenger fixes without editing lotus.conf.
+ * @brief Headless test: a fresh install enables the Messenger fixes without editing ngosen.conf.
  */
 
 #include "lotus-engine.h"

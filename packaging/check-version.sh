@@ -22,15 +22,15 @@ spec_version() {
 
 deb=$(sed -n '1s/^[^(]*(\([^)]*\)).*/\1/p' debian/changelog)
 check debian/changelog "${deb#*:}" "$want"
-check rpm/fedora "$(spec_version rpm/fedora/fcitx5-lotus.spec)" "$want"
-check rpm/opensuse "$(spec_version rpm/opensuse/fcitx5-lotus.spec)" "$want"
+check rpm/fedora "$(spec_version rpm/fedora/fcitx5-ngosen.spec)" "$want"
+check rpm/opensuse "$(spec_version rpm/opensuse/fcitx5-ngosen.spec)" "$want"
 check arch/PKGBUILD "$(sed -n 's/^pkgver=//p' arch/PKGBUILD)-$(sed -n 's/^pkgrel=//p' arch/PKGBUILD)" "$want"
-check CMakeLists.txt "$(sed -n 's/^project(fcitx5-lotus VERSION \([0-9.]*\)).*/\1/p' ../CMakeLists.txt)" "${want%-*}"
+check CMakeLists.txt "$(sed -n 's/^project(fcitx5-ngosen VERSION \([0-9.]*\)).*/\1/p' ../CMakeLists.txt)" "${want%-*}"
 
 # A package whose epoch differs would sort below or above the others for the package manager.
 epoch=$(sed -n 's/^epoch=//p' arch/PKGBUILD)
 check "debian/changelog epoch" "${deb%%:*}" "$epoch"
-check "rpm/fedora epoch" "$(sed -n 's/^Epoch: *//p' rpm/fedora/fcitx5-lotus.spec)" "$epoch"
-check "rpm/opensuse epoch" "$(sed -n 's/^Epoch: *//p' rpm/opensuse/fcitx5-lotus.spec)" "$epoch"
+check "rpm/fedora epoch" "$(sed -n 's/^Epoch: *//p' rpm/fedora/fcitx5-ngosen.spec)" "$epoch"
+check "rpm/opensuse epoch" "$(sed -n 's/^Epoch: *//p' rpm/opensuse/fcitx5-ngosen.spec)" "$epoch"
 
 exit "$fail"

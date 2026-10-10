@@ -97,16 +97,16 @@ jobs:
             dnf clean all
             dnf install -y rpm-build rpmdevtools dnf-plugins-core
             rpmdev-setuptree
-            cp /work/packaging/rpm/fedora/fcitx5-lotus.spec ~/rpmbuild/SPECS/
-            dnf builddep --setopt=install_weak_deps=False -y ~/rpmbuild/SPECS/fcitx5-lotus.spec
+            cp /work/packaging/rpm/fedora/fcitx5-ngosen.spec ~/rpmbuild/SPECS/
+            dnf builddep --setopt=install_weak_deps=False -y ~/rpmbuild/SPECS/fcitx5-ngosen.spec
             mkdir -p ~/rpmbuild/SOURCES
             cd /work
-            VERSION=$(grep '^Version:' packaging/rpm/fedora/fcitx5-lotus.spec | awk '{print $2}')
+            VERSION=$(grep '^Version:' packaging/rpm/fedora/fcitx5-ngosen.spec | awk '{print $2}')
             tar --exclude='.git' \
                 --exclude='packaging' \
-                --transform "s|^\.|fcitx5-lotus-${VERSION}|" \
-                -czf ~/rpmbuild/SOURCES/fcitx5-lotus-${VERSION}.tar.gz .
-            rpmbuild -bb ~/rpmbuild/SPECS/fcitx5-lotus.spec
+                --transform "s|^\.|fcitx5-ngosen-${VERSION}|" \
+                -czf ~/rpmbuild/SOURCES/fcitx5-ngosen-${VERSION}.tar.gz .
+            rpmbuild -bb ~/rpmbuild/SPECS/fcitx5-ngosen.spec
             mkdir -p /work/output
             find ~/rpmbuild/RPMS -name '*.rpm' -exec cp {} /work/output/ \;
 
@@ -143,20 +143,20 @@ jobs:
             zypper -n dup
             zypper install -y rpm-build rpmdevtools
             rpmdev-setuptree
-            cp /work/packaging/rpm/opensuse/fcitx5-lotus.spec ~/rpmbuild/SPECS/
+            cp /work/packaging/rpm/opensuse/fcitx5-ngosen.spec ~/rpmbuild/SPECS/
             zypper -n install \
-              $(rpmspec -P ~/rpmbuild/SPECS/fcitx5-lotus.spec \
+              $(rpmspec -P ~/rpmbuild/SPECS/fcitx5-ngosen.spec \
                 | grep '^BuildRequires:' \
                 | awk '{print $2}' \
                 | xargs)
             mkdir -p ~/rpmbuild/SOURCES
             cd /work
-            VERSION=$(grep '^Version:' packaging/rpm/opensuse/fcitx5-lotus.spec | awk '{print $2}')
+            VERSION=$(grep '^Version:' packaging/rpm/opensuse/fcitx5-ngosen.spec | awk '{print $2}')
             tar --exclude='.git' \
                 --exclude='packaging' \
-                --transform "s|^\.|fcitx5-lotus-${VERSION}|" \
-                -czf ~/rpmbuild/SOURCES/fcitx5-lotus-${VERSION}.tar.gz .
-            rpmbuild -bb ~/rpmbuild/SPECS/fcitx5-lotus.spec
+                --transform "s|^\.|fcitx5-ngosen-${VERSION}|" \
+                -czf ~/rpmbuild/SOURCES/fcitx5-ngosen-${VERSION}.tar.gz .
+            rpmbuild -bb ~/rpmbuild/SPECS/fcitx5-ngosen.spec
             mkdir -p /work/output
             find ~/rpmbuild/RPMS -name '*.rpm' -exec cp {} /work/output/ \;
 

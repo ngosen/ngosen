@@ -21,6 +21,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thay đổi
 
+- Mọi file Ngó Sen cài vào máy đều mang tên riêng (`ngosen` thay cho `lotus`), nên gói cài chung được với
+  `fcitx5-lotus`. Lần đầu fcitx5 chạy sau khi cập nhật, Ngó Sen tự chép cấu hình `lotus*.conf` sang
+  `ngosen*.conf` và đổi tên trong danh sách bộ gõ, nên không phải thêm lại bộ gõ. Log bật bằng
+  `fcitx5 --verbose ngosen=4` (#7).
 - Lõi gõ Rust, lõi mà mọi gói cài đặt đang dùng, lấy bamboo_core 0.3.26 thẳng từ tác giả gốc: bản đã gộp
   mọi bản sửa của Ngó Sen và nhanh hơn ở Backspace cùng vài chữ có dấu. Chữ gõ ra giống hệt bản trước ([#97](https://github.com/ngosen/ngosen-fork-archive/pull/97)).
 

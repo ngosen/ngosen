@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-Macro Editor Page. Edits lotus-macro-table.conf.
+Macro Editor Page. Edits ngosen-macro-table.conf.
 Implements UI with row reordering and TSV import/export.
 """
 
@@ -283,7 +283,7 @@ class MacroEditorPage(BaseEditorPage):
                     )
 
             self.table.setRowCount(0)
-            data = self.dbus.get_sub_config_list("lotus-macro", "Macro")
+            data = self.dbus.get_sub_config_list("ngosen-macro", "Macro")
             for item in data:
                 self.upsert_row(item.get("Key", ""), item.get("Value", ""), sort=False)
             self.on_search_changed()
@@ -370,7 +370,7 @@ class MacroEditorPage(BaseEditorPage):
                 continue
             data.append({"Key": key_item.text(), "Value": val_item.text() if val_item else ""})
 
-        if not self.dbus.set_sub_config_list("lotus-macro", "Macro", data):
+        if not self.dbus.set_sub_config_list("ngosen-macro", "Macro", data):
             return False
 
         self.initial_state = self._get_current_state()

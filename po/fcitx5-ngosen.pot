@@ -286,15 +286,15 @@ msgstr ""
 msgid "Page "
 msgstr ""
 
-#: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:7
+#: io.github.ngosen.NgoSen.metainfo.xml.in.in:7
 msgid "Ngó Sen"
 msgstr ""
 
-#: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:8
+#: io.github.ngosen.NgoSen.metainfo.xml.in.in:8
 msgid "Vietnamese input method (Ngó Sen)"
 msgstr ""
 
-#: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:10
+#: io.github.ngosen.NgoSen.metainfo.xml.in.in:10
 msgid ""
 "Ngó Sen is a Vietnamese input method for Fcitx5, supporting multiple typing "
 "modes and input methods."
@@ -832,7 +832,7 @@ msgid ""
 msgstr ""
 
 #: settings-gui/ui/main_window.py:33
-#: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:2
+#: settings-gui/io.github.ngosen.NgoSen.Settings.desktop.in:2
 msgid "Ngó Sen Settings"
 msgstr ""
 
@@ -896,7 +896,7 @@ msgstr ""
 msgid "Settings saved."
 msgstr ""
 
-#: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:3
+#: settings-gui/io.github.ngosen.NgoSen.Settings.desktop.in:3
 msgid "Configure the Ngó Sen input method"
 msgstr ""
 

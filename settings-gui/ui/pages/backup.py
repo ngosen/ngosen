@@ -113,7 +113,7 @@ class BackupPage(QWidget):
 
     def _get_local_dict_path(self) -> str:
         xdg_data_home = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
-        return os.path.join(xdg_data_home, "fcitx5/lotus/vietnamese.cm.dict")
+        return os.path.join(xdg_data_home, "fcitx5/ngosen/vietnamese.cm.dict")
 
     def do_export(self):
         """Creates a JSON backup of selected components."""
@@ -122,7 +122,7 @@ class BackupPage(QWidget):
             QMessageBox.warning(self, _("Warning"), _("Select at least one item to export."))
             return
 
-        default_filename = f"lotus-backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
+        default_filename = f"ngosen-backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
         path, _filter = QFileDialog.getSaveFileName(
             self,
             _("Export Backup"),
@@ -146,7 +146,7 @@ class BackupPage(QWidget):
                 backup["config"] = config_data
 
             if selected["macros"]:
-                macros = self.dbus.get_sub_config_list("lotus-macro", "Macro")
+                macros = self.dbus.get_sub_config_list("ngosen-macro", "Macro")
                 backup["macros"] = macros
 
             if selected["keymaps"]:
@@ -253,7 +253,7 @@ class BackupPage(QWidget):
                     failed_components.append(_("Main Settings"))
 
             if "macros" in selected_keys and "macros" in backup:
-                if not self.dbus.set_sub_config_list("lotus-macro", "Macro", backup["macros"]):
+                if not self.dbus.set_sub_config_list("ngosen-macro", "Macro", backup["macros"]):
                     failed_components.append(_("Macros"))
 
             if "keymaps" in selected_keys and "keymaps" in backup:

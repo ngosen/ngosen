@@ -287,15 +287,15 @@ msgstr "Ngó Sen - Tắt"
 msgid "Page "
 msgstr "Trang "
 
-#: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:7
+#: io.github.ngosen.NgoSen.metainfo.xml.in.in:7
 msgid "Ngó Sen"
 msgstr "Ngó Sen"
 
-#: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:8
+#: io.github.ngosen.NgoSen.metainfo.xml.in.in:8
 msgid "Vietnamese input method (Ngó Sen)"
 msgstr "Bộ gõ tiếng Việt (Ngó Sen)"
 
-#: org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in:10
+#: io.github.ngosen.NgoSen.metainfo.xml.in.in:10
 msgid ""
 "Ngó Sen is a Vietnamese input method for Fcitx5, supporting multiple typing "
 "modes and input methods."
@@ -867,7 +867,7 @@ msgstr ""
 "huỷ."
 
 #: settings-gui/ui/main_window.py:33
-#: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:2
+#: settings-gui/io.github.ngosen.NgoSen.Settings.desktop.in:2
 msgid "Ngó Sen Settings"
 msgstr "Cài đặt Ngó Sen"
 
@@ -931,7 +931,7 @@ msgstr "Lưu cài đặt thất bại. Hãy kiểm tra xem Fcitx5 có đang ch�
 msgid "Settings saved."
 msgstr "Cài đặt đã được lưu."
 
-#: settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in:3
+#: settings-gui/io.github.ngosen.NgoSen.Settings.desktop.in:3
 msgid "Configure the Ngó Sen input method"
 msgstr "Tuỳ chỉnh bộ gõ Ngó Sen"
 

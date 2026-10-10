@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-Dictionary Editor Page. Edits lotus-dict-table.conf.
+Dictionary Editor Page. Edits ngosen-dict-table.conf.
 Implements UI with row reordering and TSV import/export.
 """
 
@@ -49,13 +49,13 @@ class DictEditorPage(BaseEditorPage):
 
     def _get_local_dict_path(self) -> str:
         xdg_data_home = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
-        return os.path.join(xdg_data_home, "fcitx5/lotus/vietnamese.cm.dict")
+        return os.path.join(xdg_data_home, "fcitx5/ngosen/vietnamese.cm.dict")
 
     def _get_global_dict_path(self) -> str:
         # Common locations for fcitx5 pkgdata
         paths = [
-            "/usr/share/fcitx5/lotus/vietnamese.cm.dict",
-            "/usr/local/share/fcitx5/lotus/vietnamese.cm.dict",
+            "/usr/share/fcitx5/ngosen/vietnamese.cm.dict",
+            "/usr/local/share/fcitx5/ngosen/vietnamese.cm.dict",
         ]
         for p in paths:
             if os.path.exists(p):

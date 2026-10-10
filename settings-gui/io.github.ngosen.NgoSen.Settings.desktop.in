@@ -1,9 +1,9 @@
 [Desktop Entry]
 Name=Ngó Sen Settings
 Comment=Configure the Ngó Sen input method
-Exec=fcitx5-lotus-settings
-Icon=fcitx-lotus
-StartupWMClass=org.fcitx.Fcitx5.Addon.Lotus.Settings
+Exec=fcitx5-ngosen-settings
+Icon=fcitx-ngosen
+StartupWMClass=io.github.ngosen.NgoSen.Settings
 Terminal=false
 Type=Application
 Categories=Settings;DesktopSettings;

@@ -373,7 +373,7 @@ namespace {
 int main() {
     configureTestPaths("fcitx5-ngosen-click-switch-fuzz");
     if (std::getenv("NGOSEN_TEST_LOG") != nullptr)
-        fcitx::Log::setLogRule("lotus=5");
+        fcitx::Log::setLogRule("ngosen=5");
     TestInstance       t;
     fcitx::LotusEngine engine(&t.instance);
     fcitx::RawConfig   config;

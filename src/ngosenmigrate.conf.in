@@ -1,0 +1,10 @@
+[Addon]
+Name=Ngó Sen settings migration
+Category=Module
+Version=@PROJECT_VERSION@
+Library=libngosenmigrate
+Type=SharedLibrary
+OnDemand=False
+Configurable=False
+[Dependencies]
+0=core:@REQUIRED_FCITX_VERSION@

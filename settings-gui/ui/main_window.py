@@ -11,7 +11,7 @@ from datetime import datetime
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import Qt, QTimer
-from qtpy.QtGui import QIcon, QPalette
+from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -31,7 +31,7 @@ from qtpy.QtWidgets import (
 )
 
 from core import backup, settings_snapshot
-from ui import search
+from ui import brand, search
 
 # Lazy loading pages on demand
 
@@ -160,6 +160,23 @@ class NgoSenSettingsWindow(QMainWindow):
         layout.setContentsMargins(10, 12, 0, 0)
         layout.setSpacing(4)
 
+        header = QHBoxLayout()
+        header.setSpacing(8)
+        icon = QIcon.fromTheme("fcitx-ngosen")
+        if not icon.isNull():
+            logo = QLabel()
+            logo.setPixmap(icon.pixmap(28, 28))
+            header.addWidget(logo)
+        wordmark = QLabel("Ngó Sen")
+        wordmark.setObjectName("Wordmark")
+        font = brand.typed_font(22)
+        font.setWordSpacing(-6)
+        wordmark.setFont(font)
+        header.addWidget(wordmark)
+        header.addStretch()
+        layout.addLayout(header)
+        layout.addSpacing(6)
+
         self.search_field = QLineEdit()
         self.search_field.setPlaceholderText(_("Search settings"))
         self.search_field.setClearButtonEnabled(True)
@@ -267,11 +284,10 @@ class NgoSenSettingsWindow(QMainWindow):
         return wrapper
 
     def _show_message(self, text, undo=False, error=False):
-        dark = self.palette().color(QPalette.Window).lightness() < 128
         if error:
-            fill, border = ("#3d1d18", "#d0533f") if dark else ("#f8e3df", "#c2301c")
+            fill, border = brand.pick(self, brand.ERROR_FILL), brand.pick(self, brand.ERROR_BORDER)
         else:
-            fill, border = ("#183a33", "#3f9c8b") if dark else ("#e1efe9", "#1c6b5f")
+            fill, border = brand.pick(self, brand.SAVED_FILL), brand.pick(self, brand.SAVED_BORDER)
         self.message_bar.setStyleSheet(
             f"QFrame#SaveMessage {{ background: {fill}; border: 1px solid {border};"
             " border-radius: 6px; }"

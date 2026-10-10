@@ -98,6 +98,7 @@ install(DIRECTORY gnome-shell/forward-keys@ngosen.github.io DESTINATION ${CMAKE_
 install(FILES 
         LICENSES/GPL-3.0-or-later.txt
         LICENSES/LGPL-2.1-or-later.txt
+        LICENSES/OFL-1.1.txt
         DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/${PROJECT_NAME}
 )
 

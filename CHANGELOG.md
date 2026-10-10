@@ -27,6 +27,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   hai nút ở thanh dưới; khôi phục áp dụng ngay và có Hoàn tác (#16).
 - Ô tìm cài đặt ở đầu thanh bên: gõ không dấu cũng tìm được ("chinh ta" ra "Kiểm tra chính tả"), chọn kết
   quả thì mở đúng trang, đúng tab và đưa con trỏ tới tuỳ chọn đó (#17).
+- Cửa sổ cài đặt mang dấu hiệu Ngó Sen: biểu tượng và chữ "Ngó Sen" đầu thanh bên, chế độ gõ là một hàng
+  nút với nút đang chọn màu xanh men, chữ ví dụ (`vieetj → việt`) và ô Gõ thử dùng phông Xanh Mono đi kèm
+  gói (giấy phép OFL) (#18).
 
 ### Sửa
 

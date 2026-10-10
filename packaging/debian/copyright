@@ -1,17 +1,19 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: fcitx5-ngosen
-Upstream-Contact: Nguyen Hoang Ky <nhktmdzhg@gmail.com>
+Upstream-Contact: Nguyen Phi <nguyenphidt@gmail.com>
 Source: https://github.com/ngosen/ngosen
 Comment: Ngó Sen is a fork of https://github.com/LotusInputMethod/fcitx5-lotus
 
 Files: *
 Copyright: 2022 CSSlayer <wengxt@gmail.com>
-           2025 Vo Ngo Hoan Thanh <thanhpy2009@gmail.com>
+           2025 Vo Ngo Hoang Thanh <thanhpy2009@gmail.com>
            2026 Nguyen Hoang Ky <nhktmdzhg@gmail.com>
+           2026 Ngó Sen contributors
 License: GPL-3.0-or-later
 
 Files: debian/*
 Copyright: 2026 Nguyen Hoang Ky <nhktmdzhg@gmail.com>
+           2026 Nguyen Phi <nguyenphidt@gmail.com>
 License: GPL-3.0-or-later
 
 Files: bamboo/*

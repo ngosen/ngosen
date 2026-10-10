@@ -1,4 +1,6 @@
 /*
+ * SPDX-FileCopyrightText: 2026 Ngó Sen contributors
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */

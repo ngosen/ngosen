@@ -1,9 +1,9 @@
 # Ngó Sen
 
-**Bộ gõ tiếng Việt tối ưu cho Linux.**
+**Bộ gõ tiếng Việt cho fcitx5 trên Linux.**
 
-- **Bỏ hẳn uinput server.** Ngó Sen chỉ dùng đúng quyền của fcitx5. Cài xong là gõ, không bật dịch vụ,
-  không cấp quyền thiết bị.
+- **Không cần quyền đặc biệt.** Ngó Sen không còn uinput server, chỉ dùng đúng quyền của fcitx5. Cài
+  xong gõ được ngay, không phải bật service hay cấp quyền thiết bị.
 - **Gõ thẳng, không gạch chân.** Chế độ Gõ Sen đưa chữ vào app ngay khi gõ. Ô gợi ý của thanh địa chỉ hay
   ô tìm kiếm chạy theo từng phím.
 - **Một chế độ cho mọi app.** Trình duyệt, terminal, Zalo, LibreOffice đều dùng Gõ Sen. Ngó Sen tự nhận ra
@@ -14,6 +14,9 @@
   khi cài.
 
 Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues).
+
+Ngó Sen tách từ [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus) và giữ nguyên lịch sử
+commit; xem mục [Nguồn gốc](#nguồn-gốc).
 
 ## Chỉ cho fcitx5
 
@@ -124,6 +127,9 @@ ngày.
 Ngó Sen tách ra từ [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), vốn là bản fork
 của [bộ gõ VMK](https://github.com/thanhpy2009/VMK). Ngó sen là mầm mọc ra từ cây sen: cùng gốc với
 Lotus nhưng đi hướng riêng. Giấy phép vẫn là GPL-3.0-or-later.
+
+Ngày 10/10/2026 repo được tạo lại ngoài mạng fork của fcitx5-lotus, giữ nguyên lịch sử commit. Issue và
+pull request trước đó nằm ở kho lưu [ngosen/ngosen-fork-archive](https://github.com/ngosen/ngosen-fork-archive).
 
 ## English
 

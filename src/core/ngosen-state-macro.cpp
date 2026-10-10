@@ -111,12 +111,12 @@ namespace ngosen {
                     if (oldLen > 0) {
                         host_->deleteSurrounding(-static_cast<int>(oldLen), static_cast<int>(oldLen));
                     }
-                    host_->commitText(commitStr);
+                    commit(commitStr);
                 } else {
-                    host_->commitText(commitStr);
+                    commit(commitStr);
                 }
             } else {
-                host_->commitText(commitStr);
+                commit(commitStr);
             }
             keyEvent.accept();
         } else {

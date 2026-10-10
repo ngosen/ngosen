@@ -467,7 +467,7 @@ namespace ngosen {
         NGOSEN_INFO("Delete using surrounding text");
         std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrDeleteSleepMs * expected_backspaces_));
         if (!pending_commit_string_.empty()) {
-            host_->commitText(pending_commit_string_);
+            commit(pending_commit_string_);
             NGOSEN_INFO("Commit: " + pending_commit_string_);
             std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrCommitSleepMs * ngosen::utf8::length(addedPart)));
         }
@@ -525,7 +525,7 @@ namespace ngosen {
 
     void TypingState::commitReplayed(std::string& out) {
         if (!out.empty()) {
-            host_->commitText(out);
+            commit(out);
             NGOSEN_INFO("Commit: " + out);
             out.clear();
         }

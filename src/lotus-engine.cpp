@@ -557,8 +557,6 @@ namespace fcitx {
         auto* ic = event.inputContext();
         if (dropStaleSurroundingText(ic))
             LOTUS_INFO("Dropped stale surrounding text");
-        const bool               surrvalid = ic->surroundingText().isValid();
-        const bool               is_dbus   = getFrontendName(ic) == "dbus";
         static std::atomic<bool> mouseThreadStarted{false};
         if (!mouseThreadStarted.exchange(true))
             startMouseReset();
@@ -575,34 +573,9 @@ namespace fcitx {
 
         updateCharsetAction(event.inputContext());
 
-        auto*      state = stateFor(ic);
-
-        const bool uinputMode         = isUinputMode(targetMode);
-        const bool focusBounce        = uinputMode && state->lastDeactivateTime_ > 0 && now_ms() - state->lastDeactivateTime_ < 100;
-        const bool resumeReplacement  = focusBounce && state->deletionInterruptedAt_ > 0 && is_deleting_.load();
-        state->deletionInterruptedAt_ = 0;
-
-        if (!resumeReplacement) {
-            is_deleting_.store(false);
-        }
-
-        if (focusBounce) {
-            realMode = targetMode;
-            ic->updateUserInterface(UserInterfaceComponent::StatusArea);
-            LOTUS_INFO("Focus bounce: keep word buffers");
-        } else {
-            setMode(targetMode, event.inputContext());
-        }
-
-        if (event.type() == EventType::InputContextFocusIn && is_dbus && !surrvalid) {
-            LOTUS_INFO("Skip clearAllBuffers");
-        } else if (surrvalid && !state->oldPreBuffer_.empty() && (now_ms() - state->lastDeactivateTime_) >= 100) {
-            state->clearAllBuffers();
-        }
-        if (!resumeReplacement) {
-            is_deleting_.store(false);
-        }
-        needEngineReset.store(false);
+        auto* state = stateFor(ic);
+        state->activate(targetMode, event.type() == EventType::InputContextFocusIn);
+        ic->updateUserInterface(UserInterfaceComponent::StatusArea);
         if (targetMode == LotusMode::Emoji) {
             state->updateEmojiPreedit();
         } else {
@@ -644,12 +617,6 @@ namespace fcitx {
         auto*                 state = stateFor(keyEvent.inputContext());
         ngosen::FcitxKeyPress press(keyEvent);
         state->keyEvent(press);
-        const auto&  s       = ic->surroundingText();
-        const auto&  text    = s.text();
-        size_t       textLen = fcitx_utf8_strlen(text.c_str());
-        unsigned int cursor  = s.cursor();
-        if (textLen == static_cast<size_t>(cursor))
-            realtextLen.store(static_cast<unsigned int>(textLen), std::memory_order_release);
     }
 
     void LotusEngine::handleModeMenuKey(KeyEvent& keyEvent) {
@@ -834,36 +801,7 @@ namespace fcitx {
     }
 
     void LotusEngine::deactivate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
-        auto*      ic        = event.inputContext();
-        auto*      state     = stateFor(ic);
-        const bool surrvalid = ic->surroundingText().isValid();
-        const bool is_dbus   = getFrontendName(ic) == "dbus";
-        state->flushPendingReplacement(); // commit pending text into the field we are leaving
-        state->lastDeactivateTime_ = now_ms();
-        if (realMode == LotusMode::Preedit && event.type() != EventType::InputContextFocusOut) {
-            state->commitBuffer();
-        } else {
-            if (event.type() == EventType::InputContextFocusOut && is_dbus && !surrvalid) {
-                state->lastDeactivateTime_ = now_ms();
-                LOTUS_INFO("Skip clearAllBuffers");
-            } else {
-                if (surrvalid && !state->oldPreBuffer_.empty())
-                    state->clearAllBuffers();
-            }
-            const bool uinputMode = isUinputMode(realMode);
-            // A selection waiting to be typed over has no backspaces left, but is just as unfinished.
-            if (uinputMode && is_deleting_.load() && (state->expected_backspaces_ > 0 || state->overtype_pending_)) {
-                state->deletionInterruptedAt_ = now_ms();
-                LOTUS_INFO("Replacement interrupted by focus out");
-            } else {
-                is_deleting_.store(false);
-            }
-            needEngineReset.store(false);
-            ic->inputPanel().reset();
-            ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-            if (realMode == LotusMode::Preedit || realMode == LotusMode::Emoji)
-                ic->updatePreedit();
-        }
+        stateFor(event.inputContext())->deactivate(event.type() == EventType::InputContextFocusOut);
     }
 
     void LotusEngine::refreshEngine() {

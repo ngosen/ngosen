@@ -25,6 +25,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   lại một file nhật ký gõ trên app giả để tìm lỗi người dùng gửi về (#94).
 - Test gõ ngẫu nhiên kiểu Gõ Sen xen lẫn click chuột vào giữa chữ cũ, Alt+Tab và click sang app khác, trên
   app X11, Wayland và XIM. Chữ gõ sau mỗi cú click phải giống như gõ thong thả tại đúng chỗ đó (#95).
+- Phần quyết định giữ hay bỏ chữ đang gõ khi rời ô gõ rồi quay lại được chuyển vào lõi bộ gõ, để test trên
+  app giả chạy đúng đoạn code fcitx5 chạy. Gõ không thay đổi gì (#96).
 
 ## [1.0.0-1] — 09/10/2026
 

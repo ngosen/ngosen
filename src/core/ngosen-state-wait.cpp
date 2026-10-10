@@ -405,8 +405,18 @@ namespace ngosen {
     }
 
     void TypingState::noteCommit(const std::string& text) {
+        // fcitx reports our own commits too; commit() has recorded those already.
+        if (committing_)
+            return;
         unreportedCommitLength_ += ngosen::utf8::length(text);
         lastInputAtUs_ = ngosen::monotonicUs();
+    }
+
+    void TypingState::commit(const std::string& text) {
+        noteCommit(text);
+        committing_ = true;
+        host_->commitText(text);
+        committing_ = false;
     }
 
 } // namespace ngosen

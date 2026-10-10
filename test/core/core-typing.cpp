@@ -221,6 +221,30 @@ namespace {
         check(!has(log, "0x0065") && !has(log, "\"ti") && !has(log, "\"ê\"") && !has(log, " e\n"), "recorder: keeps no password text", log);
     }
 
+    // Focus that leaves a field which cannot report its text and comes straight back keeps the
+    // word; a real switch starts a new one.
+    void testFocusBounce() {
+        for (const bool bounce : {true, false}) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("xim", false));
+            ngosen::TypingState state(&resources, std::move(owned));
+
+            for (const char c : std::string("tie"))
+                press(state, static_cast<uint32_t>(c));
+            state.deactivate(true);
+            if (!bounce)
+                loop.pump(150);
+            state.activate(ngosen::Mode::Sen, true);
+            const bool taken = press(state, static_cast<uint32_t>('e'));
+            if (bounce)
+                check(taken, "focus bounce: keeps the word", "e went to the app as a plain key");
+            else
+                check(!taken, "focus switch: starts a new word", "e was taken to change the old word");
+        }
+    }
+
     void testRecorderLimits() {
         ngosen::Recorder recorder(3);
         for (int i = 0; i < 5; ++i)
@@ -258,6 +282,7 @@ int main() {
     testRecorderKeepsTheReplacement();
     testRecorderHidesPasswords();
     testRecorderLimits();
+    testFocusBounce();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";
     return failures == 0 ? 0 : 1;

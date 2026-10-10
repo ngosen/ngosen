@@ -38,7 +38,7 @@ namespace ngosen {
     }
 
     void TypingState::pickEmoji(const EmojiEntry& entry) {
-        host_->commitText(entry.output);
+        commit(entry.output);
         NGOSEN_INFO("Emoji committed: " + entry.output);
 
         engine_->recordEmoji(entry);
@@ -152,7 +152,7 @@ namespace ngosen {
                     host_->pickCandidate(list->cursor);
                     keyEvent.accept();
                 } else if (currentSym == ngosen::key::Return && !emojiBuffer_.empty()) {
-                    host_->commitText(emojiBuffer_);
+                    commit(emojiBuffer_);
                     emojiBuffer_.clear();
                     updateEmojiPreedit();
                     keyEvent.accept();

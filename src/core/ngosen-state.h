@@ -80,6 +80,12 @@ namespace ngosen {
          */
         void reset(bool isFocusOut = false);
 
+        // The field gained focus and its app rule asks for targetMode. Returns true for a focus
+        // bounce: focus left and came back so soon that the word being typed is kept.
+        bool activate(ngosen::Mode targetMode, bool isFocusIn);
+        // The field lost focus (isFocusOut), or the input method was switched away from it.
+        void deactivate(bool isFocusOut);
+
         // Called for every surrounding text report of this input context.
         void surroundingUpdated();
 
@@ -90,7 +96,8 @@ namespace ngosen {
         bool textAfterCursorChanged(const Surrounding& s) const;
 
         /**
-         * @brief Records text sent to the app, so its cursor moving past it is not taken for a click.
+         * @brief Records text another part of fcitx sent to the app, so its cursor moving past it is not
+         * taken for a click. Our own commits are recorded by commit().
          */
         void noteCommit(const std::string& text);
 
@@ -134,7 +141,7 @@ namespace ngosen {
         bool                     isPrevHyphen_          = false;
         bool                     shouldCapitalize_      = false;
         bool                     isPrevPunctuation_     = false;
-        int64_t                  lastDeactivateTime_    = 0;
+        int64_t                  lastDeactivateTime_    = 0;     ///< ms on CLOCK_MONOTONIC
         int64_t                  deletionInterruptedAt_ = 0;     ///< when deactivate() cut an in-flight replacement (0 = none)
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     macro_skip_            = false; ///< Macro disabled for the current word
@@ -147,6 +154,7 @@ namespace ngosen {
         std::string recordedField_;
         void        recordKey(const ngosen::KeyPress& keyEvent);
 
+        void        handleKey(ngosen::KeyPress& keyEvent);
         // The steps of keyEvent, in order. A true result means the key needs nothing more.
         bool     skipsKey(ngosen::KeyPress& keyEvent);
         void     settleBeforeKey();
@@ -156,6 +164,8 @@ namespace ngosen {
 
         // Presses real keys through XTEST, for frontends that cannot forward them.
         void sendBackspaceKeys(int count) const;
+        // Sends text to the app and records it as ours.
+        void commit(const std::string& text);
 
         // A report while waiting for the app to apply backspaces or show a selection.
         void onWaitSurroundingUpdated();
@@ -208,6 +218,7 @@ namespace ngosen {
         unsigned int lastSurroundingAnchor_  = 0;
         bool         hasLastSurrounding_     = false;
         unsigned int unreportedCommitLength_ = 0;
+        bool         committing_             = false;
         uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
 
         // Last key press seen, to spot one the app sends twice.

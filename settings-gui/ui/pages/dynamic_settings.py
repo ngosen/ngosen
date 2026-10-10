@@ -321,8 +321,8 @@ class DynamicSettingsPage(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(widget)
+        # Wrapping makes the form reserve two lines for a one-line hint.
         hint = QLabel(_(hint_text))
-        hint.setWordWrap(True)
         mute(hint)
         if isinstance(widget, QCheckBox):
             # Line the hint up with the checkbox text, not its box.

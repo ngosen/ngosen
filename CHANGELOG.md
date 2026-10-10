@@ -18,6 +18,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   `~/.local/state/ngosen/`, để gửi kèm khi báo lỗi. Nhật ký chỉ nằm trong bộ nhớ cho tới lúc lưu, và
   không ghi gì gõ trong ô mật khẩu (#93).
 
+### Thay đổi
+
+- Lõi Rust (tuỳ chọn khi build, mặc định tắt) lấy bamboo_core 0.3.26 thẳng từ tác giả gốc, bản đã gộp mọi
+  bản sửa của Ngó Sen và nhanh hơn ở Backspace cùng vài chữ có dấu. Chữ gõ ra giống hệt bản trước (#97).
+
 ### Kiểm thử
 
 - Test gõ ngẫu nhiên kiểu Gõ Sen vào các app giả có tật như app thật: báo chữ chậm, báo chữ cũ, không báo,

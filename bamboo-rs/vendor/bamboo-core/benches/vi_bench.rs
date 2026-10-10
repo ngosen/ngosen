@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use bamboo_core::{Engine, InputMethod, Mode};
 use skey_engine::{Method, SkeyEngine};
 use std::time::Instant;
@@ -64,13 +65,38 @@ fn bench_all_4<F1, F2, F3, F4>(
     );
 }
 
+/// Fast smoke for `cargo test` runs (bench mains get no args there).
+/// The full suite only runs under `cargo bench` (which passes `--bench`).
+fn smoke() {
+    println!("(smoke under `cargo test`; run `cargo bench` for the full suite)");
+    let mut bamboo = Engine::new(InputMethod::telex());
+    bamboo.warm_up();
+    let keys: Vec<char> = "tieengs".chars().collect();
+    let start = Instant::now();
+    for _ in 0..2000 {
+        bamboo.reset();
+        for &k in &keys {
+            bamboo.process_key(k, Mode::Vietnamese);
+        }
+        std::hint::black_box(bamboo.output_str());
+    }
+    println!(
+        "smoke feed tieengs x2000: {:.1} ns/key",
+        start.elapsed().as_nanos() as f64 / 2000.0 / keys.len() as f64
+    );
+}
+
 fn main() {
+    if !std::env::args().any(|a| a == "--bench") {
+        smoke();
+        return;
+    }
     println!(
         "========================================================================================================================"
     );
     println!("              FULL 4-WAY REAL-TIME KEYSTROKE & IME BENCHMARK SUITE (2026)");
     println!(
-        "              Bamboo Core (v0.3.25) | Skey-Engine (v0.1.23) | Uvie (v2.7.0) | Vi (v0.8.0)"
+        "              Bamboo Core (v0.3.26) | Skey-Engine (v0.1.23) | Uvie (v2.7.0) | Vi (v0.8.0)"
     );
     println!(
         "========================================================================================================================"

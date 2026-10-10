@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.88"
 name = "bamboo-core"
-version = "0.3.25"
+version = "0.3.26"
 build = false
 include = [
     "src/**",

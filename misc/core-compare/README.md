@@ -1,7 +1,7 @@
 # core-compare
 
 Types the same key sequences into the Go bamboo-core in `bamboo/` and the Rust bamboo-core that
-`bamboo-rs/` uses ([ngosen/bamboo_core](https://github.com/ngosen/bamboo_core), same revision),
+`bamboo-rs/` uses ([nguyen10t2/bamboo_core](https://github.com/nguyen10t2/bamboo_core), same revision),
 and reports where the results differ. It is a check for replacing the Go core; nothing here is
 built or installed with the addon.
 

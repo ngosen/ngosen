@@ -5,4 +5,4 @@ edition = "2024"
 publish = false
 
 [dependencies]
-bamboo-core = { git = "https://github.com/ngosen/bamboo_core", rev = "e8ebe4a818d82611a6e69fd0eba22c75b26d831f" }
+bamboo-core = { git = "https://github.com/nguyen10t2/bamboo_core", rev = "82bad325681d9b723631955c00e38fe5bdc79112" }

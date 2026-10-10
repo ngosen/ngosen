@@ -4,8 +4,8 @@ version = 4
 
 [[package]]
 name = "bamboo-core"
-version = "0.3.25"
-source = "git+https://github.com/ngosen/bamboo_core?rev=e8ebe4a818d82611a6e69fd0eba22c75b26d831f#e8ebe4a818d82611a6e69fd0eba22c75b26d831f"
+version = "0.3.26"
+source = "git+https://github.com/nguyen10t2/bamboo_core?rev=82bad325681d9b723631955c00e38fe5bdc79112#82bad325681d9b723631955c00e38fe5bdc79112"
 dependencies = [
  "bitflags",
  "phf",

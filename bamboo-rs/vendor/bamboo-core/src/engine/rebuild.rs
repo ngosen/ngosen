@@ -31,6 +31,9 @@ impl Engine {
                     OutputOptions::NONE,
                     &mut self.committed_text,
                 );
+                // Keep `committed_raw` in step like `commit()` does: the
+                // original keystrokes are unknowable for pre-existing text,
+                // so the rebuilt roots stand in for the raw keys.
                 crate::flattener::append_raw_keys(comp.as_slice(), &mut self.committed_raw);
             } else {
                 self.committed_text.push_str(word);

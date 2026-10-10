@@ -11,11 +11,14 @@
 
 #include <fcitx-config/iniparser.h>
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+#include <unistd.h>
 
 namespace {
 
@@ -33,11 +36,18 @@ namespace {
         return v ? *v : "<missing>";
     }
 
-    // The profile as fcitx5 writes it.
+    // The profile as fcitx5 writes it. fcitx5 5.0 reads INI only from a file descriptor.
     fcitx::RawConfig parse(const std::string& ini) {
-        std::istringstream in(ini);
-        fcitx::RawConfig   config;
-        fcitx::readFromIni(config, in);
+        char tmpl[] = "/tmp/ngosen-migration-profile-XXXXXX";
+        int  fd     = mkstemp(tmpl);
+        if (fd < 0 || write(fd, ini.data(), ini.size()) != static_cast<ssize_t>(ini.size()) || lseek(fd, 0, SEEK_SET) != 0) {
+            std::cerr << "FAIL: cannot write a temporary profile\n";
+            std::exit(1);
+        }
+        fcitx::RawConfig config;
+        fcitx::readFromIni(config, fd);
+        close(fd);
+        unlink(tmpl);
         return config;
     }
 

@@ -29,7 +29,7 @@ Thank you for your interest in contributing to Ngó Sen! This document guides yo
 
 ```bash
 # Clone repository
-git clone https://github.com/LotusInputMethod/fcitx5-lotus.git
+git clone https://github.com/ngosen/ngosen.git
 cd ngosen
 
 # Initialize submodules
@@ -50,7 +50,7 @@ Fork this repository on GitHub and clone your fork to your machine.
 ```bash
 git clone https://github.com/yourusername/ngosen.git
 cd ngosen
-git remote add upstream https://github.com/LotusInputMethod/fcitx5-lotus.git
+git remote add upstream https://github.com/ngosen/ngosen.git
 ```
 
 ### 2. Create a new branch

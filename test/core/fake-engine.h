@@ -88,6 +88,10 @@ namespace ngosen::test {
         bool accepted() const {
             return accepted_;
         }
+        // The key the app gets when the typing logic lets it through.
+        uint32_t appSym() const {
+            return appSym_;
+        }
 
       private:
         uint32_t sym_;

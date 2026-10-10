@@ -1,0 +1,7 @@
+0.0	field	frontend=wayland program=slow surrounding=1 preedit=1 mode=Sen
+0.0	key	down 0x0079 y
+19.0	key	down 0x0072 r
+175.0	key	down 0x0064 d
+290.0	key	down 0x006a j
+392.0	key	down 0x0073 s
+534.0	key	down 0x0020

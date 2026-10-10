@@ -1,0 +1,27 @@
+# Ngó Sen 1.0.0 typing log. It holds what you typed just before saving; read it before sharing.
+# desktop=GNOME session=wayland
+0.0	field	frontend=wayland program=firefox surrounding=1 preedit=1 mode=Sen
+0.0	key	down 0x0074 t
+40.2	key	up 0x0074 t
+95.0	key	down 0x006f o
+130.0	key	up 0x006f o
+190.0	key	down 0x006f o
+192.0	forward	BackSpace down
+225.0	key	up 0x006f o
+230.0	commit	"ô"
+280.0	key	down 0x0069 i
+320.0	key	up 0x0069 i
+400.0	key	down 0x0020
+450.0	key	up 0x0020
+520.0	key	down 0x0061 a states=4
+560.0	key	up 0x0061 a states=4
+700.0	field	frontend=wayland program=firefox surrounding=1 preedit=1 password=1 mode=Sen
+700.0	key	hidden
+900.0	field	frontend=xim program=wps surrounding=0 preedit=1 mode=Sen
+900.0	key	down 0x0076 v
+980.0	key	down 0x0069 i
+1060.0	key	down 0x0065 e
+1075.0	key	down 0x0065 e
+1160.0	key	down 0x0074 t
+1240.0	key	down 0x006a j
+1330.0	key	down 0x0020

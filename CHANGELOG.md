@@ -20,6 +20,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Kiểm thử
 
+- Test gõ ngẫu nhiên kiểu Gõ Sen vào các app giả có tật như app thật: báo chữ chậm, báo chữ cũ, không báo,
+  nhận phím chậm. Chữ cuối cùng trong app phải giống hệt chữ Telex của các phím đã gõ. `core_replay` chạy
+  lại một file nhật ký gõ trên app giả để tìm lỗi người dùng gửi về (#94).
 - Test gõ ngẫu nhiên kiểu Gõ Sen xen lẫn click chuột vào giữa chữ cũ, Alt+Tab và click sang app khác, trên
   app X11, Wayland và XIM. Chữ gõ sau mỗi cú click phải giống như gõ thong thả tại đúng chỗ đó (#95).
 

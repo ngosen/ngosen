@@ -328,13 +328,14 @@ class KeymapEditorPage(BaseEditorPage):
             self.on_search_changed()
 
     def restore_defaults(self):
-        """Clears all custom keymap entries, restoring to default."""
+        """Clears all custom keymap entries and turns the custom keymap off."""
+        self.cb_enable.setChecked(False)
         self.table.setRowCount(0)
         self._on_item_changed()
 
     def is_modified_from_default(self):
-        """Returns True if the keymap table has any entries."""
-        return self.table.rowCount() > 0
+        """Returns True if the keymap is on or has any entries."""
+        return self.table.rowCount() > 0 or self.cb_enable.isChecked()
 
     def is_modified(self):
         """Returns True if the current state differs from the initial loaded state."""

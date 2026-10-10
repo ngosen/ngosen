@@ -13,7 +13,6 @@ from i18n import _
 from qtpy.QtCore import QSize, Qt, Signal
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import (
-    QComboBox,
     QDialog,
     QFrame,
     QGridLayout,
@@ -42,14 +41,6 @@ MODE_DEFAULT = -1  # UI special value for "Use Global Default"
 # Former Smooth (1), Super Smooth (3), Surrounding Text (4) and Minecraft (8) rules load as Sen, as in
 # the addon.
 FORMER_SEN_MODES = {1, 3, 4, 8}
-FORMER_SEN_MODE_NAMES = {
-    "Uinput",
-    "Uinput (Smooth)",
-    "Uinput (Slow)",
-    "Uinput (Super Smooth)",
-    "Minecraft",
-    "Surrounding Text",
-}
 
 MODE_INFO = {
     MODE_DEFAULT: {"title": "Default Typing", "icon": "preferences-system"},
@@ -390,7 +381,6 @@ class ModeManagerPage(QWidget):
         self.dbus = dbus_handler
         self.app_rules = {}
         self.original_app_rules = {}
-        self.original_global_mode = ""
         self.selected_app = None
         self.current_app_mode = MODE_DEFAULT
         self._icon_cache = {}
@@ -445,26 +435,7 @@ class ModeManagerPage(QWidget):
         title.setObjectName("CategoryTitle")
         self.main_layout.addWidget(title)
 
-        # 1. Global Mode Section (Simplified Card)
-        self.global_card = CardWidget("")
-        global_layout = QHBoxLayout()
-        global_layout.addWidget(QLabel(_("Global Default Mode:")))
-        self.combo_global_mode = QComboBox()
-        global_modes = [
-            MODE_SEN,
-            MODE_PREEDIT,
-            MODE_EMOJI,
-            MODE_OFF,
-        ]
-        for m in global_modes:
-            self.combo_global_mode.addItem(_(MODE_INFO[m]["title"]), MODE_INFO[m]["title"])
-
-        self.combo_global_mode.currentIndexChanged.connect(self._on_global_mode_changed)
-        global_layout.addWidget(self.combo_global_mode)
-        self.global_card.content_layout.addLayout(global_layout)
-        self.main_layout.addWidget(self.global_card)
-
-        # 2. Selected App Card (Empty Title)
+        # Selected App Card (Empty Title)
         self.app_settings_card = CardWidget("")
         self.app_settings_layout = QVBoxLayout()
 
@@ -510,7 +481,7 @@ class ModeManagerPage(QWidget):
         self.layout.addWidget(self.content_widget)
 
     def load_data(self):
-        """Loads rules from config and global mode from DBus."""
+        """Loads the per-application rules."""
         self.app_rules = {}
         try:
             data = self.dbus.get_sub_config_list("app_rules", "Rules")
@@ -525,18 +496,6 @@ class ModeManagerPage(QWidget):
                     self.app_rules[app] = MODE_SEN if mode in FORMER_SEN_MODES else mode
         except Exception as e:
             print(f"Error loading app rules via DBus: {e}")
-
-        # Sync Global Mode
-        config = self.dbus.get_config()
-        mode_str = config.get("values", {}).get("Mode", "Sen")
-        if mode_str in FORMER_SEN_MODE_NAMES:
-            mode_str = "Sen"
-        self.combo_global_mode.blockSignals(True)
-        idx = self.combo_global_mode.findData(mode_str)
-        if idx >= 0:
-            self.combo_global_mode.setCurrentIndex(idx)
-        self.combo_global_mode.blockSignals(False)
-        self.original_global_mode = mode_str
 
         self._populate_app_list()
         self.original_app_rules = self.app_rules.copy()
@@ -671,12 +630,6 @@ class ModeManagerPage(QWidget):
         self.btn_remove_app.setEnabled(True)  # Enable Remove
         self._update_mode_cards()
 
-    def _on_global_mode_changed(self, index):
-        if not self.isVisible():
-            return
-
-        self._notify_changed()
-
     def _on_app_mode_changed(self, mode):
         self.current_app_mode = mode
         if mode == MODE_DEFAULT:
@@ -733,27 +686,14 @@ class ModeManagerPage(QWidget):
 
     def is_modified(self):
         """Returns True if the current state differs from the initial loaded state."""
-        return (
-            self.app_rules != self.original_app_rules
-            or self.combo_global_mode.currentData() != self.original_global_mode
-        )
+        return self.app_rules != self.original_app_rules
 
     def is_modified_from_default(self):
         """Returns True if the current state differs from the default state."""
-        return len(self.app_rules) > 0 or self.combo_global_mode.currentData() != "Sen"
+        return len(self.app_rules) > 0
 
     def save_data(self) -> bool:
         try:
-            if self.combo_global_mode.currentData() != self.original_global_mode:
-                config_data = self.dbus.get_config()
-                if config_data:
-                    latest_values = config_data.get("values", {})
-                    latest_values["Mode"] = self.combo_global_mode.currentData()
-                    if not self.dbus.set_config(latest_values):
-                        return False
-                elif not self.dbus.iface:
-                    return False
-
             data = []
             for app, mode in sorted(self.app_rules.items()):
                 data.append({"App": app, "Mode": str(mode)})
@@ -762,7 +702,6 @@ class ModeManagerPage(QWidget):
                 return False
 
             self.original_app_rules = self.app_rules.copy()
-            self.original_global_mode = self.combo_global_mode.currentData()
             return True
 
         except Exception as e:
@@ -770,4 +709,8 @@ class ModeManagerPage(QWidget):
             return False
 
     def restore_defaults(self):
-        self.load_data()
+        self.app_rules = {}
+        self.selected_app = None
+        self.app_settings_card.setVisible(False)
+        self.btn_remove_app.setEnabled(False)
+        self._populate_app_list()

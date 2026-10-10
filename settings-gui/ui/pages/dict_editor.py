@@ -162,21 +162,18 @@ class DictEditorPage(BaseEditorPage):
             if config_data:
                 values = config_data.get("values", {})
                 self.cb_enable.setChecked(
-                    str(values.get("EnableDictionary", "True")).lower() == "true"
+                    str(values.get("EnableDictionary", "False")).lower() == "true"
                 )
 
             self.words = []
             local_path = self._get_local_dict_path()
-            global_path = self._get_global_dict_path()
-            path_to_read = local_path if os.path.exists(local_path) else global_path
+            path_to_read = (
+                local_path if os.path.exists(local_path) else self._get_global_dict_path()
+            )
 
             if os.path.exists(path_to_read):
                 try:
-                    with open(path_to_read, "r", encoding="utf-8") as f:
-                        for line in f:
-                            word = line.strip()
-                            if word and not word.startswith("#"):
-                                self.words.append(word)
+                    self.words = self._read_words(path_to_read)
                 except Exception as e:
                     self._load_failed = True
                     print(f"Failed to read dictionary {path_to_read}: {e}")
@@ -194,6 +191,17 @@ class DictEditorPage(BaseEditorPage):
             self.blockSignals(False)
             self.on_search_changed()
             self.update_button_states()
+
+    @staticmethod
+    def _read_words(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return [w for w in (line.strip() for line in f) if w and not w.startswith("#")]
+
+    def _bundled_words(self):
+        try:
+            return self._read_words(self._get_global_dict_path())
+        except OSError:
+            return []
 
     def _rebuild_table(self, filtered_words: list = None):
         """Rebuilds the table based on self.words or filtered_words."""
@@ -217,19 +225,19 @@ class DictEditorPage(BaseEditorPage):
             self.table.setItem(row, col, QTableWidgetItem(""))
 
     def restore_defaults(self):
-        """Resets dictionary to default."""
+        """Turns the custom dictionary off and goes back to the bundled words."""
         self.blockSignals(True)
         try:
-            self.cb_enable.setChecked(True)
-            self.words = []
-            self.load_data()
+            self.cb_enable.setChecked(False)
+            self.words = self._bundled_words()
+            self.on_search_changed()
             self._on_item_changed()
         finally:
             self.blockSignals(False)
 
     def is_modified_from_default(self):
-        """Returns True if the dictionary has entries or checkboxes are changed from default."""
-        return len(self.words) > 0 or not self.cb_enable.isChecked()
+        """Returns True if the dictionary is on or its words differ from the bundled ones."""
+        return self.cb_enable.isChecked() or sorted(self.words) != sorted(self._bundled_words())
 
     def is_modified(self):
         """Returns True if the current state differs from the initial loaded state."""
@@ -265,24 +273,24 @@ class DictEditorPage(BaseEditorPage):
 
         local_path = self._get_local_dict_path()
         try:
-            target_dir = os.path.dirname(local_path)
-            os.makedirs(target_dir, exist_ok=True)
+            if sorted(self.words) == sorted(self._bundled_words()):
+                # A copy of the bundled words would hide later updates to them.
+                if os.path.exists(local_path):
+                    os.remove(local_path)
+            else:
+                target_dir = os.path.dirname(local_path)
+                os.makedirs(target_dir, exist_ok=True)
 
-            with tempfile.NamedTemporaryFile(
-                "w", dir=target_dir, encoding="utf-8", delete=False
-            ) as tf:
-                for word in self.words:
-                    tf.write(f"{word}\n")
-                temp_name = tf.name
+                with tempfile.NamedTemporaryFile(
+                    "w", dir=target_dir, encoding="utf-8", delete=False
+                ) as tf:
+                    for word in self.words:
+                        tf.write(f"{word}\n")
+                    temp_name = tf.name
 
-            os.replace(temp_name, local_path)
+                os.replace(temp_name, local_path)
 
-            # Trigger engine reload by setting global config (unchanged)
-            if self.dbus.iface:
-                current_config = self.dbus.get_config()
-                if current_config:
-                    self.dbus.set_config(current_config.get("values", {}))
-
+            self.dbus.reload_addon_config()
             self.initial_state = self._get_current_state()
             return True
         except Exception as e:

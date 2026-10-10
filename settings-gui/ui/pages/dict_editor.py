@@ -11,24 +11,43 @@ import tempfile
 
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
-from qtpy.QtCore import Qt
+from qtpy.QtCore import QItemSelectionModel, QSize, QStringListModel, Qt
 from qtpy.QtGui import QColor, QIcon
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QLineEdit,
+    QListView,
     QMessageBox,
     QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
     QVBoxLayout,
 )
 
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
+
+
+class WordListModel(QStringListModel):
+    """The dictionary words, with words the engine cannot use flagged."""
+
+    item_size = QSize()
+
+    def data(self, index, role=Qt.DisplayRole):
+        if role == Qt.SizeHintRole:
+            return self.item_size
+        if role in (Qt.BackgroundRole, Qt.ToolTipRole, Qt.DecorationRole):
+            if " " not in (super().data(index, Qt.DisplayRole) or ""):
+                return None
+            if role == Qt.BackgroundRole:
+                color = QColor(Qt.red)
+                color.setAlpha(60)
+                return color
+            if role == Qt.ToolTipRole:
+                return _("Warning: Dictionary words should not contain spaces.")
+            return QIcon.fromTheme("dialog-warning")
+        return super().data(index, role)
 
 
 class DictEditorPage(BaseEditorPage):
@@ -121,18 +140,23 @@ class DictEditorPage(BaseEditorPage):
         input_layout.addWidget(self.btn_add)
         content_layout.addLayout(input_layout)
 
-        # 2. Table Area
-        self.table = QTableWidget(0, 3)
-        self.table.horizontalHeader().setVisible(False)
-        self.table.verticalHeader().setVisible(False)
-        for i in range(3):
-            self.table.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectItems)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.table.setAlternatingRowColors(True)
-        self.apply_table_style()  # Apply custom table styling
-        self.table.cellClicked.connect(self.on_cell_clicked)
-        content_layout.addWidget(self.table)
+        # The view holds only the matching words; filtering in Qt would call the Python
+        # data() of every word on each key press.
+        self.model = WordListModel(self)
+        self.list_view = QListView()
+        self.list_view.setModel(self.model)
+        self.list_view.setFlow(QListView.LeftToRight)
+        self.list_view.setWrapping(True)
+        self.list_view.setResizeMode(QListView.Adjust)
+        self.list_view.setUniformItemSizes(True)
+        # Uniform sizes ask only the first word, so every cell gets the full column width.
+        self.model.item_size = QSize(144, self.fontMetrics().height() + 6)
+        self.list_view.setGridSize(QSize(150, self.fontMetrics().height() + 10))
+        self.list_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.list_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.list_view.clicked.connect(self.on_word_clicked)
+        self.list_view.selectionModel().selectionChanged.connect(self.update_button_states)
+        content_layout.addWidget(self.list_view)
 
         # 3. Bottom Toolbar
         toolbar_layout = QHBoxLayout()
@@ -185,7 +209,7 @@ class DictEditorPage(BaseEditorPage):
                         ).format(e),
                     )
 
-            self._rebuild_table()
+            self._show_words()
             self.initial_state = self._get_current_state()
         finally:
             self.blockSignals(False)
@@ -203,26 +227,28 @@ class DictEditorPage(BaseEditorPage):
         except OSError:
             return []
 
-    def _rebuild_table(self, filtered_words: list = None):
-        """Rebuilds the table based on self.words or filtered_words."""
-        display_words = filtered_words if filtered_words is not None else self.words
+    def _show_words(self):
+        needle = self.search_input.text().strip().casefold()
+        self.model.setStringList([w for w in self.words if needle in w.casefold()])
+        self.update_button_states()
 
-        num_cols = 3
-        num_rows = (len(display_words) + num_cols - 1) // num_cols
-        self.table.setRowCount(num_rows)
+    def shown_words(self):
+        return self.model.stringList()
 
-        for i, word in enumerate(display_words):
-            row = i // num_cols
-            col = i % num_cols
-            item = QTableWidgetItem(word)
-            self.table.setItem(row, col, item)
-            self._apply_cell_highlight(item, word)
+    def flagged_words(self):
+        rows = (self.model.index(r, 0) for r in range(self.model.rowCount()))
+        return [i.data() for i in rows if i.data(Qt.BackgroundRole) is not None]
 
-        # Clear remaining cells in the last row
-        for i in range(len(display_words), num_rows * num_cols):
-            row = i // num_cols
-            col = i % num_cols
-            self.table.setItem(row, col, QTableWidgetItem(""))
+    def select_words(self, words):
+        selection = self.list_view.selectionModel()
+        selection.clearSelection()
+        for r in range(self.model.rowCount()):
+            index = self.model.index(r, 0)
+            if index.data() in words:
+                selection.select(index, QItemSelectionModel.Select)
+
+    def update_button_states(self, *_args):
+        self.btn_remove.setEnabled(self.list_view.selectionModel().hasSelection())
 
     def restore_defaults(self):
         """Turns the custom dictionary off and goes back to the bundled words."""
@@ -230,7 +256,7 @@ class DictEditorPage(BaseEditorPage):
         try:
             self.cb_enable.setChecked(False)
             self.words = self._bundled_words()
-            self.on_search_changed()
+            self._show_words()
             self._on_item_changed()
         finally:
             self.blockSignals(False)
@@ -308,7 +334,7 @@ class DictEditorPage(BaseEditorPage):
         self.words.append(word)
         if sort:
             self.words.sort()
-        self.on_search_changed()
+        self._show_words()
         self._on_item_changed()
 
     def _is_invalid_word(self, word: str) -> bool:
@@ -317,31 +343,8 @@ class DictEditorPage(BaseEditorPage):
             return False
         return " " in word
 
-    def _apply_cell_highlight(self, item: QTableWidgetItem, word: str):
-        """Applies red background and warning icon to items with invalid words."""
-        is_invalid = self._is_invalid_word(word)
-        bg_color = Qt.transparent
-        tooltip = ""
-        icon = QIcon()
-        if is_invalid:
-            bg_color = QColor(Qt.red)
-            bg_color.setAlpha(60)
-            icon = QIcon.fromTheme("dialog-warning")
-            tooltip = _("Warning: Dictionary words should not contain spaces.")
-
-        item.setBackground(bg_color)
-        item.setToolTip(tooltip)
-        item.setIcon(icon)
-
     def on_search_changed(self):
-        """Filters the words and rebuilds the table."""
-        search_text = self.search_input.text().lower().strip()
-        if not search_text:
-            self._rebuild_table()
-            return
-
-        filtered = [w for w in self.words if search_text in w.lower()]
-        self._rebuild_table(filtered)
+        self._show_words()
 
     def on_add(self):
         word = self.input_word.text().strip()
@@ -374,23 +377,15 @@ class DictEditorPage(BaseEditorPage):
             self.btn_add.setIcon(QIcon.fromTheme("list-add"))
             self.btn_add.setText(_("Add"))
 
-    def on_cell_clicked(self, row, column):
-        item = self.table.item(row, column)
-        if item and item.text():
-            self.input_word.setText(item.text())
-        self.update_button_states()
+    def on_word_clicked(self, index):
+        self.input_word.setText(index.data())
 
     def on_remove(self):
-        selected_items = self.table.selectedItems()
-        if not selected_items:
+        selected = {i.data() for i in self.list_view.selectionModel().selectedIndexes()}
+        if not selected:
             return
-
-        for item in selected_items:
-            word = item.text()
-            if word in self.words:
-                self.words.remove(word)
-
-        self.on_search_changed()
+        self.words = [w for w in self.words if w not in selected]
+        self._show_words()
         self.update_button_states()
         self._on_item_changed()
         self._update_add_button_icon()

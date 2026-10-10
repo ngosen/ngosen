@@ -10,7 +10,6 @@ import signal
 import sys
 
 from i18n import setup_i18n
-from qtpy.QtCore import QTimer
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import QApplication
 from ui.main_window import NgoSenSettingsWindow
@@ -24,10 +23,6 @@ def main():
     app.setApplicationName("io.github.ngosen.NgoSen.Settings")
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app.setWindowIcon(QIcon.fromTheme("fcitx-ngosen"))
-
-    timer = QTimer()
-    timer.start(500)
-    timer.timeout.connect(lambda: None)
 
     window = NgoSenSettingsWindow()
     window.show()

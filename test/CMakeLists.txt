@@ -91,6 +91,9 @@ add_lotus_headless_test(ibus_dbus_forward_backspaces
     ibus-dbus-forward-backspaces.cpp "integration;smooth")
 add_lotus_headless_test(cursor_jump_reset
     cursor-jump-reset.cpp "integration;surrounding")
+add_lotus_headless_test(click_switch_fuzz
+    click-switch-fuzz.cpp "integration;surrounding")
+set_tests_properties(click_switch_fuzz PROPERTIES TIMEOUT 120)
 add_lotus_headless_test(cell_click_key_report
     cell-click-key-report.cpp "integration;surrounding")
 add_lotus_headless_test(calc_text_input_cell_click

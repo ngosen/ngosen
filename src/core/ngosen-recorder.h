@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <deque>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace ngosen {
@@ -26,6 +27,7 @@ namespace ngosen {
         std::string dump() const;
         void        clear() {
             events_.clear();
+            droppedField_.reset();
         }
 
       private:
@@ -37,6 +39,8 @@ namespace ngosen {
 
         size_t            capacity_;
         std::deque<Event> events_;
+        // The kept keys are useless for replay without the field they were typed into.
+        std::optional<Event> droppedField_;
     };
 
     // The text around the cursor, cut to what explains a typing error: the whole field may be a long

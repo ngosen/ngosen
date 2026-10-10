@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // On Wayland the IM sees no mouse click; the app only reports the cursor somewhere else in the same text.
-#include "lotus-engine.h"
+#include "ngosen-engine.h"
 #include "test-input-context.h"
 
 #include <fcitx-utils/utf8.h>
@@ -21,7 +21,7 @@ namespace {
     // Plays the app: applies keys, forwarded backspaces and commits to its text and reports it back.
     class FakeApp {
       public:
-        FakeApp(TestInstance& testInstance, fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry) :
+        FakeApp(TestInstance& testInstance, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry) :
             testInstance_(testInstance), engine_(engine), entry_(entry), context_(std::make_unique<TestInputContext>(&testInstance.instance, "gtk4app", "wayland")) {
             context_->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
             context_->focusIn();
@@ -138,7 +138,7 @@ namespace {
         }
 
         TestInstance&                     testInstance_;
-        fcitx::LotusEngine&               engine_;
+        fcitx::NgoSenEngine&              engine_;
         const fcitx::InputMethodEntry&    entry_;
         std::unique_ptr<TestInputContext> context_;
         std::string                       text_;
@@ -157,15 +157,15 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-cursor-jump-reset");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    configureTestPaths("fcitx5-ngosen-cursor-jump-reset");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
     engine.setConfig(config);
-    fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
 
     // Apps repeat an unchanged report; that is not a click and must keep the word.
     {

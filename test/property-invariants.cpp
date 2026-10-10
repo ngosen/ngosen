@@ -33,7 +33,7 @@
  *       -> sequence #0, "P2 preedit has 2 characters after only 1 keys (preedit=cc)"
  *   P3  call RemoveLastChar twice in the Bamboo backspace path
  *       -> sequence #0, "preedit was 'tzưdoxf' before k+BackSpace and 'tzưdox' after"
- *   P4  drop inputPanel().reset() in LotusEngine::deactivate
+ *   P4  drop inputPanel().reset() in NgoSenEngine::deactivate
  *       -> sequence #0, "P4 client preedit still holds 'tzưdoxf' after deactivate"
  *   P5  uppercase any preedit string that was rendered once before
  *       -> sequence #0, "replay yielded preedit=TZưDOXF" against "tzưdoxf"
@@ -57,7 +57,7 @@
  * They deserve their own properties and are out of scope here.
  */
 
-#include "lotus-engine.h"
+#include "ngosen-engine.h"
 #include "test-input-context.h"
 
 #include <fcitx-utils/utf8.h>
@@ -119,7 +119,7 @@ namespace {
 
     class Runner {
       public:
-        Runner(fcitx::LotusEngine& engine, fcitx::Instance& instance) : engine_(engine), instance_(instance) {}
+        Runner(fcitx::NgoSenEngine& engine, fcitx::Instance& instance) : engine_(engine), instance_(instance) {}
 
         // Drives `sequence` through a brand new context. When `checkPerKey` is
         // set, P1/P2 are verified after every single keystroke; `failure` is
@@ -128,7 +128,7 @@ namespace {
             auto context = std::make_unique<TestInputContext>(&instance_);
             context->setCapabilityFlags(fcitx::CapabilityFlag::Preedit);
             context->focusIn();
-            fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+            fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
             fcitx::InputContextEvent activateEvent(context.get(), fcitx::EventType::InputContextFocusIn);
             engine_.activate(entry, activateEvent);
 
@@ -176,7 +176,7 @@ namespace {
             auto context = std::make_unique<TestInputContext>(&instance_);
             context->setCapabilityFlags(fcitx::CapabilityFlag::Preedit);
             context->focusIn();
-            fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+            fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
             fcitx::InputContextEvent activateEvent(context.get(), fcitx::EventType::InputContextFocusIn);
             engine_.activate(entry, activateEvent);
 
@@ -200,18 +200,18 @@ namespace {
         }
 
       private:
-        fcitx::LotusEngine& engine_;
-        fcitx::Instance&    instance_;
+        fcitx::NgoSenEngine& engine_;
+        fcitx::Instance&     instance_;
     };
 
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-property-invariants");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
+    configureTestPaths("fcitx5-ngosen-property-invariants");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
 
-    fcitx::RawConfig   config;
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Preedit");
     config.setValueByPath("InputMethod", "Telex");
     // See the file header: each of these may rewrite or lengthen a composition
@@ -221,7 +221,7 @@ int main() {
     config.setValueByPath("SpellCheck", "False");
     config.setValueByPath("AutoNonVnRestore", "False");
     engine.setConfig(config);
-    if (engine.config().mode.value() != fcitx::LotusMode::Preedit || engine.config().inputMethod.value() != "Telex") {
+    if (engine.config().mode.value() != fcitx::NgoSenMode::Preedit || engine.config().inputMethod.value() != "Telex") {
         reportFailure("configure Preedit/Telex", "mode=Preedit, input method=Telex", "configured mode or input method differs",
                       "the property test cannot exercise client preedit behavior");
         return 1;

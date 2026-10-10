@@ -3,7 +3,7 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 set(SETTINGS_GUI_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/settings-gui")
 set(SETTINGS_GUI_FULL_PATH "${CMAKE_INSTALL_FULL_DATADIR}/${PROJECT_NAME}/settings-gui")
 
-option(LOTUS_BYTECOMPILE_PYTHON "Byte-compile Python scripts during install" ON)
+option(NGOSEN_BYTECOMPILE_PYTHON "Byte-compile Python scripts during install" ON)
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/version.py.in"
@@ -32,7 +32,7 @@ exec \"${SETTINGS_GUI_FULL_PATH}/main.py\" \"$@\"
 install(PROGRAMS "${LAUNCHER_SCRIPT}"
         DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
-if(LOTUS_BYTECOMPILE_PYTHON)
+if(NGOSEN_BYTECOMPILE_PYTHON)
     install(CODE "
         message(STATUS \"Byte-compiling Python scripts...\")
         execute_process(

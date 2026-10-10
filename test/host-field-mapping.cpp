@@ -173,7 +173,7 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-host-field-mapping");
+    configureTestPaths("fcitx5-ngosen-host-field-mapping");
     TestInstance testInstance;
     checkFlags(testInstance);
     checkSurrounding(testInstance);

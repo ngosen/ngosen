@@ -1,10 +1,12 @@
 /*
+ * SPDX-FileCopyrightText: 2026 Ngó Sen contributors
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
 
-#include "lotus-gnome-theme.h"
-#include "lotus-utils.h"
+#include "ngosen-gnome-theme.h"
+#include "ngosen-utils.h"
 
 #include <algorithm>
 #include <array>

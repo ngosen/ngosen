@@ -1,10 +1,13 @@
 /*
+ * SPDX-FileCopyrightText: 2026 Ngó Sen contributors
+ * SPDX-FileCopyrightText: 2026 Nguyễn Hoàng Kỳ  <nhktmdzhg@gmail.com>
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
 
 /**
- * @file lotus-plasma-theme.h
+ * @file ngosen-plasma-theme.h
  * @brief Detects whether the KDE Plasma panel is dark.
  *
  * KDE keeps two independent colour settings: the application colour scheme
@@ -17,8 +20,8 @@
  * Only plain config/data files are read; no subprocess is spawned.
  */
 
-#ifndef _FCITX5_LOTUS_PLASMA_THEME_H_
-#define _FCITX5_LOTUS_PLASMA_THEME_H_
+#ifndef _FCITX5_NGOSEN_PLASMA_THEME_H_
+#define _FCITX5_NGOSEN_PLASMA_THEME_H_
 
 #include <optional>
 #include <string>
@@ -62,4 +65,4 @@ namespace fcitx {
 
 } // namespace fcitx
 
-#endif // _FCITX5_LOTUS_PLASMA_THEME_H_
+#endif // _FCITX5_NGOSEN_PLASMA_THEME_H_

@@ -8,7 +8,7 @@
 // NGOSEN_FUZZ_RUNS sets the number of scenarios (default 2); NGOSEN_FUZZ_SEED repeats one and prints
 // its typing log if it fails. NGOSEN_TEST_LOG=1 shows the engine's log.
 
-#include "lotus-engine.h"
+#include "ngosen-engine.h"
 #include "ngosen-globals.h"
 #include "test-input-context.h"
 
@@ -86,7 +86,7 @@ namespace {
     // and every change is reported back when the field reports surrounding text.
     class App {
       public:
-        App(TestInstance& t, fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, const std::string& program, const std::string& frontend, bool surrounding,
+        App(TestInstance& t, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, const std::string& program, const std::string& frontend, bool surrounding,
             bool clicksSeen) :
             engine_(engine), entry_(entry), context_(std::make_unique<OrderedContext>(&t.instance, program, frontend)), surrounding_(surrounding), clicksSeen_(clicksSeen) {
             context_->setCapabilityFlags(surrounding ? fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText} : fcitx::CapabilityFlags{});
@@ -184,7 +184,7 @@ namespace {
             context_->updateSurroundingText();
         }
 
-        fcitx::LotusEngine&             engine_;
+        fcitx::NgoSenEngine&            engine_;
         const fcitx::InputMethodEntry&  entry_;
         std::unique_ptr<OrderedContext> context_;
         bool                            surrounding_;
@@ -270,7 +270,7 @@ namespace {
         }
     }
 
-    std::vector<std::string> typeScenario(TestInstance& t, fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, const std::vector<Step>& steps) {
+    std::vector<std::string> typeScenario(TestInstance& t, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, const std::vector<Step>& steps) {
         std::vector<std::unique_ptr<App>> apps;
         for (const auto& k : kinds)
             apps.push_back(std::make_unique<App>(t, engine, entry, k.program, k.frontend, k.surrounding, k.clicksSeen));
@@ -301,8 +301,8 @@ namespace {
 
     // Types one run of keys calmly into a fresh field of the same kind holding text, with the cursor
     // at cursor, and leaves the field's text and cursor there.
-    void typeCalmly(TestInstance& t, fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, const AppKind& kind, const std::vector<uint32_t>& keys, std::u32string& text,
-                    size_t& cursor) {
+    void typeCalmly(TestInstance& t, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, const AppKind& kind, const std::vector<uint32_t>& keys,
+                    std::u32string& text, size_t& cursor) {
         std::vector<std::unique_ptr<App>> apps;
         apps.push_back(std::make_unique<App>(t, engine, entry, kind.program, kind.frontend, kind.surrounding, kind.clicksSeen));
         App& app = *apps.front();
@@ -321,7 +321,7 @@ namespace {
 
     // The texts the apps should end with: each run of keys between clicks and switches gives what
     // it gives typed calmly at the same place.
-    std::vector<std::string> expectedTexts(TestInstance& t, fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, const std::vector<Step>& steps) {
+    std::vector<std::string> expectedTexts(TestInstance& t, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, const std::vector<Step>& steps) {
         std::vector<std::u32string> texts(appCount);
         std::vector<size_t>         cursors(appCount, 0);
         int                         current = 0;
@@ -374,14 +374,14 @@ int main() {
     configureTestPaths("fcitx5-ngosen-click-switch-fuzz");
     if (std::getenv("NGOSEN_TEST_LOG") != nullptr)
         fcitx::Log::setLogRule("ngosen=5");
-    TestInstance       t;
-    fcitx::LotusEngine engine(&t.instance);
-    fcitx::RawConfig   config;
+    TestInstance        t;
+    fcitx::NgoSenEngine engine(&t.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
     engine.setConfig(config);
-    fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
 
     const unsigned long     runs     = envNumber("NGOSEN_FUZZ_RUNS", 2);
     const unsigned long     seedBase = envNumber("NGOSEN_FUZZ_SEED", 1);

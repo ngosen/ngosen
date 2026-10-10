@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-#include "lotus-utils.h"
-#include "lotus-config.h"
+#include "ngosen-utils.h"
+#include "ngosen-config.h"
 
 #include <cstddef>
 #include <cstdlib>
@@ -19,14 +19,14 @@
 #include <chrono>
 #include <cstring>
 
-FCITX_DEFINE_LOG_CATEGORY(lotus, "ngosen", fcitx::LogLevel::NoLog);
+FCITX_DEFINE_LOG_CATEGORY(ngosenLog, "ngosen", fcitx::LogLevel::NoLog);
 
 int64_t now_ms() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
-bool isUinputMode(fcitx::LotusMode mode) {
-    return mode == fcitx::LotusMode::Sen;
+bool isUinputMode(fcitx::NgoSenMode mode) {
+    return mode == fcitx::NgoSenMode::Sen;
 }
 
 std::string getFrontendName(fcitx::InputContext* ic) {

@@ -3,8 +3,8 @@
 // Messenger in Edge (Wayland) answers a uinput backspace with two surrounding-text updates: first the
 // cursor moves back ("tie\n\n", cursor 2), then the text catches up ("ti\n\n", cursor 2). A commit
 // sent between the two is dropped by the page, so the first one must not count as done (#267).
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "key-sender-probe.h"
 #include "test-input-context.h"
 
@@ -32,7 +32,7 @@ namespace {
         context.updateSurroundingText();
     }
 
-    bool type(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool accepted) {
+    bool type(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool accepted) {
         fcitx::KeyEvent event(&context, fcitx::Key(symbol), false);
         engine.keyEvent(entry, event);
         if (event.accepted() != accepted) {
@@ -45,10 +45,10 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-super-smooth-half-updated-snapshot");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    configureTestPaths("fcitx5-ngosen-super-smooth-half-updated-snapshot");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
@@ -58,7 +58,7 @@ int main() {
     config.setValueByPath("WaitSurroundingSettleMs", "0");
     config.setValueByPath("WaitSurroundingSettleFirstWordMs", "0");
     engine.setConfig(config);
-    if (engine.config().mode.value() != fcitx::LotusMode::Sen || !engine.config().waitSurroundingEvent.value()) {
+    if (engine.config().mode.value() != fcitx::NgoSenMode::Sen || !engine.config().waitSurroundingEvent.value()) {
         reportFailure("configure Uinput", "mode=Uinput, WaitSurroundingEvent=True", "config differs");
         return 1;
     }
@@ -67,7 +67,7 @@ int main() {
     auto           context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 

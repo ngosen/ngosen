@@ -1,7 +1,6 @@
 #!/bin/bash
 # Fails when a change adds a file, or declares a type, constant, macro or function, whose name contains
-# "lotus". The project is Ngó Sen now; existing lotus names stay until there is a reason to touch them,
-# and calling them is fine.
+# "lotus". The project is Ngó Sen; the lotus names left are legacy names users' machines still have.
 #
 #   misc/check-new-names.sh [base]   compare HEAD with base (default origin/main)
 #   misc/check-new-names.sh --self-test

@@ -7,26 +7,22 @@
  */
 
 /**
- * @file lotus-utils.h
- * @brief Utility functions and global state for fcitx5-lotus.
+ * @file ngosen-utils.h
+ * @brief Utility functions and global state for Ngó Sen.
  */
 
-#ifndef _FCITX5_LOTUS_UTILS_H_
-#define _FCITX5_LOTUS_UTILS_H_
+#ifndef _FCITX5_NGOSEN_UTILS_H_
+#define _FCITX5_NGOSEN_UTILS_H_
 
 #include <fcitx-utils/log.h>
 #include <fcitx/inputcontext.h>
 
-#include "lotus-config.h"
+#include "ngosen-config.h"
 #include "ngosen-globals.h"
+#include "ngosen-log.h"
 #include "ngosen-strings.h"
 
-FCITX_DECLARE_LOG_CATEGORY(lotus);
-
-#define LOTUS_DEBUG(msg) FCITX_LOGC(lotus, Debug) << "[DEBUG] " << msg
-#define LOTUS_INFO(msg)  FCITX_LOGC(lotus, Info) << "[INFO] " << msg
-#define LOTUS_WARN(msg)  FCITX_LOGC(lotus, Warn) << "[WARN] " << msg
-#define LOTUS_ERROR(msg) FCITX_LOGC(lotus, Error) << "[ERROR] " << msg
+FCITX_DECLARE_LOG_CATEGORY(ngosenLog);
 
 // Forward declaration for fcitx types
 using KeySym = uint32_t;
@@ -42,7 +38,7 @@ int64_t now_ms();
  * @param mode Mode to check.
  * @return True for Sen.
  */
-bool isUinputMode(fcitx::LotusMode mode);
+bool isUinputMode(fcitx::NgoSenMode mode);
 
 /**
  * @brief Get the frontend name from the input context.
@@ -70,4 +66,4 @@ bool dropStaleSurroundingText(fcitx::InputContext* ic);
  */
 std::string getEnv(const std::string& name);
 
-#endif // _FCITX5_LOTUS_UTILS_H_
+#endif // _FCITX5_NGOSEN_UTILS_H_

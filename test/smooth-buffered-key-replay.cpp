@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "key-sender-probe.h"
 #include "test-input-context.h"
 
@@ -22,7 +22,7 @@ namespace {
         std::cerr << "Meaning: " << meaning << '\n';
     }
 
-    bool send(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool requireAccepted) {
+    bool send(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool requireAccepted) {
         fcitx::KeyEvent event(&context, fcitx::Key(symbol), false);
         engine.keyEvent(entry, event);
         if (event.accepted() != requireAccepted) {
@@ -41,14 +41,14 @@ int main() {
     // abstract name a running fcitx5-lotus-server already holds, so the test
     // only passes on machines where the product is not running.
 
-    configureTestPaths("fcitx5-lotus-smooth-buffered-key-replay");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    configureTestPaths("fcitx5-ngosen-smooth-buffered-key-replay");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     engine.setConfig(config);
-    if (engine.config().mode.value() != fcitx::LotusMode::Sen || engine.config().inputMethod.value() != "Telex") {
+    if (engine.config().mode.value() != fcitx::NgoSenMode::Sen || engine.config().inputMethod.value() != "Telex") {
         reportFailure("configure Uinput/Telex", "mode=Uinput, input method=Telex", "configured mode or input method differs",
                       "the replay test cannot exercise Uinput Telex behavior");
         return 1;
@@ -57,7 +57,7 @@ int main() {
     KeySenderProbe listener;
     auto           context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
     context->resetPreeditUpdateCount();

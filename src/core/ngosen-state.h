@@ -39,7 +39,7 @@ struct KeyEntry {
 };
 
 namespace fcitx {
-    class LotusEngine;
+    class NgoSenEngine;
 }
 
 namespace ngosen {
@@ -116,7 +116,7 @@ namespace ngosen {
          * @return True if no history.
          */
         bool isEmptyHistory() const;
-        friend class fcitx::LotusEngine;
+        friend class fcitx::NgoSenEngine;
 
         /**
          * @brief Commits text still waiting for the app before the input context loses focus.

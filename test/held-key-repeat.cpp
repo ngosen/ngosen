@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "key-sender-probe.h"
 #include "test-input-context.h"
 
@@ -50,10 +50,10 @@ int main(int argc, char** argv) {
     // Own a private socket name so a running fcitx5-lotus-server does not
     // already hold the one the listener binds.
 
-    configureTestPaths("fcitx5-lotus-held-key-repeat");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    configureTestPaths("fcitx5-ngosen-held-key-repeat");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     engine.setConfig(config);
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
     KeySenderProbe listener;
     auto           context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
     context->resetPreeditUpdateCount();
@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
     //
     // The window model matters. In Uinput mode the uinput server passes the
     // physical keystroke straight to the application, so every press shows up
-    // there on its own; Lotus only corrects afterwards with backspaces and a
+    // there on its own; the engine only corrects afterwards with backspaces and a
     // commit. Counting commits alone would understate what the user sees.
     const int                kHeldPresses = 12;
     int                      sent         = 0;

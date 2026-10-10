@@ -7,12 +7,12 @@
  */
 
 /**
- * @file lotus-monitor.h
- * @brief Input monitoring and timing utilities for fcitx5-lotus.
+ * @file ngosen-monitor.h
+ * @brief Input monitoring and timing utilities for Ngó Sen.
  */
 
-#ifndef _FCITX5_LOTUS_MONITOR_H_
-#define _FCITX5_LOTUS_MONITOR_H_
+#ifndef _FCITX5_NGOSEN_MONITOR_H_
+#define _FCITX5_NGOSEN_MONITOR_H_
 
 #include <thread>
 
@@ -30,4 +30,4 @@ void mousePressResetThread();
  */
 void startMouseReset();
 
-#endif // _FCITX5_LOTUS_MONITOR_H_
+#endif // _FCITX5_NGOSEN_MONITOR_H_

@@ -8,7 +8,7 @@
 // application colour scheme and the breeze-dark Plasma Style, stored in
 // ~/.config/kdedefaults, so the tray icon must be the white one.
 //
-#include "lotus-plasma-theme.h"
+#include "ngosen-plasma-theme.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -54,7 +54,7 @@ namespace {
         fs::path                      root;
         fcitx::PlasmaThemeSearchPaths paths;
 
-        explicit Tree(const char* name) : root(fs::temp_directory_path() / ("lotus-plasma-theme-test-" + std::to_string(getpid()) + "-" + name)) {
+        explicit Tree(const char* name) : root(fs::temp_directory_path() / ("ngosen-plasma-theme-test-" + std::to_string(getpid()) + "-" + name)) {
             fs::remove_all(root);
             paths.configHome = (root / "config").string();
             paths.configDirs = {(root / "config/kdedefaults").string(), (root / "etc/xdg").string()};

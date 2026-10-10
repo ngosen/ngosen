@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-Dictionary Editor Page. Edits ngosen-dict-table.conf.
+Dictionary Editor Page. Edits the user dictionary.
 Implements UI with row reordering and TSV import/export.
 """
 
 import os
 import tempfile
 
-from core.dbus_handler import LotusDBusHandler
+from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor, QIcon
@@ -32,11 +32,11 @@ from ui.pages.dynamic_settings import CardWidget
 
 
 class DictEditorPage(BaseEditorPage):
-    """UI for editing Lotus dictionary."""
+    """UI for editing the Ngó Sen dictionary."""
 
     def __init__(
         self,
-        dbus_handler: LotusDBusHandler,
+        dbus_handler: NgoSenDBusHandler,
         parent=None,
     ):
         super().__init__(parent)

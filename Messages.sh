@@ -37,8 +37,8 @@ settings-gui/io.github.ngosen.NgoSen.Settings.desktop.in
     echo '"Content-Type: text/plain; charset=UTF-8\n"'
     echo ""
     grep -hE "^Name=" \
-    src/lotus.conf.in \
-    src/lotus-addon.conf.in.in \
+    src/ngosen.conf.in \
+    src/ngosen-addon.conf.in.in \
     | sed 's/^Name=\(.*\)/msgid "\1"\nmsgstr ""\n/'
 } > /tmp/ngosen-conf.pot
 

@@ -6,6 +6,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-#include "lotus-engine.h"
+#include "ngosen-engine.h"
 
-FCITX_ADDON_FACTORY(fcitx::LotusFactory)
+FCITX_ADDON_FACTORY(fcitx::NgoSenFactory)

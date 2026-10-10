@@ -9,7 +9,7 @@
 
 namespace ngosen {
 
-    // The typing modes. The config names in lotus-config.h follow this order.
+    // The typing modes. The config names in ngosen-config.h follow this order.
     enum class Mode : std::uint8_t {
         Off,
         Sen,

@@ -1,8 +1,8 @@
 [English](CONTRIBUTING.en.md) | [Tiếng Việt](CONTRIBUTING.md)
 
-# Contributing to fcitx5-lotus
+# Contributing to Ngó Sen
 
-Thank you for your interest in contributing to the fcitx5-lotus project! This document guides you on how to participate in project development.
+Thank you for your interest in contributing to Ngó Sen! This document guides you on how to participate in project development.
 
 ## 📋 Table of Contents
 
@@ -30,7 +30,7 @@ Thank you for your interest in contributing to the fcitx5-lotus project! This do
 ```bash
 # Clone repository
 git clone https://github.com/LotusInputMethod/fcitx5-lotus.git
-cd fcitx5-lotus
+cd ngosen
 
 # Initialize submodules
 git submodule update --init --recursive
@@ -48,8 +48,8 @@ make -j$(nproc)
 Fork this repository on GitHub and clone your fork to your machine.
 
 ```bash
-git clone https://github.com/yourusername/fcitx5-lotus.git
-cd fcitx5-lotus
+git clone https://github.com/yourusername/ngosen.git
+cd ngosen
 git remote add upstream https://github.com/LotusInputMethod/fcitx5-lotus.git
 ```
 
@@ -192,7 +192,7 @@ feature/*, fix/*, hotfix/*  ← Personal branch for each PR
 
 When reporting a bug, please provide:
 
-- fcitx5-lotus version
+- Ngó Sen version
 - Operating system and version
 - Steps to reproduce the bug
 - Log or screenshot (if any) (Log via `fcitx5-diagnose` command)

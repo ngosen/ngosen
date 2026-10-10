@@ -4,7 +4,7 @@
  * @brief Headless test: a fresh install enables the Messenger fixes without editing ngosen.conf.
  */
 
-#include "lotus-engine.h"
+#include "ngosen-engine.h"
 #include "test-input-context.h"
 
 #include <iostream>
@@ -24,11 +24,11 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-messenger-defaults");
+    configureTestPaths("fcitx5-ngosen-messenger-defaults");
 
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    const auto&        config = engine.config();
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    const auto&         config = engine.config();
 
     check("WaitSurroundingEvent defaults to on", config.waitSurroundingEvent.value());
     check("MessengerSelectOvertype defaults to on", config.messengerSelectOvertype.value());

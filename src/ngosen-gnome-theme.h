@@ -1,10 +1,12 @@
 /*
+ * SPDX-FileCopyrightText: 2026 Ngó Sen contributors
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
 
 /**
- * @file lotus-gnome-theme.h
+ * @file ngosen-gnome-theme.h
  * @brief Detects whether the GNOME Shell top bar is dark.
  *
  * Tray icons sit on the top bar, which the shell stylesheet paints, while the
@@ -15,8 +17,8 @@
  * extension first, then the session mode's own stylesheet.
  */
 
-#ifndef _FCITX5_LOTUS_GNOME_THEME_H_
-#define _FCITX5_LOTUS_GNOME_THEME_H_
+#ifndef _FCITX5_NGOSEN_GNOME_THEME_H_
+#define _FCITX5_NGOSEN_GNOME_THEME_H_
 
 #include <optional>
 #include <string>
@@ -75,4 +77,4 @@ namespace fcitx {
 
 } // namespace fcitx
 
-#endif // _FCITX5_LOTUS_GNOME_THEME_H_
+#endif // _FCITX5_NGOSEN_GNOME_THEME_H_

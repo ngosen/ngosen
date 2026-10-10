@@ -6,7 +6,7 @@ Macro Editor Page. Edits ngosen-macro-table.conf.
 Implements UI with row reordering and TSV import/export.
 """
 
-from core.dbus_handler import LotusDBusHandler
+from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor, QIcon
@@ -31,11 +31,11 @@ from ui.pages.dynamic_settings import CardWidget
 
 
 class MacroEditorPage(BaseEditorPage):
-    """UI for editing Lotus macros."""
+    """UI for editing Ngó Sen macros."""
 
     def __init__(
         self,
-        dbus_handler: LotusDBusHandler,
+        dbus_handler: NgoSenDBusHandler,
         parent=None,
     ):
         super().__init__(parent)

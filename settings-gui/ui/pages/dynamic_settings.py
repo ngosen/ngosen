@@ -7,7 +7,7 @@ Dynamic Settings Page with Card-based Layout matching modern guidelines.
 
 from enum import Enum
 
-from core.dbus_handler import LotusDBusHandler
+from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import QSize, Qt, QTimer
 from qtpy.QtGui import QIcon
@@ -129,7 +129,7 @@ class CardWidget(QFrame):
 class DynamicSettingsPage(QWidget):
     def __init__(
         self,
-        dbus_handler: LotusDBusHandler,
+        dbus_handler: NgoSenDBusHandler,
         category: SettingsCategory = SettingsCategory.GENERAL,
         parent=None,
     ):
@@ -642,7 +642,7 @@ class DynamicSettingsPage(QWidget):
         if key in MODE_SHORTCUT_KEYS or key in MODE_SHORTCUT_TO_VISIBILITY.values():
             self._validate_mode_shortcuts()
 
-        # Notify the parent window (LotusSettingsWindow) if it exists
+        # Notify the parent window (NgoSenSettingsWindow) if it exists
         main_win = self.window()
         if hasattr(main_win, "on_changed"):
             main_win.on_changed()

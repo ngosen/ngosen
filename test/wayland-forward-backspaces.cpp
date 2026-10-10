@@ -3,8 +3,8 @@
 // On the Wayland frontends ("wayland" is input-method-v1 as in KWin, "wayland_v2" is v2 as in Sway and
 // Hyprland) the backspaces of a replacement go through forwardKey instead of real key presses, and the
 // commit still waits until the app reports the deletion done.
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "key-sender-probe.h"
 #include "test-input-context.h"
 
@@ -33,7 +33,7 @@ namespace {
         context.updateSurroundingText();
     }
 
-    bool type(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool accepted) {
+    bool type(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInputContext& context, fcitx::KeySym symbol, bool accepted) {
         fcitx::KeyEvent event(&context, fcitx::Key(symbol), false);
         engine.keyEvent(entry, event);
         if (event.accepted() != accepted) {
@@ -50,7 +50,7 @@ namespace {
         return out.empty() ? "(none)" : out;
     }
 
-    bool replacesThroughForward(fcitx::LotusEngine& engine, const fcitx::InputMethodEntry& entry, TestInstance& testInstance, const std::string& frontend) {
+    bool replacesThroughForward(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInstance& testInstance, const std::string& frontend) {
         auto context = std::make_unique<TestInputContext>(&testInstance.instance, "test", frontend);
         context->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
         context->focusIn();
@@ -94,10 +94,10 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-wayland-forward-backspaces");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    configureTestPaths("fcitx5-ngosen-wayland-forward-backspaces");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
@@ -107,7 +107,7 @@ int main() {
     engine.setConfig(config);
 
     KeySenderProbe          keys;
-    fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
     for (const char* frontend : {"wayland", "wayland_v2"}) {
         if (!replacesThroughForward(engine, entry, testInstance, frontend))
             return 1;

@@ -2,7 +2,7 @@
 //
 // The typing logic reads ngosen::Options, a copy of ngosen.conf. Every way the configuration changes
 // (settings window, a menu toggle, the charset menu) must update that copy.
-#include "lotus-engine.h"
+#include "ngosen-engine.h"
 #include "test-input-context.h"
 
 #include <fcitx/action.h>
@@ -57,7 +57,7 @@ namespace {
         return c;
     }
 
-    void checkMatches(const std::string& step, const fcitx::LotusEngine& engine) {
+    void checkMatches(const std::string& step, const fcitx::NgoSenEngine& engine) {
         const auto& c = engine.config();
         const auto& o = engine.options();
         check(step + ": InputMethod", o.inputMethod == c.inputMethod.value());
@@ -99,9 +99,9 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-lotus-options-sync");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
+    configureTestPaths("fcitx5-ngosen-options-sync");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
     checkMatches("defaults", engine);
 
     engine.setConfig(changedConfig());

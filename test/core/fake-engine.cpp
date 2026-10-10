@@ -33,7 +33,7 @@ namespace ngosen::test {
         static const bool initialized = (Init(), true);
         (void)initialized;
 
-        // Defaults of lotus-config.h.
+        // Defaults of ngosen-config.h.
         options_.inputMethod                      = "Telex";
         options_.outputCharset                    = "Unicode";
         options_.spellCheck                       = true;

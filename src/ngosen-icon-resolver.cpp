@@ -5,7 +5,7 @@
  *
  */
 
-#include "lotus-icon-resolver.h"
+#include "ngosen-icon-resolver.h"
 #include <unistd.h>
 
 namespace fcitx {
@@ -22,7 +22,7 @@ namespace fcitx {
         return dir + "/" + name;
     }
 
-    std::string resolveLotusIconPath(const std::vector<std::string>& names, const LotusIconSearchPaths& paths) {
+    std::string resolveNgoSenIconPath(const std::vector<std::string>& names, const NgoSenIconSearchPaths& paths) {
         // 1. Probe each candidate name in each system directory.
         //    SVG first (crisp at any size); PNG only as a raster fallback
         //    when the directory has no SVG.

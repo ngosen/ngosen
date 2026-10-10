@@ -4,8 +4,8 @@
 // keycode with the same timestamp. It must go to the app again, not be typed a second time.
 // Other frontends never do that, and WPS's fcitx4 plugin stamps keys in whole seconds, so there two
 // quick presses of one key share a time and both must be typed.
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "test-input-context.h"
 
 #include <cstdlib>
@@ -31,7 +31,7 @@ namespace {
     constexpr int CodeO = 32;
 
     struct Harness {
-        fcitx::LotusEngine&            engine;
+        fcitx::NgoSenEngine&           engine;
         const fcitx::InputMethodEntry& entry;
         TestInputContext&              context;
 
@@ -52,16 +52,16 @@ int main() {
     unsetenv("WAYLAND_DISPLAY");
 
     configureTestPaths("fcitx5-ngosen-xim-key-handback");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     engine.setConfig(config);
 
     auto context = std::make_unique<TestInputContext>(&testInstance.instance, "test", "xim");
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 

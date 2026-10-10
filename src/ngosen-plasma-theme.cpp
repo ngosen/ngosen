@@ -1,10 +1,13 @@
 /*
+ * SPDX-FileCopyrightText: 2026 Ngó Sen contributors
+ * SPDX-FileCopyrightText: 2026 Nguyễn Hoàng Kỳ  <nhktmdzhg@gmail.com>
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
 
-#include "lotus-plasma-theme.h"
-#include "lotus-utils.h"
+#include "ngosen-plasma-theme.h"
+#include "ngosen-utils.h"
 
 #include <algorithm>
 #include <array>

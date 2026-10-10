@@ -15,8 +15,8 @@
  * asserts the resolved mode is still the rule (Off).
  */
 
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "test-input-context.h"
 
 #include <filesystem>
@@ -34,12 +34,12 @@ namespace {
         std::cerr << "Meaning: " << meaning << '\n';
     }
 
-    std::string modeName(fcitx::LotusMode mode) {
+    std::string modeName(fcitx::NgoSenMode mode) {
         switch (mode) {
-            case fcitx::LotusMode::Off: return "Off";
-            case fcitx::LotusMode::Preedit: return "Preedit";
-            case fcitx::LotusMode::Sen: return "Sen";
-            case fcitx::LotusMode::Emoji: return "Emoji";
+            case fcitx::NgoSenMode::Off: return "Off";
+            case fcitx::NgoSenMode::Preedit: return "Preedit";
+            case fcitx::NgoSenMode::Sen: return "Sen";
+            case fcitx::NgoSenMode::Emoji: return "Emoji";
             default: return "Unknown";
         }
     }
@@ -47,7 +47,7 @@ namespace {
 } // namespace
 
 int main() {
-    const char* testName = "fcitx5-lotus-app-rule-reset";
+    const char* testName = "fcitx5-ngosen-app-rule-reset";
     configureTestPaths(testName);
 
     // Per-app rule for the mock context's program name ("test"): Off.
@@ -63,26 +63,26 @@ int main() {
         file << "test=0\n";
     }
 
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
 
     // Global mode Preedit, differing from the app's Off rule.
     fcitx::RawConfig config;
     config.setValueByPath("Mode", "Preedit");
     config.setValueByPath("InputMethod", "Telex");
     engine.setConfig(config);
-    if (engine.config().mode.value() != fcitx::LotusMode::Preedit) {
+    if (engine.config().mode.value() != fcitx::NgoSenMode::Preedit) {
         reportFailure("configure global Preedit", "mode=Preedit", "global mode differs", "the test needs the global mode to differ from the app rule");
         return 1;
     }
 
     auto context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->focusIn();
-    fcitx::InputMethodEntry  entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 
-    if (::realMode.load() != fcitx::LotusMode::Off) {
+    if (::realMode.load() != fcitx::NgoSenMode::Off) {
         reportFailure("activate with rule Off", "realMode=Off", "realMode=" + modeName(::realMode.load()), "activate() must resolve the per-app rule for the focused window");
         return 1;
     }
@@ -95,7 +95,7 @@ int main() {
     reloaded.setValueByPath("InputMethod", "Telex");
     engine.setConfig(reloaded);
 
-    if (::realMode.load() != fcitx::LotusMode::Off) {
+    if (::realMode.load() != fcitx::NgoSenMode::Off) {
         reportFailure("config reload keeps focused app rule", "realMode=Off", "realMode=" + modeName(::realMode.load()),
                       "a config reload must not reset the focused window from its per-app rule back to the global mode");
         return 1;

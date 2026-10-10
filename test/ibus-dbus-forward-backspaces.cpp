@@ -3,8 +3,8 @@
 // On the ibus, dbus and fcitx4 frontends the backspaces of a replacement go to the app through
 // forwardKey, or through deleteSurroundingText for GTK4 clients, which drop forwarded keys. SDL clients
 // take neither, so they get nothing; on X11 they get XTEST keys (x11-xtest-replacement.cpp).
-#include "lotus-engine.h"
-#include "lotus-utils.h"
+#include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "test-input-context.h"
 
 #include <cstddef>
@@ -45,7 +45,7 @@ namespace {
 
     struct Harness {
         TestInstance&                     testInstance;
-        fcitx::LotusEngine&               engine;
+        fcitx::NgoSenEngine&              engine;
         fcitx::InputMethodEntry&          entry;
 
         std::unique_ptr<TestInputContext> open(const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
@@ -228,16 +228,16 @@ namespace {
 int main() {
     setenv("XDG_CURRENT_DESKTOP", "KDE", 1);
 
-    configureTestPaths("fcitx5-lotus-ibus-dbus-forward-backspaces");
-    TestInstance       testInstance;
-    fcitx::LotusEngine engine(&testInstance.instance);
-    fcitx::RawConfig   config;
+    configureTestPaths("fcitx5-ngosen-ibus-dbus-forward-backspaces");
+    TestInstance        testInstance;
+    fcitx::NgoSenEngine engine(&testInstance.instance);
+    fcitx::RawConfig    config;
     config.setValueByPath("Mode", "Sen");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
     engine.setConfig(config);
 
-    fcitx::InputMethodEntry entry("lotus", "Lotus", "vi", "lotus");
+    fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
     Harness                 h{testInstance, engine, entry};
 
     if (!dbusForwardsAndWaitsForDeletion(h))

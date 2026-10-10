@@ -9,7 +9,7 @@
 #include <fcitx-utils/log.h>
 #include <fcitx/addonfactory.h>
 #include <fcitx/addoninstance.h>
-#if LOTUS_USE_MODERN_FCITX_API
+#if NGOSEN_USE_MODERN_FCITX_API
 #include <fcitx-utils/standardpaths.h>
 #else
 #include <fcitx-utils/standardpath.h>
@@ -28,7 +28,7 @@ namespace {
 
       private:
         static void copyUserFiles() {
-#if LOTUS_USE_MODERN_FCITX_API
+#if NGOSEN_USE_MODERN_FCITX_API
             const auto& paths   = fcitx::StandardPaths::global();
             const auto  confDir = paths.userDirectory(fcitx::StandardPathsType::PkgConfig) / "conf";
             const auto  dataDir = paths.userDirectory(fcitx::StandardPathsType::PkgData);
@@ -45,7 +45,7 @@ namespace {
 
         static void renameInProfile() {
             // With fcitx5-lotus installed, "lotus" in the profile is that input method; leave it.
-#if LOTUS_USE_MODERN_FCITX_API
+#if NGOSEN_USE_MODERN_FCITX_API
             if (!fcitx::StandardPaths::global().locate(fcitx::StandardPathsType::PkgData, "inputmethod/lotus.conf").empty()) {
                 return;
             }

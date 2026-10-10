@@ -6,8 +6,8 @@
  */
 
 /**
- * @file lotus-icon-resolver.h
- * @brief Absolute-path resolution for Lotus tray/status icons.
+ * @file ngosen-icon-resolver.h
+ * @brief Absolute-path resolution for Ngó Sen tray/status icons.
  *
  * The fcitx5 SNI tray host resolves the engine icon through the active
  * XDG icon theme.  Themes other than Breeze (or themes not inheriting
@@ -18,15 +18,15 @@
  * property, bypassing the theme lookup entirely.
  */
 
-#ifndef _FCITX5_LOTUS_ICON_RESOLVER_H_
-#define _FCITX5_LOTUS_ICON_RESOLVER_H_
+#ifndef _FCITX5_NGOSEN_ICON_RESOLVER_H_
+#define _FCITX5_NGOSEN_ICON_RESOLVER_H_
 
 #include <string>
 #include <vector>
 
 namespace fcitx {
 
-    struct LotusIconSearchPaths {
+    struct NgoSenIconSearchPaths {
         // System install directories, searched in order.  Each is probed as
         // "<dir>/<name>.svg" then "<dir>/<name>.png" (SVG first; PNG only as
         // a raster fallback).
@@ -37,7 +37,7 @@ namespace fcitx {
     };
 
     /**
-     * @brief Resolves the absolute path of a Lotus icon.
+     * @brief Resolves the absolute path of a Ngó Sen icon.
      *
      * Probes each candidate name (variant first, plain mode icon second) in
      * every system directory, SVG before PNG.  Returns the fallback path if
@@ -47,8 +47,8 @@ namespace fcitx {
      * @param paths Search paths.
      * @return Absolute path to the resolved icon.
      */
-    std::string resolveLotusIconPath(const std::vector<std::string>& names, const LotusIconSearchPaths& paths);
+    std::string resolveNgoSenIconPath(const std::vector<std::string>& names, const NgoSenIconSearchPaths& paths);
 
 } // namespace fcitx
 
-#endif // _FCITX5_LOTUS_ICON_RESOLVER_H_
+#endif // _FCITX5_NGOSEN_ICON_RESOLVER_H_

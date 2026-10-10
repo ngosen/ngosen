@@ -26,7 +26,7 @@ sang, bộ gõ vẫn nằm trong danh sách, gõ ra đúng chữ.
 Lõi ghép dấu viết bằng Rust có trong gói Fedora, Arch, openSUSE và Ubuntu 24.04 trở lên. Debian 12, 13 và
 Ubuntu 22.04 vẫn dùng lõi Go, vì Rust có sẵn ở đó quá cũ. Hai lõi gõ ra chữ như nhau.
 
-Gói này cài chung được với `fcitx5-lotus`. Cài xong, hoặc mỗi lần cập nhật, khởi động lại fcitx5:
+Cài xong, hoặc mỗi lần cập nhật, khởi động lại fcitx5:
 
 ```
 fcitx5 -rd

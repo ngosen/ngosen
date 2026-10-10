@@ -7,8 +7,8 @@ Các bước dưới đây cho Arch và CachyOS. Bản phân phối khác thì c
 giống hệt.
 
 **1. Máy từng tự dựng Ngó Sen 1.0.0 trở về trước:** xoá các tệp mang tên `lotus` mà bản đó cài, vì
-`cmake --install` chỉ thêm tệp chứ không xoá. Nếu máy có cài gói `fcitx5-lotus` thì bỏ qua bước này, vì
-các tệp đó thuộc về gói đó.
+`cmake --install` chỉ thêm tệp chứ không xoá. Nếu `pacman -Qo /usr/lib/fcitx5/liblotus.so` báo tệp thuộc
+một gói thì bỏ qua bước này, vì các tệp đó của gói đó.
 
 ```
 sudo rm -f /usr/lib/fcitx5/liblotus.so /usr/share/fcitx5/addon/lotus.conf /usr/share/fcitx5/inputmethod/lotus.conf \
@@ -37,7 +37,7 @@ sudo cmake --install build
 
 Trên Fedora và openSUSE dùng `-DCMAKE_INSTALL_LIBDIR=lib64` thay cho `/usr/lib`.
 
-**4. Máy từng chạy máy chủ nền của Lotus hoặc Ngó Sen bản cũ:** tắt nó và xoá các tệp nó để lại, vì
+**4. Máy từng chạy máy chủ nền của Ngó Sen bản cũ:** tắt nó và xoá các tệp nó để lại, vì
 `cmake --install` chỉ thêm tệp chứ không xoá. Máy chưa từng cài thì bỏ qua bước này.
 
 ```

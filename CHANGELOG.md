@@ -1,7 +1,6 @@
 # Nhật ký thay đổi
 
-Mọi thay đổi đáng kể của Ngó Sen (tên cũ LotusVibe), tách ra từ
-[fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), được ghi ở đây. Cách ghi theo
+Mọi thay đổi đáng kể của Ngó Sen được ghi ở đây. Cách ghi theo
 [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Mỗi dòng nói người dùng thấy gì thay đổi.
 
 Số phiên bản gồm hai phần: phần trước dấu gạch là số của Ngó Sen (nằm trong `CMakeLists.txt`), phần sau
@@ -10,6 +9,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 `ngosen-<phiên bản>`.
 
 ## [Chưa phát hành]
+
+### Thay đổi
+
+- README và mô tả gói bỏ các câu kể Ngó Sen tách từ đâu; mục Nguồn gốc còn một dòng ghi công. Trang
+  Giới thiệu trong phần cài đặt ghi người phát triển, bên dưới là một dòng ghi công thay cho danh sách
+  tác giả fcitx5-lotus. Mẫu báo lỗi và hướng dẫn đóng góp trỏ về kho của Ngó Sen (#10).
 
 ### Sửa
 

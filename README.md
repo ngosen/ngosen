@@ -15,9 +15,6 @@
 
 Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues).
 
-Ngó Sen tách từ [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus) và giữ nguyên lịch sử
-commit; xem mục [Nguồn gốc](#nguồn-gốc).
-
 ## Chỉ cho fcitx5
 
 Ngó Sen chỉ làm cho fcitx5. Bản IBus và bản chạy thẳng trên Sway, Hyprland mà không qua fcitx5 đã bỏ;
@@ -123,20 +120,17 @@ Cấu hình (các tệp `ngosen*.conf` trong `~/.config/fcitx5/conf/`, và `lotu
 Người giữ dự án chỉ **vibecode** dự án này: nêu việc cho trợ lý AI viết mã, rồi đo và dùng thử hằng
 ngày.
 
-Ngó Sen tách ra từ [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), vốn là bản fork
-của [bộ gõ VMK](https://github.com/thanhpy2009/VMK). Ngó sen là mầm mọc ra từ cây sen: cùng gốc với
-Lotus nhưng đi hướng riêng. Giấy phép vẫn là GPL-3.0-or-later.
+Dựa trên mã của [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus) và
+[VMK](https://github.com/thanhpy2009/VMK). Giấy phép GPL-3.0-or-later.
 
-Ngày 10/10/2026 repo được tạo lại ngoài mạng fork của fcitx5-lotus, giữ nguyên lịch sử commit. Issue và
-pull request trước đó nằm ở kho lưu [ngosen/ngosen-fork-archive](https://github.com/ngosen/ngosen-fork-archive).
+Issue và pull request trước ngày 10/10/2026 nằm ở kho lưu
+[ngosen/ngosen-fork-archive](https://github.com/ngosen/ngosen-fork-archive).
 
 ## English
 
 Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: the
-code is written with an AI coding agent, then measured and used daily by the maintainer. It is a fork of
-[fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), itself a fork of
-[VMK](https://github.com/thanhpy2009/VMK), under GPL-3.0-or-later, published as is with no promise of
-support.
+code is written with an AI coding agent, then measured and used daily by the maintainer. It is licensed
+under GPL-3.0-or-later and published as is, with no promise of support.
 
 Ngó Sen 1.0 has no background uinput server; two typing modes, Gõ Sen (one mode that works for fast
 typing, browsers and Electron apps) and Preedit; and the Bamboo composition core ported from Go to Rust.

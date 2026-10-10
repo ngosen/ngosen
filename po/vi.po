@@ -1,11 +1,11 @@
-# Vietnamese translations for fcitx-lotus package.
-# Copyright (C) 2026 THE fcitx-lotus'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the fcitx-lotus package.
+# Vietnamese translations for fcitx5-ngosen.
+# Copyright (C) 2026 THE fcitx5-ngosen'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the fcitx5-ngosen package.
 # Automatically generated, 2026.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: fcitx5-lotus\n"
+"Project-Id-Version: fcitx5-ngosen\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-10 08:38+0700\n"
 "PO-Revision-Date: 2026-09-10 09:30+0700\n"
@@ -326,8 +326,13 @@ msgid "Export Debug Logs"
 msgstr "Xuất nhật ký gỡ lỗi"
 
 #: settings-gui/ui/pages/about.py:148
-msgid "Based on fcitx5-lotus by"
-msgstr "Dựa trên fcitx5-lotus của"
+msgid "Developed by Nguyen Phi"
+msgstr "Phát triển bởi Nguyễn Phi"
+
+#: settings-gui/ui/pages/about.py
+#, python-brace-format
+msgid "Based on the code of {lotus} and {vmk}."
+msgstr "Dựa trên mã của {lotus} và {vmk}."
 
 #: settings-gui/ui/pages/about.py:184
 msgid "Licensed under the GNU General Public License v3.0"

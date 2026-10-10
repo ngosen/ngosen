@@ -11,6 +11,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Gõ nhanh trong gnome-terminal và các app GTK3 khác, bấm chồng hai phím có lúc làm đảo chữ: "rồi" ra
+  "riồ", "ngày" ra "ngyà". Phím bấm trong lúc Ngó Sen đang thay chữ giờ được gửi chung với chữ đó (#11).
+
 ## [1.1.0-1] — 10/10/2026
 
 Bản 1.1: file cài vào máy mang tên `ngosen`, cấu hình cũ tự chuyển sang; icon khay mới; thêm nhật ký gõ

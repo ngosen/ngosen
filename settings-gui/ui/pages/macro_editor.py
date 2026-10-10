@@ -301,6 +301,8 @@ class MacroEditorPage(BaseEditorPage):
             skip_idx = self.cb_skip_modifier.findData("Disabled")
             if skip_idx >= 0:
                 self.cb_skip_modifier.setCurrentIndex(skip_idx)
+            self.input_time_format.setCurrentIndex(self.input_time_format.findData("%H:%M"))
+            self.input_date_format.setCurrentIndex(self.input_date_format.findData("%d/%m/%Y"))
             self.table.setRowCount(0)
             self._on_item_changed()
         finally:
@@ -315,6 +317,8 @@ class MacroEditorPage(BaseEditorPage):
             or not self.cb_capitalize.isChecked()
             or self.cb_enable_off_mode.isChecked()
             or self.cb_skip_modifier.currentData() != "Disabled"
+            or self.input_time_format.currentData() != "%H:%M"
+            or self.input_date_format.currentData() != "%d/%m/%Y"
         )
 
     def is_modified(self):

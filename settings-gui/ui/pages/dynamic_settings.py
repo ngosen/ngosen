@@ -183,7 +183,8 @@ class DynamicSettingsPage(QWidget):
         self.scroll.setWidget(self.container)
         self.layout.addWidget(self.scroll)
 
-    def load_config(self):
+    def load_config(self, values=None):
+        """Shows the saved settings, or `values` as unsaved changes on top of them."""
         self.blockSignals(True)
         try:
             while self.container_layout.count():
@@ -201,7 +202,11 @@ class DynamicSettingsPage(QWidget):
                 self.container_layout.addWidget(QLabel(_("Failed to load configuration.")))
                 return
 
-            self.current_values = config_data.get("values", {})
+            saved_values = config_data.get("values", {})
+            self.current_values = dict(saved_values if values is None else values)
+            self.modified_values = {
+                k: v for k, v in self.current_values.items() if saved_values.get(k) != v
+            }
             metadata_list = config_data.get("metadata", [])
             if not metadata_list:
                 return
@@ -273,7 +278,7 @@ class DynamicSettingsPage(QWidget):
             if self.category == SettingsCategory.INTERFACE and not category_groups:
                 self.container_layout.addWidget(QLabel(_("No interface settings available yet.")))
 
-            self.initial_values = self.current_values.copy()
+            self.initial_values = saved_values.copy()
             self.container_layout.addStretch()
         finally:
             self.blockSignals(False)
@@ -309,10 +314,19 @@ class DynamicSettingsPage(QWidget):
 
         hk_btn = HotkeyEditorWidget(hotkey_str)
         hk_btn.setFixedWidth(235)
-        hk_btn.textChanged.connect(lambda text, k=key: self.update_config(k, {"0": text}))
+        hk_btn.textChanged.connect(
+            lambda text, k=key: self.update_config(k, self._with_first_key(k, text))
+        )
 
         row_layout.addWidget(hk_btn)
         layout.addLayout(row_layout)
+
+    def _with_first_key(self, key, text):
+        # Only the first key of a list is shown; the others still work and must survive an edit.
+        val = self.current_values.get(key)
+        keys = [val[i] for i in sorted(val, key=int)] if isinstance(val, dict) else []
+        keys = ([text] if text else []) + keys[1:]
+        return {str(i): k for i, k in enumerate(keys)}
 
     def _render_combobox(self, item, layout):
         key, type_str, label, default, annotations = item
@@ -593,15 +607,10 @@ class DynamicSettingsPage(QWidget):
             if not config_data:
                 return
 
-            metadata_list = config_data.get("metadata", [])
-            new_values = {}
-            for group in metadata_list:
-                for item in group[1]:
-                    key, type_str, label, default, annotations = item
-                    new_values[key] = default
-            self.modified_values = new_values.copy()
-            self.current_values = new_values
-            self.load_config()
+            defaults = {
+                item[0]: item[3] for group in config_data.get("metadata", []) for item in group[1]
+            }
+            self.load_config(values=defaults)
         finally:
             self.blockSignals(False)
 

@@ -28,11 +28,11 @@ from qtpy.QtWidgets import (
 class NgoSenSettingsWindow(QMainWindow):
     """Main entry window for the Ngó Sen settings."""
 
-    def __init__(self):
+    def __init__(self, dbus_handler=None):
         super().__init__()
         self.setWindowTitle(_("Ngó Sen Settings"))
 
-        self.dbus_handler = NgoSenDBusHandler()
+        self.dbus_handler = dbus_handler or NgoSenDBusHandler()
 
         self._setup_ui()
         self._setup_window_size()
@@ -240,6 +240,9 @@ class NgoSenSettingsWindow(QMainWindow):
             QMessageBox.Yes | QMessageBox.No,
         )
         if reply == QMessageBox.Yes:
+            # Pages are built when first opened; one never opened still has settings to reset.
+            for row in range(self.sidebar.count()):
+                self._page_for_item(self.sidebar.item(row))
             for i in range(self.content_stack.count()):
                 page = self.content_stack.widget(i)
                 if hasattr(page, "restore_defaults"):
@@ -332,13 +335,7 @@ class NgoSenSettingsWindow(QMainWindow):
 
         role = item.data(Qt.UserRole)
         if role == "page":
-            widget = item.data(Qt.UserRole + 2)
-            if widget is None:
-                factory = item.data(Qt.UserRole + 1)
-                if factory:
-                    widget = factory()
-                    self.content_stack.addWidget(widget)
-                    item.setData(Qt.UserRole + 2, widget)
+            widget = self._page_for_item(item)
             if widget:
                 self.content_stack.setCurrentWidget(widget)
             self.update_reset_button_state()
@@ -346,6 +343,18 @@ class NgoSenSettingsWindow(QMainWindow):
             # Don't allow selecting headers, move to next item
             if index + 1 < self.sidebar.count():
                 self.sidebar.setCurrentRow(index + 1)
+
+    def _page_for_item(self, item):
+        if item.data(Qt.UserRole) != "page":
+            return None
+        widget = item.data(Qt.UserRole + 2)
+        if widget is None:
+            factory = item.data(Qt.UserRole + 1)
+            if factory:
+                widget = factory()
+                self.content_stack.addWidget(widget)
+                item.setData(Qt.UserRole + 2, widget)
+        return widget
 
     def _setup_window_size(self):
         screen = QApplication.primaryScreen().availableGeometry()

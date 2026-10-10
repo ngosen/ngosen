@@ -1,0 +1,490 @@
+[
+ [
+  "ngosenConfig",
+  [
+   [
+    "Mode",
+    "Enum",
+    "Mode",
+    "Sen",
+    {
+     "EnumI18n": {
+      "0": "OFF",
+      "1": "Sen",
+      "2": "Preedit",
+      "3": "Emoji Picker"
+     },
+     "Enum": {
+      "0": "OFF",
+      "1": "Sen",
+      "2": "Preedit",
+      "3": "Emoji Picker"
+     }
+    }
+   ],
+   [
+    "InputMethod",
+    "String",
+    "Input Method",
+    "Telex",
+    {
+     "IsEnum": "True",
+     "Enum": {
+      "0": "Telex",
+      "1": "VNI",
+      "2": "Telex + VNI",
+      "3": "Telex + VNI + VIQR",
+      "4": "VIQR",
+      "5": "Microsoft layout",
+      "6": "VNI Bàn phím tiếng Pháp",
+      "7": "Custom"
+     },
+     "LaunchSubConfig": "True"
+    }
+   ],
+   [
+    "OutputCharset",
+    "String",
+    "Output Charset",
+    "Unicode",
+    {
+     "IsEnum": "True",
+     "Enum": {
+      "0": "Unicode",
+      "1": "BKHCM 1",
+      "2": "BKHCM 2",
+      "3": "NCR Decimal",
+      "4": "NCR Hex",
+      "5": "TCVN3 (ABC)",
+      "6": "UTF-8",
+      "7": "Unicode C string Decimal",
+      "8": "Unicode C string Hex",
+      "9": "Unicode tổ hợp",
+      "10": "VIQR",
+      "11": "VISCII",
+      "12": "VNI Windows",
+      "13": "VPS",
+      "14": "Vietware Full",
+      "15": "Vietware X",
+      "16": "Windows 1258 codepage"
+     }
+    }
+   ],
+   [
+    "ModeMenuKey",
+    "List|Key",
+    "Mode Menu Hotkey",
+    {
+     "0": "grave"
+    },
+    {
+     "ListConstrain": {
+      "AllowModifierLess": "True",
+      "AllowModifierOnly": "True"
+     }
+    }
+   ],
+   [
+    "CycleModeKey",
+    "List|Key",
+    "Cycle Mode Hotkey",
+    "",
+    {
+     "ListConstrain": {
+      "AllowModifierLess": "True",
+      "AllowModifierOnly": "True"
+     }
+    }
+   ],
+   [
+    "AppRules",
+    "External",
+    "App Rules",
+    "",
+    {
+     "External": "fcitx://config/addon/lotus/app_rules",
+     "LaunchSubConfig": "True"
+    }
+   ],
+   [
+    "W2U",
+    "Enum",
+    "Type w to Produce ư",
+    "Non-Start",
+    {
+     "EnumI18n": {
+      "0": "Disabled",
+      "1": "Non-Start",
+      "2": "Everywhere"
+     },
+     "Enum": {
+      "0": "Disabled",
+      "1": "Non-Start",
+      "2": "Everywhere"
+     }
+    }
+   ],
+   [
+    "BracketTransform",
+    "Enum",
+    "Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư",
+    "Disabled",
+    {
+     "EnumI18n": {
+      "0": "Disabled",
+      "1": "Non-Start",
+      "2": "Everywhere"
+     },
+     "Enum": {
+      "0": "Disabled",
+      "1": "Non-Start",
+      "2": "Everywhere"
+     }
+    }
+   ],
+   [
+    "SpellCheck",
+    "Boolean",
+    "Enable Spell Check Using Dictionary",
+    "True",
+    {}
+   ],
+   [
+    "EnableMacro",
+    "Boolean",
+    "Enable Macro",
+    "True",
+    {}
+   ],
+   [
+    "CapitalizeMacro",
+    "Boolean",
+    "Capitalize Macro",
+    "True",
+    {}
+   ],
+   [
+    "MacroSkipTriggerModifier",
+    "Enum",
+    "Modifier to Skip Macro for Next Word",
+    "Disabled",
+    {
+     "EnumI18n": {
+      "0": "Disabled",
+      "1": "Shift",
+      "2": "Ctrl",
+      "3": "Alt"
+     },
+     "Enum": {
+      "0": "Disabled",
+      "1": "Shift",
+      "2": "Ctrl",
+      "3": "Alt"
+     }
+    }
+   ],
+   [
+    "AutoCapitalizeAfterPunctuation",
+    "Boolean",
+    "Auto capitalize after sentence-ending punctuation (. ! ? Enter)",
+    "False",
+    {}
+   ],
+   [
+    "DoubleSpaceToPeriod",
+    "Boolean",
+    "Double Space to Period",
+    "False",
+    {}
+   ],
+   [
+    "DoubleHyphenToEmDash",
+    "Boolean",
+    "Double Hyphen to Em-Dash (--)",
+    "False",
+    {}
+   ],
+   [
+    "AutoNonVnRestore",
+    "Boolean",
+    "Auto Restore Invalid Words",
+    "True",
+    {}
+   ],
+   [
+    "ModernStyle",
+    "Boolean",
+    "Use oà, uý (Instead Of òa, úy)",
+    "True",
+    {}
+   ],
+   [
+    "FreeMarking",
+    "Boolean",
+    "Allow Type With More Freedom",
+    "True",
+    {}
+   ],
+   [
+    "DdFreeStyle",
+    "Boolean",
+    "Allow dd To Produce đ When Auto Restore Invalid Words Is On",
+    "True",
+    {}
+   ],
+   [
+    "WaitSurroundingEvent",
+    "Boolean",
+    "Experiment: after uinput backspaces, wait for the surrounding-text event instead of sleeping",
+    "True",
+    {}
+   ],
+   [
+    "WaitSurroundingTimeoutMs",
+    "Integer",
+    "Experiment: timeout (ms) for that wait",
+    "50",
+    {}
+   ],
+   [
+    "WaitSurroundingShortMs",
+    "Integer",
+    "Experiment: shorter timeout (ms) used after two consecutive timeouts without a matching event",
+    "40",
+    {}
+   ],
+   [
+    "WaitSurroundingProbeEvery",
+    "Integer",
+    "Experiment: when the app's snapshot is frozen during deletion, stop waiting and re-probe once every N replacements",
+    "4",
+    {}
+   ],
+   [
+    "WaitSurroundingSettleMs",
+    "Integer",
+    "Experiment: extra ms to wait after the deletion shows done, Messenger composer only",
+    "40",
+    {}
+   ],
+   [
+    "MessengerSelectOvertype",
+    "Boolean",
+    "Experiment: select with Shift+Left and type over it in the Messenger composer",
+    "True",
+    {}
+   ],
+   [
+    "WaitSurroundingSettleFirstWordMs",
+    "Integer",
+    "Experiment: settle wait for the first word of a Messenger message (composer still loading)",
+    "60",
+    {}
+   ],
+   [
+    "WaitSurroundingMinPerKeyMs",
+    "Integer",
+    "Experiment: a snapshot identical to the one at send time counts as done only after this many ms per backspace",
+    "8",
+    {}
+   ],
+   [
+    "SurrDeleteSleepMs",
+    "Integer",
+    "Experiment: ms per deleted char to sleep after deleteSurroundingText",
+    "4",
+    {}
+   ],
+   [
+    "SurrCommitSleepMs",
+    "Integer",
+    "Experiment: ms per committed char to sleep after commitString on the surrounding-text path",
+    "3",
+    {}
+   ],
+   [
+    "UseLotusIcons",
+    "Boolean",
+    "Use Ngó Sen Status Icons",
+    "False",
+    {}
+   ],
+   [
+    "EnableDictionary",
+    "Boolean",
+    "Custom Dictionary",
+    "False",
+    {}
+   ],
+   [
+    "EnableCustomKeymap",
+    "Boolean",
+    "Custom Keymap",
+    "False",
+    {}
+   ],
+   [
+    "ShowModeSen",
+    "Boolean",
+    "Show Sen",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutSen",
+    "String",
+    "Shortcut for Sen",
+    "1",
+    {}
+   ],
+   [
+    "ShowModePreedit",
+    "Boolean",
+    "Show Preedit",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutPreedit",
+    "String",
+    "Shortcut for Preedit",
+    "q",
+    {}
+   ],
+   [
+    "ShowModeEmoji",
+    "Boolean",
+    "Show Emoji Picker",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutEmoji",
+    "String",
+    "Shortcut for Emoji Picker",
+    "w",
+    {}
+   ],
+   [
+    "ShowModeOff",
+    "Boolean",
+    "Show OFF",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutOff",
+    "String",
+    "Shortcut for OFF",
+    "e",
+    {}
+   ],
+   [
+    "ShowModeDefault",
+    "Boolean",
+    "Show Default Typing",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutDefault",
+    "String",
+    "Shortcut for Default Typing",
+    "r",
+    {}
+   ],
+   [
+    "EnableMacroInOffMode",
+    "Boolean",
+    "Allow Macro in Off Mode",
+    "False",
+    {}
+   ],
+   [
+    "useSurroundingTextIfPossible",
+    "Boolean",
+    "Use Surrounding Text if possible",
+    "False",
+    {}
+   ],
+   [
+    "ModeOrder",
+    "String",
+    "Mode Order",
+    "Sen,Preedit,Emoji,Off,Default",
+    {}
+   ],
+   [
+    "TimeFormat",
+    "String",
+    "Time Format ($TIME in macro)",
+    "%H:%M",
+    {
+     "IsEnum": "True",
+     "Enum": {
+      "0": "%H:%M",
+      "1": "%H:%M:%S",
+      "2": "%I:%M:%S %p",
+      "3": "%I:%M %p",
+      "4": ""
+     }
+    }
+   ],
+   [
+    "DateFormat",
+    "String",
+    "Date Format ($DATE in macro)",
+    "%d/%m/%Y",
+    {
+     "IsEnum": "True",
+     "Enum": {
+      "0": "%d/%m/%Y",
+      "1": "%m/%d/%Y",
+      "2": "%Y-%m-%d",
+      "3": "%d/%m/%y",
+      "4": "%y-%m-%d",
+      "5": ""
+     }
+    }
+   ],
+   [
+    "MacroEditor",
+    "External",
+    "Macro",
+    "",
+    {
+     "External": "fcitx://config/addon/lotus/lotus-macro",
+     "LaunchSubConfig": "True"
+    }
+   ],
+   [
+    "CustomKeymap",
+    "External",
+    "Custom Keymap",
+    "",
+    {
+     "External": "fcitx://config/addon/lotus/custom_keymap",
+     "LaunchSubConfig": "True"
+    }
+   ],
+   [
+    "IconTheme",
+    "Enum",
+    "Icon Color",
+    "Auto",
+    {
+     "EnumI18n": {
+      "0": "Auto",
+      "1": "Light",
+      "2": "Dark"
+     },
+     "Enum": {
+      "0": "Auto",
+      "1": "Light",
+      "2": "Dark"
+     }
+    }
+   ]
+  ]
+ ]
+]

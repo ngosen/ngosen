@@ -45,6 +45,17 @@ class NgoSenDBusHandler:
             print(f"Failed to set config: {e}")
             return False
 
+    def reload_addon_config(self) -> bool:
+        """Makes the addon read its files again, which SetConfig does not do for the dictionary."""
+        if not self.iface:
+            return False
+        try:
+            self.iface.ReloadAddonConfig(self.addon_name.rsplit("/", 1)[-1])
+            return True
+        except Exception as e:
+            print(f"Failed to reload addon config: {e}")
+            return False
+
     def get_sub_config_list(self, path: str, root_key: str) -> list:
         """Get sub config list from Fcitx5 and convert to Python list."""
         if not self.iface:

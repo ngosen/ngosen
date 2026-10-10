@@ -11,7 +11,7 @@ from datetime import datetime
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import Qt, QTimer
-from qtpy.QtGui import QIcon
+from qtpy.QtGui import QIcon, QKeySequence
 from qtpy.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -24,6 +24,7 @@ from qtpy.QtWidgets import (
     QMainWindow,
     QPushButton,
     QScrollArea,
+    QShortcut,
     QStackedWidget,
     QTabWidget,
     QVBoxLayout,
@@ -136,6 +137,9 @@ class NgoSenSettingsWindow(QMainWindow):
         self.search_field.setClearButtonEnabled(True)
         self.search_field.textChanged.connect(self._on_search)
         self.search_field.returnPressed.connect(self._open_first_result)
+        find = QShortcut(QKeySequence.Find, self)
+        find.activated.connect(self.search_field.setFocus)
+        find.activated.connect(self.search_field.selectAll)
         layout.addWidget(self.search_field)
 
         self.search_results = QListWidget()
@@ -215,6 +219,7 @@ class NgoSenSettingsWindow(QMainWindow):
         btn_restore = QPushButton(QIcon.fromTheme("document-open"), _("Res&tore…"))
         btn_restore.clicked.connect(self.on_restore_backup)
         bar_layout.addWidget(btn_restore)
+        self._bottom_buttons = [self.btn_reset, btn_backup, btn_restore]
 
         layout.addWidget(container)
 
@@ -499,7 +504,17 @@ class NgoSenSettingsWindow(QMainWindow):
                 self._page_rows[page] = self.sidebar.row(item)
             self.content_stack.addWidget(widget)
             item.setData(Qt.UserRole + 2, widget)
+            self._keep_bottom_bar_last()
         return widget
+
+    def _keep_bottom_bar_last(self):
+        # A page built later joins the end of the Tab order, after the bottom bar.
+        last = self.previousInFocusChain()
+        if last in self._bottom_buttons:
+            return
+        for button in self._bottom_buttons:
+            QWidget.setTabOrder(last, button)
+            last = button
 
     def _setup_window_size(self):
         screen = QApplication.primaryScreen().availableGeometry()

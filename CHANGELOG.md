@@ -16,7 +16,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Nhật ký gõ: vừa gõ ra chữ sai thì chọn "Lưu nhật ký gõ" trong menu fcitx5 ở khay hệ thống. Ngó Sen lưu
   vài trăm phím gần nhất, những gì bộ gõ gửi cho app và những gì app báo lại vào một file trong
   `~/.local/state/ngosen/`, để gửi kèm khi báo lỗi. Nhật ký chỉ nằm trong bộ nhớ cho tới lúc lưu, và
-  không ghi gì gõ trong ô mật khẩu ([#93](https://github.com/ngosen/ngosen-fork-archive/pull/93)).
+  không ghi gì gõ trong ô mật khẩu ([#93](https://github.com/ngosen/ngosen-fork-archive/pull/93)). Gõ
+  lâu trong một app thì file vẫn ghi app đó và cách nó nối với bộ gõ, để chạy lại được các phím (#4).
 
 ### Thay đổi
 

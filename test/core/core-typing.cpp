@@ -252,6 +252,13 @@ namespace {
         const std::string log = recorder.dump();
         check(!has(log, "\t1\n") && has(log, "\t2\n") && has(log, "\t4\n"), "recorder: keeps only the last events", log);
 
+        ngosen::Recorder fields(3);
+        fields.add("field", "frontend=xim");
+        for (int i = 0; i < 5; ++i)
+            fields.add("key", std::to_string(i));
+        const std::string kept = fields.dump();
+        check(has(kept, "\tfield\tfrontend=xim\n") && has(kept, "\t4\n"), "recorder: keeps the field of the kept keys", kept);
+
         const std::string text = std::string(100, 'a') + "ê" + std::string(30, 'b');
         const std::string seen = ngosen::describeSurrounding(ngosen::Surrounding(text, 101, 101));
         const std::string want = "\"…" + std::string(39, 'a') + "ê|" + std::string(10, 'b') + "…\" cursor=101 anchor=101 length=131";

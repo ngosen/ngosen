@@ -127,8 +127,11 @@ namespace ngosen {
     void Recorder::add(const std::string& kind, const std::string& detail) {
         if (capacity_ == 0)
             return;
-        if (events_.size() == capacity_)
+        if (events_.size() == capacity_) {
+            if (events_.front().kind == "field")
+                droppedField_ = std::move(events_.front());
             events_.pop_front();
+        }
         events_.push_back({monotonicUs(), kind, detail});
     }
 
@@ -138,6 +141,8 @@ namespace ngosen {
             return out;
         const uint64_t start = events_.front().timeUs;
         char           ms[32];
+        if (droppedField_)
+            out += "0.0\tfield\t" + droppedField_->detail + "\n";
         for (const auto& event : events_) {
             std::snprintf(ms, sizeof(ms), "%.1f", static_cast<double>(event.timeUs - start) / 1000.0);
             out += std::string(ms) + "\t" + event.kind + "\t" + event.detail + "\n";

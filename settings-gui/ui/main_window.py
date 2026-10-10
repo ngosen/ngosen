@@ -119,7 +119,7 @@ class NgoSenSettingsWindow(QMainWindow):
 
         header = QHBoxLayout()
         header.setSpacing(8)
-        icon = QIcon.fromTheme("fcitx-ngosen")
+        icon = brand.logo_icon()
         if not icon.isNull():
             logo = QLabel()
             logo.setPixmap(icon.pixmap(28, 28))

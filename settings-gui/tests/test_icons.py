@@ -5,14 +5,18 @@ import os
 import tempfile
 import unittest
 
-from qtpy.QtGui import QColor, QIcon, QImage
+from qtpy.QtGui import QColor, QIcon, QImage, QImageReader
 from support import FakeDBusHandler, app  # noqa: F401
+from ui import brand
 from ui.main_window import NgoSenSettingsWindow
 
 
-class SidebarIconTest(unittest.TestCase):
+class FakeThemeTest(unittest.TestCase):
+    """Switches Qt to a one-off icon theme holding only the given icons."""
+
+    icons = ()
+
     def setUp(self):
-        # A theme like Yaru: it has preferences-system but not preferences-other.
         self.dir = tempfile.TemporaryDirectory()
         theme = os.path.join(self.dir.name, "plain")
         os.makedirs(os.path.join(theme, "16"))
@@ -21,7 +25,8 @@ class SidebarIconTest(unittest.TestCase):
         # PNG, since not every Qt build has the SVG image plugin.
         image = QImage(16, 16, QImage.Format_ARGB32)
         image.fill(QColor("black"))
-        image.save(os.path.join(theme, "16", "preferences-system.png"))
+        for name in self.icons:
+            image.save(os.path.join(theme, "16", name + ".png"))
         self.old = (QIcon.themeSearchPaths(), QIcon.themeName())
         QIcon.setThemeSearchPaths([self.dir.name])
         QIcon.setThemeName("plain")
@@ -32,11 +37,46 @@ class SidebarIconTest(unittest.TestCase):
         QIcon.setThemeName(self.old[1])
         self.dir.cleanup()
 
+
+class SidebarIconTest(FakeThemeTest):
+    # A theme like Yaru: it has preferences-system but not preferences-other.
+    icons = ("preferences-system",)
+
     def test_more_has_an_icon_without_preferences_other(self):
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
         self.addCleanup(window.close)
         more = window.sidebar.item(window.sidebar.count() - 1)
         self.assertFalse(more.icon().isNull())
+
+
+class LogoTest(FakeThemeTest):
+    # A theme like Papirus or Colloid: it has an fcitx icon but no fcitx-ngosen.
+    icons = ("fcitx",)
+
+    def setUp(self):
+        super().setUp()
+        apps = os.path.join(self.dir.name, "data", "icons", "hicolor", "scalable", "apps")
+        os.makedirs(apps)
+        with open(os.path.join(apps, "fcitx-ngosen.svg"), "w") as f:
+            f.write(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="16" height="16"/></svg>'
+            )
+        old = os.environ.get("XDG_DATA_DIRS")
+        os.environ["XDG_DATA_DIRS"] = os.path.join(self.dir.name, "data")
+        self.addCleanup(
+            lambda: (
+                os.environ.pop("XDG_DATA_DIRS")
+                if old is None
+                else os.environ.__setitem__("XDG_DATA_DIRS", old)
+            )
+        )
+
+    @unittest.skipUnless(b"svg" in QImageReader.supportedImageFormats(), "no SVG image plugin")
+    def test_does_not_borrow_the_fcitx_icon(self):
+        self.assertEqual(QIcon.fromTheme("fcitx-ngosen").name(), "fcitx")
+        logo = brand.logo_icon()
+        self.assertFalse(logo.isNull())
+        self.assertNotEqual(logo.name(), "fcitx")
 
 
 if __name__ == "__main__":

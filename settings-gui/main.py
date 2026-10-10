@@ -10,8 +10,8 @@ import signal
 import sys
 
 from i18n import setup_i18n
-from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import QApplication
+from ui import brand
 from ui.main_window import NgoSenSettingsWindow
 
 
@@ -22,7 +22,7 @@ def main():
     app.setDesktopFileName("io.github.ngosen.NgoSen.Settings")
     app.setApplicationName("io.github.ngosen.NgoSen.Settings")
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    app.setWindowIcon(QIcon.fromTheme("fcitx-ngosen"))
+    app.setWindowIcon(brand.logo_icon())
 
     window = NgoSenSettingsWindow()
     window.show()

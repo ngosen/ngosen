@@ -5,12 +5,14 @@
 
 import os
 
-from qtpy.QtGui import QFont, QFontDatabase, QPalette
+from qtpy.QtCore import QStandardPaths
+from qtpy.QtGui import QFont, QFontDatabase, QIcon, QPalette
 
 FONT_FILE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "fonts", "XanhMono-Regular.ttf"
 )
 TYPED_FAMILY = "Xanh Mono"
+LOGO = "fcitx-ngosen"
 
 # (light, dark) pairs; dark is picked from the window background, not the desktop name.
 ENAMEL = ("#1c6b5f", "#2a8574")
@@ -48,3 +50,15 @@ def wordmark_font(pixel_size):
     font = typed_font(pixel_size)
     font.setWordSpacing(-pixel_size * 0.27)
     return font
+
+
+def logo_icon():
+    # Icon loaders shorten a missing name, so themes with an "fcitx" icon (Papirus, Colloid) would
+    # show that instead; take the installed hicolor file then.
+    icon = QIcon.fromTheme(LOGO)
+    if icon.name() == LOGO:
+        return icon
+    path = QStandardPaths.locate(
+        QStandardPaths.GenericDataLocation, f"icons/hicolor/scalable/apps/{LOGO}.svg"
+    )
+    return QIcon(path) if path else QIcon()

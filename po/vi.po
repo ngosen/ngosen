@@ -981,3 +981,35 @@ msgstr "Đã lưu nhật ký gõ: "
 
 msgid "Could not save the typing log to "
 msgstr "Không lưu được nhật ký gõ vào "
+
+#: settings-gui/ui/main_window.py
+msgid "Cannot reach fcitx5, so changes will not be saved."
+msgstr "Không kết nối được fcitx5 nên thay đổi sẽ không được lưu."
+
+#: settings-gui/ui/main_window.py
+msgid "&Undo"
+msgstr "&Hoàn tác"
+
+#: settings-gui/ui/main_window.py
+msgid "Defaults restored."
+msgstr "Đã đưa về mặc định."
+
+#: settings-gui/ui/main_window.py
+msgid "Saved “{}”."
+msgstr "Đã lưu “{}”."
+
+#: settings-gui/ui/main_window.py
+msgid "Saved."
+msgstr "Đã lưu."
+
+#: settings-gui/ui/main_window.py
+msgid "Could not save. Check that fcitx5 is running."
+msgstr "Không lưu được. Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/ui/main_window.py
+msgid "Could not undo. Check that fcitx5 is running."
+msgstr "Không hoàn tác được. Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/ui/main_window.py
+msgid "Change undone."
+msgstr "Đã hoàn tác."

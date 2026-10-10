@@ -291,10 +291,10 @@ class BackupPage(QWidget):
                 _("Selected components restored. Fcitx5 restart may be required for some changes."),
             )
 
-            # Trigger UI reload
+            self.dbus.reload_addon_config()
             main_win = self.window()
-            if hasattr(main_win, "on_cancel"):
-                main_win.on_cancel()
+            if hasattr(main_win, "reload_pages"):
+                main_win.reload_pages()
 
             # Reset Restore UI
             self.restore_group.setVisible(False)

@@ -17,6 +17,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   tác giả fcitx5-lotus. Mẫu báo lỗi và hướng dẫn đóng góp trỏ về kho của Ngó Sen (#10).
 - Cửa sổ cài đặt nhanh hơn: tìm trong từ điển riêng không còn khựng mỗi phím khi có vài nghìn từ, đổi chế
   độ gõ cho một app không còn đọc lại toàn bộ danh sách app đã cài (#13).
+- Cửa sổ cài đặt lưu ngay khi đổi, không còn nút OK, Áp dụng, Huỷ. Mỗi lần lưu hiện dòng "Đã lưu" kèm nút
+  Hoàn tác, đưa lại đúng cài đặt trước đó, kể cả luật app, gõ tắt và từ điển riêng. Khi fcitx5 không chạy,
+  cửa sổ báo ngay là thay đổi sẽ không được lưu (#14).
 
 ### Sửa
 

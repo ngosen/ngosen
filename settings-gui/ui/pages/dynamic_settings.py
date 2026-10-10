@@ -642,10 +642,15 @@ class DynamicSettingsPage(QWidget):
             return False
         return True
 
+    def change_label(self):
+        item = getattr(self, "all_metadata", {}).get(getattr(self, "_last_changed_key", None))
+        return _(item[2]) if item else None
+
     def update_config(self, key: str, new_value):
         """Updates internal state and notifies parent window of change."""
         self.modified_values[key] = new_value
         self.current_values[key] = new_value
+        self._last_changed_key = key
 
         # Real-time validation if it's a shortcut
         if key in MODE_SHORTCUT_KEYS or key in MODE_SHORTCUT_TO_VISIBILITY.values():

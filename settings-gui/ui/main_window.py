@@ -7,12 +7,13 @@ Main window assembling all configuration tabs with a modern layout.
 
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
-from qtpy.QtCore import QSize, Qt
-from qtpy.QtGui import QIcon
+from qtpy.QtCore import QSize, Qt, QTimer
+from qtpy.QtGui import QIcon, QPalette
 from qtpy.QtWidgets import (
     QApplication,
     QFrame,
     QHBoxLayout,
+    QLabel,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
@@ -21,6 +22,8 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from core import settings_snapshot
 
 # Lazy loading pages on demand
 
@@ -33,11 +36,22 @@ class NgoSenSettingsWindow(QMainWindow):
         self.setWindowTitle(_("Ngó Sen Settings"))
 
         self.dbus_handler = dbus_handler or NgoSenDBusHandler()
+        self._page_titles = {}
+        self._reset_pending = False
+        # Saves once typing pauses instead of on every key in a text field.
+        self._save_timer = QTimer(self)
+        self._save_timer.setSingleShot(True)
+        self._save_timer.setInterval(400)
+        self._save_timer.timeout.connect(self.save_pending)
+        self._saved = settings_snapshot.take(self.dbus_handler)
+        self._undo_to = None
 
         self._setup_ui()
         self._setup_window_size()
         self._apply_global_styles()
         self.update_reset_button_state()
+        if self._saved is None:
+            self._show_message(_("Cannot reach fcitx5, so changes will not be saved."), error=True)
 
     def update_reset_button_state(self):
         any_modified_from_default = any(
@@ -116,8 +130,13 @@ class NgoSenSettingsWindow(QMainWindow):
 
         self.content_stack = QStackedWidget()
 
+        page_layout = QVBoxLayout()
+        page_layout.setContentsMargins(0, 0, 0, 0)
+        page_layout.addWidget(self._setup_message_bar())
+        page_layout.addWidget(self.content_stack, 1)
+
         main_h_layout.addWidget(self.sidebar)
-        main_h_layout.addWidget(self.content_stack, 1)
+        main_h_layout.addLayout(page_layout, 1)
 
         main_v_layout.addLayout(main_h_layout, 1)
 
@@ -145,22 +164,40 @@ class NgoSenSettingsWindow(QMainWindow):
 
         bar_layout.addStretch()
 
-        self.btn_cancel = QPushButton(QIcon.fromTheme("dialog-cancel"), _("&Cancel"))
-        self.btn_cancel.setEnabled(False)
-        self.btn_cancel.clicked.connect(self.on_cancel)
-        bar_layout.addWidget(self.btn_cancel)
-
-        self.btn_apply = QPushButton(QIcon.fromTheme("document-save"), _("&Apply"))
-        self.btn_apply.setEnabled(False)
-        self.btn_apply.clicked.connect(lambda: self.on_save_all(quiet=False))
-        bar_layout.addWidget(self.btn_apply)
-
-        self.btn_ok = QPushButton(QIcon.fromTheme("dialog-ok"), _("&OK"))
-        self.btn_ok.setObjectName("Primary")
-        self.btn_ok.clicked.connect(self.on_ok)
-        bar_layout.addWidget(self.btn_ok)
-
         layout.addWidget(container)
+
+    def _setup_message_bar(self):
+        self.message_bar = QFrame()
+        self.message_bar.setObjectName("SaveMessage")
+        bar_layout = QHBoxLayout(self.message_bar)
+        bar_layout.setContentsMargins(12, 6, 6, 6)
+        self.message_label = QLabel()
+        self.message_label.setWordWrap(True)
+        bar_layout.addWidget(self.message_label, 1)
+        self.btn_undo = QPushButton(_("&Undo"))
+        self.btn_undo.clicked.connect(self.undo)
+        bar_layout.addWidget(self.btn_undo)
+        self.message_bar.hide()
+
+        wrapper = QWidget()
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(20, 12, 20, 0)
+        wrapper_layout.addWidget(self.message_bar)
+        return wrapper
+
+    def _show_message(self, text, undo=False, error=False):
+        dark = self.palette().color(QPalette.Window).lightness() < 128
+        if error:
+            fill, border = ("#3d1d18", "#d0533f") if dark else ("#f8e3df", "#c2301c")
+        else:
+            fill, border = ("#183a33", "#3f9c8b") if dark else ("#e1efe9", "#1c6b5f")
+        self.message_bar.setStyleSheet(
+            f"QFrame#SaveMessage {{ background: {fill}; border: 1px solid {border};"
+            " border-radius: 6px; }"
+        )
+        self.message_label.setText(text)
+        self.btn_undo.setVisible(undo)
+        self.message_bar.show()
 
     def _setup_pages(self):
         def create_general():
@@ -247,21 +284,22 @@ class NgoSenSettingsWindow(QMainWindow):
                 page = self.content_stack.widget(i)
                 if hasattr(page, "restore_defaults"):
                     page.restore_defaults()
-            # After reset, we definitely have "unsaved changes" relative to previous
+            self._reset_pending = True
             self.on_changed()
 
+    def _modified_pages(self):
+        pages = (self.content_stack.widget(i) for i in range(self.content_stack.count()))
+        return [p for p in pages if hasattr(p, "is_modified") and p.is_modified()]
+
     def on_changed(self):
-        """Enables/disables the apply and cancel buttons based on pending changes."""
-        any_modified = any(
-            hasattr(self.content_stack.widget(i), "is_modified")
-            and self.content_stack.widget(i).is_modified()
-            for i in range(self.content_stack.count())
-        )
-        has_errors = self.has_validation_errors()
-        self.btn_apply.setEnabled(any_modified and not has_errors)
-        self.btn_cancel.setEnabled(any_modified)
-        self.btn_ok.setEnabled(not has_errors)
+        """Saves the change once the user pauses, unless a setting is invalid."""
         self.update_reset_button_state()
+        if self.has_validation_errors():
+            self._save_timer.stop()
+            self._show_message(self.validation_message(), error=True)
+            return
+        if self._modified_pages():
+            self._save_timer.start()
 
     def has_validation_errors(self):
         return any(
@@ -280,53 +318,59 @@ class NgoSenSettingsWindow(QMainWindow):
                     messages.append(message)
         return "\n".join(messages)
 
-    def on_save_all(self, quiet=False):
-        """Triggers save on all pages that support it."""
-        from qtpy.QtWidgets import QMessageBox
-
-        if self.has_validation_errors():
-            QMessageBox.warning(
-                self,
-                _("Cannot Save"),
-                self.validation_message(),
-            )
-            return False
-
-        for i in range(self.content_stack.count()):
-            page = self.content_stack.widget(i)
-            if hasattr(page, "save_data"):
-                if page.save_data() is False:
-                    QMessageBox.critical(
-                        self,
-                        _("Error"),
-                        _("Failed to save settings. Please check if Fcitx5 is running."),
-                    )
-                    return False
-
-        self.btn_apply.setEnabled(False)
-        self.btn_cancel.setEnabled(False)
+    def save_pending(self):
+        """Saves every changed page now; one saved message covers them all."""
+        self._save_timer.stop()
+        pages = self._modified_pages()
+        if not pages or self.has_validation_errors():
+            return
+        label = None
+        if len(pages) == 1:
+            page = pages[0]
+            label = page.change_label() if hasattr(page, "change_label") else None
+            label = label or self._page_titles.get(page)
+        for page in pages:
+            if page.save_data() is False:
+                self._show_message(_("Could not save. Check that fcitx5 is running."), error=True)
+                return
+        before, self._saved = self._saved, settings_snapshot.take(self.dbus_handler)
+        self._undo_to = before
+        if self._reset_pending:
+            text = _("Defaults restored.")
+        elif label:
+            text = _("Saved “{}”.").format(label)
+        else:
+            text = _("Saved.")
+        self._reset_pending = False
+        self._show_message(text, undo=before is not None)
         self.update_reset_button_state()
-        if not quiet:
-            QMessageBox.information(self, _("Success"), _("Settings saved."))
-        return True
 
-    def on_ok(self):
-        if self.on_save_all(quiet=True):
-            self.close()
+    def undo(self):
+        """Puts back the settings from before the last save."""
+        self._save_timer.stop()
+        if self._undo_to is None:
+            return
+        if not settings_snapshot.restore(self.dbus_handler, self._undo_to):
+            self._show_message(_("Could not undo. Check that fcitx5 is running."), error=True)
+            return
+        self._undo_to = None
+        self.reload_pages()
+        self._show_message(_("Change undone."))
 
-    def on_cancel(self):
-        """Discards all unsaved changes by reloading data on all pages."""
+    def reload_pages(self):
+        """Shows the saved settings again after they changed outside the pages."""
         for i in range(self.content_stack.count()):
             page = self.content_stack.widget(i)
             if hasattr(page, "load_data"):
                 page.load_data()
             elif hasattr(page, "load_config"):
                 page.load_config()
-
-        self.btn_apply.setEnabled(False)
-        self.btn_cancel.setEnabled(False)
-        self.btn_ok.setEnabled(not self.has_validation_errors())
+        self._saved = settings_snapshot.take(self.dbus_handler)
         self.update_reset_button_state()
+
+    def closeEvent(self, event):
+        self.save_pending()
+        super().closeEvent(event)
 
     def _on_sidebar_changed(self, index):
         item = self.sidebar.item(index)
@@ -352,6 +396,7 @@ class NgoSenSettingsWindow(QMainWindow):
             factory = item.data(Qt.UserRole + 1)
             if factory:
                 widget = factory()
+                self._page_titles[widget] = item.text()
                 self.content_stack.addWidget(widget)
                 item.setData(Qt.UserRole + 2, widget)
         return widget

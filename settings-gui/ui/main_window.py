@@ -18,10 +18,12 @@ from qtpy.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
     QPushButton,
+    QScrollArea,
     QStackedWidget,
     QTabWidget,
     QVBoxLayout,
@@ -29,6 +31,7 @@ from qtpy.QtWidgets import (
 )
 
 from core import backup, settings_snapshot
+from ui import search
 
 # Lazy loading pages on demand
 
@@ -42,6 +45,7 @@ class NgoSenSettingsWindow(QMainWindow):
 
         self.dbus_handler = dbus_handler or NgoSenDBusHandler()
         self._pages = []
+        self._page_rows = {}
         self._page_titles = {}
         self._reset_pending = False
         # Saves once typing pauses instead of on every key in a text field.
@@ -105,7 +109,6 @@ class NgoSenSettingsWindow(QMainWindow):
         main_h_layout.setSpacing(0)
 
         self.sidebar = QListWidget()
-        self.sidebar.setFixedWidth(200)
         self.sidebar.setStyleSheet("""
             QListWidget {
                 border: none;
@@ -136,7 +139,7 @@ class NgoSenSettingsWindow(QMainWindow):
         page_layout.addWidget(self._setup_message_bar())
         page_layout.addWidget(self.content_stack, 1)
 
-        main_h_layout.addWidget(self.sidebar)
+        main_h_layout.addWidget(self._setup_navigation())
         main_h_layout.addLayout(page_layout, 1)
 
         main_v_layout.addLayout(main_h_layout, 1)
@@ -149,6 +152,76 @@ class NgoSenSettingsWindow(QMainWindow):
 
         self.sidebar.currentRowChanged.connect(self._on_sidebar_changed)
         self.sidebar.setCurrentRow(0)
+
+    def _setup_navigation(self):
+        column = QWidget()
+        column.setFixedWidth(200)
+        layout = QVBoxLayout(column)
+        layout.setContentsMargins(10, 12, 0, 0)
+        layout.setSpacing(4)
+
+        self.search_field = QLineEdit()
+        self.search_field.setPlaceholderText(_("Search settings"))
+        self.search_field.setClearButtonEnabled(True)
+        self.search_field.textChanged.connect(self._on_search)
+        self.search_field.returnPressed.connect(self._open_first_result)
+        layout.addWidget(self.search_field)
+
+        self.search_results = QListWidget()
+        self.search_results.setFrameShape(QFrame.NoFrame)
+        self.search_results.setWordWrap(True)
+        self.search_results.itemActivated.connect(self.open_search_result)
+        self.search_results.itemClicked.connect(self.open_search_result)
+        self.search_results.hide()
+
+        layout.addWidget(self.sidebar, 1)
+        layout.addWidget(self.search_results, 1)
+        return column
+
+    def _on_search(self, text):
+        searching = bool(text.strip())
+        self.sidebar.setVisible(not searching)
+        self.search_results.setVisible(searching)
+        self.search_results.clear()
+        if not searching:
+            return
+        self._build_all_pages()
+        for label, target, page in search.find(self._pages, text):
+            item = QListWidgetItem(f"{label} — {self._page_titles[page]}")
+            item.setData(Qt.UserRole, (target, page))
+            self.search_results.addItem(item)
+        if not self.search_results.count():
+            item = QListWidgetItem(_("No settings found"))
+            item.setFlags(Qt.NoItemFlags)
+            self.search_results.addItem(item)
+
+    def _open_first_result(self):
+        item = self.search_results.item(0)
+        if item and item.data(Qt.UserRole):
+            self.open_search_result(item)
+
+    def open_search_result(self, item):
+        """Shows the page and tab holding a found setting and puts the focus on it."""
+        found = item.data(Qt.UserRole)
+        if not found:
+            return
+        target, page = found
+        self.search_field.clear()
+        self.sidebar.setCurrentRow(self._page_rows[page])
+        tabs = self.content_stack.currentWidget()
+        if isinstance(tabs, QTabWidget):
+            tabs.setCurrentWidget(page)
+        parent = target.parentWidget()
+        while parent and not isinstance(parent, QScrollArea):
+            parent = parent.parentWidget()
+        if parent:
+            parent.ensureWidgetVisible(target)
+        target.setFocus(Qt.OtherFocusReason)
+
+    def _build_all_pages(self):
+        # Pages are built when first opened; reset and search need all of them.
+        for row in range(self.sidebar.count()):
+            self._page_for_item(self.sidebar.item(row))
 
     def _setup_bottom_bar(self, layout):
         container = QFrame()
@@ -280,9 +353,7 @@ class NgoSenSettingsWindow(QMainWindow):
             QMessageBox.Yes | QMessageBox.No,
         )
         if reply == QMessageBox.Yes:
-            # Pages are built when first opened; one never opened still has settings to reset.
-            for row in range(self.sidebar.count()):
-                self._page_for_item(self.sidebar.item(row))
+            self._build_all_pages()
             for page in self._pages:
                 if hasattr(page, "restore_defaults"):
                     page.restore_defaults()
@@ -450,6 +521,7 @@ class NgoSenSettingsWindow(QMainWindow):
             for tab, page in parts:
                 self._pages.append(page)
                 self._page_titles[page] = tab or item.text()
+                self._page_rows[page] = self.sidebar.row(item)
             self.content_stack.addWidget(widget)
             item.setData(Qt.UserRole + 2, widget)
         return widget

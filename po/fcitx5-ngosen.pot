@@ -1025,3 +1025,11 @@ msgstr ""
 #: settings-gui/ui/main_window.py
 msgid "Could not restore. Check that fcitx5 is running."
 msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Search settings"
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "No settings found"
+msgstr ""

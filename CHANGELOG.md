@@ -25,6 +25,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Cửa sổ hẹp thì tên tuỳ chọn nằm trên ô chỉnh (#15).
 - Cửa sổ cài đặt còn 5 trang: Gõ chữ, Ứng dụng, Gõ tắt & Từ điển, Phím, Khác. Sao lưu và Khôi phục thành
   hai nút ở thanh dưới; khôi phục áp dụng ngay và có Hoàn tác (#16).
+- Ô tìm cài đặt ở đầu thanh bên: gõ không dấu cũng tìm được ("chinh ta" ra "Kiểm tra chính tả"), chọn kết
+  quả thì mở đúng trang, đúng tab và đưa con trỏ tới tuỳ chọn đó (#17).
 
 ### Sửa
 

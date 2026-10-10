@@ -1093,3 +1093,11 @@ msgstr "Đã khôi phục từ {}."
 #: settings-gui/ui/main_window.py
 msgid "Could not restore. Check that fcitx5 is running."
 msgstr "Không khôi phục được. Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/ui/main_window.py
+msgid "Search settings"
+msgstr "Tìm cài đặt"
+
+#: settings-gui/ui/main_window.py
+msgid "No settings found"
+msgstr "Không thấy cài đặt nào"

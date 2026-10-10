@@ -15,6 +15,9 @@
 
 Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues).
 
+Ngó Sen tách từ [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus) và giữ nguyên lịch sử
+commit; xem mục [Nguồn gốc](#nguồn-gốc).
+
 ## Chỉ cho fcitx5
 
 Ngó Sen chỉ làm cho fcitx5. Bản IBus và bản chạy thẳng trên Sway, Hyprland đã bỏ. Mã bản IBus vẫn còn ở
@@ -124,6 +127,9 @@ ngày.
 Ngó Sen tách ra từ [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus), vốn là bản fork
 của [bộ gõ VMK](https://github.com/thanhpy2009/VMK). Ngó sen là mầm mọc ra từ cây sen: cùng gốc với
 Lotus nhưng đi hướng riêng. Giấy phép vẫn là GPL-3.0-or-later.
+
+Ngày 10/10/2026 repo được tạo lại ngoài mạng fork của fcitx5-lotus, giữ nguyên lịch sử commit. Issue và
+pull request trước đó nằm ở kho lưu [ngosen/ngosen-fork-archive](https://github.com/ngosen/ngosen-fork-archive).
 
 ## English
 

@@ -35,7 +35,7 @@ namespace {
 
 int main() {
     configureTestPaths("fcitx5-lotus-emoji-history-page-navigation");
-    const auto    historyPath = std::filesystem::path(getEnv("XDG_CONFIG_HOME")) / "fcitx5/conf/lotus-emoji-history.conf";
+    const auto    historyPath = std::filesystem::path(getEnv("XDG_CONFIG_HOME")) / "fcitx5/conf/ngosen-emoji-history.conf";
     std::ofstream history(historyPath);
     const char*   emoji[] = {"😀", "😁", "😂", "😃", "😄", "😅", "😆", "😉", "😊", "😋", "😎", "😍", "😘", "😗", "😙", "😚", "🙂", "🤗"};
     for (int i = 0; i < 18; ++i)

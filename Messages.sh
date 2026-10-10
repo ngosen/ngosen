@@ -6,21 +6,21 @@ xgettext \
 --keyword=_ \
 --keyword=N_ \
 --keyword=translate \
--o /tmp/lotus-cpp.pot \
+-o /tmp/ngosen-cpp.pot \
 $(find . \( -name "*.cpp" -o -name "*.h" \))
 
 xgettext \
 --language=appdata \
 --from-code=UTF-8 \
--o /tmp/lotus-xml.pot \
-org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in
+-o /tmp/ngosen-xml.pot \
+io.github.ngosen.NgoSen.metainfo.xml.in.in
 
 xgettext \
 --language=Python \
 --from-code=UTF-8 \
 --keyword=_ \
 --keyword=N_ \
--o /tmp/lotus-python.pot \
+-o /tmp/ngosen-python.pot \
 $(find . -name "*.py")
 
 xgettext \
@@ -28,8 +28,8 @@ xgettext \
 --from-code=UTF-8 \
 --keyword=Name \
 --keyword=Comment \
--o /tmp/lotus-desktop.pot \
-settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in
+-o /tmp/ngosen-desktop.pot \
+settings-gui/io.github.ngosen.NgoSen.Settings.desktop.in
 
 {
     echo 'msgid ""'
@@ -40,13 +40,13 @@ settings-gui/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop.in
     src/lotus.conf.in \
     src/lotus-addon.conf.in.in \
     | sed 's/^Name=\(.*\)/msgid "\1"\nmsgstr ""\n/'
-} > /tmp/lotus-conf.pot
+} > /tmp/ngosen-conf.pot
 
 msgcat \
 --use-first \
-/tmp/lotus-cpp.pot \
-/tmp/lotus-xml.pot \
-/tmp/lotus-conf.pot \
-/tmp/lotus-python.pot \
-/tmp/lotus-desktop.pot \
--o po/fcitx5-lotus.pot
+/tmp/ngosen-cpp.pot \
+/tmp/ngosen-xml.pot \
+/tmp/ngosen-conf.pot \
+/tmp/ngosen-python.pot \
+/tmp/ngosen-desktop.pot \
+-o po/fcitx5-ngosen.pot

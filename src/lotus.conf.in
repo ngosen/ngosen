@@ -1,6 +1,6 @@
 [InputMethod]
 Name=Ngó Sen
-Icon=fcitx-lotus
+Icon=fcitx-ngosen
 LangCode=vi
-Addon=lotus
+Addon=ngosen
 Configurable=True

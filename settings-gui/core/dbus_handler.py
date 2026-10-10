@@ -10,7 +10,7 @@ import dbus
 
 class LotusDBusHandler:
     def __init__(self):
-        self.addon_name = "fcitx://config/addon/lotus"
+        self.addon_name = "fcitx://config/addon/ngosen"
         try:
             self.bus = dbus.SessionBus()
             self.proxy = self.bus.get_object("org.fcitx.Fcitx5", "/controller")

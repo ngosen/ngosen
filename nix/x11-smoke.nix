@@ -14,14 +14,14 @@ let
     [Groups/0]
     Name=Default
     Default Layout=us
-    DefaultIM=lotus
+    DefaultIM=ngosen
 
     [Groups/0/Items/0]
     Name=keyboard-us
     Layout=
 
     [Groups/0/Items/1]
-    Name=lotus
+    Name=ngosen
     Layout=
 
     [GroupOrder]
@@ -41,7 +41,7 @@ let
     path, _ = im.CreateInputContext([("program", "smoke")], dbus_interface="org.fcitx.Fcitx.InputMethod1")
     bus.get_object("org.fcitx.Fcitx5", path).FocusIn(dbus_interface="org.fcitx.Fcitx.InputContext1")
     ctl = bus.get_object("org.fcitx.Fcitx5", "/controller")
-    ctl.SetCurrentIM("lotus", dbus_interface="org.fcitx.Fcitx.Controller1")
+    ctl.SetCurrentIM("ngosen", dbus_interface="org.fcitx.Fcitx.Controller1")
   '';
 in
 runCommand "fcitx5-ngosen-x11-smoke"

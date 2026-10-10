@@ -6,13 +6,17 @@ tự dựng, hoặc dùng bản phân phối chưa có gói.
 Các bước dưới đây cho Arch và CachyOS. Bản phân phối khác thì cài các gói tương ứng, các bước còn lại
 giống hệt.
 
-**1. Gỡ bản Lotus đóng gói sẵn, nếu máy đã có.** Không gỡ thì tệp của hai bản đè lên nhau, và lần cập
-nhật hệ thống sau sẽ báo lỗi tệp xung đột.
+**1. Máy từng tự dựng Ngó Sen 1.0.0 trở về trước:** xoá các tệp mang tên `lotus` mà bản đó cài, vì
+`cmake --install` chỉ thêm tệp chứ không xoá. Nếu máy có cài gói `fcitx5-lotus` thì bỏ qua bước này, vì
+các tệp đó thuộc về gói đó.
 
 ```
-pacman -Qs fcitx5-lotus
-sudo pacman -R fcitx5-lotus
+sudo rm -f /usr/lib/fcitx5/liblotus.so /usr/share/fcitx5/addon/lotus.conf /usr/share/fcitx5/inputmethod/lotus.conf \
+    /usr/bin/fcitx5-lotus-settings
+sudo rm -rf /usr/share/fcitx5/lotus /usr/share/fcitx5-lotus
 ```
+
+Cấu hình cũ trong `~/.config/fcitx5/conf/lotus*.conf` được tự chép sang `ngosen*.conf` ở lần chạy đầu.
 
 **2. Cài công cụ dựng.**
 

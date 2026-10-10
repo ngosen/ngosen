@@ -53,7 +53,7 @@ int main() {
     // Per-app rule for the mock context's program name ("test"): Off.
     // Must be on disk before the engine is constructed (loadAppRules runs in
     // the constructor).
-    const auto rulesFile = std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf/lotus-app-rules.conf";
+    const auto rulesFile = std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf/ngosen-app-rules.conf";
     {
         std::ofstream file(rulesFile, std::ios::trunc);
         if (!file.is_open()) {

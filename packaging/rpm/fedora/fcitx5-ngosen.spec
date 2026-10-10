@@ -1,7 +1,3 @@
-# Ngó Sen is a fork of fcitx5-lotus. Installed paths, the gettext domain and
-# the source directory keep the upstream name so upstream patches still apply.
-%global upstream_name fcitx5-lotus
-
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
@@ -10,11 +6,7 @@ Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
 URL:            https://github.com/ngosen/ngosen
-Source0:        %{url}/archive/v%{version}/%{upstream_name}-%{version}.tar.gz
-
-# Both packages install the same files, so they cannot be installed together.
-Conflicts:      %{upstream_name}
-Obsoletes:      %{upstream_name} < %{epoch}:%{version}-%{release}
+Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  extra-cmake-modules
@@ -39,7 +31,7 @@ Requires(posttrans): shadow-utils
 Ngó Sen is a Vietnamese input method for fcitx5, forked from fcitx5-lotus.
 
 %prep
-%setup -q -n %{upstream_name}-%{version}
+%setup -q -n %{name}-%{version}
 
 %build
 %cmake -DLOTUS_BYTECOMPILE_PYTHON:BOOL=OFF -DBUILD_TESTING:BOOL=ON -DNGOSEN_RUST_CORE:BOOL=ON
@@ -47,45 +39,47 @@ Ngó Sen is a Vietnamese input method for fcitx5, forked from fcitx5-lotus.
 
 %install
 %cmake_install
-%find_lang %{upstream_name}
-%py_byte_compile %{__python3} %{buildroot}%{_datadir}/fcitx5-lotus
+%find_lang %{name}
+%py_byte_compile %{__python3} %{buildroot}%{_datadir}/fcitx5-ngosen
 
 %check
 %ctest
 
-%files -f %{upstream_name}.lang
-%{_datadir}/licenses/%{upstream_name}/GPL-3.0-or-later.txt
-%{_datadir}/licenses/%{upstream_name}/LGPL-2.1-or-later.txt
+%files -f %{name}.lang
+%{_datadir}/licenses/%{name}/GPL-3.0-or-later.txt
+%{_datadir}/licenses/%{name}/LGPL-2.1-or-later.txt
 
-%dir %{_datadir}/licenses/%{upstream_name}
-%{_bindir}/fcitx5-lotus-settings
+%dir %{_datadir}/licenses/%{name}
+%{_bindir}/fcitx5-ngosen-settings
 
-%{_libdir}/fcitx5/liblotus.so
+%{_libdir}/fcitx5/libngosen.so
+%{_libdir}/fcitx5/libngosenmigrate.so
 
-%{_datadir}/fcitx5/addon/lotus.conf
-%{_datadir}/fcitx5/inputmethod/lotus.conf
+%{_datadir}/fcitx5/addon/ngosen.conf
+%{_datadir}/fcitx5/addon/ngosenmigrate.conf
+%{_datadir}/fcitx5/inputmethod/ngosen.conf
 
-%{_datadir}/fcitx5/lotus/
-%{_datadir}/fcitx5-lotus/
-%{_datadir}/applications/org.fcitx.Fcitx5.Addon.Lotus.Settings.desktop
-%{_datadir}/metainfo/org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml
+%{_datadir}/fcitx5/ngosen/
+%{_datadir}/fcitx5-ngosen/
+%{_datadir}/applications/io.github.ngosen.NgoSen.Settings.desktop
+%{_datadir}/metainfo/io.github.ngosen.NgoSen.metainfo.xml
 %{_datadir}/gnome-shell/extensions/forward-keys@ngosen.github.io/
 
-%{_datadir}/icons/hicolor/scalable/apps/*fcitx-lotus*.svg
-%{_datadir}/icons/hicolor/scalable/status/fcitx-lotus*.svg
-%{_datadir}/icons/hicolor/*/status/fcitx-lotus*.png
+%{_datadir}/icons/hicolor/scalable/apps/*fcitx-ngosen*.svg
+%{_datadir}/icons/hicolor/scalable/status/fcitx-ngosen*.svg
+%{_datadir}/icons/hicolor/*/status/fcitx-ngosen*.png
 
 %dir %{_datadir}/icons/breeze
 %dir %{_datadir}/icons/breeze/status
 %dir %{_datadir}/icons/breeze/status/22
 %dir %{_datadir}/icons/breeze/status/24
-%{_datadir}/icons/breeze/status/*/fcitx-lotus*.svg
+%{_datadir}/icons/breeze/status/*/fcitx-ngosen*.svg
 
 %dir %{_datadir}/icons/breeze-dark
 %dir %{_datadir}/icons/breeze-dark/status
 %dir %{_datadir}/icons/breeze-dark/status/22
 %dir %{_datadir}/icons/breeze-dark/status/24
-%{_datadir}/icons/breeze-dark/status/*/fcitx-lotus*.svg
+%{_datadir}/icons/breeze-dark/status/*/fcitx-ngosen*.svg
 
 # Earlier versions ran fcitx5-lotus-server@<user>.service as the uinput_proxy user, with udev rules
 # granting it /dev/uinput and the pointer devices. This version needs none of it. posttrans runs after

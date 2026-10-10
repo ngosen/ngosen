@@ -7,7 +7,7 @@ target_include_directories(lotus_test_core PRIVATE
     ${PROJECT_SOURCE_DIR}/src
 )
 target_compile_definitions(lotus_test_core PRIVATE
-    FCITX5_LOTUS_SETTINGS_PATH="${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-lotus-settings"
+    FCITX5_LOTUS_SETTINGS_PATH="${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-ngosen-settings"
     FCITX_LOTUS_ICON_DIR="${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps"
 )
 target_link_libraries(lotus_test_core PRIVATE
@@ -32,7 +32,7 @@ function(add_lotus_headless_test target source labels)
         ${PROJECT_SOURCE_DIR}/src
     )
     target_compile_definitions(${target} PRIVATE
-        FCITX5_LOTUS_SETTINGS_PATH="${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-lotus-settings"
+        FCITX5_LOTUS_SETTINGS_PATH="${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-ngosen-settings"
         FCITX_LOTUS_ICON_DIR="${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps"
         LOTUS_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
     )
@@ -184,6 +184,12 @@ target_include_directories(utf8_matches_fcitx PRIVATE ${PROJECT_SOURCE_DIR}/src/
 target_link_libraries(utf8_matches_fcitx PRIVATE Fcitx5::Utils)
 add_test(NAME utf8_matches_fcitx COMMAND utf8_matches_fcitx)
 set_tests_properties(utf8_matches_fcitx PROPERTIES LABELS "unit" TIMEOUT 60)
+
+# Settings saved under the lotus names carry over to the ngosen names.
+add_executable(ngosen_migration_test ngosen-migration.cpp)
+target_link_libraries(ngosen_migration_test PRIVATE ngosen_migration)
+add_test(NAME ngosen_migration COMMAND ngosen_migration_test)
+set_tests_properties(ngosen_migration PROPERTIES LABELS "unit;config" TIMEOUT 20)
 
 # The Rust typing core's own tests, ported from the Go core's.
 if (NGOSEN_RUST_CORE)

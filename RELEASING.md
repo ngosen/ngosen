@@ -19,10 +19,10 @@ The release is `X.Y.Z-N` (`N` is the packaging revision) with epoch 1, tagged `n
 1. On a `release/X.Y.Z` branch, set the version everywhere:
    - `CMakeLists.txt` (`project(... VERSION X.Y.Z)`)
    - `packaging/arch/PKGBUILD` (`pkgver`, `pkgrel`)
-   - `packaging/rpm/fedora/fcitx5-lotus.spec` and `packaging/rpm/opensuse/fcitx5-lotus.spec` (`Version`,
+   - `packaging/rpm/fedora/fcitx5-ngosen.spec` and `packaging/rpm/opensuse/fcitx5-ngosen.spec` (`Version`,
      `Release`, a new `%changelog` entry)
    - `packaging/debian/changelog` (new entry `fcitx5-ngosen (1:X.Y.Z-N)`)
-   - `org.fcitx.Fcitx5.Addon.Lotus.metainfo.xml.in.in` (release `date`)
+   - `io.github.ngosen.NgoSen.metainfo.xml.in.in` (release `date`)
    - `.github/ISSUE_TEMPLATE/bug_report.yml` (example version)
 
    `packaging/check-version.sh X.Y.Z-N` must print no `MISMATCH`.

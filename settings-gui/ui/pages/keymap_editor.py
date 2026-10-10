@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-Keymap Editor Page. Edits lotus-custom-keymap.conf.
+Keymap Editor Page. Edits ngosen-custom-keymap.conf.
 Implements custom keymap presets and TSV import/export.
 """
 

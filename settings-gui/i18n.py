@@ -14,7 +14,7 @@ def setup_i18n():
     """Initialize gettext with system locale."""
     try:
         locale.setlocale(locale.LC_ALL, "")
-        domain = "fcitx5-lotus"
+        domain = "fcitx5-ngosen"
         localedir = "/usr/share/locale"
 
         if os.path.exists(localedir):

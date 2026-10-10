@@ -65,7 +65,7 @@ int main() {
         return 1;
     }
 
-    const auto rulesFile = std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf/lotus-app-rules.conf";
+    const auto rulesFile = std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf/ngosen-app-rules.conf";
     {
         std::ofstream file(rulesFile, std::ios::trunc);
         if (!file.is_open()) {

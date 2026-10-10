@@ -15,8 +15,6 @@ license=('GPL-3.0-or-later')
 depends=('fcitx5' 'fcitx5-configtool' 'fcitx5-gtk' 'fcitx5-qt' 'hicolor-icon-theme'
          'glibc' 'libstdc++' 'libgcc' 'libxcb' 'python-qtpy' 'python-pyqt6' 'python-dbus')
 makedepends=('cmake' 'extra-cmake-modules' 'rust' 'librsvg')
-# Installs the same files as fcitx5-lotus; installed paths keep the upstream name.
-conflicts=('fcitx5-lotus')
 options=('!debug')
 install=fcitx5-ngosen.install
 

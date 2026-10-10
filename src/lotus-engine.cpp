@@ -40,9 +40,9 @@
 #include <sstream>
 
 namespace fcitx {
-    constexpr const char* CharsetActionPrefix = "lotus-charset-";
-    const std::string     CustomKeymapFile    = "conf/lotus-custom-keymap.conf";
-    const std::string     MacroTableFile      = "conf/lotus-macro-table.conf";
+    constexpr const char* CharsetActionPrefix = "ngosen-charset-";
+    const std::string     CustomKeymapFile    = "conf/ngosen-custom-keymap.conf";
+    const std::string     MacroTableFile      = "conf/ngosen-macro-table.conf";
 
     int                   modeToInt(LotusMode mode) {
         switch (mode) {
@@ -298,7 +298,7 @@ namespace fcitx {
         charsetAction_ = std::make_unique<SimpleAction>();
         charsetAction_->setShortText(_("Charset"));
         charsetAction_->setIcon("character-set");
-        uiManager.registerAction("lotus-charset", charsetAction_.get());
+        uiManager.registerAction("ngosen-charset", charsetAction_.get());
         charsetMenu_ = std::make_unique<Menu>();
         charsetAction_->setMenu(charsetMenu_.get());
 
@@ -324,20 +324,20 @@ namespace fcitx {
         }
         config_.outputCharset.annotation().setList(charsets);
 
-        initToggleAction(spellCheckAction_, config_.spellCheck, "lotus-spellcheck", "tools-check-spelling", _("Spell Check"), _("Spell Check"), uiManager);
-        initToggleAction(macroAction_, config_.enableMacro, "lotus-macro", "document-edit", _("Macro"), _("Macro"), uiManager);
-        initToggleAction(capitalizeMacroAction_, config_.capitalizeMacro, "lotus-capitalizemacro", "format-text-uppercase", _("Capitalize Macro"), _("Capitalize Macro"),
+        initToggleAction(spellCheckAction_, config_.spellCheck, "ngosen-spellcheck", "tools-check-spelling", _("Spell Check"), _("Spell Check"), uiManager);
+        initToggleAction(macroAction_, config_.enableMacro, "ngosen-macro", "document-edit", _("Macro"), _("Macro"), uiManager);
+        initToggleAction(capitalizeMacroAction_, config_.capitalizeMacro, "ngosen-capitalizemacro", "format-text-uppercase", _("Capitalize Macro"), _("Capitalize Macro"),
                          uiManager);
-        initToggleAction(autoNonVnRestoreAction_, config_.autoNonVnRestore, "lotus-autonvnrestore", "edit-undo", _("Auto Restore Invalid Words"), _("Auto Non-VN Restore"),
+        initToggleAction(autoNonVnRestoreAction_, config_.autoNonVnRestore, "ngosen-autonvnrestore", "edit-undo", _("Auto Restore Invalid Words"), _("Auto Non-VN Restore"),
                          uiManager);
-        initToggleAction(enableDictionaryAction_, config_.enableDictionary, "lotus-dictionary", "accessories-dictionary", _("Custom Dictionary"), _("Custom Dictionary"),
+        initToggleAction(enableDictionaryAction_, config_.enableDictionary, "ngosen-dictionary", "accessories-dictionary", _("Custom Dictionary"), _("Custom Dictionary"),
                          uiManager);
 
         settingsAction_ = std::make_unique<SimpleAction>();
         settingsAction_->setShortText(_("Settings"));
         settingsAction_->setIcon("configure");
         connections_.emplace_back(settingsAction_->connect<SimpleAction::Activated>([](InputContext*) { startProcess({FCITX5_LOTUS_SETTINGS_PATH}); }));
-        uiManager.registerAction("lotus-settings", settingsAction_.get());
+        uiManager.registerAction("ngosen-settings", settingsAction_.get());
 
         saveLogAction_ = std::make_unique<SimpleAction>();
         saveLogAction_->setShortText(_("Save typing log"));
@@ -357,7 +357,7 @@ namespace fcitx {
         reloadConfig();
         realMode = config_.mode.value();
         instance_->inputContextManager().registerProperty("LotusState", &factory_);
-        appRulesPath_ = configDir + "/lotus-app-rules.conf";
+        appRulesPath_ = configDir + "/ngosen-app-rules.conf";
         loadAppRules();
         toggleActions_ = {charsetAction_.get(),          spellCheckAction_.get(),       macroAction_.get(),   capitalizeMacroAction_.get(),
                           autoNonVnRestoreAction_.get(), enableDictionaryAction_.get(), saveLogAction_.get(), settingsAction_.get()};
@@ -406,7 +406,7 @@ namespace fcitx {
 
     void LotusEngine::reloadConfig() {
         RawConfig raw;
-        readAsIni(raw, "conf/lotus.conf");
+        readAsIni(raw, "conf/ngosen.conf");
         migrateLegacyMode(raw);
         config_.load(raw);
         readAsIni(customKeymap_, CustomKeymapFile);
@@ -414,18 +414,18 @@ namespace fcitx {
         macroTableObject_.reset(newMacroTable(macroTables_));
         if (config_.enableDictionary.value()) {
 #if LOTUS_USE_MODERN_FCITX_API
-            auto fd = StandardPaths::global().open(StandardPathsType::PkgData, "lotus/vietnamese.cm.dict");
+            auto fd = StandardPaths::global().open(StandardPathsType::PkgData, "ngosen/vietnamese.cm.dict");
 #else
-            auto fd = StandardPath::global().open(StandardPath::Type::PkgData, "lotus/vietnamese.cm.dict", O_RDONLY);
+            auto fd = StandardPath::global().open(StandardPath::Type::PkgData, "ngosen/vietnamese.cm.dict", O_RDONLY);
 #endif
             if (fd.isValid()) {
                 dictionary_.reset(NewDictionary(fd.release()));
             }
         } else {
 #if LOTUS_USE_MODERN_FCITX_API
-            auto paths = StandardPaths::global().locateAll(StandardPathsType::PkgData, "lotus/vietnamese.cm.dict");
+            auto paths = StandardPaths::global().locateAll(StandardPathsType::PkgData, "ngosen/vietnamese.cm.dict");
 #else
-            auto paths = StandardPath::global().locateAll(StandardPath::Type::PkgData, "lotus/vietnamese.cm.dict");
+            auto paths = StandardPath::global().locateAll(StandardPath::Type::PkgData, "ngosen/vietnamese.cm.dict");
 #endif
             for (const auto& p : paths) {
 #if LOTUS_USE_MODERN_FCITX_API
@@ -451,7 +451,7 @@ namespace fcitx {
     const Configuration* LotusEngine::getSubConfig(const std::string& path) const {
         if (path == "custom_keymap")
             return &customKeymap_;
-        if (path == "lotus-macro") {
+        if (path == "ngosen-macro") {
             return &macroTables_;
         }
         if (path == "app_rules") {
@@ -524,7 +524,7 @@ namespace fcitx {
             customKeymap_.load(config, true);
             safeSaveAsIni(customKeymap_, CustomKeymapFile);
             refreshEngine();
-        } else if (path == "lotus-macro") {
+        } else if (path == "ngosen-macro") {
             macroTables_.load(config, true);
             safeSaveAsIni(macroTables_, MacroTableFile);
             macroTableObject_.reset(newMacroTable(macroTables_));
@@ -1147,9 +1147,9 @@ namespace fcitx {
     std::string LotusEngine::subModeIconImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
         std::string baseIconName;
         switch (realMode) {
-            case LotusMode::Off: baseIconName = "fcitx-lotus-off"; break;
-            case LotusMode::Emoji: baseIconName = "fcitx-lotus-emoji"; break;
-            default: baseIconName = "fcitx-lotus"; break;
+            case LotusMode::Off: baseIconName = "fcitx-ngosen-off"; break;
+            case LotusMode::Emoji: baseIconName = "fcitx-ngosen-emoji"; break;
+            default: baseIconName = "fcitx-ngosen"; break;
         }
 
         std::string iconName;

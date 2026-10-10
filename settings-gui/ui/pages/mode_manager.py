@@ -502,7 +502,9 @@ class ModeManagerPage(QWidget):
 
     def _populate_app_list(self):
         self.app_list.clear()
-        self._scan_desktop_files()
+        # Icons do not change while the window is open; scanning on every click was slow.
+        if not self._icon_cache:
+            self._scan_desktop_files()
         apps_to_show = set(self.app_rules.keys())
         if self.selected_app:
             apps_to_show.add(self.selected_app)

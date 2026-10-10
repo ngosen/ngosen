@@ -312,7 +312,8 @@ class NgoSenSettingsWindow(QMainWindow):
         )
         self._add_page(
             _("More"),
-            "preferences-other",
+            # Adwaita and Yaru have no preferences-other.
+            ("preferences-other", "preferences-system"),
             (_("Appearance"), create_appearance),
             (_("About"), create_about),
         )
@@ -524,9 +525,11 @@ class NgoSenSettingsWindow(QMainWindow):
         self.resize(w, h)
         self.move((screen.width() - w) // 2, (screen.height() - h) // 2)
 
-    def _add_page(self, title: str, icon_name: str, *parts):
+    def _add_page(self, title: str, icon_name, *parts):
         """Adds a sidebar entry; several (tab title, factory) parts show as tabs."""
-        item = QListWidgetItem(QIcon.fromTheme(icon_name), title)
+        names = (icon_name,) if isinstance(icon_name, str) else icon_name
+        icon = next((QIcon.fromTheme(n) for n in names if QIcon.hasThemeIcon(n)), QIcon())
+        item = QListWidgetItem(icon, title)
         item.setData(Qt.UserRole, "page")
         item.setData(Qt.UserRole + 1, list(parts))
         item.setData(Qt.UserRole + 2, None)

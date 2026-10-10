@@ -7,8 +7,7 @@ body:
       value: |
         Cảm ơn bạn đã dành thời gian báo cáo lỗi! Vui lòng điền đầy đủ thông tin bên dưới.
 
-        Đây là nơi báo lỗi của Ngó Sen. Nếu bạn đang dùng bản gốc fcitx5-lotus, hãy báo ở
-        [kho của bản gốc](https://github.com/LotusInputMethod/fcitx5-lotus/issues).
+        Đây là nơi báo lỗi của Ngó Sen.
 
   - type: textarea
     id: description

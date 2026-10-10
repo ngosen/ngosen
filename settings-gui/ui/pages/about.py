@@ -127,35 +127,21 @@ class AboutPage(QWidget):
         line.setObjectName("AboutLine")
         layout.addWidget(line)
 
-        # Credits Section
-        credits_title = QLabel(_("Based on fcitx5-lotus by"))
-        credits_title.setObjectName("CreditsTitle")
-        layout.addWidget(credits_title, alignment=Qt.AlignCenter)
+        developer = QLabel(_("Developed by Nguyen Phi"))
+        developer.setObjectName("DeveloperLine")
+        layout.addWidget(developer, alignment=Qt.AlignCenter)
 
-        # Authors List - Single Column with wrap-round support
-        authors_layout = QVBoxLayout()
-        authors_layout.setSpacing(12)
-
-        authors_data = [
-            ("Nguyễn Hoàng Kỳ", "https://github.com/nhktmdzhg"),
-            ("Nguyễn Hồng Hiệp", "https://github.com/justanoobcoder"),
-            ("Đặng Quang Hiển", "https://github.com/Miho1254"),
-            ("Zebra2711", "https://github.com/Zebra2711"),
-            ("Huỳnh Thiện Lộc", "https://github.com/hthienloc"),
-        ]
-
-        for name, profile_url in authors_data:
-            author_link = QLabel(
-                f'<a href="{profile_url}" style="text-decoration: none;">{name}</a>'
+        # One credit line; the authors are named in the copyright notices.
+        credits = QLabel(
+            _("Based on the code of {lotus} and {vmk}.").format(
+                lotus='<a href="https://github.com/LotusInputMethod/fcitx5-lotus" style="text-decoration: none;">fcitx5-lotus</a>',
+                vmk='<a href="https://github.com/thanhpy2009/VMK" style="text-decoration: none;">VMK</a>',
             )
-            author_link.setOpenExternalLinks(True)
-            author_link.setCursor(Qt.PointingHandCursor)
-            author_link.setObjectName("AuthorLink")
-            author_link.setAlignment(Qt.AlignCenter)
-            author_link.setMinimumHeight(24)
-            authors_layout.addWidget(author_link)
-
-        layout.addLayout(authors_layout)
+        )
+        credits.setOpenExternalLinks(True)
+        credits.setObjectName("CreditsLine")
+        credits.setStyleSheet("font-size: 11px;")
+        layout.addWidget(credits, alignment=Qt.AlignCenter)
         layout.addStretch()
 
         # Footer

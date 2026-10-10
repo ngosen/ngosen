@@ -79,7 +79,7 @@ Không có mã hoặc không mở được: UniLume (không có mã, chuyển th
 
 - **pinakey (đã kiểm):** mặc định gõ bằng chữ tạm với cờ "không gạch chân" (`fcitx5/src/pinakey.cpp:296`).
   Chế độ uinput có nhưng tắt mặc định, phải bật bằng biến môi trường `PINAKEY_UINPUT=1`
-  (`:331-349`). Lý do họ ghi: trên GNOME, đường D-Bus không bảo đảm thứ tự, "kể cả uinput+ACK kiểu Lotus".
+  (`:331-349`). Lý do họ ghi: trên GNOME, đường D-Bus không bảo đảm thứ tự, kể cả cách uinput có kèm xác nhận.
 - **TypeVN (đã kiểm):** IBus, chữ tạm không gạch chân ở chế độ tự chốt (`crates/ibus-typevn/c/engine.c:77-93`),
   tự chốt sau 800 ms không gõ hoặc khi rời ô.
 - **Chưa kiểm:** ứng dụng có thật sự bỏ gạch chân khi được yêu cầu không. Tuỳ từng ứng dụng, phải thử.
@@ -101,7 +101,7 @@ Không có mã hoặc không mở được: UniLume (không có mã, chuyển th
   React/Facebook, giống hướng Ngó Sen đã chọn, nhưng nó chốt bằng đồng hồ chứ không chờ ô xác nhận.
   Luật udev cho người dùng quyền đọc cả chuột và bàn di. Lõi Go để dạng file nhị phân build sẵn.
 - **VMK:** bấm xoá thừa một phím + chờ cố định 20 ms. Quyền uinput mở rộng không an toàn. Bỏ qua.
-- **fcitx5-lilypad:** bản Lotus đổi tên từ đầu tháng 8, thêm chế độ gõ theo đồng hồ và tự gửi xác nhận.
+- **fcitx5-lilypad:** có thêm chế độ gõ theo đồng hồ và tự gửi xác nhận.
   Đánh giá riêng trong phiên 24/09: không có gì đáng lấy.
 - **Unikey-Wayland (bản cũ):** X11, đổi bảng phím cho từng chữ bằng `XChangeKeyboardMapping` rồi bấm,
   có ngủ giữa các bước. Không áp được cho Wayland.

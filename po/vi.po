@@ -326,8 +326,9 @@ msgid "Export Debug Logs"
 msgstr "Xuất nhật ký gỡ lỗi"
 
 #: settings-gui/ui/pages/about.py:148
-msgid "Based on fcitx5-lotus by"
-msgstr "Dựa trên fcitx5-lotus của"
+#, python-brace-format
+msgid "Based on the code of {lotus} and {vmk}."
+msgstr "Dựa trên mã của {lotus} và {vmk}."
 
 #: settings-gui/ui/pages/about.py:184
 msgid "Licensed under the GNU General Public License v3.0"

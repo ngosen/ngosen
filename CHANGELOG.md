@@ -11,6 +11,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.1.0-1] — 10/10/2026
+
+Bản 1.1: file cài vào máy mang tên `ngosen`, cấu hình cũ tự chuyển sang; icon khay mới; thêm nhật ký gõ
+để gửi kèm khi báo lỗi. Tải ở [ngosen-1.1.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.1.0-1).
+
 ### Thêm
 
 - Nhật ký gõ: vừa gõ ra chữ sai thì chọn "Lưu nhật ký gõ" trong menu fcitx5 ở khay hệ thống. Ngó Sen lưu

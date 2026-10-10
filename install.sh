@@ -140,18 +140,11 @@ download_package() {
 
 install_with_pacman() {
     local package=$1
-    local -a addons=() overwrite=() path_list=()
-
-    # The OpenRC and runit add-ons depend on fcitx5-lotus, so pacman refuses to replace it while
-    # they are installed. Stop before anything is changed.
-    mapfile -t addons < <(pacman -Qq | grep -x -E 'fcitx5-lotus-(openrc|runit)(-git|-bin)?' || true)
-    if [ "${#addons[@]}" -gt 0 ]; then
-        die "gói ${addons[*]} cần fcitx5-lotus nên chưa thay được. Gỡ trước rồi chạy lại: sudo pacman -R ${addons[*]}"
-    fi
+    local -a overwrite=() path_list=()
 
     # A build installed with "cmake --install" left the same files owned by no package. Only the
     # paths this package ships may be overwritten.
-    local addon=/usr/lib/fcitx5/liblotus.so
+    local addon=/usr/lib/fcitx5/libngosen.so
     if [ -e "$addon" ] && ! pacman -Qo "$addon" >/dev/null 2>&1; then
         say "Máy có bản cài từ mã; gói sẽ ghi đè các tệp của bản đó."
         mapfile -t path_list < <(bsdtar -tf "$package" | grep -v -E '^\.|/$')
@@ -161,29 +154,17 @@ install_with_pacman() {
         done
     fi
 
-    # --noconfirm answers "no" when pacman asks whether to remove the conflicting fcitx5-lotus;
-    # --ask 4 turns that one answer into "yes". The old package then leaves in the same transaction
-    # that brings the new one, so a failed install leaves the machine as it was.
-    as_root pacman -U --noconfirm --ask 4 "${overwrite[@]}" "$package"
+    as_root pacman -U --noconfirm "${overwrite[@]}" "$package"
 }
 
 install_package() {
     local package=$1
     case "$manager" in
         dnf)
-            # --allowerasing lets dnf remove fcitx5-lotus in the same transaction.
-            if rpm -q fcitx5-lotus >/dev/null 2>&1; then
-                as_root dnf install -y --allowerasing "$package"
-            else
-                as_root dnf install -y "$package"
-            fi
+            as_root dnf install -y "$package"
             ;;
         zypper)
-            if rpm -q fcitx5-lotus >/dev/null 2>&1; then
-                as_root zypper --non-interactive install --allow-unsigned-rpm --force-resolution "$package"
-            else
-                as_root zypper --non-interactive install --allow-unsigned-rpm "$package"
-            fi
+            as_root zypper --non-interactive install --allow-unsigned-rpm "$package"
             ;;
         apt)
             as_root apt-get install -y "$package"
@@ -230,7 +211,7 @@ main() {
 
     say "Ngó Sen sẽ được cài bằng $manager từ gói:"
     say "  $RELEASE_URL/$file"
-    say "Gói fcitx5-lotus (nếu có) sẽ bị thay; cấu hình trong ~/.config/fcitx5 được giữ."
+    say "Cấu hình trong ~/.config/fcitx5 được giữ."
     confirm "Tiếp tục?" || {
         say "Đã dừng, chưa cài gì."
         exit 0

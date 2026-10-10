@@ -4,14 +4,14 @@
 
 - **Không cần quyền đặc biệt.** Ngó Sen không còn uinput server, chỉ dùng đúng quyền của fcitx5. Cài
   xong gõ được ngay, không phải bật service hay cấp quyền thiết bị.
-- **Gõ thẳng, không gạch chân.** Chế độ Gõ Sen đưa chữ vào app ngay khi gõ. Ô gợi ý của thanh địa chỉ hay
-  ô tìm kiếm chạy theo từng phím.
-- **Một chế độ cho mọi app.** Trình duyệt, terminal, Zalo, LibreOffice đều dùng Gõ Sen. Ngó Sen tự nhận ra
+- **Gõ thẳng, không gạch chân.** Chế độ Gõ Sen đưa chữ vào app ngay khi gõ. Gợi ý ở thanh địa chỉ
+  hay ô tìm kiếm hiện ra theo từng phím gõ.
+- **Một chế độ cho hầu hết app.** Trình duyệt, terminal, Zalo, LibreOffice đều dùng Gõ Sen. Ngó Sen tự nhận ra
   app nhận chữ kiểu gì, không phải đổi chế độ.
 - **Lõi Rust.** Phần biến `tieengs` thành `tiếng` được viết lại bằng Rust. Gói cho Fedora, Arch, openSUSE
   và Ubuntu 24.04 trở lên dùng lõi Rust.
-- **Cài bằng một dòng lệnh** trên Fedora, Ubuntu, Debian, Arch, CachyOS, openSUSE; script kiểm hash trước
-  khi cài.
+- **Cài bằng một dòng lệnh.** Có cho Fedora, Ubuntu, Debian, Arch, CachyOS và openSUSE. Script so hash
+  SHA-256 trước khi cài.
 
 Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues).
 
@@ -20,16 +20,16 @@ commit; xem mục [Nguồn gốc](#nguồn-gốc).
 
 ## Chỉ cho fcitx5
 
-Ngó Sen chỉ làm cho fcitx5. Bản IBus và bản chạy thẳng trên Sway, Hyprland đã bỏ. Mã bản IBus vẫn còn ở
-nhánh `feat/ibus-engine`.
+Ngó Sen chỉ làm cho fcitx5. Bản IBus và bản chạy thẳng trên Sway, Hyprland mà không qua fcitx5 đã bỏ;
+trên Sway và Hyprland vẫn gõ được qua fcitx5. Mã bản IBus vẫn còn ở nhánh `feat/ibus-engine`.
 
 ## Nên dùng chế độ nào
 
 Dùng **Gõ Sen** làm chế độ gõ chính: chọn trong cửa sổ cài đặt Ngó Sen, mục chế độ mặc định. Chế độ
-này trước tên là `Uinput`; cấu hình cũ tự chuyển sang tên mới. Chế độ Surrounding Text cũ cũng tự chuyển
+này trước đây tên là `Uinput`; cấu hình cũ tự chuyển sang tên mới. Chế độ Surrounding Text cũ cũng tự chuyển
 thành Gõ Sen.
 
-Kiểu gõ được dùng và kiểm hằng ngày là **Telex**. VNI và các kiểu khác dùng được nhưng chưa kiểm kỹ.
+Kiểu gõ được dùng và test hằng ngày là **Telex**. VNI và các kiểu khác dùng được nhưng chưa test kỹ.
 
 ## Cài
 

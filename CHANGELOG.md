@@ -47,6 +47,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   riêng; trước đây nó gần như không đổi gì. Sửa từ điển riêng có tác dụng ngay, không phải khởi động lại
   fcitx5. Đặt phím mở menu chế độ không còn xoá các phím khác đã đặt. Chế độ gõ mặc định chỉ còn chỉnh ở
   trang Chung, không còn hai chỗ ghi đè nhau (#12).
+- Cửa sổ cài đặt: mở trang Gõ tắt & Từ điển rồi đổi một cài đặt khác không còn tắt từ điển riêng và ghi lại
+  danh sách từ. Đổi sáng/tối khi cửa sổ đang mở thì dòng gợi ý và hàng nút chế độ đổi màu theo, không còn
+  chữ tối trên nền tối (#22).
 
 ## [1.1.0-1] — 10/10/2026
 

@@ -245,6 +245,29 @@ namespace {
         }
     }
 
+    // An address bar fills in a suggestion after the cursor and selects it. Typing its next letter
+    // leaves the text as it was and moves the cursor one step, which is not a click.
+    void testTypingIntoSuggestion() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "microsoft-edge"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        const std::string   suggestion = "ngosen.github.io";
+        host->setSurrounding("", 0);
+        state.surroundingUpdated();
+        for (unsigned int typed = 1; typed <= 3; ++typed) {
+            press(state, static_cast<uint32_t>(suggestion[typed - 1]));
+            // Later than the caret settling time, as Edge reports it.
+            loop.pump(45);
+            host->setSurrounding(suggestion, typed, static_cast<unsigned int>(suggestion.size()));
+            state.surroundingUpdated();
+        }
+        check(press(state, static_cast<uint32_t>('s')), "suggestion: ngo then s makes ngó", "s went to the app as a plain key");
+    }
+
     void testRecorderLimits() {
         ngosen::Recorder recorder(3);
         for (int i = 0; i < 5; ++i)
@@ -290,6 +313,7 @@ int main() {
     testRecorderHidesPasswords();
     testRecorderLimits();
     testFocusBounce();
+    testTypingIntoSuggestion();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";
     return failures == 0 ? 0 : 1;

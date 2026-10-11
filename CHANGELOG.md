@@ -14,6 +14,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Khi bật Ngó Sen, ô nhỏ cạnh con trỏ hiện `vi` thay cho hình bông sen 🪷, giống bàn phím tiếng Anh hiện
   `us` (#28).
+- Gõ trên thanh địa chỉ Edge khi đang có gợi ý tự điền không còn mất dấu: trước đây gõ `ngos` có lúc ra
+  `ngos` thay vì `ngó`, vì Ngó Sen tưởng con trỏ nhích theo gợi ý là một cú bấm chuột (#29).
 
 ## [1.2.1-1] — 11/10/2026
 

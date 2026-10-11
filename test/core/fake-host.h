@@ -105,6 +105,9 @@ namespace ngosen::test {
         void setSurrounding(const std::string& text, unsigned int cursor) {
             surrounding_ = Surrounding(text, cursor, cursor);
         }
+        void setSurrounding(const std::string& text, unsigned int cursor, unsigned int anchor) {
+            surrounding_ = Surrounding(text, cursor, anchor);
+        }
         void setSystemKeysWork(bool works) {
             systemKeysWork_ = works;
         }

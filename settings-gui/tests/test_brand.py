@@ -7,8 +7,10 @@ from qtpy.QtCore import QEvent
 from qtpy.QtGui import QFontInfo
 from qtpy.QtWidgets import QComboBox, QLabel, QLineEdit, QPushButton
 from support import FakeDBusHandler, app
+from ui import brand
 from ui.main_window import NgoSenSettingsWindow
 from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
+from ui.pages.mode_manager import MODE_SEN, ModeCard
 
 
 def family(widget):
@@ -40,6 +42,13 @@ class TypingMarksTest(unittest.TestCase):
         try_it = self.page.findChildren(QLineEdit)[-1]
         self.assertEqual(family(example), "Xanh Mono")
         self.assertEqual(family(try_it), "Xanh Mono")
+
+
+class AppModeMarksTest(unittest.TestCase):
+    def test_selected_mode_card_is_enamel_like_the_mode_buttons(self):
+        card = ModeCard(MODE_SEN, selected=True)
+        fill = card.palette().color(card.backgroundRole())
+        self.assertEqual(fill.name(), brand.ENAMEL[0])
 
 
 class SidebarMarksTest(unittest.TestCase):

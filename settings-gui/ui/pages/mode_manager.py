@@ -11,7 +11,7 @@ import re
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import QSize, Qt, Signal
-from qtpy.QtGui import QIcon, QPalette
+from qtpy.QtGui import QColor, QIcon, QPalette
 from qtpy.QtWidgets import (
     QDialog,
     QFrame,
@@ -29,6 +29,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
+from ui import brand
 from ui.pages.dynamic_settings import CardWidget
 from ui.typography import emphasize, mute, page_title
 
@@ -64,7 +65,7 @@ class ModeCard(QFrame):
         self.setObjectName("ModeCard")
         self.setCursor(Qt.PointingHandCursor)
         self._setup_ui()
-        self.update_style()
+        brand.follow_theme(self, ModeCard.update_style)
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -83,6 +84,11 @@ class ModeCard(QFrame):
     def update_style(self):
         self.setFrameShape(QFrame.StyledPanel)
         self.setAutoFillBackground(True)
+        # The chosen mode wears the same enamel as the mode buttons on the Typing page.
+        palette = self.palette()
+        palette.setColor(QPalette.Highlight, QColor(brand.pick(self, brand.ENAMEL)))
+        palette.setColor(QPalette.HighlightedText, QColor(brand.ON_ENAMEL))
+        self.setPalette(palette)
         self.setBackgroundRole(QPalette.Highlight if self.selected else QPalette.Base)
         for label in self.findChildren(QLabel):
             label.setForegroundRole(QPalette.HighlightedText if self.selected else QPalette.Text)

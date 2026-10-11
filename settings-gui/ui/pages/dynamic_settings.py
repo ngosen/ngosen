@@ -415,14 +415,17 @@ class DynamicSettingsPage(QWidget):
             button.clicked.connect(lambda _checked=False, m=mode: self.update_config(key, m))
             group.addButton(button)
             layout.addWidget(button)
+        brand.follow_theme(row, self._style_mode_buttons, source=self)
+        self.button_groups.append(group)
+        self.form.addRow(_(label) + ":", row)
+
+    def _style_mode_buttons(self, row):
         enamel = brand.pick(self, brand.ENAMEL)
         row.setStyleSheet(
             f"QWidget#ModeButtons QPushButton:checked {{ background: {enamel};"
             f" color: {brand.ON_ENAMEL}; border: 1px solid {enamel}; border-radius: 4px;"
             " padding: 4px 12px; }"
         )
-        self.button_groups.append(group)
-        self.form.addRow(_(label) + ":", row)
 
     def _render_checkbox(self, item, group_label):
         key, type_str, label, default, annotations = item
@@ -484,9 +487,7 @@ class DynamicSettingsPage(QWidget):
         if key in MODE_SHORTCUT_KEYS:
             warning = QLabel()
             warning.setObjectName("ShortcutWarning")
-            palette = warning.palette()
-            palette.setColor(QPalette.WindowText, QColor(brand.pick(self, brand.ERROR_BORDER)))
-            warning.setPalette(palette)
+            brand.follow_theme(warning, self._color_warning)
             warning.setWordWrap(True)
             warning.hide()
             wrapper.addWidget(warning)
@@ -494,6 +495,11 @@ class DynamicSettingsPage(QWidget):
             self.shortcut_warning_labels[key] = warning
 
         layout.addLayout(wrapper)
+
+    def _color_warning(self, warning):
+        palette = warning.palette()
+        palette.setColor(QPalette.WindowText, QColor(brand.pick(warning, brand.ERROR_BORDER)))
+        warning.setPalette(palette)
 
     def _render_mode_list(self, label):
         from qtpy.QtWidgets import QAbstractItemView, QListWidget, QListWidgetItem

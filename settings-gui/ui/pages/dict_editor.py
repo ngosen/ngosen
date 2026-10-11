@@ -173,9 +173,12 @@ class DictEditorPage(BaseEditorPage):
 
     def showEvent(self, event):
         super().showEvent(event)
+        self._ensure_loaded()
+
+    def _ensure_loaded(self):
+        # The page sits behind a tab, so it may be built long before its words are read.
         if not self._is_loaded:
             self.load_data()
-            self._is_loaded = True
 
     def load_data(self):
         self.blockSignals(True)
@@ -211,6 +214,7 @@ class DictEditorPage(BaseEditorPage):
 
             self._show_words()
             self.initial_state = self._get_current_state()
+            self._is_loaded = True
         finally:
             self.blockSignals(False)
             self.on_search_changed()
@@ -252,6 +256,7 @@ class DictEditorPage(BaseEditorPage):
 
     def restore_defaults(self):
         """Turns the custom dictionary off and goes back to the bundled words."""
+        self._ensure_loaded()
         self.blockSignals(True)
         try:
             self.cb_enable.setChecked(False)
@@ -263,10 +268,13 @@ class DictEditorPage(BaseEditorPage):
 
     def is_modified_from_default(self):
         """Returns True if the dictionary is on or its words differ from the bundled ones."""
+        self._ensure_loaded()
         return self.cb_enable.isChecked() or sorted(self.words) != sorted(self._bundled_words())
 
     def is_modified(self):
         """Returns True if the current state differs from the initial loaded state."""
+        if not self._is_loaded:
+            return False
         return self._get_current_state() != self.initial_state
 
     def _get_current_state(self):

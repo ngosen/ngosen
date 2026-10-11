@@ -97,6 +97,22 @@ class AutosaveTest(unittest.TestCase):
             self.assertEqual(f.read(), "an\nanh\n")
         self.assertIn("ngosen", fake.reloads)
 
+    def test_dictionary_tab_not_opened_is_left_alone(self):
+        dict_path = os.path.join(self.data_home, "fcitx5/ngosen/vietnamese.cm.dict")
+        os.makedirs(os.path.dirname(dict_path))
+        with open(dict_path, "w", encoding="utf-8") as f:
+            f.write("an\nanh\n")
+        fake = FakeDBusHandler({"SpellCheck": "True", "EnableDictionary": "True"})
+        # Its first tab shows; the dictionary tab behind it is built but never shown.
+        window = self.open_window(fake, "Macros & Dictionary")
+        window.sidebar.setCurrentRow(0)
+        self.checkbox(window, SPELL_CHECK).click()
+        window.save_pending()
+        self.assertIn(SPELL_CHECK, window.message_label.text())
+        self.assertEqual(fake.values["EnableDictionary"], "True")
+        with open(dict_path, encoding="utf-8") as f:
+            self.assertEqual(f.read(), "an\nanh\n")
+
     def test_closing_saves_a_pending_change(self):
         fake = FakeDBusHandler({"SpellCheck": "True"})
         window = self.open_window(fake, "Typing")

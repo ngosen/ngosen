@@ -5,7 +5,7 @@
 
 import os
 
-from qtpy.QtCore import QStandardPaths
+from qtpy.QtCore import QEvent, QObject, QStandardPaths
 from qtpy.QtGui import QFont, QFontDatabase, QIcon, QPalette
 
 FONT_FILE = os.path.join(
@@ -31,6 +31,35 @@ def is_dark(widget):
 
 def pick(widget, pair):
     return pair[1] if is_dark(widget) else pair[0]
+
+
+class _ThemeFollower(QObject):
+    def __init__(self, widget, apply, source):
+        super().__init__(widget)
+        self._widget = widget
+        self._apply = apply
+        self._applying = False
+        source.installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        # Child widgets get only PaletteChange, which apply() itself may also send.
+        if event.type() == QEvent.PaletteChange and not self._applying:
+            self._applying = True
+            try:
+                self._apply(self._widget)
+            finally:
+                self._applying = False
+        return False
+
+
+def follow_theme(widget, apply, source=None):
+    """Runs apply(widget) now and again when the desktop switches between light and dark.
+
+    A widget with its own style sheet keeps its palette, so it needs a plain ancestor as source.
+    """
+    apply(widget)
+    _ThemeFollower(widget, apply, source or widget)
+    return widget
 
 
 def typed_font(pixel_size):

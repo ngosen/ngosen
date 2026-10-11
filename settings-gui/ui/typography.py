@@ -4,7 +4,9 @@
 """Text emphasis built from the system font and palette, so every theme keeps its look."""
 
 from qtpy.QtGui import QFont, QPalette
-from qtpy.QtWidgets import QLabel
+from qtpy.QtWidgets import QApplication, QLabel
+
+from ui import brand
 
 
 def emphasize(widget, scale=1.0):
@@ -16,13 +18,17 @@ def emphasize(widget, scale=1.0):
     return widget
 
 
-def mute(label):
+def _fade_text(label):
     # Some themes leave the placeholder colour unset, so fade the theme's own text colour.
     palette = label.palette()
-    color = palette.color(QPalette.WindowText)
+    color = QApplication.palette(label).color(QPalette.WindowText)
     color.setAlphaF(0.65)
     palette.setColor(QPalette.WindowText, color)
     label.setPalette(palette)
+
+
+def mute(label):
+    brand.follow_theme(label, _fade_text)
     font = label.font()
     font.setPointSizeF(font.pointSizeF() * 0.9)
     label.setFont(font)

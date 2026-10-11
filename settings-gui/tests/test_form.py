@@ -46,6 +46,23 @@ class TypingPageTest(unittest.TestCase):
         hints = [w.text() for w in cb.parentWidget().findChildren(QLabel)]
         self.assertIn("Typing windows still gives windows.", hints)
 
+    def test_hints_take_one_line(self):
+        self.page.resize(760, 900)
+        self.page.show()
+        app.processEvents()
+        hints = [
+            label
+            for label in self.page.findChildren(QLabel)
+            if label.text()
+            in (
+                "Typing windows still gives windows.",
+                "Words that are not Vietnamese get no tone marks.",
+            )
+        ]
+        self.assertEqual(len(hints), 2)
+        for hint in hints:
+            self.assertLess(hint.height(), 2 * hint.fontMetrics().lineSpacing(), hint.text())
+
     def test_has_a_field_to_try_typing(self):
         form = form_of(self.page)
         last = form.itemAt(form.rowCount() - 1, QFormLayout.FieldRole).widget()

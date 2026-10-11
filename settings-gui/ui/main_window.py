@@ -11,7 +11,7 @@ from datetime import datetime
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import Qt, QTimer
-from qtpy.QtGui import QIcon
+from qtpy.QtGui import QIcon, QKeySequence
 from qtpy.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -24,6 +24,7 @@ from qtpy.QtWidgets import (
     QMainWindow,
     QPushButton,
     QScrollArea,
+    QShortcut,
     QStackedWidget,
     QTabWidget,
     QVBoxLayout,
@@ -118,7 +119,7 @@ class NgoSenSettingsWindow(QMainWindow):
 
         header = QHBoxLayout()
         header.setSpacing(8)
-        icon = QIcon.fromTheme("fcitx-ngosen")
+        icon = brand.logo_icon()
         if not icon.isNull():
             logo = QLabel()
             logo.setPixmap(icon.pixmap(28, 28))
@@ -136,6 +137,9 @@ class NgoSenSettingsWindow(QMainWindow):
         self.search_field.setClearButtonEnabled(True)
         self.search_field.textChanged.connect(self._on_search)
         self.search_field.returnPressed.connect(self._open_first_result)
+        find = QShortcut(QKeySequence.Find, self)
+        find.activated.connect(self.search_field.setFocus)
+        find.activated.connect(self.search_field.selectAll)
         layout.addWidget(self.search_field)
 
         self.search_results = QListWidget()
@@ -215,6 +219,7 @@ class NgoSenSettingsWindow(QMainWindow):
         btn_restore = QPushButton(QIcon.fromTheme("document-open"), _("Res&tore…"))
         btn_restore.clicked.connect(self.on_restore_backup)
         bar_layout.addWidget(btn_restore)
+        self._bottom_buttons = [self.btn_reset, btn_backup, btn_restore]
 
         layout.addWidget(container)
 
@@ -307,7 +312,8 @@ class NgoSenSettingsWindow(QMainWindow):
         )
         self._add_page(
             _("More"),
-            "preferences-other",
+            # Adwaita and Yaru have no preferences-other.
+            ("preferences-other", "preferences-system"),
             (_("Appearance"), create_appearance),
             (_("About"), create_about),
         )
@@ -499,7 +505,17 @@ class NgoSenSettingsWindow(QMainWindow):
                 self._page_rows[page] = self.sidebar.row(item)
             self.content_stack.addWidget(widget)
             item.setData(Qt.UserRole + 2, widget)
+            self._keep_bottom_bar_last()
         return widget
+
+    def _keep_bottom_bar_last(self):
+        # A page built later joins the end of the Tab order, after the bottom bar.
+        last = self.previousInFocusChain()
+        if last in self._bottom_buttons:
+            return
+        for button in self._bottom_buttons:
+            QWidget.setTabOrder(last, button)
+            last = button
 
     def _setup_window_size(self):
         screen = QApplication.primaryScreen().availableGeometry()
@@ -509,9 +525,11 @@ class NgoSenSettingsWindow(QMainWindow):
         self.resize(w, h)
         self.move((screen.width() - w) // 2, (screen.height() - h) // 2)
 
-    def _add_page(self, title: str, icon_name: str, *parts):
+    def _add_page(self, title: str, icon_name, *parts):
         """Adds a sidebar entry; several (tab title, factory) parts show as tabs."""
-        item = QListWidgetItem(QIcon.fromTheme(icon_name), title)
+        names = (icon_name,) if isinstance(icon_name, str) else icon_name
+        icon = next((QIcon.fromTheme(n) for n in names if QIcon.hasThemeIcon(n)), QIcon())
+        item = QListWidgetItem(icon, title)
         item.setData(Qt.UserRole, "page")
         item.setData(Qt.UserRole + 1, list(parts))
         item.setData(Qt.UserRole + 2, None)

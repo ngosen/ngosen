@@ -4,7 +4,7 @@
 
 from i18n import _
 from qtpy.QtCore import Qt, QUrl
-from qtpy.QtGui import QDesktopServices, QIcon
+from qtpy.QtGui import QDesktopServices
 from qtpy.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -49,7 +49,7 @@ class AboutPage(QWidget):
         layout.setSpacing(20)
         layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
-        pixmap = QIcon.fromTheme("fcitx-ngosen").pixmap(80, 80)
+        pixmap = brand.logo_icon().pixmap(80, 80)
         if not pixmap.isNull():
             logo = QLabel()
             logo.setPixmap(pixmap)

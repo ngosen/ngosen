@@ -33,6 +33,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt dùng giao diện của hệ thống (KDE, GNOME, sáng hay tối) thay cho màu và viền tự vẽ: danh
   sách, bảng, thẻ chế độ của app và trang Giới thiệu theo theme đang dùng. Trang nằm trong tab không còn
   lặp lại tên tab làm tiêu đề (#19).
+- Cửa sổ cài đặt dùng bàn phím dễ hơn: Ctrl+F đưa con trỏ vào ô tìm, phím Tab đi qua nội dung trang trước
+  rồi mới tới các nút dưới cùng. Trên GNOME, mục Khác ở thanh bên có biểu tượng.
+  Dòng gợi ý dưới tuỳ chọn không còn khoảng trống thừa phía trên. Với theme biểu tượng có sẵn biểu tượng
+  fcitx (Papirus, Colloid), cửa sổ hiện đúng logo Ngó Sen thay vì logo fcitx (#20).
 
 ### Sửa
 

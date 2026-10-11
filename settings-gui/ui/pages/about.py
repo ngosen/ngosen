@@ -47,7 +47,8 @@ class AboutPage(QWidget):
         layout = QVBoxLayout(content_widget)
         layout.setContentsMargins(40, 30, 40, 40)
         layout.setSpacing(20)
-        layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        # Centred per widget: a centred layout would squeeze the wrapping description.
+        layout.setAlignment(Qt.AlignTop)
 
         pixmap = brand.logo_icon().pixmap(80, 80)
         if not pixmap.isNull():
@@ -70,8 +71,7 @@ class AboutPage(QWidget):
         desc.setWordWrap(True)
         desc.setAlignment(Qt.AlignCenter)
         desc.setObjectName("AboutDescription")
-        desc.setMinimumHeight(60)
-        layout.addWidget(desc, alignment=Qt.AlignCenter)
+        layout.addWidget(desc)
 
         # GitHub Project Link
         github_link = QLabel(

@@ -376,6 +376,9 @@ class NgoSenSettingsWindow(QMainWindow):
             label = label or self._page_titles.get(page)
         for page in pages:
             if page.save_data() is False:
+                # Show what fcitx5 kept, so the window does not suggest an unsaved change took.
+                if settings_snapshot.take(self.dbus_handler) is not None:
+                    self.reload_pages()
                 self._show_message(_("Could not save. Check that fcitx5 is running."), error=True)
                 return
         before, self._saved = self._saved, settings_snapshot.take(self.dbus_handler)

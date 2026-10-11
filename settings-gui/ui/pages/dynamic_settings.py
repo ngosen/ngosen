@@ -215,7 +215,7 @@ class DynamicSettingsPage(QWidget):
 
             config_data = self.dbus.get_config()
             if not config_data:
-                self.container_layout.addWidget(QLabel(_("Failed to load configuration.")))
+                # The window already says fcitx5 cannot be reached.
                 return
 
             saved_values = config_data.get("values", {})

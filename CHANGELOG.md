@@ -50,6 +50,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt: mở trang Gõ tắt & Từ điển rồi đổi một cài đặt khác không còn tắt từ điển riêng và ghi lại
   danh sách từ. Đổi sáng/tối khi cửa sổ đang mở thì dòng gợi ý và hàng nút chế độ đổi màu theo, không còn
   chữ tối trên nền tối (#22).
+- Cửa sổ cài đặt: chế độ đang chọn cho một app có màu xanh men giống trang Gõ chữ. Khi fcitx5 không nhận
+  thay đổi, cửa sổ hiện lại cài đặt fcitx5 đang giữ thay vì giá trị chưa lưu. Khi fcitx5 không chạy chỉ
+  còn một dòng báo. Dòng mô tả ở trang Giới thiệu nằm trên một hàng (#23).
 
 ## [1.1.0-1] — 10/10/2026
 

@@ -40,7 +40,8 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
    - The tray icon (`fcitx-ngosen`, a lotus-root slice on enamel green) at the top of the sidebar.
    - The wordmark "Ngó Sen" in Xanh Mono next to it, with diacritics, never in bold.
    - The current typing mode (Sen, Preedit, Emoji, Tắt) as a segmented row of buttons; the checked
-     one is filled enamel with `on-enamel` text.
+     one is filled enamel with `on-enamel` text. The selected mode card of an app on Ứng dụng
+     uses the same fill.
    - Typed text in Xanh Mono: the keys-to-result example under the input method
      (`vieetj → việt`) and the test field.
 3. **No lotus flower, no "Lotus" wording.** fcitx5-lotus appears only in the About credit.
@@ -66,7 +67,7 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 ## Colour
 
 - The platform palette everywhere, including the accent on checkboxes, selection and focus.
-- Enamel green appears only on the checked mode button and the saved message.
+- Enamel green appears only on the selected typing mode and the saved message.
 - Both light and dark are designed: `enamel-dark` and `saved-*-dark` in a dark palette (pick by
   the window background's lightness, not by desktop name).
 

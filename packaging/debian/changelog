@@ -1,3 +1,9 @@
+fcitx5-ngosen (1:1.2.1-1) unstable; urgency=medium
+
+  * The settings window drops the Applications page; modes picked from the mode menu are still remembered per app.
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 11 Oct 2026 18:00:00 +0700
+
 fcitx5-ngosen (1:1.2.0-1) unstable; urgency=medium
 
   * New settings window that follows the desktop look and saves at once; letters no longer swap when typing fast in GTK3 apps.

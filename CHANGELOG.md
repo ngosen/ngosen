@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.2.1-1] — 11/10/2026
+
+Bản vá nhỏ: cửa sổ cài đặt bỏ trang Ứng dụng, còn 4 trang. Bộ gõ không đổi. Tải ở
+[ngosen-1.2.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.2.1-1).
+
 ### Thay đổi
 
 - Cửa sổ cài đặt bỏ trang Ứng dụng, còn 4 trang. Chọn chế độ trong menu chế độ khi đang ở một app thì Ngó

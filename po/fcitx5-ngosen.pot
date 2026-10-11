@@ -913,3 +913,35 @@ msgstr ""
 
 msgid "Could not save the typing log to "
 msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Cannot reach fcitx5, so changes will not be saved."
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "&Undo"
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Defaults restored."
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Saved “{}”."
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Saved."
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Could not save. Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Could not undo. Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Change undone."
+msgstr ""

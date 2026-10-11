@@ -44,7 +44,7 @@ class ResetTest(unittest.TestCase):
         window = NgoSenSettingsWindow(dbus_handler=fake)
         with mock.patch.object(QMessageBox, "question", return_value=QMessageBox.Yes):
             window.on_restore_defaults()
-        self.assertTrue(window.on_save_all(quiet=True))
+        window.save_pending()
         self.assertEqual(fake.values["SpellCheck"], "True")
         self.assertEqual(fake.sub_configs["app_rules"], [])
         self.assertEqual(fake.sub_configs["ngosen-macro"], [])

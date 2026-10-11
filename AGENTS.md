@@ -63,6 +63,10 @@ a careful human wrote it, and the person sending it must be able to explain ever
   When changing which frontends forward backspaces, keep the `sdlGetsNoDeletion` checks in
   `test/ibus-dbus-forward-backspaces.cpp` and the SDL case in `test/x11-xtest-replacement.cpp`
   passing.
+- **Reuse one build directory.** A full Rust or C++ build writes over 1 GB, and a new directory
+  per experiment wears out the SSD and fills it. Rebuild in one CMake build directory and point Cargo
+  at one shared `CARGO_TARGET_DIR`; make a second only when two builds must exist side by side, and
+  delete it when done.
 
 ## Commits
 

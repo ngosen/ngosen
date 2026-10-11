@@ -11,7 +11,7 @@ pkgrel=1
 pkgdesc="Ngó Sen, a Vietnamese input method for fcitx5"
 arch=('x86_64')
 url="https://github.com/ngosen/ngosen"
-license=('GPL-3.0-or-later')
+license=('GPL-3.0-or-later' 'OFL-1.1')
 depends=('fcitx5' 'fcitx5-configtool' 'fcitx5-gtk' 'fcitx5-qt' 'hicolor-icon-theme'
          'glibc' 'libstdc++' 'libgcc' 'libxcb' 'python-qtpy' 'python-pyqt6' 'python-dbus')
 makedepends=('cmake' 'extra-cmake-modules' 'rust' 'librsvg')

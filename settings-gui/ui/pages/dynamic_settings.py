@@ -12,6 +12,7 @@ from i18n import N_, _
 from qtpy.QtCore import QSize, Qt, QTimer
 from qtpy.QtGui import QIcon, QPalette
 from qtpy.QtWidgets import (
+    QButtonGroup,
     QCheckBox,
     QComboBox,
     QFormLayout,
@@ -19,6 +20,7 @@ from qtpy.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QPushButton,
     QScrollArea,
     QSizePolicy,
     QStyle,
@@ -26,6 +28,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
+from ui import brand
 from ui.components import (
     HotkeyEditorWidget,
     SingleKeyCaptureWidget,
@@ -81,6 +84,17 @@ HINTS = {
     "AutoNonVnRestore": N_("Typing windows still gives windows."),
     "FreeMarking": N_("Tone marks can also go at the end of the word."),
     "useSurroundingTextIfPossible": N_("Turn this off if an app repeats letters."),
+}
+
+MODE_BUTTON_ORDER = ["Sen", "Preedit", "Emoji Picker", "OFF"]
+
+# What a word looks like while typing it, shown under the input method.
+TYPING_EXAMPLES = {
+    "Telex": "vieetj → việt",
+    "VNI": "vie65t → việt",
+    "VIQR": "vie^.t → việt",
+    "Telex + VNI": "vieetj → việt",
+    "Telex + VNI + VIQR": "vieetj → việt",
 }
 
 # Below this width the labels go above their fields.
@@ -242,6 +256,8 @@ class DynamicSettingsPage(QWidget):
                         continue
                     if k in ["ModeMenuKey", "CycleModeKey"] or item[1] == "Hotkey":
                         self._render_hotkey(item)
+                    elif k == "Mode":
+                        self._render_mode_buttons(item)
                     elif "Enum" in item[4]:
                         self._render_combobox(item)
                     elif item[1] == "Boolean":
@@ -252,6 +268,7 @@ class DynamicSettingsPage(QWidget):
                 self.form.addRow(self._separator())
                 try_it = QLineEdit()
                 try_it.setPlaceholderText(_("Type here to test"))
+                try_it.setFont(brand.typed_font(17))
                 self.form.addRow(_("Try it:"), try_it)
 
             self.initial_values = saved_values.copy()
@@ -367,7 +384,57 @@ class DynamicSettingsPage(QWidget):
         combo.currentIndexChanged.connect(
             lambda _index, k=key: self.update_config(k, combo.currentData())
         )
-        self.form.addRow(_(label) + ":", self._with_hint(combo, key))
+        field = self._with_example(combo) if key == "InputMethod" else combo
+        self.form.addRow(_(label) + ":", self._with_hint(field, key))
+
+    def _with_example(self, combo):
+        wrapper = QWidget()
+        layout = QVBoxLayout(wrapper)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        layout.addWidget(combo)
+        example = QLabel()
+        example.setObjectName("TypingExample")
+        example.setFont(brand.typed_font(16))
+        layout.addWidget(example)
+
+        def show_example():
+            text = TYPING_EXAMPLES.get(combo.currentData(), "")
+            example.setText(text)
+            example.setVisible(bool(text))
+
+        combo.currentIndexChanged.connect(lambda _index: show_example())
+        show_example()
+        return wrapper
+
+    def _render_mode_buttons(self, item):
+        key, type_str, label, default, annotations = item
+        val = str(self.current_values.get(key, default))
+        row = QWidget()
+        row.setObjectName("ModeButtons")
+        row.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        group = QButtonGroup(row)
+        modes = set(annotations.get("Enum", {}).values())
+        for mode in MODE_BUTTON_ORDER:
+            if mode not in modes:
+                continue
+            button = QPushButton(_(mode))
+            button.setCheckable(True)
+            button.setChecked(mode == val)
+            button.clicked.connect(lambda _checked=False, m=mode: self.update_config(key, m))
+            group.addButton(button)
+            layout.addWidget(button)
+        enamel = brand.pick(self, brand.ENAMEL)
+        row.setStyleSheet(
+            f"QWidget#ModeButtons QPushButton:checked {{ background: {enamel};"
+            f" color: {brand.ON_ENAMEL}; border: 1px solid {enamel}; border-radius: 4px;"
+            " padding: 4px 12px; }"
+        )
+        self.button_groups.append(group)
+        self.form.addRow(_(label) + ":", row)
 
     def _render_checkbox(self, item, group_label):
         key, type_str, label, default, annotations = item

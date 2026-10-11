@@ -4,7 +4,7 @@ Epoch:          1
 Version:        1.1.0
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
-License:        GPL-3.0-or-later
+License:        GPL-3.0-or-later AND OFL-1.1
 URL:            https://github.com/ngosen/ngosen
 Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 
@@ -47,6 +47,7 @@ find . -type f -name '*.py' -exec sed -i '1s|^#!.*env python3|#!/usr/bin/python3
 %files -f %{name}.lang
 %{_datadir}/licenses/%{name}/GPL-3.0-or-later.txt
 %{_datadir}/licenses/%{name}/LGPL-2.1-or-later.txt
+%{_datadir}/licenses/%{name}/OFL-1.1.txt
 
 %dir %{_datadir}/licenses/%{name}
 %{_bindir}/fcitx5-ngosen-settings

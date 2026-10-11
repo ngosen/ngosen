@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.1.0
+Version:        1.2.0
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later AND OFL-1.1
@@ -113,6 +113,9 @@ echo "Mở 'Fcitx5 Configuration' và thêm bộ gõ Ngó Sen, hoặc khởi đ�
 echo "KDE Wayland: chọn 'Fcitx 5' trong System Settings → Virtual Keyboard."
 
 %changelog
+* Sun Oct 11 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.2.0-1
+- New settings window that follows the desktop look and saves at once; letters no longer swap when typing fast in GTK3 apps.
+
 * Sat Oct 10 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.1.0-1
 - Installs under ngosen names and carries settings over; new tray icon; a typing log for bug reports.
 

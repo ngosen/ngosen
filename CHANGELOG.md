@@ -37,6 +37,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   rồi mới tới các nút dưới cùng. Trên GNOME, mục Khác ở thanh bên có biểu tượng.
   Dòng gợi ý dưới tuỳ chọn không còn khoảng trống thừa phía trên. Với theme biểu tượng có sẵn biểu tượng
   fcitx (Papirus, Colloid), cửa sổ hiện đúng logo Ngó Sen thay vì logo fcitx (#20).
+- README chỉ đúng chỗ chọn chế độ Gõ Sen trong cửa sổ cài đặt mới (#21).
 
 ### Sửa
 

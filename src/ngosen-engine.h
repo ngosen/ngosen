@@ -262,7 +262,6 @@ namespace fcitx {
         static constexpr uint64_t                   CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
         FCITX_ADDON_DEPENDENCY_LOADER(emoji, instance_->addonManager());
         std::unique_ptr<EmojiLoader>           emojiLoader_;
-        bool                                   isGnome_ = false;
         mutable std::mutex                     appRulesMutex_;
         std::unordered_map<KeySym, NgoSenMode> modeMenuMapping_;
         // A Wayland click reaches the IM only as a surrounding text update.

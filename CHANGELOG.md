@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Khi bật Ngó Sen, ô nhỏ cạnh con trỏ hiện `vi` thay cho hình bông sen 🪷, giống bàn phím tiếng Anh hiện
+  `us` (#28).
+
 ## [1.2.1-1] — 11/10/2026
 
 Bản vá nhỏ: cửa sổ cài đặt bỏ trang Ứng dụng, còn 4 trang. Bộ gõ không đổi. Tải ở

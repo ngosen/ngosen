@@ -269,8 +269,6 @@ namespace fcitx {
         instance_(instance), factory_([this](InputContext& ic) {
             return new TypingStateProperty(std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_)));
         }) { //NOLINT
-        std::string desktop = getEnv("XDG_CURRENT_DESKTOP");
-        isGnome_            = (!desktop.empty()) && desktop.find("GNOME") != std::string::npos;
         Init();
         {
             auto imNames = convertToStringList(GetInputMethodNames());
@@ -1209,7 +1207,7 @@ namespace fcitx {
         switch (realMode) {
             case NgoSenMode::Off: return _("Ngó Sen - Off");
             case NgoSenMode::Emoji: return "😄";
-            default: return isGnome_ ? "vi" : "🪷";
+            default: return "vi";
         }
     }
 

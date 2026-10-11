@@ -91,5 +91,9 @@ int main() {
     press(engine, entry, *context, FcitxKey_F12);
     check(realMode.load() == ngosen::Mode::Preedit, "the cycle key steps from Sen to Preedit", modeName(realMode.load()));
 
+    // fcitx5 shows this label next to the cursor on every switch; it was a lotus flower.
+    const auto label = engine.subModeLabel(entry, *context);
+    check(label == "vi", "the label next to the cursor reads vi", label);
+
     return failures == 0 ? 0 : 1;
 }

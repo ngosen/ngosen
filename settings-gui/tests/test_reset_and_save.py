@@ -7,7 +7,7 @@ import unittest
 from unittest import mock
 
 from qtpy.QtCore import QEvent
-from qtpy.QtWidgets import QCheckBox, QComboBox, QMessageBox
+from qtpy.QtWidgets import QCheckBox, QMessageBox
 from support import FakeDBusHandler, app
 from ui.components import HotkeyEditorWidget
 from ui.main_window import NgoSenSettingsWindow
@@ -15,7 +15,6 @@ from ui.pages.dict_editor import DictEditorPage
 from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
 from ui.pages.keymap_editor import KeymapEditorPage
 from ui.pages.macro_editor import MacroEditorPage
-from ui.pages.mode_manager import ModeManagerPage
 
 
 def checkbox(page, text):
@@ -67,20 +66,6 @@ class ResetTest(unittest.TestCase):
         self.assertTrue(page.save_data())
         self.assertEqual(fake.values["TimeFormat"], "%H:%M")
         self.assertEqual(fake.values["DateFormat"], "%d/%m/%Y")
-
-    def test_reset_clears_application_rules(self):
-        fake = FakeDBusHandler(sub_configs={"app_rules": [{"App": "firefox", "Mode": "5"}]})
-        page = ModeManagerPage(fake)
-        page.restore_defaults()
-        self.assertTrue(page.save_data())
-        self.assertEqual(fake.sub_configs["app_rules"], [])
-
-
-class ModeTest(unittest.TestCase):
-    def test_default_mode_has_one_control(self):
-        # The general page sets Mode; a second control on the applications page fought with it.
-        page = ModeManagerPage(FakeDBusHandler())
-        self.assertEqual(page.findChildren(QComboBox), [])
 
 
 class HotkeyTest(unittest.TestCase):

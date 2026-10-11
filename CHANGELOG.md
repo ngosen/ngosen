@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.2.2-1] — 11/10/2026
+
+Bản vá nhỏ: chữ `vi` thay hình bông sen cạnh con trỏ, và hết lỗi mất dấu khi gõ trên thanh địa chỉ Edge.
+Tải ở [ngosen-1.2.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.2.2-1).
+
 ### Thay đổi
 
 - Khi bật Ngó Sen, ô nhỏ cạnh con trỏ hiện `vi` thay cho hình bông sen 🪷, giống bàn phím tiếng Anh hiện

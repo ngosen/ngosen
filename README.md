@@ -22,9 +22,9 @@ trên Sway và Hyprland vẫn gõ được qua fcitx5. Mã bản IBus vẫn còn
 
 ## Nên dùng chế độ nào
 
-Dùng **Gõ Sen** làm chế độ gõ chính: chọn trong cửa sổ cài đặt Ngó Sen, mục chế độ mặc định. Chế độ
-này trước đây tên là `Uinput`; cấu hình cũ tự chuyển sang tên mới. Chế độ Surrounding Text cũ cũng tự chuyển
-thành Gõ Sen.
+Dùng **Gõ Sen** làm chế độ gõ chính: trong cửa sổ cài đặt Ngó Sen, trang Gõ chữ, bấm nút Gõ Sen ở hàng
+Chế độ gõ. Chế độ này trước đây tên là `Uinput`; cấu hình cũ tự chuyển sang tên mới. Chế độ Surrounding
+Text cũ cũng tự chuyển thành Gõ Sen.
 
 Kiểu gõ được dùng và test hằng ngày là **Telex**. VNI và các kiểu khác dùng được nhưng chưa test kỹ.
 

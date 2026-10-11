@@ -1,3 +1,9 @@
+fcitx5-ngosen (1:1.2.2-1) unstable; urgency=medium
+
+  * Shows vi instead of a lotus next to the cursor; typing into Edge's address bar suggestion keeps tone marks.
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 11 Oct 2026 20:00:00 +0700
+
 fcitx5-ngosen (1:1.2.1-1) unstable; urgency=medium
 
   * The settings window drops the Applications page; modes picked from the mode menu are still remembered per app.

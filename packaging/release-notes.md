@@ -31,6 +31,9 @@ trong gnome-terminal được thử bằng client D-Bus giả lập và gõ tay 
 Bản 1.2.1 chỉ bỏ trang Ứng dụng khỏi cửa sổ cài đặt, bộ gõ không đổi. Cửa sổ 4 trang được mở trên máy ảo
 CachyOS (KDE Wayland), cả giao diện sáng và tối.
 
+Bản 1.2.2 sửa nhãn cạnh con trỏ và lỗi mất dấu trên thanh địa chỉ Edge. Lỗi Edge được tái hiện bằng test
+dựng lại từ log gõ phím trên Fedora 44 (KDE Wayland); chưa gõ tay lại trên Edge sau khi sửa.
+
 Lõi ghép dấu viết bằng Rust có trong gói Fedora, Arch, openSUSE và Ubuntu 24.04 trở lên. Debian 12, 13 và
 Ubuntu 22.04 vẫn dùng lõi Go, vì Rust có sẵn ở đó quá cũ. Hai lõi gõ ra chữ như nhau.
 

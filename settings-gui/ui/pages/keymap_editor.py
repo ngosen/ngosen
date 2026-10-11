@@ -26,6 +26,7 @@ from qtpy.QtWidgets import (
 
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
+from ui.typography import page_title
 
 BAMBOO_ACTIONS = [
     ("XoaDauThanh", "Xóa dấu thanh"),
@@ -214,8 +215,7 @@ class KeymapEditorPage(BaseEditorPage):
         main_layout.setContentsMargins(30, 20, 30, 20)
         main_layout.setSpacing(15)
 
-        title = QLabel(_("Keymap"))
-        title.setObjectName("CategoryTitle")
+        title = page_title(_("Keymap"))
         main_layout.addWidget(title)
 
         # Configuration card

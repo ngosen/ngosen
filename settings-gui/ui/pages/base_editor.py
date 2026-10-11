@@ -28,31 +28,6 @@ class BaseEditorPage(QWidget):
         self.table.setShowGrid(False)
         self.table.itemSelectionChanged.connect(self.update_button_states)
 
-        self.table.setStyleSheet(
-            """
-            QTableWidget {
-                border: 1px solid palette(midlight);
-                border-radius: 6px;
-                background-color: transparent;
-            }
-            QTableWidget::item {
-                padding: 4px;
-                border-bottom: 1px solid palette(midlight);
-            }
-            QTableWidget::item:selected {
-                background-color: palette(highlight);
-                color: palette(highlighted-text);
-            }
-            QHeaderView::section {
-                background-color: transparent;
-                border: none;
-                border-bottom: 2px solid palette(mid);
-                padding: 4px;
-                font-weight: bold;
-            }
-        """
-        )
-
     def _on_item_changed(self):
         """Notifies parent window of change."""
         main_win = self.window()

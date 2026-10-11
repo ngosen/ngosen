@@ -28,6 +28,7 @@ from qtpy.QtWidgets import (
 from ui.helpers import add_help_icon
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
+from ui.typography import mute, page_title
 
 
 class MacroEditorPage(BaseEditorPage):
@@ -49,8 +50,7 @@ class MacroEditorPage(BaseEditorPage):
         main_layout.setContentsMargins(30, 20, 30, 20)
         main_layout.setSpacing(15)
 
-        title = QLabel(_("Macros"))
-        title.setObjectName("CategoryTitle")
+        title = page_title(_("Macros"))
         main_layout.addWidget(title)
 
         # Macro behavior toggles
@@ -112,7 +112,7 @@ class MacroEditorPage(BaseEditorPage):
         # Hint text
         hint_label = QLabel(_("Macros support dynamic placeholders: $TIME and $DATE."))
         hint_label.setWordWrap(True)
-        hint_label.setStyleSheet("color: gray; font-size: 13px;")
+        mute(hint_label)
         dynamic_layout.addWidget(hint_label)
 
         # Format Inputs

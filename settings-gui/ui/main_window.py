@@ -58,7 +58,6 @@ class NgoSenSettingsWindow(QMainWindow):
 
         self._setup_ui()
         self._setup_window_size()
-        self._apply_global_styles()
         self.update_reset_button_state()
         if self._saved is None:
             self._show_message(_("Cannot reach fcitx5, so changes will not be saved."), error=True)
@@ -71,30 +70,6 @@ class NgoSenSettingsWindow(QMainWindow):
                 for p in self._pages
             )
         )
-
-    def _apply_global_styles(self):
-        self.setStyleSheet("""
-            QLabel#CategoryTitle {
-                font-size: 22px;
-            }
-            QLabel#AboutTitle {
-                font-size: 26px;
-            }
-            QLabel#KeyCap {
-                background-color: palette(button);
-                color: palette(button-text);
-                border: 1px solid palette(mid);
-                border-bottom: 2px solid palette(dark);
-                border-radius: 4px;
-                padding: 2px 6px;
-                font-weight: bold;
-                font-family: monospace;
-            }
-            QLabel#ShortcutWarning {
-                color: palette(link-visited);
-                font-size: 12px;
-            }
-        """)
 
     def _setup_ui(self):
         central_widget = QWidget()
@@ -109,28 +84,9 @@ class NgoSenSettingsWindow(QMainWindow):
         main_h_layout.setSpacing(0)
 
         self.sidebar = QListWidget()
-        self.sidebar.setStyleSheet("""
-            QListWidget {
-                border: none;
-                background: transparent;
-                outline: none;
-                padding-top: 15px;
-            }
-            QListWidget::item {
-                padding: 10px 15px;
-                border-radius: 8px;
-                margin: 2px 10px;
-            }
-            QListWidget::item:selected {
-                background: palette(highlight);
-                color: palette(highlighted-text);
-            }
-            QListWidget::item:hover:!selected {
-                background: palette(alternate-base);
-            }
-        """)
         self.sidebar.setObjectName("Sidebar")
         self.sidebar.setFrameShape(QFrame.NoFrame)
+        self.sidebar.setSpacing(3)
 
         self.content_stack = QStackedWidget()
 
@@ -169,9 +125,7 @@ class NgoSenSettingsWindow(QMainWindow):
             header.addWidget(logo)
         wordmark = QLabel("Ngó Sen")
         wordmark.setObjectName("Wordmark")
-        font = brand.typed_font(22)
-        font.setWordSpacing(-6)
-        wordmark.setFont(font)
+        wordmark.setFont(brand.wordmark_font(22))
         header.addWidget(wordmark)
         header.addStretch()
         layout.addLayout(header)
@@ -535,6 +489,11 @@ class NgoSenSettingsWindow(QMainWindow):
                 for tab, page in parts:
                     widget.addTab(page, tab)
             for tab, page in parts:
+                if len(parts) > 1:
+                    # The tab already names the page.
+                    page.setProperty("inTab", True)
+                    for title in page.findChildren(QLabel, "CategoryTitle"):
+                        title.hide()
                 self._pages.append(page)
                 self._page_titles[page] = tab or item.text()
                 self._page_rows[page] = self.sidebar.row(item)

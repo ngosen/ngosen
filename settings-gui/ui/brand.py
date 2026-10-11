@@ -41,3 +41,10 @@ def typed_font(pixel_size):
     font.setStyleHint(QFont.TypeWriter)
     font.setPixelSize(pixel_size)
     return font
+
+
+def wordmark_font(pixel_size):
+    # A monospace space is a full cell wide; the logo sets the two words closer.
+    font = typed_font(pixel_size)
+    font.setWordSpacing(-pixel_size * 0.27)
+    return font

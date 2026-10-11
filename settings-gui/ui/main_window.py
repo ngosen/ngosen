@@ -200,11 +200,6 @@ class NgoSenSettingsWindow(QMainWindow):
         self.message_bar.show()
 
     def _setup_pages(self):
-        def create_general():
-            from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
-
-            return DynamicSettingsPage(self.dbus_handler, category=SettingsCategory.GENERAL)
-
         def create_typing():
             from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
 
@@ -250,7 +245,6 @@ class NgoSenSettingsWindow(QMainWindow):
 
             return AboutPage()
 
-        self._add_page(_("General"), "preferences-system", create_general)
         self._add_page(_("Typing"), "input-keyboard", create_typing)
         self._add_page(_("Applications"), "applications-other", create_applications)
         self._add_page(_("Macros"), "accessories-text-editor", create_macros)

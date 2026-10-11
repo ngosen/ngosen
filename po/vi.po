@@ -93,7 +93,7 @@ msgstr "App"
 
 #: src/ngosen-config.h:209 src/ngosen-config.h:220
 msgid "Mode"
-msgstr "Chế độ"
+msgstr "Chế độ gõ"
 
 #: src/ngosen-config.h:212
 msgid "Rules"
@@ -121,15 +121,15 @@ msgstr "Quy tắc ứng dụng"
 
 #: src/ngosen-config.h:228
 msgid "Type w to Produce ư"
-msgstr "Gõ w thành ư"
+msgstr "Gõ w ra ư"
 
 #: src/ngosen-config.h:229
 msgid "Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"
-msgstr "Gõ [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"
+msgstr "Phím [ ] ra ơ ư"
 
 #: src/ngosen-config.h:232
 msgid "Enable Spell Check Using Dictionary"
-msgstr "Bật kiểm tra chính tả bằng từ điển"
+msgstr "Kiểm tra chính tả"
 
 #: src/ngosen-config.h:232
 msgid "Enable Macro"
@@ -145,31 +145,31 @@ msgstr "Phím để bỏ qua gõ tắt cho từ hiện tại"
 
 #: src/ngosen-config.h:236
 msgid "Auto capitalize after sentence-ending punctuation (. ! ? Enter)"
-msgstr "Tự động ghi hoa sau dấu câu (. ! ? Enter) (thử nghiệm)"
+msgstr "Tự viết hoa đầu câu (thử nghiệm)"
 
 #: src/ngosen-config.h:237
 msgid "Double Space to Period"
-msgstr "Phím cách 2 lần để chấm câu (thử nghiệm)"
+msgstr "Hai dấu cách thành dấu chấm (thử nghiệm)"
 
 #: src/ngosen-config.h:238
 msgid "Double Hyphen to Em-Dash (--)"
-msgstr "Dấu gạch ngang 2 lần để thành dấu gạch dài"
+msgstr "Hai gạch nối thành gạch dài"
 
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
-msgstr "Tự động khôi phục phím với từ sai"
+msgstr "Tự khôi phục từ gõ sai"
 
 #: src/ngosen-config.h:240
 msgid "Use oà, uý (Instead Of òa, úy)"
-msgstr "Sử dụng oà, uý (Thay vì òa, úy)"
+msgstr "Bỏ dấu kiểu mới (oà, uý)"
 
 #: src/ngosen-config.h:241
 msgid "Allow Type With More Freedom"
-msgstr "Cho phép gõ dấu tự do"
+msgstr "Gõ tự do"
 
 #: src/ngosen-config.h:242
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
-msgstr "Cho phép gõ dd thành đ khi bật Tự động khôi phục với từ sai"
+msgstr "Vẫn gõ dd ra đ khi tự khôi phục"
 
 #: src/ngosen-config.h:243
 msgid "Fix Uinput Mode With Ack"
@@ -229,7 +229,7 @@ msgstr "Cho phép gõ tắt trong chế độ \"Tắt\""
 
 #: src/ngosen-config.h:267
 msgid "Use Surrounding Text if possible"
-msgstr "Sử dụng văn bản xung quanh nếu có thể"
+msgstr "Đọc chữ quanh con trỏ"
 
 #: src/ngosen-config.h:269
 msgid "Mode Order"
@@ -894,7 +894,7 @@ msgstr "Tổng quan"
 
 #: settings-gui/ui/main_window.py:217
 msgid "Typing"
-msgstr "Nhập liệu"
+msgstr "Gõ chữ"
 
 #: settings-gui/ui/main_window.py:220
 msgid "Dictionary"
@@ -1013,3 +1013,47 @@ msgstr "Không hoàn tác được. Hãy xem fcitx5 có đang chạy không."
 #: settings-gui/ui/main_window.py
 msgid "Change undone."
 msgstr "Đã hoàn tác."
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Tone marks"
+msgstr "Cách bỏ dấu"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Quick typing"
+msgstr "Gõ nhanh"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Hotkeys"
+msgstr "Phím tắt"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Tray icon"
+msgstr "Biểu tượng khay"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Mode switching"
+msgstr "Đổi chế độ"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Try it:"
+msgstr "Gõ thử:"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Type here to test"
+msgstr "Gõ vào đây để test"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Words that are not Vietnamese get no tone marks."
+msgstr "Từ không phải tiếng Việt thì không thêm dấu."
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Typing windows still gives windows."
+msgstr "Gõ windows vẫn ra windows."
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Tone marks can also go at the end of the word."
+msgstr "Gõ dấu ở cuối từ cũng được."
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Turn this off if an app repeats letters."
+msgstr "Tắt nếu một app hay bị lặp chữ."

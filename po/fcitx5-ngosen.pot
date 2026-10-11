@@ -945,3 +945,47 @@ msgstr ""
 #: settings-gui/ui/main_window.py
 msgid "Change undone."
 msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Tone marks"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Quick typing"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Hotkeys"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Tray icon"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Mode switching"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Try it:"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Type here to test"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Words that are not Vietnamese get no tone marks."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Typing windows still gives windows."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Tone marks can also go at the end of the word."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Turn this off if an app repeats letters."
+msgstr ""

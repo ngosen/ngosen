@@ -8,17 +8,20 @@ Dynamic Settings Page with Card-based Layout matching modern guidelines.
 from enum import Enum
 
 from core.dbus_handler import NgoSenDBusHandler
-from i18n import _
+from i18n import N_, _
 from qtpy.QtCore import QSize, Qt, QTimer
-from qtpy.QtGui import QIcon
+from qtpy.QtGui import QIcon, QPalette
 from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QFormLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QScrollArea,
+    QSizePolicy,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -27,31 +30,30 @@ from ui.components import (
     HotkeyEditorWidget,
     SingleKeyCaptureWidget,
 )
-from ui.helpers import add_help_icon
 
 
 class SettingsCategory(Enum):
-    GENERAL = "general"
     APPEARANCE = "appearance"
     TYPING = "typing"
     SHORTCUTS = "shortcuts"
-    INTERFACE = "interface"
 
 
-# Mapping of settings keys to categories and groups
+MODE_SWITCHING = N_("Mode switching")
+
+# Groups show in this order; the first checkbox of a group carries the group name.
 SETTINGS_MAP = {
-    SettingsCategory.GENERAL: {
-        "INPUT METHOD": ["InputMethod", "Mode", "OutputCharset"],
-        "TYPING": ["W2U", "BracketTransform"],
-    },
-    SettingsCategory.APPEARANCE: {
-        "THEME & ICONS": ["UseLotusIcons", "IconTheme"],
-    },
     SettingsCategory.TYPING: {
-        "SPELLING & CORRECTIONS": ["SpellCheck", "AutoNonVnRestore", "DdFreeStyle"],
-        "TYPING OPTIONS": [
+        N_("Typing"): ["Mode", "InputMethod", "OutputCharset"],
+        N_("Tone marks"): [
+            "SpellCheck",
+            "AutoNonVnRestore",
+            "DdFreeStyle",
             "ModernStyle",
             "FreeMarking",
+            "W2U",
+            "BracketTransform",
+        ],
+        N_("Quick typing"): [
             "DoubleSpaceToPeriod",
             "DoubleHyphenToEmDash",
             "AutoCapitalizeAfterPunctuation",
@@ -59,8 +61,8 @@ SETTINGS_MAP = {
         ],
     },
     SettingsCategory.SHORTCUTS: {
-        "MAIN SHORTCUTS": ["ModeMenuKey", "CycleModeKey"],
-        "MODE SWITCHING": [
+        N_("Hotkeys"): ["ModeMenuKey", "CycleModeKey"],
+        MODE_SWITCHING: [
             "ShortcutSen",
             "ShortcutPreedit",
             "ShortcutEmoji",
@@ -68,22 +70,21 @@ SETTINGS_MAP = {
             "ShortcutDefault",
         ],
     },
+    SettingsCategory.APPEARANCE: {
+        N_("Tray icon"): ["UseLotusIcons", "IconTheme"],
+    },
 }
 
-CATEGORY_DESCRIPTIONS = {
-    SettingsCategory.GENERAL: _("Configure basic input method settings and behaviors."),
-    SettingsCategory.APPEARANCE: _(
-        "Customize the look and feel of the Ngó Sen status icons and theme."
-    ),
-    SettingsCategory.TYPING: _("Fine-tune spelling corrections and advanced typing options."),
-    SettingsCategory.SHORTCUTS: _("Manage input mode shortcuts, display order, and fast cycling."),
+# One line under a setting, saying what the user sees.
+HINTS = {
+    "SpellCheck": N_("Words that are not Vietnamese get no tone marks."),
+    "AutoNonVnRestore": N_("Typing windows still gives windows."),
+    "FreeMarking": N_("Tone marks can also go at the end of the word."),
+    "useSurroundingTextIfPossible": N_("Turn this off if an app repeats letters."),
 }
 
-GROUP_DESCRIPTIONS = {
-    "MAIN SHORTCUTS": _(
-        "Assign hotkeys to open the mode menu or quickly cycle through enabled modes."
-    ),
-}
+# Below this width the labels go above their fields.
+NARROW_WIDTH = 620
 
 
 MODE_SHORTCUT_TO_VISIBILITY = {
@@ -130,7 +131,7 @@ class DynamicSettingsPage(QWidget):
     def __init__(
         self,
         dbus_handler: NgoSenDBusHandler,
-        category: SettingsCategory = SettingsCategory.GENERAL,
+        category: SettingsCategory = SettingsCategory.TYPING,
         parent=None,
     ):
         super().__init__(parent)
@@ -163,8 +164,8 @@ class DynamicSettingsPage(QWidget):
                 if widget:
                     h = widget.sizeHint().height()
                     item.setSizeHint(QSize(100, h))
-                    total_h += h + 4
-            lw.setFixedHeight(total_h + 15)
+                    total_h += lw.visualItemRect(item).height()
+            lw.setFixedHeight(total_h + 2 * lw.frameWidth())
             lw.update()
 
     def _setup_ui(self):
@@ -217,66 +218,41 @@ class DynamicSettingsPage(QWidget):
                 for item in group[1]:
                     self.all_metadata[item[0]] = item
 
-            # Render based on SETTINGS_MAP
-            title_text = self.category.name.capitalize()
-            title = QLabel(_(title_text))
+            title = QLabel(_(self.category.name.capitalize()))
             title.setObjectName("CategoryTitle")
             self.container_layout.addWidget(title)
 
-            # Add category description
-            desc_text = CATEGORY_DESCRIPTIONS.get(self.category)
-            if desc_text:
-                desc = QLabel(desc_text)
-                desc.setObjectName("CategoryDescription")
-                desc.setWordWrap(True)
-                desc.setStyleSheet("color: gray; font-size: 13px; margin-bottom: 10px;")
-                self.container_layout.addWidget(desc)
+            form_widget = QWidget()
+            self.form = QFormLayout(form_widget)
+            self.form.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+            self._update_wrap_policy()
+            self.container_layout.addWidget(form_widget)
 
-            category_groups = SETTINGS_MAP.get(self.category, {})
-            for group_name, keys in category_groups.items():
-                # Convert ALL CAPS to Title Case
-                header_text = group_name.title() if group_name.isupper() else group_name
-                header = QLabel(_(header_text))
-                header.setObjectName("GroupHeader")
-                self.container_layout.addWidget(header)
-
-                if group_name == "MODE SWITCHING":
-                    # Add specific instructions for mode switching
-                    mode_info = QLabel(
-                        _(
-                            "Drag the handle on the left to reorder modes in the menu. Use checkboxes to toggle visibility, and click the buttons to reassign shortcuts."
-                        )
-                    )
-                    mode_info.setWordWrap(True)
-                    mode_info.setStyleSheet("color: gray; font-size: 13px; margin-bottom: 5px;")
-                    self.container_layout.addWidget(mode_info)
-
-                    self._render_mode_list(card_layout=self.container_layout)
+            for index, (group, keys) in enumerate(SETTINGS_MAP.get(self.category, {}).items()):
+                if index:
+                    self.form.addRow(self._separator())
+                if group == MODE_SWITCHING:
+                    self._render_mode_list(_(group) + ":")
                     continue
-
-                card = CardWidget("")
-                found_any = False
+                group_label = _(group) + ":"
                 for k in keys:
                     item = self.all_metadata.get(k)
                     if not item:
                         continue
-
-                    found_any = True
-                    type_str = item[1]
-                    if k in ["ModeMenuKey", "CycleModeKey"] or type_str == "Hotkey":
-                        self._render_hotkey(item, card.content_layout)
+                    if k in ["ModeMenuKey", "CycleModeKey"] or item[1] == "Hotkey":
+                        self._render_hotkey(item)
                     elif "Enum" in item[4]:
-                        self._render_combobox(item, card.content_layout)
-                    elif type_str == "Boolean":
-                        self._render_checkbox(item, card.content_layout)
-                    elif type_str == "String":
-                        self._render_string(item, card.content_layout)
+                        self._render_combobox(item)
+                    elif item[1] == "Boolean":
+                        self._render_checkbox(item, group_label)
+                        group_label = ""
 
-                if found_any:
-                    self.container_layout.addWidget(card)
-
-            if self.category == SettingsCategory.INTERFACE and not category_groups:
-                self.container_layout.addWidget(QLabel(_("No interface settings available yet.")))
+            if self.category == SettingsCategory.TYPING:
+                self.form.addRow(self._separator())
+                try_it = QLineEdit()
+                try_it.setPlaceholderText(_("Type here to test"))
+                self.form.addRow(_("Try it:"), try_it)
 
             self.initial_values = saved_values.copy()
             self.container_layout.addStretch()
@@ -302,24 +278,68 @@ class DynamicSettingsPage(QWidget):
         """Returns True if the current values differ from the initial loaded values."""
         return self.current_values != self.initial_values
 
-    def _render_hotkey(self, item, layout):
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._update_wrap_policy()
+
+    def _update_wrap_policy(self):
+        if getattr(self, "form", None) is None:
+            return
+        narrow = self.width() < NARROW_WIDTH
+        self.form.setRowWrapPolicy(QFormLayout.WrapAllRows if narrow else QFormLayout.DontWrapRows)
+
+    @staticmethod
+    def _separator():
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        return line
+
+    @staticmethod
+    def _mute(label):
+        # Some themes leave the placeholder colour unset, so fade the theme's own text colour.
+        palette = label.palette()
+        color = palette.color(QPalette.WindowText)
+        color.setAlphaF(0.65)
+        palette.setColor(QPalette.WindowText, color)
+        label.setPalette(palette)
+        font = label.font()
+        font.setPointSizeF(font.pointSizeF() * 0.9)
+        label.setFont(font)
+
+    def _with_hint(self, widget, key):
+        hint_text = HINTS.get(key)
+        if not hint_text:
+            return widget
+        wrapper = QWidget()
+        layout = QVBoxLayout(wrapper)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(widget)
+        hint = QLabel(_(hint_text))
+        hint.setWordWrap(True)
+        self._mute(hint)
+        if isinstance(widget, QCheckBox):
+            # Line the hint up with the checkbox text, not its box.
+            style = widget.style()
+            indent = style.pixelMetric(QStyle.PM_IndicatorWidth) + style.pixelMetric(
+                QStyle.PM_CheckBoxLabelSpacing
+            )
+            hint.setContentsMargins(indent, 0, 0, 0)
+        layout.addWidget(hint)
+        return wrapper
+
+    def _render_hotkey(self, item):
         key, type_str, label, default, annotations = item
         val = self.current_values.get(key, default)
-
         hotkey_str = val.get("0", "") if isinstance(val, dict) else ""
-
-        row_layout = QHBoxLayout()
-        row_layout.addWidget(QLabel(_(label)))
-        row_layout.addStretch()
 
         hk_btn = HotkeyEditorWidget(hotkey_str)
         hk_btn.setFixedWidth(235)
         hk_btn.textChanged.connect(
             lambda text, k=key: self.update_config(k, self._with_first_key(k, text))
         )
-
-        row_layout.addWidget(hk_btn)
-        layout.addLayout(row_layout)
+        self.form.addRow(_(label) + ":", self._with_hint(hk_btn, key))
 
     def _with_first_key(self, key, text):
         # Only the first key of a list is shown; the others still work and must survive an edit.
@@ -328,24 +348,14 @@ class DynamicSettingsPage(QWidget):
         keys = ([text] if text else []) + keys[1:]
         return {str(i): k for i, k in enumerate(keys)}
 
-    def _render_combobox(self, item, layout):
+    def _render_combobox(self, item):
         key, type_str, label, default, annotations = item
         val = str(self.current_values.get(key, default))
 
-        if "Enum" not in annotations:
-            return
-
-        row_layout = QHBoxLayout()
-        label_widget = QLabel(_(label))
-        row_layout.addWidget(label_widget)
-        add_help_icon(row_layout, key)
-        row_layout.addStretch()
-
         combo = QComboBox()
-        combo.setFixedWidth(200)
+        combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         enum_dict = annotations.get("Enum", {})
         sorted_keys = sorted(enum_dict.keys(), key=lambda x: int(x) if str(x).isdigit() else x)
-
         for k in sorted_keys:
             rb_text = str(enum_dict[k])
             combo.addItem(_(rb_text), rb_text)
@@ -354,29 +364,21 @@ class DynamicSettingsPage(QWidget):
         if idx >= 0:
             combo.setCurrentIndex(idx)
 
-        combo.currentTextChanged.connect(
-            lambda text, k=key: self.update_config(k, combo.currentData())
+        combo.currentIndexChanged.connect(
+            lambda _index, k=key: self.update_config(k, combo.currentData())
         )
-        row_layout.addWidget(combo)
-        layout.addLayout(row_layout)
+        self.form.addRow(_(label) + ":", self._with_hint(combo, key))
 
-    def _render_checkbox(self, item, layout):
+    def _render_checkbox(self, item, group_label):
         key, type_str, label, default, annotations = item
         val = self.current_values.get(key, default)
 
-        row_layout = QHBoxLayout()
-        row_layout.setContentsMargins(0, 0, 0, 0)
         cb = QCheckBox(_(label))
-        is_checked = str(val).lower() == "true"
-        cb.setChecked(is_checked)
-
+        cb.setChecked(str(val).lower() == "true")
         cb.toggled.connect(
             lambda checked, k=key: self.update_config(k, "True" if checked else "False")
         )
-        row_layout.addWidget(cb)
-        add_help_icon(row_layout, key)
-        row_layout.addStretch()
-        layout.addLayout(row_layout)
+        self.form.addRow(group_label, self._with_hint(cb, key))
 
     def _render_string(self, item, layout):
         key, type_str, label, default, annotations = item
@@ -435,14 +437,16 @@ class DynamicSettingsPage(QWidget):
 
         layout.addLayout(wrapper)
 
-    def _render_mode_list(self, card_layout):
+    def _render_mode_list(self, label):
         from qtpy.QtWidgets import QAbstractItemView, QListWidget, QListWidgetItem
 
         card = CardWidget("")
-        card.content_layout.setContentsMargins(4, 4, 4, 4)
+        card.main_layout.setContentsMargins(0, 0, 0, 0)
+        card.content_layout.setSpacing(4)
 
         list_widget = QListWidget()
         list_widget.setDragDropMode(QAbstractItemView.InternalMove)
+        list_widget.setResizeMode(QListWidget.Adjust)
         list_widget.setSelectionMode(QAbstractItemView.SingleSelection)
         list_widget.setFocusPolicy(Qt.NoFocus)
         list_widget.setFrameShape(QFrame.NoFrame)
@@ -519,7 +523,7 @@ class DynamicSettingsPage(QWidget):
             # ONLY use the height from hint, use small width to let QListWidget expand it properly.
             # Large width hints from QHBoxLayout+Stretch cause overflow.
             list_item.setSizeHint(QSize(100, hint.height()))
-            total_height += hint.height() + 4  # 4 for margins/spacing
+            total_height += hint.height()
 
             list_widget.addItem(list_item)
             list_widget.setItemWidget(list_item, container)
@@ -527,11 +531,20 @@ class DynamicSettingsPage(QWidget):
             # Store internal name in the item's data for reordering
             list_item.setData(Qt.UserRole, name)
 
+        list_widget.setFixedHeight(total_height + 2 * list_widget.frameWidth())
         self.list_widgets.append(list_widget)
         list_widget.model().rowsMoved.connect(lambda *args: self._update_mode_order(list_widget))
 
         card.content_layout.addWidget(list_widget)
-        card_layout.addWidget(card)
+        instructions = QLabel(
+            _(
+                "Drag the handle on the left to reorder modes in the menu. Use checkboxes to toggle visibility, and click the buttons to reassign shortcuts."
+            )
+        )
+        instructions.setWordWrap(True)
+        self._mute(instructions)
+        card.content_layout.addWidget(instructions)
+        self.form.addRow(label, card)
 
     def _update_mode_order(self, list_widget):
         new_order = []

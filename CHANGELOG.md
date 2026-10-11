@@ -20,6 +20,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt lưu ngay khi đổi, không còn nút OK, Áp dụng, Huỷ. Mỗi lần lưu hiện dòng "Đã lưu" kèm nút
   Hoàn tác, đưa lại đúng cài đặt trước đó, kể cả luật app, gõ tắt và từ điển riêng. Khi fcitx5 không chạy,
   cửa sổ báo ngay là thay đổi sẽ không được lưu (#14).
+- Trang Gõ chữ gộp trang Tổng quan: Chế độ gõ, Kiểu gõ, Bảng mã nằm trên cùng, các tuỳ chọn chia nhóm Cách
+  bỏ dấu và Gõ nhanh, tên ngắn hơn, có dòng gợi ý ngay dưới tuỳ chọn thay cho dấu hỏi, và ô Gõ thử ở cuối.
+  Cửa sổ hẹp thì tên tuỳ chọn nằm trên ô chỉnh (#15).
 
 ### Sửa
 

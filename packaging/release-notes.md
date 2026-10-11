@@ -28,6 +28,9 @@ X11), CachyOS (KDE Wayland) và Ubuntu 26.04 (GNOME Wayland). Gõ thử bản 1.
 Wayland) trong GNOME Text Editor: `tieengs vieetj roofi ngafy dduowcj` ra đúng chữ. Bản sửa lỗi đảo chữ
 trong gnome-terminal được thử bằng client D-Bus giả lập và gõ tay trong gnome-terminal: không còn đảo chữ.
 
+Bản 1.2.1 chỉ bỏ trang Ứng dụng khỏi cửa sổ cài đặt, bộ gõ không đổi. Cửa sổ 4 trang được mở trên máy ảo
+CachyOS (KDE Wayland), cả giao diện sáng và tối.
+
 Lõi ghép dấu viết bằng Rust có trong gói Fedora, Arch, openSUSE và Ubuntu 24.04 trở lên. Debian 12, 13 và
 Ubuntu 22.04 vẫn dùng lõi Go, vì Rust có sẵn ở đó quá cũ. Hai lõi gõ ra chữ như nhau.
 

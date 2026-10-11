@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.2.0-1] — 11/10/2026
+
+Bản 1.2: cửa sổ cài đặt mới theo giao diện máy, lưu ngay khi đổi và có Hoàn tác; hết lỗi đảo chữ khi gõ
+nhanh trong gnome-terminal. Tải ở [ngosen-1.2.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.2.0-1).
+
 ### Thay đổi
 
 - README và mô tả gói bỏ các câu kể Ngó Sen tách từ đâu; mục Nguồn gốc còn một dòng ghi công. Trang

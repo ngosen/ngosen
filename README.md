@@ -12,6 +12,13 @@
   và Ubuntu 24.04 trở lên dùng lõi Rust.
 - **Cài bằng một dòng lệnh.** Có cho Fedora, Ubuntu, Debian, Arch, CachyOS và openSUSE. Script so hash
   SHA-256 trước khi cài.
+- **Cửa sổ cài đặt theo giao diện máy.** Sáng hay tối, KDE hay GNOME, cửa sổ dùng giao diện đang có.
+  Đổi gì lưu ngay, có nút Hoàn tác.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
+  <img alt="Cửa sổ cài đặt Ngó Sen, trang Gõ chữ, trên KDE Plasma" src="docs/screenshots/settings-light.png" width="750">
+</picture>
 
 Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues).
 

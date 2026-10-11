@@ -7,7 +7,7 @@ import unittest
 from unittest import mock
 
 from qtpy.QtCore import QEvent, QEventLoop, QTimer
-from qtpy.QtWidgets import QCheckBox, QMessageBox, QPushButton
+from qtpy.QtWidgets import QCheckBox, QLabel, QMessageBox, QPushButton
 from support import FakeDBusHandler, app
 from ui.main_window import NgoSenSettingsWindow
 
@@ -138,6 +138,15 @@ class AutosaveTest(unittest.TestCase):
         window = self.open_window(FcitxDown())
         self.assertTrue(window.message_bar.isVisible())
         self.assertIn("fcitx5", window.message_label.text())
+
+    def test_fcitx5_not_running_is_said_once(self):
+        window = self.open_window(FcitxDown())
+        app.sendPostedEvents(None, QEvent.DeferredDelete)
+        texts = [label.text() for label in window.findChildren(QLabel) if label.isVisible()]
+        self.assertEqual(
+            [t for t in texts if "fcitx5" in t or "configuration" in t],
+            [window.message_label.text()],
+        )
 
 
 if __name__ == "__main__":

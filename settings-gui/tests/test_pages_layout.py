@@ -7,9 +7,10 @@ import tempfile
 import unittest
 from unittest import mock
 
-from qtpy.QtWidgets import QPushButton
+from qtpy.QtWidgets import QLabel, QPushButton
 from support import FakeDBusHandler, app  # noqa: F401
 from ui.main_window import NgoSenSettingsWindow
+from ui.pages.about import AboutPage
 from ui.pages.keymap_editor import KeymapEditorPage
 
 
@@ -26,6 +27,16 @@ class LayoutTest(unittest.TestCase):
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
         titles = [window.sidebar.item(r).text() for r in range(window.sidebar.count())]
         self.assertEqual(titles, ["Typing", "Applications", "Macros & Dictionary", "Keys", "More"])
+
+    def test_about_description_takes_the_page_width(self):
+        page = AboutPage()
+        page.resize(700, 700)
+        page.show()
+        app.processEvents()
+        self.addCleanup(page.close)
+        desc = page.findChild(QLabel, "AboutDescription")
+        # The page margins are 40px a side; a squeezed label gets only its text hint width.
+        self.assertGreater(desc.width(), page.width() - 120)
 
     def test_backup_buttons_sit_in_the_bottom_bar(self):
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())

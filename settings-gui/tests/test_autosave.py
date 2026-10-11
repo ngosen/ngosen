@@ -113,6 +113,15 @@ class AutosaveTest(unittest.TestCase):
         with open(dict_path, encoding="utf-8") as f:
             self.assertEqual(f.read(), "an\nanh\n")
 
+    def test_failed_save_shows_what_fcitx5_kept(self):
+        fake = FakeDBusHandler({"SpellCheck": "True"})
+        fake.set_config = lambda values: False
+        window = self.open_window(fake, "Typing")
+        self.checkbox(window, SPELL_CHECK).click()
+        window.save_pending()
+        self.assertIn("fcitx5", window.message_label.text())
+        self.assertTrue(self.checkbox(window, SPELL_CHECK).isChecked())
+
     def test_closing_saves_a_pending_change(self):
         fake = FakeDBusHandler({"SpellCheck": "True"})
         window = self.open_window(fake, "Typing")

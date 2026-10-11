@@ -23,10 +23,10 @@ class LayoutTest(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def test_five_pages(self):
+    def test_four_pages(self):
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
         titles = [window.sidebar.item(r).text() for r in range(window.sidebar.count())]
-        self.assertEqual(titles, ["Typing", "Applications", "Macros & Dictionary", "Keys", "More"])
+        self.assertEqual(titles, ["Typing", "Macros & Dictionary", "Keys", "More"])
 
     def test_about_description_takes_the_page_width(self):
         page = AboutPage()
@@ -46,7 +46,11 @@ class LayoutTest(unittest.TestCase):
     def test_change_on_a_second_tab_is_saved(self):
         fake = FakeDBusHandler({"EnableCustomKeymap": "False"})
         window = NgoSenSettingsWindow(dbus_handler=fake)
-        window.sidebar.setCurrentRow(3)
+        window.sidebar.setCurrentRow(
+            next(
+                r for r in range(window.sidebar.count()) if window.sidebar.item(r).text() == "Keys"
+            )
+        )
         keymap = window.findChild(KeymapEditorPage)
         keymap.cb_enable.click()
         window.save_pending()

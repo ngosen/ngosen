@@ -10,6 +10,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Cửa sổ cài đặt bỏ trang Ứng dụng, còn 4 trang. Chọn chế độ trong menu chế độ khi đang ở một app thì Ngó
+  Sen vẫn nhớ cho app đó; chọn "Chế độ gõ mặc định" trong menu đó để app quay về chế độ chung. Nút Mặc
+  định vẫn xoá mọi chế độ đã nhớ (#26).
+
 ## [1.2.0-1] — 11/10/2026
 
 Bản 1.2: cửa sổ cài đặt mới theo giao diện máy, lưu ngay khi đổi và có Hoàn tác; hết lỗi đảo chữ khi gõ

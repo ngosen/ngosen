@@ -8,7 +8,6 @@ from unittest import mock
 
 from support import FakeDBusHandler, app  # noqa: F401
 from ui.pages.dict_editor import DictEditorPage
-from ui.pages.mode_manager import ModeManagerPage
 
 
 class DictionaryPageTest(unittest.TestCase):
@@ -59,17 +58,6 @@ class DictionaryPageTest(unittest.TestCase):
 
     def test_word_with_a_space_is_flagged(self):
         self.assertEqual(self.page.flagged_words(), ["bo ba"])
-
-
-class ApplicationsPageTest(unittest.TestCase):
-    def test_changing_a_mode_does_not_rescan_desktop_files(self):
-        fake = FakeDBusHandler(sub_configs={"app_rules": [{"App": "firefox", "Mode": "2"}]})
-        page = ModeManagerPage(fake)
-        with mock.patch.object(ModeManagerPage, "_scan_desktop_files") as scan:
-            page.selected_app = "firefox"
-            for mode in (5, 6, 0):
-                page._on_app_mode_changed(mode)
-        self.assertEqual(scan.call_count, 0)
 
 
 if __name__ == "__main__":

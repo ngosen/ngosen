@@ -33,6 +33,7 @@ from qtpy.QtWidgets import (
 
 from core import backup, settings_snapshot
 from ui import brand, search
+from ui.app_modes import RememberedAppModes
 
 # Lazy loading pages on demand
 
@@ -106,6 +107,7 @@ class NgoSenSettingsWindow(QMainWindow):
 
         # Pages Mapping
         self._setup_pages()
+        self._pages.append(RememberedAppModes(self.dbus_handler))
 
         self.sidebar.currentRowChanged.connect(self._on_sidebar_changed)
         self.sidebar.setCurrentRow(0)
@@ -261,11 +263,6 @@ class NgoSenSettingsWindow(QMainWindow):
 
             return DynamicSettingsPage(self.dbus_handler, category=SettingsCategory.TYPING)
 
-        def create_applications():
-            from ui.pages.mode_manager import ModeManagerPage
-
-            return ModeManagerPage(self.dbus_handler)
-
         def create_macros():
             from ui.pages.macro_editor import MacroEditorPage
 
@@ -297,7 +294,6 @@ class NgoSenSettingsWindow(QMainWindow):
             return AboutPage()
 
         self._add_page(_("Typing"), "input-keyboard", (None, create_typing))
-        self._add_page(_("Applications"), "applications-other", (None, create_applications))
         self._add_page(
             _("Macros & Dictionary"),
             "accessories-text-editor",

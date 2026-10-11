@@ -23,6 +23,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trang Gõ chữ gộp trang Tổng quan: Chế độ gõ, Kiểu gõ, Bảng mã nằm trên cùng, các tuỳ chọn chia nhóm Cách
   bỏ dấu và Gõ nhanh, tên ngắn hơn, có dòng gợi ý ngay dưới tuỳ chọn thay cho dấu hỏi, và ô Gõ thử ở cuối.
   Cửa sổ hẹp thì tên tuỳ chọn nằm trên ô chỉnh (#15).
+- Cửa sổ cài đặt còn 5 trang: Gõ chữ, Ứng dụng, Gõ tắt & Từ điển, Phím, Khác. Sao lưu và Khôi phục thành
+  hai nút ở thanh dưới; khôi phục áp dụng ngay và có Hoàn tác (#16).
 
 ### Sửa
 

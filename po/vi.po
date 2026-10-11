@@ -1057,3 +1057,39 @@ msgstr "Gõ dấu ở cuối từ cũng được."
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Turn this off if an app repeats letters."
 msgstr "Tắt nếu một app hay bị lặp chữ."
+
+#: settings-gui/ui/main_window.py
+msgid "&Defaults"
+msgstr "&Mặc định"
+
+#: settings-gui/ui/main_window.py
+msgid "Back &Up…"
+msgstr "Sao &lưu…"
+
+#: settings-gui/ui/main_window.py
+msgid "Res&tore…"
+msgstr "&Khôi phục…"
+
+#: settings-gui/ui/main_window.py
+msgid "Macros & Dictionary"
+msgstr "Gõ tắt & Từ điển"
+
+#: settings-gui/ui/main_window.py
+msgid "Keys"
+msgstr "Phím"
+
+#: settings-gui/ui/main_window.py
+msgid "More"
+msgstr "Khác"
+
+#: settings-gui/ui/main_window.py
+msgid "Backed up to {}."
+msgstr "Đã sao lưu vào {}."
+
+#: settings-gui/ui/main_window.py
+msgid "Restored from {}."
+msgstr "Đã khôi phục từ {}."
+
+#: settings-gui/ui/main_window.py
+msgid "Could not restore. Check that fcitx5 is running."
+msgstr "Không khôi phục được. Hãy xem fcitx5 có đang chạy không."

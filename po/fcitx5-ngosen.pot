@@ -989,3 +989,39 @@ msgstr ""
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Turn this off if an app repeats letters."
 msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "&Defaults"
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Back &Up…"
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Res&tore…"
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Macros & Dictionary"
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Keys"
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "More"
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Backed up to {}."
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Restored from {}."
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Could not restore. Check that fcitx5 is running."
+msgstr ""

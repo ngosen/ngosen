@@ -5,12 +5,16 @@
 Main window assembling all configuration tabs with a modern layout.
 """
 
+import os
+from datetime import datetime
+
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
-from qtpy.QtCore import QSize, Qt, QTimer
+from qtpy.QtCore import Qt, QTimer
 from qtpy.QtGui import QIcon, QPalette
 from qtpy.QtWidgets import (
     QApplication,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -19,11 +23,12 @@ from qtpy.QtWidgets import (
     QMainWindow,
     QPushButton,
     QStackedWidget,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
-from core import settings_snapshot
+from core import backup, settings_snapshot
 
 # Lazy loading pages on demand
 
@@ -36,6 +41,7 @@ class NgoSenSettingsWindow(QMainWindow):
         self.setWindowTitle(_("Ngó Sen Settings"))
 
         self.dbus_handler = dbus_handler or NgoSenDBusHandler()
+        self._pages = []
         self._page_titles = {}
         self._reset_pending = False
         # Saves once typing pauses instead of on every key in a text field.
@@ -54,18 +60,13 @@ class NgoSenSettingsWindow(QMainWindow):
             self._show_message(_("Cannot reach fcitx5, so changes will not be saved."), error=True)
 
     def update_reset_button_state(self):
-        any_modified_from_default = any(
-            (
-                hasattr(self.content_stack.widget(i), "is_modified_from_default")
-                and self.content_stack.widget(i).is_modified_from_default()
+        self.btn_reset.setEnabled(
+            any(
+                (hasattr(p, "is_modified_from_default") and p.is_modified_from_default())
+                or (hasattr(p, "is_modified") and p.is_modified())
+                for p in self._pages
             )
-            or (
-                hasattr(self.content_stack.widget(i), "is_modified")
-                and self.content_stack.widget(i).is_modified()
-            )
-            for i in range(self.content_stack.count())
         )
-        self.btn_reset.setEnabled(any_modified_from_default)
 
     def _apply_global_styles(self):
         self.setStyleSheet("""
@@ -158,11 +159,18 @@ class NgoSenSettingsWindow(QMainWindow):
 
         bar_layout.addSpacing(180)
 
-        self.btn_reset = QPushButton(QIcon.fromTheme("edit-undo"), _("&Reset"))
+        self.btn_reset = QPushButton(QIcon.fromTheme("edit-undo"), _("&Defaults"))
         self.btn_reset.clicked.connect(self.on_restore_defaults)
         bar_layout.addWidget(self.btn_reset)
 
         bar_layout.addStretch()
+
+        btn_backup = QPushButton(QIcon.fromTheme("document-save-as"), _("Back &Up…"))
+        btn_backup.clicked.connect(self.on_export_backup)
+        bar_layout.addWidget(btn_backup)
+        btn_restore = QPushButton(QIcon.fromTheme("document-open"), _("Res&tore…"))
+        btn_restore.clicked.connect(self.on_restore_backup)
+        bar_layout.addWidget(btn_restore)
 
         layout.addWidget(container)
 
@@ -235,30 +243,31 @@ class NgoSenSettingsWindow(QMainWindow):
 
             return DynamicSettingsPage(self.dbus_handler, category=SettingsCategory.APPEARANCE)
 
-        def create_backup():
-            from ui.pages.backup import BackupPage
-
-            return BackupPage(self.dbus_handler)
-
         def create_about():
             from ui.pages.about import AboutPage
 
             return AboutPage()
 
-        self._add_page(_("Typing"), "input-keyboard", create_typing)
-        self._add_page(_("Applications"), "applications-other", create_applications)
-        self._add_page(_("Macros"), "accessories-text-editor", create_macros)
-        self._add_page(_("Dictionary"), "edit-copy", create_dict)
-        self._add_page(_("Keymap"), "preferences-desktop-keyboard", create_keymap)
-        self._add_page(_("Shortcuts"), "preferences-desktop-keyboard-shortcuts", create_shortcuts)
-        self._add_page(_("Appearance"), "preferences-desktop-theme", create_appearance)
-        self._add_page(_("Backup"), "document-save-as", create_backup)
-
-        spacer = QListWidgetItem()
-        spacer.setFlags(Qt.NoItemFlags)
-        spacer.setSizeHint(QSize(0, 20))
-        self.sidebar.addItem(spacer)
-        self._add_page(_("About"), "help-about", create_about)
+        self._add_page(_("Typing"), "input-keyboard", (None, create_typing))
+        self._add_page(_("Applications"), "applications-other", (None, create_applications))
+        self._add_page(
+            _("Macros & Dictionary"),
+            "accessories-text-editor",
+            (_("Macros"), create_macros),
+            (_("Dictionary"), create_dict),
+        )
+        self._add_page(
+            _("Keys"),
+            "preferences-desktop-keyboard",
+            (_("Shortcuts"), create_shortcuts),
+            (_("Keymap"), create_keymap),
+        )
+        self._add_page(
+            _("More"),
+            "preferences-other",
+            (_("Appearance"), create_appearance),
+            (_("About"), create_about),
+        )
 
     def on_restore_defaults(self):
         """Resets all settings to their default values."""
@@ -274,16 +283,14 @@ class NgoSenSettingsWindow(QMainWindow):
             # Pages are built when first opened; one never opened still has settings to reset.
             for row in range(self.sidebar.count()):
                 self._page_for_item(self.sidebar.item(row))
-            for i in range(self.content_stack.count()):
-                page = self.content_stack.widget(i)
+            for page in self._pages:
                 if hasattr(page, "restore_defaults"):
                     page.restore_defaults()
             self._reset_pending = True
             self.on_changed()
 
     def _modified_pages(self):
-        pages = (self.content_stack.widget(i) for i in range(self.content_stack.count()))
-        return [p for p in pages if hasattr(p, "is_modified") and p.is_modified()]
+        return [p for p in self._pages if hasattr(p, "is_modified") and p.is_modified()]
 
     def on_changed(self):
         """Saves the change once the user pauses, unless a setting is invalid."""
@@ -297,15 +304,12 @@ class NgoSenSettingsWindow(QMainWindow):
 
     def has_validation_errors(self):
         return any(
-            hasattr(self.content_stack.widget(i), "has_validation_errors")
-            and self.content_stack.widget(i).has_validation_errors()
-            for i in range(self.content_stack.count())
+            hasattr(p, "has_validation_errors") and p.has_validation_errors() for p in self._pages
         )
 
     def validation_message(self):
         messages = []
-        for i in range(self.content_stack.count()):
-            page = self.content_stack.widget(i)
+        for page in self._pages:
             if hasattr(page, "validation_message"):
                 message = page.validation_message()
                 if message:
@@ -353,14 +357,62 @@ class NgoSenSettingsWindow(QMainWindow):
 
     def reload_pages(self):
         """Shows the saved settings again after they changed outside the pages."""
-        for i in range(self.content_stack.count()):
-            page = self.content_stack.widget(i)
+        for page in self._pages:
             if hasattr(page, "load_data"):
                 page.load_data()
             elif hasattr(page, "load_config"):
                 page.load_config()
         self._saved = settings_snapshot.take(self.dbus_handler)
         self.update_reset_button_state()
+
+    def on_export_backup(self):
+        name = f"ngosen-backup-{datetime.now():%Y%m%d-%H%M%S}.json"
+        path, _filter = QFileDialog.getSaveFileName(
+            self,
+            _("Export Backup"),
+            os.path.join(os.path.expanduser("~"), name),
+            _("JSON Backup (*.json);;All Files (*)"),
+        )
+        if path:
+            self.export_backup(path)
+
+    def export_backup(self, path):
+        self.save_pending()
+        try:
+            backup.export(self.dbus_handler, path)
+        except (OSError, ValueError) as e:
+            self._show_message(_("Failed to export backup:\n") + str(e), error=True)
+            return
+        self._show_message(_("Backed up to {}.").format(path))
+
+    def on_restore_backup(self):
+        path, _filter = QFileDialog.getOpenFileName(
+            self,
+            _("Select Backup File"),
+            os.path.expanduser("~"),
+            _("JSON Backup (*.json);;All Files (*)"),
+        )
+        if path:
+            self.restore_backup(path)
+
+    def restore_backup(self, path):
+        """Applies a backup at once; Undo puts back what was there before."""
+        self.save_pending()
+        try:
+            data = backup.load(path)
+        except (OSError, ValueError) as e:
+            self._show_message(_("Failed to open backup file:\n") + str(e), error=True)
+            return
+        before = self._saved
+        restored = backup.apply(self.dbus_handler, data)
+        self.reload_pages()
+        if not restored:
+            self._show_message(_("Could not restore. Check that fcitx5 is running."), error=True)
+            return
+        self._undo_to = before
+        self._show_message(
+            _("Restored from {}.").format(os.path.basename(path)), undo=before is not None
+        )
 
     def closeEvent(self, event):
         self.save_pending()
@@ -387,12 +439,19 @@ class NgoSenSettingsWindow(QMainWindow):
             return None
         widget = item.data(Qt.UserRole + 2)
         if widget is None:
-            factory = item.data(Qt.UserRole + 1)
-            if factory:
-                widget = factory()
-                self._page_titles[widget] = item.text()
-                self.content_stack.addWidget(widget)
-                item.setData(Qt.UserRole + 2, widget)
+            parts = [(tab, factory()) for tab, factory in item.data(Qt.UserRole + 1)]
+            if len(parts) == 1:
+                widget = parts[0][1]
+            else:
+                widget = QTabWidget()
+                widget.setDocumentMode(True)
+                for tab, page in parts:
+                    widget.addTab(page, tab)
+            for tab, page in parts:
+                self._pages.append(page)
+                self._page_titles[page] = tab or item.text()
+            self.content_stack.addWidget(widget)
+            item.setData(Qt.UserRole + 2, widget)
         return widget
 
     def _setup_window_size(self):
@@ -403,10 +462,11 @@ class NgoSenSettingsWindow(QMainWindow):
         self.resize(w, h)
         self.move((screen.width() - w) // 2, (screen.height() - h) // 2)
 
-    def _add_page(self, title: str, icon_name: str, page_factory):
+    def _add_page(self, title: str, icon_name: str, *parts):
+        """Adds a sidebar entry; several (tab title, factory) parts show as tabs."""
         item = QListWidgetItem(QIcon.fromTheme(icon_name), title)
         item.setData(Qt.UserRole, "page")
-        item.setData(Qt.UserRole + 1, page_factory)
+        item.setData(Qt.UserRole + 1, list(parts))
         item.setData(Qt.UserRole + 2, None)
 
         self.sidebar.addItem(item)

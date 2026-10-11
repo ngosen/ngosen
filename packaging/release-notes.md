@@ -26,7 +26,7 @@ sang, bộ gõ vẫn nằm trong danh sách, gõ ra đúng chữ.
 Bản 1.2 thay cửa sổ cài đặt. Lưu và Hoàn tác qua fcitx5 thật được thử trên máy ảo Linux Mint 22 (Cinnamon
 X11), CachyOS (KDE Wayland) và Ubuntu 26.04 (GNOME Wayland). Gõ thử bản 1.2 trên máy ảo CachyOS (KDE
 Wayland) trong GNOME Text Editor: `tieengs vieetj roofi ngafy dduowcj` ra đúng chữ. Bản sửa lỗi đảo chữ
-trong gnome-terminal mới được thử bằng client D-Bus giả lập, chưa gõ tay trong gnome-terminal.
+trong gnome-terminal được thử bằng client D-Bus giả lập và gõ tay trong gnome-terminal: không còn đảo chữ.
 
 Lõi ghép dấu viết bằng Rust có trong gói Fedora, Arch, openSUSE và Ubuntu 24.04 trở lên. Debian 12, 13 và
 Ubuntu 22.04 vẫn dùng lõi Go, vì Rust có sẵn ở đó quá cũ. Hai lõi gõ ra chữ như nhau.

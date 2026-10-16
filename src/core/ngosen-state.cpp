@@ -344,6 +344,9 @@ namespace ngosen {
 
     void TypingState::handleKey(ngosen::KeyPress& keyEvent) {
         recordKey(keyEvent);
+        // A password shows only dots, so a mark added by mistake would go unseen until the login fails.
+        if (host_->field().password)
+            return;
         if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || skipsKey(keyEvent))
             return;
         settleBeforeKey();

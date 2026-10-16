@@ -281,6 +281,31 @@ namespace {
         check(!has(log, "0x0065") && !has(log, "\"ti") && !has(log, "\"ê\"") && !has(log, " e\n"), "recorder: keeps no password text", log);
     }
 
+    void testPasswordFieldGetsRawKeys() {
+        for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Preedit}) {
+            realMode = mode;
+            FakeLoop      loop;
+            FakeResources resources;
+            Field         field       = makeField("wayland", true, "firefox");
+            field.password            = true;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+
+            host->setSurrounding("", 0);
+            bool accepted = false;
+            for (const std::string typed : {"a", "aa"}) {
+                accepted = press(state, static_cast<uint32_t>('a')) || accepted;
+                host->setSurrounding(typed, static_cast<unsigned int>(typed.size()));
+                state.surroundingUpdated();
+                loop.pump(10);
+            }
+            const std::string what = mode == ngosen::Mode::Sen ? "password, Sen: " : "password, Preedit: ";
+            check(!accepted, what + "keys go to the app", "accepted");
+            check(host->commits().empty() && host->deletes().empty() && host->forwarded().empty(), what + "nothing typed by the engine", join(host->commits()));
+        }
+    }
+
     // Focus that leaves a field which cannot report its text and comes straight back keeps the
     // word; a real switch starts a new one.
     void testFocusBounce() {
@@ -453,6 +478,7 @@ int main() {
     testTerminalErasesWithCommittedDel();
     testRecorderKeepsTheReplacement();
     testRecorderHidesPasswords();
+    testPasswordFieldGetsRawKeys();
     testRecorderLimits();
     testFocusBounce();
     testTypingIntoSuggestion();

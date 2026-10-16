@@ -29,7 +29,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Thay đổi
 
 - Ô mật khẩu nhận đúng phím đã bấm, không thêm dấu tiếng Việt: quên tắt tiếng Việt khi gõ mật khẩu
-  không còn làm sai mật khẩu mà không hay biết (#).
+  không còn làm sai mật khẩu mà không hay biết (#105).
 - Gói cho Debian 13 và Ubuntu 22.04 chuyển sang lõi gõ Rust như các gói khác; chỉ gói Debian 12 còn dùng lõi Go (#91).
 - README ghi công tác giả hai lõi gõ: @nguyen10t2 (bản Rust) và @t1ld3x (bản Go) (#89).
 - Dữ liệu test của cửa sổ cài đặt dùng đường dẫn addon `ngosen` thay cho tên cũ `lotus`; người dùng không

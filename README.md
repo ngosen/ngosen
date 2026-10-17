@@ -20,7 +20,8 @@
   <img alt="Cửa sổ cài đặt Ngó Sen, trang Gõ chữ, trên KDE Plasma" src="docs/screenshots/settings-light.png" width="750">
 </picture>
 
-Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues).
+Gặp lỗi thì báo ở mục [Issues](https://github.com/ngosen/ngosen/issues). Những gì sắp làm nằm ở
+[ROADMAP.md](ROADMAP.md).
 
 ## Chỉ cho fcitx5
 

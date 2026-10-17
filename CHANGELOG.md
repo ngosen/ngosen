@@ -12,6 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Trang [lộ trình](ROADMAP.md): những gì Ngó Sen định làm ở các version tới.
 - Nút "Kiểm tra máy tôi…" ở trang Giới thiệu của cửa sổ cài đặt: xem fcitx5 có chạy không, Ngó Sen có trong
   danh sách bộ gõ không, các biến `GTK_IM_MODULE`, `QT_IM_MODULE`, `XMODIFIERS`, IBus có chạy song song không, và
   trên KDE Wayland thì fcitx5 có được chọn làm bàn phím ảo không. Mỗi lỗi kèm cách sửa; nút "Báo cáo lỗi…" mở

@@ -86,12 +86,18 @@ namespace ngosen {
                 return;
             }
         }
-        if (EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U)
+        if (ngosen::key::isBackspace(currentSym) && !lastWord_.empty() && reopenLastWordInPreedit(keyEvent))
+            return;
+        const bool processed = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
+        if (processed)
             keyEvent.accept();
         if (auto pulled = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()))) {
             if (pulled && (*pulled.get() != 0)) {
                 NGOSEN_INFO("Commit: " + std::string(pulled.get()));
                 commit(pulled.get());
+                // A key the engine did not take goes to the app after the commit.
+                if (processed)
+                    lastWord_ = pulled.get();
             }
         }
         host_->resetPanel();
@@ -250,6 +256,33 @@ namespace ngosen {
         const std::string word(start, lastWord_.end());
         lastWord_.clear();
         EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
+    }
+
+    bool TypingState::reopenLastWordInPreedit(ngosen::KeyPress& keyEvent) {
+        ngosen::UniqueCPtr<char> open(EnginePullPreedit(bambooEngine_.handle()));
+        if (open && *open.get() != 0)
+            return false;
+        const Surrounding s              = host_->surrounding();
+        const bool        viaSurrounding = reportsTextInTime() && s.isValid() && !s.text().empty();
+        if (!viaSurrounding && !ngosen::forwardsBackspaces(host_->field())) {
+            lastWord_.clear();
+            return false;
+        }
+        reopenLastWord();
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+        const std::string        word = preedit ? preedit.get() : "";
+        if (word.empty())
+            return false;
+        // The word moves from the app into the preedit, together with the character this key erases.
+        const auto count = static_cast<int>(ngosen::utf8::length(word)) + 1;
+        if (viaSurrounding)
+            host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
+        else
+            forwardBackspaces(count);
+        keyEvent.accept();
+        host_->showPreedit(word, false);
+        host_->refreshPreedit();
+        return true;
     }
 
     void TypingState::commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr) {

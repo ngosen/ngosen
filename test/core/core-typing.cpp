@@ -178,18 +178,26 @@ namespace {
 
     // Backspacing from after a word into it and typing on continues that word; kitty reports no
     // surrounding text, so the word comes from what we committed.
-    void testBackspaceIntoLastWord(const std::string& frontend, bool surroundingText) {
-        const Field                                                      field = makeField(frontend, surroundingText);
-        const std::string                                                what  = "backspace into last word (" + frontend + (surroundingText ? ", surrounding): " : "): ");
-        const uint32_t                                                   bs    = ngosen::key::BackSpace;
-        const std::vector<std::pair<std::vector<uint32_t>, std::string>> cases{
-            {{'d', 'u', 'y', 'e', 'e', 't', ' ', bs, bs, bs, bs, bs, 'y', 'e', 'e', 'j', 't', ' '}, "duyệt "},
-            {{'t', 'o', 'a', 'n', ' ', bs, bs, 'n', 'f', ' '}, "toàn "},
-            {{'b', 'a', 'n', ' ', bs, 'f', ' '}, "bàn "},
+    void testBackspaceIntoLastWord(const std::string& frontend, bool surroundingText, ngosen::Mode mode) {
+        const Field       field = makeField(frontend, surroundingText);
+        const std::string what =
+            "backspace into last word (" + std::string(mode == ngosen::Mode::Preedit ? "preedit, " : "") + frontend + (surroundingText ? ", surrounding): " : "): ");
+        const uint32_t bs = ngosen::key::BackSpace;
+        struct Case {
+            std::string           inputMethod;
+            std::vector<uint32_t> keys;
+            std::string           want;
         };
-        for (const auto& [keys, want] : cases) {
-            const std::string text = ngosen::test::typeInApp(field, {}, keys, std::vector<int>(keys.size(), 100));
-            check(text == want, what + want, text);
+        const std::vector<Case> cases{
+            {"Telex", {'d', 'u', 'y', 'e', 'e', 't', ' ', bs, bs, bs, bs, bs, 'y', 'e', 'e', 'j', 't', ' '}, "duyệt "},
+            {"Telex", {'t', 'o', 'a', 'n', ' ', bs, bs, 'n', 'f', ' '}, "toàn "},
+            {"Telex", {'b', 'a', 'n', ' ', bs, 'f', ' '}, "bàn "},
+            {"VNI", {'d', 'u', 'y', 'e', '6', 't', ' ', bs, bs, bs, bs, bs, 'y', 'e', '6', '5', 't', ' '}, "duyệt "},
+            {"VNI", {'b', 'a', 'n', ' ', bs, '2', ' '}, "bàn "},
+        };
+        for (const auto& c : cases) {
+            const std::string text = ngosen::test::typeInApp(field, {}, c.keys, std::vector<int>(c.keys.size(), 100), mode, c.inputMethod);
+            check(text == c.want, what + c.inputMethod + " " + c.want, text);
         }
     }
 
@@ -541,8 +549,10 @@ int main() {
     testKeyDuringReplacement();
     testCommitAfterTheReport();
     testCommitAfterFieldRefocus();
-    testBackspaceIntoLastWord("wayland", true);
-    testBackspaceIntoLastWord("wayland", false);
+    testBackspaceIntoLastWord("wayland", true, ngosen::Mode::Sen);
+    testBackspaceIntoLastWord("wayland", false, ngosen::Mode::Sen);
+    testBackspaceIntoLastWord("wayland", true, ngosen::Mode::Preedit);
+    testBackspaceIntoLastWord("wayland", false, ngosen::Mode::Preedit);
     testBackspaceAfterMovingAway();
     testBackspaceAfterCtrlBackspace();
     testGtk4DeletesSurrounding();

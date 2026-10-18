@@ -390,6 +390,8 @@ namespace ngosen {
         bool removeToneMark(ngosen::KeyPress& keyEvent);
         // Backspace from after lastWord_ into it: the engine takes up what is left of that word.
         void reopenLastWord();
+        // Preedit mode shows the open word outside the app, so the reopened word is taken out of it.
+        bool reopenLastWordInPreedit(ngosen::KeyPress& keyEvent);
         // The engine finished a word: send what differs from the text already typed.
         void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr);
         // The word is still open: bring the app's text in line with the new preedit.

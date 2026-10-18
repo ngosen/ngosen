@@ -6,6 +6,7 @@
 #pragma once
 
 #include "fake-host.h"
+#include "ngosen-mode.h"
 
 #include <cstdint>
 #include <memory>
@@ -45,11 +46,15 @@ namespace ngosen::test {
         // The user pressed the key that switches input methods.
         void        pressSwitchKey();
         std::string text() const;
+        // The word being typed in Preedit mode, shown by the app but not yet part of its text.
+        const std::string& preedit() const {
+            return preedit_;
+        }
 
-        void        commitText(const std::string& text) override;
-        void        forwardKey(EditKey key, bool release) override;
-        void        deleteSurrounding(int offset, unsigned int size) override;
-        bool        pressSystemKeys(int /*count*/) override {
+        void commitText(const std::string& text) override;
+        void forwardKey(EditKey key, bool release) override;
+        void deleteSurrounding(int offset, unsigned int size) override;
+        bool pressSystemKeys(int /*count*/) override {
             return false;
         }
 
@@ -61,9 +66,15 @@ namespace ngosen::test {
             return focused_;
         }
 
-        void                         showPreedit(const std::string& /*text*/, bool /*underline*/) override {}
-        void                         clearPreedit() override {}
-        void                         resetPanel() override {}
+        void showPreedit(const std::string& text, bool /*underline*/) override {
+            preedit_ = text;
+        }
+        void clearPreedit() override {
+            preedit_.clear();
+        }
+        void resetPanel() override {
+            preedit_.clear();
+        }
         void                         refreshPreedit() override {}
         void                         refreshPanel() override {}
 
@@ -103,6 +114,7 @@ namespace ngosen::test {
         bool                                focused_     = true;
         uint64_t                            busyUntilUs_ = 0;
         std::u32string                      text_;
+        std::string                         preedit_;
         size_t                              cursor_ = 0;
         std::u32string                      previousText_;
         size_t                              previousCursor_ = 0;
@@ -112,7 +124,9 @@ namespace ngosen::test {
     // The text the keys give in Preedit mode, where the app only ever gets finished text.
     std::string telexOutput(const std::vector<uint32_t>& keys);
 
-    // The app's text after typing the keys in Gõ Sen mode, waiting gapsMs[i] after key i.
-    std::string typeInApp(const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs);
+    // The app's text after typing the keys, waiting gapsMs[i] after key i; in Preedit mode the open
+    // word follows it.
+    std::string typeInApp(const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, Mode mode = Mode::Sen,
+                          const std::string& inputMethod = "Telex");
 
 } // namespace ngosen::test

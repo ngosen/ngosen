@@ -41,50 +41,28 @@ namespace ngosen::test {
     } // namespace
 
     std::string telexOutput(const std::vector<uint32_t>& keys) {
-        realMode = Mode::Preedit;
-        realtextLen.store(0);
-        FakeLoop      loop;
-        FakeResources resources;
-        Field         field;
-        field.frontend    = "wayland";
-        field.preedit     = true;
-        auto        owned = std::make_unique<FakeHost>(loop, field);
-        FakeHost*   host  = owned.get();
-        TypingState state(&resources, std::move(owned));
-        std::string text;
-        size_t      seenCommits = 0;
-        for (uint32_t sym : keys) {
-            FakeKey down(sym);
-            state.keyEvent(down);
-            for (; seenCommits < host->commits().size(); ++seenCommits)
-                text += host->commits()[seenCommits];
-            if (!down.accepted()) {
-                if (sym == key::BackSpace)
-                    utf8::eraseLastCodepoint(text);
-                else
-                    text += host->keyText(down.appSym());
-            }
-            FakeKey up(sym, true);
-            state.keyEvent(up);
-        }
-        return text + host->preedit();
+        Field field;
+        field.frontend = "wayland";
+        field.preedit  = true;
+        return typeInApp(field, {}, keys, std::vector<int>(keys.size(), 0), Mode::Preedit);
     }
 
-    std::string typeInApp(const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs) {
-        realMode = Mode::Sen;
+    std::string typeInApp(const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, Mode mode, const std::string& inputMethod) {
+        realMode = mode;
         realtextLen.store(0);
         FakeLoop      loop;
         FakeResources resources;
-        auto          owned = std::make_unique<FakeApp>(loop, field, quirks);
-        FakeApp*      app   = owned.get();
-        TypingState   state(&resources, std::move(owned));
+        resources.mutableOptions().inputMethod = inputMethod;
+        auto        owned                      = std::make_unique<FakeApp>(loop, field, quirks);
+        FakeApp*    app                        = owned.get();
+        TypingState state(&resources, std::move(owned));
         app->attach(&state);
         for (size_t i = 0; i < keys.size(); ++i) {
             app->type(keys[i]);
             loop.pump(gapsMs[i]);
         }
         loop.pump(300);
-        return app->text();
+        return app->text() + app->preedit();
     }
 
     void FakeApp::type(uint32_t sym) {

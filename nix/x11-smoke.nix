@@ -59,6 +59,8 @@ runCommand "fcitx5-ngosen-x11-smoke"
     cp ${profile} $XDG_CONFIG_HOME/fcitx5/profile
     # Let Xvfb pick a free display: without the sandbox, builds share /tmp/.X11-unix.
     Xvfb -displayfd 3 3>display 2>/dev/null &
+    # Without the sandbox nothing else stops it, and nix waits for its copy of stdout to close.
+    trap "kill $!" EXIT
     for _ in $(seq 50); do
       [ -s display ] && break
       sleep 0.1

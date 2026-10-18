@@ -61,6 +61,8 @@ The release is `X.Y.Z-N` (`N` is the packaging revision) with epoch 1, tagged `n
    - each pattern `install.sh` looks for matches exactly one line of `SHA256SUMS`.
 6. The maintainer publishes it:
    `gh release edit ngosen-X.Y.Z-N --repo ngosen/ngosen --draft=false --latest`.
+   Publishing starts the `APT repository` workflow, which rebuilds the repository at
+   `https://ngosen.github.io/ngosen/apt` from the two newest releases; check that it passes.
 7. Website, after the release is public: add the release entry, update the version and download links,
    and mirror any README changes to the intro, highlights and roadmap. Publishing the site needs the
    maintainer's approval.

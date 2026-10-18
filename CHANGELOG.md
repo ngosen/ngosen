@@ -28,6 +28,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Kho pacman có chữ ký cho Arch, CachyOS và EndeavourOS, để lên version mới bằng `pacman -Syu` (#137).
 - Kho openSUSE Tumbleweed có chữ ký, để lên version mới bằng `zypper up` (#140).
 
+### Thay đổi
+
+- Test X11 của bản Nix tắt Xvfb khi xong, không còn treo khi chạy ngoài sandbox; người dùng không thấy
+  khác gì (#146).
+
 ### Sửa
 
 - Cứu chữ không hiện khi phím chuyển là Ctrl+Space (phím mặc định của fcitx5) hay một phím tắt khác đặt trong

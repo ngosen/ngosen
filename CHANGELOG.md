@@ -36,7 +36,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Tài liệu
 
 - Lộ trình thêm thông báo "Có gì mới" cho 1.6.0 và mẹo dùng Ngó Sen trong cửa sổ cài đặt (#148).
-- README nói rõ cách ghi nguồn khi lấy mã hay ý tưởng của Ngó Sen, kể cả khi nhờ AI viết lại (#PR).
+- README nói rõ cách ghi nguồn khi lấy mã hay ý tưởng của Ngó Sen, kể cả khi nhờ AI viết lại (#166).
 
 ### Test
 

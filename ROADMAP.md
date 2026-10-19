@@ -28,7 +28,7 @@ Chưa có số version, xếp theo thứ tự định làm:
    không thành `cofee`.
 2. Bớt đổi nhầm chữ tiếng Anh thành tiếng Việt, như `nest` thành `nét`, `too` thành `tô`.
 3. Đoán dấu: gõ cả câu không dấu rồi bấm một phím để thêm dấu.
-4. Bôi đen một đoạn rồi thêm dấu, bỏ dấu, hoặc chuyển chữ mã cũ (TCVN3, VNI) sang Unicode.
+4. Bôi đen một đoạn rồi thêm dấu, bỏ dấu hoặc chuyển chữ mã cũ (TCVN3, VNI) sang Unicode.
 5. Sửa lỗi gõ vội, như `tiếgn` thành `tiếng`.
 6. Tự chạy "Kiểm tra máy tôi" lần đầu mở cửa sổ cài đặt. Có thêm bảng các app gõ được, lấy từ kết quả test
    người dùng gửi về.

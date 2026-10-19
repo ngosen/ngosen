@@ -199,3 +199,4 @@ Both cores are MIT licensed: the Rust [bamboo-core](https://github.com/bamboo-vi
 package.
 Ngó Sen targets fcitx5 only; the IBus engine was dropped and stays unmaintained on the
 `feat/ibus-engine` branch. The rest of this page is in Vietnamese.
+

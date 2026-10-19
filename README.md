@@ -185,6 +185,14 @@ cho Debian 12.
 Issue và pull request trước ngày 10/10/2026 nằm ở repo lưu trữ
 [ngosen/ngosen-fork-archive](https://github.com/ngosen/ngosen-fork-archive).
 
+### Lấy mã hay ý tưởng từ Ngó Sen
+
+Chép hay sửa mã của Ngó Sen thì giữ giấy phép GPL-3.0-or-later và ghi nguồn, như GPL yêu cầu. Nhờ AI đọc mã
+rồi viết lại cũng vậy, vì đó vẫn là mã sửa từ mã của Ngó Sen.
+
+Đưa cách làm của Ngó Sen sang bộ gõ khác (cách xoá chữ trong từng loại app, cách nhận ra ô địa chỉ trình duyệt…),
+kể cả khi chỉ lấy ý tưởng, thì ghi nguồn kèm link tới repo này, trong README hay ghi chú phát hành.
+
 ## English
 
 Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: the
@@ -198,4 +206,6 @@ Both cores are MIT licensed: the Rust [bamboo-core](https://github.com/bamboo-vi
 [bamboo-core](https://github.com/BambooEngine/bamboo-core) by [@t1ld3x](https://github.com/t1ld3x), used by the Debian 12
 package.
 Ngó Sen targets fcitx5 only; the IBus engine was dropped and stays unmaintained on the
-`feat/ibus-engine` branch. The rest of this page is in Vietnamese.
+`feat/ibus-engine` branch. If you reuse Ngó Sen's code, keep the GPL and its notices, including when an AI tool
+rewrites it; if you port its approaches to another input method, credit this repository with a link.
+The rest of this page is in Vietnamese.

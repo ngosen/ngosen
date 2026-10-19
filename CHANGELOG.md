@@ -70,8 +70,8 @@ Tải ở [ngosen-1.5.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
   trên KDE Wayland thì fcitx5 có được chọn làm bàn phím ảo không. Mỗi lỗi kèm cách sửa; nút "Báo cáo lỗi…" mở
   trang báo lỗi trên GitHub đã điền sẵn kết quả, không tự gửi gì (#88).
 - "Kiểm tra máy tôi" thêm mục test một app: gõ `Tieengs Vieetj cos daaus` trong app, chọn "Lưu nhật ký gõ" ở
-  menu Ngó Sen, rồi bấm "Đọc nhật ký gõ". App có báo chữ cho bộ gõ thì tự biết gõ đúng hay sai; app không báo
-  thì bạn tự chọn. Kết quả, cùng cách app nhận chữ và cách bộ gõ xoá chữ, được đưa vào báo lỗi (#90).
+  menu Ngó Sen, rồi bấm "Đọc nhật ký gõ". Nếu app có báo chữ cho bộ gõ, "Kiểm tra máy tôi" tự biết gõ đúng hay sai;
+  app không báo thì bạn tự chọn. Kết quả, cùng cách app nhận chữ và cách bộ gõ xoá chữ, được đưa vào báo lỗi (#90).
 
 ### Thay đổi
 
@@ -221,7 +221,7 @@ Tải ở [ngosen-1.4.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ## [1.3.0-1] — 13/10/2026
 
-Thêm tuỳ chọn Backspace chỉ xoá dấu thanh, icon mới hai cọng ngó sen, và sửa icon khay trên panel tối.
+Thêm tuỳ chọn Backspace chỉ xoá dấu thanh, icon mới hai cọng ngó sen và sửa icon khay trên panel tối.
 Tải ở [ngosen-1.3.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.3.0-1).
 
 ### Thêm
@@ -291,7 +291,7 @@ nhanh trong gnome-terminal. Tải ở [ngosen-1.2.0-1](https://github.com/ngosen
 - Cửa sổ cài đặt nhanh hơn: tìm trong từ điển riêng không còn khựng mỗi phím khi có vài nghìn từ, đổi chế
   độ gõ cho một app không còn đọc lại toàn bộ danh sách app đã cài (#13).
 - Cửa sổ cài đặt lưu ngay khi đổi, không còn nút OK, Áp dụng, Huỷ. Mỗi lần lưu hiện dòng "Đã lưu" kèm nút
-  Hoàn tác, đưa lại đúng cài đặt trước đó, kể cả luật app, gõ tắt và từ điển riêng. Khi fcitx5 không chạy,
+  Hoàn tác để khôi phục đúng cài đặt trước đó, kể cả luật app, gõ tắt và từ điển riêng. Khi fcitx5 không chạy,
   cửa sổ báo ngay là thay đổi sẽ không được lưu (#14).
 - Trang Gõ chữ gộp trang Tổng quan: Chế độ gõ, Kiểu gõ, Bảng mã nằm trên cùng, các tuỳ chọn chia nhóm Cách
   bỏ dấu và Gõ nhanh, tên ngắn hơn, có dòng gợi ý ngay dưới tuỳ chọn thay cho dấu hỏi, và ô Gõ thử ở cuối.
@@ -374,7 +374,7 @@ Version 1.1: file cài vào máy mang tên `ngosen`, cấu hình cũ tự chuy�
 
 ## [1.0.0-1] — 09/10/2026
 
-Version 1.0: Ngó Sen chỉ làm cho fcitx5. Click sang ô khác rồi gõ nay ra đúng trong LibreOffice Calc, WPS Office
+Version 1.0: Ngó Sen chỉ làm cho fcitx5. Click sang ô khác rồi gõ giờ đã ra đúng chữ trong LibreOffice Calc, WPS Office
 và Google Sheets. Tải ở [ngosen-1.0.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.0.0-1).
 
 ### Thêm
@@ -391,7 +391,7 @@ và Google Sheets. Tải ở [ngosen-1.0.0-1](https://github.com/ngosen/ngosen/r
   hộp thoại "Delete Contents", từ đó không gõ được tiếng Việt nữa. Nay phím đầu ở ô mới bắt đầu một chữ
   mới ([#87](https://github.com/ngosen/ngosen-fork-archive/pull/87)).
 - LibreOffice Calc mở thẳng trên Wayland (không qua module Qt của fcitx): click sang ô khác rồi gõ thì chữ
-  ra lẫn chữ của ô trước, hoặc mở hộp thoại "Delete Contents". Nay bộ gõ hỏi Calc đang ở ô nào trước khi
+  ra lẫn chữ của ô trước hoặc hộp thoại "Delete Contents" mở ra. Nay bộ gõ hỏi Calc đang ở ô nào trước khi
   sửa chữ, nên mỗi ô mới bắt đầu một chữ mới ([#90](https://github.com/ngosen/ngosen-fork-archive/pull/90)).
 - WPS Office: gõ hai phím giống nhau liền nhau (`dd`, `ee`, `oo`, `aa`, `ww`) thì phím thứ hai bị mất, nên
   `dd` không ra `đ` và `oo` không ra `ô`. Nay chỉ app gõ qua XIM mới bị coi là "gửi trả phím" ([#90](https://github.com/ngosen/ngosen-fork-archive/pull/90)).

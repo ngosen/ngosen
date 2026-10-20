@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <string>
+#include <utility>
 
 namespace ngosen {
 
@@ -439,10 +440,23 @@ namespace ngosen {
     }
 
     void TypingState::commit(const std::string& text) {
-        noteCommit(text);
+        if (hold_commits_) {
+            held_commit_ += text;
+            return;
+        }
+        const std::string out = std::exchange(held_commit_, std::string()) + text;
+        noteCommit(out);
         committing_ = true;
-        host_->commitText(text);
+        host_->commitText(out);
         committing_ = false;
+    }
+
+    void TypingState::flushHeldCommit() {
+        if (held_commit_.empty())
+            return;
+        const bool holding = std::exchange(hold_commits_, false);
+        commit({});
+        hold_commits_ = holding;
     }
 
 } // namespace ngosen

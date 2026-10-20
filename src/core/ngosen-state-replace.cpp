@@ -378,6 +378,8 @@ namespace ngosen {
 
     void TypingState::performReplacement(const std::string& deletedPart, const std::string& addedPart) {
         NGOSEN_INFO("Perform replacement: " + deletedPart + " -> " + addedPart); //NOLINT
+        // Held text must reach the app before the backspaces that may delete it.
+        flushHeldCommit();
         current_backspace_count_ = 0;
         pending_commit_string_   = addedPart;
         expected_backspaces_     = static_cast<int>(ngosen::utf8::length(deletedPart));

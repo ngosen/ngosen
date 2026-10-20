@@ -351,6 +351,7 @@ namespace ngosen {
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
         handleKey(keyEvent);
+        flushHeldCommit();
         // A report with the cursor at the end of the text tells how long the text is.
         const ngosen::Surrounding s = host_->surrounding();
         if (ngosen::utf8::length(s.text()) == s.cursor())
@@ -540,7 +541,10 @@ namespace ngosen {
                 finishReplacement("key arrived", false);
                 return true;
             }
+            // The key may commit text of its own; both must go out as one commit.
+            hold_commits_ = true;
             finishReplacement("key arrived", false);
+            hold_commits_ = false;
         }
         if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_pending_) {
             // Forwarded backspaces never come back, so this one is the user's: finish the replacement

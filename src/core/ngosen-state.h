@@ -203,6 +203,7 @@ namespace ngosen {
         void sendBackspaceKeys(int count) const;
         // Sends text to the app and records it as ours.
         void commit(const std::string& text);
+        void flushHeldCommit();
 
         // A report while waiting for the app to apply backspaces or show a selection.
         void onWaitSurroundingUpdated();
@@ -257,6 +258,11 @@ namespace ngosen {
         unsigned int unreportedCommitLength_ = 0;
         bool         committing_             = false;
         uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
+
+        // GNOME keeps only the last commit of a key event, so text committed while this is set waits
+        // for the next commit or the end of the key event.
+        bool        hold_commits_ = false;
+        std::string held_commit_;
 
         // Last key press seen, to spot one the app sends twice.
         uint32_t lastPressCode_ = 0;

@@ -332,6 +332,23 @@ namespace {
         check(join(host->commits()) == "['ên']", "key during replacement: one commit with the held key", join(host->commits()));
     }
 
+    // GNOME keeps only the last commit of a key event, so a key that ends a timed wait and commits text
+    // itself must send the pending text in the same commit.
+    void testOneCommitAfterTimedWait() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", false));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        press(state, static_cast<uint32_t>('d'));
+        press(state, static_cast<uint32_t>('d'));
+        check(host->commits().empty(), "one commit after timed wait: đ waits for the backspace", join(host->commits()));
+        check(press(state, static_cast<uint32_t>('w')), "one commit after timed wait: w is taken", "went to the app");
+        check(join(host->commits()) == "['đư']", "one commit after timed wait: đ and ư go out together", join(host->commits()));
+    }
+
     // GTK4 drops forwarded keys, so the deletion goes through the surrounding text.
     void testGtk4DeletesSurrounding() {
         realMode = ngosen::Mode::Sen;
@@ -669,6 +686,7 @@ int main() {
     testSenForwards("wayland_v2", true);
     testSenForwards("xim", false);
     testKeyDuringReplacement();
+    testOneCommitAfterTimedWait();
     testCommitAfterTheReport();
     testCommitAfterFieldRefocus();
     testCommitAfterEditorRedraw();

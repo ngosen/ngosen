@@ -52,6 +52,7 @@ Ngó Sen is a Vietnamese input method for fcitx5.
 
 %dir %{_datadir}/licenses/%{name}
 %{_bindir}/fcitx5-ngosen-settings
+%{_bindir}/ngosen-save-log
 
 %{_libdir}/fcitx5/libngosen.so
 %{_libdir}/fcitx5/libngosenmigrate.so

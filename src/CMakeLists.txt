@@ -8,6 +8,7 @@ target_link_libraries(ngosen
 	Fcitx5::Core
 	Fcitx5::Config
   Fcitx5::Module::Emoji
+  Fcitx5::Module::DBus
 	Bamboo::Core
 	Pthread::Pthread
 )

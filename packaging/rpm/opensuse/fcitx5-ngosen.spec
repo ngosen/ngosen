@@ -51,6 +51,7 @@ find . -type f -name '*.py' -exec sed -i '1s|^#!.*env python3|#!/usr/bin/python3
 
 %dir %{_datadir}/licenses/%{name}
 %{_bindir}/fcitx5-ngosen-settings
+%{_bindir}/ngosen-save-log
 
 %{_libdir}/fcitx5/libngosen.so
 %{_libdir}/fcitx5/libngosenmigrate.so

@@ -1184,3 +1184,15 @@ msgstr ""
 #: settings-gui/ui/system_check_dialog.py
 msgid "The log has no typing in it. Type the sample, then save the log again."
 msgstr ""
+
+#: settings-gui/save_log.py
+msgid "fcitx5 is not running."
+msgstr ""
+
+#: settings-gui/save_log.py
+msgid "Ngó Sen is not loaded. Switch to Ngó Sen once, then run this again."
+msgstr ""
+
+#: settings-gui/save_log.py
+msgid "fcitx5 did not answer."
+msgstr ""

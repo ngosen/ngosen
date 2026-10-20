@@ -20,6 +20,7 @@
 #include "emoji.h"
 #include "ngosen-options.h"
 #include "ngosen-go-object.h"
+#include <filesystem>
 #include <mutex>
 #include <memory>
 #include <fcitx-config/iniparser.h>
@@ -36,6 +37,8 @@ namespace ngosen {
 }
 
 namespace fcitx {
+
+    class NgoSenDBusObject;
 
     // Hangs one typing state on each fcitx5 input context; the state itself does not depend on fcitx5.
     class TypingStateProperty final : public InputContextProperty {
@@ -214,6 +217,10 @@ namespace fcitx {
             return recorder_;
         }
 
+        static std::filesystem::path typingLogDir();
+        // Writes the recorder to a new file in typingLogDir(); an empty path if that failed.
+        std::filesystem::path writeTypingLog();
+
       private:
         ngosen::TypingState*                        stateFor(InputContext* ic);
 
@@ -253,6 +260,8 @@ namespace fcitx {
         std::string                                 iconCachePath_;
         static constexpr uint64_t                   CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
         FCITX_ADDON_DEPENDENCY_LOADER(emoji, instance_->addonManager());
+        FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
+        std::unique_ptr<NgoSenDBusObject>      dbusObject_;
         std::unique_ptr<EmojiLoader>           emojiLoader_;
         mutable std::mutex                     appRulesMutex_;
         std::unordered_map<KeySym, NgoSenMode> modeMenuMapping_;
@@ -361,7 +370,7 @@ namespace fcitx {
         // Adds the item that types the menu hotkey's own character, when it is a plain key.
         void appendTypeHotkeyItem(CommonCandidateList& candidateList);
 
-        // Writes the recorder to a new file under the user's state directory and shows its path.
+        // Writes the typing log and shows its path.
         void saveTypingLog(InputContext* ic);
         void clearPanelLater(InputContext* ic, uint64_t delayUs);
 

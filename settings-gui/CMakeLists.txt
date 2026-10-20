@@ -21,7 +21,7 @@ install(FILES fonts/XanhMono-Regular.ttf
 install(FILES i18n.py "${CMAKE_CURRENT_BINARY_DIR}/version.py"
         DESTINATION "${SETTINGS_GUI_INSTALL_DIR}")
 
-install(FILES main.py
+install(FILES main.py save_log.py
         DESTINATION "${SETTINGS_GUI_INSTALL_DIR}"
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
@@ -33,6 +33,16 @@ exec \"${SETTINGS_GUI_FULL_PATH}/main.py\" \"$@\"
 ")
 
 install(PROGRAMS "${LAUNCHER_SCRIPT}"
+        DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+set(SAVE_LOG_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/ngosen-save-log")
+
+file(WRITE "${SAVE_LOG_SCRIPT}"
+"#!/bin/sh
+exec \"${SETTINGS_GUI_FULL_PATH}/save_log.py\" \"$@\"
+")
+
+install(PROGRAMS "${SAVE_LOG_SCRIPT}"
         DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
 if(NGOSEN_BYTECOMPILE_PYTHON)

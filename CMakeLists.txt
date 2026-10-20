@@ -37,6 +37,7 @@ set(ngosen_fcitx_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-icon-resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-plasma-theme.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-gnome-theme.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-dbus-object.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/emoji.cpp
 )
 
@@ -49,6 +50,7 @@ include(ECMUninstallTarget)
 
 find_package(Fcitx5Core ${REQUIRED_FCITX_VERSION} REQUIRED)
 find_package(Fcitx5ModuleEmoji REQUIRED)
+find_package(Fcitx5ModuleDBus REQUIRED)
 find_package(Pthread REQUIRED)
 find_package(Gettext REQUIRED)
 

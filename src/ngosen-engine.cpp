@@ -17,6 +17,7 @@
 #include "ngosen-icon-resolver.h"
 #include "ngosen-plasma-theme.h"
 #include "ngosen-fcitx-host.h"
+#include "ngosen-dbus-object.h"
 #include <optional>
 #include <utility>
 
@@ -28,6 +29,7 @@
 #include <fcitx-utils/utf8.h>
 #include <fcitx-utils/eventdispatcher.h>
 #include <fcitx-utils/misc.h>
+#include <dbus_public.h>
 
 #include <algorithm>
 #include <atomic>
@@ -325,6 +327,10 @@ namespace fcitx {
         saveLogAction_->setIcon("document-save");
         connections_.emplace_back(saveLogAction_->connect<SimpleAction::Activated>([this](InputContext* ic) { saveTypingLog(ic); }));
         uiManager.registerAction("ngosen-save-log", saveLogAction_.get());
+        if (auto* dbusAddon = dbus()) {
+            dbusObject_ = std::make_unique<NgoSenDBusObject>(this);
+            dbusAddon->call<IDBusModule::bus>()->addObjectVTable(NgoSenDBusObject::Path, NgoSenDBusObject::Interface, *dbusObject_);
+        }
 
 #if NGOSEN_USE_MODERN_FCITX_API
         std::string configDir = (StandardPaths::global().userDirectory(StandardPathsType::Config) / "fcitx5" / "conf").string();
@@ -1088,10 +1094,14 @@ namespace fcitx {
             });
     }
 
-    void NgoSenEngine::saveTypingLog(InputContext* ic) {
-        const std::string     stateHome = getEnv("XDG_STATE_HOME");
-        std::filesystem::path dir       = stateHome.empty() ? std::filesystem::path(getEnv("HOME")) / ".local" / "state" : std::filesystem::path(stateHome);
-        dir /= "ngosen";
+    std::filesystem::path NgoSenEngine::typingLogDir() {
+        const std::string stateHome = getEnv("XDG_STATE_HOME");
+        const auto        dir       = stateHome.empty() ? std::filesystem::path(getEnv("HOME")) / ".local" / "state" : std::filesystem::path(stateHome);
+        return dir / "ngosen";
+    }
+
+    std::filesystem::path NgoSenEngine::writeTypingLog() {
+        const auto      dir = typingLogDir();
         std::error_code error;
         std::filesystem::create_directories(dir, error);
 
@@ -1106,8 +1116,12 @@ namespace fcitx {
             << "# desktop=" << getEnv("XDG_CURRENT_DESKTOP") << " session=" << getEnv("XDG_SESSION_TYPE") << "\n"
             << recorder_.dump();
         out.close();
+        return out ? path : std::filesystem::path();
+    }
 
-        const std::string message = out ? _("Typing log saved: ") + path.string() : _("Could not save the typing log to ") + dir.string();
+    void NgoSenEngine::saveTypingLog(InputContext* ic) {
+        const auto        path    = writeTypingLog();
+        const std::string message = !path.empty() ? _("Typing log saved: ") + path.string() : _("Could not save the typing log to ") + typingLogDir().string();
         NGOSEN_INFO(message);
         if (ic == nullptr)
             return;

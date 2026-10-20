@@ -1252,3 +1252,15 @@ msgstr "Chưa có nhật ký gõ. Hãy lưu nhật ký từ menu Ngó Sen trư�
 #: settings-gui/ui/system_check_dialog.py
 msgid "The log has no typing in it. Type the sample, then save the log again."
 msgstr "Nhật ký chưa ghi lần gõ nào. Gõ câu mẫu rồi lưu lại nhật ký."
+
+#: settings-gui/save_log.py
+msgid "fcitx5 is not running."
+msgstr "fcitx5 không chạy."
+
+#: settings-gui/save_log.py
+msgid "Ngó Sen is not loaded. Switch to Ngó Sen once, then run this again."
+msgstr "Ngó Sen chưa chạy. Hãy chuyển sang Ngó Sen một lần rồi chạy lại lệnh này."
+
+#: settings-gui/save_log.py
+msgid "fcitx5 did not answer."
+msgstr "fcitx5 không trả lời."

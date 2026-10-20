@@ -1196,3 +1196,7 @@ msgstr ""
 #: settings-gui/save_log.py
 msgid "fcitx5 did not answer."
 msgstr ""
+
+#: settings-gui/save_log.py
+msgid "No desktop session bus. Run this as your own user in a desktop terminal."
+msgstr ""

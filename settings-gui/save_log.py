@@ -28,11 +28,10 @@ NOT_LOADED = (
 def save(bus):
     """Returns (exit code, message)."""
     try:
-        # A call would otherwise start a new fcitx5, whose log is empty.
-        if not bus.name_has_owner(SERVICE):
-            return 1, _("fcitx5 is not running.")
-        proxy = bus.get_object(SERVICE, PATH, introspect=False)
-        path = dbus.Interface(proxy, INTERFACE).SaveTypingLog()
+        # Calling the running fcitx5 by its unique name never starts a new one, whose log is empty.
+        owner = bus.get_name_owner(SERVICE)
+        proxy = bus.get_object(owner, PATH, introspect=False)
+        path = dbus.Interface(proxy, INTERFACE).SaveTypingLog(timeout=5)
     except dbus.DBusException as e:
         name = e.get_dbus_name()
         if name in NOT_RUNNING:
@@ -41,7 +40,7 @@ def save(bus):
             return 1, _("Ngó Sen is not loaded. Switch to Ngó Sen once, then run this again.")
         if name == "org.freedesktop.DBus.Error.NoReply":
             return 1, _("fcitx5 did not answer.")
-        return 1, e.get_dbus_message()
+        return 1, e.get_dbus_message() or str(e)
     return 0, _("Typing log saved: ") + str(path)
 
 
@@ -50,7 +49,9 @@ def main():
     try:
         bus = dbus.SessionBus()
     except dbus.DBusException:
-        code, message = 1, _("fcitx5 is not running.")
+        # Typical under sudo or ssh, which do not pass on the session's bus address.
+        code = 1
+        message = _("No desktop session bus. Run this as your own user in a desktop terminal.")
     else:
         code, message = save(bus)
     print(message, file=sys.stdout if code == 0 else sys.stderr)

@@ -1264,3 +1264,7 @@ msgstr "Ngó Sen chưa chạy. Hãy chuyển sang Ngó Sen một lần rồi ch�
 #: settings-gui/save_log.py
 msgid "fcitx5 did not answer."
 msgstr "fcitx5 không trả lời."
+
+#: settings-gui/save_log.py
+msgid "No desktop session bus. Run this as your own user in a desktop terminal."
+msgstr "Không thấy session bus của desktop. Hãy chạy lệnh này bằng user của bạn, trong terminal của desktop."

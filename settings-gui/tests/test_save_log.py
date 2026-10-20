@@ -17,7 +17,7 @@ class FakeProxy:
         self.result = result
 
     def get_dbus_method(self, member, dbus_interface=None):
-        def call():
+        def call(timeout=None):
             if isinstance(self.result, Exception):
                 raise self.result
             return dbus.String(self.result)
@@ -31,11 +31,14 @@ class FakeBus:
         self.running = running
         self.called = False
 
-    def name_has_owner(self, name):
-        return self.running
+    def get_name_owner(self, name):
+        if not self.running:
+            raise dbus.DBusException("no owner", name="org.freedesktop.DBus.Error.NameHasNoOwner")
+        return ":1.42"
 
     def get_object(self, service, path, introspect=True):
         self.called = True
+        self.service = service
         return FakeProxy(self.result)
 
 
@@ -44,6 +47,11 @@ class SaveLogTest(unittest.TestCase):
         code, message = save_log.save(FakeBus("/home/u/.local/state/ngosen/typing-1.log"))
         self.assertEqual(code, 0)
         self.assertTrue(message.endswith("/home/u/.local/state/ngosen/typing-1.log"))
+
+    def test_calls_the_running_fcitx5_by_its_unique_name(self):
+        bus = FakeBus("/x.log")
+        save_log.save(bus)
+        self.assertEqual(bus.service, ":1.42")
 
     def test_does_not_start_fcitx5(self):
         bus = FakeBus(running=False)
@@ -62,6 +70,12 @@ class SaveLogTest(unittest.TestCase):
             "Could not save the typing log to /x", name="org.freedesktop.DBus.Error.Failed"
         )
         self.assertEqual(save_log.save(FakeBus(error)), (1, "Could not save the typing log to /x"))
+
+    def test_unnamed_error_still_says_something(self):
+        error = dbus.DBusException(name="org.example.Odd")
+        code, message = save_log.save(FakeBus(error))
+        self.assertEqual(code, 1)
+        self.assertTrue(message)
 
 
 if __name__ == "__main__":

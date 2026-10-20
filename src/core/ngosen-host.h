@@ -87,6 +87,8 @@ namespace ngosen {
 
         virtual void commitText(const std::string& text)   = 0;
         virtual void forwardKey(EditKey key, bool release) = 0;
+        // Presses and releases a key the user typed, as if the input method had let it through.
+        virtual void passKey(uint32_t sym, uint32_t states, uint32_t code) = 0;
         // Deletes size characters starting offset characters from the cursor.
         virtual void deleteSurrounding(int offset, unsigned int size) = 0;
         // Presses keys at the X server: count > 0 presses BackSpace count times, count < 0 selects

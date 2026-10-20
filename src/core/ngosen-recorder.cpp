@@ -40,6 +40,12 @@ namespace ngosen {
                 recorder_.add("forward", std::string(editKeyName(key)) + (release ? " up" : " down"));
                 host_->forwardKey(key, release);
             }
+            void passKey(uint32_t sym, uint32_t states, uint32_t code) override {
+                char name[16];
+                std::snprintf(name, sizeof(name), "0x%04x", sym);
+                recorder_.add("forward", std::string(name) + (states != 0 ? " states=" + std::to_string(states) : ""));
+                host_->passKey(sym, states, code);
+            }
             void deleteSurrounding(int offset, unsigned int size) override {
                 recorder_.add("delete", "offset=" + std::to_string(offset) + " size=" + std::to_string(size));
                 host_->deleteSurrounding(offset, size);

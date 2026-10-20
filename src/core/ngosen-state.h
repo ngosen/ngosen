@@ -34,8 +34,10 @@ struct EmojiEntry;
  * @brief Key event entry for replay buffer.
  */
 struct KeyEntry {
-    uint32_t sym;   ///< Key symbol
-    uint32_t state; ///< Key state (modifiers)
+    uint32_t sym;           ///< Key symbol
+    uint32_t state;         ///< Key state (modifiers)
+    uint32_t code  = 0;     ///< Hardware keycode
+    bool     toApp = false; ///< The key goes to the app instead of being typed
 };
 
 namespace fcitx {
@@ -387,6 +389,8 @@ namespace ngosen {
          * @return True if key was forwarded.
          */
         bool checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym);
+        // Keys the Sen path lets through to the app instead of typing them.
+        bool goesToApp(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
 
         /**
          * @brief Handles Sen mode processing.
@@ -423,6 +427,7 @@ namespace ngosen {
          */
         void replayBufferedKeys(std::string committed = {});
         void commitReplayed(std::string& out);
+        void passReplayedKey(const KeyEntry& key, std::string& out);
         // Replays keys[i]; true when it started a replacement, which replays the rest later.
         bool replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         void replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart);

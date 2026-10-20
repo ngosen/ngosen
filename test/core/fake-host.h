@@ -48,6 +48,9 @@ namespace ngosen::test {
         void forwardKey(EditKey key, bool release) override {
             forwarded_.push_back({key, release});
         }
+        void passKey(uint32_t sym, uint32_t /*states*/, uint32_t /*code*/) override {
+            passed_.push_back({sym, commits_.size()});
+        }
         void deleteSurrounding(int offset, unsigned int size) override {
             deletes_.emplace_back(offset, size);
         }
@@ -119,6 +122,10 @@ namespace ngosen::test {
         const std::vector<ForwardedKey>& forwarded() const {
             return forwarded_;
         }
+        // Each key passed on to the app, with how many commits came before it.
+        const std::vector<std::pair<uint32_t, size_t>>& passed() const {
+            return passed_;
+        }
         const std::vector<std::pair<int, unsigned int>>& deletes() const {
             return deletes_;
         }
@@ -143,6 +150,7 @@ namespace ngosen::test {
         std::vector<std::string>                  commits_;
         std::vector<ForwardedKey>                 forwarded_;
         std::vector<std::pair<int, unsigned int>> deletes_;
+        std::vector<std::pair<uint32_t, size_t>>  passed_;
         std::vector<int>                          systemKeys_;
         std::string                               preedit_;
         std::string                               status_;

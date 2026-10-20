@@ -130,6 +130,11 @@ namespace ngosen::test {
         later(quirks_.lagMs, [this, text] { insert(utf8::decode(text)); });
     }
 
+    void FakeApp::passKey(uint32_t sym, uint32_t /*states*/, uint32_t /*code*/) {
+        if (const auto text = keyText(sym); !text.empty())
+            later(quirks_.lagMs, [this, text] { insert(utf8::decode(text)); });
+    }
+
     void FakeApp::forwardKey(EditKey key, bool release) {
         if (key != EditKey::BackSpace || release || monotonicUs() < busyUntilUs_)
             return;

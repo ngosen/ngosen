@@ -558,9 +558,22 @@ namespace ngosen {
         performReplacement(deletedPart, addedPart);
     }
 
+    // As on the live path, the key goes to the app and the next key starts a new word.
+    void TypingState::passReplayedKey(const KeyEntry& key, std::string& out) {
+        commitReplayed(out);
+        hasHistory_ = false;
+        ResetEngine(bambooEngine_.handle());
+        oldPreBuffer_.clear();
+        host_->passKey(key.sym, key.state, key.code);
+    }
+
     bool TypingState::replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
-        auto        sym     = keys[i].sym;
-        uint32_t    state   = keys[i].state;
+        auto     sym   = keys[i].sym;
+        uint32_t state = keys[i].state;
+        if (keys[i].toApp) {
+            passReplayedKey(keys[i], out);
+            return false;
+        }
         std::string keyUtf8 = host_->keyText(sym);
         if (keyUtf8.empty()) {
             return false;

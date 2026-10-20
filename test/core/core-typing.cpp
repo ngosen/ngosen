@@ -332,6 +332,35 @@ namespace {
         check(join(host->commits()) == "['ên']", "key during replacement: one commit with the held key", join(host->commits()));
     }
 
+    // A key that types no text, pressed while the app has not yet applied the backspaces, goes to the
+    // app after the replacement instead of being typed or dropped. Chromium on X11 talks dbus and
+    // reports no surrounding text, so it gets a timed wait instead of the reported one.
+    void testSpecialKeyDuringReplacement(const FakeKey& key, const std::string& name, const Field& field = makeField("wayland", true)) {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        typeTie(state, *host, loop, field.surroundingText);
+        if (!field.surroundingText)
+            host->setSurrounding("", 0);
+        press(state, static_cast<uint32_t>('e'));
+        FakeKey down = key;
+        state.keyEvent(down);
+        if (field.surroundingText) {
+            host->setSurrounding("ti", 2);
+            state.surroundingUpdated();
+        }
+        loop.pump(150);
+        const std::string what = "special key during replacement (" + field.frontend + "): " + name;
+        check(join(host->commits()) == "['ê']" && host->forwarded().size() == 2, what + " is not typed", join(host->commits()));
+        const auto& passed = host->passed();
+        check(passed.size() == 1 && passed[0].first == key.sym() && passed[0].second == 1, what + " goes to the app after the commit",
+              std::to_string(passed.size()) + " keys passed");
+    }
+
     // GTK4 drops forwarded keys, so the deletion goes through the surrounding text.
     void testGtk4DeletesSurrounding() {
         realMode = ngosen::Mode::Sen;
@@ -669,6 +698,14 @@ int main() {
     testSenForwards("wayland_v2", true);
     testSenForwards("xim", false);
     testKeyDuringReplacement();
+    testSpecialKeyDuringReplacement(FakeKey(ngosen::key::Return), "Return");
+    testSpecialKeyDuringReplacement(FakeKey('s', false, ngosen::modifier::Ctrl), "Ctrl+S");
+    testSpecialKeyDuringReplacement(FakeKey(ngosen::key::Left), "Left");
+    {
+        Field chromium            = makeField("dbus", false, "chromium");
+        chromium.keyEventOrderFix = true;
+        testSpecialKeyDuringReplacement(FakeKey(ngosen::key::Return), "Return", chromium);
+    }
     testCommitAfterTheReport();
     testCommitAfterFieldRefocus();
     testCommitAfterEditorRedraw();

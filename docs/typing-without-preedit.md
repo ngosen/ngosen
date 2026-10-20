@@ -121,8 +121,8 @@ tracker that links to it.
   and your desktop. Each report either adds a test case or finds a bug above.
 - **App and toolkit developers:** on Linux, report surrounding text to the input method and honour
   `delete_surrounding_text`; set the URL input purpose on address bars; deliver forwarded keys to
-  the focused widget. The tests named above show what an input method expects, and Ngó Sen's
-  maintainers will test a fix on request.
+  the focused widget. The tests named above show what an input method expects; an issue here with
+  the app's name is enough to get a fix tried against Ngó Sen.
 - **Other input method projects:** Vietnamese input methods on Linux share these problems, and
   so does any input method that corrects committed text. Confirming an upstream report with your
   own reproduction weighs more than one project alone.

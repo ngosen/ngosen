@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include <fcitx-utils/dbus/message.h>
 #include <fcitx-utils/dbus/objectvtable.h>
 
 #include <string>

@@ -11,6 +11,8 @@
 #include <iterator>
 #include <string>
 
+#include <sys/stat.h>
+
 namespace {
 
     int  failures = 0;
@@ -33,6 +35,8 @@ int main() {
     configureTestPaths("fcitx5-ngosen-typing-log-file");
     const auto root = std::filesystem::temp_directory_path() / "fcitx5-ngosen-typing-log-file";
     setenv("XDG_STATE_HOME", (root / "state").c_str(), 1);
+    // The common default, under which files are readable by everyone.
+    umask(022);
 
     TestInstance        testInstance;
     fcitx::NgoSenEngine engine(&testInstance.instance);
@@ -43,6 +47,9 @@ int main() {
     const std::string text = readFile(path);
     check("the log starts with its header", text.rfind("# Ngó Sen ", 0) == 0);
     check("the log holds the recorded events", text.find("commit\t\"việt\"") != std::string::npos);
+    using std::filesystem::perms;
+    check("only the user can open the log directory", std::filesystem::status(path.parent_path()).permissions() == perms::owner_all);
+    check("only the user can read the log", std::filesystem::status(path).permissions() == (perms::owner_read | perms::owner_write));
 
     // A file where the state directory should be: nothing can be written there.
     std::ofstream(root / "blocked").put('x');

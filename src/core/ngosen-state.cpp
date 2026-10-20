@@ -257,7 +257,12 @@ namespace ngosen {
         std::string addedPart;
         ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
 
-        if (!deletedPart.empty()) {
+        // The app already shows the raw keys, so the word stays as typed and is not ours to reopen.
+        const bool keepsRawKeys = !deletedPart.empty() && !canSendBackspaces();
+        if (keepsRawKeys) {
+            NGOSEN_ERROR("Cannot send backspaces here, pass the key");
+            keyEvent.passToApp();
+        } else if (!deletedPart.empty()) {
             performReplacement(deletedPart, addedPart);
             keyEvent.accept();
         } else {
@@ -275,7 +280,7 @@ namespace ngosen {
         hasHistory_ = false;
         ResetEngine(bambooEngine_.handle());
         oldPreBuffer_.clear();
-        lastWord_ = commitStr;
+        lastWord_ = keepsRawKeys ? std::string() : commitStr;
     }
 
     void TypingState::replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8) {

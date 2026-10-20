@@ -364,6 +364,11 @@ namespace {
         loop.pump(100);
         check(host->forwarded().empty(), "sdl: no forwarded keys", std::to_string(host->forwarded().size()));
         check(host->deletes().empty(), "sdl: no surrounding text deletion", std::to_string(host->deletes().size()));
+
+        // Ending "tiên" would need the raw e deleted; the keys after it must still reach the app.
+        press(state, static_cast<uint32_t>('n'));
+        check(!press(state, ngosen::key::space), "sdl: space after the word goes to the app", "space was taken");
+        check(!press(state, static_cast<uint32_t>('a')), "sdl: the next word is typed, not held back", "a was taken");
     }
 
     bool has(const std::string& text, const std::string& part) {

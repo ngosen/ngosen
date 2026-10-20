@@ -23,7 +23,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - README hướng dẫn thêm repo để update bằng dnf, apt, pacman hoặc zypper (#174).
 - Thêm `docs/typing-without-preedit.md` (tiếng Anh): kiểu gõ không preedit cần gì ở app, Ngó Sen đang xoá chữ
-  bằng những cách nào, và app nào sửa gì thì bỏ được cách vòng; làm nguồn cho trang kêu gọi hỗ trợ trên website (#PR).
+  bằng những cách nào, và app nào sửa gì thì bỏ được cách vòng; làm nguồn cho trang kêu gọi hỗ trợ trên website (#181).
 
 ## [1.5.3-2] — 20/10/2026
 

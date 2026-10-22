@@ -86,6 +86,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - App GTK3 đi qua GNOME Shell không còn mất dấu khi gõ: `trơi`, `ban`, `viêt` thay vì `trời`, `bạn`, `việt`.
   Ngó Sen chờ app báo đã xoá chữ rồi mới commit chữ có dấu; terminal không báo vẫn dùng thời gian chờ
   cố định (#231).
+- Chế độ Preedit trên X11 (Chrome, Chromium, Edge...): gõ `toan`, cách, Backspace rồi `s` giờ ra `toán` thay vì
+  `toans`, như Gõ Sen. Ngó Sen xoá chữ cũ rồi hiện lại để sửa tiếp. Draft.js đôi khi vẫn nhân đôi hoặc mất chữ
+  khi làm vậy (#256).
 
 ### Tài liệu
 

@@ -6,6 +6,7 @@
 #pragma once
 
 #include "fake-host.h"
+#include "ngosen-mode.h"
 
 #include <cstdint>
 #include <memory>
@@ -35,6 +36,8 @@ namespace ngosen::test {
         int  redrawAfterEditMs      = 0;     // bounces focus this long after each edit and drops commits until then, as TikTok in Chrome does
         bool redrawsOnlyOnDeletion  = false; // redraws after deletions but not insertions, as a plain Draft.js box in Chrome on GNOME does
         bool dropsOldKeyPresses     = false; // drops a Backspace press not newer than the last one, as GLFW does under XIM
+        int  holdsKeysMs            = 0;     // releases each key this late; an X server ignores a press of a key still held
+        bool dropsKeysUnderPreedit  = false; // applies a key let through a moment after our reply and drops it if a preedit showed first, as Chromium over D-Bus does
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -67,9 +70,15 @@ namespace ngosen::test {
             return focused_;
         }
 
-        void                         showPreedit(const std::string& /*text*/, bool /*underline*/) override {}
-        void                         clearPreedit() override {}
-        void                         resetPanel() override {}
+        void showPreedit(const std::string& text, bool /*underline*/) override {
+            preedit_ = text;
+        }
+        void clearPreedit() override {
+            preedit_.clear();
+        }
+        void resetPanel() override {
+            preedit_.clear();
+        }
         void                         refreshPreedit() override {}
         void                         refreshPanel() override {}
 
@@ -111,6 +120,8 @@ namespace ngosen::test {
         bool                                focused_         = true;
         uint64_t                            forwardedAt_     = 0;
         uint32_t                            lastBackSpaceAt_ = 0;
+        uint32_t                            heldKey_         = 0;
+        std::string                         preedit_;
         int                                 slowestCommitMs_ = 0;
         std::u32string                      text_;
         size_t                              cursor_ = 0;
@@ -126,8 +137,8 @@ namespace ngosen::test {
 
     // The app's text after typing the keys in Gõ Sen mode, waiting gapsMs[i] after key i.
     std::string typeInApp(const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, int* slowestCommitMs = nullptr);
-    // The same with the given settings and macro table.
+    // The same with the given settings, macro table and typing mode.
     std::string typeInApp(FakeResources& resources, const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs,
-                          int* slowestCommitMs = nullptr);
+                          int* slowestCommitMs = nullptr, Mode mode = Mode::Sen);
 
 } // namespace ngosen::test

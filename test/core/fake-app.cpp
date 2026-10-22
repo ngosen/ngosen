@@ -79,8 +79,9 @@ namespace ngosen::test {
         return typeInApp(resources, field, quirks, keys, gapsMs, slowestCommitMs);
     }
 
-    std::string typeInApp(FakeResources& resources, const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, int* slowestCommitMs) {
-        realMode = Mode::Sen;
+    std::string typeInApp(FakeResources& resources, const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, int* slowestCommitMs,
+                          Mode mode) {
+        realMode = mode;
         realtextLen.store(0);
         FakeLoop    loop;
         auto        owned = std::make_unique<FakeApp>(loop, field, quirks);
@@ -113,8 +114,19 @@ namespace ngosen::test {
                 later(quirks_.lagMs, [this, text] { insert(utf8::decode(text)); });
         }
 
-        FakeKey up(sym, true);
-        state_->keyEvent(up);
+        if (quirks_.holdsKeysMs <= 0) {
+            FakeKey up(sym, true);
+            state_->keyEvent(up);
+            return;
+        }
+        heldKey_ = sym;
+        later(quirks_.holdsKeysMs, [this, sym] {
+            if (heldKey_ != sym)
+                return;
+            heldKey_ = 0;
+            FakeKey up(sym, true);
+            state_->keyEvent(up);
+        });
     }
 
     std::string FakeApp::text() const {
@@ -159,11 +171,22 @@ namespace ngosen::test {
             // The X server stamps the burst with one time, and fcitx5's XIM frontend then marks every press after the first as a repeat.
             const auto time = static_cast<uint32_t>(monotonicUs() / 1000);
             for (int i = 0; i < count; ++i) {
+                FakeKey up(key::BackSpace, true, 0, time);
+                // The press is lost on a key still held; its release lets the key go.
+                if (heldKey_ == key::BackSpace) {
+                    heldKey_ = 0;
+                    state_->keyEvent(up);
+                    continue;
+                }
                 FakeKey down(key::BackSpace, false, i == 0 ? 0 : modifier::Repeat, time);
                 state_->keyEvent(down);
-                if (!down.accepted())
+                if (!down.accepted() && quirks_.dropsKeysUnderPreedit) {
+                    later(1, [this] {
+                        if (preedit_.empty())
+                            eraseBefore(1);
+                    });
+                } else if (!down.accepted())
                     eraseBefore(1);
-                FakeKey up(key::BackSpace, true, 0, time);
                 state_->keyEvent(up);
             }
         });
@@ -214,9 +237,9 @@ namespace ngosen::test {
         if (quirks_.redrawAfterEditMs <= 0)
             return;
         ++redraws_;
-        later(quirks_.redrawAfterEditMs, [this] {
+        later(quirks_.redrawAfterEditMs, [this, mode = realMode.load()] {
             state_->deactivate(true);
-            state_->activate(Mode::Sen, true);
+            state_->activate(mode, true);
             --redraws_;
             changed();
         });

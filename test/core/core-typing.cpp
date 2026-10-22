@@ -383,6 +383,23 @@ namespace {
         }
     }
 
+    // Preedit shows the open word outside the app, so the reopened word has to leave the app first.
+    void testPreeditBackspaceIntoLastWord(const std::string& frontend, ngosen::test::AppQuirks quirks) {
+        const Field                                                      field = makeField(frontend, false);
+        const std::string                                                what  = "preedit: backspace into last word (" + frontend + "): ";
+        const uint32_t                                                   bs    = ngosen::key::BackSpace;
+        const std::vector<std::pair<std::vector<uint32_t>, std::string>> cases{
+            {{'d', 'u', 'y', 'e', 'e', 't', ' ', bs, bs, bs, bs, bs, 'y', 'e', 'e', 'j', 't', ' '}, "duyệt "},
+            {{'t', 'o', 'a', 'n', ' ', bs, 's', ' '}, "toán "},
+            {{'b', 'a', 'n', ' ', bs, 'f', ' '}, "bàn "},
+        };
+        for (const auto& [keys, want] : cases) {
+            FakeResources     resources;
+            const std::string text = ngosen::test::typeInApp(resources, field, quirks, keys, std::vector<int>(keys.size(), 100), nullptr, ngosen::Mode::Preedit);
+            check(text == want, what + want, text);
+        }
+    }
+
     // What we committed may differ from what the engine can take back: a macro's text ending in a
     // symbol, or a word in a legacy charset.
     void testBackspaceIntoCommittedText() {
@@ -1024,6 +1041,13 @@ int main() {
         ngosen::test::AppQuirks xtest;
         xtest.takesXTest = true;
         testBackspaceIntoLastWord("xim", false, xtest);
+        xtest.holdsKeysMs           = 40;
+        xtest.dropsKeysUnderPreedit = true;
+        testPreeditBackspaceIntoLastWord("dbus", xtest);
+        // Quill and other Chromium editors redraw, bouncing focus, after a deletion.
+        xtest.redrawAfterEditMs     = 20;
+        xtest.redrawsOnlyOnDeletion = true;
+        testPreeditBackspaceIntoLastWord("dbus", xtest);
         setXTestSenderForTest({});
     }
     testBackspaceIntoCommittedText();

@@ -165,6 +165,12 @@ namespace ngosen {
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
         Surrounding              reportAtKey_;
 
+        // --- Preedit mode: a reopened word leaves the app before it shows again ---
+        std::string                    reopenedWord_;
+        int                            reopenBackspaces_ = 0;     ///< XTEST backspaces still to come back
+        bool                           reopenUnsent_     = false; ///< they wait for the backspace that reopened the word to be released
+        std::unique_ptr<ngosen::Timer> reopenTimer_;
+
         struct Retype {
             std::string typed;
             std::string marked;
@@ -189,6 +195,8 @@ namespace ngosen {
         static constexpr uint64_t ForwardWaitUs = 15000;
         // A key sent back arrives at once; a held key repeats tens of milliseconds apart.
         static constexpr uint64_t SentBackWithinUs = 10000;
+        // XTEST keys come back within milliseconds; after this the reopened word is given up.
+        static constexpr uint64_t ReopenWaitUs = 500000;
 
         // Notes the key, after the field and mode when they differ from the last noted ones.
         void recordKey(const ngosen::KeyPress& keyEvent);
@@ -412,6 +420,13 @@ namespace ngosen {
         bool removeToneMark(ngosen::KeyPress& keyEvent);
         // Backspace from after lastWord_ into it: the engine takes up what is left of that word.
         void reopenLastWord();
+        // Preedit mode shows the open word outside the app: delete it there, then show it once that is done.
+        bool reopenLastWordInPreedit();
+        void sendReopenBackspaces();
+        bool handleReopenKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        void finishReopen(bool fromTimer);
+        // Runs a key through the engine in Preedit mode; false when the engine did not take it.
+        bool feedPreedit(uint32_t sym, uint32_t states);
         // The engine finished a word: send what differs from the text already typed.
         void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr);
         // The word is still open: bring the app's text in line with the new preedit.

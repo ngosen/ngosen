@@ -27,11 +27,22 @@ namespace ngosen {
     bool TypingState::activate(ngosen::Mode targetMode, bool isFocusIn) {
         const int64_t     now    = nowMs();
         const Surrounding s      = host_->surrounding();
-        const bool        bounce = targetMode == ngosen::Mode::Sen && lastDeactivateTime_ > 0 && now - lastDeactivateTime_ < FocusBounceMs;
+        const bool        quick  = lastDeactivateTime_ > 0 && now - lastDeactivateTime_ < FocusBounceMs;
+        const bool        bounce = targetMode == ngosen::Mode::Sen && quick;
         const bool        resume = bounce && deletionInterruptedAt_ > 0 && is_deleting_.load();
         deletionInterruptedAt_   = 0;
         if (!resume)
             is_deleting_.store(false);
+        // Chromium editors such as Quill redraw after a deletion; the Preedit word outlives that bounce.
+        ngosen::UniqueCPtr<char> open(bambooEngine_ ? EnginePullPreedit(bambooEngine_.handle()) : nullptr);
+        const bool               openWord = open && *open.get() != 0;
+        const bool               keepWord = quick && targetMode == ngosen::Mode::Preedit && (openWord || !reopenedWord_.empty());
+        if (!reopenedWord_.empty() && !keepWord) {
+            reopenUnsent_     = false;
+            reopenBackspaces_ = 0;
+            reopenedWord_.clear();
+            reopenTimer_.reset();
+        }
 
         realMode = targetMode;
         if (bounce) {
@@ -46,7 +57,7 @@ namespace ngosen {
                 bouncedInWait_ = surr_wait_started_at_;
             }
             lastBounceAt_ = now;
-        } else {
+        } else if (!keepWord) {
             clearAllBuffers();
             fieldBounces_         = 0;
             checkWordAfterBounce_ = false;
@@ -54,7 +65,7 @@ namespace ngosen {
 
         if (isFocusIn && host_->field().frontend == "dbus" && !s.isValid()) {
             NGOSEN_INFO("Skip clearAllBuffers");
-        } else if (s.isValid() && !oldPreBuffer_.empty() && now - lastDeactivateTime_ >= FocusBounceMs) {
+        } else if (s.isValid() && !oldPreBuffer_.empty() && now - lastDeactivateTime_ >= FocusBounceMs && !keepWord) {
             clearAllBuffers();
         }
         if (!resume)
@@ -63,6 +74,10 @@ namespace ngosen {
         retype_.reset();
         if (isFocusIn)
             forgetKeysWhileOff();
+        if (keepWord && openWord && reopenedWord_.empty()) {
+            host_->showPreedit(open.get(), false);
+            host_->refreshPreedit();
+        }
         return bounce;
     }
 

@@ -13,6 +13,7 @@
 #include "ngosen-log.h"
 #include "ngosen-strings.h"
 #include "ngosen-utf8.h"
+#include "ngosen-xtest.h"
 
 #include <algorithm>
 #include <cctype>
@@ -87,12 +88,22 @@ namespace ngosen {
                 return;
             }
         }
-        if (EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U)
+        // The backspace itself goes to the app and erases the break after the word.
+        if (ngosen::key::isBackspace(currentSym) && !lastWord_.empty() && reopenLastWordInPreedit())
+            return;
+        if (feedPreedit(currentSym, keyEvent.states()))
             keyEvent.accept();
+    }
+
+    bool TypingState::feedPreedit(uint32_t sym, uint32_t states) {
+        const bool processed = EngineProcessKeyEvent(bambooEngine_.handle(), sym, states) != 0U;
         if (auto pulled = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()))) {
             if (pulled && (*pulled.get() != 0)) {
                 NGOSEN_INFO("Commit: " + std::string(pulled.get()));
                 commit(pulled.get());
+                // A key the engine did not take reaches the app after the commit, so the word no longer ends the text.
+                if (processed)
+                    lastWord_ = pulled.get();
             }
         }
         host_->resetPanel();
@@ -103,6 +114,89 @@ namespace ngosen {
         }
         host_->refreshPreedit();
         host_->refreshPanel();
+        return processed;
+    }
+
+    // Only XTEST backspaces come back to us, so only then do we know when the word has left the app.
+    bool TypingState::reopenLastWordInPreedit() {
+        ngosen::UniqueCPtr<char> open(EnginePullPreedit(bambooEngine_.handle()));
+        if ((open && *open.get() != 0) || !xtestAvailable()) {
+            lastWord_.clear();
+            return false;
+        }
+        reopenLastWord();
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+        reopenedWord_     = preedit ? preedit.get() : "";
+        reopenBackspaces_ = static_cast<int>(ngosen::utf8::length(reopenedWord_));
+        if (reopenBackspaces_ == 0) {
+            ResetEngine(bambooEngine_.handle());
+            return false;
+        }
+        // The X server drops a press of a key still held, so the backspaces wait for this one's release.
+        reopenUnsent_ = true;
+        return true;
+    }
+
+    void TypingState::sendReopenBackspaces() {
+        reopenUnsent_ = false;
+        if (!host_->pressSystemKeys(reopenBackspaces_)) {
+            reopenBackspaces_ = 0;
+            reopenedWord_.clear();
+            ResetEngine(bambooEngine_.handle());
+            return;
+        }
+        reopenTimer_ = host_->startTimer(ngosen::monotonicUs() + ReopenWaitUs, 1000, [this](ngosen::Timer&) {
+            // XTEST keys always reach the window, so the word has most likely left the app anyway.
+            NGOSEN_WARN("Reopened word: backspaces did not come back");
+            finishReopen(true);
+            return false;
+        });
+        NGOSEN_INFO("Reopen " + reopenedWord_ + ": send " + std::to_string(reopenBackspaces_) + " backspaces");
+    }
+
+    bool TypingState::handleReopenKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (reopenedWord_.empty())
+            return false;
+        if (reopenUnsent_)
+            sendReopenBackspaces();
+        if (reopenBackspaces_ > 0 && ngosen::key::isBackspace(currentSym) && !keyEvent.hasModifier()) {
+            keyEvent.passToApp();
+            if (--reopenBackspaces_ == 0) {
+                // A D-Bus client applies the key after our reply; a preedit shown before that makes it drop the key.
+                reopenTimer_ = host_->startTimer(ngosen::monotonicUs() + ForwardWaitUs, 1000, [this](ngosen::Timer&) {
+                    finishReopen(true);
+                    return false;
+                });
+            }
+            return true;
+        }
+        const bool editsWord = !host_->keyText(currentSym).empty() || ngosen::key::isBackspace(currentSym);
+        if (editsWord && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
+            keyEvent.accept();
+            return true;
+        }
+        return false;
+    }
+
+    void TypingState::finishReopen(bool fromTimer) {
+        reopenBackspaces_ = 0;
+        if (!fromTimer)
+            reopenTimer_.reset(); // never reset a timer from inside its own callback
+        reopenedWord_.clear();
+        auto keys = std::move(buffered_keys_);
+        buffered_keys_.clear();
+        if (!host_->hasFocus()) {
+            ResetEngine(bambooEngine_.handle());
+            return;
+        }
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+        host_->showPreedit(preedit ? preedit.get() : "", false);
+        host_->refreshPreedit();
+        for (const auto& key : keys) {
+            if (const std::string text = host_->keyText(key.sym); !feedPreedit(key.sym, key.state) && !text.empty())
+                commit(text);
+        }
     }
 
     bool TypingState::checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym) {
@@ -393,7 +487,7 @@ namespace ngosen {
         const bool ownBackspace = deleting && ngosen::key::isBackspace(currentSym) && !ngosen::forwardsBackspaces(host_->field());
         if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
             lastWord_.clear();
-        if (handleKeyDuringReplacement(keyEvent, currentSym) || handleDoubledKey(keyEvent, currentSym))
+        if (handleReopenKey(keyEvent, currentSym) || handleKeyDuringReplacement(keyEvent, currentSym) || handleDoubledKey(keyEvent, currentSym))
             return;
 
         // Vietnamese typed since then, so the English noted is no longer right before the cursor.
@@ -441,17 +535,21 @@ namespace ngosen {
         } else {
             cancelModifierTap();
         }
-        if (keyEvent.isRelease())
+        if (keyEvent.isRelease()) {
+            if (reopenUnsent_ && ngosen::key::isBackspace(keyEvent.sym()))
+                sendReopenBackspaces();
             return true;
+        }
         const uint64_t lastPressAtUs = lastInputAtUs_;
         lastInputAtUs_               = ngosen::monotonicUs();
         // An app may send a key we let through back to us: XIM clients as is, gnome-text-editor at once
         // and marked as repeated; let it through rather than count it twice. Some frontends stamp a held
         // key's repeats with its first second. Our XTEST backspaces share one time, and XIM marks them repeats.
-        const bool ownBackspace = is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(keyEvent.sym()) && !ngosen::forwardsBackspaces(host_->field());
-        const bool sameAsLast   = keyEvent.time() != 0 && keyEvent.time() == lastPressTime_ && keyEvent.code() == lastPressCode_;
-        const bool resentNow    = !ownBackspace && (keyEvent.states() & ngosen::modifier::Repeat) != 0 && lastInputAtUs_ - lastPressAtUs < SentBackWithinUs;
-        const bool sentBack     = resentNow || (!is_deleting_.load(std::memory_order_acquire) && host_->field().frontend == "xim");
+        const bool ownBackspace =
+            (reopenBackspaces_ > 0 || (is_deleting_.load(std::memory_order_acquire) && !ngosen::forwardsBackspaces(host_->field()))) && ngosen::key::isBackspace(keyEvent.sym());
+        const bool sameAsLast = keyEvent.time() != 0 && keyEvent.time() == lastPressTime_ && keyEvent.code() == lastPressCode_;
+        const bool resentNow  = !ownBackspace && (keyEvent.states() & ngosen::modifier::Repeat) != 0 && lastInputAtUs_ - lastPressAtUs < SentBackWithinUs;
+        const bool sentBack   = resentNow || (!is_deleting_.load(std::memory_order_acquire) && host_->field().frontend == "xim");
         if (sameAsLast && sentBack) {
             NGOSEN_INFO("App sent a key back: " + keyEvent.name());
             keyEvent.passToApp();
@@ -673,6 +771,9 @@ namespace ngosen {
         if (is_deleting_.load(std::memory_order_acquire)) {
             return;
         }
+        // Editors such as Quill bounce focus on our deletion; activate() or the timer decides.
+        if (!reopenedWord_.empty())
+            return;
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
         if (isFocusOut)

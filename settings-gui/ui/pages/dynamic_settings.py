@@ -130,9 +130,9 @@ HINTS = {
         "xin → Xin in an empty field or on a new line. Not in address bars or some apps; on GNOME 47 and later, Chrome and similar apps skip an empty field."
     ),
     "RetypeAfterSwitch": N_(
-        "Typed tieengs vieetj before switching on? Switch on and it becomes tiếng việt. Esc gives back what you typed."
+        "Typed tieengs vieetj before switching on? Switch on and it becomes tiếng việt. Tab or Esc gives back what you typed."
     ),
-    "RetoneSelection": N_("Select nhanh, type s, then press Tab: nhánh."),
+    "RetoneSelection": N_("Select nhanh and type s: nhánh. Tab, Esc or s again gives back s."),
     "ModeMenuKey": N_(
         "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."
     ),

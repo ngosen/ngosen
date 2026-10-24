@@ -95,7 +95,7 @@ namespace ngosen {
         // A key this field got in English, from Ngó Sen or another input method of the group.
         void noteKeyWhileOff(const ngosen::KeyPress& key);
         // When Vietnamese comes on, by activate() or the toggle key: shows what the keys noted above
-        // read as in Vietnamese, for Tab to retype them.
+        // read as in Vietnamese, for Enter to retype them.
         void offerRetype();
         // The cursor left the text noted above: focus moved or the app reset the field.
         void forgetKeysWhileOff();
@@ -171,8 +171,9 @@ namespace ngosen {
         struct Retype {
             std::string typed;
             std::string marked;
-            bool        applied = false; // Tab once more puts typed back
-            bool        atOnce  = false; // retyped on switching on; only Esc undoes it
+            bool        applied = false; // Tab or Esc then puts typed back
+            bool        atOnce  = false; // retyped on switching on; only Tab or Esc undoes it
+            bool        retone  = false; // a selected word retoned; a letter after it puts the key back
         };
         std::string                    typedWhileOff_;
         std::optional<Retype>          retype_;
@@ -181,6 +182,10 @@ namespace ngosen {
         std::string addMarks(const std::string& typed);
         bool        everyWordTakesMarks(const std::string& typed);
         void        applyRetype();
+        void        replaceRetyped(const std::string& from, const std::string& to);
+        void        acceptRetype(const std::string& hint);
+        void        applyRetypeSoon(std::string hint);
+        void        reopenTypedKey();
         void        dropRetype();
         void        hideOffer();
         bool        reportsTextInTime() const;
@@ -199,6 +204,7 @@ namespace ngosen {
         void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8);
         void                           dropRetoneKey();
         void                           checkRetoneReport();
+        bool                           handleKeyAfterRetone(ngosen::KeyPress& keyEvent);
         std::string                    retoned(const std::string& word, uint32_t sym, uint32_t states) const;
 
         // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a

@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-// A tone key typed over a selected word, offered as that word with the new tone.
+// A tone key typed over a selected word changes that word's tone.
 #include "fake-app.h"
 #include "fake-engine.h"
 #include "fake-host.h"
@@ -53,13 +53,15 @@ namespace {
         size_t                                   cursor        = 0;
         bool                                     repeatsReport = false; // reports the old state once more, as Firefox does
         uint32_t                                 tone          = 's';
-        std::vector<uint32_t>                    after; // keys once the offer shows
+        std::vector<uint32_t>                    after;          // keys once the tone has changed
+        int                                      settleMs = 150; // wait after the tone key
+        int                                      gapMs    = 150; // wait after each key in after
         std::function<void(FakeResources&)>      configure;
         std::function<void(FakeApp&, FakeLoop&)> beforeAfter;
     };
 
     struct Result {
-        std::string offer;
+        std::string hint; // the status line once the word has changed, empty when it did not
         std::string text;
     };
 
@@ -86,14 +88,14 @@ namespace {
         app->type(run.tone);
         if (run.repeatsReport)
             state.surroundingUpdated();
-        loop.pump(150);
+        loop.pump(run.settleMs);
         Result result;
-        result.offer = app->labels().empty() ? "(no offer)" : app->labels()[0];
+        result.hint = app->status();
         if (run.beforeAfter)
             run.beforeAfter(*app, loop);
         for (const uint32_t sym : run.after) {
             app->type(sym);
-            loop.pump(150);
+            loop.pump(run.gapMs);
         }
         loop.pump(300);
         result.text = app->text();
@@ -110,133 +112,166 @@ namespace {
         return run;
     }
 
-    void testOffer() {
+    void testRetone() {
         auto r = retone(nhanh());
-        check(r.offer == "nhanh → nhánh", "a tone key over a selected word offers it with the tone", r.offer);
+        check(r.text == "abc nhánh xyz" && !r.hint.empty(), "a tone key over a selected word changes it at once", r.text);
         r = retone(nhanh(9, 4));
-        check(r.offer == "nhanh → nhánh", "the selection may run either way", r.offer);
+        check(r.text == "abc nhánh xyz", "the selection may run either way", r.text);
 
         Run firefox                      = nhanh();
         firefox.quirks.hidesSelectionEnd = true;
         r                                = retone(firefox);
-        check(r.offer == "nhanh → nhánh", "a field that hides the selection end still offers", r.offer);
+        check(r.text == "abc nhánh xyz", "a field that hides the selection end", r.text);
         firefox.repeatsReport = true;
         r                     = retone(firefox);
-        check(r.offer == "nhanh → nhánh", "a repeated old report is not the answer", r.offer);
+        check(r.text == "abc nhánh xyz", "a repeated old report is not the answer", r.text);
 
         Run gnome   = nhanh();
         gnome.field = makeField("ibus");
-        gnome.after = {ngosen::key::Tab};
         r           = retone(gnome);
         check(r.text == "abc nhánh xyz", "a field behind GNOME Shell's IBus bridge", r.text);
+        gnome.after = {'a', 'c', 'h', 's'};
+        r           = retone(gnome);
+        check(r.text == "abc sách xyz", "behind the IBus bridge a letter after the key puts it back", r.text);
 
         Run run   = nhanh();
+        run.after = {ngosen::key::Escape};
+        r         = retone(run);
+        check(r.text == "abc s xyz", "Esc puts back the key", r.text);
+        run.after = {ngosen::key::Escape, 'a'};
+        r         = retone(run);
+        check(r.text == "abc sa xyz", "after Esc, typing goes on from the key", r.text);
+        run.after = {'a', 'c', 'h', 's'};
+        r         = retone(run);
+        check(r.text == "abc sách xyz", "a letter after the key puts it back and starts a word with it", r.text);
+        run.after = {'f'};
+        r         = retone(run);
+        check(r.text == "abc nhành xyz", "another tone key changes the tone again", r.text);
+        run.after = {'f', ngosen::key::Escape};
+        r         = retone(run);
+        check(r.text == "abc s xyz", "Esc after a second tone key puts back the first key", r.text);
+        run.after = {ngosen::key::space};
+        r         = retone(run);
+        check(r.text == "abc nhánh  xyz", "a space keeps the new tone", r.text);
+
+        // The letters arrive while the forwarded backspace for the retone is still on its way.
+        Run fast              = nhanh();
+        fast.field            = makeField("xim");
+        fast.quirks.keyStepMs = 8;
+        fast.settleMs         = 1;
+        fast.gapMs            = 3;
+        fast.after            = {'a', 'c', 'h', 's'};
+        r                     = retone(fast);
+        check(r.text == "abc sách xyz", "letters typed during the retone still put the key back", r.text);
         run.after = {ngosen::key::Tab};
         r         = retone(run);
-        check(r.text == "abc nhánh xyz", "Tab writes the word with the tone", r.text);
-        run.after = {ngosen::key::Tab, ngosen::key::Tab};
+        check(r.text == "abc s xyz", "Tab puts back the key", r.text);
+        run.after = {'s'};
         r         = retone(run);
-        check(r.offer != "(no offer)" && r.text == "abc s xyz", "Tab again puts back what was typed", r.offer + " / " + r.text);
-        run.after = {ngosen::key::Escape, ngosen::key::Tab};
+        check(r.text == "abc s xyz", "the tone key again puts it back", r.text);
+        run.after = {'s', 'a'};
         r         = retone(run);
-        check(r.offer != "(no offer)" && r.text == "abc s xyz", "after Esc, Tab changes nothing", r.offer + " / " + r.text);
-        run.after = {ngosen::key::Tab, 'a', 's'};
-        r         = retone(run);
-        check(r.text == "abc nhánhá xyz", "after Tab, typing starts a new word", r.text);
-        run.after = {'a'};
-        r         = retone(run);
-        check(r.offer != "(no offer)" && r.text == "abc sa xyz", "typing on keeps the key as typed", r.offer + " / " + r.text);
+        check(r.text == "abc sa xyz", "after the tone key again, typing goes on", r.text);
+
+        Run vni       = nhanh();
+        vni.typed     = "abc hai xyz";
+        vni.cursor    = 7;
+        vni.tone      = '2';
+        vni.configure = [](FakeResources& res) { res.mutableOptions().inputMethod = "VNI"; };
+        r             = retone(vni);
+        check(r.text == "abc hài xyz", "VNI: a digit over a word changes its tone", r.text);
+        vni.after = {'2'};
+        r         = retone(vni);
+        check(r.text == "abc 2 xyz", "VNI: the digit again gives the digit", r.text);
     }
 
     void testWords() {
-        const auto offerFor = [](const std::string& typed, size_t from, size_t to, uint32_t tone, const std::function<void(FakeResources&)>& configure = {}) {
+        const auto retoneOf = [](const std::string& typed, size_t from, size_t to, uint32_t tone, const std::function<void(FakeResources&)>& configure = {}) {
             Run run;
             run.typed     = typed;
             run.anchor    = from;
             run.cursor    = to;
             run.tone      = tone;
             run.configure = configure;
-            return retone(run).offer;
+            return retone(run);
         };
-        auto offer = offerFor("abc nhanhj xyz", 4, 9, 's');
-        check(offer == "nhạnh → nhánh", "another tone replaces the old one", offer);
-        offer = offerFor("abc nhanhs xyz", 4, 9, 'z');
-        check(offer == "nhánh → nhanh", "the key that removes a tone", offer);
-        offer = offerFor("abc NHANH xyz", 4, 9, 's');
-        check(offer == "NHANH → NHÁNH", "capitals keep their case", offer);
-        offer = offerFor("abc dduwowngf xyz", 4, 9, 's');
-        check(offer == "đường → đướng", "a word with đ and horns", offer);
-        offer = offerFor("abc af xyz", 4, 5, 's');
-        check(offer == "à → á", "a single letter that has a mark", offer);
-        offer = offerFor("abc nhanh xyz", 4, 9, '1', [](FakeResources& r) { r.mutableOptions().inputMethod = "VNI"; });
-        check(offer == "nhanh → nhánh", "VNI tone key", offer);
-        offer = offerFor("abc nhanh xyz", 4, 9, '\'', [](FakeResources& r) { r.mutableOptions().inputMethod = "VIQR"; });
-        check(offer == "nhanh → nhánh", "VIQR tone key", offer);
+        auto r = retoneOf("abc nhanhj xyz", 4, 9, 's');
+        check(r.text == "abc nhánh xyz", "another tone replaces the old one", r.text);
+        r = retoneOf("abc nhanhs xyz", 4, 9, 'z');
+        check(r.text == "abc nhanh xyz", "the key that removes a tone", r.text);
+        r = retoneOf("abc NHANH xyz", 4, 9, 's');
+        check(r.text == "abc NHÁNH xyz", "capitals keep their case", r.text);
+        r = retoneOf("abc dduwowngf xyz", 4, 9, 's');
+        check(r.text == "abc đướng xyz", "a word with đ and horns", r.text);
+        r = retoneOf("abc af xyz", 4, 5, 's');
+        check(r.text == "abc á xyz", "a single letter that has a mark", r.text);
+        r = retoneOf("abc nhanh xyz", 4, 9, '1', [](FakeResources& res) { res.mutableOptions().inputMethod = "VNI"; });
+        check(r.text == "abc nhánh xyz", "VNI tone key", r.text);
+        r = retoneOf("abc nhanh xyz", 4, 9, '\'', [](FakeResources& res) { res.mutableOptions().inputMethod = "VIQR"; });
+        check(r.text == "abc nhánh xyz", "VIQR tone key", r.text);
 
-        offer = offerFor("abc a xyz", 4, 5, 's');
-        check(offer == "(no offer)", "a bare letter gets no offer", offer);
-        offer = offerFor("abc tieengs xyz", 4, 9, 's');
-        check(offer == "(no offer)", "the tone the word already has gets no offer", offer);
-        offer = offerFor("abc nhanh xyz", 4, 9, 'x');
-        check(offer == "(no offer)", "a word the engine restores as invalid gets no offer", offer);
-        offer = offerFor("abc hello xyz", 4, 9, 's');
-        check(offer == "(no offer)", "an English word gets no offer", offer);
-        offer = offerFor("abc nhanh xyz", 0, 9, 's');
-        check(offer == "(no offer)", "two words get no offer", offer);
-        offer = offerFor("abc nhanh xyz", 6, 9, 's');
-        check(offer == "(no offer)", "part of a word gets no offer", offer);
-        offer = offerFor("abc nhanh xyz", 9, 9, 's');
-        check(offer == "(no offer)", "a key typed with nothing selected gets no offer", offer);
+        r = retoneOf("abc a xyz", 4, 5, 's');
+        check(r.hint.empty() && r.text == "abc s xyz", "a bare letter is left as typed", r.text);
+        r = retoneOf("abc tieengs xyz", 4, 9, 's');
+        check(r.hint.empty() && r.text == "abc s xyz", "the tone the word already has", r.text);
+        r = retoneOf("abc nhanh xyz", 4, 9, 'x');
+        check(r.hint.empty() && r.text == "abc x xyz", "a word the engine restores as invalid", r.text);
+        r = retoneOf("abc hello xyz", 4, 9, 's');
+        check(r.hint.empty() && r.text == "abc s xyz", "an English word", r.text);
+        r = retoneOf("abc nhanh xyz", 0, 9, 's');
+        check(r.hint.empty() && r.text == "s xyz", "two words", r.text);
+        r = retoneOf("abc nhanh xyz", 6, 9, 's');
+        check(r.hint.empty() && r.text == "abc nhs xyz", "part of a word", r.text);
+        r = retoneOf("abc nhanh xyz", 9, 9, 's');
+        check(r.hint.empty(), "a key typed with nothing selected", r.text);
     }
 
     void testWhereNotOffered() {
         Run run   = nhanh();
         run.field = makeField("xim", false);
-        run.after = {ngosen::key::Tab};
         auto r    = retone(run);
-        check(r.offer == "(no offer)", "a field that reports no text gets no offer", r.offer);
+        check(r.hint.empty() && r.text == "abc s xyz", "a field that reports no text is left as typed", r.text);
 
         run                = nhanh();
         run.quirks.reports = false;
         r                  = retone(run);
-        check(r.offer == "(no offer)", "no offer until the field reports the key replaced the word", r.offer);
+        check(r.hint.empty(), "nothing changes until the field reports the key replaced the word", r.text);
 
         run           = nhanh();
         run.configure = [](FakeResources& r) { r.mutableOptions().retoneSelection = false; };
-        run.after     = {ngosen::key::Tab};
         r             = retone(run);
-        check(r.offer == "(no offer)" && r.text == "abc s xyz", "the option off: no offer, Tab goes to the app", r.offer + " / " + r.text);
+        check(r.hint.empty() && r.text == "abc s xyz", "the option off leaves the key as typed", r.text);
 
         run      = nhanh();
         run.mode = Mode::Preedit;
         r        = retone(run);
-        check(r.offer == "(no offer)", "Preedit mode gets no offer", r.offer);
+        check(r.hint.empty(), "Preedit mode is left as typed", r.text);
 
         run.mode           = Mode::Sen;
         run.field          = makeField();
         run.field.password = true;
         r                  = retone(run);
-        check(r.offer == "(no offer)", "a password field gets no offer", r.offer);
+        check(r.hint.empty() && r.text == "abc s xyz", "a password field is left as typed", r.text);
     }
 
-    void testClickDropsOffer() {
+    void testClickKeepsTone() {
         Run run         = nhanh();
         run.beforeAfter = [](FakeApp& app, FakeLoop& loop) {
             app.moveCursor(0);
             loop.pump(150);
         };
-        run.after = {ngosen::key::Tab};
+        run.after = {ngosen::key::Escape};
         auto r    = retone(run);
-        check(r.offer != "(no offer)" && r.text == "abc s xyz", "Tab after a click elsewhere changes nothing", r.offer + " / " + r.text);
+        check(r.text == "abc nhánh xyz", "Esc after a click elsewhere keeps the new tone", r.text);
     }
 
 } // namespace
 
 int main() {
-    testOffer();
+    testRetone();
     testWords();
     testWhereNotOffered();
-    testClickDropsOffer();
+    testClickKeepsTone();
     if (failures == 0)
         std::cout << "all retone checks passed\n";
     return failures == 0 ? 0 : 1;

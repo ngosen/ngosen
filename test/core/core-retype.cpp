@@ -259,17 +259,26 @@ namespace {
         text = retypeInApp(field, mode, "tieengs vieetj", {ngosen::key::Escape});
         check(text == "tieengs vieetj", what + "Esc puts the typed text back", text);
 
+        text = retypeInApp(field, mode, "tieengs vieetj", {ngosen::key::Tab});
+        check(text == "tieengs vieetj", what + "Tab puts the typed text back", text);
+
         text = retypeInApp(field, mode, "tieengs ", {'a', ngosen::key::space});
         check(text == "tiếng a ", what + "typing on keeps the retyped text", text);
 
-        text = retypeInApp(field, mode, "abc tieengs", {ngosen::key::Tab});
-        check(text == "abc tiếng", what + "Tab retypes the offered text", text);
+        text = retypeInApp(field, mode, "abc tieengs", {ngosen::key::Return});
+        check(text == "abc tiếng", what + "Enter retypes the offered text", text);
 
-        text = retypeInApp(field, mode, "abc tieengs", {ngosen::key::Tab, ngosen::key::Tab});
-        check(text == "abc tieengs", what + "Tab again puts the typed text back", text);
+        text = retypeInApp(field, mode, "abc tieengs", {ngosen::key::Return, ngosen::key::Escape});
+        check(text == "abc tieengs", what + "Esc after Enter puts the typed text back", text);
 
-        text = retypeInApp(field, mode, "abc tieengs", {ngosen::key::Escape, ngosen::key::Tab});
-        check(text.rfind("abc tieengs", 0) == 0, what + "after Esc, Tab does not retype", text);
+        text = retypeInApp(field, mode, "abc tieengs", {ngosen::key::Return, ngosen::key::Tab});
+        check(text == "abc tieengs", what + "Tab after Enter puts the typed text back", text);
+
+        text = retypeInApp(field, mode, "abc tieengs", {ngosen::key::Tab, ngosen::key::Return});
+        check(text == "abc tieengs", what + "Tab keeps the typed text", text);
+
+        text = retypeInApp(field, mode, "abc tieengs", {ngosen::key::Escape, ngosen::key::Return});
+        check(text.rfind("abc tieengs", 0) == 0, what + "after Esc, Enter does not retype", text);
 
         text = retypeInApp(field, mode, "abc tieengs ", {'a', ngosen::key::space});
         check(text == "abc tieengs a ", what + "another key leaves the offered text as typed", text);
@@ -313,8 +322,8 @@ namespace {
     void testClickDropsRetype(const std::string& frontend, bool surroundingText) {
         const Field       field = makeField(frontend, surroundingText);
         const std::string what  = frontend + ": ";
-        std::string       text  = retypeAfterClick(field, "0123456789 ", "abc tieengs", {ngosen::key::Tab});
-        check(text == "0123456789 abc tieengs", what + "Tab after a click elsewhere leaves the text alone", text);
+        std::string       text  = retypeAfterClick(field, "0123456789 ", "abc tieengs", {ngosen::key::Return});
+        check(text == "0123456789 abc tieengs", what + "Enter after a click elsewhere leaves the text alone", text);
 
         text = retypeAfterClick(field, "0123456789 ", "tieengs vieetj", {ngosen::key::Escape});
         check(text == "0123456789 tiếng việt", what + "Esc after a click elsewhere leaves the retyped text", text);
@@ -343,6 +352,63 @@ namespace {
         pressInState(state, sym);
         loop.pump(150);
         check(host->status().empty(), "the hint goes away after " + what, host->status());
+    }
+
+    // Enter is taken once, for the offer; the next one goes to the app, as does Tab after keeping.
+    void testEnterTakesOffer() {
+        const auto keyTaken = [](uint32_t first, uint32_t second, bool& firstTaken, bool& secondTaken) {
+            realMode = Mode::Off;
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            host->setSurrounding("abc tieengs", 11);
+            noteWhileOff(state, "abc tieengs");
+            state.activate(Mode::Sen, false);
+            state.offerRetype();
+            loop.pump(150);
+            FakeKey down(first, false);
+            state.keyEvent(down);
+            FakeKey up(first, true);
+            state.keyEvent(up);
+            loop.pump(150);
+            firstTaken = down.accepted();
+            FakeKey again(second, false);
+            state.keyEvent(again);
+            secondTaken = again.accepted();
+        };
+        bool first  = false;
+        bool second = false;
+        keyTaken(ngosen::key::Return, ngosen::key::Return, first, second);
+        check(first, "the offer takes Enter", "Enter went to the app");
+        check(!second, "Enter after the retype goes to the app", "taken");
+        keyTaken(ngosen::key::Tab, ngosen::key::Tab, first, second);
+        check(first, "the offer takes Tab to keep the text", "Tab went to the app");
+        check(!second, "Tab after keeping goes to the app", "taken");
+    }
+
+    // Clicking the offer retypes like Enter, so Enter afterwards reaches the app and Esc undoes it.
+    void testPickedOffer() {
+        realMode = Mode::Off;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("abc tieengs", 11);
+        noteWhileOff(state, "abc tieengs");
+        state.activate(Mode::Sen, false);
+        state.offerRetype();
+        loop.pump(150);
+        host->pickCandidate(0);
+        loop.pump(150);
+        check(!host->status().empty(), "a picked offer says how to undo it", "(no hint)");
+        FakeKey down(ngosen::key::Return, false);
+        state.keyEvent(down);
+        FakeKey up(ngosen::key::Return, true);
+        state.keyEvent(up);
+        check(!down.accepted(), "Enter after a picked offer goes to the app", "taken");
     }
 
     // Qt reports the text after each backspace, so the deletion is seen half done.
@@ -457,7 +523,10 @@ int main() {
     testClickDropsRetype("xim", false);
     testRetypeInSteppingApp();
     testRetypeRightAfterSwitchKey();
+    testHintGoesAway(ngosen::key::Return, "Enter");
     testHintGoesAway(ngosen::key::Tab, "Tab");
+    testEnterTakesOffer();
+    testPickedOffer();
     testHintGoesAway(ngosen::key::Escape, "Esc");
     if (failures == 0)
         std::cout << "all retype checks passed\n";

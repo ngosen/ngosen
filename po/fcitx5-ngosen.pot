@@ -343,15 +343,15 @@ msgid "Page "
 msgstr ""
 
 #: src/core/ngosen-state-retype.cpp
-msgid "Tab: retype in Vietnamese, Esc: keep"
+msgid "Enter: retype in Vietnamese, Tab or Esc: keep"
 msgstr ""
 
 #: src/core/ngosen-state-retone.cpp
-msgid "Tab: change the tone, Esc: keep"
+msgid "Tab or Esc: put back the key"
 msgstr ""
 
 #: src/core/ngosen-state-retype.cpp
-msgid "Esc: put back what was typed"
+msgid "Tab or Esc: put back what was typed"
 msgstr ""
 
 #: io.github.ngosen.NgoSen.metainfo.xml.in.in:7
@@ -1328,11 +1328,11 @@ msgid "xin → Xin in an empty field or on a new line. Not in address bars or so
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Typed tieengs vieetj before switching on? Switch on and it becomes tiếng việt. Esc gives back what you typed."
+msgid "Typed tieengs vieetj before switching on? Switch on and it becomes tiếng việt. Tab or Esc gives back what you typed."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Select nhanh, type s, then press Tab: nhánh."
+msgid "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py

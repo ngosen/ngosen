@@ -344,16 +344,16 @@ msgid "Page "
 msgstr "Trang "
 
 #: src/core/ngosen-state-retype.cpp
-msgid "Tab: retype in Vietnamese, Esc: keep"
-msgstr "Cứu chữ: Tab để đổi, Esc để giữ nguyên"
+msgid "Enter: retype in Vietnamese, Tab or Esc: keep"
+msgstr "Cứu chữ: Enter để đổi, Tab hoặc Esc để giữ nguyên"
 
 #: src/core/ngosen-state-retone.cpp
-msgid "Tab: change the tone, Esc: keep"
-msgstr "Cứu dấu: Tab để đổi, Esc để giữ nguyên"
+msgid "Tab or Esc: put back the key"
+msgstr "Cứu dấu: Tab hoặc Esc để trả lại phím vừa gõ"
 
 #: src/core/ngosen-state-retype.cpp
-msgid "Esc: put back what was typed"
-msgstr "Cứu chữ: Esc để trả lại chữ đã gõ"
+msgid "Tab or Esc: put back what was typed"
+msgstr "Cứu chữ: Tab hoặc Esc để trả lại chữ đã gõ"
 
 #: io.github.ngosen.NgoSen.metainfo.xml.in.in:7
 msgid "Ngó Sen"
@@ -1415,12 +1415,12 @@ msgid "xin → Xin in an empty field or on a new line. Not in address bars or so
 msgstr "xin → Xin ở ô trống hoặc đầu dòng mới. Không áp dụng ở thanh địa chỉ và vài app; trên GNOME 47 trở lên, Chrome và app tương tự chưa viết hoa ở ô trống."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Typed tieengs vieetj before switching on? Switch on and it becomes tiếng việt. Esc gives back what you typed."
-msgstr "Lỡ gõ tieengs vieetj khi chưa bật? Bật tiếng Việt là thành tiếng việt. Esc để trả lại chữ đã gõ."
+msgid "Typed tieengs vieetj before switching on? Switch on and it becomes tiếng việt. Tab or Esc gives back what you typed."
+msgstr "Lỡ gõ tieengs vieetj khi chưa bật? Bật tiếng Việt là thành tiếng việt. Tab hoặc Esc để trả lại chữ đã gõ."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Select nhanh, type s, then press Tab: nhánh."
-msgstr "Bôi đen nhanh, gõ s rồi bấm Tab: nhánh."
+msgid "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s."
+msgstr "Bôi đen nhanh rồi gõ s: nhánh. Tab, Esc hoặc gõ s lần nữa để trả lại s."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."

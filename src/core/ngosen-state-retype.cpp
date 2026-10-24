@@ -122,6 +122,9 @@ namespace ngosen {
         // Firefox contenteditable reports a trailing space as U+00A0.
         for (size_t pos = 0; (pos = before.find("\u00a0", pos)) != std::string::npos;)
             before.replace(pos, 2, " ");
+        // xterm.js keeps only the last key in its hidden textarea: a field holding just the end of what we typed.
+        if (before.size() < typed.size() && it == t.end())
+            return typed.compare(typed.size() - before.size(), before.size(), before) == 0;
         return before.size() >= typed.size() && before.compare(before.size() - typed.size(), typed.size(), typed) == 0;
     }
 

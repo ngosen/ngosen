@@ -419,6 +419,26 @@ namespace {
         check(press(state, static_cast<uint32_t>('f')), "backspace into word before nbsp: f marks the word", "f went to the app");
     }
 
+    // xterm.js keeps only the last key typed in its hidden textarea, so the field never shows the word.
+    void testBackspaceIntoWordFieldDropped() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("dbus", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        for (const char c : std::string("ban ")) {
+            press(state, static_cast<uint32_t>(c));
+            host->setSurrounding(std::string(1, c), 1);
+            state.surroundingUpdated();
+        }
+        press(state, ngosen::key::BackSpace);
+        host->setSurrounding("", 0);
+        state.surroundingUpdated();
+        check(press(state, static_cast<uint32_t>('f')), "backspace into word the field dropped: f marks the word", "f went to the app");
+    }
+
     // After a click elsewhere the text before the cursor is not our word, so it is not reopened.
     void testBackspaceAfterMovingAway() {
         realMode = ngosen::Mode::Sen;
@@ -928,6 +948,7 @@ int main() {
     }
     testBackspaceIntoCommittedText();
     testBackspaceIntoWordBeforeNbsp();
+    testBackspaceIntoWordFieldDropped();
     testBackspaceAfterMovingAway();
     testBackspaceAfterCtrlBackspace();
     testResentBackspace();

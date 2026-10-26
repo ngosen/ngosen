@@ -13,7 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Ghi chú dưới ô Cứu dấu trong cửa sổ cài đặt nói rõ chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng):
-  bôi đen `nguoi` rồi gõ phím dấu không ra `người` được.
+  bôi đen `nguoi` rồi gõ phím dấu không ra `người` được (#329).
 
 ## [1.6.1-1] — 26/10/2026
 

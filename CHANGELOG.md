@@ -123,6 +123,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Thêm `misc/editor-test`: trang test cho 15 web editor (Lexical, TinyMCE, CKEditor, Monaco, xterm.js…)
   và script gõ Telex rồi kiểm tra kết quả trong Firefox hoặc Chromium trên X11. Dùng để tìm lỗi gõ nhanh
   đã sửa ở #289; người dùng không thấy khác gì (#291).
+- Test cài đặt trên CI không còn đỏ ngẫu nhiên ở Kali: container dọn tiến trình fcitx5 đã thoát như máy
+  thật; người dùng không thấy khác gì (#313).
+- Thêm nhãn `test-build` để tự động build version thử riêng cho pull request, có gói cho mọi bản phân phối
+  (.deb, .rpm, Arch), phát hành dưới dạng pre-release `pr-<số PR>-build` và đặt link trong pull request.
+  Cài bằng cùng lệnh cài một dòng như version thử `next-build`, chỉ khác link. Mỗi push mới vào pull request
+  thay thế các gói; đóng pull request hoặc gỡ nhãn sẽ xóa version thử. Người báo lỗi có thể test phần sửa lỗi
+  trước khi merge (#311).
 
 ## [1.5.8-1] — 26/10/2026
 

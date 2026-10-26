@@ -7,6 +7,11 @@ on:
     branches: [main, patch]
   pull_request:
   workflow_call:
+    inputs:
+      # Packages for testers: every target, with a version that a release later upgrades.
+      test-build:
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) && github.run_id || (github.head_ref || github.ref) }}
@@ -30,10 +35,11 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           BASE: ${{ github.event.pull_request.base.sha }}
+          TEST_BUILD: ${{ inputs.test-build }}
         run: |
           full=true
           # A failed diff leaves the full set.
-          if [ "$EVENT" = pull_request ] && changed=$(git diff --name-only "$BASE" HEAD) &&
+          if [ "$EVENT" = pull_request ] && [ "$TEST_BUILD" != true ] && changed=$(git diff --name-only "$BASE" HEAD) &&
               ! printf '%s\n' "$changed" |
               grep -qE '^(packaging/|install\.sh$|test/install-smoke\.sh$|\.github/|cmake/|bamboo|settings-gui/|pyproject\.toml$)|CMakeLists\.txt$'; then
               full=false
@@ -59,8 +65,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Put the commit in a next branch build's version
-        if: github.event_name == 'push' && github.ref == 'refs/heads/next'
+      - name: Put the commit in a test build's version
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/next') || inputs.test-build
         run: packaging/stamp-next-version.sh
 
       - name: Prepare debian directory
@@ -93,8 +99,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Put the commit in a next branch build's version
-        if: github.event_name == 'push' && github.ref == 'refs/heads/next'
+      - name: Put the commit in a test build's version
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/next') || inputs.test-build
         run: packaging/stamp-next-version.sh
 
       - name: Build Fedora RPM
@@ -144,8 +150,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Put the commit in a next branch build's version
-        if: github.event_name == 'push' && github.ref == 'refs/heads/next'
+      - name: Put the commit in a test build's version
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/next') || inputs.test-build
         run: packaging/stamp-next-version.sh
 
       - name: Build openSUSE RPM
@@ -188,8 +194,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Put the commit in a next branch build's version
-        if: github.event_name == 'push' && github.ref == 'refs/heads/next'
+      - name: Put the commit in a test build's version
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/next') || inputs.test-build
         run: packaging/stamp-next-version.sh
 
       - name: Build Arch package
@@ -256,7 +262,11 @@ jobs:
             args: kde
 
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
-    container: ${{ matrix.image }}
+    # Without an init, fcitx5 daemons that exit stay as zombies, and the installer takes them for a
+    # running fcitx5 and starts a new one.
+    container:
+      image: ${{ matrix.image }}
+      options: --init
 
     steps:
       - uses: actions/checkout@v7

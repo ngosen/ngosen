@@ -181,7 +181,9 @@ feature/*, fix/*  ← Personal branch for each PR
 ### Merge Process
 
 1. Developer creates a PR to `next` (feature) or `patch` (fix)
-2. Code review by maintainer
+2. Code review by maintainer. To have the people who reported a problem test the fix first, a maintainer
+   adds the `test-build` label: CI publishes the packages as the `pr-<number>-build` pre-release and
+   links it from the PR. It is deleted when the PR closes
 3. Merge, then test with the `next-build` pre-release
 4. Bug-fix release: `patch` → `main`, then `patch` → `next`. Feature release: `next` → `main`, then reset
    `patch` to `main`

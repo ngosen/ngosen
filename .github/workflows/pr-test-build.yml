@@ -1,0 +1,82 @@
+name: PR Test Build
+
+# A pull request labelled test-build gets its packages under a pre-release of its own, so the people
+# who reported a problem can test the fix before it is merged. Each push replaces the packages;
+# closing the pull request or removing the label deletes the pre-release.
+on:
+  pull_request:
+    types: [labeled, unlabeled, synchronize, reopened, closed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # Branches of forks get no write token, so only branches of this repository are published.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'test-build') &&
+      (github.event.action == 'synchronize' || github.event.action == 'reopened' ||
+       (github.event.action == 'labeled' && github.event.label.name == 'test-build'))
+    uses: ./.github/workflows/packaging-dev.yml
+    with:
+      test-build: true
+
+  publish:
+    name: Publish the pull request pre-release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      TAG: pr-${{ github.event.pull_request.number }}-build
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts/
+
+      - name: Collect release files
+        run: packaging/collect-release-files.sh artifacts dist
+
+      # The tag does not match ngosen-*, so it never starts the release workflow.
+      - name: Replace the pre-release
+        run: |
+          sed -e "s/@SHA@/$HEAD_SHA/g" -e "s/@PR@/$PR/g" -e "s/@TAG@/$TAG/g" packaging/pr-release-notes.md > notes.md
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" dist/* \
+            --prerelease \
+            --latest=false \
+            --target "$HEAD_SHA" \
+            --title "Ngó Sen bản thử (#$PR)" \
+            --notes-file notes.md
+
+      - name: Link the pre-release from the pull request
+        if: github.event.action == 'labeled'
+        run: |
+          gh pr comment "$PR" --body "Test packages: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$TAG"
+
+  remove:
+    name: Remove the pull request pre-release
+    if: >-
+      github.event.action == 'closed' ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'test-build')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Delete the pre-release
+        run: gh release delete "pr-${{ github.event.pull_request.number }}-build" --cleanup-tag --yes --repo "$GITHUB_REPOSITORY" || true

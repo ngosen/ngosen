@@ -200,8 +200,9 @@ namespace ngosen {
         struct RetoneKey {
             Surrounding before;
             std::string text;
-            uint32_t    sym    = 0;
-            uint32_t    states = 0;
+            uint32_t    sym        = 0;
+            uint32_t    states     = 0;
+            bool        afterClick = false;
         };
         std::optional<RetoneKey>       retoneKey_;
         std::unique_ptr<ngosen::Timer> retone_timer_;
@@ -210,7 +211,6 @@ namespace ngosen {
         void                           checkRetoneReport();
         bool                           handleKeyAfterRetone(ngosen::KeyPress& keyEvent);
         std::string                    retoned(const std::string& word, uint32_t sym, uint32_t states) const;
-        void                           reopenWordForTone(uint32_t sym, uint32_t states);
 
         // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
         // surrounding text report the commit waits this long for them.

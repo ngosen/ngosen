@@ -167,9 +167,10 @@ fcitx5_running() {
     ps -u "$user" -o stat=,comm= | awk '$2 == "fcitx5" && $1 !~ /^Z/ { found = 1 } END { exit !found }'
 }
 
+# Arguments are extra environment variables for fcitx5.
 start_fcitx5() {
     local tries=40
-    as_user fcitx5 -d >/dev/null 2>&1
+    as_user env "$@" fcitx5 -d >/dev/null 2>&1
     # The profile is loaded before fcitx5 takes its D-Bus name.
     until as_user dbus-send --session --print-reply --dest=org.freedesktop.DBus / \
         org.freedesktop.DBus.NameHasOwner string:org.fcitx.Fcitx5 2>/dev/null | grep -q 'boolean true'; do
@@ -251,6 +252,12 @@ check_old_profile_cleanup() {
     check "fcitx5 stops after that" stop_fcitx5
     check "the keyboard is dropped without settings" lacks_keyboard "$profile"
     check "no settings keep Ctrl+Space" has_line "$settings" '0=Control+space'
+
+    # Without a profile fcitx5 builds one from the input methods listed for the desktop language.
+    as_user rm -f "$profile" "$settings"
+    check "fcitx5 starts on a Vietnamese desktop without a profile" start_fcitx5 LANG=vi_VN.UTF-8
+    check "fcitx5 stops on the Vietnamese desktop" stop_fcitx5
+    check "a Vietnamese desktop gets ngosen in its first profile" has_line "$profile" 'Name=ngosen'
 
     pkill -u "$user" dbus-daemon || :
     bus=

@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Cứu dấu không cần bôi đen: bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu là chữ đổi dấu (`nhanh|` + `s` →
+  `nhánh`); Tab hoặc Esc trả lại chữ đã gõ. Bấm vào giữa chữ thì phím gõ như thường. Chỉ ở Gõ Sen (#118, #327).
+
 ### Sửa
 
 - Ghi chú dưới ô Cứu dấu trong cửa sổ cài đặt nói rõ chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng):

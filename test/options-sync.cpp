@@ -97,6 +97,43 @@ namespace {
         check(step + ": LockWordModifier", o.lockWordKey == want);
     }
 
+    // A fresh engine must start from the core's defaults, which other frontends use as they are.
+    void checkCoreDefaults(const ngosen::Options& o) {
+        const ngosen::Options d;
+        check("default InputMethod", o.inputMethod == d.inputMethod);
+        check("default OutputCharset", o.outputCharset == d.outputCharset);
+        check("default SpellCheck", o.spellCheck == d.spellCheck);
+        check("default ModernStyle", o.modernStyle == d.modernStyle);
+        check("default FreeMarking", o.freeMarking == d.freeMarking);
+        check("default W2U", o.w2u == d.w2u);
+        check("default BracketTransform", o.bracketTransform == d.bracketTransform);
+        check("default TimeFormat", o.timeFormat == d.timeFormat);
+        check("default DateFormat", o.dateFormat == d.dateFormat);
+        check("default AutoNonVnRestore", o.autoNonVnRestore == d.autoNonVnRestore);
+        check("default DdFreeStyle", o.ddFreeStyle == d.ddFreeStyle);
+        check("default BackspaceRemovesTone", o.backspaceRemovesTone == d.backspaceRemovesTone);
+        check("default EnableMacro", o.enableMacro == d.enableMacro);
+        check("default EnableMacroInOffMode", o.enableMacroInOffMode == d.enableMacroInOffMode);
+        check("default CapitalizeMacro", o.capitalizeMacro == d.capitalizeMacro);
+        check("default LockWordModifier", o.lockWordKey == d.lockWordKey);
+        check("default AutoCapitalizeAfterPunctuation", o.autoCapitalizeAfterPunctuation == d.autoCapitalizeAfterPunctuation);
+        check("default CapitalizeStartOfText", o.capitalizeStartOfText == d.capitalizeStartOfText);
+        check("default DoubleSpaceToPeriod", o.doubleSpaceToPeriod == d.doubleSpaceToPeriod);
+        check("default DoubleHyphenToEmDash", o.doubleHyphenToEmDash == d.doubleHyphenToEmDash);
+        check("default RetypeAfterSwitch", o.retypeAfterSwitch == d.retypeAfterSwitch);
+        check("default RetoneSelection", o.retoneSelection == d.retoneSelection);
+        check("default MessengerSelectOvertype", o.messengerSelectOvertype == d.messengerSelectOvertype);
+        check("default WaitSurroundingEvent", o.waitSurroundingEvent == d.waitSurroundingEvent);
+        check("default WaitSurroundingMinPerKeyMs", o.waitSurroundingMinPerKeyMs == d.waitSurroundingMinPerKeyMs);
+        check("default WaitSurroundingTimeoutMs", o.waitSurroundingTimeoutMs == d.waitSurroundingTimeoutMs);
+        check("default WaitSurroundingShortMs", o.waitSurroundingShortMs == d.waitSurroundingShortMs);
+        check("default WaitSurroundingSettleMs", o.waitSurroundingSettleMs == d.waitSurroundingSettleMs);
+        check("default WaitSurroundingSettleFirstWordMs", o.waitSurroundingSettleFirstWordMs == d.waitSurroundingSettleFirstWordMs);
+        check("default WaitSurroundingProbeEvery", o.waitSurroundingProbeEvery == d.waitSurroundingProbeEvery);
+        check("default SurrDeleteSleepMs", o.surrDeleteSleepMs == d.surrDeleteSleepMs);
+        check("default SurrCommitSleepMs", o.surrCommitSleepMs == d.surrCommitSleepMs);
+    }
+
 } // namespace
 
 int main() {
@@ -104,6 +141,7 @@ int main() {
     TestInstance        testInstance;
     fcitx::NgoSenEngine engine(&testInstance.instance);
     checkMatches("defaults", engine);
+    checkCoreDefaults(engine.options());
 
     engine.setConfig(changedConfig());
     check("the changed values took effect",

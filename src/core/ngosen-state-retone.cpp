@@ -99,7 +99,7 @@ namespace ngosen {
         const std::string toned = retoned(word, key.sym, key.states);
         if (toned.empty() || toned == word || withoutToneMark(toned) != withoutToneMark(word))
             return;
-        NGOSEN_INFO("Retone: " + word + " -> " + toned);
+        NGOSEN_INFO("Retone: " + logged(word) + " -> " + logged(toned));
         retype_ = Retype{.typed = key.text, .marked = toned, .atOnce = true, .retone = true};
         applyRetypeSoon(host_->translate("Tab or Esc: put back the key"));
     }
@@ -118,7 +118,7 @@ namespace ngosen {
         const std::string  toned = deleting ? std::string() : retoned(shown, keyEvent.sym(), keyEvent.states());
         if (!toned.empty() && toned != shown && withoutToneMark(toned) == withoutToneMark(shown)) {
             keyEvent.accept();
-            NGOSEN_INFO("Retone: " + shown + " -> " + toned);
+            NGOSEN_INFO("Retone: " + logged(shown) + " -> " + logged(toned));
             replaceRetyped(shown, toned);
             retype_->marked = toned;
             return true;

@@ -15,6 +15,10 @@
 
 namespace ngosen::test {
 
+    // While on, every log line, whatever its level, is kept here instead of printed.
+    void                      captureLog(bool on);
+    std::vector<std::string>& capturedLog();
+
     // Settings as a fresh install has them, with the system dictionary and an empty macro table.
     class FakeResources final : public EngineResources {
       public:

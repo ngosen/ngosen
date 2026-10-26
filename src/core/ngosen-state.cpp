@@ -97,7 +97,7 @@ namespace ngosen {
             keyEvent.accept();
         if (auto pulled = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()))) {
             if (pulled && (*pulled.get() != 0)) {
-                NGOSEN_INFO("Commit: " + std::string(pulled.get()));
+                NGOSEN_INFO("Commit: " + logged(pulled.get()));
                 commit(pulled.get());
                 if ((currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) && !engineTook && !keyEvent.hasModifier())
                     holdEnterAfterCommit(keyEvent);
@@ -328,7 +328,7 @@ namespace ngosen {
             if (!addedPart.empty() && (keyUtf8 != addedPart || wasAutoCapitalized)) {
                 // The key is accepted, so the commit carries its text (#178).
                 commit(addedPart);
-                NGOSEN_INFO("Commit: " + addedPart);
+                NGOSEN_INFO("Commit: " + logged(addedPart));
                 keyEvent.accept();
             } else {
                 keyEvent.passToApp();
@@ -361,7 +361,7 @@ namespace ngosen {
                     oldPreBuffer_ = preeditStr;
                     if (wasAutoCapitalized || addedPart != keyUtf8) {
                         commit(addedPart);
-                        NGOSEN_INFO("Commit: " + addedPart);
+                        NGOSEN_INFO("Commit: " + logged(addedPart));
                         keyEvent.accept();
                         isCommit = true;
                     }
@@ -518,7 +518,7 @@ namespace ngosen {
         const bool resentNow    = !ownBackspace && (keyEvent.states() & ngosen::modifier::Repeat) != 0 && lastInputAtUs_ - lastPressAtUs < SentBackWithinUs;
         const bool sentBack     = resentNow || (!is_deleting_.load(std::memory_order_acquire) && host_->field().frontend == "xim");
         if (sameAsLast && sentBack) {
-            NGOSEN_INFO("App sent a key back: " + keyEvent.name());
+            NGOSEN_INFO("App sent a key back: " + logged(keyEvent.name()));
             keyEvent.passToApp();
             return true;
         }
@@ -731,6 +731,18 @@ namespace ngosen {
     }
 
     void TypingState::reset(bool isFocusOut) {
+        resetField(isFocusOut, true);
+    }
+
+    std::string TypingState::logged(const std::string& text) const {
+        return host_->field().password ? std::string("(hidden)") : text;
+    }
+
+    void TypingState::resetAfterAppCommit(bool isFocusOut) {
+        resetField(isFocusOut, false);
+    }
+
+    void TypingState::resetField(bool isFocusOut, bool commitPreedit) {
         // After focus out a forwarded key may reach the window that took focus.
         if (isFocusOut) {
             held_enter_pending_ = false;
@@ -756,12 +768,12 @@ namespace ngosen {
             isPrevHyphen_      = false;
             shouldCapitalize_  = false;
             isPrevPunctuation_ = false;
-            if (realMode == ngosen::Mode::Preedit && isFocusOut) {
+            if (realMode == ngosen::Mode::Preedit && isFocusOut && commitPreedit) {
                 EngineCommitPreedit(bambooEngine_.handle());
                 ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
                 if (pulled && (*pulled.get() != 0)) {
                     commit(pulled.get());
-                    NGOSEN_INFO("Commit: " + std::string(pulled.get()));
+                    NGOSEN_INFO("Commit: " + logged(pulled.get()));
                 }
             }
             ResetEngine(bambooEngine_.handle());

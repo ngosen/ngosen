@@ -10,10 +10,37 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
-### Thêm
+## [1.6.1-1] — 26/10/2026
 
+Sửa gợi ý Cứu chữ / Cứu dấu để theo ngôn ngữ giao diện của Ngó Sen, mặc định tiếng Việt (#322);
+Ngó Sen tự có trong danh sách bộ gõ khi fcitx5 chạy lần đầu sau khi cài bằng package trên desktop
+tiếng Việt (#300, #316); chữ trong ô mật khẩu không còn bị ghi vào log gỡ lỗi (#321).
+Tải ở [ngosen-1.6.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.1-1).
+
+### Sửa
+
+- Khi bật log để gỡ lỗi, chữ gõ trong ô mật khẩu không còn bị ghi vào log; log chỉ ghi "(hidden)" (#321).
 - Cài Ngó Sen bằng package (apt, package tải về) trên máy để ngôn ngữ tiếng Việt: lần đầu fcitx5 chạy, Ngó Sen
   tự có trong danh sách bộ gõ, không phải thêm tay. Máy để tiếng Anh vẫn cần thêm tay hoặc dùng lệnh cài một dòng (#300, #316).
+- Dòng gợi ý cạnh con trỏ của Cứu chữ và Cứu dấu theo "Ngôn ngữ giao diện" của Ngó Sen như menu tray: mặc định
+  tiếng Việt, kể cả khi desktop dùng tiếng Anh (#322).
+
+### Tài liệu
+
+- README thêm mục "Tính năng chính": Cứu chữ, Cứu dấu, phím chuyển Anh/Việt, phím chốt chữ, gõ tắt,
+  menu tray và cửa sổ cài đặt, mỗi tính năng kèm ví dụ (#319).
+
+## [1.6.0-1] — 26/10/2026
+
+Cứu chữ đổi chữ gõ khi quên bật tiếng Việt thành chữ có dấu khi bật lại (#82, #232, #239, #243, #290);
+Cứu dấu cho bôi đen chữ rồi gõ phím dấu để đổi dấu (#272, #290).
+Có phím riêng chuyển Anh/Việt: cài mới dùng Ctrl+Shift như UniKey, đã cài giữ phím cũ (#234).
+Cửa sổ cài đặt thêm giải thích (#281), menu tray thêm mục chuyển Telex/VNI (#274); cập nhật bằng
+install.sh tự nạp lại fcitx5, không cần đăng xuất, trừ KDE Wayland (#230).
+Tải ở [ngosen-1.6.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.0-1).
+
+### Thêm
+
 - Phím riêng chuyển tiếng Anh/Việt; ở tiếng Anh, gõ như không có bộ gõ. Nhớ chế độ qua lần đăng xuất.
   Cài mới bắt đầu ở tiếng Anh, dùng Ctrl+Shift như UniKey; đã cài từ trước giữ Ctrl+Space.
   App có chế độ riêng thì phím chuyển đổi riêng app đó. Menu ` chỉ mở ở tiếng Việt; tiếng Anh gõ dấu ` (#234)
@@ -109,7 +136,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Tài liệu
 
-- Lộ trình thêm thông báo "Có gì mới" cho 1.6.0 và mẹo dùng Ngó Sen trong cửa sổ cài đặt (#148).
+- Lộ trình thêm thông báo "Có gì mới" và mẹo dùng Ngó Sen trong cửa sổ cài đặt (#148). "Có gì mới" chưa
+  có trong 1.6.0, đã dời sang 1.7.0.
 
 ### Test
 

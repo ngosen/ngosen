@@ -18,24 +18,24 @@ namespace ngosen {
     };
 
     // The settings the typing logic reads, as plain values. The framework copies them from its own
-    // configuration each time that changes.
+    // configuration each time that changes. The initial values are the defaults every frontend starts from.
     struct Options {
-        std::string inputMethod;
-        std::string outputCharset;
-        bool        spellCheck       = false;
-        bool        modernStyle      = false;
-        bool        freeMarking      = false;
-        int         w2u              = 0;
-        int         bracketTransform = 0;
-        std::string timeFormat;
-        std::string dateFormat;
-        bool        autoNonVnRestore               = false;
-        bool        ddFreeStyle                    = false;
+        std::string inputMethod                    = "Telex";
+        std::string outputCharset                  = "Unicode";
+        bool        spellCheck                     = true;
+        bool        modernStyle                    = true;
+        bool        freeMarking                    = true;
+        int         w2u                            = 1;
+        int         bracketTransform               = 0;
+        std::string timeFormat                     = "%H:%M";
+        std::string dateFormat                     = "%d/%m/%Y";
+        bool        autoNonVnRestore               = true;
+        bool        ddFreeStyle                    = true;
         bool        backspaceRemovesTone           = false;
-        bool        enableMacro                    = false;
+        bool        enableMacro                    = true;
         bool        enableMacroInOffMode           = false;
-        bool        capitalizeMacro                = false;
-        LockWordKey lockWordKey                    = LockWordKey::None;
+        bool        capitalizeMacro                = true;
+        LockWordKey lockWordKey                    = LockWordKey::Ctrl;
         bool        autoCapitalizeAfterPunctuation = false;
         bool        capitalizeStartOfText          = false;
         bool        doubleSpaceToPeriod            = false;
@@ -44,16 +44,18 @@ namespace ngosen {
         bool        retoneSelection                = true;
 
         // How old text is replaced in the app.
-        bool messengerSelectOvertype          = false;
-        bool waitSurroundingEvent             = false;
-        int  waitSurroundingMinPerKeyMs       = 0;
-        int  waitSurroundingTimeoutMs         = 0;
-        int  waitSurroundingShortMs           = 0;
-        int  waitSurroundingSettleMs          = 0;
-        int  waitSurroundingSettleFirstWordMs = 0;
-        int  waitSurroundingProbeEvery        = 0;
-        int  surrDeleteSleepMs                = 0;
-        int  surrCommitSleepMs                = 0;
+        bool messengerSelectOvertype          = true;
+        bool waitSurroundingEvent             = true;
+        int  waitSurroundingMinPerKeyMs       = 8;
+        int  waitSurroundingTimeoutMs         = 50;
+        int  waitSurroundingShortMs           = 40;
+        int  waitSurroundingSettleMs          = 40;
+        int  waitSurroundingSettleFirstWordMs = 60;
+        int  waitSurroundingProbeEvery        = 4;
+        int  surrDeleteSleepMs                = 4;
+        int  surrCommitSleepMs                = 3;
     };
+
+    inline const Options defaultOptions{};
 
 } // namespace ngosen

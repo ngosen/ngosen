@@ -152,12 +152,12 @@ namespace ngosen {
             return;
         // A word Telex leaves alone is likely English typed on purpose, so then only offer.
         if (everyWordTakesMarks(typed)) {
-            NGOSEN_INFO("Retype: " + typed + " -> " + marked);
+            NGOSEN_INFO("Retype: " + logged(typed) + " -> " + logged(marked));
             retype_ = Retype{.typed = typed, .marked = marked, .atOnce = true};
             applyRetypeSoon(host_->translate("Tab or Esc: put back what was typed"));
             return;
         }
-        NGOSEN_INFO("Offer retype: " + typed + " -> " + marked);
+        NGOSEN_INFO("Offer retype: " + logged(typed) + " -> " + logged(marked));
         retype_ = Retype{.typed = typed, .marked = marked};
         host_->showCandidates({typed + " → " + marked}, 1, [this](size_t) {
             if (retype_ && !retype_->applied)

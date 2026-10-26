@@ -22,6 +22,8 @@
 using ngosen::Field;
 using ngosen::VimKeyReader;
 using ngosen::VimStep;
+using ngosen::quitsVim;
+using ngosen::startsVim;
 using ngosen::test::FakeHost;
 using ngosen::test::FakeKey;
 using ngosen::test::FakeLoop;
@@ -42,10 +44,12 @@ namespace {
     // method must not edit it then. In insert mode keys, commits and forwarded backspaces edit it.
     class FakeVim {
       public:
-        explicit FakeVim(bool vimKeys) {
-            realMode = ngosen::Mode::Sen;
+        explicit FakeVim(bool vimKeys, ngosen::Mode mode = ngosen::Mode::Sen) {
+            realMode = mode;
             Field field;
             field.frontend = "wayland";
+            field.preedit  = mode == ngosen::Mode::Preedit;
+            preedit_       = field.preedit;
             auto owned     = std::make_unique<FakeHost>(loop_, field);
             host_          = owned.get();
             state_         = std::make_unique<ngosen::TypingState>(&resources_, std::move(owned));
@@ -54,20 +58,32 @@ namespace {
 
         void insert(const std::string& keys) {
             for (const char c : keys)
-                press(static_cast<uint32_t>(c), 0, true);
+                press(static_cast<uint32_t>(c), 0, &text_);
         }
         void command(const std::string& keys) {
             for (const char c : keys)
-                press(static_cast<uint32_t>(c), 0, false);
+                press(static_cast<uint32_t>(c), 0, nullptr);
+        }
+        // Vim's command line takes text of its own, which never reaches the file.
+        void commandLine(const std::string& keys) {
+            for (const char c : keys)
+                press(static_cast<uint32_t>(c), 0, &line_);
         }
         void escape() {
-            press(ngosen::key::Escape, 0, false);
+            press(ngosen::key::Escape, 0, nullptr);
         }
         void ctrlBracket() {
-            press(ngosen::key::bracketleft, ngosen::modifier::Ctrl, false);
+            press(ngosen::key::bracketleft, ngosen::modifier::Ctrl, nullptr);
+        }
+        void backspace() {
+            press(ngosen::key::BackSpace, 0, nullptr);
         }
         void enter(bool inText) {
-            press(ngosen::key::Return, 0, inText);
+            press(ngosen::key::Return, 0, inText ? &text_ : nullptr);
+        }
+        void runCommandLine() {
+            press(ngosen::key::Return, 0, &line_);
+            line_.clear();
         }
 
         std::string result() const {
@@ -75,7 +91,8 @@ namespace {
         }
 
       private:
-        void press(uint32_t sym, uint32_t states, bool inText) {
+        // target is where the app puts what is typed; null for normal mode, where nothing may be typed.
+        void press(uint32_t sym, uint32_t states, std::string* target) {
             const size_t commits   = host_->commits().size();
             const size_t forwarded = host_->forwarded().size();
             FakeKey      down(sym, false, states);
@@ -83,19 +100,23 @@ namespace {
             FakeKey up(sym, true, states);
             state_->keyEvent(up);
             loop_.pump(60);
-            if (!inText) {
+            if (target == nullptr) {
                 if (down.accepted() || host_->commits().size() > commits || host_->forwarded().size() > forwarded)
                     edited_ += static_cast<char>(sym & 0x7f);
                 return;
             }
-            if (!down.accepted())
-                text_ += sym == ngosen::key::Return ? std::string("\n") : std::string(1, static_cast<char>(sym));
+            const std::string passed = down.accepted() ? std::string() : sym == ngosen::key::Return ? std::string("\n") : std::string(1, static_cast<char>(sym));
+            // Sen lets the key through and then rewrites the word; Preedit commits the word before the key that ends it.
+            if (!preedit_)
+                *target += passed;
             for (size_t i = forwarded; i < host_->forwarded().size(); ++i) {
                 if (host_->forwarded()[i].key == ngosen::EditKey::BackSpace && !host_->forwarded()[i].release)
-                    ngosen::utf8::eraseLastCodepoint(text_);
+                    ngosen::utf8::eraseLastCodepoint(*target);
             }
             for (size_t i = commits; i < host_->commits().size(); ++i)
-                text_ += host_->commits()[i];
+                *target += host_->commits()[i];
+            if (preedit_)
+                *target += passed;
         }
 
         FakeLoop                             loop_;
@@ -103,6 +124,8 @@ namespace {
         FakeHost*                            host_ = nullptr;
         std::unique_ptr<ngosen::TypingState> state_;
         std::string                          text_;
+        std::string                          line_;
+        bool                                 preedit_ = false;
         std::string                          edited_;
     };
 
@@ -127,6 +150,16 @@ namespace {
             check(lastStep(keys) == VimStep::CommandLine, std::string("reader: ") + keys + " opens the command line", std::to_string(static_cast<int>(lastStep(keys))));
         for (const char* keys : {"!", "gs", "c!", "K"})
             check(lastStep(keys) == VimStep::Unknown, std::string("reader: ") + keys + " is not a command it knows", std::to_string(static_cast<int>(lastStep(keys))));
+        for (const char* keys : {"ZZ", "ZQ", "jjZZ"})
+            check(lastStep(keys) == VimStep::Quit, std::string("reader: ") + keys + " exits Vim", std::to_string(static_cast<int>(lastStep(keys))));
+        for (const char* line : {"vim", "nvim notes.md", "  vi a b", "sudo vim /etc/hosts", "/usr/bin/nvim", "TERM=xterm nvim", "vimdiff a b"})
+            check(startsVim(line), std::string("\"") + line + "\" starts Vim", "false");
+        for (const char* line : {"", "vimtutor", "echo vim", "git commit", "sudo", "nvimx"})
+            check(!startsVim(line), std::string("\"") + line + "\" does not start Vim", "true");
+        for (const char* line : {":q", ":q!", ":wq", ":x", ":qa!", ": wq "})
+            check(quitsVim(line), std::string("\"") + line + "\" exits Vim", "false");
+        for (const char* line : {":w", "/q", "q", ":q foo", ":", ":wqx"})
+            check(!quitsVim(line), std::string("\"") + line + "\" does not exit Vim", "true");
     }
 
     void expect(const std::string& what, const FakeVim& vim, const std::string& want) {
@@ -202,6 +235,118 @@ namespace {
         expect("Vim keys off, Escape, anhs em", vim, "ánh em");
     }
 
+    // Backspace on the bare ":" closes the command line; a search for "q" is no :q.
+    void testCommandLine() {
+        {
+            FakeVim vim(true);
+            vim.escape();
+            vim.commandLine(":");
+            vim.backspace();
+            vim.command("i");
+            vim.insert("tieengs");
+            expect("Escape, :, Backspace, i, tieengs", vim, "tiếng");
+        }
+        {
+            FakeVim vim(true);
+            vim.escape();
+            vim.commandLine("/q");
+            vim.runCommandLine();
+            vim.command("a");
+            vim.insert("an ");
+            expect("Escape, /q, Enter, a, an", vim, "an ");
+        }
+    }
+
+    // Preedit holds the letters it types; in normal mode it must hold none.
+    void testPreedit() {
+        for (const char* keys : {"i", "a", "ciw", "ddO", "jjkciw", "3wcw"}) {
+            FakeVim vim(true, ngosen::Mode::Preedit);
+            vim.escape();
+            vim.command(keys);
+            vim.insert("tieengs vieetj ");
+            expect(std::string("Preedit, Escape, ") + keys + ", tieengs vieetj", vim, "tiếng việt ");
+        }
+        {
+            FakeVim vim(true, ngosen::Mode::Preedit);
+            vim.insert("xin ");
+            vim.escape();
+            vim.command("dd");
+            vim.enter(false);
+            vim.command("o");
+            vim.insert("chaof ");
+            expect("Preedit, Escape, dd, Enter, o, chaof", vim, "xin chào ");
+        }
+    }
+
+    // Vim started from the shell opens in normal mode, without the Vim mode switch.
+    void testStartedFromShell() {
+        for (const char* line : {"nvim", "vim", "sudo vim"}) {
+            FakeVim vim(false);
+            vim.insert(line);
+            vim.enter(true);
+            vim.command("ciw");
+            vim.insert("tieengs");
+            expect(std::string(line) + ", Enter, ciw, tieengs", vim, std::string(line) + "\ntiếng");
+        }
+        {
+            FakeVim vim(false, ngosen::Mode::Preedit);
+            vim.insert("nvim ");
+            vim.enter(true);
+            vim.command("a");
+            vim.insert("an ");
+            expect("Preedit, nvim, Enter, a, an", vim, "nvim \nan ");
+        }
+        {
+            FakeVim vim(false);
+            vim.insert("echo vim");
+            vim.enter(true);
+            vim.insert("anhs ");
+            expect("echo vim, Enter, anhs", vim, "echo vim\nánh ");
+        }
+        // Typed while Vim runs, the word vim on a line of its own does not start it again.
+        {
+            FakeVim vim(false);
+            vim.insert("nvim");
+            vim.enter(true);
+            vim.command("o");
+            vim.insert("vim");
+            vim.enter(true);
+            vim.insert("anhs ");
+            expect("nvim, o, vim, Enter, anhs", vim, "nvim\nvim\nánh ");
+        }
+    }
+
+    // After Vim exits, the shell takes text again from its first key.
+    void testQuit() {
+        for (const char* quit : {":wq", ":q!"}) {
+            FakeVim vim(false);
+            vim.insert("nvim");
+            vim.enter(true);
+            vim.commandLine(quit);
+            vim.runCommandLine();
+            vim.insert("anhs ");
+            expect(std::string("nvim, ") + quit + ", anhs", vim, "nvim\nánh ");
+        }
+        {
+            FakeVim vim(false);
+            vim.insert("nvim");
+            vim.enter(true);
+            vim.command("ZZ");
+            vim.insert("anhs ");
+            expect("nvim, ZZ, anhs", vim, "nvim\nánh ");
+        }
+        {
+            FakeVim vim(false);
+            vim.insert("nvim");
+            vim.enter(true);
+            vim.commandLine(":w");
+            vim.runCommandLine();
+            vim.command("a");
+            vim.insert("an ");
+            expect("nvim, :w, a, an", vim, "nvim\nan ");
+        }
+    }
+
 } // namespace
 
 int main() {
@@ -211,6 +356,10 @@ int main() {
     testOtherWaysOut();
     testNotVim();
     testVimKeysOff();
+    testCommandLine();
+    testPreedit();
+    testStartedFromShell();
+    testQuit();
     if (failures == 0)
         std::cout << "core vim: all passed\n";
     return failures == 0 ? 0 : 1;

@@ -7,8 +7,10 @@
 // the start of the next word and keep it from getting tone marks (#302).
 #include "ngosen-state.h"
 
+#include "ngosen-globals.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
+#include "ngosen-utf8.h"
 
 #include <algorithm>
 #include <cctype>
@@ -18,7 +20,7 @@ namespace ngosen {
 
     void TypingState::setVimKeys(bool on) {
         vimKeys_ = on;
-        if (!on)
+        if (!vimOn())
             vimState_ = VimState::Insert;
     }
 
@@ -26,10 +28,45 @@ namespace ngosen {
         vimState_ = VimState::Normal;
         vimReader_.reset();
         vimTyped_.clear();
+        vimLine_.clear();
+    }
+
+    // Vim exits and the shell takes text again.
+    void TypingState::leaveVim() {
+        vimAuto_  = false;
+        vimState_ = VimState::Insert;
+        vimReader_.reset();
+        vimTyped_.clear();
+        vimLine_.clear();
+    }
+
+    void TypingState::noteShellKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (vimAuto_ || vimState_ != VimState::Insert || keyEvent.isModifier() || host_->field().surroundingText)
+            return;
+        if (currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) {
+            const bool starts = startsVim(vimLine_);
+            vimLine_.clear();
+            if (starts) {
+                vimAuto_ = true;
+                enterVimNormalMode();
+                NGOSEN_DEBUG("Vim starts from the shell");
+            }
+            return;
+        }
+        if (ngosen::key::isBackspace(currentSym) && !keyEvent.hasModifier()) {
+            ngosen::utf8::eraseLastCodepoint(vimLine_);
+            return;
+        }
+        // Tab completion, history and cursor keys change the line in ways we cannot follow.
+        if (typesText(keyEvent, currentSym))
+            vimLine_ += host_->keyText(currentSym);
+        else
+            vimLine_.clear();
     }
 
     void TypingState::startWordAfterVimCommand() {
         vimTyped_.clear();
+        vimLine_.clear();
         hasHistory_ = false;
         lastWord_.clear();
         ResetEngine(bambooEngine_.handle());
@@ -50,9 +87,20 @@ namespace ngosen {
 
     bool TypingState::readVimKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (vimState_ == VimState::CommandLine) {
-            // Enter runs the command line and Vim goes back to normal mode; until then the line takes text.
-            if (currentSym == ngosen::key::Return)
-                enterVimNormalMode();
+            // The line takes text until Enter runs it; Backspace on the bare ":" closes it.
+            if (currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) {
+                if (quitsVim(vimLine_))
+                    leaveVim();
+                else
+                    enterVimNormalMode();
+            } else if (ngosen::key::isBackspace(currentSym)) {
+                if (vimLine_.size() <= 1)
+                    enterVimNormalMode();
+                else
+                    ngosen::utf8::eraseLastCodepoint(vimLine_);
+            } else if (typesText(keyEvent, currentSym)) {
+                vimLine_ += host_->keyText(currentSym);
+            }
             return false;
         }
         // These move the cursor in normal mode; Backspace must not take up the last word again.
@@ -64,18 +112,30 @@ namespace ngosen {
         const std::string text = host_->keyText(currentSym);
         if (text.size() != 1 || !typesText(keyEvent, currentSym))
             return false;
-        const ngosen::VimStep step = vimReader_.feed(text[0]);
-        if (step == ngosen::VimStep::Unknown) {
-            vimState_ = VimState::Insert;
-            takeUpVimTyped();
-            return false;
-        }
-        if (step == ngosen::VimStep::Pending) {
-            vimTyped_ += text;
-        } else {
-            vimState_ = step == ngosen::VimStep::CommandLine ? VimState::CommandLine : VimState::Insert;
-            startWordAfterVimCommand();
-            NGOSEN_DEBUG(std::string("Vim leaves normal mode at ") + text);
+        switch (vimReader_.feed(text[0])) {
+            case ngosen::VimStep::Unknown:
+                vimState_ = VimState::Insert;
+                // Preedit already let those letters through as they are; only Sen rewrites the word in place.
+                if (realMode == ngosen::Mode::Sen)
+                    takeUpVimTyped();
+                else
+                    vimTyped_.clear();
+                return false;
+            case ngosen::VimStep::Pending: vimTyped_ += text; break;
+            case ngosen::VimStep::Quit:
+                leaveVim();
+                startWordAfterVimCommand();
+                break;
+            case ngosen::VimStep::CommandLine:
+                vimState_ = VimState::CommandLine;
+                startWordAfterVimCommand();
+                vimLine_ = text;
+                break;
+            case ngosen::VimStep::Insert:
+                vimState_ = VimState::Insert;
+                startWordAfterVimCommand();
+                NGOSEN_DEBUG(std::string("Vim goes into insert mode at ") + text);
+                break;
         }
         keyEvent.passToApp();
         return true;

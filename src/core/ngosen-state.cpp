@@ -80,6 +80,8 @@ namespace ngosen {
     }
 
     void TypingState::handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (vimOn() && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
+            return;
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone) {
             ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
             const std::string        shown   = preedit ? preedit.get() : "";
@@ -111,6 +113,10 @@ namespace ngosen {
         }
         host_->refreshPreedit();
         host_->refreshPanel();
+        // Escape has committed the word; the letters typed next are Vim commands.
+        const bool ctrlBracket = currentSym == ngosen::key::bracketleft && (keyEvent.states() & ngosen::modifier::Ctrl) != 0U;
+        if (vimOn() && (currentSym == ngosen::key::Escape || ctrlBracket))
+            enterVimNormalMode();
     }
 
     void TypingState::holdEnterAfterCommit(ngosen::KeyPress& keyEvent) {
@@ -149,7 +155,7 @@ namespace ngosen {
             oldPreBuffer_.clear();
             // Vim leaves insert mode on Escape or Ctrl+[; the letters typed next are commands.
             const bool ctrlBracket = currentSym == ngosen::key::bracketleft && (keyEvent.states() & ngosen::modifier::Ctrl) != 0U;
-            if (vimKeys_ && (currentSym == ngosen::key::Escape || ctrlBracket))
+            if (vimOn() && (currentSym == ngosen::key::Escape || ctrlBracket))
                 enterVimNormalMode();
             return true;
         }
@@ -224,7 +230,7 @@ namespace ngosen {
             keyEvent.passToApp();
             return;
         }
-        if (vimKeys_ && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
+        if (vimOn() && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
             return;
 
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone && removeToneMark(keyEvent))
@@ -494,6 +500,8 @@ namespace ngosen {
                 break;
             }
         }
+        if (realMode == ngosen::Mode::Sen || realMode == ngosen::Mode::Preedit)
+            noteShellKey(keyEvent, currentSym);
     }
 
     bool TypingState::skipsKey(ngosen::KeyPress& keyEvent) {

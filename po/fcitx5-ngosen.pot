@@ -262,6 +262,21 @@ msgstr ""
 msgid "Shortcut for Default Typing"
 msgstr ""
 
+msgid "Show Vim mode"
+msgstr ""
+
+msgid "Shortcut for Vim mode"
+msgstr ""
+
+msgid "Vim mode"
+msgstr ""
+
+msgid "Vim mode: on"
+msgstr ""
+
+msgid "Vim mode: off"
+msgstr ""
+
 #: src/ngosen-config.h:265
 msgid "Allow Macro in Off Mode"
 msgstr ""

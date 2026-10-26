@@ -155,10 +155,12 @@ namespace ngosen {
             Normal,
             CommandLine
         };
-        bool                    vimKeys_  = false;
+        bool                    vimKeys_  = false; ///< The app rule says the field uses Vim keys
+        bool                    vimAuto_  = false; ///< Vim was started from the shell in this field
         VimState                vimState_ = VimState::Insert;
         ngosen::VimKeyReader    vimReader_;
         std::string             vimTyped_; ///< Keys let through since Escape, given to the engine if they turn out to be text
+        std::string             vimLine_;  ///< The shell line, or Vim's command line, typed so far
         int                     expected_backspaces_     = 0;
         int                     current_backspace_count_ = 0;
         std::string             pending_commit_string_;
@@ -448,7 +450,13 @@ namespace ngosen {
          * @return True if key was forwarded.
          */
         bool checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym);
+        bool vimOn() const {
+            return vimKeys_ || vimAuto_;
+        }
         void enterVimNormalMode();
+        void leaveVim();
+        // Follows the shell line in a field without surrounding text, to see Vim start.
+        void noteShellKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
         // Lets a key typed in Vim's normal mode or command line through; false when it is text for the engine.
         bool readVimKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
         void startWordAfterVimCommand();

@@ -69,6 +69,16 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Trên GNOME 50, Chrome và các app tương tự chưa viết hoa chữ đầu ô trống, nhưng đã viết hoa đầu dòng mới
   sau Enter. App GTK chạy qua Wayland (đã test trên Plasma) vẫn chưa viết hoa đầu dòng mới sau Enter
   (#238, #241, #283).
+- Thêm Vim mode cho từng app trong menu `, dùng phím tắt `v`, hiện `[v] Vim mode: bật` / `[v] Vim mode: tắt`.
+  Ngó Sen nhớ bật/tắt riêng cho từng app; có thể ẩn mục này hoặc đổi phím ở trang Phím tắt, nhóm Đổi chế độ.
+  Dùng được với cả Gõ Sen và Preedit, cho các app dùng phím Vim: nvim/vim trong terminal, Claude Code,
+  Antigravity, plugin Vim của Obsidian và plugin Vim của JetBrains IDE. Khi bật, sau Esc hoặc Ctrl+[,
+  Ngó Sen cho các lệnh Vim đi qua nguyên vẹn; từ đầu tiên gõ sau lệnh vào insert mode (`i`, `a`, `o`, `ciw`…)
+  có dấu ngay. Trước đây, từ này còn nguyên như `tieengs`; trong Preedit, phím lệnh còn bị giữ lại hoặc
+  biến thành chữ, như `dd` thành `đ`. Trong terminal, dù tắt Vim mode, Ngó Sen vẫn nhận ra khi gõ `vim`,
+  `nvim`, `vi` ở shell rồi nhấn Enter, kể cả khi thêm `sudo`, để từ đầu tiên gõ trong file cũng có dấu.
+  Thoát Vim bằng `:q`, `:wq`, `ZZ` thì gõ lại bình thường. Chưa xử lý phím Esc được đổi thành chữ như `jk`.
+  Nếu mở Vim từ lịch sử shell bằng mũi tên lên, qua alias hoặc `git commit`, hãy bật Vim mode cho terminal (#302).
 
 ### Thay đổi
 
@@ -101,9 +111,6 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - App GTK3 đi qua GNOME Shell không còn mất dấu khi gõ: `trơi`, `ban`, `viêt` thay vì `trời`, `bạn`, `việt`.
   Ngó Sen chờ app báo đã xoá chữ rồi mới commit chữ có dấu; terminal không báo vẫn dùng thời gian chờ
   cố định (#231).
-- Gõ Sen trong app dùng phím Vim (nvim, Claude Code, plugin Vim của Obsidian, JetBrains…): sau Esc hoặc
-  Ctrl+[, chữ đầu tiên gõ tiếp sau lệnh vào insert mode như `i`, `a`, `o`, `ciw` nay có dấu; trước phải gõ
-  thêm dấu cách hoặc xoá một phím mới gõ được. Chữ tiếng Anh gõ sau lệnh được xử lý như gõ mới (#302).
 
 ### Tài liệu
 

@@ -263,6 +263,21 @@ msgstr "Hiển thị chế độ gõ mặc định"
 msgid "Shortcut for Default Typing"
 msgstr "Phím tắt cho Chế độ gõ mặc định"
 
+msgid "Show Vim mode"
+msgstr "Hiển thị Vim mode"
+
+msgid "Shortcut for Vim mode"
+msgstr "Phím tắt cho Vim mode"
+
+msgid "Vim mode"
+msgstr "Vim mode"
+
+msgid "Vim mode: on"
+msgstr "Vim mode: bật"
+
+msgid "Vim mode: off"
+msgstr "Vim mode: tắt"
+
 #: src/ngosen-config.h:265
 msgid "Allow Macro in Off Mode"
 msgstr "Cho phép gõ tắt trong chế độ \"Tắt\""

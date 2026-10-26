@@ -89,6 +89,7 @@ SETTINGS_MAP = {
             "ShortcutEmoji",
             "ShortcutOff",
             "ShortcutDefault",
+            "ShortcutVim",
         ],
     },
     SettingsCategory.APPEARANCE: {
@@ -188,6 +189,7 @@ MODE_SHORTCUT_TO_VISIBILITY = {
     "ShortcutEmoji": "ShowModeEmoji",
     "ShortcutOff": "ShowModeOff",
     "ShortcutDefault": "ShowModeDefault",
+    "ShortcutVim": "ShowModeVim",
 }
 
 MODE_KEY_TO_INTERNAL_NAME = {
@@ -196,6 +198,7 @@ MODE_KEY_TO_INTERNAL_NAME = {
     "ShortcutEmoji": "Emoji",
     "ShortcutOff": "Off",
     "ShortcutDefault": "Default",
+    "ShortcutVim": "Vim",
 }
 
 MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
@@ -718,7 +721,7 @@ class DynamicSettingsPage(QWidget):
         # Get current order from config
         order_str = self.current_values.get(
             "ModeOrder",
-            "Sen,Preedit,Emoji,Off,Default",
+            "Sen,Preedit,Emoji,Off,Default,Vim",
         )
         # The addon renames old mode names before it hands the config out.
         order = list(dict.fromkeys(order_str.split(",")))

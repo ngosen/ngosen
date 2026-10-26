@@ -5,6 +5,8 @@
  */
 #include "ngosen-vim.h"
 
+#include <algorithm>
+#include <array>
 #include <string_view>
 
 namespace ngosen {
@@ -18,6 +20,7 @@ namespace ngosen {
             CommandLine,
             VisualStart,
             VisualEnd,
+            Quit,
             Unknown
         };
 
@@ -96,7 +99,9 @@ namespace ngosen {
                 return Token::Normal;
             if (has("cdy<>=", c))
                 return operatorCommand(keys.substr(0, 1), rest);
-            if (has("rmqzZ@", c))
+            if (c == 'Z')
+                return rest.empty() ? Token::Incomplete : (has("ZQ", rest[0]) ? Token::Quit : Token::Normal);
+            if (has("rmqz@", c))
                 return rest.empty() ? Token::Incomplete : Token::Normal;
             if (c == 'g')
                 return gCommand(keys);
@@ -141,6 +146,7 @@ namespace ngosen {
             case Token::Insert: reset(); return VimStep::Insert;
             case Token::CommandLine: reset(); return VimStep::CommandLine;
             case Token::Unknown: reset(); return VimStep::Unknown;
+            case Token::Quit: reset(); return VimStep::Quit;
         }
         pending_.clear();
         return VimStep::Pending;
@@ -149,6 +155,43 @@ namespace ngosen {
     void VimKeyReader::reset() {
         pending_.clear();
         visual_ = false;
+    }
+
+    namespace {
+
+        std::string_view nextWord(std::string_view& line) {
+            const size_t start = line.find_first_not_of(' ');
+            if (start == std::string_view::npos) {
+                line = {};
+                return {};
+            }
+            line.remove_prefix(start);
+            const size_t           end  = line.find(' ');
+            const std::string_view word = line.substr(0, end);
+            line.remove_prefix(end == std::string_view::npos ? line.size() : end);
+            return word;
+        }
+
+    } // namespace
+
+    bool startsVim(std::string_view shellLine) {
+        constexpr std::array<std::string_view, 7> programs = {"vi", "vim", "nvim", "view", "vimdiff", "nvimdiff", "rvim"};
+        std::string_view                          word     = nextWord(shellLine);
+        // sudo and variables set for the command come before the program.
+        while (word == "sudo" || word == "command" || word == "exec" || word.find('=') != std::string_view::npos)
+            word = nextWord(shellLine);
+        if (const size_t slash = word.rfind('/'); slash != std::string_view::npos)
+            word.remove_prefix(slash + 1);
+        return std::find(programs.begin(), programs.end(), word) != programs.end();
+    }
+
+    bool quitsVim(std::string_view commandLine) {
+        constexpr std::array<std::string_view, 12> commands = {"q", "q!", "wq", "wq!", "x", "x!", "xa", "qa", "qa!", "wqa", "quit", "exit"};
+        if (commandLine.empty() || commandLine[0] != ':')
+            return false;
+        commandLine.remove_prefix(1);
+        const std::string_view command = nextWord(commandLine);
+        return nextWord(commandLine).empty() && std::find(commands.begin(), commands.end(), command) != commands.end();
     }
 
 } // namespace ngosen

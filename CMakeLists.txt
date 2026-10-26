@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(fcitx5-ngosen VERSION 1.6.0)
+project(fcitx5-ngosen VERSION 1.6.1)
 # The typing log names the version it came from.
 add_definitions(-DNGOSEN_VERSION=\"${PROJECT_VERSION}\")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

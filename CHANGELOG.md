@@ -10,6 +10,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.6.1-1] — 26/10/2026
+
+Sửa gợi ý Cứu chữ / Cứu dấu để theo ngôn ngữ giao diện của Ngó Sen, mặc định tiếng Việt (#322);
+Ngó Sen tự có trong danh sách bộ gõ khi fcitx5 chạy lần đầu sau khi cài bằng package trên desktop
+tiếng Việt (#300, #316); chữ trong ô mật khẩu không còn bị ghi vào log gỡ lỗi (#321).
+Tải ở [ngosen-1.6.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.1-1).
+
 ### Sửa
 
 - Khi bật log để gỡ lỗi, chữ gõ trong ô mật khẩu không còn bị ghi vào log; log chỉ ghi "(hidden)" (#321).

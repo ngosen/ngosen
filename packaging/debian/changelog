@@ -1,3 +1,12 @@
+fcitx5-ngosen (1:1.6.1-1) unstable; urgency=medium
+
+  * Cứu chữ and Cứu dấu hints follow the interface language, Vietnamese by default
+    (#322).
+  * On a Vietnamese desktop, fcitx5's first profile lists Ngó Sen (#300, #316).
+  * Debug logging no longer records text typed in password fields (#321).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Mon, 26 Oct 2026 20:00:00 +0700
+
 fcitx5-ngosen (1:1.6.0-1) unstable; urgency=medium
 
   * Cứu chữ: words typed before switching to Vietnamese are retyped with tones (#71,

@@ -222,8 +222,6 @@ namespace {
         check(r.hint.empty() && r.text == "s xyz", "two words", r.text);
         r = retoneOf("abc nhanh xyz", 6, 9, 's');
         check(r.hint.empty() && r.text == "abc nhs xyz", "part of a word", r.text);
-        r = retoneOf("abc nhanh xyz", 9, 9, 's');
-        check(r.hint.empty(), "a key typed with nothing selected", r.text);
     }
 
     void testWhereNotOffered() {
@@ -287,11 +285,20 @@ namespace {
         run.quirks.reports = false;
         r                  = retone(run);
         check(r.text == "abc nhanhs xyz", "a field that declares its text but never sends it is left as typed", r.text);
-        // GNOME Shell's IBus bridge may still report the text from before the click.
         run       = nhanh(9, 9);
         run.field = makeField("ibus");
         r         = retone(run);
-        check(r.text == "abc nhanhs xyz", "a field whose reports lag is left as typed", r.text);
+        check(r.text == "abc nhánh xyz", "behind GNOME Shell's IBus bridge", r.text);
+        run       = nhanh(9, 9);
+        run.after = {ngosen::key::Escape};
+        r         = retone(run);
+        check(!r.hint.empty() && r.text == "abc nhanhs xyz", "Esc puts back the word and the key", r.text);
+        run.after = {'s'};
+        r         = retone(run);
+        check(r.text == "abc nhanhs xyz", "the tone key again puts them back", r.text);
+        run.after = {'a'};
+        r         = retone(run);
+        check(r.text == "abc nhanhsa xyz", "a letter after the key goes on the word as typed", r.text);
         r = retone(nhanh(6, 6));
         check(r.text == "abc nhsanh xyz", "inside a word the key is typed as before", r.text);
         run       = nhanh(7, 7);
@@ -303,6 +310,11 @@ namespace {
         run.configure = [](FakeResources& resources) { resources.mutableOptions().retoneSelection = false; };
         r             = retone(run);
         check(r.text == "abc nhanhs xyz", "the option off leaves the key as typed", r.text);
+        // Firefox reports a selection as a bare cursor at its end, which looks like a click there.
+        run                          = nhanh();
+        run.quirks.hidesSelectionEnd = true;
+        r                            = retone(run);
+        check(r.text == "abc nhánh xyz", "a selection reported as a bare cursor is typed over, not deleted past", r.text);
     }
 
 } // namespace

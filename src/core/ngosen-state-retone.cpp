@@ -54,6 +54,26 @@ namespace ngosen {
                 return {};
             return charsOf(before.text(), start, word.size());
         }
+
+        // The word that key was typed right after, when after shows before with just key added at its
+        // cursor; nothing when the key went anywhere else, such as over a selection the app hides.
+        std::string wordBeforeKey(const Surrounding& before, const Surrounding& after, const std::string& key) {
+            const std::u32string was    = utf8::decode(before.text());
+            const std::u32string typed  = utf8::decode(key);
+            const size_t         cursor = before.cursor();
+            if (before.anchor() != cursor || cursor > was.size() || (cursor < was.size() && isWordChar(was[cursor])))
+                return {};
+            std::u32string expected = was;
+            expected.insert(cursor, typed);
+            if (after.anchor() != after.cursor() || after.cursor() != cursor + typed.size() || utf8::decode(after.text()) != expected)
+                return {};
+            size_t start = cursor;
+            while (start > 0 && isWordChar(was[start - 1]))
+                --start;
+            if (start == cursor || (cursor - start == 1 && was[start] < 0x80))
+                return {};
+            return charsOf(before.text(), start, cursor - start);
+        }
     } // namespace
 
     void TypingState::noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8) {
@@ -68,7 +88,7 @@ namespace ngosen {
         const Surrounding before = host_->surrounding();
         if (!before.isValid() || before.text().empty())
             return;
-        retoneKey_    = RetoneKey{.before = before, .text = keyUtf8, .sym = sym, .states = states};
+        retoneKey_    = RetoneKey{.before = before, .text = keyUtf8, .sym = sym, .states = states, .afterClick = clickBeforeKey_};
         retone_timer_ = host_->startTimer(monotonicUs() + RetoneReportUs, 0, [this](Timer&) {
             retoneKey_.reset();
             return false;
@@ -87,11 +107,17 @@ namespace ngosen {
         // Firefox repeats the old state before the new one.
         if (after == retoneKey_->before)
             return;
-        // The replaced word is at least two bytes and the key one, so the text has to get shorter.
-        if (retype_ || after.text().size() >= retoneKey_->before.text().size())
+        if (retype_)
             return;
+        // The replaced word is at least two bytes and the key one, so the text has to get shorter.
         // An app may report the deletion and the key separately.
-        const std::string word = replacedWord(retoneKey_->before, after, retoneKey_->text);
+        std::string word  = after.text().size() < retoneKey_->before.text().size() ? replacedWord(retoneKey_->before, after, retoneKey_->text) : std::string();
+        std::string typed = retoneKey_->text;
+        // A click right after a word leaves nothing selected, so the key lands after the word.
+        if (word.empty() && retoneKey_->afterClick) {
+            word  = wordBeforeKey(retoneKey_->before, after, retoneKey_->text);
+            typed = word + typed;
+        }
         if (word.empty())
             return;
         const RetoneKey key = std::move(*retoneKey_);
@@ -100,7 +126,7 @@ namespace ngosen {
         if (toned.empty() || toned == word || withoutToneMark(toned) != withoutToneMark(word))
             return;
         NGOSEN_INFO("Retone: " + word + " -> " + toned);
-        retype_ = Retype{.typed = key.text, .marked = toned, .atOnce = true, .retone = true};
+        retype_ = Retype{.typed = typed, .marked = toned, .atOnce = true, .retone = true};
         applyRetypeSoon(host_->translate("Tab or Esc: put back the key"));
     }
 
@@ -109,7 +135,9 @@ namespace ngosen {
         // means the selection was being typed over and the key goes back.
         const bool deleting = is_deleting_.load(std::memory_order_acquire);
         // The tone key twice undoes it, as typing it twice does in a word.
-        if (!deleting && host_->keyText(keyEvent.sym()) == retype_->typed) {
+        const std::string& typed = retype_->typed;
+        const std::string  key   = host_->keyText(keyEvent.sym());
+        if (!deleting && !key.empty() && typed.size() >= key.size() && typed.compare(typed.size() - key.size(), key.size(), key) == 0) {
             keyEvent.accept();
             applyRetype();
             return true;
@@ -125,36 +153,6 @@ namespace ngosen {
         }
         reopenTypedKey();
         return false;
-    }
-
-    // A click right after a word leaves nothing to type on; a tone key then changes that word, read
-    // from the field. Any other key, or a tone key after the lock key, starts a word as before.
-    void TypingState::reopenWordForTone(uint32_t sym, uint32_t states) {
-        const Field field = host_->field();
-        if (!clickBeforeKey_ || !engine_->options().retoneSelection || engine_->options().outputCharset != "Unicode" || field.password || field.url || !reportsTextInTime() ||
-            keySinceReport_)
-            return;
-        const Surrounding s = host_->surrounding();
-        if (!s.isValid() || s.anchor() != s.cursor())
-            return;
-        const std::u32string text   = utf8::decode(s.text());
-        const size_t         cursor = s.cursor();
-        // Inside a word the tone may sit after the cursor, which backspaces cannot reach.
-        if (cursor == 0 || cursor > text.size() || (cursor < text.size() && isWordChar(text[cursor])))
-            return;
-        size_t start = cursor;
-        while (start > 0 && isWordChar(text[start - 1]))
-            --start;
-        if (start == cursor || (cursor - start == 1 && text[start] < 0x80))
-            return;
-        const std::string word  = charsOf(s.text(), start, cursor - start);
-        const std::string toned = retoned(word, sym, states);
-        if (toned.empty() || toned == word || withoutToneMark(toned) != withoutToneMark(word))
-            return;
-        NGOSEN_INFO("Retone at the cursor: " + word + " -> " + toned);
-        EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
-        oldPreBuffer_ = word;
-        hasHistory_   = true;
     }
 
     std::string TypingState::retoned(const std::string& word, uint32_t sym, uint32_t states) const {

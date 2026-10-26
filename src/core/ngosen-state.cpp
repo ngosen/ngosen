@@ -248,8 +248,6 @@ namespace ngosen {
             return;
         }
 
-        if (oldPreBuffer_.empty() && currentSym == keyEvent.sym())
-            reopenWordForTone(currentSym, keyEvent.states());
         const bool startsWord = oldPreBuffer_.empty();
         bool       processed  = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 

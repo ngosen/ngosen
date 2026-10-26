@@ -11,6 +11,26 @@ Cửa sổ cài đặt dùng giao diện sáng, tối của máy trên KDE và G
   <img alt="Cửa sổ cài đặt Ngó Sen, trang Gõ chữ, trên KDE Plasma" src="docs/screenshots/settings-light.png" width="750">
 </picture>
 
+## Tính năng chính
+
+- Cứu chữ: quên bật tiếng Việt, gõ `tieengs vieetj` rồi bấm phím chuyển sang tiếng Việt thì chữ đổi
+  thành `tiếng việt`. Tab hoặc Esc trả lại chữ đã gõ. Nếu đoạn có chữ không đổi được như `abc`, Ngó Sen
+  chỉ hiện gợi ý; bấm Enter để nhận. Cứu chữ không ghi nhớ gì trong ô mật khẩu.
+- Cứu dấu: bôi đen chữ rồi gõ phím dấu để thêm, đổi hoặc bỏ dấu thanh, như `nhanh` + `s` → `nhánh`.
+  Dùng được ở app cho bộ gõ đọc chữ quanh con trỏ. Tab hoặc Esc trả lại phím đã gõ.
+- Phím chuyển Anh/Việt riêng: cài mới dùng Ctrl+Shift như UniKey; đã cài từ trước giữ Ctrl+Space.
+  Khi ở tiếng Anh, gõ như không có bộ gõ. Ngó Sen nhớ chế độ qua lần đăng xuất.
+- Phím chốt chữ: bấm rồi thả riêng Ctrl (mặc định) để giữ nguyên từ, không thêm dấu hay bung macro.
+  Phím tiếp theo bắt đầu từ mới. Ví dụ gõ `tunx`, bấm rồi thả Ctrl, sau đó Space sẽ giữ `tũn`.
+- Gõ tắt (macro): khi bật “Gõ tắt chữ hoa”, `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
+  Nội dung đã có chữ hoa vẫn giữ nguyên: `ip` → `iPhone` thì gõ `Ip` vẫn ra `iPhone`.
+- Menu tray: chuyển nhanh Telex/VNI, bật hoặc tắt từng kiểu tự viết hoa, tiện khi gõ lệnh trong terminal.
+  Có thể ẩn các mục ít dùng ở trang Giao diện; “Cài đặt” và “Lưu nhật ký gõ” luôn hiện.
+- Cửa sổ cài đặt: có giải thích ngắn dưới từng tuỳ chọn ở trang Gõ chữ, Phím tắt và Giao diện,
+  thường kèm ví dụ. Trang Giao diện có phần xem trước biểu tượng tray và chọn ngôn ngữ giao diện.
+
+Chi tiết từng version ở [CHANGELOG.md](CHANGELOG.md).
+
 ## Nên dùng chế độ nào
 
 Ngó Sen có hai chế độ: Gõ Sen và Preedit. Nên dùng Gõ Sen làm chế độ chính: mở cài đặt Ngó Sen, trang
@@ -272,6 +292,9 @@ and uses the Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) by
 [@nguyen10t2](https://github.com/nguyen10t2), ported from the original Go
 [bamboo-core](https://github.com/BambooEngine/bamboo-core) by [@t1ld3x](https://github.com/t1ld3x).
 Both projects are MIT licensed. All Ngó Sen packages, including Debian 12, use the Rust core.
+
+Ngó Sen includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to
+change the tone mark of a selected word.
 
 Ngó Sen targets fcitx5 only. The IBus engine was dropped and remains unmaintained on `feat/ibus-engine`.
 If you reuse Ngó Sen's code, keep the GPL and its notices, including when an AI tool rewrites it.

@@ -387,7 +387,7 @@ namespace ngosen {
     }
 
     void TypingState::performReplacement(const std::string& deletedPart, const std::string& addedPart) {
-        NGOSEN_INFO("Perform replacement: " + deletedPart + " -> " + addedPart); //NOLINT
+        NGOSEN_INFO("Perform replacement: " + logged(deletedPart) + " -> " + logged(addedPart)); //NOLINT
         // The deletion changes text we committed; the replacement's own commit is what to look for.
         commitNotSeen_.clear();
         current_backspace_count_ = 0;
@@ -486,7 +486,7 @@ namespace ngosen {
         std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrDeleteSleepMs * expected_backspaces_));
         if (!pending_commit_string_.empty()) {
             commit(pending_commit_string_);
-            NGOSEN_INFO("Commit: " + pending_commit_string_);
+            NGOSEN_INFO("Commit: " + logged(pending_commit_string_));
             std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrCommitSleepMs * ngosen::utf8::length(addedPart)));
         }
         expected_backspaces_     = 0;
@@ -554,7 +554,7 @@ namespace ngosen {
     void TypingState::commitReplayed(std::string& out) {
         if (!out.empty()) {
             commit(out);
-            NGOSEN_INFO("Commit: " + out);
+            NGOSEN_INFO("Commit: " + logged(out));
             out.clear();
         }
     }

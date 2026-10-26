@@ -39,7 +39,7 @@ namespace ngosen {
 
     void TypingState::pickEmoji(const EmojiEntry& entry) {
         commit(entry.output);
-        NGOSEN_INFO("Emoji committed: " + entry.output);
+        NGOSEN_INFO("Emoji committed: " + logged(entry.output));
 
         engine_->recordEmoji(entry);
 

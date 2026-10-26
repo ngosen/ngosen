@@ -100,7 +100,7 @@ namespace ngosen {
         }
 
         if (isMacroExpansion) {
-            NGOSEN_INFO("Macro expansion: '" + oldPreBuffer_ + "' -> '" + commitStr + "'");
+            NGOSEN_INFO("Macro expansion: '" + logged(oldPreBuffer_) + "' -> '" + logged(commitStr) + "'");
             // The field now holds the expansion, not the keys noted for a retype.
             forgetKeysWhileOff();
             // Try backspaces first, fallback to deleteSurroundingText, then plain commit

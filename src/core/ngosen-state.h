@@ -82,6 +82,9 @@ namespace ngosen {
          * @param isFocusOut If true, indicates the reset is due to a focus-out event, which may trigger committing the preedit text.
          */
         void reset(bool isFocusOut = false);
+        // reset() for an app that commits the preedit by itself on a reset or focus out, as IBus clients
+        // do with IBUS_ENGINE_PREEDIT_COMMIT: the word is dropped instead of committed a second time.
+        void resetAfterAppCommit(bool isFocusOut);
 
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.
@@ -217,6 +220,9 @@ namespace ngosen {
         void recordKey(const ngosen::KeyPress& keyEvent);
 
         void handleKey(ngosen::KeyPress& keyEvent);
+        void resetField(bool isFocusOut, bool commitPreedit);
+        // Typed text as a log line may show it: hidden in a password field.
+        std::string logged(const std::string& text) const;
         // The steps of keyEvent, in order. A true result means the key needs nothing more.
         bool     skipsKey(ngosen::KeyPress& keyEvent);
         void     settleBeforeKey();

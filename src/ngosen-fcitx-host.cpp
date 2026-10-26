@@ -8,9 +8,9 @@
 
 #include "ngosen-keysym.h"
 #include "ngosen-program-name.h"
+#include "ngosen-ui-text.h"
 #include "ngosen-xtest.h"
 
-#include <fcitx-utils/i18n.h>
 #include <fcitx-utils/key.h>
 #include <fcitx/candidatelist.h>
 #include <fcitx/event.h>
@@ -250,8 +250,9 @@ namespace ngosen {
         ic_->inputPanel().setAuxDown(fcitx::Text(text));
     }
 
+    // Hints follow Ngó Sen's interface language, like the tray menu, not the desktop's.
     std::string FcitxHost::translate(const char* text) const {
-        return _(text);
+        return uiText(text);
     }
 
     std::unique_ptr<Timer> FcitxHost::startTimer(uint64_t deadlineUs, uint64_t accuracyUs, std::function<bool(Timer&)> onTime) {

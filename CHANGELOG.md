@@ -72,7 +72,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ nguyên từng phím cho từ bắt đầu bằng `/` ở đầu dòng hoặc ngay sau dấu cách trong cả Gõ Sen và
   Preedit, để gõ lệnh chat (Claude Code, Slack, Discord) và đường dẫn trong terminal: `/cost` không còn
   thành `/cót`, `cd /usr/share` không còn thành `cd /ủ/share`. Tuỳ chọn "Gõ thô sau dấu / đầu từ (lệnh,
-  đường dẫn)" nằm trong nhóm Gõ nhanh ở trang Gõ chữ, mặc định bật (#310).
+  đường dẫn)" nằm trong nhóm Gõ nhanh ở trang Gõ chữ, mặc định bật (#312).
 
 ### Thay đổi
 

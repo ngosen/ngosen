@@ -20,6 +20,7 @@
 #include "ngosen-engine-resources.h"
 #include "ngosen-host.h"
 #include "ngosen-key.h"
+#include "ngosen-vim.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -83,6 +84,10 @@ namespace ngosen {
          */
         void reset(bool isFocusOut = false);
 
+        // The app runs Vim or Vim keys (#302): after Escape, letters are commands until Vim goes into
+        // insert mode, and they reach the app untouched.
+        void setVimKeys(bool on);
+
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.
         bool activate(ngosen::Mode targetMode, bool isFocusIn);
@@ -144,29 +149,38 @@ namespace ngosen {
         CGoObject                bambooEngine_;
         std::string              oldPreBuffer_;
         std::string              lastWord_; ///< The word and break we last committed, while only backspaces follow
-        bool                     hasHistory_              = false;
-        int                      expected_backspaces_     = 0;
-        int                      current_backspace_count_ = 0;
-        std::string              pending_commit_string_;
-        std::string              emojiBuffer_;
-        std::vector<EmojiEntry>  emojiCandidates_;
-        std::vector<KeyEntry>    buffered_keys_; ///< Keystrokes buffered during replacement
-        bool                     isPrevSpace_           = false;
-        bool                     isPrevHyphen_          = false;
-        bool                     shouldCapitalize_      = false;
-        bool                     isPrevPunctuation_     = false;
-        int64_t                  lastDeactivateTime_    = 0;     ///< ms on CLOCK_MONOTONIC
-        int64_t                  deletionInterruptedAt_ = 0;     ///< when deactivate() cut an in-flight replacement (0 = none)
-        int64_t                  lastBounceAt_          = 0;     ///< ms on CLOCK_MONOTONIC
-        int                      fieldBounces_          = 0;     ///< bounces since focus came in
-        int                      waitBounces_           = 0;     ///< bounces during the wait that started at bouncedInWait_
-        uint64_t                 bouncedInWait_         = 0;     ///< surr_wait_started_at_ of the wait those bounces came in
-        int                      deletedChars_          = 0;     ///< characters the current replacement deletes
-        bool                     checkWordAfterBounce_  = false; ///< focus came back too fast to tell whether it is the same field
-        bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
-        bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
-        bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
-        Surrounding              reportAtKey_;
+        bool                     hasHistory_ = false;
+        enum class VimState : std::uint8_t {
+            Insert,
+            Normal,
+            CommandLine
+        };
+        bool                    vimKeys_  = false;
+        VimState                vimState_ = VimState::Insert;
+        ngosen::VimKeyReader    vimReader_;
+        std::string             vimTyped_; ///< Keys let through since Escape, given to the engine if they turn out to be text
+        int                     expected_backspaces_     = 0;
+        int                     current_backspace_count_ = 0;
+        std::string             pending_commit_string_;
+        std::string             emojiBuffer_;
+        std::vector<EmojiEntry> emojiCandidates_;
+        std::vector<KeyEntry>   buffered_keys_; ///< Keystrokes buffered during replacement
+        bool                    isPrevSpace_           = false;
+        bool                    isPrevHyphen_          = false;
+        bool                    shouldCapitalize_      = false;
+        bool                    isPrevPunctuation_     = false;
+        int64_t                 lastDeactivateTime_    = 0;     ///< ms on CLOCK_MONOTONIC
+        int64_t                 deletionInterruptedAt_ = 0;     ///< when deactivate() cut an in-flight replacement (0 = none)
+        int64_t                 lastBounceAt_          = 0;     ///< ms on CLOCK_MONOTONIC
+        int                     fieldBounces_          = 0;     ///< bounces since focus came in
+        int                     waitBounces_           = 0;     ///< bounces during the wait that started at bouncedInWait_
+        uint64_t                bouncedInWait_         = 0;     ///< surr_wait_started_at_ of the wait those bounces came in
+        int                     deletedChars_          = 0;     ///< characters the current replacement deletes
+        bool                    checkWordAfterBounce_  = false; ///< focus came back too fast to tell whether it is the same field
+        bool                    tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
+        bool                    lock_word_pending_     = false; ///< The lock key was tapped during a replacement
+        bool                    keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
+        Surrounding             reportAtKey_;
 
         struct Retype {
             std::string typed;
@@ -434,6 +448,11 @@ namespace ngosen {
          * @return True if key was forwarded.
          */
         bool checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym);
+        void enterVimNormalMode();
+        // Lets a key typed in Vim's normal mode or command line through; false when it is text for the engine.
+        bool readVimKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        void startWordAfterVimCommand();
+        void takeUpVimTyped();
 
         /**
          * @brief Handles Sen mode processing.

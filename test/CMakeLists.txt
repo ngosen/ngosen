@@ -157,7 +157,6 @@ add_ngosen_headless_test(sen_settle_empty_composer
     sen-settle-empty-composer.cpp "integration;sen")
 add_ngosen_headless_test(sen_messenger_select_overtype
     sen-messenger-select-overtype.cpp "integration;sen")
-add_ngosen_headless_test(vim_insert_first_word vim-insert-first-word.cpp "integration;sen")
 add_ngosen_headless_test(replay_single_commit
     replay-single-commit.cpp "integration;sen")
 add_ngosen_headless_test(sen_settle_first_word

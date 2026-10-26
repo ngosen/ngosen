@@ -30,39 +30,6 @@ pub fn macro_table(pairs: &[(&str, &str)]) -> Arc<MacroTable> {
 
 const SHIFT_MASK: u32 = 1 << 0;
 
-#[test]
-fn vim_commands_after_escape_start_the_word_again() {
-    let mut e = new_test_engine(&["tiếng"], true);
-    e.expect_vim_commands(true);
-    type_keys(&mut e, "ciwtieengs");
-    assert_eq!(e.preedit_text, "ciwtiếng");
-    // The word after the commands is checked against the dictionary like any other.
-    type_keys(&mut e, " ");
-    assert_eq!(e.pull_commit(), "ciwtiếng ");
-
-    let mut e = new_test_engine(&["tiếng"], true);
-    e.expect_vim_commands(true);
-    type_keys(&mut e, "ianhs");
-    assert_eq!(e.preedit_text, "iánh");
-
-    // Without Escape the keys are one word, which stays raw once invalid.
-    let mut e = new_test_engine(&["tiếng"], true);
-    type_keys(&mut e, "ciwtieengs");
-    assert_eq!(e.preedit_text, "ciwtieengs");
-}
-
-#[test]
-fn vim_insert_commands_are_motions_then_one_insert_command() {
-    for keys in ["i", "A", "ciw", "cc", "ea", "xi", "jjkciw", "ddo", "ggO"] {
-        let keys: Vec<char> = keys.chars().collect();
-        assert!(is_vim_insert_command(&keys), "{keys:?}");
-    }
-    for keys in ["c", "ci", "dd", "jj", "sh", "ia", "ciwt"] {
-        let keys: Vec<char> = keys.chars().collect();
-        assert!(!is_vim_insert_command(&keys), "{keys:?}");
-    }
-}
-
 /// Checks `s` against a shape such as "dd:dd", where `d` stands for a digit.
 fn has_shape(s: &str, shape: &str) -> bool {
     s.chars().count() == shape.chars().count()

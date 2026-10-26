@@ -36,3 +36,9 @@ target_compile_definitions(core_retone PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT
 target_link_libraries(core_retone PRIVATE ngosen_core)
 add_test(NAME core_retone COMMAND core_retone)
 set_tests_properties(core_retone PROPERTIES LABELS "unit;core" TIMEOUT 60 ENVIRONMENT "DISPLAY=")
+
+add_executable(core_vim core-vim.cpp fake-host.cpp fake-engine.cpp)
+target_compile_definitions(core_vim PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
+target_link_libraries(core_vim PRIVATE ngosen_core)
+add_test(NAME core_vim COMMAND core_vim)
+set_tests_properties(core_vim PROPERTIES LABELS "unit;core" TIMEOUT 60 ENVIRONMENT "DISPLAY=")

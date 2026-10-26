@@ -37,6 +37,7 @@ namespace ngosen::test {
         bool dropsOldKeyPresses     = false; // drops a Backspace press not newer than the last one, as GLFW does under XIM
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
+        bool hidesCursorMoves       = false; // reports no click and shows the cursor where the last edit left it, as GTK 3 on Plasma does
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -134,8 +135,10 @@ namespace ngosen::test {
         uint32_t                            lastBackSpaceAt_ = 0;
         int                                 slowestCommitMs_ = 0;
         std::u32string                      text_;
-        size_t                              cursor_ = 0;
-        size_t                              anchor_ = 0;
+        size_t                              cursor_      = 0;
+        size_t                              anchor_      = 0;
+        size_t                              shownCursor_ = 0;
+        size_t                              shownAnchor_ = 0;
         std::vector<std::string>            labels_;
         std::string                         status_;
         std::u32string                      previousText_;

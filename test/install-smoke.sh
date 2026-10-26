@@ -298,9 +298,10 @@ check_edited_environment_kept() {
 changes=$home/.local/state/ngosen/install-changes
 enabled_extensions=$home/.stub-enabled-extensions
 uninstalled_extensions=$home/.stub-uninstalled-extensions
+installed_extensions=$home/.stub-installed-extensions
 
-# Stand-ins for GNOME 50.1's tools: the list of enabled extensions is a file, and the Input Method
-# Panel counts as installed by the user.
+# Stand-ins for GNOME 50.1's tools: the lists of enabled and installed extensions are files, and
+# the Input Method Panel counts as installed by the user unless the installed list exists.
 use_gnome_stubs() {
     local dir=$work/stubs
     mkdir -p "$dir"
@@ -317,9 +318,24 @@ STUB
     cat >"$dir/gnome-extensions" <<'STUB'
 #!/bin/bash
 case "$1" in
-    list) [ "${2:-}" = --enabled ] || echo kimpanel@kde.org ;;
+    list)
+        if [ "${2:-}" = --enabled ]; then
+            grep -o "'[^']*'" "$HOME/.stub-enabled-extensions" 2>/dev/null | tr -d "'" || :
+        else
+            cat "$HOME/.stub-installed-extensions" 2>/dev/null || echo kimpanel@kde.org
+        fi ;;
+    install) echo kimpanel@kde.org >>"$HOME/.stub-installed-extensions" ;;
     uninstall) echo "$2" >>"$HOME/.stub-uninstalled-extensions" ;;
     *) exit 1 ;;
+esac
+STUB
+    # Only extensions.gnome.org is faked; the packages still come through the real curl.
+    cat >"$dir/curl" <<'STUB'
+#!/bin/bash
+case "$*" in
+    *extension-info*) echo '{"download_url": "/download-extension/kimpanel@kde.org.shell-extension.zip"}' ;;
+    *download-extension*) while [ "$1" != -o ]; do shift; done; : >"$2" ;;
+    *) exec /usr/bin/curl "$@" ;;
 esac
 STUB
     chmod a+rx "$dir"/*
@@ -345,8 +361,26 @@ check_extensions_turned_back() {
     check "uninstall after that succeeds" installer --yes --uninstall
     check "forward-keys the user turned on stays on" extension_on forward-keys@ngosen.github.io
     check "the Input Method Panel the user turned on stays on" extension_on kimpanel@kde.org
+    check "and stays installed" test ! -e "$uninstalled_extensions"
+
+    as_user rm -f "$changes" "$enabled_extensions"
+    : | as_user tee "$installed_extensions" >/dev/null
+    check "install without the Input Method Panel succeeds" installer --yes
+    check "it installs the Input Method Panel" grep -qx kimpanel@kde.org "$installed_extensions"
+    check "uninstall after that succeeds" installer --yes --uninstall
+    check "uninstall removes the Input Method Panel it installed" grep -qx kimpanel@kde.org "$uninstalled_extensions"
+
+    # An install from before the list of changes: nothing is undone, but the user is told how.
+    as_user rm -f "$installed_extensions" "$uninstalled_extensions"
+    check "install for the old-install case succeeds" installer --yes
+    as_user rm -f "$changes"
+    check "uninstall without a list succeeds" uninstall_logged
+    check "it leaves forward-keys on" extension_on forward-keys@ngosen.github.io
+    check "it says how to turn forward-keys off" grep -qF "gnome-extensions disable forward-keys@ngosen.github.io" "$install_log"
     stub_path=
 }
+
+uninstall_logged() { installer --yes --uninstall >"$install_log" 2>&1; }
 
 check_user_im_config_kept() {
     as_user rm -f "$changes"

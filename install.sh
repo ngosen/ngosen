@@ -266,8 +266,9 @@ note_change() {
     local file
     file=$(changes_file)
     grep -qsxF -- "$1" "$file" && return 0
-    mkdir -p "$(dirname "$file")"
-    printf '%s\n' "$1" >>"$file"
+    if ! { mkdir -p "$(dirname "$file")" && printf '%s\n' "$1" >>"$file"; } 2>/dev/null; then
+        say "Không ghi được $file; lệnh gỡ sẽ không trả lại: $1"
+    fi
 }
 
 made_change() {
@@ -659,10 +660,17 @@ undo_im_config() {
 # Installs from before the list of changes are left alone, as nothing tells whether the install or
 # the user picked fcitx5.
 report_unknown_changes() {
+    local uuid
     [ -e "$(changes_file)" ] && return 0
     if xinputrc_runs_fcitx5; then
         say "  - im-config vẫn chọn fcitx5 (có thể do bản cài cũ đặt); muốn bỏ thì chạy: im-config -n REMOVE"
     fi
+    command -v gnome-extensions >/dev/null 2>&1 || return 0
+    for uuid in forward-keys@ngosen.github.io kimpanel@kde.org; do
+        if gnome-extensions list --enabled 2>/dev/null | grep -qx "$uuid"; then
+            say "  - extension $uuid vẫn bật (có thể do bản cài cũ bật); muốn tắt thì chạy: gnome-extensions disable $uuid"
+        fi
+    done
 }
 
 # Undoes setup_gnome_session. Files are removed only when they still hold what the setup wrote,

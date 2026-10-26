@@ -1053,7 +1053,11 @@ main() {
             setup_ibus_session
         else
             say ""
-            say "Xong. Thêm Ngó Sen vào nguồn nhập (Cài đặt › Bàn phím) rồi đăng xuất, đăng nhập lại."
+            say "Xong. Bản này làm cho GNOME; trên desktop khác thì tự đặt:"
+            command -v im-config >/dev/null 2>&1 &&
+                say "  - chạy im-config -n ibus để app dùng IBus thay bộ gõ đang dùng"
+            say "  - mở IBus Preferences (ibus-setup) và thêm Tiếng Việt (Ngó Sen) vào danh sách bộ gõ"
+            say "  - đăng xuất rồi đăng nhập lại"
         fi
         return
     fi

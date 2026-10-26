@@ -44,15 +44,19 @@ namespace {
     // method must not edit it then. In insert mode keys, commits and forwarded backspaces edit it.
     class FakeVim {
       public:
-        explicit FakeVim(bool vimKeys, ngosen::Mode mode = ngosen::Mode::Sen) {
+        // reported is the text a field that declares surrounding text sends; null for none declared.
+        explicit FakeVim(bool vimKeys, ngosen::Mode mode = ngosen::Mode::Sen, const char* reported = nullptr) {
             realMode = mode;
             Field field;
-            field.frontend = "wayland";
-            field.preedit  = mode == ngosen::Mode::Preedit;
-            preedit_       = field.preedit;
-            auto owned     = std::make_unique<FakeHost>(loop_, field);
-            host_          = owned.get();
-            state_         = std::make_unique<ngosen::TypingState>(&resources_, std::move(owned));
+            field.frontend        = "wayland";
+            field.preedit         = mode == ngosen::Mode::Preedit;
+            field.surroundingText = reported != nullptr;
+            preedit_              = field.preedit;
+            auto owned            = std::make_unique<FakeHost>(loop_, field);
+            host_                 = owned.get();
+            if (reported != nullptr)
+                report(reported);
+            state_ = std::make_unique<ngosen::TypingState>(&resources_, std::move(owned));
             state_->setVimKeys(vimKeys);
         }
 
@@ -94,6 +98,9 @@ namespace {
         }
         const std::string& lastCommandLine() const {
             return lastLine_;
+        }
+        void report(const std::string& text) {
+            host_->setSurrounding(text, static_cast<unsigned int>(ngosen::utf8::length(text)));
         }
         ngosen::Options& options() {
             return resources_.mutableOptions();
@@ -364,6 +371,35 @@ namespace {
     }
 
     // After Vim exits, the shell takes text again from its first key.
+    // kitty declares surrounding text but always sends it empty, like a field that reports nothing.
+    void testFieldWithEmptyReport() {
+        {
+            FakeVim vim(false, ngosen::Mode::Sen, "");
+            vim.insert("nvim");
+            vim.enter(true);
+            vim.command("ciw");
+            vim.insert("tieengs");
+            expect("empty report: nvim, Enter, ciw, tieengs", vim, "nvim\ntiếng");
+        }
+        {
+            FakeVim vim(true, ngosen::Mode::Sen, "");
+            vim.insert("xin chao ");
+            vim.escape();
+            vim.command("ciw");
+            vim.insert("tieengs vieetj");
+            expect("empty report, Vim mode on: Escape, ciw, tieengs vieetj", vim, "xin chao tiếng việt");
+        }
+        // A field that holds its text is no shell, whatever line is typed into it.
+        {
+            FakeVim vim(false, ngosen::Mode::Sen, "");
+            vim.insert("vim");
+            vim.report("vim");
+            vim.enter(true);
+            vim.insert("oo ");
+            expect("reported text: vim, Enter, oo", vim, "vim\nô ");
+        }
+    }
+
     void testQuit() {
         for (const char* quit : {":wq", ":q!"}) {
             FakeVim vim(false);
@@ -433,6 +469,7 @@ int main() {
     testPreedit();
     testStartedFromShell();
     testQuit();
+    testFieldWithEmptyReport();
     if (failures == 0)
         std::cout << "core vim: all passed\n";
     return failures == 0 ? 0 : 1;

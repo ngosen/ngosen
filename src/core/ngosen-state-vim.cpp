@@ -58,8 +58,14 @@ namespace ngosen {
     void TypingState::noteShellKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         const bool tookKey = vimTookKey_;
         vimTookKey_        = false;
-        if (tookKey || vimAuto_ || vimState_ != VimState::Insert || keyEvent.isModifier() || host_->field().surroundingText)
+        if (tookKey || vimAuto_ || vimState_ != VimState::Insert || keyEvent.isModifier())
             return;
+        // A field that holds its text is no shell. kitty and Konsole declare surrounding text but send it empty.
+        const Surrounding s = host_->surrounding();
+        if (host_->field().surroundingText && s.isValid() && !s.text().empty()) {
+            vimLine_.clear();
+            return;
+        }
         if (currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) {
             const bool starts = startsVim(vimLine_);
             vimLine_.clear();

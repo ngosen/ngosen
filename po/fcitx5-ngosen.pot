@@ -162,6 +162,10 @@ msgstr ""
 msgid "Change the tone of a selected word"
 msgstr ""
 
+#: src/ngosen-config.h
+msgid "Type a word that starts with / as is"
+msgstr ""
+
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
 msgstr ""
@@ -1323,6 +1327,10 @@ msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py

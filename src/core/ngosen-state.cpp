@@ -457,6 +457,8 @@ namespace ngosen {
         // Vietnamese typed since then, so the English noted is no longer right before the cursor.
         if (realMode != ngosen::Mode::Off)
             forgetKeysWhileOff();
+        if ((realMode == ngosen::Mode::Sen || realMode == ngosen::Mode::Preedit) && handleRawWordKey(keyEvent, currentSym))
+            return;
         switch (realMode) {
             case ngosen::Mode::Sen: {
                 const bool beforeCommit = typedBeforeCommitArrived(keyEvent, currentSym);
@@ -746,8 +748,11 @@ namespace ngosen {
         }
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
-        if (isFocusOut)
+        rawWord_               = false;
+        if (isFocusOut) {
             keySinceReport_ = false;
+            afterWordEnd_   = false;
+        }
         // GTK resets the context when Enter inserts a new line; the sentence started there still capitalizes.
         const bool keepCapitalize = shouldCapitalize_ && !isFocusOut;
 

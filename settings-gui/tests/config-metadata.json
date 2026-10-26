@@ -243,6 +243,13 @@
     {}
    ],
    [
+    "RawWordAfterSlash",
+    "Boolean",
+    "Type a word that starts with / as is",
+    "True",
+    {}
+   ],
+   [
     "AutoNonVnRestore",
     "Boolean",
     "Auto Restore Invalid Words",

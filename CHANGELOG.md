@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- `install.sh --uninstall` chỉ tắt những gì lệnh cài đã bật: extension Input Method Panel, extension sửa lỗi
+  gõ của GNOME 50 và im-config mà người dùng tự bật từ trước được giữ nguyên (#PR).
+
 ## [1.6.1-1] — 26/10/2026
 
 Sửa gợi ý Cứu chữ / Cứu dấu để theo ngôn ngữ giao diện của Ngó Sen, mặc định tiếng Việt (#322);

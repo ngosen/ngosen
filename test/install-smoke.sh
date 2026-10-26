@@ -38,6 +38,7 @@ home=/home/$user
 work=/srv/install-smoke
 failures=0
 bus=
+stub_path=
 
 check() {
     local name=$1
@@ -91,7 +92,8 @@ as_user() {
         kde) desktop=KDE type=wayland ;;
     esac
     sudo -u "$user" -H env XDG_SESSION_TYPE="$type" XDG_CURRENT_DESKTOP="$desktop" \
-        NGOSEN_RELEASE_URL="file://$work/release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} "$@"
+        NGOSEN_RELEASE_URL="file://$work/release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} \
+        ${stub_path:+PATH="$stub_path"} "$@"
 }
 
 installer() {
@@ -293,6 +295,67 @@ check_edited_environment_kept() {
     check "the edited environment.d file stays" has_line "$im_env" 'MOZ_ENABLE_WAYLAND=1'
 }
 
+changes=$home/.local/state/ngosen/install-changes
+enabled_extensions=$home/.stub-enabled-extensions
+uninstalled_extensions=$home/.stub-uninstalled-extensions
+
+# Stand-ins for GNOME 50.1's tools: the list of enabled extensions is a file, and the Input Method
+# Panel counts as installed by the user.
+use_gnome_stubs() {
+    local dir=$work/stubs
+    mkdir -p "$dir"
+    cat >"$dir/gsettings" <<'STUB'
+#!/bin/bash
+state=$HOME/.stub-enabled-extensions
+case "$1 $2 $3" in
+    "get org.gnome.shell enabled-extensions") cat "$state" 2>/dev/null || echo "@as []" ;;
+    "set org.gnome.shell enabled-extensions") printf '%s\n' "$4" >"$state" ;;
+    *) exit 1 ;;
+esac
+STUB
+    printf '#!/bin/sh\necho "GNOME Shell 50.1"\n' >"$dir/gnome-shell"
+    cat >"$dir/gnome-extensions" <<'STUB'
+#!/bin/bash
+case "$1" in
+    list) [ "${2:-}" = --enabled ] || echo kimpanel@kde.org ;;
+    uninstall) echo "$2" >>"$HOME/.stub-uninstalled-extensions" ;;
+    *) exit 1 ;;
+esac
+STUB
+    chmod a+rx "$dir"/*
+    stub_path=$dir:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+}
+
+extension_on() { grep -qF "'$1'" "$enabled_extensions"; }
+extension_off() { ! extension_on "$1"; }
+
+check_extensions_turned_back() {
+    use_gnome_stubs
+    as_user rm -f "$changes" "$enabled_extensions" "$uninstalled_extensions"
+    check "install on GNOME 50.1 succeeds" installer --yes
+    check "install turns forward-keys on" extension_on forward-keys@ngosen.github.io
+    check "install turns the Input Method Panel on" extension_on kimpanel@kde.org
+    check "uninstall on GNOME 50.1 succeeds" installer --yes --uninstall
+    check "uninstall turns forward-keys off" extension_off forward-keys@ngosen.github.io
+    check "uninstall turns the Input Method Panel off" extension_off kimpanel@kde.org
+    check "an extension the install did not add stays installed" test ! -e "$uninstalled_extensions"
+
+    echo "['forward-keys@ngosen.github.io', 'kimpanel@kde.org']" | as_user tee "$enabled_extensions" >/dev/null
+    check "install over extensions the user turned on succeeds" installer --yes
+    check "uninstall after that succeeds" installer --yes --uninstall
+    check "forward-keys the user turned on stays on" extension_on forward-keys@ngosen.github.io
+    check "the Input Method Panel the user turned on stays on" extension_on kimpanel@kde.org
+    stub_path=
+}
+
+check_user_im_config_kept() {
+    as_user rm -f "$changes"
+    echo 'run_im fcitx5' | as_user tee "$home/.xinputrc" >/dev/null
+    check "install over im-config set by the user succeeds" installer --yes
+    check "uninstall after that succeeds" installer --yes --uninstall
+    check "im-config set by the user stays" has_line "$home/.xinputrc" 'run_im fcitx5'
+}
+
 main() {
     prepare_system
 
@@ -316,11 +379,15 @@ main() {
     if [ "$session" = x11 ]; then
         echo "== toggle key named before the addon runs"
         check_toggle_key_message
+        echo "== im-config the user set"
+        check_user_im_config_kept
     fi
 
     if [ "$session" = gnome ]; then
         echo "== uninstall after the user edited environment.d"
         check_edited_environment_kept
+        echo "== extensions on GNOME 50.1"
+        check_extensions_turned_back
     fi
 
     finish

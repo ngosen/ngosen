@@ -257,6 +257,27 @@ enable_fcitx5_autostart() {
     session_changes+=("fcitx5 tự chạy khi đăng nhập")
 }
 
+# Lists what the install turned on outside its own files, so the uninstall turns off only that.
+changes_file() {
+    printf '%s' "${XDG_STATE_HOME:-$HOME/.local/state}/ngosen/install-changes"
+}
+
+note_change() {
+    local file
+    file=$(changes_file)
+    grep -qsxF -- "$1" "$file" && return 0
+    mkdir -p "$(dirname "$file")"
+    printf '%s\n' "$1" >>"$file"
+}
+
+made_change() {
+    grep -qsxF -- "$1" "$(changes_file)"
+}
+
+xinputrc_runs_fcitx5() {
+    grep -qs '^run_im fcitx5$' "$HOME/.xinputrc"
+}
+
 # im-config 1.1 replaced -n with -w and -m with -r.
 im_config_set() {
     im-config -n "$1" >/dev/null 2>&1 || im-config -w "$1" >/dev/null 2>&1
@@ -285,8 +306,8 @@ set_im_environment() {
     mkdir -p "$dir"
     im_environment_entry >"$file"
     # Debian's im-config otherwise picks IBus for X11 sessions and overrides the variables above.
-    if command -v im-config >/dev/null 2>&1; then
-        im_config_set fcitx5 || :
+    if command -v im-config >/dev/null 2>&1 && ! xinputrc_runs_fcitx5 && im_config_set fcitx5; then
+        note_change im-config
     fi
     session_changes+=("app dùng fcitx5 thay IBus")
 }
@@ -486,7 +507,10 @@ enable_forward_keys_extension() {
     esac
     enable_shell_extension "$uuid" || rc=$?
     case "$rc" in
-        0) session_changes+=("bật extension sửa lỗi gõ của GNOME $version") ;;
+        0)
+            note_change "extension $uuid"
+            session_changes+=("bật extension sửa lỗi gõ của GNOME $version")
+            ;;
         2) say "Chưa bật được extension sửa lỗi gõ; sau khi đăng nhập lại chạy: gnome-extensions enable $uuid" ;;
     esac
 }
@@ -507,9 +531,11 @@ install_kimpanel() {
             say "Chưa cài được extension Input Method Panel; cài tay ở https://extensions.gnome.org/extension/261/"
             return 0
         fi
+        note_change "installed $uuid"
     fi
     enable_shell_extension "$uuid" || rc=$?
     if [ "$rc" -eq 0 ]; then
+        note_change "extension $uuid"
         session_changes+=("cài extension Input Method Panel: biểu tượng bộ gõ trên thanh trên cùng")
     fi
 }
@@ -563,8 +589,9 @@ setup_gnome_session() {
 
 setup_x11_session() {
     say ""
-    if ! grep -qs '^run_im fcitx5$' "$HOME/.xinputrc"; then
+    if ! xinputrc_runs_fcitx5; then
         im_config_set fcitx5 || die "im-config không đặt được fcitx5"
+        note_change im-config
         session_changes+=("app dùng fcitx5, fcitx5 tự chạy khi đăng nhập")
     fi
     configure_fcitx5
@@ -622,6 +649,22 @@ disable_shell_extension() {
     gsettings set org.gnome.shell enabled-extensions "$updated"
 }
 
+# Turns im-config back to the system default if the install picked fcitx5 there.
+undo_im_config() {
+    if made_change im-config && xinputrc_runs_fcitx5 && command -v im-config >/dev/null 2>&1; then
+        im_config_set REMOVE || :
+    fi
+}
+
+# Installs from before the list of changes are left alone, as nothing tells whether the install or
+# the user picked fcitx5.
+report_unknown_changes() {
+    [ -e "$(changes_file)" ] && return 0
+    if xinputrc_runs_fcitx5; then
+        say "  - im-config vẫn chọn fcitx5 (có thể do bản cài cũ đặt); muốn bỏ thì chạy: im-config -n REMOVE"
+    fi
+}
+
 # Undoes setup_gnome_session. Files are removed only when they still hold what the setup wrote,
 # so anything the user changed stays. fcitx5's own profile and keys stay too: without autostart
 # fcitx5 no longer runs, and GNOME starts IBus again at the next login.
@@ -637,9 +680,7 @@ undo_gnome_session() {
     elif [ -e "$im_env" ]; then
         say "  - giữ nguyên $im_env vì đã được sửa sau khi cài"
     fi
-    if grep -qs '^run_im fcitx5$' "$HOME/.xinputrc" && command -v im-config >/dev/null 2>&1; then
-        im_config_set REMOVE || :
-    fi
+    undo_im_config
     autostart="$config/autostart/org.fcitx.Fcitx5.desktop"
     if cmp -s /usr/share/applications/org.fcitx.Fcitx5.desktop "$autostart"; then
         rm -f "$autostart"
@@ -650,8 +691,13 @@ undo_gnome_session() {
             rm -f "$data/$id"
         fi
     done
-    disable_shell_extension forward-keys@ngosen.github.io || :
-    if disable_shell_extension kimpanel@kde.org; then
+    if made_change "extension forward-keys@ngosen.github.io"; then
+        disable_shell_extension forward-keys@ngosen.github.io || :
+    fi
+    if made_change "extension kimpanel@kde.org"; then
+        disable_shell_extension kimpanel@kde.org || :
+    fi
+    if made_change "installed kimpanel@kde.org"; then
         gnome-extensions uninstall kimpanel@kde.org >/dev/null 2>&1 || :
         undone+=("gỡ extension Input Method Panel")
     fi
@@ -683,8 +729,12 @@ uninstall() {
     }
     if wants_gnome_setup; then
         undo_gnome_session
-    elif wants_x11_setup && grep -qs '^run_im fcitx5$' "$HOME/.xinputrc"; then
-        im_config_set REMOVE || :
+    elif wants_x11_setup; then
+        undo_im_config
+    fi
+    if wants_gnome_setup || wants_x11_setup; then
+        report_unknown_changes
+        rm -f "$(changes_file)"
     fi
     as_root "${remove[@]}"
     say ""

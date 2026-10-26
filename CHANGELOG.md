@@ -101,6 +101,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - App GTK3 đi qua GNOME Shell không còn mất dấu khi gõ: `trơi`, `ban`, `viêt` thay vì `trời`, `bạn`, `việt`.
   Ngó Sen chờ app báo đã xoá chữ rồi mới commit chữ có dấu; terminal không báo vẫn dùng thời gian chờ
   cố định (#231).
+- Gõ Sen trong app dùng phím Vim (nvim, Claude Code, plugin Vim của Obsidian, JetBrains…): sau Esc hoặc
+  Ctrl+[, chữ đầu tiên gõ tiếp sau lệnh vào insert mode như `i`, `a`, `o`, `ciw` nay có dấu; trước phải gõ
+  thêm dấu cách hoặc xoá một phím mới gõ được. Chữ tiếng Anh gõ sau lệnh được xử lý như gõ mới (#302).
 
 ### Tài liệu
 

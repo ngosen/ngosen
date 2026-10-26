@@ -249,6 +249,11 @@ pub extern "C" fn ResetEngine(engine: usize) {
     handles::with_engine(engine, BambooEngine::reset);
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineExpectVimCommands(engine: usize, expected: bool) {
+    handles::with_engine(engine, |e| e.expect_vim_commands(expected));
+}
+
 /// # Safety
 /// `text` is null or a NUL-terminated string.
 #[unsafe(no_mangle)]

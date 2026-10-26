@@ -24,6 +24,7 @@ namespace ngosen::key {
     inline constexpr uint32_t equal        = 0x003d;
     inline constexpr uint32_t question     = 0x003f;
     inline constexpr uint32_t A            = 0x0041;
+    inline constexpr uint32_t bracketleft  = 0x005b;
     inline constexpr uint32_t a            = 0x0061;
     inline constexpr uint32_t z            = 0x007a;
     inline constexpr uint32_t ISO_Left_Tab = 0xfe20;

@@ -147,6 +147,10 @@ namespace ngosen {
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
+            // Vim-style editors leave insert mode on Escape or Ctrl+[; the letters typed next are commands.
+            const bool ctrlBracket = currentSym == ngosen::key::bracketleft && (keyEvent.states() & ngosen::modifier::Ctrl) != 0U;
+            if (currentSym == ngosen::key::Escape || ctrlBracket)
+                EngineExpectVimCommands(bambooEngine_.handle(), true);
             return true;
         }
 
@@ -752,6 +756,8 @@ namespace ngosen {
         const bool keepCapitalize = shouldCapitalize_ && !isFocusOut;
 
         if (bambooEngine_) {
+            if (isFocusOut)
+                EngineExpectVimCommands(bambooEngine_.handle(), false);
             isPrevSpace_       = false;
             isPrevHyphen_      = false;
             shouldCapitalize_  = false;

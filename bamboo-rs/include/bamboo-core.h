@@ -47,6 +47,7 @@ extern uintptr_t NewCustomEngine(char** definition, uintptr_t dictHandle, uintpt
 extern uintptr_t NewMacroTable(char** definition);
 extern void      DeleteObject(uintptr_t handle);
 extern void      ResetEngine(uintptr_t engine);
+extern void      EngineExpectVimCommands(uintptr_t engine, bool expected);
 extern void      EngineRebuildFromText(uintptr_t engine, cchar* text);
 extern char**    GetCharsetNames(void);
 extern char**    GetInputMethodNames(void);

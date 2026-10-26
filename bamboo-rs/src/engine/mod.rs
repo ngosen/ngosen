@@ -164,6 +164,31 @@ pub struct BambooEngine {
     pub(crate) output_charset: String,
     pub(crate) time_format: String,
     pub(crate) date_format: String,
+    vim_commands_expected: bool,
+}
+
+/// Whether `keys` are Vim commands that end in insert mode: motions, then one insert command.
+fn is_vim_insert_command(keys: &[char]) -> bool {
+    const INSERT: [&str; 22] = [
+        "ciw", "caw", "ciW", "caW", "cc", "cw", "cW", "ce", "cE", "cb", "cB", "gi", "gI", "i", "a",
+        "o", "I", "A", "O", "s", "S", "C",
+    ];
+    const MOTIONS: [&str; 21] = [
+        "gg", "dd", "dw", "dW", "de", "db", "diw", "daw", "yy", "h", "j", "k", "l", "w", "b", "e",
+        "W", "B", "E", "x", "p",
+    ];
+    let text: String = keys.iter().collect();
+    INSERT.iter().any(|insert| {
+        text.strip_suffix(insert).is_some_and(|mut motions| {
+            while !motions.is_empty() {
+                match MOTIONS.iter().find(|m| motions.starts_with(*m)) {
+                    Some(m) => motions = &motions[m.len()..],
+                    None => return false,
+                }
+            }
+            true
+        })
+    })
 }
 
 impl BambooEngine {
@@ -186,6 +211,7 @@ impl BambooEngine {
             output_charset: "Unicode".to_string(),
             time_format: "%H:%M".to_string(),
             date_format: "%d/%m/%Y".to_string(),
+            vim_commands_expected: false,
         }
     }
 
@@ -355,7 +381,63 @@ impl BambooEngine {
         if in_key_list(self.preeditor.input_method().appending_keys(), key) {
             return self.appending_key_text(key, old_text);
         }
+        self.start_word_after_vim_commands(key);
         (self.get_preedit_string(), false)
+    }
+
+    /// After Escape in a Vim-style editor, the letters of commands such as "ciw" or "i" reach the
+    /// engine before the word, since a terminal reports no text. They make the word invalid, so
+    /// every later key would stay raw. The commands are committed as typed and the word starts
+    /// again after them.
+    fn start_word_after_vim_commands(&mut self, key: char) {
+        if !self.vim_commands_expected
+            || !self.auto_non_vn_restore
+            || !key.is_ascii_alphabetic()
+            || self.preeditor.is_valid_prefix()
+        {
+            return;
+        }
+        let raw: Vec<char> = self
+            .get_processed_string(OutputOptions::RAW)
+            .chars()
+            .collect();
+        let Some(start) = self.vim_commands_before_word(&raw) else {
+            return;
+        };
+        self.vim_commands_expected = false;
+        for _ in 0..raw.len() {
+            self.preeditor.remove_last_output_char();
+        }
+        for &c in &raw[..start] {
+            self.preeditor.process_key(c, Mode::English);
+        }
+        self.preeditor.commit();
+        for &c in &raw[start..] {
+            self.preeditor.process_key(c, Mode::Vietnamese);
+        }
+    }
+
+    /// Where a word starts after the longest run of Vim commands that opens `raw`.
+    fn vim_commands_before_word(&self, raw: &[char]) -> Option<usize> {
+        let mut scratch = Engine::with_config(
+            self.preeditor.input_method().clone(),
+            self.preeditor.config(),
+        );
+        (1..raw.len()).rev().find(|&start| {
+            if !is_vim_insert_command(&raw[..start]) {
+                return false;
+            }
+            scratch.reset();
+            for &c in &raw[start..] {
+                scratch.process_key(c, Mode::Vietnamese);
+            }
+            scratch.is_valid_prefix()
+        })
+    }
+
+    /// Escape was pressed: the next letters may be Vim commands rather than a word.
+    pub fn expect_vim_commands(&mut self, expected: bool) {
+        self.vim_commands_expected = expected;
     }
 
     fn word_break_text(&mut self, key: char, old_text: &str) -> (String, bool) {
@@ -395,6 +477,10 @@ impl BambooEngine {
     }
 
     pub(crate) fn commit_preedit_and_reset(&mut self, s: String) {
+        // A Vietnamese word shows the user is typing text again, not commands.
+        if has_any_vietnamese_rune(&s) {
+            self.vim_commands_expected = false;
+        }
         self.commit_text = s;
         self.preedit_text.clear();
         self.preeditor.reset();

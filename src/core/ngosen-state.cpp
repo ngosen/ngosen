@@ -248,6 +248,8 @@ namespace ngosen {
             return;
         }
 
+        if (oldPreBuffer_.empty() && currentSym == keyEvent.sym())
+            reopenWordForTone(currentSym, keyEvent.states());
         const bool startsWord = oldPreBuffer_.empty();
         bool       processed  = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
@@ -419,6 +421,7 @@ namespace ngosen {
         handleKey(keyEvent);
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             keySinceReport_ = true;
+            clickBeforeKey_ = false;
             reportAtKey_    = host_->surrounding();
         }
         // A report with the cursor at the end of the text tells how long the text is.
@@ -574,6 +577,7 @@ namespace ngosen {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
             forgetKeysWhileOff();
+            clickBeforeKey_ = true;
         }
     }
 

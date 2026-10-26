@@ -265,6 +265,46 @@ namespace {
         check(r.text == "abc nhánh xyz", "Esc after a click elsewhere keeps the new tone", r.text);
     }
 
+    // A click right after a word, then a tone key: no selection, so the word is read from the field.
+    void testToneAtCursor() {
+        auto r = retone(nhanh(9, 9));
+        check(r.text == "abc nhánh xyz", "a tone key right after a word changes its tone", r.text);
+        Run run   = nhanh(9, 9);
+        run.after = {'f'};
+        r         = retone(run);
+        check(r.text == "abc nhành xyz", "another tone key at the cursor changes it again", r.text);
+        run      = nhanh(9, 9);
+        run.tone = 'a';
+        r        = retone(run);
+        check(r.text == "abc nhanha xyz", "a letter that is no tone starts a word", r.text);
+        r = retone(nhanh(4, 4));
+        check(r.text == "abc snhanh xyz", "a tone key before a word starts a word", r.text);
+        run       = nhanh(9, 9);
+        run.field = makeField("xim", false);
+        r         = retone(run);
+        check(r.text == "abc nhanhs xyz", "a field that reports no text is left as typed", r.text);
+        run                = nhanh(9, 9);
+        run.quirks.reports = false;
+        r                  = retone(run);
+        check(r.text == "abc nhanhs xyz", "a field that declares its text but never sends it is left as typed", r.text);
+        // GNOME Shell's IBus bridge may still report the text from before the click.
+        run       = nhanh(9, 9);
+        run.field = makeField("ibus");
+        r         = retone(run);
+        check(r.text == "abc nhanhs xyz", "a field whose reports lag is left as typed", r.text);
+        r = retone(nhanh(6, 6));
+        check(r.text == "abc nhsanh xyz", "inside a word the key is typed as before", r.text);
+        run       = nhanh(7, 7);
+        run.typed = "abc nguoi xyz";
+        run.tone  = 'f';
+        r         = retone(run);
+        check(r.text == "abc ngufoi xyz", "inside a word a tone that fits the start is typed as before", r.text);
+        run           = nhanh(9, 9);
+        run.configure = [](FakeResources& resources) { resources.mutableOptions().retoneSelection = false; };
+        r             = retone(run);
+        check(r.text == "abc nhanhs xyz", "the option off leaves the key as typed", r.text);
+    }
+
 } // namespace
 
 int main() {
@@ -272,6 +312,7 @@ int main() {
     testWords();
     testWhereNotOffered();
     testClickKeepsTone();
+    testToneAtCursor();
     if (failures == 0)
         std::cout << "all retone checks passed\n";
     return failures == 0 ? 0 : 1;

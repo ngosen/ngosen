@@ -127,6 +127,36 @@ namespace ngosen {
         return false;
     }
 
+    // A click right after a word leaves nothing to type on; a tone key then changes that word, read
+    // from the field. Any other key, or a tone key after the lock key, starts a word as before.
+    void TypingState::reopenWordForTone(uint32_t sym, uint32_t states) {
+        const Field field = host_->field();
+        if (!clickBeforeKey_ || !engine_->options().retoneSelection || engine_->options().outputCharset != "Unicode" || field.password || field.url || !reportsTextInTime() ||
+            keySinceReport_)
+            return;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || s.anchor() != s.cursor())
+            return;
+        const std::u32string text   = utf8::decode(s.text());
+        const size_t         cursor = s.cursor();
+        // Inside a word the tone may sit after the cursor, which backspaces cannot reach.
+        if (cursor == 0 || cursor > text.size() || (cursor < text.size() && isWordChar(text[cursor])))
+            return;
+        size_t start = cursor;
+        while (start > 0 && isWordChar(text[start - 1]))
+            --start;
+        if (start == cursor || (cursor - start == 1 && text[start] < 0x80))
+            return;
+        const std::string word  = charsOf(s.text(), start, cursor - start);
+        const std::string toned = retoned(word, sym, states);
+        if (toned.empty() || toned == word || withoutToneMark(toned) != withoutToneMark(word))
+            return;
+        NGOSEN_INFO("Retone at the cursor: " + word + " -> " + toned);
+        EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
+        oldPreBuffer_ = word;
+        hasHistory_   = true;
+    }
+
     std::string TypingState::retoned(const std::string& word, uint32_t sym, uint32_t states) const {
         // Its own engine, so the one typing in the field keeps the key whatever the user does next.
         CGoObject engine(newBambooEngine());

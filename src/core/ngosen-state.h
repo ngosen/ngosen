@@ -159,8 +159,9 @@ namespace ngosen {
         bool                    vimAuto_  = false; ///< Vim was started from the shell in this field
         VimState                vimState_ = VimState::Insert;
         ngosen::VimKeyReader    vimReader_;
-        std::string             vimTyped_; ///< Keys let through since Escape, given to the engine if they turn out to be text
-        std::string             vimLine_;  ///< The shell line, or Vim's command line, typed so far
+        std::string             vimTyped_;                        ///< Keys let through since Escape, given to the engine if they turn out to be text
+        std::string             vimLine_;                         ///< The shell line, or Vim's command line, typed so far
+        bool                    vimTookKey_              = false; ///< readVimKey let the key through as a Vim command
         int                     expected_backspaces_     = 0;
         int                     current_backspace_count_ = 0;
         std::string             pending_commit_string_;
@@ -455,6 +456,8 @@ namespace ngosen {
         }
         void enterVimNormalMode();
         void leaveVim();
+        // Escape and the like that take Vim out of insert mode, or keys Vim reads that we cannot follow.
+        void noteVimSpecialKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
         // Follows the shell line in a field without surrounding text, to see Vim start.
         void noteShellKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
         // Lets a key typed in Vim's normal mode or command line through; false when it is text for the engine.

@@ -114,9 +114,8 @@ namespace ngosen {
         host_->refreshPreedit();
         host_->refreshPanel();
         // Escape has committed the word; the letters typed next are Vim commands.
-        const bool ctrlBracket = currentSym == ngosen::key::bracketleft && (keyEvent.states() & ngosen::modifier::Ctrl) != 0U;
-        if (vimOn() && (currentSym == ngosen::key::Escape || ctrlBracket))
-            enterVimNormalMode();
+        if (!typesText(keyEvent, currentSym))
+            noteVimSpecialKey(keyEvent, currentSym);
     }
 
     void TypingState::holdEnterAfterCommit(ngosen::KeyPress& keyEvent) {
@@ -153,10 +152,7 @@ namespace ngosen {
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
-            // Vim leaves insert mode on Escape or Ctrl+[; the letters typed next are commands.
-            const bool ctrlBracket = currentSym == ngosen::key::bracketleft && (keyEvent.states() & ngosen::modifier::Ctrl) != 0U;
-            if (vimOn() && (currentSym == ngosen::key::Escape || ctrlBracket))
-                enterVimNormalMode();
+            noteVimSpecialKey(keyEvent, currentSym);
             return true;
         }
 
@@ -621,6 +617,9 @@ namespace ngosen {
         uint32_t       currentSym = keyEvent.sym();
         const Options& options    = engine_->options();
         if ((!options.autoCapitalizeAfterPunctuation && !options.capitalizeStartOfText) || realMode == ngosen::Mode::Off)
+            return currentSym;
+        // A capital is another Vim command: j moves down, J joins lines.
+        if (vimOn() && vimState_ != VimState::Insert)
             return currentSym;
         // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
         if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym))

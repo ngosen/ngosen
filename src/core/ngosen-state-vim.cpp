@@ -40,8 +40,25 @@ namespace ngosen {
         vimLine_.clear();
     }
 
+    void TypingState::noteVimSpecialKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (!vimOn())
+            return;
+        const bool ctrl = (keyEvent.states() & ngosen::modifier::Ctrl) != 0U;
+        // Ctrl+C at a shell is common, so it counts only once we know Vim runs, or to cancel the command line.
+        const bool ctrlC = ctrl && (currentSym == ngosen::key::c || currentSym == ngosen::key::C) && (vimAuto_ || vimState_ == VimState::CommandLine);
+        if (currentSym == ngosen::key::Escape || (ctrl && currentSym == ngosen::key::bracketleft) || ctrlC) {
+            enterVimNormalMode();
+        } else if (vimState_ == VimState::Normal && !keyEvent.isModifier()) {
+            // Vim may take an arrow key as the motion of a pending command, or Ctrl+V for visual block.
+            vimReader_.reset();
+            vimTyped_.clear();
+        }
+    }
+
     void TypingState::noteShellKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (vimAuto_ || vimState_ != VimState::Insert || keyEvent.isModifier() || host_->field().surroundingText)
+        const bool tookKey = vimTookKey_;
+        vimTookKey_        = false;
+        if (tookKey || vimAuto_ || vimState_ != VimState::Insert || keyEvent.isModifier() || host_->field().surroundingText)
             return;
         if (currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) {
             const bool starts = startsVim(vimLine_);
@@ -100,6 +117,11 @@ namespace ngosen {
                     ngosen::utf8::eraseLastCodepoint(vimLine_);
             } else if (typesText(keyEvent, currentSym)) {
                 vimLine_ += host_->keyText(currentSym);
+                // An ex command is no word: Telex would turn ":w" into ":ư". A search may be Vietnamese.
+                if (vimLine_[0] == ':') {
+                    keyEvent.passToApp();
+                    return true;
+                }
             }
             return false;
         }
@@ -137,6 +159,7 @@ namespace ngosen {
                 NGOSEN_DEBUG(std::string("Vim goes into insert mode at ") + text);
                 break;
         }
+        vimTookKey_ = true;
         keyEvent.passToApp();
         return true;
     }

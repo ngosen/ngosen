@@ -175,7 +175,8 @@ namespace ngosen {
     } // namespace
 
     bool startsVim(std::string_view shellLine) {
-        constexpr std::array<std::string_view, 7> programs = {"vi", "vim", "nvim", "view", "vimdiff", "nvimdiff", "rvim"};
+        // Not "vi": it is also a Vietnamese word, as in "vi phạm", and a chat line may start with it.
+        constexpr std::array<std::string_view, 6> programs = {"vim", "nvim", "view", "vimdiff", "nvimdiff", "rvim"};
         std::string_view                          word     = nextWord(shellLine);
         // sudo and variables set for the command come before the program.
         while (word == "sudo" || word == "command" || word == "exec" || word.find('=') != std::string_view::npos)
@@ -186,7 +187,8 @@ namespace ngosen {
     }
 
     bool quitsVim(std::string_view commandLine) {
-        constexpr std::array<std::string_view, 12> commands = {"q", "q!", "wq", "wq!", "x", "x!", "xa", "qa", "qa!", "wqa", "quit", "exit"};
+        constexpr std::array<std::string_view, 22> commands = {"q",    "q!",   "wq",    "wq!",  "x",     "x!",    "xa",     "xa!",  "qa",  "qa!",  "wqa",
+                                                               "wqa!", "quit", "quit!", "qall", "qall!", "wqall", "wqall!", "xall", "xit", "exit", "cq"};
         if (commandLine.empty() || commandLine[0] != ':')
             return false;
         commandLine.remove_prefix(1);

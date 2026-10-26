@@ -493,6 +493,7 @@ namespace fcitx {
             }
         }
         loadAppRules();
+        loadVimApps();
         populateConfig();
     }
 
@@ -1072,6 +1073,7 @@ namespace fcitx {
         std::ifstream               file(vimAppsPath_);
         std::string                 line;
         std::lock_guard<std::mutex> lock(appRulesMutex_);
+        vimApps_.clear();
         while (std::getline(file, line)) {
             if (!line.empty() && line[0] != '#')
                 vimApps_.insert(line);

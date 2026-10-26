@@ -75,6 +75,12 @@ namespace {
         void ctrlBracket() {
             press(ngosen::key::bracketleft, ngosen::modifier::Ctrl, nullptr);
         }
+        void ctrlC() {
+            press(ngosen::key::c, ngosen::modifier::Ctrl, nullptr);
+        }
+        void left() {
+            press(ngosen::key::Left, 0, nullptr);
+        }
         void backspace() {
             press(ngosen::key::BackSpace, 0, nullptr);
         }
@@ -83,7 +89,14 @@ namespace {
         }
         void runCommandLine() {
             press(ngosen::key::Return, 0, &line_);
+            lastLine_ = line_;
             line_.clear();
+        }
+        const std::string& lastCommandLine() const {
+            return lastLine_;
+        }
+        ngosen::Options& options() {
+            return resources_.mutableOptions();
         }
 
         std::string result() const {
@@ -99,9 +112,11 @@ namespace {
             state_->keyEvent(down);
             FakeKey up(sym, true, states);
             state_->keyEvent(up);
-            loop_.pump(60);
+            // Typed text waits out the forward wait, Enter the held Enter; a commit arriving during a command still counts as an edit.
+            loop_.pump(target != &text_ ? 5 : sym == ngosen::key::Return ? 60 : 20);
             if (target == nullptr) {
-                if (down.accepted() || host_->commits().size() > commits || host_->forwarded().size() > forwarded)
+                // A key the app gets changed, such as j turned into J, is a different command.
+                if (down.accepted() || down.name() != std::to_string(sym) || host_->commits().size() > commits || host_->forwarded().size() > forwarded)
                     edited_ += static_cast<char>(sym & 0x7f);
                 return;
             }
@@ -125,6 +140,7 @@ namespace {
         std::unique_ptr<ngosen::TypingState> state_;
         std::string                          text_;
         std::string                          line_;
+        std::string                          lastLine_;
         bool                                 preedit_ = false;
         std::string                          edited_;
     };
@@ -152,11 +168,11 @@ namespace {
             check(lastStep(keys) == VimStep::Unknown, std::string("reader: ") + keys + " is not a command it knows", std::to_string(static_cast<int>(lastStep(keys))));
         for (const char* keys : {"ZZ", "ZQ", "jjZZ"})
             check(lastStep(keys) == VimStep::Quit, std::string("reader: ") + keys + " exits Vim", std::to_string(static_cast<int>(lastStep(keys))));
-        for (const char* line : {"vim", "nvim notes.md", "  vi a b", "sudo vim /etc/hosts", "/usr/bin/nvim", "TERM=xterm nvim", "vimdiff a b"})
+        for (const char* line : {"vim", "nvim notes.md", "  vim a b", "sudo vim /etc/hosts", "/usr/bin/nvim", "TERM=xterm nvim", "vimdiff a b"})
             check(startsVim(line), std::string("\"") + line + "\" starts Vim", "false");
-        for (const char* line : {"", "vimtutor", "echo vim", "git commit", "sudo", "nvimx"})
+        for (const char* line : {"", "vimtutor", "echo vim", "git commit", "sudo", "nvimx", "vi phamj"})
             check(!startsVim(line), std::string("\"") + line + "\" does not start Vim", "true");
-        for (const char* line : {":q", ":q!", ":wq", ":x", ":qa!", ": wq "})
+        for (const char* line : {":q", ":q!", ":wq", ":x", ":qa!", ": wq ", ":wqa!", ":xit", ":cq"})
             check(quitsVim(line), std::string("\"") + line + "\" exits Vim", "false");
         for (const char* line : {":w", "/q", "q", ":q foo", ":", ":wqx"})
             check(!quitsVim(line), std::string("\"") + line + "\" does not exit Vim", "true");
@@ -257,6 +273,36 @@ namespace {
         }
     }
 
+    // An ex command reaches Vim as typed, so Telex does not turn ":s/aa/b" into ":s/â/b".
+    void testExCommandAsTyped() {
+        FakeVim vim(true);
+        vim.escape();
+        vim.commandLine(":s/aa/b");
+        vim.runCommandLine();
+        check(vim.lastCommandLine() == ":s/aa/b\n", "Escape, :s/aa/b, Enter reaches Vim as typed", vim.lastCommandLine());
+    }
+
+    // Auto-capitalize would turn the command j into J, which joins lines.
+    void testNoCapitalInNormalMode() {
+        FakeVim vim(true);
+        vim.options().autoCapitalizeAfterPunctuation = true;
+        vim.escape();
+        vim.enter(false);
+        vim.command("jciw");
+        vim.insert("tieengs");
+        expect("auto-capitalize, Escape, Enter, jciw, tieengs", vim, "tiếng");
+    }
+
+    // c then an arrow key is a whole command in Vim, so the letters after it start anew.
+    void testArrowEndsPendingCommand() {
+        FakeVim vim(true);
+        vim.escape();
+        vim.command("c");
+        vim.left();
+        vim.insert("tieengs");
+        expect("Escape, c, Left, tieengs", vim, "tiếng");
+    }
+
     // Preedit holds the letters it types; in normal mode it must hold none.
     void testPreedit() {
         for (const char* keys : {"i", "a", "ciw", "ddO", "jjkciw", "3wcw"}) {
@@ -296,12 +342,13 @@ namespace {
             vim.insert("an ");
             expect("Preedit, nvim, Enter, a, an", vim, "nvim \nan ");
         }
-        {
+        for (const char* line : {"echo vim", "vi phamj"}) {
             FakeVim vim(false);
-            vim.insert("echo vim");
+            vim.insert(line);
             vim.enter(true);
             vim.insert("anhs ");
-            expect("echo vim, Enter, anhs", vim, "echo vim\nánh ");
+            const std::string shown = std::string(line) == "vi phamj" ? "vi phạm" : line;
+            expect(std::string(line) + ", Enter, anhs", vim, shown + "\nánh ");
         }
         // Typed while Vim runs, the word vim on a line of its own does not start it again.
         {
@@ -339,6 +386,29 @@ namespace {
             FakeVim vim(false);
             vim.insert("nvim");
             vim.enter(true);
+            vim.command("ZZ");
+            vim.insert("vim");
+            vim.enter(true);
+            vim.command("ciw");
+            vim.insert("tieengs");
+            expect("nvim, ZZ, vim, Enter, ciw, tieengs", vim, "nvim\nvim\ntiếng");
+        }
+        // Ctrl+C also leaves insert mode once Vim is known to run.
+        {
+            FakeVim vim(false);
+            vim.insert("nvim");
+            vim.enter(true);
+            vim.command("i");
+            vim.insert("xin ");
+            vim.ctrlC();
+            vim.command("ciw");
+            vim.insert("tieengs");
+            expect("nvim, i, xin, Ctrl+C, ciw, tieengs", vim, "nvim\nxin tiếng");
+        }
+        {
+            FakeVim vim(false);
+            vim.insert("nvim");
+            vim.enter(true);
             vim.commandLine(":w");
             vim.runCommandLine();
             vim.command("a");
@@ -357,6 +427,9 @@ int main() {
     testNotVim();
     testVimKeysOff();
     testCommandLine();
+    testExCommandAsTyped();
+    testNoCapitalInNormalMode();
+    testArrowEndsPendingCommand();
     testPreedit();
     testStartedFromShell();
     testQuit();

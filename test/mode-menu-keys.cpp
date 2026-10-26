@@ -8,6 +8,8 @@
 
 #include <fcitx/candidatelist.h>
 
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -34,6 +36,10 @@ namespace {
     std::shared_ptr<fcitx::CommonCandidateList> menu(TestInputContext& context) {
         auto list = std::dynamic_pointer_cast<fcitx::CommonCandidateList>(context.inputPanel().candidateList());
         return list && list->totalSize() > 1 ? list : nullptr;
+    }
+
+    std::string label(const fcitx::CommonCandidateList& list, int index) {
+        return list.candidateFromAll(index).text().toString();
     }
 
     std::string modeName(ngosen::Mode mode) {
@@ -66,10 +72,11 @@ int main() {
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 
-    // Sen, Preedit, Emoji, Off, Default typing, and "type `".
+    // Sen, Preedit, Emoji, Off, Default typing, the Vim mode switch, and "type `".
     press(engine, entry, *context, FcitxKey_grave);
     auto list = menu(*context);
-    check(list && list->totalSize() == 6, "menu opens with six items", list ? std::to_string(list->totalSize()) : "no menu");
+    check(list && list->totalSize() == 7, "menu opens with seven items", list ? std::to_string(list->totalSize()) : "no menu");
+    check(list && label(*list, 5) == "   [v] Vim mode: off", "the Vim mode switch starts off", list ? label(*list, 5) : "no menu");
     // gedit has no rule of its own, so it follows the default.
     check(list && list->globalCursorIndex() == 4, "Default typing is highlighted", list ? std::to_string(list->globalCursorIndex()) : "no menu");
     press(engine, entry, *context, FcitxKey_Down);
@@ -91,6 +98,29 @@ int main() {
 
     press(engine, entry, *context, FcitxKey_F12);
     check(realMode.load() == ngosen::Mode::Preedit, "the cycle key steps from Sen to Preedit", modeName(realMode.load()));
+
+    // v switches Vim mode for the app and keeps the typing mode; the choice is saved for gedit.
+    const auto vimApps = [] {
+        std::ifstream file(std::filesystem::temp_directory_path() / "fcitx5-ngosen-mode-menu-keys/config/fcitx5/conf/ngosen-vim-apps.conf");
+        std::string   line;
+        std::string   apps;
+        while (std::getline(file, line)) {
+            if (!line.empty() && line[0] != '#')
+                apps += line + ";";
+        }
+        return apps;
+    };
+    press(engine, entry, *context, FcitxKey_grave);
+    press(engine, entry, *context, FcitxKey_v);
+    check(!menu(*context), "v closes the menu", "menu still open");
+    check(realMode.load() == ngosen::Mode::Preedit, "v keeps the typing mode", modeName(realMode.load()));
+    check(vimApps() == "gedit;", "v saves Vim mode for gedit", vimApps());
+    check(context->commits().size() == 1, "v types nothing", std::to_string(context->commits().size()) + " commits");
+    press(engine, entry, *context, FcitxKey_grave);
+    list = menu(*context);
+    check(list && label(*list, 5) == "   [v] Vim mode: on", "the menu shows Vim mode on", list ? label(*list, 5) : "no menu");
+    press(engine, entry, *context, FcitxKey_v);
+    check(vimApps().empty(), "v again turns Vim mode off", vimApps());
 
     // With a label, GNOME's kimpanel shows text in the top bar instead of the Ngó Sen icon.
     for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Off, ngosen::Mode::Emoji}) {

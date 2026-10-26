@@ -80,6 +80,8 @@ namespace ngosen {
     }
 
     void TypingState::handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (vimOn() && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
+            return;
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone) {
             ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
             const std::string        shown   = preedit ? preedit.get() : "";
@@ -111,6 +113,9 @@ namespace ngosen {
         }
         host_->refreshPreedit();
         host_->refreshPanel();
+        // Escape has committed the word; the letters typed next are Vim commands.
+        if (!typesText(keyEvent, currentSym))
+            noteVimSpecialKey(keyEvent, currentSym);
     }
 
     void TypingState::holdEnterAfterCommit(ngosen::KeyPress& keyEvent) {
@@ -147,6 +152,7 @@ namespace ngosen {
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
+            noteVimSpecialKey(keyEvent, currentSym);
             return true;
         }
 
@@ -220,6 +226,8 @@ namespace ngosen {
             keyEvent.passToApp();
             return;
         }
+        if (vimOn() && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
+            return;
 
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone && removeToneMark(keyEvent))
             return;
@@ -488,6 +496,8 @@ namespace ngosen {
                 break;
             }
         }
+        if (realMode == ngosen::Mode::Sen || realMode == ngosen::Mode::Preedit)
+            noteShellKey(keyEvent, currentSym);
     }
 
     bool TypingState::skipsKey(ngosen::KeyPress& keyEvent) {
@@ -607,6 +617,9 @@ namespace ngosen {
         uint32_t       currentSym = keyEvent.sym();
         const Options& options    = engine_->options();
         if ((!options.autoCapitalizeAfterPunctuation && !options.capitalizeStartOfText) || realMode == ngosen::Mode::Off)
+            return currentSym;
+        // A capital is another Vim command: j moves down, J joins lines.
+        if (vimOn() && vimState_ != VimState::Insert)
             return currentSym;
         // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
         if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym))

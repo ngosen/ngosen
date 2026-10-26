@@ -315,6 +315,15 @@ namespace {
         run.quirks.hidesSelectionEnd = true;
         r                            = retone(run);
         check(r.text == "abc nhánh xyz", "a selection reported as a bare cursor is typed over, not deleted past", r.text);
+        // The app starts the typed key as a new word only after a space, since it never reports the click.
+        run                         = nhanh(9, 9);
+        run.typed                   = "abc nhanh xyz ";
+        run.quirks.hidesCursorMoves = true;
+        r                           = retone(run);
+        check(r.text == "abc nhánh xyz ", "a click the app does not report shows in where the key lands", r.text);
+        run.anchor = run.cursor = 6;
+        r                       = retone(run);
+        check(r.text == "abc nhsanh xyz ", "an unreported click inside a word leaves the key as typed", r.text);
     }
 
 } // namespace

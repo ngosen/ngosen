@@ -55,17 +55,22 @@ namespace ngosen {
             return charsOf(before.text(), start, word.size());
         }
 
-        // The word that key was typed right after, when after shows before with just key added at its
-        // cursor; nothing when the key went anywhere else, such as over a selection the app hides.
-        std::string wordBeforeKey(const Surrounding& before, const Surrounding& after, const std::string& key) {
-            const std::u32string was    = utf8::decode(before.text());
-            const std::u32string typed  = utf8::decode(key);
-            const size_t         cursor = before.cursor();
-            if (before.anchor() != cursor || cursor > was.size() || (cursor < was.size() && isWordChar(was[cursor])))
+        // The word that key was typed right after, when after shows before with just key added there;
+        // nothing when the key went anywhere else, such as over a selection the app hides. Without a
+        // click the key must land away from the reported cursor: GTK 3 reports no cursor move on a click.
+        std::string wordBeforeKey(const Surrounding& before, const Surrounding& after, const std::string& key, bool clicked, bool reportedSinceKey) {
+            const std::u32string was   = utf8::decode(before.text());
+            const std::u32string typed = utf8::decode(key);
+            if (after.anchor() != after.cursor() || after.cursor() < typed.size())
+                return {};
+            const size_t cursor = after.cursor() - typed.size();
+            if (cursor > was.size() || (cursor < was.size() && isWordChar(was[cursor])))
+                return {};
+            if (!clicked && (!reportedSinceKey || cursor == before.cursor()))
                 return {};
             std::u32string expected = was;
             expected.insert(cursor, typed);
-            if (after.anchor() != after.cursor() || after.cursor() != cursor + typed.size() || utf8::decode(after.text()) != expected)
+            if (utf8::decode(after.text()) != expected)
                 return {};
             size_t start = cursor;
             while (start > 0 && isWordChar(was[start - 1]))
@@ -88,7 +93,7 @@ namespace ngosen {
         const Surrounding before = host_->surrounding();
         if (!before.isValid() || before.text().empty())
             return;
-        retoneKey_    = RetoneKey{.before = before, .text = keyUtf8, .sym = sym, .states = states, .afterClick = clickBeforeKey_};
+        retoneKey_    = RetoneKey{.before = before, .text = keyUtf8, .sym = sym, .states = states, .afterClick = clickBeforeKey_, .reportedSinceKey = !keySinceReport_};
         retone_timer_ = host_->startTimer(monotonicUs() + RetoneReportUs, 0, [this](Timer&) {
             retoneKey_.reset();
             return false;
@@ -114,8 +119,8 @@ namespace ngosen {
         std::string word  = after.text().size() < retoneKey_->before.text().size() ? replacedWord(retoneKey_->before, after, retoneKey_->text) : std::string();
         std::string typed = retoneKey_->text;
         // A click right after a word leaves nothing selected, so the key lands after the word.
-        if (word.empty() && retoneKey_->afterClick) {
-            word  = wordBeforeKey(retoneKey_->before, after, retoneKey_->text);
+        if (word.empty()) {
+            word  = wordBeforeKey(retoneKey_->before, after, retoneKey_->text, retoneKey_->afterClick, retoneKey_->reportedSinceKey);
             typed = word + typed;
         }
         if (word.empty())

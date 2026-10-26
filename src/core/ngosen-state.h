@@ -200,9 +200,10 @@ namespace ngosen {
         struct RetoneKey {
             Surrounding before;
             std::string text;
-            uint32_t    sym        = 0;
-            uint32_t    states     = 0;
-            bool        afterClick = false;
+            uint32_t    sym              = 0;
+            uint32_t    states           = 0;
+            bool        afterClick       = false;
+            bool        reportedSinceKey = false; ///< before came after the previous key
         };
         std::optional<RetoneKey>       retoneKey_;
         std::unique_ptr<ngosen::Timer> retone_timer_;

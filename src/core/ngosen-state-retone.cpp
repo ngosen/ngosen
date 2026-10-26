@@ -54,6 +54,36 @@ namespace ngosen {
                 return {};
             return charsOf(before.text(), start, word.size());
         }
+
+        // The word that key was typed right after, when after shows before with just key added there;
+        // nothing when the key went anywhere else, such as over a selection the app hides.
+        // GTK 3 reports no click, so without one the app must have reported after the previous key and
+        // the key must land away from that report's cursor.
+        std::string wordBeforeKey(const Surrounding& before, const Surrounding& after, const std::string& key, bool clicked, bool reportedSinceKey) {
+            if (before.anchor() != before.cursor() || after.anchor() != after.cursor() || after.text().size() != before.text().size() + key.size())
+                return {};
+            if (!clicked && !reportedSinceKey)
+                return {};
+            const std::u32string was   = utf8::decode(before.text());
+            const std::u32string typed = utf8::decode(key);
+            if (after.cursor() < typed.size())
+                return {};
+            const size_t cursor = after.cursor() - typed.size();
+            if (cursor > was.size() || (cursor < was.size() && isWordChar(was[cursor])))
+                return {};
+            if (!clicked && cursor == before.cursor())
+                return {};
+            std::u32string expected = was;
+            expected.insert(cursor, typed);
+            if (utf8::decode(after.text()) != expected)
+                return {};
+            size_t start = cursor;
+            while (start > 0 && isWordChar(was[start - 1]))
+                --start;
+            if (start == cursor || (cursor - start == 1 && was[start] < 0x80))
+                return {};
+            return charsOf(before.text(), start, cursor - start);
+        }
     } // namespace
 
     void TypingState::noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8) {
@@ -68,7 +98,7 @@ namespace ngosen {
         const Surrounding before = host_->surrounding();
         if (!before.isValid() || before.text().empty())
             return;
-        retoneKey_    = RetoneKey{.before = before, .text = keyUtf8, .sym = sym, .states = states};
+        retoneKey_    = RetoneKey{.before = before, .text = keyUtf8, .sym = sym, .states = states, .afterClick = clickBeforeKey_, .reportedSinceKey = !keySinceReport_};
         retone_timer_ = host_->startTimer(monotonicUs() + RetoneReportUs, 0, [this](Timer&) {
             retoneKey_.reset();
             return false;
@@ -87,11 +117,17 @@ namespace ngosen {
         // Firefox repeats the old state before the new one.
         if (after == retoneKey_->before)
             return;
-        // The replaced word is at least two bytes and the key one, so the text has to get shorter.
-        if (retype_ || after.text().size() >= retoneKey_->before.text().size())
+        if (retype_)
             return;
+        // The replaced word is at least two bytes and the key one, so the text has to get shorter.
         // An app may report the deletion and the key separately.
-        const std::string word = replacedWord(retoneKey_->before, after, retoneKey_->text);
+        std::string word  = after.text().size() < retoneKey_->before.text().size() ? replacedWord(retoneKey_->before, after, retoneKey_->text) : std::string();
+        std::string typed = retoneKey_->text;
+        // A click right after a word leaves nothing selected, so the key lands after the word.
+        if (word.empty()) {
+            word  = wordBeforeKey(retoneKey_->before, after, retoneKey_->text, retoneKey_->afterClick, retoneKey_->reportedSinceKey);
+            typed = word + typed;
+        }
         if (word.empty())
             return;
         const RetoneKey key = std::move(*retoneKey_);
@@ -100,7 +136,7 @@ namespace ngosen {
         if (toned.empty() || toned == word || withoutToneMark(toned) != withoutToneMark(word))
             return;
         NGOSEN_INFO("Retone: " + logged(word) + " -> " + logged(toned));
-        retype_ = Retype{.typed = key.text, .marked = toned, .atOnce = true, .retone = true};
+        retype_ = Retype{.typed = typed, .marked = toned, .atOnce = true, .retone = true};
         applyRetypeSoon(host_->translate("Tab or Esc: put back the key"));
     }
 
@@ -109,7 +145,9 @@ namespace ngosen {
         // means the selection was being typed over and the key goes back.
         const bool deleting = is_deleting_.load(std::memory_order_acquire);
         // The tone key twice undoes it, as typing it twice does in a word.
-        if (!deleting && host_->keyText(keyEvent.sym()) == retype_->typed) {
+        const std::string& typed = retype_->typed;
+        const std::string  key   = host_->keyText(keyEvent.sym());
+        if (!deleting && !key.empty() && typed.size() >= key.size() && typed.compare(typed.size() - key.size(), key.size(), key) == 0) {
             keyEvent.accept();
             applyRetype();
             return true;

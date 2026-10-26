@@ -56,17 +56,22 @@ namespace ngosen {
         }
 
         // The word that key was typed right after, when after shows before with just key added there;
-        // nothing when the key went anywhere else, such as over a selection the app hides. Without a
-        // click the key must land away from the reported cursor: GTK 3 reports no cursor move on a click.
+        // nothing when the key went anywhere else, such as over a selection the app hides.
+        // GTK 3 reports no click, so without one the app must have reported after the previous key and
+        // the key must land away from that report's cursor.
         std::string wordBeforeKey(const Surrounding& before, const Surrounding& after, const std::string& key, bool clicked, bool reportedSinceKey) {
+            if (before.anchor() != before.cursor() || after.anchor() != after.cursor() || after.text().size() != before.text().size() + key.size())
+                return {};
+            if (!clicked && !reportedSinceKey)
+                return {};
             const std::u32string was   = utf8::decode(before.text());
             const std::u32string typed = utf8::decode(key);
-            if (after.anchor() != after.cursor() || after.cursor() < typed.size())
+            if (after.cursor() < typed.size())
                 return {};
             const size_t cursor = after.cursor() - typed.size();
             if (cursor > was.size() || (cursor < was.size() && isWordChar(was[cursor])))
                 return {};
-            if (!clicked && (!reportedSinceKey || cursor == before.cursor()))
+            if (!clicked && cursor == before.cursor())
                 return {};
             std::u32string expected = was;
             expected.insert(cursor, typed);

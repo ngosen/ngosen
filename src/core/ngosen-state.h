@@ -203,7 +203,7 @@ namespace ngosen {
             uint32_t    sym              = 0;
             uint32_t    states           = 0;
             bool        afterClick       = false;
-            bool        reportedSinceKey = false; ///< before came after the previous key
+            bool        reportedSinceKey = false; ///< a changed report arrived after the previous key
         };
         std::optional<RetoneKey>       retoneKey_;
         std::unique_ptr<ngosen::Timer> retone_timer_;

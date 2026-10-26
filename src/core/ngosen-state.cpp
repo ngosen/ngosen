@@ -451,14 +451,17 @@ namespace ngosen {
         const bool ownBackspace = deleting && ngosen::key::isBackspace(currentSym) && !ngosen::forwardsBackspaces(host_->field());
         if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
             lastWord_.clear();
-        if (handleKeyDuringReplacement(keyEvent, currentSym) || handleDoubledKey(keyEvent, currentSym))
+        if (handleKeyDuringReplacement(keyEvent, currentSym))
+            return;
+        // Before the doubled keys, so -- stays as typed in a path.
+        if ((realMode == ngosen::Mode::Sen || realMode == ngosen::Mode::Preedit) && handleRawWordKey(keyEvent, currentSym))
+            return;
+        if (handleDoubledKey(keyEvent, currentSym))
             return;
 
         // Vietnamese typed since then, so the English noted is no longer right before the cursor.
         if (realMode != ngosen::Mode::Off)
             forgetKeysWhileOff();
-        if ((realMode == ngosen::Mode::Sen || realMode == ngosen::Mode::Preedit) && handleRawWordKey(keyEvent, currentSym))
-            return;
         switch (realMode) {
             case ngosen::Mode::Sen: {
                 const bool beforeCommit = typedBeforeCommitArrived(keyEvent, currentSym);
@@ -576,6 +579,8 @@ namespace ngosen {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
             forgetKeysWhileOff();
+            rawWord_      = false;
+            afterWordEnd_ = false;
         }
     }
 
@@ -751,7 +756,8 @@ namespace ngosen {
         rawWord_               = false;
         if (isFocusOut) {
             keySinceReport_ = false;
-            afterWordEnd_   = false;
+            // A chat box is usually empty when it gets focus.
+            afterWordEnd_ = true;
         }
         // GTK resets the context when Enter inserts a new line; the sentence started there still capitalizes.
         const bool keepCapitalize = shouldCapitalize_ && !isFocusOut;

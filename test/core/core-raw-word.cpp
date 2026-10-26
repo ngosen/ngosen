@@ -48,7 +48,10 @@ namespace {
         return {typed.begin(), typed.end()};
     }
 
-    // The app's text after each key, typed 20 ms apart.
+    constexpr uint32_t Click    = 0;
+    constexpr uint32_t NewFocus = 1;
+
+    // The app's text after each key, typed 20 ms apart. Click and NewFocus stand for those events.
     std::vector<std::string> textAfterEachKey(Mode mode, const std::vector<uint32_t>& keys, bool surroundingText = true,
                                               const std::function<void(FakeResources&)>& configure = {}) {
         FakeResources resources;
@@ -63,6 +66,14 @@ namespace {
         app->attach(&state);
         std::vector<std::string> texts;
         for (const uint32_t key : keys) {
+            if (key == Click) {
+                g_mouse_clicked.store(true);
+                continue;
+            }
+            if (key == NewFocus) {
+                state.reset(true);
+                continue;
+            }
             app->type(key);
             loop.pump(20);
             texts.push_back(app->text());
@@ -106,6 +117,8 @@ namespace {
 
     void testPathsAfterSpace() {
         checkTypedAsIs("paths", {"cd /usr/share", "cd /etc/hosts", "cd /var/log", "cd /tmp", "cd /opt", "cd /dev/null", "cd /proc", "cd /boot", "cd /srv", "cd /sys"});
+        checkTypedAsIs("other path characters", {"cd /usr/include/c++/14/bits", "ls /home/u/.config/foo@bar/test", "cd /tmp/a,b=c/test"});
+        checkTypedAsIs("relative paths and quoted commands", {"cd ./test", "cd ../test", "ls ~/test", "`/cost`", "(/usage)"});
     }
 
     void testVietnameseKeepsTones() {
@@ -143,9 +156,35 @@ namespace {
         check(got == "/resviệt ", "Tab, as when an app completes the command, types Vietnamese again", got);
     }
 
+    std::vector<uint32_t> keysAround(const std::string& before, uint32_t event, const std::string& after) {
+        std::vector<uint32_t> keys = keysOf(before);
+        keys.push_back(event);
+        for (const uint32_t k : keysOf(after))
+            keys.push_back(k);
+        return keys;
+    }
+
     void testFieldWithoutReports() {
-        const std::string got = finalText(Mode::Sen, "xin chaof /cost", false);
+        std::string got = finalText(Mode::Sen, "xin chaof /cost", false);
         check(got == "xin chào /cost", "a field without surrounding text: '/' after a space starts a word", got);
+        got = textAfterEachKey(Mode::Sen, keysAround("xin", NewFocus, "/cost"), false).back();
+        check(got == "xin/cost", "a field without surrounding text: '/' first after focus starts a word", got);
+        got = finalText(Mode::Sen, "xin/cost", false);
+        check(got == "xin/cót", "a field without surrounding text: '/' inside a word is not a command", got);
+    }
+
+    void testClickEndsRawWord() {
+        const std::string got = textAfterEachKey(Mode::Sen, keysAround("/us", Click, "vieetj"), false).back();
+        check(got == "/usviệt", "a click ends the raw word", got);
+    }
+
+    void testDoubledKeysStayRaw() {
+        std::string got = finalText(Mode::Sen, "/tmp/my--dir", true, [](FakeResources& r) { r.mutableOptions().doubleHyphenToEmDash = true; });
+        check(got == "/tmp/my--dir", "-- stays as typed in a path", got);
+        got = finalText(Mode::Sen, "a /x  b", true, [](FakeResources& r) { r.mutableOptions().doubleSpaceToPeriod = true; });
+        check(got == "a /x. b", "two spaces after a raw word still give a period", got);
+        got = finalText(Mode::Sen, "a /x b", true, [](FakeResources& r) { r.mutableOptions().doubleSpaceToPeriod = true; });
+        check(got == "a /x b", "the space before the '/' and the one after the word are not a double space", got);
     }
 
     void testOptionOff() {
@@ -161,6 +200,8 @@ int main() {
     testVietnameseKeepsTones();
     testWordEnds();
     testFieldWithoutReports();
+    testClickEndsRawWord();
+    testDoubledKeysStayRaw();
     testOptionOff();
     if (failures != 0) {
         std::cerr << failures << " failure(s)\n";

@@ -14,21 +14,16 @@ namespace ngosen {
 
     namespace {
         bool continuesRawWord(uint32_t sym) {
-            if ((sym >= 'a' && sym <= 'z') || (sym >= 'A' && sym <= 'Z') || (sym >= '0' && sym <= '9'))
-                return true;
-            switch (sym) {
-                case '/':
-                case '.':
-                case '_':
-                case '-':
-                case '~':
-                case ':': return true;
-                default: return false;
-            }
+            return sym > ' ' && sym < 0x7f;
         }
 
         bool endsWord(uint32_t sym) {
             return sym == key::space || sym == key::KP_Space || sym == key::Return || sym == key::KP_Enter || sym == key::Tab || sym == key::KP_Tab;
+        }
+
+        // May come before the '/' of a path or command: ./x, ../x, ~/x, `/cost`, (/x).
+        bool leadsRawWord(char32_t c) {
+            return c == '.' || c == '~' || c == '`' || c == '(' || c == '"' || c == '\'';
         }
     } // namespace
 
@@ -41,13 +36,16 @@ namespace ngosen {
         const Surrounding s     = host_->surrounding();
         if (!field.surroundingText || keySinceReport_ || !s.isValid() || s.cursor() != s.anchor())
             return afterWordEnd_;
-        if (s.cursor() == 0)
-            return true;
-        const std::u32string text = utf8::decode(s.text());
-        if (s.cursor() > text.size())
-            return afterWordEnd_;
-        const char32_t before = text[s.cursor() - 1];
-        return before == U' ' || before == U'\t' || before == U'\n';
+        const std::string& t  = s.text();
+        auto               it = t.begin();
+        bool               at = true;
+        for (unsigned int i = 0; i < s.cursor() && it != t.end(); ++i) {
+            const auto next = utf8::nextChar(it, t.end());
+            const char c    = next - it == 1 ? *it : '\0';
+            at              = c == ' ' || c == '\t' || c == '\n' || (at && leadsRawWord(static_cast<char32_t>(c)));
+            it              = next;
+        }
+        return at;
     }
 
     // Commands and paths filter as they are typed, so each key must reach the app unchanged.
@@ -64,26 +62,33 @@ namespace ngosen {
                     rawWord_ = false;
                 else
                     --rawWordLen_;
-                keyEvent.passToApp();
-                return true;
-            }
-            if (continuesRawWord(currentSym)) {
+            } else if (continuesRawWord(currentSym)) {
                 ++rawWordLen_;
-                keyEvent.passToApp();
-                return true;
+            } else {
+                rawWord_      = false;
+                afterWordEnd_ = endsWord(currentSym);
+                return false;
             }
-            rawWord_ = false;
         } else if (currentSym == '/' && atRawWordStart()) {
             rawWord_    = true;
             rawWordLen_ = 0;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             hasHistory_ = false;
-            keyEvent.passToApp();
-            return true;
+        } else {
+            afterWordEnd_ = endsWord(currentSym) || (afterWordEnd_ && leadsRawWord(currentSym));
+            return false;
         }
-        afterWordEnd_ = endsWord(currentSym);
-        return false;
+        isPrevSpace_  = false;
+        isPrevHyphen_ = false;
+        // Firefox applies a key it let through ahead of a commit it already has.
+        if (realMode == ngosen::Mode::Sen && typedBeforeCommitArrived(keyEvent, currentSym)) {
+            keyEvent.accept();
+            commit(host_->keyText(currentSym));
+        } else {
+            keyEvent.passToApp();
+        }
+        return true;
     }
 
 } // namespace ngosen

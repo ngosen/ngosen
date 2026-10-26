@@ -207,6 +207,13 @@ namespace ngosen {
         bool                           handleKeyAfterRetone(ngosen::KeyPress& keyEvent);
         std::string                    retoned(const std::string& word, uint32_t sym, uint32_t states) const;
 
+        // A word that starts with '/', such as a chat command or a file path, goes to the app as typed.
+        bool rawWord_      = false;
+        int  rawWordLen_   = 0;    ///< characters typed after the '/'
+        bool afterWordEnd_ = true; ///< the last key ended a word, for fields that do not report their text
+        bool handleRawWordKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool atRawWordStart() const;
+
         // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
         // surrounding text report the commit waits this long for them.
         static constexpr uint64_t ForwardWaitUs = 15000;

@@ -163,6 +163,10 @@ msgstr "Cứu chữ: gõ lại có dấu khi quên bật tiếng Việt"
 msgid "Change the tone of a selected word"
 msgstr "Cứu dấu: sửa dấu chữ đang bôi đen"
 
+#: src/ngosen-config.h
+msgid "Type a word that starts with / as is"
+msgstr "Gõ thô sau dấu / đầu từ (lệnh, đường dẫn)"
+
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
 msgstr "Tự khôi phục từ gõ sai"
@@ -1409,6 +1413,10 @@ msgstr "Lỡ gõ tieengs vieetj khi chưa bật? Bật tiếng Việt là thành
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s."
 msgstr "Bôi đen nhanh rồi gõ s: nhánh. Tab, Esc hoặc gõ s lần nữa để trả lại s."
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
+msgstr "/cost và /usr/share giữ nguyên như đã gõ khi ở đầu dòng hoặc sau dấu cách, để lệnh chat và đường dẫn file chạy đúng. và/hoặc và @tên vẫn có dấu."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."

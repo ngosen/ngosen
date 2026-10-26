@@ -13,7 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Thêm
 
 - Cứu dấu không cần bôi đen: bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu là chữ đổi dấu (`nhanh|` + `s` →
-  `nhánh`); Tab hoặc Esc trả lại chữ đã gõ. Bấm vào giữa chữ thì phím gõ như thường. Chỉ ở Gõ Sen (#118, #324).
+  `nhánh`); Tab hoặc Esc trả lại chữ đã gõ. Bấm vào giữa chữ thì phím gõ như thường. Chỉ ở Gõ Sen (#118, #327).
 
 ## [1.6.1-1] — 26/10/2026
 

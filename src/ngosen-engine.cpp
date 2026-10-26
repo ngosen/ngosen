@@ -394,6 +394,8 @@ namespace fcitx {
         instance_->inputContextManager().registerProperty("NgoSenState", &factory_);
         appRulesPath_ = configDir + "/ngosen-app-rules.conf";
         loadAppRules();
+        vimAppsPath_ = configDir + "/ngosen-vim-apps.conf";
+        loadVimApps();
         menuEntries_ = {{inputMethodAction_.get(), &config_.showMenuInputMethod},
                         {charsetAction_.get(), &config_.showMenuCharset},
                         {spellCheckAction_.get(), &config_.showMenuSpellCheck},
@@ -491,6 +493,7 @@ namespace fcitx {
             }
         }
         loadAppRules();
+        loadVimApps();
         populateConfig();
     }
 
@@ -651,6 +654,7 @@ namespace fcitx {
         updateCharsetAction(event.inputContext());
 
         auto* state = stateFor(ic);
+        state->setVimKeys(vimModeFor(appName));
         state->activate(targetMode, event.type() == EventType::InputContextFocusIn);
         ic->updateUserInterface(UserInterfaceComponent::StatusArea);
         if (targetMode == NgoSenMode::Emoji) {
@@ -727,6 +731,10 @@ namespace fcitx {
             default: break;
         }
 
+        if (vimMenuKey_ != FcitxKey_None && keySym == vimMenuKey_) {
+            toggleVimMode(ic);
+            return;
+        }
         if (auto it = modeMenuMapping_.find(keySym); it != modeMenuMapping_.end()) {
             NGOSEN_INFO("Selected mode: " + ngosen::ModeI18NAnnotation::toString(it->second));
             pickMenuMode(ic, it->second, keySym == Key(*config_.shortcutDefault).sym());
@@ -1056,6 +1064,49 @@ namespace fcitx {
         return it == appRules_.end() ? std::nullopt : std::optional<NgoSenMode>(it->second);
     }
 
+    bool NgoSenEngine::vimModeFor(const std::string& appName) const {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        return vimApps_.count(appName) > 0 || vimApps_.count(stripDesktopSuffix(appName)) > 0;
+    }
+
+    void NgoSenEngine::loadVimApps() {
+        std::ifstream               file(vimAppsPath_);
+        std::string                 line;
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        vimApps_.clear();
+        while (std::getline(file, line)) {
+            if (!line.empty() && line[0] != '#')
+                vimApps_.insert(line);
+        }
+    }
+
+    // A file of its own, so the app rules file stays readable by versions without Vim mode.
+    void NgoSenEngine::saveVimApps() const {
+        std::ofstream file(vimAppsPath_, std::ios::trunc);
+        if (!file.is_open())
+            return;
+        file << "# Apps where Ngó Sen follows Vim's normal-mode keys, one per line\n";
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        for (const auto& app : vimApps_) {
+            if (!isStartsWith(app, "ctx_"))
+                file << app << "\n";
+        }
+    }
+
+    void NgoSenEngine::toggleVimMode(InputContext* ic) {
+        bool on = false;
+        {
+            std::lock_guard<std::mutex> lock(appRulesMutex_);
+            const size_t                erased = vimApps_.erase(currentConfigureApp_) + vimApps_.erase(stripDesktopSuffix(currentConfigureApp_));
+            on                                 = erased == 0;
+            if (on)
+                vimApps_.insert(currentConfigureApp_);
+        }
+        saveVimApps();
+        stateFor(ic)->setVimKeys(on);
+        closeModeMenuPanel(ic, true);
+    }
+
     NgoSenMode NgoSenEngine::vietnameseMode() const {
         return config_.mode.value() == NgoSenMode::Off ? NgoSenMode::Sen : config_.mode.value();
     }
@@ -1182,7 +1233,8 @@ namespace fcitx {
                                                                  {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
                                                                  {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
                                                                  {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
-                                                                 {"Default", {globalMode(), _("Default Typing"), getShortcut(*config_.shortcutDefault), *config_.showModeDefault}}};
+                                                                 {"Default", {globalMode(), _("Default Typing"), getShortcut(*config_.shortcutDefault), *config_.showModeDefault}},
+                                                                 {"Vim", {NgoSenMode::Sen, _("Vim mode"), getShortcut(*config_.shortcutVim), *config_.showModeVim, true}}};
 
         std::vector<ModeMenuItem>                     allModes;
         auto                                          order = stringutils::split(*config_.modeOrder, ",");
@@ -1222,12 +1274,23 @@ namespace fcitx {
         std::unordered_set<KeySym> usedModeKeys;
 
         modeMenuMapping_.clear();
+        vimMenuKey_                  = FcitxKey_None;
         const NgoSenMode defaultMode = globalMode();
 
         for (const auto& info : modeMenuItems()) {
             if (!info.visible)
                 continue;
             const bool hasShortcut = info.key != FcitxKey_None && info.key != FcitxKey_VoidSymbol;
+            if (info.vim) {
+                if (hasShortcut && usedModeKeys.insert(info.key).second)
+                    vimMenuKey_ = info.key;
+                const std::string keyUtf8 = Key::keySymToUTF8(info.key);
+                const std::string label   = vimModeFor(currentConfigureApp_) ? _("Vim mode: on") : _("Vim mode: off");
+                candidateList->append(
+                    std::make_unique<AppModeCandidateWord>(Text("   " + (keyUtf8.empty() ? "" : "[" + keyUtf8 + "] ") + label), [this](InputContext* ic) { toggleVimMode(ic); }));
+                currentCandidateIdx++;
+                continue;
+            }
             if (hasShortcut && usedModeKeys.insert(info.key).second) {
                 modeMenuMapping_[info.key] = info.mode;
             }

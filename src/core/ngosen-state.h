@@ -148,6 +148,7 @@ namespace ngosen {
         std::string              oldPreBuffer_;
         std::string              lastWord_; ///< The word and break we last committed, while only backspaces follow
         bool                     hasHistory_              = false;
+        bool                     preeditWord_             = false; ///< Sen is on, but this word goes into the preedit
         int                      expected_backspaces_     = 0;
         int                      current_backspace_count_ = 0;
         std::string              pending_commit_string_;
@@ -408,8 +409,12 @@ namespace ngosen {
         void noteWaitOutcome(const char* reason);
         bool lostWordAfterBounce(const Surrounding& s, bool settling);
         void forwardBackspaces(int count);
-        // True when a replacement can delete text: forwarded by the frontend or pressed through XTEST.
+        // True when a replacement can delete text: through backspaces the frontend forwards or XTEST presses, or, where
+        // the app takes no keys, through its surrounding text or a DEL in a terminal.
         bool canSendBackspaces() const;
+        // The mode the current word is typed in: Sen falls back to the preedit where nothing can delete.
+        ngosen::Mode mode() const;
+        void         chooseWordMode(const ngosen::KeyPress& keyEvent);
         // Moves the commit of a timer-only wait later, never earlier.
         void deferTimedCommit(uint64_t deliverAtUs);
 

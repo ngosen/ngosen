@@ -430,7 +430,7 @@ namespace ngosen {
         const auto               f           = host_->field();
         const std::string        program     = f.reportedProgram.empty() ? f.program : f.program + " (" + f.reportedProgram + ")";
         std::string field = "frontend=" + f.frontend + " program=" + program + " surrounding=" + (f.surroundingText ? "1" : "0") + " preedit=" + (f.preedit ? "1" : "0") +
-            (f.password ? " password=1" : "") + " mode=" + modeNames[static_cast<int>(realMode.load())];
+            (f.password ? " password=1" : "") + " mode=" + modeNames[static_cast<int>(mode())];
         auto& recorder = engine_->recorder();
         recorder.addField(field);
         if (f.password) {
@@ -462,7 +462,28 @@ namespace ngosen {
             realtextLen.store(s.cursor(), std::memory_order_release);
     }
 
+    ngosen::Mode TypingState::mode() const {
+        return preeditWord_ && realMode == ngosen::Mode::Sen ? ngosen::Mode::Preedit : realMode.load();
+    }
+
+    void TypingState::chooseWordMode(const ngosen::KeyPress& keyEvent) {
+        if (realMode != ngosen::Mode::Sen || !bambooEngine_ || keyEvent.isRelease() || keyEvent.isModifier() || is_deleting_.load() || !oldPreBuffer_.empty())
+            return;
+        // Switching inside a word would leave its first letters on the other side.
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+        if (preedit && *preedit.get() != 0)
+            return;
+        const bool toPreedit = host_->field().sendsNoKeys && !canSendBackspaces();
+        if (toPreedit == preeditWord_)
+            return;
+        NGOSEN_INFO(toPreedit ? "Nothing can delete here, type the word in the preedit" : "Type the word in the field");
+        preeditWord_ = toPreedit;
+        ResetEngine(bambooEngine_.handle());
+        hasHistory_ = false;
+    }
+
     void TypingState::handleKey(ngosen::KeyPress& keyEvent) {
+        chooseWordMode(keyEvent);
         recordKey(keyEvent);
         if (keyEvent.sym() == ngosen::key::Return || keyEvent.sym() == ngosen::key::KP_Enter) {
             const bool heldRelease = keyEvent.isRelease() && held_enter_release_;
@@ -490,9 +511,9 @@ namespace ngosen {
             return;
 
         // Vietnamese typed since then, so the English noted is no longer right before the cursor.
-        if (realMode != ngosen::Mode::Off)
+        if (mode() != ngosen::Mode::Off)
             forgetKeysWhileOff();
-        switch (realMode) {
+        switch (mode()) {
             case ngosen::Mode::Sen: {
                 const bool beforeCommit = typedBeforeCommitArrived(keyEvent, currentSym);
                 live_key_               = KeyEntry{.sym = currentSym, .state = keyEvent.states()};
@@ -536,7 +557,7 @@ namespace ngosen {
         }
         if (keyEvent.isModifier()) {
             handleModifierTap(keyEvent);
-            if (realMode != ngosen::Mode::Preedit || keyEvent.isBareShift())
+            if (mode() != ngosen::Mode::Preedit || keyEvent.isBareShift())
                 return true;
         } else {
             cancelModifierTap();
@@ -587,7 +608,7 @@ namespace ngosen {
                 replayBufferedKeys();
             }
         }
-        if (needEngineReset.load() && realMode != ngosen::Mode::Off) {
+        if (needEngineReset.load() && mode() != ngosen::Mode::Off) {
             NGOSEN_INFO("Need engine reset");
             oldPreBuffer_.clear();
             hasHistory_ = false;
@@ -642,7 +663,7 @@ namespace ngosen {
     uint32_t TypingState::trackCapitalization(ngosen::KeyPress& keyEvent) {
         uint32_t       currentSym = keyEvent.sym();
         const Options& options    = engine_->options();
-        if ((!options.autoCapitalizeAfterPunctuation && !options.capitalizeStartOfText) || realMode == ngosen::Mode::Off)
+        if ((!options.autoCapitalizeAfterPunctuation && !options.capitalizeStartOfText) || mode() == ngosen::Mode::Off)
             return currentSym;
         // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
         if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym))
@@ -732,7 +753,7 @@ namespace ngosen {
     }
 
     bool TypingState::handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (realMode == ngosen::Mode::Off)
+        if (mode() == ngosen::Mode::Off)
             return false;
         if (engine_->options().doubleSpaceToPeriod) {
             bool isSpaceKey = (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);
@@ -804,7 +825,7 @@ namespace ngosen {
             isPrevHyphen_      = false;
             shouldCapitalize_  = false;
             isPrevPunctuation_ = false;
-            if (realMode == ngosen::Mode::Preedit && isFocusOut && commitPreedit) {
+            if (mode() == ngosen::Mode::Preedit && isFocusOut && commitPreedit) {
                 EngineCommitPreedit(bambooEngine_.handle());
                 ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
                 if (pulled && (*pulled.get() != 0)) {
@@ -820,7 +841,7 @@ namespace ngosen {
             clearAllBuffers();
         shouldCapitalize_ = keepCapitalize;
 
-        switch (realMode) {
+        switch (mode()) {
             case ngosen::Mode::Preedit: {
                 host_->resetPanel();
                 host_->refreshPanel();
@@ -844,7 +865,7 @@ namespace ngosen {
     }
 
     void TypingState::commitBuffer() {
-        switch (realMode) {
+        switch (mode()) {
             case ngosen::Mode::Preedit: {
                 host_->resetPanel();
                 if (bambooEngine_) {

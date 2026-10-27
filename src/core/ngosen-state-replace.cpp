@@ -459,14 +459,14 @@ namespace ngosen {
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
         // A Backspace on a Calc cell that is not being edited opens the Delete Contents dialog.
         const bool isLibreOffice   = ngosen::appliesBackspacesLate(host_->field()) || ngosen::reportsFieldOnlyOnKey(host_->field());
-        const bool mustUseSurrText = isLibreOffice || ngosen::ignoresForwardedKeys(host_->field());
+        const bool mustUseSurrText = isLibreOffice || ngosen::ignoresForwardedKeys(host_->field()) || host_->field().sendsNoKeys;
         if (mustUseSurrText && host_->field().surroundingText)
             return true;
         ++expected_backspaces_;
         // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
         // the autofill shape on Firefox.
         const bool isFirefoxAddressBar = ngosen::hidesAddressBarFlag(host_->field()) && textAfterCursorLooksLikeUrl(surrounding);
-        const bool checkAutofill       = realMode != ngosen::Mode::Sen || host_->field().url || isFirefoxAddressBar;
+        const bool checkAutofill       = mode() != ngosen::Mode::Sen || host_->field().url || isFirefoxAddressBar;
         if (checkAutofill) {
             // Enable Autofill detection for all frontends (Wayland/IBus).
             // This fixes the "toôi" duplication bug in Chromium-based search bars.

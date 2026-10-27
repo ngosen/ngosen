@@ -689,6 +689,30 @@ namespace {
         return text.find(part) != std::string::npos;
     }
 
+    // GNOME Shell drops keys an IBus engine sends, so Sen deletes through the surrounding text, with a DEL in a
+    // terminal, or types the word in the preedit where neither works.
+    void testSenWithoutSentKeys() {
+        const auto typed = [](bool surroundingText, bool terminal, ngosen::test::AppQuirks quirks, const std::string& text) {
+            Field field               = makeField("ibus", surroundingText);
+            field.terminal            = terminal;
+            field.sendsNoKeys         = true;
+            quirks.dropsForwardedKeys = true;
+            const std::vector<uint32_t> keys(text.begin(), text.end());
+            return ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 100));
+        };
+        std::string text = typed(true, false, {}, "vieetj nam ");
+        check(text == "việt nam ", "ibus sen: deletes through the surrounding text", text);
+        text = typed(false, true, {.erasesOnDel = true}, "vieetj nam");
+        check(text == "việt nam", "ibus sen: a terminal erases with DEL", text);
+        text = typed(false, false, {}, "vieetj nam ");
+        check(text == "việt nam ", "ibus sen: falls back to the preedit where nothing deletes", text);
+        text = typed(false, false, {}, "vieetj nam");
+        check(text == "việt ", "ibus sen: the fallback word stays in the preedit until it ends", text);
+        // Qt reports no surrounding text while the field is empty.
+        text = typed(true, false, {.reportsTextOnceFilled = true}, "vieetj nams");
+        check(text == "việt nám", "ibus sen: types in the field once it reports text", text);
+    }
+
     // Types "tiee" in Sen mode and returns what was committed, with DEL shown as <DEL>.
     std::string commitsForTiee(const std::string& program, bool& eTaken, const std::string& frontend = "dbus") {
         realMode = ngosen::Mode::Sen;
@@ -1330,6 +1354,7 @@ int main() {
     testGtk4DeletesSurrounding();
     testSdlGetsNoForwardedBackspace();
     testTerminalErasesWithCommittedDel();
+    testSenWithoutSentKeys();
     testRecorderKeepsTheReplacement();
     testRecorderNotesFieldSwitch();
     testRecorderHidesPasswords();

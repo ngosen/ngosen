@@ -117,17 +117,10 @@ class MacroEditorPage(BaseEditorPage):
         self.input_time_format.setEditable(False)
         self.input_time_format.currentIndexChanged.connect(self._on_item_changed)
 
-        time_examples = {
-            "%H:%M": "15:04 (24h)",
-            "%H:%M:%S": "15:04:05 (24h)",
-            "%I:%M %p": "03:04 PM",
-            "%I:%M:%S %p": "03:04:05 PM",
-            "": _("None"),
-        }
         for fmt in macros.FORMATS["TimeFormat"]:
             self.input_time_format.addItem(fmt, fmt)
             self.input_time_format.setItemData(
-                self.input_time_format.count() - 1, time_examples[fmt], Qt.ToolTipRole
+                self.input_time_format.count() - 1, _(macros.EXAMPLES[fmt]), Qt.ToolTipRole
             )
 
         time_layout.addWidget(QLabel(_("Time Format:")))
@@ -139,18 +132,10 @@ class MacroEditorPage(BaseEditorPage):
         self.input_date_format.setEditable(False)
         self.input_date_format.currentIndexChanged.connect(self._on_item_changed)
 
-        date_examples = {
-            "%d/%m/%Y": "dd/MM/yyyy",
-            "%d/%m/%y": "dd/MM/yy",
-            "%m/%d/%Y": "MM/dd/yyyy",
-            "%Y-%m-%d": "yyyy-MM-dd",
-            "%y-%m-%d": "yy-MM-dd",
-            "": _("None"),
-        }
         for fmt in macros.FORMATS["DateFormat"]:
             self.input_date_format.addItem(fmt, fmt)
             self.input_date_format.setItemData(
-                self.input_date_format.count() - 1, date_examples[fmt], Qt.ToolTipRole
+                self.input_date_format.count() - 1, _(macros.EXAMPLES[fmt]), Qt.ToolTipRole
             )
 
         date_layout.addWidget(QLabel(_("Date Format:")))

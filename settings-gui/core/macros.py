@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The macro table: short keys the engine expands, and the switches and formats around it."""
 
+from i18n import N_
+
 DEFAULTS = {
     "EnableMacro": True,
     "CapitalizeMacro": True,
@@ -14,6 +16,19 @@ DEFAULTS = {
 FORMATS = {
     "TimeFormat": ("%H:%M", "%H:%M:%S", "%I:%M %p", "%I:%M:%S %p", ""),
     "DateFormat": ("%d/%m/%Y", "%d/%m/%y", "%m/%d/%Y", "%Y-%m-%d", "%y-%m-%d", ""),
+}
+# What each format looks like; the empty one is translated.
+EXAMPLES = {
+    "%H:%M": "15:04 (24h)",
+    "%H:%M:%S": "15:04:05 (24h)",
+    "%I:%M %p": "03:04 PM",
+    "%I:%M:%S %p": "03:04:05 PM",
+    "%d/%m/%Y": "dd/MM/yyyy",
+    "%d/%m/%y": "dd/MM/yy",
+    "%m/%d/%Y": "MM/dd/yyyy",
+    "%Y-%m-%d": "yyyy-MM-dd",
+    "%y-%m-%d": "yy-MM-dd",
+    "": N_("None"),
 }
 
 

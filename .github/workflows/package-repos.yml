@@ -108,18 +108,22 @@ jobs:
       - name: Install tools
         run: sudo apt-get -qq update && sudo apt-get -qq install -y createrepo-c
 
-      # The two newest releases, so users can go back one version with zypper.
+      # The two newest releases of each edition, so users can go back one version with zypper.
+      # Older ibus-ngosen releases have no openSUSE package.
       - name: Download packages
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir rpms
-          gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --exclude-pre-releases \
-              --limit 2 --json tagName --jq '.[].tagName' |
-              while read -r tag; do
-                  gh release download "$tag" --repo "$GITHUB_REPOSITORY" \
-                      --pattern '*.opensuse-tumbleweed.x86_64.rpm' --dir rpms
-              done
+          for repo in "$GITHUB_REPOSITORY" "$IBUS_REPOSITORY"; do
+              gh release list --repo "$repo" --exclude-drafts --exclude-pre-releases \
+                  --limit 2 --json tagName --jq '.[].tagName' |
+                  while read -r tag; do
+                      gh release download "$tag" --repo "$repo" \
+                          --pattern '*.opensuse-tumbleweed.x86_64.rpm' --dir rpms ||
+                          [ "$repo" = "$IBUS_REPOSITORY" ]
+                  done
+          done
 
       - name: Import signing key
         env:

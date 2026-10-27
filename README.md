@@ -127,9 +127,6 @@ printf '\n[ngosen]\nServer = https://ngosen.github.io/ngosen/arch/$arch\n' | sud
 sudo pacman -Syu fcitx5-ngosen
 ```
 
-[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) cũng có trong repo APT và pacman ở trên: thay
-`fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
-
 openSUSE Tumbleweed dùng repo zypper (x86_64):
 
 ```
@@ -139,6 +136,9 @@ sudo zypper install fcitx5-ngosen
 ```
 
 zypper hỏi một lần có tin cậy key không; đối chiếu fingerprint rồi chọn tin cậy.
+
+[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) cũng có trong repo APT, pacman và zypper ở trên: thay
+`fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
 
 Sau khi update, khởi động lại fcitx5 theo mục “Khởi động lại sau khi cài hoặc cập nhật”.
 

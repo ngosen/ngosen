@@ -229,7 +229,7 @@ namespace ngosen {
         return false;
     }
 
-    bool TypingState::deferLaggingCommit(const char* reason) {
+    bool TypingState::deferLaggingCommit(const char* reason, uint64_t settleUs) {
         if (!ngosen::surroundingTextLags(host_->field()))
             return false;
         // A report from before the forwarded keys were applied can look like the finished deletion.
@@ -241,7 +241,7 @@ namespace ngosen {
         surr_wait_pending_       = true;
         surr_wait_timer_only_    = true;
         surr_wait_focus_retries_ = 0;
-        surr_wait_deliver_at_    = std::max(floorUs, nowUs + 1000);
+        surr_wait_deliver_at_    = std::max(floorUs, nowUs + std::max<uint64_t>(settleUs, 1000));
         settle_timer_            = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); });
         return true;
     }

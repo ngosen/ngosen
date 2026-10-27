@@ -2,17 +2,18 @@
 # Runs install.sh in a throwaway container: install, uninstall, then a reinstall over an fcitx5
 # that is running without the addon. Checks packages and the user's files, not typing.
 #
-#   test/install-smoke.sh [--no-recommends] x11|gnome|kde <release-dir>
+#   test/install-smoke.sh [--no-recommends] x11|gnome|kde <release-dir> [<ibus-release-dir>]
 #
 # Run as root in a fresh Debian, Ubuntu or Fedora container; <release-dir> holds the packages and
 # SHA256SUMS laid out as in a release. It changes the system, so never run it on a real machine.
+# With <ibus-release-dir> on GNOME it also switches to the IBus edition and back.
 
 # check runs the helpers below by name.
 # shellcheck disable=SC2329
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 [--no-recommends] x11|gnome|kde <release-dir>" >&2
+    echo "usage: $0 [--no-recommends] x11|gnome|kde <release-dir> [<ibus-release-dir>]" >&2
     exit 2
 }
 
@@ -21,9 +22,10 @@ if [ "${1:-}" = --no-recommends ]; then
     no_recommends=1
     shift
 fi
-[ $# -eq 2 ] || usage
+[ $# -eq 2 ] || [ $# -eq 3 ] || usage
 session=$1
 release_dir=$(realpath "$2")
+ibus_release_dir=${3:+$(realpath "$3")}
 case "$session" in
     x11 | gnome | kde) ;;
     *) usage ;;
@@ -38,6 +40,7 @@ home=/home/$user
 work=/srv/install-smoke
 failures=0
 bus=
+stub_path=
 
 check() {
     local name=$1
@@ -80,6 +83,7 @@ prepare_system() {
     echo "$user ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/"$user"
     mkdir -p "$work"
     cp -r "$release_dir" "$work/release"
+    [ -z "$ibus_release_dir" ] || cp -r "$ibus_release_dir" "$work/ibus-release"
     cp "$(dirname "$0")/../install.sh" "$work/install.sh"
     chmod -R a+rX "$work"
 }
@@ -91,7 +95,8 @@ as_user() {
         kde) desktop=KDE type=wayland ;;
     esac
     sudo -u "$user" -H env XDG_SESSION_TYPE="$type" XDG_CURRENT_DESKTOP="$desktop" \
-        NGOSEN_RELEASE_URL="file://$work/release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} "$@"
+        NGOSEN_RELEASE_URL="file://$work/release" NGOSEN_IBUS_RELEASE_URL="file://$work/ibus-release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} \
+        ${stub_path:+PATH="$stub_path"} "$@"
 }
 
 installer() {
@@ -293,6 +298,142 @@ check_edited_environment_kept() {
     check "the edited environment.d file stays" has_line "$im_env" 'MOZ_ENABLE_WAYLAND=1'
 }
 
+changes=$home/.local/state/ngosen/install-changes
+enabled_extensions=$home/.stub-enabled-extensions
+uninstalled_extensions=$home/.stub-uninstalled-extensions
+installed_extensions=$home/.stub-installed-extensions
+
+# Stand-ins for GNOME 50.1's tools: the lists of enabled and installed extensions are files, and
+# the Input Method Panel counts as installed by the user unless the installed list exists.
+use_gnome_stubs() {
+    local dir=$work/stubs
+    mkdir -p "$dir"
+    cat >"$dir/gsettings" <<'STUB'
+#!/bin/bash
+state=$HOME/.stub-enabled-extensions
+case "$1 $2 $3" in
+    "get org.gnome.shell enabled-extensions") cat "$state" 2>/dev/null || echo "@as []" ;;
+    "set org.gnome.shell enabled-extensions") printf '%s\n' "$4" >"$state" ;;
+    "get org.gnome.desktop.input-sources sources") cat "$HOME/.stub-input-sources" 2>/dev/null || echo "[('xkb', 'us')]" ;;
+    "set org.gnome.desktop.input-sources sources") printf '%s\n' "$4" >"$HOME/.stub-input-sources" ;;
+    *) exit 1 ;;
+esac
+STUB
+    printf '#!/bin/sh\necho "GNOME Shell 50.1"\n' >"$dir/gnome-shell"
+    cat >"$dir/gnome-extensions" <<'STUB'
+#!/bin/bash
+case "$1" in
+    list)
+        if [ "${2:-}" = --enabled ]; then
+            grep -o "'[^']*'" "$HOME/.stub-enabled-extensions" 2>/dev/null | tr -d "'" || :
+        else
+            cat "$HOME/.stub-installed-extensions" 2>/dev/null || echo kimpanel@kde.org
+        fi ;;
+    install) echo kimpanel@kde.org >>"$HOME/.stub-installed-extensions" ;;
+    uninstall) echo "$2" >>"$HOME/.stub-uninstalled-extensions" ;;
+    *) exit 1 ;;
+esac
+STUB
+    # Only extensions.gnome.org is faked; the packages still come through the real curl.
+    cat >"$dir/curl" <<'STUB'
+#!/bin/bash
+case "$*" in
+    *extension-info*) echo '{"download_url": "/download-extension/kimpanel@kde.org.shell-extension.zip"}' ;;
+    *download-extension*) while [ "$1" != -o ]; do shift; done; : >"$2" ;;
+    *) exec /usr/bin/curl "$@" ;;
+esac
+STUB
+    chmod a+rx "$dir"/*
+    stub_path=$dir:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+}
+
+extension_on() { grep -qF "'$1'" "$enabled_extensions"; }
+extension_off() { ! extension_on "$1"; }
+
+check_extensions_turned_back() {
+    use_gnome_stubs
+    as_user rm -f "$changes" "$enabled_extensions" "$uninstalled_extensions"
+    check "install on GNOME 50.1 succeeds" installer --yes
+    check "install turns forward-keys on" extension_on forward-keys@ngosen.github.io
+    check "install turns the Input Method Panel on" extension_on kimpanel@kde.org
+    check "uninstall on GNOME 50.1 succeeds" installer --yes --uninstall
+    check "uninstall turns forward-keys off" extension_off forward-keys@ngosen.github.io
+    check "uninstall turns the Input Method Panel off" extension_off kimpanel@kde.org
+    check "an extension the install did not add stays installed" test ! -e "$uninstalled_extensions"
+
+    echo "['forward-keys@ngosen.github.io', 'kimpanel@kde.org']" | as_user tee "$enabled_extensions" >/dev/null
+    check "install over extensions the user turned on succeeds" installer --yes
+    check "uninstall after that succeeds" installer --yes --uninstall
+    check "forward-keys the user turned on stays on" extension_on forward-keys@ngosen.github.io
+    check "the Input Method Panel the user turned on stays on" extension_on kimpanel@kde.org
+    check "and stays installed" test ! -e "$uninstalled_extensions"
+
+    as_user rm -f "$changes" "$enabled_extensions"
+    : | as_user tee "$installed_extensions" >/dev/null
+    check "install without the Input Method Panel succeeds" installer --yes
+    check "it installs the Input Method Panel" grep -qx kimpanel@kde.org "$installed_extensions"
+    check "uninstall after that succeeds" installer --yes --uninstall
+    check "uninstall removes the Input Method Panel it installed" grep -qx kimpanel@kde.org "$uninstalled_extensions"
+
+    # An install from before the list of changes: nothing is undone, but the user is told how.
+    as_user rm -f "$installed_extensions" "$uninstalled_extensions"
+    check "install for the old-install case succeeds" installer --yes
+    as_user rm -f "$changes"
+    check "uninstall without a list succeeds" uninstall_logged
+    check "it leaves forward-keys on" extension_on forward-keys@ngosen.github.io
+    check "it says how to turn forward-keys off" grep -qF "gnome-extensions disable forward-keys@ngosen.github.io" "$install_log"
+    stub_path=
+}
+
+uninstall_logged() { installer --yes --uninstall >"$install_log" 2>&1; }
+
+sources=$home/.stub-input-sources
+fcitx5_mask=$home/.config/autostart/org.fcitx.Fcitx5.desktop
+
+# Switching away from fcitx5 is asked on the terminal even with --yes; script gives it one.
+ibus_install_answering() {
+    printf '%s\n' "$1" | as_user script -qec "bash $work/install.sh --yes --ibus" /dev/null >"$install_log" 2>&1
+}
+ibus_install_without_terminal() { installer --yes --ibus </dev/null >"$install_log" 2>&1; }
+refuses() { ! "$@"; }
+has_ngosen_source() { grep -qF "('ibus', 'ngosen')" "$sources"; }
+lacks_ngosen_source() { ! has_ngosen_source; }
+fcitx5_masked() { has_line "$fcitx5_mask" 'Hidden=true'; }
+
+check_ibus_edition() {
+    use_gnome_stubs
+    as_user rm -f "$changes" "$enabled_extensions" "$sources" "$im_env"
+    check "fcitx5 edition install succeeds" installer --yes
+    # Debian starts fcitx5 through im-config; Fedora and Arch ship this entry.
+    mkdir -p /etc/xdg/autostart
+    cp /usr/share/applications/org.fcitx.Fcitx5.desktop /etc/xdg/autostart/
+    check "IBus install without a terminal refuses to switch" refuses ibus_install_without_terminal
+    check "answering no to the switch succeeds" ibus_install_answering k
+    check "and installs nothing" is_removed ibus-ngosen
+    check "and keeps the fcitx5 edition set up" test -e "$im_env"
+    check "answering yes to the switch succeeds" ibus_install_answering c
+    check "it installs the IBus edition" is_installed ibus-ngosen
+    check "it removes the fcitx5 environment" test ! -e "$im_env"
+    check "it keeps fcitx5 from starting at login" fcitx5_masked
+    check "it adds Ngó Sen to the input sources" has_ngosen_source
+    check "fcitx5 edition install again succeeds" installer --yes
+    check "it lets fcitx5 start at login again" refuses fcitx5_masked
+    check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from the input sources" lacks_ngosen_source
+    check "the fcitx5 edition stays" is_installed fcitx5-ngosen
+    rm -f /etc/xdg/autostart/org.fcitx.Fcitx5.desktop
+    stub_path=
+}
+
+check_user_im_config_kept() {
+    as_user rm -f "$changes"
+    echo 'run_im fcitx5' | as_user tee "$home/.xinputrc" >/dev/null
+    check "install over im-config set by the user succeeds" installer --yes
+    check "uninstall after that succeeds" installer --yes --uninstall
+    check "im-config set by the user stays" has_line "$home/.xinputrc" 'run_im fcitx5'
+}
+
 main() {
     prepare_system
 
@@ -316,11 +457,19 @@ main() {
     if [ "$session" = x11 ]; then
         echo "== toggle key named before the addon runs"
         check_toggle_key_message
+        echo "== im-config the user set"
+        check_user_im_config_kept
     fi
 
     if [ "$session" = gnome ]; then
         echo "== uninstall after the user edited environment.d"
         check_edited_environment_kept
+        echo "== extensions on GNOME 50.1"
+        check_extensions_turned_back
+        if [ -n "$ibus_release_dir" ]; then
+            echo "== GNOME edition (IBus)"
+            check_ibus_edition
+        fi
     fi
 
     finish

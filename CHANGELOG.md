@@ -10,11 +10,26 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Cứu dấu không cần bôi đen: bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu là chữ đổi dấu (`nhanh|` + `s` →
+  `nhánh`); Tab hoặc Esc trả lại chữ đã gõ. Bấm vào giữa chữ thì phím gõ như thường. Chỉ ở Gõ Sen (#118, #327).
+- `install.sh --ibus` cài Ngó Sen cho GNOME (bản IBus) và thêm vào nguồn nhập của GNOME. Tài khoản đang
+  dùng bản fcitx5 thì lệnh hỏi lại trước khi chuyển; `--ibus --uninstall` gỡ bản IBus mà không đụng bản
+  fcitx5 (#330).
+
 ### Bỏ
 
 - Không còn gói cho Ubuntu 22.04 (và Linux Mint 21 dựa trên nó); cần Ubuntu 24.04 hoặc Linux Mint 22 trở lên.
   Bản cuối cho Ubuntu 22.04 là 1.6.1. Lệnh cài một dòng báo rõ điều này; máy đã thêm repo APT của Ngó Sen
   thì nên gỡ dòng repo đó, vì `apt update` sẽ báo lỗi thiếu `jammy` (#332).
+
+### Sửa
+
+- `install.sh --uninstall` chỉ tắt những gì lệnh cài đã bật: extension Input Method Panel, extension sửa lỗi
+  gõ của GNOME 50 và im-config mà người dùng tự bật từ trước được giữ nguyên (#328).
+- Ghi chú dưới ô Cứu dấu trong cửa sổ cài đặt nói rõ chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng):
+  bôi đen `nguoi` rồi gõ phím dấu không ra `người` được (#329).
 
 ## [1.6.1-1] — 26/10/2026
 

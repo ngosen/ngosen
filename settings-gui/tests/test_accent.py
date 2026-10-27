@@ -11,8 +11,11 @@ from ui import brand
 # isort: on
 
 
-def highlight():
-    return app.palette().color(QPalette.Active, QPalette.Highlight).name()
+GROUPS = (QPalette.Active, QPalette.Inactive, QPalette.Disabled)
+
+
+def colors(role):
+    return {app.palette().color(group, role).name() for group in GROUPS}
 
 
 class AccentTest(unittest.TestCase):
@@ -23,11 +26,8 @@ class AccentTest(unittest.TestCase):
         self.addCleanup(app.removeEventFilter, follower)
 
     def test_the_accent_is_enamel(self):
-        self.assertEqual(highlight(), brand.ENAMEL[0])
-        self.assertEqual(
-            app.palette().color(QPalette.Active, QPalette.HighlightedText).name(),
-            brand.ON_ENAMEL,
-        )
+        self.assertEqual(colors(QPalette.Highlight), {brand.ENAMEL[0]})
+        self.assertEqual(colors(QPalette.HighlightedText), {brand.ON_ENAMEL})
 
     def test_a_switch_to_dark_keeps_enamel(self):
         # The desktop sends a whole new palette, with its own accent, when it turns dark.
@@ -35,7 +35,8 @@ class AccentTest(unittest.TestCase):
         dark.setColor(QPalette.Highlight, QColor("#3daee9"))
         app.setPalette(dark)
         app.processEvents()
-        self.assertEqual(highlight(), brand.ENAMEL[1])
+        self.assertEqual(colors(QPalette.Highlight), {brand.ENAMEL[1]})
+        self.assertEqual(colors(QPalette.HighlightedText), {brand.ON_ENAMEL})
 
 
 if __name__ == "__main__":

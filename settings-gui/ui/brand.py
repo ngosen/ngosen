@@ -70,15 +70,15 @@ class _AccentFollower(QObject):
 def _apply_accent(app):
     palette = app.palette()
     enamel = QColor(ENAMEL[1] if palette.color(QPalette.Window).lightness() < 128 else ENAMEL[0])
-    # Setting the palette sends another change; stop once it already holds enamel.
-    if palette.color(QPalette.Active, QPalette.Highlight) == enamel:
-        return
     roles = [QPalette.Highlight] + ([QPalette.Accent] if hasattr(QPalette, "Accent") else [])
-    for group in (QPalette.Active, QPalette.Inactive):
+    accented = QPalette(palette)
+    for group in (QPalette.Active, QPalette.Inactive, QPalette.Disabled):
         for role in roles:
-            palette.setColor(group, role, enamel)
-        palette.setColor(group, QPalette.HighlightedText, QColor(ON_ENAMEL))
-    app.setPalette(palette)
+            accented.setColor(group, role, enamel)
+        accented.setColor(group, QPalette.HighlightedText, QColor(ON_ENAMEL))
+    # Setting the palette sends another change; stop once it already holds enamel.
+    if accented != palette:
+        app.setPalette(accented)
 
 
 def install_accent(app):

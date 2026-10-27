@@ -78,8 +78,9 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
   focus are enamel, with `on-enamel` text. This window ignores the accent the user picked.
 - Both light and dark are designed: `enamel-dark` and `saved-*-dark` in a dark palette (pick by
   the window background's lightness, not by desktop name). `enamel-dark` is a shade darker than
-  the website's so `on-enamel` text on it stays at 4.5:1 while it stays at 3:1 against a dark
-  window.
+  the website's so `on-enamel` text on it stays at 4.5:1. Against Breeze Dark's window it is 3.1:1;
+  on a lighter dark window (`#353535`) it drops to 2.4:1, so a selection there also
+  relies on its `on-enamel` text.
 
 ## Copy
 

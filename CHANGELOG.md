@@ -13,7 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Thêm
 
 - openSUSE Tumbleweed có Ngó Sen cho GNOME (bản IBus): `install.sh --ibus` cài được, và repo zypper có thêm gói
-  `ibus-ngosen` từ version đầu tiên có package openSUSE (#PR).
+  `ibus-ngosen` từ version đầu tiên có package openSUSE (#389).
 - Sau khi cập nhật lên version có tính năng mới (1.7.0 trở đi), một thông báo ở góc màn hình hiện một lần,
   bấm "Xem" thì mở cửa sổ cài đặt ở trang "Có gì mới & mẹo". Version chỉ sửa lỗi và cài mới không báo (#331).
 - Cửa sổ cài đặt có trang "Có gì mới & mẹo": Cứu chữ, Cứu dấu, phím chuyển Anh/Việt với nút "Mở cài đặt"

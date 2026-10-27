@@ -46,6 +46,8 @@ namespace {
                 report();
                 if (caretBounce_)
                     bounceCaret();
+                if (lateStepBack_)
+                    stepBackLate();
                 pumpEventLoop(testInstance_.instance, 60);
                 if (context_->commits().size() > commits) {
                     for (size_t i = commits; i < context_->commits().size(); ++i) {
@@ -91,6 +93,12 @@ namespace {
             caretBounce_ = true;
         }
 
+        // Antigravity's editor on GNOME reports the caret one step back well after each key, while the
+        // next key still lands at the end (#362).
+        void stepBackLateAfterKeys() {
+            lateStepBack_ = true;
+        }
+
         // Firefox in some web editors repeats the old state, then reports the cursor after a commit
         // before the committed text.
         // Those editors keep zero-width spaces after the caret, so the early cursor is still in range.
@@ -129,6 +137,14 @@ namespace {
             context_->updateSurroundingText();
             pumpEventLoop(testInstance_.instance, 1);
         }
+        void stepBackLate() {
+            pumpEventLoop(testInstance_.instance, 50);
+            const auto cursor = fcitx::utf8::length(text_.substr(0, cursor_));
+            if (cursor == 0)
+                return;
+            context_->surroundingText().setText(text_, cursor - 1, cursor - 1);
+            context_->updateSurroundingText();
+        }
         // advance moves the reported cursor ahead of the text the app has applied so far.
         void report(size_t advance = 0) {
             const auto cursor = fcitx::utf8::length(text_.substr(0, cursor_)) + advance;
@@ -145,6 +161,7 @@ namespace {
         size_t                            cursor_           = 0;
         bool                              cursorBeforeText_ = false;
         bool                              caretBounce_      = false;
+        bool                              lateStepBack_     = false;
         bool                              holdCommitReport_ = false;
     };
 
@@ -218,6 +235,14 @@ int main() {
         app.bounceCaretAfterKeys();
         app.type("veef naaus");
         if (!expectText("type \"veef naaus\" with the caret bouncing after each key", app, "về nấu"))
+            return 1;
+    }
+    // A caret report one step back, late after a key, is still the app settling.
+    {
+        FakeApp app(testInstance, engine, entry);
+        app.stepBackLateAfterKeys();
+        app.type("vieetj nhieeuf");
+        if (!expectText("type \"vieetj nhieeuf\" with a late caret step back after each key", app, "việt nhiều"))
             return 1;
     }
     return 0;

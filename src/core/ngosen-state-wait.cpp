@@ -423,6 +423,9 @@ namespace ngosen {
             ngosen::utf8::decode(s.text())[lastSurroundingCursor_] == passed_key_->sym &&
             ((s.anchor() == s.cursor() && sinceInputUs < SuggestionStepUs) || (s.anchor() == lastSurroundingAnchor_ && s.anchor() > s.cursor()));
         const bool settling = sinceInputUs < CaretSettleUs;
+        // Antigravity's editor on GNOME moves the caret one step back well after the key (#362).
+        const bool caretSettling =
+            jumped && s.cursor() == s.anchor() && sinceInputUs < SuggestionStepUs && (s.cursor() + 1 == lastSurroundingCursor_ || s.cursor() == lastSurroundingCursor_ + 1);
         // A spreadsheet reports a click on another cell only as that cell's text with the cursor at its start.
         const bool lostWord = lostWordAfterBounce(s, settling);
         const bool newField =
@@ -434,7 +437,7 @@ namespace ngosen {
         // Calc reports the new cell empty just before the key we let through lands in it.
         // Our unreported commits do not matter here: in the same cell the key would follow them.
         const bool keyStartedCell = settling && passed_key_ && !sameText && s.text().empty() && !oldPreBuffer_.empty() && ngosen::reportsFieldOnlyOnKey(host_->field());
-        jumped                    = ((jumped && !echo && !intoSuggestion) || newField) && !settling;
+        jumped                    = ((jumped && !echo && !intoSuggestion && !caretSettling) || newField) && !settling;
         lastSurroundingText_      = s.text();
         lastSurroundingCursor_    = s.cursor();
         lastSurroundingAnchor_    = s.anchor();

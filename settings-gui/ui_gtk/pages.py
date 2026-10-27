@@ -17,6 +17,7 @@ from i18n import _
 from core import system_check
 from ui_gtk import brand
 from ui_gtk.check_dialog import open_uri
+from ui_gtk.whats_new import tip_text
 
 
 def _hinted(row, key):
@@ -157,7 +158,7 @@ class TypingPage(SettingsPage):
             return
         group = Adw.PreferencesGroup()
         row = Adw.ActionRow(
-            title=_("Tip: {}").format(_(self.tip["text"])), use_markup=False, activatable=True
+            title=_("Tip: {}").format(tip_text(self.tip)), use_markup=False, activatable=True
         )
         row.add_suffix(Gtk.Image(icon_name="go-next-symbolic"))
         if self.on_tip:

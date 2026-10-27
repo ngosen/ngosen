@@ -1550,6 +1550,10 @@ msgstr "“Lưu nhật ký gõ” trong menu khay ghi lại chữ gõ, để g�
 msgid "“Back Up…” and “Restore…” below keep your settings, macros and dictionary."
 msgstr "“Sao lưu…” và “Khôi phục…” ở dưới giữ cài đặt, gõ tắt và từ điển."
 
+#: settings-gui/ui/whats_new_content.py
+msgid "“Back Up…” and “Restore…” in the window menu keep your settings, macros and dictionary."
+msgstr "“Sao lưu…” và “Khôi phục…” trong menu của cửa sổ giữ cài đặt, gõ tắt và từ điển."
+
 #: settings-gui/ui_gtk/window.py
 msgid "Restore defaults…"
 msgstr "Đưa về mặc định…"

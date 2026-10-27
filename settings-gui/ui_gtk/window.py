@@ -16,6 +16,7 @@ from core.dictionary import Dictionary  # noqa: E402
 from core.keymap import Keymap  # noqa: E402
 from core.macros import MacroTable  # noqa: E402
 from core.settings_model import SettingsModel  # noqa: E402
+from core.whats_new_content import random_tip  # noqa: E402
 from gi.repository import Adw, Gio, Gtk  # noqa: E402
 from i18n import _  # noqa: E402
 
@@ -25,6 +26,7 @@ from ui_gtk.dictionary import DictionaryPage  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
 from ui_gtk.macros import MacroPage  # noqa: E402
 from ui_gtk.shortcuts import ShortcutsPage  # noqa: E402
+from ui_gtk.whats_new import WhatsNewPage  # noqa: E402
 
 APP_ID = "io.github.ngosen.NgoSen.Settings"
 MODE_KEYS = [*MODE_SHORTCUT_TO_VISIBILITY, *MODE_SHORTCUT_TO_VISIBILITY.values()]
@@ -53,7 +55,9 @@ class Window(Adw.ApplicationWindow):
         self.tabs = {}
         self.tab_parents = {}
         if self.model.load():
-            self.typing = pages.TypingPage(self.model, self.save)
+            self.typing = pages.TypingPage(
+                self.model, self.save, tip=random_tip(), on_tip=self.show_tips
+            )
             self.appearance = AppearancePage(self.model, self.save)
             others = [n for n in (dbus.input_method_names() or []) if n != "ngosen"]
             self.shortcuts = ShortcutsPage(self.model, self.save, bool(others))
@@ -82,6 +86,13 @@ class Window(Adw.ApplicationWindow):
             _("Appearance"),
             "preferences-desktop-appearance-symbolic",
             _widget(self.appearance),
+        )
+        self.whats_new = WhatsNewPage(self.open_setting, self.show_page)
+        self._add_page(
+            "whats-new",
+            _("What's new & tips"),
+            "dialog-information-symbolic",
+            self.whats_new.page,
         )
         self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 
@@ -155,6 +166,24 @@ class Window(Adw.ApplicationWindow):
                 row = self.sidebar.get_row_at_index(index)
                 self.sidebar.select_row(row)
                 self._on_row(self.sidebar, row)
+
+    def open_setting(self, key):
+        """Shows and focuses the row of a setting; False for a key no page shows."""
+        for name, page in (
+            ("typing", self.typing),
+            ("shortcuts", self.shortcuts),
+            ("appearance", self.appearance),
+        ):
+            control = page.control_for(key) if page else None
+            if control is not None:
+                self.show_page(name)
+                control.grab_focus()
+                return True
+        return False
+
+    def show_tips(self):
+        self.show_page("whats-new")
+        self.whats_new.show_tips()
 
     def save(self, key, value):
         self.model.set(key, value)

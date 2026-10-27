@@ -34,6 +34,7 @@ class SettingsPage:
         self.on_change = on_change
         self.rows = {}
         self.page = Adw.PreferencesPage(title=title, icon_name=icon)
+        self._add_header()
         for title, keys in SETTINGS_MAP[category].items():
             group = Adw.PreferencesGroup(title=_(title))
             for key in keys:
@@ -44,8 +45,15 @@ class SettingsPage:
             self._add_extras(title, group)
             self.page.add(group)
 
+    def _add_header(self):
+        """Rows a page shows above its settings."""
+
     def _add_extras(self, title, group):
         """Rows a page adds after a group's settings."""
+
+    def control_for(self, key):
+        """The row that edits a setting, for the window to show and focus."""
+        return self.rows.get(key)
 
     def _shown(self, key, value):
         return _(value)
@@ -130,7 +138,11 @@ class SettingsPage:
 
 
 class TypingPage(SettingsPage):
-    def __init__(self, model, on_change):
+    """tip, if given, shows above the settings; on_tip(…) runs when it is clicked."""
+
+    def __init__(self, model, on_change, tip=None, on_tip=None):
+        self.tip = tip
+        self.on_tip = on_tip
         super().__init__(
             model, on_change, SettingsCategory.TYPING, _("Typing"), "input-keyboard-symbolic"
         )
@@ -139,6 +151,20 @@ class TypingPage(SettingsPage):
         entry.add_css_class("typed")
         try_it.add(entry)
         self.page.add(try_it)
+
+    def _add_header(self):
+        if self.tip is None:
+            return
+        group = Adw.PreferencesGroup()
+        row = Adw.ActionRow(
+            title=_("Tip: {}").format(_(self.tip["text"])), use_markup=False, activatable=True
+        )
+        row.add_suffix(Gtk.Image(icon_name="go-next-symbolic"))
+        if self.on_tip:
+            row.connect("activated", lambda _r: self.on_tip())
+        self.tip_row = row
+        group.add(row)
+        self.page.add(group)
 
 
 def _label(text, *css, markup=False):

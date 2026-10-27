@@ -21,7 +21,7 @@ if CAN_RUN:
     from ui_gtk import brand, window
     from ui_gtk.hotkey_button import HotkeyButton
 
-    from core import dictionary, keymap
+    from core import dictionary, keymap, whats_new_content
 
 
 def isolate(test):
@@ -96,7 +96,7 @@ class GtkWindowTest(unittest.TestCase):
     def test_show_page_switches_and_ignores_pages_not_built_yet(self):
         self.window.show_page("about")
         self.assertEqual(self.window.stack.get_visible_child_name(), "about")
-        self.window.show_page("whats-new")
+        self.window.show_page("system")
         self.assertEqual(self.window.stack.get_visible_child_name(), "about")
 
     def test_without_fcitx5_the_page_says_so(self):
@@ -412,6 +412,46 @@ class GtkAppearancePageTest(unittest.TestCase):
         theme.set_selected(theme.values.index("Light"))
         self.assertTrue(self.page.preview.has_css_class("tray-light"))
         self.assertFalse(self.page.preview.has_css_class("tray-dark"))
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkWhatsNewPageTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        isolate(self)
+        self.window = window.Window(None, FakeDBusHandler())
+        self.addCleanup(self.window.destroy)
+
+    def test_every_button_leads_somewhere_in_this_window(self):
+        w = self.window
+        buttons = [b for b in _children(w.whats_new.page) if hasattr(b, "target")]
+        items = [*whats_new_content.FEATURES, *whats_new_content.TIPS]
+        self.assertEqual(len(buttons), sum(item["target"] is not None for item in items))
+        for button in buttons:
+            kind, name = button.target
+            w.show_page("whats-new")
+            w.set_focus(None)
+            button.emit("clicked")
+            if kind == "setting":
+                controls = [p.control_for(name) for p in (w.typing, w.shortcuts, w.appearance)]
+                self.assertIn(w.get_focus(), [c for c in controls if c is not None], name)
+            else:
+                self.assertEqual(w.stack.get_visible_child_name(), name)
+
+    def test_open_setting_shows_the_tab_and_focuses_the_row(self):
+        self.assertTrue(self.window.open_setting("ModeMenuKey"))
+        self.assertEqual(self.window.stack.get_visible_child_name(), "keys")
+        self.assertEqual(self.window.tabs["shortcuts"].get_visible_child_name(), "shortcuts")
+        self.assertIs(self.window.get_focus(), self.window.shortcuts.hotkeys["ModeMenuKey"])
+
+    def test_the_tip_on_the_typing_page_opens_the_tips(self):
+        self.window.typing.tip_row.emit("activated")
+        self.assertEqual(self.window.stack.get_visible_child_name(), "whats-new")
+
+    def test_without_fcitx5_open_setting_does_nothing(self):
+        other = window.Window(None, NoFcitx())
+        self.addCleanup(other.destroy)
+        self.assertFalse(other.open_setting("RetypeAfterSwitch"))
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")

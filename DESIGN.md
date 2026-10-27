@@ -101,7 +101,7 @@ window (its `DESIGN.md`) is the model for widgets and spacing.
 - **Stock widgets.** `AdwNavigationSplitView` with the six pages in the sidebar, as in GNOME
   Settings; below about 600sp only one side shows. Each page is an `AdwPreferencesPage` of
   `AdwPreferencesGroup`s with `AdwSwitchRow`, `AdwComboRow`, `AdwEntryRow` and `AdwSpinRow`. A
-  hint is the row's subtitle. No custom colours and no CSS beyond the brand marks.
+  hint is the row's subtitle. No CSS beyond the brand marks and the accent colour.
 - **The same four brand marks.** The icon and wordmark at the top of the sidebar; typed text in
   Xanh Mono through a `.typed` class; the typing mode as linked toggle buttons, the checked one
   filled enamel with `on-enamel` text (`enamel-dark` in dark mode). libadwaita 1.5 has no
@@ -111,8 +111,10 @@ window (its `DESIGN.md`) is the model for widgets and spacing.
 - **Bottom bar as in the Qt window**, an `AdwToolbarView` bottom bar: Mặc định on the left, Sao
   lưu… and Khôi phục… on the right, so both windows put them in the same place. Mặc định asks
   first in an `AdwAlertDialog`.
-- **Light and dark** come from `AdwStyleManager`; the accent is the system accent everywhere except
-  the typing mode.
+- **Enamel is the window's accent.** The app sets libadwaita's accent colours to `enamel` (light)
+  and `enamel-dark` (dark) with `on-enamel` text, so switches, the selected sidebar row, focus rings
+  and suggested buttons are enamel. This one window ignores the accent the user picked in GNOME.
+- **Light and dark** come from `AdwStyleManager`.
 - **Search** is a `GtkSearchEntry` at the top of the sidebar that lists matching rows across pages,
   like the Qt window's search field.
 - **Check before merging** a GTK page: screenshots light and dark at 1.5 and the newest

@@ -83,6 +83,10 @@ class ShortcutsPage:
         self.offer.set_visible(not self.model.toggle_is_ctrl_shift(key))
         return self.offer
 
+    def control_for(self, key):
+        """The row or button that edits a setting, for the window to show and focus."""
+        return self.hotkeys.get(key) or self.mode_rows.get(key)
+
     def _first(self, key):
         return next(iter(self.model.hotkeys(key)), "")
 

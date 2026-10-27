@@ -243,7 +243,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: Test
         working-directory: settings-gui/tests
-        run: xvfb-run -a python3 -m unittest -v test_gtk_window test_launcher test_core_toolkit_free
+        run: xvfb-run -a python3 -m unittest -v test_gtk_window test_launcher test_core_toolkit_free test_hotkey_recorder
 
   python-lint:
     name: Python lint

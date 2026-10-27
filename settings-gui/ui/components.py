@@ -7,8 +7,8 @@ Reusable UI components.
 
 from core.hotkeys import (
     HOTKEY_SYM_MAP,
-    HOTKEY_UI_UNSHIFT_MAP,
     MODIFIER_ORDER,
+    HotkeyRecorder,
     keysym_name,
     pretty_format_hotkey_parts,
 )
@@ -18,6 +18,19 @@ from qtpy.QtGui import QIcon, QKeySequence
 from qtpy.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
 from ui.typography import emphasize, mute
+
+MODIFIER_KEYS = {
+    Qt.Key_Control: "Control",
+    Qt.Key_Shift: "Shift",
+    Qt.Key_Alt: "Alt",
+    Qt.Key_Meta: "Super",
+}
+MODIFIER_FLAGS = [
+    (Qt.ControlModifier, "Control"),
+    (Qt.AltModifier, "Alt"),
+    (Qt.MetaModifier, "Super"),
+    (Qt.ShiftModifier, "Shift"),
+]
 
 
 class KeyCap(QLabel):
@@ -102,9 +115,7 @@ class HotkeyCaptureWidget(QPushButton):
         self.setCheckable(True)
         self.setObjectName("HotkeyButton")
 
-        # Local state to track held modifiers during recording
-        self.record_mods = set()
-        self.modifier_key = ""
+        self.recorder = HotkeyRecorder()
 
         # Use a layout for visual keycaps
         self.main_layout = QHBoxLayout(self)
@@ -134,8 +145,7 @@ class HotkeyCaptureWidget(QPushButton):
 
     def _on_toggled(self, checked):
         if checked:
-            self.record_mods.clear()
-            self.modifier_key = ""
+            self.recorder = HotkeyRecorder()
         self._update_display()
 
     def _clear_layout(self):
@@ -148,14 +158,14 @@ class HotkeyCaptureWidget(QPushButton):
         self._clear_layout()
 
         if self.isChecked():
-            if not self.record_mods:
+            if not self.recorder.held:
                 lbl = QLabel(_("[ Recording... ]"))
                 emphasize(lbl)
                 self.main_layout.addWidget(lbl)
             else:
                 # Show current active modifiers
                 for mod in MODIFIER_ORDER:
-                    if mod in self.record_mods:
+                    if mod in self.recorder.held:
                         self.main_layout.addWidget(KeyCap(HOTKEY_SYM_MAP.get(mod, mod)))
                 # Add a pulsing placeholder for the next key
                 lbl = QLabel("...")
@@ -187,68 +197,26 @@ class HotkeyCaptureWidget(QPushButton):
             self.setChecked(False)
             return
 
-        # Track modifiers in real-time
-        mod_map = {
-            Qt.Key_Control: "Control",
-            Qt.Key_Shift: "Shift",
-            Qt.Key_Alt: "Alt",
-            Qt.Key_Meta: "Super",
-        }
-        if key_code in mod_map:
-            # A held key repeats.
-            if mod_map[key_code] in self.record_mods:
-                return
-            # Held modifiers plus this one's own name (Shift_L), as fcitx5 writes a modifier-only key.
-            held = [m for m in MODIFIER_ORDER if m in self.record_mods]
-            self.modifier_key = "+".join(
-                held + [self._keysym_name(event) or mod_map[key_code] + "_L"]
-            )
-            self.record_mods.add(mod_map[key_code])
-            self._update_display()
+        if key_code in MODIFIER_KEYS:
+            if self.recorder.press_modifier(MODIFIER_KEYS[key_code], self._keysym_name(event)):
+                self._update_display()
             return
 
-        self.modifier_key = ""
         if key_code == Qt.Key_unknown:
+            self.recorder.press_key("", set())
             return
 
-        # It's a base key! Capture it and finalize immediately
         base_key = self._keysym_name(event)
-        # Normalize BackTab keysym to Tab to ensure Fcitx5 sees 'Shift+Tab' instead of plain 'ISO_Left_Tab'
-        if base_key == "ISO_Left_Tab":
-            base_key = "Tab"
-
         if not base_key:
             base_key = (
                 event.text()
                 if event.text() and event.text().isprintable()
                 else QKeySequence(key_code).toString()
             )
-
-        has_non_shift_modifier = bool(
-            modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)
-        )
-        is_ascii_alpha = len(base_key) == 1 and base_key.isascii() and base_key.isalpha()
-
-        if has_non_shift_modifier and is_ascii_alpha:
-            base_key = base_key.upper()
-
-        # Build modifier list from current event state
-        mods = []
-        if modifiers & Qt.ControlModifier:
-            mods.append("Control")
-        if modifiers & Qt.AltModifier:
-            mods.append("Alt")
-        if modifiers & Qt.MetaModifier:
-            mods.append("Super")
-
-        # Selective Shift suppression for symbols
-        if (modifiers & Qt.ShiftModifier) and (
-            (has_non_shift_modifier and is_ascii_alpha) or (base_key not in HOTKEY_UI_UNSHIFT_MAP)
-        ):
-            mods.append("Shift")
-
-        mods.append(base_key)
-        self._finish("+".join(mods))
+        held = {name for flag, name in MODIFIER_FLAGS if modifiers & flag}
+        key = self.recorder.press_key(base_key, held)
+        if key:
+            self._finish(key)
 
     @staticmethod
     def _keysym_name(event):
@@ -265,20 +233,12 @@ class HotkeyCaptureWidget(QPushButton):
             return
 
         key_code = event.key()
-        mod_map = {
-            Qt.Key_Control: "Control",
-            Qt.Key_Shift: "Shift",
-            Qt.Key_Alt: "Alt",
-            Qt.Key_Meta: "Super",
-        }
-        if key_code in mod_map:
+        if key_code in MODIFIER_KEYS:
             # Modifiers pressed and let go with no other key make a modifier-only key, such as Ctrl+Shift.
-            if self.modifier_key:
-                self._finish(self.modifier_key)
-                return
-            val = mod_map[key_code]
-            if val in self.record_mods:
-                self.record_mods.remove(val)
+            key = self.recorder.release_modifier(MODIFIER_KEYS[key_code])
+            if key:
+                self._finish(key)
+            else:
                 self._update_display()
 
 

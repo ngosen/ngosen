@@ -193,3 +193,54 @@ def keysym_name(keysym):
     if libxkb.xkb_keysym_get_name(keysym, buf, 64) <= 0:
         return ""
     return buf.value.decode("utf-8")
+
+
+def hotkey_string(base_key, modifiers):
+    """The key fcitx5 stores for base_key pressed with modifiers ({"Control", "Shift", ...})."""
+    # fcitx5 sees Shift+Tab, not ISO_Left_Tab.
+    if base_key == "ISO_Left_Tab":
+        base_key = "Tab"
+    has_non_shift_modifier = bool(modifiers & {"Control", "Alt", "Super"})
+    is_ascii_alpha = len(base_key) == 1 and base_key.isascii() and base_key.isalpha()
+    if has_non_shift_modifier and is_ascii_alpha:
+        base_key = base_key.upper()
+    mods = [m for m in ("Control", "Alt", "Super") if m in modifiers]
+    # A shifted symbol already says Shift ("exclam"), so it is not written twice.
+    if "Shift" in modifiers and (
+        (has_non_shift_modifier and is_ascii_alpha) or base_key not in HOTKEY_UI_UNSHIFT_MAP
+    ):
+        mods.append("Shift")
+    return "+".join(mods + [base_key])
+
+
+class HotkeyRecorder:
+    """Follows presses and releases while a hotkey is recorded, for any toolkit."""
+
+    def __init__(self):
+        self.held = set()
+        self.modifier_key = ""
+
+    def press_modifier(self, modifier, name):
+        """modifier is "Control", "Shift", "Alt" or "Super"; name its keysym, such as Shift_R.
+
+        Returns False for a held key repeating.
+        """
+        if modifier in self.held:
+            return False
+        held = [m for m in MODIFIER_ORDER if m in self.held]
+        # Held modifiers plus this one's own name, as fcitx5 writes a modifier-only key.
+        self.modifier_key = "+".join(held + [name or modifier + "_L"])
+        self.held.add(modifier)
+        return True
+
+    def press_key(self, base_key, modifiers):
+        """The finished hotkey, or "" for a key with no name."""
+        self.modifier_key = ""
+        return hotkey_string(base_key, modifiers) if base_key else ""
+
+    def release_modifier(self, modifier):
+        """The finished modifier-only hotkey (Control+Shift_L), or "" while recording goes on."""
+        if self.modifier_key:
+            return self.modifier_key
+        self.held.discard(modifier)
+        return ""

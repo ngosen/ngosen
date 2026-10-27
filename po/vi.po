@@ -1565,3 +1565,7 @@ msgstr "Gõ tắt, từ đã thêm vào từ điển, phím tự đặt và ki�
 #: settings-gui/ui_gtk/window.py
 msgid "Could not restore every default. Check that fcitx5 is running."
 msgstr "Chưa đưa được mọi thứ về mặc định. Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/ui_gtk/check_dialog.py
+msgid "Send the result"
+msgstr "Gửi kết quả"

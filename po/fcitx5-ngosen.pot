@@ -1463,3 +1463,19 @@ msgstr ""
 #: settings-gui/ui/whats_new_content.py
 msgid "“Back Up…” and “Restore…” below keep your settings, macros and dictionary."
 msgstr ""
+
+#: settings-gui/ui_gtk/window.py
+msgid "Restore defaults…"
+msgstr ""
+
+#: settings-gui/ui_gtk/window.py
+msgid "Menu"
+msgstr ""
+
+#: settings-gui/ui_gtk/window.py
+msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
+msgstr ""
+
+#: settings-gui/ui_gtk/window.py
+msgid "Could not restore every default. Check that fcitx5 is running."
+msgstr ""

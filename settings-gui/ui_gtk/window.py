@@ -21,7 +21,7 @@ from core.whats_new_content import random_tip  # noqa: E402
 from gi.repository import Adw, Gio, Gtk  # noqa: E402
 from i18n import _  # noqa: E402
 
-from core import settings_snapshot  # noqa: E402
+from core import defaults, settings_snapshot  # noqa: E402
 from ui_gtk import brand, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
@@ -69,7 +69,7 @@ class Window(Adw.ApplicationWindow):
         self.split = Adw.NavigationSplitView(min_sidebar_width=220)
         self.split.set_sidebar(Adw.NavigationPage(title="Ngó Sen", child=self._sidebar()))
         content = Adw.ToolbarView(content=self.toasts)
-        content.add_top_bar(Adw.HeaderBar())
+        content.add_top_bar(self._header())
         self.content = Adw.NavigationPage(title=self.pages[0][1], child=content)
         self.split.set_content(self.content)
         self.set_content(self.split)
@@ -184,6 +184,60 @@ class Window(Adw.ApplicationWindow):
         if searchable:
             self.search_pages.append((name, widget))
             self.page_titles[name] = title
+
+    def _header(self):
+        menu = Gio.Menu()
+        menu.append(_("Restore defaults…"), "win.restore-defaults")
+        action = Gio.SimpleAction.new("restore-defaults", None)
+        action.connect("activate", lambda *_args: self.confirm_defaults())
+        self.add_action(action)
+        header = Adw.HeaderBar()
+        header.pack_end(
+            Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text=_("Menu"))
+        )
+        return header
+
+    def confirm_defaults(self):
+        dialog = Adw.AlertDialog(
+            heading=_("Restore all settings to defaults?"),
+            body=_(
+                "Macros, words added to the dictionary, custom keys and the modes remembered"
+                " for each app are cleared too. You can undo this right after."
+            ),
+        )
+        dialog.add_response("cancel", _("&Cancel").replace("&", "_"))
+        dialog.add_response("reset", _("&Defaults").replace("&", "_"))
+        dialog.set_response_appearance("reset", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect(
+            "response", lambda _d, response: response == "reset" and self.restore_defaults()
+        )
+        dialog.present(self)
+        return dialog
+
+    def restore_defaults(self):
+        # Taken now, since fcitx5 remembers app modes while the window is open.
+        before = settings_snapshot.take(self.dbus)
+        if before is None:
+            self._show(
+                Adw.Toast(
+                    title=_("Could not restore every default. Check that fcitx5 is running."),
+                    timeout=0,
+                )
+            )
+            return
+        ok = defaults.restore(self.dbus)
+        # Even a partial reset changed fcitx5, so the pages show what it holds and undo stays.
+        self.reload()
+        self._undo_to = before
+        if ok:
+            toast = Adw.Toast(title=_("Defaults restored."))
+        else:
+            toast = Adw.Toast(
+                title=_("Could not restore every default. Check that fcitx5 is running."), timeout=0
+            )
+        self._show(self._with_undo(toast))
 
     def _sidebar(self):
         header = Adw.HeaderBar(show_title=False)
@@ -319,17 +373,18 @@ class Window(Adw.ApplicationWindow):
 
     def report(self, ok, label):
         if ok:
-            before, self._saved = self._saved, settings_snapshot.take(self.dbus)
-            self._undo_to = before
-            toast = Adw.Toast(title=_("Saved “{}”.").format(label))
-            if before is not None:
-                toast.set_button_label(_("&Undo").replace("&", "_"))
-                toast.connect("button-clicked", lambda _t: self.undo())
-            self._show(toast)
+            self._undo_to, self._saved = self._saved, settings_snapshot.take(self.dbus)
+            self._show(self._with_undo(Adw.Toast(title=_("Saved “{}”.").format(label))))
         else:
             self._show(
                 Adw.Toast(title=_("Could not save. Check that fcitx5 is running."), timeout=0)
             )
+
+    def _with_undo(self, toast):
+        if self._undo_to is not None:
+            toast.set_button_label(_("&Undo").replace("&", "_"))
+            toast.connect("button-clicked", lambda _t: self.undo())
+        return toast
 
     def _show(self, toast):
         if self.toast is not None:

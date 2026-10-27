@@ -458,6 +458,95 @@ class GtkUndoTest(unittest.TestCase):
         self.assertIsNone(self.window.toast.get_button_label())
 
 
+class RefusesAppRules(FakeDBusHandler):
+    def set_sub_config_list(self, path, root_key, data_list):
+        return path != "app_rules" and super().set_sub_config_list(path, root_key, data_list)
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkDefaultsTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        self.local = isolate(self)
+        self.dbus = self.fcitx()
+        self.window = window.Window(None, self.dbus)
+        self.addCleanup(self.window.destroy)
+
+    def fcitx(self, cls=FakeDBusHandler):
+        return cls(
+            {"SpellCheck": "False", "EnableCustomKeymap": "True"},
+            sub_configs={
+                "ngosen-macro": [{"Key": "kg", "Value": "khô"}],
+                "custom_keymap": [{"Key": "s", "Value": "DauSac"}],
+                "app_rules": [{"App": "firefox", "Mode": "5"}],
+            },
+        )
+
+    def changed(self):
+        return (
+            self.dbus.values["SpellCheck"],
+            self.dbus.values["EnableCustomKeymap"],
+            [len(self.dbus.sub_configs[k]) for k in ("ngosen-macro", "custom_keymap", "app_rules")],
+        )
+
+    def local_words(self):
+        with open(self.local, encoding="utf-8") as f:
+            return sorted(f.read().split())
+
+    def test_defaults_clear_everything_and_undo_brings_it_back(self):
+        self.window.dictionary.word_row.set_text("ngosen")
+        self.window.dictionary.add_button.emit("clicked")
+        self.window.restore_defaults()
+        self.assertEqual(self.changed(), ("True", "False", [0, 0, 0]))
+        self.assertFalse(os.path.exists(self.local))
+        self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
+        self.assertEqual(self.window.macros.table.entries, [])
+        self.assertEqual(self.window.toast.get_title(), "Defaults restored.")
+        self.window.toast.emit("button-clicked")
+        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
+        self.assertEqual(self.local_words(), ["hello", "ngosen", "world"])
+
+    def test_only_confirming_the_dialog_restores(self):
+        dialog = self.window.confirm_defaults()
+        dialog.emit("response", "cancel")
+        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
+        dialog = self.window.confirm_defaults()
+        dialog.emit("response", "reset")
+        self.assertEqual(self.changed(), ("True", "False", [0, 0, 0]))
+
+    def test_a_dictionary_read_in_part_is_left_as_it_is(self):
+        os.makedirs(os.path.dirname(self.local), exist_ok=True)
+        with open(self.local, "wb") as f:
+            f.write(b"ok\n\xff\n")
+        self.window.restore_defaults()
+        with open(self.local, "rb") as f:
+            self.assertEqual(f.read(), b"ok\n\xff\n")
+        self.assertEqual(self.window.toast.get_timeout(), 0)
+
+    def test_undo_brings_back_what_fcitx5_remembered_after_the_window_opened(self):
+        self.dbus.sub_configs["app_rules"].append({"App": "kate", "Mode": "3"})
+        self.window.restore_defaults()
+        self.window.toast.emit("button-clicked")
+        self.assertEqual(len(self.dbus.sub_configs["app_rules"]), 2)
+
+    def test_nothing_is_reset_when_it_could_not_be_undone(self):
+        with mock.patch.object(window.settings_snapshot, "take", return_value=None):
+            self.window.restore_defaults()
+        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
+        self.assertIsNone(self.window.toast.get_button_label())
+
+    def test_a_partial_reset_says_so_and_can_be_undone(self):
+        self.dbus = self.fcitx(RefusesAppRules)
+        self.window = window.Window(None, self.dbus)
+        self.addCleanup(self.window.destroy)
+        self.window.restore_defaults()
+        self.assertEqual(self.changed(), ("True", "False", [0, 0, 1]))
+        self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
+        self.assertEqual(self.window.toast.get_timeout(), 0)
+        self.window.toast.emit("button-clicked")
+        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
+
+
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkSearchTest(unittest.TestCase):
     def setUp(self):

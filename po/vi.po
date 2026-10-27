@@ -402,11 +402,6 @@ msgstr "Đề xuất tính năng"
 msgid "Developed by Nguyen Phi"
 msgstr "Phát triển bởi Nguyễn Phi"
 
-#: settings-gui/ui/pages/about.py
-#, python-brace-format
-msgid "Based on the code of {lotus} and {vmk}."
-msgstr "Dựa trên mã của {lotus} và {vmk}."
-
 #: settings-gui/ui/pages/about.py:184
 msgid "Licensed under the GNU General Public License v3.0"
 msgstr "Được cấp phép dưới Giấy phép Công cộng GNU v3.0"

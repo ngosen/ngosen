@@ -401,11 +401,6 @@ msgstr ""
 msgid "Developed by Nguyen Phi"
 msgstr ""
 
-#: settings-gui/ui/pages/about.py
-#, python-brace-format
-msgid "Based on the code of {lotus} and {vmk}."
-msgstr ""
-
 #: settings-gui/ui/pages/about.py:184
 msgid "Licensed under the GNU General Public License v3.0"
 msgstr ""

@@ -48,7 +48,7 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
      one is filled enamel with `on-enamel` text.
    - Typed text in Xanh Mono: the keys-to-result example under the input method
      (`vieetj → việt`) and the test field.
-3. **No lotus flower, no "Lotus" wording.** fcitx5-lotus appears only in the About credit.
+3. **No lotus flower, no "Lotus" wording.** fcitx5-lotus appears only in the README credit.
 4. **Changes save at once.** No OK, Apply or Cancel. After a change, an inline message at the top
    of the page says "Đã lưu “<setting>”." with a Hoàn tác button (`KMessageWidget`-style: enamel
    border, light enamel fill; `saved-*` colours). One message, replaced by the next change.

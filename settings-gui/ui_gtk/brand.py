@@ -76,8 +76,9 @@ def css(dark, adw_minor):
 def install():
     """Applies the marks now and again whenever the window turns light or dark."""
     provider = Gtk.CssProvider()
+    # Plasma and theming tools set the accent in ~/.config/gtk-4.0/gtk.css, read at user priority.
     Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
     )
     style = Adw.StyleManager.get_default()
 

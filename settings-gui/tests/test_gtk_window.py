@@ -110,6 +110,28 @@ class GtkWindowTest(unittest.TestCase):
         self.assertIn("@define-color accent_bg_color #1c6b5f", brand.css(False, 5))
         self.assertIn("--accent-bg-color: #247b6c", brand.css(True, 6))
 
+    def test_the_accent_beats_the_users_gtk_css(self):
+        # Desktops such as Plasma write their accent to ~/.config/gtk-4.0/gtk.css.
+        theme = Gtk.CssProvider()
+        theme.load_from_string(
+            "@define-color accent_color #545a92; :root { --accent-color: #545a92; }"
+        )
+        display = Gdk.Display.get_default()
+        Gtk.StyleContext.add_provider_for_display(display, theme, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+        self.addCleanup(Gtk.StyleContext.remove_provider_for_display, display, theme)
+        ours = brand.install()
+        self.addCleanup(Gtk.StyleContext.remove_provider_for_display, display, ours)
+        label = Gtk.Label(label="x", css_classes=["accent"])
+        self.addCleanup(Gtk.Window(child=label).destroy)
+        color = label.get_color()
+        shade = 1 if Adw.StyleManager.get_default().get_dark() else 0
+        expected = Gdk.RGBA()
+        expected.parse(brand.ENAMEL_TEXT[shade])
+        self.assertEqual(
+            (round(color.red * 255), round(color.green * 255), round(color.blue * 255)),
+            (round(expected.red * 255), round(expected.green * 255), round(expected.blue * 255)),
+        )
+
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkMacroPageTest(unittest.TestCase):

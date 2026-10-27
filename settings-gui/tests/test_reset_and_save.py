@@ -100,6 +100,14 @@ class MacroTest(unittest.TestCase):
         self.assertTrue(page.save_data())
         self.assertEqual(fake.sub_configs["ngosen-macro"], [{"Key": "vn", "Value": "Vietnam"}])
 
+    def test_a_freshly_opened_table_is_not_modified(self):
+        fake = FakeDBusHandler(
+            {"TimeFormat": "%k:%M"},
+            {"ngosen-macro": [{"Key": "vn", "Value": "Việt Nam"}, {"Key": "VN", "Value": "VN"}]},
+        )
+        page = MacroEditorPage(fake)
+        self.assertFalse(page.is_modified())
+
 
 class HotkeyTest(unittest.TestCase):
     def test_editing_first_hotkey_keeps_the_others(self):

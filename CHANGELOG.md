@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Cửa sổ cài đặt không còn lỗi không mở được khi file từ điển riêng có chữ không phải UTF-8.
+  Trang Từ điển báo không đọc trọn được file (#376).
+
 ## [1.6.3-1] — 27/10/2026
 
 Sửa lỗi gõ chữ trong editor và ô chat của Antigravity trên GNOME (#362, #365); sửa lỗi Cứu dấu ở Gõ Sen khi backspace về cuối chữ trước hoặc bấm chuột vào giữa chữ (#358, #370).

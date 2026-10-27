@@ -9,6 +9,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("PangoCairo", "1.0")
 
+from core.catalog import MODE_SHORTCUT_TO_VISIBILITY  # noqa: E402
 from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
 from core.dictionary import Dictionary  # noqa: E402
@@ -22,8 +23,10 @@ from ui_gtk import brand, pages  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
 from ui_gtk.macros import MacroPage  # noqa: E402
+from ui_gtk.shortcuts import ShortcutsPage  # noqa: E402
 
 APP_ID = "io.github.ngosen.NgoSen.Settings"
+MODE_KEYS = [*MODE_SHORTCUT_TO_VISIBILITY, *MODE_SHORTCUT_TO_VISIBILITY.values()]
 
 try:
     from version import __version__
@@ -44,10 +47,13 @@ class Window(Adw.ApplicationWindow):
         self.toasts.set_child(self.stack)
         self.pages = []
 
-        self.typing = self.macros = self.dictionary = self.keymap = None
+        self.typing = self.macros = self.dictionary = self.keymap = self.shortcuts = None
         self.tabs = {}
+        self.tab_parents = {}
         if self.model.load():
             self.typing = pages.TypingPage(self.model, self.save)
+            others = [n for n in (dbus.input_method_names() or []) if n != "ngosen"]
+            self.shortcuts = ShortcutsPage(self.model, self.save, bool(others))
             table = MacroTable(dbus)
             table.load()
             self.macros = MacroPage(table, self.report)
@@ -60,10 +66,13 @@ class Window(Adw.ApplicationWindow):
             "macros",
             _("Macros & Dictionary"),
             "accessories-text-editor-symbolic",
-            self._tabs(macros=self.macros, dictionary=self.dictionary),
+            self._tabs("macros", macros=self.macros, dictionary=self.dictionary),
         )
         self._add_page(
-            "keys", _("Keys"), "preferences-desktop-keyboard-symbolic", _widget(self.keymap)
+            "keys",
+            _("Keys"),
+            "preferences-desktop-keyboard-symbolic",
+            self._tabs("keys", shortcuts=self.shortcuts, keymap=self.keymap),
         )
         self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 
@@ -79,7 +88,7 @@ class Window(Adw.ApplicationWindow):
         narrow.add_setter(self.split, "collapsed", True)
         self.add_breakpoint(narrow)
 
-    def _tabs(self, **pages):
+    def _tabs(self, parent, **pages):
         """Pages that share a sidebar entry, as tabs like the Qt window's."""
         if None in pages.values():
             return _widget(None)
@@ -89,6 +98,7 @@ class Window(Adw.ApplicationWindow):
                 page.page, name, page.page.get_title(), page.page.get_icon_name()
             )
             self.tabs[name] = stack
+            self.tab_parents[name] = parent
         switcher = Adw.ViewSwitcher(stack=stack, policy=Adw.ViewSwitcherPolicy.WIDE)
         switcher.set_halign(Gtk.Align.CENTER)
         switcher.set_margin_top(6)
@@ -130,7 +140,7 @@ class Window(Adw.ApplicationWindow):
         """Shows the named page or tab; a page this window does not have yet is ignored."""
         if name in self.tabs:
             self.tabs[name].set_visible_child_name(name)
-            name = "macros"
+            name = self.tab_parents[name]
         for index, (page, _title, _icon) in enumerate(self.pages):
             if page == name:
                 row = self.sidebar.get_row_at_index(index)
@@ -139,7 +149,20 @@ class Window(Adw.ApplicationWindow):
 
     def save(self, key, value):
         self.model.set(key, value)
-        self.report(self.model.save(), self.model.label(key) or key)
+        conflicts = self.model.shortcut_conflicts()
+        # Mode keys wait while two modes share one, so swapping two keys never saves the halfway
+        # state; every other change still saves.
+        held = {
+            k: self.model.modified.pop(k)
+            for k in MODE_KEYS
+            if conflicts and k in self.model.modified
+        }
+        ok = self.model.save()
+        self.model.modified.update(held)
+        if key in held:
+            self._show(Adw.Toast(title=conflicts[0][0], timeout=0))
+        else:
+            self.report(ok, self.model.label(key) or key)
 
     def report(self, ok, label):
         if ok:

@@ -7,7 +7,7 @@ import unittest
 from unittest import mock
 
 # isort: off
-from fake_fcitx import FakeDBusHandler
+from fake_fcitx import DEFAULTS, FakeDBusHandler
 import ui_gtk
 
 # isort: on
@@ -17,8 +17,9 @@ CAN_RUN = ui_gtk.available() and bool(os.environ.get("DISPLAY"))
 REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
 
 if CAN_RUN:
-    from gi.repository import Adw, Gtk
+    from gi.repository import Adw, Gdk, Gtk
     from ui_gtk import brand, window
+    from ui_gtk.hotkey_button import HotkeyButton
 
     from core import dictionary, keymap
 
@@ -308,6 +309,116 @@ class GtkKeymapPageTest(unittest.TestCase):
         page.key_row.set_text("f")
         page.add_button.emit("clicked")
         self.assertEqual([e["Key"] for e in dbus.sub_configs["custom_keymap"]], ["s", "f"])
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkShortcutsPageTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        isolate(self)
+        self.dbus = FakeDBusHandler({"ToggleKey": {"0": "Control+space"}})
+        self.window = window.Window(None, self.dbus)
+        self.page = self.window.shortcuts
+
+    def test_a_recorded_toggle_key_saves_and_ctrl_shift_is_offered_back(self):
+        self.page.hotkeys["ToggleKey"].emit("recorded", "F12")
+        self.assertEqual(self.dbus.values["ToggleKey"], {"0": "F12"})
+        self.assertTrue(self.page.offer.get_visible())
+        button = next(w for w in _children(self.page.offer) if isinstance(w, Gtk.Button))
+        button.emit("clicked")
+        self.assertEqual(self.dbus.values["ToggleKey"], DEFAULTS["ToggleKey"])
+        self.assertFalse(self.page.offer.get_visible())
+        self.assertEqual(self.page.hotkeys["ToggleKey"].key, "Control+Shift")
+
+    def test_a_new_menu_key_keeps_the_keys_after_it(self):
+        dbus = FakeDBusHandler({"ModeMenuKey": {"0": "grave", "1": "Control+space"}})
+        page = window.Window(None, dbus).shortcuts
+        page.hotkeys["ModeMenuKey"].emit("recorded", "F12")
+        self.assertEqual(dbus.values["ModeMenuKey"], {"0": "F12", "1": "Control+space"})
+
+    def test_a_shared_mode_key_is_held_back_until_it_is_resolved(self):
+        rows = self.page.mode_rows
+        key_of = {
+            k: next(w for w in _children(r) if isinstance(w, HotkeyButton)) for k, r in rows.items()
+        }
+        key_of["ShortcutPreedit"].emit("recorded", "w")
+        self.assertEqual(self.dbus.values["ShortcutPreedit"], "q")
+        self.assertTrue(rows["ShortcutPreedit"].has_css_class("error"))
+        self.assertTrue(rows["ShortcutEmoji"].has_css_class("error"))
+        key_of["ShortcutEmoji"].emit("recorded", "q")
+        self.assertEqual(self.dbus.values["ShortcutPreedit"], "w")
+        self.assertEqual(self.dbus.values["ShortcutEmoji"], "q")
+        self.assertFalse(rows["ShortcutPreedit"].has_css_class("error"))
+
+    def test_hiding_a_mode_ends_its_conflict(self):
+        rows = self.page.mode_rows
+        button = next(w for w in _children(rows["ShortcutPreedit"]) if isinstance(w, HotkeyButton))
+        button.emit("recorded", "w")
+        shown = next(w for w in _children(rows["ShortcutEmoji"]) if isinstance(w, Gtk.CheckButton))
+        shown.set_active(False)
+        self.assertEqual(self.dbus.values["ShowModeEmoji"], "False")
+        self.assertEqual(self.dbus.values["ShortcutPreedit"], "w")
+
+    def test_other_settings_still_save_while_mode_keys_clash(self):
+        button = next(
+            w
+            for w in _children(self.page.mode_rows["ShortcutPreedit"])
+            if isinstance(w, HotkeyButton)
+        )
+        button.emit("recorded", "w")
+        self.window.typing.rows["SpellCheck"].set_active(False)
+        self.assertEqual(self.dbus.values["SpellCheck"], "False")
+        self.assertEqual(self.dbus.values["ShortcutPreedit"], "q")
+
+    def test_dropping_a_mode_saves_the_order(self):
+        self.assertTrue(self.page.move("Off", "Sen"))
+        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Sen,Preedit,Emoji,Default")
+        self.page.move("Sen", "Emoji")
+        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Preedit,Emoji,Sen,Default")
+
+    def test_show_page_opens_the_shortcuts_tab(self):
+        self.window.show_page("keymap")
+        self.window.show_page("shortcuts")
+        self.assertEqual(self.window.stack.get_visible_child_name(), "keys")
+        self.assertEqual(self.window.tabs["shortcuts"].get_visible_child_name(), "shortcuts")
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class HotkeyButtonTest(unittest.TestCase):
+    def setUp(self):
+        self.button = HotkeyButton("F12")
+        self.recorded = []
+        self.button.connect("recorded", lambda _b, key: self.recorded.append(key))
+        self.button.set_active(True)
+
+    def press(self, keyval, state=0):
+        self.assertTrue(self.button._on_press(None, keyval, 0, Gdk.ModifierType(state)))
+
+    def release(self, keyval):
+        self.button._on_release(None, keyval, 0, Gdk.ModifierType(0))
+
+    def test_ctrl_shift_pressed_and_let_go_is_recorded(self):
+        self.press(Gdk.KEY_Control_L)
+        self.press(Gdk.KEY_Shift_L, Gdk.ModifierType.CONTROL_MASK)
+        self.release(Gdk.KEY_Shift_L)
+        self.assertEqual(self.recorded, ["Control+Shift_L"])
+        self.assertFalse(self.button.get_active())
+
+    def test_a_key_with_modifiers_is_recorded_as_fcitx5_names_it(self):
+        self.press(Gdk.KEY_Shift_L)
+        self.press(Gdk.KEY_ISO_Left_Tab, Gdk.ModifierType.SHIFT_MASK)
+        self.assertEqual(self.recorded, ["Shift+Tab"])
+
+    def test_a_mode_key_shows_as_the_qt_window_shows_it(self):
+        button = HotkeyButton("plus", single=True)
+        labels = [w.get_label() for w in _children(button) if isinstance(w, Gtk.Label)]
+        self.assertEqual(labels, ["+"])
+
+    def test_escape_cancels_and_keeps_the_key(self):
+        self.press(Gdk.KEY_Escape)
+        self.assertEqual(self.recorded, [])
+        self.assertFalse(self.button.get_active())
+        self.assertEqual(self.button.key, "F12")
 
 
 def _children(widget):

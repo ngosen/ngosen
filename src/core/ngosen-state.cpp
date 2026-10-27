@@ -420,7 +420,9 @@ namespace ngosen {
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             keySinceReport_ = true;
             clickBeforeKey_ = false;
-            reportAtKey_    = host_->surrounding();
+            // A backspace that leaves no word being typed can end right after an older word.
+            backspaceBeforeKey_ = ngosen::key::isBackspace(keyEvent.sym()) && oldPreBuffer_.empty();
+            reportAtKey_        = host_->surrounding();
         }
         // A report with the cursor at the end of the text tells how long the text is.
         const ngosen::Surrounding s = host_->surrounding();

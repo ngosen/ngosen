@@ -42,6 +42,7 @@ namespace {
     // this much before its deadline. Only lower bounds on time are checked.
     constexpr uint64_t ClockSlackUs = 3000;
     constexpr uint64_t WaitUs       = 15000;
+    constexpr uint64_t SettleUs     = 40000;
 
     struct Harness {
         TestInstance&                     testInstance;
@@ -214,6 +215,35 @@ namespace {
         return true;
     }
 
+    // A chat composer drops a commit that lands right after the deletion (#362), so an early report
+    // there still waits out the composer settle, not just the fixed wait.
+    bool gnomeIbusComposerWaitsForSettle(Harness& h) {
+        auto context = h.open("window:4", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
+        Harness::setSnapshot(*context, "ok \n\n", 3);
+        const std::string word = "tie";
+        for (size_t i = 0; i < word.size(); ++i) {
+            if (!h.type(*context, static_cast<fcitx::KeySym>(word[i]), false))
+                return false;
+            Harness::setSnapshot(*context, "ok " + word.substr(0, i + 1) + "\n\n", static_cast<unsigned int>(i + 4));
+        }
+        pumpEventLoop(h.testInstance.instance, 1);
+        const uint64_t replacedAt = nowUs();
+        if (!h.type(*context, FcitxKey_e, true))
+            return false;
+        Harness::setSnapshot(*context, "ok ti\n\n", 5);
+        const uint64_t committedAt = h.pumpUntil([&] { return !context->commits().empty(); }, replacedAt + 500000);
+        if (context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure("GNOME ibus composer: commit e -> ê", "['ê']", joinCommits(*context));
+            return false;
+        }
+        if (committedAt - replacedAt + ClockSlackUs < SettleUs) {
+            reportFailure("GNOME ibus composer: commit at least 40 ms after an early report", ">= 40000 us", std::to_string(committedAt - replacedAt) + " us");
+            return false;
+        }
+        h.type(*context, FcitxKey_space, false);
+        return true;
+    }
+
     // GNOME Shell 46 declares surrounding text for every app, so a terminal that never reports any
     // would wait out every timeout. After two silent waits the fixed wait takes over until a report.
     bool gnomeIbusStopsWaitingForSilentApp(Harness& h) {
@@ -361,6 +391,8 @@ int main() {
     if (!gnomeIbusWaitsForReportedDeletion(h))
         return 1;
     if (!gnomeIbusCommitsNoSoonerThanForwardWait(h))
+        return 1;
+    if (!gnomeIbusComposerWaitsForSettle(h))
         return 1;
     if (!gnomeIbusStopsWaitingForSilentApp(h))
         return 1;

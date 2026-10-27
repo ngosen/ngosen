@@ -12,9 +12,6 @@ mới có số version, và thứ tự có thể đổi. Muốn đề nghị hay
 - Có gì mới: sau khi cập nhật lên version có tính năng mới, một thông báo nhỏ ở góc màn hình hiện một lần,
   bấm vào thì mở trang "Có gì mới" trong cửa sổ cài đặt, mỗi tính năng có cách dùng và nút tắt. Bản chỉ sửa
   lỗi thì không báo.
-- Làm lại cách chèn emoji (#110).
-- Gộp "Kiểm tra chính tả" vào "Tự khôi phục từ gõ sai", vì nó chỉ có tác dụng khi Tự khôi phục đang bật
-  (#112).
 
 ## Sau đó
 
@@ -30,7 +27,9 @@ Chưa có số version, xếp theo thứ tự định làm:
    người dùng gửi về.
 7. Mẹo dùng Ngó Sen trong cửa sổ cài đặt, mỗi mẹo dẫn sang trang hướng dẫn trên website. Mẹo có sẵn trong
    gói cài, không tải gì từ mạng.
-8. Cứu dấu không cần bôi đen: click vào sau chữ rồi gõ dấu (#118).
-9. Đưa Ngó Sen vào repo của các distro: từ 1.5.3 đã có repo riêng có chữ ký cho Fedora (COPR),
+8. Đưa Ngó Sen vào repo của các distro: từ 1.5.3 đã có repo riêng có chữ ký cho Fedora (COPR),
    Debian và Ubuntu (APT), Arch (pacman) và openSUSE Tumbleweed. nixpkgs đang chờ review
    ([NixOS/nixpkgs#575620](https://github.com/NixOS/nixpkgs/pull/575620)). Còn AUR, rồi Debian.
+9. Làm lại cách chèn emoji (#110).
+10. Gộp "Kiểm tra chính tả" vào "Tự khôi phục từ gõ sai", vì nó chỉ có tác dụng khi Tự khôi phục đang
+    bật (#112).

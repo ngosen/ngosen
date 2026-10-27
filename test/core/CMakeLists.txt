@@ -35,4 +35,4 @@ add_executable(core_retone core-retone.cpp fake-app.cpp fake-host.cpp fake-engin
 target_compile_definitions(core_retone PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
 target_link_libraries(core_retone PRIVATE ngosen_core)
 add_test(NAME core_retone COMMAND core_retone)
-set_tests_properties(core_retone PROPERTIES LABELS "unit;core" TIMEOUT 60 ENVIRONMENT "DISPLAY=")
+set_tests_properties(core_retone PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")

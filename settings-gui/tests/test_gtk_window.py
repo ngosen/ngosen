@@ -415,6 +415,51 @@ class GtkAppearancePageTest(unittest.TestCase):
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkSearchTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        isolate(self)
+        self.window = window.Window(None, FakeDBusHandler())
+        self.addCleanup(self.window.destroy)
+
+    def search(self, text):
+        self.window.search_entry.set_text(text)
+        self.window._on_search(self.window.search_entry)
+        return [r for r in _children(self.window.results) if hasattr(r, "found")]
+
+    def test_a_found_setting_opens_on_its_page_with_the_focus(self):
+        results = self.search("spell check")
+        self.assertIn(self.window.typing.rows["SpellCheck"], [r.found[0] for r in results])
+        self.window.show_page("about")
+        self.window.search_entry.emit("activate")
+        self.assertEqual(self.window.stack.get_visible_child_name(), "typing")
+        self.assertIs(self.window.get_focus(), results[0].found[0])
+        self.assertEqual(self.window.side_stack.get_visible_child_name(), "pages")
+
+    def test_a_setting_in_a_tab_opens_that_tab(self):
+        (result,) = self.search("custom keymap")
+        self.window.open_result(result)
+        self.assertEqual(self.window.stack.get_visible_child_name(), "keys")
+        self.assertEqual(self.window.tabs["keymap"].get_visible_child_name(), "keymap")
+
+    def test_the_users_own_entries_and_whats_new_are_not_settings(self):
+        for page in (self.window.macros, self.window.keymap):
+            page.list.set_filter_func(None)
+            page.list.append(Adw.ActionRow(title="zzqq"))
+        self.assertEqual(self.search("zzqq"), [])
+        self.assertEqual(self.search("Cứu chữ"), [])
+
+    def test_nothing_found_says_so(self):
+        self.assertEqual(self.search("no such setting"), [])
+        self.assertEqual(self.window.side_stack.get_visible_child_name(), "results")
+        self.assertIsNotNone(self.window.results.get_row_at_index(0))
+        self.window.search_entry.emit("activate")
+        self.assertEqual(self.window.stack.get_visible_child_name(), "typing")
+        self.assertEqual(self.search(""), [])
+        self.assertEqual(self.window.side_stack.get_visible_child_name(), "pages")
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkWhatsNewPageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()

@@ -86,6 +86,8 @@ class KeymapPage:
         self.list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
         self.list.add_css_class("boxed-list")
         self.list.set_filter_func(self._matches)
+        # The user's own entries are not settings to find.
+        self.list.searchable = False
         group.add(self.list)
         return group
 

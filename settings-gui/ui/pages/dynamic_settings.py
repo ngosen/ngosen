@@ -338,27 +338,14 @@ class DynamicSettingsPage(QWidget):
         hk_btn = HotkeyEditorWidget(hotkey_str)
         hk_btn.setFixedWidth(235)
         self._controls[key] = hk_btn
-        hk_btn.textChanged.connect(
-            lambda text, k=key: self.update_config(k, self._with_first_key(k, text))
-        )
+        hk_btn.textChanged.connect(lambda text, k=key: self._set_first_hotkey(k, text))
         self.form.addRow(_(label) + ":", self._with_hint(hk_btn, key))
 
     def _render_toggle_key(self, item):
         key, type_str, label, default, annotations = item
-        # The default is Ctrl+Shift: either Ctrl with either Shift, in either order, as in UniKey.
-        ctrl_shift = default if isinstance(default, dict) else {}
+        model = self.model
 
-        def is_ctrl_shift():
-            val = self.current_values.get(key, default)
-            return isinstance(val, dict) and sorted(val.values()) == sorted(ctrl_shift.values())
-
-        def shown_key():
-            val = self.current_values.get(key, default)
-            first = val.get("0", "") if isinstance(val, dict) else ""
-            # Without a side, since either Ctrl and either Shift work.
-            return "Control+Shift" if is_ctrl_shift() else first
-
-        editor = HotkeyEditorWidget(shown_key())
+        editor = HotkeyEditorWidget(model.shown_toggle_key(key))
         editor.setFixedWidth(235)
         self._controls[key] = editor
         field = QWidget()
@@ -379,24 +366,21 @@ class DynamicSettingsPage(QWidget):
         offer_layout.addWidget(offer_text)
         offer_layout.addWidget(use_ctrl_shift)
         offer_layout.addStretch(1)
-        offer.setVisible(not is_ctrl_shift())
+        offer.setVisible(not model.toggle_is_ctrl_shift(key))
         layout.addWidget(offer)
 
         def choose_ctrl_shift():
-            self.update_config(key, dict(ctrl_shift))
-            editor.set_key(shown_key())
+            model.use_ctrl_shift(key)
+            self.update_config(key, model.current[key])
+            editor.set_key(model.shown_toggle_key(key))
             offer.setVisible(False)
 
         def changed(text):
-            # No key would leave no way back to Vietnamese; Ctrl+Shift recorded with either side or
-            # in either order is still all of UniKey's key.
-            if not text or text in ctrl_shift.values():
-                choose_ctrl_shift()
-                return
-            # The Ctrl+Shift entries are one key to the user; other extra keys still work.
-            new = {"0": text} if is_ctrl_shift() else self._with_first_key(key, text)
-            self.update_config(key, new)
-            offer.setVisible(not is_ctrl_shift())
+            model.set_toggle_key(text, key)
+            self.update_config(key, model.current[key])
+            if model.toggle_is_ctrl_shift(key):
+                editor.set_key(model.shown_toggle_key(key))
+            offer.setVisible(not model.toggle_is_ctrl_shift(key))
 
         editor.textChanged.connect(changed)
         use_ctrl_shift.clicked.connect(choose_ctrl_shift)
@@ -410,12 +394,9 @@ class DynamicSettingsPage(QWidget):
             layout.addWidget(hint)
         self.form.addRow(_(label) + ":", field)
 
-    def _with_first_key(self, key, text):
-        # Only the first key of a list is shown; the others still work and must survive an edit.
-        val = self.current_values.get(key)
-        keys = [val[i] for i in sorted(val, key=int)] if isinstance(val, dict) else []
-        keys = ([text] if text else []) + keys[1:]
-        return {str(i): k for i, k in enumerate(keys)}
+    def _set_first_hotkey(self, key, text):
+        self.model.set_first_hotkey(key, text)
+        self.update_config(key, self.model.current[key])
 
     def _render_combobox(self, item):
         key, type_str, label, default, annotations = item

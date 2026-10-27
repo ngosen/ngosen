@@ -96,3 +96,41 @@ class SettingsModel:
         self.modified.clear()
         self.saved = self.current.copy()
         return True
+
+    def hotkeys(self, key, fallback=None):
+        """A hotkey setting's keys in order; the window shows only the first."""
+        val = self.current.get(key, self.default(key) if fallback is None else fallback)
+        return [val[i] for i in sorted(val, key=int)] if isinstance(val, dict) else []
+
+    def set_first_hotkey(self, key, text):
+        # The keys after the first still work and must survive an edit.
+        keys = ([text] if text else []) + self.hotkeys(key, fallback={})[1:]
+        self.set(key, {str(i): k for i, k in enumerate(keys)})
+
+    def toggle_is_ctrl_shift(self, key="ToggleKey"):
+        # The default is Ctrl+Shift: either Ctrl with either Shift, in either order, as in UniKey.
+        ctrl_shift = self.default(key, {})
+        return isinstance(ctrl_shift, dict) and sorted(self.hotkeys(key)) == sorted(
+            ctrl_shift.values()
+        )
+
+    def shown_toggle_key(self, key="ToggleKey"):
+        # Without a side, since either Ctrl and either Shift work.
+        if self.toggle_is_ctrl_shift(key):
+            return "Control+Shift"
+        return next(iter(self.hotkeys(key)), "")
+
+    def use_ctrl_shift(self, key="ToggleKey"):
+        self.set(key, dict(self.default(key, {})))
+
+    def set_toggle_key(self, text, key="ToggleKey"):
+        # No key would leave no way back to Vietnamese; Ctrl+Shift recorded with either side or in
+        # either order is still all of UniKey's key.
+        ctrl_shift = self.default(key, {})
+        if not text or (isinstance(ctrl_shift, dict) and text in ctrl_shift.values()):
+            self.use_ctrl_shift(key)
+        elif self.toggle_is_ctrl_shift(key):
+            # The Ctrl+Shift entries are one key to the user; other extra keys still work.
+            self.set(key, {"0": text})
+        else:
+            self.set_first_hotkey(key, text)

@@ -1195,8 +1195,20 @@ msgid "Copy result"
 msgstr "Chép kết quả"
 
 #: settings-gui/ui/system_check_dialog.py
-msgid "Report bug…"
-msgstr "Báo cáo lỗi…"
+msgid "Message on Facebook…"
+msgstr "Nhắn qua Facebook…"
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Report on GitHub…"
+msgstr "Báo lỗi trên GitHub…"
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Copied the result."
+msgstr "Đã chép kết quả."
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Copied the result. Paste it into the message and say what went wrong."
+msgstr "Đã chép kết quả. Dán vào tin nhắn rồi kể lỗi gặp phải."
 
 #: settings-gui/ui/system_check_dialog.py
 #, python-brace-format

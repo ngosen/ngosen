@@ -15,7 +15,8 @@ TYPED_FAMILY = "Xanh Mono"
 LOGO = "io.github.ngosen.NgoSen.Settings"
 
 # (light, dark) pairs; dark is picked from the window background, not the desktop name.
-ENAMEL = ("#1c6b5f", "#2a8574")
+# The dark shade keeps light text readable on it and still stands out on a dark window.
+ENAMEL = ("#1c6b5f", "#247b6c")
 ON_ENAMEL = "#f0f5ee"
 SAVED_FILL = ("#e1efe9", "#183a33")
 SAVED_BORDER = ("#1c6b5f", "#3f9c8b")
@@ -27,8 +28,12 @@ PANEL = ("#e6e6e6", "#2d2d2d")
 _font_loaded = False
 
 
+def is_dark_palette(palette):
+    return palette.color(QPalette.Window).lightness() < 128
+
+
 def is_dark(widget):
-    return widget.palette().color(QPalette.Window).lightness() < 128
+    return is_dark_palette(widget.palette())
 
 
 def pick(widget, pair):
@@ -52,6 +57,48 @@ class _ThemeFollower(QObject):
             finally:
                 self._applying = False
         return False
+
+
+class _AccentFollower(QObject):
+    def __init__(self, app):
+        super().__init__(app)
+        self._app = app
+
+    def eventFilter(self, obj, event):
+        # An application's filter sees every object's events; only the app's own change counts.
+        if obj is self._app and event.type() == QEvent.ApplicationPaletteChange:
+            _apply_accent(self._app)
+        return False
+
+
+def _apply_accent(app):
+    palette = app.palette()
+    enamel = QColor(ENAMEL[1] if is_dark_palette(palette) else ENAMEL[0])
+    # Half see-through, so a disabled selection stays enamel but reads as off.
+    faded = QColor(enamel)
+    faded.setAlpha(128)
+    roles = [QPalette.Highlight] + ([QPalette.Accent] if hasattr(QPalette, "Accent") else [])
+    accented = QPalette(palette)
+    for group, color in (
+        (QPalette.Active, enamel),
+        (QPalette.Inactive, enamel),
+        (QPalette.Disabled, faded),
+    ):
+        for role in roles:
+            accented.setColor(group, role, color)
+    for group in (QPalette.Active, QPalette.Inactive):
+        accented.setColor(group, QPalette.HighlightedText, QColor(ON_ENAMEL))
+    # Setting the palette sends another change; stop once it already holds enamel.
+    if accented != palette:
+        app.setPalette(accented)
+
+
+def install_accent(app):
+    """Makes enamel the accent, now and whenever the desktop sends a new palette."""
+    _apply_accent(app)
+    follower = _AccentFollower(app)
+    app.installEventFilter(follower)
+    return follower
 
 
 def follow_theme(widget, apply, source=None):

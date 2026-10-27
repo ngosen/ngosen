@@ -31,6 +31,7 @@ def main():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app.setWindowIcon(brand.logo_icon())
     color_scheme.install(app)
+    brand.install_accent(app)
     scroll_bars.install(app)
 
     window = NgoSenSettingsWindow()

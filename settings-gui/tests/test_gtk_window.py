@@ -521,6 +521,19 @@ class GtkDefaultsTest(unittest.TestCase):
         self.window.restore_defaults()
         with open(self.local, "rb") as f:
             self.assertEqual(f.read(), b"ok\n\xff\n")
+        self.assertEqual(self.window.toast.get_timeout(), 0)
+
+    def test_undo_brings_back_what_fcitx5_remembered_after_the_window_opened(self):
+        self.dbus.sub_configs["app_rules"].append({"App": "kate", "Mode": "3"})
+        self.window.restore_defaults()
+        self.window.toast.emit("button-clicked")
+        self.assertEqual(len(self.dbus.sub_configs["app_rules"]), 2)
+
+    def test_nothing_is_reset_when_it_could_not_be_undone(self):
+        with mock.patch.object(window.settings_snapshot, "take", return_value=None):
+            self.window.restore_defaults()
+        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
+        self.assertIsNone(self.window.toast.get_button_label())
 
     def test_a_partial_reset_says_so_and_can_be_undone(self):
         self.dbus = self.fcitx(RefusesAppRules)

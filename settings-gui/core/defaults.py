@@ -11,7 +11,7 @@ from core.settings_model import SettingsModel
 
 
 def restore(dbus):
-    """Saves the defaults. False when fcitx5 cannot be reached or refuses a part of them."""
+    """Saves the defaults. False when a part of them was not saved, so the window can say so."""
     model = SettingsModel(dbus)
     if not model.load():
         return False
@@ -34,7 +34,7 @@ def _restore_dictionary(dbus):
     dictionary.load()
     # A file read only in part is left alone rather than replaced by the bundled words.
     if dictionary.load_failed:
-        return True
+        return False
     dictionary.reset()
     try:
         return dictionary.save()

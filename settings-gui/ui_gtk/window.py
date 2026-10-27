@@ -217,7 +217,16 @@ class Window(Adw.ApplicationWindow):
         return dialog
 
     def restore_defaults(self):
-        before = self._saved
+        # Taken now, since fcitx5 remembers app modes while the window is open.
+        before = settings_snapshot.take(self.dbus)
+        if before is None:
+            self._show(
+                Adw.Toast(
+                    title=_("Could not restore every default. Check that fcitx5 is running."),
+                    timeout=0,
+                )
+            )
+            return
         ok = defaults.restore(self.dbus)
         # Even a partial reset changed fcitx5, so the pages show what it holds and undo stays.
         self.reload()

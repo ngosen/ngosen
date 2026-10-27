@@ -121,6 +121,25 @@ class MacroTest(unittest.TestCase):
         self.assertEqual(page.table.rowCount(), 1)
 
 
+class KeymapTest(unittest.TestCase):
+    def test_a_freshly_opened_table_is_not_modified(self):
+        fake = FakeDBusHandler({}, {"custom_keymap": [{"Key": "s", "Value": "Missing"}]})
+        page = KeymapEditorPage(fake)
+        self.assertFalse(page.is_modified())
+
+    def test_reload_shows_what_fcitx5_has(self):
+        fake = FakeDBusHandler({}, {"custom_keymap": [{"Key": "s", "Value": "DauSac"}]})
+        page = KeymapEditorPage(fake)
+        # The main window asks every page whether it changed on each edit.
+        window = mock.Mock(on_changed=lambda: (page.is_modified(), page.is_modified_from_default()))
+        page.window = lambda: window
+        page.upsert_row("f", "DauHuyen")
+        fake.values["EnableCustomKeymap"] = "True"
+        page.load_data()
+        self.assertEqual(page.keymap.entries, [{"Key": "s", "Value": "DauSac"}])
+        self.assertEqual(page.table.rowCount(), 1)
+
+
 class HotkeyTest(unittest.TestCase):
     def test_editing_first_hotkey_keeps_the_others(self):
         fake = FakeDBusHandler({"ModeMenuKey": {"0": "grave", "1": "Control+space"}})

@@ -210,11 +210,6 @@ def about_page(version):
     box.append(buttons)
     box.append(Gtk.Separator())
     box.append(_label(_("Developed by Nguyen Phi")))
-    credits = _("Based on the code of {lotus} and {vmk}.").format(
-        lotus='<a href="https://github.com/LotusInputMethod/fcitx5-lotus">fcitx5-lotus</a>',
-        vmk='<a href="https://github.com/thanhpy2009/VMK">VMK</a>',
-    )
-    box.append(_label(credits, "dim-label", markup=True))
     box.append(Gtk.Separator())
     box.append(_label(_("Licensed under the GNU General Public License v3.0"), "dim-label"))
     clamp = Adw.Clamp(maximum_size=600, child=box)

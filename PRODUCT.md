@@ -46,8 +46,8 @@ not look or read like the Lotus original.
 
 ## Brand Commitments
 
-- Name: Ngó Sen. No Lotus visuals (the lotus flower logo, "Lotus" wording) outside the credit to
-  fcitx5-lotus.
+- Name: Ngó Sen, with its own logo and wording. The README credits fcitx5-lotus and VMK, whose code it
+  builds on.
 - User-facing Vietnamese uses "test" and "lỗi" and keeps common English tech terms.
 
 ## Evidence on Hand

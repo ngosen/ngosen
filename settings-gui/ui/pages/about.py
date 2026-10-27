@@ -149,17 +149,6 @@ class AboutPage(QWidget):
         developer.setObjectName("DeveloperLine")
         layout.addWidget(developer, alignment=Qt.AlignCenter)
 
-        # One credit line; the authors are named in the copyright notices.
-        credits = QLabel(
-            _("Based on the code of {lotus} and {vmk}.").format(
-                lotus='<a href="https://github.com/LotusInputMethod/fcitx5-lotus" style="text-decoration: none;">fcitx5-lotus</a>',
-                vmk='<a href="https://github.com/thanhpy2009/VMK" style="text-decoration: none;">VMK</a>',
-            )
-        )
-        credits.setOpenExternalLinks(True)
-        credits.setObjectName("CreditsLine")
-        mute(credits)
-        layout.addWidget(credits, alignment=Qt.AlignCenter)
         layout.addStretch()
 
         # Footer

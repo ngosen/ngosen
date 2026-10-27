@@ -23,6 +23,7 @@ class MacroPage:
     def __init__(self, table, on_saved):
         self.table = table
         self.on_saved = on_saved
+        self._syncing = False
         self.page = Adw.PreferencesPage(
             title=_("Macros & Dictionary"), icon_name="accessories-text-editor-symbolic"
         )
@@ -54,12 +55,15 @@ class MacroPage:
         return group
 
     def _on_switch(self, row, _param, key):
-        self.table.options[key] = row.get_active()
-        self._save(row.get_title())
+        if not self._syncing:
+            self._change(
+                lambda: self.table.options.update({key: row.get_active()}), row.get_title()
+            )
 
     def _on_format(self, row, _param, key):
-        self.table.options[key] = macros.FORMATS[key][row.get_selected()]
-        self._save(row.get_title())
+        if not self._syncing:
+            value = macros.FORMATS[key][row.get_selected()]
+            self._change(lambda: self.table.options.update({key: value}), row.get_title())
 
     def _editor(self):
         group = Adw.PreferencesGroup()
@@ -109,31 +113,39 @@ class MacroPage:
             return
         key, value = self.key_row.get_text(), self.value_row.get_text()
         index = self._index(key)
-        if index is None:
-            self.table.entries.append({"Key": key, "Value": value})
-        else:
-            self.table.entries[index] = {"Key": key, "Value": value}
-        if self._save(_("Macros")):
+
+        def put():
+            if index is None:
+                self.table.entries.append({"Key": key, "Value": value})
+            else:
+                self.table.entries[index] = {"Key": key, "Value": value}
+
+        if self._change(put, _("Macros")):
             self.key_row.set_text("")
             self.value_row.set_text("")
             self.key_row.grab_focus()
-        self.refresh()
 
     def _remove(self, key):
-        self.table.entries.pop(self._index(key))
-        self._save(_("Macros"))
-        self.refresh()
+        index = self._index(key)
+        if index is not None:
+            self._change(lambda: self.table.entries.pop(index), _("Macros"))
 
     def _edit(self, entry):
         self.key_row.set_text(entry["Key"])
         self.value_row.set_text(entry["Value"])
         self.value_row.grab_focus()
 
-    def _save(self, label):
+    def _change(self, change, label):
+        """Applies and saves a change, or puts the page back as it was if fcitx5 refuses it."""
+        # Not reloaded on failure: an fcitx5 that is restarting reads as an empty table, and the
+        # next save would write that over the user's macros.
+        options, entries = dict(self.table.options), [dict(e) for e in self.table.entries]
+        change()
         ok = self.table.save()
         if not ok:
-            self.table.load()
+            self.table.options, self.table.entries = options, entries
         self.on_saved(ok, label)
+        self.refresh()
         return ok
 
     def _matches(self, row):
@@ -142,6 +154,12 @@ class MacroPage:
         return not needle or needle in key.casefold() or needle in value.casefold()
 
     def refresh(self):
+        self._syncing = True
+        for key, row in self.switches.items():
+            row.set_active(self.table.options[key])
+        for key, row in self.formats.items():
+            row.set_selected(macros.FORMATS[key].index(self.table.options[key]))
+        self._syncing = False
         self.list.remove_all()
         for entry in self.table.entries:
             self.list.append(self._row(entry))

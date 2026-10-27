@@ -30,6 +30,24 @@ class NoFcitx(FakeDBusHandler):
         return {}
 
 
+class Restarting(FakeDBusHandler):
+    """fcitx5 gone for a moment: nothing is written and every read comes back empty."""
+
+    down = False
+
+    def get_config(self):
+        return {} if self.down else super().get_config()
+
+    def set_config(self, values):
+        return not self.down and super().set_config(values)
+
+    def get_sub_config_list(self, path, root_key):
+        return [] if self.down else super().get_sub_config_list(path, root_key)
+
+    def set_sub_config_list(self, path, root_key, data_list):
+        return not self.down and super().set_sub_config_list(path, root_key, data_list)
+
+
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkWindowTest(unittest.TestCase):
     def setUp(self):
@@ -102,6 +120,27 @@ class GtkMacroPageTest(unittest.TestCase):
     def test_removing_saves(self):
         self.page._remove("kg")
         self.assertEqual(self.saved(), [])
+
+    def test_a_failed_save_keeps_the_table_for_the_next_one(self):
+        dbus = Restarting(sub_configs={"ngosen-macro": [{"Key": "kg", "Value": "khô"}]})
+        page = window.Window(None, dbus).macros
+        dbus.down = True
+        page.key_row.set_text("hn")
+        page.value_row.set_text("Hà Nội")
+        page.add_button.emit("clicked")
+        dbus.down = False
+        page.key_row.set_text("tks")
+        page.value_row.set_text("cảm ơn")
+        page.add_button.emit("clicked")
+        self.assertEqual([e["Key"] for e in dbus.sub_configs["ngosen-macro"]], ["kg", "tks"])
+
+    def test_a_switch_that_could_not_be_saved_turns_back(self):
+        dbus = Restarting()
+        page = window.Window(None, dbus).macros
+        dbus.down = True
+        page.switches["EnableMacro"].set_active(False)
+        self.assertTrue(page.switches["EnableMacro"].get_active())
+        self.assertTrue(page.table.options["EnableMacro"])
 
     def test_switches_and_formats_save_their_values(self):
         self.page.switches["EnableMacro"].set_active(False)

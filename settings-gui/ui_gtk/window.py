@@ -46,9 +46,12 @@ class Window(Adw.ApplicationWindow):
             table = MacroTable(dbus)
             table.load()
             self.macros = MacroPage(table, self.report)
-        self._add_page("typing", _("Typing"), "input-keyboard-symbolic", self.typing)
+        self._add_page("typing", _("Typing"), "input-keyboard-symbolic", _widget(self.typing))
         self._add_page(
-            "macros", _("Macros & Dictionary"), "accessories-text-editor-symbolic", self.macros
+            "macros",
+            _("Macros & Dictionary"),
+            "accessories-text-editor-symbolic",
+            _widget(self.macros),
         )
         self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 
@@ -64,16 +67,7 @@ class Window(Adw.ApplicationWindow):
         narrow.add_setter(self.split, "collapsed", True)
         self.add_breakpoint(narrow)
 
-    def _add_page(self, name, title, icon, page):
-        """Adds a page object, or a widget; without fcitx5 there is no page, only a notice."""
-        if page is None:
-            widget = Adw.StatusPage(
-                icon_name="dialog-error-symbolic",
-                title=_("fcitx5 is not running"),
-                description=_("Cannot reach fcitx5, so changes will not be saved."),
-            )
-        else:
-            widget = getattr(page, "page", page)
+    def _add_page(self, name, title, icon, widget):
         self.stack.add_named(widget, name)
         self.pages.append((name, title, icon))
 
@@ -127,6 +121,17 @@ class Window(Adw.ApplicationWindow):
         self.toast = toast
         toast.set_use_markup(False)
         self.toasts.add_toast(toast)
+
+
+def _widget(page):
+    """The page's widget, or a notice when fcitx5 could not be reached to build it."""
+    if page is not None:
+        return page.page
+    return Adw.StatusPage(
+        icon_name="dialog-error-symbolic",
+        title=_("fcitx5 is not running"),
+        description=_("Cannot reach fcitx5, so changes will not be saved."),
+    )
 
 
 class App(Adw.Application):

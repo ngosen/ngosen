@@ -16,6 +16,7 @@ from i18n import _
 
 from core import system_check
 from ui_gtk import brand
+from ui_gtk.check_dialog import open_uri
 
 
 def _hinted(row, key):
@@ -179,11 +180,11 @@ def _label(text, *css, markup=False):
 
 def _link_button(label, uri):
     button = Gtk.Button(label=label, css_classes=["pill"])
-    button.connect("clicked", lambda b: Gtk.UriLauncher(uri=uri).launch(b.get_root(), None, None))
+    button.connect("clicked", lambda b: open_uri(b, uri))
     return button
 
 
-def about_page(version):
+def about_page(version, on_check):
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
     box.set_margin_top(24)
     box.set_margin_bottom(24)
@@ -204,6 +205,9 @@ def about_page(version):
         _label(_("Vietnamese input method for fcitx5 on Linux that types like UniKey on Windows."))
     )
     box.append(_label(f'<a href="{REPO_URL}">{REPO_URL}</a>', markup=True))
+    check = Gtk.Button(label=_("Check my machine…"), css_classes=["pill"], halign=Gtk.Align.CENTER)
+    check.connect("clicked", lambda _b: on_check())
+    box.append(check)
     buttons = Gtk.Box(spacing=12, halign=Gtk.Align.CENTER)
     buttons.append(_link_button(_("Report Bug"), BUG_REPORT_URL))
     buttons.append(_link_button(_("Request Feature"), FEATURE_REQUEST_URL))

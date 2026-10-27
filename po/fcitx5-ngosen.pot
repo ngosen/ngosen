@@ -1479,3 +1479,7 @@ msgstr ""
 #: settings-gui/ui_gtk/window.py
 msgid "Could not restore every default. Check that fcitx5 is running."
 msgstr ""
+
+#: settings-gui/ui_gtk/check_dialog.py
+msgid "Send the result"
+msgstr ""

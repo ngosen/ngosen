@@ -24,6 +24,7 @@ from i18n import _  # noqa: E402
 from core import defaults, settings_snapshot  # noqa: E402
 from ui_gtk import brand, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
+from ui_gtk.check_dialog import CheckDialog  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
 from ui_gtk.macros import MacroPage  # noqa: E402
@@ -64,7 +65,13 @@ class Window(Adw.ApplicationWindow):
             self.whats_new.page,
             searchable=False,
         )
-        self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
+        self.check = None
+        self._add_page(
+            "about",
+            _("About"),
+            "help-about-symbolic",
+            pages.about_page(__version__, self.open_system_check),
+        )
 
         self.split = Adw.NavigationSplitView(min_sidebar_width=220)
         self.split.set_sidebar(Adw.NavigationPage(title="Ngó Sen", child=self._sidebar()))
@@ -349,6 +356,13 @@ class Window(Adw.ApplicationWindow):
                 control.grab_focus()
                 return True
         return False
+
+    def open_system_check(self):
+        if self.check is None:
+            self.check = CheckDialog(self.dbus, __version__)
+        else:
+            self.check.run()
+        self.check.dialog.present(self)
 
     def show_tips(self):
         self.show_page("whats-new")

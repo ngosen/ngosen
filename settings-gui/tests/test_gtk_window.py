@@ -5,6 +5,7 @@ import os
 import tempfile
 import unittest
 from unittest import mock
+from urllib.parse import unquote
 
 # isort: off
 from fake_fcitx import DEFAULTS, FakeDBusHandler
@@ -17,11 +18,12 @@ CAN_RUN = ui_gtk.available() and bool(os.environ.get("DISPLAY"))
 REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
 
 if CAN_RUN:
-    from gi.repository import Adw, Gdk, Gtk
-    from ui_gtk import brand, window
+    from core.brand import MESSENGER_URL
+    from gi.repository import Adw, Gdk, GLib, Gtk
+    from ui_gtk import brand, check_dialog, window
     from ui_gtk.hotkey_button import HotkeyButton
 
-    from core import dictionary, keymap, whats_new_content
+    from core import dictionary, keymap, system_check, typing_log, whats_new_content
 
 
 def isolate(test):
@@ -545,6 +547,82 @@ class GtkDefaultsTest(unittest.TestCase):
         self.assertEqual(self.window.toast.get_timeout(), 0)
         self.window.toast.emit("button-clicked")
         self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkCheckDialogTest(unittest.TestCase):
+    NO_IM = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
+
+    def setUp(self):
+        Adw.init()
+        # The fcitx5 of the machine running the tests must not add a row.
+        patcher = mock.patch.object(system_check, "runs_replaced_addon", return_value=False)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        with mock.patch.dict(os.environ, self.NO_IM, clear=True):
+            self.check = check_dialog.CheckDialog(FakeDBusHandler(), "1.4.2")
+
+    def clipboard(self):
+        text = []
+        clipboard = Gdk.Display.get_default().get_clipboard()
+        clipboard.read_text_async(None, lambda c, result: text.append(c.read_text_finish(result)))
+        while not text:
+            GLib.MainContext.default().iteration(True)
+        return text[0]
+
+    def levels(self):
+        return [row.level for row in self.check.rows]
+
+    def test_lists_findings_again_and_copies_them(self):
+        self.assertIn(system_check.FAIL, self.levels())
+        self.assertIn("kate (wayland)", self.check.apps.get_text())
+        fixed = dict(
+            self.NO_IM, GTK_IM_MODULE="fcitx", QT_IM_MODULE="fcitx", XMODIFIERS="@im=fcitx"
+        )
+        old = self.check.rows
+        with mock.patch.dict(os.environ, fixed, clear=True):
+            self.check.run()
+        self.assertEqual(self.levels(), [system_check.OK])
+        self.assertEqual([row.get_parent() for row in old], [None] * len(old))
+        with mock.patch.dict(os.environ, self.NO_IM, clear=True):
+            self.check.run()
+        self.check.copy_btn.emit("clicked")
+        self.assertIn("[X] GTK apps have no input method", self.clipboard())
+        self.assertEqual(self.check.status.get_text(), "Copied the result.")
+
+    def test_messaging_copies_the_result_and_opens_the_chat(self):
+        Gdk.Display.get_default().get_clipboard().set("")
+        with mock.patch.object(check_dialog, "open_uri") as open_uri:
+            self.check.message_btn.emit("clicked")
+        self.assertEqual(open_uri.call_args[0][1], MESSENGER_URL)
+        self.assertIn("Ngó Sen 1.4.2", self.clipboard())
+        self.assertIn("Paste", self.check.status.get_text())
+
+    def test_reporting_opens_an_issue_with_the_result(self):
+        with mock.patch.object(check_dialog, "open_uri") as open_uri:
+            self.check.report_btn.emit("clicked")
+        self.assertIn("1.4.2", unquote(open_uri.call_args[0][1]))
+
+    def test_user_answers_when_the_app_hides_its_text(self):
+        test = typing_log.AppTest(path="log", program="edge", frontend="xim")
+        with mock.patch.object(typing_log, "read_latest", return_value=test):
+            self.check.read_typing_log()
+        self.assertTrue(self.check.wrong_btn.get_visible())
+        self.assertIn("edge (xim)", self.check.app_result.get_text())
+        self.check.wrong_btn.emit("clicked")
+        self.assertFalse(self.check.wrong_btn.get_visible())
+        self.assertIn("result: wrong", self.check.report_text())
+
+    def test_the_about_page_opens_one_dialog_and_checks_again(self):
+        win = window.Window(None, FakeDBusHandler())
+        self.addCleanup(win.destroy)
+        with mock.patch.object(Adw.Dialog, "present"):
+            win.open_system_check()
+            first = win.check
+            with mock.patch.object(first, "run") as run:
+                win.open_system_check()
+        self.assertIs(win.check, first)
+        run.assert_called_once()
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")

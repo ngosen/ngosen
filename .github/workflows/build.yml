@@ -213,6 +213,38 @@ jobs:
         working-directory: settings-gui/tests
         run: python3 -m unittest discover -v
 
+  # Ubuntu 24.04 has the oldest libadwaita the GTK window supports, Arch the newest.
+  settings-gtk:
+    name: Settings window tests (GTK, ${{ matrix.name }})
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: libadwaita 1.5
+            image: ubuntu:24.04
+            install: >-
+              apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y
+              --no-install-recommends python3 python3-gi python3-dbus gir1.2-gtk-4.0 gir1.2-adw-1
+              xvfb xauth fonts-dejavu-core
+          - name: newest libadwaita
+            image: archlinux:latest
+            install: >-
+              pacman -Syu --noconfirm python python-gobject python-dbus gtk4 libadwaita
+              xorg-server-xvfb xorg-xauth ttf-dejavu
+    env:
+      GDK_BACKEND: x11
+      GSK_RENDERER: cairo
+      NGOSEN_WINDOW_TESTS: required
+    steps:
+      - name: Install dependencies
+        run: ${{ matrix.install }}
+      - uses: actions/checkout@v7
+      - name: Test
+        working-directory: settings-gui/tests
+        run: xvfb-run -a python3 -m unittest -v test_gtk_window test_launcher test_core_toolkit_free
+
   python-lint:
     name: Python lint
     runs-on: ubuntu-latest

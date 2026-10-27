@@ -415,6 +415,50 @@ class GtkAppearancePageTest(unittest.TestCase):
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkUndoTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        isolate(self)
+        self.dbus = FakeDBusHandler(
+            {"SpellCheck": "True"}, sub_configs={"ngosen-macro": [{"Key": "kg", "Value": "khô"}]}
+        )
+        self.window = window.Window(None, self.dbus)
+        self.addCleanup(self.window.destroy)
+
+    def undo(self):
+        self.assertTrue(self.window.toast.get_button_label())
+        self.window.toast.emit("button-clicked")
+
+    def test_undo_puts_a_setting_back_and_shows_it(self):
+        self.window.typing.rows["SpellCheck"].set_active(False)
+        self.assertEqual(self.dbus.values["SpellCheck"], "False")
+        self.undo()
+        self.assertEqual(self.dbus.values["SpellCheck"], "True")
+        self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
+        self.assertIsNone(self.window.toast.get_button_label())
+
+    def test_undo_brings_back_a_removed_macro(self):
+        self.window.macros._remove("kg")
+        self.assertEqual(self.dbus.sub_configs["ngosen-macro"], [])
+        self.undo()
+        self.assertEqual(self.dbus.sub_configs["ngosen-macro"], [{"Key": "kg", "Value": "khô"}])
+        self.assertEqual([e["Key"] for e in self.window.macros.table.entries], ["kg"])
+
+    def test_undo_stays_on_the_tab_shown(self):
+        self.window.show_page("dictionary")
+        self.window.macros._remove("kg")
+        self.undo()
+        self.assertEqual(self.window.stack.get_visible_child_name(), "macros")
+        self.assertEqual(self.window.tabs["dictionary"].get_visible_child_name(), "dictionary")
+        self.assertIn("typing", [name for name, _w in self.window.search_pages])
+
+    def test_no_undo_when_fcitx5_could_not_be_read(self):
+        self.window._saved = None
+        self.window.typing.rows["SpellCheck"].set_active(False)
+        self.assertIsNone(self.window.toast.get_button_label())
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkSearchTest(unittest.TestCase):
     def setUp(self):
         Adw.init()

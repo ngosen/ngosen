@@ -30,7 +30,7 @@ ENAMEL_TEXT = ("#1c6b5f", "#5fb8a6")
 
 MARKS = """
 .wordmark { font-family: "Xanh Mono", monospace; font-size: 26px; }
-.typed, .typed text { font-family: "Xanh Mono", monospace; font-size: 17px; }
+.typed, .typed text, .typed-input text { font-family: "Xanh Mono", monospace; font-size: 17px; }
 .mode-button:checked { background: %(bg)s; color: %(fg)s; }
 """
 

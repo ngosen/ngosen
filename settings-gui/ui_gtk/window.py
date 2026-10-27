@@ -11,11 +11,13 @@ gi.require_version("PangoCairo", "1.0")
 
 from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
+from core.macros import MacroTable  # noqa: E402
 from core.settings_model import SettingsModel  # noqa: E402
 from gi.repository import Adw, Gio, Gtk  # noqa: E402
 from i18n import _  # noqa: E402
 
 from ui_gtk import brand, pages  # noqa: E402
+from ui_gtk.macros import MacroPage  # noqa: E402
 
 APP_ID = "io.github.ngosen.NgoSen.Settings"
 
@@ -30,24 +32,27 @@ class Window(Adw.ApplicationWindow):
         super().__init__(
             application=app, title=_("Ngó Sen Settings"), default_width=900, default_height=680
         )
-        self.model = SettingsModel(dbus or NgoSenDBusHandler())
+        dbus = dbus or NgoSenDBusHandler()
+        self.model = SettingsModel(dbus)
         self.toast = None
         self.toasts = Adw.ToastOverlay()
         self.stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
         self.toasts.set_child(self.stack)
         self.pages = []
 
+        self.typing = self.macros = None
         if self.model.load():
             self.typing = pages.TypingPage(self.model, self.save)
-            typing = self.typing.page
-        else:
-            self.typing = None
-            typing = Adw.StatusPage(
-                icon_name="dialog-error-symbolic",
-                title=_("fcitx5 is not running"),
-                description=_("Cannot reach fcitx5, so changes will not be saved."),
-            )
-        self._add_page("typing", _("Typing"), "input-keyboard-symbolic", typing)
+            table = MacroTable(dbus)
+            table.load()
+            self.macros = MacroPage(table, self.report)
+        self._add_page("typing", _("Typing"), "input-keyboard-symbolic", _widget(self.typing))
+        self._add_page(
+            "macros",
+            _("Macros & Dictionary"),
+            "accessories-text-editor-symbolic",
+            _widget(self.macros),
+        )
         self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 
         self.split = Adw.NavigationSplitView(min_sidebar_width=220)
@@ -100,8 +105,11 @@ class Window(Adw.ApplicationWindow):
 
     def save(self, key, value):
         self.model.set(key, value)
-        if self.model.save():
-            self._show(Adw.Toast(title=_("Saved “{}”.").format(self.model.label(key) or key)))
+        self.report(self.model.save(), self.model.label(key) or key)
+
+    def report(self, ok, label):
+        if ok:
+            self._show(Adw.Toast(title=_("Saved “{}”.").format(label)))
         else:
             self._show(
                 Adw.Toast(title=_("Could not save. Check that fcitx5 is running."), timeout=0)
@@ -113,6 +121,17 @@ class Window(Adw.ApplicationWindow):
         self.toast = toast
         toast.set_use_markup(False)
         self.toasts.add_toast(toast)
+
+
+def _widget(page):
+    """The page's widget, or a notice when fcitx5 could not be reached to build it."""
+    if page is not None:
+        return page.page
+    return Adw.StatusPage(
+        icon_name="dialog-error-symbolic",
+        title=_("fcitx5 is not running"),
+        description=_("Cannot reach fcitx5, so changes will not be saved."),
+    )
 
 
 class App(Adw.Application):

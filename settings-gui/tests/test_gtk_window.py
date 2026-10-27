@@ -30,6 +30,24 @@ class NoFcitx(FakeDBusHandler):
         return {}
 
 
+class Restarting(FakeDBusHandler):
+    """fcitx5 gone for a moment: nothing is written and every read comes back empty."""
+
+    down = False
+
+    def get_config(self):
+        return {} if self.down else super().get_config()
+
+    def set_config(self, values):
+        return not self.down and super().set_config(values)
+
+    def get_sub_config_list(self, path, root_key):
+        return [] if self.down else super().get_sub_config_list(path, root_key)
+
+    def set_sub_config_list(self, path, root_key, data_list):
+        return not self.down and super().set_sub_config_list(path, root_key, data_list)
+
+
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkWindowTest(unittest.TestCase):
     def setUp(self):
@@ -68,6 +86,67 @@ class GtkWindowTest(unittest.TestCase):
     def test_the_accent_follows_the_libadwaita_version(self):
         self.assertIn("@define-color accent_bg_color #1c6b5f", brand.css(False, 5))
         self.assertIn("--accent-bg-color: #247b6c", brand.css(True, 6))
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkMacroPageTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        self.dbus = FakeDBusHandler(sub_configs={"ngosen-macro": [{"Key": "kg", "Value": "khô"}]})
+        self.page = window.Window(None, self.dbus).macros
+
+    def saved(self):
+        return self.dbus.sub_configs["ngosen-macro"]
+
+    def test_adding_saves_the_table_at_once(self):
+        self.page.key_row.set_text("hn")
+        self.page.value_row.set_text("Hà Nội")
+        self.page.add_button.emit("clicked")
+        self.assertEqual(self.saved()[-1], {"Key": "hn", "Value": "Hà Nội"})
+        self.assertEqual(self.page.key_row.get_text(), "")
+
+    def test_a_key_in_another_case_updates_the_entry(self):
+        self.page.key_row.set_text("KG")
+        self.page.value_row.set_text("khô gà")
+        self.assertEqual(self.page.add_button.get_label(), window._("Update"))
+        self.page.add_button.emit("clicked")
+        self.assertEqual(self.saved(), [{"Key": "KG", "Value": "khô gà"}])
+
+    def test_a_key_the_engine_cannot_match_is_refused(self):
+        self.page.key_row.set_text("k g")
+        self.page.value_row.set_text("x")
+        self.assertFalse(self.page.add_button.get_sensitive())
+
+    def test_removing_saves(self):
+        self.page._remove("kg")
+        self.assertEqual(self.saved(), [])
+
+    def test_a_failed_save_keeps_the_table_for_the_next_one(self):
+        dbus = Restarting(sub_configs={"ngosen-macro": [{"Key": "kg", "Value": "khô"}]})
+        page = window.Window(None, dbus).macros
+        dbus.down = True
+        page.key_row.set_text("hn")
+        page.value_row.set_text("Hà Nội")
+        page.add_button.emit("clicked")
+        dbus.down = False
+        page.key_row.set_text("tks")
+        page.value_row.set_text("cảm ơn")
+        page.add_button.emit("clicked")
+        self.assertEqual([e["Key"] for e in dbus.sub_configs["ngosen-macro"]], ["kg", "tks"])
+
+    def test_a_switch_that_could_not_be_saved_turns_back(self):
+        dbus = Restarting()
+        page = window.Window(None, dbus).macros
+        dbus.down = True
+        page.switches["EnableMacro"].set_active(False)
+        self.assertTrue(page.switches["EnableMacro"].get_active())
+        self.assertTrue(page.table.options["EnableMacro"])
+
+    def test_switches_and_formats_save_their_values(self):
+        self.page.switches["EnableMacro"].set_active(False)
+        self.assertEqual(self.dbus.values["EnableMacro"], "False")
+        self.page.formats["TimeFormat"].set_selected(1)
+        self.assertEqual(self.dbus.values["TimeFormat"], "%H:%M:%S")
 
 
 def _children(widget):

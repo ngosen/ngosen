@@ -24,6 +24,20 @@ class MacroTableTest(unittest.TestCase):
         self.assertEqual(table.entries, [{"Key": "kg", "Value": "khô gà"}])
         self.assertFalse(table.is_modified())
 
+    def test_keys_that_differ_in_case_are_one_macro(self):
+        # The engine matches macro keys in any case, so only one of them could ever fire.
+        fake = FakeDBusHandler(
+            {}, {"ngosen-macro": [{"Key": "vn", "Value": "Việt Nam"}, {"Key": "VN", "Value": "VN"}]}
+        )
+        table = macros.MacroTable(fake)
+        table.load()
+        self.assertEqual(table.entries, [{"Key": "vn", "Value": "VN"}])
+
+    def test_an_unknown_format_falls_back_to_the_default(self):
+        table = macros.MacroTable(FakeDBusHandler({"TimeFormat": "%k:%M"}))
+        table.load()
+        self.assertEqual(table.options["TimeFormat"], "%H:%M")
+
     def test_save_writes_the_switches_and_the_table(self):
         fake = FakeDBusHandler()
         table = macros.MacroTable(fake)

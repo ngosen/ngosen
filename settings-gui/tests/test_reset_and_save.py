@@ -108,6 +108,18 @@ class MacroTest(unittest.TestCase):
         page = MacroEditorPage(fake)
         self.assertFalse(page.is_modified())
 
+    def test_reload_shows_what_fcitx5_has(self):
+        fake = FakeDBusHandler({}, {"ngosen-macro": [{"Key": "kg", "Value": "khô gà"}]})
+        page = MacroEditorPage(fake)
+        # The main window asks every page whether it changed on each edit.
+        window = mock.Mock(on_changed=page.is_modified_from_default)
+        page.window = lambda: window
+        page.upsert_row("unsaved", "never saved")
+        fake.values["EnableMacro"] = "False"
+        page.load_data()
+        self.assertEqual(page.macros.entries, [{"Key": "kg", "Value": "khô gà"}])
+        self.assertEqual(page.table.rowCount(), 1)
+
 
 class HotkeyTest(unittest.TestCase):
     def test_editing_first_hotkey_keeps_the_others(self):

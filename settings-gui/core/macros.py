@@ -10,11 +10,36 @@ DEFAULTS = {
     "TimeFormat": "%H:%M",
     "DateFormat": "%d/%m/%Y",
 }
+# The formats the settings window offers; an empty one leaves the time or date out.
+FORMATS = {
+    "TimeFormat": ("%H:%M", "%H:%M:%S", "%I:%M %p", "%I:%M:%S %p", ""),
+    "DateFormat": ("%d/%m/%Y", "%d/%m/%y", "%m/%d/%Y", "%Y-%m-%d", "%y-%m-%d", ""),
+}
 
 
 def is_invalid_key(key):
     # The engine ends a macro key at the first character that is not a letter or digit.
     return bool(key) and not key.isalnum()
+
+
+def merge_keys(entries):
+    """Keeps one entry per key, ignoring case as the engine does; the last value wins."""
+    merged = {}
+    for entry in entries:
+        key = entry["Key"].lower()
+        if key in merged:
+            merged[key]["Value"] = entry["Value"]
+        else:
+            merged[key] = dict(entry)
+    return list(merged.values())
+
+
+def state(options, entries):
+    return {"data": [dict(entry) for entry in entries], **options}
+
+
+def is_default(options, entries):
+    return not entries and options == DEFAULTS
 
 
 class MacroTable:
@@ -32,11 +57,14 @@ class MacroTable:
                 value = values.get(key, default)
                 if isinstance(default, bool):
                     value = str(value).lower() == "true"
+                elif value not in FORMATS[key]:
+                    value = default
                 self.options[key] = value
-        self.entries = [
+        self.entries = merge_keys(
             {"Key": item.get("Key", ""), "Value": item.get("Value", "")}
             for item in self.dbus.get_sub_config_list("ngosen-macro", "Macro")
-        ]
+            if item.get("Key")
+        )
         self.saved_state = self.state()
 
     def reset(self):
@@ -44,10 +72,10 @@ class MacroTable:
         self.entries = []
 
     def is_modified_from_default(self):
-        return bool(self.entries) or self.options != DEFAULTS
+        return not is_default(self.options, self.entries)
 
     def state(self):
-        return {"data": [dict(entry) for entry in self.entries], **self.options}
+        return state(self.options, self.entries)
 
     def is_modified(self):
         return self.state() != self.saved_state

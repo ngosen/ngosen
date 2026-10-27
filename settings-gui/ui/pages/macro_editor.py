@@ -117,17 +117,17 @@ class MacroEditorPage(BaseEditorPage):
         self.input_time_format.setEditable(False)
         self.input_time_format.currentIndexChanged.connect(self._on_item_changed)
 
-        time_presets = [
-            ("%H:%M", "15:04 (24h)"),
-            ("%H:%M:%S", "15:04:05 (24h)"),
-            ("%I:%M %p", "03:04 PM"),
-            ("%I:%M:%S %p", "03:04:05 PM"),
-            ("", _("None")),
-        ]
-        for fmt, desc in time_presets:
+        time_examples = {
+            "%H:%M": "15:04 (24h)",
+            "%H:%M:%S": "15:04:05 (24h)",
+            "%I:%M %p": "03:04 PM",
+            "%I:%M:%S %p": "03:04:05 PM",
+            "": _("None"),
+        }
+        for fmt in macros.FORMATS["TimeFormat"]:
             self.input_time_format.addItem(fmt, fmt)
             self.input_time_format.setItemData(
-                self.input_time_format.count() - 1, desc, Qt.ToolTipRole
+                self.input_time_format.count() - 1, time_examples[fmt], Qt.ToolTipRole
             )
 
         time_layout.addWidget(QLabel(_("Time Format:")))
@@ -139,18 +139,18 @@ class MacroEditorPage(BaseEditorPage):
         self.input_date_format.setEditable(False)
         self.input_date_format.currentIndexChanged.connect(self._on_item_changed)
 
-        date_presets = [
-            ("%d/%m/%Y", "dd/MM/yyyy"),
-            ("%d/%m/%y", "dd/MM/yy"),
-            ("%m/%d/%Y", "MM/dd/yyyy"),
-            ("%Y-%m-%d", "yyyy-MM-dd"),
-            ("%y-%m-%d", "yy-MM-dd"),
-            ("", _("None")),
-        ]
-        for fmt, desc in date_presets:
+        date_examples = {
+            "%d/%m/%Y": "dd/MM/yyyy",
+            "%d/%m/%y": "dd/MM/yy",
+            "%m/%d/%Y": "MM/dd/yyyy",
+            "%Y-%m-%d": "yyyy-MM-dd",
+            "%y-%m-%d": "yy-MM-dd",
+            "": _("None"),
+        }
+        for fmt in macros.FORMATS["DateFormat"]:
             self.input_date_format.addItem(fmt, fmt)
             self.input_date_format.setItemData(
-                self.input_date_format.count() - 1, desc, Qt.ToolTipRole
+                self.input_date_format.count() - 1, date_examples[fmt], Qt.ToolTipRole
             )
 
         date_layout.addWidget(QLabel(_("Date Format:")))
@@ -232,10 +232,6 @@ class MacroEditorPage(BaseEditorPage):
             for item in self.macros.entries:
                 self.upsert_row(item["Key"], item["Value"], sort=False)
             self.on_search_changed()
-            # The table merges keys that differ only in case and drops unknown formats,
-            # so what it shows is the baseline, not what was read.
-            self._sync_to_model()
-            self.macros.saved_state = self.macros.state()
         finally:
             self.blockSignals(False)
 
@@ -248,19 +244,17 @@ class MacroEditorPage(BaseEditorPage):
             (self.input_time_format, "TimeFormat"),
             (self.input_date_format, "DateFormat"),
         ):
-            index = combo.findData(options[key])
-            if index < 0:
-                # Only the listed formats can be picked, so an unknown one falls back.
-                index = combo.findData(macros.DEFAULTS[key])
-            combo.setCurrentIndex(index)
+            combo.setCurrentIndex(combo.findData(options[key]))
 
-    def _sync_to_model(self):
-        self.macros.options = {
+    def _shown_values(self):
+        # Read without storing: the main window asks is_modified() while load_data
+        # is still filling the widgets from the model.
+        options = {
             "EnableMacro": self.cb_enable.isChecked(),
             "CapitalizeMacro": self.cb_capitalize.isChecked(),
             "EnableMacroInOffMode": self.cb_enable_off_mode.isChecked(),
-            "TimeFormat": self.input_time_format.currentText(),
-            "DateFormat": self.input_date_format.currentText(),
+            "TimeFormat": self.input_time_format.currentData(),
+            "DateFormat": self.input_date_format.currentData(),
         }
         entries = []
         for row in range(self.table.rowCount()):
@@ -270,7 +264,7 @@ class MacroEditorPage(BaseEditorPage):
                 entries.append(
                     {"Key": key_item.text(), "Value": val_item.text() if val_item else ""}
                 )
-        self.macros.entries = entries
+        return options, entries
 
     def restore_defaults(self):
         """Resets macros to default (empty table, enabled checkboxes)."""
@@ -284,15 +278,13 @@ class MacroEditorPage(BaseEditorPage):
             self.blockSignals(False)
 
     def is_modified_from_default(self):
-        self._sync_to_model()
-        return self.macros.is_modified_from_default()
+        return not macros.is_default(*self._shown_values())
 
     def is_modified(self):
-        self._sync_to_model()
-        return self.macros.is_modified()
+        return macros.state(*self._shown_values()) != self.macros.saved_state
 
     def save_data(self) -> bool:
-        self._sync_to_model()
+        self.macros.options, self.macros.entries = self._shown_values()
         return self.macros.save()
 
     def _find_row_by_key(self, key: str) -> int | None:

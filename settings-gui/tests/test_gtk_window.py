@@ -17,10 +17,10 @@ CAN_RUN = ui_gtk.available() and bool(os.environ.get("DISPLAY"))
 REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
 
 if CAN_RUN:
-    from gi.repository import Adw
+    from gi.repository import Adw, Gtk
     from ui_gtk import brand, window
 
-    from core import dictionary
+    from core import dictionary, keymap
 
 
 def isolate(test):
@@ -234,6 +234,80 @@ class GtkDictionaryPageTest(unittest.TestCase):
         self.window.show_page("dictionary")
         self.assertEqual(self.window.stack.get_visible_child_name(), "macros")
         self.assertEqual(self.window.tabs["dictionary"].get_visible_child_name(), "dictionary")
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkKeymapPageTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        isolate(self)
+        self.dbus = FakeDBusHandler(
+            sub_configs={"custom_keymap": [{"Key": "s", "Value": "DauSac"}]}
+        )
+        self.page = window.Window(None, self.dbus).keymap
+
+    def saved(self):
+        return [(e["Key"], e["Value"]) for e in self.dbus.sub_configs["custom_keymap"]]
+
+    def test_adding_and_updating_a_key_saves(self):
+        self.page.key_row.set_text("f")
+        self.page.action.set_selected(2)
+        self.page.add_button.emit("clicked")
+        self.page.key_row.set_text("s")
+        self.assertEqual(self.page.add_button.get_label(), "Update")
+        self.page.action.set_selected(0)
+        self.page.add_button.emit("clicked")
+        self.assertEqual(self.saved(), [("s", "XoaDauThanh"), ("f", "DauHuyen")])
+
+    def test_changing_the_action_in_a_row_saves(self):
+        row = self.page.list.get_row_at_index(0)
+        dropdown = next(w for w in _children(row) if isinstance(w, Gtk.DropDown))
+        dropdown.set_selected(3)
+        self.assertEqual(self.saved(), [("s", "DauHoi")])
+
+    def test_a_key_longer_than_one_character_is_refused(self):
+        self.page.key_row.set_text("sf")
+        self.assertFalse(self.page.add_button.get_sensitive())
+
+    def test_changing_the_action_keeps_the_row(self):
+        row = self.page.list.get_row_at_index(0)
+        dropdown = next(w for w in _children(row) if isinstance(w, Gtk.DropDown))
+        dropdown.set_selected(3)
+        self.assertIs(self.page.list.get_row_at_index(0), row)
+
+    def test_a_row_loads_into_the_editor_and_the_search_filters(self):
+        self.page.apply("VNI")
+        row = self.page.list.get_row_at_index(0)
+        row.emit("activated")
+        self.assertEqual(self.page.key_row.get_text(), row.entry["Key"])
+        self.assertEqual(self.page.add_button.get_label(), "Update")
+        self.page.search.set_text("Dấu sắc")
+        self.page.list.invalidate_filter()
+        rows = (r for r in _children(self.page.list) if hasattr(r, "entry"))
+        shown = [r.entry["Key"] for r in rows if r.get_child_visible()]
+        self.assertEqual(shown, ["1"])
+
+    def test_removing_a_key_saves(self):
+        self.page._remove("s")
+        self.assertEqual(self.saved(), [])
+
+    def test_a_preset_replaces_every_key(self):
+        self.page.apply("VNI")
+        self.assertEqual(self.saved(), list(keymap.PRESETS["VNI"]))
+
+    def test_the_switch_saves(self):
+        self.page.switch.set_active(True)
+        self.assertEqual(self.dbus.values["EnableCustomKeymap"], "True")
+
+    def test_a_failed_save_keeps_the_keys_for_the_next_one(self):
+        dbus = Restarting(sub_configs={"custom_keymap": [{"Key": "s", "Value": "DauSac"}]})
+        page = window.Window(None, dbus).keymap
+        dbus.down = True
+        page.apply("VNI")
+        dbus.down = False
+        page.key_row.set_text("f")
+        page.add_button.emit("clicked")
+        self.assertEqual([e["Key"] for e in dbus.sub_configs["custom_keymap"]], ["s", "f"])
 
 
 def _children(widget):

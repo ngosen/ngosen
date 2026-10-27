@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [1.6.3-1] — 27/10/2026
 
-Sửa lỗi Gõ Sen để nguyên chữ thô trong editor và mất hoặc rối chữ khi gõ nhanh trong ô chat của Antigravity trên GNOME (#362, #365).
+Sửa lỗi gõ chữ trong editor và ô chat của Antigravity trên GNOME (#362, #365); sửa lỗi Cứu dấu ở Gõ Sen khi backspace về cuối chữ trước hoặc bấm chuột vào giữa chữ (#358, #370).
 Tải ở [ngosen-1.6.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.3-1).
 
 ### Sửa

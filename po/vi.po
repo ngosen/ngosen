@@ -320,8 +320,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "See Cứu chữ, Cứu dấu, the English/Vietnamese key, Vim mode and typing tips."
-msgstr "Xem Cứu chữ, Cứu dấu, phím chuyển Anh/Việt, Vim mode và mẹo gõ."
+msgid "See Cứu chữ, Cứu dấu, the English/Vietnamese key and typing tips."
+msgstr "Xem Cứu chữ, Cứu dấu, phím chuyển Anh/Việt và mẹo gõ."
 
 #: src/ngosen-engine.cpp
 msgid "Show"

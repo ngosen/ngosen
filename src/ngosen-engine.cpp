@@ -515,7 +515,7 @@ namespace fcitx {
             // It is shown only once, and Plasma keeps no history of an expired one, so it waits for the user.
             constexpr int32_t neverExpire = 0;
             addon->call<INotifications::sendNotification>(
-                "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"), _("See Cứu chữ, Cứu dấu, the English/Vietnamese key, Vim mode and typing tips."),
+                "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"), _("See Cứu chữ, Cứu dấu, the English/Vietnamese key and typing tips."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;
         });

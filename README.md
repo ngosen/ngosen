@@ -49,7 +49,7 @@ Telex được dùng và test hằng ngày. VNI và các kiểu khác dùng đư
 ## Cài
 
 Lệnh dưới đây cài cho Fedora, Ubuntu (từ 24.04), Debian (từ 12), Kali, Arch, CachyOS và openSUSE Tumbleweed
-trên x86_64. Ubuntu 22.04 và Linux Mint 21 dùng được tới version 1.6.1.
+trên x86_64. Ubuntu 22.04 và Linux Mint 21 dùng được tới version 1.6.2.
 Fedora, Ubuntu, Debian và Kali còn có gói cho ARM 64-bit (aarch64):
 
 ```
@@ -76,7 +76,8 @@ Các bước thiết lập chỉ áp dụng cho tài khoản chạy lệnh. Tài
 
 ### Ngó Sen cho GNOME (IBus)
 
-Chọn bản này nếu dùng GNOME, muốn dùng IBus có sẵn và không cần đủ tính năng của bản fcitx5:
+Chọn bản này nếu dùng GNOME, muốn dùng IBus có sẵn và không cần đủ tính năng của bản fcitx5. Trên GNOME, cài
+xong là gõ được ngay, không phải thiết lập gì thêm:
 
 ```
 curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus
@@ -121,6 +122,9 @@ sudo pacman-key --lsign-key 6D4A2075F9853BE8F6B6FE7E75501858158B36CD
 printf '\n[ngosen]\nServer = https://ngosen.github.io/ngosen/arch/$arch\n' | sudo tee -a /etc/pacman.conf
 sudo pacman -Syu fcitx5-ngosen
 ```
+
+[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) cũng có trong repo APT và pacman ở trên: thay
+`fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
 
 openSUSE Tumbleweed dùng repo zypper (x86_64):
 

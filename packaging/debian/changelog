@@ -1,3 +1,14 @@
+fcitx5-ngosen (1:1.6.2-1) unstable; urgency=medium
+
+  * Cứu dấu after a click: click right after a typed word and type a tone key to change its
+    tone, Sen typing only (#118, #327).
+  * install.sh --ibus installs Ngó Sen for GNOME, the IBus edition (#330, #334).
+  * The APT and pacman repositories also carry ibus-ngosen (#333).
+  * install.sh --uninstall turns off only what the installer turned on (#328).
+  * The Cứu dấu hint in the settings window says it changes only the tone mark (#329).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Tue, 27 Oct 2026 20:00:00 +0700
+
 fcitx5-ngosen (1:1.6.1-1) unstable; urgency=medium
 
   * Cứu chữ and Cứu dấu hints follow the interface language, Vietnamese by default

@@ -25,8 +25,9 @@ def take(dbus):
     snapshot = {"config": config.get("values", {})}
     for path, root_key in SUB_CONFIGS:
         snapshot[path] = dbus.get_sub_config_list(path, root_key)
+    # Bytes, so a file that is not UTF-8 is put back as it was instead of stopping the window.
     try:
-        with open(local_dict_path(), encoding="utf-8") as f:
+        with open(local_dict_path(), "rb") as f:
             snapshot["dictionary"] = f.read()
     except FileNotFoundError:
         snapshot["dictionary"] = None
@@ -46,7 +47,7 @@ def restore(dbus, snapshot):
                 os.remove(dict_path)
         else:
             os.makedirs(os.path.dirname(dict_path), exist_ok=True)
-            with open(dict_path, "w", encoding="utf-8") as f:
+            with open(dict_path, "wb") as f:
                 f.write(snapshot["dictionary"])
     except OSError:
         ok = False

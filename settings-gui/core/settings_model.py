@@ -134,3 +134,12 @@ class SettingsModel:
             self.set(key, {"0": text})
         else:
             self.set_first_hotkey(key, text)
+
+    def tray_icons(self, desktop_dark):
+        """The tray icons for Vietnamese and English, and whether they suit a dark panel."""
+        if str(self.current.get("UseLotusIcons", "True")).lower() == "true":
+            return ("fcitx-ngosen", "fcitx-ngosen-off"), desktop_dark
+        color = str(self.current.get("IconTheme", "Auto"))
+        dark = {"Light": False, "Dark": True}.get(color, desktop_dark)
+        suffix = "-default" if dark else "-default-black"
+        return (f"fcitx-ngosen{suffix}", f"fcitx-ngosen-off{suffix}"), dark

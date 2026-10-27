@@ -384,6 +384,37 @@ class GtkShortcutsPageTest(unittest.TestCase):
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkAppearancePageTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        isolate(self)
+        self.dbus = FakeDBusHandler()
+        self.page = window.Window(None, self.dbus).appearance
+
+    def test_each_language_is_named_in_itself(self):
+        row = self.page.rows["UiLanguage"]
+        names = [row.get_model().get_string(i) for i in range(row.get_model().get_n_items())]
+        self.assertIn("Tiếng Việt", names)
+        row.set_selected(row.values.index("English"))
+        self.assertEqual(self.dbus.values["UiLanguage"], "English")
+
+    def test_menu_switches_name_the_menu_entry(self):
+        row = self.page.rows["ShowMenuCharset"]
+        self.assertEqual(row.get_title(), "Charset")
+        row.set_active(not row.get_active())
+        self.assertEqual(self.dbus.values["ShowMenuCharset"], str(row.get_active()))
+
+    def test_tray_preview_follows_the_icon_settings(self):
+        self.page.rows["UseLotusIcons"].set_active(False)
+        theme = self.page.rows["IconTheme"]
+        theme.set_selected(theme.values.index("Dark"))
+        self.assertTrue(self.page.preview.has_css_class("tray-dark"))
+        theme.set_selected(theme.values.index("Light"))
+        self.assertTrue(self.page.preview.has_css_class("tray-light"))
+        self.assertFalse(self.page.preview.has_css_class("tray-dark"))
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class HotkeyButtonTest(unittest.TestCase):
     def setUp(self):
         self.button = HotkeyButton("F12")

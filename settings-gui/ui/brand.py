@@ -5,6 +5,7 @@
 
 import os
 
+from core.catalog import TRAY_PANEL
 from qtpy.QtCore import QEvent, QObject, QStandardPaths, Qt
 from qtpy.QtGui import QColor, QFont, QFontDatabase, QIcon, QPainter, QPalette, QPixmap
 
@@ -23,7 +24,7 @@ SAVED_BORDER = ("#1c6b5f", "#3f9c8b")
 ERROR_FILL = ("#f8e3df", "#3d1d18")
 ERROR_BORDER = ("#c2301c", "#d0533f")
 # A neutral light or dark desktop panel, behind the tray icon preview.
-PANEL = ("#e6e6e6", "#2d2d2d")
+PANEL = TRAY_PANEL
 
 _font_loaded = False
 

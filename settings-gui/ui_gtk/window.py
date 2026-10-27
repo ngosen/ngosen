@@ -20,6 +20,7 @@ from gi.repository import Adw, Gio, Gtk  # noqa: E402
 from i18n import _  # noqa: E402
 
 from ui_gtk import brand, pages  # noqa: E402
+from ui_gtk.appearance import AppearancePage  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
 from ui_gtk.macros import MacroPage  # noqa: E402
@@ -48,10 +49,12 @@ class Window(Adw.ApplicationWindow):
         self.pages = []
 
         self.typing = self.macros = self.dictionary = self.keymap = self.shortcuts = None
+        self.appearance = None
         self.tabs = {}
         self.tab_parents = {}
         if self.model.load():
             self.typing = pages.TypingPage(self.model, self.save)
+            self.appearance = AppearancePage(self.model, self.save)
             others = [n for n in (dbus.input_method_names() or []) if n != "ngosen"]
             self.shortcuts = ShortcutsPage(self.model, self.save, bool(others))
             table = MacroTable(dbus)
@@ -73,6 +76,12 @@ class Window(Adw.ApplicationWindow):
             _("Keys"),
             "preferences-desktop-keyboard-symbolic",
             self._tabs("keys", shortcuts=self.shortcuts, keymap=self.keymap),
+        )
+        self._add_page(
+            "appearance",
+            _("Appearance"),
+            "preferences-desktop-appearance-symbolic",
+            _widget(self.appearance),
         )
         self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 

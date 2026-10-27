@@ -80,10 +80,24 @@ class KeymapPage:
 
     def _list(self):
         group = Adw.PreferencesGroup()
+        self.search = Gtk.SearchEntry(placeholder_text=_("Search keys..."))
+        self.search.connect("search-changed", lambda _s: self.list.invalidate_filter())
+        group.set_header_suffix(self.search)
         self.list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
         self.list.add_css_class("boxed-list")
+        self.list.set_filter_func(self._matches)
         group.add(self.list)
         return group
+
+    def _matches(self, row):
+        needle = self.search.get_text().casefold()
+        key, action = row.entry["Key"], ACTION_NAMES[ACTION_CODES.index(row.entry["Value"])]
+        return not needle or needle in key.casefold() or needle in action.casefold()
+
+    def _edit(self, entry):
+        self.key_row.set_text(entry["Key"])
+        self.action.set_selected(ACTION_CODES.index(entry["Value"]))
+        self.action.grab_focus()
 
     def _index(self, key):
         return next((i for i, e in enumerate(self.table.entries) if e["Key"] == key), None)
@@ -91,7 +105,8 @@ class KeymapPage:
     def _check(self):
         key = self.key_row.get_text().strip()
         self.add_button.set_label(_("Update") if self._index(key) is not None else _("Add"))
-        self.add_button.set_sensitive(bool(key))
+        # The engine reads one character per rule.
+        self.add_button.set_sensitive(len(key) == 1)
 
     def _add(self):
         if not self.add_button.get_sensitive():
@@ -114,14 +129,15 @@ class KeymapPage:
         index = self._index(key)
         action = ACTION_CODES[position]
         if index is not None and self.table.entries[index]["Value"] != action:
-            self._change(lambda: self.table.entries[index].update({"Value": action}))
+            # The dropdown already shows the new action; rebuilding would destroy it mid-signal.
+            self._change(lambda: self.table.entries[index].update({"Value": action}), rebuild=False)
 
     def _remove(self, key):
         index = self._index(key)
         if index is not None:
             self._change(lambda: self.table.entries.pop(index))
 
-    def _change(self, change):
+    def _change(self, change, rebuild=True):
         """Applies and saves a change, or puts the page back as it was if fcitx5 refuses it."""
         # Not reloaded on failure, for the reason given in MacroPage._change.
         enabled, entries = self.table.enabled, [dict(e) for e in self.table.entries]
@@ -130,7 +146,10 @@ class KeymapPage:
         if not ok:
             self.table.enabled, self.table.entries = enabled, entries
         self.on_saved(ok, _("Keymap"))
-        self.refresh()
+        if ok and not rebuild:
+            self._check()
+        else:
+            self.refresh()
         return ok
 
     def refresh(self):
@@ -143,7 +162,9 @@ class KeymapPage:
         self._check()
 
     def _row(self, entry):
-        row = Adw.ActionRow()
+        row = Adw.ActionRow(activatable=True)
+        row.entry = entry
+        row.connect("activated", lambda _r: self._edit(entry))
         row.add_prefix(Gtk.Label(label=entry["Key"], width_chars=3, css_classes=["typed"]))
         actions = Gtk.DropDown(model=Gtk.StringList.new(ACTION_NAMES), valign=Gtk.Align.CENTER)
         actions.set_selected(ACTION_CODES.index(entry["Value"]))

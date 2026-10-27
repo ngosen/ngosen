@@ -265,6 +265,28 @@ class GtkKeymapPageTest(unittest.TestCase):
         dropdown.set_selected(3)
         self.assertEqual(self.saved(), [("s", "DauHoi")])
 
+    def test_a_key_longer_than_one_character_is_refused(self):
+        self.page.key_row.set_text("sf")
+        self.assertFalse(self.page.add_button.get_sensitive())
+
+    def test_changing_the_action_keeps_the_row(self):
+        row = self.page.list.get_row_at_index(0)
+        dropdown = next(w for w in _children(row) if isinstance(w, Gtk.DropDown))
+        dropdown.set_selected(3)
+        self.assertIs(self.page.list.get_row_at_index(0), row)
+
+    def test_a_row_loads_into_the_editor_and_the_search_filters(self):
+        self.page.apply("VNI")
+        row = self.page.list.get_row_at_index(0)
+        row.emit("activated")
+        self.assertEqual(self.page.key_row.get_text(), row.entry["Key"])
+        self.assertEqual(self.page.add_button.get_label(), "Update")
+        self.page.search.set_text("Dấu sắc")
+        self.page.list.invalidate_filter()
+        rows = (r for r in _children(self.page.list) if hasattr(r, "entry"))
+        shown = [r.entry["Key"] for r in rows if r.get_child_visible()]
+        self.assertEqual(shown, ["1"])
+
     def test_removing_a_key_saves(self):
         self.page._remove("s")
         self.assertEqual(self.saved(), [])

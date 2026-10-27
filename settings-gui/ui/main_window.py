@@ -8,6 +8,7 @@ Main window assembling all configuration tabs with a modern layout.
 import os
 from datetime import datetime
 
+from core.app_modes import RememberedAppModes
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import Qt, QTimer
@@ -33,7 +34,6 @@ from qtpy.QtWidgets import (
 
 from core import backup, settings_snapshot
 from ui import brand, search
-from ui.app_modes import RememberedAppModes
 
 # Lazy loading pages on demand
 
@@ -166,7 +166,9 @@ class NgoSenSettingsWindow(QMainWindow):
         if not searching:
             return
         self._build_all_pages()
-        pages = [p for p in self._pages if getattr(p, "searchable", True)]
+        pages = [
+            p for p in self._pages if isinstance(p, QWidget) and getattr(p, "searchable", True)
+        ]
         for label, target, page in search.find(pages, text):
             item = QListWidgetItem(f"{label} — {self._page_titles[page]}")
             item.setData(Qt.UserRole, (target, page))

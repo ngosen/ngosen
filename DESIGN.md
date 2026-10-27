@@ -112,7 +112,7 @@ window (its `DESIGN.md`) is the model for widgets and spacing.
   lưu… and Khôi phục… on the right, so both windows put them in the same place. Mặc định asks
   first in an `AdwAlertDialog`.
 - **Enamel is the window's accent.** The app sets libadwaita's accent colours to `enamel` (light)
-  and `enamel-dark` (dark) with `on-enamel` text, so switches, the selected sidebar row, focus rings
+  and `enamel-dark` (dark) with `on-enamel` text, so switches, checkboxes, focus rings
   and suggested buttons are enamel. This one window ignores the accent the user picked in GNOME.
 - **Light and dark** come from `AdwStyleManager`.
 - **Search** is a `GtkSearchEntry` at the top of the sidebar that lists matching rows across pages,

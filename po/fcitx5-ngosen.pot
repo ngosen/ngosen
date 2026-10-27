@@ -1483,3 +1483,7 @@ msgstr ""
 #: settings-gui/ui_gtk/check_dialog.py
 msgid "Send the result"
 msgstr ""
+
+#: settings-gui/ui_gtk/window.py
+msgid "Ngó Sen backup"
+msgstr ""

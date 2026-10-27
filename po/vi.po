@@ -1569,3 +1569,7 @@ msgstr "Chưa đưa được mọi thứ về mặc định. Hãy xem fcitx5 có
 #: settings-gui/ui_gtk/check_dialog.py
 msgid "Send the result"
 msgstr "Gửi kết quả"
+
+#: settings-gui/ui_gtk/window.py
+msgid "Ngó Sen backup"
+msgstr "Bản sao lưu Ngó Sen"

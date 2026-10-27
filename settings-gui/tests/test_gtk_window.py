@@ -550,6 +550,59 @@ class GtkDefaultsTest(unittest.TestCase):
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkBackupTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        isolate(self)
+        self.path = os.path.join(os.environ["XDG_DATA_HOME"], "b.json")
+        self.dbus = FakeDBusHandler(
+            {"SpellCheck": "True"}, sub_configs={"ngosen-macro": [{"Key": "kg", "Value": "khô"}]}
+        )
+        self.window = window.Window(None, self.dbus)
+        self.addCleanup(self.window.destroy)
+
+    def test_restoring_a_backup_puts_it_back_and_can_be_undone(self):
+        self.window.export_backup(self.path)
+        self.assertTrue(self.window.toast.get_title().startswith("Backed up to "))
+        self.window.typing.rows["SpellCheck"].set_active(False)
+        self.window.macros._remove("kg")
+        self.window.restore_backup(self.path)
+        self.assertEqual(self.window.toast.get_title(), "Restored from b.json.")
+        self.assertEqual(self.dbus.values["SpellCheck"], "True")
+        self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
+        self.assertEqual([e["Key"] for e in self.window.macros.table.entries], ["kg"])
+        self.window.toast.emit("button-clicked")
+        self.assertEqual(self.dbus.values["SpellCheck"], "False")
+        self.assertEqual(self.dbus.sub_configs["ngosen-macro"], [])
+
+    def test_a_file_that_is_not_a_backup_changes_nothing(self):
+        with open(self.path, "w") as f:
+            f.write("[]")
+        self.window.restore_backup(self.path)
+        self.assertTrue(self.window.toast.get_title().startswith("Failed to open backup file:"))
+        self.assertEqual(self.dbus.sub_configs["ngosen-macro"], [{"Key": "kg", "Value": "khô"}])
+
+    def test_a_backup_that_cannot_be_written_says_so(self):
+        self.window.export_backup(os.path.join(self.path, "missing", "b.json"))
+        self.assertTrue(self.window.toast.get_title().startswith("Failed to export backup:"))
+
+    def test_the_menu_offers_backup_and_restore(self):
+        for name in ("backup", "restore-backup", "restore-defaults"):
+            self.assertIsNotNone(self.window.lookup_action(name), name)
+
+    def test_a_cancelled_file_dialog_does_nothing(self):
+        def cancelled(_result):
+            raise GLib.Error("dismissed")
+
+        use = mock.Mock()
+        self.window._on_file(None, None, cancelled, use)
+        use.assert_not_called()
+        picked = mock.Mock(get_path=mock.Mock(return_value=self.path))
+        self.window._on_file(None, None, lambda _r: picked, use)
+        use.assert_called_once_with(self.path)
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkCheckDialogTest(unittest.TestCase):
     NO_IM = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
 

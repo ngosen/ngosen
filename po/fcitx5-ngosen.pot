@@ -314,6 +314,18 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
+#: src/ngosen-engine.cpp
+msgid "What's new in Ngó Sen?"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "See Cứu chữ, Cứu dấu, the English/Vietnamese key, Vim mode and typing tips."
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Show"
+msgstr ""
+
 #: src/ngosen-engine.cpp:991 src/ngosen-engine.cpp:1030
 msgid "Default Typing"
 msgstr ""
@@ -1344,4 +1356,103 @@ msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "What's new & tips"
+msgstr ""
+
+#: settings-gui/ui/pages/whats_new.py
+#, python-brace-format
+msgid "New in {}"
+msgstr ""
+
+#: settings-gui/ui/pages/whats_new.py
+msgid "Tips"
+msgstr ""
+
+#: settings-gui/ui/pages/whats_new.py
+msgid "Open setting"
+msgstr ""
+
+#: settings-gui/ui/pages/whats_new.py
+#, python-brace-format
+msgid "Open the {} page"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+#, python-brace-format
+msgid "Tip: {}"
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Cứu chữ"
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Forgot to switch Vietnamese on? Press the English/Vietnamese key and the word is fixed; Tab or Esc gives back what you typed."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Cứu dấu"
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Select a word, or click right after it, and type a tone key to change its tone mark; Tab or Esc gives it back."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "English/Vietnamese key"
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A new install switches with Ctrl+Shift, an older one keeps Ctrl+Space; Ngó Sen remembers the mode across logouts."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Press ` to pick Sen, Preedit, Emoji Picker or OFF for the app in use."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Tap Ctrl alone to keep the word as typed: tunx, Ctrl, Space keeps tũn."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A macro ko → không also types Không when you type Ko."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "] types ư and [ types ơ, so ch]a gives chưa. Off by default."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Space twice types a period. Off by default."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "-- types an em dash (—). Off by default."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A capital letter after . ! ? and Enter. Off by default; the tray menu's Auto Capitalize pauses it."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "hoà or hòa? Pick with “Use oà, uý (Instead Of òa, úy)”."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "$DATE and $TIME in a macro type today's date and time: hn → Hôm nay $DATE."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Typing wrong in some app? “Check my machine…” on the About page says why."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "“Save typing log” in the tray menu records what you type, to attach to a bug report."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "“Back Up…” and “Restore…” below keep your settings, macros and dictionary."
 msgstr ""

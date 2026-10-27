@@ -49,6 +49,7 @@ class NgoSenSettingsWindow(QMainWindow):
         self._pages = []
         self._page_rows = {}
         self._page_titles = {}
+        self._page_names = {}
         self._reset_pending = False
         # Saves once typing pauses instead of on every key in a text field.
         self._save_timer = QTimer(self)
@@ -165,7 +166,8 @@ class NgoSenSettingsWindow(QMainWindow):
         if not searching:
             return
         self._build_all_pages()
-        for label, target, page in search.find(self._pages, text):
+        pages = [p for p in self._pages if getattr(p, "searchable", True)]
+        for label, target, page in search.find(pages, text):
             item = QListWidgetItem(f"{label} — {self._page_titles[page]}")
             item.setData(Qt.UserRole, (target, page))
             self.search_results.addItem(item)
@@ -186,6 +188,10 @@ class NgoSenSettingsWindow(QMainWindow):
             return
         target, page = found
         self.search_field.clear()
+        self.reveal(target, page)
+
+    def reveal(self, target, page):
+        """Shows the page and tab holding a widget, scrolls to it and puts the focus on it."""
         self.sidebar.setCurrentRow(self._page_rows[page])
         tabs = self.content_stack.currentWidget()
         if isinstance(tabs, QTabWidget):
@@ -196,6 +202,32 @@ class NgoSenSettingsWindow(QMainWindow):
         if parent:
             parent.ensureWidgetVisible(target)
         target.setFocus(Qt.OtherFocusReason)
+
+    def open_setting(self, key):
+        """Shows the control of a setting, as the What's new page's buttons do.
+
+        Returns False for a key no page renders; raising here would abort the window.
+        """
+        self._build_all_pages()
+        for page in self._pages:
+            control = getattr(page, "control_for", lambda _key: None)(key)
+            if control is not None:
+                self.reveal(control, page)
+                return True
+        return False
+
+    def show_page(self, name):
+        """Shows the page registered under `name` and returns it."""
+        row, index = self._page_names[name]
+        self.sidebar.setCurrentRow(row)
+        widget = self.content_stack.currentWidget()
+        if not isinstance(widget, QTabWidget):
+            return widget
+        widget.setCurrentIndex(index)
+        return widget.widget(index)
+
+    def show_tips(self):
+        self.show_page("whats-new").show_tips()
 
     def _build_all_pages(self):
         # Pages are built when first opened; reset and search need all of them.
@@ -265,9 +297,15 @@ class NgoSenSettingsWindow(QMainWindow):
 
     def _setup_pages(self):
         def create_typing():
+            from ui import whats_new_content
             from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
 
-            return DynamicSettingsPage(self.dbus_handler, category=SettingsCategory.TYPING)
+            return DynamicSettingsPage(
+                self.dbus_handler,
+                category=SettingsCategory.TYPING,
+                tip=whats_new_content.random_tip(),
+                on_tip=self.show_tips,
+            )
 
         def create_macros():
             from ui.pages.macro_editor import MacroEditorPage
@@ -299,12 +337,18 @@ class NgoSenSettingsWindow(QMainWindow):
 
             return AboutPage(self.dbus_handler)
 
-        self._add_page(_("Typing"), "input-keyboard", (None, create_typing))
+        def create_whats_new():
+            from ui.pages.whats_new import WhatsNewPage
+
+            return WhatsNewPage(self.open_setting, self.show_page)
+
+        self._add_page(_("Typing"), "input-keyboard", (None, create_typing), names=["typing"])
         self._add_page(
             _("Macros & Dictionary"),
             "accessories-text-editor",
             (_("Macros"), create_macros),
             (_("Dictionary"), create_dict),
+            names=["macros", "dictionary"],
         )
         self._add_page(
             _("Keys"),
@@ -323,9 +367,16 @@ class NgoSenSettingsWindow(QMainWindow):
             (None, create_appearance),
         )
         self._add_page(
+            _("What's new & tips"),
+            ("dialog-information", "help-about-symbolic"),
+            (None, create_whats_new),
+            names=["whats-new"],
+        )
+        self._add_page(
             _("About"),
             ("help-about", "help-about-symbolic", "dialog-information"),
             (None, create_about),
+            names=["about"],
         )
 
     def on_restore_defaults(self):
@@ -538,13 +589,18 @@ class NgoSenSettingsWindow(QMainWindow):
         self.resize(w, h)
         self.move((screen.width() - w) // 2, (screen.height() - h) // 2)
 
-    def _add_page(self, title: str, icon_name, *parts):
-        """Adds a sidebar entry; several (tab title, factory) parts show as tabs."""
-        names = (icon_name,) if isinstance(icon_name, str) else icon_name
-        icon = next((QIcon.fromTheme(n) for n in names if QIcon.hasThemeIcon(n)), QIcon())
+    def _add_page(self, title: str, icon_name, *parts, names=()):
+        """Adds a sidebar entry; several (tab title, factory) parts show as tabs.
+
+        `names` gives the parts internal names for show_page, one per part.
+        """
+        icon_names = (icon_name,) if isinstance(icon_name, str) else icon_name
+        icon = next((QIcon.fromTheme(n) for n in icon_names if QIcon.hasThemeIcon(n)), QIcon())
         item = QListWidgetItem(icon, title)
         item.setData(Qt.UserRole, "page")
         item.setData(Qt.UserRole + 1, list(parts))
         item.setData(Qt.UserRole + 2, None)
 
         self.sidebar.addItem(item)
+        for index, name in enumerate(names):
+            self._page_names[name] = (self.sidebar.row(item), index)

@@ -43,6 +43,11 @@ The release is `X.Y.Z-N` (`N` is the packaging revision) with epoch 1, tagged `n
 
    `packaging/check-version.sh X.Y.Z-N` must print no `MISMATCH`.
 
+   A feature release (`Z` = 0) is announced once by a desktop notification that opens the "Có gì mới &
+   mẹo" page, so also update `settings-gui/ui/whats_new_content.py` (a card per new feature, newest
+   release first) and the notification text in `src/ngosen-engine.cpp` with its `po/` entries. A bug-fix
+   release shows nothing.
+
 2. `CHANGELOG.md`: turn `## [Chưa phát hành]` into `## [X.Y.Z-N] — DD/MM/YYYY` with a one-line summary and a
    link to the release, and start a new empty `## [Chưa phát hành]`.
 3. `packaging/release-notes.md`: the first paragraph says what this version fixes or adds (the CHANGELOG

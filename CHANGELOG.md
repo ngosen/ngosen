@@ -17,6 +17,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - `install.sh --ibus` cài Ngó Sen cho GNOME (bản IBus) và thêm vào nguồn nhập của GNOME. Tài khoản đang
   dùng bản fcitx5 thì lệnh hỏi lại trước khi chuyển; `--ibus --uninstall` gỡ bản IBus mà không đụng bản
   fcitx5 (#330).
+- Sau khi cập nhật lên version có tính năng mới (1.7.0 trở đi), một thông báo ở góc màn hình hiện một lần,
+  bấm "Xem" thì mở cửa sổ cài đặt ở trang "Có gì mới & mẹo". Version chỉ sửa lỗi và cài mới không báo (#331).
+- Cửa sổ cài đặt có trang "Có gì mới & mẹo": Cứu chữ, Cứu dấu, phím chuyển Anh/Việt với nút "Mở cài đặt"
+  dẫn tới đúng ô, và 12 mẹo gõ. Trang Gõ chữ hiện một mẹo ngẫu nhiên mỗi lần mở cửa sổ (#331).
 
 ### Bỏ
 

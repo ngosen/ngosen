@@ -57,9 +57,13 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 
 - Window: sidebar list on the left, page on the right. Below about 620px wide the form labels go
   above their fields.
-- Sidebar: icon and wordmark, a search field, then five pages with a small line icon each:
-  Gõ chữ, Gõ tắt & Từ điển, Phím, Giao diện, Giới thiệu. The current page uses the platform's
-  selection look.
+- Sidebar: icon and wordmark, a search field, then six pages with a small line icon each:
+  Gõ chữ, Gõ tắt & Từ điển, Phím, Giao diện, Có gì mới & mẹo, Giới thiệu. The current page uses
+  the platform's selection look.
+- Có gì mới & mẹo: one card per recent feature (name, how to use it, a typed example in Xanh
+  Mono, an "Mở cài đặt" button that jumps to the setting), then the tips as plain lines. Nothing
+  on it is a control, so the search field skips it. Gõ chữ shows one tip, picked at random, above
+  its form.
 - Page: title in the system font (semibold, about 1.3× body), then a form layout (`QFormLayout`):
   labels right-aligned with a colon, controls left-aligned. Groups are separated by a thin line,
   the group name in the label column ("Cách bỏ dấu:", "Gõ nhanh:").

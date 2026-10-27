@@ -233,7 +233,9 @@ namespace fcitx {
         // What the toggle key last chose, for apps without a rule of their own.
         HiddenOption<bool> vietnameseOn{this, "VietnameseOn", _("Vietnamese On"), false};
         // Set once the settings were upgraded; fcitx5 leaves defaults out of the file, so nothing else tells.
-        HiddenOption<int> settingsVersion{this, "SettingsVersion", _("Settings Version"), 0}; KeyListOption modeMenuKey{
+        HiddenOption<int> settingsVersion{this, "SettingsVersion", _("Settings Version"), 0};
+        // The last feature release (X.Y) whose "What's new" notification was shown.
+        HiddenOption<std::string> announcedVersion{this, "AnnouncedVersion", _("Announced Version"), ""}; KeyListOption modeMenuKey{
             this, "ModeMenuKey", _("Mode Menu Hotkey"), {Key("grave")}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
         KeyListOption cycleModeKey{this, "CycleModeKey", _("Cycle Mode Hotkey"), {}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
         SubConfigOption                                                                appRules{this, "AppRules", _("App Rules"), "fcitx://config/addon/ngosen/app_rules"};

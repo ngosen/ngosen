@@ -18,6 +18,7 @@ target_link_libraries(ngosen_test_core PRIVATE
     Fcitx5::Config
     Fcitx5::Module::Emoji
     ${NGOSEN_DBUS_MODULE}
+    ${NGOSEN_NOTIFICATIONS_MODULE}
     Bamboo::Core
     Pthread::Pthread
 )
@@ -58,6 +59,7 @@ function(ngosen_headless_test_settings target)
         Fcitx5::Config
         Fcitx5::Module::Emoji
         ${NGOSEN_DBUS_MODULE}
+        ${NGOSEN_NOTIFICATIONS_MODULE}
         Bamboo::Core
         Pthread::Pthread
     )

@@ -10,6 +10,7 @@ target_link_libraries(ngosen
 	Fcitx5::Config
   Fcitx5::Module::Emoji
   ${NGOSEN_DBUS_MODULE}
+  ${NGOSEN_NOTIFICATIONS_MODULE}
 	Bamboo::Core
 	Pthread::Pthread
 )

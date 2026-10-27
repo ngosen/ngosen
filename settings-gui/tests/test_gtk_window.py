@@ -796,6 +796,16 @@ class GtkWhatsNewPageTest(unittest.TestCase):
         self.window.typing.tip_row.emit("activated")
         self.assertEqual(self.window.stack.get_visible_child_name(), "whats-new")
 
+    def test_the_backup_tip_points_at_the_menu(self):
+        backup = whats_new_content.TIPS[-1]
+        with mock.patch.object(window, "random_tip", return_value=backup):
+            other = window.Window(None, FakeDBusHandler())
+        self.addCleanup(other.destroy)
+        shown = [other.typing.tip_row.get_title(), other.whats_new.tip_rows[-1].get_title()]
+        for title in shown:
+            self.assertIn("menu", title)
+            self.assertNotIn("below", title)
+
     def test_without_fcitx5_open_setting_does_nothing(self):
         other = window.Window(None, NoFcitx())
         self.addCleanup(other.destroy)

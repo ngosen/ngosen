@@ -11,6 +11,10 @@ from i18n import _
 PAGE_TITLES = {"macros": _("Macros"), "about": _("About")}
 
 
+def tip_text(tip):
+    return _(tip.get("gtk_text", tip["text"]))
+
+
 class WhatsNewPage:
     """open_setting(key) and show_page(name) take the buttons to what they name."""
 
@@ -31,7 +35,7 @@ class WhatsNewPage:
         tips = Adw.PreferencesGroup(title=_("Tips"))
         self.tip_rows = []
         for tip in TIPS:
-            row = Adw.ActionRow(title=_(tip["text"]), use_markup=False)
+            row = Adw.ActionRow(title=tip_text(tip), use_markup=False)
             self._add_button(row, tip["target"])
             self.tip_rows.append(row)
             tips.add(row)

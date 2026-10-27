@@ -97,6 +97,10 @@ TIPS = [
     },
     {
         "text": N_("“Back Up…” and “Restore…” below keep your settings, macros and dictionary."),
+        # The GTK window has these in its header menu, not along the bottom.
+        "gtk_text": N_(
+            "“Back Up…” and “Restore…” in the window menu keep your settings, macros and dictionary."
+        ),
         "target": None,
     },
 ]

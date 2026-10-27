@@ -555,10 +555,11 @@ class GtkCheckDialogTest(unittest.TestCase):
 
     def setUp(self):
         Adw.init()
-        # The fcitx5 of the machine running the tests must not add a row.
-        patcher = mock.patch.object(system_check, "runs_replaced_addon", return_value=False)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        # The fcitx5 and IBus of the machine running the tests must not add a row.
+        for name in ("runs_replaced_addon", "_process_running"):
+            patcher = mock.patch.object(system_check, name, return_value=False)
+            patcher.start()
+            self.addCleanup(patcher.stop)
         with mock.patch.dict(os.environ, self.NO_IM, clear=True):
             self.check = check_dialog.CheckDialog(FakeDBusHandler(), "1.4.2")
 
@@ -566,9 +567,10 @@ class GtkCheckDialogTest(unittest.TestCase):
         text = []
         clipboard = Gdk.Display.get_default().get_clipboard()
         clipboard.read_text_async(None, lambda c, result: text.append(c.read_text_finish(result)))
+        GLib.timeout_add_seconds(5, lambda: text.append(None))
         while not text:
             GLib.MainContext.default().iteration(True)
-        return text[0]
+        return text[0] or ""
 
     def levels(self):
         return [row.level for row in self.check.rows]

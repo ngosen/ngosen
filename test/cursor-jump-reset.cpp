@@ -144,6 +144,9 @@ namespace {
                 return;
             context_->surroundingText().setText(text_, cursor - 1, cursor - 1);
             context_->updateSurroundingText();
+            // The app may report the real caret again well after the key.
+            pumpEventLoop(testInstance_.instance, 120);
+            report();
         }
         // advance moves the reported cursor ahead of the text the app has applied so far.
         void report(size_t advance = 0) {

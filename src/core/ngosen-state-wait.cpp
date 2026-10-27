@@ -424,8 +424,7 @@ namespace ngosen {
             ((s.anchor() == s.cursor() && sinceInputUs < SuggestionStepUs) || (s.anchor() == lastSurroundingAnchor_ && s.anchor() > s.cursor()));
         const bool settling = sinceInputUs < CaretSettleUs;
         // Antigravity's editor on GNOME moves the caret one step back well after the key (#362).
-        const bool caretSettling =
-            jumped && s.cursor() == s.anchor() && sinceInputUs < SuggestionStepUs && (s.cursor() + 1 == lastSurroundingCursor_ || s.cursor() == lastSurroundingCursor_ + 1);
+        const bool caretSettling = jumped && s.cursor() == s.anchor() && sinceInputUs < SuggestionStepUs && s.cursor() + 1 == lastSurroundingCursor_;
         // A spreadsheet reports a click on another cell only as that cell's text with the cursor at its start.
         const bool lostWord = lostWordAfterBounce(s, settling);
         const bool newField =
@@ -439,9 +438,12 @@ namespace ngosen {
         const bool keyStartedCell = settling && passed_key_ && !sameText && s.text().empty() && !oldPreBuffer_.empty() && ngosen::reportsFieldOnlyOnKey(host_->field());
         jumped                    = ((jumped && !echo && !intoSuggestion && !caretSettling) || newField) && !settling;
         lastSurroundingText_      = s.text();
-        lastSurroundingCursor_    = s.cursor();
-        lastSurroundingAnchor_    = s.anchor();
-        hasLastSurrounding_       = true;
+        // Keep the real caret, so the app reporting it again is not a move either.
+        if (!caretSettling) {
+            lastSurroundingCursor_ = s.cursor();
+            lastSurroundingAnchor_ = s.anchor();
+        }
+        hasLastSurrounding_ = true;
         if (keyStartedCell && !is_deleting_.load(std::memory_order_acquire)) {
             startWordWithKey(*passed_key_);
             return;

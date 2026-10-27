@@ -4,14 +4,16 @@
 import unittest
 from unittest import mock
 
+# isort: off
+from support import DEFAULTS, FakeDBusHandler, app
+from core import whats_new_content
 from core.whats_new_content import FEATURES, TIPS
 from qtpy.QtWidgets import QCheckBox, QLabel, QPushButton
-from support import DEFAULTS, FakeDBusHandler, app
 from ui.main_window import NgoSenSettingsWindow
 from ui.pages.dynamic_settings import TipLine
 from ui.pages.whats_new import PAGE_TITLES, WhatsNewPage
 
-from core import whats_new_content
+# isort: on
 
 
 def targets():

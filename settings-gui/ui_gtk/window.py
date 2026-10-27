@@ -12,6 +12,7 @@ gi.require_version("PangoCairo", "1.0")
 from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
 from core.dictionary import Dictionary  # noqa: E402
+from core.keymap import Keymap  # noqa: E402
 from core.macros import MacroTable  # noqa: E402
 from core.settings_model import SettingsModel  # noqa: E402
 from gi.repository import Adw, Gio, Gtk  # noqa: E402
@@ -19,6 +20,7 @@ from i18n import _  # noqa: E402
 
 from ui_gtk import brand, pages  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
+from ui_gtk.keymap import KeymapPage  # noqa: E402
 from ui_gtk.macros import MacroPage  # noqa: E402
 
 APP_ID = "io.github.ngosen.NgoSen.Settings"
@@ -42,7 +44,7 @@ class Window(Adw.ApplicationWindow):
         self.toasts.set_child(self.stack)
         self.pages = []
 
-        self.typing = self.macros = self.dictionary = None
+        self.typing = self.macros = self.dictionary = self.keymap = None
         self.tabs = {}
         if self.model.load():
             self.typing = pages.TypingPage(self.model, self.save)
@@ -50,12 +52,18 @@ class Window(Adw.ApplicationWindow):
             table.load()
             self.macros = MacroPage(table, self.report)
             self.dictionary = DictionaryPage(Dictionary(dbus), self.report)
+            keys = Keymap(dbus)
+            keys.load()
+            self.keymap = KeymapPage(keys, self.report)
         self._add_page("typing", _("Typing"), "input-keyboard-symbolic", _widget(self.typing))
         self._add_page(
             "macros",
             _("Macros & Dictionary"),
             "accessories-text-editor-symbolic",
             self._tabs(macros=self.macros, dictionary=self.dictionary),
+        )
+        self._add_page(
+            "keys", _("Keys"), "preferences-desktop-keyboard-symbolic", _widget(self.keymap)
         )
         self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 

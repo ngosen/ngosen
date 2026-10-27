@@ -88,3 +88,34 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 - Offscreen screenshots of every page, light and dark.
 - Real windows on KDE (Breeze) and GNOME, and on Qt5 as well as Qt6.
 - Keyboard only: every control reachable with Tab, focus visible.
+
+## GTK edition
+
+The same window built with GTK 4 and libadwaita, for GNOME and Cinnamon. It follows the GNOME
+Human Interface Guidelines the way the Qt window follows the platform style, and reads and writes
+settings only through `settings-gui/core/`, so both windows save the same values. The IBus edition's
+window (its `DESIGN.md`) is the model for widgets and spacing.
+
+- **libadwaita 1.5 or newer** (Ubuntu 24.04, Mint 22, Debian 13, Fedora 43). Where the system has an
+  older one (Debian 12, Mint 21) the installer picks the Qt window.
+- **Stock widgets.** `AdwNavigationSplitView` with the six pages in the sidebar, as in GNOME
+  Settings; below about 600sp only one side shows. Each page is an `AdwPreferencesPage` of
+  `AdwPreferencesGroup`s with `AdwSwitchRow`, `AdwComboRow`, `AdwEntryRow` and `AdwSpinRow`. A
+  hint is the row's subtitle. No CSS beyond the brand marks and the accent colour.
+- **The same four brand marks.** The icon and wordmark at the top of the sidebar; typed text in
+  Xanh Mono through a `.typed` class; the typing mode as linked toggle buttons, the checked one
+  filled enamel with `on-enamel` text (`enamel-dark` in dark mode). libadwaita 1.5 has no
+  `AdwToggleGroup`.
+- **Changes save at once.** Each change shows an `AdwToast` "Đã lưu “<setting>”." with Hoàn tác,
+  one at a time, instead of the Qt window's inline message.
+- **Bottom bar as in the Qt window**, an `AdwToolbarView` bottom bar: Mặc định on the left, Sao
+  lưu… and Khôi phục… on the right, so both windows put them in the same place. Mặc định asks
+  first in an `AdwAlertDialog`.
+- **Enamel is the window's accent.** The app sets libadwaita's accent colours to `enamel` (light)
+  and `enamel-dark` (dark) with `on-enamel` text, so switches, checkboxes, focus rings
+  and suggested buttons are enamel. This one window ignores the accent the user picked in GNOME.
+- **Light and dark** come from `AdwStyleManager`.
+- **Search** is a `GtkSearchEntry` at the top of the sidebar that lists matching rows across pages,
+  like the Qt window's search field.
+- **Check before merging** a GTK page: screenshots light and dark at 1.5 and the newest
+  libadwaita, a real window on GNOME and on Cinnamon, and keyboard-only use.

@@ -454,9 +454,19 @@ class GtkUndoTest(unittest.TestCase):
         self.assertEqual(self.window.tabs["dictionary"].get_visible_child_name(), "dictionary")
         self.assertIn("typing", [name for name, _w in self.window.search_pages])
 
-    def test_no_undo_when_fcitx5_could_not_be_read(self):
-        self.window._saved = None
+    def test_undo_keeps_what_fcitx5_remembered_since_the_window_opened(self):
+        kate = [{"App": "kate", "Mode": "3"}]
+        self.dbus.sub_configs["app_rules"] = kate
         self.window.typing.rows["SpellCheck"].set_active(False)
+        self.undo()
+        self.assertEqual(self.dbus.sub_configs["app_rules"], kate)
+        self.window.macros._remove("kg")
+        self.undo()
+        self.assertEqual(self.dbus.sub_configs["app_rules"], kate)
+
+    def test_no_undo_when_fcitx5_could_not_be_read(self):
+        with mock.patch.object(window.settings_snapshot, "take", return_value=None):
+            self.window.typing.rows["SpellCheck"].set_active(False)
         self.assertIsNone(self.window.toast.get_button_label())
 
 

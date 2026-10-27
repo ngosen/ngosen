@@ -13,11 +13,11 @@ ACTION_NAMES = [name for _code, name in keymap.BAMBOO_ACTIONS]
 
 
 class KeymapPage:
-    """on_saved(ok, label) hears about every save, to show a toast."""
+    """on_save(write, label) runs every save, so the window can offer to undo it."""
 
-    def __init__(self, table, on_saved):
+    def __init__(self, table, on_save):
         self.table = table
-        self.on_saved = on_saved
+        self.on_save = on_save
         self._syncing = False
         self.page = Adw.PreferencesPage(
             title=_("Keymap"), icon_name="preferences-desktop-keyboard-symbolic"
@@ -144,10 +144,9 @@ class KeymapPage:
         # Not reloaded on failure, for the reason given in MacroPage._change.
         enabled, entries = self.table.enabled, [dict(e) for e in self.table.entries]
         change()
-        ok = self.table.save()
+        ok = self.on_save(self.table.save, _("Keymap"))
         if not ok:
             self.table.enabled, self.table.entries = enabled, entries
-        self.on_saved(ok, _("Keymap"))
         if ok and not rebuild:
             self._check()
         else:

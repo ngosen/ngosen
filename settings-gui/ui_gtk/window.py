@@ -55,7 +55,6 @@ class Window(Adw.ApplicationWindow):
         self.pages = []
         self.search_pages = []
         self.page_titles = {}
-        self._saved = settings_snapshot.take(self.dbus)
         self._undo_to = None
 
         for name, title, icon, widget, searchable in self._data_pages():
@@ -104,11 +103,11 @@ class Window(Adw.ApplicationWindow):
             self.shortcuts = ShortcutsPage(self.model, self.save, bool(others))
             table = MacroTable(self.dbus)
             table.load()
-            self.macros = MacroPage(table, self.report)
-            self.dictionary = DictionaryPage(Dictionary(self.dbus), self.report)
+            self.macros = MacroPage(table, self.save_with_undo)
+            self.dictionary = DictionaryPage(Dictionary(self.dbus), self.save_with_undo)
             keys = Keymap(self.dbus)
             keys.load()
-            self.keymap = KeymapPage(keys, self.report)
+            self.keymap = KeymapPage(keys, self.save_with_undo)
         return [
             ("typing", _("Typing"), "input-keyboard-symbolic", _widget(self.typing), True),
             (
@@ -151,7 +150,6 @@ class Window(Adw.ApplicationWindow):
             if name in self.tabs:
                 self.tabs[name].set_visible_child_name(name)
         self.stack.set_visible_child_name(shown)
-        self._saved = settings_snapshot.take(self.dbus)
 
     def undo(self):
         """Puts back the settings from before the last save."""
@@ -428,16 +426,25 @@ class Window(Adw.ApplicationWindow):
             for k in MODE_KEYS
             if conflicts and k in self.model.modified
         }
+        before = settings_snapshot.take(self.dbus)
         ok = self.model.save()
         self.model.modified.update(held)
         if key in held:
             self._show(Adw.Toast(title=conflicts[0][0], timeout=0))
         else:
-            self.report(ok, self.model.label(key) or key)
+            self._report(ok, self.model.label(key) or key, before)
 
-    def report(self, ok, label):
+    def save_with_undo(self, write, label):
+        """Runs a page's write, with Undo back to what fcitx5 held just before it."""
+        # Taken now, since fcitx5 remembers app modes while the window is open.
+        before = settings_snapshot.take(self.dbus)
+        ok = write()
+        self._report(ok, label, before)
+        return ok
+
+    def _report(self, ok, label, before):
         if ok:
-            self._undo_to, self._saved = self._saved, settings_snapshot.take(self.dbus)
+            self._undo_to = before
             self._show(self._with_undo(Adw.Toast(title=_("Saved “{}”.").format(label))))
         else:
             self._show(

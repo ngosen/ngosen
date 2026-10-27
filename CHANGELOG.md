@@ -35,9 +35,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   vùng chọn, thay cho màu nhấn desktop (KDE/GNOME); trước đây chỉ nút chế độ gõ đang chọn và thông báo “Đã lưu”
   dùng xanh men. Màu này dùng cho cả giao diện sáng và tối; sắc xanh ở giao diện tối đậm hơn trước một chút để
   chữ dễ đọc hơn (#352).
-- `install.sh` trên GNOME và Cinnamon (Linux Mint) cài thư viện cửa sổ cài đặt GTK, không tải bộ Qt
-  (khoảng 20 MB trên Ubuntu 24.04 GNOME và Mint 22.1). Debian 12 (libadwaita quá cũ), KDE và desktop khác vẫn dùng Qt.
-  Máy đã cài Ngó Sen từ trước vẫn giữ bộ Qt, không bị gỡ (#387).
+- `install.sh` trên GNOME và Cinnamon (Linux Mint) ở Debian, Ubuntu, Linux Mint, Fedora và openSUSE cài thư viện cửa sổ cài đặt GTK,
+  không tải Qt (khoảng 20 MB trên Ubuntu 24.04 GNOME và Mint 22.1). Debian 12 (libadwaita quá cũ), KDE và desktop khác vẫn dùng Qt.
+  Arch/CachyOS vẫn cài Qt vì gói Arch không cho chọn GTK hay Qt. Máy đã cài Ngó Sen vẫn giữ bộ Qt, không bị gỡ (#387).
 
 ### Bỏ
 

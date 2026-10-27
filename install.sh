@@ -211,11 +211,12 @@ wants_gtk_settings() {
 # Debian 12 has libadwaita 1.2, older than the GTK window needs.
 apt_has_libadwaita() {
     local version
-    version=$(apt-cache policy gir1.2-adw-1 2>/dev/null | sed -n 's/^ *Candidate: //p')
+    version=$(LC_ALL=C apt-cache policy gir1.2-adw-1 2>/dev/null | sed -n 's/^ *Candidate: //p')
     [ -n "$version" ] && [ "$version" != '(none)' ] && dpkg --compare-versions "$version" ge 1.5
 }
 
 # Packages named with the package itself, so the package manager settles its choice of Qt or GTK.
+# The Arch package keeps Qt, having no alternative dependencies.
 settings_window_packages() {
     settings_packages=()
     if wants_gtk_settings; then
@@ -223,7 +224,6 @@ settings_window_packages() {
             dnf) settings_packages=(python3-gobject libadwaita) ;;
             zypper) settings_packages=(python3-gobject typelib-1_0-Adw-1) ;;
             apt) ! apt_has_libadwaita || settings_packages=(gir1.2-adw-1 python3-gi) ;;
-            pacman) settings_packages=(python-gobject libadwaita) ;;
         esac
     elif [ "$edition" = fcitx5 ]; then
         case "$manager" in
@@ -236,7 +236,9 @@ settings_window_packages() {
 install_package() {
     local package=$1
     local -a settings_packages=()
-    [ "$manager" = apt ] || settings_window_packages
+    case "$manager" in
+        dnf | zypper) settings_window_packages ;;
+    esac
     case "$manager" in
         dnf)
             as_root dnf install -y "$package" "${settings_packages[@]}"
@@ -264,8 +266,6 @@ install_package() {
             ;;
         pacman)
             install_with_pacman "$package"
-            [ ${#settings_packages[@]} -eq 0 ] ||
-                as_root pacman -S --needed --asdeps --noconfirm "${settings_packages[@]}"
             ;;
     esac
 }

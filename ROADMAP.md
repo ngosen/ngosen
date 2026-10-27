@@ -30,7 +30,6 @@ Chưa có số version, xếp theo thứ tự định làm:
    người dùng gửi về.
 7. Mẹo dùng Ngó Sen trong cửa sổ cài đặt, mỗi mẹo dẫn sang trang hướng dẫn trên website. Mẹo có sẵn trong
    gói cài, không tải gì từ mạng.
-8. Cứu dấu không cần bôi đen: click vào sau chữ rồi gõ dấu (#118).
-9. Đưa Ngó Sen vào repo của các distro: từ 1.5.3 đã có repo riêng có chữ ký cho Fedora (COPR),
+8. Đưa Ngó Sen vào repo của các distro: từ 1.5.3 đã có repo riêng có chữ ký cho Fedora (COPR),
    Debian và Ubuntu (APT), Arch (pacman) và openSUSE Tumbleweed. nixpkgs đang chờ review
    ([NixOS/nixpkgs#575620](https://github.com/NixOS/nixpkgs/pull/575620)). Còn AUR, rồi Debian.

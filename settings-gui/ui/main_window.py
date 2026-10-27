@@ -297,7 +297,7 @@ class NgoSenSettingsWindow(QMainWindow):
 
     def _setup_pages(self):
         def create_typing():
-            from ui import whats_new_content
+            from core import whats_new_content
             from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
 
             return DynamicSettingsPage(

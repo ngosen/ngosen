@@ -33,6 +33,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Bỏ
 
+- Trang Giới thiệu trong cửa sổ cài đặt không còn dòng ghi công các dự án Ngó Sen dựa trên mã.
+  Phần ghi công vẫn có trong README (#373).
 - Không còn gói cho Ubuntu 22.04 (và Linux Mint 21 dựa trên nó); cần Ubuntu 24.04 hoặc Linux Mint 22 trở lên.
   Bản cuối cho Ubuntu 22.04 là 1.6.2. Lệnh cài một dòng báo rõ điều này; máy đã thêm repo APT của Ngó Sen
   thì nên gỡ dòng repo đó, vì `apt update` sẽ báo lỗi thiếu `jammy` (#332).

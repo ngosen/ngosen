@@ -83,6 +83,10 @@ xong là gõ được ngay, không phải thiết lập gì thêm:
 curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus
 ```
 
+Trên Xfce, Cinnamon, MATE (X11, Debian, Ubuntu, Linux Mint), lệnh dùng im-config đặt IBus làm bộ gõ và thêm
+Ngó Sen; đăng xuất rồi đăng nhập lại, bấm Ctrl+Space để chuyển qua lại Ngó Sen và bàn phím thường. Muốn quay lại bản fcitx5 thì chạy lệnh cài bản fcitx5 ở
+trên; lệnh hỏi lại rồi gỡ bản IBus.
+
 Xem cách cài và các giới hạn trong [README của Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen#readme).
 
 ### Cập nhật bằng trình quản lý gói

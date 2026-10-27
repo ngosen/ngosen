@@ -502,14 +502,16 @@ namespace fcitx {
     }
 
     void NgoSenEngine::announceRelease(const std::string& release) {
-        NGOSEN_INFO("Announcing release " + release);
 #ifdef NGOSEN_HAS_NOTIFICATIONS
+        NGOSEN_INFO("Announcing release " + release);
         // fcitx5 starts with the session; a notification sent before the desktop is up is lost.
         constexpr uint64_t delayUs = 5000000;
-        announceTimer_             = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [this](EventSourceTime*, uint64_t) {
+        announceTimer_             = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [this, release](EventSourceTime*, uint64_t) {
             auto* addon = notifications();
-            if (addon == nullptr)
+            if (addon == nullptr) {
+                NGOSEN_WARN("No notifications addon; release " + release + " is not announced");
                 return false;
+            }
             addon->call<INotifications::sendNotification>(
                 "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"), _("See Cứu chữ, Cứu dấu, the English/Vietnamese key, Vim mode and typing tips."),
                 std::vector<std::string>{"open", _("Show")}, -1, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});

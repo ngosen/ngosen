@@ -47,6 +47,12 @@ class PageTest(unittest.TestCase):
         self.assertIsInstance(page, WhatsNewPage)
         self.assertEqual(self.window.sidebar.currentItem().text(), "What's new & tips")
 
+    def test_every_setting_target_has_a_control(self):
+        for kind, name in targets():
+            if kind == "setting":
+                self.assertTrue(self.window.open_setting(name), name)
+        self.assertFalse(self.window.open_setting("NoSuchSetting"))
+
     def test_open_setting_focuses_its_control(self):
         self.window.open_setting("RetoneSelection")
         self.assertEqual(self.window.sidebar.currentItem().text(), "Typing")
@@ -74,6 +80,12 @@ class PageTest(unittest.TestCase):
         self.assertEqual(self.window.sidebar.currentItem().text(), "Macros & Dictionary")
         tabs = self.window.content_stack.currentWidget()
         self.assertEqual(tabs.tabText(tabs.currentIndex()), "Macros")
+
+    def test_show_page_selects_a_second_tab(self):
+        page = self.window.show_page("dictionary")
+        tabs = self.window.content_stack.currentWidget()
+        self.assertEqual(tabs.tabText(tabs.currentIndex()), "Dictionary")
+        self.assertIs(tabs.currentWidget(), page)
 
     def test_search_skips_the_page(self):
         self.window.search_field.setText("Cứu dấu")

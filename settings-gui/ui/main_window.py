@@ -204,21 +204,27 @@ class NgoSenSettingsWindow(QMainWindow):
         target.setFocus(Qt.OtherFocusReason)
 
     def open_setting(self, key):
-        """Shows the control of a setting, as the What's new page's buttons do."""
+        """Shows the control of a setting, as the What's new page's buttons do.
+
+        Returns False for a key no page renders; raising here would abort the window.
+        """
         self._build_all_pages()
         for page in self._pages:
             control = getattr(page, "control_for", lambda _key: None)(key)
             if control is not None:
                 self.reveal(control, page)
-                return
-        raise KeyError(key)
+                return True
+        return False
 
     def show_page(self, name):
         """Shows the page registered under `name` and returns it."""
         row, index = self._page_names[name]
         self.sidebar.setCurrentRow(row)
         widget = self.content_stack.currentWidget()
-        return widget.widget(index) if isinstance(widget, QTabWidget) else widget
+        if not isinstance(widget, QTabWidget):
+            return widget
+        widget.setCurrentIndex(index)
+        return widget.widget(index)
 
     def show_tips(self):
         self.show_page("whats-new").show_tips()

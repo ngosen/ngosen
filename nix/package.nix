@@ -71,7 +71,7 @@ stdenv.mkDerivation {
   postPatch = ''
     substituteInPlace settings-gui/i18n.py \
       --replace-fail '"/usr/share/locale"' "\"$out/share/locale\""
-    substituteInPlace settings-gui/ui/pages/dict_editor.py \
+    substituteInPlace settings-gui/core/dictionary.py \
       --replace-fail '"/usr/share/fcitx5/ngosen/vietnamese.cm.dict"' \
                      "\"$out/share/fcitx5/ngosen/vietnamese.cm.dict\""
   '';

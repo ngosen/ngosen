@@ -7,6 +7,7 @@
 
 #include <fcitx-utils/stringutils.h>
 
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <system_error>
@@ -164,6 +165,24 @@ namespace ngosen {
         }
         settings.setValueByPath("SettingsVersion", std::to_string(Version));
         return true;
+    }
+
+    // "1.6.1" reads as {1, 6}: a bug-fix release shares its feature release's number.
+    static std::pair<int, int> featureRelease(const std::string& version) {
+        int major = 0;
+        int minor = 0;
+        std::sscanf(version.c_str(), "%d.%d", &major, &minor);
+        return {major, minor};
+    }
+
+    std::string releaseToAnnounce(fcitx::RawConfig& settings, bool saved, const std::string& version) {
+        const auto        release = featureRelease(version);
+        const std::string current = std::to_string(release.first) + "." + std::to_string(release.second);
+        if (const auto* announced = settings.valueByPath("AnnouncedVersion"); announced != nullptr && featureRelease(*announced) >= release)
+            return {};
+        settings.setValueByPath("AnnouncedVersion", current);
+        // A fresh install has nothing to catch up on.
+        return saved ? current : std::string();
     }
 
     bool copySwitchKeys(const fcitx::RawConfig& fcitxConfig, fcitx::RawConfig& settings) {

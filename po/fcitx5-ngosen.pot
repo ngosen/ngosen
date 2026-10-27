@@ -314,6 +314,18 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
+#: src/ngosen-engine.cpp
+msgid "What's new in Ngó Sen?"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "See Cứu chữ, Cứu dấu, the English/Vietnamese key, Vim mode and typing tips."
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Show"
+msgstr ""
+
 #: src/ngosen-engine.cpp:991 src/ngosen-engine.cpp:1030
 msgid "Default Typing"
 msgstr ""

@@ -315,6 +315,18 @@ msgstr "Tự viết hoa chữ đầu văn bản và đầu dòng (thử nghiệm
 msgid "Settings"
 msgstr "Cài đặt"
 
+#: src/ngosen-engine.cpp
+msgid "What's new in Ngó Sen?"
+msgstr "Ngó Sen có gì mới?"
+
+#: src/ngosen-engine.cpp
+msgid "See Cứu chữ, Cứu dấu, the English/Vietnamese key, Vim mode and typing tips."
+msgstr "Xem Cứu chữ, Cứu dấu, phím chuyển Anh/Việt, Vim mode và mẹo gõ."
+
+#: src/ngosen-engine.cpp
+msgid "Show"
+msgstr "Xem"
+
 #: src/ngosen-engine.cpp:991 src/ngosen-engine.cpp:1030
 msgid "Default Typing"
 msgstr "Chế độ gõ mặc định"

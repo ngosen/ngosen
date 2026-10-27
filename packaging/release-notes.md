@@ -1,4 +1,4 @@
-Version 1.6.1 phát hành ngày 26/10/2026, sửa gợi ý Cứu chữ / Cứu dấu để theo ngôn ngữ giao diện của Ngó Sen, mặc định tiếng Việt (#322); Ngó Sen tự có trong danh sách bộ gõ khi fcitx5 chạy lần đầu sau khi cài bằng package trên desktop tiếng Việt (#300, #316); chữ trong ô mật khẩu không còn bị ghi vào log gỡ lỗi (#321). Chi tiết ở [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
+Version 1.6.2 phát hành ngày 27/10/2026. Cứu dấu nhanh hơn ở Gõ Sen: bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu là chữ đổi dấu, không cần bôi đen (#327). Lệnh cài có thêm `--ibus` để cài [Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen), bản chạy trên IBus có sẵn của GNOME (#330); repo APT và pacman có thêm gói `ibus-ngosen` (#333). Lệnh gỡ chỉ tắt những gì lệnh cài đã bật (#328). Chi tiết ở [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
 
 ## Cài và cập nhật
 
@@ -11,6 +11,8 @@ curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bas
 Cài lần đầu thì đăng xuất rồi đăng nhập lại, sau đó nhấn rồi thả Ctrl+Shift để chuyển giữa tiếng Anh và tiếng Việt. Đã cài từ trước thì vẫn dùng phím chuyển cũ, thường là Ctrl+Space.
 
 Cập nhật thì chạy lại đúng lệnh đó: fcitx5 tự nạp version mới, gõ được ngay. Trên KDE Wayland thì đăng xuất rồi đăng nhập lại.
+
+Muốn dùng Ngó Sen cho GNOME (IBus) thay cho bản fcitx5 thì thêm `--ibus`: `curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus`. Bản này đơn giản hơn và ít tính năng hơn, xem [README của bản cho GNOME](https://github.com/ngosen/ibus-ngosen#readme).
 
 ## Tải gói bằng tay
 

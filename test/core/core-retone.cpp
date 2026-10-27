@@ -305,6 +305,15 @@ namespace {
         run.after = {ngosen::key::Escape};
         r         = retone(run);
         check(r.text == "abc nhsanh xyz", "Esc after a click inside a word puts back the key", r.text);
+        run.after = {'s'};
+        r         = retone(run);
+        check(r.text == "abc nhsanh xyz", "the tone key again after a click inside a word puts back the key", r.text);
+        run       = nhanh(5, 5);
+        run.typed = "abc cho xyz";
+        run.tone  = 'j';
+        run.after = {'n'};
+        r         = retone(run);
+        check(r.text == "abc chọn xyz", "a letter after a retone inside a word keeps the tone", r.text);
         run       = nhanh(6, 6);
         run.field = makeField("ibus");
         r         = retone(run);

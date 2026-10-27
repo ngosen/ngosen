@@ -127,11 +127,13 @@ namespace ngosen {
     }
 
     void TypingState::retoneAtWordEnd(size_t tail, Retype retype) {
-        retoneMove_ = RetoneMove{.cursor = host_->surrounding().cursor() + tail, .retype = std::move(retype)};
+        const Surrounding at = host_->surrounding();
+        retoneMove_          = RetoneMove{.text = at.text(), .cursor = at.cursor() + tail, .retype = std::move(retype)};
         for (size_t i = 0; i < tail; ++i)
             forwardTap(EditKey::Right);
         // A field that never shows the cursor there keeps the key as typed.
         retone_timer_ = host_->startTimer(monotonicUs() + RetoneReportUs, 0, [this](Timer&) {
+            NGOSEN_DEBUG("Retone: the cursor never reached the word's end");
             retoneMove_.reset();
             return false;
         });
@@ -140,7 +142,7 @@ namespace ngosen {
     void TypingState::checkRetoneReport() {
         if (retoneMove_) {
             const Surrounding at = host_->surrounding();
-            if (at.cursor() != retoneMove_->cursor || at.anchor() != at.cursor())
+            if (at.text() != retoneMove_->text || at.cursor() != retoneMove_->cursor || at.anchor() != at.cursor())
                 return;
             retype_ = std::move(retoneMove_->retype);
             dropRetoneKey();
@@ -175,7 +177,7 @@ namespace ngosen {
         if (toned.empty() || toned == word || withoutToneMark(toned) != withoutToneMark(word))
             return;
         NGOSEN_INFO("Retone: " + logged(word) + " -> " + logged(toned));
-        Retype retype{.typed = typed, .marked = toned, .atOnce = true, .retone = true};
+        Retype retype{.typed = typed, .marked = toned, .atOnce = true, .retone = true, .inWord = tail > 0, .key = key.text};
         if (tail > 0) {
             retoneAtWordEnd(tail, std::move(retype));
             return;
@@ -189,9 +191,8 @@ namespace ngosen {
         // means the selection was being typed over and the key goes back.
         const bool deleting = is_deleting_.load(std::memory_order_acquire);
         // The tone key twice undoes it, as typing it twice does in a word.
-        const std::string& typed = retype_->typed;
-        const std::string  key   = host_->keyText(keyEvent.sym());
-        if (!deleting && !key.empty() && typed.size() >= key.size() && typed.compare(typed.size() - key.size(), key.size(), key) == 0) {
+        const std::string key = host_->keyText(keyEvent.sym());
+        if (!deleting && !key.empty() && key == retype_->key) {
             keyEvent.accept();
             applyRetype();
             return true;

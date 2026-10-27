@@ -195,6 +195,25 @@ class GtkDictionaryPageTest(unittest.TestCase):
         self.page.word_row.set_text("hello")
         self.assertFalse(self.page.add_button.get_sensitive())
 
+    def test_a_word_with_other_whitespace_is_refused(self):
+        for word in ("ngo\u00a0sen", "a\tb"):
+            self.page.word_row.set_text(word)
+            self.assertFalse(self.page.add_button.get_sensitive(), repr(word))
+
+    def test_removing_a_word_removes_every_copy(self):
+        os.makedirs(os.path.dirname(self.local), exist_ok=True)
+        with open(self.local, "w", encoding="utf-8") as f:
+            f.write("hello\nhello\nworld\n")
+        page = window.Window(None, self.dbus).dictionary
+        page._remove("hello")
+        self.assertEqual(window.Window(None, self.dbus).dictionary.dictionary.words, ["world"])
+
+    def test_removing_a_word_changes_only_its_row(self):
+        changes = []
+        self.page.words.connect("items-changed", lambda _m, *change: changes.append(change))
+        self.page._remove("hello")
+        self.assertEqual(changes, [(0, 1, 0)])
+
     def test_removing_a_word_saves(self):
         self.page._remove("hello")
         self.assertEqual(self.local_words(), ["world"])

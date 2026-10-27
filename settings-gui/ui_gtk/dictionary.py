@@ -101,7 +101,7 @@ class DictionaryPage:
 
     def _check(self):
         word = self.word_row.get_text().strip()
-        bad = " " in word
+        bad = any(c.isspace() for c in word)
         if bad:
             self.word_row.add_css_class("error")
         else:
@@ -121,7 +121,12 @@ class DictionaryPage:
 
     def _remove(self, word):
         if word in self.dictionary.words:
-            self._change(lambda: self.dictionary.words.remove(word))
+            # A hand-edited file can hold a word twice; leaving a copy would keep it active.
+            self._change(
+                lambda: setattr(
+                    self.dictionary, "words", [w for w in self.dictionary.words if w != word]
+                )
+            )
 
     def _change(self, change):
         """Applies and saves a change, or puts the page back as it was if it cannot be saved."""
@@ -141,6 +146,17 @@ class DictionaryPage:
         self._syncing = True
         self.switch.set_active(self.dictionary.enabled)
         self._syncing = False
-        words = sorted(self.dictionary.words)
-        self.words.splice(0, self.words.get_n_items(), words)
+        self._splice(sorted(self.dictionary.words))
         self._check()
+
+    def _splice(self, words):
+        """Replaces only the rows that differ, so the list keeps its scroll position."""
+        old = [self.words.get_string(i) for i in range(self.words.get_n_items())]
+        start = 0
+        while start < min(len(old), len(words)) and old[start] == words[start]:
+            start += 1
+        end = 0
+        while end < min(len(old), len(words)) - start and old[-1 - end] == words[-1 - end]:
+            end += 1
+        if old != words:
+            self.words.splice(start, len(old) - start - end, words[start : len(words) - end])

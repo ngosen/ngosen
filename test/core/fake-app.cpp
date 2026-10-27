@@ -161,6 +161,10 @@ namespace ngosen::test {
     }
 
     void FakeApp::forwardKey(EditKey key, bool release, uint32_t time) {
+        if (key == EditKey::Right && !release) {
+            later(quirks_.lagMs, [this] { moveCursor(cursor_ + 1); });
+            return;
+        }
         if (key != EditKey::BackSpace || release)
             return;
         if (quirks_.dropsOldKeyPresses) {

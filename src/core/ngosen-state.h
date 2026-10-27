@@ -203,10 +203,19 @@ namespace ngosen {
             uint32_t    sym              = 0;
             uint32_t    states           = 0;
             bool        afterClick       = false;
+            bool        afterBackspace   = false;
             bool        reportedSinceKey = false; ///< a changed report arrived after the previous key
         };
+        // A retone inside a word waits for the cursor to reach the word's end.
+        struct RetoneMove {
+            size_t cursor = 0;
+            Retype retype;
+        };
         std::optional<RetoneKey>       retoneKey_;
+        std::optional<RetoneMove>      retoneMove_;
         std::unique_ptr<ngosen::Timer> retone_timer_;
+        bool                           backspaceBeforeKey_ = false; ///< the last key was a backspace with no word being typed
+        void                           retoneAtWordEnd(size_t tail, Retype retype);
         void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8);
         void                           dropRetoneKey();
         void                           checkRetoneReport();

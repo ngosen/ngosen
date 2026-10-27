@@ -436,8 +436,10 @@ namespace ngosen {
         // Calc reports the new cell empty just before the key we let through lands in it.
         // Our unreported commits do not matter here: in the same cell the key would follow them.
         const bool keyStartedCell = settling && passed_key_ && !sameText && s.text().empty() && !oldPreBuffer_.empty() && ngosen::reportsFieldOnlyOnKey(host_->field());
-        jumped                    = ((jumped && !echo && !intoSuggestion && !caretSettling) || newField) && !settling;
-        lastSurroundingText_      = s.text();
+        // Our own Right presses carrying the cursor to the end of a word being retoned.
+        const bool ownMove   = retoneMove_.has_value();
+        jumped               = ((jumped && !echo && !intoSuggestion && !caretSettling && !ownMove) || newField) && !settling;
+        lastSurroundingText_ = s.text();
         // Keep the real caret, so the app reporting it again is not a move either.
         if (!caretSettling) {
             lastSurroundingCursor_ = s.cursor();

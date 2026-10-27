@@ -14,6 +14,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Cửa sổ cài đặt không còn lỗi không mở được khi file từ điển riêng có chữ không phải UTF-8.
   Trang Từ điển báo không đọc trọn được file (#376).
+- Cửa sổ cài đặt: "Hoàn tác" chỉ trả lại đúng thay đổi vừa lưu, không còn làm mất kiểu gõ đã nhớ cho app
+  khi chọn từ menu Ngó Sen trong lúc cửa sổ đang mở (#383).
 
 ## [1.6.3-1] — 27/10/2026
 

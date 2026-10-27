@@ -44,7 +44,7 @@ The release is `X.Y.Z-N` (`N` is the packaging revision) with epoch 1, tagged `n
    `packaging/check-version.sh X.Y.Z-N` must print no `MISMATCH`.
 
    A feature release (`Z` = 0) is announced once by a desktop notification that opens the "Có gì mới &
-   mẹo" page, so also update `settings-gui/ui/whats_new_content.py` (a card per new feature, newest
+   mẹo" page, so also update `settings-gui/core/whats_new_content.py` (a card per new feature, newest
    release first) and the notification text in `src/ngosen-engine.cpp` with its `po/` entries. A bug-fix
    release shows nothing.
 

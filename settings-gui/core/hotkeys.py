@@ -79,9 +79,8 @@ HOTKEY_SYM_MAP = {
 }
 
 
-# Mapping for UI DISPLAY ONLY: Converts shifted keysyms back to base keys + explicit Shift label.
-# This keeps the stored string engine-compliant (e.g. 'asciitilde') but UI-friendly (e.g. 'Shift' + '`').
-# NOTE: We exclude ISO_Left_Tab here because Fcitx5 configuration prefers explicit 'Shift+Tab' strings.
+# Only for display: fcitx5 stores a shifted symbol ("asciitilde"), the window shows Shift + "`".
+# ISO_Left_Tab is left out because fcitx5 stores it as "Shift+Tab" already.
 HOTKEY_UI_UNSHIFT_MAP = {
     "asciitilde": "grave",
     "exclam": "1",
@@ -105,9 +104,7 @@ HOTKEY_UI_UNSHIFT_MAP = {
     "greater": "period",
     "question": "slash",
 }
-
-for char in "abcdefghijklmnopqrstuvwxyz":
-    HOTKEY_UI_UNSHIFT_MAP[char.upper()] = char
+HOTKEY_UI_UNSHIFT_MAP.update({c.upper(): c for c in "abcdefghijklmnopqrstuvwxyz"})
 
 
 def pretty_format_hotkey_parts(hotkey_str):
@@ -116,7 +113,7 @@ def pretty_format_hotkey_parts(hotkey_str):
     if not hotkey_str:
         return []
 
-    # Robustly handle hotkeys containing '+' key (e.g. 'Control++')
+    # The + key itself is written "+", so "Control++" is Control and +.
     if hotkey_str == "+":
         parts = ["+"]
     elif hotkey_str.endswith("++"):

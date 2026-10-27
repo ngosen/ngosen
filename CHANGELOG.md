@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Antigravity trên GNOME: gõ trong vùng soạn thảo không còn để nguyên chữ thô (`vieetj`), và ô chat
+  không còn mất hay rối chữ khi gõ nhanh (#362, #365).
+
 ## [1.6.2-1] — 27/10/2026
 
 Cứu dấu sau khi bấm chuột ngay sau chữ, chỉ ở Gõ Sen (#327); `install.sh --ibus` cài

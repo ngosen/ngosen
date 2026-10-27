@@ -80,6 +80,27 @@ class AutosaveTest(unittest.TestCase):
         self.assertTrue(self.checkbox(window, SPELL_CHECK).isChecked())
         self.assertFalse(window.btn_undo.isVisible())
 
+    def test_undo_keeps_what_fcitx5_remembered_since_the_window_opened(self):
+        fake = FakeDBusHandler({"SpellCheck": "True"})
+        window = self.open_window(fake, "Typing")
+        fake.sub_configs["app_rules"] = [{"App": "kate", "Mode": "3"}]
+        self.checkbox(window, SPELL_CHECK).click()
+        window.save_pending()
+        window.btn_undo.click()
+        self.assertEqual(fake.values["SpellCheck"], "True")
+        self.assertEqual(fake.sub_configs["app_rules"], [{"App": "kate", "Mode": "3"}])
+
+    def test_undo_after_restoring_a_backup_keeps_what_fcitx5_remembered(self):
+        path = os.path.join(self.data_home, "b.json")
+        fake = FakeDBusHandler()
+        window = self.open_window(fake)
+        window.export_backup(path)
+        fake.sub_configs["app_rules"] = [{"App": "kate", "Mode": "3"}]
+        window.restore_backup(path)
+        self.assertEqual(fake.sub_configs["app_rules"], [])
+        window.btn_undo.click()
+        self.assertEqual(fake.sub_configs["app_rules"], [{"App": "kate", "Mode": "3"}])
+
     def test_undo_brings_back_rules_and_dictionary(self):
         dict_path = os.path.join(self.data_home, "fcitx5/ngosen/vietnamese.cm.dict")
         os.makedirs(os.path.dirname(dict_path))

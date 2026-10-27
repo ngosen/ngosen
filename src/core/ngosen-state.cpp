@@ -101,11 +101,10 @@ namespace ngosen {
             if (pulled && (*pulled.get() != 0)) {
                 NGOSEN_INFO("Commit: " + logged(pulled.get()));
                 commit(pulled.get());
-                const bool enter = currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter;
-                // Enter may submit the field and leave the word in it, with no break after it to take back.
-                if (!enter && rebuildable(pulled.get()))
+                // A key the engine leaves to the app (Enter, Ctrl+A, Tab) acts after the word, so it is not the break to take back.
+                if (engineTook && !keyEvent.hasModifier() && rebuildable(pulled.get()))
                     lastWord_ = pulled.get();
-                if (enter && !engineTook && !keyEvent.hasModifier())
+                if ((currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) && !engineTook && !keyEvent.hasModifier())
                     holdEnterAfterCommit(keyEvent);
             }
         }
@@ -333,19 +332,21 @@ namespace ngosen {
     bool TypingState::reopenWordInPreedit(ngosen::KeyPress& keyEvent) {
         std::string committed = std::move(lastWord_);
         lastWord_.clear();
-        // Taking the word back deletes text, so the app must show that it is still right before the cursor.
+        // Taking the word back deletes text, so the app must show it right before the cursor with nothing
+        // selected. A late report is fine: a click resets the field, which forgets the word.
         const Surrounding s = host_->surrounding();
-        if (committed.empty() || !reportsTextInTime() || !s.isValid() || s.text().empty() || !ngosen::utf8::validate(committed) || !typedBeforeCursor(committed, false))
+        if (committed.empty() || !s.isValid() || s.text().empty() || s.cursor() != s.anchor() || !ngosen::utf8::validate(committed) || !endsBeforeCursor(s, committed, false))
             return false;
         ngosen::utf8::eraseLastCodepoint(committed);
         const std::string word = trailingWord(committed);
         if (word.empty())
             return false;
-        const auto length = static_cast<int>(ngosen::utf8::decode(word).size()) + 1;
+        const auto length = static_cast<int>(ngosen::utf8::length(word)) + 1;
         keyEvent.accept();
         host_->deleteSurrounding(-length, static_cast<unsigned int>(length));
         EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
-        host_->showPreedit(word, false);
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+        host_->showPreedit(preedit ? preedit.get() : "", false);
         host_->refreshPreedit();
         return true;
     }

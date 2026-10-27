@@ -119,6 +119,10 @@ namespace ngosen {
         // Some apps (kitty, Konsole) declare surrounding text but always send it empty.
         if (!reportsTextInTime() || !s.isValid() || s.text().empty())
             return true;
+        return endsBeforeCursor(s, typed, mayDropStart);
+    }
+
+    bool TypingState::endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart) {
         const std::string& t  = s.text();
         auto               it = t.begin();
         for (unsigned int i = 0; i < s.cursor() && it != t.end(); ++i)

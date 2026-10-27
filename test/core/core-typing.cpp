@@ -970,14 +970,22 @@ namespace {
         bool                                      bsAccepted = false;
         std::vector<std::pair<int, unsigned int>> deletes;
         std::string                               preedit;
-        FakeHost*                                 host = nullptr;
     };
 
     // Types `keys` in Preedit, sets the text the app then reports and presses Backspace once.
-    PreeditReopen backspaceAfterPreeditCommit(ngosen::TypingState& state, FakeHost& host, const std::string& keys, const std::string& reported) {
-        for (const char c : keys)
+    PreeditReopen backspaceAfterPreeditCommit(ngosen::TypingState& state, FakeHost& host, const std::string& keys, const std::string& reported, unsigned int anchor = ~0U) {
+        for (const char c : keys) {
+            if (c == '^') {
+                FakeKey down('a', false, ngosen::modifier::Ctrl);
+                state.keyEvent(down);
+                FakeKey up('a', true, ngosen::modifier::Ctrl);
+                state.keyEvent(up);
+                continue;
+            }
             press(state, c == '\n' ? ngosen::key::Return : static_cast<uint32_t>(c));
-        host.setSurrounding(reported, static_cast<unsigned int>(ngosen::utf8::decode(reported).size()));
+        }
+        const auto cursor = static_cast<unsigned int>(ngosen::utf8::length(reported));
+        host.setSurrounding(reported, cursor, anchor == ~0U ? cursor : anchor);
         state.surroundingUpdated();
         PreeditReopen r;
         r.bsAccepted = press(state, ngosen::key::BackSpace);
@@ -1018,7 +1026,18 @@ namespace {
             check(host->deletes().size() == 1 && join(host->commits()) == "['ban ']", "preedit reopen: held backspace deletes the word once",
                   std::to_string(host->deletes().size()) + " " + join(host->commits()));
         }
-        const auto notReopened = [](const Field& field, const std::string& keys, const std::string& reported, const std::string& what, const std::string& charset) {
+        {
+            // GNOME's IBus relays surrounding text late, but a reset on every click forgets the word.
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            const PreeditReopen r = backspaceAfterPreeditCommit(state, *host, "vieetj ", "việt ");
+            check(r.bsAccepted && r.preedit == "việt", "preedit reopen: the IBus frontend too", r.preedit);
+        }
+        const auto notReopened = [](const Field& field, const std::string& keys, const std::string& reported, const std::string& what, const std::string& charset,
+                                    unsigned int anchor = ~0U) {
             FakeLoop      loop;
             FakeResources resources;
             if (!charset.empty())
@@ -1026,13 +1045,16 @@ namespace {
             auto                owned = std::make_unique<FakeHost>(loop, field);
             FakeHost*           host  = owned.get();
             ngosen::TypingState state(&resources, std::move(owned));
-            const PreeditReopen r = backspaceAfterPreeditCommit(state, *host, keys, reported);
+            const PreeditReopen r = backspaceAfterPreeditCommit(state, *host, keys, reported, anchor);
             check(!r.bsAccepted && r.deletes.empty() && r.preedit.empty(), "preedit reopen: " + what, r.preedit);
         };
         notReopened(makeField("wayland", true), "ban ", "xyz", "not after a click elsewhere", {});
         notReopened(makeField("wayland", false), "ban ", "", "not where the app reports no text", {});
         notReopened(makeField("wayland", true), "dduowc ", "ñöôc ", "not for a word in a legacy charset", "VNI Windows");
         notReopened(makeField("wayland", true), "tieen\n", "tiên", "not after Enter", {});
+        // Ctrl+A commits the word and selects all; Backspace must delete the selection.
+        notReopened(makeField("wayland", true), "vieetj^", "việt", "not after Ctrl+A commits the word", {});
+        notReopened(makeField("wayland", true), "ban ", "ban ", "not over a selection", {}, 0);
     }
 
     // An address bar fills in a suggestion after the cursor. Typing its next letter leaves the text

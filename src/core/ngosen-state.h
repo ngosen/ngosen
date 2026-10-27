@@ -194,6 +194,7 @@ namespace ngosen {
         void        hideOffer();
         bool        reportsTextInTime() const;
         bool        typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
+        static bool endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
         bool        handleRetypeKey(ngosen::KeyPress& keyEvent);
 
         // A key that started a word, until a report shows whether it replaced a selected word.

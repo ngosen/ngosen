@@ -13,19 +13,13 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("PangoCairo", "1.0")
 
+from core.brand import ENAMEL, FONT_FILE, LOGO, ON_ENAMEL  # noqa: E402, F401
 from core.catalog import TRAY_PANEL  # noqa: E402
 from gi.repository import Adw, Gdk, Gtk, PangoCairo  # noqa: E402
 
-FONT_FILE = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "fonts", "XanhMono-Regular.ttf"
-)
-LOGO = "io.github.ngosen.NgoSen.Settings"
 # GTK has no word-spacing; a thin space sets the two words as close as the logo does.
 WORDMARK = "Ngó\u2009Sen"
 
-# (light, dark), as in the Qt window.
-ENAMEL = ("#1c6b5f", "#247b6c")
-ON_ENAMEL = "#f0f5ee"
 # Enamel as text or a focus ring on the window; a dark window needs a lighter shade.
 ENAMEL_TEXT = ("#1c6b5f", "#5fb8a6")
 

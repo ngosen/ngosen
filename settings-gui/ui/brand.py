@@ -3,22 +3,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The few marks taken from the Ngó Sen website: enamel green and the Xanh Mono typeface."""
 
-import os
-
+from core.brand import ENAMEL, FONT_FILE, LOGO, ON_ENAMEL  # noqa: F401
 from core.catalog import TRAY_PANEL
 from qtpy.QtCore import QEvent, QObject, QStandardPaths, Qt
 from qtpy.QtGui import QColor, QFont, QFontDatabase, QIcon, QPainter, QPalette, QPixmap
 
-FONT_FILE = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "fonts", "XanhMono-Regular.ttf"
-)
 TYPED_FAMILY = "Xanh Mono"
-LOGO = "io.github.ngosen.NgoSen.Settings"
 
 # (light, dark) pairs; dark is picked from the window background, not the desktop name.
-# The dark shade keeps light text readable on it and still stands out on a dark window.
-ENAMEL = ("#1c6b5f", "#247b6c")
-ON_ENAMEL = "#f0f5ee"
 SAVED_FILL = ("#e1efe9", "#183a33")
 SAVED_BORDER = ("#1c6b5f", "#3f9c8b")
 ERROR_FILL = ("#f8e3df", "#3d1d18")

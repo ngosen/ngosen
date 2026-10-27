@@ -73,7 +73,8 @@ Các bước thiết lập chỉ áp dụng cho tài khoản chạy lệnh. Tài
 
 ### Ngó Sen cho GNOME (IBus)
 
-Chọn bản này nếu dùng GNOME, muốn dùng IBus có sẵn và không cần đủ tính năng của bản fcitx5:
+Chọn bản này nếu dùng GNOME, muốn dùng IBus có sẵn và không cần đủ tính năng của bản fcitx5. Trên GNOME, cài
+xong là gõ được ngay, không phải thiết lập gì thêm:
 
 ```
 curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus

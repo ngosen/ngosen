@@ -10,6 +10,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.6.2-1] — 27/10/2026
+
+Cứu dấu sau khi bấm chuột ngay sau chữ, chỉ ở Gõ Sen (#327); `install.sh --ibus` cài
+[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) (#330); repo APT và pacman có thêm gói
+`ibus-ngosen` (#333); lệnh gỡ chỉ tắt những gì lệnh cài đã bật (#328).
+Tải ở [ngosen-1.6.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.2-1).
+
 ### Thêm
 
 - Cứu dấu không cần bôi đen: bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu là chữ đổi dấu (`nhanh|` + `s` →

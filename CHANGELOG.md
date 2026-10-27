@@ -46,6 +46,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt: lưu từ điển riêng không còn xoá chữ bắt đầu bằng dấu # khỏi file; bộ gõ vẫn luôn dùng được
   những chữ này. Khi lưu từ điển hoặc bảng phím (Keymap) bị lỗi giữa chừng, công tắc bật/tắt không còn
   bị lưu lệch với những gì cửa sổ hiện (#367).
+- Cửa sổ cài đặt: bấm "Khôi phục…" với file sao lưu bị hỏng nay báo lỗi và không thay đổi gì; trước đây có thể
+  làm trống file từ điển riêng và ghi một phần cài đặt (#382).
 
 ## [1.6.2-1] — 27/10/2026
 

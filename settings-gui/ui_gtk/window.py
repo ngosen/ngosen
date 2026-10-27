@@ -11,12 +11,14 @@ gi.require_version("PangoCairo", "1.0")
 
 from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
+from core.dictionary import Dictionary  # noqa: E402
 from core.macros import MacroTable  # noqa: E402
 from core.settings_model import SettingsModel  # noqa: E402
 from gi.repository import Adw, Gio, Gtk  # noqa: E402
 from i18n import _  # noqa: E402
 
 from ui_gtk import brand, pages  # noqa: E402
+from ui_gtk.dictionary import DictionaryPage  # noqa: E402
 from ui_gtk.macros import MacroPage  # noqa: E402
 
 APP_ID = "io.github.ngosen.NgoSen.Settings"
@@ -40,18 +42,20 @@ class Window(Adw.ApplicationWindow):
         self.toasts.set_child(self.stack)
         self.pages = []
 
-        self.typing = self.macros = None
+        self.typing = self.macros = self.dictionary = None
+        self.tabs = {}
         if self.model.load():
             self.typing = pages.TypingPage(self.model, self.save)
             table = MacroTable(dbus)
             table.load()
             self.macros = MacroPage(table, self.report)
+            self.dictionary = DictionaryPage(Dictionary(dbus), self.report)
         self._add_page("typing", _("Typing"), "input-keyboard-symbolic", _widget(self.typing))
         self._add_page(
             "macros",
             _("Macros & Dictionary"),
             "accessories-text-editor-symbolic",
-            _widget(self.macros),
+            self._tabs(macros=self.macros, dictionary=self.dictionary),
         )
         self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 
@@ -66,6 +70,25 @@ class Window(Adw.ApplicationWindow):
         narrow = Adw.Breakpoint.new(Adw.BreakpointCondition.parse("max-width: 600sp"))
         narrow.add_setter(self.split, "collapsed", True)
         self.add_breakpoint(narrow)
+
+    def _tabs(self, **pages):
+        """Pages that share a sidebar entry, as tabs like the Qt window's."""
+        if None in pages.values():
+            return _widget(None)
+        stack = Adw.ViewStack()
+        for name, page in pages.items():
+            stack.add_titled_with_icon(
+                page.page, name, page.page.get_title(), page.page.get_icon_name()
+            )
+            self.tabs[name] = stack
+        switcher = Adw.ViewSwitcher(stack=stack, policy=Adw.ViewSwitcherPolicy.WIDE)
+        switcher.set_halign(Gtk.Align.CENTER)
+        switcher.set_margin_top(6)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box.append(switcher)
+        stack.set_vexpand(True)
+        box.append(stack)
+        return box
 
     def _add_page(self, name, title, icon, widget):
         self.stack.add_named(widget, name)
@@ -96,7 +119,10 @@ class Window(Adw.ApplicationWindow):
         self.split.set_show_content(True)
 
     def show_page(self, name):
-        """Shows the named page; a page this window does not have yet is ignored."""
+        """Shows the named page or tab; a page this window does not have yet is ignored."""
+        if name in self.tabs:
+            self.tabs[name].set_visible_child_name(name)
+            name = "macros"
         for index, (page, _title, _icon) in enumerate(self.pages):
             if page == name:
                 row = self.sidebar.get_row_at_index(index)

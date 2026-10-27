@@ -25,7 +25,7 @@ class MacroPage:
         self.on_saved = on_saved
         self._syncing = False
         self.page = Adw.PreferencesPage(
-            title=_("Macros & Dictionary"), icon_name="accessories-text-editor-symbolic"
+            title=_("Macros"), icon_name="accessories-text-editor-symbolic"
         )
         self.page.add(self._options())
         self.page.add(self._editor())

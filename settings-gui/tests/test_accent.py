@@ -11,7 +11,7 @@ from ui import brand
 # isort: on
 
 
-GROUPS = (QPalette.Active, QPalette.Inactive, QPalette.Disabled)
+GROUPS = (QPalette.Active, QPalette.Inactive)
 
 
 def colors(role):
@@ -37,6 +37,11 @@ class AccentTest(unittest.TestCase):
         app.processEvents()
         self.assertEqual(colors(QPalette.Highlight), {brand.ENAMEL[1]})
         self.assertEqual(colors(QPalette.HighlightedText), {brand.ON_ENAMEL})
+
+    def test_a_disabled_selection_is_a_paler_enamel(self):
+        disabled = app.palette().color(QPalette.Disabled, QPalette.Highlight)
+        self.assertEqual(disabled.name(), brand.ENAMEL[0])
+        self.assertLess(disabled.alpha(), 255)
 
 
 if __name__ == "__main__":

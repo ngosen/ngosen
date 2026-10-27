@@ -28,8 +28,12 @@ PANEL = ("#e6e6e6", "#2d2d2d")
 _font_loaded = False
 
 
+def is_dark_palette(palette):
+    return palette.color(QPalette.Window).lightness() < 128
+
+
 def is_dark(widget):
-    return widget.palette().color(QPalette.Window).lightness() < 128
+    return is_dark_palette(widget.palette())
 
 
 def pick(widget, pair):
@@ -69,12 +73,20 @@ class _AccentFollower(QObject):
 
 def _apply_accent(app):
     palette = app.palette()
-    enamel = QColor(ENAMEL[1] if palette.color(QPalette.Window).lightness() < 128 else ENAMEL[0])
+    enamel = QColor(ENAMEL[1] if is_dark_palette(palette) else ENAMEL[0])
+    # Half see-through, so a disabled selection stays enamel but reads as off.
+    faded = QColor(enamel)
+    faded.setAlpha(128)
     roles = [QPalette.Highlight] + ([QPalette.Accent] if hasattr(QPalette, "Accent") else [])
     accented = QPalette(palette)
-    for group in (QPalette.Active, QPalette.Inactive, QPalette.Disabled):
+    for group, color in (
+        (QPalette.Active, enamel),
+        (QPalette.Inactive, enamel),
+        (QPalette.Disabled, faded),
+    ):
         for role in roles:
-            accented.setColor(group, role, enamel)
+            accented.setColor(group, role, color)
+    for group in (QPalette.Active, QPalette.Inactive):
         accented.setColor(group, QPalette.HighlightedText, QColor(ON_ENAMEL))
     # Setting the palette sends another change; stop once it already holds enamel.
     if accented != palette:

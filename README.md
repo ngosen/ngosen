@@ -28,6 +28,8 @@ Cửa sổ cài đặt dùng giao diện sáng, tối của máy trên KDE và G
   Có thể ẩn các mục ít dùng ở trang Giao diện; “Cài đặt” và “Lưu nhật ký gõ” luôn hiện.
 - Cửa sổ cài đặt: có giải thích ngắn dưới từng tuỳ chọn ở trang Gõ chữ, Phím tắt và Giao diện,
   thường kèm ví dụ. Trang Giao diện có phần xem trước biểu tượng tray và chọn ngôn ngữ giao diện.
+  Trang "Có gì mới & mẹo" ghi cách dùng các tính năng mới và mẹo gõ; sau khi cập nhật lên version có tính
+  năng mới, một thông báo hiện một lần để mở trang này.
 
 Chi tiết từng version ở [CHANGELOG.md](CHANGELOG.md).
 

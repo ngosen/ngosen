@@ -10,6 +10,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Sau khi cập nhật lên version có tính năng mới (1.7.0 trở đi), một thông báo ở góc màn hình hiện một lần,
+  bấm "Xem" thì mở cửa sổ cài đặt ở trang "Có gì mới & mẹo". Version chỉ sửa lỗi và cài mới không báo (#PRNUM).
+- Cửa sổ cài đặt có trang "Có gì mới & mẹo": Cứu chữ, Cứu dấu, phím chuyển Anh/Việt với nút "Mở cài đặt"
+  dẫn tới đúng ô, và 12 mẹo gõ. Trang Gõ chữ hiện một mẹo ngẫu nhiên mỗi lần mở cửa sổ (#PRNUM).
+
 ## [1.6.1-1] — 26/10/2026
 
 Sửa gợi ý Cứu chữ / Cứu dấu để theo ngôn ngữ giao diện của Ngó Sen, mặc định tiếng Việt (#322);

@@ -6,6 +6,7 @@
 Application entry point.
 """
 
+import argparse
 import signal
 import sys
 
@@ -19,6 +20,11 @@ from ui.main_window import NgoSenSettingsWindow
 def main():
     """Main execution function."""
     setup_i18n()
+    parser = argparse.ArgumentParser()
+    # The What's new notification opens the window on its page.
+    parser.add_argument("--page", choices=["whats-new"])
+    # Qt reads its own options from argv, so the unknown ones stay.
+    args, _unknown = parser.parse_known_args()
     app = QApplication(sys.argv)
     app.setDesktopFileName("io.github.ngosen.NgoSen.Settings")
     app.setApplicationName("io.github.ngosen.NgoSen.Settings")
@@ -28,6 +34,8 @@ def main():
     scroll_bars.install(app)
 
     window = NgoSenSettingsWindow()
+    if args.page:
+        window.show_page(args.page)
     window.show()
 
     try:

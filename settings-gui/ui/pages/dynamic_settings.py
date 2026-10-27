@@ -24,6 +24,7 @@ from qtpy.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QStyle,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -182,6 +183,44 @@ class HintLabel(QLabel):
             self.setFixedHeight(height)
 
 
+class TipLine(QToolButton):
+    """One typing tip on one line; the whole tip is in the tooltip and on the What's new page."""
+
+    def __init__(self, text):
+        super().__init__()
+        self._text = text
+        self.setObjectName("TipLine")
+        self.setAutoRaise(True)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.setIcon(brand.theme_icon("dialog-information"))
+        self.setToolTip(text)
+        # As wide as the tip, left-aligned, and no wider than the page.
+        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        font = self.font()
+        font.setPointSizeF(font.pointSizeF() * 0.9)
+        self.setFont(font)
+        self.setText(text)
+
+    def _padding(self):
+        return self.iconSize().width() + 24
+
+    def sizeHint(self):
+        # From the whole tip, so the line grows back after the window was narrow.
+        hint = super().sizeHint()
+        return QSize(
+            self.fontMetrics().horizontalAdvance(self._text) + self._padding(), hint.height()
+        )
+
+    def minimumSizeHint(self):
+        return QSize(0, super().minimumSizeHint().height())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        room = self.width() - self._padding()
+        self.setText(self.fontMetrics().elidedText(self._text, Qt.ElideRight, room))
+
+
 MODE_SHORTCUT_TO_VISIBILITY = {
     "ShortcutSen": "ShowModeSen",
     "ShortcutPreedit": "ShowModePreedit",
@@ -223,10 +262,15 @@ class DynamicSettingsPage(QWidget):
         dbus_handler: NgoSenDBusHandler,
         category: SettingsCategory = SettingsCategory.TYPING,
         parent=None,
+        tip=None,
+        on_tip=None,
     ):
         super().__init__(parent)
         self.dbus = dbus_handler
         self.category = category
+        # A tip from the What's new page, shown above the form; clicking it opens that page.
+        self._tip = tip
+        self._on_tip = on_tip
         self.current_values = {}
         self.initial_values = {}
         self.modified_values = {}
@@ -235,6 +279,7 @@ class DynamicSettingsPage(QWidget):
         self.shortcut_warning_labels = {}
         self.validation_errors = []
         self.list_widgets = []  # Track list widgets for layout refresh
+        self._controls = {}
 
         self._setup_ui()
         self.load_config()
@@ -287,6 +332,7 @@ class DynamicSettingsPage(QWidget):
             self.shortcut_labels.clear()
             self.shortcut_warning_labels.clear()
             self.list_widgets.clear()
+            self._controls.clear()
             self._tray_preview = None
 
             config_data = self.dbus.get_config()
@@ -311,6 +357,14 @@ class DynamicSettingsPage(QWidget):
 
             if not self.property("inTab"):
                 self.container_layout.addWidget(page_title(_(self.category.name.capitalize())))
+            if self._tip:
+                line = TipLine(_("Tip: {}").format(_(self._tip["text"])))
+                if self._on_tip:
+                    line.clicked.connect(self._on_tip)
+                row = QHBoxLayout()
+                row.addWidget(line)
+                row.addStretch()
+                self.container_layout.addLayout(row)
 
             form_widget = QWidget()
             self.form = QFormLayout(form_widget)
@@ -355,6 +409,10 @@ class DynamicSettingsPage(QWidget):
             self.container_layout.addStretch()
         finally:
             self.blockSignals(False)
+
+    def control_for(self, key):
+        """The widget that edits a setting, for the window to scroll to and focus."""
+        return self._controls.get(key)
 
     def is_modified_from_default(self):
         if not hasattr(self, "all_metadata"):
@@ -432,6 +490,7 @@ class DynamicSettingsPage(QWidget):
 
         hk_btn = HotkeyEditorWidget(hotkey_str)
         hk_btn.setFixedWidth(235)
+        self._controls[key] = hk_btn
         hk_btn.textChanged.connect(
             lambda text, k=key: self.update_config(k, self._with_first_key(k, text))
         )
@@ -454,6 +513,7 @@ class DynamicSettingsPage(QWidget):
 
         editor = HotkeyEditorWidget(shown_key())
         editor.setFixedWidth(235)
+        self._controls[key] = editor
         field = QWidget()
         layout = QVBoxLayout(field)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -516,6 +576,7 @@ class DynamicSettingsPage(QWidget):
 
         combo = QComboBox()
         combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self._controls[key] = combo
         enum_dict = annotations.get("Enum", {})
         sorted_keys = sorted(enum_dict.keys(), key=lambda x: int(x) if str(x).isdigit() else x)
         for k in sorted_keys:
@@ -601,6 +662,7 @@ class DynamicSettingsPage(QWidget):
         val = self.current_values.get(key, default)
 
         cb = QCheckBox(_(label))
+        self._controls[key] = cb
         if key in MENU_ENTRIES:
             text, icon_name = MENU_ENTRIES[key]
             cb.setText(_(text))

@@ -412,7 +412,7 @@ namespace ngosen {
         }
         // Facebook composers only: other fields do not report a selection-only change, so the
         // overtype would time out and drop the tone mark.
-        if (engine_->options().messengerSelectOvertype && !ngosen::forwardsBackspaces(host_->field()) && looksLikeFacebookComposer(surrounding)) {
+        if (engine_->options().messengerSelectOvertype && !ngosen::forwardsBackspaces(host_->field()) && !host_->field().sendsNoKeys && looksLikeFacebookComposer(surrounding)) {
             selectAndOvertype(addedPart, static_cast<int>(ngosen::utf8::length(deletedPart)));
             return;
         }

@@ -467,13 +467,19 @@ namespace ngosen {
     }
 
     void TypingState::chooseWordMode(const ngosen::KeyPress& keyEvent) {
-        if (realMode != ngosen::Mode::Sen || !bambooEngine_ || keyEvent.isRelease() || keyEvent.isModifier() || is_deleting_.load() || !oldPreBuffer_.empty())
+        if (realMode != ngosen::Mode::Sen || !bambooEngine_ || keyEvent.isRelease() || keyEvent.isModifier() || is_deleting_.load())
             return;
-        // Switching inside a word would leave its first letters on the other side.
-        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
-        if (preedit && *preedit.get() != 0)
+        const bool sendsNoKeys = host_->field().sendsNoKeys;
+        if (!preeditWord_ && !sendsNoKeys)
             return;
-        const bool toPreedit = host_->field().sendsNoKeys && !canSendBackspaces();
+        // Switching inside a word would leave its first letters on the other side. A click or reset
+        // ends the word before this key is handled.
+        if (!needEngineReset.load() && !g_mouse_clicked.load(std::memory_order_acquire)) {
+            ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+            if (!oldPreBuffer_.empty() || (preedit && *preedit.get() != 0))
+                return;
+        }
+        const bool toPreedit = sendsNoKeys && !canSendBackspaces();
         if (toPreedit == preeditWord_)
             return;
         NGOSEN_INFO(toPreedit ? "Nothing can delete here, type the word in the preedit" : "Type the word in the field");
@@ -753,7 +759,7 @@ namespace ngosen {
     }
 
     bool TypingState::handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (mode() == ngosen::Mode::Off)
+        if (mode() == ngosen::Mode::Off || (host_->field().sendsNoKeys && !canSendBackspaces()))
             return false;
         if (engine_->options().doubleSpaceToPeriod) {
             bool isSpaceKey = (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);

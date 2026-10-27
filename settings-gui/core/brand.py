@@ -20,3 +20,5 @@ REPO_URL = "https://github.com/ngosen/ngosen"
 ISSUE_URL = f"{REPO_URL}/issues/new"
 BUG_REPORT_URL = f"{ISSUE_URL}?template=bug_report.yml"
 FEATURE_REQUEST_URL = f"{ISSUE_URL}?template=feature_request.yml"
+# A chat with the Ngó Sen Facebook page, for people without a GitHub account.
+MESSENGER_URL = "https://m.me/61595753582618"

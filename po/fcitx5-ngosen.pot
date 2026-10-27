@@ -1135,7 +1135,19 @@ msgid "Copy result"
 msgstr ""
 
 #: settings-gui/ui/system_check_dialog.py
-msgid "Report bug…"
+msgid "Message on Facebook…"
+msgstr ""
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Report on GitHub…"
+msgstr ""
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Copied the result."
+msgstr ""
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Copied the result. Paste it into the message and say what went wrong."
 msgstr ""
 
 #: settings-gui/ui/system_check_dialog.py

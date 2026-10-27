@@ -232,6 +232,29 @@ class DialogTest(unittest.TestCase):
         dialog.copy_report()
         self.assertIn("[X] GTK apps have no input method", QGuiApplication.clipboard().text())
 
+    def test_messaging_copies_the_report_and_opens_the_chat(self):
+        from core.brand import MESSENGER_URL
+        from qtpy.QtGui import QGuiApplication
+        from ui.system_check_dialog import SystemCheckDialog
+
+        env = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
+        with mock.patch.dict(os.environ, env, clear=True):
+            dialog = SystemCheckDialog(FakeDBusHandler(), "1.4.2")
+        QGuiApplication.clipboard().setText("")
+        with mock.patch("ui.system_check_dialog.QDesktopServices.openUrl") as open_url:
+            dialog.message_btn.click()
+        self.assertEqual(open_url.call_args[0][0].toString(), MESSENGER_URL)
+        self.assertIn("Ngó Sen 1.4.2", QGuiApplication.clipboard().text())
+        self.assertIn("Paste", dialog.status.text())
+
+    def test_copying_says_it_is_done(self):
+        from ui.system_check_dialog import SystemCheckDialog
+
+        dialog = SystemCheckDialog(FakeDBusHandler(), "1.4.2")
+        self.assertEqual(dialog.status.text(), "")
+        dialog.copy_btn.click()
+        self.assertTrue(dialog.status.text())
+
     def test_dialog_grows_to_fit_more_rows(self):
         from qtpy.QtWidgets import QApplication, QLabel
         from ui.system_check_dialog import SystemCheckDialog

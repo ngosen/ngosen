@@ -49,6 +49,15 @@ class KeymapTest(unittest.TestCase):
             self.assertFalse(table.save())
         self.assertTrue(table.is_modified())
 
+    def test_a_refused_table_puts_the_switch_back(self):
+        fake = FakeDBusHandler()
+        table = keymap.Keymap(fake)
+        table.load()
+        table.enabled = True
+        with mock.patch.object(fake, "set_sub_config_list", return_value=False):
+            self.assertFalse(table.save())
+        self.assertEqual(fake.values["EnableCustomKeymap"], "False")
+
     def test_every_preset_uses_listed_actions(self):
         for name, entries in keymap.PRESETS.items():
             for key, code in entries:

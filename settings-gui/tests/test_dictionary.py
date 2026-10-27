@@ -22,7 +22,7 @@ class DictionaryTest(unittest.TestCase):
         self.addCleanup(patcher.stop)
         self.bundled = os.path.join(tmp.name, "bundled.dict")
         with open(self.bundled, "w", encoding="utf-8") as f:
-            f.write("# bundled\nhello\nworld\n")
+            f.write("hello\nworld\n")
         self.local = os.path.join(tmp.name, "fcitx5/ngosen/vietnamese.cm.dict")
         self.fake = FakeDBusHandler()
         self.dictionary = dictionary.Dictionary(self.fake, lambda: self.bundled)
@@ -91,6 +91,24 @@ class DictionaryTest(unittest.TestCase):
             with self.assertRaises(OSError):
                 self.dictionary.save()
         self.assertEqual(os.listdir(os.path.dirname(self.local)), [])
+
+    def test_a_word_starting_with_hash_survives_a_save(self):
+        # The engine reads every non-empty line as a word, "#" included.
+        self.write_local("#hashtag\nhello\n".encode())
+        self.dictionary.load()
+        self.dictionary.words.append("ngosen")
+        self.dictionary.save()
+        with open(self.local, encoding="utf-8") as f:
+            self.assertIn("#hashtag", f.read().split())
+
+    def test_a_failed_word_write_puts_the_switch_back(self):
+        self.dictionary.load()
+        self.dictionary.enabled = True
+        self.dictionary.words.append("ngosen")
+        with mock.patch.object(dictionary, "_write_atomically", side_effect=OSError(28, "full")):
+            with self.assertRaises(OSError):
+                self.dictionary.save()
+        self.assertEqual(self.fake.values["EnableDictionary"], "False")
 
     def test_reset_goes_back_to_the_bundled_words(self):
         self.write_local(b"mine\n")

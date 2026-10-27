@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The custom dictionary: words the engine keeps as typed, and whether it is on."""
 
+import contextlib
 import os
 import tempfile
 
@@ -37,6 +38,7 @@ class Dictionary:
         self.words = []
         self.enabled = False
         self.load_failed = False
+        self.path = None
         self.saved_state = self.state()
 
     def load(self):
@@ -49,7 +51,7 @@ class Dictionary:
         self.words = []
         error = None
         local = local_dict_path()
-        path = local if os.path.exists(local) else self.bundled()
+        path = self.path = local if os.path.exists(local) else self.bundled()
         if os.path.exists(path):
             try:
                 self.words = read_words(path)
@@ -109,17 +111,12 @@ class Dictionary:
 def _write_atomically(path, words):
     folder = os.path.dirname(path)
     os.makedirs(folder, exist_ok=True)
-    with tempfile.NamedTemporaryFile("w", dir=folder, encoding="utf-8", delete=False) as tf:
-        temp_name = tf.name
-        try:
-            for word in words:
-                tf.write(f"{word}\n")
-        except BaseException:
-            tf.close()
-            os.remove(temp_name)
-            raise
+    tf = tempfile.NamedTemporaryFile("w", dir=folder, encoding="utf-8", delete=False)
     try:
-        os.replace(temp_name, path)
+        with tf:
+            tf.writelines(f"{word}\n" for word in words)
+        os.replace(tf.name, path)
     except BaseException:
-        os.remove(temp_name)
+        with contextlib.suppress(OSError):
+            os.remove(tf.name)
         raise

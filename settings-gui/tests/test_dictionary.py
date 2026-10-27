@@ -64,6 +64,34 @@ class DictionaryTest(unittest.TestCase):
         with open(self.local, "rb") as f:
             self.assertEqual(f.read(), broken)
 
+    def test_a_failed_write_leaves_no_temp_file(self):
+        real = dictionary.tempfile.NamedTemporaryFile
+
+        class FullDisk:
+            def __init__(self, *args, **kwargs):
+                self.file = real(*args, **kwargs)
+                self.name = self.file.name
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                self.file.close()
+                raise OSError(28, "No space left on device")
+
+            def writelines(self, lines):
+                self.file.writelines(lines)
+
+            def write(self, text):
+                self.file.write(text)
+
+        self.dictionary.load()
+        self.dictionary.words.append("ngosen")
+        with mock.patch.object(dictionary.tempfile, "NamedTemporaryFile", FullDisk):
+            with self.assertRaises(OSError):
+                self.dictionary.save()
+        self.assertEqual(os.listdir(os.path.dirname(self.local)), [])
+
     def test_reset_goes_back_to_the_bundled_words(self):
         self.write_local(b"mine\n")
         self.dictionary.load()

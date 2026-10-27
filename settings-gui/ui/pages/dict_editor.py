@@ -72,6 +72,9 @@ class DictEditorPage(BaseEditorPage):
     def words(self, words):
         self.dictionary.words = words
 
+    def _on_enable_toggled(self, checked):
+        self.dictionary.enabled = checked
+
     def _get_global_dict_path(self) -> str:
         return dictionary.bundled_path()
 
@@ -96,6 +99,7 @@ class DictEditorPage(BaseEditorPage):
         toggles_card = CardWidget()
         toggles_layout = QHBoxLayout()
         self.cb_enable = QCheckBox(_("Custom Dictionary"))
+        self.cb_enable.toggled.connect(self._on_enable_toggled)
         self.cb_enable.toggled.connect(self._on_item_changed)
         toggles_layout.addWidget(self.cb_enable)
         toggles_layout.addStretch()
@@ -179,7 +183,7 @@ class DictEditorPage(BaseEditorPage):
             error = self.dictionary.load()
             self.cb_enable.setChecked(self.dictionary.enabled)
             if error:
-                print(f"Failed to read dictionary: {error}")
+                print(f"Failed to read dictionary {self.dictionary.path}: {error}")
                 QMessageBox.warning(
                     self,
                     _("Warning"),
@@ -232,17 +236,14 @@ class DictEditorPage(BaseEditorPage):
     def is_modified_from_default(self):
         """Returns True if the dictionary is on or its words differ from the bundled ones."""
         self._ensure_loaded()
-        self.dictionary.enabled = self.cb_enable.isChecked()
         return self.dictionary.is_modified_from_default()
 
     def is_modified(self):
         if not self._is_loaded:
             return False
-        self.dictionary.enabled = self.cb_enable.isChecked()
         return self.dictionary.is_modified()
 
     def save_data(self) -> bool:
-        self.dictionary.enabled = self.cb_enable.isChecked()
         try:
             return self.dictionary.save()
         except dictionary.LoadFailedError:

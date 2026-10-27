@@ -10,6 +10,7 @@ import os
 import signal
 import sys
 
+from core.brand import APP_ID
 from core.cli import parse_args
 from i18n import setup_i18n
 
@@ -42,8 +43,8 @@ def run_qt():
 
     args = parse_args(sys.argv[1:])
     app = QApplication(sys.argv)
-    app.setDesktopFileName("io.github.ngosen.NgoSen.Settings")
-    app.setApplicationName("io.github.ngosen.NgoSen.Settings")
+    app.setDesktopFileName(APP_ID)
+    app.setApplicationName(APP_ID)
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app.setWindowIcon(brand.logo_icon())
     color_scheme.install(app)

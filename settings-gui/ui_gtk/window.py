@@ -9,6 +9,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("PangoCairo", "1.0")
 
+from core.brand import APP_ID  # noqa: E402
 from core.catalog import MODE_SHORTCUT_TO_VISIBILITY  # noqa: E402
 from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
@@ -28,7 +29,6 @@ from ui_gtk.macros import MacroPage  # noqa: E402
 from ui_gtk.shortcuts import ShortcutsPage  # noqa: E402
 from ui_gtk.whats_new import WhatsNewPage  # noqa: E402
 
-APP_ID = "io.github.ngosen.NgoSen.Settings"
 MODE_KEYS = [*MODE_SHORTCUT_TO_VISIBILITY, *MODE_SHORTCUT_TO_VISIBILITY.values()]
 
 try:

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The pages of the GTK window, drawn from the same catalog as the Qt window."""
 
+from core.brand import BUG_REPORT_URL, FEATURE_REQUEST_URL, REPO_URL
 from core.catalog import (
     HINTS,
     MODE_BUTTON_ORDER,
@@ -15,8 +16,6 @@ from i18n import _
 
 from core import system_check
 from ui_gtk import brand
-
-REPO_URL = "https://github.com/ngosen/ngosen"
 
 
 def _hinted(row, key):
@@ -206,10 +205,8 @@ def about_page(version):
     )
     box.append(_label(f'<a href="{REPO_URL}">{REPO_URL}</a>', markup=True))
     buttons = Gtk.Box(spacing=12, halign=Gtk.Align.CENTER)
-    buttons.append(_link_button(_("Report Bug"), f"{REPO_URL}/issues/new?template=bug_report.yml"))
-    buttons.append(
-        _link_button(_("Request Feature"), f"{REPO_URL}/issues/new?template=feature_request.yml")
-    )
+    buttons.append(_link_button(_("Report Bug"), BUG_REPORT_URL))
+    buttons.append(_link_button(_("Request Feature"), FEATURE_REQUEST_URL))
     box.append(buttons)
     box.append(Gtk.Separator())
     box.append(_label(_("Developed by Nguyen Phi")))

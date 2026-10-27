@@ -25,6 +25,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   text, terminal thì bằng DEL, field không có cả hai thì chữ đó gõ bằng gạch chân. Bản fcitx5 không đổi (#353).
 - Cửa sổ cài đặt, hộp "Kiểm tra máy tôi…": nút mới "Nhắn qua Facebook…" chép sẵn thông tin máy và mở khung chat
   với trang Facebook Ngó Sen. Dán thông tin vào tin nhắn để báo lỗi, không cần tài khoản GitHub (#374).
+- Cửa sổ cài đặt có thêm bản GTK giống app GNOME, dùng libadwaita 1.5 trở lên, bên cạnh bản Qt như cũ.
+  GNOME và Cinnamon (Linux Mint) mở GTK nếu đủ libadwaita; desktop khác mở Qt. Chỉ có thư viện bản nào thì mở bản đó.
+  Muốn chọn hẳn một bản, đặt "Cửa sổ cài đặt" thành Qt hoặc GTK trong công cụ cài đặt của fcitx5 (#386).
 
 ### Thay đổi
 

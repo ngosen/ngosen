@@ -966,6 +966,75 @@ namespace {
         check(host->preedit() == "viết", "preedit: a new tone mark goes on the rebuilt word", host->preedit());
     }
 
+    struct PreeditReopen {
+        bool                                      bsAccepted = false;
+        std::vector<std::pair<int, unsigned int>> deletes;
+        std::string                               preedit;
+        FakeHost*                                 host = nullptr;
+    };
+
+    // Types `keys` in Preedit, sets the text the app then reports and presses Backspace once.
+    PreeditReopen backspaceAfterPreeditCommit(ngosen::TypingState& state, FakeHost& host, const std::string& keys, const std::string& reported) {
+        for (const char c : keys)
+            press(state, c == '\n' ? ngosen::key::Return : static_cast<uint32_t>(c));
+        host.setSurrounding(reported, static_cast<unsigned int>(ngosen::utf8::decode(reported).size()));
+        state.surroundingUpdated();
+        PreeditReopen r;
+        r.bsAccepted = press(state, ngosen::key::BackSpace);
+        r.deletes    = host.deletes();
+        r.preedit    = host.preedit();
+        return r;
+    }
+
+    void testPreeditBackspaceReopensWord() {
+        realMode = ngosen::Mode::Preedit;
+        {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            const PreeditReopen r = backspaceAfterPreeditCommit(state, *host, "vieetj ", "việt ");
+            check(r.bsAccepted && r.deletes.size() == 1 && r.deletes[0] == std::make_pair(-5, 5U), "preedit reopen: backspace takes the word and the space back from the app",
+                  std::to_string(r.deletes.size()));
+            check(r.preedit == "việt", "preedit reopen: the word shows as preedit again", r.preedit);
+            press(state, static_cast<uint32_t>('s'));
+            check(host->preedit() == "viết", "preedit reopen: s puts a new tone on the word", host->preedit());
+            press(state, ngosen::key::space);
+            check(join(host->commits()) == "['việt ']['viết ']", "preedit reopen: space commits the fixed word", join(host->commits()));
+        }
+        {
+            // Held Backspace: the reopened word is deleted letter by letter, then the app deletes on its own.
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            backspaceAfterPreeditCommit(state, *host, "ban ", "ban ");
+            for (int i = 0; i < 3; ++i)
+                press(state, ngosen::key::BackSpace);
+            check(host->preedit().empty(), "preedit reopen: held backspace empties the preedit", host->preedit());
+            check(!press(state, ngosen::key::BackSpace), "preedit reopen: the next backspace goes on to the app", "taken");
+            check(host->deletes().size() == 1 && join(host->commits()) == "['ban ']", "preedit reopen: held backspace deletes the word once",
+                  std::to_string(host->deletes().size()) + " " + join(host->commits()));
+        }
+        const auto notReopened = [](const Field& field, const std::string& keys, const std::string& reported, const std::string& what, const std::string& charset) {
+            FakeLoop      loop;
+            FakeResources resources;
+            if (!charset.empty())
+                resources.mutableOptions().outputCharset = charset;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            const PreeditReopen r = backspaceAfterPreeditCommit(state, *host, keys, reported);
+            check(!r.bsAccepted && r.deletes.empty() && r.preedit.empty(), "preedit reopen: " + what, r.preedit);
+        };
+        notReopened(makeField("wayland", true), "ban ", "xyz", "not after a click elsewhere", {});
+        notReopened(makeField("wayland", false), "ban ", "", "not where the app reports no text", {});
+        notReopened(makeField("wayland", true), "dduowc ", "ñöôc ", "not for a word in a legacy charset", "VNI Windows");
+        notReopened(makeField("wayland", true), "tieen\n", "tiên", "not after Enter", {});
+    }
+
     // An address bar fills in a suggestion after the cursor. Typing its next letter leaves the text
     // as it was and moves the cursor one step, which is not a click. Edge reports the suggestion
     // selected; Firefox reports no selection.
@@ -1252,6 +1321,7 @@ int main() {
     testBackspaceRemovesTone(true);
     testBackspaceRemovesTone(false);
     testPreeditBackspaceRemovesTone();
+    testPreeditBackspaceReopensWord();
     testModifierTapKeepsWord();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

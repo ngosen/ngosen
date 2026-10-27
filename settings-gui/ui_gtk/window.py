@@ -22,6 +22,7 @@ from ui_gtk import brand, pages  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
 from ui_gtk.macros import MacroPage  # noqa: E402
+from ui_gtk.shortcuts import ShortcutsPage  # noqa: E402
 
 APP_ID = "io.github.ngosen.NgoSen.Settings"
 
@@ -44,10 +45,13 @@ class Window(Adw.ApplicationWindow):
         self.toasts.set_child(self.stack)
         self.pages = []
 
-        self.typing = self.macros = self.dictionary = self.keymap = None
+        self.typing = self.macros = self.dictionary = self.keymap = self.shortcuts = None
         self.tabs = {}
+        self.tab_parents = {}
         if self.model.load():
             self.typing = pages.TypingPage(self.model, self.save)
+            others = [n for n in (dbus.input_method_names() or []) if n != "ngosen"]
+            self.shortcuts = ShortcutsPage(self.model, self.save, bool(others))
             table = MacroTable(dbus)
             table.load()
             self.macros = MacroPage(table, self.report)
@@ -60,10 +64,13 @@ class Window(Adw.ApplicationWindow):
             "macros",
             _("Macros & Dictionary"),
             "accessories-text-editor-symbolic",
-            self._tabs(macros=self.macros, dictionary=self.dictionary),
+            self._tabs("macros", macros=self.macros, dictionary=self.dictionary),
         )
         self._add_page(
-            "keys", _("Keys"), "preferences-desktop-keyboard-symbolic", _widget(self.keymap)
+            "keys",
+            _("Keys"),
+            "preferences-desktop-keyboard-symbolic",
+            self._tabs("keys", shortcuts=self.shortcuts, keymap=self.keymap),
         )
         self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 
@@ -79,7 +86,7 @@ class Window(Adw.ApplicationWindow):
         narrow.add_setter(self.split, "collapsed", True)
         self.add_breakpoint(narrow)
 
-    def _tabs(self, **pages):
+    def _tabs(self, parent, **pages):
         """Pages that share a sidebar entry, as tabs like the Qt window's."""
         if None in pages.values():
             return _widget(None)
@@ -89,6 +96,7 @@ class Window(Adw.ApplicationWindow):
                 page.page, name, page.page.get_title(), page.page.get_icon_name()
             )
             self.tabs[name] = stack
+            self.tab_parents[name] = parent
         switcher = Adw.ViewSwitcher(stack=stack, policy=Adw.ViewSwitcherPolicy.WIDE)
         switcher.set_halign(Gtk.Align.CENTER)
         switcher.set_margin_top(6)
@@ -130,7 +138,7 @@ class Window(Adw.ApplicationWindow):
         """Shows the named page or tab; a page this window does not have yet is ignored."""
         if name in self.tabs:
             self.tabs[name].set_visible_child_name(name)
-            name = "macros"
+            name = self.tab_parents[name]
         for index, (page, _title, _icon) in enumerate(self.pages):
             if page == name:
                 row = self.sidebar.get_row_at_index(index)
@@ -139,6 +147,11 @@ class Window(Adw.ApplicationWindow):
 
     def save(self, key, value):
         self.model.set(key, value)
+        conflicts = self.model.shortcut_conflicts()
+        if conflicts:
+            # Held back, so swapping two modes' keys never saves the halfway state.
+            self._show(Adw.Toast(title=conflicts[0][0], timeout=0))
+            return
         self.report(self.model.save(), self.model.label(key) or key)
 
     def report(self, ok, label):

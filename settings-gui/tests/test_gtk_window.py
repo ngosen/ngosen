@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import tempfile
 import unittest
+from unittest import mock
 
 # isort: off
 from fake_fcitx import FakeDBusHandler
@@ -17,6 +19,23 @@ REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
 if CAN_RUN:
     from gi.repository import Adw
     from ui_gtk import brand, window
+
+    from core import dictionary
+
+
+def isolate(test):
+    """Keeps the dictionary files of the machine running the tests out of reach."""
+    tmp = tempfile.TemporaryDirectory()
+    test.addCleanup(tmp.cleanup)
+    for patcher in (
+        mock.patch.dict(os.environ, {"XDG_DATA_HOME": tmp.name}),
+        mock.patch.object(dictionary, "BUNDLED_PATHS", [os.path.join(tmp.name, "bundled.dict")]),
+    ):
+        patcher.start()
+        test.addCleanup(patcher.stop)
+    with open(dictionary.BUNDLED_PATHS[0], "w", encoding="utf-8") as f:
+        f.write("hello\nworld\n")
+    return os.path.join(tmp.name, "fcitx5/ngosen/vietnamese.cm.dict")
 
 
 class RequiredTest(unittest.TestCase):
@@ -52,6 +71,7 @@ class Restarting(FakeDBusHandler):
 class GtkWindowTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
+        isolate(self)
         self.dbus = FakeDBusHandler()
         self.window = window.Window(None, self.dbus)
 
@@ -92,6 +112,7 @@ class GtkWindowTest(unittest.TestCase):
 class GtkMacroPageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
+        isolate(self)
         self.dbus = FakeDBusHandler(sub_configs={"ngosen-macro": [{"Key": "kg", "Value": "khô"}]})
         self.page = window.Window(None, self.dbus).macros
 
@@ -147,6 +168,72 @@ class GtkMacroPageTest(unittest.TestCase):
         self.assertEqual(self.dbus.values["EnableMacro"], "False")
         self.page.formats["TimeFormat"].set_selected(1)
         self.assertEqual(self.dbus.values["TimeFormat"], "%H:%M:%S")
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkDictionaryPageTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        self.local = isolate(self)
+        self.dbus = FakeDBusHandler()
+        self.window = window.Window(None, self.dbus)
+        self.page = self.window.dictionary
+
+    def local_words(self):
+        with open(self.local, encoding="utf-8") as f:
+            return f.read().split()
+
+    def test_adding_a_word_writes_the_file_and_reloads_fcitx5(self):
+        self.page.word_row.set_text("ngosen")
+        self.page.add_button.emit("clicked")
+        self.assertEqual(sorted(self.local_words()), ["hello", "ngosen", "world"])
+        self.assertEqual(self.dbus.reloads, ["ngosen"])
+
+    def test_a_word_with_a_space_or_already_there_is_refused(self):
+        self.page.word_row.set_text("hai tu")
+        self.assertFalse(self.page.add_button.get_sensitive())
+        self.page.word_row.set_text("hello")
+        self.assertFalse(self.page.add_button.get_sensitive())
+
+    def test_a_word_with_other_whitespace_is_refused(self):
+        for word in ("ngo\u00a0sen", "a\tb"):
+            self.page.word_row.set_text(word)
+            self.assertFalse(self.page.add_button.get_sensitive(), repr(word))
+
+    def test_removing_a_word_removes_every_copy(self):
+        os.makedirs(os.path.dirname(self.local), exist_ok=True)
+        with open(self.local, "w", encoding="utf-8") as f:
+            f.write("hello\nhello\nworld\n")
+        page = window.Window(None, self.dbus).dictionary
+        page._remove("hello")
+        self.assertEqual(window.Window(None, self.dbus).dictionary.dictionary.words, ["world"])
+
+    def test_removing_a_word_changes_only_its_row(self):
+        changes = []
+        self.page.words.connect("items-changed", lambda _m, *change: changes.append(change))
+        self.page._remove("hello")
+        self.assertEqual(changes, [(0, 1, 0)])
+
+    def test_removing_a_word_saves(self):
+        self.page._remove("hello")
+        self.assertEqual(self.local_words(), ["world"])
+
+    def test_the_switch_saves(self):
+        self.page.switch.set_active(True)
+        self.assertEqual(self.dbus.values["EnableDictionary"], "True")
+
+    def test_a_file_read_in_part_cannot_be_edited(self):
+        os.makedirs(os.path.dirname(self.local), exist_ok=True)
+        with open(self.local, "wb") as f:
+            f.write(b"ok\n\xff\n")
+        page = window.Window(None, self.dbus).dictionary
+        self.assertFalse(page.switch.get_sensitive())
+        self.assertFalse(page.editor.get_sensitive())
+
+    def test_show_page_opens_the_dictionary_tab(self):
+        self.window.show_page("dictionary")
+        self.assertEqual(self.window.stack.get_visible_child_name(), "macros")
+        self.assertEqual(self.window.tabs["dictionary"].get_visible_child_name(), "dictionary")
 
 
 def _children(widget):

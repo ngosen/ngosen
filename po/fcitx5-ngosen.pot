@@ -1322,7 +1322,8 @@ msgid "Typed tieengs vieetj before switching on? Switch on and it becomes tiến
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s."
+msgid ""
+"Select nhanh and type s: nhánh. Tab, Esc or s again gives back s. Only the tone mark changes: nguoi does not become người."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py

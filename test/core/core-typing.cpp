@@ -1127,6 +1127,8 @@ namespace {
         FakeResources off;
         off.mutableOptions().lockWordKey = ngosen::LockWordKey::None;
         expectTyped(off, makeField("wayland", true), "tunx^ ", "tunx ", "lock: Ctrl does nothing when disabled");
+        FakeResources toned;
+        expectTyped(toned, makeField("wayland", true), "nhanh^s ", "nhanhs ", "lock: a tone key after the lock key starts a word");
         // A tap right after a tone key lands while that replacement is still in flight.
         ngosen::test::AppQuirks slow;
         slow.lagMs = 40;

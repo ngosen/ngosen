@@ -113,7 +113,7 @@ detect_distribution() {
         # Kali Rolling is built from Debian testing.
         [ "$id" = kali ] && codename=forky
         case "$codename" in
-            bookworm | trixie | forky | jammy | noble | resolute | stonking)
+            bookworm | trixie | forky | noble | resolute | stonking)
                 manager=apt
                 pattern="fcitx5-ngosen_[0-9][^ /]*_${codename}_${deb_arch}\\.deb"
                 return
@@ -121,6 +121,8 @@ detect_distribution() {
         esac
     fi
 
+    # Ubuntu 22.04 (and Linux Mint 21) had packages up to 1.6.1.
+    [ "$codename" = jammy ] && die "Ngó Sen từ 1.7.0 cần Ubuntu 24.04 trở lên (Linux Mint 22 trở lên). Bản cuối cho Ubuntu 22.04 là 1.6.1: https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.1-1"
     unsupported "${id:-bản phân phối này} ${codename:-$version}"
 }
 

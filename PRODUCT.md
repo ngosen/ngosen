@@ -7,7 +7,7 @@
 desktop
 
 The settings window is a Linux desktop app (Python, Qt through qtpy) that must look at home on both
-KDE Plasma and GNOME, and on Qt5 (Ubuntu 22.04) as well as Qt6.
+KDE Plasma and GNOME, and on Qt5 as well as Qt6.
 
 ## Users
 

@@ -45,7 +45,8 @@ Telex được dùng và test hằng ngày. VNI và các kiểu khác dùng đư
 
 ## Cài
 
-Lệnh dưới đây cài cho Fedora, Ubuntu, Debian, Kali, Arch, CachyOS và openSUSE Tumbleweed trên x86_64.
+Lệnh dưới đây cài cho Fedora, Ubuntu (từ 24.04), Debian (từ 12), Kali, Arch, CachyOS và openSUSE Tumbleweed
+trên x86_64. Ubuntu 22.04 và Linux Mint 21 dùng được tới version 1.6.1.
 Fedora, Ubuntu, Debian và Kali còn có gói cho ARM 64-bit (aarch64):
 
 ```

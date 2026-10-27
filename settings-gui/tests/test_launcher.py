@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import ast
+import subprocess
+import sys
 import unittest
 
 import fake_fcitx  # noqa: F401  (puts settings-gui on the path)
@@ -20,6 +22,14 @@ class LauncherTest(unittest.TestCase):
         first = run_qt.body[0]
         self.assertIsInstance(first, ast.Import)
         self.assertEqual(first.names[0].name, "qt_api")
+
+    def test_probing_for_gtk_leaves_it_out_of_this_process(self):
+        # Qt may still open here, and its GTK 3 theme plugin aborts next to a loaded GTK 4.
+        probe = "import sys, ui_gtk; ui_gtk.available(); print('gi.repository.Gtk' in sys.modules)"
+        result = subprocess.run(
+            [sys.executable, "-c", probe], cwd=GUI_DIR, capture_output=True, text=True
+        )
+        self.assertEqual(result.stdout.strip(), "False", result.stderr)
 
     def test_qt_unless_the_developer_asks_for_gtk(self):
         self.assertEqual(main.toolkit({}), "qt")

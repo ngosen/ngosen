@@ -6,11 +6,11 @@
 Application entry point.
 """
 
-import argparse
 import os
 import signal
 import sys
 
+from core.cli import parse_args
 from i18n import setup_i18n
 
 
@@ -40,11 +40,7 @@ def run_qt():
     from ui import brand, color_scheme, scroll_bars
     from ui.main_window import NgoSenSettingsWindow
 
-    parser = argparse.ArgumentParser()
-    # The What's new notification opens the window on its page.
-    parser.add_argument("--page", choices=["whats-new"])
-    # Qt reads its own options from argv, so the unknown ones stay.
-    args, _unknown = parser.parse_known_args()
+    args = parse_args(sys.argv[1:])
     app = QApplication(sys.argv)
     app.setDesktopFileName("io.github.ngosen.NgoSen.Settings")
     app.setApplicationName("io.github.ngosen.NgoSen.Settings")

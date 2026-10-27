@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The GTK window: pages in a sidebar, as in GNOME Settings."""
 
-import argparse
-
 import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("PangoCairo", "1.0")
 
+from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
 from core.settings_model import SettingsModel  # noqa: E402
 from gi.repository import Adw, Gio, Gtk  # noqa: E402
@@ -24,13 +23,6 @@ try:
     from version import __version__
 except ImportError:
     __version__ = "dev version"
-
-
-def parse_args(argv):
-    parser = argparse.ArgumentParser(prog="ngosen-settings")
-    parser.add_argument("--page", choices=["whats-new"])
-    args, _unknown = parser.parse_known_args(argv)
-    return args
 
 
 class Window(Adw.ApplicationWindow):

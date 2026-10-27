@@ -21,7 +21,7 @@ from core.whats_new_content import random_tip  # noqa: E402
 from gi.repository import Adw, Gio, Gtk  # noqa: E402
 from i18n import _  # noqa: E402
 
-from ui_gtk import brand, pages  # noqa: E402
+from ui_gtk import brand, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
@@ -49,6 +49,8 @@ class Window(Adw.ApplicationWindow):
         self.stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
         self.toasts.set_child(self.stack)
         self.pages = []
+        self.search_pages = []
+        self.page_titles = {}
 
         self.typing = self.macros = self.dictionary = self.keymap = self.shortcuts = None
         self.appearance = None
@@ -74,12 +76,14 @@ class Window(Adw.ApplicationWindow):
             _("Macros & Dictionary"),
             "accessories-text-editor-symbolic",
             self._tabs("macros", macros=self.macros, dictionary=self.dictionary),
+            searchable=False,
         )
         self._add_page(
             "keys",
             _("Keys"),
             "preferences-desktop-keyboard-symbolic",
             self._tabs("keys", shortcuts=self.shortcuts, keymap=self.keymap),
+            searchable=False,
         )
         self._add_page(
             "appearance",
@@ -93,6 +97,7 @@ class Window(Adw.ApplicationWindow):
             _("What's new & tips"),
             "dialog-information-symbolic",
             self.whats_new.page,
+            searchable=False,
         )
         self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 
@@ -119,6 +124,8 @@ class Window(Adw.ApplicationWindow):
             )
             self.tabs[name] = stack
             self.tab_parents[name] = parent
+            self.search_pages.append((name, page.page))
+            self.page_titles[name] = page.page.get_title()
         switcher = Adw.ViewSwitcher(stack=stack, policy=Adw.ViewSwitcherPolicy.WIDE)
         switcher.set_halign(Gtk.Align.CENTER)
         switcher.set_margin_top(6)
@@ -128,9 +135,12 @@ class Window(Adw.ApplicationWindow):
         box.append(stack)
         return box
 
-    def _add_page(self, name, title, icon, widget):
+    def _add_page(self, name, title, icon, widget, searchable=True):
         self.stack.add_named(widget, name)
         self.pages.append((name, title, icon))
+        if searchable:
+            self.search_pages.append((name, widget))
+            self.page_titles[name] = title
 
     def _sidebar(self):
         header = Adw.HeaderBar(show_title=False)
@@ -146,9 +156,71 @@ class Window(Adw.ApplicationWindow):
             self.sidebar.append(row)
         self.sidebar.connect("row-activated", self._on_row)
         self.sidebar.select_row(self.sidebar.get_row_at_index(0))
-        view = Adw.ToolbarView(content=Gtk.ScrolledWindow(child=self.sidebar))
+        self.results = Gtk.ListBox(css_classes=["navigation-sidebar"])
+        self.results.connect("row-activated", lambda _l, row: self.open_result(row))
+        self.side_stack = Gtk.Stack()
+        self.side_stack.add_named(Gtk.ScrolledWindow(child=self.sidebar), "pages")
+        self.side_stack.add_named(Gtk.ScrolledWindow(child=self.results), "results")
+        self.search_entry = Gtk.SearchEntry(
+            placeholder_text=_("Search settings"), margin_start=8, margin_end=8, margin_bottom=6
+        )
+        self.search_entry.connect("search-changed", self._on_search)
+        self.search_entry.connect("activate", self._open_first_result)
+        find = Gtk.ShortcutController(scope=Gtk.ShortcutScope.MANAGED)
+        find.add_shortcut(
+            Gtk.Shortcut(
+                trigger=Gtk.ShortcutTrigger.parse_string("<Control>f"),
+                action=Gtk.CallbackAction.new(lambda *_a: self.focus_search()),
+            )
+        )
+        self.add_controller(find)
+        view = Adw.ToolbarView(content=self.side_stack)
         view.add_top_bar(header)
+        view.add_top_bar(self.search_entry)
         return view
+
+    def _on_search(self, entry):
+        self.results.remove_all()
+        text = entry.get_text()
+        self.side_stack.set_visible_child_name("results" if text.strip() else "pages")
+        if not text.strip():
+            return
+        for title, row, name in search.find(self.search_pages, text):
+            result = Gtk.ListBoxRow()
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=4, margin_bottom=4)
+            box.append(Gtk.Label(label=title, xalign=0, wrap=True))
+            page = Gtk.Label(label=self.page_titles[name], xalign=0, css_classes=["dim-label"])
+            box.append(page)
+            result.set_child(box)
+            result.found = (row, name)
+            self.results.append(result)
+        if self.results.get_row_at_index(0) is None:
+            empty = Gtk.ListBoxRow(activatable=False, selectable=False)
+            empty.set_child(Gtk.Label(label=_("No settings found"), css_classes=["dim-label"]))
+            self.results.append(empty)
+
+    def focus_search(self):
+        # A narrow window shows the page alone, so the search field has to be brought back.
+        self.split.set_show_content(False)
+        self.search_entry.grab_focus()
+        return True
+
+    def _open_first_result(self, entry):
+        # Results follow typing after a short delay; Enter must not open the previous query's.
+        self._on_search(entry)
+        first = self.results.get_row_at_index(0)
+        if first is not None and hasattr(first, "found"):
+            self.open_result(first)
+
+    def open_result(self, result):
+        """Shows the page and tab holding a found row and puts the focus on it."""
+        if not hasattr(result, "found"):
+            return
+        row, name = result.found
+        self.search_entry.set_text("")
+        self.side_stack.set_visible_child_name("pages")
+        self.show_page(name)
+        row.grab_focus()
 
     def _on_row(self, _listbox, row):
         name, title, _icon = self.pages[row.get_index()]

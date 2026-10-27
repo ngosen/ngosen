@@ -207,17 +207,20 @@ namespace ngosen {
     } // namespace
 
     void TypingState::deliverAfterSettle(const char* reason, bool fromTimer) {
-        if (deferLaggingCommit(reason))
-            return;
         const auto snapshot = host_->surrounding();
         int        settleMs = engine_->options().waitSurroundingSettleMs;
         if (settleMs <= 0 || !looksLikeMessengerComposer(snapshot)) {
+            settleMs = 0;
+        } else if (isFirstWordOfMessage(snapshot)) {
+            // A just-emptied composer is still reloading its placeholder, so the first word waits longer.
+            settleMs = std::max(settleMs, engine_->options().waitSurroundingSettleFirstWordMs);
+        }
+        // A composer drops a commit that lands right after the deletion, also under GNOME (#362).
+        if (deferLaggingCommit(reason, static_cast<uint64_t>(settleMs) * 1000ULL))
+            return;
+        if (settleMs == 0) {
             finishReplacement(reason, fromTimer);
             return;
-        }
-        // A just-emptied composer is still reloading its placeholder, so the first word waits longer.
-        if (isFirstWordOfMessage(snapshot)) {
-            settleMs = std::max(settleMs, engine_->options().waitSurroundingSettleFirstWordMs);
         }
         // Reuse the timer-only wait state: a key arriving mid-wait finishes the wait first, focus loss
         // leaves the commit to the timer, and the snapshot watcher and timeout stay quiet.

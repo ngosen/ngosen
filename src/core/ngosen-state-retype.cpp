@@ -212,7 +212,8 @@ namespace ngosen {
 
     void TypingState::reopenTypedKey() {
         // The field still shows the retoned word, so the next key replaces it with the key and itself.
-        EngineRebuildFromText(bambooEngine_.handle(), retype_->typed.c_str());
+        // A key inside the word has no place at its end, where the cursor now is.
+        EngineRebuildFromText(bambooEngine_.handle(), (retype_->inWord ? retype_->marked : retype_->typed).c_str());
         oldPreBuffer_ = retype_->marked;
         dropRetype();
     }

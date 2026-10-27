@@ -178,6 +178,8 @@ namespace ngosen {
             bool        applied = false; // Tab or Esc then puts typed back
             bool        atOnce  = false; // retyped on switching on; only Tab or Esc undoes it
             bool        retone  = false; // a selected word retoned; a letter after it puts the key back
+            bool        inWord  = false; // the key went inside the word, so a letter after it keeps the tone
+            std::string key     = {};    // the tone key of a retone
         };
         std::string                    typedWhileOff_;
         std::optional<Retype>          retype_;
@@ -203,10 +205,20 @@ namespace ngosen {
             uint32_t    sym              = 0;
             uint32_t    states           = 0;
             bool        afterClick       = false;
+            bool        afterBackspace   = false;
             bool        reportedSinceKey = false; ///< a changed report arrived after the previous key
         };
+        // A retone inside a word waits for the cursor to reach the word's end.
+        struct RetoneMove {
+            std::string text;
+            size_t      cursor = 0;
+            Retype      retype;
+        };
         std::optional<RetoneKey>       retoneKey_;
+        std::optional<RetoneMove>      retoneMove_;
         std::unique_ptr<ngosen::Timer> retone_timer_;
+        bool                           backspaceBeforeKey_ = false; ///< the last key was a backspace that left no word being typed
+        void                           retoneAtWordEnd(size_t tail, Retype retype);
         void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8);
         void                           dropRetoneKey();
         void                           checkRetoneReport();

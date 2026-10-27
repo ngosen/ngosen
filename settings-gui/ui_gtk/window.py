@@ -165,12 +165,12 @@ class Window(Adw.ApplicationWindow):
             placeholder_text=_("Search settings"), margin_start=8, margin_end=8, margin_bottom=6
         )
         self.search_entry.connect("search-changed", self._on_search)
-        self.search_entry.connect("activate", lambda _e: self._open_first_result())
+        self.search_entry.connect("activate", self._open_first_result)
         find = Gtk.ShortcutController(scope=Gtk.ShortcutScope.MANAGED)
         find.add_shortcut(
             Gtk.Shortcut(
                 trigger=Gtk.ShortcutTrigger.parse_string("<Control>f"),
-                action=Gtk.CallbackAction.new(lambda *_a: self.search_entry.grab_focus()),
+                action=Gtk.CallbackAction.new(lambda *_a: self.focus_search()),
             )
         )
         self.add_controller(find)
@@ -199,7 +199,15 @@ class Window(Adw.ApplicationWindow):
             empty.set_child(Gtk.Label(label=_("No settings found"), css_classes=["dim-label"]))
             self.results.append(empty)
 
-    def _open_first_result(self):
+    def focus_search(self):
+        # A narrow window shows the page alone, so the search field has to be brought back.
+        self.split.set_show_content(False)
+        self.search_entry.grab_focus()
+        return True
+
+    def _open_first_result(self, entry):
+        # Results follow typing after a short delay; Enter must not open the previous query's.
+        self._on_search(entry)
         first = self.results.get_row_at_index(0)
         if first is not None and hasattr(first, "found"):
             self.open_result(first)

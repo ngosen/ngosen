@@ -436,6 +436,21 @@ class GtkSearchTest(unittest.TestCase):
         self.assertIs(self.window.get_focus(), results[0].found[0])
         self.assertEqual(self.window.side_stack.get_visible_child_name(), "pages")
 
+    def test_enter_right_after_typing_opens_what_was_typed(self):
+        self.search("about")
+        self.window.search_entry.set_text("spell check")
+        self.window.search_entry.emit("activate")
+        self.assertIs(self.window.get_focus(), self.window.typing.rows["SpellCheck"])
+
+    def test_find_shows_the_sidebar_of_a_narrow_window(self):
+        self.window.split.set_collapsed(True)
+        self.window.show_page("about")
+        self.window.focus_search()
+        self.assertFalse(self.window.split.get_show_content())
+        self.assertIs(
+            self.window.get_focus().get_ancestor(Gtk.SearchEntry), self.window.search_entry
+        )
+
     def test_a_setting_in_a_tab_opens_that_tab(self):
         (result,) = self.search("custom keymap")
         self.window.open_result(result)

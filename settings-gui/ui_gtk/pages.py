@@ -26,27 +26,32 @@ def _hinted(row, key):
     return row
 
 
-class TypingPage:
-    """The Typing settings as rows; each change goes to on_change(key, value) at once."""
+class SettingsPage:
+    """One category of the catalog as rows; each change goes to on_change(key, value) at once."""
 
-    def __init__(self, model, on_change):
+    def __init__(self, model, on_change, category, title, icon):
         self.model = model
         self.on_change = on_change
         self.rows = {}
-        self.page = Adw.PreferencesPage(title=_("Typing"), icon_name="input-keyboard-symbolic")
-        for title, keys in SETTINGS_MAP[SettingsCategory.TYPING].items():
+        self.page = Adw.PreferencesPage(title=title, icon_name=icon)
+        for title, keys in SETTINGS_MAP[category].items():
             group = Adw.PreferencesGroup(title=_(title))
             for key in keys:
                 item = model.metadata.get(key)
                 if item:
                     for row in self._rows_for(item):
                         group.add(row)
+            self._add_extras(title, group)
             self.page.add(group)
-        try_it = Adw.PreferencesGroup()
-        entry = Adw.EntryRow(title=_("Type here to test"))
-        entry.add_css_class("typed")
-        try_it.add(entry)
-        self.page.add(try_it)
+
+    def _add_extras(self, title, group):
+        """Rows a page adds after a group's settings."""
+
+    def _shown(self, key, value):
+        return _(value)
+
+    def _switch_title(self, key, label):
+        return _(label)
 
     def value(self, key):
         return str(self.model.current.get(key, self.model.default(key)))
@@ -89,7 +94,7 @@ class TypingPage:
             str(enum[k]) for k in sorted(enum, key=lambda k: int(k) if str(k).isdigit() else k)
         ]
         row = _hinted(Adw.ComboRow(title=_(label)), key)
-        row.set_model(Gtk.StringList.new([_(v) for v in values]))
+        row.set_model(Gtk.StringList.new([self._shown(key, v) for v in values]))
         if self.value(key) in values:
             row.set_selected(values.index(self.value(key)))
         row.values = values
@@ -114,7 +119,7 @@ class TypingPage:
         return row
 
     def _switch_row(self, key, label):
-        row = _hinted(Adw.SwitchRow(title=_(label)), key)
+        row = _hinted(Adw.SwitchRow(title=self._switch_title(key, label)), key)
         row.set_active(self.value(key).lower() == "true")
         row.connect("notify::active", self._on_switch, key)
         self.rows[key] = row
@@ -122,6 +127,18 @@ class TypingPage:
 
     def _on_switch(self, row, _param, key):
         self.on_change(key, "True" if row.get_active() else "False")
+
+
+class TypingPage(SettingsPage):
+    def __init__(self, model, on_change):
+        super().__init__(
+            model, on_change, SettingsCategory.TYPING, _("Typing"), "input-keyboard-symbolic"
+        )
+        try_it = Adw.PreferencesGroup()
+        entry = Adw.EntryRow(title=_("Type here to test"))
+        entry.add_css_class("typed")
+        try_it.add(entry)
+        self.page.add(try_it)
 
 
 def _label(text, *css, markup=False):

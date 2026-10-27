@@ -508,13 +508,7 @@ class DynamicSettingsPage(QWidget):
         self.form.addRow(group_label, self._with_hint(cb, key))
 
     def _tray_icon_names(self):
-        """The icons the tray shows for Vietnamese and English, and whether they suit a dark panel."""
-        if str(self.current_values.get("UseLotusIcons", "True")).lower() == "true":
-            return ("fcitx-ngosen", "fcitx-ngosen-off"), brand.is_dark(self)
-        color = str(self.current_values.get("IconTheme", "Auto"))
-        dark = {"Light": False, "Dark": True}.get(color, brand.is_dark(self))
-        suffix = "-default" if dark else "-default-black"
-        return (f"fcitx-ngosen{suffix}", f"fcitx-ngosen-off{suffix}"), dark
+        return self.model.tray_icons(brand.is_dark(self))
 
     def _render_tray_preview(self):
         preview = QLabel()

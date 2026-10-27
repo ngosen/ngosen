@@ -13,6 +13,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("PangoCairo", "1.0")
 
+from core.catalog import TRAY_PANEL  # noqa: E402
 from gi.repository import Adw, Gdk, Gtk, PangoCairo  # noqa: E402
 
 FONT_FILE = os.path.join(
@@ -32,6 +33,9 @@ MARKS = """
 .wordmark { font-family: "Xanh Mono", monospace; font-size: 26px; }
 .typed, .typed text, .typed-input text { font-family: "Xanh Mono", monospace; font-size: 17px; }
 .mode-button:checked { background: %(bg)s; color: %(fg)s; }
+.tray-preview { padding: 6px; border-radius: 4px; }
+.tray-light { background: %(panel_light)s; }
+.tray-dark { background: %(panel_dark)s; }
 """
 
 
@@ -53,7 +57,13 @@ def load_font(path=FONT_FILE):
 
 def css(dark, adw_minor):
     shade = 1 if dark else 0
-    colors = {"bg": ENAMEL[shade], "fg": ON_ENAMEL, "text": ENAMEL_TEXT[shade]}
+    colors = {
+        "bg": ENAMEL[shade],
+        "fg": ON_ENAMEL,
+        "text": ENAMEL_TEXT[shade],
+        "panel_light": TRAY_PANEL[0],
+        "panel_dark": TRAY_PANEL[1],
+    }
     # libadwaita 1.6 moved its colours to CSS variables; 1.5 still reads named colours.
     if adw_minor >= 6:
         accent = (

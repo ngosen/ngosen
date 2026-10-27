@@ -17,6 +17,9 @@ class SettingsCategory(Enum):
 MODE_SWITCHING = N_("Mode switching")
 TRAY_ICON = N_("Tray icon")
 
+# A light and a dark panel, behind the tray icon preview.
+TRAY_PANEL = ("#e6e6e6", "#2d2d2d")
+
 # Under "Show in the tray menu" each checkbox names the menu entry and shows its icon.
 MENU_ENTRIES = {
     "ShowMenuInputMethod": (N_("Input Method"), "input-keyboard"),

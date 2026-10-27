@@ -2,17 +2,18 @@
 # Runs install.sh in a throwaway container: install, uninstall, then a reinstall over an fcitx5
 # that is running without the addon. Checks packages and the user's files, not typing.
 #
-#   test/install-smoke.sh [--no-recommends] x11|gnome|kde <release-dir>
+#   test/install-smoke.sh [--no-recommends] x11|gnome|kde <release-dir> [<ibus-release-dir>]
 #
 # Run as root in a fresh Debian, Ubuntu or Fedora container; <release-dir> holds the packages and
 # SHA256SUMS laid out as in a release. It changes the system, so never run it on a real machine.
+# With <ibus-release-dir> on GNOME it also switches to the IBus edition and back.
 
 # check runs the helpers below by name.
 # shellcheck disable=SC2329
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 [--no-recommends] x11|gnome|kde <release-dir>" >&2
+    echo "usage: $0 [--no-recommends] x11|gnome|kde <release-dir> [<ibus-release-dir>]" >&2
     exit 2
 }
 
@@ -21,9 +22,10 @@ if [ "${1:-}" = --no-recommends ]; then
     no_recommends=1
     shift
 fi
-[ $# -eq 2 ] || usage
+[ $# -eq 2 ] || [ $# -eq 3 ] || usage
 session=$1
 release_dir=$(realpath "$2")
+ibus_release_dir=${3:+$(realpath "$3")}
 case "$session" in
     x11 | gnome | kde) ;;
     *) usage ;;
@@ -81,6 +83,7 @@ prepare_system() {
     echo "$user ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/"$user"
     mkdir -p "$work"
     cp -r "$release_dir" "$work/release"
+    [ -z "$ibus_release_dir" ] || cp -r "$ibus_release_dir" "$work/ibus-release"
     cp "$(dirname "$0")/../install.sh" "$work/install.sh"
     chmod -R a+rX "$work"
 }
@@ -92,7 +95,7 @@ as_user() {
         kde) desktop=KDE type=wayland ;;
     esac
     sudo -u "$user" -H env XDG_SESSION_TYPE="$type" XDG_CURRENT_DESKTOP="$desktop" \
-        NGOSEN_RELEASE_URL="file://$work/release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} \
+        NGOSEN_RELEASE_URL="file://$work/release" NGOSEN_IBUS_RELEASE_URL="file://$work/ibus-release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} \
         ${stub_path:+PATH="$stub_path"} "$@"
 }
 
@@ -311,6 +314,8 @@ state=$HOME/.stub-enabled-extensions
 case "$1 $2 $3" in
     "get org.gnome.shell enabled-extensions") cat "$state" 2>/dev/null || echo "@as []" ;;
     "set org.gnome.shell enabled-extensions") printf '%s\n' "$4" >"$state" ;;
+    "get org.gnome.desktop.input-sources sources") cat "$HOME/.stub-input-sources" 2>/dev/null || echo "[('xkb', 'us')]" ;;
+    "set org.gnome.desktop.input-sources sources") printf '%s\n' "$4" >"$HOME/.stub-input-sources" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -382,6 +387,45 @@ check_extensions_turned_back() {
 
 uninstall_logged() { installer --yes --uninstall >"$install_log" 2>&1; }
 
+sources=$home/.stub-input-sources
+fcitx5_mask=$home/.config/autostart/org.fcitx.Fcitx5.desktop
+
+# Switching away from fcitx5 is asked on the terminal even with --yes; script gives it one.
+ibus_install_answering() {
+    printf '%s\n' "$1" | as_user script -qec "bash $work/install.sh --yes --ibus" /dev/null >"$install_log" 2>&1
+}
+ibus_install_without_terminal() { installer --yes --ibus </dev/null >"$install_log" 2>&1; }
+refuses() { ! "$@"; }
+has_ngosen_source() { grep -qF "('ibus', 'ngosen')" "$sources"; }
+lacks_ngosen_source() { ! has_ngosen_source; }
+fcitx5_masked() { has_line "$fcitx5_mask" 'Hidden=true'; }
+
+check_ibus_edition() {
+    use_gnome_stubs
+    as_user rm -f "$changes" "$enabled_extensions" "$sources" "$im_env"
+    check "fcitx5 edition install succeeds" installer --yes
+    # Debian starts fcitx5 through im-config; Fedora and Arch ship this entry.
+    mkdir -p /etc/xdg/autostart
+    cp /usr/share/applications/org.fcitx.Fcitx5.desktop /etc/xdg/autostart/
+    check "IBus install without a terminal refuses to switch" refuses ibus_install_without_terminal
+    check "answering no to the switch succeeds" ibus_install_answering k
+    check "and installs nothing" is_removed ibus-ngosen
+    check "and keeps the fcitx5 edition set up" test -e "$im_env"
+    check "answering yes to the switch succeeds" ibus_install_answering c
+    check "it installs the IBus edition" is_installed ibus-ngosen
+    check "it removes the fcitx5 environment" test ! -e "$im_env"
+    check "it keeps fcitx5 from starting at login" fcitx5_masked
+    check "it adds Ngó Sen to the input sources" has_ngosen_source
+    check "fcitx5 edition install again succeeds" installer --yes
+    check "it lets fcitx5 start at login again" refuses fcitx5_masked
+    check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from the input sources" lacks_ngosen_source
+    check "the fcitx5 edition stays" is_installed fcitx5-ngosen
+    rm -f /etc/xdg/autostart/org.fcitx.Fcitx5.desktop
+    stub_path=
+}
+
 check_user_im_config_kept() {
     as_user rm -f "$changes"
     echo 'run_im fcitx5' | as_user tee "$home/.xinputrc" >/dev/null
@@ -422,6 +466,10 @@ main() {
         check_edited_environment_kept
         echo "== extensions on GNOME 50.1"
         check_extensions_turned_back
+        if [ -n "$ibus_release_dir" ]; then
+            echo "== GNOME edition (IBus)"
+            check_ibus_edition
+        fi
     fi
 
     finish

@@ -124,7 +124,8 @@ namespace ngosen::test {
         previousCursor_ = cursor_;
         cursor_         = to < text_.size() ? to : text_.size();
         anchor_         = cursor_;
-        changed();
+        if (!quirks_.hidesCursorMoves)
+            changed();
     }
 
     void FakeApp::select(size_t anchor, size_t cursor) {
@@ -132,7 +133,8 @@ namespace ngosen::test {
         previousCursor_ = cursor_;
         anchor_         = anchor;
         cursor_         = cursor;
-        changed();
+        if (!quirks_.hidesCursorMoves)
+            changed();
     }
 
     bool FakeApp::eraseSelection() {
@@ -219,6 +221,8 @@ namespace ngosen::test {
             return {};
         if (quirks_.staleReport)
             return Surrounding(encode(previousText_), static_cast<unsigned int>(previousCursor_), static_cast<unsigned int>(previousCursor_));
+        if (quirks_.hidesCursorMoves)
+            return Surrounding(encode(text_), static_cast<unsigned int>(shownCursor_), static_cast<unsigned int>(shownAnchor_));
         if (quirks_.hidesSelectionEnd) {
             const auto start = static_cast<unsigned int>(std::min(anchor_, cursor_));
             return Surrounding(encode(text_), start, start);
@@ -297,6 +301,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::changed() {
+        shownCursor_ = cursor_;
+        shownAnchor_ = anchor_;
         if (field_.surroundingText && quirks_.reports)
             later(quirks_.reportDelayMs, [this] {
                 inReport_ = true;

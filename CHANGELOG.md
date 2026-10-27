@@ -10,6 +10,30 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.6.2-1] — 27/10/2026
+
+Cứu dấu sau khi bấm chuột ngay sau chữ, chỉ ở Gõ Sen (#327); `install.sh --ibus` cài
+[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) (#330); repo APT và pacman có thêm gói
+`ibus-ngosen` (#333); lệnh gỡ chỉ tắt những gì lệnh cài đã bật (#328).
+Tải ở [ngosen-1.6.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.2-1).
+
+### Thêm
+
+- Cứu dấu không cần bôi đen: bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu là chữ đổi dấu (`nhanh|` + `s` →
+  `nhánh`); Tab hoặc Esc trả lại chữ đã gõ. Bấm vào giữa chữ thì phím gõ như thường. Chỉ ở Gõ Sen (#118, #327).
+- `install.sh --ibus` cài Ngó Sen cho GNOME (bản IBus) và thêm vào nguồn nhập của GNOME. Tài khoản đang
+  dùng bản fcitx5 thì lệnh hỏi lại trước khi chuyển; `--ibus --uninstall` gỡ bản IBus mà không đụng bản
+  fcitx5 (#330, #334).
+- Repo APT và pacman của Ngó Sen có thêm gói `ibus-ngosen` (Ngó Sen cho GNOME), cùng key và cùng dòng
+  repo (#333).
+
+### Sửa
+
+- `install.sh --uninstall` chỉ tắt những gì lệnh cài đã bật: extension Input Method Panel, extension sửa lỗi
+  gõ của GNOME 50 và im-config mà người dùng tự bật từ trước được giữ nguyên (#328).
+- Ghi chú dưới ô Cứu dấu trong cửa sổ cài đặt nói rõ chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng):
+  bôi đen `nguoi` rồi gõ phím dấu không ra `người` được (#329).
+
 ## [1.6.1-1] — 26/10/2026
 
 Sửa gợi ý Cứu chữ / Cứu dấu để theo ngôn ngữ giao diện của Ngó Sen, mặc định tiếng Việt (#322);

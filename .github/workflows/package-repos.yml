@@ -10,6 +10,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # Ngó Sen for GNOME ships from the same repositories, so one source line and one key cover both.
+  # Run this workflow by hand after an ibus-ngosen release; see RELEASING.md there.
+  IBUS_REPOSITORY: ngosen/ibus-ngosen
+
 concurrency:
   group: package-repositories
   cancel-in-progress: false
@@ -27,17 +32,19 @@ jobs:
       - name: Install tools
         run: sudo apt-get -qq update && sudo apt-get -qq install -y apt-utils
 
-      # The two newest releases, so users can go back one version with apt.
+      # The two newest releases of each edition, so users can go back one version with apt.
       - name: Download packages
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir debs
-          gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --exclude-pre-releases \
-              --limit 2 --json tagName --jq '.[].tagName' |
-              while read -r tag; do
-                  gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern '*.deb' --dir debs
-              done
+          for repo in "$GITHUB_REPOSITORY" "$IBUS_REPOSITORY"; do
+              gh release list --repo "$repo" --exclude-drafts --exclude-pre-releases \
+                  --limit 2 --json tagName --jq '.[].tagName' |
+                  while read -r tag; do
+                      gh release download "$tag" --repo "$repo" --pattern '*.deb' --dir debs
+                  done
+          done
 
       - name: Import signing key
         env:
@@ -65,13 +72,16 @@ jobs:
 
       - uses: actions/checkout@v7
 
-      - name: Download package
+      # The newest release of each edition; ibus-ngosen may have none yet.
+      - name: Download packages
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --exclude-pre-releases \
-              --limit 1 --json tagName --jq '.[0].tagName')
-          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern '*.pkg.tar.zst' --dir pkgs
+          for repo in "$GITHUB_REPOSITORY" "$IBUS_REPOSITORY"; do
+              tag=$(gh release list --repo "$repo" --exclude-drafts --exclude-pre-releases \
+                  --limit 1 --json tagName --jq '.[0].tagName // empty')
+              [ -z "$tag" ] || gh release download "$tag" --repo "$repo" --pattern '*.pkg.tar.zst' --dir pkgs
+          done
 
       - name: Import signing key
         env:

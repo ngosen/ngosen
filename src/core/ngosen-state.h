@@ -169,6 +169,7 @@ namespace ngosen {
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
+        bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key
         Surrounding              reportAtKey_;
 
         struct Retype {
@@ -199,8 +200,10 @@ namespace ngosen {
         struct RetoneKey {
             Surrounding before;
             std::string text;
-            uint32_t    sym    = 0;
-            uint32_t    states = 0;
+            uint32_t    sym              = 0;
+            uint32_t    states           = 0;
+            bool        afterClick       = false;
+            bool        reportedSinceKey = false; ///< a changed report arrived after the previous key
         };
         std::optional<RetoneKey>       retoneKey_;
         std::unique_ptr<ngosen::Timer> retone_timer_;

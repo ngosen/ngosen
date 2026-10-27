@@ -47,6 +47,17 @@ class LauncherTest(unittest.TestCase):
         env["NGOSEN_SETTINGS_TOOLKIT"] = "qt"
         self.assertEqual(main.toolkit(env, qt=yes, gtk=yes), "qt")
 
+    def test_with_no_choice_gnome_and_cinnamon_open_gtk(self):
+        for desktop in ("ubuntu:GNOME", "X-Cinnamon"):
+            env = {"XDG_CURRENT_DESKTOP": desktop}
+            self.assertEqual(main.toolkit(env, qt=yes, gtk=yes), "gtk", desktop)
+        self.assertEqual(main.toolkit({"XDG_CURRENT_DESKTOP": "KDE"}, qt=yes, gtk=yes), "qt")
+
+    def test_a_picked_qt_stays_on_gnome(self):
+        env = saved_toolkit(self, "Qt")
+        env["XDG_CURRENT_DESKTOP"] = "GNOME"
+        self.assertEqual(main.toolkit(env, qt=yes, gtk=yes), "qt")
+
     def test_a_machine_with_only_gtk_opens_gtk(self):
         self.assertEqual(main.toolkit({}, qt=no, gtk=yes), "gtk")
 

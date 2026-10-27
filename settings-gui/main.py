@@ -23,10 +23,18 @@ def has_qt(find=importlib.util.find_spec):
     return bool(find("qtpy")) and any(find(module) for module in QT_BINDINGS)
 
 
+# The desktops whose own apps are GTK and libadwaita.
+GTK_DESKTOPS = {"GNOME", "X-Cinnamon"}
+
+
 def toolkit(env=os.environ, qt=has_qt, gtk=ui_gtk.available):
     """The window the user picked, or the other one when only that is installed."""
-    wanted = env.get("NGOSEN_SETTINGS_TOOLKIT") or saved_setting("SettingsToolkit", "Qt", env)
-    order = ("gtk", "qt") if wanted.lower() == "gtk" else ("qt", "gtk")
+    wanted = env.get("NGOSEN_SETTINGS_TOOLKIT") or saved_setting("SettingsToolkit", "Auto", env)
+    wanted = wanted.lower()
+    if wanted == "auto":
+        desktops = set(env.get("XDG_CURRENT_DESKTOP", "").split(":"))
+        wanted = "gtk" if desktops & GTK_DESKTOPS else "qt"
+    order = ("gtk", "qt") if wanted == "gtk" else ("qt", "gtk")
     installed = {"qt": qt, "gtk": gtk}
     for name in order:
         if installed[name]():

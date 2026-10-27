@@ -35,18 +35,6 @@ class SettingsModelTest(unittest.TestCase):
         self.assertTrue(self.model.is_modified_from_default())
         self.assertEqual(self.model.defaults()["InputMethod"], "Telex")
 
-    def test_restoring_defaults_keeps_the_settings_window(self):
-        self.fake.values["SettingsToolkit"] = "GTK"
-        self.model.load()
-        self.model.load(self.model.defaults())
-        self.assertTrue(self.model.save())
-        self.assertEqual(self.fake.values["SettingsToolkit"], "GTK")
-
-    def test_the_settings_window_is_not_a_change_from_default(self):
-        self.fake.values["SettingsToolkit"] = "GTK"
-        self.model.load()
-        self.assertFalse(self.model.is_modified_from_default())
-
     def test_duplicate_shortcut_among_shown_modes(self):
         self.model.set("ShortcutEmoji", "q")
         (message, keys), *rest = self.model.shortcut_conflicts()

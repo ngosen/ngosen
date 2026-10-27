@@ -93,13 +93,15 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME(UiLanguage, "Vietnamese", "English");
 
-    // Read by the settings window's launcher only; the engine never uses it.
+    // Read by the settings window's launcher only. fcitx5 leaves a default value out of the file,
+    // so Auto stands for no choice and a picked Qt is still written down.
     enum class SettingsToolkit : std::uint8_t {
+        Auto,
         Qt,
         GTK,
     };
 
-    FCITX_CONFIG_ENUM_NAME(SettingsToolkit, "Qt", "GTK");
+    FCITX_CONFIG_ENUM_NAME(SettingsToolkit, "Auto", "Qt", "GTK");
 
     struct InputMethodConstrain;
     struct InputMethodAnnotation;
@@ -328,7 +330,7 @@ namespace fcitx {
         SubConfigOption                                          customKeymap{this, "CustomKeymap", _("Custom Keymap"), "fcitx://config/addon/ngosen/custom_keymap"};
         OptionWithAnnotation<IconTheme, IconThemeI18NAnnotation> iconTheme{this, "IconTheme", _("Icon Color"), IconTheme::Auto};
         Option<UiLanguage>                                       uiLanguage{this, "UiLanguage", _("Interface Language"), UiLanguage::Vietnamese};
-        Option<SettingsToolkit>                                  settingsToolkit{this, "SettingsToolkit", _("Settings Window"), SettingsToolkit::Qt};);
+        Option<SettingsToolkit>                                  settingsToolkit{this, "SettingsToolkit", _("Settings Window"), SettingsToolkit::Auto};);
 
 } // namespace fcitx
 

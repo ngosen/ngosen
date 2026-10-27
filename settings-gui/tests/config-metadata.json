@@ -602,11 +602,12 @@
     "SettingsToolkit",
     "Enum",
     "Settings Window",
-    "Qt",
+    "Auto",
     {
      "Enum": {
-      "0": "Qt",
-      "1": "GTK"
+      "0": "Auto",
+      "1": "Qt",
+      "2": "GTK"
      }
     }
    ]

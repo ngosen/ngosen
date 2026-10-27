@@ -7,9 +7,6 @@ from i18n import _
 
 from core.catalog import MODE_SHORTCUT_TO_VISIBILITY
 
-# Which settings window is installed is a fact about the machine, not a preference to reset.
-NOT_RESET = {"SettingsToolkit"}
-
 
 class SettingsModel:
     def __init__(self, dbus):
@@ -38,7 +35,7 @@ class SettingsModel:
         """What the engine uses for each setting the user never changed, or None before a load."""
         if not self.metadata:
             return None
-        return {key: item[3] for key, item in self.metadata.items() if key not in NOT_RESET}
+        return {key: item[3] for key, item in self.metadata.items()}
 
     def default(self, key, fallback=""):
         item = self.metadata.get(key)
@@ -58,7 +55,7 @@ class SettingsModel:
     def is_modified_from_default(self):
         for key, val in self.current.items():
             meta = self.metadata.get(key)
-            if not meta or key in NOT_RESET:
+            if not meta:
                 continue
             default_val = meta[3]
             # A hotkey list arrives as {"0": key}.

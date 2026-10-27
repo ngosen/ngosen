@@ -37,6 +37,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Bản cuối cho Ubuntu 22.04 là 1.6.2. Lệnh cài một dòng báo rõ điều này; máy đã thêm repo APT của Ngó Sen
   thì nên gỡ dòng repo đó, vì `apt update` sẽ báo lỗi thiếu `jammy` (#332).
 
+### Sửa
+
+- Cửa sổ cài đặt: lưu từ điển riêng không còn xoá chữ bắt đầu bằng dấu # khỏi file; bộ gõ vẫn luôn dùng được
+  những chữ này. Khi lưu từ điển hoặc bảng phím (Keymap) bị lỗi giữa chừng, công tắc bật/tắt không còn
+  bị lưu lệch với những gì cửa sổ hiện (#367).
+
 ## [1.6.2-1] — 27/10/2026
 
 Cứu dấu sau khi bấm chuột ngay sau chữ, chỉ ở Gõ Sen (#327); `install.sh --ibus` cài

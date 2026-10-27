@@ -359,6 +359,17 @@ class GtkShortcutsPageTest(unittest.TestCase):
         self.assertEqual(self.dbus.values["ShowModeEmoji"], "False")
         self.assertEqual(self.dbus.values["ShortcutPreedit"], "w")
 
+    def test_other_settings_still_save_while_mode_keys_clash(self):
+        button = next(
+            w
+            for w in _children(self.page.mode_rows["ShortcutPreedit"])
+            if isinstance(w, HotkeyButton)
+        )
+        button.emit("recorded", "w")
+        self.window.typing.rows["SpellCheck"].set_active(False)
+        self.assertEqual(self.dbus.values["SpellCheck"], "False")
+        self.assertEqual(self.dbus.values["ShortcutPreedit"], "q")
+
     def test_dropping_a_mode_saves_the_order(self):
         self.assertTrue(self.page.move("Off", "Sen"))
         self.assertEqual(self.dbus.values["ModeOrder"], "Off,Sen,Preedit,Emoji,Default")
@@ -397,6 +408,11 @@ class HotkeyButtonTest(unittest.TestCase):
         self.press(Gdk.KEY_Shift_L)
         self.press(Gdk.KEY_ISO_Left_Tab, Gdk.ModifierType.SHIFT_MASK)
         self.assertEqual(self.recorded, ["Shift+Tab"])
+
+    def test_a_mode_key_shows_as_the_qt_window_shows_it(self):
+        button = HotkeyButton("plus", single=True)
+        labels = [w.get_label() for w in _children(button) if isinstance(w, Gtk.Label)]
+        self.assertEqual(labels, ["+"])
 
     def test_escape_cancels_and_keeps_the_key(self):
         self.press(Gdk.KEY_Escape)

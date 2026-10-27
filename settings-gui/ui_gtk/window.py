@@ -9,6 +9,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("PangoCairo", "1.0")
 
+from core.catalog import MODE_SHORTCUT_TO_VISIBILITY  # noqa: E402
 from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
 from core.dictionary import Dictionary  # noqa: E402
@@ -25,6 +26,7 @@ from ui_gtk.macros import MacroPage  # noqa: E402
 from ui_gtk.shortcuts import ShortcutsPage  # noqa: E402
 
 APP_ID = "io.github.ngosen.NgoSen.Settings"
+MODE_KEYS = [*MODE_SHORTCUT_TO_VISIBILITY, *MODE_SHORTCUT_TO_VISIBILITY.values()]
 
 try:
     from version import __version__
@@ -148,11 +150,19 @@ class Window(Adw.ApplicationWindow):
     def save(self, key, value):
         self.model.set(key, value)
         conflicts = self.model.shortcut_conflicts()
-        if conflicts:
-            # Held back, so swapping two modes' keys never saves the halfway state.
+        # Mode keys wait while two modes share one, so swapping two keys never saves the halfway
+        # state; every other change still saves.
+        held = {
+            k: self.model.modified.pop(k)
+            for k in MODE_KEYS
+            if conflicts and k in self.model.modified
+        }
+        ok = self.model.save()
+        self.model.modified.update(held)
+        if key in held:
             self._show(Adw.Toast(title=conflicts[0][0], timeout=0))
-            return
-        self.report(self.model.save(), self.model.label(key) or key)
+        else:
+            self.report(ok, self.model.label(key) or key)
 
     def report(self, ok, label):
         if ok:

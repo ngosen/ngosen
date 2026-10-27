@@ -3,7 +3,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """A button that records a hotkey as fcitx5 names it, with key caps for what is held."""
 
-from core.hotkeys import MODIFIER_ORDER, HotkeyRecorder, pretty_format_hotkey_parts
+from core.hotkeys import (
+    HOTKEY_SYM_MAP,
+    MODIFIER_ORDER,
+    HotkeyRecorder,
+    pretty_format_hotkey_parts,
+)
 from gi.repository import Gdk, GObject, Gtk
 from i18n import _
 
@@ -62,6 +67,9 @@ class HotkeyButton(Gtk.ToggleButton):
             held = [m for m in MODIFIER_ORDER if m in self.recorder.held]
             waiting = _("[ Press Key... ]") if self.single else _("[ Recording... ]")
             parts = [waiting.strip("[] ")] if not held else held + ["…"]
+        elif self.key and self.single:
+            # A lone key is shown by what it types, as the Qt window does: plus is "+".
+            parts = [HOTKEY_SYM_MAP.get(self.key, self.key.capitalize())]
         elif self.key:
             parts = pretty_format_hotkey_parts(self.key)
         else:

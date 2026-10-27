@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The GTK window: pages in a sidebar, as in GNOME Settings."""
 
+import os
+from datetime import datetime
+
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -18,10 +21,10 @@ from core.keymap import Keymap  # noqa: E402
 from core.macros import MacroTable  # noqa: E402
 from core.settings_model import SettingsModel  # noqa: E402
 from core.whats_new_content import random_tip  # noqa: E402
-from gi.repository import Adw, Gio, Gtk  # noqa: E402
+from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 from i18n import _  # noqa: E402
 
-from core import defaults, settings_snapshot  # noqa: E402
+from core import backup, defaults, settings_snapshot  # noqa: E402
 from ui_gtk import brand, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
 from ui_gtk.check_dialog import CheckDialog  # noqa: E402
@@ -194,10 +197,15 @@ class Window(Adw.ApplicationWindow):
 
     def _header(self):
         menu = Gio.Menu()
-        menu.append(_("Restore defaults…"), "win.restore-defaults")
-        action = Gio.SimpleAction.new("restore-defaults", None)
-        action.connect("activate", lambda *_args: self.confirm_defaults())
-        self.add_action(action)
+        for label, name, run in (
+            (_("Back &Up…"), "backup", self.choose_backup_file),
+            (_("Res&tore…"), "restore-backup", self.choose_restore_file),
+            (_("Restore defaults…"), "restore-defaults", self.confirm_defaults),
+        ):
+            menu.append(label.replace("&", "_"), f"win.{name}")
+            action = Gio.SimpleAction.new(name, None)
+            action.connect("activate", lambda *_args, run=run: run())
+            self.add_action(action)
         header = Adw.HeaderBar()
         header.pack_end(
             Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text=_("Menu"))
@@ -224,27 +232,69 @@ class Window(Adw.ApplicationWindow):
         return dialog
 
     def restore_defaults(self):
+        self._replace_all(
+            lambda: defaults.restore(self.dbus),
+            _("Defaults restored."),
+            _("Could not restore every default. Check that fcitx5 is running."),
+        )
+
+    def _replace_all(self, write, done, failed):
+        """Runs a write that changes every page, with Undo back to what fcitx5 held just before."""
         # Taken now, since fcitx5 remembers app modes while the window is open.
         before = settings_snapshot.take(self.dbus)
         if before is None:
-            self._show(
-                Adw.Toast(
-                    title=_("Could not restore every default. Check that fcitx5 is running."),
-                    timeout=0,
-                )
-            )
+            self._show(Adw.Toast(title=failed, timeout=0))
             return
-        ok = defaults.restore(self.dbus)
-        # Even a partial reset changed fcitx5, so the pages show what it holds and undo stays.
+        ok = write()
+        # Even a partial write changed fcitx5, so the pages show what it holds and undo stays.
         self.reload()
         self._undo_to = before
-        if ok:
-            toast = Adw.Toast(title=_("Defaults restored."))
-        else:
-            toast = Adw.Toast(
-                title=_("Could not restore every default. Check that fcitx5 is running."), timeout=0
-            )
+        toast = Adw.Toast(title=done) if ok else Adw.Toast(title=failed, timeout=0)
         self._show(self._with_undo(toast))
+
+    def choose_backup_file(self):
+        dialog = self._file_dialog(_("Export Backup"))
+        dialog.set_initial_name(f"ngosen-backup-{datetime.now():%Y%m%d-%H%M%S}.json")
+        dialog.save(self, None, self._on_file, dialog.save_finish, self.export_backup)
+
+    def choose_restore_file(self):
+        dialog = self._file_dialog(_("Select Backup File"))
+        dialog.open(self, None, self._on_file, dialog.open_finish, self.restore_backup)
+
+    def _file_dialog(self, title):
+        json_files = Gtk.FileFilter(name=_("Ngó Sen backup"))
+        json_files.add_suffix("json")
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(json_files)
+        return Gtk.FileDialog(title=title, modal=True, filters=filters, default_filter=json_files)
+
+    def _on_file(self, _dialog, result, finish, use):
+        try:
+            file = finish(result)
+        except GLib.Error:
+            return  # Cancelled.
+        if file is not None and file.get_path():
+            use(file.get_path())
+
+    def export_backup(self, path):
+        try:
+            backup.export(self.dbus, path)
+        except (OSError, ValueError) as e:
+            self._show(Adw.Toast(title=_("Failed to export backup:\n").strip() + " " + str(e)))
+            return
+        self._show(Adw.Toast(title=_("Backed up to {}.").format(path)))
+
+    def restore_backup(self, path):
+        try:
+            data = backup.load(path)
+        except (OSError, ValueError) as e:
+            self._show(Adw.Toast(title=_("Failed to open backup file:\n").strip() + " " + str(e)))
+            return
+        self._replace_all(
+            lambda: backup.apply(self.dbus, data),
+            _("Restored from {}.").format(os.path.basename(path)),
+            _("Could not restore. Check that fcitx5 is running."),
+        )
 
     def _sidebar(self):
         header = Adw.HeaderBar(show_title=False)

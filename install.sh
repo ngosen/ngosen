@@ -138,8 +138,8 @@ detect_distribution() {
         esac
     fi
 
-    # Ubuntu 22.04 (and Linux Mint 21) had packages up to 1.6.1.
-    [ "$codename" = jammy ] && die "Ngó Sen từ 1.7.0 cần Ubuntu 24.04 trở lên (Linux Mint 22 trở lên). Bản cuối cho Ubuntu 22.04 là 1.6.1: https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.1-1"
+    # Ubuntu 22.04 (and Linux Mint 21) had packages up to 1.6.2.
+    [ "$codename" = jammy ] && die "Ngó Sen từ 1.7.0 cần Ubuntu 24.04 trở lên (Linux Mint 22 trở lên). Bản cuối cho Ubuntu 22.04 là 1.6.2: https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.2-1"
     unsupported "${id:-bản phân phối này} ${codename:-$version}"
 }
 

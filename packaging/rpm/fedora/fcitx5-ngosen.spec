@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.6.1
+Version:        1.6.2
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later AND OFL-1.1
@@ -97,6 +97,13 @@ else
 fi
 
 %changelog
+* Tue Oct 27 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.6.2-1
+- Cứu dấu after a click: click right after a typed word and type a tone key to change its tone, Sen typing only (#118, #327).
+- install.sh --ibus installs Ngó Sen for GNOME, the IBus edition (#330, #334).
+- The APT and pacman repositories also carry ibus-ngosen (#333).
+- install.sh --uninstall turns off only what the installer turned on (#328).
+- The Cứu dấu hint in the settings window says it changes only the tone mark (#329).
+
 * Mon Oct 26 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.6.1-1
 - Cứu chữ and Cứu dấu hints follow the interface language, Vietnamese by default (#322).
 - On a Vietnamese desktop, fcitx5's first profile lists Ngó Sen (#300, #316).

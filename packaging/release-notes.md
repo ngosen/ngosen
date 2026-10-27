@@ -1,4 +1,4 @@
-Version 1.6.1 phát hành ngày 26/10/2026, sửa gợi ý Cứu chữ / Cứu dấu để theo ngôn ngữ giao diện của Ngó Sen, mặc định tiếng Việt (#322); Ngó Sen tự có trong danh sách bộ gõ khi fcitx5 chạy lần đầu sau khi cài bằng package trên desktop tiếng Việt (#300, #316); chữ trong ô mật khẩu không còn bị ghi vào log gỡ lỗi (#321). Chi tiết ở [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
+Version 1.6.2 phát hành ngày 27/10/2026. Cứu dấu nhanh hơn ở Gõ Sen: bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu là chữ đổi dấu, không cần bôi đen (#327). Lệnh cài có thêm `--ibus` để cài [Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen), bản chạy trên IBus có sẵn của GNOME (#330); repo APT và pacman có thêm gói `ibus-ngosen` (#333). Lệnh gỡ chỉ tắt những gì lệnh cài đã bật (#328). Chi tiết ở [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
 
 ## Cài và cập nhật
 
@@ -11,6 +11,8 @@ curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bas
 Cài lần đầu thì đăng xuất rồi đăng nhập lại, sau đó nhấn rồi thả Ctrl+Shift để chuyển giữa tiếng Anh và tiếng Việt. Đã cài từ trước thì vẫn dùng phím chuyển cũ, thường là Ctrl+Space.
 
 Cập nhật thì chạy lại đúng lệnh đó: fcitx5 tự nạp version mới, gõ được ngay. Trên KDE Wayland thì đăng xuất rồi đăng nhập lại.
+
+Muốn dùng Ngó Sen cho GNOME (IBus) thay cho bản fcitx5 thì thêm `--ibus`: `curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus`. Bản này đơn giản hơn và ít tính năng hơn, xem [README của bản cho GNOME](https://github.com/ngosen/ibus-ngosen#readme).
 
 ## Tải gói bằng tay
 
@@ -29,6 +31,8 @@ Cài gói bằng tay trên Ubuntu 26.04 thì bật thêm [extension sửa lỗi 
 Đối chiếu file tải về với `SHA256SUMS`: `sha256sum -c SHA256SUMS --ignore-missing`.
 
 ## Đã test những gì
+
+Gói 1.6.2 từ PR phát hành #335 được test trên VM ngày 27/10/2026, dùng Gõ Sen, Telex. Ubuntu 26.04 (GNOME Wayland, gói `resolute`): cập nhật bằng install.sh từ bản 1.5.5 dựng từ nhánh next, fcitx5 tự nạp version mới; trong một ô chữ GTK 3, câu `dduwowngf tieengs Vieetj Nam cos dduwowjc khoong Haf Nooij` ra đúng `đường tiếng Việt Nam có được không Hà Nội`. Trên cùng máy, `install.sh --ibus` hỏi lại rồi chuyển sang Ngó Sen cho GNOME 1.0.0; đăng nhập lại, chọn Ngó Sen trên thanh trên cùng, `vieetj nam` ra `việt nam` trong ô chữ GTK 4; `install.sh --ibus --uninstall` gỡ bản IBus, bản fcitx5 vẫn còn. Linux Mint 22 (Cinnamon X11, gói `noble`): cập nhật bằng install.sh từ 1.5.7-1, câu thử đúng trong ô chữ GTK 3 và Chromium. Cứu dấu sau khi bấm chuột (#327) không được test lại trên gói này. Fedora, Arch, Debian, openSUSE, Kali và KDE chưa được test với 1.6.2.
 
 Gói 1.6.1 từ PR phát hành #323 được test trên VM ngày 26/10/2026, dùng Gõ Sen, Telex. Ubuntu 26.04 (GNOME Wayland, desktop tiếng Anh, gói `resolute`): cập nhật từ 1.6.0-1 bằng install.sh, fcitx5 tự nạp lại; trong một ô chữ GTK 3, câu `dduwowngf tieengs Vieetj Nam cos dduwowjc khoong Haf Nooij` ra đúng chữ có dấu, Cứu chữ đổi `tieengs vieetj` thành `tiếng việt`, Esc trả lại chữ cũ, Tab giữ nguyên `tieengs Nam`; dòng gợi ý của Cứu chữ hiện tiếng Việt. Linux Mint 22 (Cinnamon X11, gói `noble`): cài gói bằng apt, không qua install.sh, rồi chạy fcitx5 lần đầu với `LANG=vi_VN.UTF-8`: Ngó Sen có sẵn trong danh sách bộ gõ. Mint chọn tiếng Việt bằng `LANGUAGE` mà giữ `LANG=en_US.UTF-8` thì danh sách vẫn chỉ có bàn phím. Sau đó cài bằng install.sh rồi khởi động lại: bốn ca trên đúng trong ô chữ GTK 3, câu thử đúng trong Chrome. Fedora, Arch, Debian, openSUSE, Kali và KDE chưa được test với 1.6.1.
 

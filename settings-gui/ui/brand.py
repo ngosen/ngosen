@@ -15,7 +15,8 @@ TYPED_FAMILY = "Xanh Mono"
 LOGO = "io.github.ngosen.NgoSen.Settings"
 
 # (light, dark) pairs; dark is picked from the window background, not the desktop name.
-ENAMEL = ("#1c6b5f", "#2a8574")
+# The dark shade keeps light text readable on it and still stands out on a dark window.
+ENAMEL = ("#1c6b5f", "#247b6c")
 ON_ENAMEL = "#f0f5ee"
 SAVED_FILL = ("#e1efe9", "#183a33")
 SAVED_BORDER = ("#1c6b5f", "#3f9c8b")
@@ -52,6 +53,40 @@ class _ThemeFollower(QObject):
             finally:
                 self._applying = False
         return False
+
+
+class _AccentFollower(QObject):
+    def __init__(self, app):
+        super().__init__(app)
+        self._app = app
+
+    def eventFilter(self, obj, event):
+        # An application's filter sees every object's events; only the app's own change counts.
+        if obj is self._app and event.type() == QEvent.ApplicationPaletteChange:
+            _apply_accent(self._app)
+        return False
+
+
+def _apply_accent(app):
+    palette = app.palette()
+    enamel = QColor(ENAMEL[1] if palette.color(QPalette.Window).lightness() < 128 else ENAMEL[0])
+    # Setting the palette sends another change; stop once it already holds enamel.
+    if palette.color(QPalette.Active, QPalette.Highlight) == enamel:
+        return
+    roles = [QPalette.Highlight] + ([QPalette.Accent] if hasattr(QPalette, "Accent") else [])
+    for group in (QPalette.Active, QPalette.Inactive):
+        for role in roles:
+            palette.setColor(group, role, enamel)
+        palette.setColor(group, QPalette.HighlightedText, QColor(ON_ENAMEL))
+    app.setPalette(palette)
+
+
+def install_accent(app):
+    """Makes enamel the accent, now and whenever the desktop sends a new palette."""
+    _apply_accent(app)
+    follower = _AccentFollower(app)
+    app.installEventFilter(follower)
+    return follower
 
 
 def follow_theme(widget, apply, source=None):

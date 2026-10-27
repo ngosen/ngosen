@@ -3,7 +3,7 @@ name: Ngó Sen settings
 description: A native KDE/GNOME settings window with a few marks borrowed from the website.
 colors:
   enamel: "#1c6b5f"
-  enamel-dark: "#2a8574"
+  enamel-dark: "#247b6c"
   on-enamel: "#f0f5ee"
   cap: "#f1ead9"
   saved-bg: "#e1efe9"
@@ -23,10 +23,10 @@ typography:
 
 # Design: Ngó Sen settings window
 
-The window looks like it belongs to the desktop it runs on. Layout, widgets, fonts and the accent
-colour come from the platform style (Breeze on KDE, the Qt style in use on GNOME). Ngó Sen shows
-itself in four places only, all taken from the website's design (`ngosen.github.io`, its
-`DESIGN.md`): the icon, the wordmark, the current typing mode, and text that shows typing.
+The window looks like it belongs to the desktop it runs on. Layout, widgets and fonts come from the
+platform style (Breeze on KDE, the Qt style in use on GNOME); the accent colour is Ngó Sen's enamel
+green. Ngó Sen also shows itself in the icon, the wordmark, the current typing mode and text that
+shows typing, all taken from the website's design (`ngosen.github.io`, its `DESIGN.md`).
 
 Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9fvc4bBDQs>
 (board "Giao diện hệ thống + chút website").
@@ -34,7 +34,9 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 ## Rules
 
 1. **Native first.** Use stock Qt widgets with the platform style. No global stylesheet, no custom
-   palette, no custom checkbox or combo box drawing. A stylesheet is allowed only on the few
+   checkbox or combo box drawing. The palette is the platform's except its accent (`Highlight`,
+   `Accent`, `HighlightedText`), set to enamel in `brand.install_accent` and set again whenever
+   the desktop sends a new palette. A stylesheet is allowed only on the few
    brand widgets below, scoped by object name. One exception: on GNOME, Qt has no GNOME style and
    falls back to Fusion, whose scroll bars are wide with arrows. There, and only while the style is
    Fusion, each scroll bar gets a stylesheet for GNOME's thin rounded bar, drawn in the text colour
@@ -72,10 +74,12 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 
 ## Colour
 
-- The platform palette everywhere, including the accent on checkboxes, selection and focus.
-- Enamel green appears only on the selected typing mode and the saved message.
+- The platform palette everywhere except the accent: checkboxes, selection, the current page and
+  focus are enamel, with `on-enamel` text. This window ignores the accent the user picked.
 - Both light and dark are designed: `enamel-dark` and `saved-*-dark` in a dark palette (pick by
-  the window background's lightness, not by desktop name).
+  the window background's lightness, not by desktop name). `enamel-dark` is a shade darker than
+  the website's so `on-enamel` text on it stays at 4.5:1 while it stays at 3:1 against a dark
+  window.
 
 ## Copy
 

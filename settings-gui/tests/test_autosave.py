@@ -97,6 +97,23 @@ class AutosaveTest(unittest.TestCase):
             self.assertEqual(f.read(), "an\nanh\n")
         self.assertIn("ngosen", fake.reloads)
 
+    def test_a_dictionary_that_is_not_utf8_opens_and_undo_keeps_it(self):
+        dict_path = os.path.join(self.data_home, "fcitx5/ngosen/vietnamese.cm.dict")
+        os.makedirs(os.path.dirname(dict_path))
+        with open(dict_path, "wb") as f:
+            f.write(b"an\n\xff\n")
+        fake = FakeDBusHandler({"SpellCheck": "True"})
+        with mock.patch.object(QMessageBox, "warning") as warning:
+            window = self.open_window(fake, "Typing")
+            app.processEvents()
+            self.checkbox(window, SPELL_CHECK).click()
+            window.save_pending()
+            window.btn_undo.click()
+        warning.assert_called()
+        self.assertEqual(fake.values["SpellCheck"], "True")
+        with open(dict_path, "rb") as f:
+            self.assertEqual(f.read(), b"an\n\xff\n")
+
     def test_dictionary_tab_not_opened_is_left_alone(self):
         dict_path = os.path.join(self.data_home, "fcitx5/ngosen/vietnamese.cm.dict")
         os.makedirs(os.path.dirname(dict_path))

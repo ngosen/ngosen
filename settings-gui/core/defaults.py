@@ -9,9 +9,6 @@ from core.keymap import Keymap
 from core.macros import MacroTable
 from core.settings_model import SettingsModel
 
-# Which settings window is installed is a fact about the machine, not a preference to reset.
-KEPT = {"SettingsToolkit"}
-
 
 def restore(dbus):
     """Saves the defaults. False when a part of them was not saved, so the window can say so."""
@@ -19,7 +16,7 @@ def restore(dbus):
     if not model.load():
         return False
     for key, value in model.defaults().items():
-        if key not in KEPT and model.current.get(key) != value:
+        if model.current.get(key) != value:
             model.set(key, value)
     ok = model.save()
     for table in (MacroTable(dbus), Keymap(dbus)):

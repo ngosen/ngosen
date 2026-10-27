@@ -319,7 +319,7 @@ msgid "What's new in Ngó Sen?"
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "See Cứu chữ, Cứu dấu, the English/Vietnamese key, Vim mode and typing tips."
+msgid "See Cứu chữ, Cứu dấu, the English/Vietnamese key and typing tips."
 msgstr ""
 
 #: src/ngosen-engine.cpp

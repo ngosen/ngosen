@@ -21,6 +21,7 @@ from core.whats_new_content import random_tip  # noqa: E402
 from gi.repository import Adw, Gio, Gtk  # noqa: E402
 from i18n import _  # noqa: E402
 
+from core import settings_snapshot  # noqa: E402
 from ui_gtk import brand, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
@@ -42,8 +43,7 @@ class Window(Adw.ApplicationWindow):
         super().__init__(
             application=app, title=_("Ngó Sen Settings"), default_width=900, default_height=680
         )
-        dbus = dbus or NgoSenDBusHandler()
-        self.model = SettingsModel(dbus)
+        self.dbus = dbus or NgoSenDBusHandler()
         self.toast = None
         self.toasts = Adw.ToastOverlay()
         self.stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
@@ -51,46 +51,11 @@ class Window(Adw.ApplicationWindow):
         self.pages = []
         self.search_pages = []
         self.page_titles = {}
+        self._saved = settings_snapshot.take(self.dbus)
+        self._undo_to = None
 
-        self.typing = self.macros = self.dictionary = self.keymap = self.shortcuts = None
-        self.appearance = None
-        self.tabs = {}
-        self.tab_parents = {}
-        if self.model.load():
-            self.typing = pages.TypingPage(
-                self.model, self.save, tip=random_tip(), on_tip=self.show_tips
-            )
-            self.appearance = AppearancePage(self.model, self.save)
-            others = [n for n in (dbus.input_method_names() or []) if n != "ngosen"]
-            self.shortcuts = ShortcutsPage(self.model, self.save, bool(others))
-            table = MacroTable(dbus)
-            table.load()
-            self.macros = MacroPage(table, self.report)
-            self.dictionary = DictionaryPage(Dictionary(dbus), self.report)
-            keys = Keymap(dbus)
-            keys.load()
-            self.keymap = KeymapPage(keys, self.report)
-        self._add_page("typing", _("Typing"), "input-keyboard-symbolic", _widget(self.typing))
-        self._add_page(
-            "macros",
-            _("Macros & Dictionary"),
-            "accessories-text-editor-symbolic",
-            self._tabs("macros", macros=self.macros, dictionary=self.dictionary),
-            searchable=False,
-        )
-        self._add_page(
-            "keys",
-            _("Keys"),
-            "preferences-desktop-keyboard-symbolic",
-            self._tabs("keys", shortcuts=self.shortcuts, keymap=self.keymap),
-            searchable=False,
-        )
-        self._add_page(
-            "appearance",
-            _("Appearance"),
-            "preferences-desktop-appearance-symbolic",
-            _widget(self.appearance),
-        )
+        for name, title, icon, widget, searchable in self._data_pages():
+            self._add_page(name, title, icon, widget, searchable)
         self.whats_new = WhatsNewPage(self.open_setting, self.show_page)
         self._add_page(
             "whats-new",
@@ -112,6 +77,84 @@ class Window(Adw.ApplicationWindow):
         narrow = Adw.Breakpoint.new(Adw.BreakpointCondition.parse("max-width: 600sp"))
         narrow.add_setter(self.split, "collapsed", True)
         self.add_breakpoint(narrow)
+
+    def _data_pages(self):
+        """Builds the pages that show saved settings, as (name, title, icon, widget, searchable)."""
+        self.model = SettingsModel(self.dbus)
+        self.typing = self.macros = self.dictionary = self.keymap = self.shortcuts = None
+        self.appearance = None
+        self.tabs = {}
+        self.tab_parents = {}
+        if self.model.load():
+            self.typing = pages.TypingPage(
+                self.model, self.save, tip=random_tip(), on_tip=self.show_tips
+            )
+            self.appearance = AppearancePage(self.model, self.save)
+            others = [n for n in (self.dbus.input_method_names() or []) if n != "ngosen"]
+            self.shortcuts = ShortcutsPage(self.model, self.save, bool(others))
+            table = MacroTable(self.dbus)
+            table.load()
+            self.macros = MacroPage(table, self.report)
+            self.dictionary = DictionaryPage(Dictionary(self.dbus), self.report)
+            keys = Keymap(self.dbus)
+            keys.load()
+            self.keymap = KeymapPage(keys, self.report)
+        return [
+            ("typing", _("Typing"), "input-keyboard-symbolic", _widget(self.typing), True),
+            (
+                "macros",
+                _("Macros & Dictionary"),
+                "accessories-text-editor-symbolic",
+                self._tabs("macros", macros=self.macros, dictionary=self.dictionary),
+                False,
+            ),
+            (
+                "keys",
+                _("Keys"),
+                "preferences-desktop-keyboard-symbolic",
+                self._tabs("keys", shortcuts=self.shortcuts, keymap=self.keymap),
+                False,
+            ),
+            (
+                "appearance",
+                _("Appearance"),
+                "preferences-desktop-appearance-symbolic",
+                _widget(self.appearance),
+                True,
+            ),
+        ]
+
+    def reload(self):
+        """Builds the settings pages again from what fcitx5 holds, keeping the page and tab shown."""
+        shown = self.stack.get_visible_child_name()
+        tabs = [name for name, stack in self.tabs.items() if stack.get_visible_child_name() == name]
+        static = [entry for entry in self.search_pages if entry[0] in ("whats-new", "about")]
+        self.search_pages = []
+        for name, title, _icon, widget, searchable in self._data_pages():
+            self.stack.remove(self.stack.get_child_by_name(name))
+            self.stack.add_named(widget, name)
+            if searchable:
+                self.search_pages.append((name, widget))
+                self.page_titles[name] = title
+        self.search_pages += static
+        for name in tabs:
+            if name in self.tabs:
+                self.tabs[name].set_visible_child_name(name)
+        self.stack.set_visible_child_name(shown)
+        self._saved = settings_snapshot.take(self.dbus)
+
+    def undo(self):
+        """Puts back the settings from before the last save."""
+        if self._undo_to is None:
+            return
+        if not settings_snapshot.restore(self.dbus, self._undo_to):
+            self._show(
+                Adw.Toast(title=_("Could not undo. Check that fcitx5 is running."), timeout=0)
+            )
+            return
+        self._undo_to = None
+        self.reload()
+        self._show(Adw.Toast(title=_("Change undone.")))
 
     def _tabs(self, parent, **pages):
         """Pages that share a sidebar entry, as tabs like the Qt window's."""
@@ -276,7 +319,13 @@ class Window(Adw.ApplicationWindow):
 
     def report(self, ok, label):
         if ok:
-            self._show(Adw.Toast(title=_("Saved “{}”.").format(label)))
+            before, self._saved = self._saved, settings_snapshot.take(self.dbus)
+            self._undo_to = before
+            toast = Adw.Toast(title=_("Saved “{}”.").format(label))
+            if before is not None:
+                toast.set_button_label(_("&Undo").replace("&", "_"))
+                toast.connect("button-clicked", lambda _t: self.undo())
+            self._show(toast)
         else:
             self._show(
                 Adw.Toast(title=_("Could not save. Check that fcitx5 is running."), timeout=0)

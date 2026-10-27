@@ -125,8 +125,27 @@ hidden_launcher=$home/.local/share/applications/org.fcitx.Fcitx5.desktop
 kwinrc=$home/.config/kwinrc
 kwin_im='InputMethod=/usr/share/applications/org.fcitx.Fcitx5.desktop'
 
+# Asks the installed launcher, as the user on this desktop, which window it would open.
+settings_toolkit() {
+    as_user python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import main; print(main.toolkit())' \
+        /usr/share/fcitx5-ngosen/settings-gui
+}
+
+opens_settings_in() { [ "$(settings_toolkit)" = "$1" ]; }
+
+has_no_qt() {
+    as_user python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import main; sys.exit(main.has_qt())' \
+        /usr/share/fcitx5-ngosen/settings-gui
+}
+
 check_packages() {
     check "fcitx5-ngosen is installed" is_installed fcitx5-ngosen
+    if [ "$session" = gnome ]; then
+        check "the settings window opens in GTK" opens_settings_in gtk
+        check "no Qt is installed for it" has_no_qt
+    else
+        check "the settings window opens in Qt" opens_settings_in qt
+    fi
     if command -v apt-get >/dev/null 2>&1; then
         check "im-config is installed" is_installed im-config
         check "fcitx5-frontend-gtk3 is installed" is_installed fcitx5-frontend-gtk3

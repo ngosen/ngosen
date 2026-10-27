@@ -23,6 +23,8 @@ Homepage: https://github.com/ngosen/ngosen
 Package: fcitx5-ngosen
 Architecture: any
 # libxcb, libxcb-xtest and libxcb-xinput are loaded with dlopen at runtime, so shlibs cannot see them.
-Depends: fcitx5, fcitx5-data, libxcb1, libxcb-xtest0, libxcb-xinput0, python3-qtpy, python3-dbus, python3-pyqt6 | python3-pyside6.qtwidgets | python3-pyqt5, ${misc:Depends}, ${shlibs:Depends}, ${python3:Depends}
+# The settings window runs on Qt or on libadwaita; apt picks Qt unless libadwaita comes in the same
+# install, as install.sh does on GNOME and Cinnamon.
+Depends: fcitx5, fcitx5-data, libxcb1, libxcb-xtest0, libxcb-xinput0, python3-dbus, python3-gi, python3-qtpy | gir1.2-adw-1 (>= 1.5), python3-pyqt6 | python3-pyside6.qtwidgets | python3-pyqt5 | gir1.2-adw-1 (>= 1.5), ${misc:Depends}, ${shlibs:Depends}, ${python3:Depends}
 Description: Ngó Sen, a Vietnamese input method for fcitx5
  Ngó Sen is a Vietnamese input method for fcitx5.

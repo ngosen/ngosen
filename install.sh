@@ -198,14 +198,51 @@ install_with_pacman() {
     as_root pacman -U --noconfirm "${overwrite[@]}" "$package"
 }
 
+# The settings window opens in GTK on these desktops when it can (settings-gui/main.py), so its Qt
+# libraries are left out there.
+wants_gtk_settings() {
+    [ "$edition" = fcitx5 ] || return 1
+    case ":${XDG_CURRENT_DESKTOP:-}:" in
+        *:GNOME:* | *:X-Cinnamon:*) return 0 ;;
+    esac
+    return 1
+}
+
+# Debian 12 has libadwaita 1.2, older than the GTK window needs.
+apt_has_libadwaita() {
+    local version
+    version=$(apt-cache policy gir1.2-adw-1 2>/dev/null | sed -n 's/^ *Candidate: //p')
+    [ -n "$version" ] && [ "$version" != '(none)' ] && dpkg --compare-versions "$version" ge 1.5
+}
+
+# Packages named with the package itself, so the package manager settles its choice of Qt or GTK.
+settings_window_packages() {
+    settings_packages=()
+    if wants_gtk_settings; then
+        case "$manager" in
+            dnf) settings_packages=(python3-gobject libadwaita) ;;
+            zypper) settings_packages=(python3-gobject typelib-1_0-Adw-1) ;;
+            apt) ! apt_has_libadwaita || settings_packages=(gir1.2-adw-1 python3-gi) ;;
+            pacman) settings_packages=(python-gobject libadwaita) ;;
+        esac
+    elif [ "$edition" = fcitx5 ]; then
+        case "$manager" in
+            dnf) settings_packages=(python3-QtPy python3-pyqt6) ;;
+            zypper) settings_packages=(python3-QtPy python3-PyQt6) ;;
+        esac
+    fi
+}
+
 install_package() {
     local package=$1
+    local -a settings_packages=()
+    [ "$manager" = apt ] || settings_window_packages
     case "$manager" in
         dnf)
-            as_root dnf install -y "$package"
+            as_root dnf install -y "$package" "${settings_packages[@]}"
             ;;
         zypper)
-            as_root zypper --non-interactive install --allow-unsigned-rpm "$package"
+            as_root zypper --non-interactive install --allow-unsigned-rpm "$package" "${settings_packages[@]}"
             ;;
         apt)
             # fcitx5 only recommends its GTK and Qt modules and im-config, and MX turns recommends
@@ -222,10 +259,13 @@ install_package() {
                     *) extras+=("$candidate") ;;
                 esac
             done
-            as_root apt-get install -y "$package" "${extras[@]}"
+            settings_window_packages
+            as_root apt-get install -y "$package" "${extras[@]}" "${settings_packages[@]}"
             ;;
         pacman)
             install_with_pacman "$package"
+            [ ${#settings_packages[@]} -eq 0 ] ||
+                as_root pacman -S --needed --asdeps --noconfirm "${settings_packages[@]}"
             ;;
     esac
 }

@@ -1,9 +1,13 @@
 # SPDX-FileCopyrightText: 2026 Ngó Sen contributors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import os
+import sys
 import unittest
 
-import qt_api
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import qt_api  # noqa: E402
 
 
 def installed(*modules):

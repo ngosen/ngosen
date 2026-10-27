@@ -1,4 +1,4 @@
-Version 1.6.2 phát hành ngày 27/10/2026. Cứu dấu nhanh hơn ở Gõ Sen: bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu là chữ đổi dấu, không cần bôi đen (#327). Lệnh cài có thêm `--ibus` để cài [Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen), bản chạy trên IBus có sẵn của GNOME (#330); repo APT và pacman có thêm gói `ibus-ngosen` (#333). Lệnh gỡ chỉ tắt những gì lệnh cài đã bật (#328). Chi tiết ở [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
+Version 1.6.3 phát hành ngày 27/10/2026. Thay đổi duy nhất là sửa lỗi Antigravity trên GNOME (#362, #365). Trong editor dựa trên VS Code này, Gõ Sen có thể để nguyên `vieetj` thay vì chuyển thành `việt`: sau mỗi phím, editor báo con trỏ lùi một chữ, đôi khi muộn hơn Ngó Sen chờ, khiến Ngó Sen hiểu nhầm là bấm chuột và bỏ từ đang gõ. Trong ô chat, Ngó Sen đôi khi gửi chữ mới quá sớm sau backspace (16 ms), và ô chat bỏ mất chữ đó, nên gõ nhanh có thể mất hoặc rối chữ. Chi tiết ở [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
 
 ## Cài và cập nhật
 
@@ -31,6 +31,8 @@ Cài gói bằng tay trên Ubuntu 26.04 thì bật thêm [extension sửa lỗi 
 Đối chiếu file tải về với `SHA256SUMS`: `sha256sum -c SHA256SUMS --ignore-missing`.
 
 ## Đã test những gì
+
+Gói 1.6.3 dựng từ PR #365 được test trên VM ngày 27/10/2026, dùng Gõ Sen, Telex. Ubuntu 26.04 (GNOME Wayland, gói `resolute`), Antigravity 2.6.0: gõ 18 từ `laanx cos cas looxi tieengs vieetj dduwowcj khoong nhieeuf chuwx dduowngf phoos tooi bieets laf mootj ngayf mais` trong editor và ô chat, cả hai đều ra đúng `lẫn có cá lỗi tiếng việt được không nhiều chữ đường phố tôi biết là một ngày mái`. Với version 1.6.2, editor còn để nguyên một số từ như `vieetj`, `nhieeuf`, `dduowngf`. Lỗi mất chữ trong ô chat không xuất hiện trên VM ngay cả với version 1.6.2, nên phần sửa này mới được đối chiếu với log gõ của người báo lỗi. Chưa test Fedora, Arch, Debian, openSUSE, Kali, KDE, X11 và Linux Mint.
 
 Gói 1.6.2 từ PR phát hành #335 được test trên VM ngày 27/10/2026, dùng Gõ Sen, Telex. Ubuntu 26.04 (GNOME Wayland, gói `resolute`): cập nhật bằng install.sh từ bản 1.5.5 dựng từ nhánh next, fcitx5 tự nạp version mới; trong một ô chữ GTK 3, câu `dduwowngf tieengs Vieetj Nam cos dduwowjc khoong Haf Nooij` ra đúng `đường tiếng Việt Nam có được không Hà Nội`. Trên cùng máy, `install.sh --ibus` hỏi lại rồi chuyển sang Ngó Sen cho GNOME 1.0.0; đăng nhập lại, chọn Ngó Sen trên thanh trên cùng, `vieetj nam` ra `việt nam` trong ô chữ GTK 4; `install.sh --ibus --uninstall` gỡ bản IBus, bản fcitx5 vẫn còn. Linux Mint 22 (Cinnamon X11, gói `noble`): cập nhật bằng install.sh từ 1.5.7-1, câu thử đúng trong ô chữ GTK 3 và Chromium. Cứu dấu sau khi bấm chuột (#327) không được test lại trên gói này. Fedora, Arch, Debian, openSUSE, Kali và KDE chưa được test với 1.6.2.
 

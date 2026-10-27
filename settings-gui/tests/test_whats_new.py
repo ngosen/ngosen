@@ -4,13 +4,14 @@
 import unittest
 from unittest import mock
 
+from core.whats_new_content import FEATURES, TIPS
 from qtpy.QtWidgets import QCheckBox, QLabel, QPushButton
 from support import DEFAULTS, FakeDBusHandler, app
-from ui import whats_new_content
 from ui.main_window import NgoSenSettingsWindow
 from ui.pages.dynamic_settings import TipLine
 from ui.pages.whats_new import PAGE_TITLES, WhatsNewPage
-from ui.whats_new_content import FEATURES, TIPS
+
+from core import whats_new_content
 
 
 def targets():

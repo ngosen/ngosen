@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The "What's new & tips" page: recent features and typing tips, each with a way to its setting."""
 
+from core.whats_new_content import FEATURES, TIPS
 from i18n import _
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (
@@ -18,7 +19,6 @@ from qtpy.QtWidgets import (
 from ui import brand
 from ui.pages.dynamic_settings import CardWidget
 from ui.typography import emphasize, page_title
-from ui.whats_new_content import FEATURES, TIPS
 
 # Sidebar pages the tips point at, named as they are in the window.
 PAGE_TITLES = {"macros": _("Macros"), "about": _("About")}

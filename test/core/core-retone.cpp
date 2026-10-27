@@ -300,12 +300,34 @@ namespace {
         r         = retone(run);
         check(r.text == "abc nhanhsa xyz", "a letter after the key goes on the word as typed", r.text);
         r = retone(nhanh(6, 6));
-        check(r.text == "abc nhsanh xyz", "inside a word the key is typed as before", r.text);
-        run       = nhanh(7, 7);
-        run.typed = "abc nguoi xyz";
-        run.tone  = 'f';
+        check(r.text == "abc nhánh xyz", "a tone key after a click inside a word changes its tone", r.text);
+        run       = nhanh(6, 6);
+        run.after = {ngosen::key::Escape};
         r         = retone(run);
-        check(r.text == "abc ngufoi xyz", "inside a word a tone that fits the start is typed as before", r.text);
+        check(r.text == "abc nhsanh xyz", "Esc after a click inside a word puts back the key", r.text);
+        run.after = {'s'};
+        r         = retone(run);
+        check(r.text == "abc nhsanh xyz", "the tone key again after a click inside a word puts back the key", r.text);
+        run       = nhanh(5, 5);
+        run.typed = "abc cho xyz";
+        run.tone  = 'j';
+        run.after = {'n'};
+        r         = retone(run);
+        check(r.text == "abc chọn xyz", "a letter after a retone inside a word keeps the tone", r.text);
+        run       = nhanh(6, 6);
+        run.field = makeField("ibus");
+        r         = retone(run);
+        check(r.text == "abc nhánh xyz", "inside a word behind GNOME Shell's IBus bridge", r.text);
+        run      = nhanh(6, 6);
+        run.tone = 'a';
+        r        = retone(run);
+        check(r.text == "abc nhaanh xyz", "a letter that is no tone is typed inside the word", r.text);
+        run       = nhanh(6, 6);
+        run.typed = "abc hello xyz";
+        r         = retone(run);
+        check(r.text == "abc hesllo xyz", "inside an English word the key is typed", r.text);
+        r = retone(nhanh(4, 4));
+        check(r.text == "abc snhanh xyz", "a tone key at the start of a word is typed", r.text);
         run           = nhanh(9, 9);
         run.configure = [](FakeResources& resources) { resources.mutableOptions().retoneSelection = false; };
         r             = retone(run);
@@ -326,6 +348,51 @@ namespace {
         check(r.text == "abc nhsanh xyz ", "an unreported click inside a word leaves the key as typed", r.text);
     }
 
+    // Backspacing over the space after a word, then a tone key, as fcitx5-unikey allows (#358).
+    std::string backspaceThenTone(const std::string& typed, int backspaces, uint32_t tone, std::vector<uint32_t> after = {}) {
+        realMode = Mode::Sen;
+        realtextLen.store(0);
+        g_mouse_clicked.store(false);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeApp>(loop, makeField(), AppQuirks{});
+        FakeApp*            app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        state.activate(Mode::Sen, false);
+        for (const char c : typed) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(5);
+        }
+        loop.pump(150);
+        for (int i = 0; i < backspaces; ++i) {
+            app->type(ngosen::key::BackSpace);
+            loop.pump(60);
+        }
+        app->type(tone);
+        loop.pump(150);
+        for (const uint32_t sym : after) {
+            app->type(sym);
+            loop.pump(150);
+        }
+        loop.pump(300);
+        g_mouse_clicked.store(false);
+        return app->text();
+    }
+
+    void testToneAfterBackspace() {
+        auto text = backspaceThenTone("muoons suwar oke ", 5, 's');
+        check(text == "muốn sứa", "a tone key after backspacing into a word changes its tone", text);
+        text = backspaceThenTone("khacs oke ", 5, 'j', {ngosen::key::Escape});
+        check(text == "khácj", "Esc puts back the key", text);
+        text = backspaceThenTone("khacs ", 1, 'j');
+        check(text == "khạc", "the word just typed goes on as typed", text);
+        text = backspaceThenTone("hello ", 1, 's');
+        check(text == "hellos", "an English word takes the key as typed", text);
+        text = backspaceThenTone("khacs ", 2, 'j');
+        check(text == "khạ", "backspacing over the end of a word changes what is left", text);
+    }
+
 } // namespace
 
 int main() {
@@ -334,6 +401,7 @@ int main() {
     testWhereNotOffered();
     testClickKeepsTone();
     testToneAtCursor();
+    testToneAfterBackspace();
     if (failures == 0)
         std::cout << "all retone checks passed\n";
     return failures == 0 ? 0 : 1;

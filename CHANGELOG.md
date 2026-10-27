@@ -19,6 +19,9 @@ Tải ở [ngosen-1.6.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 - Antigravity trên GNOME: gõ trong vùng soạn thảo không còn để nguyên chữ thô (`vieetj`), và ô chat
   không còn mất hay rối chữ khi gõ nhanh (#362, #365).
+- Sửa lỗi Cứu dấu khi backspace về chữ trước (`sưa oke|` → backspace 4 lần → `sưa|` + `s` → `sứa`) hoặc
+  bấm chuột vào giữa chữ (`nh|anh` + `s` → `nhánh`). Chỉ ở Gõ Sen; Tab hoặc Esc vẫn trả lại phím đã gõ
+  (#358, #370).
 
 ## [1.6.2-1] — 27/10/2026
 

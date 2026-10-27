@@ -20,6 +20,7 @@ from core.catalog import (
     SettingsCategory,
 )
 from core.dbus_handler import NgoSenDBusHandler
+from core.settings_model import SettingsModel
 from i18n import _
 from qtpy.QtCore import QEvent, QSize, Qt, QTimer
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap
@@ -137,9 +138,7 @@ class DynamicSettingsPage(QWidget):
         # A tip from the What's new page, shown above the form; clicking it opens that page.
         self._tip = tip
         self._on_tip = on_tip
-        self.current_values = {}
-        self.initial_values = {}
-        self.modified_values = {}
+        self.model = SettingsModel(dbus_handler)
         self.button_groups = []
         self.shortcut_labels = {}
         self.shortcut_warning_labels = {}
@@ -149,6 +148,18 @@ class DynamicSettingsPage(QWidget):
 
         self._setup_ui()
         self.load_config()
+
+    @property
+    def current_values(self):
+        return self.model.current
+
+    @property
+    def modified_values(self):
+        return self.model.modified
+
+    @property
+    def all_metadata(self):
+        return self.model.metadata
 
     def showEvent(self, event):
         """Force layout refresh when page becomes visible to fix initialization overflow."""
@@ -194,32 +205,15 @@ class DynamicSettingsPage(QWidget):
                 if item.widget():
                     item.widget().deleteLater()
             self.button_groups.clear()
-            self.modified_values.clear()
             self.shortcut_labels.clear()
             self.shortcut_warning_labels.clear()
             self.list_widgets.clear()
             self._controls.clear()
             self._tray_preview = None
 
-            config_data = self.dbus.get_config()
-            if not config_data:
-                # The window already says fcitx5 cannot be reached.
+            # Without fcitx5 the window already says it cannot be reached.
+            if not self.model.load(values) or not self.all_metadata:
                 return
-
-            saved_values = config_data.get("values", {})
-            self.current_values = dict(saved_values if values is None else values)
-            self.modified_values = {
-                k: v for k, v in self.current_values.items() if saved_values.get(k) != v
-            }
-            metadata_list = config_data.get("metadata", [])
-            if not metadata_list:
-                return
-
-            # Flat map all items for easy lookup
-            self.all_metadata = {}
-            for group in metadata_list:
-                for item in group[1]:
-                    self.all_metadata[item[0]] = item
 
             if not self.property("inTab"):
                 self.container_layout.addWidget(page_title(_(self.category.name.capitalize())))
@@ -271,7 +265,6 @@ class DynamicSettingsPage(QWidget):
                 try_it.setFont(brand.typed_font(17))
                 self.form.addRow(_("Try it:"), try_it)
 
-            self.initial_values = saved_values.copy()
             self.container_layout.addStretch()
         finally:
             self.blockSignals(False)
@@ -281,23 +274,10 @@ class DynamicSettingsPage(QWidget):
         return self._controls.get(key)
 
     def is_modified_from_default(self):
-        if not hasattr(self, "all_metadata"):
-            return False
-        for key, val in self.current_values.items():
-            meta = self.all_metadata.get(key)
-            if meta:
-                default_val = meta[3]
-                # Handle cases where default_val might be a dict (like hotkeys)
-                if isinstance(default_val, dict) and isinstance(val, dict):
-                    if str(val.get("0")) != str(default_val.get("0")):
-                        return True
-                elif str(val) != str(default_val):
-                    return True
-        return False
+        return self.model.is_modified_from_default()
 
     def is_modified(self):
-        """Returns True if the current values differ from the initial loaded values."""
-        return self.current_values != self.initial_values
+        return self.model.is_modified()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -754,46 +734,14 @@ class DynamicSettingsPage(QWidget):
             if key in self.shortcut_labels:
                 self.shortcut_labels[key].setFont(self.font())
 
-        # Only check enabled modes
-        enabled_shortcuts = {}
-        for shortcut_key, visibility_key in MODE_SHORTCUT_TO_VISIBILITY.items():
-            default_visibility = "True"
-            vis_meta = (
-                self.all_metadata.get(visibility_key) if hasattr(self, "all_metadata") else None
-            )
-            if vis_meta:
-                default_visibility = vis_meta[3]
-
-            is_enabled = (
-                str(self.current_values.get(visibility_key, default_visibility)).lower() == "true"
-            )
-            if is_enabled:
-                default_shortcut = ""
-                shortcut_meta = (
-                    self.all_metadata.get(shortcut_key) if hasattr(self, "all_metadata") else None
-                )
-                if shortcut_meta:
-                    default_shortcut = shortcut_meta[3]
-                val = self.current_values.get(shortcut_key, default_shortcut)
-                if val:
-                    if val in enabled_shortcuts:
-                        enabled_shortcuts[val].append(shortcut_key)
-                    else:
-                        enabled_shortcuts[val] = [shortcut_key]
-
-        # Flag duplicates
-        for shortcut, keys in enabled_shortcuts.items():
-            if len(keys) > 1:
-                error_msg = _("Duplicate shortcut '{}' used for multiple enabled modes.").format(
-                    shortcut
-                )
-                self.validation_errors.append(error_msg)
-                for key in keys:
-                    if key in self.shortcut_warning_labels:
-                        self.shortcut_warning_labels[key].setText(error_msg)
-                        self.shortcut_warning_labels[key].show()
-                    if key in self.shortcut_labels:
-                        emphasize(self.shortcut_labels[key])
+        for message, keys in self.model.shortcut_conflicts():
+            self.validation_errors.append(message)
+            for key in keys:
+                if key in self.shortcut_warning_labels:
+                    self.shortcut_warning_labels[key].setText(message)
+                    self.shortcut_warning_labels[key].show()
+                if key in self.shortcut_labels:
+                    emphasize(self.shortcut_labels[key])
         for list_widget in self.list_widgets:
             self._fit_mode_rows(list_widget)
 
@@ -805,14 +753,9 @@ class DynamicSettingsPage(QWidget):
         """Resets current values to engine defaults."""
         self.blockSignals(True)
         try:
-            config_data = self.dbus.get_config()
-            if not config_data:
-                return
-
-            defaults = {
-                item[0]: item[3] for group in config_data.get("metadata", []) for item in group[1]
-            }
-            self.load_config(values=defaults)
+            defaults = self.model.defaults()
+            if defaults is not None:
+                self.load_config(values=defaults)
         finally:
             self.blockSignals(False)
 
@@ -828,30 +771,14 @@ class DynamicSettingsPage(QWidget):
         if self.has_validation_errors():
             return False
 
-        if not self.modified_values:
-            return True
-
-        config_data = self.dbus.get_config()
-        if config_data:
-            latest_values = config_data.get("values", {})
-            latest_values.update(self.modified_values)
-            if not self.dbus.set_config(latest_values):
-                return False
-            self.modified_values.clear()
-            self.initial_values = self.current_values.copy()
-            return True
-        elif not self.dbus.iface:
-            return False
-        return True
+        return self.model.save()
 
     def change_label(self):
-        item = getattr(self, "all_metadata", {}).get(getattr(self, "_last_changed_key", None))
-        return _(item[2]) if item else None
+        return self.model.label(getattr(self, "_last_changed_key", None))
 
     def update_config(self, key: str, new_value):
         """Updates internal state and notifies parent window of change."""
-        self.modified_values[key] = new_value
-        self.current_values[key] = new_value
+        self.model.set(key, new_value)
         self._last_changed_key = key
         if key in ("UseLotusIcons", "IconTheme"):
             self._update_tray_preview()

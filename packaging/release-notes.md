@@ -19,7 +19,7 @@ Chọn file theo distro:
 - Fedora 44, 43: `fcitx5-ngosen-*.fc44.x86_64.rpm`, `fcitx5-ngosen-*.fc43.x86_64.rpm`
 - Arch, CachyOS: `fcitx5-ngosen-*-x86_64.pkg.tar.zst`
 - openSUSE Tumbleweed: `fcitx5-ngosen-*.opensuse-tumbleweed.x86_64.rpm`
-- Ubuntu 26.10, 26.04, 24.04, 22.04: `…_stonking_amd64.deb`, `…_resolute_amd64.deb`, `…_noble_amd64.deb`, `…_jammy_amd64.deb`
+- Ubuntu 26.10, 26.04, 24.04: `…_stonking_amd64.deb`, `…_resolute_amd64.deb`, `…_noble_amd64.deb`
 - Debian 13, 12: `…_trixie_amd64.deb`, `…_bookworm_amd64.deb`
 - Kali Rolling: `…_forky_amd64.deb`
 - Máy ARM 64-bit: file cùng tên với đuôi `_arm64.deb`, hoặc `.aarch64.rpm` cho Fedora
@@ -80,6 +80,6 @@ Gói 1.5.2 (PR #130) được test trên máy ảo Ubuntu 26.04 (GNOME Wayland, 
 
 Gói 1.5.0 (PR #125) được gõ thử trên ba máy ảo: Linux Mint 22.1 (Cinnamon X11, gói `noble`), Ubuntu 26.04 (GNOME Wayland, gói `resolute`) và MX Linux 25 (Xfce X11, gói `trixie`, lần đầu dùng lõi Rust). Trên cả ba, gõ `tieengs vieetj` trong một ô chữ GTK3 ra `tiếng việt`; trên MX gõ thêm `nguwowif vieetj nam` ra `người việt nam`. Trên Ubuntu 26.04, chọn kiểu gõ Custom thì cửa sổ cài đặt hiện dòng nhắc, và "Kiểm tra máy tôi…" báo không có lỗi cài đặt. Gói 1.5.1 (PR #127) được gõ thử lại trên Mint và Ubuntu 26.04: bật "Tự viết hoa đầu câu", gõ `ban. tooi`, Enter, `xin` ra `Xin` ở dòng mới (gói 1.5.0 ra `xin`); gõ thường vẫn ra `tiếng việt`.
 
-Người giữ dự án dùng Ngó Sen hằng ngày trên Fedora 44 (KDE Plasma Wayland). Kali đã được gõ thử ở các version trước. Fedora 43, Ubuntu 22.04, Debian 12 và openSUSE chỉ được build và qua test lúc build, chưa ai gõ thử trên máy thật.
+Người giữ dự án dùng Ngó Sen hằng ngày trên Fedora 44 (KDE Plasma Wayland). Kali đã được gõ thử ở các version trước. Fedora 43, Debian 12 và openSUSE chỉ được build và qua test lúc build, chưa ai gõ thử trên máy thật.
 
 Mọi gói, kể cả Debian 12, nay dùng lõi gõ Rust; lõi Go đã bỏ.

@@ -20,7 +20,7 @@ only() {
     printf '%s\n' "$found"
 }
 
-for codename in bookworm trixie forky jammy noble resolute stonking; do
+for codename in bookworm trixie forky noble resolute stonking; do
     for arch in amd64 arm64; do
         dir=$src/deb-$codename
         [ "$arch" = amd64 ] || dir=$dir-$arch

@@ -126,11 +126,11 @@ detect_distribution() {
         # Kali Rolling is built from Debian testing.
         [ "$id" = kali ] && codename=forky
         case "$codename" in
-            # The IBus edition needs libadwaita 1.5, which these lack.
-            bookworm | jammy) ibus_unsupported "$id $codename" ;;
+            # The IBus edition needs libadwaita 1.5, which this lacks.
+            bookworm) ibus_unsupported "$id $codename" ;;
         esac
         case "$codename" in
-            bookworm | trixie | forky | jammy | noble | resolute | stonking)
+            bookworm | trixie | forky | noble | resolute | stonking)
                 manager=apt
                 pattern="${package_name}_[0-9][^ /]*_${codename}_${deb_arch}\\.deb"
                 return
@@ -138,6 +138,8 @@ detect_distribution() {
         esac
     fi
 
+    # Ubuntu 22.04 (and Linux Mint 21) had packages up to 1.6.1.
+    [ "$codename" = jammy ] && die "Ngó Sen từ 1.7.0 cần Ubuntu 24.04 trở lên (Linux Mint 22 trở lên). Bản cuối cho Ubuntu 22.04 là 1.6.1: https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.1-1"
     unsupported "${id:-bản phân phối này} ${codename:-$version}"
 }
 

@@ -225,8 +225,10 @@ class Keymap:
     def save(self):
         """Writes the switch and the table. False when fcitx5 cannot be reached or refuses."""
         config_data = self.dbus.get_config()
+        values = previous = None
         if config_data:
             values = config_data.get("values", {})
+            previous = values.get("EnableCustomKeymap")
             values["EnableCustomKeymap"] = "True" if self.enabled else "False"
             if not self.dbus.set_config(values):
                 return False
@@ -234,6 +236,10 @@ class Keymap:
             return False
 
         if not self.dbus.set_sub_config_list("custom_keymap", "CustomKeymap", self.entries):
+            # The switch alone must not stay saved, or fcitx5 and the window disagree.
+            if previous is not None:
+                values["EnableCustomKeymap"] = previous
+                self.dbus.set_config(values)
             return False
         self.saved_state = self.state()
         return True

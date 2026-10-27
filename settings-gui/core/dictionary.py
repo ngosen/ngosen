@@ -27,8 +27,9 @@ def bundled_path():
 
 
 def read_words(path):
+    # As the engine reads it: every non-empty line is a word, one starting with "#" too.
     with open(path, encoding="utf-8") as f:
-        return [w for w in (line.strip() for line in f) if w and not w.startswith("#")]
+        return [w for w in (line.strip() for line in f) if w]
 
 
 class Dictionary:
@@ -88,14 +89,29 @@ class Dictionary:
         if self.load_failed:
             raise LoadFailedError()
         config_data = self.dbus.get_config()
+        values = previous = None
         if config_data:
             values = config_data.get("values", {})
+            previous = values.get("EnableDictionary")
             values["EnableDictionary"] = "True" if self.enabled else "False"
             if not self.dbus.set_config(values):
                 return False
         elif not self.dbus.iface:
             return False
 
+        try:
+            self._write_words()
+        except OSError:
+            # Words not written must not leave the switch saved, or fcitx5 and the window disagree.
+            if previous is not None:
+                values["EnableDictionary"] = previous
+                self.dbus.set_config(values)
+            raise
+        self.dbus.reload_addon_config()
+        self.saved_state = self.state()
+        return True
+
+    def _write_words(self):
         local = local_dict_path()
         if sorted(self.words) == sorted(self.bundled_words()):
             # A copy of the bundled words would hide later updates to them.
@@ -103,9 +119,6 @@ class Dictionary:
                 os.remove(local)
         else:
             _write_atomically(local, self.words)
-        self.dbus.reload_addon_config()
-        self.saved_state = self.state()
-        return True
 
 
 def _write_atomically(path, words):

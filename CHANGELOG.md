@@ -27,7 +27,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt dùng xanh men của Ngó Sen cho ô đã đánh dấu, trang đang chọn ở thanh bên, focus và
   vùng chọn, thay cho màu nhấn desktop (KDE/GNOME); trước đây chỉ nút chế độ gõ đang chọn và thông báo “Đã lưu”
   dùng xanh men. Màu này dùng cho cả giao diện sáng và tối; sắc xanh ở giao diện tối đậm hơn trước một chút để
-  chữ dễ đọc hơn (#PRNUM).
+  chữ dễ đọc hơn (#352).
 
 ### Bỏ
 

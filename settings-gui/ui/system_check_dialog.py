@@ -146,23 +146,7 @@ class SystemCheckDialog(QDialog):
         self._show_app_test()
 
     def _show_app_test(self):
-        test = self.app_test
-        if test is None:
-            text = _("No typing log found. Save one from the Ngó Sen menu first.")
-        elif not test.program and not test.frontend:
-            text = _("The log has no typing in it. Type the sample, then save the log again.")
-        else:
-            app = f"{test.program or '?'} ({test.frontend})"
-            text = {
-                typing_log.RIGHT: _("{app} got the sample right."),
-                typing_log.WRONG: _("{app} got the sample wrong."),
-                typing_log.UNKNOWN: _(
-                    "{app} does not tell Ngó Sen its text. Did the sample come out right?"
-                ),
-            }[test.verdict].format(app=app)
-            if test.verdict == typing_log.WRONG and test.app_text:
-                text += " " + _("The app shows: {}").format(test.app_text.replace("|", ""))
-        self.app_result.setText(text)
+        self.app_result.setText(typing_log.describe(self.app_test))
         self.app_result.show()
         QTimer.singleShot(0, self._fit)
 

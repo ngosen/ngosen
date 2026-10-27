@@ -1,8 +1,9 @@
 # Ngó Sen
 
 Ngó Sen là bộ gõ tiếng Việt được **vibecode** cho fcitx5 trên Linux, cho trải nghiệm gõ như UniKey trên Windows.
-fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM. Chỉ làm cho fcitx5 cũng
-đỡ công giữ nhiều bản. Mã IBus cũ ở nhánh `feat/ibus-engine`, không còn được bảo trì.
+fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM. Có thêm
+[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, đơn giản hơn và ít
+tính năng hơn bản fcitx5.
 
 Cửa sổ cài đặt dùng giao diện sáng, tối của máy trên KDE và GNOME. Đổi gì lưu ngay, có nút Hoàn tác.
 
@@ -47,7 +48,8 @@ Telex được dùng và test hằng ngày. VNI và các kiểu khác dùng đư
 
 ## Cài
 
-Lệnh dưới đây cài cho Fedora, Ubuntu, Debian, Kali, Arch, CachyOS và openSUSE Tumbleweed trên x86_64.
+Lệnh dưới đây cài cho Fedora, Ubuntu (từ 24.04), Debian (từ 12), Kali, Arch, CachyOS và openSUSE Tumbleweed
+trên x86_64. Ubuntu 22.04 và Linux Mint 21 dùng được tới version 1.6.1.
 Fedora, Ubuntu, Debian và Kali còn có gói cho ARM 64-bit (aarch64):
 
 ```
@@ -71,6 +73,16 @@ và tiếng Việt, biểu tượng khay hiện chữ V khi đang gõ tiếng Vi
 dùng phím chuyển cũ (thường là Ctrl+Space); muốn đổi phím, mở cửa sổ cài đặt, mục Phím tắt.
 Các bước thiết lập chỉ áp dụng cho tài khoản chạy lệnh. Tài khoản khác trên cùng máy cần đăng nhập vào
 đó rồi chạy lại lệnh cài.
+
+### Ngó Sen cho GNOME (IBus)
+
+Chọn bản này nếu dùng GNOME, muốn dùng IBus có sẵn và không cần đủ tính năng của bản fcitx5:
+
+```
+curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus
+```
+
+Xem cách cài và các giới hạn trong [README của Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen#readme).
 
 ### Cập nhật bằng trình quản lý gói
 
@@ -298,7 +310,8 @@ Both projects are MIT licensed. All Ngó Sen packages, including Debian 12, use 
 Ngó Sen includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to
 change the tone mark of a selected word.
 
-Ngó Sen targets fcitx5 only. The IBus engine was dropped and remains unmaintained on `feat/ibus-engine`.
+[Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in IBus. It is simpler and has
+fewer features than the fcitx5 version.
 If you reuse Ngó Sen's code, keep the GPL and its notices, including when an AI tool rewrites it.
 If you port its approaches to another input method, credit this repository with a link.
 The rest of this page is in Vietnamese.

@@ -86,5 +86,5 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 ## Check before merging a GUI change
 
 - Offscreen screenshots of every page, light and dark.
-- Real windows on KDE (Breeze) and GNOME, and on Qt5 (Ubuntu 22.04) as well as Qt6.
+- Real windows on KDE (Breeze) and GNOME, and on Qt5 as well as Qt6.
 - Keyboard only: every control reachable with Tab, focus visible.

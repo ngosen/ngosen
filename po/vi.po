@@ -1419,8 +1419,10 @@ msgid "Typed tieengs vieetj before switching on? Switch on and it becomes tiến
 msgstr "Lỡ gõ tieengs vieetj khi chưa bật? Bật tiếng Việt là thành tiếng việt. Tab hoặc Esc để trả lại chữ đã gõ."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s."
-msgstr "Bôi đen nhanh rồi gõ s: nhánh. Tab, Esc hoặc gõ s lần nữa để trả lại s."
+msgid ""
+"Select nhanh and type s: nhánh. Tab, Esc or s again gives back s. Only the tone mark changes: nguoi does not become người."
+msgstr ""
+"Bôi đen nhanh rồi gõ s: nhánh. Tab, Esc hoặc gõ s lần nữa để trả lại s. Chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng): nguoi không thành người được."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."

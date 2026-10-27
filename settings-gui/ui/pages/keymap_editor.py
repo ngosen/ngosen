@@ -138,7 +138,6 @@ class KeymapEditorPage(BaseEditorPage):
         self.update_button_states()
 
     def load_data(self):
-        """Loads keymap data strictly via D-Bus."""
         self.blockSignals(True)
         try:
             self.keymap.load()
@@ -175,7 +174,6 @@ class KeymapEditorPage(BaseEditorPage):
         return self.cb_enable.isChecked(), entries
 
     def save_data(self) -> bool:
-        """Saves current table via DBus to C++ Engine."""
         self.keymap.enabled, self.keymap.entries = self._shown_values()
         return self.keymap.save()
 

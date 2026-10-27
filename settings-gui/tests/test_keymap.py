@@ -50,10 +50,9 @@ class KeymapTest(unittest.TestCase):
         self.assertTrue(table.is_modified())
 
     def test_every_preset_uses_listed_actions(self):
-        codes = {code for code, _name in keymap.BAMBOO_ACTIONS}
         for name, entries in keymap.PRESETS.items():
             for key, code in entries:
-                self.assertIn(code, codes, f"{name}: {key}")
+                self.assertIn(code, keymap.ACTION_CODES, f"{name}: {key}")
 
 
 if __name__ == "__main__":

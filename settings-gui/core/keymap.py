@@ -175,9 +175,12 @@ PRESETS = {
 }
 
 
+ACTION_CODES = {code for code, _name in BAMBOO_ACTIONS}
+
+
 def known_action(code):
     # The table can only show listed actions, so an unknown one falls back to the first.
-    return code if code in dict(BAMBOO_ACTIONS) else BAMBOO_ACTIONS[0][0]
+    return code if code in ACTION_CODES else BAMBOO_ACTIONS[0][0]
 
 
 def state(enabled, entries):

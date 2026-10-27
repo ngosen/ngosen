@@ -131,7 +131,7 @@ class KeymapTest(unittest.TestCase):
         fake = FakeDBusHandler({}, {"custom_keymap": [{"Key": "s", "Value": "DauSac"}]})
         page = KeymapEditorPage(fake)
         # The main window asks every page whether it changed on each edit.
-        window = mock.Mock(on_changed=page.is_modified_from_default)
+        window = mock.Mock(on_changed=lambda: (page.is_modified(), page.is_modified_from_default()))
         page.window = lambda: window
         page.upsert_row("f", "DauHuyen")
         fake.values["EnableCustomKeymap"] = "True"

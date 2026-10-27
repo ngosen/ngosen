@@ -56,5 +56,41 @@ class SettingsModelTest(unittest.TestCase):
         self.assertFalse(self.model.save())
 
 
+class HotkeyRulesTest(unittest.TestCase):
+    def model(self, values=None):
+        model = SettingsModel(FakeDBusHandler(values))
+        model.load()
+        return model
+
+    def test_a_new_first_key_keeps_the_others(self):
+        model = self.model({"ModeMenuKey": {"0": "grave", "1": "Control+space"}})
+        model.set_first_hotkey("ModeMenuKey", "F12")
+        self.assertEqual(model.current["ModeMenuKey"], {"0": "F12", "1": "Control+space"})
+        model.set_first_hotkey("ModeMenuKey", "")
+        self.assertEqual(model.current["ModeMenuKey"], {"0": "Control+space"})
+
+    def test_ctrl_shift_shows_as_one_key(self):
+        model = self.model()
+        self.assertTrue(model.toggle_is_ctrl_shift())
+        self.assertEqual(model.shown_toggle_key(), "Control+Shift")
+
+    def test_a_new_toggle_key_replaces_every_ctrl_shift(self):
+        model = self.model()
+        model.set_toggle_key("F12")
+        self.assertEqual(model.current["ToggleKey"], {"0": "F12"})
+        self.assertEqual(model.shown_toggle_key(), "F12")
+
+    def test_ctrl_shift_recorded_or_cleared_restores_every_side(self):
+        for text in ("Shift+Control_R", ""):
+            model = self.model({"ToggleKey": {"0": "Control+space"}})
+            model.set_toggle_key(text)
+            self.assertEqual(model.current["ToggleKey"], DEFAULTS["ToggleKey"], repr(text))
+
+    def test_a_new_toggle_key_keeps_keys_copied_from_fcitx5(self):
+        model = self.model({"ToggleKey": {"0": "Control+space", "1": "Zenkaku_Hankaku"}})
+        model.set_toggle_key("F12")
+        self.assertEqual(model.current["ToggleKey"], {"0": "F12", "1": "Zenkaku_Hankaku"})
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -18,11 +18,11 @@ INVALID_KEY = N_("Macro keys cannot contain spaces or special characters.")
 
 
 class MacroPage:
-    """on_saved(ok, label) hears about every save, to show a toast."""
+    """on_save(write, label) runs every save, so the window can offer to undo it."""
 
-    def __init__(self, table, on_saved):
+    def __init__(self, table, on_save):
         self.table = table
-        self.on_saved = on_saved
+        self.on_save = on_save
         self._syncing = False
         self.page = Adw.PreferencesPage(
             title=_("Macros"), icon_name="accessories-text-editor-symbolic"
@@ -143,10 +143,9 @@ class MacroPage:
         # next save would write that over the user's macros.
         options, entries = dict(self.table.options), [dict(e) for e in self.table.entries]
         change()
-        ok = self.table.save()
+        ok = self.on_save(self.table.save, label)
         if not ok:
             self.table.options, self.table.entries = options, entries
-        self.on_saved(ok, label)
         self.refresh()
         return ok
 

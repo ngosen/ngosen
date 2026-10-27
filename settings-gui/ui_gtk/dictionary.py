@@ -10,11 +10,11 @@ INVALID_WORD = N_("Warning: Dictionary words should not contain spaces.")
 
 
 class DictionaryPage:
-    """on_saved(ok, label) hears about every save, to show a toast."""
+    """on_save(write, label) runs every save, so the window can offer to undo it."""
 
-    def __init__(self, dictionary, on_saved):
+    def __init__(self, dictionary, on_save):
         self.dictionary = dictionary
-        self.on_saved = on_saved
+        self.on_save = on_save
         self._syncing = False
         error = dictionary.load()
         self.page = Adw.PreferencesPage(
@@ -132,15 +132,17 @@ class DictionaryPage:
         """Applies and saves a change, or puts the page back as it was if it cannot be saved."""
         enabled, words = self.dictionary.enabled, list(self.dictionary.words)
         change()
-        try:
-            ok = self.dictionary.save()
-        except OSError:
-            ok = False
+        ok = self.on_save(self._write, _("Custom Dictionary"))
         if not ok:
             self.dictionary.enabled, self.dictionary.words = enabled, words
-        self.on_saved(ok, _("Custom Dictionary"))
         self.refresh()
         return ok
+
+    def _write(self):
+        try:
+            return self.dictionary.save()
+        except OSError:
+            return False
 
     def refresh(self):
         self._syncing = True

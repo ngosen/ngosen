@@ -50,7 +50,7 @@ class SettingsModelTest(unittest.TestCase):
     def test_without_fcitx5(self):
         self.fake.get_config = lambda: {}
         self.assertFalse(self.model.load())
-        self.assertIsNone(self.model.defaults())
+        self.assertIsNone(SettingsModel(self.fake).defaults())
         self.model.set("SpellCheck", "False")
         self.fake.iface = None
         self.assertFalse(self.model.save())

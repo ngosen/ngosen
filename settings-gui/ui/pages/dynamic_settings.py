@@ -211,7 +211,8 @@ class DynamicSettingsPage(QWidget):
             self._controls.clear()
             self._tray_preview = None
 
-            # Without fcitx5 the window already says it cannot be reached.
+            # Without fcitx5 the window already says it cannot be reached; without metadata there is
+            # nothing to draw.
             if not self.model.load(values) or not self.all_metadata:
                 return
 

@@ -17,10 +17,10 @@ class SettingsModel:
         self.metadata = {}
 
     def load(self, values=None):
-        """Reads the saved settings, with `values` as unsaved changes on top. False without fcitx5."""
-        self.modified.clear()
+        """Reads the saved settings; `values`, if given, replaces them as unsaved. False without fcitx5."""
         config_data = self.dbus.get_config()
         if not config_data:
+            self.modified = {}
             return False
         saved = config_data.get("values", {})
         self.current = dict(saved if values is None else values)
@@ -32,11 +32,10 @@ class SettingsModel:
         return True
 
     def defaults(self):
-        """What the engine uses for each setting the user never changed, or None without fcitx5."""
-        config_data = self.dbus.get_config()
-        if not config_data:
+        """What the engine uses for each setting the user never changed, or None before a load."""
+        if not self.metadata:
             return None
-        return {item[0]: item[3] for group in config_data.get("metadata", []) for item in group[1]}
+        return {key: item[3] for key, item in self.metadata.items()}
 
     def default(self, key, fallback=""):
         item = self.metadata.get(key)

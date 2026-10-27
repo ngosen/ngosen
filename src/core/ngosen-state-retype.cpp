@@ -140,7 +140,7 @@ namespace ngosen {
     void TypingState::offerRetype() {
         retype_.reset();
         // Still English: keep the text for the toggle key.
-        if (realMode != ngosen::Mode::Sen && realMode != ngosen::Mode::Preedit)
+        if (mode() != ngosen::Mode::Sen && mode() != ngosen::Mode::Preedit)
             return;
         const std::string typed = std::move(typedWhileOff_);
         typedWhileOff_.clear();

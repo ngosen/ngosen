@@ -71,13 +71,13 @@ namespace ngosen {
         if (isFocusOut)
             commitNotSeen_.clear();
         lastDeactivateTime_ = nowMs();
-        if (realMode == ngosen::Mode::Preedit && !isFocusOut) {
+        if (mode() == ngosen::Mode::Preedit && !isFocusOut) {
             commitBuffer();
             return;
         }
         // The word stays until activate() knows whether focus only bounced.
         // A selection waiting to be typed over has no backspaces left, but is just as unfinished.
-        if (realMode == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_pending_)) {
+        if (mode() == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_pending_)) {
             deletionInterruptedAt_ = nowMs();
             NGOSEN_INFO("Replacement interrupted by focus out");
         } else {
@@ -88,7 +88,7 @@ namespace ngosen {
         dropRetoneKey();
         host_->resetPanel();
         host_->refreshPanel();
-        if (realMode == ngosen::Mode::Preedit || realMode == ngosen::Mode::Emoji)
+        if (mode() == ngosen::Mode::Preedit || mode() == ngosen::Mode::Emoji)
             host_->refreshPreedit();
     }
 

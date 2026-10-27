@@ -161,7 +161,7 @@ namespace ngosen::test {
     }
 
     void FakeApp::forwardKey(EditKey key, bool release, uint32_t time) {
-        if (key != EditKey::BackSpace || release)
+        if (key != EditKey::BackSpace || release || quirks_.dropsForwardedKeys)
             return;
         if (quirks_.dropsOldKeyPresses) {
             if (lastBackSpaceAt_ != 0 && static_cast<int32_t>(time - lastBackSpaceAt_) <= 0)
@@ -217,7 +217,7 @@ namespace ngosen::test {
     }
 
     Surrounding FakeApp::surrounding() const {
-        if (!field_.surroundingText)
+        if (!field().surroundingText)
             return {};
         if (quirks_.staleReport)
             return Surrounding(encode(previousText_), static_cast<unsigned int>(previousCursor_), static_cast<unsigned int>(previousCursor_));
@@ -246,6 +246,13 @@ namespace ngosen::test {
     }
 
     void FakeApp::insert(const std::u32string& text) {
+        if (quirks_.erasesOnDel && !text.empty() && text[0] == U'\x7f') {
+            const size_t dels = text.find_first_not_of(U'\x7f');
+            eraseBefore(dels == std::u32string::npos ? text.size() : dels);
+            if (dels != std::u32string::npos)
+                insert(text.substr(dels));
+            return;
+        }
         previousText_   = text_;
         previousCursor_ = cursor_;
         eraseSelection();

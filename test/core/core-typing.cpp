@@ -689,6 +689,73 @@ namespace {
         return text.find(part) != std::string::npos;
     }
 
+    // GNOME Shell drops keys an IBus engine sends, so Sen deletes through the surrounding text, with a DEL in a
+    // terminal, or types the word in the preedit where neither works.
+    void testSenWithoutSentKeys() {
+        const auto typed = [](bool surroundingText, bool terminal, ngosen::test::AppQuirks quirks, const std::string& text) {
+            Field field               = makeField("ibus", surroundingText);
+            field.terminal            = terminal;
+            field.sendsNoKeys         = true;
+            quirks.dropsForwardedKeys = true;
+            const std::vector<uint32_t> keys(text.begin(), text.end());
+            return ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 100));
+        };
+        std::string text = typed(true, false, {}, "vieetj nam ");
+        check(text == "việt nam ", "ibus sen: deletes through the surrounding text", text);
+        text = typed(false, true, {.erasesOnDel = true}, "vieetj nam");
+        check(text == "việt nam", "ibus sen: a terminal erases with DEL", text);
+        text = typed(false, false, {}, "vieetj nam ");
+        check(text == "việt nam ", "ibus sen: falls back to the preedit where nothing deletes", text);
+        text = typed(false, false, {}, "vieetj nam");
+        check(text == "việt ", "ibus sen: the fallback word stays in the preedit until it ends", text);
+        // Qt reports no surrounding text while the field is empty.
+        text = typed(true, false, {.reportsTextOnceFilled = true}, "vieetj nams");
+        check(text == "việt nám", "ibus sen: types in the field once it reports text", text);
+        FakeResources spaces;
+        spaces.mutableOptions().doubleSpaceToPeriod = true;
+        Field bare                                  = makeField("ibus", false);
+        bare.sendsNoKeys                            = true;
+        const std::vector<uint32_t> keys{'n', 'a', 'm', ' ', ' ', 'a', 'b', ' '};
+        text = ngosen::test::typeInApp(spaces, bare, {.dropsForwardedKeys = true}, keys, std::vector<int>(keys.size(), 100));
+        check(text == "nam  ab ", "ibus sen: two spaces stay where nothing deletes", text);
+
+        // A Facebook composer reports only its trailing newlines; it takes no selection keys here.
+        Field field       = makeField("ibus", true);
+        field.sendsNoKeys = true;
+        {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            host->setSurrounding("\n\n", 2);
+            for (char c : std::string("tiee"))
+                press(state, static_cast<uint32_t>(c));
+            loop.pump(300);
+            check(host->deletes().size() == 1 && host->systemKeys().empty(), "ibus sen: a Facebook composer deletes through the surrounding text",
+                  std::to_string(host->deletes().size()) + " " + std::to_string(host->systemKeys().size()));
+        }
+        {
+            // A click ends the word, so the next one is typed the way the field now allows.
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            host->setSurrounding("", 0);
+            press(state, static_cast<uint32_t>('v'));
+            press(state, static_cast<uint32_t>('i'));
+            Field cleared           = field;
+            cleared.surroundingText = false;
+            host->setField(cleared);
+            g_mouse_clicked.store(true);
+            press(state, static_cast<uint32_t>('e'));
+            press(state, static_cast<uint32_t>('e'));
+            check(host->preedit() == "ê", "ibus sen: after a click the next word picks its mode again", host->preedit());
+            g_mouse_clicked.store(false);
+        }
+    }
+
     // Types "tiee" in Sen mode and returns what was committed, with DEL shown as <DEL>.
     std::string commitsForTiee(const std::string& program, bool& eTaken, const std::string& frontend = "dbus") {
         realMode = ngosen::Mode::Sen;
@@ -1330,6 +1397,7 @@ int main() {
     testGtk4DeletesSurrounding();
     testSdlGetsNoForwardedBackspace();
     testTerminalErasesWithCommittedDel();
+    testSenWithoutSentKeys();
     testRecorderKeepsTheReplacement();
     testRecorderNotesFieldSwitch();
     testRecorderHidesPasswords();

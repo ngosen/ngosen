@@ -21,6 +21,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   khoản đang dùng bản IBus thì lệnh hỏi lại rồi gỡ bản IBus (#341).
 - Ở chế độ gạch chân, Backspace ngay sau khi gõ xong một chữ sẽ mở lại chữ đó để sửa dấu (`việt ` + Backspace +
   `s` → `viết`), như Gõ Sen. Cần app báo surrounding text; terminal thì Backspace như cũ (#344).
+- Lõi gõ được Gõ Sen ở app không nhận phím do bộ gõ gửi tới (bản IBus trên GNOME): xoá chữ bằng surrounding
+  text, terminal thì bằng DEL, field không có cả hai thì chữ đó gõ bằng gạch chân. Bản fcitx5 không đổi (#353).
 
 ### Thay đổi
 

@@ -11,6 +11,8 @@
 namespace ngosen {
 
     bool forwardsBackspaces(const Field& field) {
+        if (field.sendsNoKeys)
+            return false;
         // On wayland_v2 (input-method-v2: Sway, Hyprland) fcitx5 sends forwarded keys through a virtual keyboard.
         if (field.frontend == "wayland" || field.frontend == "wayland_v2") {
             return true;
@@ -61,6 +63,8 @@ namespace ngosen {
     bool erasesWithCommittedDel(const Field& field) {
         if (field.surroundingText)
             return false;
+        if (field.terminal)
+            return true;
         std::string program;
         if (field.frontend == "dbus" && !field.keyEventOrderFix)
             program = field.program;

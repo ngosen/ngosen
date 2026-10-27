@@ -38,6 +38,9 @@ namespace ngosen::test {
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
         bool hidesCursorMoves       = false; // reports no click and shows the cursor where the last edit left it, as GTK 3 on Plasma does
+        bool dropsForwardedKeys     = false; // never gets keys the input method sends, as under GNOME Shell's IBus bridge
+        bool erasesOnDel            = false; // erases the character before the cursor for each DEL committed, as a terminal does
+        bool reportsTextOnceFilled  = false; // reports surrounding text only once the field has text, as Qt over IBus does
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -74,7 +77,10 @@ namespace ngosen::test {
 
         Surrounding surrounding() const override;
         Field       field() const override {
-            return field_;
+            Field field = field_;
+            if (quirks_.reportsTextOnceFilled && text_.empty())
+                field.surroundingText = false;
+            return field;
         }
         bool hasFocus() const override {
             return focused_;

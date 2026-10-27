@@ -111,6 +111,9 @@ namespace ngosen::test {
         void setSurrounding(const std::string& text, unsigned int cursor, unsigned int anchor) {
             surrounding_ = Surrounding(text, cursor, anchor);
         }
+        void setField(Field field) {
+            field_ = std::move(field);
+        }
         void setSystemKeysWork(bool works) {
             systemKeysWork_ = works;
         }

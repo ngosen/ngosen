@@ -93,6 +93,14 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME(UiLanguage, "Vietnamese", "English");
 
+    // Read by the settings window's launcher only; the engine never uses it.
+    enum class SettingsToolkit : std::uint8_t {
+        Qt,
+        GTK,
+    };
+
+    FCITX_CONFIG_ENUM_NAME(SettingsToolkit, "Qt", "GTK");
+
     struct InputMethodConstrain;
     struct InputMethodAnnotation;
 
@@ -319,7 +327,8 @@ namespace fcitx {
         SubConfigOption                                          macroEditor{this, "MacroEditor", _("Macro"), "fcitx://config/addon/ngosen/ngosen-macro"};
         SubConfigOption                                          customKeymap{this, "CustomKeymap", _("Custom Keymap"), "fcitx://config/addon/ngosen/custom_keymap"};
         OptionWithAnnotation<IconTheme, IconThemeI18NAnnotation> iconTheme{this, "IconTheme", _("Icon Color"), IconTheme::Auto};
-        Option<UiLanguage>                                       uiLanguage{this, "UiLanguage", _("Interface Language"), UiLanguage::Vietnamese};);
+        Option<UiLanguage>                                       uiLanguage{this, "UiLanguage", _("Interface Language"), UiLanguage::Vietnamese};
+        Option<SettingsToolkit>                                  settingsToolkit{this, "SettingsToolkit", _("Settings Window"), SettingsToolkit::Qt};);
 
 } // namespace fcitx
 

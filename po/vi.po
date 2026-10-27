@@ -287,6 +287,10 @@ msgstr "Màu biểu tượng"
 msgid "Interface Language"
 msgstr "Ngôn ngữ giao diện"
 
+#: src/ngosen-config.h
+msgid "Settings Window"
+msgstr "Cửa sổ cài đặt"
+
 #: src/ngosen-engine.cpp:215
 msgid "Charset"
 msgstr "Bảng mã"

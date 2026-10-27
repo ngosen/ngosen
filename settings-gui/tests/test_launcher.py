@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import ast
+import pathlib
 import subprocess
 import sys
+import tempfile
 import unittest
 
 import fake_fcitx  # noqa: F401  (puts settings-gui on the path)
@@ -32,8 +34,46 @@ class LauncherTest(unittest.TestCase):
         self.assertEqual(result.stdout.strip(), "False", result.stderr)
 
     def test_qt_unless_the_developer_asks_for_gtk(self):
-        self.assertEqual(main.toolkit({}), "qt")
-        self.assertEqual(main.toolkit({"NGOSEN_SETTINGS_TOOLKIT": "qt"}), "qt")
+        self.assertEqual(main.toolkit({}, qt=yes), "qt")
+        self.assertEqual(main.toolkit({"NGOSEN_SETTINGS_TOOLKIT": "qt"}, qt=yes), "qt")
+
+    def test_the_saved_choice_opens_when_it_is_installed(self):
+        env = saved_toolkit(self, "GTK")
+        self.assertEqual(main.toolkit(env, qt=yes, gtk=yes), "gtk")
+        self.assertEqual(main.toolkit(env, qt=yes, gtk=no), "qt")
+
+    def test_the_developer_variable_beats_the_saved_choice(self):
+        env = saved_toolkit(self, "GTK")
+        env["NGOSEN_SETTINGS_TOOLKIT"] = "qt"
+        self.assertEqual(main.toolkit(env, qt=yes, gtk=yes), "qt")
+
+    def test_a_machine_with_only_gtk_opens_gtk(self):
+        self.assertEqual(main.toolkit({}, qt=no, gtk=yes), "gtk")
+
+    def test_qt_needs_qtpy_and_a_binding(self):
+        def found(*names):
+            return lambda module: module in names
+
+        self.assertTrue(main.has_qt(found("qtpy", "PySide6")))
+        self.assertFalse(main.has_qt(found("PyQt6")))
+        self.assertFalse(main.has_qt(found("qtpy")))
+
+
+def yes():
+    return True
+
+
+def no():
+    return False
+
+
+def saved_toolkit(test, value):
+    home = tempfile.TemporaryDirectory()
+    test.addCleanup(home.cleanup)
+    conf = pathlib.Path(home.name, "fcitx5", "conf")
+    conf.mkdir(parents=True)
+    (conf / "ngosen.conf").write_text(f"UiLanguage=English\nSettingsToolkit={value}\n")
+    return {"XDG_CONFIG_HOME": home.name}
 
 
 if __name__ == "__main__":

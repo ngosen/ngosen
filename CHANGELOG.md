@@ -23,6 +23,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   `s` → `viết`), như Gõ Sen. Cần app báo surrounding text; terminal thì Backspace như cũ (#344).
 - Lõi gõ được Gõ Sen ở app không nhận phím do bộ gõ gửi tới (bản IBus trên GNOME): xoá chữ bằng surrounding
   text, terminal thì bằng DEL, field không có cả hai thì chữ đó gõ bằng gạch chân. Bản fcitx5 không đổi (#353).
+- Cửa sổ cài đặt, hộp "Kiểm tra máy tôi…": nút mới "Nhắn qua Facebook…" chép sẵn thông tin máy và mở khung chat
+  với trang Facebook Ngó Sen. Dán thông tin vào tin nhắn để báo lỗi, không cần tài khoản GitHub (#374).
 
 ### Thay đổi
 

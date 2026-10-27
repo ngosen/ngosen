@@ -402,8 +402,8 @@ namespace ngosen {
         bool onTimedWaitTimer(ngosen::Timer& t);
         bool waitsForRedraw() const;
         // Under GNOME, leaves a finished deletion's commit to the timed wait until the fixed wait has
-        // passed and the field is back from a redraw (#175).
-        bool deferLaggingCommit(const char* reason);
+        // passed and the field is back from a redraw (#175), and at least settleUs from now.
+        bool deferLaggingCommit(const char* reason, uint64_t settleUs = 0);
         void noteWaitOutcome(const char* reason);
         bool lostWordAfterBounce(const Surrounding& s, bool settling);
         void forwardBackspaces(int count);

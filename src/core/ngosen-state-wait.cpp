@@ -229,7 +229,7 @@ namespace ngosen {
         return false;
     }
 
-    bool TypingState::deferLaggingCommit(const char* reason) {
+    bool TypingState::deferLaggingCommit(const char* reason, uint64_t settleUs) {
         if (!ngosen::surroundingTextLags(host_->field()))
             return false;
         // A report from before the forwarded keys were applied can look like the finished deletion.
@@ -241,7 +241,7 @@ namespace ngosen {
         surr_wait_pending_       = true;
         surr_wait_timer_only_    = true;
         surr_wait_focus_retries_ = 0;
-        surr_wait_deliver_at_    = std::max(floorUs, nowUs + 1000);
+        surr_wait_deliver_at_    = std::max(floorUs, nowUs + std::max<uint64_t>(settleUs, 1000));
         settle_timer_            = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); });
         return true;
     }
@@ -423,6 +423,8 @@ namespace ngosen {
             ngosen::utf8::decode(s.text())[lastSurroundingCursor_] == passed_key_->sym &&
             ((s.anchor() == s.cursor() && sinceInputUs < SuggestionStepUs) || (s.anchor() == lastSurroundingAnchor_ && s.anchor() > s.cursor()));
         const bool settling = sinceInputUs < CaretSettleUs;
+        // Antigravity's editor on GNOME moves the caret one step back well after the key (#362).
+        const bool caretSettling = jumped && s.cursor() == s.anchor() && sinceInputUs < SuggestionStepUs && s.cursor() + 1 == lastSurroundingCursor_;
         // A spreadsheet reports a click on another cell only as that cell's text with the cursor at its start.
         const bool lostWord = lostWordAfterBounce(s, settling);
         const bool newField =
@@ -434,11 +436,14 @@ namespace ngosen {
         // Calc reports the new cell empty just before the key we let through lands in it.
         // Our unreported commits do not matter here: in the same cell the key would follow them.
         const bool keyStartedCell = settling && passed_key_ && !sameText && s.text().empty() && !oldPreBuffer_.empty() && ngosen::reportsFieldOnlyOnKey(host_->field());
-        jumped                    = ((jumped && !echo && !intoSuggestion) || newField) && !settling;
+        jumped                    = ((jumped && !echo && !intoSuggestion && !caretSettling) || newField) && !settling;
         lastSurroundingText_      = s.text();
-        lastSurroundingCursor_    = s.cursor();
-        lastSurroundingAnchor_    = s.anchor();
-        hasLastSurrounding_       = true;
+        // Keep the real caret, so the app reporting it again is not a move either.
+        if (!caretSettling) {
+            lastSurroundingCursor_ = s.cursor();
+            lastSurroundingAnchor_ = s.anchor();
+        }
+        hasLastSurrounding_ = true;
         if (keyStartedCell && !is_deleting_.load(std::memory_order_acquire)) {
             startWordWithKey(*passed_key_);
             return;

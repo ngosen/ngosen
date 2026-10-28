@@ -100,10 +100,9 @@ detect_distribution() {
             return
             ;;
         opensuse-tumbleweed)
-            ibus_unsupported "openSUSE"
             x86_64_only "openSUSE" "$machine"
             manager=zypper
-            pattern='fcitx5-ngosen-[0-9][^ /]*\.opensuse-tumbleweed\.x86_64\.rpm'
+            pattern="${package_name}-[0-9][^ /]*\\.opensuse-tumbleweed\\.x86_64\\.rpm"
             return
             ;;
         arch | cachyos | endeavouros)

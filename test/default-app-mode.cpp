@@ -12,6 +12,8 @@
 #include "ngosen-utils.h"
 #include "test-input-context.h"
 
+#include <fcitx/candidatelist.h>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -55,6 +57,14 @@ namespace {
         engine.activate(entry, event);
     }
 
+    void press(fcitx::NgoSenEngine& engine, TestInputContext& context, fcitx::KeySym sym) {
+        fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
+        fcitx::KeyEvent         down(&context, fcitx::Key(sym), false);
+        engine.keyEvent(entry, down);
+        fcitx::KeyEvent up(&context, fcitx::Key(sym), true);
+        engine.keyEvent(entry, up);
+    }
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -84,6 +94,21 @@ int main(int argc, char** argv) {
         return failures == 0 ? 0 : 1;
     }
     expectMode("deepin-editor types in Preedit", fcitx::NgoSenMode::Preedit);
+
+    // With no rule of its own the app follows its default, so the menu marks "Default typing"
+    // (Sen, Preedit, Emoji, Off, Default typing, "type `"), and picking it keeps Preedit.
+    press(engine, editor, FcitxKey_grave);
+    auto list = std::dynamic_pointer_cast<fcitx::CommonCandidateList>(editor.inputPanel().candidateList());
+    if (!list || list->globalCursorIndex() != 4) {
+        std::cerr << "FAIL: the menu marks Default typing: cursor " << (list ? std::to_string(list->globalCursorIndex()) : "no menu") << '\n';
+        ++failures;
+    }
+    press(engine, editor, FcitxKey_r);
+    expectMode("Default typing keeps Preedit in deepin-editor", fcitx::NgoSenMode::Preedit);
+
+    TestInputContext desktopNamed(&testInstance.instance, "deepin-editor.desktop");
+    focus(engine, desktopNamed);
+    expectMode("deepin-editor.desktop types in Preedit", fcitx::NgoSenMode::Preedit);
 
     setGlobal(engine, false);
     focus(engine, editor);

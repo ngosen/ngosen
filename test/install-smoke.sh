@@ -283,6 +283,7 @@ check_old_profile_cleanup() {
     check "fcitx5 starts on a Vietnamese desktop without a profile" start_fcitx5 -u LC_ALL -u LANGUAGE LANG=vi_VN.UTF-8
     check "fcitx5 stops on the Vietnamese desktop" stop_fcitx5
     check "a Vietnamese desktop gets ngosen in its first profile" has_line "$profile" 'Name=ngosen'
+    check "a first profile keeps Ctrl+Shift" lacks_line "$settings" '0=Control+space'
 
     pkill -u "$user" dbus-daemon || :
     bus=

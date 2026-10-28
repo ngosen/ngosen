@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Người cài gói rồi tự thêm Ngó Sen trong Fcitx5 Configuration không còn bị mất bàn phím tiếng Anh và đổi sang Ctrl+Space sau lần khởi động fcitx5 kế tiếp; máy mới giữ Ctrl+Shift (#419).
+
 ## [1.6.4-1] — 28/10/2026
 
 Sửa lỗi mất dấu hoặc chữ trong chat và editor của Antigravity trên GNOME (#362, #395); sửa Cứu dấu trong Gõ Sen trên Chrome, Chromium và Brave ở X11 (#360, #390); sửa phím tắt Super khi dùng Gạch chân (#391, #392); sửa lỗi mở cửa sổ cài đặt và Hoàn tác (#376, #383); sửa install.sh khi desktop dùng tiếng Việt hoặc có nguồn apt lỗi, cài được trên deepin, LMDE, Devuan, Parrot, Artix và bỏ phụ thuộc python3-qtpy của .deb (#388, #399, #397, #403, #408).

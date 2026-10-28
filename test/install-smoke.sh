@@ -442,6 +442,26 @@ check_user_im_config_kept() {
     check "im-config set by the user stays" has_line "$home/.xinputrc" 'run_im fcitx5'
 }
 
+apt_args=/srv/apt-get-args
+
+# sudo keeps its own PATH, so the wrapper goes in a directory on it that comes before /usr/bin.
+log_apt_get() {
+    printf '#!/bin/sh\necho "$*" >>%s\nexec /usr/bin/apt-get "$@"\n' "$apt_args" >/usr/local/sbin/apt-get
+    chmod +x /usr/local/sbin/apt-get
+}
+
+names_frontend() { grep -q '^install .*fcitx5-frontend-' "$apt_args"; }
+
+check_installed_frontends_left_alone() {
+    log_apt_get
+    : >"$apt_args"
+    check "precondition: the GTK 3 module is installed" is_installed fcitx5-frontend-gtk3
+    check "install with the modules in place succeeds" installer --yes
+    check "precondition: apt-get install was logged" grep -q '^install ' "$apt_args"
+    check "it does not name the installed modules" refuses names_frontend
+    rm -f /usr/local/sbin/apt-get
+}
+
 main() {
     prepare_system
 
@@ -467,6 +487,8 @@ main() {
         check_toggle_key_message
         echo "== im-config the user set"
         check_user_im_config_kept
+        echo "== GTK and Qt modules already installed"
+        check_installed_frontends_left_alone
     fi
 
     if [ "$session" = gnome ]; then

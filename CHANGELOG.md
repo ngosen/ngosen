@@ -23,6 +23,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Nay cài đủ ở mọi ngôn ngữ, tránh thiếu gói khi cài lại hoặc trên MX không cài gói đề xuất (#388).
 - Antigravity trên GNOME: Gõ Sen không còn mất dấu khi gõ nhanh trong vùng soạn thảo, nhờ chờ app
   xoá xong chữ cũ lâu hơn khi app chậm (#362, #395).
+- Gạch chân: phím tắt Super + chữ (như Super+Q chuyển workspace) không còn bị gõ thành `q`, `ư`; nay đi
+  thẳng tới desktop và app như Ctrl, Alt, giữ lại chữ đang gõ dở (#391, #392).
 
 ## [1.6.3-1] — 27/10/2026
 

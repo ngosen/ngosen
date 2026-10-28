@@ -31,6 +31,8 @@ mod tests;
 pub const LOCK_MASK: u32 = 1 << 1;
 pub const CONTROL_MASK: u32 = 1 << 2;
 pub const MOD1_MASK: u32 = 1 << 3;
+// Where fcitx5 and X11 report Super; IBus sets it alongside SUPER_MASK.
+pub const MOD4_MASK: u32 = 1 << 6;
 pub const IGNORED_MASK: u32 = 1 << 25;
 pub const SUPER_MASK: u32 = 1 << 26;
 pub const HYPER_MASK: u32 = 1 << 27;
@@ -426,8 +428,13 @@ impl BambooEngine {
     }
 
     pub(crate) fn is_valid_state(state: u32) -> bool {
-        const INVALID: u32 =
-            CONTROL_MASK | MOD1_MASK | IGNORED_MASK | SUPER_MASK | HYPER_MASK | META_MASK;
+        const INVALID: u32 = CONTROL_MASK
+            | MOD1_MASK
+            | MOD4_MASK
+            | IGNORED_MASK
+            | SUPER_MASK
+            | HYPER_MASK
+            | META_MASK;
         state & INVALID == 0
     }
 

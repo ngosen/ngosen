@@ -221,7 +221,7 @@ settings_window_packages() {
     settings_packages=()
     if wants_gtk_settings; then
         case "$manager" in
-            dnf) settings_packages=(python3-gobject libadwaita) ;;
+            dnf) settings_packages=(python3-gobject gobject-introspection libadwaita) ;;
             zypper) settings_packages=(python3-gobject typelib-1_0-Adw-1) ;;
             apt) ! apt_has_libadwaita || settings_packages=(gir1.2-adw-1 python3-gi) ;;
         esac

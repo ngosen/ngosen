@@ -20,8 +20,9 @@ BuildRequires:  python3-devel
 BuildRequires:  librsvg2-tools
 
 Requires:       fcitx5
-# The settings window runs on Qt or on libadwaita.
-Requires:       ((python3-QtPy and (python3-pyqt6 or python3-pyside6)) or (python3-gobject and libadwaita >= 1.5))
+# The settings window runs on Qt or on libadwaita. Gtk 4 needs the cairo
+# typelib, which Fedora ships in gobject-introspection.
+Requires:       ((python3-QtPy and (python3-pyqt6 or python3-pyside6)) or (python3-gobject and gobject-introspection and libadwaita >= 1.5))
 Requires:       python3-dbus
 # Loaded with dlopen at runtime, so the automatic soname requires miss it.
 Requires:       libxcb

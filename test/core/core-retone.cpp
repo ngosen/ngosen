@@ -263,6 +263,7 @@ namespace {
         Run run                       = nhanh();
         run.field                     = makeField("dbus", false);
         run.field.keyEventOrderFix    = true;
+        run.field.program             = "chromium";
         run.quirks.announcesSelection = true;
         return run;
     }
@@ -307,6 +308,11 @@ namespace {
         run.anchor = 0;
         r          = retone(run);
         check(r.hint.empty() && r.text == "s xyz", "an announced selection of two words", r.text);
+
+        run               = announced();
+        run.field.program = "xterm";
+        r                 = retone(run);
+        check(r.hint.empty() && r.text == "abc s xyz", "a terminal's announced selection", r.text);
     }
 
     void testClickKeepsTone() {

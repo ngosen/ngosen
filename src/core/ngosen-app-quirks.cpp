@@ -10,6 +10,16 @@
 
 namespace ngosen {
 
+    namespace {
+        bool isChromiumBrowser(const std::string& program) {
+            for (const char* browser : {"chromium", "chrome", "google-chrome", "microsoft-edge", "msedge", "brave", "opera"}) {
+                if (isStartsWith(program, browser))
+                    return true;
+            }
+            return false;
+        }
+    } // namespace
+
     bool forwardsBackspaces(const Field& field) {
         // On wayland_v2 (input-method-v2: Sway, Hyprland) fcitx5 sends forwarded keys through a virtual keyboard.
         if (field.frontend == "wayland" || field.frontend == "wayland_v2") {
@@ -86,11 +96,13 @@ namespace ngosen {
         if (field.caretWidth * 8 > field.caretHeight)
             return false;
         // Terminals match the checks above too, and print Shift+Left instead of selecting.
-        for (const char* browser : {"chromium", "chrome", "google-chrome", "microsoft-edge", "msedge", "brave", "opera"}) {
-            if (isStartsWith(program, browser))
-                return true;
-        }
-        return false;
+        return isChromiumBrowser(program);
+    }
+
+    bool typesOverPrimarySelection(const Field& field) {
+        // Terminals, Emacs and Vim also own the primary selection and report the same, but type elsewhere.
+        const std::string program = stripDesktopSuffix(field.program);
+        return !field.surroundingText && (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc"));
     }
 
     bool surroundingTextLags(const Field& field) {

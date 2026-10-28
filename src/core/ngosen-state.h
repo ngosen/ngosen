@@ -222,6 +222,7 @@ namespace ngosen {
         void                           retoneAtWordEnd(size_t tail, Retype retype);
         void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8);
         void                           retoneAnnounced(uint32_t sym, uint32_t states, const std::string& keyUtf8);
+        void                           forgetSelection();
         void                           offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key);
         void                           dropRetoneKey();
         void                           checkRetoneReport();

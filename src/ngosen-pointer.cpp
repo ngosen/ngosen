@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <dlfcn.h>
 #include <poll.h>
 
@@ -55,7 +56,7 @@ namespace {
     }
 
     // Opens a connection that receives raw button presses; nullptr when anything is missing.
-    XcbConnection* openRawButtonConnection(void* xcb, void* xinput, uint8_t& opcode) {
+    XcbConnection* openRawButtonConnection(void* xcb, void* xinput, uint8_t& opcode, uint32_t& root) {
         auto  connect      = symbol<ConnectFn>(xcb, "xcb_connect");
         auto  disconnect   = symbol<DisconnectFn>(xcb, "xcb_disconnect");
         auto  hasError     = symbol<HasErrorFn>(xcb, "xcb_connection_has_error");
@@ -94,8 +95,9 @@ namespace {
             return nullptr;
         }
 
+        root = *roots(getSetup(conn)).data;
         const XcbEventMask mask{AllMasterDevices, 1, RawButtonPressBit};
-        void*              error = requestCheck(conn, select(conn, *roots(getSetup(conn)).data, 1, &mask));
+        void*              error = requestCheck(conn, select(conn, root, 1, &mask));
         if (error != nullptr) {
             std::free(error);
             NGOSEN_WARN("XInput2 unavailable: cannot select raw button events");
@@ -140,27 +142,27 @@ namespace {
         void handle(const uint8_t* event);
 
       private:
-        uint8_t*           reply(XcbCookie cookie);
-        uint32_t           atom(const char* name);
-        bool               ownedByFocusedClient(uint32_t owner);
-        void               ownerChanged(uint32_t owner);
-        void               converted(uint32_t property);
+        uint8_t*             reply(XcbCookie cookie);
+        uint32_t             atom(const char* name);
+        bool                 ownedByFocusedClient(uint32_t owner);
+        void                 ownerChanged(uint32_t owner);
+        void                 converted(uint32_t property);
 
-        XcbConnection*     conn_       = nullptr;
-        X11Selection*      selection_  = nullptr;
-        FlushFn            flush_      = nullptr;
-        WaitForReplyFn     wait_       = nullptr;
-        InternAtomFn       intern_     = nullptr;
-        ConnectionCallFn   getFocus_   = nullptr;
-        ConvertSelectionFn convert_    = nullptr;
-        GetPropertyFn      getProp_    = nullptr;
-        uint8_t            firstEvent_ = 0;
-        uint32_t           clientMask_ = 0;
-        uint32_t           window_     = 0;
-        uint32_t           utf8_       = 0;
-        uint32_t           property_   = 0;
-        uint32_t           active_     = 0;
-        uint64_t           ticket_     = 0;
+        XcbConnection*       conn_       = nullptr;
+        X11Selection*        selection_  = nullptr;
+        FlushFn              flush_      = nullptr;
+        WaitForReplyFn       wait_       = nullptr;
+        InternAtomFn         intern_     = nullptr;
+        ConnectionCallFn     getFocus_   = nullptr;
+        ConvertSelectionFn   convert_    = nullptr;
+        GetPropertyFn        getProp_    = nullptr;
+        uint8_t              firstEvent_ = 0;
+        uint32_t             clientMask_ = 0;
+        uint32_t             window_     = 0;
+        uint32_t             utf8_       = 0;
+        uint32_t             property_   = 0;
+        uint32_t             active_     = 0;
+        std::deque<uint64_t> tickets_;
     };
 
     bool SelectionFollower::open(void* xcb, XcbConnection* conn, uint32_t root, X11Selection* selection) {
@@ -239,18 +241,24 @@ namespace {
             selection_->forget();
             return;
         }
-        ticket_ = selection_->announce();
+        // Replies come in request order, so each carries the ticket of the change that asked for it.
+        tickets_.push_back(selection_->announce());
         convert_(conn_, window_, PrimaryAtom, utf8_, property_, 0);
         flush_(conn_);
     }
 
     void SelectionFollower::converted(uint32_t property) {
+        if (tickets_.empty())
+            return;
+        const uint64_t ticket = tickets_.front();
+        tickets_.pop_front();
         if (property == 0)
             return;
-        uint8_t* answer = reply(getProp_(conn_, 1, window_, property_, 0, 0, MaxSelectionLong));
+        // Not deleted: deleting a large selection's INCR property would start a transfer nobody reads.
+        uint8_t* answer = reply(getProp_(conn_, 0, window_, property_, 0, 0, MaxSelectionLong));
         // xcb_get_property_reply_t: format at 1, type at 8, bytes_after at 12, value_len at 16, value at 32.
         if (answer && answer[1] == 8 && word32(answer, 8) == utf8_ && word32(answer, 12) == 0)
-            selection_->arrive(ticket_, std::string(reinterpret_cast<const char*>(answer + 32), word32(answer, 16)));
+            selection_->arrive(ticket, std::string(reinterpret_cast<const char*>(answer + 32), word32(answer, 16)));
         std::free(answer);
     }
 } // namespace
@@ -299,7 +307,8 @@ bool watchX11PointerClicks(const std::atomic<bool>& stop, const std::function<vo
         return false;
     }
     uint8_t        opcode = 0;
-    XcbConnection* conn   = openRawButtonConnection(xcb, xinput, opcode);
+    uint32_t       root   = 0;
+    XcbConnection* conn   = openRawButtonConnection(xcb, xinput, opcode, root);
     if (conn == nullptr)
         return false;
     auto getFd        = symbol<GetFdFn>(xcb, "xcb_get_file_descriptor");
@@ -309,9 +318,7 @@ bool watchX11PointerClicks(const std::atomic<bool>& stop, const std::function<vo
     NGOSEN_INFO("Watching mouse clicks through XInput2.");
     // On one connection, so a click and a selection arrive in the order they happened.
     SelectionFollower follower;
-    auto              getSetup = symbol<GetSetupFn>(xcb, "xcb_get_setup");
-    auto              roots    = symbol<RootsIteratorFn>(xcb, "xcb_setup_roots_iterator");
-    if (selection != nullptr && !follower.open(xcb, conn, *roots(getSetup(conn)).data, selection))
+    if (selection != nullptr && !follower.open(xcb, conn, root, selection))
         selection = nullptr;
 
     pollfd pfd{getFd(conn), POLLIN, 0};

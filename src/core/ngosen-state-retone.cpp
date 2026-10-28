@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 // TypingState: retoning a selected word with the tone key typed over it.
+#include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
@@ -109,7 +110,8 @@ namespace ngosen {
         if (!preedit || keyUtf8 != preedit.get())
             return;
         if (!field.surroundingText) {
-            retoneAnnounced(sym, states, keyUtf8);
+            if (ngosen::typesOverPrimarySelection(field))
+                retoneAnnounced(sym, states, keyUtf8);
             return;
         }
         const Surrounding before = host_->surrounding();
@@ -133,6 +135,11 @@ namespace ngosen {
         const std::optional<std::string> word = std::exchange(selectedBeforeKey_, std::nullopt);
         if (word && isRetonable(utf8::decode(*word)))
             offerRetone(*word, keyUtf8, 0, sym, states, keyUtf8);
+    }
+
+    void TypingState::forgetSelection() {
+        selectedBeforeKey_.reset();
+        host_->takeSelection();
     }
 
     void TypingState::offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key) {

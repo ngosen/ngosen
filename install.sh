@@ -154,7 +154,7 @@ confirm() {
     read -r answer <&3 || answer=
     exec 3<&-
     case "$answer" in
-        y | Y | yes | c | C) return 0 ;;
+        [yY] | [yY][eE][sS] | [cC]) return 0 ;;
         *) return 1 ;;
     esac
 }

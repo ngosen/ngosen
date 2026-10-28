@@ -24,6 +24,8 @@ keyboard_dropped=0
 fcitx5_reloaded=0
 manager=
 pattern=
+# Packages apt upgrades along with the install on a distribution that needs it.
+apt_upgrades=()
 workdir=
 
 say() { printf '%s\n' "$*"; }
@@ -125,6 +127,15 @@ detect_distribution() {
     if command -v apt-get >/dev/null 2>&1; then
         # Kali Rolling is built from Debian testing.
         [ "$id" = kali ] && codename=forky
+        # deepin 23 (beige) and 25 (crimson) ship glibc 2.38 and fcitx5 5.1, above what the bookworm build needs.
+        case "$id:$codename" in
+            deepin:beige | deepin:crimson)
+                codename=bookworm
+                # deepin's fcitx5 GTK modules declare GLib 2.76 but need the GLib in its repository;
+                # on an image that has not been updated GTK apps then get no input method.
+                apt_upgrades=(libglib2.0-0)
+                ;;
+        esac
         case "$codename" in
             # The IBus edition needs libadwaita 1.5, which this lacks.
             bookworm) ibus_unsupported "$id $codename" ;;
@@ -251,6 +262,7 @@ install_package() {
             local extra candidate
             local -a extras=() candidates=()
             [ "$edition" = fcitx5 ] && candidates=(im-config fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6)
+            candidates+=("${apt_upgrades[@]}")
             # Kali's images ship without package lists, and old lists name versions the mirror dropped.
             # A broken third-party source fails the update while the distribution's lists still refresh;
             # the install below stops on its own if a package is really missing.

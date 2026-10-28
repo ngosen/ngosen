@@ -193,9 +193,14 @@ jobs:
         include:
           - qt: Qt5
             image: ubuntu:24.04
-            packages: python3-pyqt5
+            packages: python3-qtpy python3-pyqt5
             api: pyqt5
           - qt: Qt6
+            image: ubuntu:24.04
+            packages: python3-qtpy python3-pyqt6 qt6-qpa-plugins
+            api: pyqt6
+          # deepin packages no qtpy; qt_api stands in for it.
+          - qt: Qt6 without qtpy
             image: ubuntu:24.04
             packages: python3-pyqt6 qt6-qpa-plugins
             api: pyqt6
@@ -207,11 +212,12 @@ jobs:
         run: |
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            python3 python3-qtpy python3-dbus python3-gi dbus fonts-dejavu-core ${{ matrix.packages }}
+            python3 python3-dbus python3-gi dbus fonts-dejavu-core ${{ matrix.packages }}
       - uses: actions/checkout@v7
       - name: Test
         working-directory: settings-gui/tests
-        run: python3 -m unittest discover -v
+        # qt_api goes first, as in main.py, so its qtpy stand-in is in place before the tests import Qt.
+        run: python3 -c "import sys; sys.path.insert(0, '..'); import qt_api, unittest; unittest.main(module=None, argv=['unittest', 'discover', '-v'])"
 
   # Ubuntu 24.04 has the oldest libadwaita the GTK window supports, Arch the newest.
   settings-gtk:

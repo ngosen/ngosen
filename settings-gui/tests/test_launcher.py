@@ -71,12 +71,14 @@ class LauncherTest(unittest.TestCase):
     def test_a_machine_with_only_gtk_opens_gtk(self):
         self.assertEqual(main.toolkit({}, qt=no, gtk=yes), "gtk")
 
-    def test_qt_needs_qtpy_and_a_binding(self):
+    def test_qt_needs_a_binding_and_qtpy_unless_it_is_pyqt6(self):
         def found(*names):
             return lambda module: module in names
 
         self.assertTrue(main.has_qt(found("qtpy", "PySide6")))
-        self.assertFalse(main.has_qt(found("PyQt6")))
+        # deepin packages PyQt6 but no qtpy; qt_api stands in for it.
+        self.assertTrue(main.has_qt(found("PyQt6")))
+        self.assertFalse(main.has_qt(found("PySide6")))
         self.assertFalse(main.has_qt(found("qtpy")))
 
 

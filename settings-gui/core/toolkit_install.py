@@ -24,7 +24,7 @@ from gi.repository import Adw
 raise SystemExit(0 if Adw.get_minor_version() >= {MIN_ADW_MINOR} else 1)
 """
 
-# Kept in step with settings_window_packages in install.sh.
+# Kept in step with settings_window_packages in install.sh. A tuple lists alternatives, first wins.
 PACKAGES = {
     "gtk": {
         "apt-get": ("gir1.2-adw-1", "python3-gi"),
@@ -33,10 +33,12 @@ PACKAGES = {
         "pacman": ("python-gobject", "libadwaita"),
     },
     "qt": {
-        "apt-get": ("python3-qtpy", "python3-pyqt6"),
-        "dnf": ("python3-QtPy", "python3-pyqt6"),
-        "zypper": ("python3-QtPy", "python3-PyQt6"),
-        "pacman": ("python-qtpy", "python-pyqt6"),
+        # Without the SVG plugins the logo and icons are blank. Debian 13 moved them out of
+        # libqt6svg6, and deepin packages no qtpy.
+        "apt-get": ("python3-qtpy", "python3-pyqt6", ("qt6-svg-plugins", "libqt6svg6")),
+        "dnf": ("python3-QtPy", "python3-pyqt6", "qt6-qtsvg"),
+        "zypper": ("python3-QtPy", "python3-PyQt6", "libQt6Svg6"),
+        "pacman": ("python-qtpy", "python-pyqt6", "qt6-svg"),
     },
 }
 
@@ -53,7 +55,10 @@ UNITS = {"B": 1, "KiB": 1024, "MiB": 1024**2, "GiB": 1024**3}
 def has_qt(find=importlib.util.find_spec):
     # Packages installed while the window is open would stay unseen otherwise.
     importlib.invalidate_caches()
-    return bool(find("qtpy")) and any(find(module) for module in QT_BINDINGS)
+    if find("qtpy"):
+        return any(find(module) for module in QT_BINDINGS)
+    # qt_api stands in for qtpy on PyQt6.
+    return bool(find("PyQt6"))
 
 
 def has_gtk():
@@ -72,12 +77,12 @@ def package_manager(which=shutil.which):
     return next((name for name in INSTALL if which(name)), None)
 
 
-def install_command(toolkit, manager):
-    return [*INSTALL[manager], *PACKAGES[toolkit][manager]]
+def install_command(manager, packages):
+    return [*INSTALL[manager], *packages]
 
 
-def shown_command(toolkit, manager):
-    return "sudo " + shlex.join(install_command(toolkit, manager))
+def shown_command(manager, packages):
+    return "sudo " + shlex.join(install_command(manager, packages))
 
 
 def _output(args, run, ok=(0,)):
@@ -91,9 +96,8 @@ def _output(args, run, ok=(0,)):
     return result.stdout if result.returncode in ok else None
 
 
-def download_size(toolkit, manager, run=subprocess.run):
+def download_size(manager, packages, run=subprocess.run):
     """Bytes to download, or None when the package manager cannot tell without root."""
-    packages = PACKAGES[toolkit][manager]
     if manager == "apt-get":
         return _apt_size(packages, run)
     if manager == "dnf":
@@ -122,6 +126,39 @@ def _apt_size(packages, run):
     if text is None:
         return None
     return sum(int(size) for size in re.findall(r"^Size: (\d+)$", text, re.MULTILINE))
+
+
+def _apt_policy(names, run):
+    """Whether each package is installed and whether it has a candidate; None when apt fails."""
+    text = _output(["apt-cache", "policy", *names], run)
+    if text is None:
+        return None
+    found = re.findall(r"^(\S+):\n +Installed: (\S+)\n +Candidate: (\S+)", text, re.MULTILINE)
+    return {
+        name: (installed != "(none)", candidate != "(none)") for name, installed, candidate in found
+    }
+
+
+def needed_packages(toolkit, manager, run=subprocess.run):
+    """The packages still to install, each alternative narrowed to one the system has."""
+    wanted = [
+        entry if isinstance(entry, tuple) else (entry,) for entry in PACKAGES[toolkit][manager]
+    ]
+    state = (
+        _apt_policy([name for entry in wanted for name in entry], run)
+        if manager == "apt-get"
+        else None
+    )
+    # Empty when the package lists were never fetched; the command works after apt-get update.
+    if not state:
+        return [entry[0] for entry in wanted]
+    needed = []
+    for entry in wanted:
+        # The first one apt has decides: libqt6svg6 can be installed without the plugins.
+        chosen = next((name for name in entry if state.get(name, (False, False))[1]), None)
+        if chosen and not state[chosen][0]:
+            needed.append(chosen)
+    return needed
 
 
 def apt_has_libadwaita(run=subprocess.run):
@@ -156,22 +193,20 @@ class Offer:
         self.ready = installed[self.target]()
         self.manager = package_manager(which)
         self.installable = not self.ready and can_install(self.target, self.manager, run)
+        self.packages = needed_packages(self.target, self.manager, run) if self.installable else []
+        self.installable = bool(self.packages)
         self.runnable = self.installable and bool(which("pkexec"))
 
     @property
-    def packages(self):
-        return PACKAGES[self.target][self.manager]
-
-    @property
     def command(self):
-        return shown_command(self.target, self.manager)
+        return shown_command(self.manager, self.packages)
 
     @property
     def install_argv(self):
-        return ["pkexec", *install_command(self.target, self.manager)]
+        return ["pkexec", *install_command(self.manager, self.packages)]
 
     def download_size(self, run=subprocess.run):
-        return download_size(self.target, self.manager, run)
+        return download_size(self.manager, self.packages, run)
 
     def installed_now(self):
         return INSTALLED[self.target]()

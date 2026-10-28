@@ -32,7 +32,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Muốn chọn hẳn một bản, đặt "Cửa sổ cài đặt" thành Qt hoặc GTK trong công cụ cài đặt của fcitx5 (#386, #396).
 - Cửa sổ cài đặt, trang Giao diện: bản Qt có nút "Đổi sang bản GTK…", bản GTK có nút "Đổi sang bản Qt…".
   Có sẵn bản kia thì cửa sổ mở lại ngay bằng bản đó. Chưa có thì báo cần cài gói nào, tải về khoảng bao nhiêu,
-  rồi cho chọn cài ngay (hỏi mật khẩu) hoặc chép lệnh để tự chạy (#393).
+  rồi cho chọn cài ngay (hỏi mật khẩu) hoặc chép lệnh để tự chạy (#393, #407).
 
 ### Thay đổi
 

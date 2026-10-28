@@ -261,8 +261,8 @@ settings_window_packages() {
         esac
     elif [ "$edition" = fcitx5 ]; then
         case "$manager" in
-            dnf) settings_packages=(python3-QtPy python3-pyqt6) ;;
-            zypper) settings_packages=(python3-QtPy python3-PyQt6) ;;
+            dnf) settings_packages=(python3-QtPy python3-pyqt6 qt6-qtsvg) ;;
+            zypper) settings_packages=(python3-QtPy python3-PyQt6 libQt6Svg6) ;;
         esac
     fi
 }

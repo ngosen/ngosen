@@ -59,6 +59,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Cửa sổ cài đặt: bấm "Mặc định" nay báo trước phím chuyển Anh/Việt sẽ về Ctrl+Shift nếu đang dùng phím khác,
+  kể cả phím vừa đổi, trong cả cửa sổ Qt và GTK (#414).
 - Cửa sổ cài đặt: lưu từ điển riêng không còn xoá chữ bắt đầu bằng dấu # khỏi file; bộ gõ vẫn luôn dùng được
   những chữ này. Khi lưu từ điển hoặc bảng phím (Keymap) bị lỗi giữa chừng, công tắc bật/tắt không còn
   bị lưu lệch với những gì cửa sổ hiện (#367).

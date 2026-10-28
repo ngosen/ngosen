@@ -212,12 +212,14 @@ class Window(Adw.ApplicationWindow):
         return header
 
     def confirm_defaults(self):
+        cleared = _(
+            "Macros, words added to the dictionary, custom keys and the modes remembered"
+            " for each app are cleared too. You can undo this right after."
+        )
+        note = defaults.toggle_key_note(self.model)
         dialog = Adw.AlertDialog(
             heading=_("Restore all settings to defaults?"),
-            body=_(
-                "Macros, words added to the dictionary, custom keys and the modes remembered"
-                " for each app are cleared too. You can undo this right after."
-            ),
+            body=f"{note} {cleared}" if note else cleared,
         )
         dialog.add_response("cancel", _("&Cancel").replace("&", "_"))
         dialog.add_response("reset", _("&Defaults").replace("&", "_"))

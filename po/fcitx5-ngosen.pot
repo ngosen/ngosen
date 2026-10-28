@@ -1484,6 +1484,10 @@ msgstr ""
 msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
 msgstr ""
 
+#: settings-gui/core/defaults.py
+msgid "The key that switches between Vietnamese and English goes back to Ctrl+Shift."
+msgstr ""
+
 #: settings-gui/ui_gtk/window.py
 msgid "Could not restore every default. Check that fcitx5 is running."
 msgstr ""

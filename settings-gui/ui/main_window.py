@@ -383,12 +383,21 @@ class NgoSenSettingsWindow(QMainWindow):
 
     def on_restore_defaults(self):
         """Resets all settings to their default values."""
+        from core.settings_model import SettingsModel
         from qtpy.QtWidgets import QMessageBox
 
+        from core import defaults
+
+        # The key the user just set is read back, so it must not wait for the timer.
+        self.save_pending()
+        model = SettingsModel(self.dbus_handler)
+        model.load()
+        note = defaults.toggle_key_note(model)
+        question = _("Restore all settings to defaults?")
         reply = QMessageBox.question(
             self,
             _("Confirm Reset"),
-            _("Restore all settings to defaults?"),
+            f"{question}\n\n{note}" if note else question,
             QMessageBox.Yes | QMessageBox.No,
         )
         if reply == QMessageBox.Yes:

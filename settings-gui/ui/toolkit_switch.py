@@ -111,8 +111,8 @@ def _install(button, model, offer):
     def finished(code):
         button.setEnabled(True)
         button.setText(_("Switch to {}…").format(offer.name))
-        # 126 and 127: the password prompt was closed or refused.
-        if code not in (0, 126, 127):
+        # 126: the password prompt was closed. 127 is also what no polkit agent gives.
+        if code not in (0, 126):
             _failed(button, offer)
         elif code == 0:
             _in_background(offer.installed_now, lambda ok: _installed(ok, button, model, offer))

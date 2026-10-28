@@ -182,7 +182,16 @@ class AppearancePageTest(unittest.TestCase):
             wait_until(lambda: failed.called)
         switch.assert_not_called()
 
-    def test_a_refused_password_prompt_changes_nothing(self):
+    def test_pkexec_without_an_agent_shows_the_command(self):
+        offer = mock.Mock(install_argv=["sh", "-c", "exit 127"], command="sudo true")
+        offer.name = "GTK"
+        button = self.page.control_for("SettingsToolkit")
+        with mock.patch("ui.toolkit_switch._failed") as failed:
+            toolkit_switch._install(button, self.page.model, offer)
+            wait_until(lambda: failed.called)
+        offer.installed_now.assert_not_called()
+
+    def test_a_closed_password_prompt_changes_nothing(self):
         offer = mock.Mock(install_argv=["sh", "-c", "exit 126"])
         offer.name = "GTK"
         button = self.page.control_for("SettingsToolkit")

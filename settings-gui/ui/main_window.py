@@ -11,7 +11,7 @@ from datetime import datetime
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import Qt, QTimer
-from qtpy.QtGui import QIcon, QKeySequence, QShortcut
+from qtpy.QtGui import QIcon, QKeySequence
 from qtpy.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -24,6 +24,7 @@ from qtpy.QtWidgets import (
     QMainWindow,
     QPushButton,
     QScrollArea,
+    QShortcut,
     QStackedWidget,
     QTabWidget,
     QVBoxLayout,

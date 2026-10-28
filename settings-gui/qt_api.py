@@ -12,6 +12,7 @@ import types
 
 QT6_BINDINGS = (("pyqt6", "PyQt6"), ("pyside6", "PySide6"))
 FALLBACK_MODULES = ("QtCore", "QtGui", "QtWidgets", "QtTest")
+MOVED_TO_QTGUI = ("QAction", "QActionGroup", "QShortcut", "QFileSystemModel", "QUndoCommand")
 
 
 def pick(env=os.environ, installed=importlib.util.find_spec):
@@ -58,6 +59,9 @@ def install_fallback(modules=sys.modules, installed=importlib.util.find_spec):
         modules[f"qtpy.{name}"] = module
     package.QtCore.Signal = package.QtCore.pyqtSignal
     package.QtCore.Slot = package.QtCore.pyqtSlot
+    # Qt 6 moved these to QtGui; qtpy keeps them reachable from QtWidgets too.
+    for name in MOVED_TO_QTGUI:
+        setattr(package.QtWidgets, name, getattr(package.QtGui, name))
     return True
 
 

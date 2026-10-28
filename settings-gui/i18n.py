@@ -20,9 +20,12 @@ _english = {}
 def configured_language(env=os.environ):
     """The UiLanguage saved in ngosen.conf; Vietnamese when it was never changed."""
     config_home = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME", ""), ".config")
+    # Other keys may hold bytes that are not UTF-8; the one read here is ASCII.
     try:
         with open(
-            os.path.join(config_home, "fcitx5", "conf", "ngosen.conf"), encoding="utf-8"
+            os.path.join(config_home, "fcitx5", "conf", "ngosen.conf"),
+            encoding="utf-8",
+            errors="replace",
         ) as f:
             match = re.search(r"^UiLanguage=(\S+)", f.read(), re.MULTILINE)
     except OSError:

@@ -57,6 +57,12 @@ class LanguageTest(unittest.TestCase):
         env = self.write_config("IconTheme=Dark\nUiLanguage=English\n")
         self.assertEqual(i18n.configured_language(env), "English")
 
+    def test_reads_a_config_that_is_not_utf8(self):
+        env = self.write_config("UiLanguage=English\n")
+        with open(os.path.join(self.dir.name, "fcitx5", "conf", "ngosen.conf"), "ab") as f:
+            f.write(b"CustomKeymap=\xff\xfe\n")
+        self.assertEqual(i18n.configured_language(env), "English")
+
     def test_vietnamese_on_any_desktop(self):
         i18n.use_language("Vietnamese", localedir=self.localedir)
         self.assertEqual(i18n._("Charset"), "Bảng mã")

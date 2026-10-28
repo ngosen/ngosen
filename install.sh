@@ -213,7 +213,8 @@ install_package() {
             # Kali's images ship without package lists, and old lists name versions the mirror dropped.
             as_root apt-get update
             for candidate in "${candidates[@]}"; do
-                extra=$(apt-cache policy "$candidate" 2>/dev/null | grep -m1 'Candidate:' || true)
+                # apt translates the label, "Ứng cử:" on a Vietnamese desktop.
+                extra=$(LC_ALL=C apt-cache policy "$candidate" 2>/dev/null | grep -m1 'Candidate:' || true)
                 case "$extra" in
                     *'(none)'* | '') ;;
                     *) extras+=("$candidate") ;;

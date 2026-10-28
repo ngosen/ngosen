@@ -5,7 +5,8 @@
 
 from core.whats_new_content import FEATURES, TIPS
 from i18n import _
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt, QUrl
+from qtpy.QtGui import QDesktopServices
 from qtpy.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -81,9 +82,18 @@ class WhatsNewPage(QWidget):
             example.setObjectName("TypingExample")
             example.setFont(brand.typed_font(16))
             card.content_layout.addWidget(example)
+        buttons = QHBoxLayout()
+        buttons.addStretch()
+        if "link" in feature:
+            label, url = feature["link"]
+            link = QPushButton(_(label))
+            link.setProperty("url", url)
+            link.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(url)))
+            buttons.addWidget(link)
         button = self._open_button(feature["target"])
         if button:
-            card.content_layout.addWidget(button, alignment=Qt.AlignRight)
+            buttons.addWidget(button)
+        card.content_layout.addLayout(buttons)
         return card
 
     def _tip_row(self, tip):

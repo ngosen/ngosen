@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """What the "What's new & tips" page says: the one file to update before a feature release.
 
+An optional link is a (label, url) pair opened in the browser.
 A target names what the "Open setting" button shows: ("setting", key) for a setting on the
 Typing, Keys or Appearance page, ("page", name) for a whole page, or None.
 """
@@ -22,6 +23,8 @@ FEATURES = [
         ),
         "example": "",
         "target": ("setting", "SettingsToolkit"),
+        # Pictures of the GTK window for people still in the Qt one; the GTK page leaves it out.
+        "link": (N_("See the GTK window"), "https://ngosen.github.io/huong-dan/cua-so-cai-dat/"),
     },
     {
         "version": "1.6",

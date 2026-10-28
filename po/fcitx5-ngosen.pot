@@ -1565,5 +1565,9 @@ msgid "Settings window in GTK"
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
+msgid "See the GTK window"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
 msgid "GNOME and Cinnamon open the GTK window, other desktops the Qt one. Switch on the Appearance page, which offers to install the other window when it is missing."
 msgstr ""

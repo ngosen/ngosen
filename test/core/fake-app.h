@@ -9,7 +9,9 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ngosen {
@@ -37,7 +39,9 @@ namespace ngosen::test {
         bool dropsOldKeyPresses     = false; // drops a Backspace press not newer than the last one, as GLFW does under XIM
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
+        int  backspaceLagMs         = 0;     // applies forwarded backspaces this late but commits at once, as Antigravity's editor on GNOME sometimes does
         bool hidesCursorMoves       = false; // reports no click and shows the cursor where the last edit left it, as GTK 3 on Plasma does
+        bool announcesSelection     = false; // makes a selection the X11 primary selection, as Chromium on X11 does
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -78,6 +82,9 @@ namespace ngosen::test {
         }
         bool hasFocus() const override {
             return focused_;
+        }
+        std::optional<std::string> takeSelection() override {
+            return std::exchange(announced_, std::nullopt);
         }
 
         void showPreedit(const std::string& /*text*/, bool /*underline*/) override {}
@@ -135,6 +142,7 @@ namespace ngosen::test {
         uint32_t                            lastBackSpaceAt_ = 0;
         int                                 slowestCommitMs_ = 0;
         std::u32string                      text_;
+        std::optional<std::string>          announced_;
         size_t                              cursor_      = 0;
         size_t                              anchor_      = 0;
         size_t                              shownCursor_ = 0;

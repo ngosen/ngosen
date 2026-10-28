@@ -10,6 +10,40 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.6.4-1] — 28/10/2026
+
+Sửa lỗi mất dấu hoặc chữ trong chat và editor của Antigravity trên GNOME (#362, #395); sửa Cứu dấu trong Gõ Sen trên Chrome, Chromium và Brave ở X11 (#360, #390); sửa phím tắt Super khi dùng Gạch chân (#391, #392); sửa lỗi mở cửa sổ cài đặt và Hoàn tác (#376, #383); sửa install.sh khi desktop dùng tiếng Việt hoặc có nguồn apt lỗi, cài được trên deepin, LMDE, Devuan, Parrot, Artix và bỏ phụ thuộc python3-qtpy của .deb (#388, #399, #397, #403, #408).
+Tải ở [ngosen-1.6.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.4-1).
+
+### Sửa
+
+- Cửa sổ cài đặt không còn lỗi không mở được khi file từ điển riêng có chữ không phải UTF-8.
+  Trang Từ điển báo không đọc trọn được file (#376).
+- Cửa sổ cài đặt: "Hoàn tác" chỉ trả lại đúng thay đổi vừa lưu, không còn làm mất kiểu gõ đã nhớ cho app
+  khi chọn từ menu Ngó Sen trong lúc cửa sổ đang mở (#383).
+- Sửa lỗi Cứu dấu trên Chrome, Chromium và Brave ở phiên X11: bôi đen `nhanh` (bấm đúp hoặc
+  Shift+mũi tên) rồi gõ `s` ra `nhánh`. Chỉ ở Gõ Sen; Tab hoặc Esc vẫn trả lại phím đã gõ
+  (#360, #390).
+- `install.sh` trên máy để tiếng Việt từng bỏ sót im-config và module gõ fcitx5 cho app GTK, Qt trên Debian, Ubuntu, Mint, MX.
+  Nay cài đủ ở mọi ngôn ngữ, tránh thiếu gói khi cài lại hoặc trên MX không cài gói đề xuất (#388).
+- Antigravity trên GNOME: Gõ Sen không còn mất dấu khi gõ nhanh trong vùng soạn thảo, nhờ chờ app
+  xoá xong chữ cũ lâu hơn khi app chậm (#362, #395).
+- Gạch chân: phím tắt Super + chữ (như Super+Q chuyển workspace) không còn bị gõ thành `q`, `ư`; nay đi
+  thẳng tới desktop và app như Ctrl, Alt, giữ lại chữ đang gõ dở (#391, #392).
+- `install.sh` không còn dừng giữa chừng khi máy có một nguồn apt khác đang lỗi (như Zorin OS có nguồn
+  `github.io` hỏng); nay báo nguồn lỗi rồi vẫn cài tiếp (#399).
+- `install.sh` cài được trên deepin 23 và 25 (trước đây báo không hỗ trợ). Gói `.deb` không còn đòi
+  `python3-qtpy`, gói deepin không có; cửa sổ cài đặt chạy thẳng với PyQt6 (#397).
+- `install.sh` cài được trên LMDE, Devuan, Parrot và Artix (trước đây báo không hỗ trợ dù gói Debian, Arch
+  dùng được) (#403).
+- `install.sh` không còn dừng với lỗi "im-config không đặt được fcitx5" trên deepin và Kali mới cài: nay cài
+  kèm `whiptail`, thứ im-config 1.1 cần mà không tự kéo về (#408).
+
+### Test
+
+- Test cài trên LMDE không còn báo lỗi nhầm ở bước máy để tiếng Việt: ảnh LMDE đặt sẵn `LC_ALL` tiếng Anh, đè
+  lên ngôn ngữ test đặt (#405).
+
 ## [1.6.3-1] — 27/10/2026
 
 Sửa lỗi gõ chữ trong editor và ô chat của Antigravity trên GNOME (#362, #365); sửa lỗi Cứu dấu ở Gõ Sen khi backspace về cuối chữ trước hoặc bấm chuột vào giữa chữ (#358, #370).

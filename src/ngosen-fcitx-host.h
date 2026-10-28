@@ -31,6 +31,7 @@ namespace ngosen {
         Surrounding                  surrounding() const override;
         Field                        field() const override;
         bool                         hasFocus() const override;
+        std::optional<std::string>   takeSelection() override;
 
         void                         showPreedit(const std::string& text, bool underline) override;
         void                         clearPreedit() override;

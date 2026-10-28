@@ -23,6 +23,8 @@ keyboard_dropped=0
 fcitx5_reloaded=0
 manager=
 pattern=
+# Packages apt upgrades along with the install on a distribution that needs it.
+apt_upgrades=()
 workdir=
 
 say() { printf '%s\n' "$*"; }
@@ -113,18 +115,20 @@ detect_distribution() {
             ;;
     esac
 
-    case " $like " in
-        *" arch "*)
-            x86_64_only "$id" "$machine"
-            manager=pacman
-            pattern="${package_name}-[0-9][^ /]*-x86_64\\.pkg\\.tar\\.zst"
-            return
-            ;;
-    esac
-
     if command -v apt-get >/dev/null 2>&1; then
         # Kali Rolling is built from Debian testing.
         [ "$id" = kali ] && codename=forky
+        # deepin 23 (beige) and 25 (crimson) ship glibc 2.38 and fcitx5 5.1, above what the bookworm build needs.
+        case "$id:$codename" in
+            deepin:beige | deepin:crimson)
+                codename=bookworm
+                # deepin's fcitx5 GTK modules declare GLib 2.76 but need the GLib in its repository;
+                # on an image that has not been updated GTK apps then get no input method.
+                apt_upgrades=(libglib2.0-0)
+                ;;
+            *:bookworm | *:trixie | *:forky | *:jammy | *:noble | *:resolute | *:stonking) ;;
+            *) codename=$(debian_base "$codename") ;;
+        esac
         case "$codename" in
             # The IBus edition needs libadwaita 1.5, which these lack.
             bookworm | jammy) ibus_unsupported "$id $codename" ;;
@@ -138,7 +142,32 @@ detect_distribution() {
         esac
     fi
 
+    # Some Arch derivatives (Artix, Garuda) leave ID_LIKE out; pacman is what the package needs.
+    if [[ " $like " == *" arch "* ]] || { command -v pacman >/dev/null 2>&1 && ! command -v apt-get >/dev/null 2>&1; }; then
+        x86_64_only "$id" "$machine"
+        manager=pacman
+        pattern="${package_name}-[0-9][^ /]*-x86_64\\.pkg\\.tar\\.zst"
+        return
+    fi
+
     unsupported "${id:-bản phân phối này} ${codename:-$version}"
+}
+
+# Debian derivatives with a codename of their own (LMDE, Devuan, Parrot) still name the Debian
+# release they are built on, in DEBIAN_CODENAME or /etc/debian_version.
+debian_base() {
+    local base
+    # shellcheck disable=SC1091
+    base=$(. /etc/os-release && printf '%s' "${DEBIAN_CODENAME:-}")
+    if [ -n "$base" ]; then
+        printf '%s' "$base"
+        return
+    fi
+    case "$(cat /etc/debian_version 2>/dev/null)" in
+        12.*) printf bookworm ;;
+        13.*) printf trixie ;;
+        *) printf '%s' "$1" ;;
+    esac
 }
 
 confirm() {
@@ -207,13 +236,20 @@ install_package() {
         apt)
             # fcitx5 only recommends its GTK and Qt modules and im-config, and MX turns recommends
             # off. Naming them also covers a reinstall, which apt skips along with its recommends.
+            # im-config 1.1 (Kali, deepin) fails without a dialog program but only recommends whiptail.
             local extra candidate
             local -a extras=() candidates=()
-            [ "$edition" = fcitx5 ] && candidates=(im-config fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6)
+            [ "$edition" = fcitx5 ] && candidates=(im-config whiptail fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6)
+            candidates+=("${apt_upgrades[@]}")
             # Kali's images ship without package lists, and old lists name versions the mirror dropped.
-            as_root apt-get update
+            # A broken third-party source fails the update while the distribution's lists still refresh;
+            # the install below stops on its own if a package is really missing.
+            if ! as_root apt-get update; then
+                say "Một nguồn apt trên máy đang lỗi (xem dòng E: ở trên); vẫn thử cài tiếp."
+            fi
             for candidate in "${candidates[@]}"; do
-                extra=$(apt-cache policy "$candidate" 2>/dev/null | grep -m1 'Candidate:' || true)
+                # apt translates the label, "Ứng cử:" on a Vietnamese desktop.
+                extra=$(LC_ALL=C apt-cache policy "$candidate" 2>/dev/null | grep -m1 'Candidate:' || true)
                 case "$extra" in
                     *'(none)'* | '') ;;
                     *) extras+=("$candidate") ;;

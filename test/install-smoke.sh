@@ -37,6 +37,7 @@ esac
 
 user=tester
 home=/home/$user
+installer_lang=
 work=/srv/install-smoke
 failures=0
 bus=
@@ -69,9 +70,14 @@ prepare_system() {
             echo 'APT::Install-Recommends "0";' >/etc/apt/apt.conf.d/99no-recommends
         fi
         apt-get update -q
-        # im-config 1.1 exits without a dialog program; every Debian install but a container has whiptail.
         DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends \
-            sudo curl ca-certificates procps dbus dbus-bin whiptail
+            sudo curl ca-certificates procps dbus dbus-bin
+        # apt translates what it prints, and most users run a Vietnamese desktop.
+        if [ "$no_recommends" -eq 1 ]; then
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends locales
+            localedef -i vi_VN -f UTF-8 vi_VN.UTF-8
+            installer_lang=vi_VN.UTF-8
+        fi
         # Like a fresh Kali image, so the installer has to fetch the lists itself.
         rm -rf /var/lib/apt/lists/*
     else
@@ -100,7 +106,7 @@ as_user() {
 }
 
 installer() {
-    as_user bash "$work/install.sh" "$@"
+    as_user env ${installer_lang:+LANG="$installer_lang"} bash "$work/install.sh" "$@"
 }
 
 is_installed() {
@@ -129,6 +135,7 @@ check_packages() {
     check "fcitx5-ngosen is installed" is_installed fcitx5-ngosen
     if command -v apt-get >/dev/null 2>&1; then
         check "im-config is installed" is_installed im-config
+        check "whiptail is installed" is_installed whiptail
         check "fcitx5-frontend-gtk3 is installed" is_installed fcitx5-frontend-gtk3
     fi
 }
@@ -260,7 +267,8 @@ check_old_profile_cleanup() {
 
     # Without a profile fcitx5 builds one from the input methods listed for the desktop language.
     as_user rm -f "$profile" "$settings"
-    check "fcitx5 starts on a Vietnamese desktop without a profile" start_fcitx5 LANG=vi_VN.UTF-8
+    # Some images (LMDE) set LC_ALL and LANGUAGE, which override LANG.
+    check "fcitx5 starts on a Vietnamese desktop without a profile" start_fcitx5 -u LC_ALL -u LANGUAGE LANG=vi_VN.UTF-8
     check "fcitx5 stops on the Vietnamese desktop" stop_fcitx5
     check "a Vietnamese desktop gets ngosen in its first profile" has_line "$profile" 'Name=ngosen'
 

@@ -466,16 +466,21 @@ kwin_input_method_available() {
 # only when the setting changes. KWin reads the setting when the change signal arrives, so it stays
 # cleared until KWin has let go of the old one.
 restart_fcitx5_in_kwin() {
-    local launcher old tries=20
+    local launcher old tries=20 failed=0
     launcher=$(kreadconfig6 --file kwinrc --group Wayland --key InputMethod 2>/dev/null) || return 1
     [ -n "$launcher" ] || return 1
     old=$(pgrep -u "$(id -u)" -x fcitx5 | head -n 1 || true)
     kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod "" || return 1
+    # Without the setting KDE would start no input method at the next login either.
+    trap 'kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod "$launcher"; exit 130' INT TERM HUP
     while [ "$tries" -gt 0 ] && kwin_input_method_available; do
         sleep 0.1
         tries=$((tries - 1))
     done
-    kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod "$launcher" || return 1
+    kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod "$launcher" ||
+        kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod "$launcher" || failed=1
+    trap - INT TERM HUP
+    [ "$failed" -eq 0 ] || return 1
     wait_for_new_fcitx5 "$old"
 }
 
@@ -602,7 +607,8 @@ configure_fcitx5() {
     add_ngosen_to_profile
     [ "$was_running" -eq 1 ] || return 0
     [ "$in_kwin" -eq 1 ] && restart_fcitx5_in_kwin && return 0
-    fcitx5 -d >/dev/null 2>&1 || :
+    # A late fcitx5 from KWin would quit if this one already held the bus name.
+    pgrep -u "$(id -u)" -x fcitx5 >/dev/null || fcitx5 -d >/dev/null 2>&1 || :
 }
 
 # Adds an extension to GNOME's list; it starts at the next login. Returns 1 when it is already

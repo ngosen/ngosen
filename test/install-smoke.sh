@@ -337,6 +337,8 @@ case "$1 $2 $3" in
     "set org.gnome.shell enabled-extensions") printf '%s\n' "$4" >"$state" ;;
     "get org.gnome.desktop.input-sources sources") cat "$HOME/.stub-input-sources" 2>/dev/null || echo "[('xkb', 'us')]" ;;
     "set org.gnome.desktop.input-sources sources") printf '%s\n' "$4" >"$HOME/.stub-input-sources" ;;
+    "get org.gnome.desktop.input-sources mru-sources") cat "$HOME/.stub-recent-sources" 2>/dev/null || echo "@a(ss) []" ;;
+    "set org.gnome.desktop.input-sources mru-sources") printf '%s\n' "$4" >"$HOME/.stub-recent-sources" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -420,10 +422,13 @@ refuses() { ! "$@"; }
 has_ngosen_source() { grep -qF "('ibus', 'ngosen')" "$sources"; }
 lacks_ngosen_source() { ! has_ngosen_source; }
 fcitx5_masked() { has_line "$fcitx5_mask" 'Hidden=true'; }
+recent_sources=$home/.stub-recent-sources
+ngosen_first() { grep -q "^\[('ibus', 'ngosen')" "$recent_sources"; }
 
 check_ibus_edition() {
     use_gnome_stubs
     as_user rm -f "$changes" "$enabled_extensions" "$sources" "$im_env"
+    echo "[('xkb', 'us')]" | as_user tee "$recent_sources" >/dev/null
     check "fcitx5 edition install succeeds" installer --yes
     # Debian starts fcitx5 through im-config; Fedora and Arch ship this entry.
     mkdir -p /etc/xdg/autostart
@@ -437,6 +442,8 @@ check_ibus_edition() {
     check "it removes the fcitx5 environment" test ! -e "$im_env"
     check "it keeps fcitx5 from starting at login" fcitx5_masked
     check "it adds Ngó Sen to the input sources" has_ngosen_source
+    check "it logs in on Ngó Sen" ngosen_first
+    check "the keyboard is still a recent source" grep -qF "('xkb', 'us')" "$recent_sources"
     check "fcitx5 edition install again succeeds" installer --yes
     check "it lets fcitx5 start at login again" refuses fcitx5_masked
     check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus

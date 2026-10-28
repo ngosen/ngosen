@@ -72,6 +72,10 @@ namespace {
             return waited;
         }
 
+        static bool listsInputMethod(const fcitx::RawConfig& profile) {
+            return ngosen::listsInputMethod(profile, ngosen::InputMethod) || ngosen::listsInputMethod(profile, ngosen::LegacyInputMethod);
+        }
+
         struct ProfileChanges {
             bool renamed = false;
             bool dropped = false;
@@ -102,6 +106,13 @@ namespace {
             };
             fcitx::RawConfig profile;
             auto             changes = readChanged(profile);
+            if (dropKeyboard && !listsInputMethod(profile)) {
+                // Users who upgrade already list Ngó Sen. The engine loads only once switched to, so
+                // mark the settings now or adding Ngó Sen in the configtool looks like an upgrade.
+                ngosen::upgradeSettings(settings, std::filesystem::exists(confDir() / "ngosen.conf"));
+                fcitx::safeSaveAsIni(settings, type, "conf/ngosen.conf");
+                return;
+            }
             if (!changes.renamed && !changes.dropped) {
                 return;
             }

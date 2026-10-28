@@ -265,6 +265,18 @@ check_old_profile_cleanup() {
     check "the keyboard is dropped without settings" lacks_keyboard "$profile"
     check "no settings keep Ctrl+Space" has_line "$settings" '0=Control+space'
 
+    # A new user who adds Ngó Sen in the configtool starts fcitx5 before Ngó Sen ever loads.
+    printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[GroupOrder]\n0=Default\n' |
+        as_user tee "$profile" >/dev/null
+    as_user rm -f "$settings"
+    check "fcitx5 starts before Ngó Sen is added" start_fcitx5
+    check "fcitx5 stops before Ngó Sen is added" stop_fcitx5
+    printf '\n[Groups/0/Items/1]\nName=ngosen\nLayout=\n' | as_user tee -a "$profile" >/dev/null
+    check "fcitx5 starts with Ngó Sen just added" start_fcitx5
+    check "fcitx5 stops with Ngó Sen just added" stop_fcitx5
+    check "a new user keeps the keyboard" has_line "$profile" 'Name=keyboard-us'
+    check "a new user gets Ctrl+Shift" lacks_line "$settings" '0=Control+space'
+
     # Without a profile fcitx5 builds one from the input methods listed for the desktop language.
     as_user rm -f "$profile" "$settings"
     # Some images (LMDE) set LC_ALL and LANGUAGE, which override LANG.

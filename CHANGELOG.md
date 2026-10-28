@@ -19,6 +19,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Sửa lỗi Cứu dấu trên Chrome, Chromium và Brave ở phiên X11: bôi đen `nhanh` (bấm đúp hoặc
   Shift+mũi tên) rồi gõ `s` ra `nhánh`. Chỉ ở Gõ Sen; Tab hoặc Esc vẫn trả lại phím đã gõ
   (#360, #390).
+- `install.sh` trên máy để tiếng Việt từng bỏ sót im-config và module gõ fcitx5 cho app GTK, Qt trên Debian, Ubuntu, Mint, MX.
+  Nay cài đủ ở mọi ngôn ngữ, tránh thiếu gói khi cài lại hoặc trên MX không cài gói đề xuất (#388).
 
 ## [1.6.3-1] — 27/10/2026
 

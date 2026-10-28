@@ -1140,6 +1140,15 @@ namespace {
         expectTyped(plain, makeField("wayland", true), "ban ^<f ", "bàn ", "lock: Ctrl after a word");
     }
 
+    // Over GNOME's IBus bridge a slow app can apply our backspace after the commit sent behind it, which then
+    // erases the new letter (#362).
+    void testSlowBackspaceOverIbus() {
+        ngosen::test::AppQuirks slow;
+        slow.backspaceLagMs = 70;
+        FakeResources resources;
+        expectTyped(resources, makeField("ibus", true), "daasu ", "dấu ", "a backspace applied 70 ms late over IBus", slow, 120);
+    }
+
     // Letting go of Ctrl before Shift in a Shift+Ctrl chord is not a tap.
     void testLockWordNotOnChord() {
         realMode = ngosen::Mode::Sen;
@@ -1217,6 +1226,7 @@ int main() {
     testMacroKeepsSpace();
     testLockWord();
     testLockWordPreedit();
+    testSlowBackspaceOverIbus();
     testLockWordNotOnChord();
     testMacroCapitalized();
     testMacroKeyCase();

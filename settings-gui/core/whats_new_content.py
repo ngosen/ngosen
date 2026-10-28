@@ -14,6 +14,16 @@ from i18n import N_
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
     {
+        "version": "1.7",
+        "title": N_("Settings window in GTK"),
+        "how": N_(
+            "GNOME and Cinnamon open the GTK window, other desktops the Qt one. Switch on the "
+            "Appearance page, which installs the other window when it is missing."
+        ),
+        "example": "",
+        "target": ("setting", "SettingsToolkit"),
+    },
+    {
         "version": "1.6",
         "title": N_("Cứu chữ"),
         "how": N_(

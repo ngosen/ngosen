@@ -379,6 +379,13 @@ im_environment_entry() {
     printf 'GTK_IM_MODULE=fcitx\nQT_IM_MODULE=fcitx\nXMODIFIERS=@im=fcitx\nSDL_IM_MODULE=fcitx\n'
 }
 
+# The systemd user manager reads environment.d only when it starts, and it can outlive a logout;
+# without a reload the next login keeps the variables from before the change.
+reload_user_environment() {
+    command -v systemctl >/dev/null 2>&1 || return 0
+    systemctl --user daemon-reload >/dev/null 2>&1 || :
+}
+
 # GNOME offers fcitx5 no Wayland input-method protocol, so apps have to load fcitx5's own modules.
 set_im_environment() {
     local dir file
@@ -391,6 +398,7 @@ set_im_environment() {
     fi
     mkdir -p "$dir"
     im_environment_entry >"$file"
+    reload_user_environment
     # Debian's im-config otherwise picks IBus for X11 sessions and overrides the variables above.
     if command -v im-config >/dev/null 2>&1 && ! xinputrc_runs_fcitx5 && im_config_set fcitx5; then
         note_change im-config
@@ -410,6 +418,7 @@ set_xim_environment() {
     fi
     mkdir -p "$dir"
     echo 'XMODIFIERS=@im=fcitx' >"$file"
+    reload_user_environment
     session_changes+=("app X11 chạy qua XWayland (như Minecraft bản cũ) dùng fcitx5")
 }
 
@@ -769,6 +778,7 @@ undo_gnome_session() {
     im_env="$config/environment.d/90-ngosen.conf"
     if [ -e "$im_env" ] && [ "$(cat "$im_env")" = "$(im_environment_entry)" ]; then
         rm -f "$im_env"
+        reload_user_environment
         undone+=("app dùng lại IBus")
     elif [ -e "$im_env" ]; then
         say "  - giữ nguyên $im_env vì đã được sửa sau khi cài"

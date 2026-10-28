@@ -323,6 +323,8 @@ changes=$home/.local/state/ngosen/install-changes
 enabled_extensions=$home/.stub-enabled-extensions
 uninstalled_extensions=$home/.stub-uninstalled-extensions
 installed_extensions=$home/.stub-installed-extensions
+reloads=$home/.stub-reloads
+last_reload() { [ "$(tail -n 1 "$reloads" 2>/dev/null)" = "$1" ]; }
 
 # Stand-ins for GNOME 50.1's tools: the lists of enabled and installed extensions are files, and
 # the Input Method Panel counts as installed by the user unless the installed list exists.
@@ -357,6 +359,20 @@ case "$1" in
     *) exit 1 ;;
 esac
 STUB
+    # Records each reload of the user manager and whether the fcitx5 environment existed then.
+    cat >"$dir/systemctl" <<'STUB'
+#!/bin/bash
+if [ "$*" = "--user daemon-reload" ]; then
+    if [ -e "$HOME/.config/environment.d/90-ngosen.conf" ]; then
+        echo with-fcitx5 >>"$HOME/.stub-reloads"
+    else
+        echo without-fcitx5 >>"$HOME/.stub-reloads"
+    fi
+    exit 0
+fi
+[ -x /usr/bin/systemctl ] && exec /usr/bin/systemctl "$@"
+exit 1
+STUB
     # Only extensions.gnome.org is faked; the packages still come through the real curl.
     cat >"$dir/curl" <<'STUB'
 #!/bin/bash
@@ -375,11 +391,13 @@ extension_off() { ! extension_on "$1"; }
 
 check_extensions_turned_back() {
     use_gnome_stubs
-    as_user rm -f "$changes" "$enabled_extensions" "$uninstalled_extensions"
+    as_user rm -f "$changes" "$enabled_extensions" "$uninstalled_extensions" "$im_env" "$reloads"
     check "install on GNOME 50.1 succeeds" installer --yes
+    check "install has the user manager reread the environment" last_reload with-fcitx5
     check "install turns forward-keys on" extension_on forward-keys@ngosen.github.io
     check "install turns the Input Method Panel on" extension_on kimpanel@kde.org
     check "uninstall on GNOME 50.1 succeeds" installer --yes --uninstall
+    check "uninstall has the user manager reread the environment" last_reload without-fcitx5
     check "uninstall turns forward-keys off" extension_off forward-keys@ngosen.github.io
     check "uninstall turns the Input Method Panel off" extension_off kimpanel@kde.org
     check "an extension the install did not add stays installed" test ! -e "$uninstalled_extensions"
@@ -427,9 +445,10 @@ ngosen_first() { grep -q "^\[('ibus', 'ngosen')" "$recent_sources"; }
 
 check_ibus_edition() {
     use_gnome_stubs
-    as_user rm -f "$changes" "$enabled_extensions" "$sources" "$im_env"
+    as_user rm -f "$changes" "$enabled_extensions" "$sources" "$im_env" "$reloads"
     echo "[('xkb', 'us')]" | as_user tee "$recent_sources" >/dev/null
     check "fcitx5 edition install succeeds" installer --yes
+    check "the user manager rereads the fcitx5 environment" last_reload with-fcitx5
     # Debian starts fcitx5 through im-config; Fedora and Arch ship this entry.
     mkdir -p /etc/xdg/autostart
     cp /usr/share/applications/org.fcitx.Fcitx5.desktop /etc/xdg/autostart/
@@ -440,6 +459,7 @@ check_ibus_edition() {
     check "answering yes to the switch succeeds" ibus_install_answering c
     check "it installs the IBus edition" is_installed ibus-ngosen
     check "it removes the fcitx5 environment" test ! -e "$im_env"
+    check "the user manager rereads the environment without it" last_reload without-fcitx5
     check "it keeps fcitx5 from starting at login" fcitx5_masked
     check "it adds Ngó Sen to the input sources" has_ngosen_source
     check "it logs in on Ngó Sen" ngosen_first

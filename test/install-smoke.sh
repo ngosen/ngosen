@@ -267,7 +267,8 @@ check_old_profile_cleanup() {
 
     # Without a profile fcitx5 builds one from the input methods listed for the desktop language.
     as_user rm -f "$profile" "$settings"
-    check "fcitx5 starts on a Vietnamese desktop without a profile" start_fcitx5 LANG=vi_VN.UTF-8
+    # Some images (LMDE) set LC_ALL and LANGUAGE, which override LANG.
+    check "fcitx5 starts on a Vietnamese desktop without a profile" start_fcitx5 -u LC_ALL -u LANGUAGE LANG=vi_VN.UTF-8
     check "fcitx5 stops on the Vietnamese desktop" stop_fcitx5
     check "a Vietnamese desktop gets ngosen in its first profile" has_line "$profile" 'Name=ngosen'
 

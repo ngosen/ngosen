@@ -797,7 +797,9 @@ undo_gnome_session() {
     fi
     undo_im_config
     autostart="$config/autostart/org.fcitx.Fcitx5.desktop"
-    if cmp -s /usr/share/applications/org.fcitx.Fcitx5.desktop "$autostart"; then
+    # Not cmp: diffutils is missing on minimal systems.
+    if [ -e "$autostart" ] &&
+        [ "$(cat "$autostart")" = "$(cat /usr/share/applications/org.fcitx.Fcitx5.desktop 2>/dev/null)" ]; then
         rm -f "$autostart"
         undone+=("fcitx5 thôi tự chạy khi đăng nhập")
     fi

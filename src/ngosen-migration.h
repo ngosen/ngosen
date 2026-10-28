@@ -27,6 +27,9 @@ namespace ngosen {
     // drops `from` instead. Returns whether the profile changed.
     bool renameProfileInputMethod(fcitx::RawConfig& profile, const std::string& from, const std::string& to);
 
+    // Whether any group of an fcitx5 profile lists `inputMethod`.
+    bool listsInputMethod(const fcitx::RawConfig& profile, const std::string& inputMethod);
+
     // Removes the keyboard from each group holding only `inputMethod` and one keyboard layout, so
     // fcitx5's switch key reaches Ngó Sen. The layout moves to the group's default layout if unset;
     // a group whose default layout is another one stays.
@@ -44,6 +47,10 @@ namespace ngosen {
     // The feature release (X.Y of `version`) to tell the user about, or nothing: a bug-fix release
     // and a fresh install are quiet. `saved` says the settings file existed. Updates `settings`.
     std::string releaseToAnnounce(fcitx::RawConfig& settings, bool saved, const std::string& version);
+
+    // Settings for an account that adds Ngó Sen before it ever ran there: current, so no upgrade
+    // applies, and with nothing to announce.
+    fcitx::RawConfig newAccountSettings(const std::string& version);
 
     // Copies dir/old to dir/new for each pair where only the old file exists. The old file stays, so
     // going back to an earlier version keeps its settings. Returns the new names that were written.

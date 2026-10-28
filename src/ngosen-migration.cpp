@@ -135,6 +135,25 @@ namespace ngosen {
         return changed;
     }
 
+    bool listsInputMethod(const fcitx::RawConfig& profile, const std::string& inputMethod) {
+        auto groups = profile.get("Groups");
+        if (!groups) {
+            return false;
+        }
+        for (const auto& key : groups->subItems()) {
+            auto items = groups->get(key + "/Items");
+            if (!items) {
+                continue;
+            }
+            for (const auto& item : readItems(*items)) {
+                if (item.name == inputMethod) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     bool dropLoneKeyboard(fcitx::RawConfig& profile, const std::string& inputMethod) {
         auto groups = profile.get("Groups");
         if (!groups) {
@@ -183,6 +202,13 @@ namespace ngosen {
         settings.setValueByPath("AnnouncedVersion", current);
         // A fresh install has nothing to catch up on.
         return saved ? current : std::string();
+    }
+
+    fcitx::RawConfig newAccountSettings(const std::string& version) {
+        fcitx::RawConfig settings;
+        upgradeSettings(settings, false);
+        releaseToAnnounce(settings, false, version);
+        return settings;
     }
 
     bool copySwitchKeys(const fcitx::RawConfig& fcitxConfig, fcitx::RawConfig& settings) {

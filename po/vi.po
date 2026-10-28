@@ -964,6 +964,14 @@ msgstr "Xác nhận cài đặt lại"
 msgid "Restore all settings to defaults?"
 msgstr "Bạn có chắc chắn muốn khôi phục tất cả cài đặt về giá trị mặc định?"
 
+#: settings-gui/ui/main_window.py
+msgid "&Restore defaults"
+msgstr "&Khôi phục mặc định"
+
+#: settings-gui/ui/pages/keymap_editor.py
+msgid "&Replace"
+msgstr "&Thay thế"
+
 #: settings-gui/ui/main_window.py:287
 msgid "Cannot Save"
 msgstr "Không thể lưu"

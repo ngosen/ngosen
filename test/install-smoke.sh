@@ -225,6 +225,24 @@ check_reinstall_over_running_fcitx5() {
     bus=
 }
 
+addon_state() { stat -c '%i %Z' "$(find /usr/lib /usr/lib64 -maxdepth 3 -name libngosen.so | head -n 1)"; }
+fcitx5_pid() { pgrep -u "$user" -x fcitx5 | head -n 1; }
+
+check_second_run() {
+    local addon pid
+    bus=$(sudo -u "$user" dbus-daemon --session --fork --print-address=1 | head -n 1)
+    check "fcitx5 starts before the second run" start_fcitx5
+    pid=$(fcitx5_pid)
+    addon=$(addon_state)
+    check "a second run succeeds" install_logged
+    check "it says this version is already installed" grep -qF "đã được cài từ trước" "$install_log"
+    check "it leaves the package as it is" test "$(addon_state)" = "$addon"
+    check "it leaves fcitx5 running" test "$(fcitx5_pid)" = "$pid"
+    check "fcitx5 stops after the second run" stop_fcitx5
+    pkill -u "$user" dbus-daemon || :
+    bus=
+}
+
 # A profile from before Ngó Sen had its own toggle key lists a keyboard next to it, and fcitx5's
 # Ctrl+Space switched between them; the first start of this version drops the keyboard.
 check_old_profile_cleanup() {
@@ -493,9 +511,13 @@ main() {
 
     echo "== install"
     # A failed install leaves the session files half done, so only the packages say anything.
-    check "install succeeds" installer --yes
+    check "install succeeds" install_logged
     check_packages
-    [ "$failures" -eq 0 ] || finish
+    [ "$failures" -eq 0 ] || {
+        cat "$install_log"
+        finish
+    }
+    check "the package leaves the next steps to install.sh" refuses grep -qF -- "--- Cấu hình Ngó Sen ---" "$install_log"
     check_session_files
 
     echo "== uninstall"
@@ -504,6 +526,9 @@ main() {
 
     echo "== reinstall over a running fcitx5"
     check_reinstall_over_running_fcitx5
+
+    echo "== second run of the same version"
+    check_second_run
 
     echo "== profile from before the toggle key"
     check_old_profile_cleanup

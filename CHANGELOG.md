@@ -19,6 +19,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Người cài gói rồi tự thêm Ngó Sen trong Fcitx5 Configuration không còn bị mất bàn phím tiếng Anh và đổi sang Ctrl+Space sau lần khởi động fcitx5 kế tiếp; máy mới giữ Ctrl+Shift (#419).
 - Chuyển từ bản fcitx5 sang bản GNOME (IBus) bằng `install.sh --ibus`: đăng nhập lại là đang ở Ngó Sen, chữ đầu tiên không còn ra không dấu (#420).
 - install.sh trên Kali và các bản cập nhật liên tục không còn kéo theo nâng cấp dở các gói Qt: chỉ cài module GTK/Qt của fcitx5 còn thiếu, gói đã có để nguyên (#418).
+- KDE Wayland: cài hoặc nâng cấp xong thì fcitx5 được KDE bật lại như lúc đăng nhập, nên Ngó Sen vẫn biết đang gõ trong app nào (nhớ chế độ riêng từng app) mà không cần đăng nhập lại (#428).
 
 ### Tài liệu
 

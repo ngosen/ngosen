@@ -103,6 +103,7 @@ fi
 - Preedit: Super + letter shortcuts reach the desktop instead of being typed (#391, #392).
 - Settings window: opens with a user dictionary that is not UTF-8 (#376); undo gives back only the change just saved (#383).
 - install.sh: installs the GTK and Qt modules on a Vietnamese desktop (#388), goes on past a broken apt source (#399), and installs on deepin 23 and 25 (#397), LMDE, Devuan, Parrot and Artix (#403).
+- install.sh: pulls whiptail with im-config, which im-config 1.1 on deepin and Kali needs (#408).
 - The .deb accepts python3-pyqt6 without python3-qtpy (#397).
 
 * Tue Oct 27 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.6.3-1

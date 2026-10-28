@@ -923,6 +923,14 @@ msgstr ""
 msgid "Restore all settings to defaults?"
 msgstr ""
 
+#: settings-gui/ui/main_window.py
+msgid "&Restore defaults"
+msgstr ""
+
+#: settings-gui/ui/pages/keymap_editor.py
+msgid "&Replace"
+msgstr ""
+
 #: settings-gui/ui/main_window.py:287
 msgid "Cannot Save"
 msgstr ""

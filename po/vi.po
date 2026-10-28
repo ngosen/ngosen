@@ -287,6 +287,10 @@ msgstr "Màu biểu tượng"
 msgid "Interface Language"
 msgstr "Ngôn ngữ giao diện"
 
+#: src/ngosen-config.h
+msgid "Settings Window"
+msgstr "Cửa sổ cài đặt"
+
 #: src/ngosen-engine.cpp:215
 msgid "Charset"
 msgstr "Bảng mã"
@@ -314,6 +318,18 @@ msgstr "Tự viết hoa chữ đầu văn bản và đầu dòng (thử nghiệm
 #: src/ngosen-engine.cpp:252
 msgid "Settings"
 msgstr "Cài đặt"
+
+#: src/ngosen-engine.cpp
+msgid "What's new in Ngó Sen?"
+msgstr "Ngó Sen có gì mới?"
+
+#: src/ngosen-engine.cpp
+msgid "See Cứu chữ, Cứu dấu, the English/Vietnamese key and typing tips."
+msgstr "Xem Cứu chữ, Cứu dấu, phím chuyển Anh/Việt và mẹo gõ."
+
+#: src/ngosen-engine.cpp
+msgid "Show"
+msgstr "Xem"
 
 #: src/ngosen-engine.cpp:991 src/ngosen-engine.cpp:1030
 msgid "Default Typing"
@@ -389,11 +405,6 @@ msgstr "Đề xuất tính năng"
 #: settings-gui/ui/pages/about.py:148
 msgid "Developed by Nguyen Phi"
 msgstr "Phát triển bởi Nguyễn Phi"
-
-#: settings-gui/ui/pages/about.py
-#, python-brace-format
-msgid "Based on the code of {lotus} and {vmk}."
-msgstr "Dựa trên mã của {lotus} và {vmk}."
 
 #: settings-gui/ui/pages/about.py:184
 msgid "Licensed under the GNU General Public License v3.0"
@@ -1188,8 +1199,20 @@ msgid "Copy result"
 msgstr "Chép kết quả"
 
 #: settings-gui/ui/system_check_dialog.py
-msgid "Report bug…"
-msgstr "Báo cáo lỗi…"
+msgid "Message on Facebook…"
+msgstr "Nhắn qua Facebook…"
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Report on GitHub…"
+msgstr "Báo lỗi trên GitHub…"
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Copied the result."
+msgstr "Đã chép kết quả."
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Copied the result. Paste it into the message and say what went wrong."
+msgstr "Đã chép kết quả. Dán vào tin nhắn rồi kể lỗi gặp phải."
 
 #: settings-gui/ui/system_check_dialog.py
 #, python-brace-format
@@ -1431,3 +1454,198 @@ msgstr "Tắt: dùng biểu tượng một màu, theo màu chọn bên dưới."
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
 msgstr "Chỉ dùng cho biểu tượng một màu. Sáng hợp panel sáng, Tối hợp panel tối, Tự động theo chế độ sáng/tối của máy."
+
+#: settings-gui/ui/main_window.py
+msgid "What's new & tips"
+msgstr "Có gì mới & mẹo"
+
+#: settings-gui/ui/pages/whats_new.py
+#, python-brace-format
+msgid "New in {}"
+msgstr "Mới trong {}"
+
+#: settings-gui/ui/pages/whats_new.py
+msgid "Tips"
+msgstr "Mẹo hay"
+
+#: settings-gui/ui/pages/whats_new.py
+msgid "Open setting"
+msgstr "Mở cài đặt"
+
+#: settings-gui/ui/pages/whats_new.py
+#, python-brace-format
+msgid "Open the {} page"
+msgstr "Mở trang {}"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+#, python-brace-format
+msgid "Tip: {}"
+msgstr "Mẹo: {}"
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Cứu chữ"
+msgstr "Cứu chữ"
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Forgot to switch Vietnamese on? Press the English/Vietnamese key and the word is fixed; Tab or Esc gives back what you typed."
+msgstr "Quên bật tiếng Việt, bấm phím chuyển Anh/Việt để cứu chữ; Tab hoặc Esc trả lại chữ cũ."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Cứu dấu"
+msgstr "Cứu dấu"
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Select a word, or click right after it, and type a tone key to change its tone mark; Tab or Esc gives it back."
+msgstr "Bôi đen hoặc bấm ngay sau chữ rồi gõ dấu thanh để đổi dấu; Tab hoặc Esc trả lại."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "English/Vietnamese key"
+msgstr "Phím chuyển Anh/Việt"
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A new install switches with Ctrl+Shift, an older one keeps Ctrl+Space; Ngó Sen remembers the mode across logouts."
+msgstr "Cài mới dùng Ctrl+Shift, cài từ trước giữ Ctrl+Space; Ngó Sen nhớ chế độ qua lần đăng xuất."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Press ` to pick Sen, Preedit, Emoji Picker or OFF for the app in use."
+msgstr "Bấm ` để chọn Gõ Sen, Gạch chân, Chọn Emoji hoặc Tắt cho app đang dùng."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Tap Ctrl alone to keep the word as typed: tunx, Ctrl, Space keeps tũn."
+msgstr "Nhấp thả Ctrl để chốt chữ như đã gõ: tunx, Ctrl, Space giữ tũn."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A macro ko → không also types Không when you type Ko."
+msgstr "Gõ tắt ko → không thì gõ Ko ra Không."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "] types ư and [ types ơ, so ch]a gives chưa. Off by default."
+msgstr "] ra ư, [ ra ơ, nên ch]a ra chưa. Mặc định tắt."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Space twice types a period. Off by default."
+msgstr "Bấm Space hai lần ra dấu chấm. Mặc định tắt."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "-- types an em dash (—). Off by default."
+msgstr "-- ra gạch dài (—). Mặc định tắt."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A capital letter after . ! ? and Enter. Off by default; the tray menu's Auto Capitalize pauses it."
+msgstr "Tự viết hoa sau . ! ? và Enter. Mặc định tắt; mục Tự viết hoa trong menu khay tắt tạm."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "hoà or hòa? Pick with “Use oà, uý (Instead Of òa, úy)”."
+msgstr "hoà hay hòa? Chọn ở ô “Bỏ dấu kiểu mới (oà, uý)”."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "$DATE and $TIME in a macro type today's date and time: hn → Hôm nay $DATE."
+msgstr "$DATE và $TIME trong gõ tắt ra ngày giờ hôm nay: hn → Hôm nay $DATE."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Typing wrong in some app? “Check my machine…” on the About page says why."
+msgstr "Gõ lỗi trong app nào đó? “Kiểm tra máy tôi…” ở trang Giới thiệu cho biết vì sao."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "“Save typing log” in the tray menu records what you type, to attach to a bug report."
+msgstr "“Lưu nhật ký gõ” trong menu khay ghi lại chữ gõ, để gửi kèm báo lỗi."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "“Back Up…” and “Restore…” below keep your settings, macros and dictionary."
+msgstr "“Sao lưu…” và “Khôi phục…” ở dưới giữ cài đặt, gõ tắt và từ điển."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "“Back Up…” and “Restore…” in the window menu keep your settings, macros and dictionary."
+msgstr "“Sao lưu…” và “Khôi phục…” trong menu của cửa sổ giữ cài đặt, gõ tắt và từ điển."
+
+#: settings-gui/ui_gtk/window.py
+msgid "Restore defaults…"
+msgstr "Đưa về mặc định…"
+
+#: settings-gui/ui_gtk/window.py
+msgid "Menu"
+msgstr "Menu"
+
+#: settings-gui/ui_gtk/window.py
+msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
+msgstr "Gõ tắt, từ đã thêm vào từ điển, phím tự đặt và kiểu gõ đã nhớ cho từng app cũng bị xoá. Có thể hoàn tác ngay sau đó."
+
+#: settings-gui/ui_gtk/window.py
+msgid "Could not restore every default. Check that fcitx5 is running."
+msgstr "Chưa đưa được mọi thứ về mặc định. Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/ui_gtk/check_dialog.py
+msgid "Send the result"
+msgstr "Gửi kết quả"
+
+#: settings-gui/ui_gtk/window.py
+msgid "Ngó Sen backup"
+msgstr "Bản sao lưu Ngó Sen"
+
+#: settings-gui/core/catalog.py
+msgid "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
+msgstr "GTK hợp với GNOME và Cinnamon, Qt hợp với KDE và phần lớn desktop khác."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "This window uses {}"
+msgstr "Cửa sổ này dùng bản {}"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Switch to {}…"
+msgstr "Đổi sang bản {}…"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Switch to {}"
+msgstr "Đổi sang bản {}"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Install the {} window with your package manager."
+msgstr "Hãy cài bản {} bằng trình quản lý gói của máy."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "The {} window needs these packages: {}."
+msgstr "Bản {} cần cài các gói: {}."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Checking the download size…"
+msgstr "Đang xem dung lượng tải về…"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Download: about {}."
+msgstr "Tải về khoảng {}."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Copy Command"
+msgstr "Chép lệnh"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Install"
+msgstr "Cài ngay"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Installing…"
+msgstr "Đang cài…"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Could not install"
+msgstr "Không cài được"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Run this command in a terminal:"
+msgstr "Hãy chạy lệnh này trong terminal:"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Could not switch"
+msgstr "Không đổi được"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Check that fcitx5 is running."
+msgstr "Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Settings window in GTK"
+msgstr "Cửa sổ cài đặt bản GTK"
+
+#: settings-gui/core/whats_new_content.py
+msgid "GNOME and Cinnamon open the GTK window, other desktops the Qt one. Switch on the Appearance page, which offers to install the other window when it is missing."
+msgstr "GNOME và Cinnamon mở bản GTK, desktop khác mở bản Qt. Đổi bản ở trang Giao diện; chưa có bản kia thì được mời cài ngay tại đó."

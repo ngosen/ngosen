@@ -131,8 +131,27 @@ hidden_launcher=$home/.local/share/applications/org.fcitx.Fcitx5.desktop
 kwinrc=$home/.config/kwinrc
 kwin_im='InputMethod=/usr/share/applications/org.fcitx.Fcitx5.desktop'
 
+# Asks the installed launcher, as the user on this desktop, which window it would open.
+settings_toolkit() {
+    as_user python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import main; print(main.toolkit())' \
+        /usr/share/fcitx5-ngosen/settings-gui
+}
+
+opens_settings_in() { [ "$(settings_toolkit)" = "$1" ]; }
+
+has_no_qt() {
+    as_user python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import main; sys.exit(main.has_qt())' \
+        /usr/share/fcitx5-ngosen/settings-gui
+}
+
 check_packages() {
     check "fcitx5-ngosen is installed" is_installed fcitx5-ngosen
+    if [ "$session" = gnome ]; then
+        check "the settings window opens in GTK" opens_settings_in gtk
+        check "no Qt is installed for it" has_no_qt
+    else
+        check "the settings window opens in Qt" opens_settings_in qt
+    fi
     if command -v apt-get >/dev/null 2>&1; then
         check "im-config is installed" is_installed im-config
         check "whiptail is installed" is_installed whiptail
@@ -217,7 +236,10 @@ check_reinstall_over_running_fcitx5() {
     cp "$saved" "$profile"
 
     check "fcitx5 starts again" start_fcitx5
-    check "reinstall over a running fcitx5 succeeds" installer --yes
+    check "reinstall over a running fcitx5 succeeds" install_logged
+    if [ "$session" = gnome ]; then
+        check "a running fcitx5 after --uninstall still gets the explanation" explains_gnome_setup
+    fi
     check "fcitx5 stops after the reinstall" stop_fcitx5
     check "profile lists ngosen after fcitx5 exits" has_line "$profile" 'Name=ngosen'
 
@@ -278,8 +300,29 @@ check_old_profile_cleanup() {
 
 install_log=$work/install.log
 install_logged() { installer --yes >"$install_log" 2>&1; }
+# Keeps the output in the CI log too, for when the install fails.
+install_shown() {
+    installer --yes 2>&1 | tee "$install_log"
+    return "${PIPESTATUS[0]}"
+}
 install_names() { grep -q "Bấm $1 " "$install_log"; }
+offers_ibus() { grep -qF -- "| bash -s -- --ibus" "$install_log"; }
+lacks_ibus_offer() { ! offers_ibus; }
+explains_gnome_setup() { grep -qF "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus" "$install_log"; }
+lacks_gnome_explanation() { ! explains_gnome_setup; }
+lists_undone_under_a_heading() { grep -A1 -F "Đã trả lại những gì bản fcitx5 đặt:" "$install_log" | grep -q '^  - '; }
 fcitx5_stopped() { ! fcitx5_running; }
+
+# A release listing an IBus package under this machine's name is enough for the offer.
+check_ibus_offer() {
+    mkdir -p "$work/ibus-release"
+    sed 's/fcitx5-ngosen/ibus-ngosen/' "$work/release/SHA256SUMS" >"$work/ibus-release/SHA256SUMS"
+    chmod -R a+rX "$work/ibus-release"
+    check "install with an IBus package listed succeeds" install_logged
+    check "it offers the IBus edition" offers_ibus
+    check "uninstall after that succeeds" installer --yes --uninstall
+    rm -rf "$work/ibus-release"
+}
 
 # Without a running fcitx5 the installer names the key before the addon has run, so it must
 # predict whether the keyboard goes.
@@ -324,6 +367,10 @@ case "$1 $2 $3" in
     "set org.gnome.shell enabled-extensions") printf '%s\n' "$4" >"$state" ;;
     "get org.gnome.desktop.input-sources sources") cat "$HOME/.stub-input-sources" 2>/dev/null || echo "[('xkb', 'us')]" ;;
     "set org.gnome.desktop.input-sources sources") printf '%s\n' "$4" >"$HOME/.stub-input-sources" ;;
+    "get org.freedesktop.ibus.general preload-engines") cat "$HOME/.stub-ibus-engines" 2>/dev/null || echo "@as []" ;;
+    "set org.freedesktop.ibus.general preload-engines") printf '%s\n' "$4" >"$HOME/.stub-ibus-engines" ;;
+    "get org.freedesktop.ibus.general.hotkey triggers") cat "$HOME/.stub-ibus-triggers" 2>/dev/null || echo "['<Super>space']" ;;
+    "set org.freedesktop.ibus.general.hotkey triggers") printf '%s\n' "$4" >"$HOME/.stub-ibus-triggers" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -402,10 +449,20 @@ fcitx5_mask=$home/.config/autostart/org.fcitx.Fcitx5.desktop
 ibus_install_answering() {
     printf '%s\n' "$1" | as_user script -qec "bash $work/install.sh --yes --ibus" /dev/null >"$install_log" 2>&1
 }
+fcitx5_install_answering() {
+    printf '%s\n' "$1" | as_user script -qec "bash $work/install.sh --yes" /dev/null >"$install_log" 2>&1
+}
 ibus_install_without_terminal() { installer --yes --ibus </dev/null >"$install_log" 2>&1; }
+fcitx5_install_without_terminal() { installer --yes </dev/null >"$install_log" 2>&1; }
 refuses() { ! "$@"; }
 has_ngosen_source() { grep -qF "('ibus', 'ngosen')" "$sources"; }
 lacks_ngosen_source() { ! has_ngosen_source; }
+engines=$home/.stub-ibus-engines
+has_ngosen_engine() { grep -qF "'ngosen'" "$engines"; }
+lacks_ngosen_engine() { ! has_ngosen_engine; }
+triggers=$home/.stub-ibus-triggers
+# Read as the gsettings stub reports them, default included.
+switch_keys_are() { [ "$(cat "$triggers" 2>/dev/null || echo "['<Super>space']")" = "$1" ]; }
 fcitx5_masked() { has_line "$fcitx5_mask" 'Hidden=true'; }
 
 check_ibus_edition() {
@@ -424,13 +481,49 @@ check_ibus_edition() {
     check "it removes the fcitx5 environment" test ! -e "$im_env"
     check "it keeps fcitx5 from starting at login" fcitx5_masked
     check "it adds Ngó Sen to the input sources" has_ngosen_source
-    check "fcitx5 edition install again succeeds" installer --yes
+    check "fcitx5 install without a terminal refuses to switch back" refuses fcitx5_install_without_terminal
+    check "and keeps the IBus edition" is_installed ibus-ngosen
+    check "switching back to the fcitx5 edition succeeds" fcitx5_install_answering c
     check "it lets fcitx5 start at login again" refuses fcitx5_masked
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from the input sources" lacks_ngosen_source
+    check "it sets up the fcitx5 edition" test -e "$im_env"
+    check "IBus install over that succeeds" ibus_install_answering c
     check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
     check "it removes the IBus edition" is_removed ibus-ngosen
     check "it removes Ngó Sen from the input sources" lacks_ngosen_source
     check "the fcitx5 edition stays" is_installed fcitx5-ngosen
     rm -f /etc/xdg/autostart/org.fcitx.Fcitx5.desktop
+    stub_path=
+}
+
+check_ibus_x11() {
+    local xinputrc=$home/.xinputrc
+    use_gnome_stubs
+    as_user rm -f "$changes" "$engines" "$xinputrc" "$triggers"
+    check "fcitx5 edition install succeeds" installer --yes
+    check "switching to the IBus edition succeeds" ibus_install_answering c
+    check "it installs the IBus edition" is_installed ibus-ngosen
+    check "im-config picks IBus" has_line "$xinputrc" 'run_im ibus'
+    check "it adds Ngó Sen to IBus's engines" has_ngosen_engine
+    check "it adds Ctrl+Space to IBus's switch keys" switch_keys_are "['<Super>space', '<Control>space']"
+    check "switching back to the fcitx5 edition succeeds" fcitx5_install_answering c
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from IBus's engines" lacks_ngosen_engine
+    check "it takes Ctrl+Space back out" switch_keys_are "['<Super>space']"
+    check "im-config picks fcitx5 again" has_line "$xinputrc" 'run_im fcitx5'
+    check "IBus install over that succeeds" ibus_install_answering c
+    check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from IBus's engines" lacks_ngosen_engine
+    check "im-config no longer picks IBus" lacks_line "$xinputrc" 'run_im ibus'
+
+    echo 'run_im fcitx5' | as_user tee "$xinputrc" >/dev/null
+    check "IBus install over a hand-written .xinputrc succeeds" ibus_install_answering c
+    check "it keeps the hand-written .xinputrc" has_line "$xinputrc" 'run_im fcitx5'
+    check "it says which line to change" grep -qF 'run_im ibus' "$install_log"
+    check "uninstalling after that succeeds" installer --yes --uninstall --ibus
+    check "the hand-written .xinputrc stays" has_line "$xinputrc" 'run_im fcitx5'
     stub_path=
 }
 
@@ -447,14 +540,32 @@ main() {
 
     echo "== install"
     # A failed install leaves the session files half done, so only the packages say anything.
-    check "install succeeds" installer --yes
+    check "install succeeds" install_shown
+    if [ "$session" = gnome ] && [ -n "$ibus_release_dir" ]; then
+        check "it offers the IBus edition" offers_ibus
+    else
+        check "it offers no IBus edition without its package" lacks_ibus_offer
+    fi
     check_packages
     [ "$failures" -eq 0 ] || finish
     check_session_files
+    if [ "$session" = gnome ]; then
+        check "it explains the GNOME setup first" explains_gnome_setup
+        check "a second install succeeds" install_logged
+        check "an account already on fcitx5 gets no explanation" lacks_gnome_explanation
+    fi
 
     echo "== uninstall"
-    check "uninstall succeeds" installer --yes --uninstall
+    check "uninstall succeeds" uninstall_logged
+    if [ "$session" = gnome ]; then
+        check "what it undid is listed under a heading" lists_undone_under_a_heading
+    fi
     check_uninstalled_state
+
+    if [ "$session" = gnome ] && [ -z "$ibus_release_dir" ]; then
+        echo "== IBus edition offered where it has a package"
+        check_ibus_offer
+    fi
 
     echo "== reinstall over a running fcitx5"
     check_reinstall_over_running_fcitx5
@@ -467,6 +578,10 @@ main() {
         check_toggle_key_message
         echo "== im-config the user set"
         check_user_im_config_kept
+        if [ -n "$ibus_release_dir" ]; then
+            echo "== IBus edition on X11"
+            check_ibus_x11
+        fi
     fi
 
     if [ "$session" = gnome ]; then

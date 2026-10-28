@@ -3,16 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Finds settings by the words shown on screen."""
 
-import unicodedata
-
+from core.text import fold
 from qtpy.QtWidgets import QCheckBox, QLabel, QRadioButton
-
-
-def fold(text):
-    """Lower case without tone marks, so "chinh ta" finds "Chính tả"."""
-    text = text.replace("đ", "d").replace("Đ", "D")
-    decomposed = unicodedata.normalize("NFD", text)
-    return "".join(c for c in decomposed if not unicodedata.combining(c)).casefold()
 
 
 def find(pages, query):

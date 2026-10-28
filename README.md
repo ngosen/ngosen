@@ -5,7 +5,9 @@ fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều t�
 [Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, đơn giản hơn và ít
 tính năng hơn bản fcitx5.
 
-Cửa sổ cài đặt dùng giao diện sáng, tối của máy trên KDE và GNOME. Đổi gì lưu ngay, có nút Hoàn tác.
+Cửa sổ cài đặt có hai bản: Qt và GTK (giống app GNOME). GNOME và Linux Mint (Cinnamon) mở bản GTK,
+các desktop khác mở bản Qt. Cửa sổ dùng giao diện sáng, tối của máy trên KDE và GNOME; đổi gì lưu
+ngay, có nút Hoàn tác.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
@@ -29,6 +31,10 @@ Cửa sổ cài đặt dùng giao diện sáng, tối của máy trên KDE và G
   Có thể ẩn các mục ít dùng ở trang Giao diện; “Cài đặt” và “Lưu nhật ký gõ” luôn hiện.
 - Cửa sổ cài đặt: có giải thích ngắn dưới từng tuỳ chọn ở trang Gõ chữ, Phím tắt và Giao diện,
   thường kèm ví dụ. Trang Giao diện có phần xem trước biểu tượng tray và chọn ngôn ngữ giao diện.
+  Trang "Có gì mới & mẹo" ghi cách dùng các tính năng mới và mẹo gõ; sau khi cập nhật lên version có tính
+  năng mới, một thông báo hiện một lần để mở trang này.
+  Trang Giao diện có nút đổi sang bản kia (Qt hoặc GTK), máy chưa có thì cài ngay tại đó; bản GTK cần
+  libadwaita 1.5 trở lên (Ubuntu 24.04, Linux Mint 22, Debian 13), còn Debian 12 và Mint 21 chỉ có bản Qt.
 
 Chi tiết từng version ở [CHANGELOG.md](CHANGELOG.md).
 
@@ -46,8 +52,8 @@ Telex được dùng và test hằng ngày. VNI và các kiểu khác dùng đư
 
 ## Cài
 
-Lệnh dưới đây cài cho Fedora, Ubuntu, Debian, Kali, deepin, LMDE, Devuan, Parrot, Arch, Artix, CachyOS và
-openSUSE Tumbleweed trên x86_64.
+Lệnh dưới đây cài cho Fedora, Ubuntu (từ 24.04), Debian (từ 12), Kali, deepin, LMDE, Devuan, Parrot, Arch, Artix,
+CachyOS và openSUSE Tumbleweed trên x86_64. Ubuntu 22.04 và Linux Mint 21 dùng được tới version 1.6.4.
 Fedora, Ubuntu, Debian và Kali còn có gói cho ARM 64-bit (aarch64):
 
 ```
@@ -80,6 +86,10 @@ xong là gõ được ngay, không phải thiết lập gì thêm:
 ```
 curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus
 ```
+
+Trên Xfce, Cinnamon, MATE (X11, Debian, Ubuntu, Linux Mint), lệnh dùng im-config đặt IBus làm bộ gõ và thêm
+Ngó Sen; đăng xuất rồi đăng nhập lại, bấm Ctrl+Space để chuyển qua lại Ngó Sen và bàn phím thường. Muốn quay lại bản fcitx5 thì chạy lệnh cài bản fcitx5 ở
+trên; lệnh hỏi lại rồi gỡ bản IBus.
 
 Xem cách cài và các giới hạn trong [README của Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen#readme).
 
@@ -123,9 +133,6 @@ printf '\n[ngosen]\nServer = https://ngosen.github.io/ngosen/arch/$arch\n' | sud
 sudo pacman -Syu fcitx5-ngosen
 ```
 
-[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) cũng có trong repo APT và pacman ở trên: thay
-`fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
-
 openSUSE Tumbleweed dùng repo zypper (x86_64):
 
 ```
@@ -135,6 +142,9 @@ sudo zypper install fcitx5-ngosen
 ```
 
 zypper hỏi một lần có tin cậy key không; đối chiếu fingerprint rồi chọn tin cậy.
+
+[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) cũng có trong repo APT, pacman và zypper ở trên: thay
+`fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
 
 Sau khi update, khởi động lại fcitx5 theo mục “Khởi động lại sau khi cài hoặc cập nhật”.
 
@@ -240,8 +250,10 @@ sed -i 's|^Exec=/snap/bin/code|Exec=env GTK_IM_MODULE=xim XMODIFIERS=@im=fcitx /
 Tắt hẳn VS Code rồi mở lại từ menu. Qua XIM, khoảng một câu trong mười có một chữ sai dấu.
 Muốn bỏ cách này thì xoá file `~/.local/share/applications/code_code.desktop`.
 
-Gặp lỗi khác thì báo ở [Issues](https://github.com/ngosen/ngosen/issues). Tin version mới và bài blog có trên
-[Facebook](https://www.facebook.com/profile.php?id=61595753582618); hỏi đáp và báo lỗi vẫn ở GitHub.
+Gặp lỗi khác thì báo ở [Issues](https://github.com/ngosen/ngosen/issues) trên GitHub. Không có tài khoản
+GitHub thì nhắn trang [Facebook](https://www.facebook.com/profile.php?id=61595753582618). Trong cửa sổ cài đặt,
+vào trang “Giới thiệu”, bấm “Kiểm tra máy tôi…” rồi “Nhắn qua Facebook…” để chép sẵn thông tin máy, dán vào tin
+nhắn. Trang Facebook cũng đăng tin version mới và bài blog.
 
 ## Gỡ
 

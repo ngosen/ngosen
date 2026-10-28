@@ -43,6 +43,15 @@ def load(path):
         backup = json.load(f)
     if not isinstance(backup, dict) or not any(k in backup for k in COMPONENTS):
         raise ValueError("no settings found in the file")
+    # Checked before anything is written, so a damaged file changes nothing.
+    if not isinstance(backup.get("config", {}), dict):
+        raise ValueError("the settings in the file are damaged")
+    for name in SUB_CONFIGS:
+        items = backup.get(name, [])
+        if not isinstance(items, list) or not all(isinstance(item, dict) for item in items):
+            raise ValueError(f"the {name} in the file are damaged")
+    if not isinstance(backup.get("dictionary", ""), str):
+        raise ValueError("the dictionary in the file is damaged")
     return backup
 
 

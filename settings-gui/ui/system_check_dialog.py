@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Shows what is wrong with this machine's fcitx5 setup and opens a pre-filled bug report."""
 
+from core.brand import MESSENGER_URL
 from i18n import _
 from qtpy.QtCore import QTimer, QUrl
 from qtpy.QtGui import QDesktopServices, QGuiApplication
@@ -59,12 +60,25 @@ class SystemCheckDialog(QDialog):
         layout.addWidget(self._app_test_box())
         layout.addStretch()
 
+        # Its own row: five buttons do not fit the dialog, and these two are where the result goes.
+        send = QHBoxLayout()
+        self.message_btn = QPushButton(_("Message on Facebook…"))
+        self.report_btn = QPushButton(_("Report on GitHub…"))
+        send.addWidget(self.message_btn)
+        send.addWidget(self.report_btn)
+        send.addStretch()
+        layout.addLayout(send)
+        self.status = QLabel()
+        self.status.setWordWrap(True)
+        mute(self.status)
+        layout.addWidget(self.status)
+
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
         self.again_btn = buttons.addButton(_("Check again"), QDialogButtonBox.ActionRole)
         self.copy_btn = buttons.addButton(_("Copy result"), QDialogButtonBox.ActionRole)
-        self.report_btn = buttons.addButton(_("Report bug…"), QDialogButtonBox.ActionRole)
         self.again_btn.clicked.connect(self.run)
         self.copy_btn.clicked.connect(self.copy_report)
+        self.message_btn.clicked.connect(self.open_chat)
         self.report_btn.clicked.connect(self.open_report)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -132,23 +146,7 @@ class SystemCheckDialog(QDialog):
         self._show_app_test()
 
     def _show_app_test(self):
-        test = self.app_test
-        if test is None:
-            text = _("No typing log found. Save one from the Ngó Sen menu first.")
-        elif not test.program and not test.frontend:
-            text = _("The log has no typing in it. Type the sample, then save the log again.")
-        else:
-            app = f"{test.program or '?'} ({test.frontend})"
-            text = {
-                typing_log.RIGHT: _("{app} got the sample right."),
-                typing_log.WRONG: _("{app} got the sample wrong."),
-                typing_log.UNKNOWN: _(
-                    "{app} does not tell Ngó Sen its text. Did the sample come out right?"
-                ),
-            }[test.verdict].format(app=app)
-            if test.verdict == typing_log.WRONG and test.app_text:
-                text += " " + _("The app shows: {}").format(test.app_text.replace("|", ""))
-        self.app_result.setText(text)
+        self.app_result.setText(typing_log.describe(self.app_test))
         self.app_result.show()
         QTimer.singleShot(0, self._fit)
 
@@ -193,6 +191,15 @@ class SystemCheckDialog(QDialog):
 
     def copy_report(self):
         QGuiApplication.clipboard().setText(self.report_text())
+        self.status.setText(_("Copied the result."))
+
+    def open_chat(self):
+        # Messenger cannot be handed the text, so it waits on the clipboard.
+        QGuiApplication.clipboard().setText(self.report_text())
+        self.status.setText(
+            _("Copied the result. Paste it into the message and say what went wrong.")
+        )
+        QDesktopServices.openUrl(QUrl(MESSENGER_URL))
 
     def open_report(self):
         QDesktopServices.openUrl(QUrl(system_check.issue_url(self.facts, self.report_text())))

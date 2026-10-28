@@ -152,6 +152,20 @@ namespace {
         check("a fresh install keeps the built-in default", value(fresh, "RetypeAfterSwitch") == "<missing>");
     }
 
+    void testReleaseAnnouncedOnce() {
+        auto upgraded = parse("SettingsVersion=1\n");
+        check("an upgrade to a feature release is announced", ngosen::releaseToAnnounce(upgraded, true, "1.7.0") == "1.7");
+        check("the announced release is remembered", value(upgraded, "AnnouncedVersion") == "1.7");
+        check("a bug-fix release is not announced", ngosen::releaseToAnnounce(upgraded, true, "1.7.2").empty());
+        check("the next feature release is announced again", ngosen::releaseToAnnounce(upgraded, true, "1.8.0") == "1.8");
+        check("going back to an older version stays quiet", ngosen::releaseToAnnounce(upgraded, true, "1.7.3").empty());
+
+        fcitx::RawConfig fresh;
+        check("a fresh install is not announced", ngosen::releaseToAnnounce(fresh, false, "1.7.0").empty());
+        check("a fresh install remembers its release", value(fresh, "AnnouncedVersion") == "1.7");
+        check("the first bug-fix release after a fresh install is quiet", ngosen::releaseToAnnounce(fresh, true, "1.7.1").empty());
+    }
+
     void testKeepOtherInputMethods() {
         auto twoLayouts = parse("[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=ngosen\n\n"
                                 "[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n"
@@ -225,6 +239,7 @@ int main() {
     testKeepOtherInputMethods();
     testCopySwitchKeys();
     testUpgradeTurnsRetypeOn();
+    testReleaseAnnouncedOnce();
     testCopyFiles();
     testProcessesNamed();
     if (failures == 0) {

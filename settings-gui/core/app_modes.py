@@ -3,14 +3,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The typing mode fcitx5 remembers per app when one is picked from the mode menu."""
 
-from qtpy.QtWidgets import QWidget
 
-
-class RememberedAppModes(QWidget):
-    """Never shown; it lets Defaults forget the remembered modes like any other setting."""
+class RememberedAppModes:
+    """Has no page of its own; it lets Defaults forget the remembered modes like any other setting."""
 
     def __init__(self, dbus_handler):
-        super().__init__()
         self.dbus = dbus_handler
         self.load_data()
 

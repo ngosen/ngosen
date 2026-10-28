@@ -3,10 +3,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import unittest
 
-from qtpy.QtWidgets import QTabWidget
+# isort: off
 from support import FakeDBusHandler, app
+from core.text import fold
+from qtpy.QtWidgets import QTabWidget
 from ui.main_window import NgoSenSettingsWindow
-from ui.search import fold
+
+# isort: on
 
 
 class FoldTest(unittest.TestCase):

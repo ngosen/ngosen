@@ -6,8 +6,9 @@
 
 desktop
 
-The settings window is a Linux desktop app (Python, Qt through qtpy) that must look at home on both
-KDE Plasma and GNOME, and on Qt5 (Ubuntu 22.04) as well as Qt6.
+The settings window is a Linux desktop app in Python with two editions: Qt through qtpy (Qt5 or Qt6),
+at home on KDE Plasma and most desktops, and GTK 4 with libadwaita, at home on GNOME and Cinnamon.
+The installer picks one; the Appearance page switches to the other.
 
 ## Users
 
@@ -38,7 +39,8 @@ not look or read like the Lotus original.
 - Settings: input method, typing mode, output charset, w→ư, bracket keys, spelling and auto-restore,
   typing extras, mode hotkeys and mode order, status icons, per-app modes, macros with time/date
   formats, custom dictionary, custom keymap, backup and restore.
-- No new runtime dependencies beyond qtpy with PyQt6, PySide6 or PyQt5.
+- No new runtime dependencies beyond qtpy with PyQt6, PySide6 or PyQt5 for the Qt window, and PyGObject
+  with libadwaita 1.5 for the GTK window.
 - Runtime names users already have stay unless a migration ships with the change: addon `ngosen`,
   config path `fcitx://config/addon/ngosen`, app id `io.github.ngosen.NgoSen.Settings`, gettext
   domain `fcitx5-ngosen`, icon `fcitx-ngosen`.
@@ -46,8 +48,8 @@ not look or read like the Lotus original.
 
 ## Brand Commitments
 
-- Name: Ngó Sen. No Lotus visuals (the lotus flower logo, "Lotus" wording) outside the credit to
-  fcitx5-lotus.
+- Name: Ngó Sen, with its own logo and wording. The README credits fcitx5-lotus and VMK, whose code it
+  builds on.
 - User-facing Vietnamese uses "test" and "lỗi" and keeps common English tech terms.
 
 ## Evidence on Hand

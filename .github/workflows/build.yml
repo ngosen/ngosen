@@ -133,12 +133,12 @@ jobs:
         with:
           checkout_path: ngosen
 
-  # The typing logic must build and pass its tests with no fcitx5 installed. Ubuntu 22.04 is the
-  # oldest system we package for, so this also keeps it building as C++17 with GCC 11.
+  # The typing logic must build and pass its tests with no fcitx5 installed. Ubuntu 24.04 is the
+  # oldest Ubuntu we package for, so this also keeps it building with its GCC 13.
   core-only:
     name: Typing logic without fcitx5
     runs-on: ubuntu-latest
-    container: ubuntu:22.04
+    container: ubuntu:24.04
     steps:
       - name: Install dependencies
         run: |
@@ -182,7 +182,7 @@ jobs:
           rustup toolchain install 1.88 --profile minimal
           cargo +1.88 test --offline --locked
 
-  # Ubuntu 22.04 packages the settings window with Qt5, the others with Qt6.
+  # The packages prefer Qt6 but still accept PyQt5, so the window must run on both.
   settings-gui:
     name: Settings window tests (${{ matrix.qt }})
     runs-on: ubuntu-latest
@@ -192,7 +192,7 @@ jobs:
       matrix:
         include:
           - qt: Qt5
-            image: ubuntu:22.04
+            image: ubuntu:24.04
             packages: python3-qtpy python3-pyqt5
             api: pyqt5
           - qt: Qt6
@@ -218,6 +218,38 @@ jobs:
         working-directory: settings-gui/tests
         # qt_api goes first, as in main.py, so its qtpy stand-in is in place before the tests import Qt.
         run: python3 -c "import sys; sys.path.insert(0, '..'); import qt_api, unittest; unittest.main(module=None, argv=['unittest', 'discover', '-v'])"
+
+  # Ubuntu 24.04 has the oldest libadwaita the GTK window supports, Arch the newest.
+  settings-gtk:
+    name: Settings window tests (GTK, ${{ matrix.name }})
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: libadwaita 1.5
+            image: ubuntu:24.04
+            install: >-
+              apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y
+              --no-install-recommends python3 python3-gi python3-dbus gir1.2-gtk-4.0 gir1.2-adw-1
+              xvfb xauth fonts-dejavu-core
+          - name: newest libadwaita
+            image: archlinux:latest
+            install: >-
+              pacman -Syu --noconfirm python python-gobject python-dbus gtk4 libadwaita
+              xorg-server-xvfb xorg-xauth ttf-dejavu
+    env:
+      GDK_BACKEND: x11
+      GSK_RENDERER: cairo
+      NGOSEN_WINDOW_TESTS: required
+    steps:
+      - name: Install dependencies
+        run: ${{ matrix.install }}
+      - uses: actions/checkout@v7
+      - name: Test
+        working-directory: settings-gui/tests
+        run: xvfb-run -a python3 -m unittest -v test_gtk_window test_launcher test_core_toolkit_free test_hotkey_recorder
 
   python-lint:
     name: Python lint

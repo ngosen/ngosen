@@ -3,32 +3,30 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The few marks taken from the Ngó Sen website: enamel green and the Xanh Mono typeface."""
 
-import os
-
+from core.brand import ENAMEL, FONT_FILE, LOGO, ON_ENAMEL  # noqa: F401
+from core.catalog import TRAY_PANEL
 from qtpy.QtCore import QEvent, QObject, QStandardPaths, Qt
 from qtpy.QtGui import QColor, QFont, QFontDatabase, QIcon, QPainter, QPalette, QPixmap
 
-FONT_FILE = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "fonts", "XanhMono-Regular.ttf"
-)
 TYPED_FAMILY = "Xanh Mono"
-LOGO = "io.github.ngosen.NgoSen.Settings"
 
 # (light, dark) pairs; dark is picked from the window background, not the desktop name.
-ENAMEL = ("#1c6b5f", "#2a8574")
-ON_ENAMEL = "#f0f5ee"
 SAVED_FILL = ("#e1efe9", "#183a33")
 SAVED_BORDER = ("#1c6b5f", "#3f9c8b")
 ERROR_FILL = ("#f8e3df", "#3d1d18")
 ERROR_BORDER = ("#c2301c", "#d0533f")
 # A neutral light or dark desktop panel, behind the tray icon preview.
-PANEL = ("#e6e6e6", "#2d2d2d")
+PANEL = TRAY_PANEL
 
 _font_loaded = False
 
 
+def is_dark_palette(palette):
+    return palette.color(QPalette.Window).lightness() < 128
+
+
 def is_dark(widget):
-    return widget.palette().color(QPalette.Window).lightness() < 128
+    return is_dark_palette(widget.palette())
 
 
 def pick(widget, pair):
@@ -52,6 +50,48 @@ class _ThemeFollower(QObject):
             finally:
                 self._applying = False
         return False
+
+
+class _AccentFollower(QObject):
+    def __init__(self, app):
+        super().__init__(app)
+        self._app = app
+
+    def eventFilter(self, obj, event):
+        # An application's filter sees every object's events; only the app's own change counts.
+        if obj is self._app and event.type() == QEvent.ApplicationPaletteChange:
+            _apply_accent(self._app)
+        return False
+
+
+def _apply_accent(app):
+    palette = app.palette()
+    enamel = QColor(ENAMEL[1] if is_dark_palette(palette) else ENAMEL[0])
+    # Half see-through, so a disabled selection stays enamel but reads as off.
+    faded = QColor(enamel)
+    faded.setAlpha(128)
+    roles = [QPalette.Highlight] + ([QPalette.Accent] if hasattr(QPalette, "Accent") else [])
+    accented = QPalette(palette)
+    for group, color in (
+        (QPalette.Active, enamel),
+        (QPalette.Inactive, enamel),
+        (QPalette.Disabled, faded),
+    ):
+        for role in roles:
+            accented.setColor(group, role, color)
+    for group in (QPalette.Active, QPalette.Inactive):
+        accented.setColor(group, QPalette.HighlightedText, QColor(ON_ENAMEL))
+    # Setting the palette sends another change; stop once it already holds enamel.
+    if accented != palette:
+        app.setPalette(accented)
+
+
+def install_accent(app):
+    """Makes enamel the accent, now and whenever the desktop sends a new palette."""
+    _apply_accent(app)
+    follower = _AccentFollower(app)
+    app.installEventFilter(follower)
+    return follower
 
 
 def follow_theme(widget, apply, source=None):

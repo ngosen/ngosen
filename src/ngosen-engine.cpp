@@ -40,6 +40,9 @@
 #ifdef NGOSEN_HAS_DBUS
 #include <dbus_public.h>
 #endif
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+#include <notifications_public.h>
+#endif
 
 #include <algorithm>
 #include <atomic>
@@ -451,10 +454,14 @@ namespace fcitx {
         RawConfig raw;
         readAsIni(raw, "conf/ngosen.conf");
         migrateLegacyMode(raw);
-        const bool upgraded = ngosen::upgradeSettings(raw, std::filesystem::exists(userConfigDir() + "/ngosen.conf"));
+        const bool        saved    = std::filesystem::exists(userConfigDir() + "/ngosen.conf");
+        const bool        upgraded = ngosen::upgradeSettings(raw, saved);
+        const std::string release  = ngosen::releaseToAnnounce(raw, saved, NGOSEN_VERSION);
         config_.load(raw);
-        if (upgraded)
+        if (upgraded || !release.empty())
             saveConfig();
+        if (!release.empty())
+            announceRelease(release);
         readAsIni(customKeymap_, CustomKeymapFile);
         readAsIni(macroTables_, MacroTableFile);
         macroTableObject_.reset(newMacroTable(macroTables_));
@@ -492,6 +499,27 @@ namespace fcitx {
         }
         loadAppRules();
         populateConfig();
+    }
+
+    void NgoSenEngine::announceRelease(const std::string& release) {
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        NGOSEN_INFO("Announcing release " + release);
+        // fcitx5 starts with the session; a notification sent before the desktop is up is lost.
+        constexpr uint64_t delayUs = 5000000;
+        announceTimer_             = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [this, release](EventSourceTime*, uint64_t) {
+            auto* addon = notifications();
+            if (addon == nullptr) {
+                NGOSEN_WARN("No notifications addon; release " + release + " is not announced");
+                return false;
+            }
+            // It is shown only once, and Plasma keeps no history of an expired one, so it waits for the user.
+            constexpr int32_t neverExpire = 0;
+            addon->call<INotifications::sendNotification>(
+                "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"), _("See Cứu chữ, Cứu dấu, the English/Vietnamese key and typing tips."),
+                std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
+            return false;
+        });
+#endif
     }
 
     const Configuration* NgoSenEngine::getSubConfig(const std::string& path) const {

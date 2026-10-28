@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from core.brand import BUG_REPORT_URL, FEATURE_REQUEST_URL, REPO_URL
 from i18n import _
 from qtpy.QtCore import Qt, QUrl
 from qtpy.QtGui import QColor, QDesktopServices, QPalette
@@ -108,9 +109,7 @@ class AboutPage(QWidget):
         layout.addWidget(desc)
 
         # GitHub Project Link
-        github_link = QLabel(
-            '<a href="https://github.com/ngosen/ngosen" style="text-decoration: none;">https://github.com/ngosen/ngosen</a>'
-        )
+        github_link = QLabel(f'<a href="{REPO_URL}" style="text-decoration: none;">{REPO_URL}</a>')
         github_link.setOpenExternalLinks(True)
         layout.addWidget(github_link, alignment=Qt.AlignCenter)
 
@@ -122,20 +121,12 @@ class AboutPage(QWidget):
         btn_bug = QPushButton(_("Report Bug"))
         btn_bug.setObjectName("BugReport")
         btn_bug.setFixedWidth(200)
-        btn_bug.clicked.connect(
-            lambda: QDesktopServices.openUrl(
-                QUrl("https://github.com/ngosen/ngosen/issues/new?template=bug_report.yml")
-            )
-        )
+        btn_bug.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(BUG_REPORT_URL)))
 
         btn_feature = QPushButton(_("Request Feature"))
         btn_feature.setObjectName("FeatureRequest")
         btn_feature.setFixedWidth(200)
-        btn_feature.clicked.connect(
-            lambda: QDesktopServices.openUrl(
-                QUrl("https://github.com/ngosen/ngosen/issues/new?template=feature_request.yml")
-            )
-        )
+        btn_feature.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(FEATURE_REQUEST_URL)))
 
         # Its own row: three buttons do not fit the narrowest window, and checking comes before reporting.
         btn_check = QPushButton(_("Check my machine…"))
@@ -158,17 +149,6 @@ class AboutPage(QWidget):
         developer.setObjectName("DeveloperLine")
         layout.addWidget(developer, alignment=Qt.AlignCenter)
 
-        # One credit line; the authors are named in the copyright notices.
-        credits = QLabel(
-            _("Based on the code of {lotus} and {vmk}.").format(
-                lotus='<a href="https://github.com/LotusInputMethod/fcitx5-lotus" style="text-decoration: none;">fcitx5-lotus</a>',
-                vmk='<a href="https://github.com/thanhpy2009/VMK" style="text-decoration: none;">VMK</a>',
-            )
-        )
-        credits.setOpenExternalLinks(True)
-        credits.setObjectName("CreditsLine")
-        mute(credits)
-        layout.addWidget(credits, alignment=Qt.AlignCenter)
         layout.addStretch()
 
         # Footer

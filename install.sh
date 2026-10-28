@@ -15,6 +15,7 @@ SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/TU-DUNG.md"
 edition=fcitx5
 package_name=fcitx5-ngosen
 switch_fcitx5=0
+switch_ibus=0
 switched_from_fcitx5=0
 assume_yes=0
 setup_session=1
@@ -101,10 +102,9 @@ detect_distribution() {
             return
             ;;
         opensuse-tumbleweed)
-            ibus_unsupported "openSUSE"
             x86_64_only "openSUSE" "$machine"
             manager=zypper
-            pattern='fcitx5-ngosen-[0-9][^ /]*\.opensuse-tumbleweed\.x86_64\.rpm'
+            pattern="${package_name}-[0-9][^ /]*\\.opensuse-tumbleweed\\.x86_64\\.rpm"
             return
             ;;
         arch | cachyos | endeavouros)
@@ -130,11 +130,11 @@ detect_distribution() {
             *) codename=$(debian_base "$codename") ;;
         esac
         case "$codename" in
-            # The IBus edition needs libadwaita 1.5, which these lack.
-            bookworm | jammy) ibus_unsupported "$id $codename" ;;
+            # The IBus edition needs libadwaita 1.5, which this lacks.
+            bookworm) ibus_unsupported "$id $codename" ;;
         esac
         case "$codename" in
-            bookworm | trixie | forky | jammy | noble | resolute | stonking)
+            bookworm | trixie | forky | noble | resolute | stonking)
                 manager=apt
                 pattern="${package_name}_[0-9][^ /]*_${codename}_${deb_arch}\\.deb"
                 return
@@ -150,6 +150,8 @@ detect_distribution() {
         return
     fi
 
+    # Ubuntu 22.04 (and Linux Mint 21) had packages up to 1.6.4.
+    [ "$codename" = jammy ] && die "Ngó Sen từ 1.7.0 cần Ubuntu 24.04 trở lên (Linux Mint 22 trở lên). Bản cuối cho Ubuntu 22.04 là 1.6.4: https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.4-1"
     unsupported "${id:-bản phân phối này} ${codename:-$version}"
 }
 
@@ -170,6 +172,30 @@ debian_base() {
     esac
 }
 
+# The IBus edition has its own releases, which cover fewer distributions.
+has_ibus_package() {
+    local sums ibus_pattern="ibus-ngosen${pattern#"$package_name"}"
+    sums=$(fetch -sS "$IBUS_RELEASE_URL/SHA256SUMS" 2>/dev/null) || return 1
+    grep -qE "^[0-9a-f]{64}  ${ibus_pattern}\$" <<<"$sums"
+}
+
+explain_gnome_setup() {
+    say ""
+    say "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus của GNOME cho tài khoản này: fcitx5 tự chạy khi"
+    say "đăng nhập, app gõ qua fcitx5, thêm biểu tượng bộ gõ lên thanh trên cùng (tải extension"
+    say "từ extensions.gnome.org nếu máy chưa có khay). Đăng xuất một lần là dùng được."
+    say "Gỡ bằng --uninstall thì trả lại hết."
+    if ibus_edition_in_use || ! has_ibus_package; then
+        return 0
+    fi
+    say ""
+    say "Thích đơn giản, dùng đúng đồ có sẵn của GNOME? Có bản Ngó Sen cho GNOME chạy trên IBus:"
+    say "không cần fcitx5 hay extension, cài xong gõ được ngay, đổi Anh/Việt bằng Super+Space như"
+    say "các nguồn nhập khác. Tính năng và trải nghiệm gõ không bằng bản fcitx5: chữ đang gõ có"
+    say "gạch chân, không có Cứu chữ, Cứu dấu. Muốn bản này thì trả lời N rồi chạy:"
+    say "  curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus"
+}
+
 confirm() {
     [ "$assume_yes" -eq 1 ] && return 0
     # The script itself arrives on stdin when piped from curl, so the answer is read from the terminal.
@@ -177,11 +203,11 @@ confirm() {
         die "không có cửa sổ dòng lệnh để hỏi lại. Chạy lại với --yes nếu đồng ý cài."
     fi
     local answer
-    printf '%s [c/K] ' "$1"
+    printf '%s [y/N] ' "$1"
     read -r answer <&3 || answer=
     exec 3<&-
     case "$answer" in
-        c | C | y | Y) return 0 ;;
+        [yY] | [yY][eE][sS] | [cC]) return 0 ;;
         *) return 1 ;;
     esac
 }
@@ -224,14 +250,53 @@ install_with_pacman() {
     as_root pacman -U --noconfirm "${overwrite[@]}" "$package"
 }
 
+# The settings window opens in GTK on these desktops when it can (settings-gui/main.py), so its Qt
+# libraries are left out there.
+wants_gtk_settings() {
+    [ "$edition" = fcitx5 ] || return 1
+    case ":${XDG_CURRENT_DESKTOP:-}:" in
+        *:GNOME:* | *:X-Cinnamon:*) return 0 ;;
+    esac
+    return 1
+}
+
+# Debian 12 has libadwaita 1.2, older than the GTK window needs.
+apt_has_libadwaita() {
+    local version
+    version=$(LC_ALL=C apt-cache policy gir1.2-adw-1 2>/dev/null | sed -n 's/^ *Candidate: //p')
+    [ -n "$version" ] && [ "$version" != '(none)' ] && dpkg --compare-versions "$version" ge 1.5
+}
+
+# Packages named with the package itself, so the package manager settles its choice of Qt or GTK.
+# The Arch package keeps Qt, having no alternative dependencies.
+settings_window_packages() {
+    settings_packages=()
+    if wants_gtk_settings; then
+        case "$manager" in
+            dnf) settings_packages=(python3-gobject gobject-introspection libadwaita) ;;
+            zypper) settings_packages=(python3-gobject typelib-1_0-Adw-1) ;;
+            apt) ! apt_has_libadwaita || settings_packages=(gir1.2-adw-1 python3-gi) ;;
+        esac
+    elif [ "$edition" = fcitx5 ]; then
+        case "$manager" in
+            dnf) settings_packages=(python3-QtPy python3-pyqt6 qt6-qtsvg) ;;
+            zypper) settings_packages=(python3-QtPy python3-PyQt6 libQt6Svg6) ;;
+        esac
+    fi
+}
+
 install_package() {
     local package=$1
+    local -a settings_packages=()
+    case "$manager" in
+        dnf | zypper) settings_window_packages ;;
+    esac
     case "$manager" in
         dnf)
-            as_root dnf install -y "$package"
+            as_root dnf install -y "$package" "${settings_packages[@]}"
             ;;
         zypper)
-            as_root zypper --non-interactive install --allow-unsigned-rpm "$package"
+            as_root zypper --non-interactive install --allow-unsigned-rpm "$package" "${settings_packages[@]}"
             ;;
         apt)
             # fcitx5 only recommends its GTK and Qt modules and im-config, and MX turns recommends
@@ -255,7 +320,8 @@ install_package() {
                     *) extras+=("$candidate") ;;
                 esac
             done
-            as_root apt-get install -y "$package" "${extras[@]}"
+            settings_window_packages
+            as_root apt-get install -y "$package" "${extras[@]}" "${settings_packages[@]}"
             ;;
         pacman)
             install_with_pacman "$package"
@@ -295,6 +361,17 @@ wants_kde_setup() {
         *) return 1 ;;
     esac
     command -v kwriteconfig6 >/dev/null 2>&1 && command -v kreadconfig6 >/dev/null 2>&1
+}
+
+# Outside GNOME nothing starts IBus by default; im-config does it on Debian and Ubuntu. Elsewhere
+# the user sets it up, as the steps differ per distribution.
+wants_ibus_x11_setup() {
+    [ "$edition" = ibus ] && [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ] || return 1
+    [ "${XDG_SESSION_TYPE:-}" = x11 ] || return 1
+    case ":${XDG_CURRENT_DESKTOP:-}:" in
+        *:GNOME:* | *:KDE:*) return 1 ;;
+    esac
+    command -v im-config >/dev/null 2>&1
 }
 
 config_home() {
@@ -362,6 +439,10 @@ forget_change() {
 
 xinputrc_runs_fcitx5() {
     grep -qs '^run_im fcitx5$' "$HOME/.xinputrc"
+}
+
+xinputrc_runs_ibus() {
+    grep -qs '^run_im ibus$' "$HOME/.xinputrc"
 }
 
 # im-config 1.1 replaced -n with -w and -m with -r.
@@ -745,16 +826,22 @@ undo_im_config() {
 # Installs from before the list of changes are left alone, as nothing tells whether the install or
 # the user picked fcitx5.
 report_unknown_changes() {
-    local uuid
+    local uuid line
+    local -a left=()
     [ -e "$(changes_file)" ] && return 0
     if xinputrc_runs_fcitx5; then
-        say "  - im-config vẫn chọn fcitx5 (có thể do bản cài cũ đặt); muốn bỏ thì chạy: im-config -n REMOVE"
+        left+=("im-config vẫn chọn fcitx5 (có thể do bản cài cũ đặt); muốn bỏ thì chạy: im-config -n REMOVE")
     fi
-    command -v gnome-extensions >/dev/null 2>&1 || return 0
-    for uuid in forward-keys@ngosen.github.io kimpanel@kde.org; do
-        if gnome-extensions list --enabled 2>/dev/null | grep -qx "$uuid"; then
-            say "  - extension $uuid vẫn bật (có thể do bản cài cũ bật); muốn tắt thì chạy: gnome-extensions disable $uuid"
-        fi
+    if command -v gnome-extensions >/dev/null 2>&1; then
+        for uuid in forward-keys@ngosen.github.io kimpanel@kde.org; do
+            if gnome-extensions list --enabled 2>/dev/null | grep -qx "$uuid"; then
+                left+=("extension $uuid vẫn bật (có thể do bản cài cũ bật); muốn tắt thì chạy: gnome-extensions disable $uuid")
+            fi
+        done
+    fi
+    [ "${#left[@]}" -eq 0 ] || say "Chưa trả lại được:"
+    for line in "${left[@]}"; do
+        say "  - $line"
     done
 }
 
@@ -771,11 +858,13 @@ undo_gnome_session() {
         rm -f "$im_env"
         undone+=("app dùng lại IBus")
     elif [ -e "$im_env" ]; then
-        say "  - giữ nguyên $im_env vì đã được sửa sau khi cài"
+        say "Giữ nguyên $im_env vì đã được sửa sau khi cài."
     fi
     undo_im_config
     autostart="$config/autostart/org.fcitx.Fcitx5.desktop"
-    if cmp -s /usr/share/applications/org.fcitx.Fcitx5.desktop "$autostart"; then
+    # Not cmp: diffutils is missing on minimal systems.
+    if [ -e "$autostart" ] &&
+        [ "$(cat "$autostart")" = "$(cat /usr/share/applications/org.fcitx.Fcitx5.desktop 2>/dev/null)" ]; then
         rm -f "$autostart"
         undone+=("fcitx5 thôi tự chạy khi đăng nhập")
     fi
@@ -794,6 +883,7 @@ undo_gnome_session() {
         gnome-extensions uninstall kimpanel@kde.org >/dev/null 2>&1 || :
         undone+=("gỡ extension Input Method Panel")
     fi
+    [ "${#undone[@]}" -eq 0 ] || say "Đã trả lại những gì bản fcitx5 đặt:"
     for id in "${undone[@]}"; do
         say "  - $id"
     done
@@ -805,15 +895,15 @@ fcitx5_edition_in_use() {
         pgrep -u "$(id -u)" -x fcitx5 >/dev/null
 }
 
-# Switching takes fcitx5 away from this account, so --yes does not answer it.
+# Switching takes the other edition away from this account, so --yes does not answer it.
 confirm_switch() {
     local yes=$assume_yes rc=0
     if ! { exec 3</dev/tty; } 2>/dev/null; then
-        die "tài khoản này đang dùng fcitx5; chạy lệnh cài trong cửa sổ dòng lệnh để trả lời có chuyển hay không."
+        die "tài khoản này đang dùng $1; chạy lệnh cài trong cửa sổ dòng lệnh để trả lời có chuyển hay không."
     fi
     exec 3<&-
     assume_yes=0
-    confirm "Tài khoản này đang gõ bằng fcitx5. Bỏ fcitx5 và chuyển sang Ngó Sen cho GNOME?" || rc=1
+    confirm "$2" || rc=1
     assume_yes=$yes
     return "$rc"
 }
@@ -843,6 +933,7 @@ undo_fcitx5_setup() {
 
 switch_from_fcitx5() {
     undo_fcitx5_setup
+    say ""
     hide_fcitx5_autostart
     stop_fcitx5 || :
     switched_from_fcitx5=1
@@ -858,6 +949,10 @@ use_ibus_im_config() {
 
 ibus_source_list() {
     gsettings get org.gnome.desktop.input-sources sources 2>/dev/null
+}
+
+ibus_engine_list() {
+    gsettings get org.freedesktop.ibus.general preload-engines 2>/dev/null
 }
 
 add_ibus_source() {
@@ -878,6 +973,38 @@ add_ibus_source() {
     gsettings set org.gnome.desktop.input-sources sources "$sources"
     note_change "input source ibus ngosen"
     session_changes+=("thêm Ngó Sen vào nguồn nhập của GNOME")
+}
+
+# Outside GNOME ibus-daemon loads the engines in this list when it starts.
+add_ibus_engine() {
+    local engines
+    if ! engines=$(ibus_engine_list); then
+        say "Chưa thêm được Ngó Sen; thêm tay ở IBus Preferences (ibus-setup)."
+        return 0
+    fi
+    case "$engines" in
+        *"'ngosen'"*) return 0 ;;
+        # Ngó Sen has no English mode of its own here, so a plain keyboard goes first.
+        "@as []" | "[]") engines="['xkb:us::eng', 'ngosen']" ;;
+        *) engines="${engines%]}, 'ngosen']" ;;
+    esac
+    gsettings set org.freedesktop.ibus.general preload-engines "$engines"
+    note_change "ibus engine ngosen"
+    session_changes+=("thêm Ngó Sen vào danh sách bộ gõ của IBus")
+}
+
+# Cinnamon keeps Super for its menu, so IBus's default Super+Space never reaches IBus.
+add_ibus_trigger() {
+    local triggers
+    triggers=$(gsettings get org.freedesktop.ibus.general.hotkey triggers 2>/dev/null) || return 0
+    case "$triggers" in
+        *"'<Control>space'"*) return 0 ;;
+        "@as []" | "[]") triggers="['<Control>space']" ;;
+        *) triggers="${triggers%]}, '<Control>space']" ;;
+    esac
+    gsettings set org.freedesktop.ibus.general.hotkey triggers "$triggers"
+    note_change "ibus trigger ctrl+space"
+    session_changes+=("thêm phím chuyển Ctrl+Space cho IBus")
 }
 
 # A running ibus-daemon finds a newly installed engine only when it starts again.
@@ -910,6 +1037,35 @@ setup_ibus_session() {
     say "Tài khoản khác trên máy này: đăng nhập vào tài khoản đó rồi chạy lại lệnh cài."
 }
 
+setup_ibus_x11_session() {
+    local change
+    say ""
+    [ "$switch_fcitx5" -eq 1 ] && switch_from_fcitx5
+    if ! xinputrc_runs_ibus; then
+        # im-config leaves alone a ~/.xinputrc it did not write, yet the -w fallback still succeeds.
+        im_config_set ibus || :
+        if xinputrc_runs_ibus; then
+            note_change im-config
+            session_changes+=("app dùng IBus, IBus tự chạy khi đăng nhập")
+        else
+            say "Chưa đặt được IBus vì $HOME/.xinputrc do bạn tự viết; sửa dòng run_im trong đó thành: run_im ibus"
+        fi
+    fi
+    add_ibus_engine
+    add_ibus_trigger
+    restart_ibus || :
+    if [ "${#session_changes[@]}" -gt 0 ]; then
+        say "Đã đặt IBus và Ngó Sen làm bộ gõ:"
+        for change in "${session_changes[@]}"; do
+            say "  - $change"
+        done
+        say ""
+    fi
+    say "Xong. Đăng xuất rồi đăng nhập lại là gõ được tiếng Việt."
+    say "Bấm Ctrl+Space để chuyển qua lại Ngó Sen và bàn phím thường."
+    say "Tài khoản khác trên máy này: đăng nhập vào tài khoản đó rồi chạy lại lệnh cài."
+}
+
 # Undoes setup_ibus_session. fcitx5 stays masked when only the IBus edition was installed, since
 # at login it would take the keys from IBus without anything set up to use it.
 undo_ibus_session() {
@@ -920,7 +1076,19 @@ undo_ibus_session() {
         gsettings set org.gnome.desktop.input-sources sources "$updated"
         say "  - bỏ Ngó Sen khỏi nguồn nhập"
     fi
-    if made_change im-config && grep -qs '^run_im ibus$' "$HOME/.xinputrc" && command -v im-config >/dev/null 2>&1; then
+    if made_change "ibus engine ngosen" && sources=$(ibus_engine_list); then
+        updated=$(printf '%s' "$sources" | sed "s/, 'ngosen'//; s/'ngosen', //; s/'ngosen'//")
+        [ "$updated" = "[]" ] && updated="@as []"
+        gsettings set org.freedesktop.ibus.general preload-engines "$updated"
+        say "  - bỏ Ngó Sen khỏi danh sách bộ gõ của IBus"
+    fi
+    if made_change "ibus trigger ctrl+space" &&
+        sources=$(gsettings get org.freedesktop.ibus.general.hotkey triggers 2>/dev/null); then
+        updated=$(printf '%s' "$sources" | sed "s/, '<Control>space'//; s/'<Control>space', //; s/'<Control>space'//")
+        [ "$updated" = "[]" ] && updated="@as []"
+        gsettings set org.freedesktop.ibus.general.hotkey triggers "$updated"
+    fi
+    if made_change im-config && xinputrc_runs_ibus && command -v im-config >/dev/null 2>&1; then
         im_config_set REMOVE || :
     fi
     if is_package_installed fcitx5-ngosen; then
@@ -948,29 +1116,52 @@ pick_uninstall_edition() {
     fi
 }
 
-uninstall() {
-    local -a remove
-    pick_uninstall_edition
+# Sets the caller's remove array to the command that removes package $1.
+set_remove_command() {
     if command -v apt-get >/dev/null 2>&1; then
-        remove=(apt-get remove -y "$package_name")
+        remove=(apt-get remove -y "$1")
     elif command -v dnf >/dev/null 2>&1; then
-        remove=(dnf remove -y "$package_name")
+        remove=(dnf remove -y "$1")
     elif command -v zypper >/dev/null 2>&1; then
-        remove=(zypper --non-interactive remove "$package_name")
+        remove=(zypper --non-interactive remove "$1")
     elif command -v pacman >/dev/null 2>&1; then
-        remove=(pacman -R --noconfirm "$package_name")
+        remove=(pacman -R --noconfirm "$1")
     else
         die "không biết trình quản lý gói của máy này"
     fi
+}
+
+# Both editions would take the same keys, so the IBus one goes when this account uses it.
+ibus_edition_in_use() {
+    is_package_installed ibus-ngosen || return 1
+    ibus_source_list | grep -qF "('ibus', 'ngosen')" || ibus_engine_list | grep -qF "'ngosen'"
+}
+
+# The local edition makes changes_file name the IBus edition's list.
+switch_from_ibus() {
+    local edition=ibus
+    local -a remove
+    set_remove_command ibus-ngosen
+    say ""
+    say "Bỏ Ngó Sen bản IBus:"
+    undo_ibus_session
+    rm -f "$(changes_file)"
+    as_root "${remove[@]}"
+}
+
+uninstall() {
+    local -a remove
+    pick_uninstall_edition
+    set_remove_command "$package_name"
     say "Ngó Sen sẽ được gỡ bằng: ${remove[*]}"
-    if wants_gnome_setup || wants_x11_setup; then
+    if wants_gnome_setup || wants_x11_setup || wants_ibus_x11_setup; then
         say "Các thay đổi lệnh cài đã làm cho tài khoản này cũng được trả lại."
     fi
     confirm "Tiếp tục?" || {
         say "Đã dừng, chưa gỡ gì."
         exit 0
     }
-    if wants_gnome_setup && [ "$edition" = ibus ]; then
+    if [ "$edition" = ibus ] && { wants_gnome_setup || wants_ibus_x11_setup; }; then
         undo_ibus_session
         rm -f "$(changes_file)"
     elif wants_gnome_setup; then
@@ -985,7 +1176,7 @@ uninstall() {
     as_root "${remove[@]}"
     say ""
     if [ "$edition" = ibus ]; then
-        say "Xong. Đăng xuất rồi đăng nhập lại để gỡ hẳn Ngó Sen khỏi GNOME."
+        say "Xong. Đăng xuất rồi đăng nhập lại để gỡ hẳn Ngó Sen."
     elif wants_gnome_setup; then
         say "Xong. Đăng xuất rồi đăng nhập lại để GNOME dùng lại IBus."
     elif wants_x11_setup && [ "$(im_config_auto)" = fcitx5 ]; then
@@ -1061,19 +1252,33 @@ main() {
     if wants_gnome_setup && [ "$edition" = ibus ]; then
         say "Sau đó Ngó Sen được thêm vào nguồn nhập của GNOME cho tài khoản này."
         fcitx5_edition_in_use && switch_fcitx5=1
+    elif wants_ibus_x11_setup; then
+        say "Sau đó IBus và Ngó Sen được đặt làm bộ gõ cho tài khoản này."
+        fcitx5_edition_in_use && switch_fcitx5=1
     elif wants_gnome_setup; then
-        say "Sau đó fcitx5 được đặt làm bộ gõ cho tài khoản này, thay IBus của GNOME."
+        # Only an earlier setup leaves this file; without it the account is about to get the changes.
+        [ -e "$(config_home)/environment.d/90-ngosen.conf" ] || explain_gnome_setup
     elif wants_kde_setup; then
         say "Sau đó fcitx5 được đặt làm bộ gõ của KDE cho tài khoản này."
     elif wants_x11_setup; then
         say "Sau đó fcitx5 được đặt làm bộ gõ cho tài khoản này."
     fi
+    if [ "$edition" = fcitx5 ] && [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ] && ibus_edition_in_use; then
+        say "Ngó Sen bản IBus đang dùng ở tài khoản này sẽ được gỡ."
+        switch_ibus=1
+    fi
     confirm "Tiếp tục?" || {
         say "Đã dừng, chưa cài gì."
         exit 0
     }
-    if [ "$switch_fcitx5" -eq 1 ] && ! confirm_switch; then
+    if [ "$switch_fcitx5" -eq 1 ] &&
+        ! confirm_switch fcitx5 "Tài khoản này đang gõ bằng fcitx5. Bỏ fcitx5 và chuyển sang Ngó Sen bản IBus?"; then
         say "Đã dừng, chưa cài gì. Bản fcitx5 vẫn dùng như cũ."
+        exit 0
+    fi
+    if [ "$switch_ibus" -eq 1 ] &&
+        ! confirm_switch "Ngó Sen bản IBus" "Tài khoản này đang gõ bằng Ngó Sen bản IBus. Gỡ bản IBus và chuyển sang bản fcitx5?"; then
+        say "Đã dừng, chưa cài gì. Bản IBus vẫn dùng như cũ."
         exit 0
     fi
 
@@ -1087,6 +1292,8 @@ main() {
     if [ "$edition" = ibus ]; then
         if wants_gnome_setup; then
             setup_ibus_session
+        elif wants_ibus_x11_setup; then
+            setup_ibus_x11_session
         else
             say ""
             say "Xong. Bản này làm cho GNOME; trên desktop khác thì tự đặt:"
@@ -1097,6 +1304,7 @@ main() {
         fi
         return
     fi
+    [ "$switch_ibus" -eq 1 ] && switch_from_ibus
     if wants_gnome_setup; then
         setup_gnome_session
         return

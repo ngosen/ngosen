@@ -41,6 +41,10 @@ namespace ngosen {
     // Returns whether `settings` changed.
     bool upgradeSettings(fcitx::RawConfig& settings, bool saved);
 
+    // The feature release (X.Y of `version`) to tell the user about, or nothing: a bug-fix release
+    // and a fresh install are quiet. `saved` says the settings file existed. Updates `settings`.
+    std::string releaseToAnnounce(fcitx::RawConfig& settings, bool saved, const std::string& version);
+
     // Copies dir/old to dir/new for each pair where only the old file exists. The old file stays, so
     // going back to an earlier version keeps its settings. Returns the new names that were written.
     std::vector<std::string> copyLegacyFiles(const std::filesystem::path& dir, const std::vector<std::pair<std::string, std::string>>& names);

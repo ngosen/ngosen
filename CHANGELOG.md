@@ -29,6 +29,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   `github.io` hỏng); nay báo nguồn lỗi rồi vẫn cài tiếp (#399).
 - `install.sh` cài được trên deepin 23 và 25 (trước đây báo không hỗ trợ). Gói `.deb` không còn đòi
   `python3-qtpy`, gói deepin không có; cửa sổ cài đặt chạy thẳng với PyQt6 (#397).
+- `install.sh` cài được trên LMDE, Devuan, Parrot và Artix (trước đây báo không hỗ trợ dù gói Debian, Arch
+  dùng được) (#403).
 
 ## [1.6.3-1] — 27/10/2026
 

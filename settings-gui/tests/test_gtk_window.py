@@ -820,6 +820,25 @@ class GtkWhatsNewPageTest(unittest.TestCase):
             else:
                 self.assertEqual(w.stack.get_visible_child_name(), name)
 
+    def test_a_row_low_on_a_page_never_shown_is_scrolled_to(self):
+        w = window.Window(None, FakeDBusHandler())
+        self.addCleanup(w.destroy)
+        w.set_default_size(900, 500)
+        w.present()
+        self.assertTrue(w.open_setting("SettingsToolkit"))
+        row = w.appearance.control_for("SettingsToolkit")
+        adjustment = row.get_ancestor(Gtk.ScrolledWindow).get_vadjustment()
+        context = GLib.MainContext.default()
+        for _ in range(300):
+            if adjustment.get_value() > 0:
+                break
+            context.iteration(False)
+            time.sleep(0.01)
+        if w.get_frame_clock().get_frame_counter() == 0:
+            self.skipTest("the window was never drawn, as on a locked desktop")
+        self.assertGreater(adjustment.get_value(), 0)
+        self.assertIs(w.get_focus(), row)
+
     def test_open_setting_shows_the_tab_and_focuses_the_row(self):
         self.assertTrue(self.window.open_setting("ModeMenuKey"))
         self.assertEqual(self.window.stack.get_visible_child_name(), "keys")

@@ -32,6 +32,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - `install.sh` cài được trên LMDE, Devuan, Parrot và Artix (trước đây báo không hỗ trợ dù gói Debian, Arch
   dùng được) (#403).
 
+### Test
+
+- Test cài trên LMDE không còn báo lỗi nhầm ở bước máy để tiếng Việt: ảnh LMDE đặt sẵn `LC_ALL` tiếng Anh, đè
+  lên ngôn ngữ test đặt (#405).
+
 ## [1.6.3-1] — 27/10/2026
 
 Sửa lỗi gõ chữ trong editor và ô chat của Antigravity trên GNOME (#362, #365); sửa lỗi Cứu dấu ở Gõ Sen khi backspace về cuối chữ trước hoặc bấm chuột vào giữa chữ (#358, #370).

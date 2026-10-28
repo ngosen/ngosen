@@ -34,6 +34,10 @@ namespace ngosen {
     // surrounding text and selects an inline autocompletion after the typed text.
     bool selectsOverAutocompletion(const Field& field);
 
+    // True for Chromium-based browsers that report no surrounding text, as on X11: a key typed there replaces
+    // the selection, which is also the X11 primary selection.
+    bool typesOverPrimarySelection(const Field& field);
+
     // Under GNOME, apps reach fcitx5 through GNOME Shell's IBus bridge, which can relay the client's
     // surrounding text tens of milliseconds late, one edit at a time.
     bool surroundingTextLags(const Field& field);

@@ -20,6 +20,10 @@
 
 namespace ngosen {
 
+    namespace {
+        constexpr int LaggingReportWaitMs = 100;
+    } // namespace
+
     void TypingState::sendBackspaceKeys(int count) const {
         if (!host_->pressSystemKeys(count)) {
             NGOSEN_ERROR("Cannot send backspaces: XTEST is unavailable");
@@ -131,7 +135,11 @@ namespace ngosen {
         surr_wait_watching_           = true;
         // Two timeouts in a row: this app does not update while deleting. Use the short timeout
         // until an event matches again.
-        const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->options().waitSurroundingShortMs : engine_->options().waitSurroundingTimeoutMs;
+        // Behind GNOME Shell's IBus bridge a slow app can apply our backspace after the commit sent once we stop
+        // waiting, and the backspace then erases the new letter (#362).
+        const int fullMs =
+            ngosen::surroundingTextLags(host_->field()) ? std::max(engine_->options().waitSurroundingTimeoutMs, LaggingReportWaitMs) : engine_->options().waitSurroundingTimeoutMs;
+        const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->options().waitSurroundingShortMs : fullMs;
         const auto timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
         // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms. Check once at the
         // threshold first: many apps report "done" before it and then go quiet.

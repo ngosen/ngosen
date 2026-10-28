@@ -503,8 +503,11 @@ namespace ngosen {
         }
         if (!keyEvent.isRelease())
             sendHeldEnter();
-        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+        if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             dropRetoneKey();
+            // Taken on every key, so only the key right after the selection can use it.
+            selectedBeforeKey_ = host_->takeSelection();
+        }
         if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || skipsKey(keyEvent))
             return;
         settleBeforeKey();

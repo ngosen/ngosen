@@ -15,9 +15,23 @@ def toolkit_row(model, hint):
         title=_("This window uses {}").format("GTK"), subtitle=_(hint), use_markup=False
     )
     button = Gtk.Button(label=_("Switch to {}…").format("Qt"), valign=Gtk.Align.CENTER)
-    button.connect("clicked", lambda _b: _offer(button, model, Offer("gtk")))
+    button.connect("clicked", lambda _b: _check(button, model))
     row.add_suffix(button)
     return row
+
+
+def _in_background(work, then):
+    threading.Thread(target=lambda: GLib.idle_add(then, work()), daemon=True).start()
+
+
+def _check(button, model):
+    button.set_sensitive(False)
+
+    def checked(offer):
+        button.set_sensitive(True)
+        _offer(button, model, offer)
+
+    _in_background(lambda: Offer("gtk"), checked)
 
 
 def _offer(button, model, offer):
@@ -48,9 +62,7 @@ def _offer(button, model, offer):
         else:
             dialog.set_body(needs + "\n" + _("Download: about {}.").format(format_size(size)))
 
-    threading.Thread(
-        target=lambda: GLib.idle_add(show_size, offer.download_size()), daemon=True
-    ).start()
+    _in_background(offer.download_size, show_size)
 
 
 def _on_response(_dialog, response, button, model, offer):
@@ -63,19 +75,34 @@ def _on_response(_dialog, response, button, model, offer):
 def _install(button, model, offer):
     button.set_sensitive(False)
     button.set_label(_("Installing…"))
-    process = Gio.Subprocess.new(offer.install_argv, Gio.SubprocessFlags.NONE)
+
+    def finished(code):
+        button.set_sensitive(True)
+        button.set_label(_("Switch to {}…").format(offer.name))
+        # 126 and 127: the password prompt was closed or refused.
+        if code not in (0, 126, 127):
+            _failed(button, offer)
+        elif code == 0:
+            _in_background(offer.installed_now, lambda ok: _installed(ok, button, model, offer))
+
+    try:
+        process = Gio.Subprocess.new(offer.install_argv, Gio.SubprocessFlags.NONE)
+    except GLib.Error:
+        finished(-1)
+        return
 
     def done(process, result):
         process.wait_finish(result)
-        button.set_sensitive(True)
-        button.set_label(_("Switch to {}…").format(offer.name))
-        if process.get_successful() and offer.installed_now():
-            _switch(button, model, offer)
-        # 126 and 127: the password prompt was closed or refused.
-        elif process.get_exit_status() not in (126, 127):
-            _failed(button, offer)
+        finished(process.get_exit_status())
 
     process.wait_async(None, done)
+
+
+def _installed(ok, button, model, offer):
+    if ok:
+        _switch(button, model, offer)
+    else:
+        _failed(button, offer)
 
 
 def _failed(button, offer):

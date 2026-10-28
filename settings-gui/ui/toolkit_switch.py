@@ -11,8 +11,25 @@ from qtpy.QtCore import QObject, QProcess, Signal
 from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMessageBox, QPushButton, QWidget
 
 
-class _Size(QObject):
-    found = Signal(object)
+class _Results(QObject):
+    """Hands what a thread found to the main thread."""
+
+    ready = Signal(object)
+
+    def __init__(self):
+        super().__init__()
+        self.ready.connect(lambda done: done[0](done[1]))
+
+
+_results = []
+
+
+def _in_background(work, then):
+    # Made on the main thread and kept for the app's life, so no thread deletes a Qt object.
+    if not _results:
+        _results.append(_Results())
+    results = _results[0]
+    threading.Thread(target=lambda: results.ready.emit((then, work())), daemon=True).start()
 
 
 def toolkit_field(model):
@@ -21,10 +38,23 @@ def toolkit_field(model):
     layout.setContentsMargins(0, 0, 0, 0)
     layout.addWidget(QLabel(_("This window uses {}").format("Qt")))
     button = QPushButton(_("Switch to {}…").format("GTK"))
-    button.clicked.connect(lambda: _offer(button, model, Offer("qt")))
+    button.clicked.connect(lambda: _check(button, model))
     layout.addWidget(button)
     layout.addStretch()
     return field, button
+
+
+def _check(button, model):
+    button.setEnabled(False)
+
+    def checked(offer):
+        try:
+            button.setEnabled(True)
+        except RuntimeError:
+            return  # The window closed meanwhile.
+        _offer(button, model, offer)
+
+    _in_background(lambda: Offer("qt"), checked)
 
 
 def _offer(button, model, offer):
@@ -68,10 +98,7 @@ def _offer(button, model, offer):
         elif chosen is install:
             _install(button, model, offer)
 
-    # Not owned by the box, which the thread could otherwise outlive.
-    size = _Size()
-    size.found.connect(show_size)
-    threading.Thread(target=lambda: size.found.emit(offer.download_size()), daemon=True).start()
+    _in_background(offer.download_size, show_size)
     box.buttonClicked.connect(clicked)
     box.open()
 
@@ -81,17 +108,25 @@ def _install(button, model, offer):
     button.setText(_("Installing…"))
     process = QProcess(button)
 
-    def done(code, _status):
+    def finished(code):
         button.setEnabled(True)
         button.setText(_("Switch to {}…").format(offer.name))
-        if code == 0 and offer.installed_now():
-            _switch(button, model, offer)
         # 126 and 127: the password prompt was closed or refused.
-        elif code not in (126, 127):
+        if code not in (0, 126, 127):
             _failed(button, offer)
+        elif code == 0:
+            _in_background(offer.installed_now, lambda ok: _installed(ok, button, model, offer))
 
-    process.finished.connect(done)
+    process.finished.connect(lambda code, _status: finished(code))
+    process.errorOccurred.connect(lambda error: error == QProcess.FailedToStart and finished(-1))
     process.start(offer.install_argv[0], offer.install_argv[1:])
+
+
+def _installed(ok, button, model, offer):
+    if ok:
+        _switch(button, model, offer)
+    else:
+        _failed(button, offer)
 
 
 def _failed(button, offer):

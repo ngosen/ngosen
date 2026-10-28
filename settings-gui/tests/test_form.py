@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import time
 import unittest
 from unittest import mock
 
@@ -16,6 +17,7 @@ from qtpy.QtWidgets import (
     QMessageBox,
 )
 from support import FakeDBusHandler, app
+from ui import toolkit_switch
 from ui.components import SingleKeyCaptureWidget
 from ui.main_window import NgoSenSettingsWindow
 from ui.pages.dynamic_settings import (
@@ -134,6 +136,16 @@ class ShortcutsPageTest(unittest.TestCase):
             self.assertLessEqual(button.mapTo(view, button.rect().bottomRight()).x(), view.width())
 
 
+def wait_until(condition, seconds=5):
+    """Runs the event loop until condition() holds, for work handed back from a thread."""
+    deadline = time.monotonic() + seconds
+    while not condition():
+        if time.monotonic() > deadline:
+            raise AssertionError("timed out")
+        app.processEvents()
+        time.sleep(0.01)
+
+
 class AppearancePageTest(unittest.TestCase):
     def setUp(self):
         self.fake = FakeDBusHandler({"ShowMenuCharset": "True"})
@@ -152,8 +164,33 @@ class AppearancePageTest(unittest.TestCase):
             mock.patch.object(self.page, "close") as close,
         ):
             button.click()
+            self.assertFalse(button.isEnabled())
+            wait_until(lambda: close.called)
         switch.assert_called_once_with(self.page.model, "gtk")
-        close.assert_called_once()
+        self.assertTrue(button.isEnabled())
+
+    def test_a_window_that_still_cannot_load_after_installing_is_reported(self):
+        offer = mock.Mock(install_argv=["true"], command="sudo true")
+        offer.name = "GTK"
+        offer.installed_now.return_value = False
+        button = self.page.control_for("SettingsToolkit")
+        with (
+            mock.patch("ui.toolkit_switch.switch") as switch,
+            mock.patch("ui.toolkit_switch._failed") as failed,
+        ):
+            toolkit_switch._install(button, self.page.model, offer)
+            wait_until(lambda: failed.called)
+        switch.assert_not_called()
+
+    def test_a_refused_password_prompt_changes_nothing(self):
+        offer = mock.Mock(install_argv=["sh", "-c", "exit 126"])
+        offer.name = "GTK"
+        button = self.page.control_for("SettingsToolkit")
+        with mock.patch("ui.toolkit_switch._failed") as failed:
+            toolkit_switch._install(button, self.page.model, offer)
+            wait_until(lambda: button.isEnabled())
+        failed.assert_not_called()
+        offer.installed_now.assert_not_called()
 
     def test_a_missing_window_lists_its_packages_first(self):
         offer = mock.Mock(ready=False, installable=True, runnable=True, packages=("a", "b"))
@@ -164,6 +201,7 @@ class AppearancePageTest(unittest.TestCase):
             mock.patch("ui.toolkit_switch.switch") as switch,
         ):
             self.page.control_for("SettingsToolkit").click()
+            wait_until(lambda: self.page.findChild(QMessageBox))
         box = self.page.findChild(QMessageBox)
         self.assertIn("a, b", box.informativeText())
         self.assertIn("Install", [b.text() for b in box.buttons()])

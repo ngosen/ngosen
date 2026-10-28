@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
 import tempfile
+import time
 import unittest
 from unittest import mock
 from urllib.parse import unquote
@@ -428,6 +429,13 @@ class GtkAppearancePageTest(unittest.TestCase):
             mock.patch.object(Gio.Application, "get_default", return_value=app),
         ):
             button.emit("clicked")
+            self.assertFalse(button.get_sensitive())
+            context = GLib.MainContext.default()
+            for _ in range(500):
+                if app.quit.called:
+                    break
+                context.iteration(False)
+                time.sleep(0.01)
         switch.assert_called_once_with(self.page.model, "qt")
         app.quit.assert_called_once()
 

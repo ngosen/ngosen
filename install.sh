@@ -125,6 +125,10 @@ detect_distribution() {
     if command -v apt-get >/dev/null 2>&1; then
         # Kali Rolling is built from Debian testing.
         [ "$id" = kali ] && codename=forky
+        # deepin 23 (beige) and 25 (crimson) ship glibc 2.38 and fcitx5 5.1, above what the bookworm build needs.
+        case "$id:$codename" in
+            deepin:beige | deepin:crimson) codename=bookworm ;;
+        esac
         case "$codename" in
             # The IBus edition needs libadwaita 1.5, which these lack.
             bookworm | jammy) ibus_unsupported "$id $codename" ;;

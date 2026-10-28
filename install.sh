@@ -143,6 +143,30 @@ detect_distribution() {
     unsupported "${id:-bản phân phối này} ${codename:-$version}"
 }
 
+# The IBus edition has its own releases, which cover fewer distributions.
+has_ibus_package() {
+    local sums ibus_pattern="ibus-ngosen${pattern#"$package_name"}"
+    sums=$(fetch -sS "$IBUS_RELEASE_URL/SHA256SUMS" 2>/dev/null) || return 1
+    grep -qE "^[0-9a-f]{64}  ${ibus_pattern}\$" <<<"$sums"
+}
+
+explain_gnome_setup() {
+    say ""
+    say "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus của GNOME cho tài khoản này: fcitx5 tự chạy khi"
+    say "đăng nhập, app gõ qua fcitx5, thêm biểu tượng bộ gõ lên thanh trên cùng (tải extension"
+    say "từ extensions.gnome.org nếu máy chưa có khay). Đăng xuất một lần là dùng được."
+    say "Gỡ bằng --uninstall thì trả lại hết."
+    if ibus_edition_in_use || ! has_ibus_package; then
+        return 0
+    fi
+    say ""
+    say "Thích đơn giản, dùng đúng đồ có sẵn của GNOME? Có bản Ngó Sen cho GNOME chạy trên IBus:"
+    say "không cần fcitx5 hay extension, cài xong gõ được ngay, đổi Anh/Việt bằng Super+Space như"
+    say "các nguồn nhập khác. Tính năng và trải nghiệm gõ không bằng bản fcitx5: chữ đang gõ có"
+    say "gạch chân, không có Cứu chữ, Cứu dấu. Muốn bản này thì trả lời N rồi chạy:"
+    say "  curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus"
+}
+
 confirm() {
     [ "$assume_yes" -eq 1 ] && return 0
     # The script itself arrives on stdin when piped from curl, so the answer is read from the terminal.
@@ -1193,7 +1217,7 @@ main() {
         say "Sau đó IBus và Ngó Sen được đặt làm bộ gõ cho tài khoản này."
         fcitx5_edition_in_use && switch_fcitx5=1
     elif wants_gnome_setup; then
-        say "Sau đó fcitx5 được đặt làm bộ gõ cho tài khoản này, thay IBus của GNOME."
+        explain_gnome_setup
     elif wants_kde_setup; then
         say "Sau đó fcitx5 được đặt làm bộ gõ của KDE cho tài khoản này."
     elif wants_x11_setup; then

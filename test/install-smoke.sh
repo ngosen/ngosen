@@ -296,8 +296,26 @@ check_old_profile_cleanup() {
 
 install_log=$work/install.log
 install_logged() { installer --yes >"$install_log" 2>&1; }
+# Keeps the output in the CI log too, for when the install fails.
+install_shown() {
+    installer --yes 2>&1 | tee "$install_log"
+    return "${PIPESTATUS[0]}"
+}
 install_names() { grep -q "Bấm $1 " "$install_log"; }
+offers_ibus() { grep -qF -- "| bash -s -- --ibus" "$install_log"; }
+lacks_ibus_offer() { ! offers_ibus; }
 fcitx5_stopped() { ! fcitx5_running; }
+
+# A release listing an IBus package under this machine's name is enough for the offer.
+check_ibus_offer() {
+    mkdir -p "$work/ibus-release"
+    sed 's/fcitx5-ngosen/ibus-ngosen/' "$work/release/SHA256SUMS" >"$work/ibus-release/SHA256SUMS"
+    chmod -R a+rX "$work/ibus-release"
+    check "install with an IBus package listed succeeds" install_logged
+    check "it offers the IBus edition" offers_ibus
+    check "uninstall after that succeeds" installer --yes --uninstall
+    rm -rf "$work/ibus-release"
+}
 
 # Without a running fcitx5 the installer names the key before the addon has run, so it must
 # predict whether the keyboard goes.
@@ -515,7 +533,12 @@ main() {
 
     echo "== install"
     # A failed install leaves the session files half done, so only the packages say anything.
-    check "install succeeds" installer --yes
+    check "install succeeds" install_shown
+    if [ "$session" = gnome ] && [ -n "$ibus_release_dir" ]; then
+        check "it offers the IBus edition" offers_ibus
+    else
+        check "it offers no IBus edition without its package" lacks_ibus_offer
+    fi
     check_packages
     [ "$failures" -eq 0 ] || finish
     check_session_files
@@ -523,6 +546,11 @@ main() {
     echo "== uninstall"
     check "uninstall succeeds" installer --yes --uninstall
     check_uninstalled_state
+
+    if [ "$session" = gnome ] && [ -z "$ibus_release_dir" ]; then
+        echo "== IBus edition offered where it has a package"
+        check_ibus_offer
+    fi
 
     echo "== reinstall over a running fcitx5"
     check_reinstall_over_running_fcitx5

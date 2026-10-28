@@ -15,6 +15,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt mở được khi file `ngosen.conf` có byte không phải UTF-8; trước đây cửa sổ không hiện, mở từ khay
   thì không báo gì (#415).
 - Trang Giới thiệu và kết quả "Kiểm tra máy tôi" không còn ghi "(Stable)" sau số version, kể cả trên bản thử (#416).
+- Hộp thoại hỏi "Khôi phục mặc định" và "Thay thế" bảng phím giờ có nút cùng ngôn ngữ với cửa sổ cài đặt, không còn Yes/No theo ngôn ngữ desktop (#417).
+- Người cài gói rồi tự thêm Ngó Sen trong Fcitx5 Configuration không còn bị mất bàn phím tiếng Anh và đổi sang Ctrl+Space sau lần khởi động fcitx5 kế tiếp; máy mới giữ Ctrl+Shift (#419).
 - Chuyển từ bản fcitx5 sang bản GNOME (IBus) bằng `install.sh --ibus`: đăng nhập lại là đang ở Ngó Sen, chữ đầu tiên không còn ra không dấu (#420).
 
 ## [1.6.4-1] — 28/10/2026

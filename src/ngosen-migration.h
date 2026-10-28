@@ -27,6 +27,9 @@ namespace ngosen {
     // drops `from` instead. Returns whether the profile changed.
     bool renameProfileInputMethod(fcitx::RawConfig& profile, const std::string& from, const std::string& to);
 
+    // Whether any group of an fcitx5 profile lists `inputMethod`.
+    bool listsInputMethod(const fcitx::RawConfig& profile, const std::string& inputMethod);
+
     // Removes the keyboard from each group holding only `inputMethod` and one keyboard layout, so
     // fcitx5's switch key reaches Ngó Sen. The layout moves to the group's default layout if unset;
     // a group whose default layout is another one stays.

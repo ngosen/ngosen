@@ -7,6 +7,7 @@
 #include "ngosen-app-quirks.h"
 
 #include "ngosen-keysym.h"
+#include "ngosen-monitor.h"
 #include "ngosen-program-name.h"
 #include "ngosen-ui-text.h"
 #include "ngosen-xtest.h"
@@ -160,6 +161,10 @@ namespace ngosen {
 
     bool FcitxHost::hasFocus() const {
         return ic_->hasFocus();
+    }
+
+    std::optional<std::string> FcitxHost::takeSelection() {
+        return x11_selection.take();
     }
 
     void FcitxHost::showPreedit(const std::string& text, bool underline) {

@@ -66,6 +66,9 @@ namespace ngosen::test {
         bool hasFocus() const override {
             return true;
         }
+        std::optional<std::string> takeSelection() override {
+            return std::nullopt;
+        }
 
         void showPreedit(const std::string& text, bool /*underline*/) override {
             preedit_ = text;

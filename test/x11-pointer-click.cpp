@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <optional>
 #include <spawn.h>
 #include <string>
 #include <sys/wait.h>
@@ -87,6 +88,36 @@ namespace {
             std::cerr << "Step: watch on a Wayland session with Xwayland\nExpected: returns true\nActual: returned false\n";
         return watched;
     }
+    bool expectSelection(const std::string& step, const std::optional<std::string>& actual, const std::optional<std::string>& expected) {
+        if (actual == expected)
+            return true;
+        std::cerr << "Step: " << step << "\nExpected: " << expected.value_or("(none)") << "\nActual: " << actual.value_or("(none)") << '\n';
+        return false;
+    }
+
+    bool keepsSelection() {
+        bool         ok = true;
+        X11Selection selection;
+        selection.arrive(selection.announce(), "nhanh");
+        ok &= expectSelection("a key after a selection", selection.take(), "nhanh");
+        ok &= expectSelection("the next key", selection.take(), std::nullopt);
+
+        uint64_t ticket = selection.announce();
+        selection.forget();
+        selection.arrive(ticket, "nhanh");
+        ok &= expectSelection("a click before the text arrived", selection.take(), std::nullopt);
+
+        ticket = selection.announce();
+        selection.take();
+        selection.arrive(ticket, "nhanh");
+        ok &= expectSelection("a key before the text arrived", selection.take(), std::nullopt);
+
+        ticket = selection.announce();
+        selection.arrive(selection.announce(), "abc nhanh xyz");
+        selection.arrive(ticket, "nhanh");
+        ok &= expectSelection("an older selection's text after a newer one", selection.take(), "abc nhanh xyz");
+        return ok;
+    }
 } // namespace
 
 int main() {
@@ -109,5 +140,6 @@ int main() {
         ok = false;
     }
     ok &= watchesXwaylandClicks();
+    ok &= keepsSelection();
     return ok ? 0 : 1;
 }

@@ -57,6 +57,7 @@ namespace {
         int                                      settleMs = 150; // wait after the tone key
         int                                      gapMs    = 150; // wait after each key in after
         std::function<void(FakeResources&)>      configure;
+        std::function<void(FakeApp&, FakeLoop&)> beforeTone;
         std::function<void(FakeApp&, FakeLoop&)> beforeAfter;
     };
 
@@ -84,7 +85,12 @@ namespace {
         }
         loop.pump(150);
         app->select(run.anchor, run.cursor);
+        // The double click that selected the word, which the click watcher sees.
+        if (run.quirks.announcesSelection)
+            g_mouse_clicked.store(true);
         loop.pump(150);
+        if (run.beforeTone)
+            run.beforeTone(*app, loop);
         app->type(run.tone);
         if (run.repeatsReport)
             state.surroundingUpdated();
@@ -252,6 +258,57 @@ namespace {
         check(r.hint.empty() && r.text == "abc s xyz", "a password field is left as typed", r.text);
     }
 
+    // Chromium on X11 reports no text, but makes the selection the X11 primary selection (#360).
+    Run announced() {
+        Run run                       = nhanh();
+        run.field                     = makeField("dbus", false);
+        run.field.keyEventOrderFix    = true;
+        run.quirks.announcesSelection = true;
+        return run;
+    }
+
+    void testAnnouncedSelection() {
+        Run  run = announced();
+        auto r   = retone(run);
+        check(r.text == "abc nhánh xyz" && !r.hint.empty(), "a field that only announces its selection", r.text);
+        run.after = {ngosen::key::Escape};
+        r         = retone(run);
+        check(r.text == "abc s xyz", "announced selection: Esc puts back the key", r.text);
+        run.after = {'a', 'c', 'h', 's'};
+        r         = retone(run);
+        check(r.text == "abc sách xyz", "announced selection: a letter after the key puts it back", r.text);
+        run.after = {'f'};
+        r         = retone(run);
+        check(r.text == "abc nhành xyz", "announced selection: another tone key changes the tone again", r.text);
+
+        run            = announced();
+        run.beforeTone = [](FakeApp& app, FakeLoop& loop) {
+            app.type(ngosen::key::Left);
+            loop.pump(150);
+        };
+        r = retone(run);
+        check(r.hint.empty(), "a key between the selection and the tone key", r.text);
+
+        run            = announced();
+        run.beforeTone = [](FakeApp& app, FakeLoop& loop) {
+            app.moveCursor(9);
+            g_mouse_clicked.store(true);
+            loop.pump(150);
+        };
+        r = retone(run);
+        check(r.hint.empty() && r.text == "abc nhanhs xyz", "a click after the selection", r.text);
+
+        run                = announced();
+        run.field.password = true;
+        r                  = retone(run);
+        check(r.hint.empty() && r.text == "abc s xyz", "an announced selection in a password field", r.text);
+
+        run        = announced();
+        run.anchor = 0;
+        r          = retone(run);
+        check(r.hint.empty() && r.text == "s xyz", "an announced selection of two words", r.text);
+    }
+
     void testClickKeepsTone() {
         Run run         = nhanh();
         run.beforeAfter = [](FakeApp& app, FakeLoop& loop) {
@@ -399,6 +456,7 @@ int main() {
     testRetone();
     testWords();
     testWhereNotOffered();
+    testAnnouncedSelection();
     testClickKeepsTone();
     testToneAtCursor();
     testToneAfterBackspace();

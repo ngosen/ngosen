@@ -124,6 +124,7 @@ namespace ngosen::test {
         previousCursor_ = cursor_;
         cursor_         = to < text_.size() ? to : text_.size();
         anchor_         = cursor_;
+        announced_.reset();
         if (!quirks_.hidesCursorMoves)
             changed();
     }
@@ -133,6 +134,8 @@ namespace ngosen::test {
         previousCursor_ = cursor_;
         anchor_         = anchor;
         cursor_         = cursor;
+        if (quirks_.announcesSelection && anchor != cursor)
+            announced_ = encode(text_.substr(std::min(anchor, cursor), anchor > cursor ? anchor - cursor : cursor - anchor));
         if (!quirks_.hidesCursorMoves)
             changed();
     }

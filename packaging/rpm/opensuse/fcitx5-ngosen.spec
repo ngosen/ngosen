@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.6.3
+Version:        1.6.4
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later AND OFL-1.1
@@ -97,6 +97,14 @@ else
 fi
 
 %changelog
+* Wed Oct 28 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.6.4-1
+- Antigravity on GNOME: tone marks and letters are no longer lost when typing fast; behind GNOME's IBus bridge Sen waits up to 100 ms for a deletion (#362, #395).
+- Cứu dấu changes the tone of a selected word in Chrome, Chromium and Brave on X11 (#360, #390).
+- Preedit: Super + letter shortcuts reach the desktop instead of being typed (#391, #392).
+- Settings window: opens with a user dictionary that is not UTF-8 (#376); undo gives back only the change just saved (#383).
+- install.sh: installs the GTK and Qt modules on a Vietnamese desktop (#388), goes on past a broken apt source (#399), and installs on deepin 23 and 25 (#397), LMDE, Devuan, Parrot and Artix (#403).
+- The .deb accepts python3-pyqt6 without python3-qtpy (#397).
+
 * Tue Oct 27 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.6.3-1
 - Antigravity on GNOME: words in the editor no longer stay as typed (vieetj), and the chat box no longer loses or garbles letters when typing fast (#362, #365).
 - Cứu dấu also works after backspacing to the end of an earlier word and after a click inside a word (#358, #370).

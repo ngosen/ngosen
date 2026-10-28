@@ -194,9 +194,21 @@ def switch(model, toolkit):
     return True
 
 
-def reopen_if_switched(execve=os.execve):
+def reopen_if_switched(execve=os.execve, argv=None):
     if not _reopen_in:
         return
     # Named outright too, so the new window does not depend on fcitx5 having written the file yet.
     env = {**os.environ, "NGOSEN_SETTINGS_TOOLKIT": _reopen_in[0]}
-    execve(sys.executable, sys.orig_argv, env)
+    execve(sys.executable, [*_without_page(argv or sys.orig_argv), "--page", "appearance"], env)
+
+
+def _without_page(argv):
+    kept, skip = [], False
+    for arg in argv:
+        if skip:
+            skip = False
+        elif arg == "--page":
+            skip = True
+        elif not arg.startswith("--page="):
+            kept.append(arg)
+    return kept

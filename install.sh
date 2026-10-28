@@ -115,15 +115,6 @@ detect_distribution() {
             ;;
     esac
 
-    case " $like " in
-        *" arch "*)
-            x86_64_only "$id" "$machine"
-            manager=pacman
-            pattern="${package_name}-[0-9][^ /]*-x86_64\\.pkg\\.tar\\.zst"
-            return
-            ;;
-    esac
-
     if command -v apt-get >/dev/null 2>&1; then
         # Kali Rolling is built from Debian testing.
         [ "$id" = kali ] && codename=forky
@@ -135,6 +126,8 @@ detect_distribution() {
                 # on an image that has not been updated GTK apps then get no input method.
                 apt_upgrades=(libglib2.0-0)
                 ;;
+            *:bookworm | *:trixie | *:forky | *:jammy | *:noble | *:resolute | *:stonking) ;;
+            *) codename=$(debian_base "$codename") ;;
         esac
         case "$codename" in
             # The IBus edition needs libadwaita 1.5, which these lack.
@@ -149,7 +142,32 @@ detect_distribution() {
         esac
     fi
 
+    # Some Arch derivatives (Artix, Garuda) leave ID_LIKE out; pacman is what the package needs.
+    if [[ " $like " == *" arch "* ]] || { command -v pacman >/dev/null 2>&1 && ! command -v apt-get >/dev/null 2>&1; }; then
+        x86_64_only "$id" "$machine"
+        manager=pacman
+        pattern="${package_name}-[0-9][^ /]*-x86_64\\.pkg\\.tar\\.zst"
+        return
+    fi
+
     unsupported "${id:-bản phân phối này} ${codename:-$version}"
+}
+
+# Debian derivatives with a codename of their own (LMDE, Devuan, Parrot) still name the Debian
+# release they are built on, in DEBIAN_CODENAME or /etc/debian_version.
+debian_base() {
+    local base
+    # shellcheck disable=SC1091
+    base=$(. /etc/os-release && printf '%s' "${DEBIAN_CODENAME:-}")
+    if [ -n "$base" ]; then
+        printf '%s' "$base"
+        return
+    fi
+    case "$(cat /etc/debian_version 2>/dev/null)" in
+        12.*) printf bookworm ;;
+        13.*) printf trixie ;;
+        *) printf '%s' "$1" ;;
+    esac
 }
 
 confirm() {

@@ -244,6 +244,14 @@ jobs:
           - name: kali-rolling, X11
             image: kalilinux/kali-rolling
             args: x11
+          # Debian derivatives with codenames of their own: one names its base in /etc/debian_version,
+          # the other in DEBIAN_CODENAME.
+          - name: devuan-6, X11
+            image: devuan/devuan:excalibur
+            args: x11
+          - name: lmde-7, X11
+            image: linuxmintd/lmde7-amd64
+            args: x11
           - name: ubuntu-24.04, X11
             image: ubuntu:24.04
             args: x11

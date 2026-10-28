@@ -5,11 +5,12 @@
 
 import os
 
-from core.catalog import LANGUAGE_NAMES, MENU_ENTRIES, TRAY_ICON, SettingsCategory
+from core.catalog import HINTS, LANGUAGE_NAMES, MENU_ENTRIES, TRAY_ICON, SettingsCategory
 from gi.repository import Adw, Gdk, GLib, Gtk
 from i18n import _
 
 from ui_gtk.pages import SettingsPage
+from ui_gtk.toolkit_switch import toolkit_row
 
 TRAY_KEYS = ("UseLotusIcons", "IconTheme")
 
@@ -36,6 +37,12 @@ class AppearancePage(SettingsPage):
     def _shown(self, key, value):
         # Each language is named in itself, so it can be found whichever one the window is in.
         return LANGUAGE_NAMES.get(value, value) if key == "UiLanguage" else _(value)
+
+    def _rows_for(self, item):
+        if item[0] == "SettingsToolkit":
+            self.rows[item[0]] = toolkit_row(self.model, HINTS[item[0]])
+            return [self.rows[item[0]]]
+        return super()._rows_for(item)
 
     def _switch_title(self, key, label):
         return _(MENU_ENTRIES[key][0]) if key in MENU_ENTRIES else _(label)

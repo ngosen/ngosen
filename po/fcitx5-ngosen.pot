@@ -1495,3 +1495,63 @@ msgstr ""
 #: settings-gui/ui_gtk/window.py
 msgid "Ngó Sen backup"
 msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "This window uses {}"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Switch to {}…"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Switch to {}"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Install the {} window with your package manager."
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "The {} window needs these packages: {}."
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Checking the download size…"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Download: about {}."
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Copy Command"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Install"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Installing…"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Could not install"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Run this command in a terminal:"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Could not switch"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Check that fcitx5 is running."
+msgstr ""

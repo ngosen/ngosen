@@ -1581,3 +1581,63 @@ msgstr "Gửi kết quả"
 #: settings-gui/ui_gtk/window.py
 msgid "Ngó Sen backup"
 msgstr "Bản sao lưu Ngó Sen"
+
+#: settings-gui/core/catalog.py
+msgid "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
+msgstr "GTK hợp với GNOME và Cinnamon, Qt hợp với KDE và phần lớn desktop khác."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "This window uses {}"
+msgstr "Cửa sổ này dùng bản {}"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Switch to {}…"
+msgstr "Đổi sang bản {}…"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Switch to {}"
+msgstr "Đổi sang bản {}"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Install the {} window with your package manager."
+msgstr "Hãy cài bản {} bằng trình quản lý gói của máy."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "The {} window needs these packages: {}."
+msgstr "Bản {} cần cài các gói: {}."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Checking the download size…"
+msgstr "Đang xem dung lượng tải về…"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Download: about {}."
+msgstr "Tải về khoảng {}."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Copy Command"
+msgstr "Chép lệnh"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Install"
+msgstr "Cài ngay"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Installing…"
+msgstr "Đang cài…"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Could not install"
+msgstr "Không cài được"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Run this command in a terminal:"
+msgstr "Hãy chạy lệnh này trong terminal:"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Could not switch"
+msgstr "Không đổi được"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Check that fcitx5 is running."
+msgstr "Hãy xem fcitx5 có đang chạy không."

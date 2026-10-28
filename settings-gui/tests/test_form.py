@@ -2,11 +2,22 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import time
 import unittest
+from unittest import mock
 
 from qtpy.QtCore import QEvent
-from qtpy.QtWidgets import QCheckBox, QComboBox, QFormLayout, QLabel, QLineEdit, QListWidget
+from qtpy.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QFormLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QMessageBox,
+)
 from support import FakeDBusHandler, app
+from ui import toolkit_switch
 from ui.components import SingleKeyCaptureWidget
 from ui.main_window import NgoSenSettingsWindow
 from ui.pages.dynamic_settings import (
@@ -125,6 +136,16 @@ class ShortcutsPageTest(unittest.TestCase):
             self.assertLessEqual(button.mapTo(view, button.rect().bottomRight()).x(), view.width())
 
 
+def wait_until(condition, seconds=5):
+    """Runs the event loop until condition() holds, for work handed back from a thread."""
+    deadline = time.monotonic() + seconds
+    while not condition():
+        if time.monotonic() > deadline:
+            raise AssertionError("timed out")
+        app.processEvents()
+        time.sleep(0.01)
+
+
 class AppearancePageTest(unittest.TestCase):
     def setUp(self):
         self.fake = FakeDBusHandler({"ShowMenuCharset": "True"})
@@ -132,6 +153,60 @@ class AppearancePageTest(unittest.TestCase):
 
     def menu_checkbox(self, text):
         return next(c for c in self.page.findChildren(QCheckBox) if c.text() == text)
+
+    def test_switching_reopens_in_gtk_when_it_is_installed(self):
+        button = self.page.control_for("SettingsToolkit")
+        self.assertEqual(button.text(), "Switch to GTK…")
+        offer = mock.Mock(ready=True, target="gtk")
+        with (
+            mock.patch("ui.toolkit_switch.Offer", return_value=offer),
+            mock.patch("ui.toolkit_switch.switch", return_value=True) as switch,
+            mock.patch.object(self.page, "close") as close,
+        ):
+            button.click()
+            self.assertFalse(button.isEnabled())
+            wait_until(lambda: close.called)
+        switch.assert_called_once_with(self.page.model, "gtk")
+        self.assertTrue(button.isEnabled())
+
+    def test_a_window_that_still_cannot_load_after_installing_is_reported(self):
+        offer = mock.Mock(install_argv=["true"], command="sudo true")
+        offer.name = "GTK"
+        offer.installed_now.return_value = False
+        button = self.page.control_for("SettingsToolkit")
+        with (
+            mock.patch("ui.toolkit_switch.switch") as switch,
+            mock.patch("ui.toolkit_switch._failed") as failed,
+        ):
+            toolkit_switch._install(button, self.page.model, offer)
+            wait_until(lambda: failed.called)
+        switch.assert_not_called()
+
+    def test_a_refused_password_prompt_changes_nothing(self):
+        offer = mock.Mock(install_argv=["sh", "-c", "exit 126"])
+        offer.name = "GTK"
+        button = self.page.control_for("SettingsToolkit")
+        with mock.patch("ui.toolkit_switch._failed") as failed:
+            toolkit_switch._install(button, self.page.model, offer)
+            wait_until(lambda: button.isEnabled())
+        failed.assert_not_called()
+        offer.installed_now.assert_not_called()
+
+    def test_a_missing_window_lists_its_packages_first(self):
+        offer = mock.Mock(ready=False, installable=True, runnable=True, packages=("a", "b"))
+        offer.name = "GTK"
+        offer.download_size.return_value = None
+        with (
+            mock.patch("ui.toolkit_switch.Offer", return_value=offer),
+            mock.patch("ui.toolkit_switch.switch") as switch,
+        ):
+            self.page.control_for("SettingsToolkit").click()
+            wait_until(lambda: self.page.findChild(QMessageBox))
+        box = self.page.findChild(QMessageBox)
+        self.assertIn("a, b", box.informativeText())
+        self.assertIn("Install", [b.text() for b in box.buttons()])
+        switch.assert_not_called()
+        box.close()
 
     def test_menu_entries_follow_the_tray_icon(self):
         labels = row_labels(form_of(self.page))

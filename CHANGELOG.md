@@ -30,6 +30,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt có thêm bản GTK giống app GNOME, dùng libadwaita 1.5 trở lên, bên cạnh bản Qt như cũ.
   GNOME và Cinnamon (Linux Mint) mở GTK nếu đủ libadwaita; desktop khác mở Qt. Chỉ có thư viện bản nào thì mở bản đó.
   Muốn chọn hẳn một bản, đặt "Cửa sổ cài đặt" thành Qt hoặc GTK trong công cụ cài đặt của fcitx5 (#386).
+- Cửa sổ cài đặt, trang Giao diện: bản Qt có nút "Đổi sang bản GTK…", bản GTK có nút "Đổi sang bản Qt…".
+  Có sẵn bản kia thì cửa sổ mở lại ngay bằng bản đó. Chưa có thì báo cần cài gói nào, tải về khoảng bao nhiêu,
+  rồi cho chọn cài ngay (hỏi mật khẩu) hoặc chép lệnh để tự chạy (#393).
 
 ### Thay đổi
 

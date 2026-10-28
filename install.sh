@@ -858,6 +858,7 @@ undo_gnome_session() {
         gnome-extensions uninstall kimpanel@kde.org >/dev/null 2>&1 || :
         undone+=("gỡ extension Input Method Panel")
     fi
+    [ "${#undone[@]}" -eq 0 ] || say "Đã trả lại những gì bản fcitx5 đặt:"
     for id in "${undone[@]}"; do
         say "  - $id"
     done
@@ -1229,7 +1230,8 @@ main() {
         say "Sau đó IBus và Ngó Sen được đặt làm bộ gõ cho tài khoản này."
         fcitx5_edition_in_use && switch_fcitx5=1
     elif wants_gnome_setup; then
-        explain_gnome_setup
+        # An account already on fcitx5 is upgrading; nothing it reads there would change for it.
+        fcitx5_edition_in_use || explain_gnome_setup
     elif wants_kde_setup; then
         say "Sau đó fcitx5 được đặt làm bộ gõ của KDE cho tài khoản này."
     elif wants_x11_setup; then

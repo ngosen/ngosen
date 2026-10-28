@@ -304,6 +304,9 @@ install_shown() {
 install_names() { grep -q "Bấm $1 " "$install_log"; }
 offers_ibus() { grep -qF -- "| bash -s -- --ibus" "$install_log"; }
 lacks_ibus_offer() { ! offers_ibus; }
+explains_gnome_setup() { grep -qF "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus" "$install_log"; }
+lacks_gnome_explanation() { ! explains_gnome_setup; }
+lists_undone_under_a_heading() { grep -A1 -F "Đã trả lại những gì bản fcitx5 đặt:" "$install_log" | grep -q '^  - '; }
 fcitx5_stopped() { ! fcitx5_running; }
 
 # A release listing an IBus package under this machine's name is enough for the offer.
@@ -542,9 +545,17 @@ main() {
     check_packages
     [ "$failures" -eq 0 ] || finish
     check_session_files
+    if [ "$session" = gnome ]; then
+        check "it explains the GNOME setup first" explains_gnome_setup
+        check "a second install succeeds" install_logged
+        check "an account already on fcitx5 gets no explanation" lacks_gnome_explanation
+    fi
 
     echo "== uninstall"
-    check "uninstall succeeds" installer --yes --uninstall
+    check "uninstall succeeds" uninstall_logged
+    if [ "$session" = gnome ]; then
+        check "what it undid is listed under a heading" lists_undone_under_a_heading
+    fi
     check_uninstalled_state
 
     if [ "$session" = gnome ] && [ -z "$ibus_release_dir" ]; then

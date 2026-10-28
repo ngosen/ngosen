@@ -18,7 +18,7 @@ FEATURES = [
         "title": N_("Settings window in GTK"),
         "how": N_(
             "GNOME and Cinnamon open the GTK window, other desktops the Qt one. Switch on the "
-            "Appearance page, which installs the other window when it is missing."
+            "Appearance page, which offers to install the other window when it is missing."
         ),
         "example": "",
         "target": ("setting", "SettingsToolkit"),

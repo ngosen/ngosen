@@ -1647,5 +1647,5 @@ msgid "Settings window in GTK"
 msgstr "Cửa sổ cài đặt bản GTK"
 
 #: settings-gui/core/whats_new_content.py
-msgid "GNOME and Cinnamon open the GTK window, other desktops the Qt one. Switch on the Appearance page, which installs the other window when it is missing."
-msgstr "GNOME và Cinnamon mở bản GTK, desktop khác mở bản Qt. Đổi bản ở trang Giao diện; chưa có bản kia thì cài ngay tại đó."
+msgid "GNOME and Cinnamon open the GTK window, other desktops the Qt one. Switch on the Appearance page, which offers to install the other window when it is missing."
+msgstr "GNOME và Cinnamon mở bản GTK, desktop khác mở bản Qt. Đổi bản ở trang Giao diện; chưa có bản kia thì được mời cài ngay tại đó."

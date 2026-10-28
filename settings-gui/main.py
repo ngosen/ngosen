@@ -6,24 +6,39 @@
 Application entry point.
 """
 
+import importlib.util
 import os
 import signal
 import sys
 
+import ui_gtk
 from core.brand import APP_ID
 from core.cli import parse_args
-from i18n import setup_i18n
+from i18n import saved_setting, setup_i18n
+
+QT_BINDINGS = ("PyQt6", "PySide6", "PyQt5")
 
 
-def toolkit(env=os.environ):
-    """qt, or gtk when the developer asks for it and GTK 4 with libadwaita 1.5 is there."""
-    if env.get("NGOSEN_SETTINGS_TOOLKIT") != "gtk":
-        return "qt"
-    import ui_gtk
+def has_qt(find=importlib.util.find_spec):
+    return bool(find("qtpy")) and any(find(module) for module in QT_BINDINGS)
 
-    if ui_gtk.available():
-        return "gtk"
-    print("GTK 4 or libadwaita 1.5 is missing; opening the Qt window.", file=sys.stderr)
+
+# The desktops whose own apps are GTK and libadwaita.
+GTK_DESKTOPS = {"GNOME", "X-Cinnamon"}
+
+
+def toolkit(env=os.environ, qt=has_qt, gtk=ui_gtk.available):
+    """The window the user picked, or the other one when only that is installed."""
+    wanted = env.get("NGOSEN_SETTINGS_TOOLKIT") or saved_setting("SettingsToolkit", "Auto", env)
+    wanted = wanted.lower()
+    if wanted == "auto":
+        desktops = set(env.get("XDG_CURRENT_DESKTOP", "").split(":"))
+        wanted = "gtk" if desktops & GTK_DESKTOPS else "qt"
+    order = ("gtk", "qt") if wanted == "gtk" else ("qt", "gtk")
+    installed = {"qt": qt, "gtk": gtk}
+    for name in order:
+        if installed[name]():
+            return name
     return "qt"
 
 

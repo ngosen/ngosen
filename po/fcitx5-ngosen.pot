@@ -286,6 +286,10 @@ msgstr ""
 msgid "Interface Language"
 msgstr ""
 
+#: src/ngosen-config.h
+msgid "Settings Window"
+msgstr ""
+
 #: src/ngosen-engine.cpp:215
 msgid "Charset"
 msgstr ""

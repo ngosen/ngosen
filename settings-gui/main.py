@@ -15,8 +15,18 @@ from core.cli import parse_args
 from core.toolkit_install import has_gtk, has_qt, reopen_if_switched
 from i18n import saved_setting, setup_i18n
 
-# The desktops whose own apps are GTK and libadwaita.
+# The desktops whose own apps are GTK and libadwaita, and their session names.
 GTK_DESKTOPS = {"GNOME", "X-Cinnamon"}
+GTK_SESSIONS = ("gnome", "ubuntu", "cinnamon")
+
+
+def desktop_wants_gtk(env):
+    current = env.get("XDG_CURRENT_DESKTOP")
+    if current:
+        return bool(set(current.split(":")) & GTK_DESKTOPS)
+    # im-config starts fcitx5 from Xsession.d, before the session manager sets XDG_CURRENT_DESKTOP.
+    session = env.get("XDG_SESSION_DESKTOP") or env.get("DESKTOP_SESSION") or ""
+    return session.lower().startswith(GTK_SESSIONS)
 
 
 def toolkit(env=os.environ, qt=has_qt, gtk=has_gtk):
@@ -24,8 +34,7 @@ def toolkit(env=os.environ, qt=has_qt, gtk=has_gtk):
     wanted = env.get("NGOSEN_SETTINGS_TOOLKIT") or saved_setting("SettingsToolkit", "Auto", env)
     wanted = wanted.lower()
     if wanted == "auto":
-        desktops = set(env.get("XDG_CURRENT_DESKTOP", "").split(":"))
-        wanted = "gtk" if desktops & GTK_DESKTOPS else "qt"
+        wanted = "gtk" if desktop_wants_gtk(env) else "qt"
     order = ("gtk", "qt") if wanted == "gtk" else ("qt", "gtk")
     installed = {"qt": qt, "gtk": gtk}
     for name in order:

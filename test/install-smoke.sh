@@ -238,6 +238,12 @@ check_second_run() {
     check "it says this version is already installed" grep -qF "đã được cài từ trước" "$install_log"
     check "it leaves the package as it is" test "$(addon_state)" = "$addon"
     check "it leaves fcitx5 running" test "$(fcitx5_pid)" = "$pid"
+    # An addon written after fcitx5 started has not been loaded yet.
+    sleep 1
+    touch "$(find /usr/lib /usr/lib64 -maxdepth 3 -name libngosen.so | head -n 1)"
+    check "a run after the addon changed succeeds" install_logged
+    check "it restarts fcitx5" test "$(fcitx5_pid)" != "$pid"
+    check "it does not say nothing changed" refuses grep -qF "không có gì thay đổi" "$install_log"
     check "fcitx5 stops after the second run" stop_fcitx5
     pkill -u "$user" dbus-daemon || :
     bus=

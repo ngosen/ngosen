@@ -22,6 +22,7 @@ session_changes=()
 keyboard_dropped=0
 fcitx5_reloaded=0
 package_changed=1
+fcitx5_current=0
 manager=
 pattern=
 # Packages apt upgrades along with the install on a distribution that needs it.
@@ -263,6 +264,8 @@ install_package() {
                     *) extras+=("$candidate") ;;
                 esac
             done
+            # Modules new to the machine reach apps only after fcitx5 restarts.
+            [ "${#extras[@]}" -eq 0 ] || package_changed=1
             as_root env NGOSEN_INSTALLER=1 apt-get install -y "$package" "${extras[@]}"
             ;;
         pacman)
@@ -461,13 +464,19 @@ restart_fcitx5() {
 }
 
 installed_package_version() {
-    if command -v dpkg-query >/dev/null 2>&1; then
-        dpkg-query -W -f='${Status} ${Version}' "$package_name" 2>/dev/null
-    elif command -v pacman >/dev/null 2>&1; then
-        pacman -Q "$package_name" 2>/dev/null
-    else
-        rpm -q "$package_name" 2>/dev/null
-    fi
+    case "$manager" in
+        apt) dpkg-query -W -f='${Version}' "$package_name" ;;
+        pacman) pacman -Q "$package_name" | cut -d' ' -f2 ;;
+        *) rpm -q --qf '%{EPOCHNUM}:%{VERSION}-%{RELEASE}' "$package_name" ;;
+    esac 2>/dev/null
+}
+
+package_file_version() {
+    case "$manager" in
+        apt) dpkg-deb -f "$1" Version ;;
+        pacman) pacman -Qp "$1" | cut -d' ' -f2 ;;
+        *) rpm -qp --qf '%{EPOCHNUM}:%{VERSION}-%{RELEASE}' "$1" ;;
+    esac 2>/dev/null
 }
 
 # True when the running fcitx5 started after the installed addon was written, so it runs that one.
@@ -485,7 +494,7 @@ fcitx5_runs_installed_addon() {
 reload_fcitx5() {
     local had_keyboard=0 tries=20
     if [ "$package_changed" -eq 0 ] && has_ngosen_in_profile && fcitx5_runs_installed_addon; then
-        fcitx5_reloaded=1
+        fcitx5_current=1
         return 0
     fi
     has_keyboard_in_profile && had_keyboard=1
@@ -725,7 +734,7 @@ setup_kde_session() {
     fi
     set_xim_environment
     configure_fcitx5
-    if [ "${#session_changes[@]}" -eq 0 ] && [ "$fcitx5_reloaded" -eq 0 ]; then
+    if [ "${#session_changes[@]}" -eq 0 ] && [ "$fcitx5_reloaded" -eq 0 ] && [ "$fcitx5_current" -eq 0 ]; then
         say "Xong. Đăng xuất rồi đăng nhập lại để dùng bản mới."
         return
     fi
@@ -736,7 +745,7 @@ report_session_changes() {
     local change
     if [ "${#session_changes[@]}" -eq 0 ]; then
         report_dropped_keyboard
-        if [ "$package_changed" -eq 0 ] && [ "$fcitx5_reloaded" -eq 1 ]; then
+        if [ "$fcitx5_current" -eq 1 ]; then
             say "Xong. Ngó Sen đã là bản này và đã đặt xong, không có gì thay đổi."
         elif [ "$fcitx5_reloaded" -eq 1 ]; then
             say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
@@ -1090,7 +1099,7 @@ main() {
 
     detect_distribution
 
-    local found hash file before
+    local found hash file
     found=$(find_package)
     hash=${found%% *}
     file=${found##* }
@@ -1131,12 +1140,12 @@ main() {
     chmod 755 "$workdir"
 
     download_package "$hash" "$file"
-    before=$(installed_package_version || true)
-    install_package "$workdir/$file"
-    if is_package_installed "$package_name" && [ "$before" = "$(installed_package_version || true)" ]; then
+    if is_package_installed "$package_name" &&
+        [ "$(installed_package_version)" = "$(package_file_version "$workdir/$file")" ]; then
         package_changed=0
-        say "Bản này đã được cài từ trước, không cài lại."
     fi
+    install_package "$workdir/$file"
+    [ "$package_changed" -eq 1 ] || say "Bản này đã được cài từ trước, không cài lại."
     if [ "$edition" = ibus ]; then
         if wants_gnome_setup; then
             setup_ibus_session
@@ -1166,7 +1175,7 @@ main() {
     say ""
     if [ "$(id -u)" -ne 0 ] && reload_fcitx5; then
         report_dropped_keyboard
-        if [ "$package_changed" -eq 0 ]; then
+        if [ "$fcitx5_current" -eq 1 ]; then
             say "Xong. Ngó Sen đã là bản này, không có gì thay đổi."
         else
             say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."

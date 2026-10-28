@@ -51,6 +51,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- deepin-editor: mặc định dùng chế độ gạch chân để gõ nhanh không còn đảo chữ, mất hoặc lặp dấu như khi
+  dùng Gõ Sen; vẫn giữ chế độ đã chọn cho app qua menu `, không đổi các app khác (#421).
 - Cửa sổ cài đặt: bấm "Mặc định" nay báo trước phím chuyển Anh/Việt sẽ về Ctrl+Shift nếu đang dùng phím khác,
   kể cả phím vừa đổi, trong cả cửa sổ Qt và GTK (#414).
 - Cửa sổ cài đặt: lưu từ điển riêng không còn xoá chữ bắt đầu bằng dấu # khỏi file; bộ gõ vẫn luôn dùng được

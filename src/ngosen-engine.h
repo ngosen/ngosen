@@ -403,6 +403,8 @@ namespace fcitx {
         NgoSenMode vietnameseMode() const;
         // The mode of an app without a rule: Off until the toggle key turns Vietnamese on.
         NgoSenMode globalMode() const;
+        // The mode an app gets when the user has picked none for it.
+        NgoSenMode defaultModeFor(const std::string& appName) const;
         bool       isToggleKey(const Key& key) const;
         // Handles the toggle key; returns whether the key was it.
         bool handleToggleKey(KeyEvent& keyEvent);
@@ -445,7 +447,7 @@ namespace fcitx {
         void pickMenuMode(InputContext* ic, NgoSenMode mode, bool isDefault);
         void openModeMenu(InputContext* ic);
         // The modes the cycle key steps through, in the configured order.
-        std::vector<NgoSenMode> cycleModes();
+        std::vector<NgoSenMode> cycleModes(const std::string& appName);
         void                    cycleMode(InputContext* ic);
 
         /**

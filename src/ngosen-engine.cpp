@@ -93,6 +93,12 @@ namespace fcitx {
     }
 
     namespace {
+        // deepin-editor stalls between edits, and fcitx5-qt applies a commit before the keys let
+        // through ahead of it, so fast typing in Sen scrambles words there. Preedit sends no keys.
+        bool typesInPreeditByDefault(const std::string& appName) {
+            return stripDesktopSuffix(appName) == "deepin-editor";
+        }
+
         bool otherModifierHeld(const Key& key) {
             return (key.states() & ~Key::keySymToStates(key.sym()) & KeyStates{KeyState::Ctrl_Alt_Shift, KeyState::Super}) != 0;
         }
@@ -828,7 +834,7 @@ namespace fcitx {
         }
     }
 
-    std::vector<NgoSenMode> NgoSenEngine::cycleModes() {
+    std::vector<NgoSenMode> NgoSenEngine::cycleModes(const std::string& appName) {
         auto                                      order      = stringutils::split(*config_.modeOrder, ",");
         std::vector<std::pair<std::string, bool>> visibility = {{"Sen", *config_.showModeSen},
                                                                 {"Preedit", *config_.showModePreedit},
@@ -857,7 +863,7 @@ namespace fcitx {
             else if (name == "Off")
                 mode = NgoSenMode::Off;
             else if (name == "Default")
-                mode = globalMode();
+                mode = defaultModeFor(appName);
             else
                 continue;
 
@@ -872,7 +878,7 @@ namespace fcitx {
         NGOSEN_INFO("Cycle mode key pressed");
         const std::string appName      = getProgramName(ic);
         const NgoSenMode  current      = getAppRule(appName);
-        const auto        enabledModes = cycleModes();
+        const auto        enabledModes = cycleModes(appName);
         if (enabledModes.empty())
             return;
 
@@ -1062,7 +1068,12 @@ namespace fcitx {
     }
 
     NgoSenMode NgoSenEngine::getAppRule(const std::string& appName) const {
-        return findAppRule(appName).value_or(globalMode());
+        return findAppRule(appName).value_or(defaultModeFor(appName));
+    }
+
+    NgoSenMode NgoSenEngine::defaultModeFor(const std::string& appName) const {
+        const NgoSenMode mode = globalMode();
+        return mode == NgoSenMode::Sen && typesInPreeditByDefault(appName) ? NgoSenMode::Preedit : mode;
     }
 
     std::optional<std::string> NgoSenEngine::appRuleName(const std::string& appName) const {
@@ -1206,14 +1217,15 @@ namespace fcitx {
     std::vector<NgoSenEngine::ModeMenuItem> NgoSenEngine::modeMenuItems() {
         auto                                          getShortcut = [](const std::string& shortcut) { return Key(shortcut).sym(); };
 
-        std::unordered_map<std::string, ModeMenuItem> modeMap = {{"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
-                                                                 {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
-                                                                 {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
-                                                                 {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
-                                                                 {"Default", {globalMode(), _("Default Typing"), getShortcut(*config_.shortcutDefault), *config_.showModeDefault}}};
+        std::unordered_map<std::string, ModeMenuItem> modeMap = {
+            {"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
+            {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
+            {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
+            {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
+            {"Default", {defaultModeFor(currentConfigureApp_), _("Default Typing"), getShortcut(*config_.shortcutDefault), *config_.showModeDefault}}};
 
-        std::vector<ModeMenuItem>                     allModes;
-        auto                                          order = stringutils::split(*config_.modeOrder, ",");
+        std::vector<ModeMenuItem> allModes;
+        auto                      order = stringutils::split(*config_.modeOrder, ",");
         for (const auto& name : order) {
             auto it = modeMap.find(name);
             if (it != modeMap.end()) {
@@ -1250,7 +1262,7 @@ namespace fcitx {
         std::unordered_set<KeySym> usedModeKeys;
 
         modeMenuMapping_.clear();
-        const NgoSenMode defaultMode = globalMode();
+        const NgoSenMode defaultMode = defaultModeFor(currentConfigureApp_);
 
         for (const auto& info : modeMenuItems()) {
             if (!info.visible)

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """What the "What's new & tips" page says: the one file to update before a feature release.
 
+An optional link is a (label, url) pair opened in the browser.
 A target names what the "Open setting" button shows: ("setting", key) for a setting on the
 Typing, Keys or Appearance page, ("page", name) for a whole page, or None.
 """
@@ -15,13 +16,14 @@ from i18n import N_
 FEATURES = [
     {
         "version": "1.7",
-        "title": N_("Settings window in GTK"),
+        "title": N_("GTK look for GNOME"),
         "how": N_(
-            "GNOME and Cinnamon open the GTK window, other desktops the Qt one. Switch on the "
-            "Appearance page, which offers to install the other window when it is missing."
+            "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
         ),
         "example": "",
         "target": ("setting", "SettingsToolkit"),
+        # Pictures of the GTK look for people still in the Qt one; the GTK page leaves it out.
+        "link": (N_("See the GTK look"), "https://ngosen.github.io/huong-dan/cua-so-cai-dat/"),
     },
     {
         "version": "1.6",

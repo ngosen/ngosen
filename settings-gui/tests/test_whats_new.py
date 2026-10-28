@@ -78,6 +78,17 @@ class PageTest(unittest.TestCase):
         self.assertEqual(self.window.sidebar.currentItem().text(), "Typing")
         self.assertIsInstance(app.focusWidget(), QCheckBox)
 
+    def test_gtk_card_links_to_pictures_of_the_gtk_window(self):
+        page = self.window.show_page("whats-new")
+        link = next(b for b in page.findChildren(QPushButton) if b.property("url"))
+        self.assertEqual(link.text(), "See the GTK look")
+        with mock.patch("ui.pages.whats_new.QDesktopServices.openUrl") as open_url:
+            link.click()
+        self.assertEqual(
+            open_url.call_args.args[0].toString(),
+            "https://ngosen.github.io/huong-dan/cua-so-cai-dat/",
+        )
+
     def test_tip_button_opens_its_page(self):
         page = self.window.show_page("whats-new")
         button = next(

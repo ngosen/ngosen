@@ -369,6 +369,19 @@ im_config_set() {
     im-config -n "$1" >/dev/null 2>&1 || im-config -w "$1" >/dev/null 2>&1
 }
 
+# im-config 1.1 drops the choice with "auto"; given "REMOVE" it writes "run_im REMOVE".
+im_config_unset() {
+    im-config -n REMOVE >/dev/null 2>&1 || im-config -w auto >/dev/null 2>&1
+}
+
+im_config_unset_command() {
+    if im-config -h 2>&1 | grep -q -- '-w <name>'; then
+        echo "im-config -w auto"
+    else
+        echo "im-config -n REMOVE"
+    fi
+}
+
 # Prints the input method im-config starts when the user has picked none.
 im_config_auto() {
     im-config -m 2>/dev/null | sed -n 3p | grep . ||
@@ -738,7 +751,7 @@ disable_shell_extension() {
 # Turns im-config back to the system default if the install picked fcitx5 there.
 undo_im_config() {
     if made_change im-config && xinputrc_runs_fcitx5 && command -v im-config >/dev/null 2>&1; then
-        im_config_set REMOVE || :
+        im_config_unset || :
     fi
 }
 
@@ -747,9 +760,6 @@ undo_im_config() {
 report_unknown_changes() {
     local uuid
     [ -e "$(changes_file)" ] && return 0
-    if xinputrc_runs_fcitx5; then
-        say "  - im-config vẫn chọn fcitx5 (có thể do bản cài cũ đặt); muốn bỏ thì chạy: im-config -n REMOVE"
-    fi
     command -v gnome-extensions >/dev/null 2>&1 || return 0
     for uuid in forward-keys@ngosen.github.io kimpanel@kde.org; do
         if gnome-extensions list --enabled 2>/dev/null | grep -qx "$uuid"; then
@@ -935,7 +945,7 @@ undo_ibus_session() {
         say "  - bỏ Ngó Sen khỏi nguồn nhập"
     fi
     if made_change im-config && grep -qs '^run_im ibus$' "$HOME/.xinputrc" && command -v im-config >/dev/null 2>&1; then
-        im_config_set REMOVE || :
+        im_config_unset || :
     fi
     if is_package_installed fcitx5-ngosen; then
         unmask_fcitx5_autostart
@@ -1000,6 +1010,9 @@ uninstall() {
     say ""
     if [ "$edition" = ibus ]; then
         say "Xong. Đăng xuất rồi đăng nhập lại để gỡ hẳn Ngó Sen khỏi GNOME."
+    elif { wants_gnome_setup || wants_x11_setup; } && command -v im-config >/dev/null 2>&1 && xinputrc_runs_fcitx5; then
+        say "Xong. im-config vẫn chọn fcitx5 nên fcitx5 vẫn chạy khi đăng nhập. Muốn bỏ thì chạy lệnh dưới"
+        say "rồi đăng xuất và đăng nhập lại:  $(im_config_unset_command)"
     elif wants_gnome_setup; then
         say "Xong. Đăng xuất rồi đăng nhập lại để GNOME dùng lại IBus."
     elif wants_x11_setup && [ "$(im_config_auto)" = fcitx5 ]; then

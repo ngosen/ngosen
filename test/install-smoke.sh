@@ -161,6 +161,7 @@ check_uninstalled_state() {
     check "fcitx5-ngosen is removed" is_removed fcitx5-ngosen
     if [ "$session" = x11 ]; then
         check ".xinputrc no longer runs fcitx5" lacks_line "$home/.xinputrc" 'run_im fcitx5'
+        check ".xinputrc is removed" test ! -e "$home/.xinputrc"
     elif [ "$session" = kde ]; then
         # fcitx5 may serve other input methods, so KDE keeps it.
         check "KWin still starts fcitx5" has_line "$kwinrc" "$kwin_im"
@@ -458,8 +459,11 @@ check_user_im_config_kept() {
     as_user rm -f "$changes"
     echo 'run_im fcitx5' | as_user tee "$home/.xinputrc" >/dev/null
     check "install over im-config set by the user succeeds" installer --yes
-    check "uninstall after that succeeds" installer --yes --uninstall
+    check "uninstall after that succeeds" uninstall_logged
     check "im-config set by the user stays" has_line "$home/.xinputrc" 'run_im fcitx5'
+    check "it says fcitx5 still starts at login" grep -qF "im-config vẫn chọn fcitx5" "$install_log"
+    check "it does not promise fcitx5 is gone" refuses grep -qE "GNOME dùng lại IBus|bỏ hẳn fcitx5" "$install_log"
+    as_user rm -f "$home/.xinputrc"
 }
 
 main() {
@@ -485,6 +489,11 @@ main() {
     if [ "$session" = x11 ]; then
         echo "== toggle key named before the addon runs"
         check_toggle_key_message
+        echo "== im-config the user set"
+        check_user_im_config_kept
+    fi
+
+    if [ "$session" = gnome ] && command -v im-config >/dev/null 2>&1; then
         echo "== im-config the user set"
         check_user_im_config_kept
     fi

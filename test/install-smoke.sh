@@ -444,10 +444,16 @@ check_user_im_config_kept() {
 
 apt_args=/srv/apt-get-args
 
-# sudo keeps its own PATH, so the wrapper goes in a directory on it that comes before /usr/bin.
+# sudo keeps its own PATH, which on Kali leaves out /usr/local, so the wrapper takes apt-get's place.
 log_apt_get() {
-    printf '#!/bin/sh\necho "$*" >>%s\nexec /usr/bin/apt-get "$@"\n' "$apt_args" >/usr/local/sbin/apt-get
-    chmod +x /usr/local/sbin/apt-get
+    dpkg-divert --quiet --rename --add /usr/bin/apt-get
+    printf '#!/bin/sh\necho "$*" >>%s\nexec /usr/bin/apt-get.distrib "$@"\n' "$apt_args" >/usr/bin/apt-get
+    chmod +x /usr/bin/apt-get
+}
+
+restore_apt_get() {
+    rm -f /usr/bin/apt-get
+    dpkg-divert --quiet --rename --remove /usr/bin/apt-get
 }
 
 names_frontend() { grep -q '^install .*fcitx5-frontend-' "$apt_args"; }
@@ -459,7 +465,7 @@ check_installed_frontends_left_alone() {
     check "install with the modules in place succeeds" installer --yes
     check "precondition: apt-get install was logged" grep -q '^install ' "$apt_args"
     check "it does not name the installed modules" refuses names_frontend
-    rm -f /usr/local/sbin/apt-get
+    restore_apt_get
 }
 
 main() {

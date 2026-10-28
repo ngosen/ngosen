@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Puts every setting, table and remembered app mode back to what a new install has."""
 
+from i18n import _
+
 from core.app_modes import RememberedAppModes
 from core.dictionary import Dictionary
 from core.keymap import Keymap
@@ -27,6 +29,13 @@ def restore(dbus):
     app_modes.restore_defaults()
     ok = app_modes.save_data() and ok
     return _restore_dictionary(dbus) and ok
+
+
+def toggle_key_note(model):
+    """What a reset changes about switching languages, or "" when the key is already the default."""
+    if not model.metadata or model.toggle_is_ctrl_shift():
+        return ""
+    return _("The key that switches between Vietnamese and English goes back to Ctrl+Shift.")
 
 
 def _restore_dictionary(dbus):

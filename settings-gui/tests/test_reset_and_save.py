@@ -32,6 +32,31 @@ class ResetTest(unittest.TestCase):
         self.assertTrue(page.save_data())
         self.assertEqual(fake.values["SpellCheck"], "True")
 
+    def asked(self, window):
+        with mock.patch.object(QMessageBox, "question", return_value=QMessageBox.No) as question:
+            window.on_restore_defaults()
+        return question.call_args.args[2]
+
+    def test_reset_says_the_toggle_key_goes_back_to_ctrl_shift(self):
+        window = NgoSenSettingsWindow(
+            dbus_handler=FakeDBusHandler({"ToggleKey": {"0": "Control+space"}})
+        )
+        self.assertIn("goes back to Ctrl+Shift", self.asked(window))
+        self.assertNotIn(
+            "Ctrl+Shift", self.asked(NgoSenSettingsWindow(dbus_handler=FakeDBusHandler()))
+        )
+
+    def test_reset_sees_a_toggle_key_not_saved_yet(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        window._build_all_pages()
+        page = next(
+            p
+            for p in window._pages
+            if isinstance(p, DynamicSettingsPage) and p.findChildren(HotkeyEditorWidget)
+        )
+        page.findChildren(HotkeyEditorWidget)[0].hotkey_capture.textChanged.emit("F12")
+        self.assertIn("goes back to Ctrl+Shift", self.asked(window))
+
     def test_reset_covers_pages_not_opened(self):
         fake = FakeDBusHandler(
             {"SpellCheck": "False"},

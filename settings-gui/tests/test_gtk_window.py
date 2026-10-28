@@ -564,6 +564,11 @@ class GtkDefaultsTest(unittest.TestCase):
         self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
         self.assertEqual(self.local_words(), ["hello", "ngosen", "world"])
 
+    def test_the_dialog_says_the_toggle_key_goes_back_to_ctrl_shift(self):
+        self.assertNotIn("Ctrl+Shift", self.window.confirm_defaults().get_body())
+        self.window.model.set("ToggleKey", {"0": "Control+space"})
+        self.assertIn("goes back to Ctrl+Shift", self.window.confirm_defaults().get_body())
+
     def test_only_confirming_the_dialog_restores(self):
         dialog = self.window.confirm_defaults()
         dialog.emit("response", "cancel")

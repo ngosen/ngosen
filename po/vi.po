@@ -1570,6 +1570,10 @@ msgstr "Menu"
 msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
 msgstr "Gõ tắt, từ đã thêm vào từ điển, phím tự đặt và kiểu gõ đã nhớ cho từng app cũng bị xoá. Có thể hoàn tác ngay sau đó."
 
+#: settings-gui/core/defaults.py
+msgid "The key that switches between Vietnamese and English goes back to Ctrl+Shift."
+msgstr "Phím chuyển Anh/Việt trở về Ctrl+Shift."
+
 #: settings-gui/ui_gtk/window.py
 msgid "Could not restore every default. Check that fcitx5 is running."
 msgstr "Chưa đưa được mọi thứ về mặc định. Hãy xem fcitx5 có đang chạy không."

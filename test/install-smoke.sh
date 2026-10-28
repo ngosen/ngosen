@@ -265,12 +265,25 @@ check_old_profile_cleanup() {
     check "the keyboard is dropped without settings" lacks_keyboard "$profile"
     check "no settings keep Ctrl+Space" has_line "$settings" '0=Control+space'
 
+    # A new user who adds Ngó Sen in the configtool starts fcitx5 before Ngó Sen ever loads.
+    printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[GroupOrder]\n0=Default\n' |
+        as_user tee "$profile" >/dev/null
+    as_user rm -f "$settings"
+    check "fcitx5 starts before Ngó Sen is added" start_fcitx5
+    check "fcitx5 stops before Ngó Sen is added" stop_fcitx5
+    printf '\n[Groups/0/Items/1]\nName=ngosen\nLayout=\n' | as_user tee -a "$profile" >/dev/null
+    check "fcitx5 starts with Ngó Sen just added" start_fcitx5
+    check "fcitx5 stops with Ngó Sen just added" stop_fcitx5
+    check "a new user keeps the keyboard" has_line "$profile" 'Name=keyboard-us'
+    check "a new user gets Ctrl+Shift" lacks_line "$settings" '0=Control+space'
+
     # Without a profile fcitx5 builds one from the input methods listed for the desktop language.
     as_user rm -f "$profile" "$settings"
     # Some images (LMDE) set LC_ALL and LANGUAGE, which override LANG.
     check "fcitx5 starts on a Vietnamese desktop without a profile" start_fcitx5 -u LC_ALL -u LANGUAGE LANG=vi_VN.UTF-8
     check "fcitx5 stops on the Vietnamese desktop" stop_fcitx5
     check "a Vietnamese desktop gets ngosen in its first profile" has_line "$profile" 'Name=ngosen'
+    check "a first profile keeps Ctrl+Shift" lacks_line "$settings" '0=Control+space'
 
     pkill -u "$user" dbus-daemon || :
     bus=
@@ -324,6 +337,8 @@ case "$1 $2 $3" in
     "set org.gnome.shell enabled-extensions") printf '%s\n' "$4" >"$state" ;;
     "get org.gnome.desktop.input-sources sources") cat "$HOME/.stub-input-sources" 2>/dev/null || echo "[('xkb', 'us')]" ;;
     "set org.gnome.desktop.input-sources sources") printf '%s\n' "$4" >"$HOME/.stub-input-sources" ;;
+    "get org.gnome.desktop.input-sources mru-sources") cat "$HOME/.stub-recent-sources" 2>/dev/null || echo "@a(ss) []" ;;
+    "set org.gnome.desktop.input-sources mru-sources") printf '%s\n' "$4" >"$HOME/.stub-recent-sources" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -407,10 +422,13 @@ refuses() { ! "$@"; }
 has_ngosen_source() { grep -qF "('ibus', 'ngosen')" "$sources"; }
 lacks_ngosen_source() { ! has_ngosen_source; }
 fcitx5_masked() { has_line "$fcitx5_mask" 'Hidden=true'; }
+recent_sources=$home/.stub-recent-sources
+ngosen_first() { grep -q "^\[('ibus', 'ngosen')" "$recent_sources"; }
 
 check_ibus_edition() {
     use_gnome_stubs
     as_user rm -f "$changes" "$enabled_extensions" "$sources" "$im_env"
+    echo "[('xkb', 'us')]" | as_user tee "$recent_sources" >/dev/null
     check "fcitx5 edition install succeeds" installer --yes
     # Debian starts fcitx5 through im-config; Fedora and Arch ship this entry.
     mkdir -p /etc/xdg/autostart
@@ -424,6 +442,8 @@ check_ibus_edition() {
     check "it removes the fcitx5 environment" test ! -e "$im_env"
     check "it keeps fcitx5 from starting at login" fcitx5_masked
     check "it adds Ngó Sen to the input sources" has_ngosen_source
+    check "it logs in on Ngó Sen" ngosen_first
+    check "the keyboard is still a recent source" grep -qF "('xkb', 'us')" "$recent_sources"
     check "fcitx5 edition install again succeeds" installer --yes
     check "it lets fcitx5 start at login again" refuses fcitx5_masked
     check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus

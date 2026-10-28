@@ -886,6 +886,19 @@ add_ibus_source() {
     session_changes+=("thêm Ngó Sen vào nguồn nhập của GNOME")
 }
 
+# GNOME logs in on the first of the recently used sources. Someone switching from the fcitx5
+# edition was typing Vietnamese, so they start on Ngó Sen rather than on the keyboard.
+make_ngosen_current() {
+    local recent
+    recent=$(gsettings get org.gnome.desktop.input-sources mru-sources 2>/dev/null) || return 0
+    recent=$(printf '%s' "$recent" | sed "s/^@a(ss) //; s/('ibus', 'ngosen'),\? *//; s/, *]$/]/")
+    case "$recent" in
+        "[]") recent="[('ibus', 'ngosen')]" ;;
+        *) recent="[('ibus', 'ngosen'), ${recent#[}" ;;
+    esac
+    gsettings set org.gnome.desktop.input-sources mru-sources "$recent"
+}
+
 # A running ibus-daemon finds a newly installed engine only when it starts again.
 restart_ibus() {
     pgrep -u "$(id -u)" -x ibus-daemon >/dev/null || return 1
@@ -898,6 +911,7 @@ setup_ibus_session() {
     [ "$switch_fcitx5" -eq 1 ] && switch_from_fcitx5
     use_ibus_im_config
     add_ibus_source
+    [ "$switched_from_fcitx5" -eq 1 ] && make_ngosen_current
     restart_ibus && restarted=1
     if [ "${#session_changes[@]}" -gt 0 ]; then
         say "Đã đặt Ngó Sen cho GNOME:"

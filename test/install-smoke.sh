@@ -70,9 +70,8 @@ prepare_system() {
             echo 'APT::Install-Recommends "0";' >/etc/apt/apt.conf.d/99no-recommends
         fi
         apt-get update -q
-        # im-config 1.1 exits without a dialog program; every Debian install but a container has whiptail.
         DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends \
-            sudo curl ca-certificates procps dbus dbus-bin whiptail
+            sudo curl ca-certificates procps dbus dbus-bin
         # apt translates what it prints, and most users run a Vietnamese desktop.
         if [ "$no_recommends" -eq 1 ]; then
             DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends locales
@@ -136,6 +135,7 @@ check_packages() {
     check "fcitx5-ngosen is installed" is_installed fcitx5-ngosen
     if command -v apt-get >/dev/null 2>&1; then
         check "im-config is installed" is_installed im-config
+        check "whiptail is installed" is_installed whiptail
         check "fcitx5-frontend-gtk3 is installed" is_installed fcitx5-frontend-gtk3
     fi
 }

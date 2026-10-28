@@ -12,6 +12,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Cửa sổ cài đặt mở được khi file `ngosen.conf` có byte không phải UTF-8; trước đây cửa sổ không hiện, mở từ khay
+  thì không báo gì (#415).
 - install.sh trên Kali và các bản cập nhật liên tục không còn kéo theo nâng cấp dở các gói Qt: chỉ cài module GTK/Qt của fcitx5 còn thiếu, gói đã có để nguyên (#418).
 
 ## [1.6.4-1] — 28/10/2026

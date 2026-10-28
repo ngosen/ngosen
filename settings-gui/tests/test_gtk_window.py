@@ -820,13 +820,13 @@ class GtkWhatsNewPageTest(unittest.TestCase):
             else:
                 self.assertEqual(w.stack.get_visible_child_name(), name)
 
-    def test_a_row_low_on_a_page_never_shown_is_scrolled_to(self):
+    def assert_scrolled_to(self, open_it):
+        """open_it(window) focuses a row low on a page never shown; the page must scroll to it."""
         w = window.Window(None, FakeDBusHandler())
         self.addCleanup(w.destroy)
         w.set_default_size(900, 500)
         w.present()
-        self.assertTrue(w.open_setting("SettingsToolkit"))
-        row = w.appearance.control_for("SettingsToolkit")
+        row = open_it(w)
         adjustment = row.get_ancestor(Gtk.ScrolledWindow).get_vadjustment()
         context = GLib.MainContext.default()
         for _ in range(300):
@@ -834,10 +834,33 @@ class GtkWhatsNewPageTest(unittest.TestCase):
                 break
             context.iteration(False)
             time.sleep(0.01)
-        if w.get_frame_clock().get_frame_counter() == 0:
+        if w.get_frame_clock().get_frame_counter() == 0 and not REQUIRED:
             self.skipTest("the window was never drawn, as on a locked desktop")
         self.assertGreater(adjustment.get_value(), 0)
         self.assertIs(w.get_focus(), row)
+
+    def test_a_row_low_on_a_page_never_shown_is_scrolled_to(self):
+        def open_setting(w):
+            w.open_setting("SettingsToolkit")
+            return w.appearance.control_for("SettingsToolkit")
+
+        self.assert_scrolled_to(open_setting)
+
+    def test_a_search_result_on_a_page_never_shown_is_scrolled_to(self):
+        def open_found(w):
+            result = Gtk.ListBoxRow()
+            result.found = (w.appearance.control_for("SettingsToolkit"), "appearance")
+            w.open_result(result)
+            return result.found[0]
+
+        self.assert_scrolled_to(open_found)
+
+    def test_the_tips_are_scrolled_to_on_a_fresh_window(self):
+        def open_tips(w):
+            w.show_tips()
+            return w.whats_new.tip_rows[0]
+
+        self.assert_scrolled_to(open_tips)
 
     def test_open_setting_shows_the_tab_and_focuses_the_row(self):
         self.assertTrue(self.window.open_setting("ModeMenuKey"))

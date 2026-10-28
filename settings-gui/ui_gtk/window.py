@@ -29,6 +29,7 @@ from ui_gtk import brand, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
 from ui_gtk.check_dialog import CheckDialog  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
+from ui_gtk.focus import focus_when_laid_out  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
 from ui_gtk.macros import MacroPage  # noqa: E402
 from ui_gtk.shortcuts import ShortcutsPage  # noqa: E402
@@ -40,25 +41,6 @@ try:
     from version import __version__
 except ImportError:
     __version__ = "dev version"
-
-
-def _focus_when_laid_out(control):
-    """Focuses a row and scrolls to it, waiting for a page that was never shown to get its size."""
-    control.grab_focus()
-    scrolled = control.get_ancestor(Gtk.ScrolledWindow)
-    adjustment = scrolled.get_vadjustment() if scrolled else None
-    if adjustment is None or adjustment.get_page_size() > 0:
-        return
-
-    def laid_out(adjustment):
-        if adjustment.get_page_size() == 0:
-            return
-        adjustment.disconnect(handler)
-        # A row already holding the focus is not scrolled to again.
-        control.get_root().set_focus(None)
-        control.grab_focus()
-
-    handler = adjustment.connect("changed", laid_out)
 
 
 class Window(Adw.ApplicationWindow):
@@ -391,7 +373,7 @@ class Window(Adw.ApplicationWindow):
         self.search_entry.set_text("")
         self.side_stack.set_visible_child_name("pages")
         self.show_page(name)
-        row.grab_focus()
+        focus_when_laid_out(row)
 
     def _on_row(self, _listbox, row):
         name, title, _icon = self.pages[row.get_index()]
@@ -420,7 +402,7 @@ class Window(Adw.ApplicationWindow):
             control = page.control_for(key) if page else None
             if control is not None:
                 self.show_page(name)
-                _focus_when_laid_out(control)
+                focus_when_laid_out(control)
                 return True
         return False
 

@@ -7,6 +7,8 @@ from core.whats_new_content import FEATURES, TIPS
 from gi.repository import Adw, Gtk
 from i18n import _
 
+from ui_gtk.focus import focus_when_laid_out
+
 # Sidebar pages the tips point at, named as they are in the window.
 PAGE_TITLES = {"macros": _("Macros"), "about": _("About")}
 
@@ -65,4 +67,4 @@ class WhatsNewPage:
 
     def show_tips(self):
         # Scrolling follows the focus, so focusing the first tip brings the list into view.
-        self.tip_rows[0].grab_focus()
+        focus_when_laid_out(self.tip_rows[0])

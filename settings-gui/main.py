@@ -6,28 +6,20 @@
 Application entry point.
 """
 
-import importlib.util
 import os
 import signal
 import sys
 
-import ui_gtk
 from core.brand import APP_ID
 from core.cli import parse_args
+from core.toolkit_install import has_gtk, has_qt, reopen_if_switched
 from i18n import saved_setting, setup_i18n
-
-QT_BINDINGS = ("PyQt6", "PySide6", "PyQt5")
-
-
-def has_qt(find=importlib.util.find_spec):
-    return bool(find("qtpy")) and any(find(module) for module in QT_BINDINGS)
-
 
 # The desktops whose own apps are GTK and libadwaita.
 GTK_DESKTOPS = {"GNOME", "X-Cinnamon"}
 
 
-def toolkit(env=os.environ, qt=has_qt, gtk=ui_gtk.available):
+def toolkit(env=os.environ, qt=has_qt, gtk=has_gtk):
     """The window the user picked, or the other one when only that is installed."""
     wanted = env.get("NGOSEN_SETTINGS_TOOLKIT") or saved_setting("SettingsToolkit", "Auto", env)
     wanted = wanted.lower()
@@ -81,7 +73,9 @@ def run_qt():
 def main():
     """Main execution function."""
     setup_i18n()
-    sys.exit(run_gtk() if toolkit() == "gtk" else run_qt())
+    code = run_gtk() if toolkit() == "gtk" else run_qt()
+    reopen_if_switched()
+    sys.exit(code)
 
 
 if __name__ == "__main__":

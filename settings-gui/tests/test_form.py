@@ -3,9 +3,18 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
 import unittest
+from unittest import mock
 
 from qtpy.QtCore import QEvent
-from qtpy.QtWidgets import QCheckBox, QComboBox, QFormLayout, QLabel, QLineEdit, QListWidget
+from qtpy.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QFormLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QMessageBox,
+)
 from support import FakeDBusHandler, app
 from ui.components import SingleKeyCaptureWidget
 from ui.main_window import NgoSenSettingsWindow
@@ -132,6 +141,34 @@ class AppearancePageTest(unittest.TestCase):
 
     def menu_checkbox(self, text):
         return next(c for c in self.page.findChildren(QCheckBox) if c.text() == text)
+
+    def test_switching_reopens_in_gtk_when_it_is_installed(self):
+        button = self.page.control_for("SettingsToolkit")
+        self.assertEqual(button.text(), "Switch to GTK…")
+        offer = mock.Mock(ready=True, target="gtk")
+        with (
+            mock.patch("ui.toolkit_switch.Offer", return_value=offer),
+            mock.patch("ui.toolkit_switch.switch", return_value=True) as switch,
+            mock.patch.object(self.page, "close") as close,
+        ):
+            button.click()
+        switch.assert_called_once_with(self.page.model, "gtk")
+        close.assert_called_once()
+
+    def test_a_missing_window_lists_its_packages_first(self):
+        offer = mock.Mock(ready=False, installable=True, runnable=True, packages=("a", "b"))
+        offer.name = "GTK"
+        offer.download_size.return_value = None
+        with (
+            mock.patch("ui.toolkit_switch.Offer", return_value=offer),
+            mock.patch("ui.toolkit_switch.switch") as switch,
+        ):
+            self.page.control_for("SettingsToolkit").click()
+        box = self.page.findChild(QMessageBox)
+        self.assertIn("a, b", box.informativeText())
+        self.assertIn("Install", [b.text() for b in box.buttons()])
+        switch.assert_not_called()
+        box.close()
 
     def test_menu_entries_follow_the_tray_icon(self):
         labels = row_labels(form_of(self.page))

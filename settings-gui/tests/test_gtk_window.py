@@ -19,7 +19,7 @@ REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
 
 if CAN_RUN:
     from core.brand import MESSENGER_URL
-    from gi.repository import Adw, Gdk, GLib, Gtk
+    from gi.repository import Adw, Gdk, Gio, GLib, Gtk
     from ui_gtk import brand, check_dialog, window
     from ui_gtk.hotkey_button import HotkeyButton
 
@@ -414,6 +414,22 @@ class GtkAppearancePageTest(unittest.TestCase):
         isolate(self)
         self.dbus = FakeDBusHandler()
         self.page = window.Window(None, self.dbus).appearance
+
+    def test_switching_reopens_in_qt_when_it_is_installed(self):
+        row = self.page.rows["SettingsToolkit"]
+        button = next(w for w in _children(row) if isinstance(w, Gtk.Button) and w.get_label())
+        self.assertEqual(button.get_label(), "Switch to Qt…")
+        app = mock.Mock()
+        with (
+            mock.patch(
+                "ui_gtk.toolkit_switch.Offer", return_value=mock.Mock(ready=True, target="qt")
+            ),
+            mock.patch("ui_gtk.toolkit_switch.switch", return_value=True) as switch,
+            mock.patch.object(Gio.Application, "get_default", return_value=app),
+        ):
+            button.emit("clicked")
+        switch.assert_called_once_with(self.page.model, "qt")
+        app.quit.assert_called_once()
 
     def test_each_language_is_named_in_itself(self):
         row = self.page.rows["UiLanguage"]

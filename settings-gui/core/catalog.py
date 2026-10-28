@@ -70,6 +70,7 @@ SETTINGS_MAP = {
         N_("Language"): ["UiLanguage"],
         TRAY_ICON: ["UseLotusIcons", "IconTheme"],
         N_("Show in the tray menu"): list(MENU_ENTRIES),
+        N_("Settings Window"): ["SettingsToolkit"],
     },
 }
 
@@ -83,6 +84,9 @@ HINTS = {
     ),
     "FreeMarking": N_("Tone marks can also go at the end of the word."),
     "UiLanguage": N_("The tray menu changes at once, this window the next time it opens."),
+    "SettingsToolkit": N_(
+        "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
+    ),
     "BackspaceRemovesTone": N_(
         "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
     ),

@@ -145,5 +145,65 @@ class CanInstallTest(unittest.TestCase):
         self.assertFalse(toolkit_install.can_install("gtk", None, answering({})))
 
 
+class FakeModel:
+    def __init__(self, saves=True):
+        self.values, self.saves = {}, saves
+
+    def set(self, key, value):
+        self.values[key] = value
+
+    def save(self):
+        return self.saves
+
+
+class OfferTest(unittest.TestCase):
+    def offer(self, gtk=False, qt=True, programs=("dnf", "pkexec")):
+        return toolkit_install.Offer(
+            "qt",
+            installed={"qt": lambda: qt, "gtk": lambda: gtk},
+            which=lambda name: name in programs,
+            run=answering({}),
+        )
+
+    def test_an_installed_window_needs_nothing(self):
+        offer = self.offer(gtk=True)
+        self.assertEqual(offer.target, "gtk")
+        self.assertTrue(offer.ready)
+        self.assertFalse(offer.installable)
+
+    def test_a_missing_one_is_installed_through_pkexec(self):
+        offer = self.offer()
+        self.assertTrue(offer.runnable)
+        self.assertEqual(offer.install_argv[:3], ["pkexec", "dnf", "install"])
+
+    def test_without_pkexec_only_the_command_is_offered(self):
+        offer = self.offer(programs=("dnf",))
+        self.assertTrue(offer.installable)
+        self.assertFalse(offer.runnable)
+
+    def test_sizes_read_in_megabytes(self):
+        self.assertEqual(toolkit_install.format_size(450_000), "0.4 MB")
+        self.assertEqual(toolkit_install.format_size(52 * 1024**2), "52 MB")
+
+
+class SwitchTest(unittest.TestCase):
+    def tearDown(self):
+        toolkit_install._reopen_in.clear()
+
+    def test_the_window_reopens_in_the_saved_choice(self):
+        model = FakeModel()
+        self.assertTrue(toolkit_install.switch(model, "gtk"))
+        self.assertEqual(model.values, {"SettingsToolkit": "GTK"})
+        calls = []
+        toolkit_install.reopen_if_switched(lambda *args: calls.append(args))
+        self.assertEqual(calls[0][2]["NGOSEN_SETTINGS_TOOLKIT"], "gtk")
+
+    def test_nothing_reopens_when_saving_fails(self):
+        self.assertFalse(toolkit_install.switch(FakeModel(saves=False), "gtk"))
+        calls = []
+        toolkit_install.reopen_if_switched(lambda *args: calls.append(args))
+        self.assertEqual(calls, [])
+
+
 if __name__ == "__main__":
     unittest.main()

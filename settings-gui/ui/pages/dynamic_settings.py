@@ -47,6 +47,7 @@ from ui.components import (
     HotkeyEditorWidget,
     SingleKeyCaptureWidget,
 )
+from ui.toolkit_switch import toolkit_field
 from ui.typography import emphasize, mute, page_title
 
 # Below this width the labels go above their fields.
@@ -247,6 +248,8 @@ class DynamicSettingsPage(QWidget):
                         continue
                     if k == "ToggleKey":
                         self._render_toggle_key(item)
+                    elif k == "SettingsToolkit":
+                        self._render_toolkit(item)
                     elif k in ["ModeMenuKey", "CycleModeKey"] or item[1] == "Hotkey":
                         self._render_hotkey(item)
                     elif k == "Mode":
@@ -397,6 +400,11 @@ class DynamicSettingsPage(QWidget):
     def _set_first_hotkey(self, key, text):
         self.model.set_first_hotkey(key, text)
         self.update_config(key, self.model.current[key])
+
+    def _render_toolkit(self, item):
+        field, button = toolkit_field(self.model)
+        self._controls[item[0]] = button
+        self.form.addRow(_(item[2]) + ":", self._with_hint(field, item[0]))
 
     def _render_combobox(self, item):
         key, type_str, label, default, annotations = item

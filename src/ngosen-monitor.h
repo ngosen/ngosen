@@ -14,9 +14,12 @@
 #ifndef _FCITX5_NGOSEN_MONITOR_H_
 #define _FCITX5_NGOSEN_MONITOR_H_
 
+#include "ngosen-pointer.h"
+
 #include <thread>
 
-extern std::thread mouse_thread;
+extern std::thread  mouse_thread;
+extern X11Selection x11_selection;
 
 /**
  * @brief Thread function for mouse press detection and reset.

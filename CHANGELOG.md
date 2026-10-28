@@ -61,6 +61,21 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   bị lưu lệch với những gì cửa sổ hiện (#367).
 - Cửa sổ cài đặt: bấm "Khôi phục…" với file sao lưu bị hỏng nay báo lỗi và không thay đổi gì; trước đây có thể
   làm trống file từ điển riêng và ghi một phần cài đặt (#382).
+- Cửa sổ cài đặt không còn lỗi không mở được khi file từ điển riêng có chữ không phải UTF-8.
+  Trang Từ điển báo không đọc trọn được file (#376).
+- Cửa sổ cài đặt: "Hoàn tác" chỉ trả lại đúng thay đổi vừa lưu, không còn làm mất kiểu gõ đã nhớ cho app
+  khi chọn từ menu Ngó Sen trong lúc cửa sổ đang mở (#383).
+- Sửa lỗi Cứu dấu trên Chrome, Chromium và Brave ở phiên X11: bôi đen `nhanh` (bấm đúp hoặc
+  Shift+mũi tên) rồi gõ `s` ra `nhánh`. Chỉ ở Gõ Sen; Tab hoặc Esc vẫn trả lại phím đã gõ
+  (#360, #390).
+- `install.sh` trên máy để tiếng Việt từng bỏ sót im-config và module gõ fcitx5 cho app GTK, Qt trên Debian, Ubuntu, Mint, MX.
+  Nay cài đủ ở mọi ngôn ngữ, tránh thiếu gói khi cài lại hoặc trên MX không cài gói đề xuất (#388).
+- Antigravity trên GNOME: Gõ Sen không còn mất dấu khi gõ nhanh trong vùng soạn thảo, nhờ chờ app
+  xoá xong chữ cũ lâu hơn khi app chậm (#362, #395).
+- Gạch chân: phím tắt Super + chữ (như Super+Q chuyển workspace) không còn bị gõ thành `q`, `ư`; nay đi
+  thẳng tới desktop và app như Ctrl, Alt, giữ lại chữ đang gõ dở (#391, #392).
+- `install.sh` không còn dừng giữa chừng khi máy có một nguồn apt khác đang lỗi (như Zorin OS có nguồn
+  `github.io` hỏng); nay báo nguồn lỗi rồi vẫn cài tiếp (#399).
 
 ## [1.6.3-1] — 27/10/2026
 

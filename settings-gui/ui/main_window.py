@@ -56,7 +56,6 @@ class NgoSenSettingsWindow(QMainWindow):
         self._save_timer.setSingleShot(True)
         self._save_timer.setInterval(400)
         self._save_timer.timeout.connect(self.save_pending)
-        self._saved = settings_snapshot.take(self.dbus_handler)
         self._undo_to = None
 
         self._setup_ui()
@@ -64,7 +63,7 @@ class NgoSenSettingsWindow(QMainWindow):
         self.update_reset_button_state()
         # Defaults also resets pages not opened yet, so the button must see what they hold.
         QTimer.singleShot(0, self._check_all_pages)
-        if self._saved is None:
+        if settings_snapshot.take(self.dbus_handler) is None:
             self._show_message(_("Cannot reach fcitx5, so changes will not be saved."), error=True)
 
     def update_reset_button_state(self):
@@ -437,6 +436,8 @@ class NgoSenSettingsWindow(QMainWindow):
             page = pages[0]
             label = page.change_label() if hasattr(page, "change_label") else None
             label = label or self._page_titles.get(page)
+        # Taken now, since fcitx5 remembers app modes while the window is open.
+        before = settings_snapshot.take(self.dbus_handler)
         for page in pages:
             if page.save_data() is False:
                 # Show what fcitx5 kept, so the window does not suggest an unsaved change took.
@@ -444,7 +445,6 @@ class NgoSenSettingsWindow(QMainWindow):
                     self.reload_pages()
                 self._show_message(_("Could not save. Check that fcitx5 is running."), error=True)
                 return
-        before, self._saved = self._saved, settings_snapshot.take(self.dbus_handler)
         self._undo_to = before
         if self._reset_pending:
             text = _("Defaults restored.")
@@ -475,7 +475,6 @@ class NgoSenSettingsWindow(QMainWindow):
                 page.load_data()
             elif hasattr(page, "load_config"):
                 page.load_config()
-        self._saved = settings_snapshot.take(self.dbus_handler)
         self.update_reset_button_state()
 
     def on_export_backup(self):
@@ -516,7 +515,7 @@ class NgoSenSettingsWindow(QMainWindow):
         except (OSError, ValueError) as e:
             self._show_message(_("Failed to open backup file:\n") + str(e), error=True)
             return
-        before = self._saved
+        before = settings_snapshot.take(self.dbus_handler)
         restored = backup.apply(self.dbus_handler, data)
         self.reload_pages()
         if not restored:

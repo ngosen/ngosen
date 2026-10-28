@@ -96,7 +96,7 @@ def _output(args, run, ok=(0,)):
     return result.stdout if result.returncode in ok else None
 
 
-def download_size(packages, manager, run=subprocess.run):
+def download_size(manager, packages, run=subprocess.run):
     """Bytes to download, or None when the package manager cannot tell without root."""
     if manager == "apt-get":
         return _apt_size(packages, run)
@@ -149,13 +149,15 @@ def needed_packages(toolkit, manager, run=subprocess.run):
         if manager == "apt-get"
         else None
     )
-    if state is None:
+    # Empty when the package lists were never fetched; the command works after apt-get update.
+    if not state:
         return [entry[0] for entry in wanted]
     needed = []
     for entry in wanted:
-        if any(state.get(name, (False, False))[0] for name in entry):
-            continue
-        needed += [name for name in entry if state.get(name, (False, False))[1]][:1]
+        # The first one apt has decides: libqt6svg6 can be installed without the plugins.
+        chosen = next((name for name in entry if state.get(name, (False, False))[1]), None)
+        if chosen and not state[chosen][0]:
+            needed.append(chosen)
     return needed
 
 
@@ -204,7 +206,7 @@ class Offer:
         return ["pkexec", *install_command(self.manager, self.packages)]
 
     def download_size(self, run=subprocess.run):
-        return download_size(self.packages, self.manager, run)
+        return download_size(self.manager, self.packages, run)
 
     def installed_now(self):
         return INSTALLED[self.target]()

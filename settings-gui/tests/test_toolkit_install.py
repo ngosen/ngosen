@@ -66,7 +66,7 @@ class DownloadSizeTest(unittest.TestCase):
         )
         self.assertEqual(
             toolkit_install.download_size(
-                toolkit_install.PACKAGES["gtk"]["apt-get"], "apt-get", run
+                "apt-get", toolkit_install.PACKAGES["gtk"]["apt-get"], run
             ),
             41778 + 408094,
         )
@@ -74,7 +74,7 @@ class DownloadSizeTest(unittest.TestCase):
 
     def test_the_labels_are_read_in_english(self):
         run = answering({})
-        toolkit_install.download_size(toolkit_install.PACKAGES["gtk"]["apt-get"], "apt-get", run)
+        toolkit_install.download_size("apt-get", toolkit_install.PACKAGES["gtk"]["apt-get"], run)
         self.assertEqual(run.calls[0][1]["env"]["LC_ALL"], "C")
 
     def test_dnf_reports_what_it_would_download(self):
@@ -86,14 +86,14 @@ class DownloadSizeTest(unittest.TestCase):
             returncode=1,
         )
         self.assertEqual(
-            toolkit_install.download_size(toolkit_install.PACKAGES["gtk"]["dnf"], "dnf", run),
+            toolkit_install.download_size("dnf", toolkit_install.PACKAGES["gtk"]["dnf"], run),
             round(1.5 * 1024**2),
         )
 
     def test_pacman_adds_up_the_sizes(self):
         run = answering({"pacman": "151458\n34678\n329964\n"})
         self.assertEqual(
-            toolkit_install.download_size(toolkit_install.PACKAGES["gtk"]["pacman"], "pacman", run),
+            toolkit_install.download_size("pacman", toolkit_install.PACKAGES["gtk"]["pacman"], run),
             516100,
         )
 
@@ -101,7 +101,7 @@ class DownloadSizeTest(unittest.TestCase):
         run = answering({"apt-get": "0 upgraded, 0 newly installed, 0 to remove.\n"})
         self.assertEqual(
             toolkit_install.download_size(
-                toolkit_install.PACKAGES["gtk"]["apt-get"], "apt-get", run
+                "apt-get", toolkit_install.PACKAGES["gtk"]["apt-get"], run
             ),
             0,
         )
@@ -110,14 +110,14 @@ class DownloadSizeTest(unittest.TestCase):
         run = answering({"apt-get": "Reading package lists...\n"}, returncode=100)
         self.assertIsNone(
             toolkit_install.download_size(
-                toolkit_install.PACKAGES["gtk"]["apt-get"], "apt-get", run
+                "apt-get", toolkit_install.PACKAGES["gtk"]["apt-get"], run
             )
         )
 
     def test_pacman_with_everything_installed_is_zero(self):
         self.assertEqual(
             toolkit_install.download_size(
-                toolkit_install.PACKAGES["gtk"]["pacman"], "pacman", answering({})
+                "pacman", toolkit_install.PACKAGES["gtk"]["pacman"], answering({})
             ),
             0,
         )
@@ -125,19 +125,19 @@ class DownloadSizeTest(unittest.TestCase):
     def test_pacman_that_fails_gives_no_size(self):
         run = answering({"pacman": "error: target not found: libadwaita\n"}, returncode=1)
         self.assertIsNone(
-            toolkit_install.download_size(toolkit_install.PACKAGES["gtk"]["pacman"], "pacman", run)
+            toolkit_install.download_size("pacman", toolkit_install.PACKAGES["gtk"]["pacman"], run)
         )
 
     def test_dnf_with_everything_installed_is_zero(self):
         run = answering({"dnf": "Package libadwaita is already installed.\nNothing to do.\n"})
         self.assertEqual(
-            toolkit_install.download_size(toolkit_install.PACKAGES["gtk"]["dnf"], "dnf", run), 0
+            toolkit_install.download_size("dnf", toolkit_install.PACKAGES["gtk"]["dnf"], run), 0
         )
 
     def test_zypper_needs_root_to_tell(self):
         run = answering({"zypper": "Root privileges are required to run this command.\n"})
         self.assertIsNone(
-            toolkit_install.download_size(toolkit_install.PACKAGES["gtk"]["zypper"], "zypper", run)
+            toolkit_install.download_size("zypper", toolkit_install.PACKAGES["gtk"]["zypper"], run)
         )
         self.assertEqual(run.calls, [])
 
@@ -146,7 +146,7 @@ class DownloadSizeTest(unittest.TestCase):
             raise FileNotFoundError(args[0])
 
         self.assertIsNone(
-            toolkit_install.download_size(toolkit_install.PACKAGES["qt"]["dnf"], "dnf", run)
+            toolkit_install.download_size("dnf", toolkit_install.PACKAGES["qt"]["dnf"], run)
         )
 
 
@@ -186,6 +186,17 @@ class NeededPackagesTest(unittest.TestCase):
             toolkit_install.needed_packages("qt", "apt-get", run),
             ["python3-qtpy", "python3-pyqt6", "qt6-svg-plugins"],
         )
+
+    def test_the_plugins_are_asked_for_where_they_ship_apart(self):
+        # Debian 13: other apps pulled in libqt6svg6, which no longer holds the plugins.
+        state = {
+            "python3-qtpy": ("2.4.3-1", "2.4.3-1"),
+            "python3-pyqt6": ("6.9.0-2", "6.9.0-2"),
+            "qt6-svg-plugins": ("(none)", "6.8.2-3"),
+            "libqt6svg6": ("6.8.2-3", "6.8.2-3"),
+        }
+        run = answering({"apt-cache": policy_of(state)})
+        self.assertEqual(toolkit_install.needed_packages("qt", "apt-get", run), ["qt6-svg-plugins"])
 
     def test_an_installed_package_is_not_listed(self):
         state = {"gir1.2-adw-1": ("(none)", "1.6.2-1"), "python3-gi": ("3.50.0-4", "3.50.0-4")}
@@ -259,15 +270,32 @@ class OfferTest(unittest.TestCase):
         self.assertTrue(offer.runnable)
         self.assertEqual(offer.install_argv[:3], ["pkexec", "dnf", "install"])
 
-    def test_nothing_missing_means_nothing_to_install(self):
-        offer = toolkit_install.Offer(
+    def apt_offer(self, state):
+        return toolkit_install.Offer(
             "gtk",
             installed={"qt": lambda: False, "gtk": lambda: True},
             which=lambda name: name in ("apt-get", "pkexec"),
-            run=answering({"apt-cache": policy_of({"python3-pyqt6": ("6.9.0-1", "6.9.0-1")})}),
+            run=answering({"apt-cache": policy_of(state)}),
+        )
+
+    def test_nothing_missing_means_nothing_to_install(self):
+        installed = ("6.9.0-1", "6.9.0-1")
+        offer = self.apt_offer(
+            {
+                "python3-qtpy": installed,
+                "python3-pyqt6": installed,
+                "qt6-svg-plugins": installed,
+                "libqt6svg6": installed,
+            }
         )
         self.assertEqual(offer.packages, [])
         self.assertFalse(offer.installable)
+
+    def test_lists_apt_knows_nothing_about_still_give_the_command(self):
+        # Kali images ship without package lists until apt-get update.
+        offer = self.apt_offer({})
+        self.assertEqual(offer.packages, ["python3-qtpy", "python3-pyqt6", "qt6-svg-plugins"])
+        self.assertTrue(offer.runnable)
 
     def test_without_pkexec_only_the_command_is_offered(self):
         offer = self.offer(programs=("dnf",))

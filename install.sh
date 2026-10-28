@@ -21,6 +21,8 @@ setup_session=1
 session_changes=()
 keyboard_dropped=0
 fcitx5_reloaded=0
+package_changed=1
+fcitx5_current=0
 manager=
 pattern=
 # Packages apt upgrades along with the install on a distribution that needs it.
@@ -221,17 +223,18 @@ install_with_pacman() {
         done
     fi
 
-    as_root pacman -U --noconfirm "${overwrite[@]}" "$package"
+    as_root env NGOSEN_INSTALLER=1 pacman -U --needed --noconfirm "${overwrite[@]}" "$package"
 }
 
+# The package scripts see NGOSEN_INSTALLER and leave the next steps to this script.
 install_package() {
     local package=$1
     case "$manager" in
         dnf)
-            as_root dnf install -y "$package"
+            as_root env NGOSEN_INSTALLER=1 dnf install -y "$package"
             ;;
         zypper)
-            as_root zypper --non-interactive install --allow-unsigned-rpm "$package"
+            as_root env NGOSEN_INSTALLER=1 zypper --non-interactive install --allow-unsigned-rpm "$package"
             ;;
         apt)
             # fcitx5 only recommends its GTK and Qt modules and im-config, and MX turns recommends
@@ -261,7 +264,9 @@ install_package() {
                     *) extras+=("$candidate") ;;
                 esac
             done
-            as_root apt-get install -y "$package" "${extras[@]}"
+            # Modules new to the machine reach apps only after fcitx5 restarts.
+            [ "${#extras[@]}" -eq 0 ] || package_changed=1
+            as_root env NGOSEN_INSTALLER=1 apt-get install -y "$package" "${extras[@]}"
             ;;
         pacman)
             install_with_pacman "$package"
@@ -491,10 +496,40 @@ restart_fcitx5() {
     return 1
 }
 
+installed_package_version() {
+    case "$manager" in
+        apt) dpkg-query -W -f='${Version}' "$package_name" ;;
+        pacman) pacman -Q "$package_name" | cut -d' ' -f2 ;;
+        *) rpm -q --qf '%{EPOCHNUM}:%{VERSION}-%{RELEASE}' "$package_name" ;;
+    esac 2>/dev/null
+}
+
+package_file_version() {
+    case "$manager" in
+        apt) dpkg-deb -f "$1" Version ;;
+        pacman) pacman -Qp "$1" | cut -d' ' -f2 ;;
+        *) rpm -qp --qf '%{EPOCHNUM}:%{VERSION}-%{RELEASE}' "$1" ;;
+    esac 2>/dev/null
+}
+
+# True when the running fcitx5 started after the installed addon was written, so it runs that one.
+fcitx5_runs_installed_addon() {
+    local pid addon elapsed
+    pid=$(pgrep -u "$(id -u)" -x fcitx5 | head -n 1) || return 1
+    addon=$(find /usr/lib /usr/lib64 -maxdepth 3 -name libngosen.so 2>/dev/null | head -n 1)
+    [ -n "$addon" ] || return 1
+    elapsed=$(ps -o etimes= -p "$pid") || return 1
+    [ "$(($(date +%s) - elapsed))" -gt "$(stat -c %Z "$addon")" ]
+}
+
 # An fcitx5 that ran without the addon drops ngosen from the profile as it exits, hence the second
 # check.
 reload_fcitx5() {
     local had_keyboard=0 tries=20
+    if [ "$package_changed" -eq 0 ] && has_ngosen_in_profile && fcitx5_runs_installed_addon; then
+        fcitx5_current=1
+        return 0
+    fi
     has_keyboard_in_profile && had_keyboard=1
     has_ngosen_in_profile && restart_fcitx5 && has_ngosen_in_profile || return 1
     fcitx5_reloaded=1
@@ -732,7 +767,7 @@ setup_kde_session() {
     fi
     set_xim_environment
     configure_fcitx5
-    if [ "${#session_changes[@]}" -eq 0 ] && [ "$fcitx5_reloaded" -eq 0 ]; then
+    if [ "${#session_changes[@]}" -eq 0 ] && [ "$fcitx5_reloaded" -eq 0 ] && [ "$fcitx5_current" -eq 0 ]; then
         say "Xong. Đăng xuất rồi đăng nhập lại để dùng bản mới."
         return
     fi
@@ -743,7 +778,9 @@ report_session_changes() {
     local change
     if [ "${#session_changes[@]}" -eq 0 ]; then
         report_dropped_keyboard
-        if [ "$fcitx5_reloaded" -eq 1 ]; then
+        if [ "$fcitx5_current" -eq 1 ]; then
+            say "Xong. Ngó Sen đã là bản này và đã đặt xong, không có gì thay đổi."
+        elif [ "$fcitx5_reloaded" -eq 1 ]; then
             say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
         else
             say "Xong. Khởi động lại fcitx5 để dùng bản mới:  fcitx5 -rd"
@@ -1137,7 +1174,12 @@ main() {
     chmod 755 "$workdir"
 
     download_package "$hash" "$file"
+    if is_package_installed "$package_name" &&
+        [ "$(installed_package_version)" = "$(package_file_version "$workdir/$file")" ]; then
+        package_changed=0
+    fi
     install_package "$workdir/$file"
+    [ "$package_changed" -eq 1 ] || say "Bản này đã được cài từ trước, không cài lại."
     if [ "$edition" = ibus ]; then
         if wants_gnome_setup; then
             setup_ibus_session
@@ -1167,7 +1209,11 @@ main() {
     say ""
     if [ "$(id -u)" -ne 0 ] && reload_fcitx5; then
         report_dropped_keyboard
-        say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
+        if [ "$fcitx5_current" -eq 1 ]; then
+            say "Xong. Ngó Sen đã là bản này, không có gì thay đổi."
+        else
+            say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
+        fi
         return
     fi
     say "Xong. Việc còn lại:"

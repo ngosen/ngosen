@@ -50,6 +50,10 @@ class PageTest(unittest.TestCase):
         self.assertIsInstance(page, WhatsNewPage)
         self.assertEqual(self.window.sidebar.currentItem().text(), "What's new & tips")
 
+    def test_a_switched_window_can_open_on_appearance(self):
+        self.window.show_page("appearance")
+        self.assertEqual(self.window.sidebar.currentItem().text(), "Appearance")
+
     def test_every_setting_target_has_a_control(self):
         for kind, name in targets():
             if kind == "setting":

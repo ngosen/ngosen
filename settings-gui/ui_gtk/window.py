@@ -29,6 +29,7 @@ from ui_gtk import brand, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
 from ui_gtk.check_dialog import CheckDialog  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
+from ui_gtk.focus import focus_when_laid_out  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
 from ui_gtk.macros import MacroPage  # noqa: E402
 from ui_gtk.shortcuts import ShortcutsPage  # noqa: E402
@@ -372,7 +373,7 @@ class Window(Adw.ApplicationWindow):
         self.search_entry.set_text("")
         self.side_stack.set_visible_child_name("pages")
         self.show_page(name)
-        row.grab_focus()
+        focus_when_laid_out(row)
 
     def _on_row(self, _listbox, row):
         name, title, _icon = self.pages[row.get_index()]
@@ -401,7 +402,7 @@ class Window(Adw.ApplicationWindow):
             control = page.control_for(key) if page else None
             if control is not None:
                 self.show_page(name)
-                control.grab_focus()
+                focus_when_laid_out(control)
                 return True
         return False
 

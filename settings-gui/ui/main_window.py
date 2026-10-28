@@ -366,6 +366,7 @@ class NgoSenSettingsWindow(QMainWindow):
                 "preferences-system",
             ),
             (None, create_appearance),
+            names=["appearance"],
         )
         self._add_page(
             _("What's new & tips"),

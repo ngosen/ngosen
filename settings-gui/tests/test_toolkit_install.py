@@ -320,6 +320,13 @@ class SwitchTest(unittest.TestCase):
         toolkit_install.reopen_if_switched(lambda *args: calls.append(args))
         self.assertEqual(calls[0][2]["NGOSEN_SETTINGS_TOOLKIT"], "gtk")
 
+    def test_the_new_window_opens_where_the_switch_button_is(self):
+        toolkit_install.switch(FakeModel(), "qt")
+        calls = []
+        argv = ["python3", "main.py", "--page", "whats-new", "-v"]
+        toolkit_install.reopen_if_switched(lambda *args: calls.append(args), argv)
+        self.assertEqual(calls[0][1], ["python3", "main.py", "-v", "--page", "appearance"])
+
     def test_nothing_reopens_when_saving_fails(self):
         self.assertFalse(toolkit_install.switch(FakeModel(saves=False), "gtk"))
         calls = []

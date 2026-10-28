@@ -462,6 +462,32 @@ check_user_im_config_kept() {
     check "im-config set by the user stays" has_line "$home/.xinputrc" 'run_im fcitx5'
 }
 
+apt_args=/srv/apt-get-args
+
+# sudo keeps its own PATH, which on Kali leaves out /usr/local, so the wrapper takes apt-get's place.
+log_apt_get() {
+    dpkg-divert --quiet --rename --add /usr/bin/apt-get
+    printf '#!/bin/sh\necho "$*" >>%s\nexec /usr/bin/apt-get.distrib "$@"\n' "$apt_args" >/usr/bin/apt-get
+    chmod +x /usr/bin/apt-get
+}
+
+restore_apt_get() {
+    rm -f /usr/bin/apt-get
+    dpkg-divert --quiet --rename --remove /usr/bin/apt-get
+}
+
+names_frontend() { grep -q '^install .*fcitx5-frontend-' "$apt_args"; }
+
+check_installed_frontends_left_alone() {
+    log_apt_get
+    : >"$apt_args"
+    check "precondition: the GTK 3 module is installed" is_installed fcitx5-frontend-gtk3
+    check "install with the modules in place succeeds" installer --yes
+    check "precondition: apt-get install was logged" grep -q '^install ' "$apt_args"
+    check "it does not name the installed modules" refuses names_frontend
+    restore_apt_get
+}
+
 main() {
     prepare_system
 
@@ -487,6 +513,8 @@ main() {
         check_toggle_key_message
         echo "== im-config the user set"
         check_user_im_config_kept
+        echo "== GTK and Qt modules already installed"
+        check_installed_frontends_left_alone
     fi
 
     if [ "$session" = gnome ]; then

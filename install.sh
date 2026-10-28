@@ -23,6 +23,8 @@ keyboard_dropped=0
 fcitx5_reloaded=0
 manager=
 pattern=
+# Packages apt upgrades along with the install on a distribution that needs it.
+apt_upgrades=()
 workdir=
 
 say() { printf '%s\n' "$*"; }
@@ -127,7 +129,12 @@ detect_distribution() {
         [ "$id" = kali ] && codename=forky
         # deepin 23 (beige) and 25 (crimson) ship glibc 2.38 and fcitx5 5.1, above what the bookworm build needs.
         case "$id:$codename" in
-            deepin:beige | deepin:crimson) codename=bookworm ;;
+            deepin:beige | deepin:crimson)
+                codename=bookworm
+                # deepin's fcitx5 GTK modules declare GLib 2.76 but need the GLib in its repository;
+                # on an image that has not been updated GTK apps then get no input method.
+                apt_upgrades=(libglib2.0-0)
+                ;;
         esac
         case "$codename" in
             # The IBus edition needs libadwaita 1.5, which these lack.
@@ -214,6 +221,7 @@ install_package() {
             local extra candidate
             local -a extras=() candidates=()
             [ "$edition" = fcitx5 ] && candidates=(im-config fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6)
+            candidates+=("${apt_upgrades[@]}")
             # Kali's images ship without package lists, and old lists name versions the mirror dropped.
             as_root apt-get update
             for candidate in "${candidates[@]}"; do

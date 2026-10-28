@@ -197,14 +197,53 @@ install_with_pacman() {
     as_root pacman -U --noconfirm "${overwrite[@]}" "$package"
 }
 
+# The settings window opens in GTK on these desktops when it can (settings-gui/main.py), so its Qt
+# libraries are left out there.
+wants_gtk_settings() {
+    [ "$edition" = fcitx5 ] || return 1
+    case ":${XDG_CURRENT_DESKTOP:-}:" in
+        *:GNOME:* | *:X-Cinnamon:*) return 0 ;;
+    esac
+    return 1
+}
+
+# Debian 12 has libadwaita 1.2, older than the GTK window needs.
+apt_has_libadwaita() {
+    local version
+    version=$(LC_ALL=C apt-cache policy gir1.2-adw-1 2>/dev/null | sed -n 's/^ *Candidate: //p')
+    [ -n "$version" ] && [ "$version" != '(none)' ] && dpkg --compare-versions "$version" ge 1.5
+}
+
+# Packages named with the package itself, so the package manager settles its choice of Qt or GTK.
+# The Arch package keeps Qt, having no alternative dependencies.
+settings_window_packages() {
+    settings_packages=()
+    if wants_gtk_settings; then
+        case "$manager" in
+            dnf) settings_packages=(python3-gobject gobject-introspection libadwaita) ;;
+            zypper) settings_packages=(python3-gobject typelib-1_0-Adw-1) ;;
+            apt) ! apt_has_libadwaita || settings_packages=(gir1.2-adw-1 python3-gi) ;;
+        esac
+    elif [ "$edition" = fcitx5 ]; then
+        case "$manager" in
+            dnf) settings_packages=(python3-QtPy python3-pyqt6) ;;
+            zypper) settings_packages=(python3-QtPy python3-PyQt6) ;;
+        esac
+    fi
+}
+
 install_package() {
     local package=$1
+    local -a settings_packages=()
+    case "$manager" in
+        dnf | zypper) settings_window_packages ;;
+    esac
     case "$manager" in
         dnf)
-            as_root dnf install -y "$package"
+            as_root dnf install -y "$package" "${settings_packages[@]}"
             ;;
         zypper)
-            as_root zypper --non-interactive install --allow-unsigned-rpm "$package"
+            as_root zypper --non-interactive install --allow-unsigned-rpm "$package" "${settings_packages[@]}"
             ;;
         apt)
             # fcitx5 only recommends its GTK and Qt modules and im-config, and MX turns recommends
@@ -221,7 +260,8 @@ install_package() {
                     *) extras+=("$candidate") ;;
                 esac
             done
-            as_root apt-get install -y "$package" "${extras[@]}"
+            settings_window_packages
+            as_root apt-get install -y "$package" "${extras[@]}" "${settings_packages[@]}"
             ;;
         pacman)
             install_with_pacman "$package"
@@ -756,7 +796,9 @@ undo_gnome_session() {
     fi
     undo_im_config
     autostart="$config/autostart/org.fcitx.Fcitx5.desktop"
-    if cmp -s /usr/share/applications/org.fcitx.Fcitx5.desktop "$autostart"; then
+    # Not cmp: diffutils is missing on minimal systems.
+    if [ -e "$autostart" ] &&
+        [ "$(cat "$autostart")" = "$(cat /usr/share/applications/org.fcitx.Fcitx5.desktop 2>/dev/null)" ]; then
         rm -f "$autostart"
         undone+=("fcitx5 thôi tự chạy khi đăng nhập")
     fi

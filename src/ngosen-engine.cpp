@@ -93,6 +93,12 @@ namespace fcitx {
     }
 
     namespace {
+        // deepin-editor stalls between edits, and fcitx5-qt applies a commit before the keys let
+        // through ahead of it, so fast typing in Sen scrambles words there. Preedit sends no keys.
+        bool typesInPreeditByDefault(const std::string& appName) {
+            return appName == "deepin-editor";
+        }
+
         bool otherModifierHeld(const Key& key) {
             return (key.states() & ~Key::keySymToStates(key.sym()) & KeyStates{KeyState::Ctrl_Alt_Shift, KeyState::Super}) != 0;
         }
@@ -1062,7 +1068,10 @@ namespace fcitx {
     }
 
     NgoSenMode NgoSenEngine::getAppRule(const std::string& appName) const {
-        return findAppRule(appName).value_or(globalMode());
+        if (auto rule = findAppRule(appName))
+            return *rule;
+        const NgoSenMode mode = globalMode();
+        return mode == NgoSenMode::Sen && typesInPreeditByDefault(appName) ? NgoSenMode::Preedit : mode;
     }
 
     std::optional<std::string> NgoSenEngine::appRuleName(const std::string& appName) const {

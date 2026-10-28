@@ -36,6 +36,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thay đổi
 
+- install.sh đổi "Tiếp tục? [c/K]" (c = có, K = không) thành "Tiếp tục? [y/N]" như đa số lệnh Linux.
+  Gõ y, yes hoặc c để đồng ý; bấm Enter không gõ gì vẫn là không (#398).
 - Cửa sổ cài đặt dùng xanh men của Ngó Sen cho ô đã đánh dấu, trang đang chọn ở thanh bên, focus và
   vùng chọn, thay cho màu nhấn desktop (KDE/GNOME); trước đây chỉ nút chế độ gõ đang chọn và thông báo “Đã lưu”
   dùng xanh men. Màu này dùng cho cả giao diện sáng và tối; sắc xanh ở giao diện tối đậm hơn trước một chút để

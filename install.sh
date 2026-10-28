@@ -150,11 +150,11 @@ confirm() {
         die "không có cửa sổ dòng lệnh để hỏi lại. Chạy lại với --yes nếu đồng ý cài."
     fi
     local answer
-    printf '%s [c/K] ' "$1"
+    printf '%s [y/N] ' "$1"
     read -r answer <&3 || answer=
     exec 3<&-
     case "$answer" in
-        c | C | y | Y) return 0 ;;
+        [yY] | [yY][eE][sS] | [cC]) return 0 ;;
         *) return 1 ;;
     esac
 }

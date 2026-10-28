@@ -18,6 +18,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Hộp thoại hỏi "Khôi phục mặc định" và "Thay thế" bảng phím giờ có nút cùng ngôn ngữ với cửa sổ cài đặt, không còn Yes/No theo ngôn ngữ desktop (#417).
 - Người cài gói rồi tự thêm Ngó Sen trong Fcitx5 Configuration không còn bị mất bàn phím tiếng Anh và đổi sang Ctrl+Space sau lần khởi động fcitx5 kế tiếp; máy mới giữ Ctrl+Shift (#419).
 - Chuyển từ bản fcitx5 sang bản GNOME (IBus) bằng `install.sh --ibus`: đăng nhập lại là đang ở Ngó Sen, chữ đầu tiên không còn ra không dấu (#420).
+- Gỡ bằng `install.sh --uninstall` trên máy có im-config 1.1 (Debian testing, Kali, Ubuntu 26.10) bỏ được
+  lựa chọn fcitx5 của im-config, không còn ghi `run_im REMOVE` vào `~/.xinputrc`. Khi im-config vẫn chọn fcitx5,
+  dòng cuối báo fcitx5 còn chạy và đưa lệnh bỏ đúng với version im-config, không còn hứa "GNOME dùng lại IBus" (#424).
 
 ## [1.6.4-1] — 28/10/2026
 

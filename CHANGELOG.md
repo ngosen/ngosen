@@ -25,6 +25,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   xoá xong chữ cũ lâu hơn khi app chậm (#362, #395).
 - Gạch chân: phím tắt Super + chữ (như Super+Q chuyển workspace) không còn bị gõ thành `q`, `ư`; nay đi
   thẳng tới desktop và app như Ctrl, Alt, giữ lại chữ đang gõ dở (#391, #392).
+- `install.sh` không còn dừng giữa chừng khi máy có một nguồn apt khác đang lỗi (như Zorin OS có nguồn
+  `github.io` hỏng); nay báo nguồn lỗi rồi vẫn cài tiếp (#399).
 
 ## [1.6.3-1] — 27/10/2026
 

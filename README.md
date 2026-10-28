@@ -46,7 +46,7 @@ Telex được dùng và test hằng ngày. VNI và các kiểu khác dùng đư
 
 ## Cài
 
-Lệnh dưới đây cài cho Fedora, Ubuntu, Debian, Kali, Arch, CachyOS và openSUSE Tumbleweed trên x86_64.
+Lệnh dưới đây cài cho Fedora, Ubuntu, Debian, Kali, deepin, Arch, CachyOS và openSUSE Tumbleweed trên x86_64.
 Fedora, Ubuntu, Debian và Kali còn có gói cho ARM 64-bit (aarch64):
 
 ```
@@ -110,6 +110,7 @@ sudo apt install fcitx5-ngosen
 ```
 
 Kali: thay phần `$(. /etc/os-release && echo ${UBUNTU_CODENAME:-$VERSION_CODENAME})` bằng `forky`.
+deepin 23 và 25: thay phần đó bằng `bookworm`.
 
 Arch, CachyOS và EndeavourOS dùng repo pacman (x86_64):
 

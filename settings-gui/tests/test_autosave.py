@@ -108,7 +108,7 @@ class AutosaveTest(unittest.TestCase):
             f.write("an\nanh\n")
         fake = FakeDBusHandler(sub_configs={"app_rules": [{"App": "firefox", "Mode": "5"}]})
         window = self.open_window(fake)
-        with mock.patch.object(QMessageBox, "question", return_value=QMessageBox.Yes):
+        with mock.patch("ui.main_window.confirm", return_value=True):
             window.on_restore_defaults()
         window.save_pending()
         self.assertEqual(fake.sub_configs["app_rules"], [])

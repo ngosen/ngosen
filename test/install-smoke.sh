@@ -236,7 +236,10 @@ check_reinstall_over_running_fcitx5() {
     cp "$saved" "$profile"
 
     check "fcitx5 starts again" start_fcitx5
-    check "reinstall over a running fcitx5 succeeds" installer --yes
+    check "reinstall over a running fcitx5 succeeds" install_logged
+    if [ "$session" = gnome ]; then
+        check "a running fcitx5 after --uninstall still gets the explanation" explains_gnome_setup
+    fi
     check "fcitx5 stops after the reinstall" stop_fcitx5
     check "profile lists ngosen after fcitx5 exits" has_line "$profile" 'Name=ngosen'
 

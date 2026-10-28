@@ -807,16 +807,22 @@ undo_im_config() {
 # Installs from before the list of changes are left alone, as nothing tells whether the install or
 # the user picked fcitx5.
 report_unknown_changes() {
-    local uuid
+    local uuid line
+    local -a left=()
     [ -e "$(changes_file)" ] && return 0
     if xinputrc_runs_fcitx5; then
-        say "  - im-config vẫn chọn fcitx5 (có thể do bản cài cũ đặt); muốn bỏ thì chạy: im-config -n REMOVE"
+        left+=("im-config vẫn chọn fcitx5 (có thể do bản cài cũ đặt); muốn bỏ thì chạy: im-config -n REMOVE")
     fi
-    command -v gnome-extensions >/dev/null 2>&1 || return 0
-    for uuid in forward-keys@ngosen.github.io kimpanel@kde.org; do
-        if gnome-extensions list --enabled 2>/dev/null | grep -qx "$uuid"; then
-            say "  - extension $uuid vẫn bật (có thể do bản cài cũ bật); muốn tắt thì chạy: gnome-extensions disable $uuid"
-        fi
+    if command -v gnome-extensions >/dev/null 2>&1; then
+        for uuid in forward-keys@ngosen.github.io kimpanel@kde.org; do
+            if gnome-extensions list --enabled 2>/dev/null | grep -qx "$uuid"; then
+                left+=("extension $uuid vẫn bật (có thể do bản cài cũ bật); muốn tắt thì chạy: gnome-extensions disable $uuid")
+            fi
+        done
+    fi
+    [ "${#left[@]}" -eq 0 ] || say "Chưa trả lại được:"
+    for line in "${left[@]}"; do
+        say "  - $line"
     done
 }
 
@@ -833,7 +839,7 @@ undo_gnome_session() {
         rm -f "$im_env"
         undone+=("app dùng lại IBus")
     elif [ -e "$im_env" ]; then
-        say "  - giữ nguyên $im_env vì đã được sửa sau khi cài"
+        say "Giữ nguyên $im_env vì đã được sửa sau khi cài."
     fi
     undo_im_config
     autostart="$config/autostart/org.fcitx.Fcitx5.desktop"
@@ -908,6 +914,7 @@ undo_fcitx5_setup() {
 
 switch_from_fcitx5() {
     undo_fcitx5_setup
+    say ""
     hide_fcitx5_autostart
     stop_fcitx5 || :
     switched_from_fcitx5=1
@@ -1230,8 +1237,8 @@ main() {
         say "Sau đó IBus và Ngó Sen được đặt làm bộ gõ cho tài khoản này."
         fcitx5_edition_in_use && switch_fcitx5=1
     elif wants_gnome_setup; then
-        # An account already on fcitx5 is upgrading; nothing it reads there would change for it.
-        fcitx5_edition_in_use || explain_gnome_setup
+        # Only an earlier setup leaves this file; without it the account is about to get the changes.
+        [ -e "$(config_home)/environment.d/90-ngosen.conf" ] || explain_gnome_setup
     elif wants_kde_setup; then
         say "Sau đó fcitx5 được đặt làm bộ gõ của KDE cho tài khoản này."
     elif wants_x11_setup; then

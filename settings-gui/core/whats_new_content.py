@@ -16,15 +16,14 @@ from i18n import N_
 FEATURES = [
     {
         "version": "1.7",
-        "title": N_("Settings window in GTK"),
+        "title": N_("GTK look for GNOME"),
         "how": N_(
-            "GNOME and Cinnamon open the GTK window, other desktops the Qt one. Switch on the "
-            "Appearance page, which offers to install the other window when it is missing."
+            "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
         ),
         "example": "",
         "target": ("setting", "SettingsToolkit"),
-        # Pictures of the GTK window for people still in the Qt one; the GTK page leaves it out.
-        "link": (N_("See the GTK window"), "https://ngosen.github.io/huong-dan/cua-so-cai-dat/"),
+        # Pictures of the GTK look for people still in the Qt one; the GTK page leaves it out.
+        "link": (N_("See the GTK look"), "https://ngosen.github.io/huong-dan/cua-so-cai-dat/"),
     },
     {
         "version": "1.6",

@@ -81,7 +81,7 @@ class PageTest(unittest.TestCase):
     def test_gtk_card_links_to_pictures_of_the_gtk_window(self):
         page = self.window.show_page("whats-new")
         link = next(b for b in page.findChildren(QPushButton) if b.property("url"))
-        self.assertEqual(link.text(), "See the GTK window")
+        self.assertEqual(link.text(), "See the GTK look")
         with mock.patch("ui.pages.whats_new.QDesktopServices.openUrl") as open_url:
             link.click()
         self.assertEqual(

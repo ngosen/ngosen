@@ -1561,13 +1561,13 @@ msgid "Check that fcitx5 is running."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
-msgid "Settings window in GTK"
+msgid "GTK look for GNOME"
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
-msgid "See the GTK window"
+msgid "See the GTK look"
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
-msgid "GNOME and Cinnamon open the GTK window, other desktops the Qt one. Switch on the Appearance page, which offers to install the other window when it is missing."
+msgid "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
 msgstr ""

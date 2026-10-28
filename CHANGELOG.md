@@ -12,6 +12,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Cửa sổ cài đặt mở được khi file `ngosen.conf` có byte không phải UTF-8; trước đây cửa sổ không hiện, mở từ khay
+  thì không báo gì (#415).
 - Hộp thoại hỏi "Khôi phục mặc định" và "Thay thế" bảng phím giờ có nút cùng ngôn ngữ với cửa sổ cài đặt, không còn Yes/No theo ngôn ngữ desktop (#417).
 
 ## [1.6.4-1] — 28/10/2026

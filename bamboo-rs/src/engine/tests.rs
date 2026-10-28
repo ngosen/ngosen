@@ -319,12 +319,27 @@ fn test_can_process_key() {
 }
 
 #[test]
+fn test_super_shortcut_goes_to_app() {
+    let mut e = new_test_engine(&[], false);
+    type_keys(&mut e, "Loi");
+    // Super+Q with Num Lock on, as fcitx5 reports it.
+    assert!(!e.process_key_event('q' as u32, MOD4_MASK | (1 << 4)));
+    assert!(!e.process_key_event('w' as u32, MOD4_MASK));
+    assert_eq!(
+        e.commit_text, "Loi",
+        "the word is committed, as before Ctrl"
+    );
+    assert_eq!(e.get_preedit_string(), "");
+}
+
+#[test]
 fn test_is_valid_state() {
     assert!(BambooEngine::is_valid_state(0));
     assert!(BambooEngine::is_valid_state(SHIFT_MASK), "shift is allowed");
     for mask in [
         CONTROL_MASK,
         MOD1_MASK,
+        MOD4_MASK,
         IGNORED_MASK,
         SUPER_MASK,
         HYPER_MASK,

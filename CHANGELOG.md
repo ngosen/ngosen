@@ -35,7 +35,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Test
 
 - Test cài trên LMDE không còn báo lỗi nhầm ở bước máy để tiếng Việt: ảnh LMDE đặt sẵn `LC_ALL` tiếng Anh, đè
-  lên ngôn ngữ test đặt (#PR).
+  lên ngôn ngữ test đặt (#405).
 
 ## [1.6.3-1] — 27/10/2026
 

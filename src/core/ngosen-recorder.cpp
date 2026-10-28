@@ -60,6 +60,9 @@ namespace ngosen {
             bool hasFocus() const override {
                 return host_->hasFocus();
             }
+            std::optional<std::string> takeSelection() override {
+                return host_->takeSelection();
+            }
 
             void showPreedit(const std::string& text, bool underline) override {
                 recorder_.add("preedit", quoted(text));

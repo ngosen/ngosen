@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 // TypingState: retoning a selected word with the tone key typed over it.
+#include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
@@ -12,7 +13,9 @@
 #include "ngosen-utf8.h"
 
 #include <algorithm>
+#include <optional>
 #include <string>
+#include <utility>
 
 namespace ngosen {
 
@@ -28,6 +31,11 @@ namespace ngosen {
             for (size_t i = 0; i < count && end != text.end(); ++i)
                 end = utf8::nextChar(end, text.end());
             return {start, end};
+        }
+
+        // A bare letter typed over is more often code or a form value than a word.
+        bool isRetonable(const std::u32string& word) {
+            return !word.empty() && std::all_of(word.begin(), word.end(), isWordChar) && (word.size() > 1 || word[0] >= 0x80);
         }
 
         // The word that after shows replaced by key, or nothing when after is anything else. Only the
@@ -47,10 +55,7 @@ namespace ngosen {
             if (was.compare(0, start, now, 0, start) != 0 || was.compare(end, tail, now, cursor, tail) != 0)
                 return {};
             const std::u32string word = was.substr(start, end - start);
-            if (!std::all_of(word.begin(), word.end(), isWordChar) || (start > 0 && isWordChar(was[start - 1])) || (end < was.size() && isWordChar(was[end])))
-                return {};
-            // A bare letter typed over is more often code or a form value than a word.
-            if (word.size() == 1 && word[0] < 0x80)
+            if (!isRetonable(word) || (start > 0 && isWordChar(was[start - 1])) || (end < was.size() && isWordChar(was[end])))
                 return {};
             return charsOf(before.text(), start, word.size());
         }
@@ -98,12 +103,17 @@ namespace ngosen {
     void TypingState::noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8) {
         // A lagging report is fine here: only the text is compared, and the wait allows for it.
         const Field field = host_->field();
-        if (!engine_->options().retoneSelection || engine_->options().outputCharset != "Unicode" || field.password || !field.surroundingText)
+        if (!engine_->options().retoneSelection || engine_->options().outputCharset != "Unicode" || field.password)
             return;
         // Only a key the engine keeps as typed goes to the app, which then types it over the selection.
         UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         if (!preedit || keyUtf8 != preedit.get())
             return;
+        if (!field.surroundingText) {
+            if (ngosen::typesOverPrimarySelection(field))
+                retoneAnnounced(sym, states, keyUtf8);
+            return;
+        }
         const Surrounding before = host_->surrounding();
         if (!before.isValid() || before.text().empty())
             return;
@@ -118,6 +128,32 @@ namespace ngosen {
             retoneKey_.reset();
             return false;
         });
+    }
+
+    void TypingState::retoneAnnounced(uint32_t sym, uint32_t states, const std::string& keyUtf8) {
+        // The field cannot show which word the key replaced; the X server says what was selected.
+        const std::optional<std::string> word = std::exchange(selectedBeforeKey_, std::nullopt);
+        if (word && isRetonable(utf8::decode(*word)))
+            offerRetone(*word, keyUtf8, 0, sym, states, keyUtf8);
+    }
+
+    void TypingState::forgetSelection() {
+        selectedBeforeKey_.reset();
+        host_->takeSelection();
+    }
+
+    void TypingState::offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key) {
+        const std::string toned = retoned(word, sym, states);
+        if (toned.empty() || toned == word || withoutToneMark(toned) != withoutToneMark(word))
+            return;
+        NGOSEN_INFO("Retone: " + logged(word) + " -> " + logged(toned));
+        Retype retype{.typed = std::move(typed), .marked = toned, .atOnce = true, .retone = true, .inWord = tail > 0, .key = key};
+        if (tail > 0) {
+            retoneAtWordEnd(tail, std::move(retype));
+            return;
+        }
+        retype_ = std::move(retype);
+        applyRetypeSoon(host_->translate("Tab or Esc: put back the key"));
     }
 
     void TypingState::dropRetoneKey() {
@@ -173,17 +209,7 @@ namespace ngosen {
             return;
         const RetoneKey key = std::move(*retoneKey_);
         dropRetoneKey();
-        const std::string toned = retoned(word, key.sym, key.states);
-        if (toned.empty() || toned == word || withoutToneMark(toned) != withoutToneMark(word))
-            return;
-        NGOSEN_INFO("Retone: " + logged(word) + " -> " + logged(toned));
-        Retype retype{.typed = typed, .marked = toned, .atOnce = true, .retone = true, .inWord = tail > 0, .key = key.text};
-        if (tail > 0) {
-            retoneAtWordEnd(tail, std::move(retype));
-            return;
-        }
-        retype_ = std::move(retype);
-        applyRetypeSoon(host_->translate("Tab or Esc: put back the key"));
+        offerRetone(word, typed, tail, key.sym, key.states, key.text);
     }
 
     bool TypingState::handleKeyAfterRetone(ngosen::KeyPress& keyEvent) {

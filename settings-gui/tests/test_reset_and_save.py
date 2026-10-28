@@ -33,7 +33,7 @@ class ResetTest(unittest.TestCase):
         self.assertEqual(fake.values["SpellCheck"], "True")
 
     def asked(self, window):
-        with mock.patch.object(QMessageBox, "question", return_value=QMessageBox.No) as question:
+        with mock.patch("ui.main_window.confirm", return_value=False) as question:
             window.on_restore_defaults()
         return question.call_args.args[2]
 
@@ -66,7 +66,7 @@ class ResetTest(unittest.TestCase):
             },
         )
         window = NgoSenSettingsWindow(dbus_handler=fake)
-        with mock.patch.object(QMessageBox, "question", return_value=QMessageBox.Yes):
+        with mock.patch("ui.main_window.confirm", return_value=True):
             window.on_restore_defaults()
         window.save_pending()
         self.assertEqual(fake.values["SpellCheck"], "True")
@@ -111,6 +111,35 @@ class ResetTest(unittest.TestCase):
         self.assertTrue(page.save_data())
         self.assertEqual(fake.values["TimeFormat"], "%H:%M")
         self.assertEqual(fake.values["DateFormat"], "%d/%m/%Y")
+
+
+class ConfirmButtonsTest(unittest.TestCase):
+    """Qt names Yes/No in the desktop's language, which can differ from the window's."""
+
+    def buttons_shown(self, ask):
+        shown = []
+
+        def record(box):
+            shown.extend(b.text() for b in box.buttons())
+            return 0
+
+        refuse = mock.Mock(side_effect=AssertionError("Qt's own Yes/No buttons"))
+        with (
+            mock.patch.object(QMessageBox, "exec", record),
+            mock.patch.object(QMessageBox, "question", refuse),
+        ):
+            ask()
+        return sorted(shown)
+
+    def test_reset_names_its_buttons(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        shown = self.buttons_shown(window.on_restore_defaults)
+        self.assertEqual(shown, ["&Cancel", "&Restore defaults"])
+
+    def test_keymap_preset_names_its_buttons(self):
+        page = KeymapEditorPage(FakeDBusHandler())
+        shown = self.buttons_shown(page.on_load_preset)
+        self.assertEqual(shown, ["&Cancel", "&Replace"])
 
 
 class MacroTest(unittest.TestCase):

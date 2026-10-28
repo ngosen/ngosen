@@ -17,7 +17,6 @@ from qtpy.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -25,6 +24,7 @@ from qtpy.QtWidgets import (
 )
 
 from core import keymap
+from ui.confirm import confirm
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
 from ui.typography import page_title
@@ -254,15 +254,14 @@ class KeymapEditorPage(BaseEditorPage):
     def on_load_preset(self):
         """Loads a predefined set of keymaps."""
         preset_name = self.combo_preset.currentText()
-        reply = QMessageBox.question(
+        if not confirm(
             self,
             _("Confirm"),
             _("This operation will replace all existing keys with ")
             + preset_name
             + _(". Are you sure?"),
-            QMessageBox.Yes | QMessageBox.No,
-        )
-        if reply == QMessageBox.No:
+            _("&Replace"),
+        ):
             return
 
         self.table.setRowCount(0)

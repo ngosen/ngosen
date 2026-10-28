@@ -287,12 +287,25 @@ check_old_profile_cleanup() {
     check "the keyboard is dropped without settings" lacks_keyboard "$profile"
     check "no settings keep Ctrl+Space" has_line "$settings" '0=Control+space'
 
+    # A new user who adds Ngó Sen in the configtool starts fcitx5 before Ngó Sen ever loads.
+    printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[GroupOrder]\n0=Default\n' |
+        as_user tee "$profile" >/dev/null
+    as_user rm -f "$settings"
+    check "fcitx5 starts before Ngó Sen is added" start_fcitx5
+    check "fcitx5 stops before Ngó Sen is added" stop_fcitx5
+    printf '\n[Groups/0/Items/1]\nName=ngosen\nLayout=\n' | as_user tee -a "$profile" >/dev/null
+    check "fcitx5 starts with Ngó Sen just added" start_fcitx5
+    check "fcitx5 stops with Ngó Sen just added" stop_fcitx5
+    check "a new user keeps the keyboard" has_line "$profile" 'Name=keyboard-us'
+    check "a new user gets Ctrl+Shift" lacks_line "$settings" '0=Control+space'
+
     # Without a profile fcitx5 builds one from the input methods listed for the desktop language.
     as_user rm -f "$profile" "$settings"
     # Some images (LMDE) set LC_ALL and LANGUAGE, which override LANG.
     check "fcitx5 starts on a Vietnamese desktop without a profile" start_fcitx5 -u LC_ALL -u LANGUAGE LANG=vi_VN.UTF-8
     check "fcitx5 stops on the Vietnamese desktop" stop_fcitx5
     check "a Vietnamese desktop gets ngosen in its first profile" has_line "$profile" 'Name=ngosen'
+    check "a first profile keeps Ctrl+Shift" lacks_line "$settings" '0=Control+space'
 
     pkill -u "$user" dbus-daemon || :
     bus=
@@ -371,6 +384,8 @@ case "$1 $2 $3" in
     "set org.freedesktop.ibus.general preload-engines") printf '%s\n' "$4" >"$HOME/.stub-ibus-engines" ;;
     "get org.freedesktop.ibus.general.hotkey triggers") cat "$HOME/.stub-ibus-triggers" 2>/dev/null || echo "['<Super>space']" ;;
     "set org.freedesktop.ibus.general.hotkey triggers") printf '%s\n' "$4" >"$HOME/.stub-ibus-triggers" ;;
+    "get org.gnome.desktop.input-sources mru-sources") cat "$HOME/.stub-recent-sources" 2>/dev/null || echo "@a(ss) []" ;;
+    "set org.gnome.desktop.input-sources mru-sources") printf '%s\n' "$4" >"$HOME/.stub-recent-sources" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -464,10 +479,13 @@ triggers=$home/.stub-ibus-triggers
 # Read as the gsettings stub reports them, default included.
 switch_keys_are() { [ "$(cat "$triggers" 2>/dev/null || echo "['<Super>space']")" = "$1" ]; }
 fcitx5_masked() { has_line "$fcitx5_mask" 'Hidden=true'; }
+recent_sources=$home/.stub-recent-sources
+ngosen_first() { grep -q "^\[('ibus', 'ngosen')" "$recent_sources"; }
 
 check_ibus_edition() {
     use_gnome_stubs
     as_user rm -f "$changes" "$enabled_extensions" "$sources" "$im_env"
+    echo "[('xkb', 'us')]" | as_user tee "$recent_sources" >/dev/null
     check "fcitx5 edition install succeeds" installer --yes
     # Debian starts fcitx5 through im-config; Fedora and Arch ship this entry.
     mkdir -p /etc/xdg/autostart
@@ -481,6 +499,8 @@ check_ibus_edition() {
     check "it removes the fcitx5 environment" test ! -e "$im_env"
     check "it keeps fcitx5 from starting at login" fcitx5_masked
     check "it adds Ngó Sen to the input sources" has_ngosen_source
+    check "it logs in on Ngó Sen" ngosen_first
+    check "the keyboard is still a recent source" grep -qF "('xkb', 'us')" "$recent_sources"
     check "fcitx5 install without a terminal refuses to switch back" refuses fcitx5_install_without_terminal
     check "and keeps the IBus edition" is_installed ibus-ngosen
     check "switching back to the fcitx5 edition succeeds" fcitx5_install_answering c
@@ -535,6 +555,32 @@ check_user_im_config_kept() {
     check "im-config set by the user stays" has_line "$home/.xinputrc" 'run_im fcitx5'
 }
 
+apt_args=/srv/apt-get-args
+
+# sudo keeps its own PATH, which on Kali leaves out /usr/local, so the wrapper takes apt-get's place.
+log_apt_get() {
+    dpkg-divert --quiet --rename --add /usr/bin/apt-get
+    printf '#!/bin/sh\necho "$*" >>%s\nexec /usr/bin/apt-get.distrib "$@"\n' "$apt_args" >/usr/bin/apt-get
+    chmod +x /usr/bin/apt-get
+}
+
+restore_apt_get() {
+    rm -f /usr/bin/apt-get
+    dpkg-divert --quiet --rename --remove /usr/bin/apt-get
+}
+
+names_frontend() { grep -q '^install .*fcitx5-frontend-' "$apt_args"; }
+
+check_installed_frontends_left_alone() {
+    log_apt_get
+    : >"$apt_args"
+    check "precondition: the GTK 3 module is installed" is_installed fcitx5-frontend-gtk3
+    check "install with the modules in place succeeds" installer --yes
+    check "precondition: apt-get install was logged" grep -q '^install ' "$apt_args"
+    check "it does not name the installed modules" refuses names_frontend
+    restore_apt_get
+}
+
 main() {
     prepare_system
 
@@ -582,6 +628,8 @@ main() {
             echo "== IBus edition on X11"
             check_ibus_x11
         fi
+        echo "== GTK and Qt modules already installed"
+        check_installed_frontends_left_alone
     fi
 
     if [ "$session" = gnome ]; then

@@ -124,6 +124,17 @@ namespace {
         check("a keyboard on another layout than the group's stays", !ngosen::dropLoneKeyboard(profile, "ngosen"));
     }
 
+    void testListsInputMethod() {
+        auto profile = parse("[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n"
+                             "[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n"
+                             "[Groups/1]\nName=Other\nDefault Layout=us\nDefaultIM=ngosen\n\n"
+                             "[Groups/1/Items/0]\nName=ngosen\nLayout=\n");
+        check("Ngó Sen in a second group is found", ngosen::listsInputMethod(profile, "ngosen"));
+        check("an input method not listed is not found", !ngosen::listsInputMethod(profile, "lotus"));
+        fcitx::RawConfig empty;
+        check("no profile lists nothing", !ngosen::listsInputMethod(empty, "ngosen"));
+    }
+
     void testCopySwitchKeys() {
         auto             fcitxConfig = parse("[Hotkey/TriggerKeys]\n0=Super+space\n1=Zenkaku_Hankaku\n");
         fcitx::RawConfig settings;
@@ -237,6 +248,7 @@ int main() {
     testOtherGroups();
     testDropKeyboard();
     testKeepOtherInputMethods();
+    testListsInputMethod();
     testCopySwitchKeys();
     testUpgradeTurnsRetypeOn();
     testReleaseAnnouncedOnce();

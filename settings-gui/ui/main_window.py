@@ -34,6 +34,7 @@ from qtpy.QtWidgets import (
 
 from core import backup, settings_snapshot
 from ui import brand, search
+from ui.confirm import confirm
 
 # Lazy loading pages on demand
 
@@ -384,7 +385,6 @@ class NgoSenSettingsWindow(QMainWindow):
     def on_restore_defaults(self):
         """Resets all settings to their default values."""
         from core.settings_model import SettingsModel
-        from qtpy.QtWidgets import QMessageBox
 
         from core import defaults
 
@@ -394,13 +394,12 @@ class NgoSenSettingsWindow(QMainWindow):
         model.load()
         note = defaults.toggle_key_note(model)
         question = _("Restore all settings to defaults?")
-        reply = QMessageBox.question(
+        if confirm(
             self,
             _("Confirm Reset"),
             f"{question}\n\n{note}" if note else question,
-            QMessageBox.Yes | QMessageBox.No,
-        )
-        if reply == QMessageBox.Yes:
+            _("&Restore defaults"),
+        ):
             self._build_all_pages()
             for page in self._pages:
                 if hasattr(page, "restore_defaults"):

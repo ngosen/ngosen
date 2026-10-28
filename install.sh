@@ -302,9 +302,15 @@ install_package() {
             # fcitx5 only recommends its GTK and Qt modules and im-config, and MX turns recommends
             # off. Naming them also covers a reinstall, which apt skips along with its recommends.
             # im-config 1.1 (Kali, deepin) fails without a dialog program but only recommends whiptail.
+            # Only missing ones are named: naming an installed module upgrades it, which on a rolling
+            # release pulls in part of a toolkit upgrade.
             local extra candidate
             local -a extras=() candidates=()
-            [ "$edition" = fcitx5 ] && candidates=(im-config whiptail fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6)
+            if [ "$edition" = fcitx5 ]; then
+                for candidate in im-config whiptail fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6; do
+                    is_package_installed "$candidate" || candidates+=("$candidate")
+                done
+            fi
             candidates+=("${apt_upgrades[@]}")
             # Kali's images ship without package lists, and old lists name versions the mirror dropped.
             # A broken third-party source fails the update while the distribution's lists still refresh;
@@ -1007,6 +1013,19 @@ add_ibus_trigger() {
     session_changes+=("thêm phím chuyển Ctrl+Space cho IBus")
 }
 
+# GNOME logs in on the first of the recently used sources. Someone switching from the fcitx5
+# edition was typing Vietnamese, so they start on Ngó Sen rather than on the keyboard.
+make_ngosen_current() {
+    local recent
+    recent=$(gsettings get org.gnome.desktop.input-sources mru-sources 2>/dev/null) || return 0
+    recent=$(printf '%s' "$recent" | sed "s/^@a(ss) //; s/('ibus', 'ngosen'),\? *//; s/, *]$/]/")
+    case "$recent" in
+        "[]") recent="[('ibus', 'ngosen')]" ;;
+        *) recent="[('ibus', 'ngosen'), ${recent#[}" ;;
+    esac
+    gsettings set org.gnome.desktop.input-sources mru-sources "$recent"
+}
+
 # A running ibus-daemon finds a newly installed engine only when it starts again.
 restart_ibus() {
     pgrep -u "$(id -u)" -x ibus-daemon >/dev/null || return 1
@@ -1019,6 +1038,7 @@ setup_ibus_session() {
     [ "$switch_fcitx5" -eq 1 ] && switch_from_fcitx5
     use_ibus_im_config
     add_ibus_source
+    [ "$switched_from_fcitx5" -eq 1 ] && make_ngosen_current
     restart_ibus && restarted=1
     if [ "${#session_changes[@]}" -gt 0 ]; then
         say "Đã đặt Ngó Sen cho GNOME:"

@@ -175,6 +175,11 @@ namespace {
         check("a fresh install is not announced", ngosen::releaseToAnnounce(fresh, false, "1.7.0").empty());
         check("a fresh install remembers its release", value(fresh, "AnnouncedVersion") == "1.7");
         check("the first bug-fix release after a fresh install is quiet", ngosen::releaseToAnnounce(fresh, true, "1.7.1").empty());
+
+        // The engine then finds a settings file and takes the account for an upgrade.
+        auto added = ngosen::newAccountSettings("1.7.0");
+        check("a new account needs no upgrade", !ngosen::upgradeSettings(added, true));
+        check("a new account added in the configtool is not announced", ngosen::releaseToAnnounce(added, true, "1.7.0").empty());
     }
 
     void testKeepOtherInputMethods() {

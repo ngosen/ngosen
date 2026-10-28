@@ -96,9 +96,7 @@ namespace {
             if (ngosen::listsInputMethod(profile, ngosen::InputMethod) || ngosen::listsInputMethod(profile, ngosen::LegacyInputMethod)) {
                 return false;
             }
-            fcitx::RawConfig settings;
-            ngosen::upgradeSettings(settings, false);
-            fcitx::safeSaveAsIni(settings, profileType(), "conf/ngosen.conf");
+            fcitx::safeSaveAsIni(ngosen::newAccountSettings(NGOSEN_VERSION), profileType(), "conf/ngosen.conf");
             return true;
         }
 

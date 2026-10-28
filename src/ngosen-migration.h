@@ -48,6 +48,10 @@ namespace ngosen {
     // and a fresh install are quiet. `saved` says the settings file existed. Updates `settings`.
     std::string releaseToAnnounce(fcitx::RawConfig& settings, bool saved, const std::string& version);
 
+    // Settings for an account that adds Ngó Sen before it ever ran there: current, so no upgrade
+    // applies, and with nothing to announce.
+    fcitx::RawConfig newAccountSettings(const std::string& version);
+
     // Copies dir/old to dir/new for each pair where only the old file exists. The old file stays, so
     // going back to an earlier version keeps its settings. Returns the new names that were written.
     std::vector<std::string> copyLegacyFiles(const std::filesystem::path& dir, const std::vector<std::pair<std::string, std::string>>& names);

@@ -204,6 +204,13 @@ namespace ngosen {
         return saved ? current : std::string();
     }
 
+    fcitx::RawConfig newAccountSettings(const std::string& version) {
+        fcitx::RawConfig settings;
+        upgradeSettings(settings, false);
+        releaseToAnnounce(settings, false, version);
+        return settings;
+    }
+
     bool copySwitchKeys(const fcitx::RawConfig& fcitxConfig, fcitx::RawConfig& settings) {
         const auto keys = fcitxConfig.get("Hotkey/TriggerKeys");
         if (!keys || keys->subItemsSize() == 0 || settings.get("ToggleKey")) {

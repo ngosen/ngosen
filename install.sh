@@ -18,7 +18,6 @@ switch_fcitx5=0
 switch_ibus=0
 switched_from_fcitx5=0
 assume_yes=0
-ibus_available=1
 setup_session=1
 session_changes=()
 keyboard_dropped=0
@@ -61,10 +60,7 @@ usage() {
 }
 
 ibus_unsupported() {
-    [ "$edition" = ibus ] || {
-        ibus_available=0
-        return 0
-    }
+    [ "$edition" = ibus ] || return 0
     die "chưa có Ngó Sen cho GNOME (bản IBus) trên $1. Bỏ --ibus để cài bản fcitx5."
 }
 
@@ -147,13 +143,22 @@ detect_distribution() {
     unsupported "${id:-bản phân phối này} ${codename:-$version}"
 }
 
+# The IBus edition has its own releases, which cover fewer distributions.
+has_ibus_package() {
+    local sums ibus_pattern="ibus-ngosen${pattern#"$package_name"}"
+    sums=$(fetch -sS "$IBUS_RELEASE_URL/SHA256SUMS" 2>/dev/null) || return 1
+    grep -qE "^[0-9a-f]{64}  ${ibus_pattern}\$" <<<"$sums"
+}
+
 explain_gnome_setup() {
     say ""
     say "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus của GNOME cho tài khoản này: fcitx5 tự chạy khi"
     say "đăng nhập, app gõ qua fcitx5, thêm biểu tượng bộ gõ lên thanh trên cùng (tải extension"
     say "từ extensions.gnome.org nếu máy chưa có khay). Đăng xuất một lần là dùng được."
     say "Gỡ bằng --uninstall thì trả lại hết."
-    [ "$ibus_available" -eq 1 ] || return 0
+    if ibus_edition_in_use || ! has_ibus_package; then
+        return 0
+    fi
     say ""
     say "Thích đơn giản, dùng đúng đồ có sẵn của GNOME? Có bản Ngó Sen cho GNOME chạy trên IBus:"
     say "không cần fcitx5 hay extension, cài xong gõ được ngay, đổi Anh/Việt bằng Super+Space như"

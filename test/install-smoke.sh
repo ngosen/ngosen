@@ -461,7 +461,7 @@ check_user_im_config_kept() {
     check "install over im-config set by the user succeeds" installer --yes
     check "uninstall after that succeeds" uninstall_logged
     check "im-config set by the user stays" has_line "$home/.xinputrc" 'run_im fcitx5'
-    check "it says fcitx5 still starts at login" grep -qF "im-config vẫn chọn fcitx5" "$install_log"
+    check "it says fcitx5 still starts at login" grep -qE "fcitx5 vẫn (chạy|còn trên máy)" "$install_log"
     check "it does not promise fcitx5 is gone" refuses grep -qE "GNOME dùng lại IBus|bỏ hẳn fcitx5" "$install_log"
     as_user rm -f "$home/.xinputrc"
 }

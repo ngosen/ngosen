@@ -370,12 +370,23 @@ im_config_set() {
 }
 
 # im-config 1.1 drops the choice with "auto"; given "REMOVE" it writes "run_im REMOVE".
+im_config_is_1_1() {
+    case "$(im-config -h 2>&1)" in
+        *"-w <name>"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 im_config_unset() {
-    im-config -n REMOVE >/dev/null 2>&1 || im-config -w auto >/dev/null 2>&1
+    if im_config_is_1_1; then
+        im-config -w auto >/dev/null 2>&1
+    else
+        im-config -n REMOVE >/dev/null 2>&1
+    fi
 }
 
 im_config_unset_command() {
-    if im-config -h 2>&1 | grep -q -- '-w <name>'; then
+    if im_config_is_1_1; then
         echo "im-config -w auto"
     else
         echo "im-config -n REMOVE"
@@ -1010,15 +1021,15 @@ uninstall() {
     say ""
     if [ "$edition" = ibus ]; then
         say "Xong. Đăng xuất rồi đăng nhập lại để gỡ hẳn Ngó Sen khỏi GNOME."
+    elif wants_x11_setup && [ "$(im_config_auto)" = fcitx5 ]; then
+        # The system default picks any installed input method, and fcitx5 itself stays installed.
+        say "Xong. fcitx5 vẫn còn trên máy nên vẫn tự chạy khi đăng nhập, gõ tiếng Anh như bàn phím."
+        say "Gỡ hẳn fcitx5:  sudo apt remove fcitx5"
     elif { wants_gnome_setup || wants_x11_setup; } && command -v im-config >/dev/null 2>&1 && xinputrc_runs_fcitx5; then
         say "Xong. im-config vẫn chọn fcitx5 nên fcitx5 vẫn chạy khi đăng nhập. Muốn bỏ thì chạy lệnh dưới"
         say "rồi đăng xuất và đăng nhập lại:  $(im_config_unset_command)"
     elif wants_gnome_setup; then
         say "Xong. Đăng xuất rồi đăng nhập lại để GNOME dùng lại IBus."
-    elif wants_x11_setup && [ "$(im_config_auto)" = fcitx5 ]; then
-        # The system default picks any installed input method, and fcitx5 itself stays installed.
-        say "Xong. fcitx5 vẫn còn trên máy nên vẫn tự chạy khi đăng nhập, gõ tiếng Anh như bàn phím."
-        say "Gỡ hẳn fcitx5:  sudo apt remove fcitx5"
     elif wants_x11_setup; then
         say "Xong. Đăng xuất rồi đăng nhập lại để bỏ hẳn fcitx5."
     elif wants_kde_setup; then

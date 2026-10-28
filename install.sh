@@ -21,6 +21,8 @@ setup_session=1
 session_changes=()
 keyboard_dropped=0
 fcitx5_reloaded=0
+package_changed=1
+fcitx5_current=0
 manager=
 pattern=
 # Packages apt upgrades along with the install on a distribution that needs it.
@@ -221,17 +223,18 @@ install_with_pacman() {
         done
     fi
 
-    as_root pacman -U --noconfirm "${overwrite[@]}" "$package"
+    as_root env NGOSEN_INSTALLER=1 pacman -U --needed --noconfirm "${overwrite[@]}" "$package"
 }
 
+# The package scripts see NGOSEN_INSTALLER and leave the next steps to this script.
 install_package() {
     local package=$1
     case "$manager" in
         dnf)
-            as_root dnf install -y "$package"
+            as_root env NGOSEN_INSTALLER=1 dnf install -y "$package"
             ;;
         zypper)
-            as_root zypper --non-interactive install --allow-unsigned-rpm "$package"
+            as_root env NGOSEN_INSTALLER=1 zypper --non-interactive install --allow-unsigned-rpm "$package"
             ;;
         apt)
             # fcitx5 only recommends its GTK and Qt modules and im-config, and MX turns recommends
@@ -261,7 +264,9 @@ install_package() {
                     *) extras+=("$candidate") ;;
                 esac
             done
-            as_root apt-get install -y "$package" "${extras[@]}"
+            # Modules new to the machine reach apps only after fcitx5 restarts.
+            [ "${#extras[@]}" -eq 0 ] || package_changed=1
+            as_root env NGOSEN_INSTALLER=1 apt-get install -y "$package" "${extras[@]}"
             ;;
         pacman)
             install_with_pacman "$package"
@@ -375,6 +380,30 @@ im_config_set() {
     im-config -n "$1" >/dev/null 2>&1 || im-config -w "$1" >/dev/null 2>&1
 }
 
+# im-config 1.1 drops the choice with "auto"; given "REMOVE" it writes "run_im REMOVE".
+im_config_is_1_1() {
+    case "$(im-config -h 2>&1)" in
+        *"-w <name>"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+im_config_unset() {
+    if im_config_is_1_1; then
+        im-config -w auto >/dev/null 2>&1
+    else
+        im-config -n REMOVE >/dev/null 2>&1
+    fi
+}
+
+im_config_unset_command() {
+    if im_config_is_1_1; then
+        echo "im-config -w auto"
+    else
+        echo "im-config -n REMOVE"
+    fi
+}
+
 # Prints the input method im-config starts when the user has picked none.
 im_config_auto() {
     im-config -m 2>/dev/null | sed -n 3p | grep . ||
@@ -383,6 +412,13 @@ im_config_auto() {
 
 im_environment_entry() {
     printf 'GTK_IM_MODULE=fcitx\nQT_IM_MODULE=fcitx\nXMODIFIERS=@im=fcitx\nSDL_IM_MODULE=fcitx\n'
+}
+
+# The systemd user manager reads environment.d only when it starts, and it can outlive a logout;
+# without a reload the next login keeps the variables from before the change.
+reload_user_environment() {
+    command -v systemctl >/dev/null 2>&1 || return 0
+    systemctl --user daemon-reload >/dev/null 2>&1 || :
 }
 
 # GNOME offers fcitx5 no Wayland input-method protocol, so apps have to load fcitx5's own modules.
@@ -397,6 +433,7 @@ set_im_environment() {
     fi
     mkdir -p "$dir"
     im_environment_entry >"$file"
+    reload_user_environment
     # Debian's im-config otherwise picks IBus for X11 sessions and overrides the variables above.
     if command -v im-config >/dev/null 2>&1 && ! xinputrc_runs_fcitx5 && im_config_set fcitx5; then
         note_change im-config
@@ -416,6 +453,7 @@ set_xim_environment() {
     fi
     mkdir -p "$dir"
     echo 'XMODIFIERS=@im=fcitx' >"$file"
+    reload_user_environment
     session_changes+=("app X11 chạy qua XWayland (như Minecraft bản cũ) dùng fcitx5")
 }
 
@@ -499,10 +537,40 @@ restart_fcitx5() {
     wait_for_new_fcitx5 "$old"
 }
 
+installed_package_version() {
+    case "$manager" in
+        apt) dpkg-query -W -f='${Version}' "$package_name" ;;
+        pacman) pacman -Q "$package_name" | cut -d' ' -f2 ;;
+        *) rpm -q --qf '%{EPOCHNUM}:%{VERSION}-%{RELEASE}' "$package_name" ;;
+    esac 2>/dev/null
+}
+
+package_file_version() {
+    case "$manager" in
+        apt) dpkg-deb -f "$1" Version ;;
+        pacman) pacman -Qp "$1" | cut -d' ' -f2 ;;
+        *) rpm -qp --qf '%{EPOCHNUM}:%{VERSION}-%{RELEASE}' "$1" ;;
+    esac 2>/dev/null
+}
+
+# True when the running fcitx5 started after the installed addon was written, so it runs that one.
+fcitx5_runs_installed_addon() {
+    local pid addon elapsed
+    pid=$(pgrep -u "$(id -u)" -x fcitx5 | head -n 1) || return 1
+    addon=$(find /usr/lib /usr/lib64 -maxdepth 3 -name libngosen.so 2>/dev/null | head -n 1)
+    [ -n "$addon" ] || return 1
+    elapsed=$(ps -o etimes= -p "$pid") || return 1
+    [ "$(($(date +%s) - elapsed))" -gt "$(stat -c %Z "$addon")" ]
+}
+
 # An fcitx5 that ran without the addon drops ngosen from the profile as it exits, hence the second
 # check.
 reload_fcitx5() {
     local had_keyboard=0 tries=20
+    if [ "$package_changed" -eq 0 ] && has_ngosen_in_profile && fcitx5_runs_installed_addon; then
+        fcitx5_current=1
+        return 0
+    fi
     has_keyboard_in_profile && had_keyboard=1
     has_ngosen_in_profile && restart_fcitx5 && has_ngosen_in_profile || return 1
     fcitx5_reloaded=1
@@ -743,7 +811,7 @@ setup_kde_session() {
     fi
     set_xim_environment
     configure_fcitx5
-    if [ "${#session_changes[@]}" -eq 0 ] && [ "$fcitx5_reloaded" -eq 0 ]; then
+    if [ "${#session_changes[@]}" -eq 0 ] && [ "$fcitx5_reloaded" -eq 0 ] && [ "$fcitx5_current" -eq 0 ]; then
         say "Xong. Đăng xuất rồi đăng nhập lại để dùng bản mới."
         return
     fi
@@ -754,7 +822,9 @@ report_session_changes() {
     local change
     if [ "${#session_changes[@]}" -eq 0 ]; then
         report_dropped_keyboard
-        if [ "$fcitx5_reloaded" -eq 1 ]; then
+        if [ "$fcitx5_current" -eq 1 ]; then
+            say "Xong. Ngó Sen đã là bản này và đã đặt xong, không có gì thay đổi."
+        elif [ "$fcitx5_reloaded" -eq 1 ]; then
             say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
         else
             say "Xong. Khởi động lại fcitx5 để dùng bản mới:  fcitx5 -rd"
@@ -788,7 +858,7 @@ disable_shell_extension() {
 # Turns im-config back to the system default if the install picked fcitx5 there.
 undo_im_config() {
     if made_change im-config && xinputrc_runs_fcitx5 && command -v im-config >/dev/null 2>&1; then
-        im_config_set REMOVE || :
+        im_config_unset || :
     fi
 }
 
@@ -797,9 +867,6 @@ undo_im_config() {
 report_unknown_changes() {
     local uuid
     [ -e "$(changes_file)" ] && return 0
-    if xinputrc_runs_fcitx5; then
-        say "  - im-config vẫn chọn fcitx5 (có thể do bản cài cũ đặt); muốn bỏ thì chạy: im-config -n REMOVE"
-    fi
     command -v gnome-extensions >/dev/null 2>&1 || return 0
     for uuid in forward-keys@ngosen.github.io kimpanel@kde.org; do
         if gnome-extensions list --enabled 2>/dev/null | grep -qx "$uuid"; then
@@ -819,6 +886,7 @@ undo_gnome_session() {
     im_env="$config/environment.d/90-ngosen.conf"
     if [ -e "$im_env" ] && [ "$(cat "$im_env")" = "$(im_environment_entry)" ]; then
         rm -f "$im_env"
+        reload_user_environment
         undone+=("app dùng lại IBus")
     elif [ -e "$im_env" ]; then
         say "  - giữ nguyên $im_env vì đã được sửa sau khi cài"
@@ -985,7 +1053,7 @@ undo_ibus_session() {
         say "  - bỏ Ngó Sen khỏi nguồn nhập"
     fi
     if made_change im-config && grep -qs '^run_im ibus$' "$HOME/.xinputrc" && command -v im-config >/dev/null 2>&1; then
-        im_config_set REMOVE || :
+        im_config_unset || :
     fi
     if is_package_installed fcitx5-ngosen; then
         unmask_fcitx5_autostart
@@ -1050,12 +1118,15 @@ uninstall() {
     say ""
     if [ "$edition" = ibus ]; then
         say "Xong. Đăng xuất rồi đăng nhập lại để gỡ hẳn Ngó Sen khỏi GNOME."
-    elif wants_gnome_setup; then
-        say "Xong. Đăng xuất rồi đăng nhập lại để GNOME dùng lại IBus."
     elif wants_x11_setup && [ "$(im_config_auto)" = fcitx5 ]; then
         # The system default picks any installed input method, and fcitx5 itself stays installed.
         say "Xong. fcitx5 vẫn còn trên máy nên vẫn tự chạy khi đăng nhập, gõ tiếng Anh như bàn phím."
         say "Gỡ hẳn fcitx5:  sudo apt remove fcitx5"
+    elif { wants_gnome_setup || wants_x11_setup; } && command -v im-config >/dev/null 2>&1 && xinputrc_runs_fcitx5; then
+        say "Xong. im-config vẫn chọn fcitx5 nên fcitx5 vẫn chạy khi đăng nhập. Muốn bỏ thì chạy lệnh dưới"
+        say "rồi đăng xuất và đăng nhập lại:  $(im_config_unset_command)"
+    elif wants_gnome_setup; then
+        say "Xong. Đăng xuất rồi đăng nhập lại để GNOME dùng lại IBus."
     elif wants_x11_setup; then
         say "Xong. Đăng xuất rồi đăng nhập lại để bỏ hẳn fcitx5."
     elif wants_kde_setup; then
@@ -1147,7 +1218,12 @@ main() {
     chmod 755 "$workdir"
 
     download_package "$hash" "$file"
+    if is_package_installed "$package_name" &&
+        [ "$(installed_package_version)" = "$(package_file_version "$workdir/$file")" ]; then
+        package_changed=0
+    fi
     install_package "$workdir/$file"
+    [ "$package_changed" -eq 1 ] || say "Bản này đã được cài từ trước, không cài lại."
     if [ "$edition" = ibus ]; then
         if wants_gnome_setup; then
             setup_ibus_session
@@ -1177,7 +1253,11 @@ main() {
     say ""
     if [ "$(id -u)" -ne 0 ] && reload_fcitx5; then
         report_dropped_keyboard
-        say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
+        if [ "$fcitx5_current" -eq 1 ]; then
+            say "Xong. Ngó Sen đã là bản này, không có gì thay đổi."
+        else
+            say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
+        fi
         return
     fi
     say "Xong. Việc còn lại:"

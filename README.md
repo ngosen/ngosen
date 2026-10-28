@@ -52,8 +52,8 @@ Telex được dùng và test hằng ngày. VNI và các kiểu khác dùng đư
 
 ## Cài
 
-Lệnh dưới đây cài cho Fedora, Ubuntu (từ 24.04), Debian (từ 12), Kali, deepin, Arch, CachyOS và openSUSE Tumbleweed
-trên x86_64. Ubuntu 22.04 và Linux Mint 21 dùng được tới version 1.6.2.
+Lệnh dưới đây cài cho Fedora, Ubuntu (từ 24.04), Debian (từ 12), Kali, deepin, LMDE, Devuan, Parrot, Arch, Artix,
+CachyOS và openSUSE Tumbleweed trên x86_64. Ubuntu 22.04 và Linux Mint 21 dùng được tới version 1.6.4.
 Fedora, Ubuntu, Debian và Kali còn có gói cho ARM 64-bit (aarch64):
 
 ```
@@ -121,7 +121,8 @@ sudo apt install fcitx5-ngosen
 ```
 
 Kali: thay phần `$(. /etc/os-release && echo ${UBUNTU_CODENAME:-$VERSION_CODENAME})` bằng `forky`.
-deepin 23 và 25: thay phần đó bằng `bookworm`.
+deepin 23 và 25: thay phần đó bằng `bookworm`. LMDE, Devuan và Parrot: thay bằng bản Debian gốc, `bookworm` hoặc
+`trixie` (xem `/etc/debian_version`: 12 là `bookworm`, 13 là `trixie`).
 
 Arch, CachyOS và EndeavourOS dùng repo pacman (x86_64):
 

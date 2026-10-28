@@ -49,14 +49,6 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   không tải Qt (khoảng 20 MB trên Ubuntu 24.04 GNOME và Mint 22.1). Debian 12 (libadwaita quá cũ), KDE và desktop khác vẫn dùng Qt.
   Arch/CachyOS vẫn cài Qt vì gói Arch không cho chọn GTK hay Qt. Máy đã cài Ngó Sen vẫn giữ bộ Qt, không bị gỡ (#387).
 
-### Bỏ
-
-- Trang Giới thiệu trong cửa sổ cài đặt không còn dòng "Dựa trên mã của fcitx5-lotus và VMK"; phần ghi công
-  hai dự án này vẫn có trong README (#373).
-- Không còn gói cho Ubuntu 22.04 (và Linux Mint 21 dựa trên nó); cần Ubuntu 24.04 hoặc Linux Mint 22 trở lên.
-  Bản cuối cho Ubuntu 22.04 là 1.6.2. Lệnh cài một dòng báo rõ điều này; máy đã thêm repo APT của Ngó Sen
-  thì nên gỡ dòng repo đó, vì `apt update` sẽ báo lỗi thiếu `jammy` (#332).
-
 ### Sửa
 
 - Cửa sổ cài đặt: bấm "Mặc định" nay báo trước phím chuyển Anh/Việt sẽ về Ctrl+Shift nếu đang dùng phím khác,
@@ -66,6 +58,22 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   bị lưu lệch với những gì cửa sổ hiện (#367).
 - Cửa sổ cài đặt: bấm "Khôi phục…" với file sao lưu bị hỏng nay báo lỗi và không thay đổi gì; trước đây có thể
   làm trống file từ điển riêng và ghi một phần cài đặt (#382).
+
+### Bỏ
+
+- Trang Giới thiệu trong cửa sổ cài đặt không còn dòng "Dựa trên mã của fcitx5-lotus và VMK"; phần ghi công
+  hai dự án này vẫn có trong README (#373).
+- Không còn gói cho Ubuntu 22.04 (và Linux Mint 21 dựa trên nó); cần Ubuntu 24.04 hoặc Linux Mint 22 trở lên.
+  Bản cuối cho Ubuntu 22.04 là 1.6.4. Lệnh cài một dòng báo rõ điều này; máy đã thêm repo APT của Ngó Sen
+  thì nên gỡ dòng repo đó, vì `apt update` sẽ báo lỗi thiếu `jammy` (#332).
+
+## [1.6.4-1] — 28/10/2026
+
+Sửa lỗi mất dấu hoặc chữ trong chat và editor của Antigravity trên GNOME (#362, #395); sửa Cứu dấu trong Gõ Sen trên Chrome, Chromium và Brave ở X11 (#360, #390); sửa phím tắt Super khi dùng Gạch chân (#391, #392); sửa lỗi mở cửa sổ cài đặt và Hoàn tác (#376, #383); sửa install.sh khi desktop dùng tiếng Việt hoặc có nguồn apt lỗi, cài được trên deepin, LMDE, Devuan, Parrot, Artix và bỏ phụ thuộc python3-qtpy của .deb (#388, #399, #397, #403, #408).
+Tải ở [ngosen-1.6.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.4-1).
+
+### Sửa
+
 - Cửa sổ cài đặt không còn lỗi không mở được khi file từ điển riêng có chữ không phải UTF-8.
   Trang Từ điển báo không đọc trọn được file (#376).
 - Cửa sổ cài đặt: "Hoàn tác" chỉ trả lại đúng thay đổi vừa lưu, không còn làm mất kiểu gõ đã nhớ cho app
@@ -83,6 +91,15 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   `github.io` hỏng); nay báo nguồn lỗi rồi vẫn cài tiếp (#399).
 - `install.sh` cài được trên deepin 23 và 25 (trước đây báo không hỗ trợ). Gói `.deb` không còn đòi
   `python3-qtpy`, gói deepin không có; cửa sổ cài đặt chạy thẳng với PyQt6 (#397).
+- `install.sh` cài được trên LMDE, Devuan, Parrot và Artix (trước đây báo không hỗ trợ dù gói Debian, Arch
+  dùng được) (#403).
+- `install.sh` không còn dừng với lỗi "im-config không đặt được fcitx5" trên deepin và Kali mới cài: nay cài
+  kèm `whiptail`, thứ im-config 1.1 cần mà không tự kéo về (#408).
+
+### Test
+
+- Test cài trên LMDE không còn báo lỗi nhầm ở bước máy để tiếng Việt: ảnh LMDE đặt sẵn `LC_ALL` tiếng Anh, đè
+  lên ngôn ngữ test đặt (#405).
 
 ## [1.6.3-1] — 27/10/2026
 

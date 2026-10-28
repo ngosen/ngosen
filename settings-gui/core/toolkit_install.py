@@ -179,6 +179,8 @@ class Offer:
 
 def format_size(size):
     megabytes = size / 1024**2
+    if megabytes < 0.1:
+        return f"{size / 1024:.0f} kB"
     text = f"{megabytes:.1f}" if megabytes < 10 else f"{megabytes:.0f}"
     return text + " MB"
 

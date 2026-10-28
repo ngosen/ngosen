@@ -182,6 +182,7 @@ class OfferTest(unittest.TestCase):
         self.assertFalse(offer.runnable)
 
     def test_sizes_read_in_megabytes(self):
+        self.assertEqual(toolkit_install.format_size(41_778), "41 kB")
         self.assertEqual(toolkit_install.format_size(450_000), "0.4 MB")
         self.assertEqual(toolkit_install.format_size(52 * 1024**2), "52 MB")
 

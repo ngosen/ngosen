@@ -36,6 +36,8 @@ Tải ở [ngosen-1.6.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
   `python3-qtpy`, gói deepin không có; cửa sổ cài đặt chạy thẳng với PyQt6 (#397).
 - `install.sh` cài được trên LMDE, Devuan, Parrot và Artix (trước đây báo không hỗ trợ dù gói Debian, Arch
   dùng được) (#403).
+- `install.sh` không còn dừng với lỗi "im-config không đặt được fcitx5" trên deepin và Kali mới cài: nay cài
+  kèm `whiptail`, thứ im-config 1.1 cần mà không tự kéo về (#408).
 
 ### Test
 

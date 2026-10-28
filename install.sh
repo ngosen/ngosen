@@ -236,9 +236,10 @@ install_package() {
         apt)
             # fcitx5 only recommends its GTK and Qt modules and im-config, and MX turns recommends
             # off. Naming them also covers a reinstall, which apt skips along with its recommends.
+            # im-config 1.1 (Kali, deepin) fails without a dialog program but only recommends whiptail.
             local extra candidate
             local -a extras=() candidates=()
-            [ "$edition" = fcitx5 ] && candidates=(im-config fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6)
+            [ "$edition" = fcitx5 ] && candidates=(im-config whiptail fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6)
             candidates+=("${apt_upgrades[@]}")
             # Kali's images ship without package lists, and old lists name versions the mirror dropped.
             # A broken third-party source fails the update while the distribution's lists still refresh;

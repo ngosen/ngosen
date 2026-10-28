@@ -18,6 +18,7 @@ switch_fcitx5=0
 switch_ibus=0
 switched_from_fcitx5=0
 assume_yes=0
+ibus_available=1
 setup_session=1
 session_changes=()
 keyboard_dropped=0
@@ -60,7 +61,10 @@ usage() {
 }
 
 ibus_unsupported() {
-    [ "$edition" = ibus ] || return 0
+    [ "$edition" = ibus ] || {
+        ibus_available=0
+        return 0
+    }
     die "chưa có Ngó Sen cho GNOME (bản IBus) trên $1. Bỏ --ibus để cài bản fcitx5."
 }
 
@@ -141,6 +145,21 @@ detect_distribution() {
     # Ubuntu 22.04 (and Linux Mint 21) had packages up to 1.6.2.
     [ "$codename" = jammy ] && die "Ngó Sen từ 1.7.0 cần Ubuntu 24.04 trở lên (Linux Mint 22 trở lên). Bản cuối cho Ubuntu 22.04 là 1.6.2: https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.2-1"
     unsupported "${id:-bản phân phối này} ${codename:-$version}"
+}
+
+explain_gnome_setup() {
+    say ""
+    say "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus của GNOME cho tài khoản này: fcitx5 tự chạy khi"
+    say "đăng nhập, app gõ qua fcitx5, thêm biểu tượng bộ gõ lên thanh trên cùng (tải extension"
+    say "từ extensions.gnome.org nếu máy chưa có khay). Đăng xuất một lần là dùng được."
+    say "Gỡ bằng --uninstall thì trả lại hết."
+    [ "$ibus_available" -eq 1 ] || return 0
+    say ""
+    say "Thích đơn giản, dùng đúng đồ có sẵn của GNOME? Có bản Ngó Sen cho GNOME chạy trên IBus:"
+    say "không cần fcitx5 hay extension, cài xong gõ được ngay, đổi Anh/Việt bằng Super+Space như"
+    say "các nguồn nhập khác. Tính năng và trải nghiệm gõ không bằng bản fcitx5: chữ đang gõ có"
+    say "gạch chân, không có Cứu chữ, Cứu dấu. Muốn bản này thì trả lời N rồi chạy:"
+    say "  curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus"
 }
 
 confirm() {
@@ -1188,7 +1207,7 @@ main() {
         say "Sau đó IBus và Ngó Sen được đặt làm bộ gõ cho tài khoản này."
         fcitx5_edition_in_use && switch_fcitx5=1
     elif wants_gnome_setup; then
-        say "Sau đó fcitx5 được đặt làm bộ gõ cho tài khoản này, thay IBus của GNOME."
+        explain_gnome_setup
     elif wants_kde_setup; then
         say "Sau đó fcitx5 được đặt làm bộ gõ của KDE cho tài khoản này."
     elif wants_x11_setup; then

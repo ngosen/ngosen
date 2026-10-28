@@ -289,7 +289,14 @@ check_old_profile_cleanup() {
 
 install_log=$work/install.log
 install_logged() { installer --yes >"$install_log" 2>&1; }
+# Keeps the output in the CI log too, for when the install fails.
+install_shown() {
+    installer --yes 2>&1 | tee "$install_log"
+    return "${PIPESTATUS[0]}"
+}
 install_names() { grep -q "Bấm $1 " "$install_log"; }
+offers_ibus() { grep -qF -- "| bash -s -- --ibus" "$install_log"; }
+lacks_ibus_offer() { ! offers_ibus; }
 fcitx5_stopped() { ! fcitx5_running; }
 
 # Without a running fcitx5 the installer names the key before the addon has run, so it must
@@ -508,7 +515,12 @@ main() {
 
     echo "== install"
     # A failed install leaves the session files half done, so only the packages say anything.
-    check "install succeeds" installer --yes
+    check "install succeeds" install_shown
+    if [ "$session" = gnome ]; then
+        check "it offers the IBus edition" offers_ibus
+    else
+        check "it offers no IBus edition off GNOME" lacks_ibus_offer
+    fi
     check_packages
     [ "$failures" -eq 0 ] || finish
     check_session_files

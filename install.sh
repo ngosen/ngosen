@@ -223,7 +223,11 @@ install_package() {
             [ "$edition" = fcitx5 ] && candidates=(im-config fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6)
             candidates+=("${apt_upgrades[@]}")
             # Kali's images ship without package lists, and old lists name versions the mirror dropped.
-            as_root apt-get update
+            # A broken third-party source fails the update while the distribution's lists still refresh;
+            # the install below stops on its own if a package is really missing.
+            if ! as_root apt-get update; then
+                say "Một nguồn apt trên máy đang lỗi (xem dòng E: ở trên); vẫn thử cài tiếp."
+            fi
             for candidate in "${candidates[@]}"; do
                 # apt translates the label, "Ứng cử:" on a Vietnamese desktop.
                 extra=$(LC_ALL=C apt-cache policy "$candidate" 2>/dev/null | grep -m1 'Candidate:' || true)

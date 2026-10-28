@@ -25,6 +25,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   xoá xong chữ cũ lâu hơn khi app chậm (#362, #395).
 - Gạch chân: phím tắt Super + chữ (như Super+Q chuyển workspace) không còn bị gõ thành `q`, `ư`; nay đi
   thẳng tới desktop và app như Ctrl, Alt, giữ lại chữ đang gõ dở (#391, #392).
+- `install.sh` không còn dừng giữa chừng khi máy có một nguồn apt khác đang lỗi (như Zorin OS có nguồn
+  `github.io` hỏng); nay báo nguồn lỗi rồi vẫn cài tiếp (#399).
 - `install.sh` cài được trên deepin 23 và 25 (trước đây báo không hỗ trợ). Gói `.deb` không còn đòi
   `python3-qtpy`, gói deepin không có; cửa sổ cài đặt chạy thẳng với PyQt6 (#397).
 

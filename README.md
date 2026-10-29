@@ -9,9 +9,18 @@ Cửa sổ cài đặt có hai bản: Qt và GTK (giống app GNOME). GNOME và 
 các desktop khác mở bản Qt. Cửa sổ dùng giao diện sáng, tối của máy trên KDE và GNOME; đổi gì lưu
 ngay, có nút Hoàn tác.
 
+Bản GTK trên GNOME:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-gtk-dark.png">
+  <img alt="Cửa sổ cài đặt Ngó Sen bản GTK, trang Gõ chữ, trên GNOME" src="docs/screenshots/settings-gtk-light.png" width="750">
+</picture>
+
+Bản Qt trên KDE Plasma:
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
-  <img alt="Cửa sổ cài đặt Ngó Sen, trang Gõ chữ, trên KDE Plasma" src="docs/screenshots/settings-light.png" width="750">
+  <img alt="Cửa sổ cài đặt Ngó Sen bản Qt, trang Gõ chữ, trên KDE Plasma" src="docs/screenshots/settings-light.png" width="750">
 </picture>
 
 ## Tính năng chính
@@ -35,7 +44,7 @@ ngay, có nút Hoàn tác.
   Trang "Có gì mới & mẹo" ghi cách dùng các tính năng mới và mẹo gõ; sau khi cập nhật lên version có tính
   năng mới, một thông báo hiện một lần để mở trang này.
   Trang Giao diện có nút đổi sang bản kia (Qt hoặc GTK), máy chưa có thì cài ngay tại đó; bản GTK cần
-  libadwaita 1.5 trở lên (Ubuntu 24.04, Linux Mint 22, Debian 13), còn Debian 12 và Mint 21 chỉ có bản Qt.
+  libadwaita 1.5 trở lên (Ubuntu 24.04, Linux Mint 22, Debian 13), còn Debian 12 chỉ có bản Qt.
 
 Chi tiết từng version ở [CHANGELOG.md](CHANGELOG.md).
 

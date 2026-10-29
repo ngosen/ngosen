@@ -207,6 +207,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
+        if (quirks_.ignoresSurroundingDel)
+            return;
         later(quirks_.lagMs, [this, offset, size] { eraseAround(offset, size); });
     }
 

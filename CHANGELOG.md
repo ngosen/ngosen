@@ -60,6 +60,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Kiểm tra máy không còn báo "IBus đang chạy song song" khi IBus đó chỉ phục vụ chương trình khác (như IBus
   xpra tự bật); chỉ báo khi IBus thật sự giành bộ gõ của phiên đang dùng (#442).
+- Nhật ký gõ lưu ra file không còn bị gãy dòng ở phím Enter hay khi app báo chữ có xuống dòng: mỗi sự kiện
+  nằm trên đúng một dòng (#445).
 - Sửa Gõ Sen làm hỏng chữ như "tiíiếng" khi app dùng surrounding text báo chữ chậm hơn phím gõ
   (LibreOffice, ô GTK4) (#441).
 - deepin-editor: mặc định dùng chế độ gạch chân để gõ nhanh không còn đảo chữ, mất hoặc lặp dấu như khi

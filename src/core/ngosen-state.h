@@ -506,6 +506,8 @@ namespace ngosen {
         bool                            surrSeenTextSinceFocus_ = false; ///< the field reported text since it got focus
         uint64_t                        commitCount_            = 0;
         Surrounding                     lastReport_;
+        bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
+        std::unique_ptr<ngosen::Timer>  replay_timer_;
         bool                            autofillMarked_ = false; ///< this field filled in text after the cursor without a key
         bool                            rawWord_        = false; ///< the rest of this word goes to the app as typed
 

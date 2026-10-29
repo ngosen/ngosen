@@ -363,10 +363,13 @@ namespace ngosen {
         ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
 
         if (!deletedPart.empty() && keepsWordRaw(deletedPart)) {
-            // This key ends the word, so the next one starts afresh.
+            // This key ends the word, so the next one starts afresh, and the field never showed the word to reopen.
             rawWord_ = false;
+            lastWord_.clear();
             keyEvent.passToApp();
-        } else if (!deletedPart.empty()) {
+            return;
+        }
+        if (!deletedPart.empty()) {
             performReplacement(deletedPart, addedPart);
             keyEvent.accept();
         } else {

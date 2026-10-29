@@ -18,7 +18,6 @@
 #include "ngosen-utf8.h"
 #include "ngosen-xtest.h"
 
-#include <cctype>
 #include <cstddef>
 #include <algorithm>
 #include <string>
@@ -519,7 +518,9 @@ namespace ngosen {
         std::vector<std::string> fails;
         if (!surrSeenTextSinceFocus_)
             fails.emplace_back("no text since focus");
-        if (surrounding.cursor() != surrounding.anchor())
+        if (!surrounding.isValid())
+            fails.emplace_back("no copy");
+        else if (surrounding.cursor() != surrounding.anchor())
             fails.emplace_back("selection");
         if (surroundingUntrusted())
             fails.emplace_back("marked untrusted");
@@ -567,9 +568,11 @@ namespace ngosen {
         }
         if (!rawWord_)
             return false;
-        const std::string text     = host_->keyText(sym);
-        const bool        wordChar = text.size() == 1 && std::isalnum(static_cast<unsigned char>(text[0])) != 0;
-        if (!keyEvent.hasModifier() && (wordChar || ngosen::key::isBackspace(sym))) {
+        const std::u32string chars = ngosen::utf8::decode(host_->keyText(sym));
+        // Telex types ư and ơ with the bracket keys, so they belong to the word too.
+        const bool wordChar  = chars.size() == 1 && (isWordChar(chars[0]) || chars[0] == U'[' || chars[0] == U']');
+        const bool shiftOnly = (keyEvent.states() & ~(ngosen::modifier::Shift | ngosen::modifier::Repeat)) == 0;
+        if (shiftOnly && (wordChar || ngosen::key::isBackspace(sym))) {
             keyEvent.passToApp();
             return true;
         }
@@ -578,11 +581,13 @@ namespace ngosen {
     }
 
     void TypingState::noteAutofill(const Surrounding& report) {
-        const Field       field    = host_->field();
+        const Field field = host_->field();
+        if (!field.preeditFallback)
+            return;
         const Surrounding previous = lastReport_;
         lastReport_                = report;
         // A key's own report can carry the suggestion too; only one that comes on its own is told apart.
-        if (!field.preeditFallback || autofillMarked_ || oldPreBuffer_.empty() || keySinceReport_ || !previous.isValid() || !report.isValid())
+        if (autofillMarked_ || oldPreBuffer_.empty() || keySinceReport_ || !previous.isValid() || !report.isValid())
             return;
         const std::string before = textBeforeCursor(report);
         if (before != textBeforeCursor(previous) || !isEndsWith(before, oldPreBuffer_))
@@ -678,6 +683,16 @@ namespace ngosen {
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
+        if (replaying_) {
+            // The replay that led here resets the engine once this returns, so the keys after this
+            // one wait for the next turn; new keys queue behind them meanwhile.
+            replay_timer_ = host_->startTimer(monotonicUs(), 0, [this](Timer&) {
+                is_deleting_.store(false);
+                replayBufferedKeys();
+                return false;
+            });
+            return;
+        }
         is_deleting_.store(false);
         replayBufferedKeys();
     }
@@ -723,6 +738,8 @@ namespace ngosen {
         // shows "i"). Send the replacement and the replayed keys as one commit.
         std::string out = std::move(committed);
         NGOSEN_INFO("Starting replay buffered keys");
+        replaying_       = true;
+        const auto guard = std::unique_ptr<bool, void (*)(bool*)>(&replaying_, [](bool* flag) { *flag = false; });
         if (buffered_keys_.empty()) {
             commitReplayed(out);
             return;

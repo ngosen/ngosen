@@ -1601,6 +1601,14 @@ namespace {
         check(run.text == "tô tô " && off.empty() && countHaving(lines, "Surrounding text untrusted") == 1 && countHaving(lines, "Fix the dropped deletion") == 1,
               "fallback: a dropped deletion is fixed and backspaces take over", run.text + " " + join(off) + join(lines));
 
+        // Keys typed during a wait are replayed; one that replaces through the surrounding text must not
+        // lose the words replayed after it.
+        for (const auto& quirks : {ngosen::test::AppQuirks{.staleReport = true, .convertsDeleteOnReportedCopy = true},
+                                   ngosen::test::AppQuirks{.staleReport = true, .lagMs = 40, .convertsDeleteOnReportedCopy = true}}) {
+            lines = logLinesWhileTyping(gnome, quirks, "nguyeenx vieetj tieesng ", "", &run, 20);
+            check(run.text == "nguyễn việt tiếng ", "fallback: words replayed after a surrounding replacement stay whole", run.text + " " + join(lines));
+        }
+
         // No other way and no preedit: keys go to the app as they are.
         const ngosen::test::AppQuirks dropsAll{.dropsForwardedKeys = true, .ignoresSurroundingDel = true};
         lines = logLinesWhileTyping(surroundingOnlyField(), dropsAll, "too too ", "", &run);

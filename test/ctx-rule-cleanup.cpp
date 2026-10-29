@@ -8,6 +8,9 @@
  * user cycles its mode. If the rule outlives the window, the rules grow for the
  * whole session and a later window allocated at the same address inherits a
  * mode the user never chose for it.
+ *
+ * GNOME Shell before fcitx5 5.1.22 reports every app as "gnome-shell", so a
+ * saved rule for that name would override the default mode in every app.
  */
 
 #include "ngosen-engine.h"
@@ -38,38 +41,45 @@ namespace {
 
 } // namespace
 
+namespace {
+
+    int cycleAndClose(const std::string& program) {
+        TestInstance        testInstance;
+        fcitx::NgoSenEngine engine(&testInstance.instance);
+
+        fcitx::RawConfig    config;
+        config.setValueByPath("Mode", "Preedit");
+        config.setValueByPath("VietnameseOn", "True");
+        config.setValueByPath("InputMethod", "Telex");
+        config.setValueByPath("CycleModeKey/0", "F12");
+        engine.setConfig(config);
+
+        auto context = std::make_unique<TestInputContext>(&testInstance.instance, program);
+        context->focusIn();
+        fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
+        fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, focus);
+
+        fcitx::KeyEvent cycle(context.get(), fcitx::Key(FcitxKey_F12), false);
+        engine.keyEvent(entry, cycle);
+
+        if (countCtxRules(engine) != 1) {
+            std::cerr << "[" << program << "] Expected one ctx_ rule after cycling the mode, got " << countCtxRules(engine) << '\n';
+            return 1;
+        }
+
+        context.reset();
+
+        if (countCtxRules(engine) != 0) {
+            std::cerr << "[" << program << "] Expected no ctx_ rule after the window closed, got " << countCtxRules(engine) << '\n';
+            return 1;
+        }
+        return 0;
+    }
+
+} // namespace
+
 int main() {
     configureTestPaths("fcitx5-ngosen-ctx-rule-cleanup");
-
-    TestInstance        testInstance;
-    fcitx::NgoSenEngine engine(&testInstance.instance);
-
-    fcitx::RawConfig    config;
-    config.setValueByPath("Mode", "Preedit");
-    config.setValueByPath("VietnameseOn", "True");
-    config.setValueByPath("InputMethod", "Telex");
-    config.setValueByPath("CycleModeKey/0", "F12");
-    engine.setConfig(config);
-
-    auto context = std::make_unique<TestInputContext>(&testInstance.instance, "");
-    context->focusIn();
-    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
-    fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
-    engine.activate(entry, focus);
-
-    fcitx::KeyEvent cycle(context.get(), fcitx::Key(FcitxKey_F12), false);
-    engine.keyEvent(entry, cycle);
-
-    if (countCtxRules(engine) != 1) {
-        std::cerr << "Expected one ctx_ rule after cycling the mode, got " << countCtxRules(engine) << '\n';
-        return 1;
-    }
-
-    context.reset();
-
-    if (countCtxRules(engine) != 0) {
-        std::cerr << "Expected no ctx_ rule after the window closed, got " << countCtxRules(engine) << '\n';
-        return 1;
-    }
-    return 0;
+    return cycleAndClose("") + cycleAndClose("gnome-shell");
 }

@@ -1473,9 +1473,9 @@ namespace fcitx {
             return "unknown-app";
         }
         std::string programName = ic->program();
-        if (programName.empty() || programName == "wayland" || programName == "x11") {
-            // Fallback: InputContext address-based resolution
-            // This ensures at least per-window separation.
+        // GNOME Shell reports every app under its own name until fcitx5 5.1.22, so a saved rule
+        // for it would override the default mode everywhere; keep such a choice to this session.
+        if (programName.empty() || programName == "wayland" || programName == "x11" || programName == "gnome-shell") {
             std::ostringstream oss;
             oss << "ctx_" << static_cast<const void*>(ic);
             programName = oss.str();

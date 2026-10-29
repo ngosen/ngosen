@@ -519,9 +519,12 @@ namespace fcitx {
                 return false;
             }
             // It is shown only once, and Plasma keeps no history of an expired one, so it waits for the user.
+            // The text names the release, so it changes with each feature release.
             constexpr int32_t neverExpire = 0;
             addon->call<INotifications::sendNotification>(
-                "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"), _("See Cứu chữ, Cứu dấu, the English/Vietnamese key and typing tips."),
+                "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
+                _("Version 1.7: the settings window also comes in a GTK edition that looks like a GNOME app. See also Cứu chữ (retype words typed with Vietnamese off), Cứu dấu "
+                  "(select a word and type a tone mark to change it), the English/Vietnamese key and typing tips."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;
         });

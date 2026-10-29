@@ -1404,6 +1404,107 @@ namespace {
         check(text == "tiếng", "glfw: forwarded backspaces are newer than a typed one", text);
     }
 
+    // A field that deletes only through its surrounding text, behind GNOME Shell's IBus bridge.
+    Field surroundingOnlyField() {
+        Field field       = makeField("ibus", true);
+        field.sendsNoKeys = true;
+        return field;
+    }
+
+    std::vector<uint32_t> keysOf(const std::string& typed) {
+        return std::vector<uint32_t>(typed.begin(), typed.end());
+    }
+
+    // The fake app's quirks must break the text the way the real apps do, or a test on them proves
+    // nothing about the path that avoids them.
+    void testSurroundingQuirksBreakText() {
+        const auto typed = [](ngosen::test::AppQuirks quirks, const std::string& text) {
+            quirks.dropsForwardedKeys = true;
+            const auto keys           = keysOf(text);
+            return ngosen::test::typeInApp(surroundingOnlyField(), quirks, keys, std::vector<int>(keys.size(), 100));
+        };
+        std::string text = typed({.ignoresSurroundingDel = true}, "tiee");
+        check(text == "tieê", "quirk: a dropped deletion leaves the old letter", text);
+        text = typed({.reportsEmptyText = true}, "tiee");
+        check(text == "tieê", "quirk: a field that reports no text drops the deletion", text);
+        text = typed({.convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true}, "vieetj nam tieesng");
+        // On s the word becomes tíê and on n tiến; each time two characters of the old copy "tie" are
+        // two bytes, which cut inside ê, so only one character goes.
+        check(text == "việt nam tiíiếng", "quirk: bytes counted on an old copy cut inside a letter", text);
+
+        // The cursor moves with no report, so the deletion falls before the start of the text.
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop                loop;
+        FakeResources           resources;
+        ngosen::test::AppQuirks silent;
+        silent.reports            = false;
+        silent.dropsForwardedKeys = true;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(), silent);
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (char c : std::string("vie")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(30);
+        }
+        app->moveCursor(0);
+        app->type('e');
+        loop.pump(300);
+        check(app->text() == "êvie", "quirk: a deletion out of range is dropped", app->text());
+    }
+
+    void testSuggestion() {
+        for (const bool selected : {true, false}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("vie")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            app->suggest("tnam", selected);
+            loop.pump(30);
+            app->type('k');
+            loop.pump(300);
+            const std::string want = selected ? "viek" : "viektnam";
+            check(app->text() == want, std::string("suggest: ") + (selected ? "a selected" : "an unselected") + " suggestion", app->text());
+        }
+    }
+
+    // The path check must tell a field that fell back to backspaces from one that deleted through its
+    // surrounding text, even when both end with the right text.
+    void testPathCheck() {
+        FakeResources resources;
+        auto          keys = keysOf("vieetj nam ");
+        auto          run  = ngosen::test::typeInAppTraced(resources, surroundingOnlyField(), {.dropsForwardedKeys = true}, keys, std::vector<int>(keys.size(), 100));
+        auto          off  = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 2, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0});
+        check(run.text == "việt nam " && off.empty(), "path: two deletions through the surrounding text, nothing else", run.text + " " + join(off));
+
+        keys = keysOf("daasu ");
+        run  = ngosen::test::typeInAppTraced(resources, makeField("ibus", true), {.ignoresSurroundingDel = true}, keys, std::vector<int>(keys.size(), 100));
+        off  = ngosen::test::pathMismatches(run.sent, {.forwardedBackSpaces = 0});
+        check(run.text == "dấu " && !off.empty(), "path: right text through backspaces is not the surrounding path", run.text + " " + join(off));
+
+        setXTestSenderForTest([](int) { return true; });
+        keys = keysOf("daasu ");
+        run  = ngosen::test::typeInAppTraced(resources, makeField("xim", false), {.takesXTest = true}, keys, std::vector<int>(keys.size(), 100));
+        setXTestSenderForTest({});
+        off = ngosen::test::pathMismatches(run.sent, {.systemKeyPresses = 0});
+        check(run.text == "dấu " && !off.empty(), "path: backspaces pressed through XTEST are counted", run.text + " " + join(off));
+
+        ngosen::test::FakeLoop loop;
+        ngosen::test::FakeApp  app(loop, makeField("wayland", true), {});
+        app.showPreedit("vi", true);
+        off = ngosen::test::pathMismatches(app.sent(), {.preedits = 0});
+        check(!off.empty(), "path: a shown preedit is counted", join(off));
+    }
+
 } // namespace
 
 int main() {
@@ -1469,6 +1570,9 @@ int main() {
     testPreeditBackspaceRemovesTone();
     testPreeditBackspaceReopensWord();
     testModifierTapKeepsWord();
+    testSurroundingQuirksBreakText();
+    testSuggestion();
+    testPathCheck();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";
     return failures == 0 ? 0 : 1;

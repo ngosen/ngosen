@@ -878,6 +878,16 @@ namespace {
         check(last != std::string::npos && has(log.substr(last), "program=kitty") && has(log.substr(last), "0x0063 c"), "recorder: notes the field again on coming back", log);
     }
 
+    // Enter's key text and multi-line app reports would otherwise split one event over several lines.
+    void testRecorderKeepsOneEventPerLine() {
+        ngosen::Recorder recorder;
+        recorder.add("key", "down 0xff0d \r");
+        recorder.add("app", "\"a\nb\tc\\|\" cursor=6");
+        const std::string log = recorder.dump();
+        check(std::count(log.begin(), log.end(), '\n') == 2, "recorder: one line per event", log);
+        check(has(log, "\tkey\tdown 0xff0d \\r\n") && has(log, "\tapp\t\"a\\nb\\tc\\\\|\" cursor=6\n"), "recorder: escapes control characters", log);
+    }
+
     void testRecorderHidesPasswords() {
         realMode = ngosen::Mode::Sen;
         FakeLoop      loop;
@@ -1705,6 +1715,7 @@ int main() {
     testRecorderKeepsTheReplacement();
     testRecorderNotesFieldSwitch();
     testRecorderHidesPasswords();
+    testRecorderKeepsOneEventPerLine();
     testRecorderLimits();
     testRecorderSkipsRepeatedReports();
     testFocusBounce();

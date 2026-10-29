@@ -1483,13 +1483,26 @@ namespace {
         FakeResources resources;
         auto          keys = keysOf("vieetj nam ");
         auto          run  = ngosen::test::typeInAppTraced(resources, surroundingOnlyField(), {.dropsForwardedKeys = true}, keys, std::vector<int>(keys.size(), 100));
-        auto          off  = ngosen::test::pathMismatches(run.events, {.surroundingDeletes = 2, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0});
+        auto          off  = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 2, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0});
         check(run.text == "việt nam " && off.empty(), "path: two deletions through the surrounding text, nothing else", run.text + " " + join(off));
 
         keys = keysOf("daasu ");
         run  = ngosen::test::typeInAppTraced(resources, makeField("ibus", true), {.ignoresSurroundingDel = true}, keys, std::vector<int>(keys.size(), 100));
-        off  = ngosen::test::pathMismatches(run.events, {.forwardedBackSpaces = 0});
+        off  = ngosen::test::pathMismatches(run.sent, {.forwardedBackSpaces = 0});
         check(run.text == "dấu " && !off.empty(), "path: right text through backspaces is not the surrounding path", run.text + " " + join(off));
+
+        setXTestSenderForTest([](int) { return true; });
+        keys = keysOf("daasu ");
+        run  = ngosen::test::typeInAppTraced(resources, makeField("xim", false), {.takesXTest = true}, keys, std::vector<int>(keys.size(), 100));
+        setXTestSenderForTest({});
+        off = ngosen::test::pathMismatches(run.sent, {.systemKeyPresses = 0});
+        check(run.text == "dấu " && !off.empty(), "path: backspaces pressed through XTEST are counted", run.text + " " + join(off));
+
+        ngosen::test::FakeLoop loop;
+        ngosen::test::FakeApp  app(loop, makeField("wayland", true), {});
+        app.showPreedit("vi", true);
+        off = ngosen::test::pathMismatches(app.sent(), {.preedits = 0});
+        check(!off.empty(), "path: a shown preedit is counted", join(off));
     }
 
 } // namespace

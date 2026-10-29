@@ -55,6 +55,14 @@ namespace ngosen::test {
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
     // was typed.
+    // How the typing logic changes the app's text; -1 means not checked.
+    struct Path {
+        int surroundingDeletes  = -1;
+        int forwardedBackSpaces = -1; // presses only
+        int systemKeyPresses    = -1; // keys pressed, not calls
+        int preedits            = -1;
+    };
+
     class FakeApp final : public Host {
       public:
         FakeApp(FakeLoop& loop, Field field, AppQuirks quirks) : loop_(loop), field_(std::move(field)), quirks_(quirks) {}
@@ -71,12 +79,9 @@ namespace ngosen::test {
         void select(size_t anchor, size_t cursor);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
-        // Deletions through the surrounding text the app received and the ones it applied.
-        int receivedDeletes() const {
-            return receivedDeletes_;
-        }
-        int appliedDeletes() const {
-            return appliedDeletes_;
+        // How the typing logic asked the app to change its text so far.
+        const Path& sent() const {
+            return sent_;
         }
         const std::vector<std::string>& labels() const {
             return labels_;
@@ -108,7 +113,10 @@ namespace ngosen::test {
             return std::exchange(announced_, std::nullopt);
         }
 
-        void showPreedit(const std::string& /*text*/, bool /*underline*/) override {}
+        void showPreedit(const std::string& text, bool /*underline*/) override {
+            if (!text.empty())
+                ++sent_.preedits;
+        }
         void clearPreedit() override {}
         void resetPanel() override {}
         void refreshPreedit() override {}
@@ -179,8 +187,7 @@ namespace ngosen::test {
         size_t                              reportedCursor_    = 0;
         size_t                              reportedAnchor_    = 0;
         bool                                silentAfterDelete_ = false;
-        int                                 receivedDeletes_   = 0;
-        int                                 appliedDeletes_    = 0;
+        Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};
         std::vector<std::unique_ptr<Timer>> timers_;
     };
 
@@ -192,22 +199,11 @@ namespace ngosen::test {
     // What the app shows after typing, and what the typing logic sent it to get there.
     struct Typed {
         std::string text;
-        std::string events; // the Recorder's dump, one event per line
-        int         receivedDeletes = 0;
-        int         appliedDeletes  = 0;
+        Path        sent;
     };
 
-    // How the typing logic is expected to change the app's text; -1 means not checked.
-    struct Path {
-        int surroundingDeletes  = -1;
-        int forwardedBackSpaces = -1; // presses only
-        int systemKeyPresses    = -1;
-        int preedits            = -1;
-    };
-
-    // The ways the events depart from the path, empty when they match. Reads the same dump a user's
-    // saved typing log has.
-    std::vector<std::string> pathMismatches(const std::string& events, const Path& path);
+    // The ways what was sent departs from the expected path, empty when they match.
+    std::vector<std::string> pathMismatches(const Path& sent, const Path& expected);
 
     Typed                    typeInAppTraced(FakeResources& resources, const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs);
 

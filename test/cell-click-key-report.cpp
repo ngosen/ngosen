@@ -54,8 +54,9 @@ namespace {
                     ++backspaces_;
                 }
                 for (size_t i = deletes; i < context_->deletes().size(); ++i) {
-                    // Only deletions that end at the cursor, at the end of the cell, are sent here.
-                    for (unsigned int n = 0; n < context_->deletes()[i].second && !text_.empty(); ++n)
+                    // Applies only deletions that end at the cursor, at the end of the cell.
+                    const auto [offset, size] = context_->deletes()[i];
+                    for (unsigned int n = 0; offset == -static_cast<int>(size) && n < size && !text_.empty(); ++n)
                         eraseLastChar();
                     ++surroundingDeletes_;
                 }

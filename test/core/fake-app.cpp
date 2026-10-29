@@ -98,30 +98,8 @@ namespace ngosen::test {
             loop.pump(300);
             if (slowestCommitMs != nullptr)
                 *slowestCommitMs = app->slowestCommitMs();
-            return {.text = app->text(), .events = resources.recorder().dump(), .receivedDeletes = app->receivedDeletes(), .appliedDeletes = app->appliedDeletes()};
+            return {.text = app->text(), .sent = app->sent()};
         }
-
-        int countEvents(const std::string& events, const std::string& kind, const std::string& detailPrefix = {}) {
-            int    count = 0;
-            size_t start = 0;
-            while (start < events.size()) {
-                size_t end = events.find('\n', start);
-                if (end == std::string::npos)
-                    end = events.size();
-                const std::string line = events.substr(start, end - start);
-                start                  = end + 1;
-                const size_t kindAt    = line.find('\t');
-                if (kindAt == std::string::npos)
-                    continue;
-                const size_t      detailAt = line.find('\t', kindAt + 1);
-                const std::string got      = line.substr(kindAt + 1, detailAt == std::string::npos ? std::string::npos : detailAt - kindAt - 1);
-                const std::string detail   = detailAt == std::string::npos ? std::string() : line.substr(detailAt + 1);
-                if (got == kind && detail.compare(0, detailPrefix.size(), detailPrefix) == 0)
-                    ++count;
-            }
-            return count;
-        }
-
     } // namespace
 
     std::string typeInApp(FakeResources& resources, const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, int* slowestCommitMs) {
@@ -129,20 +107,19 @@ namespace ngosen::test {
     }
 
     Typed typeInAppTraced(FakeResources& resources, const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs) {
-        resources.recorder().clear();
         return typeKeys(resources, field, quirks, keys, gapsMs, nullptr);
     }
 
-    std::vector<std::string> pathMismatches(const std::string& events, const Path& path) {
+    std::vector<std::string> pathMismatches(const Path& sent, const Path& expected) {
         std::vector<std::string> out;
         const auto               expect = [&out](const char* what, int want, int got) {
             if (want >= 0 && want != got)
                 out.push_back(std::string(what) + ": want " + std::to_string(want) + ", got " + std::to_string(got));
         };
-        expect("surrounding deletions", path.surroundingDeletes, countEvents(events, "delete"));
-        expect("forwarded backspaces", path.forwardedBackSpaces, countEvents(events, "forward", "BackSpace down"));
-        expect("system key presses", path.systemKeyPresses, countEvents(events, "press"));
-        expect("preedits", path.preedits, countEvents(events, "preedit"));
+        expect("surrounding deletions", expected.surroundingDeletes, sent.surroundingDeletes);
+        expect("forwarded backspaces", expected.forwardedBackSpaces, sent.forwardedBackSpaces);
+        expect("system key presses", expected.systemKeyPresses, sent.systemKeyPresses);
+        expect("preedits", expected.preedits, sent.preedits);
         return out;
     }
 
@@ -216,9 +193,9 @@ namespace ngosen::test {
             slowestCommitMs_ = std::max(slowestCommitMs_, static_cast<int>((monotonicUs() - forwardedAt_) / 1000));
             forwardedAt_     = 0;
         }
-        // A commit's serial is checked when it is sent; focus and redraws matter when the app gets to it,
-        // which can be after a deletion sent just before it has emptied the field.
-        if (quirks_.dropsCommitsInReport && inReport_)
+        // Focus and redraws are checked again when the app gets to the commit, which can be after a
+        // deletion sent just before it has emptied the field.
+        if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
             return;
         later(quirks_.lagMs + quirks_.commitLagMs, [this, text] {
             if (focused_ && redraws_ == 0)
@@ -231,7 +208,10 @@ namespace ngosen::test {
             later(quirks_.lagMs, [this] { moveCursor(cursor_ + 1); });
             return;
         }
-        if (key != EditKey::BackSpace || release || quirks_.dropsForwardedKeys)
+        if (key != EditKey::BackSpace || release)
+            return;
+        ++sent_.forwardedBackSpaces;
+        if (quirks_.dropsForwardedKeys)
             return;
         if (quirks_.dropsOldKeyPresses) {
             if (lastBackSpaceAt_ != 0 && static_cast<int32_t>(time - lastBackSpaceAt_) <= 0)
@@ -254,6 +234,7 @@ namespace ngosen::test {
     bool FakeApp::pressSystemKeys(int count) {
         if (!quirks_.takesXTest || count <= 0)
             return false;
+        sent_.systemKeyPresses += count;
         later(quirks_.lagMs, [this, count] {
             // The X server stamps the burst with one time, and fcitx5's XIM frontend then marks every press after the first as a repeat.
             const auto time = static_cast<uint32_t>(monotonicUs() / 1000);
@@ -270,7 +251,7 @@ namespace ngosen::test {
     }
 
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
-        ++receivedDeletes_;
+        ++sent_.surroundingDeletes;
         // A module whose copy of the text is empty finds every deletion out of range.
         if (quirks_.ignoresSurroundingDel || quirks_.reportsEmptyText)
             return;
@@ -306,7 +287,6 @@ namespace ngosen::test {
         const long from = static_cast<long>(cursor_) + offset;
         if (from < 0 || static_cast<size_t>(from) + size > text_.size())
             return;
-        ++appliedDeletes_;
         silentAfterDelete_ = quirks_.reportsNothingAfterDelete;
         previousText_      = text_;
         previousCursor_    = cursor_;

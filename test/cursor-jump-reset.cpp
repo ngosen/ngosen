@@ -51,9 +51,10 @@ namespace {
                 if (lateStepBack_)
                     stepBackLate();
                 pumpEventLoop(testInstance_.instance, 60);
-                // Only deletions that end at the cursor are sent; each goes out right before its commit.
+                // Applies only deletions that end at the cursor, so any other shape shows in the text.
                 for (; deletes_ < context_->deletes().size(); ++deletes_) {
-                    for (int i = 0; i < -context_->deletes()[deletes_].first && cursor_ > 0; ++i)
+                    const auto [offset, size] = context_->deletes()[deletes_];
+                    for (unsigned int i = 0; offset == -static_cast<int>(size) && i < size && cursor_ > 0; ++i)
                         eraseBeforeCursor();
                 }
                 if (context_->commits().size() > commits) {

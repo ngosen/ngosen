@@ -169,6 +169,14 @@ namespace {
         check("a saved surrounding delete sleep goes back to the default", value(saved, "SurrDeleteSleepMs") == "<missing>");
         check("a saved surrounding commit sleep goes back to the default", value(saved, "SurrCommitSleepMs") == "<missing>");
 
+        auto oldest = parse("Mode=Sen\nSurrDeleteSleepMs=4\nSurrCommitSleepMs=3\n");
+        ngosen::upgradeSettings(oldest, true);
+        check("settings from before SettingsVersion lose the saved sleeps too",
+              value(oldest, "SurrDeleteSleepMs") == "<missing>" && value(oldest, "SurrCommitSleepMs") == "<missing>");
+
+        auto plain = parse("SettingsVersion=1\n");
+        check("settings from SettingsVersion 1 without sleeps are upgraded", ngosen::upgradeSettings(plain, true) && value(plain, "SettingsVersion") == "2");
+
         auto tuned = parse("SettingsVersion=1\nSurrDeleteSleepMs=9\n");
         ngosen::upgradeSettings(tuned, true);
         check("a sleep set to another value stays", value(tuned, "SurrDeleteSleepMs") == "9");

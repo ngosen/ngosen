@@ -287,7 +287,7 @@ namespace ngosen::test {
         const long from = static_cast<long>(cursor_) + offset;
         if (from < 0 || static_cast<size_t>(from) + size > text_.size())
             return;
-        silentAfterDelete_ = quirks_.reportsNothingAfterDelete;
+        silentAfterDelete_ = quirks_.reportsNothingAfterDelete || quirks_.repeatsOldTextAfterDelete;
         previousText_      = text_;
         previousCursor_    = cursor_;
         text_.erase(static_cast<size_t>(from), size);
@@ -318,7 +318,7 @@ namespace ngosen::test {
             return {};
         if (quirks_.reportsEmptyText)
             return Surrounding("", 0, 0);
-        if (quirks_.reportsNothingAfterDelete && silentAfterDelete_)
+        if (silentAfterDelete_)
             return Surrounding(encode(reportedText_), static_cast<unsigned int>(reportedCursor_), static_cast<unsigned int>(reportedAnchor_));
         if (quirks_.staleReport)
             return Surrounding(encode(previousText_), static_cast<unsigned int>(previousCursor_), static_cast<unsigned int>(previousCursor_));
@@ -405,14 +405,16 @@ namespace ngosen::test {
     void FakeApp::changed() {
         shownCursor_ = cursor_;
         shownAnchor_ = anchor_;
-        if (silentAfterDelete_)
+        if (silentAfterDelete_ && !quirks_.repeatsOldTextAfterDelete)
             return;
         if (field_.surroundingText && quirks_.reports)
             later(quirks_.reportDelayMs, [this] {
-                reportedText_   = text_;
-                reportedCursor_ = cursor_;
-                reportedAnchor_ = anchor_;
-                inReport_       = true;
+                if (!silentAfterDelete_) {
+                    reportedText_   = text_;
+                    reportedCursor_ = cursor_;
+                    reportedAnchor_ = anchor_;
+                }
+                inReport_ = true;
                 state_->surroundingUpdated();
                 inReport_ = false;
             });

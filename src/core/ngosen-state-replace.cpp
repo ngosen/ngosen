@@ -502,6 +502,10 @@ namespace ngosen {
             if (deletion.match == SurroundingDeletion::Match::None)
                 fails.emplace_back("copy shows another word");
         }
+        // Some apps report nothing after a commit, or repeat the old text, until the next key; a deletion
+        // counted on that copy would take characters already gone.
+        if (unreportedCommitLength_ > 0)
+            fails.emplace_back("copy older than the last commit");
         if (surroundingUntrusted())
             fails.emplace_back("marked untrusted");
         if (field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))

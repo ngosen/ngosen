@@ -80,7 +80,7 @@ class EvaluateTest(unittest.TestCase):
 
     def test_missing_xmodifiers_and_running_ibus_warn(self):
         env = dict(FCITX, XMODIFIERS="@im=ibus")
-        found = system_check.evaluate(facts("wayland", "GNOME", env=env, ibus_running=True))
+        found = system_check.evaluate(facts("wayland", "GNOME", env=env, ibus_owns_session=True))
         self.assertEqual(
             titles(found, WARN),
             ["Older X11 apps have no input method", "IBus is running next to fcitx5"],
@@ -173,6 +173,37 @@ class CollectTest(unittest.TestCase):
             f = system_check.collect(FakeDBusHandler(), env={"XDG_CURRENT_DESKTOP": "KDE"})
         self.assertEqual(f.gnome_shell_version, "")
         self.assertNotIn("gnome-shell", [c.args[0][0] for c in ran.call_args_list])
+
+    def test_ibus_counts_only_when_it_holds_this_session(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        proc = os.path.join(tmp.name, "proc")
+        for pid, comm in (("100", "ibus-daemon"), ("200", "fcitx5")):
+            os.makedirs(os.path.join(proc, pid))
+            with open(os.path.join(proc, pid, "comm"), "w", encoding="utf-8") as f:
+                f.write(comm + "\n")
+        bus = os.path.join(tmp.name, "ibus", "bus")
+        os.makedirs(bus)
+
+        def address(name, pid):
+            with open(os.path.join(bus, "m1-" + name), "w", encoding="utf-8") as f:
+                f.write(f"# IBus address file\nIBUS_ADDRESS=unix:path=/x\nIBUS_DAEMON_PID={pid}\n")
+
+        def owns(**env):
+            env["XDG_CONFIG_HOME"] = tmp.name
+            return system_check.ibus_owns_session(env, proc=proc, machine_id="m1")
+
+        address("unix-wayland-0", 200)
+        address("unix-100", 100)
+        # Another program's IBus on its own display, as xpra starts one.
+        self.assertFalse(owns(WAYLAND_DISPLAY="wayland-0"))
+        address("unix-wayland-0", 100)
+        self.assertTrue(owns(WAYLAND_DISPLAY="wayland-0"))
+        address("unix-0", 100)
+        self.assertTrue(owns(DISPLAY=":0.0"))
+        address("unix-0", 999)
+        self.assertFalse(owns(DISPLAY=":0"))
+        self.assertFalse(owns(DISPLAY=":5"))
 
     def test_fcitx5_not_answering(self):
         handler = FakeDBusHandler()

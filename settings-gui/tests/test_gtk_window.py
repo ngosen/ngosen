@@ -670,7 +670,7 @@ class GtkCheckDialogTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
         # The fcitx5 and IBus of the machine running the tests must not add a row.
-        for name in ("runs_replaced_addon", "_process_running"):
+        for name in ("runs_replaced_addon", "ibus_owns_session"):
             patcher = mock.patch.object(system_check, name, return_value=False)
             patcher.start()
             self.addCleanup(patcher.stop)

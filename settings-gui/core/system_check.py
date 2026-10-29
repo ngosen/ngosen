@@ -29,7 +29,8 @@ class Facts:
     env: dict
     fcitx_running: bool = False
     ngosen_in_group: bool = False
-    ibus_running: bool = False
+    # IBus took this session's address file, so apps and GNOME Shell talk to it, not fcitx5.
+    ibus_owns_session: bool = False
     kwin_input_method: str = ""
     apps: list = field(default_factory=list)
     distro: str = ""
@@ -108,7 +109,7 @@ def evaluate(facts):
             )
         )
     found += _desktop_findings(facts)
-    if facts.ibus_running:
+    if facts.ibus_owns_session:
         found.append(
             Finding(
                 WARN,
@@ -218,7 +219,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
     facts.ngosen_version = ngosen_version
     facts.distro = _distro()
     facts.fcitx_version = _fcitx_version()
-    facts.ibus_running = _process_running("ibus-daemon")
+    facts.ibus_owns_session = ibus_owns_session(env)
     facts.kwin_input_method = _kwin_input_method(env)
     facts.addon_replaced = runs_replaced_addon()
     if "GNOME" in facts.desktops:
@@ -290,8 +291,43 @@ def _pids_named(name, proc="/proc"):
     return found
 
 
-def _process_running(name):
-    return bool(_pids_named(name))
+def _machine_id():
+    for path in ("/var/lib/dbus/machine-id", "/etc/machine-id"):
+        try:
+            with open(path, encoding="utf-8") as f:
+                return f.read().strip()
+        except OSError:
+            continue
+    return ""
+
+
+def _ibus_address_name(env):
+    """Display part of the address file name, as IBus builds it."""
+    if env.get("WAYLAND_DISPLAY"):
+        return "unix-" + env["WAYLAND_DISPLAY"]
+    host, _, rest = env.get("DISPLAY", ":0").partition(":")
+    return f"{host or 'unix'}-{rest.split('.')[0] or '0'}"
+
+
+def ibus_owns_session(env, proc="/proc", machine_id=None):
+    """Whether this session's IBus address file names a running ibus-daemon.
+
+    fcitx5 writes its own pid there; another program's IBus, such as the one xpra starts for its
+    own display, writes a file for that display and does not count.
+    """
+    config_home = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME", ""), ".config")
+    name = f"{machine_id or _machine_id()}-{_ibus_address_name(env)}"
+    try:
+        with open(os.path.join(config_home, "ibus", "bus", name), encoding="utf-8") as f:
+            match = re.search(r"^IBUS_DAEMON_PID=(\d+)", f.read(), re.M)
+        if match is None:
+            return False
+        with open(
+            os.path.join(proc, match.group(1), "comm"), encoding="utf-8", errors="replace"
+        ) as f:
+            return f.read().strip() == "ibus-daemon"
+    except OSError:
+        return False
 
 
 def runs_replaced_addon(proc="/proc"):

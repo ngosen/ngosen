@@ -17,6 +17,8 @@
 #include "ngosen-utils.h"
 #include "test-input-context.h"
 
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -39,15 +41,39 @@ namespace {
         return count;
     }
 
+    bool hasRule(const fcitx::NgoSenEngine& engine, const std::string& name) {
+        fcitx::RawConfig raw;
+        engine.getSubConfig("app_rules")->save(raw);
+        bool found = false;
+        if (auto rules = raw.get("Rules")) {
+            rules->visitSubItems([&](fcitx::RawConfig& rule, const std::string&) {
+                auto app = rule.get("App");
+                found    = found || (app && app->value() == name);
+                return true;
+            });
+        }
+        return found;
+    }
+
 } // namespace
 
 namespace {
 
-    int cycleAndClose(const std::string& program) {
+    int cycleAndClose(const char* testName, const std::string& program) {
+        configureTestPaths(testName);
+        // A rule saved under this name before it became per-session must not apply.
+        if (!program.empty()) {
+            std::ofstream file(std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf/ngosen-app-rules.conf", std::ios::trunc);
+            file << program << "=2\n";
+        }
         TestInstance        testInstance;
         fcitx::NgoSenEngine engine(&testInstance.instance);
+        if (!program.empty() && hasRule(engine, program)) {
+            std::cerr << "[" << program << "] Expected the saved " << program << " rule to be dropped on load\n";
+            return 1;
+        }
 
-        fcitx::RawConfig    config;
+        fcitx::RawConfig config;
         config.setValueByPath("Mode", "Preedit");
         config.setValueByPath("VietnameseOn", "True");
         config.setValueByPath("InputMethod", "Telex");
@@ -67,6 +93,10 @@ namespace {
             std::cerr << "[" << program << "] Expected one ctx_ rule after cycling the mode, got " << countCtxRules(engine) << '\n';
             return 1;
         }
+        if (!program.empty() && hasRule(engine, program)) {
+            std::cerr << "[" << program << "] Expected no saved " << program << " rule after cycling the mode\n";
+            return 1;
+        }
 
         context.reset();
 
@@ -80,6 +110,5 @@ namespace {
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-ngosen-ctx-rule-cleanup");
-    return cycleAndClose("") + cycleAndClose("gnome-shell");
+    return cycleAndClose("fcitx5-ngosen-ctx-rule-cleanup", "") + cycleAndClose("fcitx5-ngosen-ctx-rule-cleanup", "gnome-shell");
 }

@@ -1025,6 +1025,9 @@ namespace fcitx {
                 if (delimiterPos != std::string::npos) {
                     std::string app  = line.substr(0, delimiterPos);
                     std::string mode = line.substr(delimiterPos + 1);
+                    // Older versions saved this for every app on GNOME; see getProgramName.
+                    if (app == "gnome-shell")
+                        continue;
                     try {
                         tempRules[app] = intToMode(std::stoi(mode));
                     } catch (const std::exception&) { NGOSEN_WARN("Invalid mode value for app: " + app); }
@@ -1473,8 +1476,8 @@ namespace fcitx {
             return "unknown-app";
         }
         std::string programName = ic->program();
-        // GNOME Shell reports every app under its own name until fcitx5 5.1.22, so a saved rule
-        // for it would override the default mode everywhere; keep such a choice to this session.
+        // Without a name that tells windows apart, a rule is kept per context and never saved.
+        // GNOME Shell relays every app under its own name until fcitx5 5.1.22.
         if (programName.empty() || programName == "wayland" || programName == "x11" || programName == "gnome-shell") {
             std::ostringstream oss;
             oss << "ctx_" << static_cast<const void*>(ic);

@@ -86,6 +86,8 @@ find . -type f -name '*.py' -exec sed -i '1s|^#!.*env python3|#!/usr/bin/python3
 %{_datadir}/icons/breeze-dark/status/*/fcitx-ngosen*.svg
 
 %posttrans
+# install.sh says what to do next itself.
+[ -n "${NGOSEN_INSTALLER:-}" ] && exit 0
 echo "--- Cấu hình Ngó Sen ---"
 # posttrans cannot tell an install from an upgrade. KWin starts fcitx5 itself on KDE Wayland, and
 # one started with fcitx5 -rd cannot serve Qt apps.

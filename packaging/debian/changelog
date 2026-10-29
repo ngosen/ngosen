@@ -1,3 +1,24 @@
+fcitx5-ngosen (1:1.7.0-1) unstable; urgency=medium
+
+  * Settings window: a GTK edition that looks like a GNOME app, opened by default on GNOME and
+    Cinnamon (#386, #396), with buttons to switch between Qt and GTK (#393, #407, #422).
+  * Settings window: a "What's new & tips" page, announced once after updating to a release with new
+    features (#331, #409).
+  * Ngó Sen for GNOME (IBus): packages for openSUSE Tumbleweed (#389); install.sh --ibus sets it up
+    on Xfce, Cinnamon and MATE (#341).
+  * Typing core: the underline mode reopens a word on Backspace (#344); Sen works in apps that take
+    no forwarded keys (#353).
+  * WPS Office on deepin over D-Bus no longer leaves old letters behind (#430); deepin-editor
+    defaults to the underline mode (#421).
+  * KDE Wayland: per-app modes keep working after an update without logging in again (#428).
+  * install.sh: explains what changes on GNOME before asking (#400, #410), asks [y/N] (#398),
+    installs the GTK settings libraries on GNOME and Cinnamon (#387), leaves installed Qt packages
+    alone (#418), skips reinstalling when up to date (#426), switches to the IBus edition cleanly
+    (#420, #425) and uninstalls with im-config 1.1 (#424).
+  * No packages for Ubuntu 22.04 any more; 1.6.4 is the last one (#332).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Thu, 29 Oct 2026 18:00:00 +0700
+
 fcitx5-ngosen (1:1.6.4-1) unstable; urgency=medium
 
   * Antigravity on GNOME: tone marks and letters are no longer lost when typing fast; behind

@@ -10,6 +10,15 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.7.0-1] — 29/10/2026
+
+Cửa sổ cài đặt có thêm bản GTK giống app GNOME, mở mặc định trên GNOME và Cinnamon, đổi qua lại với bản Qt
+bằng một nút (#386, #393, #396, #407); trang "Có gì mới & mẹo" và thông báo một lần sau khi cập nhật lên version
+có tính năng mới (#331, #409). Ngó Sen cho GNOME (IBus) có gói openSUSE và tự cài trên Xfce, Cinnamon, MATE
+(#389, #341). Sửa WPS Office trên deepin (#430), KDE Wayland nhớ chế độ từng app sau khi cập nhật (#428) và
+nhiều lỗi của install.sh và cửa sổ cài đặt. Không còn gói cho Ubuntu 22.04 (#332).
+Tải ở [ngosen-1.7.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.0-1).
+
 ### Thêm
 
 - openSUSE Tumbleweed có Ngó Sen cho GNOME (bản IBus): `install.sh --ibus` cài được, và repo zypper có thêm gói

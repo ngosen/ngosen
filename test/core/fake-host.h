@@ -117,6 +117,9 @@ namespace ngosen::test {
         void setField(Field field) {
             field_ = std::move(field);
         }
+        void forgetSurrounding() {
+            surrounding_ = Surrounding();
+        }
         void setSystemKeysWork(bool works) {
             systemKeysWork_ = works;
         }

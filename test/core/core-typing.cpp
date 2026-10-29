@@ -104,13 +104,18 @@ namespace {
         std::string commits, forwarded;
     };
 
-    EnterResult typeEnterInPreedit(const Field& field, const char* before, uint32_t nextKey = 0, uint32_t enterSym = ngosen::key::Return, bool focusOut = false) {
+    EnterResult typeEnterInPreedit(const Field& field, const char* before, uint32_t nextKey = 0, uint32_t enterSym = ngosen::key::Return, bool focusOut = false,
+                                   bool reports = false) {
         realMode = ngosen::Mode::Preedit;
         FakeLoop            loop;
         FakeResources       resources;
         auto                owned = std::make_unique<FakeHost>(loop, field);
         FakeHost*           host  = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
+        if (reports) {
+            host->setSurrounding("", 0);
+            state.surroundingUpdated();
+        }
         for (const char* c = before; *c != 0; ++c)
             press(state, static_cast<uint32_t>(*c));
         EnterResult r;
@@ -154,7 +159,7 @@ namespace {
         check(!empty.enterAccepted && empty.atEnd == 0, "preedit Enter: with nothing to commit Enter goes on to the app", empty.forwarded);
 
         Field             gtk4           = makeField("dbus", true);
-        const EnterResult dropsForwarded = typeEnterInPreedit(gtk4, "tieen");
+        const EnterResult dropsForwarded = typeEnterInPreedit(gtk4, "tieen", 0, ngosen::key::Return, false, true);
         check(!dropsForwarded.enterAccepted && dropsForwarded.atEnd == 0, "preedit Enter: goes on at once where forwarded keys are dropped", dropsForwarded.forwarded);
     }
 
@@ -667,6 +672,44 @@ namespace {
         check(host->deletes().size() == 1 && host->deletes()[0] == std::pair<int, unsigned int>(-1, 1), "gtk4: deletes one character before the cursor",
               std::to_string(host->deletes().size()) + " deletions");
         check(join(host->commits()) == "['ê']", "gtk4: commits ê", join(host->commits()));
+    }
+
+    // WPS over D-Bus sets the same flags as GTK4 but never reports its text, and ignores deletions through it.
+    void testSilentFieldGetsBackspaces() {
+        ngosen::test::AppQuirks quirks;
+        quirks.reports               = false;
+        quirks.ignoresSurroundingDel = true;
+        const std::vector<std::pair<std::string, std::string>> cases{{"thucws ", "thức "}, {"cos thuwcs ", "có thức "}};
+        for (const auto& [typed, want] : cases) {
+            const std::vector<uint32_t> keys(typed.begin(), typed.end());
+            const std::string           text = ngosen::test::typeInApp(makeField("dbus", true, "wps"), quirks, keys, std::vector<int>(keys.size(), 60));
+            check(text == want, "silent field gets backspaces: " + want, text);
+        }
+    }
+
+    // A GTK4 field that comes back with its text unchanged does not report it again; a field that
+    // comes back with no text known is silent again.
+    void testRefocusKeepsReport(bool textKept) {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("dbus", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        host->setSurrounding("", 0);
+        state.surroundingUpdated();
+        state.deactivate(true);
+        loop.pump(200);
+        if (!textKept)
+            host->forgetSurrounding();
+        state.activate(ngosen::Mode::Sen, true);
+        typeTie(state, *host, loop, false);
+        press(state, static_cast<uint32_t>('e'));
+        loop.pump(150);
+        const std::string label = textKept ? "refocus with text kept: deletes through surrounding" : "refocus with no text: forwards backspaces";
+        check(textKept == !host->deletes().empty() && textKept == host->forwarded().empty(), label,
+              std::to_string(host->deletes().size()) + " deletions, " + std::to_string(host->forwarded().size()) + " forwarded");
     }
 
     // SDL takes only commits and preedit; forwarded backspaces never reach it.
@@ -1405,6 +1448,9 @@ int main() {
     testBackspaceAfterCtrlBackspace();
     testResentBackspace();
     testGtk4DeletesSurrounding();
+    testSilentFieldGetsBackspaces();
+    testRefocusKeepsReport(true);
+    testRefocusKeepsReport(false);
     testSdlGetsNoForwardedBackspace();
     testTerminalErasesWithCommittedDel();
     testSenWithoutSentKeys();

@@ -45,6 +45,7 @@ namespace ngosen::test {
         bool erasesOnDel            = false; // erases the character before the cursor for each DEL committed, as a terminal does
         bool reportsTextOnceFilled  = false; // reports surrounding text only once the field has text, as Qt over IBus does
         bool announcesSelection     = false; // makes a selection the X11 primary selection, as Chromium on X11 does
+        bool ignoresSurroundingDel  = false; // takes no deletion through its surrounding text, as WPS over D-Bus does
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what

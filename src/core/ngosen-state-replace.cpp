@@ -462,7 +462,7 @@ namespace ngosen {
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
         // A Backspace on a Calc cell that is not being edited opens the Delete Contents dialog.
         const bool isLibreOffice   = ngosen::appliesBackspacesLate(host_->field()) || ngosen::reportsFieldOnlyOnKey(host_->field());
-        const bool mustUseSurrText = isLibreOffice || ngosen::ignoresForwardedKeys(host_->field()) || host_->field().sendsNoKeys;
+        const bool mustUseSurrText = isLibreOffice || dropsForwardedKeys() || host_->field().sendsNoKeys;
         if (mustUseSurrText && host_->field().surroundingText)
             return true;
         ++expected_backspaces_;

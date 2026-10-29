@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "ngosen-surrounding-check.h"
 #include "ngosen-surrounding-count.h"
 
 #include <iostream>
@@ -13,6 +14,13 @@ namespace {
         if (got.match == match && got.chars == chars && got.retype == retype)
             return;
         std::cerr << "FAIL: " << name << ": chars=" << got.chars << " retype='" << got.retype << "' match=" << static_cast<int>(got.match) << '\n';
+        ++failures;
+    }
+
+    void expectVerdict(const std::string& name, ngosen::SurroundingVerdict got, ngosen::SurroundingVerdict want) {
+        if (got == want)
+            return;
+        std::cerr << "FAIL: " << name << ": " << ngosen::verdictName(got) << '\n';
         ++failures;
     }
 } // namespace
@@ -30,6 +38,17 @@ int main() {
     expect("a copy that says nothing about the word", ngosen::countSurroundingDeletion("xyz", "ti", "e", {"ta"}), Match::None, 1);
     expect("no old tails and a stale copy", ngosen::countSurroundingDeletion("tie", "ti", "ê", {}), Match::None, 1);
     expect("the word would have to be crossed", ngosen::countSurroundingDeletion("ê", "", "e", {"ê"}), Match::None, 1);
+
+    using Verdict = ngosen::SurroundingVerdict;
+    expectVerdict("the replaced word", ngosen::judgeSurroundingReport("nam tiê", "ti", "e", "ê", ""), Verdict::Correct);
+    expectVerdict("the replaced word with keys typed after it", ngosen::judgeSurroundingReport("nam tiên", "ti", "e", "ê", "n"), Verdict::Correct);
+    expectVerdict("a report that shows only the first key typed after", ngosen::judgeSurroundingReport("nam tiên", "ti", "e", "ê", "ng"), Verdict::Correct);
+    expectVerdict("the old part left before the new one", ngosen::judgeSurroundingReport("nam tieê", "ti", "e", "ê", ""), Verdict::DroppedDeletion);
+    // With no prefix, "dđ" also ends with the correct shape "đ".
+    expectVerdict("a dropped deletion at the start of a word", ngosen::judgeSurroundingReport("dđ", "", "d", "đ", ""), Verdict::DroppedDeletion);
+    expectVerdict("too many bytes deleted before the new part", ngosen::judgeSurroundingReport("tiííiếng", "ti", "ê", "ế", "ng"), Verdict::WrongEarlierPart);
+    expectVerdict("the report from before the replacement", ngosen::judgeSurroundingReport("nam tie", "ti", "e", "ê", ""), Verdict::NoAnswer);
+    expectVerdict("the deletion applied, the commit not yet", ngosen::judgeSurroundingReport("nam ti", "ti", "e", "ê", ""), Verdict::NoAnswer);
     if (failures == 0)
         std::cout << "all surrounding count checks passed\n";
     return failures == 0 ? 0 : 1;

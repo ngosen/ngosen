@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <algorithm>
 #include <string>
+#include <vector>
 #include <thread>
 
 namespace ngosen {
@@ -27,14 +28,6 @@ namespace ngosen {
     constexpr uint64_t XTestSelectTimeoutUs = 500000;
 
     namespace {
-        std::string textBeforeCursor(const Surrounding& s) {
-            const std::string& t  = s.text();
-            auto               it = t.begin();
-            for (unsigned int i = 0; i < s.cursor() && it != t.end(); ++i)
-                it = utf8::nextChar(it, t.end());
-            return std::string(t.begin(), it);
-        }
-
         const char* matchName(SurroundingDeletion::Match match) {
             switch (match) {
                 case SurroundingDeletion::Match::Fresh: return "current";
@@ -472,6 +465,44 @@ namespace ngosen {
         }
     }
 
+    std::string TypingState::textBeforeCursor(const Surrounding& s) {
+        const std::string& t  = s.text();
+        auto               it = t.begin();
+        for (unsigned int i = 0; i < s.cursor() && it != t.end(); ++i)
+            it = utf8::nextChar(it, t.end());
+        return std::string(t.begin(), it);
+    }
+
+    std::string TypingState::loggedField(const Field& field) {
+        return " (" + field.frontend + " " + field.program + ")";
+    }
+
+    void TypingState::observeSurroundingPath(const Surrounding& surrounding) {
+        std::vector<std::string> fails;
+        if (!surrSeenTextSinceFocus_)
+            fails.emplace_back("no text since focus");
+        unsigned int chars = static_cast<unsigned int>(deletedChars_);
+        if (!surrounding.isValid()) {
+            fails.emplace_back("no copy");
+        } else {
+            const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+            if (ngosen::countsDeletionOnCopy(host_->field()))
+                chars = deletion.chars;
+            if (surrounding.cursor() < chars)
+                fails.emplace_back("cursor too close to the start");
+            if (surrounding.cursor() != surrounding.anchor())
+                fails.emplace_back("selection");
+            if (deletion.match == SurroundingDeletion::Match::None)
+                fails.emplace_back("copy shows another word");
+        }
+        if (host_->field().url || (ngosen::hidesAddressBarFlag(host_->field()) && textAfterCursorLooksLikeUrl(surrounding)))
+            fails.emplace_back("address bar");
+        std::string failed;
+        for (const auto& fail : fails)
+            failed += (failed.empty() ? "" : ", ") + fail;
+        NGOSEN_INFO("Surrounding path would delete " + std::to_string(chars) + loggedField(host_->field()) + "; fails: " + (failed.empty() ? "none" : failed));
+    }
+
     bool TypingState::deletesThroughSurrounding(const ngosen::Surrounding& surrounding) {
         // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it. Its
         // deleteSurroundingText applies at once, relative to the cursor, so use it there (#162).
@@ -480,6 +511,8 @@ namespace ngosen {
         const bool mustUseSurrText = isLibreOffice || dropsForwardedKeys() || host_->field().sendsNoKeys;
         if (mustUseSurrText && host_->field().surroundingText)
             return true;
+        if (host_->field().surroundingText)
+            observeSurroundingPath(surrounding);
         ++expected_backspaces_;
         // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
         // the autofill shape on Firefox.
@@ -530,6 +563,7 @@ namespace ngosen {
             NGOSEN_INFO("Commit: " + logged(text));
             std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrCommitSleepMs * ngosen::utf8::length(text)));
         }
+        openSurroundingCheck(surrounding);
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();

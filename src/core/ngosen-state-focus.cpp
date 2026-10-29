@@ -56,6 +56,14 @@ namespace ngosen {
             // GTK sends its text again only when it changes.
             if (isFocusIn)
                 fieldReported_ = s.isValid();
+            if (isFocusIn) {
+                // A GNOME app's new context gets a copy of the previous window's text before focus-in.
+                surrSeenTextSinceFocus_ = false;
+                surrCheck_.reset();
+                surr_check_timer_.reset();
+                surrUnanswered_ = 0;
+                surrAnswered_   = false;
+            }
         }
 
         if (isFocusIn && host_->field().frontend == "dbus" && !s.isValid()) {

@@ -20,6 +20,7 @@
 #include "ngosen-engine-resources.h"
 #include "ngosen-host.h"
 #include "ngosen-key.h"
+#include "ngosen-surrounding-check.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -190,19 +191,21 @@ namespace ngosen {
         std::optional<Retype>          retype_;
         std::unique_ptr<ngosen::Timer> retype_timer_;
         // What typed reads as with this field's input method, or typed when it changes nothing.
-        std::string addMarks(const std::string& typed);
-        bool        everyWordTakesMarks(const std::string& typed);
-        void        applyRetype();
-        void        replaceRetyped(const std::string& from, const std::string& to);
-        void        acceptRetype(const std::string& hint);
-        void        applyRetypeSoon(std::string hint);
-        void        reopenTypedKey();
-        void        dropRetype();
-        void        hideOffer();
-        bool        reportsTextInTime() const;
-        bool        typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
-        static bool endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
-        bool        handleRetypeKey(ngosen::KeyPress& keyEvent);
+        std::string        addMarks(const std::string& typed);
+        bool               everyWordTakesMarks(const std::string& typed);
+        void               applyRetype();
+        void               replaceRetyped(const std::string& from, const std::string& to);
+        void               acceptRetype(const std::string& hint);
+        void               applyRetypeSoon(std::string hint);
+        void               reopenTypedKey();
+        void               dropRetype();
+        void               hideOffer();
+        bool               reportsTextInTime() const;
+        bool               typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
+        static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
+        static std::string textBeforeCursor(const Surrounding& s);
+        static std::string loggedField(const Field& field); ///< " (frontend program)"
+        bool               handleRetypeKey(ngosen::KeyPress& keyEvent);
 
         // A key that started a word, until a report shows whether it replaced a selected word.
         struct RetoneKey {
@@ -454,6 +457,28 @@ namespace ngosen {
         void trackEarlierWords(const std::string& addedPart);
         void replaceThroughForwardedKeys();
         void replaceThroughCommittedDel();
+
+        // What the app did with a deletion through its surrounding text, read from its next reports.
+        // Only logged for now.
+        struct SurroundingCheck {
+            std::string prefix;
+            std::string deleted;
+            std::string added;
+            std::string sentReport; ///< "text\x1fcursor" when the deletion was sent
+            uint64_t    keysAtSend = 0;
+            uint64_t    sentAtUs   = 0;
+        };
+        void openSurroundingCheck(const Surrounding& sent);
+        void checkSurroundingReport();
+        void closeSurroundingCheck(SurroundingVerdict verdict);
+        // Logs whether a field that also takes keys could delete through its surrounding text here.
+        void                            observeSurroundingPath(const Surrounding& surrounding);
+        std::optional<SurroundingCheck> surrCheck_;
+        std::unique_ptr<ngosen::Timer>  surr_check_timer_;
+        uint64_t                        keyCount_               = 0;     ///< key presses other than modifiers
+        int                             surrUnanswered_         = 0;     ///< checks in a row left unanswered in this field
+        bool                            surrAnswered_           = false; ///< a check in this field came out correct
+        bool                            surrSeenTextSinceFocus_ = false; ///< the field reported text since it got focus
 
         /**
          * @brief Handles the double space to period replacement.

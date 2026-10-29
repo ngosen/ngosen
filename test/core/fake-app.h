@@ -133,6 +133,7 @@ namespace ngosen::test {
         bool                                eraseSelection();
         void                                eraseBefore(size_t count);
         void                                eraseAround(int offset, unsigned int size);
+        bool                                leaveIfEmptied();
         void                                changed();
         void                                redrawAfterEdit();
         void                                later(int ms, std::function<void()> action);

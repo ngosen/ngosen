@@ -158,9 +158,14 @@ namespace ngosen::test {
             slowestCommitMs_ = std::max(slowestCommitMs_, static_cast<int>((monotonicUs() - forwardedAt_) / 1000));
             forwardedAt_     = 0;
         }
-        if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
+        // A commit's serial is checked when it is sent; focus and redraws matter when the app gets to it,
+        // which can be after a deletion sent just before it has emptied the field.
+        if (quirks_.dropsCommitsInReport && inReport_)
             return;
-        later(quirks_.lagMs + quirks_.commitLagMs, [this, text] { insert(utf8::decode(text)); });
+        later(quirks_.lagMs + quirks_.commitLagMs, [this, text] {
+            if (focused_ && redraws_ == 0)
+                insert(utf8::decode(text));
+        });
     }
 
     void FakeApp::forwardKey(EditKey key, bool release, uint32_t time) {
@@ -218,11 +223,27 @@ namespace ngosen::test {
             return;
         previousText_   = text_;
         previousCursor_ = cursor_;
-        anchor_         = cursor_;
         text_.erase(static_cast<size_t>(from), size);
         if (cursor_ > static_cast<size_t>(from))
             cursor_ = cursor_ >= static_cast<size_t>(from) + size ? cursor_ - size : static_cast<size_t>(from);
+        anchor_ = cursor_;
+        if (leaveIfEmptied())
+            return;
         changed();
+        redrawAfterEdit();
+    }
+
+    bool FakeApp::leaveIfEmptied() {
+        if (!text_.empty() || quirks_.refocusWhenEmptiedMs <= 0)
+            return false;
+        focused_ = false;
+        state_->deactivate(true);
+        later(quirks_.refocusWhenEmptiedMs, [this] {
+            focused_ = true;
+            state_->activate(Mode::Sen, true);
+            changed();
+        });
+        return true;
     }
 
     Surrounding FakeApp::surrounding() const {
@@ -302,16 +323,8 @@ namespace ngosen::test {
         text_.erase(cursor_ - count, count);
         cursor_ -= count;
         anchor_ = cursor_;
-        if (text_.empty() && quirks_.refocusWhenEmptiedMs > 0) {
-            focused_ = false;
-            state_->deactivate(true);
-            later(quirks_.refocusWhenEmptiedMs, [this] {
-                focused_ = true;
-                state_->activate(Mode::Sen, true);
-                changed();
-            });
+        if (leaveIfEmptied())
             return;
-        }
         changed();
         redrawAfterEdit();
     }

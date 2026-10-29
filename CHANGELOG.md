@@ -12,6 +12,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Kiểm tra máy cảnh báo khi GNOME 50.0–50.3 chạy mà không bật bản sửa `forward-keys` (Enter sau chữ Preedit và
+  BackSpace của Gõ Sen bị mất), kèm lệnh bật lại; báo lỗi có thêm version GNOME Shell và trạng thái bản sửa (#440).
 - openSUSE Tumbleweed có Ngó Sen cho GNOME (bản IBus): `install.sh --ibus` cài được, và repo zypper có thêm gói
   `ibus-ngosen` từ version đầu tiên có package openSUSE (#389).
 - Sau khi cập nhật lên version có tính năng mới (1.7.0 trở đi), một thông báo ở góc màn hình hiện một lần,

@@ -1200,6 +1200,18 @@ msgid "Two input methods compete for keys; stop IBus from starting at login."
 msgstr ""
 
 #: settings-gui/core/system_check.py
+msgid "GNOME {} drops the keys Ngó Sen sends to apps"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Install Ngó Sen with install.sh, which adds the fix for this GNOME version, then log out and back in."
+msgstr ""
+
+#: settings-gui/core/system_check.py
 msgid "fcitx5 still runs Ngó Sen from before the update"
 msgstr ""
 

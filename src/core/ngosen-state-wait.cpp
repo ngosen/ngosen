@@ -292,6 +292,7 @@ namespace ngosen {
         // Edge reports an empty composer as "\n".
         if (host_->hasFocus() && host_->surrounding().text().find_first_not_of(" \t\n") != std::string::npos)
             surrSeenTextSinceFocus_ = true;
+        noteAutofill(host_->surrounding());
         checkSurroundingReport();
         surr_silent_        = false;
         surr_silent_streak_ = 0;
@@ -493,6 +494,7 @@ namespace ngosen {
     }
 
     void TypingState::commit(const std::string& text) {
+        ++commitCount_;
         noteCommit(text);
         // A field that rewrites what we commit never shows it; keep only the latest commits.
         if (mode() == ngosen::Mode::Sen && ngosen::appliesEarlyKeysFirst(host_->field()))

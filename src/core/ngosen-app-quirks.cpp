@@ -121,6 +121,10 @@ namespace ngosen {
         return stripDesktopSuffix(field.program) == "soffice";
     }
 
+    bool deletesThroughSurroundingFirst(const Field& field) {
+        return field.frontend == "ibus";
+    }
+
     bool countsDeletionOnCopy(const Field& field) {
         return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2";
     }

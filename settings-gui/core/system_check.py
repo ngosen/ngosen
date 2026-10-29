@@ -129,11 +129,13 @@ def _forward_keys_findings(facts):
     if not _drops_forwarded_keys(facts.gnome_shell_version) or facts.forward_keys_state == "ACTIVE":
         return []
     if facts.forward_keys_state:
-        fix = _("Turn on the fix: gnome-extensions enable {}, then log out and back in.").format(
-            FORWARD_KEYS
-        )
+        fix = _(
+            "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
+        ).format(FORWARD_KEYS)
     else:
-        fix = _("Install Ngó Sen with install.sh, which adds the fix for this GNOME version.")
+        fix = _(
+            "Install Ngó Sen with install.sh, which adds the fix for this GNOME version, then log out and back in."
+        )
     title = _("GNOME {} drops the keys Ngó Sen sends to apps").format(facts.gnome_shell_version)
     return [Finding(WARN, title, fix)]
 
@@ -249,8 +251,10 @@ def _fcitx_version():
 
 
 def _output(cmd):
+    # Untranslated labels, so "State:" can be found on any desktop language.
+    env = {**os.environ, "LC_ALL": "C"}
     try:
-        return subprocess.run(cmd, capture_output=True, text=True, timeout=3).stdout
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=3, env=env).stdout
     except (OSError, subprocess.SubprocessError):
         return ""
 

@@ -98,6 +98,8 @@ class EvaluateTest(unittest.TestCase):
         self.assertIn("gnome-extensions enable", found("50.1", "INACTIVE")[0].fix)
         self.assertIn("install.sh", found("50.1", "")[0].fix)
         self.assertEqual(found("50.1", "ACTIVE"), [])
+        self.assertEqual(len(found("50.0", "INACTIVE")), 1)
+        self.assertEqual(len(found("50.3", "INACTIVE")), 1)
         self.assertEqual(found("50.4", "INACTIVE"), [])
         self.assertEqual(found("49.2", ""), [])
         self.assertEqual(found("", ""), [])
@@ -149,8 +151,12 @@ class CollectTest(unittest.TestCase):
         info = "forward-keys@ngosen.github.io\n  Enabled: No\n  State: INACTIVE\n"
         outputs = {"gnome-shell": "GNOME Shell 50.1\n", "gnome-extensions": info}
 
-        def run(cmd, **kw):
-            return subprocess.CompletedProcess(cmd, 0, stdout=outputs.get(cmd[0], ""))
+        def run(cmd, env=None, **kw):
+            out = outputs.get(cmd[0], "")
+            # gnome-extensions translates its labels, but not the state itself.
+            if (env or {}).get("LC_ALL") != "C":
+                out = out.replace("State:", "Trạng thái:")
+            return subprocess.CompletedProcess(cmd, 0, stdout=out)
 
         env = {"XDG_CURRENT_DESKTOP": "ubuntu:GNOME"}
         with mock.patch.object(system_check.subprocess, "run", side_effect=run):

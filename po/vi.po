@@ -1269,12 +1269,12 @@ msgid "GNOME {} drops the keys Ngó Sen sends to apps"
 msgstr "GNOME {} làm rơi phím Ngó Sen gửi cho app"
 
 #: settings-gui/core/system_check.py
-msgid "Turn on the fix: gnome-extensions enable {}, then log out and back in."
-msgstr "Bật bản sửa: gnome-extensions enable {}, rồi đăng xuất và đăng nhập lại."
+msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
+msgstr "Bật bản sửa: gnome-extensions enable {}. Nếu vẫn mất phím thì đăng xuất rồi đăng nhập lại."
 
 #: settings-gui/core/system_check.py
-msgid "Install Ngó Sen with install.sh, which adds the fix for this GNOME version."
-msgstr "Cài Ngó Sen bằng install.sh, lệnh này thêm bản sửa cho version GNOME này."
+msgid "Install Ngó Sen with install.sh, which adds the fix for this GNOME version, then log out and back in."
+msgstr "Cài Ngó Sen bằng install.sh, lệnh này thêm bản sửa cho version GNOME này, rồi đăng xuất và đăng nhập lại."
 
 #: settings-gui/core/system_check.py
 msgid "fcitx5 still runs Ngó Sen from before the update"

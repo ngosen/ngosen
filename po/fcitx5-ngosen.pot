@@ -1204,11 +1204,11 @@ msgid "GNOME {} drops the keys Ngó Sen sends to apps"
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Turn on the fix: gnome-extensions enable {}, then log out and back in."
+msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Install Ngó Sen with install.sh, which adds the fix for this GNOME version."
+msgid "Install Ngó Sen with install.sh, which adds the fix for this GNOME version, then log out and back in."
 msgstr ""
 
 #: settings-gui/core/system_check.py

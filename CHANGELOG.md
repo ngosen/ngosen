@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Tài liệu
+
+- README có thêm ảnh cửa sổ cài đặt bản GTK trên GNOME, ở giao diện sáng và tối, bên cạnh ảnh bản Qt (#435).
+
 ## [1.7.0-1] — 29/10/2026
 
 Cửa sổ cài đặt có thêm bản GTK giống app GNOME, mở mặc định trên GNOME và Cinnamon, đổi qua lại với bản Qt

@@ -62,6 +62,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   xpra tự bật); chỉ báo khi IBus thật sự giành bộ gõ của phiên đang dùng (#442).
 - Nhật ký gõ lưu ra file không còn bị gãy dòng ở phím Enter hay khi app báo chữ có xuống dòng: mỗi sự kiện
   nằm trên đúng một dòng (#445).
+- Trên GNOME với fcitx5 cũ (Ubuntu 26.04, Debian), chọn chế độ gõ ở menu `,` hay bằng phím đổi chế độ không còn
+  được lưu lại: nó áp cho mọi app tới khi đăng xuất, đăng nhập lại thì về chế độ mặc định trong cửa sổ cài đặt.
+  Trước đây lựa chọn đó bị lưu mãi và đè lên chế độ mặc định; luật cũ còn trong máy được bỏ qua (#444).
 - Sửa Gõ Sen làm hỏng chữ như "tiíiếng" khi app dùng surrounding text báo chữ chậm hơn phím gõ
   (LibreOffice, ô GTK4) (#441).
 - deepin-editor: mặc định dùng chế độ gạch chân để gõ nhanh không còn đảo chữ, mất hoặc lặp dấu như khi

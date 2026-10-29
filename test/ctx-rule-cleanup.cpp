@@ -8,12 +8,17 @@
  * user cycles its mode. If the rule outlives the window, the rules grow for the
  * whole session and a later window allocated at the same address inherits a
  * mode the user never chose for it.
+ *
+ * GNOME Shell before fcitx5 5.1.22 reports every app as "gnome-shell", so a
+ * saved rule for that name would override the default mode in every app.
  */
 
 #include "ngosen-engine.h"
 #include "ngosen-utils.h"
 #include "test-input-context.h"
 
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -36,40 +41,74 @@ namespace {
         return count;
     }
 
+    bool hasRule(const fcitx::NgoSenEngine& engine, const std::string& name) {
+        fcitx::RawConfig raw;
+        engine.getSubConfig("app_rules")->save(raw);
+        bool found = false;
+        if (auto rules = raw.get("Rules")) {
+            rules->visitSubItems([&](fcitx::RawConfig& rule, const std::string&) {
+                auto app = rule.get("App");
+                found    = found || (app && app->value() == name);
+                return true;
+            });
+        }
+        return found;
+    }
+
+} // namespace
+
+namespace {
+
+    int cycleAndClose(const char* testName, const std::string& program) {
+        configureTestPaths(testName);
+        // A rule saved under this name before it became per-session must not apply.
+        if (!program.empty()) {
+            std::ofstream file(std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf/ngosen-app-rules.conf", std::ios::trunc);
+            file << program << "=2\n";
+        }
+        TestInstance        testInstance;
+        fcitx::NgoSenEngine engine(&testInstance.instance);
+        if (!program.empty() && hasRule(engine, program)) {
+            std::cerr << "[" << program << "] Expected the saved " << program << " rule to be dropped on load\n";
+            return 1;
+        }
+
+        fcitx::RawConfig config;
+        config.setValueByPath("Mode", "Preedit");
+        config.setValueByPath("VietnameseOn", "True");
+        config.setValueByPath("InputMethod", "Telex");
+        config.setValueByPath("CycleModeKey/0", "F12");
+        engine.setConfig(config);
+
+        auto context = std::make_unique<TestInputContext>(&testInstance.instance, program);
+        context->focusIn();
+        fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
+        fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, focus);
+
+        fcitx::KeyEvent cycle(context.get(), fcitx::Key(FcitxKey_F12), false);
+        engine.keyEvent(entry, cycle);
+
+        if (countCtxRules(engine) != 1) {
+            std::cerr << "[" << program << "] Expected one ctx_ rule after cycling the mode, got " << countCtxRules(engine) << '\n';
+            return 1;
+        }
+        if (!program.empty() && hasRule(engine, program)) {
+            std::cerr << "[" << program << "] Expected no saved " << program << " rule after cycling the mode\n";
+            return 1;
+        }
+
+        context.reset();
+
+        if (countCtxRules(engine) != 0) {
+            std::cerr << "[" << program << "] Expected no ctx_ rule after the window closed, got " << countCtxRules(engine) << '\n';
+            return 1;
+        }
+        return 0;
+    }
+
 } // namespace
 
 int main() {
-    configureTestPaths("fcitx5-ngosen-ctx-rule-cleanup");
-
-    TestInstance        testInstance;
-    fcitx::NgoSenEngine engine(&testInstance.instance);
-
-    fcitx::RawConfig    config;
-    config.setValueByPath("Mode", "Preedit");
-    config.setValueByPath("VietnameseOn", "True");
-    config.setValueByPath("InputMethod", "Telex");
-    config.setValueByPath("CycleModeKey/0", "F12");
-    engine.setConfig(config);
-
-    auto context = std::make_unique<TestInputContext>(&testInstance.instance, "");
-    context->focusIn();
-    fcitx::InputMethodEntry  entry("ngosen", "Ngó Sen", "vi", "ngosen");
-    fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
-    engine.activate(entry, focus);
-
-    fcitx::KeyEvent cycle(context.get(), fcitx::Key(FcitxKey_F12), false);
-    engine.keyEvent(entry, cycle);
-
-    if (countCtxRules(engine) != 1) {
-        std::cerr << "Expected one ctx_ rule after cycling the mode, got " << countCtxRules(engine) << '\n';
-        return 1;
-    }
-
-    context.reset();
-
-    if (countCtxRules(engine) != 0) {
-        std::cerr << "Expected no ctx_ rule after the window closed, got " << countCtxRules(engine) << '\n';
-        return 1;
-    }
-    return 0;
+    return cycleAndClose("fcitx5-ngosen-ctx-rule-cleanup", "") + cycleAndClose("fcitx5-ngosen-ctx-rule-cleanup", "gnome-shell");
 }

@@ -11,6 +11,8 @@
 #include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
 #include "ngosen-log.h"
+#include "ngosen-strings.h"
+#include "ngosen-surrounding-count.h"
 #include "ngosen-utf8.h"
 #include "ngosen-xtest.h"
 
@@ -25,6 +27,23 @@ namespace ngosen {
     constexpr uint64_t XTestSelectTimeoutUs = 500000;
 
     namespace {
+        std::string textBeforeCursor(const Surrounding& s) {
+            const std::string& t  = s.text();
+            auto               it = t.begin();
+            for (unsigned int i = 0; i < s.cursor() && it != t.end(); ++i)
+                it = utf8::nextChar(it, t.end());
+            return std::string(t.begin(), it);
+        }
+
+        const char* matchName(SurroundingDeletion::Match match) {
+            switch (match) {
+                case SurroundingDeletion::Match::Fresh: return "current";
+                case SurroundingDeletion::Match::OldTail: return "earlier";
+                case SurroundingDeletion::Match::None: break;
+            }
+            return "unrelated";
+        }
+
         // Firefox's address bar sets no Url flag and reports its autofill suffix as unselected, so
         // recognise it by shape: one line, and only URL characters after the cursor.
         bool isUrlChar(uint32_t c) {
@@ -398,6 +417,7 @@ namespace ngosen {
         expected_backspaces_     = static_cast<int>(ngosen::utf8::length(deletedPart));
         deletedChars_            = expected_backspaces_;
         recordSendSnapshot(deletedPart);
+        trackEarlierWords(addedPart);
         if (live_key_ && waitsForKeyReport()) {
             startKeyReportWait(deletedPart, addedPart);
             return;
@@ -426,7 +446,7 @@ namespace ngosen {
         const bool isSurrText = deletesThroughSurrounding(surrounding);
         is_deleting_.store(true, std::memory_order_release);
         if (isSurrText) {
-            replaceThroughSurrounding(addedPart);
+            replaceThroughSurrounding(surrounding);
             return;
         }
         if (ngosen::forwardsBackspaces(host_->field())) {
@@ -446,12 +466,7 @@ namespace ngosen {
         // count towards "frozen"; a lagging app sends a stale one.
         surr_wait_sent_snapshot_fresh_ = false;
         if (snapshot.isValid()) {
-            const std::string& t  = snapshot.text();
-            auto               it = t.begin();
-            for (unsigned int i = 0; i < snapshot.cursor() && it != t.end(); ++i) {
-                it = ngosen::utf8::nextChar(it, t.end());
-            }
-            const std::string before(t.begin(), it);
+            const std::string before       = textBeforeCursor(snapshot);
             const std::string expected     = surr_wait_prefix_ + surr_wait_deleted_;
             surr_wait_sent_snapshot_fresh_ = before.size() >= expected.size() && before.compare(before.size() - expected.size(), expected.size(), expected) == 0;
         }
@@ -483,14 +498,37 @@ namespace ngosen {
         return false;
     }
 
-    void TypingState::replaceThroughSurrounding(const std::string& addedPart) {
-        host_->deleteSurrounding(-expected_backspaces_, expected_backspaces_);
+    void TypingState::trackEarlierWords(const std::string& addedPart) {
+        // Raw keys after a replacement extend the word it left; anything else starts a new word.
+        if (!wordAfterReplacement_.empty() && isStartsWith(oldPreBuffer_, wordAfterReplacement_))
+            earlierWords_.push_back(wordBeforeReplacement_);
+        else
+            earlierWords_.clear();
+        wordBeforeReplacement_ = oldPreBuffer_;
+        wordAfterReplacement_  = surr_wait_prefix_ + addedPart;
+    }
+
+    int TypingState::surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const {
+        if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
+            return deletedChars_;
+        const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        NGOSEN_INFO(std::string("Surrounding copy shows the ") + matchName(deletion.match) + " word: delete " + std::to_string(deletion.chars) + " of " +
+                    std::to_string(deletedChars_));
+        retype = deletion.retype;
+        return static_cast<int>(deletion.chars);
+    }
+
+    void TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
+        std::string retype;
+        const int   count = surroundingDeletionCount(surrounding, retype);
+        host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
         NGOSEN_INFO("Delete using surrounding text");
-        std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrDeleteSleepMs * expected_backspaces_));
-        if (!pending_commit_string_.empty()) {
-            commit(pending_commit_string_);
-            NGOSEN_INFO("Commit: " + logged(pending_commit_string_));
-            std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrCommitSleepMs * ngosen::utf8::length(addedPart)));
+        std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrDeleteSleepMs * count));
+        const std::string text = retype + pending_commit_string_;
+        if (!text.empty()) {
+            commit(text);
+            NGOSEN_INFO("Commit: " + logged(text));
+            std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrCommitSleepMs * ngosen::utf8::length(text)));
         }
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;

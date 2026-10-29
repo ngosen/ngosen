@@ -149,7 +149,7 @@ namespace ngosen {
         std::string              lastWord_; ///< The word and break we last committed, while only backspaces follow
         bool                     hasHistory_              = false;
         bool                     preeditWord_             = false; ///< Sen is on, but this word goes into the preedit
-        int                      expected_backspaces_     = 0;
+        int                      expected_backspaces_     = 0;     ///< backspaces the key paths still send; XTEST adds one that comes back
         int                      current_backspace_count_ = 0;
         std::string              pending_commit_string_;
         std::string              emojiBuffer_;
@@ -165,7 +165,10 @@ namespace ngosen {
         int                      fieldBounces_          = 0;     ///< bounces since focus came in
         int                      waitBounces_           = 0;     ///< bounces during the wait that started at bouncedInWait_
         uint64_t                 bouncedInWait_         = 0;     ///< surr_wait_started_at_ of the wait those bounces came in
-        int                      deletedChars_          = 0;     ///< characters the current replacement deletes
+        int                      deletedChars_          = 0;     ///< characters the app holds to delete
+        std::vector<std::string> earlierWords_;                  ///< the current word before each of its earlier replacements
+        std::string              wordBeforeReplacement_;         ///< the word the last replacement started from
+        std::string              wordAfterReplacement_;          ///< the word the last replacement left
         bool                     checkWordAfterBounce_  = false; ///< focus came back too fast to tell whether it is the same field
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
@@ -446,7 +449,9 @@ namespace ngosen {
         void recordSendSnapshot(const std::string& deletedPart);
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
         bool deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
-        void replaceThroughSurrounding(const std::string& addedPart);
+        void replaceThroughSurrounding(const Surrounding& surrounding);
+        int  surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
+        void trackEarlierWords(const std::string& addedPart);
         void replaceThroughForwardedKeys();
         void replaceThroughCommittedDel();
 

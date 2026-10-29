@@ -1428,9 +1428,9 @@ namespace {
         text = typed({.reportsEmptyText = true}, "tiee");
         check(text == "tieê", "quirk: a field that reports no text drops the deletion", text);
         text = typed({.convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true}, "vieetj nam tieesng");
-        // On s the word becomes tíê and on n tiến; each time two characters of the old copy "tie" are
-        // two bytes, which cut inside ê, so only one character goes.
-        check(text == "việt nam tiíiếng", "quirk: bytes counted on an old copy cut inside a letter", text);
+        // The copy stays "tie" while the app holds tiê, then tíê: the deletion asks for as many copy
+        // characters as the real ones have bytes.
+        check(text == "việt nam tiếng", "quirk: bytes counted on an old copy delete whole letters", text);
 
         // The cursor moves with no report, so the deletion falls before the start of the text.
         realMode = ngosen::Mode::Sen;

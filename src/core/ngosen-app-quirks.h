@@ -48,6 +48,10 @@ namespace ngosen {
     // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it.
     bool appliesBackspacesLate(const Field& field);
 
+    // These frontends turn a surrounding deletion's character count into bytes on their own copy of
+    // the text, which can lag behind the app.
+    bool countsDeletionOnCopy(const Field& field);
+
     // LibreOffice Calc over Wayland text-input tells the input method nothing when another cell is
     // selected; it reports the field only when a key reaches it, a lone Shift included.
     bool reportsFieldOnlyOnKey(const Field& field);

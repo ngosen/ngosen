@@ -13,6 +13,7 @@ add_library(ngosen_core STATIC
     ngosen-globals.cpp
     ngosen-recorder.cpp
     ngosen-strings.cpp
+    ngosen-surrounding-count.cpp
     ngosen-utf8.cpp
     ngosen-xtest.cpp
 )

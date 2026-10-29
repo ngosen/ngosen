@@ -204,6 +204,17 @@ class CollectTest(unittest.TestCase):
         address("unix-0", 999)
         self.assertFalse(owns(DISPLAY=":0"))
         self.assertFalse(owns(DISPLAY=":5"))
+        # IBus reads IBUS_ADDRESS_FILE instead of the usual name when it is set.
+        self.assertTrue(
+            owns(DISPLAY=":5", IBUS_ADDRESS_FILE=os.path.join(bus, "m1-unix-wayland-0"))
+        )
+        with open(os.path.join(bus, "m1-unix-1"), "w", encoding="utf-8") as f:
+            f.write("IBUS_ADDRESS=unix:path=/x\n")
+        self.assertFalse(owns(DISPLAY=":1"))
+        home = {"HOME": os.path.join(tmp.name, "home"), "WAYLAND_DISPLAY": "wayland-0"}
+        os.makedirs(os.path.join(home["HOME"], ".config"))
+        os.symlink(os.path.join(tmp.name, "ibus"), os.path.join(home["HOME"], ".config", "ibus"))
+        self.assertTrue(system_check.ibus_owns_session(home, proc=proc, machine_id="m1"))
 
     def test_fcitx5_not_answering(self):
         handler = FakeDBusHandler()

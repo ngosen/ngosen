@@ -315,10 +315,13 @@ def ibus_owns_session(env, proc="/proc", machine_id=None):
     fcitx5 writes its own pid there; another program's IBus, such as the one xpra starts for its
     own display, writes a file for that display and does not count.
     """
-    config_home = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME", ""), ".config")
-    name = f"{machine_id or _machine_id()}-{_ibus_address_name(env)}"
+    path = env.get("IBUS_ADDRESS_FILE")
+    if not path:
+        config_home = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME", ""), ".config")
+        name = f"{machine_id or _machine_id()}-{_ibus_address_name(env)}"
+        path = os.path.join(config_home, "ibus", "bus", name)
     try:
-        with open(os.path.join(config_home, "ibus", "bus", name), encoding="utf-8") as f:
+        with open(path, encoding="utf-8", errors="replace") as f:
             match = re.search(r"^IBUS_DAEMON_PID=(\d+)", f.read(), re.M)
         if match is None:
             return False

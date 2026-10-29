@@ -101,7 +101,7 @@ fi
 %changelog
 * Thu Oct 29 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.0-1
 - Settings window: a GTK edition that looks like a GNOME app, opened by default on GNOME and Cinnamon (#386, #396), with buttons to switch between Qt and GTK (#393, #407, #422).
-- Settings window: a "What's new & tips" page, announced once after updating to a release with new features (#331, #409).
+- Settings window: a "What's new & tips" page, announced once after updating to a release with new features (#331, #409, #433).
 - Ngó Sen for GNOME (IBus): packages for openSUSE Tumbleweed (#389); install.sh --ibus sets it up on Xfce, Cinnamon and MATE (#341).
 - Typing core: the underline mode reopens a word on Backspace (#344); Sen works in apps that take no forwarded keys (#353).
 - WPS Office on deepin over D-Bus no longer leaves old letters behind (#430); deepin-editor defaults to the underline mode (#421).

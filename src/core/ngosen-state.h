@@ -460,29 +460,54 @@ namespace ngosen {
         void replaceThroughCommittedDel();
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
-        // Only logged for now.
         struct SurroundingCheck {
             std::string prefix;
             std::string deleted;
             std::string added;
             std::string retype;     ///< committed again ahead of added
             std::string sentReport; ///< reportKey() when the deletion was sent
-            bool        password   = false;
-            uint64_t    keysAtSend = 0;
-            uint64_t    sentAtUs   = 0;
+            std::string sentAfter;  ///< the text after the cursor then
+            bool        password      = false;
+            uint64_t    keysAtSend    = 0;
+            uint64_t    commitsAtSend = 0;
+            uint64_t    sentAtUs      = 0;
         };
         void               openSurroundingCheck(const Surrounding& sent, const std::string& retype);
         void               checkSurroundingReport();
         SurroundingVerdict judgeOpenCheck(const Surrounding& report) const;
-        void               closeSurroundingCheck(SurroundingVerdict verdict, bool beforeNext = false);
-        // Logs whether a field that also takes keys could delete through its surrounding text here.
-        void                            observeSurroundingPath(const Surrounding& surrounding);
+        void               closeSurroundingCheck(SurroundingVerdict verdict, const Surrounding* report, bool beforeNext = false);
+        void               fixDroppedDeletion(const SurroundingCheck& check, const Surrounding& report);
+        void               markSurroundingUntrusted(const std::string& why);
+        // The field takes no keys or applies them out of order, so surrounding text is its only way to delete.
+        bool deletesOnlyThroughSurrounding() const;
+        // That only way failed and the host has no preedit to fall back on: keys go to the app as they are.
+        bool stopsReplacing() const;
+        // Something can remove text already in the field, and the field has not been left raw.
+        bool canReplaceInApp() const;
+        // Passes the key on when this field or word is typed as it is; true when it did.
+        bool typesRaw(ngosen::KeyPress& keyEvent, uint32_t sym);
+        // Why the next word cannot be typed in the field, for a host that can type it in the preedit.
+        std::vector<std::string> wordStartFails() const;
+        // The first letters are already in the field and its copy does not show them: leave the word raw.
+        bool keepsWordRaw(const std::string& deletedPart);
+        void noteAutofill(const Surrounding& report);
+        // Why this word cannot be deleted through the surrounding text; chars is what the deletion would ask for.
+        std::vector<std::string> surroundingPathFails(const Surrounding& surrounding, unsigned int& chars) const;
+        static std::string       joined(const std::vector<std::string>& parts); ///< "none" when empty
+        // Logs a line when the path differs from the last replacement's in this field.
+        void                            notePath(const char* path, const std::string& why);
+        bool                            surroundingUntrusted() const;
+        std::string                     lastPath_;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
         uint64_t                        keyCount_               = 0;     ///< key presses other than modifiers
         int                             surrUnanswered_         = 0;     ///< checks in a row left unanswered in this field
         bool                            surrAnswered_           = false; ///< a check in this field came out correct
         bool                            surrSeenTextSinceFocus_ = false; ///< the field reported text since it got focus
+        uint64_t                        commitCount_            = 0;
+        Surrounding                     lastReport_;
+        bool                            autofillMarked_ = false; ///< this field filled in text after the cursor without a key
+        bool                            rawWord_        = false; ///< the rest of this word goes to the app as typed
 
         /**
          * @brief Handles the double space to period replacement.

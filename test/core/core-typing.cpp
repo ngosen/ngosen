@@ -1529,7 +1529,6 @@ namespace {
     }
 
     // After a deletion through the surrounding text, the next reports tell what the app did with it.
-    // Only logged until the typing logic acts on it.
     void testSurroundingCheck() {
         ngosen::test::Typed run;
         auto                lines = logLinesWhileTyping(surroundingOnlyField(), {.dropsForwardedKeys = true, .ignoresSurroundingDel = true}, "tiee", "Surrounding check", &run);
@@ -1537,7 +1536,7 @@ namespace {
               run.text + " " + join(lines));
 
         lines = logLinesWhileTyping(surroundingOnlyField(), {.staleReport = true, .lagMs = 40, .dropsForwardedKeys = true}, "vieetj nam ", "Surrounding check");
-        check(countHaving(lines, ": correct") == 2 && countHaving(lines, "would stop trusting") == 0, "check: a lagging app is judged correct", join(lines));
+        check(countHaving(lines, ": correct") == 2 && countHaving(lines, "untrusted") == 0, "check: a lagging app is judged correct", join(lines));
 
         // The app lags behind the keys: the next replacement comes before it answers the first, and the
         // Space before it answers the second.
@@ -1547,12 +1546,103 @@ namespace {
               "check: a lagging app answers only the last replacement", run.text + " " + join(lines));
 
         lines = logLinesWhileTyping(surroundingOnlyField(), {.reports = false, .dropsForwardedKeys = true}, "vieetj nam tieesng ", "Surrounding check");
-        check(countHaving(lines, "not answered") >= 3 && countHaving(lines, "would stop trusting") >= 1, "check: an app that never reports goes unanswered", join(lines));
+        // Silence alone is no reason to give up on a field that has no other way to delete.
+        check(countHaving(lines, "not answered") >= 3 && countHaving(lines, "untrusted") == 0, "check: an app that never reports goes unanswered", join(lines));
 
         // A field that also takes keys keeps them, and logs what the surrounding path would have done.
         lines = logLinesWhileTyping(makeField("wayland", true), {}, "vieetj nam ", "Surrounding path would", &run);
         check(lines.size() == 2 && countHaving(lines, "fails: none") == 2 && run.sent.surroundingDeletes == 0, "check: one observation line per replacement on a wayland field",
               run.text + " " + join(lines));
+    }
+
+    // An address bar that sets no Url flag still shows itself by filling in text after the cursor.
+    void testAutofillMark() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = surroundingOnlyField();
+        field.preeditFallback     = true;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.dropsForwardedKeys = true});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& text) {
+            for (char c : text) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+        };
+        ngosen::test::captureLog(true);
+        typeText("too vie");
+        app->suggest("tnam.com", false);
+        loop.pump(30);
+        typeText("etj too ");
+        loop.pump(300);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(app->text() == "tô vieetj tô tnam.com" && countHaving(lines, "Text appeared after the cursor without a key") == 1 &&
+                  countHaving(lines, "Type the word in the preedit: marked untrusted") == 1,
+              "fallback: text filled in after the cursor sends the next words to the preedit", app->text() + " " + join(lines));
+    }
+
+    // The ways out when a deletion through the surrounding text goes wrong.
+    void testSurroundingFallback() {
+        ngosen::test::Typed run;
+        const Field         gnome = makeField("ibus", true);
+        auto                lines = logLinesWhileTyping(gnome, {}, "vieetj nam ", "Path changed", &run);
+        auto                off   = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 2, .forwardedBackSpaces = 0});
+        check(run.text == "việt nam " && off.empty() && lines.size() == 1, "fallback: a GNOME field deletes through its surrounding text",
+              run.text + " " + join(off) + join(lines));
+
+        // Both ways: the dropped deletion is fixed with backspaces, which then take over.
+        lines = logLinesWhileTyping(gnome, {.ignoresSurroundingDel = true}, "too too ", "", &run);
+        off   = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 1});
+        check(run.text == "tô tô " && off.empty() && countHaving(lines, "Surrounding text untrusted") == 1 && countHaving(lines, "Fix the dropped deletion") == 1,
+              "fallback: a dropped deletion is fixed and backspaces take over", run.text + " " + join(off) + join(lines));
+
+        // No other way and no preedit: keys go to the app as they are.
+        const ngosen::test::AppQuirks dropsAll{.dropsForwardedKeys = true, .ignoresSurroundingDel = true};
+        lines = logLinesWhileTyping(surroundingOnlyField(), dropsAll, "too too ", "", &run);
+        off   = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 1, .preedits = 0});
+        check(run.text == "toô too " && off.empty() && countHaving(lines, "type keys as they are") == 1, "fallback: a field with no way out types raw keys",
+              run.text + " " + join(off));
+
+        // The mark holds for the app's next field too.
+        {
+            FakeResources resources;
+            const auto    first = keysOf("too ");
+            ngosen::test::typeInAppTraced(resources, surroundingOnlyField(), dropsAll, first, std::vector<int>(first.size(), 100));
+            const auto next = keysOf("vieetj ");
+            run             = ngosen::test::typeInAppTraced(resources, surroundingOnlyField(), dropsAll, next, std::vector<int>(next.size(), 100));
+            off             = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 0});
+            check(run.text == "vieetj " && off.empty(), "fallback: the mark holds for the next field of the app", run.text + " " + join(off));
+        }
+
+        Field preeditHost           = surroundingOnlyField();
+        preeditHost.preeditFallback = true;
+        lines                       = logLinesWhileTyping(preeditHost, dropsAll, "too too too ", "", &run);
+        off                         = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 1});
+        check(run.text == "tô toô tô " && off.empty() && run.sent.preedits > 0 && countHaving(lines, "Type the word in the preedit: marked untrusted") == 1,
+              "fallback: a host with a preedit types the next word there", run.text + " " + join(off) + join(lines));
+
+        // A mark that comes mid-word leaves the rest of that word raw.
+        lines = logLinesWhileTyping(preeditHost, dropsAll, "too toos too ", "", &run);
+        off   = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 1});
+        check(run.text == "tô toôs tô " && off.empty() && countHaving(lines, "Keep the word as typed") == 1, "fallback: the rest of a word goes raw after a mark",
+              run.text + " " + join(off) + join(lines));
+
+        // Decided at the first key of each word.
+        lines = logLinesWhileTyping(preeditHost, {.dropsForwardedKeys = true}, "vieetj vieetj ", "", &run);
+        off   = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 2});
+        check(run.text == "việt việt " && off.empty() && countHaving(lines, "Type the word in the preedit: no text since focus") == 1,
+              "fallback: the first word goes to the preedit until the field reports text", run.text + " " + join(off) + join(lines));
+
+        Field urlField = preeditHost;
+        urlField.url   = true;
+        run = ngosen::test::typeInAppTraced(*std::make_unique<FakeResources>(), urlField, {.dropsForwardedKeys = true}, keysOf("vieetj vieetj "), std::vector<int>(14, 100));
+        off = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 0});
+        check(run.text == "việt việt " && off.empty(), "fallback: an address bar types every word in the preedit", run.text + " " + join(off));
     }
 } // namespace
 
@@ -1623,6 +1713,8 @@ int main() {
     testSuggestion();
     testPathCheck();
     testSurroundingCheck();
+    testSurroundingFallback();
+    testAutofillMark();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";
     return failures == 0 ? 0 : 1;

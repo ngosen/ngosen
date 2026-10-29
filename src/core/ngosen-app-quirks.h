@@ -48,6 +48,11 @@ namespace ngosen {
     // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it.
     bool appliesBackspacesLate(const Field& field);
 
+    // A field on these frontends that also takes keys deletes through its surrounding text when it can.
+    // Through GNOME's IBus bridge forwarded backspaces can land after the commit that follows them (#362);
+    // the other frontends keep backspaces until they are measured.
+    bool deletesThroughSurroundingFirst(const Field& field);
+
     // These frontends turn a surrounding deletion's character count into bytes on their own copy of
     // the text, which can lag behind the app.
     bool countsDeletionOnCopy(const Field& field);

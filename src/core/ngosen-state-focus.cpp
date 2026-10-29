@@ -58,6 +58,8 @@ namespace ngosen {
                 fieldReported_ = s.isValid();
                 // A GNOME app's new context gets a copy of the previous window's text before focus-in.
                 surrSeenTextSinceFocus_ = false;
+                autofillMarked_         = false;
+                lastPath_.clear();
                 surrCheck_.reset();
                 surr_check_timer_.reset();
                 surrUnanswered_ = 0;

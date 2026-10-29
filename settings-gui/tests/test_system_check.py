@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -85,6 +86,22 @@ class EvaluateTest(unittest.TestCase):
             ["Older X11 apps have no input method", "IBus is running next to fcitx5"],
         )
 
+    def test_gnome_50_without_the_forward_key_fix_warns(self):
+        def found(version, state):
+            f = facts(
+                "wayland", "ubuntu:GNOME", gnome_shell_version=version, forward_keys_state=state
+            )
+            return system_check.evaluate(f)
+
+        title = "GNOME 50.1 drops the keys Ngó Sen sends to apps"
+        self.assertEqual(titles(found("50.1", "INACTIVE"), WARN), [title])
+        self.assertIn("gnome-extensions enable", found("50.1", "INACTIVE")[0].fix)
+        self.assertIn("install.sh", found("50.1", "")[0].fix)
+        self.assertEqual(found("50.1", "ACTIVE"), [])
+        self.assertEqual(found("50.4", "INACTIVE"), [])
+        self.assertEqual(found("49.2", ""), [])
+        self.assertEqual(found("", ""), [])
+
 
 class ReportTest(unittest.TestCase):
     def test_debug_info_gives_each_app_once(self):
@@ -127,6 +144,29 @@ class CollectTest(unittest.TestCase):
         self.assertIn("Fcitx5", f.kwin_input_method)
         self.assertEqual(f.apps, [("kate", "wayland")])
         self.assertNotIn("HOME", f.env)
+
+    def test_reads_gnome_shell_and_forward_key_fix_on_gnome(self):
+        info = "forward-keys@ngosen.github.io\n  Enabled: No\n  State: INACTIVE\n"
+        outputs = {"gnome-shell": "GNOME Shell 50.1\n", "gnome-extensions": info}
+
+        def run(cmd, **kw):
+            return subprocess.CompletedProcess(cmd, 0, stdout=outputs.get(cmd[0], ""))
+
+        env = {"XDG_CURRENT_DESKTOP": "ubuntu:GNOME"}
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            f = system_check.collect(FakeDBusHandler(), env=env)
+        self.assertEqual((f.gnome_shell_version, f.forward_keys_state), ("50.1", "INACTIVE"))
+        self.assertIn("GNOME Shell 50.1, forward-keys: INACTIVE", system_check.report(f, []))
+
+        outputs["gnome-extensions"] = ""
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            self.assertEqual(
+                system_check.collect(FakeDBusHandler(), env=env).forward_keys_state, ""
+            )
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run) as ran:
+            f = system_check.collect(FakeDBusHandler(), env={"XDG_CURRENT_DESKTOP": "KDE"})
+        self.assertEqual(f.gnome_shell_version, "")
+        self.assertNotIn("gnome-shell", [c.args[0][0] for c in ran.call_args_list])
 
     def test_fcitx5_not_answering(self):
         handler = FakeDBusHandler()

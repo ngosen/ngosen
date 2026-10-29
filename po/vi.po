@@ -1265,6 +1265,18 @@ msgid "Two input methods compete for keys; stop IBus from starting at login."
 msgstr "Hai bộ gõ tranh nhau phím; hãy tắt IBus tự chạy khi đăng nhập."
 
 #: settings-gui/core/system_check.py
+msgid "GNOME {} drops the keys Ngó Sen sends to apps"
+msgstr "GNOME {} làm rơi phím Ngó Sen gửi cho app"
+
+#: settings-gui/core/system_check.py
+msgid "Turn on the fix: gnome-extensions enable {}, then log out and back in."
+msgstr "Bật bản sửa: gnome-extensions enable {}, rồi đăng xuất và đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "Install Ngó Sen with install.sh, which adds the fix for this GNOME version."
+msgstr "Cài Ngó Sen bằng install.sh, lệnh này thêm bản sửa cho version GNOME này."
+
+#: settings-gui/core/system_check.py
 msgid "fcitx5 still runs Ngó Sen from before the update"
 msgstr "fcitx5 vẫn chạy Ngó Sen version cũ, trước khi cập nhật"
 

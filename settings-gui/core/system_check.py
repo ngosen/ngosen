@@ -21,6 +21,8 @@ IM_VARIABLES = ("GTK_IM_MODULE", "QT_IM_MODULE", "XMODIFIERS", "SDL_IM_MODULE")
 
 OK, WARN, FAIL = "ok", "warn", "fail"
 
+FORWARD_KEYS = "forward-keys@ngosen.github.io"
+
 
 @dataclass
 class Facts:
@@ -34,6 +36,9 @@ class Facts:
     fcitx_version: str = ""
     ngosen_version: str = ""
     addon_replaced: bool = False
+    gnome_shell_version: str = ""
+    # As gnome-extensions reports it (ACTIVE, INACTIVE, ERROR...), empty when not installed.
+    forward_keys_state: str = ""
 
     @property
     def session(self):
@@ -114,10 +119,36 @@ def evaluate(facts):
     return found
 
 
+def _drops_forwarded_keys(version):
+    """GNOME 50.0 to 50.3 drop the keys an input method sends on to the app (mutter#4853)."""
+    match = re.match(r"50\.(\d+)$", version)
+    return match is not None and int(match.group(1)) <= 3
+
+
+def _forward_keys_findings(facts):
+    if not _drops_forwarded_keys(facts.gnome_shell_version) or facts.forward_keys_state == "ACTIVE":
+        return []
+    if facts.forward_keys_state:
+        fix = _("Turn on the fix: gnome-extensions enable {}, then log out and back in.").format(
+            FORWARD_KEYS
+        )
+    else:
+        fix = _("Install Ngó Sen with install.sh, which adds the fix for this GNOME version.")
+    title = _("GNOME {} drops the keys Ngó Sen sends to apps").format(facts.gnome_shell_version)
+    return [Finding(WARN, title, fix)]
+
+
 def _desktop_findings(facts):
     if "GNOME" in facts.desktops:
-        return _needs(facts, "QT_IM_MODULE", FAIL, _("Qt apps have no input method")) + _needs(
-            facts, "GTK_IM_MODULE", WARN, _("Chrome and older GTK apps may have no input method")
+        return (
+            _needs(facts, "QT_IM_MODULE", FAIL, _("Qt apps have no input method"))
+            + _needs(
+                facts,
+                "GTK_IM_MODULE",
+                WARN,
+                _("Chrome and older GTK apps may have no input method"),
+            )
+            + _forward_keys_findings(facts)
         )
     if facts.session == "x11":
         return _needs(facts, "GTK_IM_MODULE", FAIL, _("GTK apps have no input method")) + _needs(
@@ -158,6 +189,9 @@ def report(facts, findings, app_test=None):
     ]
     if facts.kwin_input_method:
         lines.append(f"KWin InputMethod={facts.kwin_input_method}")
+    if facts.gnome_shell_version:
+        state = facts.forward_keys_state or "not installed"
+        lines.append(f"GNOME Shell {facts.gnome_shell_version}, forward-keys: {state}")
     lines.append("")
     lines += [f"[{marks[f.level]}] {f.title}" for f in findings] or ["[OK] no setup problem found"]
     if facts.apps:
@@ -185,6 +219,9 @@ def collect(dbus_handler, ngosen_version="", env=None):
     facts.ibus_running = _process_running("ibus-daemon")
     facts.kwin_input_method = _kwin_input_method(env)
     facts.addon_replaced = runs_replaced_addon()
+    if "GNOME" in facts.desktops:
+        facts.gnome_shell_version = _gnome_shell_version()
+        facts.forward_keys_state = _extension_state(FORWARD_KEYS)
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
     facts.ngosen_in_group = "ngosen" in (names or [])
@@ -209,6 +246,22 @@ def _fcitx_version():
     except (OSError, subprocess.SubprocessError):
         return ""
     return out.stdout.strip()
+
+
+def _output(cmd):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=3).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def _gnome_shell_version():
+    return _output(["gnome-shell", "--version"]).strip().removeprefix("GNOME Shell ")
+
+
+def _extension_state(uuid):
+    match = re.search(r"^\s*State:\s*(.+?)\s*$", _output(["gnome-extensions", "info", uuid]), re.M)
+    return match.group(1) if match else ""
 
 
 def _pids_named(name, proc="/proc"):

@@ -170,6 +170,7 @@ namespace ngosen {
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
         bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key
+        bool                     fieldReported_         = false; ///< the field reported its text since it got focus
         Surrounding              reportAtKey_;
 
         struct Retype {
@@ -373,6 +374,7 @@ namespace ngosen {
         // so an Enter that commits the preedit reaches the app a moment later.
         static constexpr uint64_t      EnterAfterCommitUs = 50000;
         void                           holdEnterAfterCommit(ngosen::KeyPress& keyEvent);
+        bool                           dropsForwardedKeys() const;
         void                           sendHeldEnter();
         std::unique_ptr<ngosen::Timer> held_enter_timer_;
         bool                           held_enter_pending_ = false;

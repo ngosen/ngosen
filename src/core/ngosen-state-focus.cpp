@@ -53,6 +53,9 @@ namespace ngosen {
             clearAllBuffers();
             fieldBounces_         = 0;
             checkWordAfterBounce_ = false;
+            // GTK sends its text again only when it changes.
+            if (isFocusIn)
+                fieldReported_ = s.isValid();
         }
 
         if (isFocusIn && host_->field().frontend == "dbus" && !s.isValid()) {

@@ -12,6 +12,7 @@
 #include "ngosen-clock.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
+#include "ngosen-strings.h"
 #include "ngosen-utf8.h"
 #include "ngosen-xtest.h"
 
@@ -53,11 +54,10 @@ namespace ngosen {
             it = ngosen::utf8::nextChar(it, t.end());
         }
         const std::string before(t.begin(), it);
-        auto              endsWith = [](const std::string& a, const std::string& b) { return a.size() >= b.size() && a.compare(a.size() - b.size(), b.size(), b) == 0; };
         // Stale or half done: some of the text to delete is still there. Qt reports after each backspace.
         for (auto d = surr_wait_deleted_.begin(); d != surr_wait_deleted_.end();) {
             d = ngosen::utf8::nextChar(d, surr_wait_deleted_.end());
-            if (endsWith(before, surr_wait_prefix_ + std::string(surr_wait_deleted_.begin(), d)))
+            if (isEndsWith(before, surr_wait_prefix_ + std::string(surr_wait_deleted_.begin(), d)))
                 return false;
         }
         // Messenger moves the cursor before it removes the text, so a snapshot can look done while
@@ -67,14 +67,14 @@ namespace ngosen {
             std::string       passed = surr_wait_prefix_;
             for (auto d = surr_wait_deleted_.begin(); d != surr_wait_deleted_.end();) {
                 const auto next = ngosen::utf8::nextChar(d, surr_wait_deleted_.end());
-                if (charAfter == std::string(d, next) && endsWith(before, passed)) {
+                if (charAfter == std::string(d, next) && isEndsWith(before, passed)) {
                     return false;
                 }
                 passed.append(d, next);
                 d = next;
             }
         }
-        return endsWith(before, surr_wait_prefix_);
+        return isEndsWith(before, surr_wait_prefix_);
     }
 
     bool TypingState::handleReplacementBackspace(ngosen::KeyPress& event, uint32_t currentSym, int sleepTime) {

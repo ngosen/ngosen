@@ -921,6 +921,9 @@ namespace ngosen {
         oldPreBuffer_.clear();
         lastWord_.clear();
         hasHistory_ = false;
+        earlierWords_.clear();
+        wordBeforeReplacement_.clear();
+        wordAfterReplacement_.clear();
         if (!is_deleting_.load(std::memory_order_acquire)) {
             expected_backspaces_     = 0;
             current_backspace_count_ = 0;

@@ -11,6 +11,7 @@
 #include "ngosen-strings.h"
 #include "ngosen-utf8.h"
 
+#include <algorithm>
 #include <string>
 
 namespace ngosen {
@@ -20,22 +21,23 @@ namespace ngosen {
         constexpr int SurroundingCheckWaitMs = 200;
         // Unanswered checks in a row, with none correct, that would make the field untrusted.
         constexpr int UnansweredLimit = 3;
-
-        std::string   reportOf(const Surrounding& s) {
-            return s.isValid() ? s.text() + "\x1f" + std::to_string(s.cursor()) : std::string();
-        }
     } // namespace
 
-    void TypingState::openSurroundingCheck(const Surrounding& sent) {
-        if (surrCheck_)
-            closeSurroundingCheck(SurroundingVerdict::NoAnswer);
+    void TypingState::openSurroundingCheck(const Surrounding& sent, const std::string& retype) {
+        if (surrCheck_) {
+            surr_check_timer_.reset();
+            closeSurroundingCheck(SurroundingVerdict::NoAnswer, true);
+        }
         surrCheck_        = SurroundingCheck{.prefix     = surr_wait_prefix_,
                                              .deleted    = surr_wait_deleted_,
                                              .added      = pending_commit_string_,
-                                             .sentReport = reportOf(sent),
+                                             .retype     = retype,
+                                             .sentReport = reportKey(sent),
+                                             .password   = host_->field().password,
                                              .keysAtSend = keyCount_,
                                              .sentAtUs   = monotonicUs()};
-        surr_check_timer_ = host_->startTimer(monotonicUs() + SurroundingCheckWaitMs * 1000ULL, 0, [this](Timer&) {
+        const int waitMs  = std::max(engine_->options().waitSurroundingTimeoutMs, SurroundingCheckWaitMs);
+        surr_check_timer_ = host_->startTimer(monotonicUs() + static_cast<uint64_t>(waitMs) * 1000ULL, 0, [this](Timer&) {
             // The timer is still running here, so closing must not reset it.
             if (surrCheck_)
                 closeSurroundingCheck(SurroundingVerdict::NoAnswer);
@@ -43,13 +45,18 @@ namespace ngosen {
         });
     }
 
+    SurroundingVerdict TypingState::judgeOpenCheck(const Surrounding& report) const {
+        if (!report.isValid() || reportKey(report) == surrCheck_->sentReport)
+            return SurroundingVerdict::NoAnswer;
+        // A dropped deletion leaves the old part with the retyped text and the new part after it.
+        return judgeSurroundingReport(textBeforeCursor(report), surrCheck_->prefix, surrCheck_->deleted + surrCheck_->retype, surrCheck_->added,
+                                      static_cast<unsigned int>(keyCount_ - surrCheck_->keysAtSend));
+    }
+
     void TypingState::checkSurroundingReport() {
-        const Surrounding s = host_->surrounding();
-        if (!surrCheck_ || !s.isValid() || reportOf(s) == surrCheck_->sentReport)
+        if (!surrCheck_)
             return;
-        const std::string word       = surrCheck_->prefix + surrCheck_->added;
-        const std::string typedAfter = isStartsWith(oldPreBuffer_, word) ? oldPreBuffer_.substr(word.size()) : std::string();
-        const auto        verdict    = judgeSurroundingReport(textBeforeCursor(s), surrCheck_->prefix, surrCheck_->deleted, surrCheck_->added, typedAfter);
+        const auto verdict = judgeOpenCheck(host_->surrounding());
         // A deletion and its commit can reach the app as two changes; wait for the commit.
         if (verdict == SurroundingVerdict::NoAnswer)
             return;
@@ -57,13 +64,12 @@ namespace ngosen {
         closeSurroundingCheck(verdict);
     }
 
-    void TypingState::closeSurroundingCheck(SurroundingVerdict verdict) {
+    void TypingState::closeSurroundingCheck(SurroundingVerdict verdict, bool beforeNext) {
         const auto check = *surrCheck_;
         surrCheck_.reset();
-        const bool  password = host_->field().password;
-        std::string line     = std::string("Surrounding check: ") + verdictName(verdict) + " after " + std::to_string((monotonicUs() - check.sentAtUs) / 1000) + " ms, " +
-            std::to_string(keyCount_ - check.keysAtSend) + " keys later" + loggedField(host_->field());
-        if (!password)
+        std::string line = std::string("Surrounding check: ") + verdictName(verdict) + (beforeNext ? " before the next replacement" : "") + " after " +
+            std::to_string((monotonicUs() - check.sentAtUs) / 1000) + " ms, " + std::to_string(keyCount_ - check.keysAtSend) + " keys later" + loggedField(host_->field());
+        if (!check.password)
             line += ", replaced " + check.deleted + " -> " + check.added;
         if (verdict == SurroundingVerdict::Correct)
             surrAnswered_ = true;

@@ -22,6 +22,10 @@ bool isStartsWith(const std::string& str, const std::string& prefix) {
 #endif
 }
 
+bool isEndsWith(const std::string& str, const std::string& suffix) {
+    return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
 bool isInHomeDirectory(const std::string& path) {
     return isStartsWith(path, "/home/");
 }

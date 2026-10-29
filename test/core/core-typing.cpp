@@ -1508,11 +1508,11 @@ namespace {
 
     // Types keys with every log line kept; returns the lines that contain `start`.
     std::vector<std::string> logLinesWhileTyping(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::string& start,
-                                                 ngosen::test::Typed* run = nullptr) {
+                                                 ngosen::test::Typed* run = nullptr, int gapMs = 100) {
         FakeResources resources;
         const auto    keys = keysOf(typed);
         ngosen::test::captureLog(true);
-        const auto               typedRun = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), 100));
+        const auto               typedRun = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), gapMs));
         std::vector<std::string> lines;
         for (const auto& line : ngosen::test::capturedLog()) {
             if (has(line, start))
@@ -1538,6 +1538,13 @@ namespace {
 
         lines = logLinesWhileTyping(surroundingOnlyField(), {.staleReport = true, .lagMs = 40, .dropsForwardedKeys = true}, "vieetj nam ", "Surrounding check");
         check(countHaving(lines, ": correct") == 2 && countHaving(lines, "would stop trusting") == 0, "check: a lagging app is judged correct", join(lines));
+
+        // The app lags behind the keys: the next replacement comes before it answers the first, and the
+        // Space before it answers the second.
+        lines =
+            logLinesWhileTyping(surroundingOnlyField(), {.lagMs = 60, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true}, "vieetj ", "Surrounding check", &run, 20);
+        check(run.text == "việt " && countHaving(lines, "not answered before the next replacement") == 1 && countHaving(lines, ": correct") == 1,
+              "check: a lagging app answers only the last replacement", run.text + " " + join(lines));
 
         lines = logLinesWhileTyping(surroundingOnlyField(), {.reports = false, .dropsForwardedKeys = true}, "vieetj nam tieesng ", "Surrounding check");
         check(countHaving(lines, "not answered") >= 3 && countHaving(lines, "would stop trusting") >= 1, "check: an app that never reports goes unanswered", join(lines));

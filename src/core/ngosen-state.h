@@ -204,6 +204,7 @@ namespace ngosen {
         bool               typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
         static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
         static std::string textBeforeCursor(const Surrounding& s);
+        static std::string reportKey(const Surrounding& s); ///< "text\x1fcursor", empty for no report
         static std::string loggedField(const Field& field); ///< " (frontend program)"
         bool               handleRetypeKey(ngosen::KeyPress& keyEvent);
 
@@ -464,13 +465,16 @@ namespace ngosen {
             std::string prefix;
             std::string deleted;
             std::string added;
-            std::string sentReport; ///< "text\x1fcursor" when the deletion was sent
+            std::string retype;     ///< committed again ahead of added
+            std::string sentReport; ///< reportKey() when the deletion was sent
+            bool        password   = false;
             uint64_t    keysAtSend = 0;
             uint64_t    sentAtUs   = 0;
         };
-        void openSurroundingCheck(const Surrounding& sent);
-        void checkSurroundingReport();
-        void closeSurroundingCheck(SurroundingVerdict verdict);
+        void               openSurroundingCheck(const Surrounding& sent, const std::string& retype);
+        void               checkSurroundingReport();
+        SurroundingVerdict judgeOpenCheck(const Surrounding& report) const;
+        void               closeSurroundingCheck(SurroundingVerdict verdict, bool beforeNext = false);
         // Logs whether a field that also takes keys could delete through its surrounding text here.
         void                            observeSurroundingPath(const Surrounding& surrounding);
         std::optional<SurroundingCheck> surrCheck_;

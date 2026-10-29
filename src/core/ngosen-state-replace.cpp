@@ -453,7 +453,7 @@ namespace ngosen {
     void TypingState::recordSendSnapshot(const std::string& deletedPart) {
         surr_wait_deleted_       = deletedPart;
         const auto snapshot      = host_->surrounding();
-        surr_wait_sent_snapshot_ = snapshot.isValid() ? snapshot.text() + "\x1f" + std::to_string(snapshot.cursor()) : std::string();
+        surr_wait_sent_snapshot_ = reportKey(snapshot);
         surr_wait_prefix_        = (oldPreBuffer_.size() >= deletedPart.size()) ? oldPreBuffer_.substr(0, oldPreBuffer_.size() - deletedPart.size()) : std::string();
         // Only a fresh send-time snapshot (text before the cursor ends with prefix + deleted) may
         // count towards "frozen"; a lagging app sends a stale one.
@@ -471,6 +471,10 @@ namespace ngosen {
         for (unsigned int i = 0; i < s.cursor() && it != t.end(); ++i)
             it = utf8::nextChar(it, t.end());
         return std::string(t.begin(), it);
+    }
+
+    std::string TypingState::reportKey(const Surrounding& s) {
+        return s.isValid() ? s.text() + "\x1f" + std::to_string(s.cursor()) : std::string();
     }
 
     std::string TypingState::loggedField(const Field& field) {
@@ -563,7 +567,7 @@ namespace ngosen {
             NGOSEN_INFO("Commit: " + logged(text));
             std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrCommitSleepMs * ngosen::utf8::length(text)));
         }
-        openSurroundingCheck(surrounding);
+        openSurroundingCheck(surrounding, retype);
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();

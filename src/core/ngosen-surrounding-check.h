@@ -18,10 +18,9 @@ namespace ngosen {
     };
 
     // beforeCursor is the reported text up to the cursor; prefix + deleted was the word before the
-    // replacement, prefix + added after it, and typedAfter the keys typed since, which a lagging
-    // report may show only in part.
+    // replacement and prefix + added after it. keysAfter is how many keys were typed since.
     SurroundingVerdict judgeSurroundingReport(const std::string& beforeCursor, const std::string& prefix, const std::string& deleted, const std::string& added,
-                                              const std::string& typedAfter);
+                                              unsigned int keysAfter);
 
     const char*        verdictName(SurroundingVerdict verdict);
 

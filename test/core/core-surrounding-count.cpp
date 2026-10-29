@@ -40,15 +40,17 @@ int main() {
     expect("the word would have to be crossed", ngosen::countSurroundingDeletion("ê", "", "e", {"ê"}), Match::None, 1);
 
     using Verdict = ngosen::SurroundingVerdict;
-    expectVerdict("the replaced word", ngosen::judgeSurroundingReport("nam tiê", "ti", "e", "ê", ""), Verdict::Correct);
-    expectVerdict("the replaced word with keys typed after it", ngosen::judgeSurroundingReport("nam tiên", "ti", "e", "ê", "n"), Verdict::Correct);
-    expectVerdict("a report that shows only the first key typed after", ngosen::judgeSurroundingReport("nam tiên", "ti", "e", "ê", "ng"), Verdict::Correct);
-    expectVerdict("the old part left before the new one", ngosen::judgeSurroundingReport("nam tieê", "ti", "e", "ê", ""), Verdict::DroppedDeletion);
+    expectVerdict("the replaced word", ngosen::judgeSurroundingReport("nam tiê", "ti", "e", "ê", 0), Verdict::Correct);
+    expectVerdict("the replaced word with keys typed after it", ngosen::judgeSurroundingReport("nam tiên", "ti", "e", "ê", 1), Verdict::Correct);
+    expectVerdict("a report that shows only the first key typed after", ngosen::judgeSurroundingReport("nam tiên", "ti", "e", "ê", 2), Verdict::Correct);
+    expectVerdict("a Space after the word ended it", ngosen::judgeSurroundingReport("nam việt ", "vi", "êt", "ệt", 1), Verdict::Correct);
+    expectVerdict("more text than keys typed since", ngosen::judgeSurroundingReport("nam tiênx", "ti", "e", "ê", 1), Verdict::NoAnswer);
+    expectVerdict("the old part left before the new one", ngosen::judgeSurroundingReport("nam tieê", "ti", "e", "ê", 0), Verdict::DroppedDeletion);
     // With no prefix, "dđ" also ends with the correct shape "đ".
-    expectVerdict("a dropped deletion at the start of a word", ngosen::judgeSurroundingReport("dđ", "", "d", "đ", ""), Verdict::DroppedDeletion);
-    expectVerdict("too many bytes deleted before the new part", ngosen::judgeSurroundingReport("tiííiếng", "ti", "ê", "ế", "ng"), Verdict::WrongEarlierPart);
-    expectVerdict("the report from before the replacement", ngosen::judgeSurroundingReport("nam tie", "ti", "e", "ê", ""), Verdict::NoAnswer);
-    expectVerdict("the deletion applied, the commit not yet", ngosen::judgeSurroundingReport("nam ti", "ti", "e", "ê", ""), Verdict::NoAnswer);
+    expectVerdict("a dropped deletion at the start of a word", ngosen::judgeSurroundingReport("dđ", "", "d", "đ", 0), Verdict::DroppedDeletion);
+    expectVerdict("too many bytes deleted before the new part", ngosen::judgeSurroundingReport("tiííiếng", "ti", "ê", "ế", 2), Verdict::WrongEarlierPart);
+    expectVerdict("the report from before the replacement", ngosen::judgeSurroundingReport("nam tie", "ti", "e", "ê", 0), Verdict::NoAnswer);
+    expectVerdict("the deletion applied, the commit not yet", ngosen::judgeSurroundingReport("nam ti", "ti", "e", "ê", 0), Verdict::NoAnswer);
     if (failures == 0)
         std::cout << "all surrounding count checks passed\n";
     return failures == 0 ? 0 : 1;

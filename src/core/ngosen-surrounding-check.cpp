@@ -5,28 +5,28 @@
  */
 #include "ngosen-surrounding-check.h"
 
+#include "ngosen-strings.h"
+
 namespace ngosen {
 
-    namespace {
-        bool endsWith(const std::string& text, const std::string& tail) {
-            return text.size() >= tail.size() && text.compare(text.size() - tail.size(), tail.size(), tail) == 0;
-        }
-    } // namespace
-
     SurroundingVerdict judgeSurroundingReport(const std::string& beforeCursor, const std::string& prefix, const std::string& deleted, const std::string& added,
-                                              const std::string& typedAfter) {
-        // A lagging report shows only the first of the keys typed since, so try each, longest first.
-        for (size_t typed = typedAfter.size() + 1; typed-- > 0;) {
-            if (typed < typedAfter.size() && (static_cast<unsigned char>(typedAfter[typed]) & 0xC0) == 0x80)
-                continue;
-            const std::string after = typedAfter.substr(0, typed);
+                                              unsigned int keysAfter) {
+        // The report may show any of the keys typed since, so drop up to that many characters from its end.
+        size_t end = beforeCursor.size();
+        for (unsigned int dropped = 0; dropped <= keysAfter; ++dropped) {
+            const std::string shown = beforeCursor.substr(0, end);
             // Checked first: with no prefix, the correct shape prefix + added matches a dropped deletion too.
-            if (!deleted.empty() && endsWith(beforeCursor, prefix + deleted + added + after))
+            if (!deleted.empty() && isEndsWith(shown, prefix + deleted + added))
                 return SurroundingVerdict::DroppedDeletion;
-            if (endsWith(beforeCursor, prefix + added + after))
+            if (isEndsWith(shown, prefix + added))
                 return SurroundingVerdict::Correct;
-            if (!added.empty() && endsWith(beforeCursor, added + after))
+            if (!added.empty() && isEndsWith(shown, added))
                 return SurroundingVerdict::WrongEarlierPart;
+            if (end == 0)
+                break;
+            do
+                --end;
+            while (end > 0 && (static_cast<unsigned char>(beforeCursor[end]) & 0xC0) == 0x80);
         }
         return SurroundingVerdict::NoAnswer;
     }

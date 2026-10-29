@@ -39,6 +39,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thay đổi
 
+- Gõ Sen không còn dừng vài mili giây sau mỗi lần xoá và commit trong app xoá chữ qua surrounding text như
+  LibreOffice và ô GTK4 (#438).
 - Cài bản fcitx5 trên GNOME, install.sh nay nói rõ trước câu "Tiếp tục?" sẽ đổi gì cho tài khoản và cách
   trả lại bằng `--uninstall`, rồi giới thiệu bản Ngó Sen cho GNOME chạy trên IBus kèm lệnh cài. Máy chưa có
   gói bản IBus (như Debian 12) hoặc đang dùng sẵn bản IBus thì không giới thiệu (#400, #410).

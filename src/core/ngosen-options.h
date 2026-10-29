@@ -52,8 +52,8 @@ namespace ngosen {
         int  waitSurroundingSettleMs          = 40;
         int  waitSurroundingSettleFirstWordMs = 60;
         int  waitSurroundingProbeEvery        = 4;
-        int  surrDeleteSleepMs                = 4;
-        int  surrCommitSleepMs                = 3;
+        int  surrDeleteSleepMs                = 0;
+        int  surrCommitSleepMs                = 0;
     };
 
     inline const Options defaultOptions{};

@@ -324,8 +324,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "See Cứu chữ, Cứu dấu, the English/Vietnamese key and typing tips."
-msgstr "Xem Cứu chữ, Cứu dấu, phím chuyển Anh/Việt và mẹo gõ."
+msgid "Version 1.7: the settings window also comes in a GTK edition that looks like a GNOME app. See also Cứu chữ (retype words typed with Vietnamese off), Cứu dấu (select a word and type a tone mark to change it), the English/Vietnamese key and typing tips."
+msgstr "Version 1.7: cửa sổ cài đặt có thêm bản GTK giống app GNOME. Xem thêm Cứu chữ (gõ lại chữ lỡ gõ khi chưa bật tiếng Việt), Cứu dấu (bôi đen chữ rồi gõ phím dấu để đổi dấu), phím chuyển Anh/Việt và mẹo gõ."
 
 #: src/ngosen-engine.cpp
 msgid "Show"

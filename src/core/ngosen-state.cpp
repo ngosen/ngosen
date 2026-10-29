@@ -456,6 +456,9 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        // Counted first, so a replacement this key starts does not count it as a later key.
+        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+            ++keyCount_;
         handleKey(keyEvent);
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             keySinceReport_ = true;
@@ -918,6 +921,9 @@ namespace ngosen {
         oldPreBuffer_.clear();
         lastWord_.clear();
         hasHistory_ = false;
+        earlierWords_.clear();
+        wordBeforeReplacement_.clear();
+        wordAfterReplacement_.clear();
         if (!is_deleting_.load(std::memory_order_acquire)) {
             expected_backspaces_     = 0;
             current_backspace_count_ = 0;

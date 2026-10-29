@@ -18,6 +18,7 @@
 #include "ngosen-utf8.h"
 #include "ngosen-xtest.h"
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -1428,9 +1429,9 @@ namespace {
         text = typed({.reportsEmptyText = true}, "tiee");
         check(text == "tieê", "quirk: a field that reports no text drops the deletion", text);
         text = typed({.convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true}, "vieetj nam tieesng");
-        // On s the word becomes tíê and on n tiến; each time two characters of the old copy "tie" are
-        // two bytes, which cut inside ê, so only one character goes.
-        check(text == "việt nam tiíiếng", "quirk: bytes counted on an old copy cut inside a letter", text);
+        // The copy stays "tie" while the app holds tiê, then tíê: the deletion asks for as many copy
+        // characters as the real ones have bytes.
+        check(text == "việt nam tiếng", "quirk: bytes counted on an old copy delete whole letters", text);
 
         // The cursor moves with no report, so the deletion falls before the start of the text.
         realMode = ngosen::Mode::Sen;
@@ -1505,6 +1506,54 @@ namespace {
         check(!off.empty(), "path: a shown preedit is counted", join(off));
     }
 
+    // Types keys with every log line kept; returns the lines that contain `start`.
+    std::vector<std::string> logLinesWhileTyping(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::string& start,
+                                                 ngosen::test::Typed* run = nullptr, int gapMs = 100) {
+        FakeResources resources;
+        const auto    keys = keysOf(typed);
+        ngosen::test::captureLog(true);
+        const auto               typedRun = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), gapMs));
+        std::vector<std::string> lines;
+        for (const auto& line : ngosen::test::capturedLog()) {
+            if (has(line, start))
+                lines.push_back(line);
+        }
+        ngosen::test::captureLog(false);
+        if (run != nullptr)
+            *run = typedRun;
+        return lines;
+    }
+
+    size_t countHaving(const std::vector<std::string>& lines, const std::string& part) {
+        return static_cast<size_t>(std::count_if(lines.begin(), lines.end(), [&](const std::string& line) { return has(line, part); }));
+    }
+
+    // After a deletion through the surrounding text, the next reports tell what the app did with it.
+    // Only logged until the typing logic acts on it.
+    void testSurroundingCheck() {
+        ngosen::test::Typed run;
+        auto                lines = logLinesWhileTyping(surroundingOnlyField(), {.dropsForwardedKeys = true, .ignoresSurroundingDel = true}, "tiee", "Surrounding check", &run);
+        check(countHaving(lines, "app dropped the deletion") == 1 && run.sent.forwardedBackSpaces == 0 && run.sent.systemKeyPresses == 0, "check: a dropped deletion is logged",
+              run.text + " " + join(lines));
+
+        lines = logLinesWhileTyping(surroundingOnlyField(), {.staleReport = true, .lagMs = 40, .dropsForwardedKeys = true}, "vieetj nam ", "Surrounding check");
+        check(countHaving(lines, ": correct") == 2 && countHaving(lines, "would stop trusting") == 0, "check: a lagging app is judged correct", join(lines));
+
+        // The app lags behind the keys: the next replacement comes before it answers the first, and the
+        // Space before it answers the second.
+        lines =
+            logLinesWhileTyping(surroundingOnlyField(), {.lagMs = 60, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true}, "vieetj ", "Surrounding check", &run, 20);
+        check(run.text == "việt " && countHaving(lines, "not answered before the next replacement") == 1 && countHaving(lines, ": correct") == 1,
+              "check: a lagging app answers only the last replacement", run.text + " " + join(lines));
+
+        lines = logLinesWhileTyping(surroundingOnlyField(), {.reports = false, .dropsForwardedKeys = true}, "vieetj nam tieesng ", "Surrounding check");
+        check(countHaving(lines, "not answered") >= 3 && countHaving(lines, "would stop trusting") >= 1, "check: an app that never reports goes unanswered", join(lines));
+
+        // A field that also takes keys keeps them, and logs what the surrounding path would have done.
+        lines = logLinesWhileTyping(makeField("wayland", true), {}, "vieetj nam ", "Surrounding path would", &run);
+        check(lines.size() == 2 && countHaving(lines, "fails: none") == 2 && run.sent.surroundingDeletes == 0, "check: one observation line per replacement on a wayland field",
+              run.text + " " + join(lines));
+    }
 } // namespace
 
 int main() {
@@ -1573,6 +1622,7 @@ int main() {
     testSurroundingQuirksBreakText();
     testSuggestion();
     testPathCheck();
+    testSurroundingCheck();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";
     return failures == 0 ? 0 : 1;

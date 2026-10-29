@@ -58,6 +58,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Sửa Gõ Sen làm hỏng chữ như "tiíiếng" khi app dùng surrounding text báo chữ chậm hơn phím gõ
+  (LibreOffice, ô GTK4) (#441).
 - deepin-editor: mặc định dùng chế độ gạch chân để gõ nhanh không còn đảo chữ, mất hoặc lặp dấu như khi
   dùng Gõ Sen; vẫn giữ chế độ đã chọn cho app qua menu `, không đổi các app khác (#421).
 - Cửa sổ cài đặt: bấm "Mặc định" nay báo trước phím chuyển Anh/Việt sẽ về Ctrl+Shift nếu đang dùng phím khác,

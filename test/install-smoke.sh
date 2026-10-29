@@ -536,6 +536,81 @@ check_installed_frontends_left_alone() {
     restore_apt_get
 }
 
+parent_name() { ps -o comm= -p "$(ps -o ppid= -p "$1" | tr -d ' ')"; }
+
+# Runs fcitx5 as its child like KWin. KWin restarts it only when the setting's value changes; this
+# one restarts it on every change signal, so the installer's wait for KWin is not tested here.
+use_fake_kwin() {
+    local dir=$work/kwin
+    mkdir -p "$dir"
+    cat >"$dir/kwin_wayland" <<'STUB'
+#!/bin/bash
+child=
+start() { fcitx5 >/dev/null 2>&1 & child=$!; }
+stop() { [ -z "$child" ] || { kill "$child" 2>/dev/null; wait "$child" 2>/dev/null; }; child=; }
+start
+while read -r line; do
+    case "$line" in *member=ConfigChanged*) ;; *) continue ;; esac
+    stop
+    [ -z "$(kreadconfig6 --file kwinrc --group Wayland --key InputMethod)" ] || start
+done < <(dbus-monitor --session "type='signal',interface='org.kde.kconfig.notify',member='ConfigChanged'")
+STUB
+    chmod a+rx "$dir/kwin_wayland"
+    fake_kwin=$dir/kwin_wayland
+}
+
+# Prints the pid of the fcitx5 the fake KWin started, once it holds its bus name.
+start_fake_kwin() {
+    local pid tries=40
+    as_user "$fake_kwin" >/dev/null 2>&1 &
+    until pid=$(fcitx5_pid || true) && [ -n "$pid" ] && as_user dbus-send --session --print-reply \
+        --dest=org.freedesktop.DBus / org.freedesktop.DBus.NameHasOwner string:org.fcitx.Fcitx5 \
+        2>/dev/null | grep -q 'boolean true'; do
+        tries=$((tries - 1))
+        [ "$tries" -gt 0 ] || break
+        sleep 0.25
+    done
+    echo "$pid"
+}
+
+stop_fake_kwin() {
+    pkill -u "$user" -x kwin_wayland || :
+    stop_fcitx5
+}
+
+# KWin's fcitx5 is the only one that gets the app name from Wayland apps; one the installer starts
+# itself goes without it until the next login.
+check_restart_through_kwin() {
+    local pid new
+    use_fake_kwin
+    bus=$(sudo -u "$user" dbus-daemon --session --fork --print-address=1 | head -n 1)
+
+    pid=$(start_fake_kwin)
+    check "precondition: KWin started fcitx5" test "$(parent_name "$pid")" = kwin_wayland
+    # An addon written after fcitx5 started has not been loaded yet.
+    sleep 1
+    touch "$(find /usr/lib /usr/lib64 -maxdepth 3 -name libngosen.so | head -n 1)"
+    check "a run with fcitx5 under KWin succeeds" installer --yes
+    new=$(fcitx5_pid || true)
+    check "it restarts fcitx5" test -n "$new" -a "$new" != "$pid"
+    check "KWin starts the new fcitx5" test "$(parent_name "$new")" = kwin_wayland
+    check "KWin still starts fcitx5 as its input method" has_line "$kwinrc" "$kwin_im"
+    stop_fake_kwin
+
+    # Without ngosen in the profile the installer stops fcitx5 to add it.
+    printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[GroupOrder]\n0=Default\n' |
+        as_user tee "$profile" >/dev/null
+    start_fake_kwin >/dev/null
+    check "a run without ngosen in the profile succeeds" installer --yes
+    new=$(fcitx5_pid || true)
+    check "KWin starts fcitx5 after ngosen is added" test -n "$new" -a "$(parent_name "$new")" = kwin_wayland
+    check "the profile lists ngosen" has_line "$profile" 'Name=ngosen'
+    stop_fake_kwin
+
+    pkill -u "$user" dbus-daemon || :
+    bus=
+}
+
 main() {
     prepare_system
 
@@ -570,6 +645,11 @@ main() {
         check_user_im_config_kept
         echo "== GTK and Qt modules already installed"
         check_installed_frontends_left_alone
+    fi
+
+    if [ "$session" = kde ]; then
+        echo "== fcitx5 that KWin started"
+        check_restart_through_kwin
     fi
 
     if [ "$session" = gnome ] && command -v im-config >/dev/null 2>&1; then

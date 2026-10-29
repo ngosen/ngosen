@@ -27,6 +27,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gỡ bằng `install.sh --uninstall` trên máy có im-config 1.1 (Debian testing, Kali, Ubuntu 26.10) bỏ được
   lựa chọn fcitx5 của im-config, không còn ghi `run_im REMOVE` vào `~/.xinputrc`. Khi im-config vẫn chọn fcitx5,
   dòng cuối báo fcitx5 còn chạy và đưa lệnh bỏ đúng với version im-config, không còn hứa "GNOME dùng lại IBus" (#424).
+- KDE Wayland: cài hoặc nâng cấp xong thì fcitx5 được KDE bật lại như lúc đăng nhập, nên Ngó Sen vẫn biết đang gõ trong app nào (nhớ chế độ riêng từng app) mà không cần đăng nhập lại (#428).
 
 ### Tài liệu
 

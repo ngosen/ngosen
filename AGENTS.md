@@ -1,8 +1,7 @@
 # AGENTS.md
 
 Rules for anyone (human or coding agent) changing this repository. [CONTRIBUTING](CONTRIBUTING.en.md)
-still applies; this file adds what it leaves out. Outside the code, fcitx5-lotus is named only in the
-README credit line and the credit line on the settings About page; do not add comparisons or "forked from" lines elsewhere.
+still applies; this file adds what it leaves out.
 
 These rules exist because upstream reviewers said our patches were hard to read: Vietnamese
 identifiers, too many core changes at once, long AI-sounding PR text, and claims they could not
@@ -40,8 +39,8 @@ a careful human wrote it, and the person sending it must be able to explain ever
   `misc/check-new-names.sh` enforces this in CI.
 - **Run clang-format before pushing.** CI fails on any formatting diff, including alignment of
   neighbouring declarations.
-- **Build as C++17.** The Ubuntu 22.04 package compiles in C++17, so no `std::string::starts_with`
-  and the like; use `isStartsWith` (`src/core/ngosen-strings.h`).
+- **Build as C++17.** `CMakeLists.txt` sets C++17, so no `std::string::starts_with` and the like;
+  use `isStartsWith` (`src/core/ngosen-strings.h`).
 - **A bug fix comes with a test that fails without it.** Check this by undoing the fix (or breaking
   its guard) and watching that test, and only that test, fail.
 - **Handle apps by how they behave, not by name.** Check what the field reports (capability flags,

@@ -17,17 +17,24 @@ _translation = gettext.NullTranslations()
 _english = {}
 
 
-def configured_language(env=os.environ):
-    """The UiLanguage saved in ngosen.conf; Vietnamese when it was never changed."""
+def saved_setting(key, fallback, env=os.environ):
+    """A value saved in ngosen.conf, read before fcitx5 can be asked; fallback when never changed."""
     config_home = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME", ""), ".config")
+    # Other keys may hold bytes that are not UTF-8; the one read here is ASCII.
     try:
         with open(
-            os.path.join(config_home, "fcitx5", "conf", "ngosen.conf"), encoding="utf-8"
+            os.path.join(config_home, "fcitx5", "conf", "ngosen.conf"),
+            encoding="utf-8",
+            errors="replace",
         ) as f:
-            match = re.search(r"^UiLanguage=(\S+)", f.read(), re.MULTILINE)
+            match = re.search(rf"^{key}=(\S+)", f.read(), re.MULTILINE)
     except OSError:
         match = None
-    return match.group(1) if match else "Vietnamese"
+    return match.group(1) if match else fallback
+
+
+def configured_language(env=os.environ):
+    return saved_setting("UiLanguage", "Vietnamese", env)
 
 
 def use_language(language, localedir=LOCALEDIR):

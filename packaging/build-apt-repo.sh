@@ -8,7 +8,7 @@ set -euo pipefail
 
 src=${1:?usage: build-apt-repo.sh <debs-dir> <output-dir>}
 out=${2:?usage: build-apt-repo.sh <debs-dir> <output-dir>}
-codenames="bookworm trixie forky jammy noble resolute stonking"
+codenames="bookworm trixie forky noble resolute stonking"
 archs="amd64 arm64"
 
 rm -rf "$out"

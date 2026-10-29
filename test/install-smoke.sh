@@ -131,8 +131,27 @@ hidden_launcher=$home/.local/share/applications/org.fcitx.Fcitx5.desktop
 kwinrc=$home/.config/kwinrc
 kwin_im='InputMethod=/usr/share/applications/org.fcitx.Fcitx5.desktop'
 
+# Asks the installed launcher, as the user on this desktop, which window it would open.
+settings_toolkit() {
+    as_user python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import main; print(main.toolkit())' \
+        /usr/share/fcitx5-ngosen/settings-gui
+}
+
+opens_settings_in() { [ "$(settings_toolkit)" = "$1" ]; }
+
+has_no_qt() {
+    as_user python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import main; sys.exit(main.has_qt())' \
+        /usr/share/fcitx5-ngosen/settings-gui
+}
+
 check_packages() {
     check "fcitx5-ngosen is installed" is_installed fcitx5-ngosen
+    if [ "$session" = gnome ]; then
+        check "the settings window opens in GTK" opens_settings_in gtk
+        check "no Qt is installed for it" has_no_qt
+    else
+        check "the settings window opens in Qt" opens_settings_in qt
+    fi
     if command -v apt-get >/dev/null 2>&1; then
         check "im-config is installed" is_installed im-config
         check "whiptail is installed" is_installed whiptail
@@ -161,6 +180,7 @@ check_uninstalled_state() {
     check "fcitx5-ngosen is removed" is_removed fcitx5-ngosen
     if [ "$session" = x11 ]; then
         check ".xinputrc no longer runs fcitx5" lacks_line "$home/.xinputrc" 'run_im fcitx5'
+        check ".xinputrc is removed" test ! -e "$home/.xinputrc"
     elif [ "$session" = kde ]; then
         # fcitx5 may serve other input methods, so KDE keeps it.
         check "KWin still starts fcitx5" has_line "$kwinrc" "$kwin_im"
@@ -217,10 +237,37 @@ check_reinstall_over_running_fcitx5() {
     cp "$saved" "$profile"
 
     check "fcitx5 starts again" start_fcitx5
-    check "reinstall over a running fcitx5 succeeds" installer --yes
+    check "reinstall over a running fcitx5 succeeds" install_logged
+    if [ "$session" = gnome ]; then
+        check "a running fcitx5 after --uninstall still gets the explanation" explains_gnome_setup
+    fi
     check "fcitx5 stops after the reinstall" stop_fcitx5
     check "profile lists ngosen after fcitx5 exits" has_line "$profile" 'Name=ngosen'
 
+    pkill -u "$user" dbus-daemon || :
+    bus=
+}
+
+addon_state() { stat -c '%i %Z' "$(find /usr/lib /usr/lib64 -maxdepth 3 -name libngosen.so | head -n 1)"; }
+fcitx5_pid() { pgrep -u "$user" -x fcitx5 | head -n 1; }
+
+check_second_run() {
+    local addon pid
+    bus=$(sudo -u "$user" dbus-daemon --session --fork --print-address=1 | head -n 1)
+    check "fcitx5 starts before the second run" start_fcitx5
+    pid=$(fcitx5_pid)
+    addon=$(addon_state)
+    check "a second run succeeds" install_logged
+    check "it says this version is already installed" grep -qF "đã được cài từ trước" "$install_log"
+    check "it leaves the package as it is" test "$(addon_state)" = "$addon"
+    check "it leaves fcitx5 running" test "$(fcitx5_pid)" = "$pid"
+    # An addon written after fcitx5 started has not been loaded yet.
+    sleep 1
+    touch "$(find /usr/lib /usr/lib64 -maxdepth 3 -name libngosen.so | head -n 1)"
+    check "a run after the addon changed succeeds" install_logged
+    check "it restarts fcitx5" test "$(fcitx5_pid)" != "$pid"
+    check "it does not say nothing changed" refuses grep -qF "không có gì thay đổi" "$install_log"
+    check "fcitx5 stops after the second run" stop_fcitx5
     pkill -u "$user" dbus-daemon || :
     bus=
 }
@@ -265,12 +312,25 @@ check_old_profile_cleanup() {
     check "the keyboard is dropped without settings" lacks_keyboard "$profile"
     check "no settings keep Ctrl+Space" has_line "$settings" '0=Control+space'
 
+    # A new user who adds Ngó Sen in the configtool starts fcitx5 before Ngó Sen ever loads.
+    printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[GroupOrder]\n0=Default\n' |
+        as_user tee "$profile" >/dev/null
+    as_user rm -f "$settings"
+    check "fcitx5 starts before Ngó Sen is added" start_fcitx5
+    check "fcitx5 stops before Ngó Sen is added" stop_fcitx5
+    printf '\n[Groups/0/Items/1]\nName=ngosen\nLayout=\n' | as_user tee -a "$profile" >/dev/null
+    check "fcitx5 starts with Ngó Sen just added" start_fcitx5
+    check "fcitx5 stops with Ngó Sen just added" stop_fcitx5
+    check "a new user keeps the keyboard" has_line "$profile" 'Name=keyboard-us'
+    check "a new user gets Ctrl+Shift" lacks_line "$settings" '0=Control+space'
+
     # Without a profile fcitx5 builds one from the input methods listed for the desktop language.
     as_user rm -f "$profile" "$settings"
     # Some images (LMDE) set LC_ALL and LANGUAGE, which override LANG.
     check "fcitx5 starts on a Vietnamese desktop without a profile" start_fcitx5 -u LC_ALL -u LANGUAGE LANG=vi_VN.UTF-8
     check "fcitx5 stops on the Vietnamese desktop" stop_fcitx5
     check "a Vietnamese desktop gets ngosen in its first profile" has_line "$profile" 'Name=ngosen'
+    check "a first profile keeps Ctrl+Shift" lacks_line "$settings" '0=Control+space'
 
     pkill -u "$user" dbus-daemon || :
     bus=
@@ -278,8 +338,29 @@ check_old_profile_cleanup() {
 
 install_log=$work/install.log
 install_logged() { installer --yes >"$install_log" 2>&1; }
+# Keeps the output in the CI log too, for when the install fails.
+install_shown() {
+    installer --yes 2>&1 | tee "$install_log"
+    return "${PIPESTATUS[0]}"
+}
 install_names() { grep -q "Bấm $1 " "$install_log"; }
+offers_ibus() { grep -qF -- "| bash -s -- --ibus" "$install_log"; }
+lacks_ibus_offer() { ! offers_ibus; }
+explains_gnome_setup() { grep -qF "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus" "$install_log"; }
+lacks_gnome_explanation() { ! explains_gnome_setup; }
+lists_undone_under_a_heading() { grep -A1 -F "Đã trả lại những gì bản fcitx5 đặt:" "$install_log" | grep -q '^  - '; }
 fcitx5_stopped() { ! fcitx5_running; }
+
+# A release listing an IBus package under this machine's name is enough for the offer.
+check_ibus_offer() {
+    mkdir -p "$work/ibus-release"
+    sed 's/fcitx5-ngosen/ibus-ngosen/' "$work/release/SHA256SUMS" >"$work/ibus-release/SHA256SUMS"
+    chmod -R a+rX "$work/ibus-release"
+    check "install with an IBus package listed succeeds" install_logged
+    check "it offers the IBus edition" offers_ibus
+    check "uninstall after that succeeds" installer --yes --uninstall
+    rm -rf "$work/ibus-release"
+}
 
 # Without a running fcitx5 the installer names the key before the addon has run, so it must
 # predict whether the keyboard goes.
@@ -310,6 +391,8 @@ changes=$home/.local/state/ngosen/install-changes
 enabled_extensions=$home/.stub-enabled-extensions
 uninstalled_extensions=$home/.stub-uninstalled-extensions
 installed_extensions=$home/.stub-installed-extensions
+reloads=$home/.stub-reloads
+last_reload() { [ "$(tail -n 1 "$reloads" 2>/dev/null)" = "$1" ]; }
 
 # Stand-ins for GNOME 50.1's tools: the lists of enabled and installed extensions are files, and
 # the Input Method Panel counts as installed by the user unless the installed list exists.
@@ -324,6 +407,12 @@ case "$1 $2 $3" in
     "set org.gnome.shell enabled-extensions") printf '%s\n' "$4" >"$state" ;;
     "get org.gnome.desktop.input-sources sources") cat "$HOME/.stub-input-sources" 2>/dev/null || echo "[('xkb', 'us')]" ;;
     "set org.gnome.desktop.input-sources sources") printf '%s\n' "$4" >"$HOME/.stub-input-sources" ;;
+    "get org.freedesktop.ibus.general preload-engines") cat "$HOME/.stub-ibus-engines" 2>/dev/null || echo "@as []" ;;
+    "set org.freedesktop.ibus.general preload-engines") printf '%s\n' "$4" >"$HOME/.stub-ibus-engines" ;;
+    "get org.freedesktop.ibus.general.hotkey triggers") cat "$HOME/.stub-ibus-triggers" 2>/dev/null || echo "['<Super>space']" ;;
+    "set org.freedesktop.ibus.general.hotkey triggers") printf '%s\n' "$4" >"$HOME/.stub-ibus-triggers" ;;
+    "get org.gnome.desktop.input-sources mru-sources") cat "$HOME/.stub-recent-sources" 2>/dev/null || echo "@a(ss) []" ;;
+    "set org.gnome.desktop.input-sources mru-sources") printf '%s\n' "$4" >"$HOME/.stub-recent-sources" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -341,6 +430,20 @@ case "$1" in
     uninstall) echo "$2" >>"$HOME/.stub-uninstalled-extensions" ;;
     *) exit 1 ;;
 esac
+STUB
+    # Records each reload of the user manager and whether the fcitx5 environment existed then.
+    cat >"$dir/systemctl" <<'STUB'
+#!/bin/bash
+if [ "$*" = "--user daemon-reload" ]; then
+    if [ -e "$HOME/.config/environment.d/90-ngosen.conf" ]; then
+        echo with-fcitx5 >>"$HOME/.stub-reloads"
+    else
+        echo without-fcitx5 >>"$HOME/.stub-reloads"
+    fi
+    exit 0
+fi
+[ -x /usr/bin/systemctl ] && exec /usr/bin/systemctl "$@"
+exit 1
 STUB
     # Only extensions.gnome.org is faked; the packages still come through the real curl.
     cat >"$dir/curl" <<'STUB'
@@ -360,11 +463,13 @@ extension_off() { ! extension_on "$1"; }
 
 check_extensions_turned_back() {
     use_gnome_stubs
-    as_user rm -f "$changes" "$enabled_extensions" "$uninstalled_extensions"
+    as_user rm -f "$changes" "$enabled_extensions" "$uninstalled_extensions" "$im_env" "$reloads"
     check "install on GNOME 50.1 succeeds" installer --yes
+    check "install has the user manager reread the environment" last_reload with-fcitx5
     check "install turns forward-keys on" extension_on forward-keys@ngosen.github.io
     check "install turns the Input Method Panel on" extension_on kimpanel@kde.org
     check "uninstall on GNOME 50.1 succeeds" installer --yes --uninstall
+    check "uninstall has the user manager reread the environment" last_reload without-fcitx5
     check "uninstall turns forward-keys off" extension_off forward-keys@ngosen.github.io
     check "uninstall turns the Input Method Panel off" extension_off kimpanel@kde.org
     check "an extension the install did not add stays installed" test ! -e "$uninstalled_extensions"
@@ -402,16 +507,30 @@ fcitx5_mask=$home/.config/autostart/org.fcitx.Fcitx5.desktop
 ibus_install_answering() {
     printf '%s\n' "$1" | as_user script -qec "bash $work/install.sh --yes --ibus" /dev/null >"$install_log" 2>&1
 }
+fcitx5_install_answering() {
+    printf '%s\n' "$1" | as_user script -qec "bash $work/install.sh --yes" /dev/null >"$install_log" 2>&1
+}
 ibus_install_without_terminal() { installer --yes --ibus </dev/null >"$install_log" 2>&1; }
+fcitx5_install_without_terminal() { installer --yes </dev/null >"$install_log" 2>&1; }
 refuses() { ! "$@"; }
 has_ngosen_source() { grep -qF "('ibus', 'ngosen')" "$sources"; }
 lacks_ngosen_source() { ! has_ngosen_source; }
+engines=$home/.stub-ibus-engines
+has_ngosen_engine() { grep -qF "'ngosen'" "$engines"; }
+lacks_ngosen_engine() { ! has_ngosen_engine; }
+triggers=$home/.stub-ibus-triggers
+# Read as the gsettings stub reports them, default included.
+switch_keys_are() { [ "$(cat "$triggers" 2>/dev/null || echo "['<Super>space']")" = "$1" ]; }
 fcitx5_masked() { has_line "$fcitx5_mask" 'Hidden=true'; }
+recent_sources=$home/.stub-recent-sources
+ngosen_first() { grep -q "^\[('ibus', 'ngosen')" "$recent_sources"; }
 
 check_ibus_edition() {
     use_gnome_stubs
-    as_user rm -f "$changes" "$enabled_extensions" "$sources" "$im_env"
+    as_user rm -f "$changes" "$enabled_extensions" "$sources" "$im_env" "$reloads"
+    echo "[('xkb', 'us')]" | as_user tee "$recent_sources" >/dev/null
     check "fcitx5 edition install succeeds" installer --yes
+    check "the user manager rereads the fcitx5 environment" last_reload with-fcitx5
     # Debian starts fcitx5 through im-config; Fedora and Arch ship this entry.
     mkdir -p /etc/xdg/autostart
     cp /usr/share/applications/org.fcitx.Fcitx5.desktop /etc/xdg/autostart/
@@ -422,10 +541,19 @@ check_ibus_edition() {
     check "answering yes to the switch succeeds" ibus_install_answering c
     check "it installs the IBus edition" is_installed ibus-ngosen
     check "it removes the fcitx5 environment" test ! -e "$im_env"
+    check "the user manager rereads the environment without it" last_reload without-fcitx5
     check "it keeps fcitx5 from starting at login" fcitx5_masked
     check "it adds Ngó Sen to the input sources" has_ngosen_source
-    check "fcitx5 edition install again succeeds" installer --yes
+    check "it logs in on Ngó Sen" ngosen_first
+    check "the keyboard is still a recent source" grep -qF "('xkb', 'us')" "$recent_sources"
+    check "fcitx5 install without a terminal refuses to switch back" refuses fcitx5_install_without_terminal
+    check "and keeps the IBus edition" is_installed ibus-ngosen
+    check "switching back to the fcitx5 edition succeeds" fcitx5_install_answering c
     check "it lets fcitx5 start at login again" refuses fcitx5_masked
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from the input sources" lacks_ngosen_source
+    check "it sets up the fcitx5 edition" test -e "$im_env"
+    check "IBus install over that succeeds" ibus_install_answering c
     check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
     check "it removes the IBus edition" is_removed ibus-ngosen
     check "it removes Ngó Sen from the input sources" lacks_ngosen_source
@@ -434,12 +562,146 @@ check_ibus_edition() {
     stub_path=
 }
 
+check_ibus_x11() {
+    local xinputrc=$home/.xinputrc
+    use_gnome_stubs
+    as_user rm -f "$changes" "$engines" "$xinputrc" "$triggers"
+    check "fcitx5 edition install succeeds" installer --yes
+    check "switching to the IBus edition succeeds" ibus_install_answering c
+    check "it installs the IBus edition" is_installed ibus-ngosen
+    check "im-config picks IBus" has_line "$xinputrc" 'run_im ibus'
+    check "it adds Ngó Sen to IBus's engines" has_ngosen_engine
+    check "it adds Ctrl+Space to IBus's switch keys" switch_keys_are "['<Super>space', '<Control>space']"
+    check "switching back to the fcitx5 edition succeeds" fcitx5_install_answering c
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from IBus's engines" lacks_ngosen_engine
+    check "it takes Ctrl+Space back out" switch_keys_are "['<Super>space']"
+    check "im-config picks fcitx5 again" has_line "$xinputrc" 'run_im fcitx5'
+    check "IBus install over that succeeds" ibus_install_answering c
+    check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from IBus's engines" lacks_ngosen_engine
+    check "im-config no longer picks IBus" lacks_line "$xinputrc" 'run_im ibus'
+
+    echo 'run_im fcitx5' | as_user tee "$xinputrc" >/dev/null
+    check "IBus install over a hand-written .xinputrc succeeds" ibus_install_answering c
+    check "it keeps the hand-written .xinputrc" has_line "$xinputrc" 'run_im fcitx5'
+    check "it says which line to change" grep -qF 'run_im ibus' "$install_log"
+    check "uninstalling after that succeeds" installer --yes --uninstall --ibus
+    check "the hand-written .xinputrc stays" has_line "$xinputrc" 'run_im fcitx5'
+    stub_path=
+}
+
 check_user_im_config_kept() {
     as_user rm -f "$changes"
     echo 'run_im fcitx5' | as_user tee "$home/.xinputrc" >/dev/null
     check "install over im-config set by the user succeeds" installer --yes
-    check "uninstall after that succeeds" installer --yes --uninstall
+    check "uninstall after that succeeds" uninstall_logged
     check "im-config set by the user stays" has_line "$home/.xinputrc" 'run_im fcitx5'
+    check "it says fcitx5 still starts at login" grep -qE "fcitx5 vẫn (chạy|còn trên máy)" "$install_log"
+    check "it does not promise fcitx5 is gone" refuses grep -qE "GNOME dùng lại IBus|bỏ hẳn fcitx5" "$install_log"
+    as_user rm -f "$home/.xinputrc"
+}
+
+apt_args=/srv/apt-get-args
+
+# sudo keeps its own PATH, which on Kali leaves out /usr/local, so the wrapper takes apt-get's place.
+log_apt_get() {
+    dpkg-divert --quiet --rename --add /usr/bin/apt-get
+    printf '#!/bin/sh\necho "$*" >>%s\nexec /usr/bin/apt-get.distrib "$@"\n' "$apt_args" >/usr/bin/apt-get
+    chmod +x /usr/bin/apt-get
+}
+
+restore_apt_get() {
+    rm -f /usr/bin/apt-get
+    dpkg-divert --quiet --rename --remove /usr/bin/apt-get
+}
+
+names_frontend() { grep -q '^install .*fcitx5-frontend-' "$apt_args"; }
+
+check_installed_frontends_left_alone() {
+    log_apt_get
+    : >"$apt_args"
+    check "precondition: the GTK 3 module is installed" is_installed fcitx5-frontend-gtk3
+    check "install with the modules in place succeeds" installer --yes
+    check "precondition: apt-get install was logged" grep -q '^install ' "$apt_args"
+    check "it does not name the installed modules" refuses names_frontend
+    restore_apt_get
+}
+
+parent_name() { ps -o comm= -p "$(ps -o ppid= -p "$1" | tr -d ' ')"; }
+
+# Runs fcitx5 as its child like KWin. KWin restarts it only when the setting's value changes; this
+# one restarts it on every change signal, so the installer's wait for KWin is not tested here.
+use_fake_kwin() {
+    local dir=$work/kwin
+    mkdir -p "$dir"
+    cat >"$dir/kwin_wayland" <<'STUB'
+#!/bin/bash
+child=
+start() { fcitx5 >/dev/null 2>&1 & child=$!; }
+stop() { [ -z "$child" ] || { kill "$child" 2>/dev/null; wait "$child" 2>/dev/null; }; child=; }
+start
+while read -r line; do
+    case "$line" in *member=ConfigChanged*) ;; *) continue ;; esac
+    stop
+    [ -z "$(kreadconfig6 --file kwinrc --group Wayland --key InputMethod)" ] || start
+done < <(dbus-monitor --session "type='signal',interface='org.kde.kconfig.notify',member='ConfigChanged'")
+STUB
+    chmod a+rx "$dir/kwin_wayland"
+    fake_kwin=$dir/kwin_wayland
+}
+
+# Prints the pid of the fcitx5 the fake KWin started, once it holds its bus name.
+start_fake_kwin() {
+    local pid tries=40
+    as_user "$fake_kwin" >/dev/null 2>&1 &
+    until pid=$(fcitx5_pid || true) && [ -n "$pid" ] && as_user dbus-send --session --print-reply \
+        --dest=org.freedesktop.DBus / org.freedesktop.DBus.NameHasOwner string:org.fcitx.Fcitx5 \
+        2>/dev/null | grep -q 'boolean true'; do
+        tries=$((tries - 1))
+        [ "$tries" -gt 0 ] || break
+        sleep 0.25
+    done
+    echo "$pid"
+}
+
+stop_fake_kwin() {
+    pkill -u "$user" -x kwin_wayland || :
+    stop_fcitx5
+}
+
+# KWin's fcitx5 is the only one that gets the app name from Wayland apps; one the installer starts
+# itself goes without it until the next login.
+check_restart_through_kwin() {
+    local pid new
+    use_fake_kwin
+    bus=$(sudo -u "$user" dbus-daemon --session --fork --print-address=1 | head -n 1)
+
+    pid=$(start_fake_kwin)
+    check "precondition: KWin started fcitx5" test "$(parent_name "$pid")" = kwin_wayland
+    # An addon written after fcitx5 started has not been loaded yet.
+    sleep 1
+    touch "$(find /usr/lib /usr/lib64 -maxdepth 3 -name libngosen.so | head -n 1)"
+    check "a run with fcitx5 under KWin succeeds" installer --yes
+    new=$(fcitx5_pid || true)
+    check "it restarts fcitx5" test -n "$new" -a "$new" != "$pid"
+    check "KWin starts the new fcitx5" test "$(parent_name "$new")" = kwin_wayland
+    check "KWin still starts fcitx5 as its input method" has_line "$kwinrc" "$kwin_im"
+    stop_fake_kwin
+
+    # Without ngosen in the profile the installer stops fcitx5 to add it.
+    printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[GroupOrder]\n0=Default\n' |
+        as_user tee "$profile" >/dev/null
+    start_fake_kwin >/dev/null
+    check "a run without ngosen in the profile succeeds" installer --yes
+    new=$(fcitx5_pid || true)
+    check "KWin starts fcitx5 after ngosen is added" test -n "$new" -a "$(parent_name "$new")" = kwin_wayland
+    check "the profile lists ngosen" has_line "$profile" 'Name=ngosen'
+    stop_fake_kwin
+
+    pkill -u "$user" dbus-daemon || :
+    bus=
 }
 
 main() {
@@ -447,17 +709,39 @@ main() {
 
     echo "== install"
     # A failed install leaves the session files half done, so only the packages say anything.
-    check "install succeeds" installer --yes
+    check "install succeeds" install_shown
+    if [ "$session" = gnome ] && [ -n "$ibus_release_dir" ]; then
+        check "it offers the IBus edition" offers_ibus
+    else
+        check "it offers no IBus edition without its package" lacks_ibus_offer
+    fi
     check_packages
     [ "$failures" -eq 0 ] || finish
+    check "the package leaves the next steps to install.sh" refuses grep -qF -- "--- Cấu hình Ngó Sen ---" "$install_log"
     check_session_files
+    if [ "$session" = gnome ]; then
+        check "it explains the GNOME setup first" explains_gnome_setup
+        check "a second install succeeds" install_logged
+        check "an account already on fcitx5 gets no explanation" lacks_gnome_explanation
+    fi
 
     echo "== uninstall"
-    check "uninstall succeeds" installer --yes --uninstall
+    check "uninstall succeeds" uninstall_logged
+    if [ "$session" = gnome ]; then
+        check "what it undid is listed under a heading" lists_undone_under_a_heading
+    fi
     check_uninstalled_state
+
+    if [ "$session" = gnome ] && [ -z "$ibus_release_dir" ]; then
+        echo "== IBus edition offered where it has a package"
+        check_ibus_offer
+    fi
 
     echo "== reinstall over a running fcitx5"
     check_reinstall_over_running_fcitx5
+
+    echo "== second run of the same version"
+    check_second_run
 
     echo "== profile from before the toggle key"
     check_old_profile_cleanup
@@ -465,6 +749,22 @@ main() {
     if [ "$session" = x11 ]; then
         echo "== toggle key named before the addon runs"
         check_toggle_key_message
+        echo "== im-config the user set"
+        check_user_im_config_kept
+        if [ -n "$ibus_release_dir" ]; then
+            echo "== IBus edition on X11"
+            check_ibus_x11
+        fi
+        echo "== GTK and Qt modules already installed"
+        check_installed_frontends_left_alone
+    fi
+
+    if [ "$session" = kde ]; then
+        echo "== fcitx5 that KWin started"
+        check_restart_through_kwin
+    fi
+
+    if [ "$session" = gnome ] && command -v im-config >/dev/null 2>&1; then
         echo "== im-config the user set"
         check_user_im_config_kept
     fi

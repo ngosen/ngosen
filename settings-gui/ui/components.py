@@ -3,13 +3,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
 Reusable UI components.
-Uses system's libxkbcommon to natively resolve XKB keysym names,
-convert keysyms to Unicode, and mathematically handle Shift modifiers.
 """
 
-import ctypes
-import ctypes.util
-
+from core.hotkeys import (
+    HOTKEY_SYM_MAP,
+    MODIFIER_ORDER,
+    HotkeyRecorder,
+    keysym_name,
+    pretty_format_hotkey_parts,
+)
 from i18n import _
 from qtpy.QtCore import QEvent, Qt, Signal
 from qtpy.QtGui import QIcon, QKeySequence
@@ -17,186 +19,18 @@ from qtpy.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
 from ui.typography import emphasize, mute
 
-libxkb = None
-libxkb_path = ctypes.util.find_library("xkbcommon")
-if libxkb_path:
-    try:
-        libxkb = ctypes.CDLL(libxkb_path)
-
-        libxkb.xkb_keysym_get_name.argtypes = [
-            ctypes.c_uint32,
-            ctypes.c_char_p,
-            ctypes.c_size_t,
-        ]
-        libxkb.xkb_keysym_get_name.restype = ctypes.c_int
-
-    except Exception as e:
-        print(f"Failed to load libxkbcommon: {e}")
-
-
-MODIFIER_ORDER = ["Control", "Alt", "Super", "Shift"]
-
-# Common XKB keysym name to character mapping for display
-HOTKEY_SYM_MAP = {
-    "grave": "`",
-    "minus": "-",
-    "equal": "=",
-    "bracketleft": "[",
-    "bracketright": "]",
-    "backslash": "\\",
-    "semicolon": ";",
-    "apostrophe": "'",
-    "comma": ",",
-    "period": ".",
-    "slash": "/",
-    "asciitilde": "~",
-    "underscore": "_",
-    "plus": "+",
-    "braceleft": "{",
-    "braceright": "}",
-    "bar": "|",
-    "colon": ":",
-    "quotedbl": '"',
-    "less": "<",
-    "greater": ">",
-    "question": "?",
-    "exclam": "!",
-    "at": "@",
-    "numbersign": "#",
-    "dollar": "$",
-    "percent": "%",
-    "asciicircum": "^",
-    "ampersand": "&",
-    "asterisk": "*",
-    "parenleft": "(",
-    "parenright": ")",
-    "Control": "Ctrl",
-    "Escape": "Esc",
-    "Return": "Enter",
-    "BackSpace": "Backspace",
-    "Delete": "Del",
-    "Insert": "Ins",
-    "ISO_Left_Tab": "Tab",
-    "Shift_L": "L-Shift",
-    "Shift_R": "R-Shift",
-    "Control_L": "L-Ctrl",
-    "Control_R": "R-Ctrl",
-    "Alt_L": "L-Alt",
-    "Alt_R": "R-Alt",
-    "Super_L": "L-Super",
-    "Super_R": "R-Super",
-    "Meta_L": "L-Super",
-    "Meta_R": "R-Super",
+MODIFIER_KEYS = {
+    Qt.Key_Control: "Control",
+    Qt.Key_Shift: "Shift",
+    Qt.Key_Alt: "Alt",
+    Qt.Key_Meta: "Super",
 }
-
-
-# Mapping for UI DISPLAY ONLY: Converts shifted keysyms back to base keys + explicit Shift label.
-# This keeps the stored string engine-compliant (e.g. 'asciitilde') but UI-friendly (e.g. 'Shift' + '`').
-# NOTE: We exclude ISO_Left_Tab here because Fcitx5 configuration prefers explicit 'Shift+Tab' strings.
-HOTKEY_UI_UNSHIFT_MAP = {
-    "asciitilde": "grave",
-    "exclam": "1",
-    "at": "2",
-    "numbersign": "3",
-    "dollar": "4",
-    "percent": "5",
-    "asciicircum": "6",
-    "ampersand": "7",
-    "asterisk": "8",
-    "parenleft": "9",
-    "parenright": "0",
-    "underscore": "minus",
-    "plus": "equal",
-    "braceleft": "bracketleft",
-    "braceright": "bracketright",
-    "bar": "backslash",
-    "colon": "semicolon",
-    "quotedbl": "apostrophe",
-    "less": "comma",
-    "greater": "period",
-    "question": "slash",
-}
-
-for char in "abcdefghijklmnopqrstuvwxyz":
-    HOTKEY_UI_UNSHIFT_MAP[char.upper()] = char
-
-
-def pretty_format_hotkey_parts(hotkey_str):
-    """Converts internal keysym names to user-friendly characters for display as a list.
-    Automatically de-normalizes shifted keysyms and de-duplicates redundant modifiers."""
-    if not hotkey_str:
-        return []
-
-    # Robustly handle hotkeys containing '+' key (e.g. 'Control++')
-    if hotkey_str == "+":
-        parts = ["+"]
-    elif hotkey_str.endswith("++"):
-        parts = hotkey_str[:-2].split("+") + ["+"]
-    else:
-        parts = hotkey_str.split("+")
-
-    raw_mods = []
-    base_key_part = None
-
-    # Analyze parts to identify modifiers and the base key
-    for part in parts:
-        if not part:
-            continue
-        if part in ("Control", "Alt", "Super", "Shift"):
-            if part not in raw_mods:
-                raw_mods.append(part)
-        else:
-            base_key_part = part
-
-    # De-duplicate: If base key IS a specific modifier (e.g. Shift_L),
-    # suppress the corresponding generic modifier label.
-    if base_key_part:
-        if base_key_part.startswith("Shift_"):
-            if "Shift" in raw_mods:
-                raw_mods.remove("Shift")
-        elif base_key_part.startswith("Control_") or base_key_part == "Control":
-            if "Control" in raw_mods:
-                raw_mods.remove("Control")
-        elif base_key_part.startswith("Alt_") or base_key_part == "Alt":
-            if "Alt" in raw_mods:
-                raw_mods.remove("Alt")
-        elif base_key_part.startswith("Super_") or base_key_part.startswith("Meta_"):
-            if "Super" in raw_mods:
-                raw_mods.remove("Super")
-
-    pretty_parts = []
-    explicit_shift_needed = "Shift" in raw_mods
-    has_non_shift_modifier = any(mod in raw_mods for mod in ("Control", "Alt", "Super"))
-
-    # Process base key for UI display
-    if base_key_part:
-        if len(base_key_part) == 1 and base_key_part.isupper():
-            explicit_shift_needed = explicit_shift_needed or not has_non_shift_modifier
-            base_key_label = base_key_part  # Keep uppercase A-Z
-        # Check for symbols that imply Shift (Display only)
-        elif base_key_part in HOTKEY_UI_UNSHIFT_MAP:
-            explicit_shift_needed = True
-            display_base = HOTKEY_UI_UNSHIFT_MAP[base_key_part]
-            base_key_label = HOTKEY_SYM_MAP.get(display_base, display_base.capitalize())
-        else:
-            base_key_label = HOTKEY_SYM_MAP.get(base_key_part, base_key_part.capitalize())
-    else:
-        base_key_label = ""
-
-    # Build the final ordered list of labels
-    if "Control" in raw_mods:
-        pretty_parts.append("Ctrl")
-    if "Alt" in raw_mods:
-        pretty_parts.append("Alt")
-    if "Super" in raw_mods:
-        pretty_parts.append("Super")
-    if explicit_shift_needed:
-        pretty_parts.append("Shift")
-
-    if base_key_label:
-        pretty_parts.append(base_key_label)
-
-    return pretty_parts
+MODIFIER_FLAGS = [
+    (Qt.ControlModifier, "Control"),
+    (Qt.AltModifier, "Alt"),
+    (Qt.MetaModifier, "Super"),
+    (Qt.ShiftModifier, "Shift"),
+]
 
 
 class KeyCap(QLabel):
@@ -281,9 +115,7 @@ class HotkeyCaptureWidget(QPushButton):
         self.setCheckable(True)
         self.setObjectName("HotkeyButton")
 
-        # Local state to track held modifiers during recording
-        self.record_mods = set()
-        self.modifier_key = ""
+        self.recorder = HotkeyRecorder()
 
         # Use a layout for visual keycaps
         self.main_layout = QHBoxLayout(self)
@@ -313,8 +145,7 @@ class HotkeyCaptureWidget(QPushButton):
 
     def _on_toggled(self, checked):
         if checked:
-            self.record_mods.clear()
-            self.modifier_key = ""
+            self.recorder = HotkeyRecorder()
         self._update_display()
 
     def _clear_layout(self):
@@ -327,14 +158,14 @@ class HotkeyCaptureWidget(QPushButton):
         self._clear_layout()
 
         if self.isChecked():
-            if not self.record_mods:
+            if not self.recorder.held:
                 lbl = QLabel(_("[ Recording... ]"))
                 emphasize(lbl)
                 self.main_layout.addWidget(lbl)
             else:
                 # Show current active modifiers
                 for mod in MODIFIER_ORDER:
-                    if mod in self.record_mods:
+                    if mod in self.recorder.held:
                         self.main_layout.addWidget(KeyCap(HOTKEY_SYM_MAP.get(mod, mod)))
                 # Add a pulsing placeholder for the next key
                 lbl = QLabel("...")
@@ -366,79 +197,30 @@ class HotkeyCaptureWidget(QPushButton):
             self.setChecked(False)
             return
 
-        # Track modifiers in real-time
-        mod_map = {
-            Qt.Key_Control: "Control",
-            Qt.Key_Shift: "Shift",
-            Qt.Key_Alt: "Alt",
-            Qt.Key_Meta: "Super",
-        }
-        if key_code in mod_map:
-            # A held key repeats.
-            if mod_map[key_code] in self.record_mods:
-                return
-            # Held modifiers plus this one's own name (Shift_L), as fcitx5 writes a modifier-only key.
-            held = [m for m in MODIFIER_ORDER if m in self.record_mods]
-            self.modifier_key = "+".join(
-                held + [self._keysym_name(event) or mod_map[key_code] + "_L"]
-            )
-            self.record_mods.add(mod_map[key_code])
-            self._update_display()
+        if key_code in MODIFIER_KEYS:
+            if self.recorder.press_modifier(MODIFIER_KEYS[key_code], self._keysym_name(event)):
+                self._update_display()
             return
 
-        self.modifier_key = ""
         if key_code == Qt.Key_unknown:
+            self.recorder.press_key("", set())
             return
 
-        # It's a base key! Capture it and finalize immediately
         base_key = self._keysym_name(event)
-        # Normalize BackTab keysym to Tab to ensure Fcitx5 sees 'Shift+Tab' instead of plain 'ISO_Left_Tab'
-        if base_key == "ISO_Left_Tab":
-            base_key = "Tab"
-
         if not base_key:
             base_key = (
                 event.text()
                 if event.text() and event.text().isprintable()
                 else QKeySequence(key_code).toString()
             )
-
-        has_non_shift_modifier = bool(
-            modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)
-        )
-        is_ascii_alpha = len(base_key) == 1 and base_key.isascii() and base_key.isalpha()
-
-        if has_non_shift_modifier and is_ascii_alpha:
-            base_key = base_key.upper()
-
-        # Build modifier list from current event state
-        mods = []
-        if modifiers & Qt.ControlModifier:
-            mods.append("Control")
-        if modifiers & Qt.AltModifier:
-            mods.append("Alt")
-        if modifiers & Qt.MetaModifier:
-            mods.append("Super")
-
-        # Selective Shift suppression for symbols
-        if (modifiers & Qt.ShiftModifier) and (
-            (has_non_shift_modifier and is_ascii_alpha) or (base_key not in HOTKEY_UI_UNSHIFT_MAP)
-        ):
-            mods.append("Shift")
-
-        mods.append(base_key)
-        self._finish("+".join(mods))
+        held = {name for flag, name in MODIFIER_FLAGS if modifiers & flag}
+        key = self.recorder.press_key(base_key, held)
+        if key:
+            self._finish(key)
 
     @staticmethod
     def _keysym_name(event):
-        """The keysym's own name, which fcitx5 reads, or "" without xkbcommon."""
-        keysym = event.nativeVirtualKey()
-        if not libxkb or keysym <= 0:
-            return ""
-        buf = ctypes.create_string_buffer(64)
-        if libxkb.xkb_keysym_get_name(keysym, buf, 64) <= 0:
-            return ""
-        return buf.value.decode("utf-8")
+        return keysym_name(event.nativeVirtualKey())
 
     def _finish(self, key):
         self.current_key = key
@@ -451,20 +233,12 @@ class HotkeyCaptureWidget(QPushButton):
             return
 
         key_code = event.key()
-        mod_map = {
-            Qt.Key_Control: "Control",
-            Qt.Key_Shift: "Shift",
-            Qt.Key_Alt: "Alt",
-            Qt.Key_Meta: "Super",
-        }
-        if key_code in mod_map:
+        if key_code in MODIFIER_KEYS:
             # Modifiers pressed and let go with no other key make a modifier-only key, such as Ctrl+Shift.
-            if self.modifier_key:
-                self._finish(self.modifier_key)
-                return
-            val = mod_map[key_code]
-            if val in self.record_mods:
-                self.record_mods.remove(val)
+            key = self.recorder.release_modifier(MODIFIER_KEYS[key_code])
+            if key:
+                self._finish(key)
+            else:
                 self._update_display()
 
 

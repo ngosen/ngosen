@@ -18,6 +18,7 @@ target_link_libraries(ngosen_test_core PRIVATE
     Fcitx5::Config
     Fcitx5::Module::Emoji
     ${NGOSEN_DBUS_MODULE}
+    ${NGOSEN_NOTIFICATIONS_MODULE}
     Bamboo::Core
     Pthread::Pthread
 )
@@ -58,6 +59,7 @@ function(ngosen_headless_test_settings target)
         Fcitx5::Config
         Fcitx5::Module::Emoji
         ${NGOSEN_DBUS_MODULE}
+        ${NGOSEN_NOTIFICATIONS_MODULE}
         Bamboo::Core
         Pthread::Pthread
     )
@@ -99,6 +101,9 @@ endfunction()
 
 add_ngosen_headless_test(preedit_lifecycle preedit-lifecycle.cpp "integration;preedit")
 add_ngosen_headless_test(app_rule_reset app-rule-reset.cpp "integration;apprule")
+add_ngosen_headless_test(default_app_mode default-app-mode.cpp "integration;apprule")
+add_test(NAME default_app_mode_override COMMAND default_app_mode override)
+set_tests_properties(default_app_mode_override PROPERTIES LABELS "integration;apprule" TIMEOUT 20 ENVIRONMENT "DISPLAY=")
 add_ngosen_headless_test(ctx_rule_cleanup ctx-rule-cleanup.cpp "integration;apprule")
 add_ngosen_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule")
 add_ngosen_headless_test(toggle_key toggle-key.cpp "integration;apprule")

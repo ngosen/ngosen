@@ -40,6 +40,9 @@
 #ifdef NGOSEN_HAS_DBUS
 #include <dbus_public.h>
 #endif
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+#include <notifications_public.h>
+#endif
 
 #include <algorithm>
 #include <atomic>
@@ -90,6 +93,12 @@ namespace fcitx {
     }
 
     namespace {
+        // deepin-editor stalls between edits, and fcitx5-qt applies a commit before the keys let
+        // through ahead of it, so fast typing in Sen scrambles words there. Preedit sends no keys.
+        bool typesInPreeditByDefault(const std::string& appName) {
+            return stripDesktopSuffix(appName) == "deepin-editor";
+        }
+
         bool otherModifierHeld(const Key& key) {
             return (key.states() & ~Key::keySymToStates(key.sym()) & KeyStates{KeyState::Ctrl_Alt_Shift, KeyState::Super}) != 0;
         }
@@ -451,10 +460,14 @@ namespace fcitx {
         RawConfig raw;
         readAsIni(raw, "conf/ngosen.conf");
         migrateLegacyMode(raw);
-        const bool upgraded = ngosen::upgradeSettings(raw, std::filesystem::exists(userConfigDir() + "/ngosen.conf"));
+        const bool        saved    = std::filesystem::exists(userConfigDir() + "/ngosen.conf");
+        const bool        upgraded = ngosen::upgradeSettings(raw, saved);
+        const std::string release  = ngosen::releaseToAnnounce(raw, saved, NGOSEN_VERSION);
         config_.load(raw);
-        if (upgraded)
+        if (upgraded || !release.empty())
             saveConfig();
+        if (!release.empty())
+            announceRelease(release);
         readAsIni(customKeymap_, CustomKeymapFile);
         readAsIni(macroTables_, MacroTableFile);
         macroTableObject_.reset(newMacroTable(macroTables_));
@@ -492,6 +505,30 @@ namespace fcitx {
         }
         loadAppRules();
         populateConfig();
+    }
+
+    void NgoSenEngine::announceRelease(const std::string& release) {
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        NGOSEN_INFO("Announcing release " + release);
+        // fcitx5 starts with the session; a notification sent before the desktop is up is lost.
+        constexpr uint64_t delayUs = 5000000;
+        announceTimer_             = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [this, release](EventSourceTime*, uint64_t) {
+            auto* addon = notifications();
+            if (addon == nullptr) {
+                NGOSEN_WARN("No notifications addon; release " + release + " is not announced");
+                return false;
+            }
+            // It is shown only once, and Plasma keeps no history of an expired one, so it waits for the user.
+            // The text names the release, so it changes with each feature release.
+            constexpr int32_t neverExpire = 0;
+            addon->call<INotifications::sendNotification>(
+                "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
+                _("Version 1.7: the settings window also comes in a GTK edition that looks like a GNOME app. See also Cứu chữ (retype words typed with Vietnamese off), Cứu dấu "
+                  "(select a word and type a tone mark to change it), the English/Vietnamese key and typing tips."),
+                std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
+            return false;
+        });
+#endif
     }
 
     const Configuration* NgoSenEngine::getSubConfig(const std::string& path) const {
@@ -800,7 +837,7 @@ namespace fcitx {
         }
     }
 
-    std::vector<NgoSenMode> NgoSenEngine::cycleModes() {
+    std::vector<NgoSenMode> NgoSenEngine::cycleModes(const std::string& appName) {
         auto                                      order      = stringutils::split(*config_.modeOrder, ",");
         std::vector<std::pair<std::string, bool>> visibility = {{"Sen", *config_.showModeSen},
                                                                 {"Preedit", *config_.showModePreedit},
@@ -829,7 +866,7 @@ namespace fcitx {
             else if (name == "Off")
                 mode = NgoSenMode::Off;
             else if (name == "Default")
-                mode = globalMode();
+                mode = defaultModeFor(appName);
             else
                 continue;
 
@@ -844,7 +881,7 @@ namespace fcitx {
         NGOSEN_INFO("Cycle mode key pressed");
         const std::string appName      = getProgramName(ic);
         const NgoSenMode  current      = getAppRule(appName);
-        const auto        enabledModes = cycleModes();
+        const auto        enabledModes = cycleModes(appName);
         if (enabledModes.empty())
             return;
 
@@ -1034,7 +1071,12 @@ namespace fcitx {
     }
 
     NgoSenMode NgoSenEngine::getAppRule(const std::string& appName) const {
-        return findAppRule(appName).value_or(globalMode());
+        return findAppRule(appName).value_or(defaultModeFor(appName));
+    }
+
+    NgoSenMode NgoSenEngine::defaultModeFor(const std::string& appName) const {
+        const NgoSenMode mode = globalMode();
+        return mode == NgoSenMode::Sen && typesInPreeditByDefault(appName) ? NgoSenMode::Preedit : mode;
     }
 
     std::optional<std::string> NgoSenEngine::appRuleName(const std::string& appName) const {
@@ -1178,14 +1220,15 @@ namespace fcitx {
     std::vector<NgoSenEngine::ModeMenuItem> NgoSenEngine::modeMenuItems() {
         auto                                          getShortcut = [](const std::string& shortcut) { return Key(shortcut).sym(); };
 
-        std::unordered_map<std::string, ModeMenuItem> modeMap = {{"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
-                                                                 {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
-                                                                 {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
-                                                                 {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
-                                                                 {"Default", {globalMode(), _("Default Typing"), getShortcut(*config_.shortcutDefault), *config_.showModeDefault}}};
+        std::unordered_map<std::string, ModeMenuItem> modeMap = {
+            {"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
+            {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
+            {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
+            {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
+            {"Default", {defaultModeFor(currentConfigureApp_), _("Default Typing"), getShortcut(*config_.shortcutDefault), *config_.showModeDefault}}};
 
-        std::vector<ModeMenuItem>                     allModes;
-        auto                                          order = stringutils::split(*config_.modeOrder, ",");
+        std::vector<ModeMenuItem> allModes;
+        auto                      order = stringutils::split(*config_.modeOrder, ",");
         for (const auto& name : order) {
             auto it = modeMap.find(name);
             if (it != modeMap.end()) {
@@ -1222,7 +1265,7 @@ namespace fcitx {
         std::unordered_set<KeySym> usedModeKeys;
 
         modeMenuMapping_.clear();
-        const NgoSenMode defaultMode = globalMode();
+        const NgoSenMode defaultMode = defaultModeFor(currentConfigureApp_);
 
         for (const auto& info : modeMenuItems()) {
             if (!info.visible)

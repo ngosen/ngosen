@@ -124,6 +124,17 @@ namespace {
         check("a keyboard on another layout than the group's stays", !ngosen::dropLoneKeyboard(profile, "ngosen"));
     }
 
+    void testListsInputMethod() {
+        auto profile = parse("[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n"
+                             "[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n"
+                             "[Groups/1]\nName=Other\nDefault Layout=us\nDefaultIM=ngosen\n\n"
+                             "[Groups/1/Items/0]\nName=ngosen\nLayout=\n");
+        check("Ngó Sen in a second group is found", ngosen::listsInputMethod(profile, "ngosen"));
+        check("an input method not listed is not found", !ngosen::listsInputMethod(profile, "lotus"));
+        fcitx::RawConfig empty;
+        check("no profile lists nothing", !ngosen::listsInputMethod(empty, "ngosen"));
+    }
+
     void testCopySwitchKeys() {
         auto             fcitxConfig = parse("[Hotkey/TriggerKeys]\n0=Super+space\n1=Zenkaku_Hankaku\n");
         fcitx::RawConfig settings;
@@ -150,6 +161,25 @@ namespace {
         fcitx::RawConfig fresh;
         ngosen::upgradeSettings(fresh, false);
         check("a fresh install keeps the built-in default", value(fresh, "RetypeAfterSwitch") == "<missing>");
+    }
+
+    void testReleaseAnnouncedOnce() {
+        auto upgraded = parse("SettingsVersion=1\n");
+        check("an upgrade to a feature release is announced", ngosen::releaseToAnnounce(upgraded, true, "1.7.0") == "1.7");
+        check("the announced release is remembered", value(upgraded, "AnnouncedVersion") == "1.7");
+        check("a bug-fix release is not announced", ngosen::releaseToAnnounce(upgraded, true, "1.7.2").empty());
+        check("the next feature release is announced again", ngosen::releaseToAnnounce(upgraded, true, "1.8.0") == "1.8");
+        check("going back to an older version stays quiet", ngosen::releaseToAnnounce(upgraded, true, "1.7.3").empty());
+
+        fcitx::RawConfig fresh;
+        check("a fresh install is not announced", ngosen::releaseToAnnounce(fresh, false, "1.7.0").empty());
+        check("a fresh install remembers its release", value(fresh, "AnnouncedVersion") == "1.7");
+        check("the first bug-fix release after a fresh install is quiet", ngosen::releaseToAnnounce(fresh, true, "1.7.1").empty());
+
+        // The engine then finds a settings file and takes the account for an upgrade.
+        auto added = ngosen::newAccountSettings("1.7.0");
+        check("a new account needs no upgrade", !ngosen::upgradeSettings(added, true));
+        check("a new account added in the configtool is not announced", ngosen::releaseToAnnounce(added, true, "1.7.0").empty());
     }
 
     void testKeepOtherInputMethods() {
@@ -223,8 +253,10 @@ int main() {
     testOtherGroups();
     testDropKeyboard();
     testKeepOtherInputMethods();
+    testListsInputMethod();
     testCopySwitchKeys();
     testUpgradeTurnsRetypeOn();
+    testReleaseAnnouncedOnce();
     testCopyFiles();
     testProcessesNamed();
     if (failures == 0) {

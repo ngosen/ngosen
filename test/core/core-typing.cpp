@@ -104,13 +104,18 @@ namespace {
         std::string commits, forwarded;
     };
 
-    EnterResult typeEnterInPreedit(const Field& field, const char* before, uint32_t nextKey = 0, uint32_t enterSym = ngosen::key::Return, bool focusOut = false) {
+    EnterResult typeEnterInPreedit(const Field& field, const char* before, uint32_t nextKey = 0, uint32_t enterSym = ngosen::key::Return, bool focusOut = false,
+                                   bool reports = false) {
         realMode = ngosen::Mode::Preedit;
         FakeLoop            loop;
         FakeResources       resources;
         auto                owned = std::make_unique<FakeHost>(loop, field);
         FakeHost*           host  = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
+        if (reports) {
+            host->setSurrounding("", 0);
+            state.surroundingUpdated();
+        }
         for (const char* c = before; *c != 0; ++c)
             press(state, static_cast<uint32_t>(*c));
         EnterResult r;
@@ -154,7 +159,7 @@ namespace {
         check(!empty.enterAccepted && empty.atEnd == 0, "preedit Enter: with nothing to commit Enter goes on to the app", empty.forwarded);
 
         Field             gtk4           = makeField("dbus", true);
-        const EnterResult dropsForwarded = typeEnterInPreedit(gtk4, "tieen");
+        const EnterResult dropsForwarded = typeEnterInPreedit(gtk4, "tieen", 0, ngosen::key::Return, false, true);
         check(!dropsForwarded.enterAccepted && dropsForwarded.atEnd == 0, "preedit Enter: goes on at once where forwarded keys are dropped", dropsForwarded.forwarded);
     }
 
@@ -669,6 +674,44 @@ namespace {
         check(join(host->commits()) == "['ê']", "gtk4: commits ê", join(host->commits()));
     }
 
+    // WPS over D-Bus sets the same flags as GTK4 but never reports its text, and ignores deletions through it.
+    void testSilentFieldGetsBackspaces() {
+        ngosen::test::AppQuirks quirks;
+        quirks.reports               = false;
+        quirks.ignoresSurroundingDel = true;
+        const std::vector<std::pair<std::string, std::string>> cases{{"thucws ", "thức "}, {"cos thuwcs ", "có thức "}};
+        for (const auto& [typed, want] : cases) {
+            const std::vector<uint32_t> keys(typed.begin(), typed.end());
+            const std::string           text = ngosen::test::typeInApp(makeField("dbus", true, "wps"), quirks, keys, std::vector<int>(keys.size(), 60));
+            check(text == want, "silent field gets backspaces: " + want, text);
+        }
+    }
+
+    // A GTK4 field that comes back with its text unchanged does not report it again; a field that
+    // comes back with no text known is silent again.
+    void testRefocusKeepsReport(bool textKept) {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("dbus", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        host->setSurrounding("", 0);
+        state.surroundingUpdated();
+        state.deactivate(true);
+        loop.pump(200);
+        if (!textKept)
+            host->forgetSurrounding();
+        state.activate(ngosen::Mode::Sen, true);
+        typeTie(state, *host, loop, false);
+        press(state, static_cast<uint32_t>('e'));
+        loop.pump(150);
+        const std::string label = textKept ? "refocus with text kept: deletes through surrounding" : "refocus with no text: forwards backspaces";
+        check(textKept == !host->deletes().empty() && textKept == host->forwarded().empty(), label,
+              std::to_string(host->deletes().size()) + " deletions, " + std::to_string(host->forwarded().size()) + " forwarded");
+    }
+
     // SDL takes only commits and preedit; forwarded backspaces never reach it.
     void testSdlGetsNoForwardedBackspace() {
         realMode = ngosen::Mode::Sen;
@@ -687,6 +730,73 @@ namespace {
 
     bool has(const std::string& text, const std::string& part) {
         return text.find(part) != std::string::npos;
+    }
+
+    // GNOME Shell drops keys an IBus engine sends, so Sen deletes through the surrounding text, with a DEL in a
+    // terminal, or types the word in the preedit where neither works.
+    void testSenWithoutSentKeys() {
+        const auto typed = [](bool surroundingText, bool terminal, ngosen::test::AppQuirks quirks, const std::string& text) {
+            Field field               = makeField("ibus", surroundingText);
+            field.terminal            = terminal;
+            field.sendsNoKeys         = true;
+            quirks.dropsForwardedKeys = true;
+            const std::vector<uint32_t> keys(text.begin(), text.end());
+            return ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 100));
+        };
+        std::string text = typed(true, false, {}, "vieetj nam ");
+        check(text == "việt nam ", "ibus sen: deletes through the surrounding text", text);
+        text = typed(false, true, {.erasesOnDel = true}, "vieetj nam");
+        check(text == "việt nam", "ibus sen: a terminal erases with DEL", text);
+        text = typed(false, false, {}, "vieetj nam ");
+        check(text == "việt nam ", "ibus sen: falls back to the preedit where nothing deletes", text);
+        text = typed(false, false, {}, "vieetj nam");
+        check(text == "việt ", "ibus sen: the fallback word stays in the preedit until it ends", text);
+        // Qt reports no surrounding text while the field is empty.
+        text = typed(true, false, {.reportsTextOnceFilled = true}, "vieetj nams");
+        check(text == "việt nám", "ibus sen: types in the field once it reports text", text);
+        FakeResources spaces;
+        spaces.mutableOptions().doubleSpaceToPeriod = true;
+        Field bare                                  = makeField("ibus", false);
+        bare.sendsNoKeys                            = true;
+        const std::vector<uint32_t> keys{'n', 'a', 'm', ' ', ' ', 'a', 'b', ' '};
+        text = ngosen::test::typeInApp(spaces, bare, {.dropsForwardedKeys = true}, keys, std::vector<int>(keys.size(), 100));
+        check(text == "nam  ab ", "ibus sen: two spaces stay where nothing deletes", text);
+
+        // A Facebook composer reports only its trailing newlines; it takes no selection keys here.
+        Field field       = makeField("ibus", true);
+        field.sendsNoKeys = true;
+        {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            host->setSurrounding("\n\n", 2);
+            for (char c : std::string("tiee"))
+                press(state, static_cast<uint32_t>(c));
+            loop.pump(300);
+            check(host->deletes().size() == 1 && host->systemKeys().empty(), "ibus sen: a Facebook composer deletes through the surrounding text",
+                  std::to_string(host->deletes().size()) + " " + std::to_string(host->systemKeys().size()));
+        }
+        {
+            // A click ends the word, so the next one is typed the way the field now allows.
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            host->setSurrounding("", 0);
+            press(state, static_cast<uint32_t>('v'));
+            press(state, static_cast<uint32_t>('i'));
+            Field cleared           = field;
+            cleared.surroundingText = false;
+            host->setField(cleared);
+            g_mouse_clicked.store(true);
+            press(state, static_cast<uint32_t>('e'));
+            press(state, static_cast<uint32_t>('e'));
+            check(host->preedit() == "ê", "ibus sen: after a click the next word picks its mode again", host->preedit());
+            g_mouse_clicked.store(false);
+        }
     }
 
     // Types "tiee" in Sen mode and returns what was committed, with DEL shown as <DEL>.
@@ -964,6 +1074,97 @@ namespace {
         check(host->preedit() == "viêt", "preedit: backspace on việt shows viêt", host->preedit());
         press(state, static_cast<uint32_t>('s'));
         check(host->preedit() == "viết", "preedit: a new tone mark goes on the rebuilt word", host->preedit());
+    }
+
+    struct PreeditReopen {
+        bool                                      bsAccepted = false;
+        std::vector<std::pair<int, unsigned int>> deletes;
+        std::string                               preedit;
+    };
+
+    // Types `keys` in Preedit, sets the text the app then reports and presses Backspace once.
+    PreeditReopen backspaceAfterPreeditCommit(ngosen::TypingState& state, FakeHost& host, const std::string& keys, const std::string& reported, unsigned int anchor = ~0U) {
+        for (const char c : keys) {
+            if (c == '^') {
+                FakeKey down('a', false, ngosen::modifier::Ctrl);
+                state.keyEvent(down);
+                FakeKey up('a', true, ngosen::modifier::Ctrl);
+                state.keyEvent(up);
+                continue;
+            }
+            press(state, c == '\n' ? ngosen::key::Return : static_cast<uint32_t>(c));
+        }
+        const auto cursor = static_cast<unsigned int>(ngosen::utf8::length(reported));
+        host.setSurrounding(reported, cursor, anchor == ~0U ? cursor : anchor);
+        state.surroundingUpdated();
+        PreeditReopen r;
+        r.bsAccepted = press(state, ngosen::key::BackSpace);
+        r.deletes    = host.deletes();
+        r.preedit    = host.preedit();
+        return r;
+    }
+
+    void testPreeditBackspaceReopensWord() {
+        realMode = ngosen::Mode::Preedit;
+        {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            const PreeditReopen r = backspaceAfterPreeditCommit(state, *host, "vieetj ", "việt ");
+            check(r.bsAccepted && r.deletes.size() == 1 && r.deletes[0] == std::make_pair(-5, 5U), "preedit reopen: backspace takes the word and the space back from the app",
+                  std::to_string(r.deletes.size()));
+            check(r.preedit == "việt", "preedit reopen: the word shows as preedit again", r.preedit);
+            press(state, static_cast<uint32_t>('s'));
+            check(host->preedit() == "viết", "preedit reopen: s puts a new tone on the word", host->preedit());
+            press(state, ngosen::key::space);
+            check(join(host->commits()) == "['việt ']['viết ']", "preedit reopen: space commits the fixed word", join(host->commits()));
+        }
+        {
+            // Held Backspace: the reopened word is deleted letter by letter, then the app deletes on its own.
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            backspaceAfterPreeditCommit(state, *host, "ban ", "ban ");
+            for (int i = 0; i < 3; ++i)
+                press(state, ngosen::key::BackSpace);
+            check(host->preedit().empty(), "preedit reopen: held backspace empties the preedit", host->preedit());
+            check(!press(state, ngosen::key::BackSpace), "preedit reopen: the next backspace goes on to the app", "taken");
+            check(host->deletes().size() == 1 && join(host->commits()) == "['ban ']", "preedit reopen: held backspace deletes the word once",
+                  std::to_string(host->deletes().size()) + " " + join(host->commits()));
+        }
+        {
+            // GNOME's IBus relays surrounding text late, but a reset on every click forgets the word.
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            const PreeditReopen r = backspaceAfterPreeditCommit(state, *host, "vieetj ", "việt ");
+            check(r.bsAccepted && r.preedit == "việt", "preedit reopen: the IBus frontend too", r.preedit);
+        }
+        const auto notReopened = [](const Field& field, const std::string& keys, const std::string& reported, const std::string& what, const std::string& charset,
+                                    unsigned int anchor = ~0U) {
+            FakeLoop      loop;
+            FakeResources resources;
+            if (!charset.empty())
+                resources.mutableOptions().outputCharset = charset;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            const PreeditReopen r = backspaceAfterPreeditCommit(state, *host, keys, reported, anchor);
+            check(!r.bsAccepted && r.deletes.empty() && r.preedit.empty(), "preedit reopen: " + what, r.preedit);
+        };
+        notReopened(makeField("wayland", true), "ban ", "xyz", "not after a click elsewhere", {});
+        notReopened(makeField("wayland", false), "ban ", "", "not where the app reports no text", {});
+        notReopened(makeField("wayland", true), "dduowc ", "ñöôc ", "not for a word in a legacy charset", "VNI Windows");
+        notReopened(makeField("wayland", true), "tieen\n", "tiên", "not after Enter", {});
+        // Ctrl+A commits the word and selects all; Backspace must delete the selection.
+        notReopened(makeField("wayland", true), "vieetj^", "việt", "not after Ctrl+A commits the word", {});
+        notReopened(makeField("wayland", true), "ban ", "ban ", "not over a selection", {}, 0);
     }
 
     // An address bar fills in a suggestion after the cursor. Typing its next letter leaves the text
@@ -1247,8 +1448,12 @@ int main() {
     testBackspaceAfterCtrlBackspace();
     testResentBackspace();
     testGtk4DeletesSurrounding();
+    testSilentFieldGetsBackspaces();
+    testRefocusKeepsReport(true);
+    testRefocusKeepsReport(false);
     testSdlGetsNoForwardedBackspace();
     testTerminalErasesWithCommittedDel();
+    testSenWithoutSentKeys();
     testRecorderKeepsTheReplacement();
     testRecorderNotesFieldSwitch();
     testRecorderHidesPasswords();
@@ -1262,6 +1467,7 @@ int main() {
     testBackspaceRemovesTone(true);
     testBackspaceRemovesTone(false);
     testPreeditBackspaceRemovesTone();
+    testPreeditBackspaceReopensWord();
     testModifierTapKeepsWord();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

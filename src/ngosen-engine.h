@@ -113,6 +113,8 @@ namespace fcitx {
          * @brief Reloads configuration from disk.
          */
         void reloadConfig() override;
+        // Shows the one-time "What's new" notification for a feature release.
+        void announceRelease(const std::string& release);
 
         /**
          * @brief Gets the current configuration.
@@ -276,6 +278,7 @@ namespace fcitx {
         bool                             retypeOnRelease_ = false;
         std::string                      currentConfigureApp_;
         std::unique_ptr<EventSourceTime> cycleModeNotificationTimer_;
+        std::unique_ptr<EventSourceTime> announceTimer_;
         std::string                      iconCacheName_;
         std::string                      iconCachePath_;
         static constexpr uint64_t        CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
@@ -283,6 +286,9 @@ namespace fcitx {
 #ifdef NGOSEN_HAS_DBUS
         FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
         std::unique_ptr<NgoSenDBusObject> dbusObject_;
+#endif
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        FCITX_ADDON_DEPENDENCY_LOADER(notifications, instance_->addonManager());
 #endif
         std::unique_ptr<EmojiLoader>           emojiLoader_;
         mutable std::mutex                     appRulesMutex_;
@@ -397,6 +403,8 @@ namespace fcitx {
         NgoSenMode vietnameseMode() const;
         // The mode of an app without a rule: Off until the toggle key turns Vietnamese on.
         NgoSenMode globalMode() const;
+        // The mode an app gets when the user has picked none for it.
+        NgoSenMode defaultModeFor(const std::string& appName) const;
         bool       isToggleKey(const Key& key) const;
         // Handles the toggle key; returns whether the key was it.
         bool handleToggleKey(KeyEvent& keyEvent);
@@ -439,7 +447,7 @@ namespace fcitx {
         void pickMenuMode(InputContext* ic, NgoSenMode mode, bool isDefault);
         void openModeMenu(InputContext* ic);
         // The modes the cycle key steps through, in the configured order.
-        std::vector<NgoSenMode> cycleModes();
+        std::vector<NgoSenMode> cycleModes(const std::string& appName);
         void                    cycleMode(InputContext* ic);
 
         /**

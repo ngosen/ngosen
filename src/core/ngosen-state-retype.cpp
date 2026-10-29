@@ -119,6 +119,10 @@ namespace ngosen {
         // Some apps (kitty, Konsole) declare surrounding text but always send it empty.
         if (!reportsTextInTime() || !s.isValid() || s.text().empty())
             return true;
+        return endsBeforeCursor(s, typed, mayDropStart);
+    }
+
+    bool TypingState::endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart) {
         const std::string& t  = s.text();
         auto               it = t.begin();
         for (unsigned int i = 0; i < s.cursor() && it != t.end(); ++i)
@@ -136,7 +140,7 @@ namespace ngosen {
     void TypingState::offerRetype() {
         retype_.reset();
         // Still English: keep the text for the toggle key.
-        if (realMode != ngosen::Mode::Sen && realMode != ngosen::Mode::Preedit)
+        if (mode() != ngosen::Mode::Sen && mode() != ngosen::Mode::Preedit)
             return;
         const std::string typed = std::move(typedWhileOff_);
         typedWhileOff_.clear();

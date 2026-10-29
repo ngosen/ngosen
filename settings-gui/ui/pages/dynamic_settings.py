@@ -5,10 +5,23 @@
 Dynamic Settings Page with Card-based Layout matching modern guidelines.
 """
 
-from enum import Enum
-
+from core.catalog import (
+    HINTS,
+    LANGUAGE_NAMES,
+    MENU_ENTRIES,
+    MODE_BUTTON_ORDER,
+    MODE_KEY_TO_INTERNAL_NAME,
+    MODE_SHORTCUT_KEYS,
+    MODE_SHORTCUT_TO_VISIBILITY,
+    MODE_SWITCHING,
+    SETTINGS_MAP,
+    TRAY_ICON,
+    TYPING_EXAMPLES,
+    SettingsCategory,
+)
 from core.dbus_handler import NgoSenDBusHandler
-from i18n import N_, _
+from core.settings_model import SettingsModel
+from i18n import _
 from qtpy.QtCore import QEvent, QSize, Qt, QTimer
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap
 from qtpy.QtWidgets import (
@@ -24,6 +37,7 @@ from qtpy.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QStyle,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -33,136 +47,8 @@ from ui.components import (
     HotkeyEditorWidget,
     SingleKeyCaptureWidget,
 )
+from ui.toolkit_switch import toolkit_field
 from ui.typography import emphasize, mute, page_title
-
-
-class SettingsCategory(Enum):
-    APPEARANCE = "appearance"
-    TYPING = "typing"
-    SHORTCUTS = "shortcuts"
-
-
-MODE_SWITCHING = N_("Mode switching")
-TRAY_ICON = N_("Tray icon")
-
-# Under "Show in the tray menu" each checkbox names the menu entry and shows its icon.
-MENU_ENTRIES = {
-    "ShowMenuInputMethod": (N_("Input Method"), "input-keyboard"),
-    "ShowMenuCharset": (N_("Charset"), "character-set"),
-    "ShowMenuSpellCheck": (N_("Spell Check"), "tools-check-spelling"),
-    "ShowMenuMacro": (N_("Macro"), "document-edit"),
-    "ShowMenuCapitalizeMacro": (N_("Capitalize Macro"), "format-text-uppercase"),
-    "ShowMenuAutoCapitalize": (N_("Auto Capitalize"), "format-text-capitalize"),
-    "ShowMenuAutoRestore": (N_("Auto Restore Invalid Words"), "edit-undo"),
-    "ShowMenuDictionary": (N_("Custom Dictionary"), "accessories-dictionary"),
-}
-
-# Groups show in this order; the first checkbox of a group carries the group name.
-SETTINGS_MAP = {
-    SettingsCategory.TYPING: {
-        N_("Typing"): ["Mode", "InputMethod", "OutputCharset"],
-        N_("Tone marks"): [
-            "SpellCheck",
-            "AutoNonVnRestore",
-            "LockWordModifier",
-            "DdFreeStyle",
-            "ModernStyle",
-            "FreeMarking",
-            "BackspaceRemovesTone",
-            "W2U",
-            "BracketTransform",
-        ],
-        N_("Quick typing"): [
-            "DoubleSpaceToPeriod",
-            "DoubleHyphenToEmDash",
-            "AutoCapitalizeAfterPunctuation",
-            "CapitalizeStartOfText",
-            "RetypeAfterSwitch",
-            "RetoneSelection",
-        ],
-    },
-    SettingsCategory.SHORTCUTS: {
-        N_("Hotkeys"): ["ToggleKey", "ModeMenuKey", "CycleModeKey"],
-        MODE_SWITCHING: [
-            "ShortcutSen",
-            "ShortcutPreedit",
-            "ShortcutEmoji",
-            "ShortcutOff",
-            "ShortcutDefault",
-        ],
-    },
-    SettingsCategory.APPEARANCE: {
-        N_("Language"): ["UiLanguage"],
-        TRAY_ICON: ["UseLotusIcons", "IconTheme"],
-        N_("Show in the tray menu"): list(MENU_ENTRIES),
-    },
-}
-
-# One line under a setting, saying what the user sees.
-HINTS = {
-    "ToggleKey": N_("Tap it alone to switch. The tray icon shows V while typing Vietnamese."),
-    "SpellCheck": N_("Words that are not Vietnamese get no tone marks."),
-    "AutoNonVnRestore": N_("Typing windows still gives windows."),
-    "LockWordModifier": N_(
-        "Tap the key alone to keep the word as shown: tunx, Ctrl → tũn, with no restore or macro. Alt also shows the menu bar in some apps."
-    ),
-    "FreeMarking": N_("Tone marks can also go at the end of the word."),
-    "UiLanguage": N_("The tray menu changes at once, this window the next time it opens."),
-    "BackspaceRemovesTone": N_(
-        "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
-    ),
-    "Mode": N_(
-        "Sen types straight into the app. Preedit underlines the word until it is done; use it in an app that Sen does not work with."
-    ),
-    "OutputCharset": N_(
-        "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
-    ),
-    "DdFreeStyle": N_("dd and Space stays đ instead of going back to dd."),
-    "ModernStyle": N_("hoà, khoẻ, thuý, tuỳ. Off: hòa, khỏe, thúy, tùy."),
-    "W2U": N_(
-        "Non-Start: nhw → như, but w alone stays w. Everywhere: w alone gives ư too. uw always gives ư."
-    ),
-    "BracketTransform": N_("ch]a → chưa, m[f → mờ. Type a bracket twice to get it back: [[ → [."),
-    "DoubleSpaceToPeriod": N_("ban and Space twice gives “ban. ”."),
-    "DoubleHyphenToEmDash": N_("a--b → a—b."),
-    "AutoCapitalizeAfterPunctuation": N_("ban. tooi → ban. Tôi. The same after Enter."),
-    "CapitalizeStartOfText": N_(
-        "xin → Xin in an empty field or on a new line. Not in address bars or some apps; on GNOME 47 and later, Chrome and similar apps skip an empty field."
-    ),
-    "RetypeAfterSwitch": N_(
-        "Typed tieengs vieetj before switching on? Switch on and it becomes tiếng việt. Tab or Esc gives back what you typed."
-    ),
-    "RetoneSelection": N_(
-        "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s. Only the tone mark changes: nguoi does not become người."
-    ),
-    "ModeMenuKey": N_(
-        "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."
-    ),
-    "CycleModeKey": N_(
-        "Moves the app in use to the next mode in the list below, and remembers it for that app."
-    ),
-    "ModeOrder": N_(
-        "With the mode menu open, press a mode's key to pick it for the app in use. Pick Default Typing to make the app follow the switch key again."
-    ),
-    "UseLotusIcons": N_("Off: plain one-colour icons, in the colour picked below."),
-    "IconTheme": N_(
-        "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
-    ),
-}
-
-MODE_BUTTON_ORDER = ["Sen", "Preedit", "Emoji Picker", "OFF"]
-
-# Each language is named in itself, so it can be found whichever one the window is in.
-LANGUAGE_NAMES = {"Vietnamese": "Tiếng Việt", "English": "English"}
-
-# What a word looks like while typing it, shown under the input method.
-TYPING_EXAMPLES = {
-    "Telex": "vieetj → việt",
-    "VNI": "vie65t → việt",
-    "VIQR": "vie^.t → việt",
-    "Telex + VNI": "vieetj → việt",
-    "Telex + VNI + VIQR": "vieetj → việt",
-}
 
 # Below this width the labels go above their fields.
 NARROW_WIDTH = 620
@@ -184,23 +70,42 @@ class HintLabel(QLabel):
             self.setFixedHeight(height)
 
 
-MODE_SHORTCUT_TO_VISIBILITY = {
-    "ShortcutSen": "ShowModeSen",
-    "ShortcutPreedit": "ShowModePreedit",
-    "ShortcutEmoji": "ShowModeEmoji",
-    "ShortcutOff": "ShowModeOff",
-    "ShortcutDefault": "ShowModeDefault",
-}
+class TipLine(QToolButton):
+    """One typing tip on one line; the whole tip is in the tooltip and on the What's new page."""
 
-MODE_KEY_TO_INTERNAL_NAME = {
-    "ShortcutSen": "Sen",
-    "ShortcutPreedit": "Preedit",
-    "ShortcutEmoji": "Emoji",
-    "ShortcutOff": "Off",
-    "ShortcutDefault": "Default",
-}
+    def __init__(self, text):
+        super().__init__()
+        self._text = text
+        self.setObjectName("TipLine")
+        self.setAutoRaise(True)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.setIcon(brand.theme_icon("dialog-information"))
+        self.setToolTip(text)
+        # As wide as the tip, left-aligned, and no wider than the page.
+        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        font = self.font()
+        font.setPointSizeF(font.pointSizeF() * 0.9)
+        self.setFont(font)
+        self.setText(text)
 
-MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
+    def _padding(self):
+        return self.iconSize().width() + 24
+
+    def sizeHint(self):
+        # From the whole tip, so the line grows back after the window was narrow.
+        hint = super().sizeHint()
+        return QSize(
+            self.fontMetrics().horizontalAdvance(self._text) + self._padding(), hint.height()
+        )
+
+    def minimumSizeHint(self):
+        return QSize(0, super().minimumSizeHint().height())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        room = self.width() - self._padding()
+        self.setText(self.fontMetrics().elidedText(self._text, Qt.ElideRight, room))
 
 
 class CardWidget(QFrame):
@@ -225,21 +130,37 @@ class DynamicSettingsPage(QWidget):
         dbus_handler: NgoSenDBusHandler,
         category: SettingsCategory = SettingsCategory.TYPING,
         parent=None,
+        tip=None,
+        on_tip=None,
     ):
         super().__init__(parent)
         self.dbus = dbus_handler
         self.category = category
-        self.current_values = {}
-        self.initial_values = {}
-        self.modified_values = {}
+        # A tip from the What's new page, shown above the form; clicking it opens that page.
+        self._tip = tip
+        self._on_tip = on_tip
+        self.model = SettingsModel(dbus_handler)
         self.button_groups = []
         self.shortcut_labels = {}
         self.shortcut_warning_labels = {}
         self.validation_errors = []
         self.list_widgets = []  # Track list widgets for layout refresh
+        self._controls = {}
 
         self._setup_ui()
         self.load_config()
+
+    @property
+    def current_values(self):
+        return self.model.current
+
+    @property
+    def modified_values(self):
+        return self.model.modified
+
+    @property
+    def all_metadata(self):
+        return self.model.metadata
 
     def showEvent(self, event):
         """Force layout refresh when page becomes visible to fix initialization overflow."""
@@ -285,34 +206,27 @@ class DynamicSettingsPage(QWidget):
                 if item.widget():
                     item.widget().deleteLater()
             self.button_groups.clear()
-            self.modified_values.clear()
             self.shortcut_labels.clear()
             self.shortcut_warning_labels.clear()
             self.list_widgets.clear()
+            self._controls.clear()
             self._tray_preview = None
 
-            config_data = self.dbus.get_config()
-            if not config_data:
-                # The window already says fcitx5 cannot be reached.
+            # Without fcitx5 the window already says it cannot be reached; without metadata there is
+            # nothing to draw.
+            if not self.model.load(values) or not self.all_metadata:
                 return
-
-            saved_values = config_data.get("values", {})
-            self.current_values = dict(saved_values if values is None else values)
-            self.modified_values = {
-                k: v for k, v in self.current_values.items() if saved_values.get(k) != v
-            }
-            metadata_list = config_data.get("metadata", [])
-            if not metadata_list:
-                return
-
-            # Flat map all items for easy lookup
-            self.all_metadata = {}
-            for group in metadata_list:
-                for item in group[1]:
-                    self.all_metadata[item[0]] = item
 
             if not self.property("inTab"):
                 self.container_layout.addWidget(page_title(_(self.category.name.capitalize())))
+            if self._tip:
+                line = TipLine(_("Tip: {}").format(_(self._tip["text"])))
+                if self._on_tip:
+                    line.clicked.connect(self._on_tip)
+                row = QHBoxLayout()
+                row.addWidget(line)
+                row.addStretch()
+                self.container_layout.addLayout(row)
 
             form_widget = QWidget()
             self.form = QFormLayout(form_widget)
@@ -334,6 +248,8 @@ class DynamicSettingsPage(QWidget):
                         continue
                     if k == "ToggleKey":
                         self._render_toggle_key(item)
+                    elif k == "SettingsToolkit":
+                        self._render_toolkit(item)
                     elif k in ["ModeMenuKey", "CycleModeKey"] or item[1] == "Hotkey":
                         self._render_hotkey(item)
                     elif k == "Mode":
@@ -353,29 +269,19 @@ class DynamicSettingsPage(QWidget):
                 try_it.setFont(brand.typed_font(17))
                 self.form.addRow(_("Try it:"), try_it)
 
-            self.initial_values = saved_values.copy()
             self.container_layout.addStretch()
         finally:
             self.blockSignals(False)
 
+    def control_for(self, key):
+        """The widget that edits a setting, for the window to scroll to and focus."""
+        return self._controls.get(key)
+
     def is_modified_from_default(self):
-        if not hasattr(self, "all_metadata"):
-            return False
-        for key, val in self.current_values.items():
-            meta = self.all_metadata.get(key)
-            if meta:
-                default_val = meta[3]
-                # Handle cases where default_val might be a dict (like hotkeys)
-                if isinstance(default_val, dict) and isinstance(val, dict):
-                    if str(val.get("0")) != str(default_val.get("0")):
-                        return True
-                elif str(val) != str(default_val):
-                    return True
-        return False
+        return self.model.is_modified_from_default()
 
     def is_modified(self):
-        """Returns True if the current values differ from the initial loaded values."""
-        return self.current_values != self.initial_values
+        return self.model.is_modified()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -434,28 +340,17 @@ class DynamicSettingsPage(QWidget):
 
         hk_btn = HotkeyEditorWidget(hotkey_str)
         hk_btn.setFixedWidth(235)
-        hk_btn.textChanged.connect(
-            lambda text, k=key: self.update_config(k, self._with_first_key(k, text))
-        )
+        self._controls[key] = hk_btn
+        hk_btn.textChanged.connect(lambda text, k=key: self._set_first_hotkey(k, text))
         self.form.addRow(_(label) + ":", self._with_hint(hk_btn, key))
 
     def _render_toggle_key(self, item):
         key, type_str, label, default, annotations = item
-        # The default is Ctrl+Shift: either Ctrl with either Shift, in either order, as in UniKey.
-        ctrl_shift = default if isinstance(default, dict) else {}
+        model = self.model
 
-        def is_ctrl_shift():
-            val = self.current_values.get(key, default)
-            return isinstance(val, dict) and sorted(val.values()) == sorted(ctrl_shift.values())
-
-        def shown_key():
-            val = self.current_values.get(key, default)
-            first = val.get("0", "") if isinstance(val, dict) else ""
-            # Without a side, since either Ctrl and either Shift work.
-            return "Control+Shift" if is_ctrl_shift() else first
-
-        editor = HotkeyEditorWidget(shown_key())
+        editor = HotkeyEditorWidget(model.shown_toggle_key(key))
         editor.setFixedWidth(235)
+        self._controls[key] = editor
         field = QWidget()
         layout = QVBoxLayout(field)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -474,24 +369,21 @@ class DynamicSettingsPage(QWidget):
         offer_layout.addWidget(offer_text)
         offer_layout.addWidget(use_ctrl_shift)
         offer_layout.addStretch(1)
-        offer.setVisible(not is_ctrl_shift())
+        offer.setVisible(not model.toggle_is_ctrl_shift(key))
         layout.addWidget(offer)
 
         def choose_ctrl_shift():
-            self.update_config(key, dict(ctrl_shift))
-            editor.set_key(shown_key())
+            model.use_ctrl_shift(key)
+            self.update_config(key, model.current[key])
+            editor.set_key(model.shown_toggle_key(key))
             offer.setVisible(False)
 
         def changed(text):
-            # No key would leave no way back to Vietnamese; Ctrl+Shift recorded with either side or
-            # in either order is still all of UniKey's key.
-            if not text or text in ctrl_shift.values():
-                choose_ctrl_shift()
-                return
-            # The Ctrl+Shift entries are one key to the user; other extra keys still work.
-            new = {"0": text} if is_ctrl_shift() else self._with_first_key(key, text)
-            self.update_config(key, new)
-            offer.setVisible(not is_ctrl_shift())
+            model.set_toggle_key(text, key)
+            self.update_config(key, model.current[key])
+            if model.toggle_is_ctrl_shift(key):
+                editor.set_key(model.shown_toggle_key(key))
+            offer.setVisible(not model.toggle_is_ctrl_shift(key))
 
         editor.textChanged.connect(changed)
         use_ctrl_shift.clicked.connect(choose_ctrl_shift)
@@ -505,12 +397,14 @@ class DynamicSettingsPage(QWidget):
             layout.addWidget(hint)
         self.form.addRow(_(label) + ":", field)
 
-    def _with_first_key(self, key, text):
-        # Only the first key of a list is shown; the others still work and must survive an edit.
-        val = self.current_values.get(key)
-        keys = [val[i] for i in sorted(val, key=int)] if isinstance(val, dict) else []
-        keys = ([text] if text else []) + keys[1:]
-        return {str(i): k for i, k in enumerate(keys)}
+    def _set_first_hotkey(self, key, text):
+        self.model.set_first_hotkey(key, text)
+        self.update_config(key, self.model.current[key])
+
+    def _render_toolkit(self, item):
+        field, button = toolkit_field(self.model)
+        self._controls[item[0]] = button
+        self.form.addRow(_(item[2]) + ":", self._with_hint(field, item[0]))
 
     def _render_combobox(self, item):
         key, type_str, label, default, annotations = item
@@ -518,6 +412,7 @@ class DynamicSettingsPage(QWidget):
 
         combo = QComboBox()
         combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self._controls[key] = combo
         enum_dict = annotations.get("Enum", {})
         sorted_keys = sorted(enum_dict.keys(), key=lambda x: int(x) if str(x).isdigit() else x)
         for k in sorted_keys:
@@ -603,6 +498,7 @@ class DynamicSettingsPage(QWidget):
         val = self.current_values.get(key, default)
 
         cb = QCheckBox(_(label))
+        self._controls[key] = cb
         if key in MENU_ENTRIES:
             text, icon_name = MENU_ENTRIES[key]
             cb.setText(_(text))
@@ -620,13 +516,7 @@ class DynamicSettingsPage(QWidget):
         self.form.addRow(group_label, self._with_hint(cb, key))
 
     def _tray_icon_names(self):
-        """The icons the tray shows for Vietnamese and English, and whether they suit a dark panel."""
-        if str(self.current_values.get("UseLotusIcons", "True")).lower() == "true":
-            return ("fcitx-ngosen", "fcitx-ngosen-off"), brand.is_dark(self)
-        color = str(self.current_values.get("IconTheme", "Auto"))
-        dark = {"Light": False, "Dark": True}.get(color, brand.is_dark(self))
-        suffix = "-default" if dark else "-default-black"
-        return (f"fcitx-ngosen{suffix}", f"fcitx-ngosen-off{suffix}"), dark
+        return self.model.tray_icons(brand.is_dark(self))
 
     def _render_tray_preview(self):
         preview = QLabel()
@@ -828,46 +718,14 @@ class DynamicSettingsPage(QWidget):
             if key in self.shortcut_labels:
                 self.shortcut_labels[key].setFont(self.font())
 
-        # Only check enabled modes
-        enabled_shortcuts = {}
-        for shortcut_key, visibility_key in MODE_SHORTCUT_TO_VISIBILITY.items():
-            default_visibility = "True"
-            vis_meta = (
-                self.all_metadata.get(visibility_key) if hasattr(self, "all_metadata") else None
-            )
-            if vis_meta:
-                default_visibility = vis_meta[3]
-
-            is_enabled = (
-                str(self.current_values.get(visibility_key, default_visibility)).lower() == "true"
-            )
-            if is_enabled:
-                default_shortcut = ""
-                shortcut_meta = (
-                    self.all_metadata.get(shortcut_key) if hasattr(self, "all_metadata") else None
-                )
-                if shortcut_meta:
-                    default_shortcut = shortcut_meta[3]
-                val = self.current_values.get(shortcut_key, default_shortcut)
-                if val:
-                    if val in enabled_shortcuts:
-                        enabled_shortcuts[val].append(shortcut_key)
-                    else:
-                        enabled_shortcuts[val] = [shortcut_key]
-
-        # Flag duplicates
-        for shortcut, keys in enabled_shortcuts.items():
-            if len(keys) > 1:
-                error_msg = _("Duplicate shortcut '{}' used for multiple enabled modes.").format(
-                    shortcut
-                )
-                self.validation_errors.append(error_msg)
-                for key in keys:
-                    if key in self.shortcut_warning_labels:
-                        self.shortcut_warning_labels[key].setText(error_msg)
-                        self.shortcut_warning_labels[key].show()
-                    if key in self.shortcut_labels:
-                        emphasize(self.shortcut_labels[key])
+        for message, keys in self.model.shortcut_conflicts():
+            self.validation_errors.append(message)
+            for key in keys:
+                if key in self.shortcut_warning_labels:
+                    self.shortcut_warning_labels[key].setText(message)
+                    self.shortcut_warning_labels[key].show()
+                if key in self.shortcut_labels:
+                    emphasize(self.shortcut_labels[key])
         for list_widget in self.list_widgets:
             self._fit_mode_rows(list_widget)
 
@@ -879,14 +737,9 @@ class DynamicSettingsPage(QWidget):
         """Resets current values to engine defaults."""
         self.blockSignals(True)
         try:
-            config_data = self.dbus.get_config()
-            if not config_data:
-                return
-
-            defaults = {
-                item[0]: item[3] for group in config_data.get("metadata", []) for item in group[1]
-            }
-            self.load_config(values=defaults)
+            defaults = self.model.defaults()
+            if defaults is not None:
+                self.load_config(values=defaults)
         finally:
             self.blockSignals(False)
 
@@ -902,30 +755,14 @@ class DynamicSettingsPage(QWidget):
         if self.has_validation_errors():
             return False
 
-        if not self.modified_values:
-            return True
-
-        config_data = self.dbus.get_config()
-        if config_data:
-            latest_values = config_data.get("values", {})
-            latest_values.update(self.modified_values)
-            if not self.dbus.set_config(latest_values):
-                return False
-            self.modified_values.clear()
-            self.initial_values = self.current_values.copy()
-            return True
-        elif not self.dbus.iface:
-            return False
-        return True
+        return self.model.save()
 
     def change_label(self):
-        item = getattr(self, "all_metadata", {}).get(getattr(self, "_last_changed_key", None))
-        return _(item[2]) if item else None
+        return self.model.label(getattr(self, "_last_changed_key", None))
 
     def update_config(self, key: str, new_value):
         """Updates internal state and notifies parent window of change."""
-        self.modified_values[key] = new_value
-        self.current_values[key] = new_value
+        self.model.set(key, new_value)
         self._last_changed_key = key
         if key in ("UseLotusIcons", "IconTheme"):
             self._update_tray_preview()

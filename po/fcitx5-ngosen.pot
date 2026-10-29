@@ -286,6 +286,10 @@ msgstr ""
 msgid "Interface Language"
 msgstr ""
 
+#: src/ngosen-config.h
+msgid "Settings Window"
+msgstr ""
+
 #: src/ngosen-engine.cpp:215
 msgid "Charset"
 msgstr ""
@@ -312,6 +316,18 @@ msgstr ""
 
 #: src/ngosen-engine.cpp:252
 msgid "Settings"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "What's new in Ngó Sen?"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Version 1.7: the settings window also comes in a GTK edition that looks like a GNOME app. See also Cứu chữ (retype words typed with Vietnamese off), Cứu dấu (select a word and type a tone mark to change it), the English/Vietnamese key and typing tips."
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Show"
 msgstr ""
 
 #: src/ngosen-engine.cpp:991 src/ngosen-engine.cpp:1030
@@ -387,11 +403,6 @@ msgstr ""
 
 #: settings-gui/ui/pages/about.py:148
 msgid "Developed by Nguyen Phi"
-msgstr ""
-
-#: settings-gui/ui/pages/about.py
-#, python-brace-format
-msgid "Based on the code of {lotus} and {vmk}."
 msgstr ""
 
 #: settings-gui/ui/pages/about.py:184
@@ -923,6 +934,14 @@ msgstr ""
 msgid "Restore all settings to defaults?"
 msgstr ""
 
+#: settings-gui/ui/main_window.py
+msgid "&Restore defaults"
+msgstr ""
+
+#: settings-gui/ui/pages/keymap_editor.py
+msgid "&Replace"
+msgstr ""
+
 #: settings-gui/ui/main_window.py:287
 msgid "Cannot Save"
 msgstr ""
@@ -1123,7 +1142,19 @@ msgid "Copy result"
 msgstr ""
 
 #: settings-gui/ui/system_check_dialog.py
-msgid "Report bug…"
+msgid "Message on Facebook…"
+msgstr ""
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Report on GitHub…"
+msgstr ""
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Copied the result."
+msgstr ""
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Copied the result. Paste it into the message and say what went wrong."
 msgstr ""
 
 #: settings-gui/ui/system_check_dialog.py
@@ -1344,4 +1375,207 @@ msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "What's new & tips"
+msgstr ""
+
+#: settings-gui/ui/pages/whats_new.py
+#, python-brace-format
+msgid "New in {}"
+msgstr ""
+
+#: settings-gui/ui/pages/whats_new.py
+msgid "Tips"
+msgstr ""
+
+#: settings-gui/ui/pages/whats_new.py
+msgid "Open setting"
+msgstr ""
+
+#: settings-gui/ui/pages/whats_new.py
+#, python-brace-format
+msgid "Open the {} page"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+#, python-brace-format
+msgid "Tip: {}"
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Cứu chữ"
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Forgot to switch Vietnamese on? Press the English/Vietnamese key and the word is fixed; Tab or Esc gives back what you typed."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Cứu dấu"
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Select a word, or click right after it, and type a tone key to change its tone mark; Tab or Esc gives it back."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "English/Vietnamese key"
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A new install switches with Ctrl+Shift, an older one keeps Ctrl+Space; Ngó Sen remembers the mode across logouts."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Press ` to pick Sen, Preedit, Emoji Picker or OFF for the app in use."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Tap Ctrl alone to keep the word as typed: tunx, Ctrl, Space keeps tũn."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A macro ko → không also types Không when you type Ko."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "] types ư and [ types ơ, so ch]a gives chưa. Off by default."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Space twice types a period. Off by default."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "-- types an em dash (—). Off by default."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A capital letter after . ! ? and Enter. Off by default; the tray menu's Auto Capitalize pauses it."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "hoà or hòa? Pick with “Use oà, uý (Instead Of òa, úy)”."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "$DATE and $TIME in a macro type today's date and time: hn → Hôm nay $DATE."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Typing wrong in some app? “Check my machine…” on the About page says why."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "“Save typing log” in the tray menu records what you type, to attach to a bug report."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "“Back Up…” and “Restore…” below keep your settings, macros and dictionary."
+msgstr ""
+
+#: settings-gui/ui/whats_new_content.py
+msgid "“Back Up…” and “Restore…” in the window menu keep your settings, macros and dictionary."
+msgstr ""
+
+#: settings-gui/ui_gtk/window.py
+msgid "Restore defaults…"
+msgstr ""
+
+#: settings-gui/ui_gtk/window.py
+msgid "Menu"
+msgstr ""
+
+#: settings-gui/ui_gtk/window.py
+msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
+msgstr ""
+
+#: settings-gui/core/defaults.py
+msgid "The key that switches between Vietnamese and English goes back to Ctrl+Shift."
+msgstr ""
+
+#: settings-gui/ui_gtk/window.py
+msgid "Could not restore every default. Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_dialog.py
+msgid "Send the result"
+msgstr ""
+
+#: settings-gui/ui_gtk/window.py
+msgid "Ngó Sen backup"
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "This window uses {}"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Switch to {}…"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Switch to {}"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Install the {} window with your package manager."
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "The {} window needs these packages: {}."
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Checking the download size…"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Download: about {}."
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Copy Command"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Install"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Installing…"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Could not install"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Run this command in a terminal:"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Could not switch"
+msgstr ""
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "GTK look for GNOME"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "See the GTK look"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
 msgstr ""

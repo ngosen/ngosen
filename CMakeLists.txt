@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(fcitx5-ngosen VERSION 1.6.4)
+project(fcitx5-ngosen VERSION 1.7.0)
 # The typing log names the version it came from.
 add_definitions(-DNGOSEN_VERSION=\"${PROJECT_VERSION}\")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -52,6 +52,12 @@ if (Fcitx5ModuleDBus_FOUND)
     add_definitions(-DNGOSEN_HAS_DBUS)
     list(APPEND ngosen_fcitx_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-dbus-object.cpp)
     set(NGOSEN_DBUS_MODULE Fcitx5::Module::DBus)
+endif()
+# Missing when fcitx5 is built without notifications; the "What's new" notice is then skipped.
+find_package(Fcitx5ModuleNotifications)
+if (Fcitx5ModuleNotifications_FOUND)
+    add_definitions(-DNGOSEN_HAS_NOTIFICATIONS)
+    set(NGOSEN_NOTIFICATIONS_MODULE Fcitx5::Module::Notifications)
 endif()
 find_package(Pthread REQUIRED)
 find_package(Gettext REQUIRED)

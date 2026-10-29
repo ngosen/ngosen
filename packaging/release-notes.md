@@ -1,4 +1,4 @@
-Version 1.6.4 phát hành ngày 28/10/2026. Sửa lỗi gõ nhanh mất dấu hoặc chữ trong chat và editor của Antigravity trên GNOME: qua cầu nối IBus, Ngó Sen chờ backspace tối đa 100 ms thay vì 50 ms, đi tiếp ngay khi app báo đã xoá. Cứu dấu trong Gõ Sen trên Chrome, Chromium và Brave ở X11: bôi đen `nhanh` rồi gõ `s` ra `nhánh`; Tab hoặc Esc vẫn trả lại phím đã gõ. Gạch chân chuyển phím tắt Super cho desktop và app, giữ chữ đang gõ. Cửa sổ cài đặt mở được khi từ điển có nội dung không phải UTF-8 và báo chưa đọc hết file; Hoàn tác chỉ trả lại thay đổi vừa lưu, giữ chế độ gõ từng app. install.sh cài đủ thành phần ở mọi ngôn ngữ, báo nguồn apt lỗi rồi tiếp tục, hỗ trợ thêm deepin 23/25, LMDE, Devuan, Parrot và Artix, và cài kèm `whiptail` để im-config trên deepin, Kali không dừng giữa chừng. .deb không còn đòi `python3-qtpy`, dùng PyQt6 trực tiếp. Chi tiết ở [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
+Version 1.7.0 phát hành ngày 29/10/2026. Cửa sổ cài đặt có thêm bản GTK giống app GNOME: GNOME và Cinnamon (Linux Mint) mở bản này nếu máy có libadwaita 1.5 trở lên, desktop khác vẫn mở bản Qt, và trang Giao diện có nút đổi qua lại giữa hai bản. Trang mới "Có gì mới & mẹo" giới thiệu Cứu chữ, Cứu dấu, phím chuyển Anh/Việt và 12 mẹo gõ; sau khi cập nhật, một thông báo hiện một lần để mở trang này. Ngó Sen cho GNOME (bản IBus) có gói cho openSUSE Tumbleweed, và `install.sh --ibus` tự cài xong trên Xfce, Cinnamon, MATE. Sửa Gõ Sen để lại chữ cũ trong WPS Office trên deepin ("thucws" ra "thucưcức"), KDE Wayland quên chế độ riêng từng app sau khi cập nhật, cùng nhiều lỗi của install.sh và cửa sổ cài đặt. Không còn gói cho Ubuntu 22.04 và Linux Mint 21; bản cuối cho hai hệ này là 1.6.4. Chi tiết ở [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
 
 ## Cài và cập nhật
 
@@ -21,7 +21,7 @@ Chọn file theo distro:
 - Fedora 44, 43: `fcitx5-ngosen-*.fc44.x86_64.rpm`, `fcitx5-ngosen-*.fc43.x86_64.rpm`
 - Arch, CachyOS: `fcitx5-ngosen-*-x86_64.pkg.tar.zst`
 - openSUSE Tumbleweed: `fcitx5-ngosen-*.opensuse-tumbleweed.x86_64.rpm`
-- Ubuntu 26.10, 26.04, 24.04, 22.04: `…_stonking_amd64.deb`, `…_resolute_amd64.deb`, `…_noble_amd64.deb`, `…_jammy_amd64.deb`
+- Ubuntu 26.10, 26.04, 24.04: `…_stonking_amd64.deb`, `…_resolute_amd64.deb`, `…_noble_amd64.deb`
 - Debian 13, 12: `…_trixie_amd64.deb`, `…_bookworm_amd64.deb`
 - Kali Rolling: `…_forky_amd64.deb`
 - Máy ARM 64-bit: file cùng tên với đuôi `_arm64.deb`, hoặc `.aarch64.rpm` cho Fedora
@@ -31,6 +31,8 @@ Cài gói bằng tay trên Ubuntu 26.04 thì bật thêm [extension sửa lỗi 
 Đối chiếu file tải về với `SHA256SUMS`: `sha256sum -c SHA256SUMS --ignore-missing`.
 
 ## Đã test những gì
+
+Gói 1.7.0-1 do CI dựng từ PR phát hành #432 được test trên VM ngày 29/10/2026, dùng Gõ Sen, Telex, cài bằng install.sh với thư mục gói trên máy. Linux Mint 22 (Cinnamon X11, gói `noble`): cập nhật từ 1.6.3-1, fcitx5 tự nạp version mới; thông báo "Ngó Sen có gì mới?" hiện câu của version 1.7, bấm "Xem" mở cửa sổ cài đặt bản GTK ở trang "Có gì mới & mẹo". Trong một ô chữ GTK 3, 5/5 câu thử ra đúng, trong đó `vieejt nguwowif ddaay hoaf quas giuwax tieengs khoong` gõ không nghỉ giữa các phím ra `việt người đây hoà quá giữa tiếng không`, kèm chữ hoa, sửa bằng Backspace và chuyển Anh/Việt giữa câu. Ubuntu 26.04 (GNOME Wayland, gói `resolute`): máy đang dùng Ngó Sen cho GNOME 1.0.0 (IBus) cạnh gói fcitx5 1.6.3-1; install.sh hỏi lại, gỡ bản IBus rồi cài 1.7.0-1; đăng nhập lại thì fcitx5 chạy, thông báo của version 1.7 nằm trong danh sách thông báo, cửa sổ cài đặt mở bản GTK, và cùng 5 câu thử đúng 5/5 trong ô chữ GTK 3. Với 1.7.0, chưa test Fedora, Arch, Debian, openSUSE, Kali, KDE, deepin (WPS, #430), trình duyệt và cài mới.
 
 Gói 1.6.4-1 do CI dựng từ PR phát hành #406 được test trên VM ngày 28/10/2026, dùng Gõ Sen, Telex; cài bằng dpkg -i rồi khởi động lại fcitx5 qua DBus. Ubuntu 26.04 (GNOME Wayland, gói `resolute`): GNOME Text Editor nhận `dduwowngf tieengs vieetj nam cos dduwowjc khoong haf nooij` ra `đường tiếng việt nam có được không hà nội` (tool không gửi Shift). Antigravity 2.6.0: gõ 18 từ không nghỉ giữa các phím trong chat và editor đều ra `lẫn có cá lỗi tiếng việt được không nhiều chữ đường phố tôi biết là một ngày mái`, đọc từ log gõ, không phải màn hình. MX Linux 25 (Xfce X11, gói `trixie`), Chromium: gõ cùng câu chữ thường, thêm `nhanh`, chọn bằng Ctrl+Shift+Left rồi nhấn `s` (Cứu dấu), được câu trên kèm `nhánh` ở 2/3 lượt. Lượt đầu ngay sau khi mở Chromium ra `dường`; log cho thấy phím `d` đầu được nhấn trước khi ô chữ nối với fcitx5 nên Ngó Sen không nhận được; chưa so với 1.6.3. deepin 25.2 (DDE X11, máy mới cài): install.sh của PR #408 với gói `bookworm` 1.6.4-1 chạy xong không lỗi, kéo `whiptail` cùng im-config 1.1 và thêm Ngó Sen vào danh sách bộ gõ; trước bản sửa, install.sh dừng ở bước im-config 2/2 lần. Với 1.6.4, chưa test cập nhật qua install.sh, Fedora, Arch, Debian 12, openSUSE, Kali, KDE, Linux Mint, Firefox, phím tắt Super trong Preedit (#392) và cửa sổ cài đặt (#376, #383).
 
@@ -88,6 +90,6 @@ Gói 1.5.2 (PR #130) được test trên máy ảo Ubuntu 26.04 (GNOME Wayland, 
 
 Gói 1.5.0 (PR #125) được gõ thử trên ba máy ảo: Linux Mint 22.1 (Cinnamon X11, gói `noble`), Ubuntu 26.04 (GNOME Wayland, gói `resolute`) và MX Linux 25 (Xfce X11, gói `trixie`, lần đầu dùng lõi Rust). Trên cả ba, gõ `tieengs vieetj` trong một ô chữ GTK3 ra `tiếng việt`; trên MX gõ thêm `nguwowif vieetj nam` ra `người việt nam`. Trên Ubuntu 26.04, chọn kiểu gõ Custom thì cửa sổ cài đặt hiện dòng nhắc, và "Kiểm tra máy tôi…" báo không có lỗi cài đặt. Gói 1.5.1 (PR #127) được gõ thử lại trên Mint và Ubuntu 26.04: bật "Tự viết hoa đầu câu", gõ `ban. tooi`, Enter, `xin` ra `Xin` ở dòng mới (gói 1.5.0 ra `xin`); gõ thường vẫn ra `tiếng việt`.
 
-Người giữ dự án dùng Ngó Sen hằng ngày trên Fedora 44 (KDE Plasma Wayland). Kali đã được gõ thử ở các version trước. Fedora 43, Ubuntu 22.04, Debian 12 và openSUSE chỉ được build và qua test lúc build, chưa ai gõ thử trên máy thật.
+Người giữ dự án dùng Ngó Sen hằng ngày trên Fedora 44 (KDE Plasma Wayland). Kali đã được gõ thử ở các version trước. Fedora 43, Debian 12 và openSUSE chỉ được build và qua test lúc build, chưa ai gõ thử trên máy thật.
 
 Mọi gói, kể cả Debian 12, nay dùng lõi gõ Rust; lõi Go đã bỏ.

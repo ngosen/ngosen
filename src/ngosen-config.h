@@ -93,6 +93,16 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME(UiLanguage, "Vietnamese", "English");
 
+    // Read by the settings window's launcher only. fcitx5 leaves a default value out of the file,
+    // so Auto stands for no choice and a picked Qt is still written down.
+    enum class SettingsToolkit : std::uint8_t {
+        Auto,
+        Qt,
+        GTK,
+    };
+
+    FCITX_CONFIG_ENUM_NAME(SettingsToolkit, "Auto", "Qt", "GTK");
+
     struct InputMethodConstrain;
     struct InputMethodAnnotation;
 
@@ -233,7 +243,9 @@ namespace fcitx {
         // What the toggle key last chose, for apps without a rule of their own.
         HiddenOption<bool> vietnameseOn{this, "VietnameseOn", _("Vietnamese On"), false};
         // Set once the settings were upgraded; fcitx5 leaves defaults out of the file, so nothing else tells.
-        HiddenOption<int> settingsVersion{this, "SettingsVersion", _("Settings Version"), 0}; KeyListOption modeMenuKey{
+        HiddenOption<int> settingsVersion{this, "SettingsVersion", _("Settings Version"), 0};
+        // The last feature release (X.Y) whose "What's new" notification was shown.
+        HiddenOption<std::string> announcedVersion{this, "AnnouncedVersion", _("Announced Version"), ""}; KeyListOption modeMenuKey{
             this, "ModeMenuKey", _("Mode Menu Hotkey"), {Key("grave")}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
         KeyListOption cycleModeKey{this, "CycleModeKey", _("Cycle Mode Hotkey"), {}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
         SubConfigOption                                                                appRules{this, "AppRules", _("App Rules"), "fcitx://config/addon/ngosen/app_rules"};
@@ -317,7 +329,8 @@ namespace fcitx {
         SubConfigOption                                          macroEditor{this, "MacroEditor", _("Macro"), "fcitx://config/addon/ngosen/ngosen-macro"};
         SubConfigOption                                          customKeymap{this, "CustomKeymap", _("Custom Keymap"), "fcitx://config/addon/ngosen/custom_keymap"};
         OptionWithAnnotation<IconTheme, IconThemeI18NAnnotation> iconTheme{this, "IconTheme", _("Icon Color"), IconTheme::Auto};
-        Option<UiLanguage>                                       uiLanguage{this, "UiLanguage", _("Interface Language"), UiLanguage::Vietnamese};);
+        Option<UiLanguage>                                       uiLanguage{this, "UiLanguage", _("Interface Language"), UiLanguage::Vietnamese};
+        Option<SettingsToolkit>                                  settingsToolkit{this, "SettingsToolkit", _("Settings Window"), SettingsToolkit::Auto};);
 
 } // namespace fcitx
 

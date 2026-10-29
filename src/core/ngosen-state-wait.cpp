@@ -262,6 +262,8 @@ namespace ngosen {
 
     bool TypingState::canSendBackspaces() const {
         const Field field = host_->field();
+        if (field.sendsNoKeys)
+            return field.surroundingText || ngosen::erasesWithCommittedDel(field);
         return ngosen::forwardsBackspaces(field) || ngosen::erasesWithCommittedDel(field) || xtestAvailable() || ngosen::takesSentKeyEvents(field);
     }
 
@@ -277,6 +279,7 @@ namespace ngosen {
         const bool        waiting    = surr_wait_watching_;
         const bool        overtyping = overtype_watching_;
         const std::string report     = host_->field().password ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
+        fieldReported_               = fieldReported_ || host_->surrounding().isValid();
         // A repeat that a wait acts on stays in the log for its timing.
         if (waiting || overtyping || key_report_pending_)
             engine_->recorder().add("app", report);
@@ -405,7 +408,7 @@ namespace ngosen {
         if (!checkWordAfterBounce_ || is_deleting_.load(std::memory_order_acquire) || deferred_commit_pending_ || unreportedCommitLength_ > 0)
             return false;
         checkWordAfterBounce_ = false;
-        if (settling || realMode != ngosen::Mode::Sen || oldPreBuffer_.empty() || s.cursor() != s.anchor())
+        if (settling || mode() != ngosen::Mode::Sen || oldPreBuffer_.empty() || s.cursor() != s.anchor())
             return false;
         const std::u32string word   = ngosen::utf8::decode(oldPreBuffer_);
         const std::u32string before = ngosen::utf8::decode(s.text()).substr(0, s.cursor());
@@ -488,7 +491,7 @@ namespace ngosen {
     void TypingState::commit(const std::string& text) {
         noteCommit(text);
         // A field that rewrites what we commit never shows it; keep only the latest commits.
-        if (realMode == ngosen::Mode::Sen && ngosen::appliesEarlyKeysFirst(host_->field()))
+        if (mode() == ngosen::Mode::Sen && ngosen::appliesEarlyKeysFirst(host_->field()))
             commitNotSeen_ = commitNotSeen_.size() + text.size() > 64 ? text : commitNotSeen_ + text;
         committing_ = true;
         host_->commitText(text);

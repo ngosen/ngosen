@@ -17,187 +17,17 @@ from qtpy.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
 )
 
+from core import keymap
+from ui.confirm import confirm
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
 from ui.typography import page_title
-
-BAMBOO_ACTIONS = [
-    ("XoaDauThanh", "Xóa dấu thanh"),
-    ("DauSac", "Dấu sắc"),
-    ("DauHuyen", "Dấu huyền"),
-    ("DauHoi", "Dấu hỏi"),
-    ("DauNga", "Dấu ngã"),
-    ("DauNang", "Dấu nặng"),
-    ("A_Â", "a -> â"),
-    ("E_Ê", "e -> ê"),
-    ("O_Ô", "o -> ô"),
-    ("AEO_ÂÊÔ", "a/e/o -> â/ê/ô"),
-    ("UOA_ƯƠĂ", "u/o/a -> ư/ơ/ă"),
-    ("D_Đ", "d -> đ"),
-    ("UO_ƯƠ", "u/o -> ư/ơ"),
-    ("A_Ă", "a -> ă"),
-    ("__ă", "ă"),
-    ("_Ă", "Ă"),
-    ("__â", "â"),
-    ("_Â", "Â"),
-    ("__ê", "ê"),
-    ("_Ê", "Ê"),
-    ("__ô", "ô"),
-    ("_Ô", "Ô"),
-    ("__ư", "ư"),
-    ("_Ư", "Ư"),
-    ("__ơ", "ơ"),
-    ("_Ơ", "Ơ"),
-    ("__đ", "đ"),
-    ("_Đ", "Đ"),
-    ("UOA_ƯƠĂ__Ư", "u/o/a -> ư/ơ/ă, ư"),
-]
-
-PRESETS = {
-    "Telex": [
-        ("z", "XoaDauThanh"),
-        ("s", "DauSac"),
-        ("f", "DauHuyen"),
-        ("r", "DauHoi"),
-        ("x", "DauNga"),
-        ("j", "DauNang"),
-        ("a", "A_Â"),
-        ("e", "E_Ê"),
-        ("o", "O_Ô"),
-        ("w", "UOA_ƯƠĂ"),
-        ("d", "D_Đ"),
-    ],
-    "VNI": [
-        ("0", "XoaDauThanh"),
-        ("1", "DauSac"),
-        ("2", "DauHuyen"),
-        ("3", "DauHoi"),
-        ("4", "DauNga"),
-        ("5", "DauNang"),
-        ("6", "AEO_ÂÊÔ"),
-        ("7", "UO_ƯƠ"),
-        ("8", "A_Ă"),
-        ("9", "D_Đ"),
-    ],
-    "VIQR": [
-        ("0", "XoaDauThanh"),
-        ("'", "DauSac"),
-        ("`", "DauHuyen"),
-        ("?", "DauHoi"),
-        ("~", "DauNga"),
-        (".", "DauNang"),
-        ("^", "AEO_ÂÊÔ"),
-        ("+", "UO_ƯƠ"),
-        ("*", "UO_ƯƠ"),
-        ("(", "A_Ă"),
-        ("d", "D_Đ"),
-    ],
-    "Microsoft layout": [
-        ("8", "DauSac"),
-        ("5", "DauHuyen"),
-        ("6", "DauHoi"),
-        ("7", "DauNga"),
-        ("9", "DauNang"),
-        ("1", "__ă"),
-        ("!", "_Ă"),
-        ("2", "__â"),
-        ("@", "_Â"),
-        ("3", "__ê"),
-        ("#", "_Ê"),
-        ("4", "__ô"),
-        ("$", "_Ô"),
-        ("0", "__đ"),
-        (")", "_Đ"),
-    ],
-    "Telex + VNI": [
-        ("z", "XoaDauThanh"),
-        ("s", "DauSac"),
-        ("f", "DauHuyen"),
-        ("r", "DauHoi"),
-        ("x", "DauNga"),
-        ("j", "DauNang"),
-        ("a", "A_Â"),
-        ("e", "E_Ê"),
-        ("o", "O_Ô"),
-        ("w", "UOA_ƯƠĂ"),
-        ("d", "D_Đ"),
-        ("0", "XoaDauThanh"),
-        ("1", "DauSac"),
-        ("2", "DauHuyen"),
-        ("3", "DauHoi"),
-        ("4", "DauNga"),
-        ("5", "DauNang"),
-        ("6", "AEO_ÂÊÔ"),
-        ("7", "UO_ƯƠ"),
-        ("8", "A_Ă"),
-        ("9", "D_Đ"),
-    ],
-    "Telex + VNI + VIQR": [
-        ("z", "XoaDauThanh"),
-        ("s", "DauSac"),
-        ("f", "DauHuyen"),
-        ("r", "DauHoi"),
-        ("x", "DauNga"),
-        ("j", "DauNang"),
-        ("a", "A_Â"),
-        ("e", "E_Ê"),
-        ("o", "O_Ô"),
-        ("w", "UOA_ƯƠĂ"),
-        ("d", "D_Đ"),
-        ("0", "XoaDauThanh"),
-        ("1", "DauSac"),
-        ("2", "DauHuyen"),
-        ("3", "DauHoi"),
-        ("4", "DauNga"),
-        ("5", "DauNang"),
-        ("6", "AEO_ÂÊÔ"),
-        ("7", "UO_ƯƠ"),
-        ("8", "A_Ă"),
-        ("9", "D_Đ"),
-        ("'", "DauSac"),
-        ("`", "DauHuyen"),
-        ("?", "DauHoi"),
-        ("~", "DauNga"),
-        (".", "DauNang"),
-        ("^", "AEO_ÂÊÔ"),
-        ("+", "UO_ƯƠ"),
-        ("*", "UO_ƯƠ"),
-        ("(", "A_Ă"),
-        ("\\\\", "D_Đ"),
-    ],
-    "VNI Bàn phím tiếng Pháp": [
-        ("&", "XoaDauThanh"),
-        ("é", "DauSac"),
-        ('"', "DauHuyen"),
-        ("'", "DauHoi"),
-        ("(", "DauNga"),
-        ("-", "DauNang"),
-        ("è", "AEO_ÂÊÔ"),
-        ("_", "UO_ƯƠ"),
-        ("ç", "A_Ă"),
-        ("à", "D_Đ"),
-    ],
-    "Telex W": [
-        ("z", "XoaDauThanh"),
-        ("s", "DauSac"),
-        ("f", "DauHuyen"),
-        ("r", "DauHoi"),
-        ("x", "DauNga"),
-        ("j", "DauNang"),
-        ("a", "A_Â"),
-        ("e", "E_Ê"),
-        ("o", "O_Ô"),
-        ("w", "UOA_ƯƠĂ__Ư"),
-        ("d", "D_Đ"),
-    ],
-}
 
 
 class KeymapEditorPage(BaseEditorPage):
@@ -206,7 +36,7 @@ class KeymapEditorPage(BaseEditorPage):
     def __init__(self, dbus_handler: NgoSenDBusHandler, parent=None):
         super().__init__(parent)
         self.dbus = dbus_handler
-        self.initial_state = {}
+        self.keymap = keymap.Keymap(dbus_handler)
         self._setup_ui()
         self.load_data()
 
@@ -242,7 +72,7 @@ class KeymapEditorPage(BaseEditorPage):
         bottom_row = QHBoxLayout()
         bottom_row.addWidget(QLabel(_("Original Input Method:")))
         self.combo_preset = QComboBox()
-        self.combo_preset.addItems(PRESETS.keys())
+        self.combo_preset.addItems(keymap.PRESETS.keys())
         bottom_row.addWidget(self.combo_preset)
 
         btn_load_preset = QPushButton(QIcon.fromTheme("document-import"), _("Apply Preset"))
@@ -268,7 +98,7 @@ class KeymapEditorPage(BaseEditorPage):
         self.input_key.setClearButtonEnabled(True)
 
         self.combo_action = QComboBox()
-        for action_code, action_name in BAMBOO_ACTIONS:
+        for action_code, action_name in keymap.BAMBOO_ACTIONS:
             self.combo_action.addItem(action_name, action_code)
 
         self.btn_add = QPushButton(QIcon.fromTheme("list-add"), _("Add"))
@@ -308,77 +138,44 @@ class KeymapEditorPage(BaseEditorPage):
         self.update_button_states()
 
     def load_data(self):
-        """Loads keymap data strictly via D-Bus."""
         self.blockSignals(True)
         try:
-            config_data = self.dbus.get_config()
-            if config_data:
-                values = config_data.get("values", {})
-                self.cb_enable.setChecked(
-                    str(values.get("EnableCustomKeymap", "False")).lower() == "true"
-                )
-
+            self.keymap.load()
+            self.cb_enable.setChecked(self.keymap.enabled)
             self.table.setRowCount(0)
-            data = self.dbus.get_sub_config_list("custom_keymap", "CustomKeymap")
-            for item in data:
-                self._add_row(item.get("Key", ""), item.get("Value", ""))
-            self.initial_state = self._get_current_state()
+            for item in self.keymap.entries:
+                self._add_row(item["Key"], item["Value"])
         finally:
             self.blockSignals(False)
             self.on_search_changed()
 
     def restore_defaults(self):
         """Clears all custom keymap entries and turns the custom keymap off."""
+        self.keymap.reset()
         self.cb_enable.setChecked(False)
         self.table.setRowCount(0)
         self._on_item_changed()
 
     def is_modified_from_default(self):
-        """Returns True if the keymap is on or has any entries."""
-        return self.table.rowCount() > 0 or self.cb_enable.isChecked()
+        return not keymap.is_default(*self._shown_values())
 
     def is_modified(self):
-        """Returns True if the current state differs from the initial loaded state."""
-        return self._get_current_state() != self.initial_state
+        return keymap.state(*self._shown_values()) != self.keymap.saved_state
 
-    def _get_current_state(self):
-        """Captures the current UI state for comparison."""
-        data = []
+    def _shown_values(self):
+        # Read without storing: the main window asks is_modified() while load_data
+        # is still filling the widgets from the model.
+        entries = []
         for row in range(self.table.rowCount()):
             key_item = self.table.item(row, 0)
             combo_widget = self.table.cellWidget(row, 1)
             if key_item and combo_widget:
-                data.append({"Key": key_item.text(), "Value": combo_widget.currentData()})
-        return {
-            "data": data,
-            "EnableCustomKeymap": self.cb_enable.isChecked(),
-        }
+                entries.append({"Key": key_item.text(), "Value": combo_widget.currentData()})
+        return self.cb_enable.isChecked(), entries
 
     def save_data(self) -> bool:
-        """Saves current table via DBus to C++ Engine."""
-        # Save toggle
-        config_data = self.dbus.get_config()
-        if config_data:
-            values = config_data.get("values", {})
-            values["EnableCustomKeymap"] = "True" if self.cb_enable.isChecked() else "False"
-            if not self.dbus.set_config(values):
-                return False
-        elif not self.dbus.iface:
-            return False
-
-        data = []
-        for row in range(self.table.rowCount()):
-            key_item = self.table.item(row, 0)
-            combo_widget = self.table.cellWidget(row, 1)
-            if not key_item or not combo_widget:
-                continue
-            data.append({"Key": key_item.text(), "Value": combo_widget.currentData()})
-
-        if not self.dbus.set_sub_config_list("custom_keymap", "CustomKeymap", data):
-            return False
-
-        self.initial_state = self._get_current_state()
-        return True
+        self.keymap.enabled, self.keymap.entries = self._shown_values()
+        return self.keymap.save()
 
     def on_search_changed(self):
         """Filters the table rows based on the search input."""
@@ -457,19 +254,18 @@ class KeymapEditorPage(BaseEditorPage):
     def on_load_preset(self):
         """Loads a predefined set of keymaps."""
         preset_name = self.combo_preset.currentText()
-        reply = QMessageBox.question(
+        if not confirm(
             self,
             _("Confirm"),
             _("This operation will replace all existing keys with ")
             + preset_name
             + _(". Are you sure?"),
-            QMessageBox.Yes | QMessageBox.No,
-        )
-        if reply == QMessageBox.No:
+            _("&Replace"),
+        ):
             return
 
         self.table.setRowCount(0)
-        for key, action_code in PRESETS.get(preset_name, []):
+        for key, action_code in keymap.PRESETS.get(preset_name, []):
             self._add_row(key, action_code)
         self._on_item_changed()
 
@@ -479,7 +275,7 @@ class KeymapEditorPage(BaseEditorPage):
         self.table.insertRow(row)
         self.table.setItem(row, 0, QTableWidgetItem(key))
         cell_combo = QComboBox()
-        for code, name in BAMBOO_ACTIONS:
+        for code, name in keymap.BAMBOO_ACTIONS:
             cell_combo.addItem(name, code)
 
         idx = cell_combo.findData(action_code)

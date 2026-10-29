@@ -597,6 +597,19 @@
       "1": "English"
      }
     }
+   ],
+   [
+    "SettingsToolkit",
+    "Enum",
+    "Settings Window",
+    "Auto",
+    {
+     "Enum": {
+      "0": "Auto",
+      "1": "Qt",
+      "2": "GTK"
+     }
+    }
    ]
   ]
  ]

@@ -25,9 +25,9 @@ namespace ngosen {
     // True when a key the app sent before our commit reached it can land ahead of that commit.
     bool appliesEarlyKeysFirst(const Field& field);
 
-    // True for VTE terminals under GTK4 (Ptyxis, GNOME Console), through fcitx5-gtk4 or IBus: they take neither
-    // forwarded keys nor surrounding text, but pass committed text to the shell as is, so a DEL in it erases like
-    // Backspace.
+    // True for terminals that report no surrounding text, and for VTE terminals under GTK4 (Ptyxis, GNOME Console),
+    // which do not pass on their input purpose: they pass committed text to the shell as is, so a DEL in it erases
+    // like Backspace.
     bool erasesWithCommittedDel(const Field& field);
 
     // True for the address bar of Chromium-based browsers on the D-Bus and fcitx4 frontends: it reports no

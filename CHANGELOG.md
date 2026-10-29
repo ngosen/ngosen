@@ -10,6 +10,99 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.7.0-1] — 29/10/2026
+
+Cửa sổ cài đặt có thêm bản GTK giống app GNOME, mở mặc định trên GNOME và Cinnamon, đổi qua lại với bản Qt
+bằng một nút (#386, #393, #396, #407); trang "Có gì mới & mẹo" và thông báo một lần sau khi cập nhật lên version
+có tính năng mới (#331, #409). Ngó Sen cho GNOME (IBus) có gói openSUSE và tự cài trên Xfce, Cinnamon, MATE
+(#389, #341). Sửa WPS Office trên deepin (#430), KDE Wayland nhớ chế độ từng app sau khi cập nhật (#428) và
+nhiều lỗi của install.sh và cửa sổ cài đặt. Không còn gói cho Ubuntu 22.04 (#332).
+Tải ở [ngosen-1.7.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.0-1).
+
+### Thêm
+
+- openSUSE Tumbleweed có Ngó Sen cho GNOME (bản IBus): `install.sh --ibus` cài được, và repo zypper có thêm gói
+  `ibus-ngosen` từ version đầu tiên có package openSUSE (#389).
+- Sau khi cập nhật lên version có tính năng mới (1.7.0 trở đi), một thông báo ở góc màn hình hiện một lần,
+  bấm "Xem" thì mở cửa sổ cài đặt ở trang "Có gì mới & mẹo". Version chỉ sửa lỗi và cài mới không báo (#331).
+  Thông báo của 1.7.0 giới thiệu cửa sổ cài đặt bản GTK, Cứu chữ, Cứu dấu và phím chuyển Anh/Việt (#433).
+- Cửa sổ cài đặt có trang "Có gì mới & mẹo": Cứu chữ, Cứu dấu, phím chuyển Anh/Việt với nút "Mở cài đặt"
+  dẫn tới đúng ô, và 12 mẹo gõ. Trang Gõ chữ hiện một mẹo ngẫu nhiên mỗi lần mở cửa sổ (#331, #409).
+- `install.sh --ibus` trên Xfce, Cinnamon, MATE (X11, có im-config như Ubuntu, Debian, Linux Mint) tự đặt
+  IBus làm bộ gõ, thêm Ngó Sen và phím chuyển Ctrl+Space, không còn phải làm tay. Cài bản fcitx5 khi tài
+  khoản đang dùng bản IBus thì lệnh hỏi lại rồi gỡ bản IBus (#341).
+- Ở chế độ gạch chân, Backspace ngay sau khi gõ xong một chữ sẽ mở lại chữ đó để sửa dấu (`việt ` + Backspace +
+  `s` → `viết`), như Gõ Sen. Cần app báo surrounding text; terminal thì Backspace như cũ (#344).
+- Lõi gõ được Gõ Sen ở app không nhận phím do bộ gõ gửi tới (bản IBus trên GNOME): xoá chữ bằng surrounding
+  text, terminal thì bằng DEL, field không có cả hai thì chữ đó gõ bằng gạch chân. Bản fcitx5 không đổi (#353).
+- Cửa sổ cài đặt, hộp "Kiểm tra máy tôi…": nút mới "Nhắn qua Facebook…" chép sẵn thông tin máy và mở khung chat
+  với trang Facebook Ngó Sen. Dán thông tin vào tin nhắn để báo lỗi, không cần tài khoản GitHub (#374).
+- Cửa sổ cài đặt có thêm bản GTK giống app GNOME, dùng libadwaita 1.5 trở lên, bên cạnh bản Qt như cũ.
+  GNOME và Cinnamon (Linux Mint) mở GTK nếu đủ libadwaita; desktop khác mở Qt. Chỉ có thư viện bản nào thì mở bản đó.
+  Muốn chọn hẳn một bản, đặt "Cửa sổ cài đặt" thành Qt hoặc GTK trong công cụ cài đặt của fcitx5 (#386, #396).
+- Cửa sổ cài đặt bản Qt: trang "Có gì mới & mẹo" thêm nút "Xem giao diện GTK", mở trang web Ngó Sen có ảnh
+  giao diện GTK để xem trước khi đổi (#422).
+- Cửa sổ cài đặt, trang Giao diện: bản Qt có nút "Đổi sang bản GTK…", bản GTK có nút "Đổi sang bản Qt…".
+  Có sẵn bản kia thì cửa sổ mở lại ngay bằng bản đó. Chưa có thì báo cần cài gói nào, tải về khoảng bao nhiêu,
+  rồi cho chọn cài ngay (hỏi mật khẩu) hoặc chép lệnh để tự chạy (#393, #407).
+
+### Thay đổi
+
+- Cài bản fcitx5 trên GNOME, install.sh nay nói rõ trước câu "Tiếp tục?" sẽ đổi gì cho tài khoản và cách
+  trả lại bằng `--uninstall`, rồi giới thiệu bản Ngó Sen cho GNOME chạy trên IBus kèm lệnh cài. Máy chưa có
+  gói bản IBus (như Debian 12) hoặc đang dùng sẵn bản IBus thì không giới thiệu (#400, #410).
+- install.sh đổi "Tiếp tục? [c/K]" (c = có, K = không) thành "Tiếp tục? [y/N]" như đa số lệnh Linux.
+  Gõ y, yes hoặc c để đồng ý; bấm Enter không gõ gì vẫn là không (#398).
+- Cửa sổ cài đặt dùng xanh men của Ngó Sen cho ô đã đánh dấu, trang đang chọn ở thanh bên, focus và
+  vùng chọn, thay cho màu nhấn desktop (KDE/GNOME); trước đây chỉ nút chế độ gõ đang chọn và thông báo “Đã lưu”
+  dùng xanh men. Màu này dùng cho cả giao diện sáng và tối; sắc xanh ở giao diện tối đậm hơn trước một chút để
+  chữ dễ đọc hơn (#352).
+- `install.sh` trên GNOME và Cinnamon (Linux Mint) ở Debian, Ubuntu, Linux Mint, Fedora và openSUSE cài thư viện cửa sổ cài đặt GTK,
+  không tải Qt (khoảng 20 MB trên Ubuntu 24.04 GNOME và Mint 22.1). Debian 12 (libadwaita quá cũ), KDE và desktop khác vẫn dùng Qt.
+  Arch/CachyOS vẫn cài Qt vì gói Arch không cho chọn GTK hay Qt. Máy đã cài Ngó Sen vẫn giữ bộ Qt, không bị gỡ (#387).
+
+### Sửa
+
+- deepin-editor: mặc định dùng chế độ gạch chân để gõ nhanh không còn đảo chữ, mất hoặc lặp dấu như khi
+  dùng Gõ Sen; vẫn giữ chế độ đã chọn cho app qua menu `, không đổi các app khác (#421).
+- Cửa sổ cài đặt: bấm "Mặc định" nay báo trước phím chuyển Anh/Việt sẽ về Ctrl+Shift nếu đang dùng phím khác,
+  kể cả phím vừa đổi, trong cả cửa sổ Qt và GTK (#414).
+- Cửa sổ cài đặt: lưu từ điển riêng không còn xoá chữ bắt đầu bằng dấu # khỏi file; bộ gõ vẫn luôn dùng được
+  những chữ này. Khi lưu từ điển hoặc bảng phím (Keymap) bị lỗi giữa chừng, công tắc bật/tắt không còn
+  bị lưu lệch với những gì cửa sổ hiện (#367).
+- Cửa sổ cài đặt: bấm "Khôi phục…" với file sao lưu bị hỏng nay báo lỗi và không thay đổi gì; trước đây có thể
+  làm trống file từ điển riêng và ghi một phần cài đặt (#382).
+- Cửa sổ cài đặt mở được khi file `ngosen.conf` có byte không phải UTF-8; trước đây cửa sổ không hiện, mở từ khay
+  thì không báo gì (#415).
+- Chuyển từ bản fcitx5 sang bản GNOME (IBus) bằng `install.sh --ibus`: Firefox không còn gõ ra chữ thô sau khi
+  đăng nhập lại. Trước đây máy có thể vẫn giữ biến bộ gõ của fcitx5 tới lần khởi động lại (#425).
+- Trang Giới thiệu và kết quả "Kiểm tra máy tôi" không còn ghi "(Stable)" sau số version, kể cả trên bản thử (#416).
+- Hộp thoại hỏi "Khôi phục mặc định" và "Thay thế" bảng phím giờ có nút cùng ngôn ngữ với cửa sổ cài đặt, không còn Yes/No theo ngôn ngữ desktop (#417).
+- Người cài gói rồi tự thêm Ngó Sen trong Fcitx5 Configuration không còn bị mất bàn phím tiếng Anh và đổi sang Ctrl+Space sau lần khởi động fcitx5 kế tiếp; máy mới giữ Ctrl+Shift (#419).
+- Chuyển từ bản fcitx5 sang bản GNOME (IBus) bằng `install.sh --ibus`: đăng nhập lại là đang ở Ngó Sen, chữ đầu tiên không còn ra không dấu (#420).
+- install.sh trên Kali và các bản cập nhật liên tục không còn kéo theo nâng cấp dở các gói Qt: chỉ cài module GTK/Qt của fcitx5 còn thiếu, gói đã có để nguyên (#418).
+- Cài bằng `install.sh` không còn in hướng dẫn của gói ("khởi động lại fcitx5", "thêm bộ gõ trong Fcitx5
+  Configuration") ngay trước dòng báo đã xong. Chạy lại khi đã đúng bản thì không cài lại gói (Arch, CachyOS không
+  còn tạo ảnh snapper) và không khởi động lại fcitx5 (#426).
+- Gỡ bằng `install.sh --uninstall` trên máy có im-config 1.1 (Debian testing, Kali, Ubuntu 26.10) bỏ được
+  lựa chọn fcitx5 của im-config, không còn ghi `run_im REMOVE` vào `~/.xinputrc`. Khi im-config vẫn chọn fcitx5,
+  dòng cuối báo fcitx5 còn chạy và đưa lệnh bỏ đúng với version im-config, không còn hứa "GNOME dùng lại IBus" (#424).
+- KDE Wayland: cài hoặc nâng cấp xong thì fcitx5 được KDE bật lại như lúc đăng nhập, nên Ngó Sen vẫn biết đang gõ trong app nào (nhớ chế độ riêng từng app) mà không cần đăng nhập lại (#428).
+- WPS Office trên deepin: Gõ Sen không còn để lại chữ cũ khi WPS kết nối với fcitx5 theo đường D-Bus ("thucws" ra "thucưcức" thay vì "thức") (#430).
+
+### Bỏ
+
+- Trang Giới thiệu trong cửa sổ cài đặt không còn dòng "Dựa trên mã của fcitx5-lotus và VMK"; phần ghi công
+  hai dự án này vẫn có trong README (#373).
+- Không còn gói cho Ubuntu 22.04 (và Linux Mint 21 dựa trên nó); cần Ubuntu 24.04 hoặc Linux Mint 22 trở lên.
+  Bản cuối cho Ubuntu 22.04 là 1.6.4. Lệnh cài một dòng báo rõ điều này; máy đã thêm repo APT của Ngó Sen
+  thì nên gỡ dòng repo đó, vì `apt update` sẽ báo lỗi thiếu `jammy` (#332).
+
+### Tài liệu
+
+- README ghi rõ Cứu dấu không chạy trong Firefox bản snap cài sẵn trên Ubuntu, và cách cài Firefox từ kho của
+  Mozilla (#423).
+
 ## [1.6.4-1] — 28/10/2026
 
 Sửa lỗi mất dấu hoặc chữ trong chat và editor của Antigravity trên GNOME (#362, #395); sửa Cứu dấu trong Gõ Sen trên Chrome, Chromium và Brave ở X11 (#360, #390); sửa phím tắt Super khi dùng Gạch chân (#391, #392); sửa lỗi mở cửa sổ cài đặt và Hoàn tác (#376, #383); sửa install.sh khi desktop dùng tiếng Việt hoặc có nguồn apt lỗi, cài được trên deepin, LMDE, Devuan, Parrot, Artix và bỏ phụ thuộc python3-qtpy của .deb (#388, #399, #397, #403, #408).

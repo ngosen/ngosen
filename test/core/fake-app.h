@@ -46,6 +46,11 @@ namespace ngosen::test {
         bool reportsTextOnceFilled  = false; // reports surrounding text only once the field has text, as Qt over IBus does
         bool announcesSelection     = false; // makes a selection the X11 primary selection, as Chromium on X11 does
         bool ignoresSurroundingDel  = false; // takes no deletion through its surrounding text, as WPS over D-Bus does
+        bool reportsEmptyText       = false; // declares surrounding text but reports none and drops deletions through it, as Konsole does
+        // Turns a deletion of characters into bytes on the text it reported last, as mutter does for
+        // text-input-v3 and fcitx5 does on Wayland.
+        bool convertsDeleteOnReportedCopy = false;
+        bool reportsNothingAfterDelete    = false; // reports nothing after a deletion until a typed key, as Qt 6 over text-input-v3 does
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -63,7 +68,16 @@ namespace ngosen::test {
         // Moves the cursor without an edit, as a click does.
         void moveCursor(size_t to);
         // Selects from anchor to cursor, as Shift+arrows or a double click do; typing replaces it.
-        void                            select(size_t anchor, size_t cursor);
+        void select(size_t anchor, size_t cursor);
+        // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
+        void suggest(const std::string& tail, bool selected);
+        // Deletions through the surrounding text the app received and the ones it applied.
+        int receivedDeletes() const {
+            return receivedDeletes_;
+        }
+        int appliedDeletes() const {
+            return appliedDeletes_;
+        }
         const std::vector<std::string>& labels() const {
             return labels_;
         }
@@ -129,11 +143,13 @@ namespace ngosen::test {
         std::string keyText(uint32_t sym) const override;
 
       private:
-        void                                insert(const std::u32string& text);
+        void                                insert(const std::u32string& text, bool typed = false);
         bool                                eraseSelection();
         void                                eraseBefore(size_t count);
         void                                eraseAround(int offset, unsigned int size);
         bool                                leaveIfEmptied();
+        size_t                              reportedBytesBefore(unsigned int size) const;
+        unsigned int                        charsForBytesBefore(size_t bytes) const;
         void                                changed();
         void                                redrawAfterEdit();
         void                                later(int ms, std::function<void()> action);
@@ -159,6 +175,12 @@ namespace ngosen::test {
         std::string                         status_;
         std::u32string                      previousText_;
         size_t                              previousCursor_ = 0;
+        std::u32string                      reportedText_;
+        size_t                              reportedCursor_    = 0;
+        size_t                              reportedAnchor_    = 0;
+        bool                                silentAfterDelete_ = false;
+        int                                 receivedDeletes_   = 0;
+        int                                 appliedDeletes_    = 0;
         std::vector<std::unique_ptr<Timer>> timers_;
     };
 
@@ -166,6 +188,28 @@ namespace ngosen::test {
     std::string telexOutput(const std::vector<uint32_t>& keys);
     // The same with the given settings and macro table.
     std::string telexOutput(FakeResources& resources, const std::vector<uint32_t>& keys);
+
+    // What the app shows after typing, and what the typing logic sent it to get there.
+    struct Typed {
+        std::string text;
+        std::string events; // the Recorder's dump, one event per line
+        int         receivedDeletes = 0;
+        int         appliedDeletes  = 0;
+    };
+
+    // How the typing logic is expected to change the app's text; -1 means not checked.
+    struct Path {
+        int surroundingDeletes  = -1;
+        int forwardedBackSpaces = -1; // presses only
+        int systemKeyPresses    = -1;
+        int preedits            = -1;
+    };
+
+    // The ways the events depart from the path, empty when they match. Reads the same dump a user's
+    // saved typing log has.
+    std::vector<std::string> pathMismatches(const std::string& events, const Path& path);
+
+    Typed                    typeInAppTraced(FakeResources& resources, const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs);
 
     // The app's text after typing the keys in Gõ Sen mode, waiting gapsMs[i] after key i.
     std::string typeInApp(const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, int* slowestCommitMs = nullptr);

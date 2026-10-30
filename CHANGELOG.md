@@ -10,6 +10,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.7.2-1] — 30/10/2026
+
+Sửa Gõ Sen quên chữ đang gõ trong VS Code trên GNOME (#453). Sửa Gõ Sen ra “tiêsng” khi gõ “tieesng” trong app Qt
+trên GNOME, chỉ áp dụng cho bản IBus (#452).
+Tải ở [ngosen-1.7.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.2-1).
+
 ### Sửa
 
 - Ngó Sen cho GNOME (bản IBus, lõi gõ dùng chung): Gõ Sen trong app Qt không còn ra "tiêsng" khi gõ "tieesng"

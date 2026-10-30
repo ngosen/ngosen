@@ -1,4 +1,4 @@
-Version 1.7.1 phát hành ngày 30/10/2026. Trên GNOME, khi app báo đúng chữ đang gõ, Gõ Sen xoá chữ cũ qua surrounding text thay cho phím Backspace, vốn có lúc tới muộn và làm hỏng chữ; app nào bỏ qua lệnh xoá thì Ngó Sen tự quay về Backspace tới hết phiên. KDE và các desktop khác vẫn xoá như cũ. Version này cũng sửa lỗi hỏng chữ như "tiíiếng" khi app báo chữ chậm (LibreOffice, ô GTK4), bỏ khoảng dừng sau mỗi lần xoá, và trên GNOME với fcitx5 cũ (Ubuntu 26.04, Debian) chế độ chọn ở menu `,` chỉ áp tới khi đăng xuất thay vì bị lưu mãi. Kiểm tra máy cảnh báo GNOME 50.0–50.3 chưa bật bản sửa `forward-keys` kèm lệnh bật lại, và không còn báo nhầm IBus chạy song song. Chi tiết ở [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
+Version 1.7.2 phát hành ngày 30/10/2026. Đây là version sửa lỗi Gõ Sen quên chữ đang gõ trong VS Code trên GNOME (#453), đồng thời sửa lỗi gõ “tieesng” ra “tiêsng” trong app Qt trên GNOME ở bản IBus dùng chung lõi gõ; sửa lỗi này chỉ thay đổi hoạt động của bản IBus (#452). Chi tiết ở [CHANGELOG.md](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md).
 
 ## Cài và cập nhật
 

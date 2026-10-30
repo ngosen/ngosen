@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The pages of the GTK window, drawn from the same catalog as the Qt window."""
 
-from core.brand import BUG_REPORT_URL, FEATURE_REQUEST_URL, REPO_URL
+from core.brand import FEATURE_REQUEST_URL, REPO_URL
 from core.catalog import (
     HINTS,
     MODE_BUTTON_ORDER,
@@ -14,9 +14,8 @@ from core.catalog import (
 from gi.repository import Adw, Gtk
 from i18n import _
 
-from core import system_check
 from ui_gtk import brand
-from ui_gtk.check_dialog import open_uri
+from ui_gtk.check_page import open_uri
 from ui_gtk.whats_new import tip_text
 
 
@@ -185,34 +184,18 @@ def _link_button(label, uri):
     return button
 
 
-def about_page(version, on_check):
+def about_page(version):
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
     box.set_margin_top(24)
     box.set_margin_bottom(24)
     box.append(Gtk.Image(icon_name=brand.LOGO, pixel_size=80))
     box.append(_label(brand.WORDMARK, "wordmark"))
     box.append(_label(_("Version {}").format(version), "dim-label"))
-    if system_check.runs_replaced_addon():
-        box.append(
-            _label(
-                _(
-                    "Typing still uses the Ngó Sen that ran before the update. "
-                    "Log out and back in to start version {}."
-                ).format(version),
-                "error",
-            )
-        )
     box.append(
         _label(_("Vietnamese input method for fcitx5 on Linux that types like UniKey on Windows."))
     )
     box.append(_label(f'<a href="{REPO_URL}">{REPO_URL}</a>', markup=True))
-    check = Gtk.Button(label=_("Check my machine…"), css_classes=["pill"], halign=Gtk.Align.CENTER)
-    check.connect("clicked", lambda _b: on_check())
-    box.append(check)
-    buttons = Gtk.Box(spacing=12, halign=Gtk.Align.CENTER)
-    buttons.append(_link_button(_("Report Bug"), BUG_REPORT_URL))
-    buttons.append(_link_button(_("Request Feature"), FEATURE_REQUEST_URL))
-    box.append(buttons)
+    box.append(_link_button(_("Request Feature"), FEATURE_REQUEST_URL))
     box.append(Gtk.Separator())
     box.append(_label(_("Developed by Nguyen Phi")))
     box.append(Gtk.Separator())

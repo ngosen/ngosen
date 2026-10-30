@@ -27,7 +27,7 @@ from i18n import _  # noqa: E402
 from core import backup, defaults, settings_snapshot  # noqa: E402
 from ui_gtk import brand, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
-from ui_gtk.check_dialog import CheckDialog  # noqa: E402
+from ui_gtk.check_page import CheckPage  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
 from ui_gtk.focus import focus_when_laid_out  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
@@ -68,13 +68,16 @@ class Window(Adw.ApplicationWindow):
             self.whats_new.page,
             searchable=False,
         )
-        self.check = None
+        self.badge = Gtk.Label(css_classes=["check-badge"], visible=False, valign=Gtk.Align.CENTER)
+        self.check = CheckPage(self.dbus, __version__, self.notify, self._show_count)
         self._add_page(
-            "about",
-            _("About"),
-            "help-about-symbolic",
-            pages.about_page(__version__, self.open_system_check),
+            "check",
+            _("Check my machine"),
+            "emblem-system-symbolic",
+            self.check.page,
+            searchable=False,
         )
+        self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 
         self.split = Adw.NavigationSplitView(min_sidebar_width=220)
         self.split.set_sidebar(Adw.NavigationPage(title="Ngó Sen", child=self._sidebar()))
@@ -304,10 +307,12 @@ class Window(Adw.ApplicationWindow):
         mark.append(Gtk.Label(label=brand.WORDMARK, css_classes=["wordmark"]))
         header.pack_start(mark)
         self.sidebar = Gtk.ListBox(css_classes=["navigation-sidebar"])
-        for _name, title, icon in self.pages:
+        for name, title, icon in self.pages:
             row = Gtk.Box(spacing=12)
             row.append(Gtk.Image(icon_name=icon))
-            row.append(Gtk.Label(label=title, xalign=0))
+            row.append(Gtk.Label(label=title, xalign=0, hexpand=True))
+            if name == "check":
+                row.append(self.badge)
             self.sidebar.append(row)
         self.sidebar.connect("row-activated", self._on_row)
         self.sidebar.select_row(self.sidebar.get_row_at_index(0))
@@ -381,6 +386,8 @@ class Window(Adw.ApplicationWindow):
         name, title, _icon = self.pages[row.get_index()]
         self.stack.set_visible_child_name(name)
         self.content.set_title(title)
+        if name == "check":
+            self.check.run()
         self.split.set_show_content(True)
 
     def show_page(self, name):
@@ -408,12 +415,20 @@ class Window(Adw.ApplicationWindow):
                 return True
         return False
 
-    def open_system_check(self):
-        if self.check is None:
-            self.check = CheckDialog(self.dbus, __version__)
-        else:
-            self.check.run()
-        self.check.dialog.present(self)
+    def _show_count(self, count):
+        self.badge.set_text(str(count))
+        self.badge.set_visible(count > 0)
+        self.badge.update_property(
+            [Gtk.AccessibleProperty.LABEL], [_("Steps left to fix: {}").format(count)]
+        )
+
+    def notify(self, text, undo):
+        """A toast from the check page, with Undo when its fix can be taken back."""
+        toast = Adw.Toast(title=text)
+        if undo is not None:
+            toast.set_button_label(_("&Undo").replace("&", "_"))
+            toast.connect("button-clicked", lambda _t: undo())
+        self._show(toast)
 
     def show_tips(self):
         self.show_page("whats-new")

@@ -1714,3 +1714,110 @@ msgstr "Xem giao diện GTK"
 #: settings-gui/core/whats_new_content.py
 msgid "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
 msgstr "Thêm giao diện GTK, hợp với GNOME. Không thích giao diện Qt cũ thì đổi ở trang Giao diện."
+
+#: settings-gui/core/system_check.py
+msgid "Use the button on a step, or fix them all at once. Ngó Sen only changes this account's settings."
+msgstr "Bấm nút ở từng bước, hoặc sửa hết một lần. Ngó Sen chỉ đổi cài đặt của tài khoản này."
+
+#: settings-gui/core/system_check.py
+msgid "Each step says what to do."
+msgstr "Mỗi bước có ghi cách sửa."
+
+#: settings-gui/core/system_check.py
+msgid "Start fcitx5"
+msgstr "Chạy fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Restart fcitx5"
+msgstr "Khởi động lại fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Add Ngó Sen"
+msgstr "Thêm Ngó Sen"
+
+#: settings-gui/core/system_check.py
+msgid "Turn on the fix"
+msgstr "Bật bản sửa"
+
+#: settings-gui/core/system_check.py
+msgid "Started fcitx5."
+msgstr "Đã chạy fcitx5."
+
+#: settings-gui/core/system_check.py
+msgid "Restarted fcitx5."
+msgstr "Đã khởi động lại fcitx5."
+
+#: settings-gui/core/system_check.py
+msgid "Added Ngó Sen to the input method list."
+msgstr "Đã thêm Ngó Sen vào danh sách bộ gõ."
+
+#: settings-gui/core/system_check.py
+msgid "Turned on the fix for GNOME."
+msgstr "Đã bật bản sửa cho GNOME."
+
+#: settings-gui/core/system_check.py
+msgid "This machine is ready"
+msgstr "Máy đã sẵn sàng"
+
+#: settings-gui/core/system_check.py
+msgid "Try typing in any app."
+msgstr "Gõ thử ở bất kỳ app nào."
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "Steps left to fix: {}"
+msgstr "Còn {} việc nữa là gõ được tiếng Việt"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Fixing…"
+msgstr "Đang sửa…"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Steps to type Vietnamese"
+msgstr "Các bước để gõ tiếng Việt"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Apps connected to fcitx5"
+msgstr "App đang nối với fcitx5"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "An app missing here has not connected to the input method: open it again, or send the result to Ngó Sen."
+msgstr "App không có ở đây là app chưa nối được với bộ gõ: mở lại app đó, hoặc gửi kết quả cho Ngó Sen."
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Try typing here"
+msgstr "Gõ thử ngay tại đây"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "In Telex, vieetj becomes việt."
+msgstr "Kiểu Telex: gõ vieetj sẽ ra việt."
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Send the result to Ngó Sen"
+msgstr "Gửi kết quả cho Ngó Sen"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "The result lists the steps above, the apps connected and the typing log you read. Nothing is sent until you press a button below."
+msgstr "Kết quả gồm các bước ở trên, tên các app đang nối và nhật ký gõ vừa đọc. Không gửi gì đi cho tới khi bạn bấm một nút dưới đây."
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Fix all ({})"
+msgstr "Sửa cả {} việc"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Could not fix this. Copy the command to run it yourself, or send the result to Ngó Sen."
+msgstr "Chưa sửa được. Chép lệnh để tự chạy, hoặc gửi kết quả cho Ngó Sen."
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Copy command"
+msgstr "Chép lệnh"
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Copied: {}"
+msgstr "Đã chép: {}"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "No app is connected yet"
+msgstr "Chưa có app nào nối với fcitx5"

@@ -243,6 +243,44 @@ def with_ngosen(layout, items):
     return layout, items + [("ngosen", "")]
 
 
+def fix_label(action):
+    return {
+        START_FCITX: _("Start fcitx5"),
+        RESTART_FCITX: _("Restart fcitx5"),
+        ADD_NGOSEN: _("Add Ngó Sen"),
+        ENABLE_FORWARD_KEYS: _("Turn on the fix"),
+    }[action]
+
+
+def fixed_message(action):
+    return {
+        START_FCITX: _("Started fcitx5."),
+        RESTART_FCITX: _("Restarted fcitx5."),
+        ADD_NGOSEN: _("Added Ngó Sen to the input method list."),
+        ENABLE_FORWARD_KEYS: _("Turned on the fix for GNOME."),
+    }[action]
+
+
+# fcitx5 takes a moment to come back on the bus after starting.
+SETTLE_MS = {START_FCITX: 1500, RESTART_FCITX: 1500}
+
+
+def summary(found):
+    """Heading and text above the steps."""
+    problems = [f for f in found if f.level != OK]
+    if not problems:
+        return _("This machine is ready"), _("Try typing in any app.")
+    title = _("Steps left to fix: {}").format(len(problems))
+    if any(f.action for f in problems):
+        text = _(
+            "Use the button on a step, or fix them all at once. Ngó Sen only changes this "
+            "account's settings."
+        )
+    else:
+        text = _("Each step says what to do.")
+    return title, text
+
+
 def run_fix(action, dbus_handler):
     """Runs a step's fix. Returns (done, undo), where undo puts things back or is None."""
     if action == ADD_NGOSEN:

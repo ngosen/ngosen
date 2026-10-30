@@ -1628,3 +1628,110 @@ msgstr ""
 #: settings-gui/core/whats_new_content.py
 msgid "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
 msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Use the button on a step, or fix them all at once. Ngó Sen only changes this account's settings."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Each step says what to do."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Start fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Restart fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Add Ngó Sen"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Turn on the fix"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Started fcitx5."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Restarted fcitx5."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Added Ngó Sen to the input method list."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Turned on the fix for GNOME."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "This machine is ready"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Try typing in any app."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "Steps left to fix: {}"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Fixing…"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Steps to type Vietnamese"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Apps connected to fcitx5"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "An app missing here has not connected to the input method: open it again, or send the result to Ngó Sen."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Try typing here"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "In Telex, vieetj becomes việt."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Send the result to Ngó Sen"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "The result lists the steps above, the apps connected and the typing log you read. Nothing is sent until you press a button below."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Fix all ({})"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Could not fix this. Copy the command to run it yourself, or send the result to Ngó Sen."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Copy command"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Copied: {}"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "No app is connected yet"
+msgstr ""

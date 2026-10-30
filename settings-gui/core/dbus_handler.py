@@ -79,6 +79,16 @@ class NgoSenDBusHandler:
             print(f"Failed to read the input method group: {e}")
             return None
 
+    def has_input_method(self, name):
+        """Whether fcitx5 has loaded the input method, or None when it does not answer."""
+        if not self.iface:
+            return None
+        try:
+            return any(str(im[0]) == name for im in self.iface.AvailableInputMethods())
+        except Exception as e:
+            print(f"Failed to read the available input methods: {e}")
+            return None
+
     def input_method_group(self):
         """(name, default layout, [(input method, layout)]) of the current group, or None."""
         if not self.iface:

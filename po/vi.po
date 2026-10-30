@@ -1784,9 +1784,13 @@ msgstr "Kết quả gồm các bước ở trên, các app đang kết nối và
 msgid "Fix all ({})"
 msgstr "Sửa cả {} việc"
 
-#: settings-gui/ui_gtk/check_page.py
-msgid "Could not fix this. Copy the command to run it yourself, or send the result to Ngó Sen."
-msgstr "Chưa sửa được. Chép lệnh để tự chạy, hoặc gửi kết quả cho Ngó Sen."
+#: settings-gui/core/system_check.py
+msgid "Could not fix this."
+msgstr "Không sửa được."
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 started before Ngó Sen was installed"
+msgstr "fcitx5 đã chạy từ trước khi cài Ngó Sen"
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "Copy command"

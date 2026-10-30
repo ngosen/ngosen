@@ -30,6 +30,7 @@ class FakeDBusHandler:
         self.reloads = []
         self.group = ("Default", "us", [("keyboard-us", ""), ("ngosen", "")])
         self.restarts = 0
+        self.available = {"keyboard-us", "ngosen"}
 
     def get_config(self):
         return {"values": copy.deepcopy(self.values), "metadata": copy.deepcopy(METADATA)}
@@ -51,6 +52,9 @@ class FakeDBusHandler:
 
     def input_method_names(self):
         return [im for im, _im_layout in self.group[2]]
+
+    def has_input_method(self, name):
+        return name in self.available
 
     def input_method_group(self):
         return copy.deepcopy(self.group)

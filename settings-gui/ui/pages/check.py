@@ -184,7 +184,7 @@ class CheckPage(QWidget):
         self.rows = [self._row(finding) for finding in self.found]
         for row in self.rows:
             self.steps.content_layout.addWidget(row)
-        title, text = system_check.summary(self.found)
+        title, text = system_check.summary(self.found, self.fixes.failed)
         self.heading.setText(_("Fixing…") if self.fixes.busy else title)
         self.summary.setText(text)
         fixable = self.fixes.fixable(self.findings)
@@ -250,8 +250,11 @@ class CheckPage(QWidget):
         QTimer.singleShot(settle, lambda: self._fixed(done, undos))
 
     def _fixed(self, done, undos):
-        self.fixes.busy = set()
         self.run()
+        wait = self.fixes.settle_again(done, self.findings)
+        if wait:
+            QTimer.singleShot(wait, lambda: self._fixed(done, undos))
+            return
         text, undo = self.fixes.finish(done, undos, self.findings)
         self._show_steps()
         if text:

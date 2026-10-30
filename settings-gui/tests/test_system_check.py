@@ -228,6 +228,65 @@ class FixReviewTest(unittest.TestCase):
         found.append(system_check.Finding(FAIL, "fcitx5 is off", action=system_check.START_FCITX))
         self.assertIn("all at once", system_check.summary(found)[1])
 
+    def test_failed_fixes_do_not_count_as_buttons(self):
+        found = [
+            system_check.Finding(FAIL, "Ngó Sen is missing", action=system_check.ADD_NGOSEN),
+            system_check.Finding(FAIL, "fcitx5 is off", action=system_check.START_FCITX),
+        ]
+        one_failed = system_check.summary(found, {system_check.ADD_NGOSEN})[1]
+        self.assertNotIn("all at once", one_failed)
+        all_failed = system_check.summary(
+            found, {system_check.ADD_NGOSEN, system_check.START_FCITX}
+        )
+        self.assertEqual(all_failed[1], "Each step says what to do.")
+
+    def test_a_failed_fix_keeps_the_instructions(self):
+        found = system_check.steps(facts("wayland", "KDE", ngosen_in_group=False))
+        add = next(f for f in found if f.action == system_check.ADD_NGOSEN)
+        self.assertIn(add.fix, system_check.failed_text(add))
+
+    def test_undo_skips_fixes_that_did_not_take(self):
+        fixes = system_check.Fixes(FakeDBusHandler())
+        undone = []
+
+        def run_fix(action, _dbus):
+            return True, lambda: undone.append(action) or True
+
+        with mock.patch.object(system_check, "run_fix", side_effect=run_fix):
+            done, undos, _settle = fixes.run(
+                [system_check.ADD_NGOSEN, system_check.ENABLE_FORWARD_KEYS]
+            )
+        left = [system_check.Finding(FAIL, "off", action=system_check.ENABLE_FORWARD_KEYS)]
+        _message, undo = fixes.finish(done, undos, left)
+        undo()
+        self.assertEqual(undone, [system_check.ADD_NGOSEN])
+
+    def test_a_slow_fix_is_checked_again_before_it_fails(self):
+        fixes = system_check.Fixes(FakeDBusHandler())
+        not_running = system_check.steps(facts("wayland", "GNOME", fcitx_running=False))
+        restart = [system_check.RESTART_FCITX]
+        self.assertGreater(fixes.settle_again(restart, not_running), 0)
+        self.assertEqual(fixes.settle_again([system_check.ADD_NGOSEN], not_running), 0)
+        extension = [system_check.ENABLE_FORWARD_KEYS]
+        still_off = [system_check.Finding(FAIL, "off", action=system_check.ENABLE_FORWARD_KEYS)]
+        self.assertGreater(fixes.settle_again(extension, still_off), 0)
+        while fixes.settle_again(extension, still_off):
+            pass
+        self.assertEqual(fixes.settle_again(extension, []), 0)
+
+    def test_ngosen_installed_after_fcitx5_asks_for_a_restart(self):
+        found = system_check.steps(
+            facts("wayland", "GNOME", ngosen_in_group=False, ngosen_loaded=False)
+        )
+        actions = [f.action for f in found]
+        self.assertNotIn(system_check.ADD_NGOSEN, actions)
+        self.assertIn(system_check.RESTART_FCITX, actions)
+        kde = system_check.steps(
+            facts("wayland", "KDE", ngosen_in_group=False, ngosen_loaded=False)
+        )
+        self.assertNotIn(system_check.RESTART_FCITX, [f.action for f in kde])
+        self.assertTrue(any("Log out" in f.fix for f in kde))
+
 
 class ReportTest(unittest.TestCase):
     def test_debug_info_gives_each_app_once(self):
@@ -528,6 +587,12 @@ class CheckPageWindowTest(unittest.TestCase):
             window.show_page("about")
             window.show_page("check")
         run.assert_called_once()
+
+    def test_badge_shows_before_the_page_is_opened(self):
+        window = self.window(FakeDBusHandler())
+        app.processEvents()
+        self.assertEqual(window.check_badge.text(), "3")
+        self.assertFalse(window.check_badge.isHidden())
 
     def test_coming_back_after_a_message_checks_again(self):
         window = self.window(FakeDBusHandler())

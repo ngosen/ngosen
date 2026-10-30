@@ -145,7 +145,7 @@ class CheckPage:
         self.rows = [self._row(finding) for finding in self.found]
         for row in self.rows:
             self.steps.add(row)
-        title, text = system_check.summary(self.found)
+        title, text = system_check.summary(self.found, self.fixes.failed)
         if self.fixes.busy:
             title = _("Fixing…")
         self.heading.set_text(title)
@@ -206,8 +206,11 @@ class CheckPage:
         return GLib.SOURCE_REMOVE
 
     def _fixed(self, done, undos):
-        self.fixes.busy = set()
         self.run()
+        wait = self.fixes.settle_again(done, self.findings)
+        if wait:
+            GLib.timeout_add(wait, self._fixed, done, undos)
+            return GLib.SOURCE_REMOVE
         text, undo = self.fixes.finish(done, undos, self.findings)
         self._show_steps()
         if text:

@@ -29,6 +29,8 @@ class Facts:
     env: dict
     fcitx_running: bool = False
     ngosen_in_group: bool = False
+    # False when fcitx5 started before Ngó Sen was installed, so it cannot add it yet.
+    ngosen_loaded: bool = True
     # IBus took this session's address file, so apps and GNOME Shell talk to it, not fcitx5.
     ibus_owns_session: bool = False
     kwin_input_method: str = ""
@@ -55,7 +57,7 @@ class Finding:
     level: str
     title: str
     fix: str = ""
-    # What the window can do about it (one of FIXES), and the command to copy when that fails.
+    # What the window can do about it (a fix action below), and the command to copy when that fails.
     action: str = ""
     command: str = ""
 
@@ -102,6 +104,8 @@ def steps(facts):
         found.append(_replaced_addon_finding(facts))
     if facts.ngosen_in_group:
         found.append(Finding(OK, _("Ngó Sen is in the fcitx5 input method list")))
+    elif not facts.ngosen_loaded and not facts.addon_replaced:
+        found.append(_restart_finding(facts, _("fcitx5 started before Ngó Sen was installed")))
     else:
         found.append(
             Finding(
@@ -135,7 +139,10 @@ def steps(facts):
 
 
 def _replaced_addon_finding(facts):
-    title = _("fcitx5 still runs Ngó Sen from before the update")
+    return _restart_finding(facts, _("fcitx5 still runs Ngó Sen from before the update"))
+
+
+def _restart_finding(facts, title):
     # KWin starts fcitx5 as its virtual keyboard and ignores a restart asked over D-Bus.
     if facts.session == "wayland" and "KDE" in facts.desktops:
         return Finding(WARN, title, _("Log out and back in to start the installed version."))
@@ -268,16 +275,18 @@ def fixed_message(action):
 
 
 # fcitx5 takes a moment to come back on the bus after starting.
-SETTLE_MS = {START_FCITX: 1500, RESTART_FCITX: 1500}
+SETTLE_MS = {START_FCITX: 1500, RESTART_FCITX: 1500, ENABLE_FORWARD_KEYS: 500}
+# A slow machine may need longer; check again this often before calling the fix failed.
+RETRY_MS, RETRIES = 500, 8
 
 
-def summary(found):
-    """Heading and text above the steps."""
+def summary(found, failed=()):
+    """Heading and text above the steps; failed fixes have no button left."""
     problems = [f for f in found if f.level != OK]
     if not problems:
         return _("This machine is ready"), _("Try typing in any app.")
     title = _("Steps left to fix: {}").format(len(problems))
-    fixable = sum(1 for f in problems if f.action)
+    fixable = sum(1 for f in problems if f.action and f.action not in failed)
     if fixable > 1:
         text = _(
             "Use the button on a step, or fix them all at once. Ngó Sen only changes this "
@@ -293,9 +302,7 @@ def summary(found):
 def failed_text(finding):
     if not finding.command:
         return finding.fix
-    return _(
-        "Could not fix this. Copy the command to run it yourself, or send the result to Ngó Sen."
-    )
+    return _("Could not fix this.") + " " + finding.fix
 
 
 def run_fix(action, dbus_handler):
@@ -343,13 +350,14 @@ class Fixes:
         self.dbus_handler = dbus_handler
         self.busy = set()
         self.failed = set()
+        self._retries = 0
 
     def fixable(self, findings):
         return [f.action for f in findings if f.action and f.action not in self.failed]
 
     def run(self, actions):
         """Runs the fixes; returns (done, undos, ms to wait before checking again)."""
-        done, undos = [], []
+        done, undos = [], {}
         for action in sorted(actions, key=FIX_ORDER.index):
             ok, undo = run_fix(action, self.dbus_handler)
             if not ok:
@@ -357,8 +365,19 @@ class Fixes:
                 continue
             done.append(action)
             if undo:
-                undos.append(undo)
+                undos[action] = undo
         return done, undos, max((SETTLE_MS.get(a, 0) for a in done), default=0)
+
+    def settle_again(self, done, findings):
+        """ms to wait before checking again while a slow fix may still be taking effect, or 0."""
+        left = {f.action for f in findings}
+        slow = set(done) & set(SETTLE_MS)
+        # A restarted fcitx5 shows as not running until it is back on the bus.
+        if slow and left & (slow | {START_FCITX}) and self._retries < RETRIES:
+            self._retries += 1
+            return RETRY_MS
+        self._retries = 0
+        return 0
 
     def finish(self, done, undos, findings):
         """After checking again: the message to show and its undo, empty when nothing got fixed."""
@@ -370,7 +389,8 @@ class Fixes:
         fixed = [a for a in done if a not in left]
         if not fixed:
             return "", None
-        return " ".join(fixed_message(a) for a in fixed), self._undo(undos) if undos else None
+        steps = [undos[a] for a in fixed if a in undos]
+        return " ".join(fixed_message(a) for a in fixed), self._undo(steps) if steps else None
 
     @staticmethod
     def _undo(undos):
@@ -427,6 +447,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
     facts.ngosen_in_group = "ngosen" in (names or [])
+    facts.ngosen_loaded = dbus_handler.has_input_method("ngosen") is not False
     facts.apps = parse_debug_info(dbus_handler.debug_info())
     return facts
 

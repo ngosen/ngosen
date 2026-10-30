@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
         // loadAppRules runs in the engine constructor, so the rule must be on disk first.
         const auto    rulesFile = std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf/ngosen-app-rules.conf";
         std::ofstream file(rulesFile, std::ios::trunc);
-        file << "deepin-editor=2\n";
+        file << "deepin-editor=2\nkate=2\n";
     }
 
     TestInstance        testInstance;
@@ -91,6 +91,15 @@ int main(int argc, char** argv) {
     focus(engine, editor);
     if (override) {
         expectMode("the user's Sen rule for deepin-editor wins", fcitx::NgoSenMode::Sen);
+        // kate.desktop has kate's rule, so the menu marks Sen and not Default typing.
+        TestInputContext kate(&testInstance.instance, "kate.desktop");
+        focus(engine, kate);
+        press(engine, kate, FcitxKey_grave);
+        auto menu = std::dynamic_pointer_cast<fcitx::CommonCandidateList>(kate.inputPanel().candidateList());
+        if (!menu || menu->globalCursorIndex() != 0) {
+            std::cerr << "FAIL: the menu marks kate's rule: cursor " << (menu ? std::to_string(menu->globalCursorIndex()) : "no menu") << '\n';
+            ++failures;
+        }
         return failures == 0 ? 0 : 1;
     }
     expectMode("deepin-editor types in Preedit", fcitx::NgoSenMode::Preedit);

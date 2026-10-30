@@ -270,10 +270,32 @@ int main() {
     keys.focus(*firefox);
     check(realMode.load() == ngosen::Mode::Sen, "firefox keeps its own switch", modeName(realMode.load()));
 
+    // A pick from the menu is not undone by a switch saved under the app's other name.
+    keys.ctrlShift(*firefox);
+    keys.focus(*firefoxDesktop);
+    keys.ctrlShift(*firefoxDesktop);
+    keys.tap(*firefoxDesktop, "grave");
+    keys.tap(*firefoxDesktop, "q");
+    keys.focus(*firefox);
+    keys.focus(*firefoxDesktop);
+    check(realMode.load() == ngosen::Mode::Preedit, "a menu pick holds over the other name's switch", modeName(realMode.load()));
+
+    // Defaults also forgets the switch of an open window without a name.
+    auto unnamedOpen = std::make_unique<TestInputContext>(&testInstance.instance, "");
+    keys.focus(*unnamedOpen);
+    keys.ctrlShift(*unnamedOpen);
+    const bool unnamedOn = realMode.load() != ngosen::Mode::Off;
+    keys.focus(*chat);
+    keys.ctrlShift(*chat);
+    if ((realMode.load() != ngosen::Mode::Off) == unnamedOn)
+        keys.ctrlShift(*chat);
+    const std::string unnamedOpenName = fcitx::NgoSenEngine::getProgramName(unnamedOpen.get());
+
     // What follows checks the older settings, not the switches.
     fcitx::RawConfig noSwitches;
     noSwitches.get("Switches", true);
     engine.setSubConfig("app_switches", noSwitches);
+    check((engine.modeFor(unnamedOpenName) != ngosen::Mode::Off) != unnamedOn, "Defaults forgets an unnamed window's switch", modeName(engine.modeFor(unnamedOpenName)));
 
     // Settings saved before the toggle key existed keep the key fcitx5 used to switch with.
     {

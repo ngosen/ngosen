@@ -658,6 +658,9 @@ namespace fcitx {
             refreshEngine();
         } else if (path == "app_switches") {
             appSwitchesTables_.load(config, true);
+            // An empty list is Defaults, which forgets open windows without a name too.
+            if (appSwitchesTables_.switches->empty())
+                ctxSwitches_.clear();
             safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
             refreshEngine();
         }
@@ -689,7 +692,9 @@ namespace fcitx {
         // The group is checked first: a lone input method can be activated with a plain InputContextEvent.
         if (event.type() == EventType::InputContextSwitchInputMethod && instance_->inputMethodManager().currentGroup().inputMethodList().size() > 1 &&
             switchPickedByUser(static_cast<InputContextSwitchInputMethodEvent&>(event).reason())) {
-            setAppSwitch(appName, true);
+            // An Off picked from the menu stays, as it did before apps had switches.
+            if (findAppRule(appName) != NgoSenMode::Off)
+                setAppSwitch(appName, true);
             if (!*config_.vietnameseOn) {
                 config_.vietnameseOn.setValue(true);
                 saveConfig();
@@ -1292,15 +1297,16 @@ namespace fcitx {
     }
 
     void NgoSenEngine::clearAppSwitch(const std::string& appName) {
-        const auto name = appSwitchName(appName);
-        if (!name)
-            return;
-        if (isStartsWith(*name, "ctx_")) {
-            ctxSwitches_.erase(*name);
+        if (isStartsWith(appName, "ctx_")) {
+            ctxSwitches_.erase(appName);
             return;
         }
-        auto switches = *appSwitchesTables_.switches;
-        switches.erase(std::remove_if(switches.begin(), switches.end(), [&name](const auto& entry) { return *entry.app == *name; }), switches.end());
+        if (!appSwitchName(appName))
+            return;
+        // Both spellings, or the one left over would still apply to appName.
+        const std::string bareName = stripDesktopSuffix(appName);
+        auto              switches = *appSwitchesTables_.switches;
+        switches.erase(std::remove_if(switches.begin(), switches.end(), [&](const auto& entry) { return *entry.app == appName || *entry.app == bareName; }), switches.end());
         appSwitchesTables_.switches.setValue(std::move(switches));
         safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
     }
@@ -1358,7 +1364,6 @@ namespace fcitx {
         std::unordered_set<KeySym> usedModeKeys;
 
         modeMenuMapping_.clear();
-        const NgoSenMode defaultMode = defaultModeFor(currentConfigureApp_);
 
         for (const auto& info : modeMenuItems()) {
             if (!info.visible)
@@ -1376,8 +1381,7 @@ namespace fcitx {
 
             if (info.mode == realMode && !isDefaultItem) {
                 activeSelectionIdx = currentCandidateIdx;
-            } else if (isDefaultItem && modeFor(currentConfigureApp_) == defaultMode && appRules_.find(currentConfigureApp_) == appRules_.end() &&
-                       !findAppSwitch(currentConfigureApp_)) {
+            } else if (isDefaultItem && !findAppRule(currentConfigureApp_) && !findAppSwitch(currentConfigureApp_)) {
                 activeSelectionIdx = currentCandidateIdx;
             }
             currentCandidateIdx++;

@@ -10,10 +10,60 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.7.1-1] — 30/10/2026
+
+Trên GNOME, Gõ Sen xoá chữ qua surrounding text khi app báo đúng chữ đang gõ, để Backspace tới muộn không còn
+làm hỏng chữ; app bỏ qua lệnh xoá thì Ngó Sen tự quay về Backspace tới hết phiên (#443, #446). Sửa hỏng chữ khi
+app báo chữ chậm hơn phím gõ (#441) và bỏ khoảng dừng sau mỗi lần xoá (#438). Kiểm tra máy cảnh báo GNOME
+50.0–50.3 thiếu bản sửa `forward-keys` (#440) và thôi báo nhầm IBus chạy song song (#442). Chế độ chọn ở menu `,`
+trên fcitx5 cũ không còn bị lưu mãi (#444); nhật ký gõ giữ mỗi sự kiện trên một dòng (#445).
+Tải ở [ngosen-1.7.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.1-1).
+
 ### Thêm
 
 - Kiểm tra máy cảnh báo khi GNOME 50.0–50.3 chạy mà không bật bản sửa `forward-keys` (Enter sau chữ Preedit và
   BackSpace của Gõ Sen bị mất), kèm lệnh bật lại; báo lỗi có thêm version GNOME Shell và trạng thái bản sửa (#440).
+
+### Thay đổi
+
+- Gõ Sen không còn dừng vài mili giây sau mỗi lần xoá và commit trong app xoá chữ qua surrounding text như
+  LibreOffice và ô GTK4 (#438).
+- Trên GNOME, Gõ Sen dùng surrounding text khi app báo đúng chữ đang gõ, tránh Backspace tới muộn làm hỏng chữ.
+  Nếu app bỏ qua lệnh xoá, Ngó Sen sửa chữ thừa bằng Backspace và dùng Backspace tới hết phiên; nếu không có
+  cách xoá khác thì gõ thô để lỗi không chồng lên nhau. KDE và các desktop Wayland khác chưa đổi (#443, #446).
+
+### Sửa
+
+- Kiểm tra máy không còn báo "IBus đang chạy song song" khi IBus đó chỉ phục vụ chương trình khác (như IBus
+  xpra tự bật); chỉ báo khi IBus thật sự giành bộ gõ của phiên đang dùng (#442).
+- Nhật ký gõ lưu ra file không còn bị gãy dòng ở phím Enter hay khi app báo chữ có xuống dòng: mỗi sự kiện
+  nằm trên đúng một dòng (#445).
+- Trên GNOME với fcitx5 cũ (Ubuntu 26.04, Debian), chọn chế độ gõ ở menu `,` hay bằng phím đổi chế độ không còn
+  được lưu lại: nó áp cho mọi app tới khi đăng xuất, đăng nhập lại thì về chế độ mặc định trong cửa sổ cài đặt.
+  Trước đây lựa chọn đó bị lưu mãi và đè lên chế độ mặc định; luật cũ còn trong máy được bỏ qua (#444).
+- Sửa Gõ Sen làm hỏng chữ như "tiíiếng" khi app dùng surrounding text báo chữ chậm hơn phím gõ
+  (LibreOffice, ô GTK4) (#441).
+
+### Tài liệu
+
+- README có thêm ảnh cửa sổ cài đặt bản GTK trên GNOME, ở giao diện sáng và tối, bên cạnh ảnh bản Qt (#435).
+
+### Test
+
+- App giả trong test xoá qua surrounding text giữ chữ sau con trỏ; thêm app báo sai hoặc không báo chữ,
+  kiểm cả đường xoá qua surrounding text hay Backspace (#437).
+
+## [1.7.0-1] — 29/10/2026
+
+Cửa sổ cài đặt có thêm bản GTK giống app GNOME, mở mặc định trên GNOME và Cinnamon, đổi qua lại với bản Qt
+bằng một nút (#386, #393, #396, #407); trang "Có gì mới & mẹo" và thông báo một lần sau khi cập nhật lên version
+có tính năng mới (#331, #409). Ngó Sen cho GNOME (IBus) có gói openSUSE và tự cài trên Xfce, Cinnamon, MATE
+(#389, #341). Sửa WPS Office trên deepin (#430), KDE Wayland nhớ chế độ từng app sau khi cập nhật (#428) và
+nhiều lỗi của install.sh và cửa sổ cài đặt. Không còn gói cho Ubuntu 22.04 (#332).
+Tải ở [ngosen-1.7.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.0-1).
+
+### Thêm
+
 - openSUSE Tumbleweed có Ngó Sen cho GNOME (bản IBus): `install.sh --ibus` cài được, và repo zypper có thêm gói
   `ibus-ngosen` từ version đầu tiên có package openSUSE (#389).
 - Sau khi cập nhật lên version có tính năng mới (1.7.0 trở đi), một thông báo ở góc màn hình hiện một lần,
@@ -41,11 +91,6 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thay đổi
 
-- Gõ Sen không còn dừng vài mili giây sau mỗi lần xoá và commit trong app xoá chữ qua surrounding text như
-  LibreOffice và ô GTK4 (#438).
-- Trên GNOME, Gõ Sen dùng surrounding text khi app báo đúng chữ đang gõ, tránh Backspace tới muộn làm hỏng chữ.
-  Nếu app bỏ qua lệnh xoá, Ngó Sen sửa chữ thừa bằng Backspace và dùng Backspace tới hết phiên; nếu không có
-  cách xoá khác thì gõ thô để lỗi không chồng lên nhau. KDE và các desktop Wayland khác chưa đổi (#443, #446).
 - Cài bản fcitx5 trên GNOME, install.sh nay nói rõ trước câu "Tiếp tục?" sẽ đổi gì cho tài khoản và cách
   trả lại bằng `--uninstall`, rồi giới thiệu bản Ngó Sen cho GNOME chạy trên IBus kèm lệnh cài. Máy chưa có
   gói bản IBus (như Debian 12) hoặc đang dùng sẵn bản IBus thì không giới thiệu (#400, #410).
@@ -61,15 +106,6 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
-- Kiểm tra máy không còn báo "IBus đang chạy song song" khi IBus đó chỉ phục vụ chương trình khác (như IBus
-  xpra tự bật); chỉ báo khi IBus thật sự giành bộ gõ của phiên đang dùng (#442).
-- Nhật ký gõ lưu ra file không còn bị gãy dòng ở phím Enter hay khi app báo chữ có xuống dòng: mỗi sự kiện
-  nằm trên đúng một dòng (#445).
-- Trên GNOME với fcitx5 cũ (Ubuntu 26.04, Debian), chọn chế độ gõ ở menu `,` hay bằng phím đổi chế độ không còn
-  được lưu lại: nó áp cho mọi app tới khi đăng xuất, đăng nhập lại thì về chế độ mặc định trong cửa sổ cài đặt.
-  Trước đây lựa chọn đó bị lưu mãi và đè lên chế độ mặc định; luật cũ còn trong máy được bỏ qua (#444).
-- Sửa Gõ Sen làm hỏng chữ như "tiíiếng" khi app dùng surrounding text báo chữ chậm hơn phím gõ
-  (LibreOffice, ô GTK4) (#441).
 - deepin-editor: mặc định dùng chế độ gạch chân để gõ nhanh không còn đảo chữ, mất hoặc lặp dấu như khi
   dùng Gõ Sen; vẫn giữ chế độ đã chọn cho app qua menu `, không đổi các app khác (#421).
 - Cửa sổ cài đặt: bấm "Mặc định" nay báo trước phím chuyển Anh/Việt sẽ về Ctrl+Shift nếu đang dùng phím khác,
@@ -109,11 +145,6 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - README ghi rõ Cứu dấu không chạy trong Firefox bản snap cài sẵn trên Ubuntu, và cách cài Firefox từ kho của
   Mozilla (#423).
-
-### Test
-
-- App giả trong test xoá qua surrounding text giữ chữ sau con trỏ; thêm app báo sai hoặc không báo chữ,
-  kiểm cả đường xoá qua surrounding text hay Backspace (#437).
 
 ## [1.6.4-1] — 28/10/2026
 

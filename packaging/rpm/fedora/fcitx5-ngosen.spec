@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.6.4
+Version:        1.7.1
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later AND OFL-1.1
@@ -100,6 +100,25 @@ else
 fi
 
 %changelog
+* Fri Oct 30 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.1-1
+- On GNOME, Sen uses surrounding text when the app reports the current word correctly, avoiding delayed Backspace keys that corrupt text. If the app ignores deletion, it repairs leftover text with Backspace and uses Backspace for the rest of the session; if no deletion method remains, it passes keystrokes through without conversion. KDE and other Wayland desktops are unchanged (#443, #446).
+- Remove pauses after each deletion and commit in apps that delete through surrounding text, including LibreOffice and GTK4 text fields (#438).
+- Fix Sen corrupting words when apps report surrounding text later than keystrokes, including LibreOffice and GTK4 text fields (#441).
+- System checks warn when GNOME 50.0–50.3 runs without the forward-keys fix, which prevents lost Enter keys after Preedit text and lost Sen Backspace keys, and provide a command to enable it. Error reports include the GNOME Shell version and fix status (#440).
+- System checks no longer warn about IBus running alongside fcitx5 when it only serves other programs, such as IBus started by xpra; warn only when IBus competes for the current session's input method (#442).
+- Keep each event in saved typing logs on one line, including Enter keys and app-reported text containing line breaks (#445).
+- On GNOME with older fcitx5 versions (Ubuntu 26.04, Debian), typing modes selected from the comma menu or mode-switch key apply to all apps until logout and are no longer saved permanently. The next login restores the default from settings, and old saved rules that overrode it are ignored (#444).
+
+* Thu Oct 29 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.0-1
+- Settings window: a GTK edition that looks like a GNOME app, opened by default on GNOME and Cinnamon (#386, #396), with buttons to switch between Qt and GTK (#393, #407, #422).
+- Settings window: a "What's new & tips" page, announced once after updating to a release with new features (#331, #409, #433).
+- Ngó Sen for GNOME (IBus): packages for openSUSE Tumbleweed (#389); install.sh --ibus sets it up on Xfce, Cinnamon and MATE (#341).
+- Typing core: the underline mode reopens a word on Backspace (#344); Sen works in apps that take no forwarded keys (#353).
+- WPS Office on deepin over D-Bus no longer leaves old letters behind (#430); deepin-editor defaults to the underline mode (#421).
+- KDE Wayland: per-app modes keep working after an update without logging in again (#428).
+- install.sh: explains what changes on GNOME before asking (#400, #410), asks [y/N] (#398), installs the GTK settings libraries on GNOME and Cinnamon (#387), leaves installed Qt packages alone (#418), skips reinstalling when up to date (#426), switches to the IBus edition cleanly (#420, #425) and uninstalls with im-config 1.1 (#424).
+- No packages for Ubuntu 22.04 any more; 1.6.4 is the last one (#332).
+
 * Wed Oct 28 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.6.4-1
 - Antigravity on GNOME: tone marks and letters are no longer lost when typing fast; behind GNOME's IBus bridge Sen waits up to 100 ms for a deletion (#362, #395).
 - Cứu dấu changes the tone of a selected word in Chrome, Chromium and Brave on X11 (#360, #390).

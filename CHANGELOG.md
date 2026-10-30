@@ -10,7 +10,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Phím chuyển Anh/Việt (Ctrl+Shift) nay chỉ đổi app đang gõ, và mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất. App chưa bấm lần nào theo lần bấm gần nhất. Nút "Mặc định", sao lưu và hoàn tác trong cửa sổ cài đặt bao luôn phần nhớ này (#PR).
+
 ### Sửa
+
+- App đã chọn Preedit qua menu `` ` `` không còn chuyển sang Gõ Sen sau khi bấm phím chuyển Anh/Việt hai lần (#PR).
 
 - Preedit trên GNOME: bấm Enter sau chữ đang gạch chân không còn bị mất Enter khi giữ phím lâu một chút như gõ bình thường; Enter nay đi lúc nhả phím (#465).
 - Ở chế độ gạch chân (Preedit), click trong Alacritty và app XIM khác không còn làm mất chữ đang gõ dở (#466).

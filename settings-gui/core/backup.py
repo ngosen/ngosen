@@ -9,11 +9,12 @@ from datetime import datetime
 
 from core.settings_snapshot import local_dict_path
 
-COMPONENTS = ("config", "macros", "keymaps", "rules", "dictionary")
+COMPONENTS = ("config", "macros", "keymaps", "rules", "switches", "dictionary")
 SUB_CONFIGS = {
     "macros": ("ngosen-macro", "Macro"),
     "keymaps": ("custom_keymap", "CustomKeymap"),
     "rules": ("app_rules", "Rules"),
+    "switches": ("app_switches", "Switches"),
 }
 
 

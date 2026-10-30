@@ -12,6 +12,7 @@ add_library(ngosen_core STATIC
     ngosen-state-wait.cpp
     ngosen-app-quirks.cpp
     ngosen-globals.cpp
+    ngosen-pointer.cpp
     ngosen-recorder.cpp
     ngosen-strings.cpp
     ngosen-surrounding-check.cpp

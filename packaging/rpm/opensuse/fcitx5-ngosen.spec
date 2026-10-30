@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.7.2
+Version:        1.7.3
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later AND OFL-1.1
@@ -99,6 +99,9 @@ else
 fi
 
 %changelog
+* Fri Oct 30 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.3-1
+- Recognise Firefox (including the snap), Chrome and LibreOffice by name when they connect through the IBus GTK module on X11, and share the X11 click watcher with the IBus edition (#458).
+
 * Fri Oct 30 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.2-1
 - Fix Sen forgetting the word being typed in VS Code on GNOME when VS Code reports the cursor moving to the start of the line and back to the end of the unchanged word (#453).
 - Fix Sen producing "tiêsng" for "tieesng" in Qt apps on GNOME in the IBus edition, which shares the typing core with the fcitx5 edition. This fix only changes IBus behaviour (#452).

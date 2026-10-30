@@ -9,8 +9,8 @@
 #include "ngosen-utils.h"
 #include "ngosen-pointer.h"
 
-std::thread  mouse_thread = std::thread();
-X11Selection x11_selection;
+std::thread          mouse_thread = std::thread();
+ngosen::X11Selection x11_selection;
 
 namespace {
     void markMouseClick() {
@@ -23,7 +23,7 @@ void mousePressResetThread() {
     // Wayland reports clicks to no one but the app; checkCursorJump covers that case. Xwayland still
     // reports clicks on X11 windows.
     // Xwayland's primary selection also carries what Wayland apps select, which no X11 window owns.
-    watchX11PointerClicks(stop_flag_monitor, markMouseClick, getEnv("WAYLAND_DISPLAY").empty() ? &x11_selection : nullptr);
+    ngosen::watchX11PointerClicks(stop_flag_monitor, markMouseClick, getEnv("WAYLAND_DISPLAY").empty() ? &x11_selection : nullptr);
 }
 
 void startMouseReset() {

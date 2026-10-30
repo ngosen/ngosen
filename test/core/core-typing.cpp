@@ -1596,6 +1596,19 @@ namespace {
               "fallback: text filled in after the cursor sends the next words to the preedit", app->text() + " " + join(lines));
     }
 
+    // An app whose copy still holds the replaced characters until the next key, as Firefox on GNOME
+    // does: a deletion counted on that copy takes too many.
+    void testSlowReport() {
+        ngosen::test::Typed run;
+        const Field         gnome = makeField("ibus", true);
+        for (const auto& quirks : {ngosen::test::AppQuirks{.reportsNothingAfterDelete = true}, ngosen::test::AppQuirks{.repeatsOldTextAfterDelete = true}}) {
+            const auto lines = logLinesWhileTyping(gnome, quirks, "vieetj nam tieesng ", "", &run, 150);
+            check(run.text == "việt nam tiếng " && countHaving(lines, "Surrounding text untrusted") == 0 && countHaving(lines, "copy older than the last commit") > 0 &&
+                      run.sent.forwardedBackSpaces > 0,
+                  "slow report: a copy from before the last replacement is not deleted on", run.text + " " + join(lines));
+        }
+    }
+
     // The ways out when a deletion through the surrounding text goes wrong.
     void testSurroundingFallback() {
         ngosen::test::Typed run;
@@ -1733,6 +1746,7 @@ int main() {
     testPathCheck();
     testSurroundingCheck();
     testSurroundingFallback();
+    testSlowReport();
     testAutofillMark();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

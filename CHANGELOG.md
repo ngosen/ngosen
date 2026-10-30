@@ -45,7 +45,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   LibreOffice và ô GTK4 (#438).
 - Trên GNOME, Gõ Sen dùng surrounding text khi app báo đúng chữ đang gõ, tránh Backspace tới muộn làm hỏng chữ.
   Nếu app bỏ qua lệnh xoá, Ngó Sen sửa chữ thừa bằng Backspace và dùng Backspace tới hết phiên; nếu không có
-  cách xoá khác thì gõ thô để lỗi không chồng lên nhau. KDE và các desktop Wayland khác chưa đổi (#443).
+  cách xoá khác thì gõ thô để lỗi không chồng lên nhau. KDE và các desktop Wayland khác chưa đổi (#443, #446).
 - Cài bản fcitx5 trên GNOME, install.sh nay nói rõ trước câu "Tiếp tục?" sẽ đổi gì cho tài khoản và cách
   trả lại bằng `--uninstall`, rồi giới thiệu bản Ngó Sen cho GNOME chạy trên IBus kèm lệnh cài. Máy chưa có
   gói bản IBus (như Debian 12) hoặc đang dùng sẵn bản IBus thì không giới thiệu (#400, #410).

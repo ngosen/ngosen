@@ -392,10 +392,6 @@ msgstr ""
 msgid "Vietnamese input method for fcitx5 on Linux that types like UniKey on Windows."
 msgstr ""
 
-#: settings-gui/ui/pages/about.py:103
-msgid "Report Bug"
-msgstr ""
-
 #: settings-gui/ui/pages/about.py:112
 msgid "Request Feature"
 msgstr ""
@@ -1121,16 +1117,8 @@ msgstr ""
 msgid "No settings found"
 msgstr ""
 
-#: settings-gui/ui/pages/about.py
-msgid "Check my machine…"
-msgstr ""
-
 #: settings-gui/ui/system_check_dialog.py
 msgid "Check my machine"
-msgstr ""
-
-#: settings-gui/ui/system_check_dialog.py
-msgid "How fcitx5 is set up on this machine. Nothing is sent until you send a bug report, and it lists the apps below, so read it before sending."
 msgstr ""
 
 #: settings-gui/ui/system_check_dialog.py
@@ -1155,15 +1143,6 @@ msgstr ""
 
 #: settings-gui/ui/system_check_dialog.py
 msgid "Copied the result. Paste it into the message and say what went wrong."
-msgstr ""
-
-#: settings-gui/ui/system_check_dialog.py
-#, python-brace-format
-msgid "Apps connected to fcitx5: {}"
-msgstr ""
-
-#: settings-gui/ui/system_check_dialog.py
-msgid "No setup problem found"
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1254,10 +1233,6 @@ msgstr ""
 
 #: settings-gui/core/system_check.py
 msgid "Qt 5 apps use fcitx5"
-msgstr ""
-
-#: settings-gui/ui/pages/about.py
-msgid "Typing still uses the Ngó Sen that ran before the update. Log out and back in to start version {}."
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1514,7 +1489,7 @@ msgid "$DATE and $TIME in a macro type today's date and time: hn → Hôm nay $D
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
-msgid "Typing wrong in some app? “Check my machine…” on the About page says why."
+msgid "Typing wrong in some app? The Check my machine page says why."
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py

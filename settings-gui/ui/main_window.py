@@ -36,6 +36,11 @@ from core import backup, settings_snapshot
 from ui import brand, search
 from ui.confirm import confirm
 
+try:
+    from version import __version__
+except ImportError:
+    __version__ = "dev version"
+
 # Lazy loading pages on demand
 
 
@@ -58,6 +63,8 @@ class NgoSenSettingsWindow(QMainWindow):
         self._save_timer.setInterval(400)
         self._save_timer.timeout.connect(self.save_pending)
         self._undo_to = None
+        self._undo_fix = None
+        self._check_item = None
 
         self._setup_ui()
         self._setup_window_size()
@@ -285,6 +292,8 @@ class NgoSenSettingsWindow(QMainWindow):
         return wrapper
 
     def _show_message(self, text, undo=False, error=False):
+        self._undo_fix = None
+        self._check_item = None
         if error:
             fill, border = brand.pick(self, brand.ERROR_FILL), brand.pick(self, brand.ERROR_BORDER)
         else:
@@ -339,6 +348,11 @@ class NgoSenSettingsWindow(QMainWindow):
 
             return AboutPage(self.dbus_handler)
 
+        def create_check():
+            from ui.pages.check import CheckPage
+
+            return CheckPage(self.dbus_handler, __version__, self.notify, self._show_count)
+
         def create_whats_new():
             from ui.pages.whats_new import WhatsNewPage
 
@@ -374,6 +388,12 @@ class NgoSenSettingsWindow(QMainWindow):
             ("dialog-information", "help-about-symbolic"),
             (None, create_whats_new),
             names=["whats-new"],
+        )
+        self._add_page(
+            _("Check my machine"),
+            ("emblem-system", "emblem-system-symbolic", "preferences-system"),
+            (None, create_check),
+            names=["check"],
         )
         self._add_page(
             _("About"),
@@ -465,9 +485,25 @@ class NgoSenSettingsWindow(QMainWindow):
         self._show_message(text, undo=before is not None)
         self.update_reset_button_state()
 
+    def notify(self, text, undo):
+        """A message from the check page, with Undo when its fix can be taken back."""
+        self._undo_to = None
+        self._show_message(text, undo=undo is not None)
+        self._undo_fix = undo
+
+    def _show_count(self, count):
+        self.check_badge.setText(str(count))
+        self.check_badge.setVisible(count > 0)
+        self.check_badge.setAccessibleName(_("Steps left to fix: {}").format(count))
+
     def undo(self):
-        """Puts back the settings from before the last save."""
+        """Puts back the settings from before the last save, or the last fix."""
         self._save_timer.stop()
+        if self._undo_fix is not None:
+            undo = self._undo_fix
+            undo()
+            self._show_message(_("Change undone."))
+            return
         if self._undo_to is None:
             return
         if not settings_snapshot.restore(self.dbus_handler, self._undo_to):
@@ -549,6 +585,8 @@ class NgoSenSettingsWindow(QMainWindow):
             widget = self._page_for_item(item)
             if widget:
                 self.content_stack.setCurrentWidget(widget)
+                if item is self._check_item:
+                    widget.run()
             self.update_reset_button_state()
         elif role == "header":
             # Don't allow selecting headers, move to next item
@@ -599,6 +637,21 @@ class NgoSenSettingsWindow(QMainWindow):
         self.resize(w, h)
         self.move((screen.width() - w) // 2, (screen.height() - h) // 2)
 
+    def _badge_overlay(self):
+        """Lies over the check entry, so the list still draws and selects the entry itself."""
+        overlay = QWidget()
+        overlay.setAttribute(Qt.WA_TransparentForMouseEvents)
+        layout = QHBoxLayout(overlay)
+        layout.setContentsMargins(0, 0, 8, 0)
+        layout.addStretch()
+        self.check_badge = QLabel()
+        self.check_badge.setObjectName("CheckBadge")
+        self.check_badge.setAlignment(Qt.AlignCenter)
+        self.check_badge.hide()
+        brand.follow_theme(self.check_badge, _paint_badge)
+        layout.addWidget(self.check_badge)
+        return overlay
+
     def _add_page(self, title: str, icon_name, *parts, names=()):
         """Adds a sidebar entry; several (tab title, factory) parts show as tabs.
 
@@ -612,5 +665,15 @@ class NgoSenSettingsWindow(QMainWindow):
         item.setData(Qt.UserRole + 2, None)
 
         self.sidebar.addItem(item)
+        if "check" in names:
+            self._check_item = item
+            self.sidebar.setItemWidget(item, self._badge_overlay())
         for index, name in enumerate(names):
             self._page_names[name] = (self.sidebar.row(item), index)
+
+
+def _paint_badge(label):
+    label.setStyleSheet(
+        f"QLabel#CheckBadge {{ background: {brand.pick(label, brand.ERROR_BORDER)}; color: white;"
+        " border-radius: 8px; padding: 0 6px; font-weight: bold; min-width: 4px; }"
+    )

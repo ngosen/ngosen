@@ -8,8 +8,6 @@ import unittest
 from unittest import mock
 from urllib.parse import parse_qs, urlparse
 
-from qtpy.QtWidgets import QWidget
-
 # support puts the settings window on sys.path, so it has to come first.
 # isort: off
 from support import FakeDBusHandler, app  # noqa: F401
@@ -354,83 +352,141 @@ class ReplacedAddonTest(unittest.TestCase):
         self.assertEqual(titles(found, WARN), ["fcitx5 still runs Ngó Sen from before the update"])
 
 
-class DialogTest(unittest.TestCase):
+class CheckPageTest(unittest.TestCase):
+    NO_IM = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
+    TITLE = "Ngó Sen is not in the fcitx5 input method list"
+
     def setUp(self):
-        # The fcitx5 of the machine running the tests must not add a row.
-        patcher = mock.patch.object(system_check, "runs_replaced_addon", return_value=False)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        from ui.pages.check import CheckPage
 
-    def test_dialog_lists_findings_and_copies_the_report(self):
+        # The fcitx5 and IBus of the machine running the tests must not add a row.
+        for name in ("runs_replaced_addon", "ibus_owns_session"):
+            patcher = mock.patch.object(system_check, name, return_value=False)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        env = mock.patch.dict(os.environ, self.NO_IM, clear=True)
+        env.start()
+        self.addCleanup(env.stop)
+        self.dbus = FakeDBusHandler()
+        self.messages = []
+        self.counts = []
+        self.page = CheckPage(
+            self.dbus,
+            "1.4.2",
+            lambda text, undo: self.messages.append((text, undo)),
+            self.counts.append,
+        )
+
+    def row(self, title):
+        return next(row for row in self.page.rows if row.title == title)
+
+    def settle(self):
+        from qtpy.QtWidgets import QApplication
+
+        while self.page.busy:
+            QApplication.processEvents()
+
+    def test_lists_every_step_and_copies_the_report(self):
         from qtpy.QtGui import QGuiApplication
-        from ui.system_check_dialog import SystemCheckDialog
 
-        env = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
-        with mock.patch.dict(os.environ, env, clear=True):
-            dialog = SystemCheckDialog(FakeDBusHandler(), "1.4.2")
-        rows = [
-            w.objectName()
-            for w in dialog.findChildren(object)
-            if w.objectName().startswith("CheckRow-")
-        ]
-        self.assertIn("CheckRow-fail", rows)
-        self.assertIn("kate (wayland)", dialog.apps.text())
-
-        fixed = dict(env, GTK_IM_MODULE="fcitx", QT_IM_MODULE="fcitx", XMODIFIERS="@im=fcitx")
-        with mock.patch.dict(os.environ, fixed, clear=True):
-            dialog.run()
-        rows = [
-            w.objectName()
-            for w in dialog.findChildren(QWidget)
-            if w.objectName().startswith("CheckRow-")
-        ]
-        self.assertEqual(rows, ["CheckRow-ok"])
-
-        with mock.patch.dict(os.environ, env, clear=True):
-            dialog.run()
-        dialog.copy_report()
+        levels = [row.level for row in self.page.rows]
+        self.assertEqual(levels[:2], [OK, OK])
+        self.assertIn(FAIL, levels)
+        self.assertEqual(self.counts[-1], 3)
+        self.assertIn("kate (wayland)", self.page.apps.text())
+        fixed = dict(self.NO_IM, GTK_IM_MODULE="fcitx", QT_IM_MODULE="fcitx")
+        with mock.patch.dict(os.environ, dict(fixed, XMODIFIERS="@im=fcitx"), clear=True):
+            self.page.run()
+        self.assertEqual({row.level for row in self.page.rows}, {OK})
+        self.assertEqual(self.counts[-1], 0)
+        self.assertEqual(self.page.heading.text(), "This machine is ready")
+        self.page.run()
+        self.page.copy_btn.click()
         self.assertIn("[X] GTK apps have no input method", QGuiApplication.clipboard().text())
+        self.assertEqual(self.messages[-1][0], "Copied the result.")
+
+    def test_adding_ngosen_fixes_the_step_and_can_be_undone(self):
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.page.run()
+        self.row(self.TITLE).button.click()
+        self.assertEqual(self.page.heading.text(), "Fixing…")
+        self.settle()
+        self.assertEqual(self.dbus.input_method_names(), ["ngosen"])
+        self.assertNotIn(self.TITLE, [row.title for row in self.page.rows])
+        text, undo = self.messages[-1]
+        self.assertEqual(text, "Added Ngó Sen to the input method list.")
+        undo()
+        self.assertEqual(self.dbus.input_method_names(), ["keyboard-us"])
+        self.assertIn(self.TITLE, [row.title for row in self.page.rows])
+
+    def test_a_failed_fix_offers_its_command(self):
+        from qtpy.QtGui import QGuiApplication
+
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.dbus.set_input_method_group = lambda *args: False
+        self.page.run()
+        self.row(self.TITLE).button.click()
+        self.settle()
+        button = self.row(self.TITLE).button
+        self.assertEqual(button.text(), "Copy command")
+        self.assertEqual(self.messages, [])
+        button.click()
+        self.assertEqual(QGuiApplication.clipboard().text(), "fcitx5-configtool")
 
     def test_messaging_copies_the_report_and_opens_the_chat(self):
         from core.brand import MESSENGER_URL
         from qtpy.QtGui import QGuiApplication
-        from ui.system_check_dialog import SystemCheckDialog
 
-        env = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
-        with mock.patch.dict(os.environ, env, clear=True):
-            dialog = SystemCheckDialog(FakeDBusHandler(), "1.4.2")
         QGuiApplication.clipboard().setText("")
-        with mock.patch("ui.system_check_dialog.QDesktopServices.openUrl") as open_url:
-            dialog.message_btn.click()
+        with mock.patch("ui.pages.check.QDesktopServices.openUrl") as open_url:
+            self.page.message_btn.click()
         self.assertEqual(open_url.call_args[0][0].toString(), MESSENGER_URL)
         self.assertIn("Ngó Sen 1.4.2", QGuiApplication.clipboard().text())
-        self.assertIn("Paste", dialog.status.text())
+        self.assertIn("Paste", self.messages[-1][0])
 
-    def test_copying_says_it_is_done(self):
-        from ui.system_check_dialog import SystemCheckDialog
 
-        dialog = SystemCheckDialog(FakeDBusHandler(), "1.4.2")
-        self.assertEqual(dialog.status.text(), "")
-        dialog.copy_btn.click()
-        self.assertTrue(dialog.status.text())
+class CheckPageWindowTest(unittest.TestCase):
+    def setUp(self):
+        for name in ("runs_replaced_addon", "ibus_owns_session"):
+            patcher = mock.patch.object(system_check, name, return_value=False)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        env = mock.patch.dict(os.environ, CheckPageTest.NO_IM, clear=True)
+        env.start()
+        self.addCleanup(env.stop)
 
-    def test_dialog_grows_to_fit_more_rows(self):
-        from qtpy.QtWidgets import QApplication, QLabel
-        from ui.system_check_dialog import SystemCheckDialog
+    def window(self, dbus):
+        from ui.main_window import NgoSenSettingsWindow
 
-        env = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
-        fixed = dict(env, GTK_IM_MODULE="fcitx", QT_IM_MODULE="fcitx", XMODIFIERS="@im=fcitx")
-        with mock.patch.dict(os.environ, fixed, clear=True):
-            dialog = SystemCheckDialog(FakeDBusHandler(), "1.4.2")
-        dialog.show()
-        QApplication.processEvents()
-        with mock.patch.dict(os.environ, env, clear=True):
-            dialog.run()
-        QApplication.processEvents()
-        for label in dialog.findChildren(QLabel):
-            if label.parent().objectName().startswith("CheckRow-") and label.text():
-                self.assertGreaterEqual(label.height(), label.sizeHint().height(), label.text())
-        dialog.close()
+        window = NgoSenSettingsWindow(dbus_handler=dbus)
+        self.addCleanup(window.close)
+        return window
+
+    def test_sits_above_about_with_the_steps_left(self):
+        window = self.window(FakeDBusHandler())
+        titles = [window.sidebar.item(r).text() for r in range(window.sidebar.count())]
+        self.assertEqual(titles[-2:], ["Check my machine", "About"])
+        page = window.show_page("check")
+        self.assertEqual(window.check_badge.text(), "3")
+        self.assertFalse(window.check_badge.isHidden())
+        with mock.patch.object(page, "run") as run:
+            window.show_page("about")
+            window.show_page("check")
+        run.assert_called_once()
+
+    def test_undo_takes_back_the_fix(self):
+        dbus = FakeDBusHandler()
+        dbus.group = ("Default", "us", [("keyboard-us", "")])
+        window = self.window(dbus)
+        page = window.show_page("check")
+        page.fix([system_check.ADD_NGOSEN])
+        while page.busy:
+            app.processEvents()
+        self.assertFalse(window.btn_undo.isHidden())
+        window.btn_undo.click()
+        self.assertEqual(dbus.input_method_names(), ["keyboard-us"])
+        self.assertEqual(window.message_label.text(), "Change undone.")
+        self.assertTrue(window.btn_undo.isHidden())
 
 
 if __name__ == "__main__":

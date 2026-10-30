@@ -1,3 +1,11 @@
+fcitx5-ngosen (1:1.7.4-1) unstable; urgency=medium
+
+  * Send a held Enter in Preedit on GNOME when the key is released (#465), commit the underlined
+    word when a click in an XIM app comes without a reset (#466), and delete through the text in
+    apps GNOME Shell 50.0-50.3 relays when the forward-keys extension is not running (#467).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sat, 31 Oct 2026 12:00:00 +0700
+
 fcitx5-ngosen (1:1.7.3-1) unstable; urgency=medium
 
   * Recognise Firefox (including the snap), Chrome and LibreOffice by name when they connect

@@ -337,14 +337,14 @@
     "SurrDeleteSleepMs",
     "Integer",
     "Experiment: ms per deleted char to sleep after deleteSurroundingText",
-    "4",
+    "0",
     {}
    ],
    [
     "SurrCommitSleepMs",
     "Integer",
     "Experiment: ms per committed char to sleep after commitString on the surrounding-text path",
-    "3",
+    "0",
     {}
    ],
    [

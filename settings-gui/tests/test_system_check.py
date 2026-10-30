@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -79,11 +80,29 @@ class EvaluateTest(unittest.TestCase):
 
     def test_missing_xmodifiers_and_running_ibus_warn(self):
         env = dict(FCITX, XMODIFIERS="@im=ibus")
-        found = system_check.evaluate(facts("wayland", "GNOME", env=env, ibus_running=True))
+        found = system_check.evaluate(facts("wayland", "GNOME", env=env, ibus_owns_session=True))
         self.assertEqual(
             titles(found, WARN),
             ["Older X11 apps have no input method", "IBus is running next to fcitx5"],
         )
+
+    def test_gnome_50_without_the_forward_key_fix_warns(self):
+        def found(version, state):
+            f = facts(
+                "wayland", "ubuntu:GNOME", gnome_shell_version=version, forward_keys_state=state
+            )
+            return system_check.evaluate(f)
+
+        title = "GNOME 50.1 drops the keys Ngó Sen sends to apps"
+        self.assertEqual(titles(found("50.1", "INACTIVE"), WARN), [title])
+        self.assertIn("gnome-extensions enable", found("50.1", "INACTIVE")[0].fix)
+        self.assertIn("install.sh", found("50.1", "")[0].fix)
+        self.assertEqual(found("50.1", "ACTIVE"), [])
+        self.assertEqual(len(found("50.0", "INACTIVE")), 1)
+        self.assertEqual(len(found("50.3", "INACTIVE")), 1)
+        self.assertEqual(found("50.4", "INACTIVE"), [])
+        self.assertEqual(found("49.2", ""), [])
+        self.assertEqual(found("", ""), [])
 
 
 class ReportTest(unittest.TestCase):
@@ -127,6 +146,75 @@ class CollectTest(unittest.TestCase):
         self.assertIn("Fcitx5", f.kwin_input_method)
         self.assertEqual(f.apps, [("kate", "wayland")])
         self.assertNotIn("HOME", f.env)
+
+    def test_reads_gnome_shell_and_forward_key_fix_on_gnome(self):
+        info = "forward-keys@ngosen.github.io\n  Enabled: No\n  State: INACTIVE\n"
+        outputs = {"gnome-shell": "GNOME Shell 50.1\n", "gnome-extensions": info}
+
+        def run(cmd, env=None, **kw):
+            out = outputs.get(cmd[0], "")
+            # gnome-extensions translates its labels, but not the state itself.
+            if (env or {}).get("LC_ALL") != "C":
+                out = out.replace("State:", "Trạng thái:")
+            return subprocess.CompletedProcess(cmd, 0, stdout=out)
+
+        env = {"XDG_CURRENT_DESKTOP": "ubuntu:GNOME"}
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            f = system_check.collect(FakeDBusHandler(), env=env)
+        self.assertEqual((f.gnome_shell_version, f.forward_keys_state), ("50.1", "INACTIVE"))
+        self.assertIn("GNOME Shell 50.1, forward-keys: INACTIVE", system_check.report(f, []))
+
+        outputs["gnome-extensions"] = ""
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            self.assertEqual(
+                system_check.collect(FakeDBusHandler(), env=env).forward_keys_state, ""
+            )
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run) as ran:
+            f = system_check.collect(FakeDBusHandler(), env={"XDG_CURRENT_DESKTOP": "KDE"})
+        self.assertEqual(f.gnome_shell_version, "")
+        self.assertNotIn("gnome-shell", [c.args[0][0] for c in ran.call_args_list])
+
+    def test_ibus_counts_only_when_it_holds_this_session(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        proc = os.path.join(tmp.name, "proc")
+        for pid, comm in (("100", "ibus-daemon"), ("200", "fcitx5")):
+            os.makedirs(os.path.join(proc, pid))
+            with open(os.path.join(proc, pid, "comm"), "w", encoding="utf-8") as f:
+                f.write(comm + "\n")
+        bus = os.path.join(tmp.name, "ibus", "bus")
+        os.makedirs(bus)
+
+        def address(name, pid):
+            with open(os.path.join(bus, "m1-" + name), "w", encoding="utf-8") as f:
+                f.write(f"# IBus address file\nIBUS_ADDRESS=unix:path=/x\nIBUS_DAEMON_PID={pid}\n")
+
+        def owns(**env):
+            env["XDG_CONFIG_HOME"] = tmp.name
+            return system_check.ibus_owns_session(env, proc=proc, machine_id="m1")
+
+        address("unix-wayland-0", 200)
+        address("unix-100", 100)
+        # Another program's IBus on its own display, as xpra starts one.
+        self.assertFalse(owns(WAYLAND_DISPLAY="wayland-0"))
+        address("unix-wayland-0", 100)
+        self.assertTrue(owns(WAYLAND_DISPLAY="wayland-0"))
+        address("unix-0", 100)
+        self.assertTrue(owns(DISPLAY=":0.0"))
+        address("unix-0", 999)
+        self.assertFalse(owns(DISPLAY=":0"))
+        self.assertFalse(owns(DISPLAY=":5"))
+        # IBus reads IBUS_ADDRESS_FILE instead of the usual name when it is set.
+        self.assertTrue(
+            owns(DISPLAY=":5", IBUS_ADDRESS_FILE=os.path.join(bus, "m1-unix-wayland-0"))
+        )
+        with open(os.path.join(bus, "m1-unix-1"), "w", encoding="utf-8") as f:
+            f.write("IBUS_ADDRESS=unix:path=/x\n")
+        self.assertFalse(owns(DISPLAY=":1"))
+        home = {"HOME": os.path.join(tmp.name, "home"), "WAYLAND_DISPLAY": "wayland-0"}
+        os.makedirs(os.path.join(home["HOME"], ".config"))
+        os.symlink(os.path.join(tmp.name, "ibus"), os.path.join(home["HOME"], ".config", "ibus"))
+        self.assertTrue(system_check.ibus_owns_session(home, proc=proc, machine_id="m1"))
 
     def test_fcitx5_not_answering(self):
         handler = FakeDBusHandler()

@@ -169,10 +169,12 @@ namespace ngosen {
     }
 
     bool upgradeSettings(fcitx::RawConfig& settings, bool saved) {
-        constexpr int Version = 1;
-        if (const auto* version = settings.valueByPath("SettingsVersion"); version != nullptr && std::atoi(version->c_str()) >= Version)
+        constexpr int Version = 2;
+        const auto*   version = settings.valueByPath("SettingsVersion");
+        const int     from    = version != nullptr ? std::atoi(version->c_str()) : 0;
+        if (from >= Version)
             return false;
-        if (saved) {
+        if (saved && from < 1) {
             if (settings.get("ToggleKey") == nullptr)
                 settings.setValueByPath("ToggleKey/0", "Control+space");
             if (settings.valueByPath("VietnameseOn") == nullptr) {
@@ -181,6 +183,13 @@ namespace ngosen {
             }
             // Retyping was a hidden option, so a saved False is fcitx5's default, not the user's choice.
             settings.setValueByPath("RetypeAfterSwitch", "True");
+        }
+        if (saved && from < 2) {
+            // The old hidden defaults, saved by fcitx5 versions that write every option.
+            if (const auto* sleep = settings.valueByPath("SurrDeleteSleepMs"); sleep != nullptr && *sleep == "4")
+                settings.remove("SurrDeleteSleepMs");
+            if (const auto* sleep = settings.valueByPath("SurrCommitSleepMs"); sleep != nullptr && *sleep == "3")
+                settings.remove("SurrCommitSleepMs");
         }
         settings.setValueByPath("SettingsVersion", std::to_string(Version));
         return true;

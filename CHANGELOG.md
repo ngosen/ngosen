@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Trên X11, Firefox (kể cả bản snap), Chrome và LibreOffice khi kết nối qua mô-đun IBus GTK được Ngó Sen nhận
+  đúng tên app và xử lý như khi kết nối trực tiếp với fcitx5 (#458).
+
 ## [1.7.2-1] — 30/10/2026
 
 Sửa Gõ Sen quên chữ đang gõ trong VS Code trên GNOME (#453). Sửa Gõ Sen ra “tiêsng” khi gõ “tieesng” trong app Qt

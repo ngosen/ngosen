@@ -75,6 +75,7 @@ namespace ngosen {
         if (!resume)
             is_deleting_.store(false);
         needEngineReset.store(false);
+        jumpedFrom_.reset();
         retype_.reset();
         if (isFocusIn)
             forgetKeysWhileOff();
@@ -99,6 +100,7 @@ namespace ngosen {
             is_deleting_.store(false);
         }
         needEngineReset.store(false);
+        jumpedFrom_.reset();
         retype_.reset();
         dropRetoneKey();
         // Keys typed while another input method is active never reach us to take the selection.

@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.7.1
+Version:        1.7.2
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later AND OFL-1.1
@@ -100,6 +100,10 @@ else
 fi
 
 %changelog
+* Fri Oct 30 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.2-1
+- Fix Sen forgetting the word being typed in VS Code on GNOME when VS Code reports the cursor moving to the start of the line and back to the end of the unchanged word (#453).
+- Fix Sen producing "tiêsng" for "tieesng" in Qt apps on GNOME in the IBus edition, which shares the typing core with the fcitx5 edition. This fix only changes IBus behaviour (#452).
+
 * Fri Oct 30 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.1-1
 - On GNOME, Sen uses surrounding text when the app reports the current word correctly, avoiding delayed Backspace keys that corrupt text. If the app ignores deletion, it repairs leftover text with Backspace and uses Backspace for the rest of the session; if no deletion method remains, it passes keystrokes through without conversion. KDE and other Wayland desktops are unchanged (#443, #446).
 - Remove pauses after each deletion and commit in apps that delete through surrounding text, including LibreOffice and GTK4 text fields (#438).

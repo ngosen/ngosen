@@ -27,6 +27,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct EmojiEntry;
@@ -326,6 +327,9 @@ namespace ngosen {
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.
         std::string commitNotSeen_;
 
+        // Text and cursor a move without an edit left, until the next key or focus change.
+        std::optional<std::pair<std::string, unsigned int>> jumpedFrom_;
+
         // Last key press seen, to spot one the app sends twice.
         uint32_t lastPressCode_      = 0;
         uint32_t lastPressTime_      = 0;
@@ -452,12 +456,13 @@ namespace ngosen {
         // Remembers what the app showed when the replacement started, to tell when it is done.
         void recordSendSnapshot(const std::string& deletedPart);
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
-        bool deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
-        void replaceThroughSurrounding(const Surrounding& surrounding);
-        int  surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
-        void trackEarlierWords(const std::string& addedPart);
-        void replaceThroughForwardedKeys();
-        void replaceThroughCommittedDel();
+        bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
+        void                     replaceThroughSurrounding(const Surrounding& surrounding);
+        int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
+        std::vector<std::string> earlierWordsBeforeReplacement() const;
+        void                     trackEarlierWords(const std::string& addedPart);
+        void                     replaceThroughForwardedKeys();
+        void                     replaceThroughCommittedDel();
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
         struct SurroundingCheck {

@@ -427,8 +427,9 @@ namespace ngosen {
             hasLastSurrounding_ = false;
             return;
         }
-        const bool sameText = hasLastSurrounding_ && s.text() == lastSurroundingText_;
-        bool       jumped   = sameText && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
+        const bool         sameText       = hasLastSurrounding_ && s.text() == lastSurroundingText_;
+        const unsigned int previousCursor = lastSurroundingCursor_;
+        bool               jumped         = sameText && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
         // Some editors (Lark in Firefox) report the cursor past our commit before the committed text.
         const bool echo = jumped && unreportedCommitLength_ > 0 && s.cursor() == s.anchor() && s.cursor() == lastSurroundingCursor_ + unreportedCommitLength_;
         // Typing the next letter of an inline suggestion keeps the text and steps over that letter.
@@ -466,10 +467,21 @@ namespace ngosen {
             startWordWithKey(*passed_key_);
             return;
         }
+        // VS Code reports the cursor at the line start and then back at the word end, with no edit.
+        if (jumped && jumpedFrom_ && needEngineReset.load() && s.text() == jumpedFrom_->first && s.cursor() == s.anchor() && s.cursor() == jumpedFrom_->second) {
+            jumpedFrom_.reset();
+            NGOSEN_INFO("Cursor came back to the word");
+            needEngineReset.store(false, std::memory_order_release);
+            g_mouse_clicked.store(false, std::memory_order_release);
+            return;
+        }
         // Our own selection for overtyping moves the anchor too.
         if (!jumped || is_deleting_.load(std::memory_order_acquire))
             return;
         NGOSEN_INFO("Cursor moved without an edit");
+        // Only a move on the same text can come back; a new field's text never stood at the old cursor.
+        if (sameText && !needEngineReset.load())
+            jumpedFrom_ = std::make_pair(s.text(), previousCursor);
         needEngineReset.store(true, std::memory_order_release);
         g_mouse_clicked.store(true, std::memory_order_release);
     }

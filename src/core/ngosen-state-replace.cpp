@@ -546,7 +546,8 @@ namespace ngosen {
         if (!surrounding.isValid()) {
             fails.emplace_back("no copy");
         } else {
-            const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), prefix, deletedPart, earlierWords_);
+            // The replacement has not been tracked yet, so the copy may still show the word before the last one.
+            const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), prefix, deletedPart, earlierWordsBeforeReplacement());
             if (deletion.match == SurroundingDeletion::Match::None)
                 fails.emplace_back("copy shows another word");
             else if (surrounding.cursor() < deletion.chars)
@@ -651,8 +652,17 @@ namespace ngosen {
         return false;
     }
 
-    void TypingState::trackEarlierWords(const std::string& addedPart) {
+    std::vector<std::string> TypingState::earlierWordsBeforeReplacement() const {
         // Raw keys after a replacement extend the word it left; anything else starts a new word.
+        // trackEarlierWords keeps the same rule.
+        if (wordAfterReplacement_.empty() || !isStartsWith(oldPreBuffer_, wordAfterReplacement_))
+            return {};
+        std::vector<std::string> words = earlierWords_;
+        words.push_back(wordBeforeReplacement_);
+        return words;
+    }
+
+    void TypingState::trackEarlierWords(const std::string& addedPart) {
         if (!wordAfterReplacement_.empty() && isStartsWith(oldPreBuffer_, wordAfterReplacement_))
             earlierWords_.push_back(wordBeforeReplacement_);
         else

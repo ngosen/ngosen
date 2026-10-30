@@ -1609,6 +1609,67 @@ namespace {
         }
     }
 
+    // Qt over GNOME Shell's IBus bridge stops reporting after a deletion, so the next replacement in
+    // the word sees the copy from before the last one.
+    void testStaleCopyBeforeReplacement() {
+        ngosen::test::Typed run;
+        Field               field = surroundingOnlyField();
+        field.preeditFallback     = true;
+        const ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true};
+        const auto                    lines = logLinesWhileTyping(field, qt, "nam tieesng ", "", &run, 150);
+        check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0 && countHaving(lines, "copy shows the earlier word") > 0,
+              "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
+    }
+
+    // VS Code reports the cursor at the start of the line and then back at the end of the word,
+    // with the text unchanged; the word being typed must survive that.
+    void testCursorBounceBack() {
+        Field ibusEdition           = surroundingOnlyField();
+        ibusEdition.preeditFallback = true;
+        for (const auto& [field, quirks] :
+             {std::pair{makeField("ibus", true), ngosen::test::AppQuirks{}}, std::pair{ibusEdition, ngosen::test::AppQuirks{.dropsForwardedKeys = true}}}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            const auto typeText = [&](const std::string& text) {
+                for (char c : text) {
+                    app->type(static_cast<uint32_t>(c));
+                    loop.pump(100);
+                }
+            };
+            typeText("xin v");
+            loop.pump(300);
+            app->moveCursor(0);
+            loop.pump(30);
+            app->moveCursor(5);
+            loop.pump(30);
+            typeText("ieetj ");
+            loop.pump(300);
+            check(app->text() == "xin việt ", "bounce: the cursor coming back to the word end keeps the word",
+                  std::string(field.preeditFallback ? "IBus edition " : "fcitx5 ") + app->text());
+
+            // A move that ends elsewhere is a click: the word before it is gone.
+            ngosen::test::captureLog(true);
+            typeText("v");
+            loop.pump(300);
+            app->moveCursor(0);
+            loop.pump(30);
+            app->moveCursor(3);
+            loop.pump(30);
+            typeText("ieetj");
+            loop.pump(300);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(app->text() == "xiniệt việt v" && countHaving(lines, "Cursor came back to the word") == 0, "bounce: a move that ends elsewhere still forgets the word",
+                  std::string(field.preeditFallback ? "IBus edition " : "fcitx5 ") + app->text() + " " + join(lines));
+        }
+    }
+
     // The ways out when a deletion through the surrounding text goes wrong.
     void testSurroundingFallback() {
         ngosen::test::Typed run;
@@ -1747,6 +1808,8 @@ int main() {
     testSurroundingCheck();
     testSurroundingFallback();
     testSlowReport();
+    testStaleCopyBeforeReplacement();
+    testCursorBounceBack();
     testAutofillMark();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

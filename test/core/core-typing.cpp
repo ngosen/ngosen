@@ -1638,7 +1638,23 @@ namespace {
             loop.pump(30);
             typeText("ieetj ");
             loop.pump(300);
-            check(app->text() == "xin việt ", "bounce: the cursor coming back to the word end keeps the word", field.frontend + " " + app->text());
+            check(app->text() == "xin việt ", "bounce: the cursor coming back to the word end keeps the word",
+                  std::string(field.preeditFallback ? "IBus edition " : "fcitx5 ") + app->text());
+
+            // A move that ends elsewhere is a click: the word before it is gone.
+            ngosen::test::captureLog(true);
+            typeText("v");
+            loop.pump(300);
+            app->moveCursor(0);
+            loop.pump(30);
+            app->moveCursor(3);
+            loop.pump(30);
+            typeText("ieetj");
+            loop.pump(300);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(app->text() == "xiniệt việt v" && countHaving(lines, "Cursor came back to the word") == 0, "bounce: a move that ends elsewhere still forgets the word",
+                  std::string(field.preeditFallback ? "IBus edition " : "fcitx5 ") + app->text() + " " + join(lines));
         }
     }
 

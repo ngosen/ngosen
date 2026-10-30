@@ -479,7 +479,8 @@ namespace ngosen {
         if (!jumped || is_deleting_.load(std::memory_order_acquire))
             return;
         NGOSEN_INFO("Cursor moved without an edit");
-        if (!needEngineReset.load())
+        // Only a move on the same text can come back; a new field's text never stood at the old cursor.
+        if (sameText && !needEngineReset.load())
             jumpedFrom_ = std::make_pair(s.text(), previousCursor);
         needEngineReset.store(true, std::memory_order_release);
         g_mouse_clicked.store(true, std::memory_order_release);

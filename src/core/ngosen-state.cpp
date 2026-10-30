@@ -645,6 +645,8 @@ namespace ngosen {
     }
 
     void TypingState::settleBeforeKey() {
+        // A key ends a bounce, also in Off mode, where the reset waits.
+        jumpedFrom_.reset();
         // This safety valve silently clears the flag on the next key. Skip it while a wait is pending,
         // otherwise the pending commit is thrown away.
         if (!surr_wait_pending_ && !overtype_pending_ && current_backspace_count_ >= expected_backspaces_ && is_deleting_.load()) {

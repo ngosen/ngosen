@@ -27,6 +27,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct EmojiEntry;
@@ -325,6 +326,9 @@ namespace ngosen {
         uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.
         std::string commitNotSeen_;
+
+        // Text and cursor a move without an edit left, until the next key or focus change.
+        std::optional<std::pair<std::string, unsigned int>> jumpedFrom_;
 
         // Last key press seen, to spot one the app sends twice.
         uint32_t lastPressCode_      = 0;

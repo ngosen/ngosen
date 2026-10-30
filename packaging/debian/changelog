@@ -1,3 +1,12 @@
+fcitx5-ngosen (1:1.7.2-1) unstable; urgency=medium
+
+  * Fix Sen forgetting the word being typed in VS Code on GNOME when VS Code reports the cursor
+    at the start of the line and then back at the end of the unchanged word (#453).
+  * Fix Sen producing "tiêsng" for "tieesng" in Qt apps on GNOME in the IBus edition, which shares
+    the typing core with the fcitx5 edition. This fix only changes IBus behaviour (#452).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Fri, 30 Oct 2026 21:00:00 +0700
+
 fcitx5-ngosen (1:1.7.1-1) unstable; urgency=medium
 
   * On GNOME, Sen uses surrounding text when the app reports the current word correctly,

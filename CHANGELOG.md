@@ -14,6 +14,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Preedit trên GNOME: bấm Enter sau chữ đang gạch chân không còn bị mất Enter khi giữ phím lâu một chút như gõ bình thường; Enter nay đi lúc nhả phím (#465).
 - Ở chế độ gạch chân (Preedit), click trong Alacritty và app XIM khác không còn làm mất chữ đang gõ dở (#466).
+- GNOME 50.0–50.3 khi chưa bật extension chuyển phím: Gõ Sen trong terminal (kitty, Ptyxis…) không còn ra chữ lặp
+  kiểu "tieêngếng" mà lùi về gạch chân, và Enter sau chữ gạch chân ở Preedit không còn bị mất (#467).
 
 ## [1.7.3-1] — 30/10/2026
 

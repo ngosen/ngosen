@@ -21,7 +21,8 @@ namespace ngosen {
 
     class FcitxHost final : public Host {
       public:
-        FcitxHost(fcitx::InputContext* ic, fcitx::Instance* instance) : ic_(ic), instance_(instance) {}
+        // shellDropsKeys, when set, says whether GNOME Shell currently loses the keys we forward.
+        FcitxHost(fcitx::InputContext* ic, fcitx::Instance* instance, const bool* shellDropsKeys = nullptr) : ic_(ic), instance_(instance), shell_drops_keys_(shellDropsKeys) {}
 
         void                         commitText(const std::string& text) override;
         void                         forwardKey(EditKey key, bool release, uint32_t time) override;
@@ -58,6 +59,7 @@ namespace ngosen {
 
         fcitx::InputContext*                        ic_;
         fcitx::Instance*                            instance_;
+        const bool*                                 shell_drops_keys_;
     };
 
     class FcitxKeyPress final : public KeyPress {

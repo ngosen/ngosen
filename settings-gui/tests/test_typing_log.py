@@ -109,9 +109,9 @@ class LatestLogTest(unittest.TestCase):
             self.assertEqual(typing_log.latest_log(os.path.join(state, "missing")), "")
 
 
-class DialogAppTestTest(unittest.TestCase):
+class CheckPageAppTestTest(unittest.TestCase):
     def test_user_answers_when_the_app_hides_its_text(self):
-        from ui.system_check_dialog import SystemCheckDialog
+        from ui.pages.check import CheckPage
 
         with tempfile.TemporaryDirectory() as state:
             env = {
@@ -120,7 +120,7 @@ class DialogAppTestTest(unittest.TestCase):
                 "XDG_CURRENT_DESKTOP": "KDE",
             }
             with mock.patch.dict(os.environ, env, clear=True):
-                dialog = SystemCheckDialog(FakeDBusHandler(), "1.4.2")
+                dialog = CheckPage(FakeDBusHandler(), "1.4.2", lambda *a: None, lambda n: None)
                 dialog.read_typing_log()
                 self.assertIsNone(dialog.app_test)
                 self.assertTrue(dialog.right_btn.isHidden())

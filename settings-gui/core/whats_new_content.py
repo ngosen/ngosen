@@ -98,8 +98,8 @@ TIPS = [
         "target": ("page", "macros"),
     },
     {
-        "text": N_("Typing wrong in some app? “Check my machine…” on the About page says why."),
-        "target": ("page", "about"),
+        "text": N_("Typing wrong in some app? The Check my machine page says why."),
+        "target": ("page", "check"),
     },
     {
         "text": N_(

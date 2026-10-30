@@ -30,6 +30,10 @@ MARKS = """
 .tray-preview { padding: 6px; border-radius: 4px; }
 .tray-light { background: %(panel_light)s; }
 .tray-dark { background: %(panel_dark)s; }
+.check-badge {
+  background: @error_bg_color; color: @error_fg_color; border-radius: 999px;
+  min-width: 12px; padding: 0 6px; font-size: smaller; font-weight: bold;
+}
 """
 
 

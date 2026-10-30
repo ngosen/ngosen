@@ -392,10 +392,6 @@ msgstr ""
 msgid "Vietnamese input method for fcitx5 on Linux that types like UniKey on Windows."
 msgstr ""
 
-#: settings-gui/ui/pages/about.py:103
-msgid "Report Bug"
-msgstr ""
-
 #: settings-gui/ui/pages/about.py:112
 msgid "Request Feature"
 msgstr ""
@@ -1121,16 +1117,8 @@ msgstr ""
 msgid "No settings found"
 msgstr ""
 
-#: settings-gui/ui/pages/about.py
-msgid "Check my machine…"
-msgstr ""
-
 #: settings-gui/ui/system_check_dialog.py
 msgid "Check my machine"
-msgstr ""
-
-#: settings-gui/ui/system_check_dialog.py
-msgid "How fcitx5 is set up on this machine. Nothing is sent until you send a bug report, and it lists the apps below, so read it before sending."
 msgstr ""
 
 #: settings-gui/ui/system_check_dialog.py
@@ -1155,15 +1143,6 @@ msgstr ""
 
 #: settings-gui/ui/system_check_dialog.py
 msgid "Copied the result. Paste it into the message and say what went wrong."
-msgstr ""
-
-#: settings-gui/ui/system_check_dialog.py
-#, python-brace-format
-msgid "Apps connected to fcitx5: {}"
-msgstr ""
-
-#: settings-gui/ui/system_check_dialog.py
-msgid "No setup problem found"
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1216,11 +1195,44 @@ msgid "fcitx5 still runs Ngó Sen from before the update"
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Log out and back in to start the installed version."
+msgid "Restart fcitx5, or log out and back in, to start the installed version."
 msgstr ""
 
-#: settings-gui/ui/pages/about.py
-msgid "Typing still uses the Ngó Sen that ran before the update. Log out and back in to start version {}."
+#: settings-gui/core/system_check.py
+msgid "fcitx5 is running"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Ngó Sen is in the fcitx5 input method list"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Older X11 apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "The fix for GNOME {} is on"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Qt apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Chrome and older GTK apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "GTK apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "KDE starts fcitx5 as its virtual keyboard"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Qt 5 apps use fcitx5"
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1477,7 +1489,7 @@ msgid "$DATE and $TIME in a macro type today's date and time: hn → Hôm nay $D
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
-msgid "Typing wrong in some app? “Check my machine…” on the About page says why."
+msgid "Typing wrong in some app? The Check my machine page says why."
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
@@ -1590,4 +1602,123 @@ msgstr ""
 
 #: settings-gui/core/whats_new_content.py
 msgid "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Use the button on a step, or fix them all at once. Ngó Sen only changes this account's settings."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Use the button on the step. Ngó Sen only changes this account's settings."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Each step says what to do."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Start fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Restart fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Add Ngó Sen"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Turn on the fix"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Started fcitx5."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Restarted fcitx5."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Added Ngó Sen to the input method list."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Turned on the fix for GNOME."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "This machine is ready"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Try typing in any app."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "Steps left to fix: {}"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Fixing…"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Steps to type Vietnamese"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Apps connected to fcitx5"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "An app missing here has not connected to the input method: open it again, or send the result to Ngó Sen."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Try typing here"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "In Telex, vieetj becomes việt."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Send the result to Ngó Sen"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "The result lists the steps above, the apps connected and the typing log you read. Nothing is sent until you press a button below."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Fix all ({})"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Could not fix this."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 started before Ngó Sen was installed"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Copy command"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Copied: {}"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "No app is connected yet"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in to start the installed version."
 msgstr ""

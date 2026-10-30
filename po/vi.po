@@ -393,10 +393,6 @@ msgstr "Phiên bản {}"
 msgid "Vietnamese input method for fcitx5 on Linux that types like UniKey on Windows."
 msgstr "Bộ gõ tiếng Việt cho fcitx5 trên Linux, gõ như UniKey trên Windows."
 
-#: settings-gui/ui/pages/about.py:103
-msgid "Report Bug"
-msgstr "Báo cáo lỗi"
-
 #: settings-gui/ui/pages/about.py:112
 msgid "Request Feature"
 msgstr "Đề xuất tính năng"
@@ -1186,17 +1182,9 @@ msgstr "Tìm cài đặt"
 msgid "No settings found"
 msgstr "Không thấy cài đặt nào"
 
-#: settings-gui/ui/pages/about.py
-msgid "Check my machine…"
-msgstr "Kiểm tra máy tôi…"
-
 #: settings-gui/ui/system_check_dialog.py
 msgid "Check my machine"
-msgstr "Kiểm tra máy tôi"
-
-#: settings-gui/ui/system_check_dialog.py
-msgid "How fcitx5 is set up on this machine. Nothing is sent until you send a bug report, and it lists the apps below, so read it before sending."
-msgstr "Cách fcitx5 đang được cài trên máy này. Không có gì được gửi đi cho tới khi bạn gửi báo lỗi, và báo lỗi có kèm danh sách app bên dưới, nên hãy đọc trước khi gửi."
+msgstr "Kiểm tra máy"
 
 #: settings-gui/ui/system_check_dialog.py
 msgid "Check again"
@@ -1221,15 +1209,6 @@ msgstr "Đã chép kết quả."
 #: settings-gui/ui/system_check_dialog.py
 msgid "Copied the result. Paste it into the message and say what went wrong."
 msgstr "Đã chép kết quả. Dán vào tin nhắn rồi kể lỗi gặp phải."
-
-#: settings-gui/ui/system_check_dialog.py
-#, python-brace-format
-msgid "Apps connected to fcitx5: {}"
-msgstr "App đang nối với fcitx5: {}"
-
-#: settings-gui/ui/system_check_dialog.py
-msgid "No setup problem found"
-msgstr "Không thấy lỗi cài đặt nào"
 
 #: settings-gui/core/system_check.py
 #, python-brace-format
@@ -1281,12 +1260,45 @@ msgid "fcitx5 still runs Ngó Sen from before the update"
 msgstr "fcitx5 vẫn chạy Ngó Sen version cũ, trước khi cập nhật"
 
 #: settings-gui/core/system_check.py
-msgid "Log out and back in to start the installed version."
-msgstr "Đăng xuất rồi đăng nhập lại để chạy version vừa cài."
+msgid "Restart fcitx5, or log out and back in, to start the installed version."
+msgstr "Khởi động lại fcitx5, hoặc đăng xuất rồi đăng nhập lại, để chạy version vừa cài."
 
-#: settings-gui/ui/pages/about.py
-msgid "Typing still uses the Ngó Sen that ran before the update. Log out and back in to start version {}."
-msgstr "Bạn vẫn đang gõ bằng Ngó Sen version cũ, trước khi cập nhật. Đăng xuất rồi đăng nhập lại để dùng version {}."
+#: settings-gui/core/system_check.py
+msgid "fcitx5 is running"
+msgstr "fcitx5 đang chạy"
+
+#: settings-gui/core/system_check.py
+msgid "Ngó Sen is in the fcitx5 input method list"
+msgstr "Ngó Sen đã có trong danh sách bộ gõ của fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Older X11 apps use fcitx5"
+msgstr "App X11 cũ gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "The fix for GNOME {} is on"
+msgstr "Bản sửa cho GNOME {} đang bật"
+
+#: settings-gui/core/system_check.py
+msgid "Qt apps use fcitx5"
+msgstr "App Qt gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Chrome and older GTK apps use fcitx5"
+msgstr "Chrome và app GTK cũ gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "GTK apps use fcitx5"
+msgstr "App GTK gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "KDE starts fcitx5 as its virtual keyboard"
+msgstr "KDE chạy fcitx5 làm bàn phím ảo"
+
+#: settings-gui/core/system_check.py
+msgid "Qt 5 apps use fcitx5"
+msgstr "App Qt 5 gõ qua fcitx5"
 
 #: settings-gui/core/system_check.py
 msgid "Qt apps have no input method"
@@ -1563,8 +1575,8 @@ msgid "$DATE and $TIME in a macro type today's date and time: hn → Hôm nay $D
 msgstr "$DATE và $TIME trong gõ tắt ra ngày giờ hôm nay: hn → Hôm nay $DATE."
 
 #: settings-gui/ui/whats_new_content.py
-msgid "Typing wrong in some app? “Check my machine…” on the About page says why."
-msgstr "Gõ lỗi trong app nào đó? “Kiểm tra máy tôi…” ở trang Giới thiệu cho biết vì sao."
+msgid "Typing wrong in some app? The Check my machine page says why."
+msgstr "Gõ lỗi trong app nào đó? Trang Kiểm tra máy cho biết vì sao."
 
 #: settings-gui/ui/whats_new_content.py
 msgid "“Save typing log” in the tray menu records what you type, to attach to a bug report."
@@ -1677,3 +1689,122 @@ msgstr "Xem giao diện GTK"
 #: settings-gui/core/whats_new_content.py
 msgid "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
 msgstr "Thêm giao diện GTK, hợp với GNOME. Không thích giao diện Qt cũ thì đổi ở trang Giao diện."
+
+#: settings-gui/core/system_check.py
+msgid "Use the button on a step, or fix them all at once. Ngó Sen only changes this account's settings."
+msgstr "Bấm nút ở từng bước, hoặc sửa hết một lần. Ngó Sen chỉ đổi cài đặt của tài khoản này."
+
+#: settings-gui/core/system_check.py
+msgid "Use the button on the step. Ngó Sen only changes this account's settings."
+msgstr "Bấm nút ở bước đó. Ngó Sen chỉ đổi cài đặt của tài khoản này."
+
+#: settings-gui/core/system_check.py
+msgid "Each step says what to do."
+msgstr "Mỗi bước ghi rõ việc cần làm."
+
+#: settings-gui/core/system_check.py
+msgid "Start fcitx5"
+msgstr "Chạy fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Restart fcitx5"
+msgstr "Khởi động lại fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Add Ngó Sen"
+msgstr "Thêm Ngó Sen"
+
+#: settings-gui/core/system_check.py
+msgid "Turn on the fix"
+msgstr "Bật bản sửa"
+
+#: settings-gui/core/system_check.py
+msgid "Started fcitx5."
+msgstr "Đã chạy fcitx5."
+
+#: settings-gui/core/system_check.py
+msgid "Restarted fcitx5."
+msgstr "Đã khởi động lại fcitx5."
+
+#: settings-gui/core/system_check.py
+msgid "Added Ngó Sen to the input method list."
+msgstr "Đã thêm Ngó Sen vào danh sách bộ gõ."
+
+#: settings-gui/core/system_check.py
+msgid "Turned on the fix for GNOME."
+msgstr "Đã bật bản sửa cho GNOME."
+
+#: settings-gui/core/system_check.py
+msgid "This machine is ready"
+msgstr "Máy đã sẵn sàng"
+
+#: settings-gui/core/system_check.py
+msgid "Try typing in any app."
+msgstr "Gõ để test trong app bất kỳ."
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "Steps left to fix: {}"
+msgstr "Còn {} việc cần sửa"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Fixing…"
+msgstr "Đang sửa…"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Steps to type Vietnamese"
+msgstr "Các bước để gõ tiếng Việt"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Apps connected to fcitx5"
+msgstr "App đang kết nối với fcitx5"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "An app missing here has not connected to the input method: open it again, or send the result to Ngó Sen."
+msgstr "App không có trong danh sách chưa kết nối với bộ gõ: mở lại app đó hoặc gửi kết quả cho Ngó Sen."
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Try typing here"
+msgstr "Gõ thử ngay tại đây"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "In Telex, vieetj becomes việt."
+msgstr "Kiểu Telex: gõ vieetj sẽ ra việt."
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Send the result to Ngó Sen"
+msgstr "Gửi kết quả cho Ngó Sen"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "The result lists the steps above, the apps connected and the typing log you read. Nothing is sent until you press a button below."
+msgstr "Kết quả gồm các bước ở trên, các app đang kết nối và nhật ký gõ bạn vừa đọc. Chỉ gửi khi bạn bấm một nút bên dưới."
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Fix all ({})"
+msgstr "Sửa cả {} việc"
+
+#: settings-gui/core/system_check.py
+msgid "Could not fix this."
+msgstr "Không sửa được."
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 started before Ngó Sen was installed"
+msgstr "fcitx5 đã chạy từ trước khi cài Ngó Sen"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Copy command"
+msgstr "Chép lệnh"
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Copied: {}"
+msgstr "Đã chép: {}"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "No app is connected yet"
+msgstr "Chưa có app nào kết nối với fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in to start the installed version."
+msgstr "Đăng xuất rồi đăng nhập lại để chạy version vừa cài."

@@ -29,6 +29,8 @@ class Facts:
     env: dict
     fcitx_running: bool = False
     ngosen_in_group: bool = False
+    # False when fcitx5 started before Ngó Sen was installed, so it cannot add it yet.
+    ngosen_loaded: bool = True
     # IBus took this session's address file, so apps and GNOME Shell talk to it, not fcitx5.
     ibus_owns_session: bool = False
     kwin_input_method: str = ""
@@ -55,6 +57,17 @@ class Finding:
     level: str
     title: str
     fix: str = ""
+    # What the window can do about it (a fix action below), and the command to copy when that fails.
+    action: str = ""
+    command: str = ""
+
+
+START_FCITX, RESTART_FCITX, ADD_NGOSEN, ENABLE_FORWARD_KEYS = (
+    "start-fcitx",
+    "restart-fcitx",
+    "add-ngosen",
+    "enable-forward-keys",
+)
 
 
 def parse_debug_info(text):
@@ -66,41 +79,46 @@ def parse_debug_info(text):
     return apps
 
 
-def _needs(facts, variable, level, title):
+def _needs(facts, variable, level, title, ok_title):
     if facts.env.get(variable) == "fcitx":
-        return []
+        return [Finding(OK, ok_title)]
     return [
         Finding(level, title, _("Set {} in the session environment.").format(f"{variable}=fcitx"))
     ]
 
 
-def evaluate(facts):
+def steps(facts):
+    """Every check that applies to this machine, passed or not, in the order to fix them."""
     if not facts.fcitx_running:
         return [
             Finding(
                 FAIL,
                 _("fcitx5 is not running"),
                 _("Start Fcitx 5 from the application menu, or run fcitx5 -d."),
+                START_FCITX,
+                "fcitx5 -d",
             )
         ]
-    found = []
+    found = [Finding(OK, _("fcitx5 is running"))]
     if facts.addon_replaced:
-        found.append(
-            Finding(
-                WARN,
-                _("fcitx5 still runs Ngó Sen from before the update"),
-                _("Log out and back in to start the installed version."),
-            )
-        )
-    if not facts.ngosen_in_group:
+        found.append(_replaced_addon_finding(facts))
+    if facts.ngosen_in_group:
+        found.append(Finding(OK, _("Ngó Sen is in the fcitx5 input method list")))
+    elif not facts.ngosen_loaded and not facts.addon_replaced:
+        found.append(_restart_finding(facts, _("fcitx5 started before Ngó Sen was installed")))
+    else:
         found.append(
             Finding(
                 FAIL,
                 _("Ngó Sen is not in the fcitx5 input method list"),
                 _("Open Fcitx 5 Configuration and add Ngó Sen under Input Method."),
+                ADD_NGOSEN,
+                "fcitx5-configtool",
             )
         )
-    if facts.env.get("XMODIFIERS") != "@im=fcitx":
+    if facts.env.get("XMODIFIERS") == "@im=fcitx":
+        found.append(Finding(OK, _("Older X11 apps use fcitx5")))
+    else:
         found.append(
             Finding(
                 WARN,
@@ -120,6 +138,28 @@ def evaluate(facts):
     return found
 
 
+def _replaced_addon_finding(facts):
+    return _restart_finding(facts, _("fcitx5 still runs Ngó Sen from before the update"))
+
+
+def _restart_finding(facts, title):
+    # KWin starts fcitx5 as its virtual keyboard and ignores a restart asked over D-Bus.
+    if facts.session == "wayland" and "KDE" in facts.desktops:
+        return Finding(WARN, title, _("Log out and back in to start the installed version."))
+    return Finding(
+        WARN,
+        title,
+        _("Restart fcitx5, or log out and back in, to start the installed version."),
+        RESTART_FCITX,
+        "fcitx5 -rd",
+    )
+
+
+def evaluate(facts):
+    """The steps that need fixing."""
+    return [f for f in steps(facts) if f.level != OK]
+
+
 def _drops_forwarded_keys(version):
     """GNOME 50.0 to 50.3 drop the keys an input method sends on to the app (mutter#4853)."""
     match = re.match(r"50\.(\d+)$", version)
@@ -127,41 +167,60 @@ def _drops_forwarded_keys(version):
 
 
 def _forward_keys_findings(facts):
-    if not _drops_forwarded_keys(facts.gnome_shell_version) or facts.forward_keys_state == "ACTIVE":
+    if not _drops_forwarded_keys(facts.gnome_shell_version):
         return []
-    if facts.forward_keys_state:
-        fix = _(
-            "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
-        ).format(FORWARD_KEYS)
-    else:
+    if facts.forward_keys_state == "ACTIVE":
+        title = _("The fix for GNOME {} is on").format(facts.gnome_shell_version)
+        return [Finding(OK, title)]
+    title = _("GNOME {} drops the keys Ngó Sen sends to apps").format(facts.gnome_shell_version)
+    if not facts.forward_keys_state:
         fix = _(
             "Install Ngó Sen with install.sh, which adds the fix for this GNOME version, then log out and back in."
         )
-    title = _("GNOME {} drops the keys Ngó Sen sends to apps").format(facts.gnome_shell_version)
-    return [Finding(WARN, title, fix)]
+        return [Finding(WARN, title, fix)]
+    fix = _(
+        "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
+    ).format(FORWARD_KEYS)
+    command = f"gnome-extensions enable {FORWARD_KEYS}"
+    return [Finding(WARN, title, fix, ENABLE_FORWARD_KEYS, command)]
 
 
 def _desktop_findings(facts):
     if "GNOME" in facts.desktops:
         return (
-            _needs(facts, "QT_IM_MODULE", FAIL, _("Qt apps have no input method"))
+            _needs(
+                facts,
+                "QT_IM_MODULE",
+                FAIL,
+                _("Qt apps have no input method"),
+                _("Qt apps use fcitx5"),
+            )
             + _needs(
                 facts,
                 "GTK_IM_MODULE",
                 WARN,
                 _("Chrome and older GTK apps may have no input method"),
+                _("Chrome and older GTK apps use fcitx5"),
             )
             + _forward_keys_findings(facts)
         )
     if facts.session == "x11":
-        return _needs(facts, "GTK_IM_MODULE", FAIL, _("GTK apps have no input method")) + _needs(
-            facts, "QT_IM_MODULE", FAIL, _("Qt apps have no input method")
+        return _needs(
+            facts,
+            "GTK_IM_MODULE",
+            FAIL,
+            _("GTK apps have no input method"),
+            _("GTK apps use fcitx5"),
+        ) + _needs(
+            facts, "QT_IM_MODULE", FAIL, _("Qt apps have no input method"), _("Qt apps use fcitx5")
         )
     if facts.session != "wayland":
         return []
     if "KDE" in facts.desktops:
         found = []
-        if "fcitx" not in facts.kwin_input_method.lower():
+        if "fcitx" in facts.kwin_input_method.lower():
+            found.append(Finding(OK, _("KDE starts fcitx5 as its virtual keyboard")))
+        else:
             found.append(
                 Finding(
                     FAIL,
@@ -178,7 +237,167 @@ def _desktop_findings(facts):
                 )
             )
         return found
-    return _needs(facts, "QT_IM_MODULE", WARN, _("Qt 5 apps have no input method"))
+    return _needs(
+        facts,
+        "QT_IM_MODULE",
+        WARN,
+        _("Qt 5 apps have no input method"),
+        _("Qt 5 apps use fcitx5"),
+    )
+
+
+def with_ngosen(layout, items):
+    """The group's layout and items once Ngó Sen is added, the way install.sh adds it."""
+    if "ngosen" in (im for im, _im_layout in items):
+        return layout, items
+    if len(items) == 1 and items[0][0].startswith("keyboard-"):
+        # Ngó Sen switches to English itself, so it takes the lone keyboard's place and layout.
+        return items[0][0].removeprefix("keyboard-"), [("ngosen", "")]
+    return layout, items + [("ngosen", "")]
+
+
+def fix_label(action):
+    return {
+        START_FCITX: _("Start fcitx5"),
+        RESTART_FCITX: _("Restart fcitx5"),
+        ADD_NGOSEN: _("Add Ngó Sen"),
+        ENABLE_FORWARD_KEYS: _("Turn on the fix"),
+    }[action]
+
+
+def fixed_message(action):
+    return {
+        START_FCITX: _("Started fcitx5."),
+        RESTART_FCITX: _("Restarted fcitx5."),
+        ADD_NGOSEN: _("Added Ngó Sen to the input method list."),
+        ENABLE_FORWARD_KEYS: _("Turned on the fix for GNOME."),
+    }[action]
+
+
+# fcitx5 takes a moment to come back on the bus after starting.
+SETTLE_MS = {START_FCITX: 1500, RESTART_FCITX: 1500, ENABLE_FORWARD_KEYS: 500}
+# A slow machine may need longer; check again this often before calling the fix failed.
+RETRY_MS, RETRIES = 500, 8
+
+
+def summary(found, failed=()):
+    """Heading and text above the steps; failed fixes have no button left."""
+    problems = [f for f in found if f.level != OK]
+    if not problems:
+        return _("This machine is ready"), _("Try typing in any app.")
+    title = _("Steps left to fix: {}").format(len(problems))
+    fixable = sum(1 for f in problems if f.action and f.action not in failed)
+    if fixable > 1:
+        text = _(
+            "Use the button on a step, or fix them all at once. Ngó Sen only changes this "
+            "account's settings."
+        )
+    elif fixable:
+        text = _("Use the button on the step. Ngó Sen only changes this account's settings.")
+    else:
+        text = _("Each step says what to do.")
+    return title, text
+
+
+def failed_text(finding):
+    if not finding.command:
+        return finding.fix
+    return _("Could not fix this.") + " " + finding.fix
+
+
+def run_fix(action, dbus_handler):
+    """Runs a step's fix. Returns (done, undo), where undo puts things back or is None."""
+    if action == ADD_NGOSEN:
+        group = dbus_handler.input_method_group()
+        if group is None:
+            return False, None
+        name, layout, items = group
+        if not dbus_handler.set_input_method_group(name, *with_ngosen(layout, items)):
+            return False, None
+        # fcitx5 quietly drops an input method it has not loaded, such as one installed after it.
+        if "ngosen" not in (dbus_handler.input_method_names() or []):
+            dbus_handler.set_input_method_group(name, layout, items)
+            return False, None
+        return True, lambda: dbus_handler.set_input_method_group(name, layout, items)
+    if action == RESTART_FCITX:
+        return dbus_handler.restart(), None
+    if action == START_FCITX:
+        return _succeeds(["fcitx5", "-d"]), None
+    if action == ENABLE_FORWARD_KEYS:
+        if not _succeeds(["gnome-extensions", "enable", FORWARD_KEYS]):
+            return False, None
+        return True, lambda: _succeeds(["gnome-extensions", "disable", FORWARD_KEYS])
+    return False, None
+
+
+def _succeeds(cmd):
+    # Not pipes: fcitx5 -d leaves a child holding them, and reading them would wait for it.
+    out = subprocess.DEVNULL
+    try:
+        return subprocess.run(cmd, stdout=out, stderr=out, timeout=10).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+# Restarting last: a change made over D-Bus is saved when the old fcitx5 exits.
+FIX_ORDER = (START_FCITX, ADD_NGOSEN, ENABLE_FORWARD_KEYS, RESTART_FCITX)
+
+
+class Fixes:
+    """What the check page's fix buttons are doing; the Qt and GTK pages only draw it."""
+
+    def __init__(self, dbus_handler):
+        self.dbus_handler = dbus_handler
+        self.busy = set()
+        self.failed = set()
+        self._retries = 0
+
+    def fixable(self, findings):
+        return [f.action for f in findings if f.action and f.action not in self.failed]
+
+    def run(self, actions):
+        """Runs the fixes; returns (done, undos, ms to wait before checking again)."""
+        done, undos = [], {}
+        for action in sorted(actions, key=FIX_ORDER.index):
+            ok, undo = run_fix(action, self.dbus_handler)
+            if not ok:
+                self.failed.add(action)
+                continue
+            done.append(action)
+            if undo:
+                undos[action] = undo
+        return done, undos, max((SETTLE_MS.get(a, 0) for a in done), default=0)
+
+    def settle_again(self, done, findings):
+        """ms to wait before checking again while a slow fix may still be taking effect, or 0."""
+        left = {f.action for f in findings}
+        slow = set(done) & set(SETTLE_MS)
+        # A restarted fcitx5 shows as not running until it is back on the bus.
+        if slow and left & (slow | {START_FCITX}) and self._retries < RETRIES:
+            self._retries += 1
+            return RETRY_MS
+        self._retries = 0
+        return 0
+
+    def finish(self, done, undos, findings):
+        """After checking again: the message to show and its undo, empty when nothing got fixed."""
+        self.busy = set()
+        left = {f.action for f in findings}
+        # A fix that ran but left its step, such as a restart KWin ignored, did not work.
+        self.failed |= left & set(done)
+        self.failed &= left
+        fixed = [a for a in done if a not in left]
+        if not fixed:
+            return "", None
+        steps = [undos[a] for a in fixed if a in undos]
+        return " ".join(fixed_message(a) for a in fixed), self._undo(steps) if steps else None
+
+    @staticmethod
+    def _undo(undos):
+        def undo():
+            return all([step() for step in reversed(undos)])
+
+        return undo
 
 
 def report(facts, findings, app_test=None):
@@ -228,6 +447,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
     facts.ngosen_in_group = "ngosen" in (names or [])
+    facts.ngosen_loaded = dbus_handler.has_input_method("ngosen") is not False
     facts.apps = parse_debug_info(dbus_handler.debug_info())
     return facts
 

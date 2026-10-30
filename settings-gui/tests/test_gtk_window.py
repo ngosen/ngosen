@@ -21,7 +21,7 @@ REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
 if CAN_RUN:
     from core.brand import MESSENGER_URL
     from gi.repository import Adw, Gdk, Gio, GLib, Gtk
-    from ui_gtk import brand, check_dialog, window
+    from ui_gtk import brand, check_page, window
     from ui_gtk.hotkey_button import HotkeyButton
 
     from core import dictionary, keymap, system_check, typing_log, whats_new_content
@@ -664,7 +664,7 @@ class GtkBackupTest(unittest.TestCase):
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
-class GtkCheckDialogTest(unittest.TestCase):
+class GtkCheckPageTest(unittest.TestCase):
     NO_IM = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
 
     def setUp(self):
@@ -674,8 +674,18 @@ class GtkCheckDialogTest(unittest.TestCase):
             patcher = mock.patch.object(system_check, name, return_value=False)
             patcher.start()
             self.addCleanup(patcher.stop)
-        with mock.patch.dict(os.environ, self.NO_IM, clear=True):
-            self.check = check_dialog.CheckDialog(FakeDBusHandler(), "1.4.2")
+        env = mock.patch.dict(os.environ, self.NO_IM, clear=True)
+        env.start()
+        self.addCleanup(env.stop)
+        self.dbus = FakeDBusHandler()
+        self.toasts = []
+        self.counts = []
+        self.check = check_page.CheckPage(
+            self.dbus,
+            "1.4.2",
+            lambda text, undo: self.toasts.append((text, undo)),
+            self.counts.append,
+        )
 
     def clipboard(self):
         text = []
@@ -689,33 +699,71 @@ class GtkCheckDialogTest(unittest.TestCase):
     def levels(self):
         return [row.level for row in self.check.rows]
 
-    def test_lists_findings_again_and_copies_them(self):
+    def settle(self):
+        while self.check.fixes.busy:
+            GLib.MainContext.default().iteration(True)
+
+    def row(self, title):
+        return next(row for row in self.check.rows if row.get_title() == title)
+
+    def test_lists_every_step_and_apps_and_copies_them(self):
+        self.assertEqual(self.levels()[:2], [system_check.OK, system_check.OK])
         self.assertIn(system_check.FAIL, self.levels())
-        self.assertIn("kate (wayland)", self.check.apps.get_text())
+        self.assertEqual(self.counts[-1], 3)
+        self.assertEqual([r.get_title() for r in self.check.app_rows], ["kate"])
         fixed = dict(
             self.NO_IM, GTK_IM_MODULE="fcitx", QT_IM_MODULE="fcitx", XMODIFIERS="@im=fcitx"
         )
         old = self.check.rows
         with mock.patch.dict(os.environ, fixed, clear=True):
             self.check.run()
-        self.assertEqual(self.levels(), [system_check.OK])
+        self.assertNotIn(system_check.FAIL, self.levels())
+        self.assertEqual(self.counts[-1], 0)
+        self.assertEqual(self.check.heading.get_text(), "This machine is ready")
         self.assertEqual([row.get_parent() for row in old], [None] * len(old))
-        with mock.patch.dict(os.environ, self.NO_IM, clear=True):
-            self.check.run()
+        self.check.run()
         self.check.copy_btn.emit("clicked")
         self.assertIn("[X] GTK apps have no input method", self.clipboard())
-        self.assertEqual(self.check.status.get_text(), "Copied the result.")
+        self.assertEqual(self.toasts[-1][0], "Copied the result.")
+
+    def test_adding_ngosen_fixes_the_step_and_can_be_undone(self):
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.check.run()
+        title = "Ngó Sen is not in the fcitx5 input method list"
+        self.row(title).button.emit("clicked")
+        self.assertEqual(self.check.heading.get_text(), "Fixing…")
+        self.settle()
+        self.assertEqual(self.dbus.input_method_names(), ["ngosen"])
+        self.assertNotIn(title, [row.get_title() for row in self.check.rows])
+        text, undo = self.toasts[-1]
+        self.assertEqual(text, "Added Ngó Sen to the input method list.")
+        undo()
+        self.assertEqual(self.dbus.input_method_names(), ["keyboard-us"])
+        self.assertIn(title, [row.get_title() for row in self.check.rows])
+
+    def test_a_failed_fix_offers_its_command(self):
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.dbus.set_input_method_group = lambda *args: False
+        self.check.run()
+        title = "Ngó Sen is not in the fcitx5 input method list"
+        self.row(title).button.emit("clicked")
+        self.settle()
+        button = self.row(title).button
+        self.assertEqual(button.get_label(), "Copy command")
+        self.assertEqual(self.toasts, [])
+        button.emit("clicked")
+        self.assertEqual(self.clipboard(), "fcitx5-configtool")
 
     def test_messaging_copies_the_result_and_opens_the_chat(self):
         Gdk.Display.get_default().get_clipboard().set("")
-        with mock.patch.object(check_dialog, "open_uri") as open_uri:
+        with mock.patch.object(check_page, "open_uri") as open_uri:
             self.check.message_btn.emit("clicked")
         self.assertEqual(open_uri.call_args[0][1], MESSENGER_URL)
         self.assertIn("Ngó Sen 1.4.2", self.clipboard())
-        self.assertIn("Paste", self.check.status.get_text())
+        self.assertIn("Paste", self.toasts[-1][0])
 
     def test_reporting_opens_an_issue_with_the_result(self):
-        with mock.patch.object(check_dialog, "open_uri") as open_uri:
+        with mock.patch.object(check_page, "open_uri") as open_uri:
             self.check.report_btn.emit("clicked")
         self.assertIn("1.4.2", unquote(open_uri.call_args[0][1]))
 
@@ -729,15 +777,13 @@ class GtkCheckDialogTest(unittest.TestCase):
         self.assertFalse(self.check.wrong_btn.get_visible())
         self.assertIn("result: wrong", self.check.report_text())
 
-    def test_the_about_page_opens_one_dialog_and_checks_again(self):
+    def test_window_counts_steps_left_and_checks_again_on_opening(self):
         win = window.Window(None, FakeDBusHandler())
         self.addCleanup(win.destroy)
-        with mock.patch.object(Adw.Dialog, "present"):
-            win.open_system_check()
-            first = win.check
-            with mock.patch.object(first, "run") as run:
-                win.open_system_check()
-        self.assertIs(win.check, first)
+        self.assertEqual(win.badge.get_text(), "3")
+        self.assertTrue(win.badge.get_visible())
+        with mock.patch.object(win.check, "run") as run:
+            win.show_page("check")
         run.assert_called_once()
 
 

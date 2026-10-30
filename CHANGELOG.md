@@ -10,6 +10,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Cửa sổ cài đặt Qt và GTK có trang "Kiểm tra máy": hiện các bước cài đặt, số việc còn cần sửa và nút sửa
+  từng việc hoặc "Sửa cả N việc". Ô gõ thử, test app kèm nhật ký gõ, danh sách app kết nối với fcitx5 và gửi
+  kết quả qua Facebook, GitHub hoặc chép kết quả nằm cùng trang, thay hộp "Kiểm tra máy tôi…" và nút
+  "Báo lỗi" ở trang Giới thiệu (#463)
+
 ## [1.7.2-1] — 30/10/2026
 
 Sửa Gõ Sen quên chữ đang gõ trong VS Code trên GNOME (#453). Sửa Gõ Sen ra “tiêsng” khi gõ “tieesng” trong app Qt

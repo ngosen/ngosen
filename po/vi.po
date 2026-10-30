@@ -1696,7 +1696,7 @@ msgstr "Bấm nút ở từng bước, hoặc sửa hết một lần. Ngó Sen 
 
 #: settings-gui/core/system_check.py
 msgid "Each step says what to do."
-msgstr "Mỗi bước có ghi cách sửa."
+msgstr "Mỗi bước ghi rõ việc cần làm."
 
 #: settings-gui/core/system_check.py
 msgid "Start fcitx5"
@@ -1736,12 +1736,12 @@ msgstr "Máy đã sẵn sàng"
 
 #: settings-gui/core/system_check.py
 msgid "Try typing in any app."
-msgstr "Gõ thử ở bất kỳ app nào."
+msgstr "Gõ để test trong app bất kỳ."
 
 #: settings-gui/core/system_check.py
 #, python-brace-format
 msgid "Steps left to fix: {}"
-msgstr "Còn {} việc nữa là gõ được tiếng Việt"
+msgstr "Còn {} việc cần sửa"
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "Fixing…"
@@ -1753,11 +1753,11 @@ msgstr "Các bước để gõ tiếng Việt"
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "Apps connected to fcitx5"
-msgstr "App đang nối với fcitx5"
+msgstr "App đang kết nối với fcitx5"
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "An app missing here has not connected to the input method: open it again, or send the result to Ngó Sen."
-msgstr "App không có ở đây là app chưa nối được với bộ gõ: mở lại app đó, hoặc gửi kết quả cho Ngó Sen."
+msgstr "App không có trong danh sách chưa kết nối với bộ gõ: mở lại app đó hoặc gửi kết quả cho Ngó Sen."
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "Try typing here"
@@ -1773,7 +1773,7 @@ msgstr "Gửi kết quả cho Ngó Sen"
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "The result lists the steps above, the apps connected and the typing log you read. Nothing is sent until you press a button below."
-msgstr "Kết quả gồm các bước ở trên, tên các app đang nối và nhật ký gõ vừa đọc. Không gửi gì đi cho tới khi bạn bấm một nút dưới đây."
+msgstr "Kết quả gồm các bước ở trên, các app đang kết nối và nhật ký gõ bạn vừa đọc. Chỉ gửi khi bạn bấm một nút bên dưới."
 
 #: settings-gui/ui_gtk/check_page.py
 #, python-brace-format
@@ -1795,4 +1795,4 @@ msgstr "Đã chép: {}"
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "No app is connected yet"
-msgstr "Chưa có app nào nối với fcitx5"
+msgstr "Chưa có app nào kết nối với fcitx5"

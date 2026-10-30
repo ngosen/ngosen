@@ -17,6 +17,18 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   kết quả qua Facebook, GitHub hoặc chép kết quả nằm cùng trang, thay hộp "Kiểm tra máy tôi…" và nút
   "Báo lỗi" ở trang Giới thiệu (#463)
 
+## [1.7.3-1] — 30/10/2026
+
+Sửa lõi gõ dùng chung để Ngó Sen cho GNOME (bản IBus) chuẩn bị gõ thẳng trong app X11 (#458). Trên X11,
+Ngó Sen nhận ra Firefox (kể cả bản snap), Chrome và LibreOffice khi chúng nối qua mô-đun IBus GTK, và phần nhận cú
+bấm chuột trên X11 nay nằm trong lõi dùng chung.
+Tải ở [ngosen-1.7.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.3-1).
+
+### Sửa
+
+- Trên X11, Firefox (kể cả bản snap), Chrome và LibreOffice khi kết nối qua mô-đun IBus GTK được Ngó Sen nhận
+  đúng tên app và xử lý như khi kết nối trực tiếp với fcitx5 (#458).
+
 ## [1.7.2-1] — 30/10/2026
 
 Sửa Gõ Sen quên chữ đang gõ trong VS Code trên GNOME (#453). Sửa Gõ Sen ra “tiêsng” khi gõ “tieesng” trong app Qt

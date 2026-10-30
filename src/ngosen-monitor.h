@@ -18,8 +18,8 @@
 
 #include <thread>
 
-extern std::thread  mouse_thread;
-extern X11Selection x11_selection;
+extern std::thread          mouse_thread;
+extern ngosen::X11Selection x11_selection;
 
 /**
  * @brief Thread function for mouse press detection and reset.

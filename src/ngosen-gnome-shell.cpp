@@ -10,11 +10,15 @@
 #include <regex>
 
 #ifdef NGOSEN_HAS_DBUS
+// Older fcitx5 does not install variant.h; distributions that old ship a GNOME without the bug.
+#if __has_include(<fcitx-utils/dbus/variant.h>)
+#define NGOSEN_READS_GNOME_SHELL
 #include <fcitx-utils/dbus/matchrule.h>
 #include <fcitx-utils/dbus/message.h>
 #include <fcitx-utils/dbus/variant.h>
 
 #include <vector>
+#endif
 #endif
 
 namespace ngosen {
@@ -24,7 +28,7 @@ namespace ngosen {
         return std::regex_match(version, dropping);
     }
 
-#ifdef NGOSEN_HAS_DBUS
+#ifdef NGOSEN_READS_GNOME_SHELL
     namespace {
         constexpr const char* ShellService    = "org.gnome.Shell";
         constexpr const char* ShellPath       = "/org/gnome/Shell";
@@ -88,6 +92,8 @@ namespace ngosen {
         drops_keys_ = drops;
         NGOSEN_INFO("GNOME Shell " + version_ + (drops ? " loses forwarded keys; deleting through the text in apps it relays" : " delivers forwarded keys"));
     }
+#elif defined(NGOSEN_HAS_DBUS)
+    GnomeShellWatcher::GnomeShellWatcher(fcitx::dbus::Bus* bus) : bus_(bus), watcher_(*bus) {}
 #endif
 
 } // namespace ngosen

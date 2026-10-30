@@ -657,6 +657,10 @@ namespace ngosen {
                 replayBufferedKeys();
             }
         }
+        // An app that sends no reset on a click (XIM) still shows the underlined word, which the reset
+        // below would drop.
+        if (mode() == ngosen::Mode::Preedit && g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire))
+            commitBuffer();
         if (needEngineReset.load() && mode() != ngosen::Mode::Off) {
             NGOSEN_INFO("Need engine reset");
             oldPreBuffer_.clear();
@@ -677,9 +681,6 @@ namespace ngosen {
         flushDeferredCommit();
         if (g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire)) {
             g_mouse_clicked.store(false, std::memory_order_release);
-            // An app that sends no reset on a click (XIM) still shows the underlined word.
-            if (mode() == ngosen::Mode::Preedit)
-                commitBuffer();
             clearAllBuffers();
             forgetKeysWhileOff();
             clickBeforeKey_ = true;

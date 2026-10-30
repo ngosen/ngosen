@@ -9,6 +9,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -50,6 +51,8 @@ int main() {
     engine.activate(entry, focus);
 
     type(engine, entry, *context, "xin vie");
+    // The click watcher sets both flags.
+    needEngineReset.store(true, std::memory_order_release);
     g_mouse_clicked.store(true, std::memory_order_release);
     type(engine, entry, *context, "e ");
     const std::string text = joined(context->commits());

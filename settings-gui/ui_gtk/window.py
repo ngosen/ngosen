@@ -69,7 +69,7 @@ class Window(Adw.ApplicationWindow):
             searchable=False,
         )
         self.badge = Gtk.Label(css_classes=["check-badge"], visible=False, valign=Gtk.Align.CENTER)
-        self.check = CheckPage(self.dbus, __version__, self.notify, self._show_count)
+        self.check = CheckPage(self.dbus, __version__, self.show_check_message, self._show_count)
         self._add_page(
             "check",
             _("Check my machine"),
@@ -422,13 +422,18 @@ class Window(Adw.ApplicationWindow):
             [Gtk.AccessibleProperty.LABEL], [_("Steps left to fix: {}").format(count)]
         )
 
-    def notify(self, text, undo):
+    def show_check_message(self, text, undo):
         """A toast from the check page, with Undo when its fix can be taken back."""
         toast = Adw.Toast(title=text)
         if undo is not None:
-            toast.set_button_label(_("&Undo").replace("&", "_"))
-            toast.connect("button-clicked", lambda _t: undo())
+            _undo_button(toast, lambda: self._undo_fix(undo))
         self._show(toast)
+
+    def _undo_fix(self, undo):
+        if not undo():
+            self._show(
+                Adw.Toast(title=_("Could not undo. Check that fcitx5 is running."), timeout=0)
+            )
 
     def show_tips(self):
         self.show_page("whats-new")
@@ -471,8 +476,7 @@ class Window(Adw.ApplicationWindow):
 
     def _with_undo(self, toast):
         if self._undo_to is not None:
-            toast.set_button_label(_("&Undo").replace("&", "_"))
-            toast.connect("button-clicked", lambda _t: self.undo())
+            _undo_button(toast, self.undo)
         return toast
 
     def _show(self, toast):
@@ -481,6 +485,11 @@ class Window(Adw.ApplicationWindow):
         self.toast = toast
         toast.set_use_markup(False)
         self.toasts.add_toast(toast)
+
+
+def _undo_button(toast, undo):
+    toast.set_button_label(_("&Undo").replace("&", "_"))
+    toast.connect("button-clicked", lambda _t: undo())
 
 
 def _widget(page):

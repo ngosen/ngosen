@@ -293,7 +293,6 @@ class NgoSenSettingsWindow(QMainWindow):
 
     def _show_message(self, text, undo=False, error=False):
         self._undo_fix = None
-        self._check_item = None
         if error:
             fill, border = brand.pick(self, brand.ERROR_FILL), brand.pick(self, brand.ERROR_BORDER)
         else:
@@ -351,7 +350,9 @@ class NgoSenSettingsWindow(QMainWindow):
         def create_check():
             from ui.pages.check import CheckPage
 
-            return CheckPage(self.dbus_handler, __version__, self.notify, self._show_count)
+            return CheckPage(
+                self.dbus_handler, __version__, self.show_check_message, self._show_count
+            )
 
         def create_whats_new():
             from ui.pages.whats_new import WhatsNewPage
@@ -485,7 +486,7 @@ class NgoSenSettingsWindow(QMainWindow):
         self._show_message(text, undo=before is not None)
         self.update_reset_button_state()
 
-    def notify(self, text, undo):
+    def show_check_message(self, text, undo):
         """A message from the check page, with Undo when its fix can be taken back."""
         self._undo_to = None
         self._show_message(text, undo=undo is not None)
@@ -500,9 +501,10 @@ class NgoSenSettingsWindow(QMainWindow):
         """Puts back the settings from before the last save, or the last fix."""
         self._save_timer.stop()
         if self._undo_fix is not None:
-            undo = self._undo_fix
-            undo()
-            self._show_message(_("Change undone."))
+            if self._undo_fix():
+                self._show_message(_("Change undone."))
+            else:
+                self._show_message(_("Could not undo. Check that fcitx5 is running."), error=True)
             return
         if self._undo_to is None:
             return

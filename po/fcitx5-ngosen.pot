@@ -1710,3 +1710,7 @@ msgstr ""
 #: settings-gui/ui_gtk/check_page.py
 msgid "No app is connected yet"
 msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in to start the installed version."
+msgstr ""

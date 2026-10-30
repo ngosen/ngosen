@@ -99,15 +99,7 @@ def steps(facts):
         ]
     found = [Finding(OK, _("fcitx5 is running"))]
     if facts.addon_replaced:
-        found.append(
-            Finding(
-                WARN,
-                _("fcitx5 still runs Ngó Sen from before the update"),
-                _("Restart fcitx5, or log out and back in, to start the installed version."),
-                RESTART_FCITX,
-                "fcitx5 -rd",
-            )
-        )
+        found.append(_replaced_addon_finding(facts))
     if facts.ngosen_in_group:
         found.append(Finding(OK, _("Ngó Sen is in the fcitx5 input method list")))
     else:
@@ -140,6 +132,20 @@ def steps(facts):
             )
         )
     return found
+
+
+def _replaced_addon_finding(facts):
+    title = _("fcitx5 still runs Ngó Sen from before the update")
+    # KWin starts fcitx5 as its virtual keyboard and ignores a restart asked over D-Bus.
+    if facts.session == "wayland" and "KDE" in facts.desktops:
+        return Finding(WARN, title, _("Log out and back in to start the installed version."))
+    return Finding(
+        WARN,
+        title,
+        _("Restart fcitx5, or log out and back in, to start the installed version."),
+        RESTART_FCITX,
+        "fcitx5 -rd",
+    )
 
 
 def evaluate(facts):
@@ -281,6 +287,14 @@ def summary(found):
     return title, text
 
 
+def failed_text(finding):
+    if not finding.command:
+        return finding.fix
+    return _(
+        "Could not fix this. Copy the command to run it yourself, or send the result to Ngó Sen."
+    )
+
+
 def run_fix(action, dbus_handler):
     """Runs a step's fix. Returns (done, undo), where undo puts things back or is None."""
     if action == ADD_NGOSEN:
@@ -289,6 +303,10 @@ def run_fix(action, dbus_handler):
             return False, None
         name, layout, items = group
         if not dbus_handler.set_input_method_group(name, *with_ngosen(layout, items)):
+            return False, None
+        # fcitx5 quietly drops an input method it has not loaded, such as one installed after it.
+        if "ngosen" not in (dbus_handler.input_method_names() or []):
+            dbus_handler.set_input_method_group(name, layout, items)
             return False, None
         return True, lambda: dbus_handler.set_input_method_group(name, layout, items)
     if action == RESTART_FCITX:
@@ -303,10 +321,60 @@ def run_fix(action, dbus_handler):
 
 
 def _succeeds(cmd):
+    # Not pipes: fcitx5 -d leaves a child holding them, and reading them would wait for it.
+    out = subprocess.DEVNULL
     try:
-        return subprocess.run(cmd, capture_output=True, timeout=10).returncode == 0
+        return subprocess.run(cmd, stdout=out, stderr=out, timeout=10).returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False
+
+
+# Restarting last: a change made over D-Bus is saved when the old fcitx5 exits.
+FIX_ORDER = (START_FCITX, ADD_NGOSEN, ENABLE_FORWARD_KEYS, RESTART_FCITX)
+
+
+class Fixes:
+    """What the check page's fix buttons are doing; the Qt and GTK pages only draw it."""
+
+    def __init__(self, dbus_handler):
+        self.dbus_handler = dbus_handler
+        self.busy = set()
+        self.failed = set()
+
+    def fixable(self, findings):
+        return [f.action for f in findings if f.action and f.action not in self.failed]
+
+    def run(self, actions):
+        """Runs the fixes; returns (done, undos, ms to wait before checking again)."""
+        done, undos = [], []
+        for action in sorted(actions, key=FIX_ORDER.index):
+            ok, undo = run_fix(action, self.dbus_handler)
+            if not ok:
+                self.failed.add(action)
+                continue
+            done.append(action)
+            if undo:
+                undos.append(undo)
+        return done, undos, max((SETTLE_MS.get(a, 0) for a in done), default=0)
+
+    def finish(self, done, undos, findings):
+        """After checking again: the message to show and its undo, empty when nothing got fixed."""
+        self.busy = set()
+        left = {f.action for f in findings}
+        # A fix that ran but left its step, such as a restart KWin ignored, did not work.
+        self.failed |= left & set(done)
+        self.failed &= left
+        fixed = [a for a in done if a not in left]
+        if not fixed:
+            return "", None
+        return " ".join(fixed_message(a) for a in fixed), self._undo(undos) if undos else None
+
+    @staticmethod
+    def _undo(undos):
+        def undo():
+            return all([step() for step in reversed(undos)])
+
+        return undo
 
 
 def report(facts, findings, app_test=None):

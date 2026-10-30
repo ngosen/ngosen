@@ -45,8 +45,7 @@ class CheckPage:
         self.notify = notify
         self.on_count = on_count
         self.app_test = None
-        self.busy = set()
-        self.failed = set()
+        self.fixes = system_check.Fixes(dbus)
         self.rows = []
         self.app_rows = []
         page = Adw.PreferencesPage()
@@ -136,8 +135,7 @@ class CheckPage:
     def run(self):
         self.facts = system_check.collect(self.dbus, self.ngosen_version)
         self.found = system_check.steps(self.facts)
-        self.findings = system_check.evaluate(self.facts)
-        self.failed &= {f.action for f in self.findings}
+        self.findings = [f for f in self.found if f.level != system_check.OK]
         self._show_steps()
         self._show_apps()
 
@@ -148,18 +146,15 @@ class CheckPage:
         for row in self.rows:
             self.steps.add(row)
         title, text = system_check.summary(self.found)
-        if self.busy:
+        if self.fixes.busy:
             title = _("Fixing…")
         self.heading.set_text(title)
         self.summary.set_text(text)
-        fixable = self._fixable()
+        fixable = self.fixes.fixable(self.findings)
         self.fix_all_btn.set_label(_("Fix all ({})").format(len(fixable)))
         self.fix_all_btn.set_visible(len(fixable) > 1)
-        self.fix_all_btn.set_sensitive(not self.busy)
+        self.fix_all_btn.set_sensitive(not self.fixes.busy)
         self.on_count(len(self.findings))
-
-    def _fixable(self):
-        return [f.action for f in self.findings if f.action and f.action not in self.failed]
 
     def _row(self, finding):
         # A step with a button needs no instructions unless the button fails.
@@ -169,18 +164,14 @@ class CheckPage:
         row.add_prefix(Gtk.Image(icon_name=icon, css_classes=[css]))
         row.level = finding.level
         row.button = None
-        if finding.action in self.busy:
+        if finding.action in self.fixes.busy:
             row.set_subtitle(_("Fixing…"))
             row.add_suffix(Gtk.Spinner(spinning=True, valign=Gtk.Align.CENTER))
-        elif finding.action in self.failed:
-            row.set_subtitle(
-                _(
-                    "Could not fix this. Copy the command to run it yourself, or send the result "
-                    "to Ngó Sen."
-                )
-            )
-            row.button = _button(_("Copy command"), lambda: self.copy_command(finding.command))
-            row.add_suffix(row.button)
+        elif finding.action in self.fixes.failed:
+            row.set_subtitle(system_check.failed_text(finding))
+            if finding.command:
+                row.button = _button(_("Copy command"), lambda: self.copy_command(finding.command))
+                row.add_suffix(row.button)
         elif finding.action:
             row.button = _button(
                 system_check.fix_label(finding.action), lambda: self.fix([finding.action])
@@ -199,45 +190,37 @@ class CheckPage:
             self.apps.add(row)
 
     def fix_all(self):
-        self.fix(self._fixable())
+        self.fix(self.fixes.fixable(self.findings))
 
     def fix(self, actions):
-        if self.busy or not actions:
+        if self.fixes.busy or not actions:
             return
-        self.busy = set(actions)
+        self.fixes.busy = set(actions)
         self._show_steps()
         # Let the spinner show before the fix holds the main loop.
         GLib.timeout_add(50, self._run_fixes, list(actions))
 
     def _run_fixes(self, actions):
-        undos, done = [], []
-        for action in actions:
-            ok, undo = system_check.run_fix(action, self.dbus)
-            if ok:
-                done.append(action)
-                if undo:
-                    undos.append(undo)
-            else:
-                self.failed.add(action)
-        settle = max((system_check.SETTLE_MS.get(a, 0) for a in done), default=0)
+        done, undos, settle = self.fixes.run(actions)
         GLib.timeout_add(settle, self._fixed, done, undos)
         return GLib.SOURCE_REMOVE
 
     def _fixed(self, done, undos):
-        self.busy = set()
+        self.fixes.busy = set()
         self.run()
-        if done:
-            text = " ".join(system_check.fixed_message(a) for a in done)
-            self.notify(text, self._undo(undos) if undos else None)
+        text, undo = self.fixes.finish(done, undos, self.findings)
+        self._show_steps()
+        if text:
+            self.notify(text, self._then_check(undo) if undo else None)
         return GLib.SOURCE_REMOVE
 
-    def _undo(self, undos):
-        def undo():
-            for step in reversed(undos):
-                step()
+    def _then_check(self, undo):
+        def undo_and_check():
+            ok = undo()
             self.run()
+            return ok
 
-        return undo
+        return undo_and_check
 
     def copy_command(self, command):
         _copy(command)

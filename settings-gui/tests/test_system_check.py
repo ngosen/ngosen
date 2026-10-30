@@ -174,6 +174,52 @@ class FixTest(unittest.TestCase):
         self.assertEqual(dbus.restarts, 1)
 
 
+class FixReviewTest(unittest.TestCase):
+    def test_ngosen_dropped_by_fcitx5_is_not_reported_added(self):
+        class Drops(FakeDBusHandler):
+            def set_input_method_group(self, name, layout, items):
+                kept = [item for item in items if item[0] != "ngosen"]
+                return super().set_input_method_group(name, layout, kept)
+
+        dbus = Drops()
+        dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.assertEqual(system_check.run_fix(system_check.ADD_NGOSEN, dbus), (False, None))
+        self.assertEqual(dbus.group, ("Default", "us", [("keyboard-us", "")]))
+
+    def test_started_fcitx5_does_not_hold_the_output_pipes(self):
+        with mock.patch.object(subprocess, "run") as run:
+            run.return_value.returncode = 0
+            system_check.run_fix(system_check.START_FCITX, FakeDBusHandler())
+        self.assertEqual(run.call_args.kwargs["stdout"], subprocess.DEVNULL)
+        self.assertEqual(run.call_args.kwargs["stderr"], subprocess.DEVNULL)
+
+    def test_kwin_fcitx5_is_not_offered_a_restart(self):
+        found = system_check.evaluate(
+            facts("wayland", "KDE", env={}, kwin_input_method="fcitx5", addon_replaced=True)
+        )
+        replaced = next(f for f in found if "before the update" in f.title)
+        self.assertEqual(replaced.action, "")
+        self.assertIn("Log out", replaced.fix)
+
+    def test_ngosen_is_added_before_fcitx5_restarts(self):
+        fixes = system_check.Fixes(FakeDBusHandler())
+        ran = []
+        with mock.patch.object(
+            system_check, "run_fix", side_effect=lambda a, d: ran.append(a) or (True, None)
+        ):
+            fixes.run([system_check.RESTART_FCITX, system_check.ADD_NGOSEN])
+        self.assertEqual(ran, [system_check.ADD_NGOSEN, system_check.RESTART_FCITX])
+
+    def test_a_fix_that_left_its_step_counts_as_failed(self):
+        fixes = system_check.Fixes(FakeDBusHandler())
+        fixes.busy = {system_check.RESTART_FCITX}
+        still = facts("wayland", "GNOME", addon_replaced=True)
+        message, undo = fixes.finish([system_check.RESTART_FCITX], [], system_check.evaluate(still))
+        self.assertEqual((message, undo), ("", None))
+        self.assertEqual(fixes.failed, {system_check.RESTART_FCITX})
+        self.assertEqual(fixes.busy, set())
+
+
 class ReportTest(unittest.TestCase):
     def test_debug_info_gives_each_app_once(self):
         text = (
@@ -383,7 +429,7 @@ class CheckPageTest(unittest.TestCase):
     def settle(self):
         from qtpy.QtWidgets import QApplication
 
-        while self.page.busy:
+        while self.page.fixes.busy:
             QApplication.processEvents()
 
     def test_lists_every_step_and_copies_the_report(self):
@@ -474,13 +520,28 @@ class CheckPageWindowTest(unittest.TestCase):
             window.show_page("check")
         run.assert_called_once()
 
+    def test_coming_back_after_a_message_checks_again(self):
+        window = self.window(FakeDBusHandler())
+        page = window.show_page("check")
+        window.show_page("about")
+        window._show_message("Saved.")
+        with mock.patch.object(page, "run") as run:
+            window.show_page("check")
+        run.assert_called_once()
+
+    def test_a_failed_undo_says_so(self):
+        window = self.window(FakeDBusHandler())
+        window.show_check_message("Added.", lambda: False)
+        window.btn_undo.click()
+        self.assertIn("Could not undo", window.message_label.text())
+
     def test_undo_takes_back_the_fix(self):
         dbus = FakeDBusHandler()
         dbus.group = ("Default", "us", [("keyboard-us", "")])
         window = self.window(dbus)
         page = window.show_page("check")
         page.fix([system_check.ADD_NGOSEN])
-        while page.busy:
+        while page.fixes.busy:
             app.processEvents()
         self.assertFalse(window.btn_undo.isHidden())
         window.btn_undo.click()

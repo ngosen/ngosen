@@ -59,8 +59,7 @@ class CheckPage(QWidget):
         self.notify = notify
         self.on_count = on_count
         self.app_test = None
-        self.busy = set()
-        self.failed = set()
+        self.fixes = system_check.Fixes(dbus_handler)
         self.rows = []
         self._setup_ui()
         self.run()
@@ -172,8 +171,7 @@ class CheckPage(QWidget):
     def run(self):
         self.facts = system_check.collect(self.dbus_handler, self.ngosen_version)
         self.found = system_check.steps(self.facts)
-        self.findings = system_check.evaluate(self.facts)
-        self.failed &= {f.action for f in self.findings}
+        self.findings = [f for f in self.found if f.level != system_check.OK]
         self._show_steps()
         names = [f"{program} ({frontend})" for program, frontend in self.facts.apps]
         self.apps.setText(", ".join(names) or _("No app is connected yet"))
@@ -187,16 +185,13 @@ class CheckPage(QWidget):
         for row in self.rows:
             self.steps.content_layout.addWidget(row)
         title, text = system_check.summary(self.found)
-        self.heading.setText(_("Fixing…") if self.busy else title)
+        self.heading.setText(_("Fixing…") if self.fixes.busy else title)
         self.summary.setText(text)
-        fixable = self._fixable()
+        fixable = self.fixes.fixable(self.findings)
         self.fix_all_btn.setText(_("Fix all ({})").format(len(fixable)))
         self.fix_all_btn.setVisible(len(fixable) > 1)
-        self.fix_all_btn.setEnabled(not self.busy)
+        self.fix_all_btn.setEnabled(not self.fixes.busy)
         self.on_count(len(self.findings))
-
-    def _fixable(self):
-        return [f.action for f in self.findings if f.action and f.action not in self.failed]
 
     def _row(self, finding):
         row = QWidget()
@@ -216,18 +211,16 @@ class CheckPage(QWidget):
         # A step with a button needs no instructions unless the button fails.
         subtitle = "" if finding.action else finding.fix
         trailing = None
-        if finding.action in self.busy:
+        if finding.action in self.fixes.busy:
             subtitle = _("Fixing…")
             trailing = QProgressBar()
             trailing.setRange(0, 0)
             trailing.setFixedWidth(80)
             trailing.setTextVisible(False)
-        elif finding.action in self.failed:
-            subtitle = _(
-                "Could not fix this. Copy the command to run it yourself, or send the result to "
-                "Ngó Sen."
-            )
-            trailing = _button(_("Copy command"), lambda: self.copy_command(finding.command))
+        elif finding.action in self.fixes.failed:
+            subtitle = system_check.failed_text(finding)
+            if finding.command:
+                trailing = _button(_("Copy command"), lambda: self.copy_command(finding.command))
         elif finding.action:
             trailing = _button(
                 system_check.fix_label(finding.action), lambda: self.fix([finding.action])
@@ -242,43 +235,35 @@ class CheckPage(QWidget):
         return row
 
     def fix_all(self):
-        self.fix(self._fixable())
+        self.fix(self.fixes.fixable(self.findings))
 
     def fix(self, actions):
-        if self.busy or not actions:
+        if self.fixes.busy or not actions:
             return
-        self.busy = set(actions)
+        self.fixes.busy = set(actions)
         self._show_steps()
         # Let the busy row paint before the fix holds the event loop.
         QTimer.singleShot(50, lambda: self._run_fixes(list(actions)))
 
     def _run_fixes(self, actions):
-        undos, done = [], []
-        for action in actions:
-            ok, undo = system_check.run_fix(action, self.dbus_handler)
-            if ok:
-                done.append(action)
-                if undo:
-                    undos.append(undo)
-            else:
-                self.failed.add(action)
-        settle = max((system_check.SETTLE_MS.get(a, 0) for a in done), default=0)
+        done, undos, settle = self.fixes.run(actions)
         QTimer.singleShot(settle, lambda: self._fixed(done, undos))
 
     def _fixed(self, done, undos):
-        self.busy = set()
+        self.fixes.busy = set()
         self.run()
-        if done:
-            text = " ".join(system_check.fixed_message(a) for a in done)
-            self.notify(text, self._undo(undos) if undos else None)
+        text, undo = self.fixes.finish(done, undos, self.findings)
+        self._show_steps()
+        if text:
+            self.notify(text, self._then_check(undo) if undo else None)
 
-    def _undo(self, undos):
-        def undo():
-            for step in reversed(undos):
-                step()
+    def _then_check(self, undo):
+        def undo_and_check():
+            ok = undo()
             self.run()
+            return ok
 
-        return undo
+        return undo_and_check
 
     def copy_command(self, command):
         QGuiApplication.clipboard().setText(command)

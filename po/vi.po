@@ -1796,3 +1796,7 @@ msgstr "Đã chép: {}"
 #: settings-gui/ui_gtk/check_page.py
 msgid "No app is connected yet"
 msgstr "Chưa có app nào kết nối với fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in to start the installed version."
+msgstr "Đăng xuất rồi đăng nhập lại để chạy version vừa cài."

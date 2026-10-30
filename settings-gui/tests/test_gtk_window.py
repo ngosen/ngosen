@@ -700,7 +700,7 @@ class GtkCheckPageTest(unittest.TestCase):
         return [row.level for row in self.check.rows]
 
     def settle(self):
-        while self.check.busy:
+        while self.check.fixes.busy:
             GLib.MainContext.default().iteration(True)
 
     def row(self, title):

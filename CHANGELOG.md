@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Lõi gõ dùng chung với Ngó Sen cho GNOME (bản IBus): Gõ Sen trong app Qt trên GNOME không còn ra "tiêsng" khi gõ
+  "tieesng"; app Qt ngừng báo chữ sau mỗi lần xoá, và Ngó Sen nay xoá đúng dựa trên bản chép cũ đó (#PR).
+
 ## [1.7.1-1] — 30/10/2026
 
 Trên GNOME, Gõ Sen xoá chữ qua surrounding text khi app báo đúng chữ đang gõ, để Backspace tới muộn không còn

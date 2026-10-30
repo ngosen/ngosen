@@ -1609,6 +1609,18 @@ namespace {
         }
     }
 
+    // Qt over GNOME Shell's IBus bridge stops reporting after a deletion, so the next replacement in
+    // the word sees the copy from before the last one.
+    void testStaleCopyBeforeReplacement() {
+        ngosen::test::Typed run;
+        Field               field = surroundingOnlyField();
+        field.preeditFallback     = true;
+        const ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true};
+        const auto                    lines = logLinesWhileTyping(field, qt, "nam tieesng ", "", &run, 150);
+        check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0, "stale copy: a replacement after a replacement deletes on the older copy",
+              run.text + " " + join(lines));
+    }
+
     // The ways out when a deletion through the surrounding text goes wrong.
     void testSurroundingFallback() {
         ngosen::test::Typed run;
@@ -1747,6 +1759,7 @@ int main() {
     testSurroundingCheck();
     testSurroundingFallback();
     testSlowReport();
+    testStaleCopyBeforeReplacement();
     testAutofillMark();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

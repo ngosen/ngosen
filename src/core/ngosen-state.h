@@ -452,12 +452,13 @@ namespace ngosen {
         // Remembers what the app showed when the replacement started, to tell when it is done.
         void recordSendSnapshot(const std::string& deletedPart);
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
-        bool deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
-        void replaceThroughSurrounding(const Surrounding& surrounding);
-        int  surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
-        void trackEarlierWords(const std::string& addedPart);
-        void replaceThroughForwardedKeys();
-        void replaceThroughCommittedDel();
+        bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
+        void                     replaceThroughSurrounding(const Surrounding& surrounding);
+        int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
+        std::vector<std::string> earlierWordsBeforeReplacement() const;
+        void                     trackEarlierWords(const std::string& addedPart);
+        void                     replaceThroughForwardedKeys();
+        void                     replaceThroughCommittedDel();
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
         struct SurroundingCheck {

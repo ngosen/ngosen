@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(fcitx5-ngosen VERSION 1.7.2)
+project(fcitx5-ngosen VERSION 1.7.3)
 # The typing log names the version it came from.
 add_definitions(-DNGOSEN_VERSION=\"${PROJECT_VERSION}\")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -28,7 +28,6 @@ set(ngosen_fcitx_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-fcitx-host.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-fcitx-log.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-program-name.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-pointer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-monitor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-icon-resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-plasma-theme.cpp

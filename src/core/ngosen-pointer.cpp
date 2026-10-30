@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "ngosen-pointer.h"
-#include "ngosen-utils.h"
+#include "ngosen-log.h"
 
 #include <cerrno>
 #include <cstdlib>
@@ -12,6 +12,7 @@
 #include <deque>
 #include <dlfcn.h>
 #include <poll.h>
+#include <utility>
 
 namespace {
     // Loaded at run time, like XTEST, so a system without libxcb-xinput still builds and runs.
@@ -298,7 +299,8 @@ bool isRawClickEvent(const uint8_t* event, uint8_t xinputOpcode) {
 }
 
 bool watchX11PointerClicks(const std::atomic<bool>& stop, const std::function<void()>& onClick, X11Selection* selection) {
-    if (getEnv("DISPLAY").empty())
+    const char* display = std::getenv("DISPLAY");
+    if (display == nullptr || *display == 0)
         return false;
     void* xcb    = dlopen("libxcb.so.1", RTLD_NOW | RTLD_LOCAL);
     void* xinput = dlopen("libxcb-xinput.so.0", RTLD_NOW | RTLD_LOCAL);

@@ -1623,6 +1623,36 @@ namespace {
 
     // VS Code reports the cursor at the start of the line and then back at the end of the word,
     // with the text unchanged; the word being typed must survive that.
+    // IBus names a client "<toolkit>-im:<program>", and a snap's program repeats the snap name.
+    void testIbusClientNames() {
+        auto ibus = [](const std::string& program, bool surroundingText = false) { return makeField("ibus", surroundingText, program); };
+        auto said = [](bool ok) { return std::string(ok ? "true" : "false"); };
+        bool ok   = ngosen::hidesAddressBarFlag(ibus("gtk3-im:firefox_firefox"));
+        check(ok, "IBus snap Firefox hides the address bar flag", said(ok));
+        ok = ngosen::hidesAddressBarFlag(ibus("gtk3-im:firefox"));
+        check(ok, "IBus Firefox hides the address bar flag", said(ok));
+        ok = ngosen::typesOverPrimarySelection(ibus("gtk3-im:google-chrome"));
+        check(ok, "IBus Chrome types over the primary selection", said(ok));
+        ok = ngosen::appliesBackspacesLate(ibus("gtk3-im:soffice"));
+        check(ok, "IBus LibreOffice applies backspaces late", said(ok));
+        ok = ngosen::appliesBackspacesLate(ibus("gtk3-im:soffice_soffice"));
+        check(ok, "IBus snap LibreOffice applies backspaces late", said(ok));
+        ok = ngosen::ignoresForwardedKeys(ibus("gtk4-im:python3"));
+        check(ok, "IBus GTK4 still ignores forwarded keys", said(ok));
+        ok = ngosen::ignoresForwardedKeys(ibus("gtk3-im:firefox"));
+        check(!ok, "IBus GTK3 takes forwarded keys", said(ok));
+        ok = ngosen::erasesWithCommittedDel(ibus("gtk4-im:ptyxis"));
+        check(ok, "IBus Ptyxis erases with a committed DEL", said(ok));
+        ok = ngosen::hidesAddressBarFlag(ibus("gtk3-im:gnome-terminal-server"));
+        check(!ok, "IBus terminal is not Firefox", said(ok));
+        ok = ngosen::hidesAddressBarFlag(ibus("gnome-shell"));
+        check(!ok, "GNOME Shell is not Firefox", said(ok));
+        ok = ngosen::appliesBackspacesLate(ibus("gtk3-im:soffice_bin"));
+        check(!ok, "an underscore that does not repeat the name stays", said(ok));
+        ok = ngosen::appliesBackspacesLate(makeField("dbus", true, "soffice_soffice"));
+        check(!ok, "snap names are only shortened for IBus clients", said(ok));
+    }
+
     void testCursorBounceBack() {
         Field ibusEdition           = surroundingOnlyField();
         ibusEdition.preeditFallback = true;
@@ -1810,6 +1840,7 @@ int main() {
     testSlowReport();
     testStaleCopyBeforeReplacement();
     testCursorBounceBack();
+    testIbusClientNames();
     testAutofillMark();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

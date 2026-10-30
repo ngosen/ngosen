@@ -1,3 +1,11 @@
+fcitx5-ngosen (1:1.7.3-1) unstable; urgency=medium
+
+  * Recognise Firefox (including the snap), Chrome and LibreOffice by name when they connect
+    through the IBus GTK module on X11, and share the X11 click watcher with the IBus edition
+    (#458).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Fri, 30 Oct 2026 22:00:00 +0700
+
 fcitx5-ngosen (1:1.7.2-1) unstable; urgency=medium
 
   * Fix Sen forgetting the word being typed in VS Code on GNOME when VS Code reports the cursor

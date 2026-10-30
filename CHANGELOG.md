@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Ở chế độ gạch chân (Preedit), click trong Alacritty và app XIM khác không còn làm mất chữ đang gõ dở (#466).
+
 ## [1.7.3-1] — 30/10/2026
 
 Sửa lõi gõ dùng chung để Ngó Sen cho GNOME (bản IBus) chuẩn bị gõ thẳng trong app X11 (#458). Trên X11,

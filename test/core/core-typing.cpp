@@ -1609,6 +1609,39 @@ namespace {
         }
     }
 
+    // VS Code reports the cursor at the start of the line and then back at the end of the word,
+    // with the text unchanged; the word being typed must survive that.
+    void testCursorBounceBack() {
+        Field ibusEdition           = surroundingOnlyField();
+        ibusEdition.preeditFallback = true;
+        for (const auto& [field, quirks] :
+             {std::pair{makeField("ibus", true), ngosen::test::AppQuirks{}}, std::pair{ibusEdition, ngosen::test::AppQuirks{.dropsForwardedKeys = true}}}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            const auto typeText = [&](const std::string& text) {
+                for (char c : text) {
+                    app->type(static_cast<uint32_t>(c));
+                    loop.pump(100);
+                }
+            };
+            typeText("xin v");
+            loop.pump(300);
+            app->moveCursor(0);
+            loop.pump(30);
+            app->moveCursor(5);
+            loop.pump(30);
+            typeText("ieetj ");
+            loop.pump(300);
+            check(app->text() == "xin việt ", "bounce: the cursor coming back to the word end keeps the word", field.frontend + " " + app->text());
+        }
+    }
+
     // The ways out when a deletion through the surrounding text goes wrong.
     void testSurroundingFallback() {
         ngosen::test::Typed run;
@@ -1747,6 +1780,7 @@ int main() {
     testSurroundingCheck();
     testSurroundingFallback();
     testSlowReport();
+    testCursorBounceBack();
     testAutofillMark();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

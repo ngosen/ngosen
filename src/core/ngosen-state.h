@@ -27,6 +27,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct EmojiEntry;
@@ -317,12 +318,14 @@ namespace ngosen {
 
         // Last surrounding text the app reported, to tell a click from an edit.
         std::string  lastSurroundingText_;
-        unsigned int lastSurroundingCursor_  = 0;
-        unsigned int lastSurroundingAnchor_  = 0;
-        bool         hasLastSurrounding_     = false;
-        unsigned int unreportedCommitLength_ = 0;
-        bool         committing_             = false;
-        uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
+        unsigned int lastSurroundingCursor_ = 0;
+        // Text and cursor before a move without an edit, until the next key.
+        std::optional<std::pair<std::string, unsigned int>> jumpedFrom_;
+        unsigned int                                        lastSurroundingAnchor_  = 0;
+        bool                                                hasLastSurrounding_     = false;
+        unsigned int                                        unreportedCommitLength_ = 0;
+        bool                                                committing_             = false;
+        uint64_t                                            lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.
         std::string commitNotSeen_;
 

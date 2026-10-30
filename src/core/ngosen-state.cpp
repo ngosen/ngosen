@@ -657,6 +657,7 @@ namespace ngosen {
         }
         if (needEngineReset.load() && mode() != ngosen::Mode::Off) {
             NGOSEN_INFO("Need engine reset");
+            jumpedFrom_.reset();
             oldPreBuffer_.clear();
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());

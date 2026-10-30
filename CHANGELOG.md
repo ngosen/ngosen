@@ -13,7 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Gõ Sen trong VS Code trên GNOME không còn quên chữ đang gõ ("xin vieetj" thay vì "xin việt") khi VS Code báo con
-  trỏ nhảy về đầu dòng rồi quay lại cuối chữ mà chữ không đổi (#PR).
+  trỏ nhảy về đầu dòng rồi quay lại cuối chữ mà chữ không đổi (#453).
 
 ## [1.7.1-1] — 30/10/2026
 

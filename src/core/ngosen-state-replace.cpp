@@ -654,6 +654,7 @@ namespace ngosen {
 
     std::vector<std::string> TypingState::earlierWordsBeforeReplacement() const {
         // Raw keys after a replacement extend the word it left; anything else starts a new word.
+        // trackEarlierWords keeps the same rule.
         if (wordAfterReplacement_.empty() || !isStartsWith(oldPreBuffer_, wordAfterReplacement_))
             return {};
         std::vector<std::string> words = earlierWords_;
@@ -662,7 +663,10 @@ namespace ngosen {
     }
 
     void TypingState::trackEarlierWords(const std::string& addedPart) {
-        earlierWords_          = earlierWordsBeforeReplacement();
+        if (!wordAfterReplacement_.empty() && isStartsWith(oldPreBuffer_, wordAfterReplacement_))
+            earlierWords_.push_back(wordBeforeReplacement_);
+        else
+            earlierWords_.clear();
         wordBeforeReplacement_ = oldPreBuffer_;
         wordAfterReplacement_  = surr_wait_prefix_ + addedPart;
     }

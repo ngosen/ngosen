@@ -1617,8 +1617,8 @@ namespace {
         field.preeditFallback     = true;
         const ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true};
         const auto                    lines = logLinesWhileTyping(field, qt, "nam tieesng ", "", &run, 150);
-        check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0, "stale copy: a replacement after a replacement deletes on the older copy",
-              run.text + " " + join(lines));
+        check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0 && countHaving(lines, "copy shows the earlier word") > 0,
+              "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
     }
 
     // The ways out when a deletion through the surrounding text goes wrong.

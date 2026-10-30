@@ -10,6 +10,15 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.7.1-1] — 30/10/2026
+
+Trên GNOME, Gõ Sen xoá chữ qua surrounding text khi app báo đúng chữ đang gõ, để Backspace tới muộn không còn
+làm hỏng chữ; app bỏ qua lệnh xoá thì Ngó Sen tự quay về Backspace tới hết phiên (#443, #446). Sửa hỏng chữ khi
+app báo chữ chậm hơn phím gõ (#441) và bỏ khoảng dừng sau mỗi lần xoá (#438). Kiểm tra máy cảnh báo GNOME
+50.0–50.3 thiếu bản sửa `forward-keys` (#440) và thôi báo nhầm IBus chạy song song (#442). Chế độ chọn ở menu `,`
+trên fcitx5 cũ không còn bị lưu mãi (#444); nhật ký gõ giữ mỗi sự kiện trên một dòng (#445).
+Tải ở [ngosen-1.7.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.1-1).
+
 ### Thêm
 
 - Kiểm tra máy cảnh báo khi GNOME 50.0–50.3 chạy mà không bật bản sửa `forward-keys` (Enter sau chữ Preedit và

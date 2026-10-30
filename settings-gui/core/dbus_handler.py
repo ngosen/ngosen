@@ -79,6 +79,42 @@ class NgoSenDBusHandler:
             print(f"Failed to read the input method group: {e}")
             return None
 
+    def input_method_group(self):
+        """(name, default layout, [(input method, layout)]) of the current group, or None."""
+        if not self.iface:
+            return None
+        try:
+            name = str(self.iface.CurrentInputMethodGroup())
+            layout, items = self.iface.InputMethodGroupInfo(name)
+            return name, str(layout), [(str(im), str(im_layout)) for im, im_layout in items]
+        except Exception as e:
+            print(f"Failed to read the input method group: {e}")
+            return None
+
+    def set_input_method_group(self, name, layout, items) -> bool:
+        if not self.iface:
+            return False
+        try:
+            entries = dbus.Array([dbus.Struct(item) for item in items], signature="(ss)")
+            self.iface.SetInputMethodGroupInfo(name, layout, entries)
+            return True
+        except Exception as e:
+            print(f"Failed to set the input method group: {e}")
+            return False
+
+    def restart(self) -> bool:
+        """Restarts fcitx5 so it loads the installed addon."""
+        if not self.iface:
+            return False
+        try:
+            if not self.iface.CanRestart():
+                return False
+            self.iface.Restart()
+            return True
+        except Exception as e:
+            print(f"Failed to restart fcitx5: {e}")
+            return False
+
     def debug_info(self) -> str:
         """fcitx5's list of connected input contexts, with each one's program and frontend."""
         if not self.iface:

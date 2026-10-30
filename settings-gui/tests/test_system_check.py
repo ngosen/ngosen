@@ -14,7 +14,7 @@ from qtpy.QtWidgets import QWidget
 # isort: off
 from support import FakeDBusHandler, app  # noqa: F401
 from core import system_check
-from core.system_check import FAIL, WARN, Facts
+from core.system_check import FAIL, OK, WARN, Facts
 
 # isort: on
 
@@ -98,11 +98,82 @@ class EvaluateTest(unittest.TestCase):
         self.assertIn("gnome-extensions enable", found("50.1", "INACTIVE")[0].fix)
         self.assertIn("install.sh", found("50.1", "")[0].fix)
         self.assertEqual(found("50.1", "ACTIVE"), [])
+        ok = system_check.steps(
+            facts("wayland", "GNOME", gnome_shell_version="50.1", forward_keys_state="ACTIVE")
+        )
+        self.assertIn("The fix for GNOME 50.1 is on", titles(ok, OK))
         self.assertEqual(len(found("50.0", "INACTIVE")), 1)
         self.assertEqual(len(found("50.3", "INACTIVE")), 1)
         self.assertEqual(found("50.4", "INACTIVE"), [])
         self.assertEqual(found("49.2", ""), [])
         self.assertEqual(found("", ""), [])
+
+
+class StepsTest(unittest.TestCase):
+    def test_passed_checks_are_listed_too(self):
+        found = system_check.steps(facts("wayland", "GNOME"))
+        self.assertEqual(
+            titles(found, OK),
+            [
+                "fcitx5 is running",
+                "Ngó Sen is in the fcitx5 input method list",
+                "Older X11 apps use fcitx5",
+                "Qt apps use fcitx5",
+                "Chrome and older GTK apps use fcitx5",
+            ],
+        )
+        self.assertEqual(titles(found, FAIL) + titles(found, WARN), [])
+
+    def test_steps_the_window_can_fix(self):
+        def action(**kw):
+            found = system_check.evaluate(facts("wayland", "GNOME", **kw))
+            return [(f.action, f.command) for f in found]
+
+        self.assertEqual(action(fcitx_running=False), [("start-fcitx", "fcitx5 -d")])
+        self.assertEqual(action(ngosen_in_group=False), [("add-ngosen", "fcitx5-configtool")])
+        self.assertEqual(action(addon_replaced=True), [("restart-fcitx", "fcitx5 -rd")])
+        self.assertEqual(
+            action(gnome_shell_version="50.1", forward_keys_state="INACTIVE"),
+            [("enable-forward-keys", f"gnome-extensions enable {system_check.FORWARD_KEYS}")],
+        )
+        # Not installed: the window has nothing to turn on.
+        self.assertEqual(action(gnome_shell_version="50.1", forward_keys_state=""), [("", "")])
+
+
+class FixTest(unittest.TestCase):
+    def test_ngosen_takes_the_place_of_the_only_keyboard(self):
+        self.assertEqual(
+            system_check.with_ngosen("us", [("keyboard-fr", "")]), ("fr", [("ngosen", "")])
+        )
+
+    def test_ngosen_goes_after_other_input_methods(self):
+        items = [("keyboard-us", ""), ("pinyin", "")]
+        self.assertEqual(system_check.with_ngosen("us", items), ("us", items + [("ngosen", "")]))
+
+    def test_ngosen_is_added_once(self):
+        items = [("keyboard-us", ""), ("ngosen", "")]
+        self.assertEqual(system_check.with_ngosen("us", items), ("us", items))
+
+    def test_adding_ngosen_can_be_undone(self):
+        dbus = FakeDBusHandler()
+        dbus.group = ("Default", "us", [("keyboard-us", "")])
+        done, undo = system_check.run_fix(system_check.ADD_NGOSEN, dbus)
+        self.assertTrue(done)
+        self.assertEqual(dbus.input_method_names(), ["ngosen"])
+        undo()
+        self.assertEqual(dbus.group, ("Default", "us", [("keyboard-us", "")]))
+
+    def test_failed_fix_offers_no_undo(self):
+        dbus = FakeDBusHandler()
+        dbus.set_input_method_group = lambda *args: False
+        self.assertEqual(system_check.run_fix(system_check.ADD_NGOSEN, dbus), (False, None))
+        with mock.patch.object(subprocess, "run", side_effect=OSError):
+            self.assertEqual(system_check.run_fix(system_check.START_FCITX, dbus), (False, None))
+
+    def test_restart_goes_through_fcitx5(self):
+        dbus = FakeDBusHandler()
+        self.assertEqual(system_check.run_fix(system_check.RESTART_FCITX, dbus), (True, None))
+        self.assertEqual(dbus.restarts, 1)
 
 
 class ReportTest(unittest.TestCase):

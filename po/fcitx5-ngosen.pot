@@ -1216,7 +1216,44 @@ msgid "fcitx5 still runs Ngó Sen from before the update"
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Log out and back in to start the installed version."
+msgid "Restart fcitx5, or log out and back in, to start the installed version."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 is running"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Ngó Sen is in the fcitx5 input method list"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Older X11 apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "The fix for GNOME {} is on"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Qt apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Chrome and older GTK apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "GTK apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "KDE starts fcitx5 as its virtual keyboard"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Qt 5 apps use fcitx5"
 msgstr ""
 
 #: settings-gui/ui/pages/about.py

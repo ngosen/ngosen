@@ -1281,8 +1281,45 @@ msgid "fcitx5 still runs Ngó Sen from before the update"
 msgstr "fcitx5 vẫn chạy Ngó Sen version cũ, trước khi cập nhật"
 
 #: settings-gui/core/system_check.py
-msgid "Log out and back in to start the installed version."
-msgstr "Đăng xuất rồi đăng nhập lại để chạy version vừa cài."
+msgid "Restart fcitx5, or log out and back in, to start the installed version."
+msgstr "Khởi động lại fcitx5, hoặc đăng xuất rồi đăng nhập lại, để chạy version vừa cài."
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 is running"
+msgstr "fcitx5 đang chạy"
+
+#: settings-gui/core/system_check.py
+msgid "Ngó Sen is in the fcitx5 input method list"
+msgstr "Ngó Sen đã có trong danh sách bộ gõ của fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Older X11 apps use fcitx5"
+msgstr "App X11 cũ gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "The fix for GNOME {} is on"
+msgstr "Bản sửa cho GNOME {} đang bật"
+
+#: settings-gui/core/system_check.py
+msgid "Qt apps use fcitx5"
+msgstr "App Qt gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Chrome and older GTK apps use fcitx5"
+msgstr "Chrome và app GTK cũ gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "GTK apps use fcitx5"
+msgstr "App GTK gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "KDE starts fcitx5 as its virtual keyboard"
+msgstr "KDE chạy fcitx5 làm bàn phím ảo"
+
+#: settings-gui/core/system_check.py
+msgid "Qt 5 apps use fcitx5"
+msgstr "App Qt 5 gõ qua fcitx5"
 
 #: settings-gui/ui/pages/about.py
 msgid "Typing still uses the Ngó Sen that ran before the update. Log out and back in to start version {}."

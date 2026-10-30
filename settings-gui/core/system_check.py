@@ -277,11 +277,14 @@ def summary(found):
     if not problems:
         return _("This machine is ready"), _("Try typing in any app.")
     title = _("Steps left to fix: {}").format(len(problems))
-    if any(f.action for f in problems):
+    fixable = sum(1 for f in problems if f.action)
+    if fixable > 1:
         text = _(
             "Use the button on a step, or fix them all at once. Ngó Sen only changes this "
             "account's settings."
         )
+    elif fixable:
+        text = _("Use the button on the step. Ngó Sen only changes this account's settings.")
     else:
         text = _("Each step says what to do.")
     return title, text

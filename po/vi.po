@@ -1695,6 +1695,10 @@ msgid "Use the button on a step, or fix them all at once. Ngó Sen only changes 
 msgstr "Bấm nút ở từng bước, hoặc sửa hết một lần. Ngó Sen chỉ đổi cài đặt của tài khoản này."
 
 #: settings-gui/core/system_check.py
+msgid "Use the button on the step. Ngó Sen only changes this account's settings."
+msgstr "Bấm nút ở bước đó. Ngó Sen chỉ đổi cài đặt của tài khoản này."
+
+#: settings-gui/core/system_check.py
 msgid "Each step says what to do."
 msgstr "Mỗi bước ghi rõ việc cần làm."
 

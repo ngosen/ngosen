@@ -219,6 +219,15 @@ class FixReviewTest(unittest.TestCase):
         self.assertEqual(fixes.failed, {system_check.RESTART_FCITX})
         self.assertEqual(fixes.busy, set())
 
+    def test_one_fixable_step_does_not_mention_fixing_all(self):
+        found = [
+            system_check.Finding(FAIL, "Ngó Sen is missing", action=system_check.ADD_NGOSEN),
+            system_check.Finding(WARN, "X11 apps have no input method"),
+        ]
+        self.assertNotIn("all at once", system_check.summary(found)[1])
+        found.append(system_check.Finding(FAIL, "fcitx5 is off", action=system_check.START_FCITX))
+        self.assertIn("all at once", system_check.summary(found)[1])
+
 
 class ReportTest(unittest.TestCase):
     def test_debug_info_gives_each_app_once(self):

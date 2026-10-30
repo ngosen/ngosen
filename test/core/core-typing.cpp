@@ -1609,6 +1609,18 @@ namespace {
         }
     }
 
+    // Qt over GNOME Shell's IBus bridge stops reporting after a deletion, so the next replacement in
+    // the word sees the copy from before the last one.
+    void testStaleCopyBeforeReplacement() {
+        ngosen::test::Typed run;
+        Field               field = surroundingOnlyField();
+        field.preeditFallback     = true;
+        const ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true};
+        const auto                    lines = logLinesWhileTyping(field, qt, "nam tieesng ", "", &run, 150);
+        check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0 && countHaving(lines, "copy shows the earlier word") > 0,
+              "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
+    }
+
     // VS Code reports the cursor at the start of the line and then back at the end of the word,
     // with the text unchanged; the word being typed must survive that.
     void testCursorBounceBack() {
@@ -1796,6 +1808,7 @@ int main() {
     testSurroundingCheck();
     testSurroundingFallback();
     testSlowReport();
+    testStaleCopyBeforeReplacement();
     testCursorBounceBack();
     testAutofillMark();
     if (failures == 0)

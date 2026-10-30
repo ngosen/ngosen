@@ -61,6 +61,9 @@ def apply(dbus, backup):
     ok = True
     if "config" in backup:
         ok = dbus.set_config(backup["config"]) and ok
+    if "rules" in backup and "switches" not in backup:
+        # A backup from before switches existed: today's switches would override its rules.
+        backup = {**backup, "switches": []}
     for name, (sub_path, root_key) in SUB_CONFIGS.items():
         if name in backup:
             ok = dbus.set_sub_config_list(sub_path, root_key, backup[name]) and ok

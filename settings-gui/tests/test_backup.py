@@ -59,6 +59,15 @@ class RoundTripTest(unittest.TestCase):
         self.assertEqual(target.sub_configs["app_rules"], rules)
         self.assertEqual(target.sub_configs["app_switches"], switches)
 
+    def test_an_older_backup_brings_its_rules_back_without_todays_switches(self):
+        rules = [{"App": "kate", "Mode": "0"}]
+        target = fake_fcitx.FakeDBusHandler(
+            sub_configs={"app_switches": [{"App": "kate", "Vietnamese": "True"}]}
+        )
+        self.assertTrue(backup.apply(target, {"rules": rules}))
+        self.assertEqual(target.sub_configs["app_rules"], rules)
+        self.assertEqual(target.sub_configs["app_switches"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

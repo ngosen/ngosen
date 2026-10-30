@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// The toggle key switches between English and Vietnamese for every app without a rule of its own,
-// and English lets keys through untouched.
+// The toggle key switches between English and Vietnamese in the app it is pressed in, which remembers
+// that; an app it was never pressed in follows the last press. English lets keys through untouched.
 #include "ngosen-engine.h"
 #include "ngosen-utils.h"
 #include "test-input-context.h"
@@ -9,6 +9,7 @@
 #include <fcitx/candidatelist.h>
 
 #include <chrono>
+#include <map>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -87,6 +88,46 @@ namespace {
         return list && list->size() > 1;
     }
 
+    // App name to "True" or "False", as the engine saved them.
+    std::map<std::string, std::string> savedSwitches() {
+        std::ifstream                      file(std::string(getenv("XDG_CONFIG_HOME")) + "/fcitx5/conf/ngosen-app-switch.conf");
+        std::map<std::string, std::string> switches;
+        std::string                        line;
+        std::string                        app;
+        while (std::getline(file, line)) {
+            // fcitx5 writes a value equal to the default as a comment.
+            if (line.rfind("# ", 0) == 0)
+                line = line.substr(2);
+            if (line.rfind("App=", 0) == 0)
+                app = line.substr(4);
+            else if (line.rfind("Vietnamese=", 0) == 0)
+                switches[app] = line.substr(11);
+        }
+        return switches;
+    }
+
+    std::string describe(const std::map<std::string, std::string>& switches) {
+        std::string text;
+        for (const auto& [app, on] : switches)
+            text += app + "=" + on + " ";
+        return text.empty() ? "(none)" : text;
+    }
+
+    std::string savedRule(const fcitx::NgoSenEngine& engine, const std::string& name) {
+        fcitx::RawConfig raw;
+        engine.getSubConfig("app_rules")->save(raw);
+        std::string mode = "(none)";
+        if (auto rules = raw.get("Rules")) {
+            rules->visitSubItems([&](fcitx::RawConfig& rule, const std::string&) {
+                auto app = rule.get("App");
+                if (app && app->value() == name)
+                    mode = rule.valueByPath("Mode") ? *rule.valueByPath("Mode") : "?";
+                return true;
+            });
+        }
+        return mode;
+    }
+
 } // namespace
 
 int main() {
@@ -130,26 +171,109 @@ int main() {
     check(realMode.load() != beforeReloadSwitch, "Ctrl+Shift still switches after a reload", modeName(realMode.load()));
     keys.ctrlShift(*gedit);
 
-    // No app has a rule, so the switch holds everywhere.
+    // An app never switched in follows the last switch; one switched in keeps its own.
     keys.focus(*kate);
-    check(realMode.load() == ngosen::Mode::Sen, "another app follows the switch", modeName(realMode.load()));
+    check(realMode.load() == ngosen::Mode::Sen, "another app follows the last switch", modeName(realMode.load()));
     keys.ctrlShift(*kate);
     keys.focus(*gedit);
-    check(realMode.load() == ngosen::Mode::Off, "switching back holds in every app", modeName(realMode.load()));
+    check(realMode.load() == ngosen::Mode::Sen, "gedit keeps its own switch", modeName(realMode.load()));
 
-    // gedit gets a rule of its own from the menu: Off.
-    keys.ctrlShift(*gedit);
+    // A window without a name is remembered while it is open, and never saved.
+    auto unnamed = std::make_unique<TestInputContext>(&testInstance.instance, "");
+    keys.focus(*unnamed);
+    check(realMode.load() == ngosen::Mode::Off, "an unnamed window follows the last switch", modeName(realMode.load()));
+    keys.ctrlShift(*unnamed);
+    const auto switches = savedSwitches();
+    check(switches.size() == 2 && switches.count("gedit") && switches.at("gedit") == "True" && switches.count("kate") && switches.at("kate") == "False",
+          "each named app's switch is saved", describe(switches));
+
+    // A rule picked from the menu wins over the switch, until the toggle key is pressed there again.
+    keys.focus(*gedit);
     keys.tap(*gedit, "grave");
     check(menuOpen(*gedit), "` opens the menu in Vietnamese", "no menu");
     keys.tap(*gedit, "e");
     check(realMode.load() == ngosen::Mode::Off, "the menu sets Off for gedit", modeName(realMode.load()));
     keys.ctrlShift(*gedit);
-    check(realMode.load() == ngosen::Mode::Sen, "the toggle switches gedit's own rule", modeName(realMode.load()));
+    check(realMode.load() == ngosen::Mode::Sen, "the toggle wins over the menu's Off", modeName(realMode.load()));
+    keys.focus(*kate);
+    check(realMode.load() == ngosen::Mode::Off, "kate keeps English", modeName(realMode.load()));
+    keys.ctrlShift(*kate);
+    check(realMode.load() == ngosen::Mode::Sen, "kate switches back to Vietnamese", modeName(realMode.load()));
+    keys.focus(*gedit);
+    check(realMode.load() == ngosen::Mode::Sen, "gedit keeps Vietnamese", modeName(realMode.load()));
+
+    // The unnamed window keeps English through a reload while the last switch elsewhere was Vietnamese.
+    keys.focus(*unnamed);
+    keys.ctrlShift(*unnamed);
+    keys.focus(*gedit);
+    keys.ctrlShift(*gedit);
+    keys.ctrlShift(*gedit);
+    engine.reloadConfig();
+    keys.focus(*unnamed);
+    check(realMode.load() == ngosen::Mode::Off, "an unnamed window keeps its switch through a reload", modeName(realMode.load()));
+    const std::string unnamedName = fcitx::NgoSenEngine::getProgramName(unnamed.get());
+    unnamed.reset();
+    check(engine.modeFor(unnamedName) == ngosen::Mode::Sen, "a closed window's switch is forgotten", modeName(engine.modeFor(unnamedName)));
+
+    // Switching off and on keeps the Preedit the menu picked for gedit.
+    keys.focus(*gedit);
+    keys.tap(*gedit, "grave");
+    keys.tap(*gedit, "q");
+    check(realMode.load() == ngosen::Mode::Preedit, "the menu sets Preedit for gedit", modeName(realMode.load()));
+    keys.ctrlShift(*gedit);
+    keys.ctrlShift(*gedit);
+    check(realMode.load() == ngosen::Mode::Preedit, "the toggle key keeps gedit's Preedit", modeName(realMode.load()));
+    check(savedRule(engine, "gedit") == "5", "the toggle key leaves gedit's rule alone", savedRule(engine, "gedit"));
+
+    // A new app follows whichever way the last switch went.
+    auto chat = std::make_unique<TestInputContext>(&testInstance.instance, "chat");
+    keys.focus(*chat);
+    check(realMode.load() == ngosen::Mode::Sen, "a new app follows the last switch to Vietnamese", modeName(realMode.load()));
     keys.focus(*kate);
     keys.ctrlShift(*kate);
-    check(realMode.load() == ngosen::Mode::Off, "kate switches to English", modeName(realMode.load()));
+    auto news = std::make_unique<TestInputContext>(&testInstance.instance, "news");
+    keys.focus(*news);
+    check(realMode.load() == ngosen::Mode::Off, "a new app follows the last switch to English", modeName(realMode.load()));
+
+    // Picking from the menu forgets the app's switch, so the pick holds and Default follows the last switch.
+    keys.focus(*kate);
+    keys.ctrlShift(*kate);
+    keys.tap(*kate, "grave");
+    keys.tap(*kate, "e");
     keys.focus(*gedit);
-    check(realMode.load() == ngosen::Mode::Sen, "gedit keeps its rule", modeName(realMode.load()));
+    keys.focus(*kate);
+    check(realMode.load() == ngosen::Mode::Off, "the menu's Off holds after the toggle key", modeName(realMode.load()));
+    keys.ctrlShift(*kate);
+    keys.tap(*kate, "grave");
+    check(menuOpen(*kate), "` opens the menu in kate again", "no menu");
+    keys.tap(*kate, "r");
+    keys.focus(*chat);
+    keys.ctrlShift(*chat);
+    keys.focus(*kate);
+    check(realMode.load() == ngosen::Mode::Off, "Default makes kate follow the last switch", modeName(realMode.load()));
+
+    // "firefox.desktop" falls back to firefox's switch, but one of its own wins.
+    auto firefox        = std::make_unique<TestInputContext>(&testInstance.instance, "firefox");
+    auto firefoxDesktop = std::make_unique<TestInputContext>(&testInstance.instance, "firefox.desktop");
+    keys.focus(*firefox);
+    keys.ctrlShift(*firefox);
+    keys.focus(*chat);
+    keys.ctrlShift(*chat);
+    keys.ctrlShift(*chat);
+    keys.focus(*firefoxDesktop);
+    check(realMode.load() == ngosen::Mode::Sen, "firefox.desktop follows firefox's switch", modeName(realMode.load()));
+    keys.ctrlShift(*firefoxDesktop);
+    keys.focus(*chat);
+    keys.ctrlShift(*chat);
+    keys.focus(*firefoxDesktop);
+    check(realMode.load() == ngosen::Mode::Off, "firefox.desktop keeps a switch of its own", modeName(realMode.load()));
+    keys.focus(*firefox);
+    check(realMode.load() == ngosen::Mode::Sen, "firefox keeps its own switch", modeName(realMode.load()));
+
+    // What follows checks the older settings, not the switches.
+    fcitx::RawConfig noSwitches;
+    noSwitches.get("Switches", true);
+    engine.setSubConfig("app_switches", noSwitches);
 
     // Settings saved before the toggle key existed keep the key fcitx5 used to switch with.
     {
@@ -204,6 +328,13 @@ int main() {
     keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, fcitx::KeyStates{fcitx::KeyState::Ctrl, fcitx::KeyState::Shift}), true);
     check(realMode.load() == ngosen::Mode::Off, "a long Ctrl+Shift hold does not switch", modeName(realMode.load()));
 #endif
+
+    // Leaving a password field or changing the group is not a pick of Vietnamese.
+    using Reason = fcitx::InputMethodSwitchedReason;
+    check(fcitx::switchPickedByUser(Reason::Trigger), "the trigger key picks Ngó Sen", "not a pick");
+    check(fcitx::switchPickedByUser(Reason::Other), "the tray picks Ngó Sen", "not a pick");
+    check(!fcitx::switchPickedByUser(Reason::CapabilityChanged), "leaving a password field picks nothing", "a pick");
+    check(!fcitx::switchPickedByUser(Reason::GroupChange), "changing the group picks nothing", "a pick");
 
     return failures == 0 ? 0 : 1;
 }

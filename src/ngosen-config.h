@@ -223,6 +223,12 @@ namespace fcitx {
                         OptionWithAnnotation<std::vector<ngosenAppRule>, ListDisplayOptionAnnotation> rules{
                             this, "Rules", _("Rules"), {}, {}, {}, ListDisplayOptionAnnotation("App")};);
 
+    // Where the toggle key last left each app; apart from the rules so a toggle never overwrites a picked mode.
+    FCITX_CONFIGURATION(ngosenAppSwitch, Option<std::string> app{this, "App", _("App"), ""}; Option<bool> vietnamese{this, "Vietnamese", _("Vietnamese"), false};);
+    FCITX_CONFIGURATION(ngosenAppSwitches,
+                        OptionWithAnnotation<std::vector<ngosenAppSwitch>, ListDisplayOptionAnnotation> switches{
+                            this, "Switches", _("Switches"), {}, {}, {}, ListDisplayOptionAnnotation("App")};);
+
     /**
      * @brief Main configuration structure for the Ngó Sen input method.
      */

@@ -66,6 +66,7 @@ namespace fcitx {
     constexpr const char* InputMethodActionId = "ngosen-input-method";
     const std::string     CustomKeymapFile    = "conf/ngosen-custom-keymap.conf";
     const std::string     MacroTableFile      = "conf/ngosen-macro-table.conf";
+    const std::string     AppSwitchFile       = "conf/ngosen-app-switch.conf";
 
     int                   modeToInt(NgoSenMode mode) {
         switch (mode) {
@@ -313,8 +314,10 @@ namespace fcitx {
         // A ctx_ rule names a context address, which a later window may reuse.
         contextDestroyedWatcher_ = instance_->watchEvent(EventType::InputContextDestroyed, EventWatcherPhase::Default, [this](Event& event) {
             auto appName = getProgramName(static_cast<InputContextEvent&>(event).inputContext());
-            if (isStartsWith(appName, "ctx_"))
+            if (isStartsWith(appName, "ctx_")) {
                 clearAppRule(appName);
+                clearAppSwitch(appName);
+            }
         });
 
         auto& uiManager = instance_->userInterfaceManager();
@@ -471,6 +474,7 @@ namespace fcitx {
         readAsIni(customKeymap_, CustomKeymapFile);
         readAsIni(macroTables_, MacroTableFile);
         macroTableObject_.reset(newMacroTable(macroTables_));
+        readAsIni(appSwitchesTables_, AppSwitchFile);
         if (config_.enableDictionary.value()) {
 #if NGOSEN_USE_MODERN_FCITX_API
             auto fd = StandardPaths::global().open(StandardPathsType::PkgData, "ngosen/vietnamese.cm.dict");
@@ -540,6 +544,8 @@ namespace fcitx {
         if (path == "app_rules") {
             return &appRulesTables_;
         }
+        if (path == "app_switches")
+            return &appSwitchesTables_;
         return nullptr;
     }
 
@@ -650,6 +656,10 @@ namespace fcitx {
             }
             saveAppRules();
             refreshEngine();
+        } else if (path == "app_switches") {
+            appSwitchesTables_.load(config, true);
+            safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
+            refreshEngine();
         }
     }
 
@@ -676,12 +686,17 @@ namespace fcitx {
         NGOSEN_INFO("App name: " + appName);
 
         // Next to other input methods fcitx5 owns the switch, so picking Ngó Sen there means Vietnamese.
-        if (event.type() == EventType::InputContextSwitchInputMethod && !*config_.vietnameseOn && instance_->inputMethodManager().currentGroup().inputMethodList().size() > 1) {
-            config_.vietnameseOn.setValue(true);
-            saveConfig();
+        // The group is checked first: a lone input method can be activated with a plain InputContextEvent.
+        if (event.type() == EventType::InputContextSwitchInputMethod && instance_->inputMethodManager().currentGroup().inputMethodList().size() > 1 &&
+            switchPickedByUser(static_cast<InputContextSwitchInputMethodEvent&>(event).reason())) {
+            setAppSwitch(appName, true);
+            if (!*config_.vietnameseOn) {
+                config_.vietnameseOn.setValue(true);
+                saveConfig();
+            }
         }
 
-        const NgoSenMode targetMode = getAppRule(appName);
+        const NgoSenMode targetMode = modeFor(appName);
         NGOSEN_INFO("Target mode: " + ngosen::ModeI18NAnnotation::toString(targetMode));
 
         updateInputMethodAction(event.inputContext());
@@ -826,6 +841,8 @@ namespace fcitx {
                     saveAppRules();
                 }
             }
+            // A mode picked for the app wins over where the toggle key last left it.
+            clearAppSwitch(currentConfigureApp_);
         }
 
         closeModeMenuPanel(ic, true);
@@ -880,7 +897,7 @@ namespace fcitx {
     void NgoSenEngine::cycleMode(InputContext* ic) {
         NGOSEN_INFO("Cycle mode key pressed");
         const std::string appName      = getProgramName(ic);
-        const NgoSenMode  current      = getAppRule(appName);
+        const NgoSenMode  current      = modeFor(appName);
         const auto        enabledModes = cycleModes(appName);
         if (enabledModes.empty())
             return;
@@ -889,6 +906,7 @@ namespace fcitx {
         NgoSenMode nextMode = it == enabledModes.end() ? enabledModes[0] : enabledModes[(static_cast<size_t>(it - enabledModes.begin()) + 1) % enabledModes.size()];
         setMode(nextMode, ic);
         setAppRule(appName, nextMode);
+        clearAppSwitch(appName);
         showCycleModeNotification(nextMode, ic);
     }
 
@@ -901,7 +919,7 @@ namespace fcitx {
         }
         currentConfigureApp_ = getProgramName(ic);
         g_mouse_clicked.store(false, std::memory_order_release);
-        setMode(getAppRule(currentConfigureApp_), ic);
+        setMode(modeFor(currentConfigureApp_), ic);
         showAppModeMenu(ic);
     }
 
@@ -930,7 +948,7 @@ namespace fcitx {
             if (ic->hasFocus()) {
                 // Re-resolve the focused window's rule; setEngine() must not
                 // reset it to the global mode.
-                setMode(getAppRule(getProgramName(ic)), ic);
+                setMode(modeFor(getProgramName(ic)), ic);
                 state->reset();
             }
             return true;
@@ -1073,12 +1091,28 @@ namespace fcitx {
         file.close();
     }
 
-    NgoSenMode NgoSenEngine::getAppRule(const std::string& appName) const {
-        return findAppRule(appName).value_or(defaultModeFor(appName));
+    NgoSenMode NgoSenEngine::modeFor(const std::string& appName) const {
+        const auto rule = findAppRule(appName);
+        // Until the toggle key is pressed in the app, its rule says whether it types Vietnamese.
+        const bool on = findAppSwitch(appName).value_or(rule ? *rule != NgoSenMode::Off : *config_.vietnameseOn);
+        if (!on)
+            return NgoSenMode::Off;
+        if (rule && *rule != NgoSenMode::Off)
+            return *rule;
+        return vietnameseModeFor(appName);
+    }
+
+    bool switchPickedByUser(InputMethodSwitchedReason reason) {
+        using Reason = InputMethodSwitchedReason;
+        return reason == Reason::Trigger || reason == Reason::AltTrigger || reason == Reason::Enumerate || reason == Reason::Activate || reason == Reason::Other;
     }
 
     NgoSenMode NgoSenEngine::defaultModeFor(const std::string& appName) const {
-        const NgoSenMode mode = globalMode();
+        return *config_.vietnameseOn ? vietnameseModeFor(appName) : NgoSenMode::Off;
+    }
+
+    NgoSenMode NgoSenEngine::vietnameseModeFor(const std::string& appName) const {
+        const NgoSenMode mode = vietnameseMode();
         return mode == NgoSenMode::Sen && typesInPreeditByDefault(appName) ? NgoSenMode::Preedit : mode;
     }
 
@@ -1166,17 +1200,12 @@ namespace fcitx {
             state->reset();
         }
         const bool        turnOn = realMode == NgoSenMode::Off;
-        const NgoSenMode  mode   = turnOn ? vietnameseMode() : NgoSenMode::Off;
         const std::string app    = getProgramName(ic);
-        // An app the user gave its own mode keeps its own switch.
-        if (const auto ruleApp = appRuleName(app)) {
-            setAppRule(*ruleApp, mode);
-            if (!isStartsWith(*ruleApp, "ctx_"))
-                saveAppRules();
-        } else {
-            config_.vietnameseOn.setValue(turnOn);
-            saveConfig();
-        }
+        setAppSwitch(app, turnOn);
+        // Apps never switched in follow the last switch.
+        config_.vietnameseOn.setValue(turnOn);
+        saveConfig();
+        const NgoSenMode mode = modeFor(app);
         NGOSEN_INFO(std::string("Toggle key: ") + (turnOn ? "Vietnamese" : "English") + " in " + app);
         setMode(mode, ic);
 #if NGOSEN_USE_MODERN_FCITX_API
@@ -1213,6 +1242,67 @@ namespace fcitx {
             appRules_[appName] = mode;
         }
         appRulesTables_.rules.setValue(std::move(rules));
+    }
+
+    std::optional<std::string> NgoSenEngine::appSwitchName(const std::string& appName) const {
+        if (isStartsWith(appName, "ctx_"))
+            return ctxSwitches_.count(appName) > 0 ? std::optional<std::string>(appName) : std::nullopt;
+        // Exact match wins so a "foo.desktop" switch can differ from "foo".
+        for (const auto& name : {appName, stripDesktopSuffix(appName)}) {
+            for (const auto& entry : *appSwitchesTables_.switches) {
+                if (*entry.app == name)
+                    return name;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<bool> NgoSenEngine::findAppSwitch(const std::string& appName) const {
+        const auto name = appSwitchName(appName);
+        if (!name)
+            return std::nullopt;
+        if (isStartsWith(*name, "ctx_"))
+            return ctxSwitches_.at(*name);
+        for (const auto& entry : *appSwitchesTables_.switches) {
+            if (*entry.app == *name)
+                return *entry.vietnamese;
+        }
+        return std::nullopt;
+    }
+
+    void NgoSenEngine::setAppSwitch(const std::string& appName, bool vietnamese) {
+        if (isStartsWith(appName, "ctx_")) {
+            ctxSwitches_[appName] = vietnamese;
+            return;
+        }
+        auto switches = *appSwitchesTables_.switches;
+        auto it       = std::find_if(switches.begin(), switches.end(), [&appName](const auto& entry) { return *entry.app == appName; });
+        if (it == switches.end()) {
+            ngosenAppSwitch entry;
+            entry.app.setValue(appName);
+            entry.vietnamese.setValue(vietnamese);
+            switches.push_back(std::move(entry));
+        } else if (*it->vietnamese == vietnamese) {
+            return;
+        } else {
+            it->vietnamese.setValue(vietnamese);
+        }
+        appSwitchesTables_.switches.setValue(std::move(switches));
+        safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
+    }
+
+    void NgoSenEngine::clearAppSwitch(const std::string& appName) {
+        const auto name = appSwitchName(appName);
+        if (!name)
+            return;
+        if (isStartsWith(*name, "ctx_")) {
+            ctxSwitches_.erase(*name);
+            return;
+        }
+        auto switches = *appSwitchesTables_.switches;
+        switches.erase(std::remove_if(switches.begin(), switches.end(), [&name](const auto& entry) { return *entry.app == *name; }), switches.end());
+        appSwitchesTables_.switches.setValue(std::move(switches));
+        safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
     }
 
     void NgoSenEngine::closeAppModeMenu() {
@@ -1286,7 +1376,8 @@ namespace fcitx {
 
             if (info.mode == realMode && !isDefaultItem) {
                 activeSelectionIdx = currentCandidateIdx;
-            } else if (isDefaultItem && getAppRule(currentConfigureApp_) == defaultMode && appRules_.find(currentConfigureApp_) == appRules_.end()) {
+            } else if (isDefaultItem && modeFor(currentConfigureApp_) == defaultMode && appRules_.find(currentConfigureApp_) == appRules_.end() &&
+                       !findAppSwitch(currentConfigureApp_)) {
                 activeSelectionIdx = currentCandidateIdx;
             }
             currentCandidateIdx++;

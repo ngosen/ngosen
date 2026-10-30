@@ -68,15 +68,17 @@ namespace {
             return true;
         }
 
-        // Types "tie" and reports each step to the context when it declares surrounding text.
-        bool typeTie(TestInputContext& context) {
+        // Types "tie" and reports each step to the context when it declares surrounding text. A lagging
+        // field reports each step one key late, so its copy misses the last letter.
+        bool typeTie(TestInputContext& context, bool lagging = false) {
             const bool        surrounding = context.capabilityFlags().test(fcitx::CapabilityFlag::SurroundingText);
             const std::string word        = "tie";
             for (size_t i = 0; i < word.size(); ++i) {
                 if (!type(context, static_cast<fcitx::KeySym>(word[i]), false))
                     return false;
-                if (surrounding)
-                    setSnapshot(context, word.substr(0, i + 1), static_cast<unsigned int>(i + 1));
+                const size_t reported = lagging ? i : i + 1;
+                if (surrounding && reported > 0)
+                    setSnapshot(context, word.substr(0, reported), static_cast<unsigned int>(reported));
             }
             return true;
         }
@@ -146,8 +148,9 @@ namespace {
         return true;
     }
 
-    // GTK4 clients drop forwarded keys, so the replacement deletes through surrounding text.
-    bool gtk4DeletesThroughSurroundingText(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+    // GTK4 clients drop forwarded keys, and through GNOME's IBus bridge forwarded keys can land after
+    // the commit (#362), so these replacements delete through surrounding text.
+    bool deletesThroughSurroundingText(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
         auto context = h.open(program, frontend, caps);
         if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, true))
             return false;
@@ -172,7 +175,7 @@ namespace {
     // sometimes later than any fixed wait. The commit waits for the report that shows the deletion.
     bool gnomeIbusWaitsForReportedDeletion(Harness& h) {
         auto context = h.open("window:1", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
-        if (!h.typeTie(*context))
+        if (!h.typeTie(*context, true))
             return false;
         pumpEventLoop(h.testInstance.instance, 1);
         if (!h.type(*context, FcitxKey_e, true))
@@ -196,7 +199,7 @@ namespace {
     // sooner than the fixed wait would have sent it.
     bool gnomeIbusCommitsNoSoonerThanForwardWait(Harness& h) {
         auto context = h.open("window:3", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
-        if (!h.typeTie(*context))
+        if (!h.typeTie(*context, true))
             return false;
         pumpEventLoop(h.testInstance.instance, 1);
         const uint64_t replacedAt = nowUs();
@@ -224,7 +227,8 @@ namespace {
         for (size_t i = 0; i < word.size(); ++i) {
             if (!h.type(*context, static_cast<fcitx::KeySym>(word[i]), false))
                 return false;
-            Harness::setSnapshot(*context, "ok " + word.substr(0, i + 1) + "\n\n", static_cast<unsigned int>(i + 4));
+            // Reported one key late, so the copy misses the last letter.
+            Harness::setSnapshot(*context, "ok " + word.substr(0, i) + "\n\n", static_cast<unsigned int>(i + 3));
         }
         pumpEventLoop(h.testInstance.instance, 1);
         const uint64_t replacedAt = nowUs();
@@ -384,9 +388,11 @@ int main() {
         return 1;
     if (!dbusKeyDuringWaitJoinsCommit(h))
         return 1;
-    if (!gtk4DeletesThroughSurroundingText(h, "gtk4app", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
+    if (!deletesThroughSurroundingText(h, "gtk4app", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
         return 1;
-    if (!gtk4DeletesThroughSurroundingText(h, "gtk4-im:gtk4app", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
+    if (!deletesThroughSurroundingText(h, "gtk4-im:gtk4app", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
+        return 1;
+    if (!deletesThroughSurroundingText(h, "window:5", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
         return 1;
     if (!gnomeIbusWaitsForReportedDeletion(h))
         return 1;

@@ -146,8 +146,7 @@ namespace ngosen {
         typedWhileOff_.clear();
         if (!bambooEngine_ || !engine_->options().retypeAfterSwitch || typed.empty())
             return;
-        // Without either, Tab could not remove what was typed.
-        if (!canSendBackspaces() && !host_->field().surroundingText)
+        if (!canReplaceInApp())
             return;
         if (!typedBeforeCursor(typed, true))
             return;

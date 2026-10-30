@@ -14,6 +14,7 @@
  * @return True if string starts with prefix.
  */
 bool isStartsWith(const std::string& str, const std::string& prefix);
+bool isEndsWith(const std::string& str, const std::string& suffix);
 
 // True for a file in a user's home, such as the custom dictionary the settings window writes.
 bool isInHomeDirectory(const std::string& path);

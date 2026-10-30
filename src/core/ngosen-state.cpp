@@ -362,6 +362,13 @@ namespace ngosen {
         std::string addedPart;
         ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
 
+        if (!deletedPart.empty() && keepsWordRaw(deletedPart)) {
+            // This key ends the word, so the next one starts afresh, and the field never showed the word to reopen.
+            rawWord_ = false;
+            lastWord_.clear();
+            keyEvent.passToApp();
+            return;
+        }
         if (!deletedPart.empty()) {
             performReplacement(deletedPart, addedPart);
             keyEvent.accept();
@@ -411,6 +418,11 @@ namespace ngosen {
                     keyEvent.passToApp();
                 }
             } else {
+                if (keepsWordRaw(deletedPart)) {
+                    passed_key_ = live_key_;
+                    keyEvent.passToApp();
+                    return;
+                }
                 if (!canSendBackspaces()) {
                     NGOSEN_ERROR("Cannot send backspaces here, commit rawkey");
                     std::string rawKey = keyEvent.name();
@@ -436,7 +448,8 @@ namespace ngosen {
         const auto               f           = host_->field();
         const std::string        program     = f.reportedProgram.empty() ? f.program : f.program + " (" + f.reportedProgram + ")";
         std::string field = "frontend=" + f.frontend + " program=" + program + " surrounding=" + (f.surroundingText ? "1" : "0") + " preedit=" + (f.preedit ? "1" : "0") +
-            (f.password ? " password=1" : "") + " mode=" + modeNames[static_cast<int>(mode())];
+            (f.sendsNoKeys ? " sendsNoKeys=1" : "") + (f.preeditFallback ? " preeditFallback=1" : "") + (f.password ? " password=1" : "") +
+            " mode=" + modeNames[static_cast<int>(mode())];
         auto& recorder = engine_->recorder();
         recorder.addField(field);
         if (f.password) {
@@ -456,6 +469,9 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        // Counted first, so a replacement this key starts does not count it as a later key.
+        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+            ++keyCount_;
         handleKey(keyEvent);
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             keySinceReport_ = true;
@@ -477,8 +493,9 @@ namespace ngosen {
     void TypingState::chooseWordMode(const ngosen::KeyPress& keyEvent) {
         if (realMode != ngosen::Mode::Sen || !bambooEngine_ || keyEvent.isRelease() || keyEvent.isModifier() || is_deleting_.load())
             return;
-        const bool sendsNoKeys = host_->field().sendsNoKeys;
-        if (!preeditWord_ && !sendsNoKeys)
+        const Field field       = host_->field();
+        const bool  sendsNoKeys = field.sendsNoKeys;
+        if (!preeditWord_ && !sendsNoKeys && !field.preeditFallback)
             return;
         // Switching inside a word would leave its first letters on the other side. A click or reset
         // ends the word before this key is handled.
@@ -487,10 +504,21 @@ namespace ngosen {
             if (!oldPreBuffer_.empty() || (preedit && *preedit.get() != 0))
                 return;
         }
-        const bool toPreedit = sendsNoKeys && !canSendBackspaces();
+        std::string why;
+        bool        toPreedit = sendsNoKeys && !canSendBackspaces();
+        if (!toPreedit && field.preeditFallback && deletesOnlyThroughSurrounding()) {
+            const auto fails = wordStartFails();
+            toPreedit        = !fails.empty();
+            why              = joined(fails);
+        }
         if (toPreedit == preeditWord_)
             return;
-        NGOSEN_INFO(toPreedit ? "Nothing can delete here, type the word in the preedit" : "Type the word in the field");
+        if (!toPreedit)
+            NGOSEN_INFO("Type the word in the field");
+        else if (why.empty())
+            NGOSEN_INFO("Nothing can delete here, type the word in the preedit");
+        else
+            NGOSEN_INFO("Type the word in the preedit: " + why);
         preeditWord_ = toPreedit;
         ResetEngine(bambooEngine_.handle());
         hasHistory_ = false;
@@ -532,6 +560,8 @@ namespace ngosen {
             forgetKeysWhileOff();
         switch (mode()) {
             case ngosen::Mode::Sen: {
+                if (typesRaw(keyEvent, currentSym))
+                    break;
                 const bool beforeCommit = typedBeforeCommitArrived(keyEvent, currentSym);
                 live_key_               = KeyEntry{.sym = currentSym, .state = keyEvent.states()};
                 passed_key_.reset();
@@ -918,6 +948,10 @@ namespace ngosen {
         oldPreBuffer_.clear();
         lastWord_.clear();
         hasHistory_ = false;
+        earlierWords_.clear();
+        rawWord_ = false;
+        wordBeforeReplacement_.clear();
+        wordAfterReplacement_.clear();
         if (!is_deleting_.load(std::memory_order_acquire)) {
             expected_backspaces_     = 0;
             current_backspace_count_ = 0;

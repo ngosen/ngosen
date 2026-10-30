@@ -20,6 +20,7 @@
 #include "ngosen-engine-resources.h"
 #include "ngosen-host.h"
 #include "ngosen-key.h"
+#include "ngosen-surrounding-check.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -149,7 +150,7 @@ namespace ngosen {
         std::string              lastWord_; ///< The word and break we last committed, while only backspaces follow
         bool                     hasHistory_              = false;
         bool                     preeditWord_             = false; ///< Sen is on, but this word goes into the preedit
-        int                      expected_backspaces_     = 0;
+        int                      expected_backspaces_     = 0;     ///< backspaces the key paths still send; XTEST adds one that comes back
         int                      current_backspace_count_ = 0;
         std::string              pending_commit_string_;
         std::string              emojiBuffer_;
@@ -165,7 +166,10 @@ namespace ngosen {
         int                      fieldBounces_          = 0;     ///< bounces since focus came in
         int                      waitBounces_           = 0;     ///< bounces during the wait that started at bouncedInWait_
         uint64_t                 bouncedInWait_         = 0;     ///< surr_wait_started_at_ of the wait those bounces came in
-        int                      deletedChars_          = 0;     ///< characters the current replacement deletes
+        int                      deletedChars_          = 0;     ///< characters the app holds to delete
+        std::vector<std::string> earlierWords_;                  ///< the current word before each of its earlier replacements
+        std::string              wordBeforeReplacement_;         ///< the word the last replacement started from
+        std::string              wordAfterReplacement_;          ///< the word the last replacement left
         bool                     checkWordAfterBounce_  = false; ///< focus came back too fast to tell whether it is the same field
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
@@ -187,19 +191,22 @@ namespace ngosen {
         std::optional<Retype>          retype_;
         std::unique_ptr<ngosen::Timer> retype_timer_;
         // What typed reads as with this field's input method, or typed when it changes nothing.
-        std::string addMarks(const std::string& typed);
-        bool        everyWordTakesMarks(const std::string& typed);
-        void        applyRetype();
-        void        replaceRetyped(const std::string& from, const std::string& to);
-        void        acceptRetype(const std::string& hint);
-        void        applyRetypeSoon(std::string hint);
-        void        reopenTypedKey();
-        void        dropRetype();
-        void        hideOffer();
-        bool        reportsTextInTime() const;
-        bool        typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
-        static bool endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
-        bool        handleRetypeKey(ngosen::KeyPress& keyEvent);
+        std::string        addMarks(const std::string& typed);
+        bool               everyWordTakesMarks(const std::string& typed);
+        void               applyRetype();
+        void               replaceRetyped(const std::string& from, const std::string& to);
+        void               acceptRetype(const std::string& hint);
+        void               applyRetypeSoon(std::string hint);
+        void               reopenTypedKey();
+        void               dropRetype();
+        void               hideOffer();
+        bool               reportsTextInTime() const;
+        bool               typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
+        static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
+        static std::string textBeforeCursor(const Surrounding& s);
+        static std::string reportKey(const Surrounding& s); ///< "text\x1fcursor", empty for no report
+        static std::string loggedField(const Field& field); ///< " (frontend program)"
+        bool               handleRetypeKey(ngosen::KeyPress& keyEvent);
 
         // A key that started a word, until a report shows whether it replaced a selected word.
         struct RetoneKey {
@@ -446,9 +453,63 @@ namespace ngosen {
         void recordSendSnapshot(const std::string& deletedPart);
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
         bool deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
-        void replaceThroughSurrounding(const std::string& addedPart);
+        void replaceThroughSurrounding(const Surrounding& surrounding);
+        int  surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
+        void trackEarlierWords(const std::string& addedPart);
         void replaceThroughForwardedKeys();
         void replaceThroughCommittedDel();
+
+        // What the app did with a deletion through its surrounding text, read from its next reports.
+        struct SurroundingCheck {
+            std::string prefix;
+            std::string deleted;
+            std::string added;
+            std::string retype;     ///< committed again ahead of added
+            std::string sentReport; ///< reportKey() when the deletion was sent
+            std::string sentAfter;  ///< the text after the cursor then
+            bool        password      = false;
+            uint64_t    keysAtSend    = 0;
+            uint64_t    commitsAtSend = 0;
+            uint64_t    sentAtUs      = 0;
+        };
+        void               openSurroundingCheck(const Surrounding& sent, const std::string& retype);
+        void               checkSurroundingReport();
+        SurroundingVerdict judgeOpenCheck(const Surrounding& report) const;
+        void               closeSurroundingCheck(SurroundingVerdict verdict, const Surrounding* report, bool beforeNext = false);
+        void               fixDroppedDeletion(const SurroundingCheck& check, const Surrounding& report);
+        void               markSurroundingUntrusted(const std::string& why);
+        // The field takes no keys or applies them out of order, so surrounding text is its only way to delete.
+        bool deletesOnlyThroughSurrounding() const;
+        // That only way failed and the host has no preedit to fall back on: keys go to the app as they are.
+        bool stopsReplacing() const;
+        // Something can remove text already in the field, and the field has not been left raw.
+        bool canReplaceInApp() const;
+        // Passes the key on when this field or word is typed as it is; true when it did.
+        bool typesRaw(ngosen::KeyPress& keyEvent, uint32_t sym);
+        // Why the next word cannot be typed in the field, for a host that can type it in the preedit.
+        std::vector<std::string> wordStartFails() const;
+        // The first letters are already in the field and its copy does not show them: leave the word raw.
+        bool keepsWordRaw(const std::string& deletedPart);
+        void noteAutofill(const Surrounding& report);
+        // Why this word cannot be deleted through the surrounding text; chars is what the deletion would ask for.
+        std::vector<std::string> surroundingPathFails(const Surrounding& surrounding, unsigned int& chars) const;
+        static std::string       joined(const std::vector<std::string>& parts); ///< "none" when empty
+        // Logs a line when the path differs from the last replacement's in this field.
+        void                            notePath(const char* path, const std::string& why);
+        bool                            surroundingUntrusted() const;
+        std::string                     lastPath_;
+        std::optional<SurroundingCheck> surrCheck_;
+        std::unique_ptr<ngosen::Timer>  surr_check_timer_;
+        uint64_t                        keyCount_               = 0;     ///< key presses other than modifiers
+        int                             surrUnanswered_         = 0;     ///< checks in a row left unanswered in this field
+        bool                            surrAnswered_           = false; ///< a check in this field came out correct
+        bool                            surrSeenTextSinceFocus_ = false; ///< the field reported text since it got focus
+        uint64_t                        commitCount_            = 0;
+        Surrounding                     lastReport_;
+        bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
+        std::unique_ptr<ngosen::Timer>  replay_timer_;
+        bool                            autofillMarked_ = false; ///< this field filled in text after the cursor without a key
+        bool                            rawWord_        = false; ///< the rest of this word goes to the app as typed
 
         /**
          * @brief Handles the double space to period replacement.

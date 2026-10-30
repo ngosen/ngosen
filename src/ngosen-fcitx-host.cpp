@@ -156,6 +156,8 @@ namespace ngosen {
         f.caretHeight      = ic_->cursorRect().height();
         if (f.program != ic_->program())
             f.reportedProgram = ic_->program();
+        // fcitx5 before 5.1.22 names every app GNOME Shell relays after the shell; fixed GNOME versions come with newer fcitx5.
+        f.sendsNoKeys = shell_drops_keys_ != nullptr && *shell_drops_keys_ && f.frontend == "ibus" && ic_->program() == "gnome-shell";
         return f;
     }
 

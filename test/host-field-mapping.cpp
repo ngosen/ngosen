@@ -6,6 +6,7 @@
 // key event the way the typing logic used to.
 #include "ngosen-app-quirks.h"
 #include "ngosen-fcitx-host.h"
+#include "ngosen-gnome-shell.h"
 #include "ngosen-program-name.h"
 #include "test-input-context.h"
 
@@ -60,6 +61,25 @@ namespace {
         context.setCursorRect(fcitx::Rect(168, 86, 169, 103));
         const auto caret = ngosen::FcitxHost(&context, &testInstance.instance).field();
         check("the caret size is copied", caret.caretWidth == 1 && caret.caretHeight == 17);
+    }
+
+    void checkShellDropsKeys(TestInstance& testInstance) {
+        for (const char* version : {"50.0", "50.1", "50.3"})
+            check(std::string("GNOME ") + version + " drops forwarded keys", ngosen::gnomeShellDropsForwardedKeys(version));
+        for (const char* version : {"50.4", "50.10", "49.5", "51.1", "50", "50.rc", ""})
+            check(std::string("GNOME '") + version + "' keeps forwarded keys", !ngosen::gnomeShellDropsForwardedKeys(version));
+
+        bool drops     = true;
+        auto sendsKeys = [&](const char* program, const char* frontend, const bool* shellDropsKeys) {
+            TestInputContext context(&testInstance.instance, program, frontend);
+            return !ngosen::FcitxHost(&context, &testInstance.instance, shellDropsKeys).field().sendsNoKeys;
+        };
+        check("apps relayed by a dropping GNOME Shell are sent no keys", !sendsKeys("gnome-shell", "ibus", &drops));
+        check("an app on its own IBus connection still gets keys", sendsKeys("chromium", "ibus", &drops));
+        check("fcitx5's own GTK module still gets keys", sendsKeys("gnome-shell", "dbus", &drops));
+        check("without a host flag apps get keys", sendsKeys("gnome-shell", "ibus", nullptr));
+        drops = false;
+        check("a GNOME Shell that keeps keys gets them", sendsKeys("gnome-shell", "ibus", &drops));
     }
 
     void checkSurrounding(TestInstance& testInstance) {
@@ -234,6 +254,7 @@ int main() {
     writeDesktopFiles(std::filesystem::temp_directory_path() / "fcitx5-ngosen-host-field-mapping" / "system");
     TestInstance testInstance;
     checkFlags(testInstance);
+    checkShellDropsKeys(testInstance);
     checkSurrounding(testInstance);
     checkFocus(testInstance);
     checkPreedit(testInstance);

@@ -140,6 +140,14 @@ namespace {
         r           = retone(gnome);
         check(r.text == "abc sách xyz", "behind the IBus bridge a letter after the key puts it back", r.text);
 
+        // Only a deletion through the surrounding text can change the word here.
+        Run surrounding                       = nhanh();
+        surrounding.field                     = makeField("ibus");
+        surrounding.field.sendsNoKeys         = true;
+        surrounding.quirks.dropsForwardedKeys = true;
+        r                                     = retone(surrounding);
+        check(r.text == "abc nhánh xyz", "ibus sen: a deletion through the surrounding text keeps the text after the cursor", r.text);
+
         Run run   = nhanh();
         run.after = {ngosen::key::Escape};
         r         = retone(run);

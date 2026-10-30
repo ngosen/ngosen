@@ -21,19 +21,25 @@ IM_VARIABLES = ("GTK_IM_MODULE", "QT_IM_MODULE", "XMODIFIERS", "SDL_IM_MODULE")
 
 OK, WARN, FAIL = "ok", "warn", "fail"
 
+FORWARD_KEYS = "forward-keys@ngosen.github.io"
+
 
 @dataclass
 class Facts:
     env: dict
     fcitx_running: bool = False
     ngosen_in_group: bool = False
-    ibus_running: bool = False
+    # IBus took this session's address file, so apps and GNOME Shell talk to it, not fcitx5.
+    ibus_owns_session: bool = False
     kwin_input_method: str = ""
     apps: list = field(default_factory=list)
     distro: str = ""
     fcitx_version: str = ""
     ngosen_version: str = ""
     addon_replaced: bool = False
+    gnome_shell_version: str = ""
+    # As gnome-extensions reports it (ACTIVE, INACTIVE, ERROR...), empty when not installed.
+    forward_keys_state: str = ""
 
     @property
     def session(self):
@@ -103,7 +109,7 @@ def evaluate(facts):
             )
         )
     found += _desktop_findings(facts)
-    if facts.ibus_running:
+    if facts.ibus_owns_session:
         found.append(
             Finding(
                 WARN,
@@ -114,10 +120,38 @@ def evaluate(facts):
     return found
 
 
+def _drops_forwarded_keys(version):
+    """GNOME 50.0 to 50.3 drop the keys an input method sends on to the app (mutter#4853)."""
+    match = re.match(r"50\.(\d+)$", version)
+    return match is not None and int(match.group(1)) <= 3
+
+
+def _forward_keys_findings(facts):
+    if not _drops_forwarded_keys(facts.gnome_shell_version) or facts.forward_keys_state == "ACTIVE":
+        return []
+    if facts.forward_keys_state:
+        fix = _(
+            "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
+        ).format(FORWARD_KEYS)
+    else:
+        fix = _(
+            "Install Ngó Sen with install.sh, which adds the fix for this GNOME version, then log out and back in."
+        )
+    title = _("GNOME {} drops the keys Ngó Sen sends to apps").format(facts.gnome_shell_version)
+    return [Finding(WARN, title, fix)]
+
+
 def _desktop_findings(facts):
     if "GNOME" in facts.desktops:
-        return _needs(facts, "QT_IM_MODULE", FAIL, _("Qt apps have no input method")) + _needs(
-            facts, "GTK_IM_MODULE", WARN, _("Chrome and older GTK apps may have no input method")
+        return (
+            _needs(facts, "QT_IM_MODULE", FAIL, _("Qt apps have no input method"))
+            + _needs(
+                facts,
+                "GTK_IM_MODULE",
+                WARN,
+                _("Chrome and older GTK apps may have no input method"),
+            )
+            + _forward_keys_findings(facts)
         )
     if facts.session == "x11":
         return _needs(facts, "GTK_IM_MODULE", FAIL, _("GTK apps have no input method")) + _needs(
@@ -158,6 +192,9 @@ def report(facts, findings, app_test=None):
     ]
     if facts.kwin_input_method:
         lines.append(f"KWin InputMethod={facts.kwin_input_method}")
+    if facts.gnome_shell_version:
+        state = facts.forward_keys_state or "not installed"
+        lines.append(f"GNOME Shell {facts.gnome_shell_version}, forward-keys: {state}")
     lines.append("")
     lines += [f"[{marks[f.level]}] {f.title}" for f in findings] or ["[OK] no setup problem found"]
     if facts.apps:
@@ -182,9 +219,12 @@ def collect(dbus_handler, ngosen_version="", env=None):
     facts.ngosen_version = ngosen_version
     facts.distro = _distro()
     facts.fcitx_version = _fcitx_version()
-    facts.ibus_running = _process_running("ibus-daemon")
+    facts.ibus_owns_session = ibus_owns_session(env)
     facts.kwin_input_method = _kwin_input_method(env)
     facts.addon_replaced = runs_replaced_addon()
+    if "GNOME" in facts.desktops:
+        facts.gnome_shell_version = _gnome_shell_version()
+        facts.forward_keys_state = _extension_state(FORWARD_KEYS)
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
     facts.ngosen_in_group = "ngosen" in (names or [])
@@ -211,6 +251,24 @@ def _fcitx_version():
     return out.stdout.strip()
 
 
+def _output(cmd):
+    # Untranslated labels, so "State:" can be found on any desktop language.
+    env = {**os.environ, "LC_ALL": "C"}
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=3, env=env).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def _gnome_shell_version():
+    return _output(["gnome-shell", "--version"]).strip().removeprefix("GNOME Shell ")
+
+
+def _extension_state(uuid):
+    match = re.search(r"^\s*State:\s*(.+?)\s*$", _output(["gnome-extensions", "info", uuid]), re.M)
+    return match.group(1) if match else ""
+
+
 def _pids_named(name, proc="/proc"):
     """Directories under proc of this user's processes called name."""
     try:
@@ -233,8 +291,46 @@ def _pids_named(name, proc="/proc"):
     return found
 
 
-def _process_running(name):
-    return bool(_pids_named(name))
+def _machine_id():
+    for path in ("/var/lib/dbus/machine-id", "/etc/machine-id"):
+        try:
+            with open(path, encoding="utf-8") as f:
+                return f.read().strip()
+        except OSError:
+            continue
+    return ""
+
+
+def _ibus_address_name(env):
+    """Display part of the address file name, as IBus builds it."""
+    if env.get("WAYLAND_DISPLAY"):
+        return "unix-" + env["WAYLAND_DISPLAY"]
+    host, _, rest = env.get("DISPLAY", ":0").partition(":")
+    return f"{host or 'unix'}-{rest.split('.')[0] or '0'}"
+
+
+def ibus_owns_session(env, proc="/proc", machine_id=None):
+    """Whether this session's IBus address file names a running ibus-daemon.
+
+    fcitx5 writes its own pid there; another program's IBus, such as the one xpra starts for its
+    own display, writes a file for that display and does not count.
+    """
+    path = env.get("IBUS_ADDRESS_FILE")
+    if not path:
+        config_home = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME", ""), ".config")
+        name = f"{machine_id or _machine_id()}-{_ibus_address_name(env)}"
+        path = os.path.join(config_home, "ibus", "bus", name)
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            match = re.search(r"^IBUS_DAEMON_PID=(\d+)", f.read(), re.M)
+        if match is None:
+            return False
+        with open(
+            os.path.join(proc, match.group(1), "comm"), encoding="utf-8", errors="replace"
+        ) as f:
+            return f.read().strip() == "ibus-daemon"
+    except OSError:
+        return False
 
 
 def runs_replaced_addon(proc="/proc"):

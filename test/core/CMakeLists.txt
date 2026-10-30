@@ -4,7 +4,7 @@ add_executable(core_typing core-typing.cpp fake-app.cpp fake-host.cpp fake-engin
 target_compile_definitions(core_typing PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
 target_link_libraries(core_typing PRIVATE ngosen_core)
 add_test(NAME core_typing COMMAND core_typing)
-set_tests_properties(core_typing PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
+set_tests_properties(core_typing PROPERTIES LABELS "unit;core" TIMEOUT 240 ENVIRONMENT "DISPLAY=")
 
 add_executable(core_fuzz core-fuzz.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
 target_compile_definitions(core_fuzz PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
@@ -36,3 +36,8 @@ target_compile_definitions(core_retone PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT
 target_link_libraries(core_retone PRIVATE ngosen_core)
 add_test(NAME core_retone COMMAND core_retone)
 set_tests_properties(core_retone PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
+
+add_executable(core_surrounding_count core-surrounding-count.cpp)
+target_link_libraries(core_surrounding_count PRIVATE ngosen_core)
+add_test(NAME core_surrounding_count COMMAND core_surrounding_count)
+set_tests_properties(core_surrounding_count PROPERTIES LABELS "unit;core" TIMEOUT 30)

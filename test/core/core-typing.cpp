@@ -18,6 +18,7 @@
 #include "ngosen-utf8.h"
 #include "ngosen-xtest.h"
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -877,6 +878,16 @@ namespace {
         check(last != std::string::npos && has(log.substr(last), "program=kitty") && has(log.substr(last), "0x0063 c"), "recorder: notes the field again on coming back", log);
     }
 
+    // Enter's key text and multi-line app reports would otherwise split one event over several lines.
+    void testRecorderKeepsOneEventPerLine() {
+        ngosen::Recorder recorder;
+        recorder.add("key", "down 0xff0d \r");
+        recorder.add("app", "\"a\nb\tc\\|\" cursor=6");
+        const std::string log = recorder.dump();
+        check(std::count(log.begin(), log.end(), '\n') == 2, "recorder: one line per event", log);
+        check(has(log, "\tkey\tdown 0xff0d \\r\n") && has(log, "\tapp\t\"a\\nb\\tc\\\\|\" cursor=6\n"), "recorder: escapes control characters", log);
+    }
+
     void testRecorderHidesPasswords() {
         realMode = ngosen::Mode::Sen;
         FakeLoop      loop;
@@ -1404,6 +1415,266 @@ namespace {
         check(text == "tiếng", "glfw: forwarded backspaces are newer than a typed one", text);
     }
 
+    // A field that deletes only through its surrounding text, behind GNOME Shell's IBus bridge.
+    Field surroundingOnlyField() {
+        Field field       = makeField("ibus", true);
+        field.sendsNoKeys = true;
+        return field;
+    }
+
+    std::vector<uint32_t> keysOf(const std::string& typed) {
+        return std::vector<uint32_t>(typed.begin(), typed.end());
+    }
+
+    // The fake app's quirks must break the text the way the real apps do, or a test on them proves
+    // nothing about the path that avoids them.
+    void testSurroundingQuirksBreakText() {
+        const auto typed = [](ngosen::test::AppQuirks quirks, const std::string& text) {
+            quirks.dropsForwardedKeys = true;
+            const auto keys           = keysOf(text);
+            return ngosen::test::typeInApp(surroundingOnlyField(), quirks, keys, std::vector<int>(keys.size(), 100));
+        };
+        std::string text = typed({.ignoresSurroundingDel = true}, "tiee");
+        check(text == "tieê", "quirk: a dropped deletion leaves the old letter", text);
+        text = typed({.reportsEmptyText = true}, "tiee");
+        check(text == "tieê", "quirk: a field that reports no text drops the deletion", text);
+        text = typed({.convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true}, "vieetj nam tieesng");
+        // The copy stays "tie" while the app holds tiê, then tíê: the deletion asks for as many copy
+        // characters as the real ones have bytes.
+        check(text == "việt nam tiếng", "quirk: bytes counted on an old copy delete whole letters", text);
+
+        // The cursor moves with no report, so the deletion falls before the start of the text.
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop                loop;
+        FakeResources           resources;
+        ngosen::test::AppQuirks silent;
+        silent.reports            = false;
+        silent.dropsForwardedKeys = true;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(), silent);
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (char c : std::string("vie")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(30);
+        }
+        app->moveCursor(0);
+        app->type('e');
+        loop.pump(300);
+        check(app->text() == "êvie", "quirk: a deletion out of range is dropped", app->text());
+    }
+
+    void testSuggestion() {
+        for (const bool selected : {true, false}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("vie")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            app->suggest("tnam", selected);
+            loop.pump(30);
+            app->type('k');
+            loop.pump(300);
+            const std::string want = selected ? "viek" : "viektnam";
+            check(app->text() == want, std::string("suggest: ") + (selected ? "a selected" : "an unselected") + " suggestion", app->text());
+        }
+    }
+
+    // The path check must tell a field that fell back to backspaces from one that deleted through its
+    // surrounding text, even when both end with the right text.
+    void testPathCheck() {
+        FakeResources resources;
+        auto          keys = keysOf("vieetj nam ");
+        auto          run  = ngosen::test::typeInAppTraced(resources, surroundingOnlyField(), {.dropsForwardedKeys = true}, keys, std::vector<int>(keys.size(), 100));
+        auto          off  = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 2, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0});
+        check(run.text == "việt nam " && off.empty(), "path: two deletions through the surrounding text, nothing else", run.text + " " + join(off));
+
+        keys = keysOf("daasu ");
+        run  = ngosen::test::typeInAppTraced(resources, makeField("ibus", true), {.ignoresSurroundingDel = true}, keys, std::vector<int>(keys.size(), 100));
+        off  = ngosen::test::pathMismatches(run.sent, {.forwardedBackSpaces = 0});
+        check(run.text == "dấu " && !off.empty(), "path: right text through backspaces is not the surrounding path", run.text + " " + join(off));
+
+        setXTestSenderForTest([](int) { return true; });
+        keys = keysOf("daasu ");
+        run  = ngosen::test::typeInAppTraced(resources, makeField("xim", false), {.takesXTest = true}, keys, std::vector<int>(keys.size(), 100));
+        setXTestSenderForTest({});
+        off = ngosen::test::pathMismatches(run.sent, {.systemKeyPresses = 0});
+        check(run.text == "dấu " && !off.empty(), "path: backspaces pressed through XTEST are counted", run.text + " " + join(off));
+
+        ngosen::test::FakeLoop loop;
+        ngosen::test::FakeApp  app(loop, makeField("wayland", true), {});
+        app.showPreedit("vi", true);
+        off = ngosen::test::pathMismatches(app.sent(), {.preedits = 0});
+        check(!off.empty(), "path: a shown preedit is counted", join(off));
+    }
+
+    // Types keys with every log line kept; returns the lines that contain `start`.
+    std::vector<std::string> logLinesWhileTyping(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::string& start,
+                                                 ngosen::test::Typed* run = nullptr, int gapMs = 100) {
+        FakeResources resources;
+        const auto    keys = keysOf(typed);
+        ngosen::test::captureLog(true);
+        const auto               typedRun = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), gapMs));
+        std::vector<std::string> lines;
+        for (const auto& line : ngosen::test::capturedLog()) {
+            if (has(line, start))
+                lines.push_back(line);
+        }
+        ngosen::test::captureLog(false);
+        if (run != nullptr)
+            *run = typedRun;
+        return lines;
+    }
+
+    size_t countHaving(const std::vector<std::string>& lines, const std::string& part) {
+        return static_cast<size_t>(std::count_if(lines.begin(), lines.end(), [&](const std::string& line) { return has(line, part); }));
+    }
+
+    // After a deletion through the surrounding text, the next reports tell what the app did with it.
+    void testSurroundingCheck() {
+        ngosen::test::Typed run;
+        auto                lines = logLinesWhileTyping(surroundingOnlyField(), {.dropsForwardedKeys = true, .ignoresSurroundingDel = true}, "tiee", "Surrounding check", &run);
+        check(countHaving(lines, "app dropped the deletion") == 1 && run.sent.forwardedBackSpaces == 0 && run.sent.systemKeyPresses == 0, "check: a dropped deletion is logged",
+              run.text + " " + join(lines));
+
+        lines = logLinesWhileTyping(surroundingOnlyField(), {.staleReport = true, .lagMs = 40, .dropsForwardedKeys = true}, "vieetj nam ", "Surrounding check");
+        check(countHaving(lines, ": correct") == 2 && countHaving(lines, "untrusted") == 0, "check: a lagging app is judged correct", join(lines));
+
+        // The app lags behind the keys: the next replacement comes before it answers the first, and the
+        // Space before it answers the second.
+        lines =
+            logLinesWhileTyping(surroundingOnlyField(), {.lagMs = 60, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true}, "vieetj ", "Surrounding check", &run, 20);
+        check(run.text == "việt " && countHaving(lines, "not answered before the next replacement") == 1 && countHaving(lines, ": correct") == 1,
+              "check: a lagging app answers only the last replacement", run.text + " " + join(lines));
+
+        lines = logLinesWhileTyping(surroundingOnlyField(), {.reports = false, .dropsForwardedKeys = true}, "vieetj nam tieesng ", "Surrounding check");
+        // Silence alone is no reason to give up on a field that has no other way to delete.
+        check(countHaving(lines, "not answered") >= 3 && countHaving(lines, "untrusted") == 0, "check: an app that never reports goes unanswered", join(lines));
+
+        // A field that also takes keys keeps them, and logs what the surrounding path would have done.
+        lines = logLinesWhileTyping(makeField("wayland", true), {}, "vieetj nam ", "Surrounding path would", &run);
+        check(lines.size() == 2 && countHaving(lines, "fails: none") == 2 && run.sent.surroundingDeletes == 0, "check: one observation line per replacement on a wayland field",
+              run.text + " " + join(lines));
+    }
+
+    // An address bar that sets no Url flag still shows itself by filling in text after the cursor.
+    void testAutofillMark() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = surroundingOnlyField();
+        field.preeditFallback     = true;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.dropsForwardedKeys = true});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& text) {
+            for (char c : text) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+        };
+        ngosen::test::captureLog(true);
+        typeText("too vie");
+        app->suggest("tnam.com", false);
+        loop.pump(30);
+        typeText("etj too ");
+        loop.pump(300);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(app->text() == "tô vieetj tô tnam.com" && countHaving(lines, "Text appeared after the cursor without a key") == 1 &&
+                  countHaving(lines, "Type the word in the preedit: marked untrusted") == 1,
+              "fallback: text filled in after the cursor sends the next words to the preedit", app->text() + " " + join(lines));
+    }
+
+    // An app whose copy still holds the replaced characters until the next key, as Firefox on GNOME
+    // does: a deletion counted on that copy takes too many.
+    void testSlowReport() {
+        ngosen::test::Typed run;
+        const Field         gnome = makeField("ibus", true);
+        for (const auto& quirks : {ngosen::test::AppQuirks{.reportsNothingAfterDelete = true}, ngosen::test::AppQuirks{.repeatsOldTextAfterDelete = true}}) {
+            const auto lines = logLinesWhileTyping(gnome, quirks, "vieetj nam tieesng ", "", &run, 150);
+            check(run.text == "việt nam tiếng " && countHaving(lines, "Surrounding text untrusted") == 0 && countHaving(lines, "copy older than the last commit") > 0 &&
+                      run.sent.forwardedBackSpaces > 0,
+                  "slow report: a copy from before the last replacement is not deleted on", run.text + " " + join(lines));
+        }
+    }
+
+    // The ways out when a deletion through the surrounding text goes wrong.
+    void testSurroundingFallback() {
+        ngosen::test::Typed run;
+        const Field         gnome = makeField("ibus", true);
+        auto                lines = logLinesWhileTyping(gnome, {}, "vieetj nam ", "Path changed", &run);
+        auto                off   = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 2, .forwardedBackSpaces = 0});
+        check(run.text == "việt nam " && off.empty() && lines.size() == 1, "fallback: a GNOME field deletes through its surrounding text",
+              run.text + " " + join(off) + join(lines));
+
+        // Both ways: the dropped deletion is fixed with backspaces, which then take over.
+        lines = logLinesWhileTyping(gnome, {.ignoresSurroundingDel = true}, "too too ", "", &run);
+        off   = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 1});
+        check(run.text == "tô tô " && off.empty() && countHaving(lines, "Surrounding text untrusted") == 1 && countHaving(lines, "Fix the dropped deletion") == 1,
+              "fallback: a dropped deletion is fixed and backspaces take over", run.text + " " + join(off) + join(lines));
+
+        // Keys typed during a wait are replayed; one that replaces through the surrounding text must not
+        // lose the words replayed after it.
+        for (const auto& quirks : {ngosen::test::AppQuirks{.staleReport = true, .convertsDeleteOnReportedCopy = true},
+                                   ngosen::test::AppQuirks{.staleReport = true, .lagMs = 40, .convertsDeleteOnReportedCopy = true}}) {
+            lines = logLinesWhileTyping(gnome, quirks, "nguyeenx vieetj tieesng ", "", &run, 20);
+            check(run.text == "nguyễn việt tiếng ", "fallback: words replayed after a surrounding replacement stay whole", run.text + " " + join(lines));
+        }
+
+        // No other way and no preedit: keys go to the app as they are.
+        const ngosen::test::AppQuirks dropsAll{.dropsForwardedKeys = true, .ignoresSurroundingDel = true};
+        lines = logLinesWhileTyping(surroundingOnlyField(), dropsAll, "too too ", "", &run);
+        off   = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 1, .preedits = 0});
+        check(run.text == "toô too " && off.empty() && countHaving(lines, "type keys as they are") == 1, "fallback: a field with no way out types raw keys",
+              run.text + " " + join(off));
+
+        // The mark holds for the app's next field too.
+        {
+            FakeResources resources;
+            const auto    first = keysOf("too ");
+            ngosen::test::typeInAppTraced(resources, surroundingOnlyField(), dropsAll, first, std::vector<int>(first.size(), 100));
+            const auto next = keysOf("vieetj ");
+            run             = ngosen::test::typeInAppTraced(resources, surroundingOnlyField(), dropsAll, next, std::vector<int>(next.size(), 100));
+            off             = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 0});
+            check(run.text == "vieetj " && off.empty(), "fallback: the mark holds for the next field of the app", run.text + " " + join(off));
+        }
+
+        Field preeditHost           = surroundingOnlyField();
+        preeditHost.preeditFallback = true;
+        lines                       = logLinesWhileTyping(preeditHost, dropsAll, "too too too ", "", &run);
+        off                         = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 1});
+        check(run.text == "tô toô tô " && off.empty() && run.sent.preedits > 0 && countHaving(lines, "Type the word in the preedit: marked untrusted") == 1,
+              "fallback: a host with a preedit types the next word there", run.text + " " + join(off) + join(lines));
+
+        // A mark that comes mid-word leaves the rest of that word raw.
+        lines = logLinesWhileTyping(preeditHost, dropsAll, "too toos too ", "", &run);
+        off   = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 1});
+        check(run.text == "tô toôs tô " && off.empty() && countHaving(lines, "Keep the word as typed") == 1, "fallback: the rest of a word goes raw after a mark",
+              run.text + " " + join(off) + join(lines));
+
+        // Decided at the first key of each word.
+        lines = logLinesWhileTyping(preeditHost, {.dropsForwardedKeys = true}, "vieetj vieetj ", "", &run);
+        off   = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 2});
+        check(run.text == "việt việt " && off.empty() && countHaving(lines, "Type the word in the preedit: no text since focus") == 1,
+              "fallback: the first word goes to the preedit until the field reports text", run.text + " " + join(off) + join(lines));
+
+        Field urlField = preeditHost;
+        urlField.url   = true;
+        run = ngosen::test::typeInAppTraced(*std::make_unique<FakeResources>(), urlField, {.dropsForwardedKeys = true}, keysOf("vieetj vieetj "), std::vector<int>(14, 100));
+        off = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 0});
+        check(run.text == "việt việt " && off.empty(), "fallback: an address bar types every word in the preedit", run.text + " " + join(off));
+    }
 } // namespace
 
 int main() {
@@ -1457,6 +1728,7 @@ int main() {
     testRecorderKeepsTheReplacement();
     testRecorderNotesFieldSwitch();
     testRecorderHidesPasswords();
+    testRecorderKeepsOneEventPerLine();
     testRecorderLimits();
     testRecorderSkipsRepeatedReports();
     testFocusBounce();
@@ -1469,6 +1741,13 @@ int main() {
     testPreeditBackspaceRemovesTone();
     testPreeditBackspaceReopensWord();
     testModifierTapKeepsWord();
+    testSurroundingQuirksBreakText();
+    testSuggestion();
+    testPathCheck();
+    testSurroundingCheck();
+    testSurroundingFallback();
+    testSlowReport();
+    testAutofillMark();
     if (failures == 0)
         std::cout << "all core typing checks passed\n";
     return failures == 0 ? 0 : 1;

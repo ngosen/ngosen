@@ -10,7 +10,9 @@
 #include "ngosen-recorder.h"
 
 #include <cstdint>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ngosen {
@@ -39,6 +41,18 @@ namespace ngosen {
 
         // Shared by every field, so a saved log follows the user across windows.
         virtual Recorder& recorder() = 0;
+
+        // Apps whose fields mishandled a deletion through their surrounding text. Kept for this session
+        // only, and shared by every field, as an app opens a new one for each window.
+        bool surroundingUntrusted(const std::string& frontend, const std::string& program) const {
+            return untrusted_.count({frontend, program}) != 0;
+        }
+        void markSurroundingUntrusted(const std::string& frontend, const std::string& program) {
+            untrusted_.insert({frontend, program});
+        }
+
+      private:
+        std::set<std::pair<std::string, std::string>> untrusted_;
     };
 
 } // namespace ngosen

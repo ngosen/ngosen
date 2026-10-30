@@ -121,6 +121,14 @@ namespace ngosen {
         return stripDesktopSuffix(field.program) == "soffice";
     }
 
+    bool deletesThroughSurroundingFirst(const Field& field) {
+        return field.frontend == "ibus";
+    }
+
+    bool countsDeletionOnCopy(const Field& field) {
+        return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2";
+    }
+
     bool reportsFieldOnlyOnKey(const Field& field) {
         // Nothing Calc reports sets it apart from a text field that keeps its text.
         return field.frontend == "wayland" && stripDesktopSuffix(field.program) == "libreoffice-calc";

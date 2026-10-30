@@ -18,11 +18,11 @@ namespace {
         std::cerr << "Step: " << step << "\nExpected: " << expected << "\nActual: " << actual << '\n';
     }
 
-    // Plays the app: applies keys, forwarded backspaces and commits to its text and reports it back.
+    // Plays the app: applies keys, forwarded backspaces, deletions and commits to its text and reports it back.
     class FakeApp {
       public:
-        FakeApp(TestInstance& testInstance, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry) :
-            testInstance_(testInstance), engine_(engine), entry_(entry), context_(std::make_unique<TestInputContext>(&testInstance.instance, "gtk4app", "wayland")) {
+        FakeApp(TestInstance& testInstance, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, const std::string& program = "gtk4app") :
+            testInstance_(testInstance), engine_(engine), entry_(entry), context_(std::make_unique<TestInputContext>(&testInstance.instance, program, "wayland")) {
             context_->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
             context_->focusIn();
             fcitx::InputContextEvent focus(context_.get(), fcitx::EventType::InputContextFocusIn);
@@ -40,8 +40,10 @@ namespace {
                     insert(std::string(1, c));
                 for (size_t i = forwarded; i < context_->forwarded().size(); ++i) {
                     const auto& key = context_->forwarded()[i];
-                    if (key.key().sym() == FcitxKey_BackSpace && !key.isRelease())
+                    if (key.key().sym() == FcitxKey_BackSpace && !key.isRelease()) {
                         eraseBeforeCursor();
+                        ++backspaces_;
+                    }
                 }
                 report();
                 if (caretBounce_)
@@ -49,6 +51,12 @@ namespace {
                 if (lateStepBack_)
                     stepBackLate();
                 pumpEventLoop(testInstance_.instance, 60);
+                // Applies only deletions that end at the cursor, so any other shape shows in the text.
+                for (; deletes_ < context_->deletes().size(); ++deletes_) {
+                    const auto [offset, size] = context_->deletes()[deletes_];
+                    for (unsigned int i = 0; offset == -static_cast<int>(size) && i < size && cursor_ > 0; ++i)
+                        eraseBeforeCursor();
+                }
                 if (context_->commits().size() > commits) {
                     for (size_t i = commits; i < context_->commits().size(); ++i) {
                         if (cursorBeforeText_) {
@@ -111,6 +119,12 @@ namespace {
         const std::string& text() const {
             return text_;
         }
+        size_t surroundingDeletes() const {
+            return deletes_;
+        }
+        int backspaces() const {
+            return backspaces_;
+        }
 
       private:
         void eraseBeforeCursor() {
@@ -166,6 +180,8 @@ namespace {
         bool                              caretBounce_      = false;
         bool                              lateStepBack_     = false;
         bool                              holdCommitReport_ = false;
+        size_t                            deletes_          = 0;
+        int                               backspaces_       = 0;
     };
 
     bool expectText(const std::string& step, const FakeApp& app, const std::string& expected) {
@@ -196,6 +212,22 @@ int main() {
         app.type("e");
         if (!expectText("type \"tiee\" with a repeated report in between", app, "tiê"))
             return 1;
+    }
+    // The same on a field that deletes through its surrounding text, under LibreOffice's name.
+    {
+        FakeApp app(testInstance, engine, entry, "soffice");
+        app.type("tie");
+        app.repeatReport();
+        app.type("e");
+        app.click(0);
+        app.type("as");
+        if (!expectText("soffice: type \"tiee\" with a repeated report, click at the start, type \"as\"", app, "átiê"))
+            return 1;
+        if (app.surroundingDeletes() != 2 || app.backspaces() != 0) {
+            reportFailure("soffice: deletes through the surrounding text", "2 deletions, 0 backspaces",
+                          std::to_string(app.surroundingDeletes()) + " deletions, " + std::to_string(app.backspaces()) + " backspaces");
+            return 1;
+        }
     }
     // A click at the start of the field must start a new word there.
     {

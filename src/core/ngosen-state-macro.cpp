@@ -103,6 +103,10 @@ namespace ngosen {
             NGOSEN_INFO("Macro expansion: '" + logged(oldPreBuffer_) + "' -> '" + logged(commitStr) + "'");
             // The field now holds the expansion, not the keys noted for a retype.
             forgetKeysWhileOff();
+            if (!canReplaceInApp()) {
+                keyEvent.passToApp();
+                return;
+            }
             // Try backspaces first, fallback to deleteSurroundingText, then plain commit
             if (canSendBackspaces() && !oldPreBuffer_.empty()) {
                 performReplacement(oldPreBuffer_, commitStr);

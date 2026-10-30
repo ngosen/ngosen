@@ -40,7 +40,8 @@ namespace ngosen {
     bool copySwitchKeys(const fcitx::RawConfig& fcitxConfig, fcitx::RawConfig& settings);
 
     // Settings saved before the toggle key existed, when fcitx5 switched to Ngó Sen with Ctrl+Space
-    // and the saved mode said whether it typed Vietnamese, keep both. `saved` says the file existed.
+    // and the saved mode said whether it typed Vietnamese, keep both. Saved hidden defaults that have
+    // since changed go back to the new default. `saved` says the file existed.
     // Returns whether `settings` changed.
     bool upgradeSettings(fcitx::RawConfig& settings, bool saved);
 

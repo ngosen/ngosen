@@ -1621,8 +1621,6 @@ namespace {
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
     }
 
-    // VS Code reports the cursor at the start of the line and then back at the end of the word,
-    // with the text unchanged; the word being typed must survive that.
     // IBus names a client "<toolkit>-im:<program>", and a snap's program repeats the snap name.
     void testIbusClientNames() {
         auto ibus = [](const std::string& program, bool surroundingText = false) { return makeField("ibus", surroundingText, program); };
@@ -1653,6 +1651,8 @@ namespace {
         check(!ok, "snap names are only shortened for IBus clients", said(ok));
     }
 
+    // VS Code reports the cursor at the start of the line and then back at the end of the word,
+    // with the text unchanged; the word being typed must survive that.
     void testCursorBounceBack() {
         Field ibusEdition           = surroundingOnlyField();
         ibusEdition.preeditFallback = true;

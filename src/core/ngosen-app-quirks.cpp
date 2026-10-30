@@ -90,7 +90,8 @@ namespace ngosen {
             return false;
         if (field.terminal)
             return true;
-        if (!(field.frontend == "dbus" && !field.keyEventOrderFix) && !(field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:")))
+        const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
+        if (!gtk4Module)
             return false;
         // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
         const std::string program = appName(field);

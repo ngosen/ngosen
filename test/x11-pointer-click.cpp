@@ -32,7 +32,7 @@ namespace {
     bool expectClick(const std::string& step, uint8_t responseType, uint8_t opcode, uint16_t type, uint32_t button, bool expected) {
         uint8_t event[32];
         rawEvent(event, responseType, opcode, type, button);
-        const bool actual = isRawClickEvent(event, XInputOpcode);
+        const bool actual = ngosen::isRawClickEvent(event, XInputOpcode);
         if (actual == expected)
             return true;
         std::cerr << "Step: " << step << "\nExpected: " << (expected ? "click" : "no click") << "\nActual: " << (actual ? "click" : "no click") << '\n';
@@ -76,7 +76,7 @@ namespace {
         setenv("WAYLAND_DISPLAY", "wayland-test", 1);
         std::atomic<bool> stop{false};
         bool              watched = false;
-        std::thread       watcher([&] { watched = watchX11PointerClicks(stop, [] {}); });
+        std::thread       watcher([&] { watched = ngosen::watchX11PointerClicks(stop, [] {}); });
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
         stop.store(true);
         watcher.join();
@@ -96,8 +96,8 @@ namespace {
     }
 
     bool keepsSelection() {
-        bool         ok = true;
-        X11Selection selection;
+        bool                 ok = true;
+        ngosen::X11Selection selection;
         selection.arrive(selection.announce(), "nhanh");
         ok &= expectSelection("a key after a selection", selection.take(), "nhanh");
         ok &= expectSelection("the next key", selection.take(), std::nullopt);
@@ -135,7 +135,7 @@ int main() {
     // ctest runs with an empty DISPLAY: the watcher must give up at once so the server path takes over.
     std::atomic<bool> stop{false};
     int               clicks = 0;
-    if (watchX11PointerClicks(stop, [&clicks] { ++clicks; })) {
+    if (ngosen::watchX11PointerClicks(stop, [&clicks] { ++clicks; })) {
         std::cerr << "Step: watch without an X11 session\nExpected: returns false\nActual: returned true\n";
         ok = false;
     }

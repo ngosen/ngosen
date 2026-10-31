@@ -540,6 +540,27 @@ namespace {
             macroGaps[i] = 1;
         const std::string expanded = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, macro, macroGaps);
         check(expanded == "nhé được\na", "Enter during replacement: macro before it", expanded);
+
+        // A forwarded tap would lose the Shift, so the line break stays in the commit.
+        const std::vector<uint32_t> shifted{'n', 'h', 'e', 's', ngosen::key::Return | ngosen::test::WithShift, 'a'};
+        std::string                 lineBreak = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, shifted, gaps);
+        std::replace(lineBreak.begin(), lineBreak.end(), '\r', '\n');
+        check(lineBreak == "nhé\na", "Enter during replacement: Shift+Enter", lineBreak);
+
+        // A dbus client gets the commit after the reply to the key, so a passed Enter would land first.
+        Field dbus                = makeField("dbus", false);
+        dbus.keyEventOrderFix     = true;
+        const std::string ordered = ngosen::test::typeInApp(dbus, quirks, keys, gaps);
+        check(ordered == "nhé\na", "Enter during replacement: dbus", ordered);
+        std::string shiftedOnDbus = ngosen::test::typeInApp(dbus, quirks, shifted, gaps);
+        std::replace(shiftedOnDbus.begin(), shiftedOnDbus.end(), '\r', '\n');
+        check(shiftedOnDbus == "nhé\na", "Enter during replacement: dbus Shift+Enter", shiftedOnDbus);
+
+        std::vector<uint32_t> shiftedMacro = macro;
+        shiftedMacro[7] |= ngosen::test::WithShift;
+        std::string macroLineBreak = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, shiftedMacro, macroGaps);
+        std::replace(macroLineBreak.begin(), macroLineBreak.end(), '\r', '\n');
+        check(macroLineBreak == "nhé được\na", "Enter during replacement: Shift+Enter after a macro", macroLineBreak);
     }
 
     // With Capitalize Macro on, an abbreviation typed with a capital first letter capitalizes the

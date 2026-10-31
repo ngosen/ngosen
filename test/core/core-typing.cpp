@@ -515,6 +515,19 @@ namespace {
         check(forwarded == "Return down;Return up;", "macro before Enter: preedit sends the Enter after it", forwarded);
     }
 
+    // An Enter typed while a replacement waits for the app's report reaches the app as a key, not as
+    // a carriage return inside the commit, which Google Docs ignores.
+    void testEnterDuringReplacement() {
+        ngosen::test::AppQuirks quirks;
+        quirks.showsEnter    = true;
+        quirks.reportDelayMs = 10;
+        const std::vector<uint32_t> keys{'n', 'h', 'e', 's', ngosen::key::Return, 'a'};
+        std::vector<int>            gaps(keys.size(), 100);
+        gaps[3]                = 2;
+        const std::string text = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, keys, gaps);
+        check(text == "nhé\na", "Enter during replacement", text);
+    }
+
     // With Capitalize Macro on, an abbreviation typed with a capital first letter capitalizes the
     // text, unless the text has capitals of its own.
     void testMacroCapitalized() {
@@ -1948,6 +1961,7 @@ int main() {
     testQuickSwitchesNoRedrawWait();
     testMacroKeepsSpace();
     testMacroBeforeEnter();
+    testEnterDuringReplacement();
     testLockWord();
     testLockWordPreedit();
     testSlowBackspaceOverIbus();

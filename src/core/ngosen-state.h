@@ -597,6 +597,7 @@ namespace ngosen {
          */
         void replayBufferedKeys(std::string committed = {});
         void commitReplayed(std::string& out);
+        bool replaysAsEnterKey(uint32_t sym, uint32_t state) const;
         // Replays keys[i]; true when it started a replacement, which replays the rest later.
         bool replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         void replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart);

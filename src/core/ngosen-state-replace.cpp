@@ -798,6 +798,15 @@ namespace ngosen {
         NGOSEN_INFO("Replay buffered keys done");
     }
 
+    bool TypingState::replaysAsEnterKey(uint32_t sym, uint32_t state) const {
+        if (sym != ngosen::key::Return && sym != ngosen::key::KP_Enter)
+            return false;
+        // A forwarded tap carries no modifiers, and Shift+Enter means a line break, not send, in chat apps.
+        if ((state & (ngosen::modifier::Shift | ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) != 0U)
+            return false;
+        return !host_->field().sendsNoKeys && canSendBackspaces();
+    }
+
     void TypingState::commitReplayed(std::string& out) {
         if (!out.empty()) {
             commit(out);
@@ -822,6 +831,15 @@ namespace ngosen {
         uint32_t    state   = keys[i].state;
         std::string keyUtf8 = host_->keyText(sym);
         if (keyUtf8.empty()) {
+            return false;
+        }
+        if (replaysAsEnterKey(sym, state)) {
+            // Google Docs ignores a carriage return inside a commit, so the Enter goes as a key.
+            commitReplayed(out);
+            ResetEngine(bambooEngine_.handle());
+            oldPreBuffer_.clear();
+            hasHistory_ = false;
+            forwardTap(ngosen::EditKey::Return);
             return false;
         }
 

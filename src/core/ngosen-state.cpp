@@ -777,7 +777,7 @@ namespace ngosen {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
             NGOSEN_INFO("XIM handed back a forwarded backspace");
-            deferTimedCommit(ngosen::monotonicUs() + ForwardWaitUs);
+            deferTimedCommit(ngosen::monotonicUs() + forwardWaitUs());
             return true;
         }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_) {

@@ -294,8 +294,8 @@ namespace {
         // Any report means the app does report, so the next replacement waits for it again.
         Harness::setSnapshot(*context, "ls -l tô ", 9);
         const uint64_t reportedUs = replace("tien", 'e');
-        if (reportedUs < 30000) {
-            reportFailure("GNOME ibus silent app: wait for a report once the app sends one", ">= 30000 us", std::to_string(reportedUs) + " us");
+        if (reportedUs < 60000) {
+            reportFailure("GNOME ibus silent app: wait for a report once the app sends one", ">= 60000 us", std::to_string(reportedUs) + " us");
             return false;
         }
         if (context->commits() != std::vector<std::string>{"ên", "ên", "ô", "ên"}) {
@@ -328,6 +328,11 @@ namespace {
         }
         if (committedAt - replacedAt + ClockSlackUs < waitUs) {
             reportFailure(where + "commit no sooner than the forward wait", ">= " + std::to_string(waitUs) + " us", std::to_string(committedAt - replacedAt) + " us");
+            return false;
+        }
+        // Other frontends keep the short wait; the GNOME one costs 25 ms per replacement.
+        if (committedAt - replacedAt > waitUs + 15000) {
+            reportFailure(where + "commit soon after the forward wait", "<= " + std::to_string(waitUs + 15000) + " us", std::to_string(committedAt - replacedAt) + " us");
             return false;
         }
         return true;
@@ -396,6 +401,8 @@ int main() {
     config.setValueByPath("VietnameseOn", "True");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
+    // Longer than the GNOME forward wait, so waiting for a report stays distinguishable from the fixed wait.
+    config.setValueByPath("WaitSurroundingShortMs", "70");
     engine.setConfig(config);
 
     fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");

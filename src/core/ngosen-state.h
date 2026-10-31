@@ -246,8 +246,8 @@ namespace ngosen {
         // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
         // surrounding text report the commit waits this long for them.
         static constexpr uint64_t ForwardWaitUs = 15000;
-        // GNOME Shell relays forwarded keys and commits on separate paths, so a commit sent sooner can
-        // still reach the app before the backspaces.
+        // IBus clients, GNOME Shell above all, get forwarded keys and commits on separate paths, so a
+        // commit sent sooner can still reach the app before the backspaces.
         static constexpr uint64_t ShellForwardWaitUs = 40000;
         uint64_t                  forwardWaitUs() const;
         // A key sent back arrives at once; a held key repeats tens of milliseconds apart.

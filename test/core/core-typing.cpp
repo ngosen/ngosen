@@ -552,6 +552,15 @@ namespace {
         dbus.keyEventOrderFix     = true;
         const std::string ordered = ngosen::test::typeInApp(dbus, quirks, keys, gaps);
         check(ordered == "nhé\na", "Enter during replacement: dbus", ordered);
+        std::string shiftedOnDbus = ngosen::test::typeInApp(dbus, quirks, shifted, gaps);
+        std::replace(shiftedOnDbus.begin(), shiftedOnDbus.end(), '\r', '\n');
+        check(shiftedOnDbus == "nhé\na", "Enter during replacement: dbus Shift+Enter", shiftedOnDbus);
+
+        std::vector<uint32_t> shiftedMacro = macro;
+        shiftedMacro[7] |= ngosen::test::WithShift;
+        std::string macroLineBreak = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, shiftedMacro, macroGaps);
+        std::replace(macroLineBreak.begin(), macroLineBreak.end(), '\r', '\n');
+        check(macroLineBreak == "nhé được\na", "Enter during replacement: Shift+Enter after a macro", macroLineBreak);
     }
 
     // With Capitalize Macro on, an abbreviation typed with a capital first letter capitalizes the

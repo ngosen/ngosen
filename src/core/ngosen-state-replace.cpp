@@ -165,6 +165,7 @@ namespace ngosen {
     // The wait returns to the event loop, so focus can move while a commit is pending. deactivate()
     // clears is_deleting_ and a later timer would drop the text, so commit now.
     void TypingState::flushPendingReplacement() {
+        // Held keys stay too: focus bouncing after the edit comes back, and the keys land then.
         if (!surr_wait_pending_) {
             return;
         }
@@ -723,6 +724,39 @@ namespace ngosen {
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
+        // An Enter still owed goes out as a real key, which mutter delivers only after the edit.
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && !enter_after_replacement_) {
+            is_deleting_.store(false);
+            holdKeysUntilEditShown();
+            return;
+        }
+        releaseKeysAfterSurroundingEdit();
+    }
+
+    // Keys already buffered stay for the release, so the replayed text cannot share the edit's turn.
+    // A replay from the timer can start the next hold, so the timer is rearmed rather than replaced.
+    void TypingState::holdKeysUntilEditShown() {
+        edit_hold_           = true;
+        const uint64_t until = monotonicUs() + EditHoldUs;
+        if (edit_hold_timer_) {
+            edit_hold_timer_->rearm(until);
+            return;
+        }
+        edit_hold_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+            finishEditHold();
+            return edit_hold_;
+        });
+    }
+
+    void TypingState::finishEditHold() {
+        if (!edit_hold_)
+            return;
+        edit_hold_ = false;
+        if (!is_deleting_.load(std::memory_order_acquire))
+            replayBufferedKeys();
+    }
+
+    void TypingState::releaseKeysAfterSurroundingEdit() {
         if (replaying_) {
             // The replay that led here resets the engine once this returns, so the keys after this
             // one wait for the next turn; new keys queue behind them meanwhile.

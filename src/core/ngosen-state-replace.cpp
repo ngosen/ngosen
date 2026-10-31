@@ -165,6 +165,7 @@ namespace ngosen {
     // The wait returns to the event loop, so focus can move while a commit is pending. deactivate()
     // clears is_deleting_ and a later timer would drop the text, so commit now.
     void TypingState::flushPendingReplacement() {
+        finishEditHold(false); // the keys held back belong to the field we are leaving
         if (!surr_wait_pending_) {
             return;
         }
@@ -723,6 +724,35 @@ namespace ngosen {
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
+        // An Enter still owed goes out as a real key, which mutter delivers only after the edit.
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && !enter_after_replacement_) {
+            is_deleting_.store(false);
+            holdKeysUntilEditShown();
+            return;
+        }
+        releaseKeysAfterSurroundingEdit();
+    }
+
+    // Keys already buffered stay for the release, so the replayed text cannot share the edit's turn.
+    void TypingState::holdKeysUntilEditShown() {
+        edit_hold_       = true;
+        edit_hold_timer_ = host_->startTimer(monotonicUs() + EditHoldUs, 1000, [this](Timer&) {
+            finishEditHold(true);
+            return false;
+        });
+    }
+
+    void TypingState::finishEditHold(bool fromTimer) {
+        if (!edit_hold_)
+            return;
+        edit_hold_ = false;
+        if (!fromTimer)
+            edit_hold_timer_.reset(); // never reset a timer from inside its own callback
+        if (!is_deleting_.load(std::memory_order_acquire))
+            replayBufferedKeys();
+    }
+
+    void TypingState::releaseKeysAfterSurroundingEdit() {
         if (replaying_) {
             // The replay that led here resets the engine once this returns, so the keys after this
             // one wait for the next turn; new keys queue behind them meanwhile.

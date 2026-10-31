@@ -1594,6 +1594,25 @@ namespace {
         // The copy stays "tie" while the app holds tiê, then tíê: the deletion asks for as many copy
         // characters as the real ones have bytes.
         check(text == "việt nam tiếng", "quirk: bytes counted on an old copy delete whole letters", text);
+        {
+            // The deletion, "à" and "y" in one turn show "ngy", as Chromium behind GNOME Shell did.
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(), ngosen::test::AppQuirks{.keepsLastEditPerTurn = true});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("nga"))
+                app->type(static_cast<uint32_t>(c));
+            loop.pump(20);
+            app->deleteSurrounding(-1, 1);
+            app->commitText("à");
+            app->commitText("y");
+            loop.pump(20);
+            check(app->text() == "ngy", "quirk: one turn keeps only its last commit", app->text());
+        }
 
         // The cursor moves with no report, so the deletion falls before the start of the text.
         realMode = ngosen::Mode::Sen;
@@ -1775,6 +1794,20 @@ namespace {
         const auto                    lines = logLinesWhileTyping(field, qt, "nam tieesng ", "", &run, 150);
         check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0 && countHaving(lines, "copy shows the earlier word") > 0,
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
+    }
+
+    // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first
+    // replacement; sent at once, the app would keep only the second.
+    void testReplacementsInOneTurn() {
+        const Field                   field = surroundingOnlyField();
+        const ngosen::test::AppQuirks shell{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true};
+        const auto                    keys = keysOf("nguowfi ddoofng ");
+        std::vector<int>              gaps(keys.size(), 100);
+        gaps[4]  = 0; // w and f
+        gaps[11] = 0; // the second o and f
+        FakeResources resources;
+        const auto    run = ngosen::test::typeInAppTraced(resources, field, shell, keys, gaps);
+        check(run.text == "người đồng ", "one turn: a replacement waits until the app shows the one before", run.text);
     }
 
     // An empty field reports an empty copy when it gets focus; that is all it can show before the first word.
@@ -2033,6 +2066,7 @@ int main() {
     testEmptyFieldFirstWord();
     testSlowReport();
     testStaleCopyBeforeReplacement();
+    testReplacementsInOneTurn();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

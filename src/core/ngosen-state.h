@@ -480,11 +480,19 @@ namespace ngosen {
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
         bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
         void                     replaceThroughSurrounding(const Surrounding& surrounding);
+        void                     releaseKeysAfterSurroundingEdit();
         int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
         std::vector<std::string> earlierWordsBeforeReplacement() const;
         void                     trackEarlierWords(const std::string& addedPart);
         void                     replaceThroughForwardedKeys();
         void                     replaceThroughCommittedDel();
+
+        // Keys typed before the app shows a surrounding edit wait, so the next edit cannot share its turn.
+        void                           holdKeysUntilEditShown();
+        void                           finishEditHold(bool fromTimer);
+        std::unique_ptr<ngosen::Timer> edit_hold_timer_;
+        bool                           edit_hold_ = false;
+        static constexpr uint64_t      EditHoldUs = 20000;
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
         struct SurroundingCheck {

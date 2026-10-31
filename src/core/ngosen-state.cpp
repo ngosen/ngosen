@@ -786,6 +786,14 @@ namespace ngosen {
     }
 
     bool TypingState::handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (edit_hold_ && !keyEvent.isRelease()) {
+            if (typesText(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+                buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
+                keyEvent.accept();
+                return true;
+            }
+            finishEditHold(false);
+        }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_ && ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" &&
             ngosen::forwardsBackspaces(host_->field())) {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the

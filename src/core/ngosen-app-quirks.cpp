@@ -124,6 +124,10 @@ namespace ngosen {
         return field.frontend == "ibus";
     }
 
+    bool keepsLastEditPerTurn(const Field& field) {
+        return field.frontend == "ibus";
+    }
+
     bool dropsCommitsWithoutFocus(const Field& field) {
         return field.frontend == "wayland" || field.frontend == "wayland_v2";
     }

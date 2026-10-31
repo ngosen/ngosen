@@ -127,6 +127,8 @@ namespace ngosen::test {
         const auto time = static_cast<uint32_t>(monotonicUs() / 1000);
         FakeKey    down(sym, false, 0, time);
         state_->keyEvent(down);
+        if (!down.accepted() && quirks_.keepsLastEditPerTurn)
+            endTurn();
         if (!down.accepted() && quirks_.resendsKeysWithoutText && keyText(sym).empty()) {
             FakeKey again(sym, false, modifier::Repeat, time);
             state_->keyEvent(again);
@@ -199,6 +201,11 @@ namespace ngosen::test {
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
             return;
+        if (quirks_.keepsLastEditPerTurn) {
+            turnCommit_ = text;
+            startTurn();
+            return;
+        }
         later(quirks_.lagMs + quirks_.commitLagMs, [this, text] {
             if (focused_ && redraws_ == 0)
                 insert(utf8::decode(text));
@@ -261,6 +268,11 @@ namespace ngosen::test {
         // A module whose copy of the text is empty finds every deletion out of range.
         if (quirks_.ignoresSurroundingDel || quirks_.reportsEmptyText)
             return;
+        if (quirks_.keepsLastEditPerTurn && offset == -static_cast<int>(size)) {
+            turnDeleteBytes_ = reportedBytesBefore(size);
+            startTurn();
+            return;
+        }
         if (quirks_.convertsDeleteOnReportedCopy && offset == -static_cast<int>(size)) {
             const size_t bytes = reportedBytesBefore(size);
             later(quirks_.lagMs, [this, bytes] {
@@ -424,6 +436,27 @@ namespace ngosen::test {
                 state_->surroundingUpdated();
                 inReport_ = false;
             });
+    }
+
+    void FakeApp::startTurn() {
+        if (turnPending_)
+            return;
+        turnPending_ = true;
+        later(0, [this] { endTurn(); });
+    }
+
+    void FakeApp::endTurn() {
+        if (!turnPending_)
+            return;
+        turnPending_ = false;
+        if (turnDeleteBytes_) {
+            const unsigned int chars = charsForBytesBefore(*turnDeleteBytes_);
+            eraseAround(-static_cast<int>(chars), chars);
+        }
+        if (turnCommit_ && focused_)
+            insert(utf8::decode(*turnCommit_));
+        turnDeleteBytes_.reset();
+        turnCommit_.reset();
     }
 
     void FakeApp::later(int ms, std::function<void()> action) {

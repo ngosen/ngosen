@@ -78,6 +78,8 @@ namespace ngosen {
         constexpr int ShiftKeycode = 50;
         // XKB keycode of Return: evdev KEY_ENTER (28) + 8.
         constexpr int ReturnKeycode = 36;
+        // XKB keycode of Tab: evdev KEY_TAB (15) + 8.
+        constexpr int TabKeycode = 23;
 
         fcitx::Key    toFcitxKey(EditKey key) {
             switch (key) {
@@ -85,6 +87,9 @@ namespace ngosen {
                 case EditKey::Right: return fcitx::Key(FcitxKey_Right);
                 case EditKey::Shift: return fcitx::Key(FcitxKey_Shift_L, fcitx::KeyStates(), ShiftKeycode);
                 case EditKey::Return: return fcitx::Key(FcitxKey_Return, fcitx::KeyStates(), ReturnKeycode);
+                case EditKey::ShiftReturn: return fcitx::Key(FcitxKey_Return, fcitx::KeyState::Shift, ReturnKeycode);
+                case EditKey::Tab: return fcitx::Key(FcitxKey_Tab, fcitx::KeyStates(), TabKeycode);
+                case EditKey::ShiftTab: return fcitx::Key(FcitxKey_ISO_Left_Tab, fcitx::KeyState::Shift, TabKeycode);
             }
             return fcitx::Key();
         }

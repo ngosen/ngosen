@@ -135,7 +135,8 @@ namespace ngosen {
         holdEnter(true);
     }
 
-    void TypingState::holdEnter(bool untilRelease) {
+    void TypingState::holdEnter(bool untilRelease, ngosen::EditKey key) {
+        held_key_           = key;
         held_enter_pending_ = true;
         held_enter_release_ = untilRelease;
         held_enter_due_us_  = ngosen::monotonicUs() + EnterAfterCommitUs;
@@ -163,7 +164,7 @@ namespace ngosen {
     }
 
     void TypingState::forwardHeldEnter() {
-        forwardTap(ngosen::EditKey::Return);
+        forwardTap(held_key_);
         // Keys typed after a replayed Enter waited for it.
         if (!buffered_keys_.empty() && !is_deleting_.load(std::memory_order_acquire))
             replayBufferedKeys();
@@ -803,9 +804,8 @@ namespace ngosen {
             }
             // A dbus client gets the commit after this key's reply and may type a key let through
             // first, so a typing key goes out inside the commit and an Enter after it.
-            const bool shiftEnter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & ngosen::modifier::Shift) != 0U &&
-                (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
-            if (host_->field().frontend == "dbus" && (typesText(keyEvent, currentSym) || replaysAsEnterKey(currentSym, keyEvent.states()) || shiftEnter) &&
+            const bool enter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
+            if (host_->field().frontend == "dbus" && (typesText(keyEvent, currentSym) || enter || replayedEditKey(currentSym, keyEvent.states())) &&
                 buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
                 keyEvent.accept();
@@ -827,7 +827,7 @@ namespace ngosen {
             handleReplacementBackspace(keyEvent, currentSym, 4);
         } else {
             std::string keyUtf8Check = host_->keyText(currentSym);
-            if (!keyUtf8Check.empty() && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            if ((!keyUtf8Check.empty() || replayedEditKey(currentSym, keyEvent.states())) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 NGOSEN_WARN("Typing so fast, add key to queue");
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
             }

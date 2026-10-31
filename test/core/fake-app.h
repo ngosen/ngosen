@@ -52,7 +52,8 @@ namespace ngosen::test {
         bool convertsDeleteOnReportedCopy = false;
         bool reportsNothingAfterDelete    = false; // reports nothing after a deletion until a typed key, as Qt 6 over text-input-v3 does
         bool repeatsOldTextAfterDelete    = false; // reports its text from before a deletion until a typed key, as Firefox on GNOME does
-        bool showsEnter                   = false; // shows each Enter, typed or forwarded, as a line break
+        bool showsEnter                   = false; // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
+        bool showsTab                     = false; // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what

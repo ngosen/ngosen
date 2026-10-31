@@ -802,8 +802,9 @@ namespace ngosen {
                 std::this_thread::sleep_for(std::chrono::microseconds(surr_wait_deliver_at_ - nowUs));
             }
             // A dbus client gets the commit after this key's reply and may type a key let through
-            // first, so a typing key goes out inside the commit.
-            if (host_->field().frontend == "dbus" && typesText(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            // first, so a typing key goes out inside the commit and an Enter after it.
+            if (host_->field().frontend == "dbus" && (typesText(keyEvent, currentSym) || replaysAsEnterKey(currentSym, keyEvent.states())) &&
+                buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
                 keyEvent.accept();
                 finishReplacement("key arrived", false);

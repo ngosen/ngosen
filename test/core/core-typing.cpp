@@ -546,6 +546,12 @@ namespace {
         std::string                 lineBreak = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, shifted, gaps);
         std::replace(lineBreak.begin(), lineBreak.end(), '\r', '\n');
         check(lineBreak == "nhé\na", "Enter during replacement: Shift+Enter", lineBreak);
+
+        // A dbus client gets the commit after the reply to the key, so a passed Enter would land first.
+        Field dbus                = makeField("dbus", false);
+        dbus.keyEventOrderFix     = true;
+        const std::string ordered = ngosen::test::typeInApp(dbus, quirks, keys, gaps);
+        check(ordered == "nhé\na", "Enter during replacement: dbus", ordered);
     }
 
     // With Capitalize Macro on, an abbreviation typed with a capital first letter capitalizes the

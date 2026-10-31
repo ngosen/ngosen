@@ -335,7 +335,8 @@ namespace {
         FakeHost*           host  = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
 
-        typeTie(state, *host, loop, surroundingText);
+        // A field that has not reported its word yet keeps the backspace path.
+        typeTie(state, *host, loop, false);
         const std::string what = "sen " + frontend + ": ";
         check(join(host->commits()) == "(none)", what + "plain letters go to the app as keys", join(host->commits()));
 
@@ -356,6 +357,26 @@ namespace {
         check(join(host->commits()) == "['ê']", what + "commits ê", join(host->commits()));
     }
 
+    // Once the field has reported the word, KWin, Sway and D-Bus fields delete through the surrounding text.
+    void testSenDeletesReportedWord(const std::string& frontend) {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field = makeField(frontend, true);
+        // fcitx5-gtk3 and fcitx5-qt; without the flag a D-Bus field is GTK4, which only takes deletions.
+        field.keyEventOrderFix    = frontend == "dbus";
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        typeTie(state, *host, loop, true);
+        const std::string what = "sen " + frontend + ", reported word: ";
+        check(press(state, static_cast<uint32_t>('e')), what + "e -> ê takes the key", "not accepted");
+        loop.pump(3);
+        check(host->forwarded().empty() && host->deletes().size() == 1 && join(host->commits()) == "['ê']", what + "one surrounding deletion, then ê, no backspace",
+              std::to_string(host->forwarded().size()) + " forwarded, " + std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
+    }
+
     // Sway (wlroots) reports the text and then a done event; a commit sent before the done carries a
     // stale serial and is dropped.
     void testCommitAfterTheReport() {
@@ -363,8 +384,12 @@ namespace {
         ngosen::test::AppQuirks quirks;
         quirks.dropsCommitsInReport = true;
         const std::vector<uint32_t> keys{'d', 'd', 'w', 'o', 'w', 'n', 'g', 'f'};
-        const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 100));
-        check(text == "đường", "sway: commits go out after the app's report", text);
+        FakeResources               resources;
+        const auto                  run = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), 100));
+        check(run.text == "đường", "sway: commits go out after the app's report", run.text);
+        // The first replacement empties the field, so it alone goes through backspaces.
+        check(run.sent.surroundingDeletes > 0 && run.sent.forwardedBackSpaces == 1, "sway: the later replacements delete through the surrounding text",
+              std::to_string(run.sent.surroundingDeletes) + " deletes, " + std::to_string(run.sent.forwardedBackSpaces) + " backspaces");
     }
 
     // Zed leaves focus for a moment when a deletion empties its field; a commit sent then is lost (#93).
@@ -383,11 +408,15 @@ namespace {
         quirks.commitLagMs               = 5;
         const std::vector<uint32_t> keys = {'t', 'i', 'e', 'e', 'n', 'g', 's', ' ', 'v', 'i'};
         std::vector<int>            gaps(keys.size(), 30);
-        gaps[6]                = 2;
-        Field gtk3             = makeField("dbus", true);
-        gtk3.keyEventOrderFix  = true;
-        const std::string text = ngosen::test::typeInApp(gtk3, quirks, keys, gaps);
+        gaps[6]               = 2;
+        Field gtk3            = makeField("dbus", true);
+        gtk3.keyEventOrderFix = true;
+        FakeResources     resources;
+        const auto        run  = ngosen::test::typeInAppTraced(resources, gtk3, quirks, keys, gaps);
+        const std::string text = run.text;
         check(text == "tiếng vi", "dbus: a key typed before the commit arrived lands after it", text);
+        check(run.sent.surroundingDeletes > 0 && run.sent.forwardedBackSpaces == 0, "dbus: those replacements delete through the surrounding text",
+              std::to_string(run.sent.surroundingDeletes) + " deletes, " + std::to_string(run.sent.forwardedBackSpaces) + " backspaces");
         const std::vector<uint32_t> back = {'t', 'i', 'e', 'e', 'n', 'g', 's', ngosen::key::BackSpace};
         const std::string           cut  = ngosen::test::typeInApp(gtk3, quirks, back, std::vector<int>{30, 30, 30, 30, 30, 30, 2, 30});
         check(cut.find('\b') == std::string::npos, "dbus: a backspace typed before the commit arrived is not committed", cut);
@@ -722,7 +751,7 @@ namespace {
         FakeHost*           host  = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
 
-        typeTie(state, *host, loop, true);
+        typeTie(state, *host, loop, false);
         press(state, static_cast<uint32_t>('e'));
         check(press(state, static_cast<uint32_t>('n')), "key during replacement: n is held back", "not accepted");
         host->setSurrounding("ti", 2);
@@ -931,7 +960,7 @@ namespace {
         const std::string log = resources.recorder().dump();
         check(has(log, "\tfield\tfrontend=wayland program=firefox (org.mozilla.firefox) surrounding=1 preedit=1 mode=Sen\n"), "recorder: notes the field and mode", log);
         check(has(log, "\tkey\tdown 0x0065 e\n"), "recorder: notes the key", log);
-        check(has(log, "\tforward\tBackSpace down\n"), "recorder: notes the forwarded backspace", log);
+        check(has(log, "\tdelete\toffset=-1 size=1\n"), "recorder: notes the surrounding deletion", log);
         check(has(log, "\tapp\t\"ti|\" cursor=2 anchor=2 length=2\n"), "recorder: notes the app's report", log);
         check(has(log, "\tcommit\t\"ê\"\n"), "recorder: notes the commit", log);
     }
@@ -1311,9 +1340,12 @@ namespace {
     // Browsers repeat the same report several times per key; repeats would push the keys out of the log.
     void testRecorderSkipsRepeatedReports() {
         realMode = ngosen::Mode::Sen;
-        FakeLoop            loop;
-        FakeResources       resources;
-        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "firefox"));
+        FakeLoop      loop;
+        FakeResources resources;
+        // An address bar keeps the backspace path, whose wait acts on the repeats.
+        Field addressBar          = makeField("wayland", true, "firefox");
+        addressBar.url            = true;
+        auto                owned = std::make_unique<FakeHost>(loop, addressBar);
         FakeHost*           host  = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
 
@@ -1633,9 +1665,9 @@ namespace {
         // Silence alone is no reason to give up on a field that has no other way to delete.
         check(countHaving(lines, "not answered") >= 3 && countHaving(lines, "untrusted") == 0, "check: an app that never reports goes unanswered", join(lines));
 
-        // A field that also takes keys keeps them, and logs what the surrounding path would have done.
-        lines = logLinesWhileTyping(makeField("wayland", true), {}, "vieetj nam ", "Surrounding path would", &run);
-        check(lines.size() == 2 && countHaving(lines, "fails: none") == 2 && run.sent.surroundingDeletes == 0, "check: one observation line per replacement on a wayland field",
+        // A field outside the surrounding rule keeps its keys, and logs what the surrounding path would have done.
+        lines = logLinesWhileTyping(makeField("fcitx4", true), {}, "vieetj nam ", "Surrounding path would", &run);
+        check(lines.size() == 2 && countHaving(lines, "fails: none") == 2 && run.sent.surroundingDeletes == 0, "check: one observation line per replacement on an fcitx4 field",
               run.text + " " + join(lines));
     }
 
@@ -1885,6 +1917,8 @@ int main() {
     testSenForwards("wayland", true);
     testSenForwards("wayland_v2", true);
     testSenForwards("xim", false);
+    for (const char* frontend : {"wayland", "wayland_v2", "dbus"})
+        testSenDeletesReportedWord(frontend);
     testForwardedKeysNewerThanTyped();
     testKeyDuringReplacement();
     testCommitAfterTheReport();

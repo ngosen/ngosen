@@ -133,7 +133,8 @@ namespace ngosen {
     }
 
     bool deletesThroughSurroundingFirst(const Field& field) {
-        return field.frontend == "ibus";
+        // fcitx4 and XIM have no surrounding path worth trusting yet; see the plan's second wave.
+        return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2" || field.frontend == "dbus";
     }
 
     bool countsDeletionOnCopy(const Field& field) {

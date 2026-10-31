@@ -70,8 +70,8 @@ namespace {
 
         // Types "tie" and reports each step to the context when it declares surrounding text. A lagging
         // field reports each step one key late, so its copy misses the last letter.
-        bool typeTie(TestInputContext& context, bool lagging = false) {
-            const bool        surrounding = context.capabilityFlags().test(fcitx::CapabilityFlag::SurroundingText);
+        bool typeTie(TestInputContext& context, bool lagging = false, bool reportsWord = true) {
+            const bool        surrounding = reportsWord && context.capabilityFlags().test(fcitx::CapabilityFlag::SurroundingText);
             const std::string word        = "tie";
             for (size_t i = 0; i < word.size(); ++i) {
                 if (!type(context, static_cast<fcitx::KeySym>(word[i]), false))
@@ -102,11 +102,27 @@ namespace {
             forwarded[1].isRelease();
     }
 
-    // fcitx5-gtk (GTK3) and fcitx5-qt keep forwarded keys in order with commits.
-    bool dbusForwardsAndWaitsForDeletion(Harness& h) {
+    // fcitx5-gtk (GTK3) and fcitx5-qt delete through the surrounding text once the field has reported
+    // the word.
+    bool dbusDeletesReportedWord(Harness& h) {
         const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix};
         auto       context = h.open("gtk3app", "dbus", caps);
         if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, true))
+            return false;
+        const bool deleted = context->deletes() == std::vector<std::pair<int, unsigned int>>{{-1, 1}};
+        if (!deleted || !context->forwarded().empty() || context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure("dbus: e -> ê through the surrounding text", "deletes=1 forwarded=(none) ['ê']",
+                          "deletes=" + std::to_string(context->deletes().size()) + " forwarded=" + describeForwarded(*context) + " " + joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
+    // Before the field reports any text they keep forwarded keys in order with commits.
+    bool dbusForwardsAndWaitsForDeletion(Harness& h) {
+        const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix};
+        auto       context = h.open("gtk3app", "dbus", caps);
+        if (!h.typeTie(*context, false, false) || !h.type(*context, FcitxKey_e, true))
             return false;
         if (!forwardedOneBackspace(*context)) {
             reportFailure("dbus: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
@@ -384,7 +400,7 @@ int main() {
     fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
     Harness                 h{testInstance, engine, entry};
 
-    if (!dbusForwardsAndWaitsForDeletion(h))
+    if (!dbusDeletesReportedWord(h) || !dbusForwardsAndWaitsForDeletion(h))
         return 1;
     if (!dbusKeyDuringWaitJoinsCommit(h))
         return 1;

@@ -515,6 +515,10 @@ namespace ngosen {
             fails.emplace_back("marked untrusted");
         if (field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))
             fails.emplace_back("address bar");
+        // A field the deletion empties can leave focus before the commit lands, and fcitx5 drops commits
+        // without focus (Zed, #93); the backspace path waits for focus to come back.
+        if (ngosen::dropsCommitsWithoutFocus(field) && surrounding.isValid() && chars >= ngosen::utf8::length(surrounding.text()))
+            fails.emplace_back("deletion empties the field");
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");
@@ -694,6 +698,7 @@ namespace ngosen {
         std::string retype;
         const int   count = surroundingDeletionCount(surrounding, retype);
         host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
+        unreportedDeleteLength_ = static_cast<unsigned int>(count);
         NGOSEN_INFO("Delete using surrounding text");
         std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrDeleteSleepMs * count));
         const std::string text = retype + pending_commit_string_;

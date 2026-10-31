@@ -807,6 +807,11 @@ namespace ngosen {
         return !host_->field().sendsNoKeys && canSendBackspaces();
     }
 
+    void TypingState::forwardReplayedEnter(std::string& out) {
+        commitReplayed(out);
+        forwardTap(ngosen::EditKey::Return);
+    }
+
     void TypingState::commitReplayed(std::string& out) {
         if (!out.empty()) {
             commit(out);
@@ -833,25 +838,19 @@ namespace ngosen {
         if (keyUtf8.empty()) {
             return false;
         }
-        if (replaysAsEnterKey(sym, state)) {
-            // Google Docs ignores a carriage return inside a commit, so the Enter goes as a key.
-            commitReplayed(out);
-            ResetEngine(bambooEngine_.handle());
-            oldPreBuffer_.clear();
-            hasHistory_ = false;
-            forwardTap(ngosen::EditKey::Return);
-            return false;
-        }
+        // Google Docs ignores a carriage return inside a commit, so the Enter goes as a key.
+        const bool enterKey = replaysAsEnterKey(sym, state);
 
-        bool processed = EngineProcessKeyEvent(bambooEngine_.handle(), sym, state) != 0U;
+        bool       processed = EngineProcessKeyEvent(bambooEngine_.handle(), sym, state) != 0U;
 
-        auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
+        auto       commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
         if (commitF && (*commitF.get() != 0)) {
             std::string deletedPart;
             std::string addedPart;
             ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitF.get(), deletedPart, addedPart);
             const bool replacing = !deletedPart.empty();
             if (replacing) {
+                enter_after_replacement_ = enter_after_replacement_ || enterKey;
                 replaceDuringReplay(keys, i, out, deletedPart, addedPart);
             } else {
                 out += addedPart;
@@ -859,9 +858,15 @@ namespace ngosen {
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
+            if (enterKey && !replacing)
+                forwardReplayedEnter(out);
             return replacing;
         }
 
+        if (enterKey) {
+            forwardReplayedEnter(out);
+            return false;
+        }
         if (!processed) {
             out += keyUtf8;
             return false;

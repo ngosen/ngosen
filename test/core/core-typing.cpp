@@ -526,6 +526,15 @@ namespace {
         gaps[3]                = 2;
         const std::string text = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, keys, gaps);
         check(text == "nhé\na", "Enter during replacement", text);
+
+        FakeResources resources;
+        resources.setMacros({{"dc", "được"}});
+        const std::vector<uint32_t> macro{'n', 'h', 'e', 's', ' ', 'd', 'c', ngosen::key::Return, 'a'};
+        std::vector<int>            macroGaps(macro.size(), 100);
+        for (size_t i = 3; i < 7; ++i)
+            macroGaps[i] = 1;
+        const std::string expanded = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, macro, macroGaps);
+        check(expanded == "nhé được\na", "Enter during replacement: macro before it", expanded);
     }
 
     // With Capitalize Macro on, an abbreviation typed with a capital first letter capitalizes the

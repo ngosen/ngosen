@@ -42,6 +42,7 @@ namespace {
     // this much before its deadline. Only lower bounds on time are checked.
     constexpr uint64_t ClockSlackUs = 3000;
     constexpr uint64_t WaitUs       = 15000;
+    constexpr uint64_t ShellWaitUs  = 40000;
     constexpr uint64_t SettleUs     = 40000;
 
     struct Harness {
@@ -227,8 +228,8 @@ namespace {
             reportFailure("GNOME ibus early report: commit e -> ê", "['ê']", joinCommits(*context));
             return false;
         }
-        if (committedAt - replacedAt + ClockSlackUs < WaitUs) {
-            reportFailure("GNOME ibus early report: commit at least 15 ms after the forward", ">= 15000 us", std::to_string(committedAt - replacedAt) + " us");
+        if (committedAt - replacedAt + ClockSlackUs < ShellWaitUs) {
+            reportFailure("GNOME ibus early report: commit at least 40 ms after the forward", ">= 40000 us", std::to_string(committedAt - replacedAt) + " us");
             return false;
         }
         return true;
@@ -286,8 +287,8 @@ namespace {
         replace("tien", 'e');
         replace("tien", 'e');
         const uint64_t oneKeyUs = replace("to", 'o');
-        if (oneKeyUs + ClockSlackUs < WaitUs || oneKeyUs > 30000) {
-            reportFailure("GNOME ibus silent app: fixed wait for one backspace", "15000-30000 us", std::to_string(oneKeyUs) + " us");
+        if (oneKeyUs + ClockSlackUs < ShellWaitUs || oneKeyUs > 55000) {
+            reportFailure("GNOME ibus silent app: fixed wait for one backspace", "40000-55000 us", std::to_string(oneKeyUs) + " us");
             return false;
         }
         // Any report means the app does report, so the next replacement waits for it again.
@@ -306,7 +307,7 @@ namespace {
 
     // Firefox over IBus and Chromium over the fcitx4 GTK module report no surrounding text; their
     // forwarded keys queue behind the commit unless the commit waits.
-    bool forwardWithoutSurroundingWaits(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+    bool forwardWithoutSurroundingWaits(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, uint64_t waitUs) {
         auto              context = h.open(program, frontend, caps);
         const std::string where   = frontend + " " + program + ": ";
         if (!h.typeTie(*context))
@@ -325,8 +326,8 @@ namespace {
             reportFailure(where + "commit e -> ê", "['ê']", joinCommits(*context));
             return false;
         }
-        if (committedAt - replacedAt + ClockSlackUs < WaitUs) {
-            reportFailure(where + "commit at least 15 ms after the forward", ">= 15000 us", std::to_string(committedAt - replacedAt) + " us");
+        if (committedAt - replacedAt + ClockSlackUs < waitUs) {
+            reportFailure(where + "commit no sooner than the forward wait", ">= " + std::to_string(waitUs) + " us", std::to_string(committedAt - replacedAt) + " us");
             return false;
         }
         return true;
@@ -418,9 +419,9 @@ int main() {
         return 1;
     if (!gnomeIbusStopsWaitingForSilentApp(h))
         return 1;
-    if (!forwardWithoutSurroundingWaits(h, "gtk3-im:firefox", "ibus", fcitx::CapabilityFlags{}))
+    if (!forwardWithoutSurroundingWaits(h, "gtk3-im:firefox", "ibus", fcitx::CapabilityFlags{}, ShellWaitUs))
         return 1;
-    if (!forwardWithoutSurroundingWaits(h, "chrome", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}))
+    if (!forwardWithoutSurroundingWaits(h, "chrome", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}, WaitUs))
         return 1;
     if (!fcitx4ForwardsWithSurroundingText(h))
         return 1;

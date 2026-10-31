@@ -399,7 +399,7 @@ namespace ngosen {
         static constexpr uint64_t      EnterAfterCommitUs     = 50000;
         static constexpr uint64_t      HeldEnterReleaseWaitUs = 450000;
         void                           holdEnterAfterCommit(ngosen::KeyPress& keyEvent);
-        void                           holdEnter(bool untilRelease);
+        void                           holdEnter(bool untilRelease, ngosen::EditKey key = ngosen::EditKey::Return);
         void                           forwardHeldEnter();
         bool                           forwardsEnterAfterCommit() const;
         bool                           dropsForwardedKeys() const;
@@ -408,12 +408,14 @@ namespace ngosen {
         bool                           held_enter_pending_ = false;
         bool                           held_enter_release_ = false;
         uint64_t                       held_enter_due_us_  = 0;
+        ngosen::EditKey                held_key_           = ngosen::EditKey::Return;
 
         // Enter after a macro expands it, and reaches the app once the expansion is in the field.
-        bool expandMacroBeforeEnter(ngosen::KeyPress& keyEvent);
-        void sendEnterAfterReplacement();
-        bool enter_after_replacement_ = false;
-        bool enter_key_live_          = false;
+        bool            expandMacroBeforeEnter(ngosen::KeyPress& keyEvent);
+        void            sendEnterAfterReplacement();
+        bool            enter_after_replacement_ = false;
+        ngosen::EditKey enter_after_key_         = ngosen::EditKey::Return;
+        bool            enter_key_live_          = false;
 
         /**
          * @brief Updates emoji page status in candidate list.
@@ -607,10 +609,10 @@ namespace ngosen {
          * replacement completes.
          * @param committed Text to commit first; it goes out in the same commit as the replayed keys.
          */
-        void replayBufferedKeys(std::string committed = {});
-        void commitReplayed(std::string& out);
-        bool replaysAsEnterKey(uint32_t sym, uint32_t state) const;
-        bool holdReplayedEnter(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
+        void                           replayBufferedKeys(std::string committed = {});
+        void                           commitReplayed(std::string& out);
+        std::optional<ngosen::EditKey> replayedEditKey(uint32_t sym, uint32_t state) const;
+        bool                           holdReplayedKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out, ngosen::EditKey key);
         // Replays keys[i]; true when it started a replacement, which replays the rest later.
         bool replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         void replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart);

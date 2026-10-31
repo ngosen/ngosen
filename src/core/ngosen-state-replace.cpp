@@ -832,21 +832,23 @@ namespace ngosen {
         NGOSEN_INFO("Replay buffered keys done");
     }
 
-    bool TypingState::replaysAsEnterKey(uint32_t sym, uint32_t state) const {
-        if (!ngosen::key::isEnter(sym))
-            return false;
-        // A forwarded tap carries no modifiers, and Shift+Enter means a line break, not send, in chat apps.
-        if ((state & (ngosen::modifier::Shift | ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) != 0U)
-            return false;
-        return forwardsEnterAfterCommit();
+    std::optional<ngosen::EditKey> TypingState::replayedEditKey(uint32_t sym, uint32_t state) const {
+        if ((state & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) != 0U || !forwardsEnterAfterCommit())
+            return std::nullopt;
+        const bool shift = (state & ngosen::modifier::Shift) != 0U;
+        if (ngosen::key::isEnter(sym))
+            return shift ? ngosen::EditKey::ShiftReturn : ngosen::EditKey::Return;
+        if (sym == ngosen::key::Tab || sym == ngosen::key::KP_Tab || sym == ngosen::key::ISO_Left_Tab)
+            return shift || sym == ngosen::key::ISO_Left_Tab ? ngosen::EditKey::ShiftTab : ngosen::EditKey::Tab;
+        return std::nullopt;
     }
 
     // Holds the Enter after the commit as a typed one is, and leaves the keys after it for then.
-    bool TypingState::holdReplayedEnter(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
+    bool TypingState::holdReplayedKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out, ngosen::EditKey key) {
         for (size_t j = i + 1; j < keys.size() && buffered_keys_.size() < MAX_BUFFERED_KEYS; ++j)
             buffered_keys_.push_back(keys[j]);
         commitReplayed(out);
-        holdEnter(false);
+        holdEnter(false, key);
         return true;
     }
 
@@ -873,24 +875,36 @@ namespace ngosen {
         auto        sym     = keys[i].sym;
         uint32_t    state   = keys[i].state;
         std::string keyUtf8 = host_->keyText(sym);
-        if (keyUtf8.empty()) {
+        // Google Docs ignores a line break inside a commit, and Tab must move focus, so these go as keys.
+        const std::optional<ngosen::EditKey> sent = replayedEditKey(sym, state);
+        if (keyUtf8.empty() && !sent) {
             return false;
         }
-        // Google Docs ignores a carriage return inside a commit, so the Enter goes as a key.
-        const bool enterKey = replaysAsEnterKey(sym, state);
+        if (sent == ngosen::EditKey::Tab || sent == ngosen::EditKey::ShiftTab) {
+            // Like a typed Tab: it ends the word as it is and goes out at once, before focus moves on.
+            commitReplayed(out);
+            hasHistory_ = false;
+            ResetEngine(bambooEngine_.handle());
+            oldPreBuffer_.clear();
+            forwardTap(*sent);
+            return false;
+        }
 
-        bool       processed = EngineProcessKeyEvent(bambooEngine_.handle(), sym, state) != 0U;
+        bool processed = EngineProcessKeyEvent(bambooEngine_.handle(), sym, state) != 0U;
 
-        auto       commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
+        auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
         if (commitF && (*commitF.get() != 0)) {
             std::string deletedPart;
             std::string addedPart;
             ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitF.get(), deletedPart, addedPart);
             const bool replacing = !deletedPart.empty();
             // The engine ends the word on Enter without taking it, so the Enter still has to go out.
-            const std::string owed = !processed && !enterKey && ngosen::key::isEnter(sym) ? keyUtf8 : std::string();
+            const std::string owed = !processed && !sent && ngosen::key::isEnter(sym) ? keyUtf8 : std::string();
             if (replacing) {
-                enter_after_replacement_ = enter_after_replacement_ || enterKey;
+                if (sent) {
+                    enter_after_replacement_ = true;
+                    enter_after_key_         = *sent;
+                }
                 replaceDuringReplay(keys, i, out, deletedPart, addedPart + owed);
             } else {
                 out += addedPart;
@@ -898,15 +912,15 @@ namespace ngosen {
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
-            if (enterKey && !replacing)
-                return holdReplayedEnter(keys, i, out);
+            if (sent && !replacing)
+                return holdReplayedKey(keys, i, out, *sent);
             if (!replacing)
                 out += owed;
             return replacing;
         }
 
-        if (enterKey)
-            return holdReplayedEnter(keys, i, out);
+        if (sent)
+            return holdReplayedKey(keys, i, out, *sent);
         if (!processed) {
             out += keyUtf8;
             return false;

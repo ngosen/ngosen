@@ -137,7 +137,9 @@ namespace ngosen::test {
         }
         if (!down.accepted()) {
             if (sym == key::Return && quirks_.showsEnter)
-                later(quirks_.lagMs, [this] { insert(U"\n", true); });
+                later(quirks_.lagMs, [this, soft = state == modifier::Shift] { insert(soft ? U"\u2028" : U"\n", true); });
+            else if ((sym == key::Tab || sym == key::ISO_Left_Tab) && quirks_.showsTab)
+                later(quirks_.lagMs, [this, back = sym == key::ISO_Left_Tab || (state & modifier::Shift) != 0U] { insert(back ? U"⇤" : U"⇥", true); });
             else if (sym == key::BackSpace) {
                 lastBackSpaceAt_ = time;
                 later(quirks_.lagMs, [this] { eraseBefore(1); });
@@ -215,8 +217,12 @@ namespace ngosen::test {
     }
 
     void FakeApp::forwardKey(EditKey key, bool release, uint32_t time) {
-        if (key == EditKey::Return && !release && quirks_.showsEnter && !quirks_.dropsForwardedKeys) {
-            later(quirks_.lagMs, [this] { insert(U"\n", true); });
+        if ((key == EditKey::Tab || key == EditKey::ShiftTab) && !release && quirks_.showsTab && !quirks_.dropsForwardedKeys) {
+            later(quirks_.lagMs, [this, key] { insert(key == EditKey::ShiftTab ? U"⇤" : U"⇥", true); });
+            return;
+        }
+        if ((key == EditKey::Return || key == EditKey::ShiftReturn) && !release && quirks_.showsEnter && !quirks_.dropsForwardedKeys) {
+            later(quirks_.lagMs, [this, key] { insert(key == EditKey::ShiftReturn ? U"\u2028" : U"\n", true); });
             return;
         }
         if (key == EditKey::Right && !release && !quirks_.dropsForwardedKeys) {

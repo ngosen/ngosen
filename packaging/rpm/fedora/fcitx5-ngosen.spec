@@ -71,6 +71,7 @@ Ngó Sen is a Vietnamese input method for fcitx5.
 
 %{_datadir}/icons/hicolor/scalable/apps/*fcitx-ngosen*.svg
 %{_datadir}/icons/hicolor/scalable/apps/io.github.ngosen.NgoSen.Settings.svg
+%{_datadir}/icons/hicolor/scalable/actions/ngosen-*.svg
 %{_datadir}/icons/hicolor/scalable/status/fcitx-ngosen*.svg
 %{_datadir}/icons/hicolor/*/status/fcitx-ngosen*.png
 

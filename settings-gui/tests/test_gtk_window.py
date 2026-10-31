@@ -941,5 +941,18 @@ def _children(widget):
         child = child.get_next_sibling()
 
 
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkMenuIconTest(unittest.TestCase):
+    def test_missing_theme_icon_falls_back_to_own(self):
+        from ui_gtk import appearance
+
+        # A theme like Adwaita: no character-set icon, only the one Ngó Sen installs.
+        theme = mock.Mock()
+        theme.has_icon.side_effect = lambda name: name == "ngosen-charset"
+        with mock.patch.object(appearance, "_theme", return_value=theme):
+            image = appearance._menu_icon("character-set")
+        self.assertEqual(image.get_icon_name(), "ngosen-charset")
+
+
 if __name__ == "__main__":
     unittest.main()

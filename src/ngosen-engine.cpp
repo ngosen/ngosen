@@ -15,6 +15,7 @@
 #include "ngosen-utils.h"
 #include "ngosen-gnome-theme.h"
 #include "ngosen-icon-resolver.h"
+#include "ngosen-menu-icon.h"
 #include "ngosen-plasma-theme.h"
 #include "ngosen-fcitx-host.h"
 #include "ngosen-migration.h"
@@ -339,9 +340,10 @@ namespace fcitx {
             },
             uiManager);
 
+        // Only Breeze has three of these icons; other themes get the copies Ngó Sen installs in hicolor.
         auto charsets = convertToStringList(GetCharsetNames());
         initChoiceMenu(
-            charsetAction_, charsetSubAction_, charsetMenu_, CharsetActionId, _("Charset"), "character-set", charsets,
+            charsetAction_, charsetSubAction_, charsetMenu_, CharsetActionId, _("Charset"), menuIconName("character-set", "ngosen-charset"), charsets,
             [this](InputContext* ic, const std::string& charset) {
                 if (config_.outputCharset.value() == charset)
                     return;
@@ -358,11 +360,11 @@ namespace fcitx {
 
         initToggleAction(spellCheckAction_, config_.spellCheck, "ngosen-spellcheck", "tools-check-spelling", _("Spell Check"), N_("Spell Check"), uiManager);
         initToggleAction(macroAction_, config_.enableMacro, "ngosen-macro", "document-edit", _("Macro"), N_("Macro"), uiManager);
-        initToggleAction(capitalizeMacroAction_, config_.capitalizeMacro, "ngosen-capitalizemacro", "format-text-uppercase", _("Capitalize Macro"), N_("Capitalize Macro"),
-                         uiManager);
+        initToggleAction(capitalizeMacroAction_, config_.capitalizeMacro, "ngosen-capitalizemacro", menuIconName("format-text-uppercase", "ngosen-capitalize-macro"),
+                         _("Capitalize Macro"), N_("Capitalize Macro"), uiManager);
         autoCapitalizeAction_ = std::make_unique<SimpleAction>();
         autoCapitalizeAction_->setShortText(_("Auto Capitalize"));
-        autoCapitalizeAction_->setIcon("format-text-capitalize");
+        autoCapitalizeAction_->setIcon(menuIconName("format-text-capitalize", "ngosen-auto-capitalize"));
         uiManager.registerAction("ngosen-autocapitalize", autoCapitalizeAction_.get());
         autoCapitalizeMenu_ = std::make_unique<Menu>();
         autoCapitalizeAction_->setMenu(autoCapitalizeMenu_.get());

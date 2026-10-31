@@ -30,6 +30,7 @@ set(ngosen_fcitx_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-program-name.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-monitor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-icon-resolver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-menu-icon.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-plasma-theme.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-gnome-theme.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-gnome-shell.cpp

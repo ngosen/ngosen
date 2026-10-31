@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Thay đổi
 
 - Phím chuyển Anh/Việt (Ctrl+Shift) nay chỉ đổi app đang gõ, và mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất. App chưa bấm lần nào theo lần bấm gần nhất. Nút "Mặc định", sao lưu và hoàn tác trong cửa sổ cài đặt bao luôn phần nhớ này (#469).
+- Chế độ Gõ Sen trên KDE (Wayland), Sway, Hyprland và app X11 dùng mô-đun fcitx5 (GTK3, Qt) nay nhờ app xoá thẳng chữ cũ trong ô khi thêm dấu, như trên GNOME, để xoá rồi thêm chữ đúng thứ tự, tránh BackSpace tới muộn xoá mất chữ mới khi app chậm. Ô chưa cho biết chữ bên trong, thanh địa chỉ và khi lệnh xoá làm ô trống trên Wayland vẫn dùng BackSpace như trước (#477).
 
 ### Sửa
 

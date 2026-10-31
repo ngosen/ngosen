@@ -410,6 +410,18 @@ namespace ngosen {
         return before.substr(std::min<size_t>(lastSurroundingCursor_, before.size())) != now.substr(std::min<size_t>(s.cursor(), now.size()));
     }
 
+    // The report of a surrounding deletion alone: the same text with only the deleted characters gone
+    // before the cursor. The commit sent with the deletion is still to come.
+    bool TypingState::showsOwnDeletion(const Surrounding& s) const {
+        // A key since then may be the user's own BackSpace, which reports the same shape.
+        if (unreportedDeleteLength_ == 0 || keyCount_ != unreportedDeleteKey_ || s.cursor() != s.anchor() || s.cursor() + unreportedDeleteLength_ != lastSurroundingCursor_ ||
+            textAfterCursorChanged(s))
+            return false;
+        const std::u32string before = ngosen::utf8::decode(lastSurroundingText_);
+        const std::u32string now    = ngosen::utf8::decode(s.text());
+        return s.cursor() <= now.size() && lastSurroundingCursor_ <= before.size() && before.compare(0, s.cursor(), now, 0, s.cursor()) == 0;
+    }
+
     // A quick switch to another field on the same context comes back like a bounce. The first settled
     // report after it tells which: the same field still has the word before the cursor.
     bool TypingState::lostWordAfterBounce(const Surrounding& s, bool settling) {
@@ -451,8 +463,10 @@ namespace ngosen {
             (hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() && (unreportedCommitLength_ == 0 || textAfterCursorChanged(s))) ||
             lostWord;
         // Firefox repeats the old state before the echo, so only a change ends the wait.
-        if (jumped || !sameText)
-            unreportedCommitLength_ = 0;
+        if (!jumped && !sameText && showsOwnDeletion(s))
+            unreportedDeleteLength_ = 0;
+        else if (jumped || !sameText)
+            unreportedCommitLength_ = unreportedDeleteLength_ = 0;
         // Calc reports the new cell empty just before the key we let through lands in it.
         // Our unreported commits do not matter here: in the same cell the key would follow them.
         const bool keyStartedCell = settling && passed_key_ && !sameText && s.text().empty() && !oldPreBuffer_.empty() && ngosen::reportsFieldOnlyOnKey(host_->field());

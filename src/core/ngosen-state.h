@@ -112,6 +112,7 @@ namespace ngosen {
          */
         void checkCursorJump();
         bool textAfterCursorChanged(const Surrounding& s) const;
+        bool showsOwnDeletion(const Surrounding& s) const;
 
         /**
          * @brief Records text another part of fcitx sent to the app, so its cursor moving past it is not
@@ -206,6 +207,7 @@ namespace ngosen {
         static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
         static std::string textBeforeCursor(const Surrounding& s);
         static bool        showsText(const Surrounding& s);
+        static bool        showsTextAfterDeleting(const Surrounding& s, unsigned int chars);
         static std::string reportKey(const Surrounding& s); ///< "text\x1fcursor", empty for no report
         static std::string loggedField(const Field& field); ///< " (frontend program)"
         bool               handleRetypeKey(ngosen::KeyPress& keyEvent);
@@ -323,6 +325,10 @@ namespace ngosen {
         unsigned int lastSurroundingAnchor_  = 0;
         bool         hasLastSurrounding_     = false;
         unsigned int unreportedCommitLength_ = 0;
+        // Characters a surrounding deletion took that the app has not reported yet; its report can
+        // come between the deletion and the commit that follows it.
+        unsigned int unreportedDeleteLength_ = 0;
+        uint64_t     unreportedDeleteKey_    = 0; ///< keyCount_ when that deletion was sent
         bool         committing_             = false;
         uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.

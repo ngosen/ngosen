@@ -475,6 +475,14 @@ namespace ngosen {
         return std::string(t.begin(), it);
     }
 
+    bool TypingState::showsTextAfterDeleting(const Surrounding& s, unsigned int chars) {
+        std::u32string text = utf8::decode(s.text());
+        const size_t   end  = std::min<size_t>(s.cursor(), text.size());
+        text.erase(end - std::min<size_t>(chars, end), std::min<size_t>(chars, end));
+        // Edge reports an empty composer as "\n".
+        return text.find_first_not_of(U" \t\n") != std::u32string::npos;
+    }
+
     bool TypingState::showsText(const Surrounding& s) {
         // Edge reports an empty composer as "\n".
         return s.text().find_first_not_of(" \t\n") != std::string::npos;
@@ -515,6 +523,12 @@ namespace ngosen {
             fails.emplace_back("marked untrusted");
         if (field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))
             fails.emplace_back("address bar");
+        // A field the deletion empties can leave focus before the commit lands, and fcitx5 drops commits
+        // without focus (Zed, #93); the backspace path waits for focus to come back.
+        if (ngosen::dropsCommitsWithoutFocus(field) && surrounding.isValid() && !showsTextAfterDeleting(surrounding, chars))
+            fails.emplace_back("deletion empties the field");
+        if (ngosen::reportsSurroundingEditsLate(field))
+            fails.emplace_back("app reports edits late");
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");
@@ -693,6 +707,9 @@ namespace ngosen {
     void TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
         std::string retype;
         const int   count = surroundingDeletionCount(surrounding, retype);
+        // Set first: a host may deliver the deletion's report from inside the call.
+        unreportedDeleteLength_ = static_cast<unsigned int>(count);
+        unreportedDeleteKey_    = keyCount_;
         host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
         NGOSEN_INFO("Delete using surrounding text");
         std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrDeleteSleepMs * count));

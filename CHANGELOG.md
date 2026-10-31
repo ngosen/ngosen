@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Ngó Sen cho GNOME, khi bật Gõ Sen: chữ đầu tiên trong ô còn trống của app GTK, Firefox và LibreOffice không còn bị gạch chân mà gõ thẳng vào ô như các chữ sau (#473).
+
 ## [1.7.4-1] — 31/10/2026
 
 Sửa Preedit trên GNOME mất Enter khi giữ phím (#465), mất chữ đang gõ khi click trong Alacritty và app XIM khác trên X11 (#466). Trên GNOME 50.0–50.3 không có extension chuyển phím, sửa Gõ Sen ra chữ lặp trong kitty và Preedit mất Enter (#467).

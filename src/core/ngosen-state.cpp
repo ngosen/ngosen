@@ -131,11 +131,18 @@ namespace ngosen {
         keyEvent.accept();
         held_enter_pending_ = true;
         held_enter_release_ = true;
-        held_enter_timer_   = host_->startTimer(ngosen::monotonicUs() + EnterAfterCommitUs, 1000, [this](ngosen::Timer&) {
-            if (held_enter_pending_) {
-                held_enter_pending_ = false;
-                forwardTap(ngosen::EditKey::Return);
+        held_enter_due_us_  = ngosen::monotonicUs() + EnterAfterCommitUs;
+        held_enter_timer_   = host_->startTimer(held_enter_due_us_, 1000, [this](ngosen::Timer& timer) {
+            if (!held_enter_pending_)
+                return false;
+            // GNOME Shell loses a forwarded Enter while the user still holds Enter down, so the release sends it.
+            // Not every app reports releases; by the time key repeat starts the Enter goes out anyway.
+            if (held_enter_release_ && ngosen::monotonicUs() < held_enter_due_us_ + HeldEnterReleaseWaitUs) {
+                timer.rearm(held_enter_due_us_ + HeldEnterReleaseWaitUs);
+                return true;
             }
+            held_enter_pending_ = false;
+            forwardTap(ngosen::EditKey::Return);
             return false;
         });
     }
@@ -532,6 +539,8 @@ namespace ngosen {
             held_enter_release_    = false;
             if (heldRelease) {
                 keyEvent.accept();
+                if (ngosen::monotonicUs() >= held_enter_due_us_)
+                    sendHeldEnter();
                 return;
             }
         }
@@ -657,6 +666,10 @@ namespace ngosen {
                 replayBufferedKeys();
             }
         }
+        // An app that sends no reset on a click (XIM) still shows the underlined word, which the reset
+        // below would drop.
+        if (mode() == ngosen::Mode::Preedit && g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire))
+            commitBuffer();
         if (needEngineReset.load() && mode() != ngosen::Mode::Off) {
             NGOSEN_INFO("Need engine reset");
             oldPreBuffer_.clear();

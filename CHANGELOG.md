@@ -17,6 +17,17 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   kết quả qua Facebook, GitHub hoặc chép kết quả nằm cùng trang, thay hộp "Kiểm tra máy tôi…" và nút
   "Báo lỗi" ở trang Giới thiệu (#463)
 
+## [1.7.4-1] — 31/10/2026
+
+Sửa Preedit trên GNOME mất Enter khi giữ phím (#465), mất chữ đang gõ khi click trong Alacritty và app XIM khác trên X11 (#466). Trên GNOME 50.0–50.3 không có extension chuyển phím, sửa Gõ Sen ra chữ lặp trong kitty và Preedit mất Enter (#467).
+Tải ở [ngosen-1.7.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.4-1).
+
+### Sửa
+
+- Preedit trên GNOME: bấm Enter sau chữ đang gạch chân không còn bị mất Enter khi giữ phím lâu một chút như gõ bình thường; Enter nay đi lúc nhả phím (#465).
+- Ở chế độ gạch chân (Preedit), click trong Alacritty và app XIM khác không còn làm mất chữ đang gõ dở (#466).
+- GNOME 50.0–50.3 khi không có extension chuyển phím: Gõ Sen trong kitty không còn ra chữ lặp kiểu "tieêngếng" mà chuyển sang gạch chân; Enter sau chữ gạch chân ở Preedit không còn bị mất (#467).
+
 ## [1.7.3-1] — 30/10/2026
 
 Sửa lõi gõ dùng chung để Ngó Sen cho GNOME (bản IBus) chuẩn bị gõ thẳng trong app X11 (#458). Trên X11,

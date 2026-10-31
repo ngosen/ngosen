@@ -21,6 +21,7 @@
 #include "ngosen-ui-text.h"
 #ifdef NGOSEN_HAS_DBUS
 #include "ngosen-dbus-object.h"
+#include "ngosen-gnome-shell.h"
 #endif
 #include <optional>
 #include <utility>
@@ -278,7 +279,7 @@ namespace fcitx {
 
     NgoSenEngine::NgoSenEngine(Instance* instance) :
         instance_(instance), factory_([this](InputContext& ic) {
-            return new TypingStateProperty(std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_)));
+            return new TypingStateProperty(std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_, shellDropsKeys())));
         }) { //NOLINT
         Init();
         {
@@ -390,6 +391,7 @@ namespace fcitx {
                 NGOSEN_WARN("Could not register " << NgoSenDBusObject::Path << " on D-Bus; ngosen-save-log will not work");
                 dbusObject_.reset();
             }
+            gnomeShell_ = std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>());
         }
 #endif
 
@@ -436,6 +438,14 @@ namespace fcitx {
         if (ic != nullptr) {
             action->update(ic);
         }
+    }
+
+    const bool* NgoSenEngine::shellDropsKeys() const {
+#ifdef NGOSEN_HAS_DBUS
+        if (gnomeShell_)
+            return gnomeShell_->dropsKeys();
+#endif
+        return nullptr;
     }
 
     NgoSenEngine::~NgoSenEngine() {

@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.7.3
+Version:        1.7.4
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later AND OFL-1.1
@@ -99,6 +99,9 @@ else
 fi
 
 %changelog
+* Sat Oct 31 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.4-1
+- Send a held Enter in Preedit on GNOME when the key is released (#465), commit the underlined word when a click in an XIM app comes without a reset (#466), and delete through the text in apps GNOME Shell 50.0-50.3 relays when the forward-keys extension is not running (#467).
+
 * Fri Oct 30 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.3-1
 - Recognise Firefox (including the snap), Chrome and LibreOffice by name when they connect through the IBus GTK module on X11, and share the X11 click watcher with the IBus edition (#458).
 

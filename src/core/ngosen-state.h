@@ -23,6 +23,7 @@
 #include "ngosen-surrounding-check.h"
 
 #include <cstddef>
+#include <cstdlib>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -242,7 +243,11 @@ namespace ngosen {
 
         // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
         // surrounding text report the commit waits this long for them.
-        static constexpr uint64_t ForwardWaitUs = 40000;
+        // Experiment: NGOSEN_FORWARD_WAIT_MS overrides the floor, default 15 ms.
+        static inline const uint64_t ForwardWaitUs = [] {
+            const char* v = std::getenv("NGOSEN_FORWARD_WAIT_MS");
+            return static_cast<uint64_t>(v ? std::atoi(v) : 15) * 1000ULL;
+        }();
         // A key sent back arrives at once; a held key repeats tens of milliseconds apart.
         static constexpr uint64_t SentBackWithinUs = 10000;
 

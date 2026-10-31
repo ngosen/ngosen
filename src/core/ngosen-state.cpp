@@ -124,13 +124,20 @@ namespace ngosen {
         return ngosen::ignoresForwardedKeys(host_->field()) && fieldReported_;
     }
 
+    bool TypingState::forwardsEnterAfterCommit() const {
+        return ngosen::forwardsBackspaces(host_->field()) && !dropsForwardedKeys();
+    }
+
     void TypingState::holdEnterAfterCommit(ngosen::KeyPress& keyEvent) {
-        const Field field = host_->field();
-        if (!ngosen::forwardsBackspaces(field) || dropsForwardedKeys())
+        if (!forwardsEnterAfterCommit())
             return;
         keyEvent.accept();
+        holdEnter(true);
+    }
+
+    void TypingState::holdEnter(bool untilRelease) {
         held_enter_pending_ = true;
-        held_enter_release_ = true;
+        held_enter_release_ = untilRelease;
         held_enter_due_us_  = ngosen::monotonicUs() + EnterAfterCommitUs;
         held_enter_timer_   = host_->startTimer(held_enter_due_us_, 1000, [this](ngosen::Timer& timer) {
             if (!held_enter_pending_)
@@ -142,7 +149,7 @@ namespace ngosen {
                 return true;
             }
             held_enter_pending_ = false;
-            forwardTap(ngosen::EditKey::Return);
+            forwardHeldEnter();
             return false;
         });
     }
@@ -152,7 +159,14 @@ namespace ngosen {
             return;
         held_enter_pending_ = false;
         held_enter_timer_.reset();
+        forwardHeldEnter();
+    }
+
+    void TypingState::forwardHeldEnter() {
         forwardTap(ngosen::EditKey::Return);
+        // Keys typed after a replayed Enter waited for it.
+        if (!buffered_keys_.empty() && !is_deleting_.load(std::memory_order_acquire))
+            replayBufferedKeys();
     }
 
     bool TypingState::checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym) {

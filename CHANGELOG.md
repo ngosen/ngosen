@@ -22,6 +22,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - App đã chọn Preedit qua menu `` ` `` không còn chuyển sang Gõ Sen sau khi bấm phím chuyển Anh/Việt hai lần (#469).
 - Ngó Sen cho GNOME, khi bật Gõ Sen: chữ đầu tiên trong ô còn trống của app GTK, Firefox và LibreOffice không còn bị gạch chân mà gõ thẳng vào ô như các chữ sau (#473).
 - Gõ Sen trên GNOME: khi Ngó Sen phải xoá bằng BackSpace, như ở Google Docs và Firefox, dấu vừa gõ không còn lâu lâu bị mất hay chen vào giữa chữ ("chư", "dâuấ"). Ngó Sen nay chờ ít nhất 40 ms thay vì 15 ms sau BackSpace rồi mới gửi chữ mới (#481).
+- Gõ Sen trong Google Docs trên Firefox, GNOME: bấm Enter ngay sau từ vừa thêm dấu (như "nhes" → "nhé") không còn bị mất xuống dòng; Enter nay tới app bằng phím bấm thật sau từ vừa gõ (#487).
 
 ## [1.7.4-1] — 31/10/2026
 

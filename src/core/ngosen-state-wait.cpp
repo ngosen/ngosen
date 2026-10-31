@@ -289,9 +289,12 @@ namespace ngosen {
             checkCursorJump();
             checkRetoneReport();
         }
-        // Edge reports an empty composer as "\n".
-        if (host_->hasFocus() && host_->surrounding().text().find_first_not_of(" \t\n") != std::string::npos)
-            surrSeenTextSinceFocus_ = true;
+        if (host_->hasFocus() && host_->surrounding().isValid()) {
+            if (showsText(host_->surrounding()))
+                surrSeenTextSinceFocus_ = true;
+            else if (keyCount_ == keysAtFocus_)
+                surrSeenEmptySinceFocus_ = true;
+        }
         noteAutofill(host_->surrounding());
         checkSurroundingReport();
         surr_silent_        = false;

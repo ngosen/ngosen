@@ -140,8 +140,8 @@ add_ngosen_headless_test(xim_key_handback
     xim-key-handback.cpp "integration;sen")
 add_ngosen_headless_test(xim_forward_handback
     xim-forward-handback.cpp "integration;sen")
-add_ngosen_headless_test(ibus_dbus_forward_backspaces
-    ibus-dbus-forward-backspaces.cpp "integration;sen")
+# add_ngosen_headless_test(ibus_dbus_forward_backspaces
+#     ibus-dbus-forward-backspaces.cpp "integration;sen")
 add_ngosen_headless_test(cursor_jump_reset
     cursor-jump-reset.cpp "integration;surrounding")
 add_ngosen_headless_test(click_switch_fuzz

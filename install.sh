@@ -10,6 +10,7 @@ set -euo pipefail
 RELEASE_URL=${NGOSEN_RELEASE_URL:-https://github.com/ngosen/ngosen/releases/latest/download}
 IBUS_RELEASE_URL=${NGOSEN_IBUS_RELEASE_URL:-https://github.com/ngosen/ibus-ngosen/releases/latest/download}
 SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/TU-DUNG.md"
+OSTREE_ISSUE="https://github.com/ngosen/ngosen/issues/492"
 
 # fcitx5 or ibus; the IBus edition is for GNOME and has its own releases.
 edition=fcitx5
@@ -68,6 +69,19 @@ ibus_unsupported() {
     die "chưa có Ngó Sen cho GNOME (bản IBus) trên $1. Bỏ --ibus để cài bản fcitx5."
 }
 
+# Image-based Fedora (Silverblue, Kinoite, Bazzite) layers packages with rpm-ostree; dnf cannot install.
+is_ostree() { [ -e /run/ostree-booted ]; }
+
+ostree_unsupported() {
+    say "Máy này là Fedora dạng ảnh hệ thống (Silverblue, Kinoite, Bazzite...), không cài bằng dnf được."
+    say "install.sh chưa hỗ trợ loại máy này. Chạy tay các lệnh sau:"
+    say "  $1"
+    say "  systemctl reboot"
+    say "$2"
+    say "Muốn install.sh hỗ trợ chính thức? Bấm 👍 hoặc kể máy bạn đang dùng ở: $OSTREE_ISSUE"
+    exit 1
+}
+
 x86_64_only() {
     [ "$2" = x86_64 ] || unsupported "$1 trên máy $2"
 }
@@ -100,6 +114,7 @@ detect_distribution() {
             *) unsupported "${id} ${version:-không rõ phiên bản}" ;;
         esac
         manager=dnf
+        is_ostree && manager=rpm-ostree
         pattern="${package_name}-[0-9][^ /]*\\.fc${version}\\.${machine}\\.rpm"
         return
     fi
@@ -1252,6 +1267,9 @@ pick_uninstall_edition() {
 
 # Sets the caller's remove array to the command that removes package $1.
 set_remove_command() {
+    if is_ostree; then
+        ostree_unsupported "sudo rpm-ostree uninstall $1" "Cấu hình trong ~/.config/fcitx5 được giữ."
+    fi
     if command -v apt-get >/dev/null 2>&1; then
         remove=(apt-get remove -y "$1")
     elif command -v dnf >/dev/null 2>&1; then
@@ -1377,6 +1395,13 @@ main() {
     case "$file" in
         *[!A-Za-z0-9._+~-]* | '') die "tên tệp lạ trong SHA256SUMS: $file" ;;
     esac
+
+    if [ "$manager" = rpm-ostree ]; then
+        if [ "$edition" = ibus ]; then
+            ostree_unsupported "sudo rpm-ostree install $RELEASE_URL/$file" "Sau khi khởi động lại, thêm Ngó Sen vào Settings → Keyboard → Input Sources."
+        fi
+        ostree_unsupported "sudo rpm-ostree install $RELEASE_URL/$file" "Sau khi khởi động lại, mở 'Fcitx5 Configuration' và thêm Ngó Sen."
+    fi
 
     if [ "$edition" = ibus ]; then
         say "Ngó Sen cho GNOME sẽ được cài bằng $manager từ gói:"

@@ -12,20 +12,28 @@
 
 namespace fcitx {
 
-    std::string menuIconName(const std::string& themeName, const std::string& themed, const std::string& own) {
-        const IconTheme theme(themeName);
+    namespace {
+
+        std::string pickIcon(const IconTheme& theme, const std::string& themed, const std::string& own) {
 #if NGOSEN_USE_MODERN_FCITX_API
-        const std::filesystem::path found = theme.findIconPath(themed, 16);
+            const std::filesystem::path found = theme.findIconPath(themed, 16);
 #else
-        const std::filesystem::path found = theme.findIcon(themed, 16);
+            const std::filesystem::path found = theme.findIcon(themed, 16);
 #endif
-        // The lookup drops trailing "-word" parts when nothing matches, so "format-text" would count.
-        return found.stem() == themed ? themed : own;
+            // The lookup drops trailing "-word" parts when nothing matches, so "format-text" would count.
+            return found.stem() == themed ? themed : own;
+        }
+
+    } // namespace
+
+    std::string menuIconName(const std::string& themeName, const std::string& themed, const std::string& own) {
+        return pickIcon(IconTheme(themeName), themed, own);
     }
 
     std::string menuIconName(const std::string& themed, const std::string& own) {
-        static const std::string themeName = IconTheme::defaultIconThemeName();
-        return menuIconName(themeName, themed, own);
+        // Loading a theme reads every index.theme it inherits, so do it once.
+        static const IconTheme theme(IconTheme::defaultIconThemeName());
+        return pickIcon(theme, themed, own);
     }
 
 } // namespace fcitx

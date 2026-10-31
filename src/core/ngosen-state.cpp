@@ -252,6 +252,8 @@ namespace ngosen {
                 ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
                 oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
             } else {
+                if (expandMacroBeforeEnter(keyEvent))
+                    return;
                 hasHistory_ = false;
                 ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
@@ -958,8 +960,9 @@ namespace ngosen {
         if (is_deleting_.load(std::memory_order_acquire)) {
             return;
         }
-        tracking_modifier_tap_ = false;
-        lock_word_pending_     = false;
+        tracking_modifier_tap_   = false;
+        lock_word_pending_       = false;
+        enter_after_replacement_ = false;
         oldPreBuffer_.clear();
         lastWord_.clear();
         hasHistory_ = false;

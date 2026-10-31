@@ -124,8 +124,10 @@ namespace ngosen::test {
     }
 
     void FakeApp::type(uint32_t sym) {
-        const auto time = static_cast<uint32_t>(monotonicUs() / 1000);
-        FakeKey    down(sym, false, 0, time);
+        const auto     time  = static_cast<uint32_t>(monotonicUs() / 1000);
+        const uint32_t state = (sym & WithShift) != 0U ? modifier::Shift : 0U;
+        sym &= ~WithShift;
+        FakeKey down(sym, false, state, time);
         state_->keyEvent(down);
         if (!down.accepted() && quirks_.keepsLastEditPerTurn)
             endTurn();
@@ -143,7 +145,7 @@ namespace ngosen::test {
                 later(quirks_.lagMs, [this, text] { insert(utf8::decode(text), true); });
         }
 
-        FakeKey up(sym, true);
+        FakeKey up(sym, true, state);
         state_->keyEvent(up);
     }
 

@@ -829,7 +829,7 @@ namespace ngosen {
     }
 
     bool TypingState::replaysAsEnterKey(uint32_t sym, uint32_t state) const {
-        if (sym != ngosen::key::Return && sym != ngosen::key::KP_Enter)
+        if (!ngosen::key::isEnter(sym))
             return false;
         // A forwarded tap carries no modifiers, and Shift+Enter means a line break, not send, in chat apps.
         if ((state & (ngosen::modifier::Shift | ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) != 0U)
@@ -883,9 +883,11 @@ namespace ngosen {
             std::string addedPart;
             ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitF.get(), deletedPart, addedPart);
             const bool replacing = !deletedPart.empty();
+            // The engine ends the word on Enter without taking it, so the Enter still has to go out.
+            const std::string owed = !processed && !enterKey && ngosen::key::isEnter(sym) ? keyUtf8 : std::string();
             if (replacing) {
                 enter_after_replacement_ = enter_after_replacement_ || enterKey;
-                replaceDuringReplay(keys, i, out, deletedPart, addedPart);
+                replaceDuringReplay(keys, i, out, deletedPart, addedPart + owed);
             } else {
                 out += addedPart;
             }
@@ -894,6 +896,8 @@ namespace ngosen {
             oldPreBuffer_.clear();
             if (enterKey && !replacing)
                 return holdReplayedEnter(keys, i, out);
+            if (!replacing)
+                out += owed;
             return replacing;
         }
 

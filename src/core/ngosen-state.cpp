@@ -104,7 +104,7 @@ namespace ngosen {
                 // A key the engine leaves to the app (Enter, Ctrl+A, Tab) acts after the word, so it is not the break to take back.
                 if (engineTook && !keyEvent.hasModifier() && rebuildable(pulled.get()))
                     lastWord_ = pulled.get();
-                if ((currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) && !engineTook && !keyEvent.hasModifier())
+                if (ngosen::key::isEnter(currentSym) && !engineTook && !keyEvent.hasModifier())
                     holdEnterAfterCommit(keyEvent);
             }
         }
@@ -550,7 +550,7 @@ namespace ngosen {
     void TypingState::handleKey(ngosen::KeyPress& keyEvent) {
         chooseWordMode(keyEvent);
         recordKey(keyEvent);
-        if (keyEvent.sym() == ngosen::key::Return || keyEvent.sym() == ngosen::key::KP_Enter) {
+        if (ngosen::key::isEnter(keyEvent.sym())) {
             const bool heldRelease = keyEvent.isRelease() && held_enter_release_;
             held_enter_release_    = false;
             if (heldRelease) {
@@ -810,8 +810,11 @@ namespace ngosen {
                 std::this_thread::sleep_for(std::chrono::microseconds(surr_wait_deliver_at_ - nowUs));
             }
             // A dbus client gets the commit after this key's reply and may type a key let through
-            // first, so a typing key goes out inside the commit.
-            if (host_->field().frontend == "dbus" && typesText(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            // first, so a typing key goes out inside the commit and an Enter after it.
+            const bool shiftEnter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & ngosen::modifier::Shift) != 0U &&
+                (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
+            if (host_->field().frontend == "dbus" && (typesText(keyEvent, currentSym) || replaysAsEnterKey(currentSym, keyEvent.states()) || shiftEnter) &&
+                buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
                 keyEvent.accept();
                 finishReplacement("key arrived", false);

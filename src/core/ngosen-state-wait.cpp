@@ -237,11 +237,15 @@ namespace ngosen {
         return false;
     }
 
+    uint64_t TypingState::forwardWaitUs() const {
+        return ngosen::surroundingTextLags(host_->field()) ? ShellForwardWaitUs : ForwardWaitUs;
+    }
+
     bool TypingState::deferLaggingCommit(const char* reason, uint64_t settleUs) {
         if (!ngosen::surroundingTextLags(host_->field()))
             return false;
         // A report from before the forwarded keys were applied can look like the finished deletion.
-        const uint64_t floorUs = surr_wait_started_at_ + ForwardWaitUs;
+        const uint64_t floorUs = surr_wait_started_at_ + forwardWaitUs();
         const uint64_t nowUs   = ngosen::monotonicUs();
         if (nowUs >= floorUs && host_->hasFocus() && !waitsForRedraw())
             return false;

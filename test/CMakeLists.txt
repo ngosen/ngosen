@@ -232,6 +232,12 @@ set_tests_properties(gnome_panel_theme PROPERTIES
     TIMEOUT 20
 )
 
+add_executable(menu_icon menu-icon.cpp ${PROJECT_SOURCE_DIR}/src/ngosen-menu-icon.cpp)
+target_include_directories(menu_icon PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(menu_icon PRIVATE Fcitx5::Core Fcitx5::Utils)
+add_test(NAME menu_icon COMMAND menu_icon)
+set_tests_properties(menu_icon PROPERTIES LABELS "unit;icon" TIMEOUT 20)
+
 # Compares the typing logic's own UTF-8 helpers with the fcitx5 ones they replace.
 add_executable(utf8_matches_fcitx utf8-matches-fcitx.cpp ${PROJECT_SOURCE_DIR}/src/core/ngosen-utf8.cpp)
 target_include_directories(utf8_matches_fcitx PRIVATE ${PROJECT_SOURCE_DIR}/src/core)

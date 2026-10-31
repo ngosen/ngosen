@@ -520,7 +520,11 @@ namespace ngosen {
         const Field              field       = host_->field();
         const Surrounding        surrounding = host_->surrounding();
         std::vector<std::string> fails;
-        if (!surrSeenTextSinceFocus_)
+        // An empty field has no text to show, so its empty report counts for the first key typed there.
+        // Some apps report an empty copy whatever they hold; their later words still wait for text.
+        const bool firstKey      = keyCount_ == keysAtFocus_ + 1;
+        const bool reportedEmpty = firstKey && surrSeenEmptySinceFocus_ && surrounding.isValid() && surrounding.text().find_first_not_of(" \t\n") == std::string::npos;
+        if (!surrSeenTextSinceFocus_ && !reportedEmpty)
             fails.emplace_back("no text since focus");
         if (!surrounding.isValid())
             fails.emplace_back("no copy");

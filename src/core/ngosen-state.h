@@ -507,11 +507,13 @@ namespace ngosen {
         std::string                     lastPath_;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
-        uint64_t                        keyCount_               = 0;     ///< key presses other than modifiers
-        int                             surrUnanswered_         = 0;     ///< checks in a row left unanswered in this field
-        bool                            surrAnswered_           = false; ///< a check in this field came out correct
-        bool                            surrSeenTextSinceFocus_ = false; ///< the field reported text since it got focus
-        uint64_t                        commitCount_            = 0;
+        uint64_t                        keyCount_                = 0;     ///< key presses other than modifiers
+        int                             surrUnanswered_          = 0;     ///< checks in a row left unanswered in this field
+        bool                            surrAnswered_            = false; ///< a check in this field came out correct
+        bool                            surrSeenTextSinceFocus_  = false; ///< the field reported text since it got focus
+        bool                            surrSeenEmptySinceFocus_ = false; ///< the field reported itself empty before any key since it got focus
+        uint64_t                        keysAtFocus_             = 0;
+        uint64_t                        commitCount_             = 0;
         Surrounding                     lastReport_;
         bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
         std::unique_ptr<ngosen::Timer>  replay_timer_;

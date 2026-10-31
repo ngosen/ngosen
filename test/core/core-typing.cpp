@@ -1629,6 +1629,39 @@ namespace {
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
     }
 
+    // An empty field reports an empty copy when it gets focus; that is all it can show before the first word.
+    void testEmptyFieldFirstWord() {
+        Field field           = surroundingOnlyField();
+        field.preeditFallback = true;
+        for (const auto& [quirks, want] : {std::pair{ngosen::test::AppQuirks{.dropsForwardedKeys = true}, "việt việt "},
+                                           std::pair{ngosen::test::AppQuirks{.dropsForwardedKeys = true, .reportsEmptyText = true}, ""}}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            ngosen::test::captureLog(true);
+            state.surroundingUpdated();
+            for (char c : std::string("vieetj vieetj ")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(300);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            if (!quirks.reportsEmptyText) {
+                check(app->text() == want && app->sent().preedits == 0 && countHaving(lines, "Type the word in the preedit") == 0,
+                      "empty field: the first word is typed in the field", app->text() + " " + join(lines));
+            } else {
+                check(countHaving(lines, "Type the word in the preedit: no text since focus") == 1,
+                      "empty field: a field that only ever reports empty types its next word in the preedit", app->text() + " " + join(lines));
+            }
+        }
+    }
+
     // IBus names a client "<toolkit>-im:<program>", and a snap's program repeats the snap name.
     void testIbusClientNames() {
         auto ibus = [](const std::string& program, bool surroundingText = false) { return makeField("ibus", surroundingText, program); };
@@ -1845,6 +1878,7 @@ int main() {
     testPathCheck();
     testSurroundingCheck();
     testSurroundingFallback();
+    testEmptyFieldFirstWord();
     testSlowReport();
     testStaleCopyBeforeReplacement();
     testCursorBounceBack();

@@ -7,6 +7,7 @@
  *
  */
 // Sending backspaces and waiting for the app to apply them.
+#include <cstdlib>
 #include "ngosen-state.h"
 #include "ngosen-app-quirks.h"
 #include "ngosen-clock.h"
@@ -237,11 +238,17 @@ namespace ngosen {
         return false;
     }
 
+    // Probe only (not for merge): NGOSEN_PROBE_FLOOR_MS / NGOSEN_PROBE_SETTLE_MS override the waits.
+    static uint64_t probeEnvUs(const char* name, uint64_t fallbackUs) {
+        const char* v = std::getenv(name);
+        return v ? std::strtoull(v, nullptr, 10) * 1000ULL : fallbackUs;
+    }
+
     bool TypingState::deferLaggingCommit(const char* reason, uint64_t settleUs) {
         if (!ngosen::surroundingTextLags(host_->field()))
             return false;
         // A report from before the forwarded keys were applied can look like the finished deletion.
-        const uint64_t floorUs = surr_wait_started_at_ + ForwardWaitUs;
+        const uint64_t floorUs = surr_wait_started_at_ + probeEnvUs("NGOSEN_PROBE_FLOOR_MS", ForwardWaitUs);
         const uint64_t nowUs   = ngosen::monotonicUs();
         if (nowUs >= floorUs && host_->hasFocus() && !waitsForRedraw())
             return false;

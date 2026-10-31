@@ -7,6 +7,7 @@
  *
  */
 // TypingState: replacing the typed word in the app, by backspaces or by selecting over it.
+#include <cstdlib>
 #include "ngosen-state.h"
 
 #include "ngosen-app-quirks.h"
@@ -229,6 +230,8 @@ namespace ngosen {
             // A just-emptied composer is still reloading its placeholder, so the first word waits longer.
             settleMs = std::max(settleMs, engine_->options().waitSurroundingSettleFirstWordMs);
         }
+        if (std::getenv("NGOSEN_PROBE_SETTLE_MS") && ngosen::surroundingTextLags(host_->field()))
+            settleMs = std::atoi(std::getenv("NGOSEN_PROBE_SETTLE_MS"));
         // A composer drops a commit that lands right after the deletion, also under GNOME (#362).
         if (deferLaggingCommit(reason, static_cast<uint64_t>(settleMs) * 1000ULL))
             return;
@@ -768,7 +771,7 @@ namespace ngosen {
         // XIM, IBus and D-Bus clients queue forwarded keys, and on wayland_v2 they travel apart from the
         // commit, so the commit can overtake them.
         if (host_->field().frontend != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
-            deferTimedCommit(surr_wait_started_at_ + ForwardWaitUs);
+            deferTimedCommit(surr_wait_started_at_ + (std::getenv("NGOSEN_PROBE_FLOOR_MS") ? std::strtoull(std::getenv("NGOSEN_PROBE_FLOOR_MS"), nullptr, 10) * 1000ULL : ForwardWaitUs));
         }
     }
 

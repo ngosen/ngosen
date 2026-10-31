@@ -1688,6 +1688,10 @@ namespace {
         lines = logLinesWhileTyping(makeField("fcitx4", true), {}, "vieetj nam ", "Surrounding path would", &run);
         check(lines.size() == 2 && countHaving(lines, "fails: none") == 2 && run.sent.surroundingDeletes == 0, "check: one observation line per replacement on an fcitx4 field",
               run.text + " " + join(lines));
+
+        // A message written as `cond ? "a" : "b"` must reach the log as text, not as the condition's value.
+        lines = logLinesWhileTyping(makeField("fcitx4", true), {.reportsEmptyText = true}, "vieetj ", "Surr wait skip");
+        check(countHaving(lines, "Surr wait skip: empty snapshot") == 2, "log: a ternary message keeps its text", join(lines));
     }
 
     // An address bar that sets no Url flag still shows itself by filling in text after the cursor.

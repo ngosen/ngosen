@@ -377,6 +377,25 @@ namespace {
               std::to_string(host->forwarded().size()) + " forwarded, " + std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
     }
 
+    // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
+    void testFirefoxKeepsBackspaces() {
+        for (const char* frontend : {"wayland", "wayland_v2", "dbus"}) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop      loop;
+            FakeResources resources;
+            Field         field       = makeField(frontend, true, "firefox");
+            field.keyEventOrderFix    = std::string(frontend) == "dbus";
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            typeTie(state, *host, loop, true);
+            press(state, static_cast<uint32_t>('e'));
+            loop.pump(3);
+            check(host->deletes().empty() && host->forwarded().size() == 2, std::string("firefox ") + frontend + ": backspaces, no surrounding deletion",
+                  std::to_string(host->deletes().size()) + " deletes, " + std::to_string(host->forwarded().size()) + " forwarded");
+        }
+    }
+
     // Sway (wlroots) reports the text and then a done event; a commit sent before the done carries a
     // stale serial and is dropped.
     void testCommitAfterTheReport() {
@@ -960,7 +979,7 @@ namespace {
         const std::string log = resources.recorder().dump();
         check(has(log, "\tfield\tfrontend=wayland program=firefox (org.mozilla.firefox) surrounding=1 preedit=1 mode=Sen\n"), "recorder: notes the field and mode", log);
         check(has(log, "\tkey\tdown 0x0065 e\n"), "recorder: notes the key", log);
-        check(has(log, "\tdelete\toffset=-1 size=1\n"), "recorder: notes the surrounding deletion", log);
+        check(has(log, "\tforward\tBackSpace down\n"), "recorder: notes the forwarded backspace", log);
         check(has(log, "\tapp\t\"ti|\" cursor=2 anchor=2 length=2\n"), "recorder: notes the app's report", log);
         check(has(log, "\tcommit\t\"ê\"\n"), "recorder: notes the commit", log);
     }
@@ -1919,6 +1938,7 @@ int main() {
     testSenForwards("xim", false);
     for (const char* frontend : {"wayland", "wayland_v2", "dbus"})
         testSenDeletesReportedWord(frontend);
+    testFirefoxKeepsBackspaces();
     testForwardedKeysNewerThanTyped();
     testKeyDuringReplacement();
     testCommitAfterTheReport();

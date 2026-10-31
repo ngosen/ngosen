@@ -133,8 +133,15 @@ namespace ngosen {
     }
 
     bool deletesThroughSurroundingFirst(const Field& field) {
-        // fcitx4 and XIM have no surrounding path worth trusting yet; see the plan's second wave.
+        // XIM has no surrounding text; fcitx4 is the GTK module in old snaps, which nobody has measured.
         return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2" || field.frontend == "dbus";
+    }
+
+    bool reportsSurroundingEditsLate(const Field& field) {
+        // Firefox may report our deletion and commit only after the next key, and the replacement that
+        // finds the copy stale then mixes both paths. Nothing it reports shows this before it happens.
+        // Over IBus the wait for each key's report covers it.
+        return field.frontend != "ibus" && hidesAddressBarFlag(field);
     }
 
     bool countsDeletionOnCopy(const Field& field) {

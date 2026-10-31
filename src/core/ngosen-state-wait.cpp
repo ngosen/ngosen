@@ -413,7 +413,9 @@ namespace ngosen {
     // The report of a surrounding deletion alone: the same text with only the deleted characters gone
     // before the cursor. The commit sent with the deletion is still to come.
     bool TypingState::showsOwnDeletion(const Surrounding& s) const {
-        if (unreportedDeleteLength_ == 0 || s.cursor() != s.anchor() || s.cursor() + unreportedDeleteLength_ != lastSurroundingCursor_ || textAfterCursorChanged(s))
+        // A key since then may be the user's own BackSpace, which reports the same shape.
+        if (unreportedDeleteLength_ == 0 || keyCount_ != unreportedDeleteKey_ || s.cursor() != s.anchor() || s.cursor() + unreportedDeleteLength_ != lastSurroundingCursor_ ||
+            textAfterCursorChanged(s))
             return false;
         const std::u32string before = ngosen::utf8::decode(lastSurroundingText_);
         const std::u32string now    = ngosen::utf8::decode(s.text());

@@ -165,7 +165,7 @@ namespace ngosen {
     // The wait returns to the event loop, so focus can move while a commit is pending. deactivate()
     // clears is_deleting_ and a later timer would drop the text, so commit now.
     void TypingState::flushPendingReplacement() {
-        finishEditHold(false); // the keys held back belong to the field we are leaving
+        // Held keys stay too: focus bouncing after the edit comes back, and the keys land then.
         if (!surr_wait_pending_) {
             return;
         }
@@ -734,20 +734,24 @@ namespace ngosen {
     }
 
     // Keys already buffered stay for the release, so the replayed text cannot share the edit's turn.
+    // A replay from the timer can start the next hold, so the timer is rearmed rather than replaced.
     void TypingState::holdKeysUntilEditShown() {
-        edit_hold_       = true;
-        edit_hold_timer_ = host_->startTimer(monotonicUs() + EditHoldUs, 1000, [this](Timer&) {
-            finishEditHold(true);
-            return false;
+        edit_hold_           = true;
+        const uint64_t until = monotonicUs() + EditHoldUs;
+        if (edit_hold_timer_) {
+            edit_hold_timer_->rearm(until);
+            return;
+        }
+        edit_hold_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+            finishEditHold();
+            return edit_hold_;
         });
     }
 
-    void TypingState::finishEditHold(bool fromTimer) {
+    void TypingState::finishEditHold() {
         if (!edit_hold_)
             return;
         edit_hold_ = false;
-        if (!fromTimer)
-            edit_hold_timer_.reset(); // never reset a timer from inside its own callback
         if (!is_deleting_.load(std::memory_order_acquire))
             replayBufferedKeys();
     }

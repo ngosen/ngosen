@@ -316,7 +316,7 @@ namespace ngosen {
             onOvertypeSurroundingUpdated();
         // The check closes once the app shows the edit, which it can only do after mutter sent it.
         if (edit_hold_ && !surrCheck_)
-            finishEditHold(false);
+            finishEditHold();
     }
 
     constexpr uint64_t KeyReportWaitUs = 20000;

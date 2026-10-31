@@ -1820,15 +1820,28 @@ namespace {
     // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first
     // replacement; sent at once, the app would keep only the second.
     void testReplacementsInOneTurn() {
-        const Field                   field = surroundingOnlyField();
-        const ngosen::test::AppQuirks shell{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true};
-        const auto                    keys = keysOf("nguowfi ddoofng ");
-        std::vector<int>              gaps(keys.size(), 100);
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks shell{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true};
+        const auto              keys = keysOf("nguowfi ddoofng ");
+        std::vector<int>        gaps(keys.size(), 100);
         gaps[4]  = 0; // w and f
         gaps[11] = 0; // the second o and f
         FakeResources resources;
-        const auto    run = ngosen::test::typeInAppTraced(resources, field, shell, keys, gaps);
+        auto          run = ngosen::test::typeInAppTraced(resources, field, shell, keys, gaps);
         check(run.text == "người đồng ", "one turn: a replacement waits until the app shows the one before", run.text);
+        // With no report in time the hold's own timer replays the held f, whose replacement holds the
+        // keys after it again. The copy is stale by then, so only the timer's handling is checked here.
+        shell.reportDelayMs = 30;
+        FakeResources fresh;
+        const int     destroyedBefore = ngosen::test::timersDestroyedInCallback;
+        ngosen::test::captureLog(true);
+        ngosen::test::typeInAppTraced(fresh, field, shell, keys, gaps);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(lines, "Perform replacement: ơ -> ờ") == 1, "one turn: the hold's timer replays a held tone key", join(lines));
+        check(ngosen::test::timersDestroyedInCallback == destroyedBefore, "one turn: the hold's timer is not destroyed from its own callback",
+              std::to_string(ngosen::test::timersDestroyedInCallback - destroyedBefore));
     }
 
     // An empty field reports an empty copy when it gets focus; that is all it can show before the first word.

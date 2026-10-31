@@ -489,7 +489,8 @@ namespace ngosen {
 
         // Keys typed before the app shows a surrounding edit wait, so the next edit cannot share its turn.
         void                           holdKeysUntilEditShown();
-        void                           finishEditHold(bool fromTimer);
+        void                           finishEditHold();
+        bool                           holdKeyDuringEditHold(ngosen::KeyPress& keyEvent, uint32_t currentSym);
         std::unique_ptr<ngosen::Timer> edit_hold_timer_;
         bool                           edit_hold_ = false;
         static constexpr uint64_t      EditHoldUs = 20000;

@@ -124,8 +124,9 @@ namespace ngosen {
         return field.frontend == "ibus";
     }
 
+    // Only GNOME Shell sends edits through mutter; nothing else the field reports tells it apart.
     bool keepsLastEditPerTurn(const Field& field) {
-        return field.frontend == "ibus";
+        return field.frontend == "ibus" && appName(field) == "gnome-shell";
     }
 
     bool dropsCommitsWithoutFocus(const Field& field) {

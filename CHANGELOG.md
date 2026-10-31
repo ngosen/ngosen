@@ -17,6 +17,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- `install.sh` trên Fedora Silverblue, Kinoite, Bazzite: thay vì hỏng giữa chừng ở bước dnf, nay in sẵn lệnh `rpm-ostree` để cài tay, kèm link issue #492 cho ai muốn được hỗ trợ chính thức (#494).
 - `install.sh` nay cài được trên Ultramarine Linux và các bản dựng từ Fedora 43, 44 khác, thay vì báo "chưa có gói dựng sẵn" (#491).
 - Cửa sổ cài đặt, trang Giao diện: ba mục menu Bảng mã, Gõ tắt chữ hoa và Tự viết hoa nay có icon trên GNOME, Ubuntu và các theme không có sẵn icon đó, cả trong cửa sổ cài đặt lẫn menu ở khay hệ thống (#484, #486).
 - Preedit và Gõ Sen: bấm Enter ngay sau từ gõ tắt nay bung từ trước khi Enter tới app, ví dụ gõ "dc" rồi Enter trong ô chat sẽ gửi "được" (#476).

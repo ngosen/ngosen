@@ -61,6 +61,7 @@ namespace ngosen {
             return true;
         }
         enter_after_replacement_ = true;
+        enter_after_key_         = ngosen::EditKey::Return;
         enter_key_live_          = true;
         performReplacement(deletedPart, addedPart);
         enter_key_live_ = false;
@@ -75,7 +76,8 @@ namespace ngosen {
     void TypingState::sendEnterAfterReplacement() {
         enter_after_replacement_ = false;
         if (!enter_key_live_)
-            forwardTap(ngosen::EditKey::Return);
+            forwardTap(enter_after_key_);
+        enter_after_key_ = ngosen::EditKey::Return;
     }
 
     void TypingState::handleOffModeMacro(ngosen::KeyPress& keyEvent, uint32_t currentSym) {

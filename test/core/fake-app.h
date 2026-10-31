@@ -209,6 +209,9 @@ namespace ngosen::test {
 
     Typed                    typeInAppTraced(FakeResources& resources, const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs);
 
+    // Or this into a key for typeInApp to press it with Shift held.
+    inline constexpr uint32_t WithShift = 1U << 30;
+
     // The app's text after typing the keys in Gõ Sen mode, waiting gapsMs[i] after key i.
     std::string typeInApp(const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, int* slowestCommitMs = nullptr);
     // The same with the given settings and macro table.

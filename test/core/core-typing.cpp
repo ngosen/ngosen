@@ -540,6 +540,12 @@ namespace {
             macroGaps[i] = 1;
         const std::string expanded = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, macro, macroGaps);
         check(expanded == "nhé được\na", "Enter during replacement: macro before it", expanded);
+
+        // A forwarded tap would lose the Shift, so the line break stays in the commit.
+        const std::vector<uint32_t> shifted{'n', 'h', 'e', 's', ngosen::key::Return | ngosen::test::WithShift, 'a'};
+        std::string                 lineBreak = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, shifted, gaps);
+        std::replace(lineBreak.begin(), lineBreak.end(), '\r', '\n');
+        check(lineBreak == "nhé\na", "Enter during replacement: Shift+Enter", lineBreak);
     }
 
     // With Capitalize Macro on, an abbreviation typed with a capital first letter capitalizes the

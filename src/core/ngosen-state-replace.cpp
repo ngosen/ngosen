@@ -864,6 +864,9 @@ namespace ngosen {
             oldPreBuffer_.clear();
             if (enterKey && !replacing)
                 return holdReplayedEnter(keys, i, out);
+            // The engine ends the word on Enter without taking it, so the Enter still has to go out.
+            if (!processed && !replacing && (sym == ngosen::key::Return || sym == ngosen::key::KP_Enter))
+                out += keyUtf8;
             return replacing;
         }
 

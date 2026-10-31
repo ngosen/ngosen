@@ -93,16 +93,18 @@ detect_distribution() {
     # shellcheck disable=SC1091
     version=$(. /etc/os-release && printf '%s' "${VERSION_ID:-}")
 
+    # Fedora remixes (Ultramarine, Nobara) have an ID of their own but keep Fedora's release number.
+    if [ "$id" = fedora ] || [[ " $like " == *" fedora "* ]]; then
+        case "$version" in
+            43 | 44) ;;
+            *) unsupported "${id} ${version:-không rõ phiên bản}" ;;
+        esac
+        manager=dnf
+        pattern="${package_name}-[0-9][^ /]*\\.fc${version}\\.${machine}\\.rpm"
+        return
+    fi
+
     case "$id" in
-        fedora)
-            case "$version" in
-                43 | 44) ;;
-                *) unsupported "Fedora ${version:-không rõ phiên bản}" ;;
-            esac
-            manager=dnf
-            pattern="${package_name}-[0-9][^ /]*\\.fc${version}\\.${machine}\\.rpm"
-            return
-            ;;
         opensuse-tumbleweed)
             x86_64_only "openSUSE" "$machine"
             manager=zypper

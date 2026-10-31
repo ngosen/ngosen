@@ -396,6 +396,12 @@ namespace ngosen {
         bool                           held_enter_release_ = false;
         uint64_t                       held_enter_due_us_  = 0;
 
+        // Enter after a macro expands it, and reaches the app once the expansion is in the field.
+        bool expandMacroBeforeEnter(ngosen::KeyPress& keyEvent);
+        void sendEnterAfterReplacement();
+        bool enter_after_replacement_ = false;
+        bool enter_key_live_          = false;
+
         /**
          * @brief Updates emoji page status in candidate list.
          */

@@ -760,6 +760,10 @@ namespace ngosen {
         // last commit_string before it, so back-to-back commits lose all but the last ("đ" then "i"
         // shows "i"). Send the replacement and the replayed keys as one commit.
         std::string out = std::move(committed);
+        if (enter_after_replacement_) {
+            commitReplayed(out);
+            sendEnterAfterReplacement();
+        }
         NGOSEN_INFO("Starting replay buffered keys");
         replaying_       = true;
         const auto guard = std::unique_ptr<bool, void (*)(bool*)>(&replaying_, [](bool* flag) { *flag = false; });

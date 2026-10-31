@@ -252,6 +252,8 @@ namespace ngosen {
                 ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
                 oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
             } else {
+                if (expandMacroBeforeEnter(keyEvent))
+                    return;
                 hasHistory_ = false;
                 ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
@@ -688,6 +690,9 @@ namespace ngosen {
 
         // A key that beats the deferred commit must not land before it.
         flushDeferredCommit();
+        // Nothing is being replaced any more, so an Enter still owed belongs to a dropped replacement.
+        if (!is_deleting_.load(std::memory_order_acquire) && !surr_wait_pending_ && !overtype_pending_ && !key_report_pending_)
+            enter_after_replacement_ = false;
         if (g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire)) {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
@@ -958,8 +963,9 @@ namespace ngosen {
         if (is_deleting_.load(std::memory_order_acquire)) {
             return;
         }
-        tracking_modifier_tap_ = false;
-        lock_word_pending_     = false;
+        tracking_modifier_tap_   = false;
+        lock_word_pending_       = false;
+        enter_after_replacement_ = false;
         oldPreBuffer_.clear();
         lastWord_.clear();
         hasHistory_ = false;

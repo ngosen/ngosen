@@ -401,6 +401,72 @@ namespace {
         check(text == "em không a", "macro keeps its space", text);
     }
 
+    // A macro typed right before Enter expands, and the Enter reaches the app after the expansion.
+    void testMacroBeforeEnter() {
+        struct Case {
+            const char* name;
+            Field       field;
+            int         lagMs;
+        };
+        const Case cases[] = {
+            {"sen, field reports text", makeField("wayland", true), 0},
+            {"sen, field reports nothing", makeField("wayland", false), 0},
+            {"sen, slow field", makeField("wayland", true), 5},
+        };
+        for (const auto& c : cases) {
+            FakeResources resources;
+            resources.setMacros({{"dc", "được"}});
+            ngosen::test::AppQuirks quirks;
+            quirks.showsEnter = true;
+            quirks.lagMs      = c.lagMs;
+            const std::vector<uint32_t> keys{'d', 'c', ngosen::key::Return, 'a'};
+            const std::string           text = ngosen::test::typeInApp(resources, c.field, quirks, keys, std::vector<int>(keys.size(), 100));
+            check(text == "được\na", std::string("macro before Enter: ") + c.name, text);
+        }
+        FakeResources resources;
+        resources.setMacros({{"dc", "được"}});
+        ngosen::test::AppQuirks quirks;
+        quirks.showsEnter = true;
+        const std::vector<uint32_t> word{'t', 'i', 'e', 'e', 'n', 'g', 's', ngosen::key::Return};
+        const std::string           text = ngosen::test::typeInApp(resources, makeField("wayland", true), quirks, word, std::vector<int>(word.size(), 100));
+        check(text == "tiếng\n", "macro before Enter: a plain word stays", text);
+
+        Field shell       = makeField("ibus", true);
+        shell.sendsNoKeys = true;
+        FakeResources shellResources;
+        shellResources.setMacros({{"dc", "được"}});
+        ngosen::test::AppQuirks lossy;
+        lossy.showsEnter         = true;
+        lossy.dropsForwardedKeys = true;
+        const std::vector<uint32_t> keys{'d', 'c', ngosen::key::Return, 'a'};
+        const std::string           kept = ngosen::test::typeInApp(shellResources, shell, lossy, keys, std::vector<int>(keys.size(), 100));
+        check(kept == "được\na", "macro before Enter: a field that loses sent keys still gets its Enter", kept);
+
+        FakeResources stuckResources;
+        stuckResources.setMacros({{"dc", "được"}});
+        ngosen::test::AppQuirks shows;
+        shows.showsEnter               = true;
+        const std::string cannotDelete = ngosen::test::typeInApp(stuckResources, makeField("dbus", false), shows, keys, std::vector<int>(keys.size(), 100));
+        check(cannotDelete == "dc\na", "macro before Enter: a field nothing can delete in keeps the word and its Enter", cannotDelete);
+
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop      loop;
+        FakeResources preeditResources;
+        preeditResources.setMacros({{"dc", "được"}});
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&preeditResources, std::move(owned));
+        press(state, 'd');
+        press(state, 'c');
+        press(state, ngosen::key::Return);
+        loop.pump(100);
+        std::string forwarded;
+        for (const auto& key : host->forwarded())
+            forwarded += std::string(key.key == ngosen::EditKey::Return ? "Return" : "other") + (key.release ? " up;" : " down;");
+        check(join(host->commits()) == "['được']", "macro before Enter: preedit commits the expansion", join(host->commits()));
+        check(forwarded == "Return down;Return up;", "macro before Enter: preedit sends the Enter after it", forwarded);
+    }
+
     // With Capitalize Macro on, an abbreviation typed with a capital first letter capitalizes the
     // text, unless the text has capitals of its own.
     void testMacroCapitalized() {
@@ -1827,6 +1893,7 @@ int main() {
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();
     testMacroKeepsSpace();
+    testMacroBeforeEnter();
     testLockWord();
     testLockWordPreedit();
     testSlowBackspaceOverIbus();

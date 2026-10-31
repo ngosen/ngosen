@@ -41,6 +41,8 @@ pub const META_MASK: u32 = 1 << 28;
 pub const KEY_BACKSPACE: u32 = 0xff08;
 pub const KEY_SPACE: u32 = 0x020;
 pub const KEY_TAB: u32 = 0xff09;
+pub const KEY_RETURN: u32 = 0xff0d;
+pub const KEY_KP_ENTER: u32 = 0xff8d;
 
 /// The input methods the addon offers, in the order it lists them.
 pub const INPUT_METHOD_NAMES: [&str; 7] = [
@@ -496,8 +498,13 @@ impl BambooEngine {
                 && !self.preeditor.can_process_key(key_char(key_val)))
         {
             if has_preedit {
-                let preedit = self.get_preedit_string();
-                self.commit_preedit_and_reset(preedit);
+                let enter = (key_val == KEY_RETURN || key_val == KEY_KP_ENTER)
+                    && Self::is_valid_state(state);
+                let text = match self.get_macro_text() {
+                    Some(macro_text) if enter => macro_text,
+                    _ => self.get_preedit_string(),
+                };
+                self.commit_preedit_and_reset(text);
             }
             return false;
         }

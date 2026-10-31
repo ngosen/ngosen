@@ -132,7 +132,9 @@ namespace ngosen::test {
             state_->keyEvent(again);
         }
         if (!down.accepted()) {
-            if (sym == key::BackSpace) {
+            if (sym == key::Return && quirks_.showsEnter)
+                later(quirks_.lagMs, [this] { insert(U"\n", true); });
+            else if (sym == key::BackSpace) {
                 lastBackSpaceAt_ = time;
                 later(quirks_.lagMs, [this] { eraseBefore(1); });
             } else if (const auto text = keyText(down.appSym()); !text.empty() && static_cast<unsigned char>(text[0]) >= 0x20 && text[0] != '\x7f')
@@ -204,6 +206,10 @@ namespace ngosen::test {
     }
 
     void FakeApp::forwardKey(EditKey key, bool release, uint32_t time) {
+        if (key == EditKey::Return && !release && quirks_.showsEnter && !quirks_.dropsForwardedKeys) {
+            later(quirks_.lagMs, [this] { insert(U"\n", true); });
+            return;
+        }
         if (key == EditKey::Right && !release && !quirks_.dropsForwardedKeys) {
             later(quirks_.lagMs, [this] { moveCursor(cursor_ + 1); });
             return;

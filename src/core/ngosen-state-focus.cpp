@@ -85,7 +85,8 @@ namespace ngosen {
     }
 
     void TypingState::deactivate(bool isFocusOut) {
-        flushPendingReplacement(); // commit pending text into the field we are leaving
+        enter_after_replacement_ = false; // an Enter would land in the next field
+        flushPendingReplacement();        // commit pending text into the field we are leaving
         if (isFocusOut)
             commitNotSeen_.clear();
         lastDeactivateTime_ = nowMs();

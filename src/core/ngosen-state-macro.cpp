@@ -77,7 +77,6 @@ namespace ngosen {
         enter_after_replacement_ = false;
         if (!enter_key_live_)
             forwardTap(enter_after_key_);
-        enter_after_key_ = ngosen::EditKey::Return;
     }
 
     void TypingState::handleOffModeMacro(ngosen::KeyPress& keyEvent, uint32_t currentSym) {

@@ -804,9 +804,8 @@ namespace ngosen {
             }
             // A dbus client gets the commit after this key's reply and may type a key let through
             // first, so a typing key goes out inside the commit and an Enter after it.
-            const bool shiftEnter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & ngosen::modifier::Shift) != 0U &&
-                (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
-            if (host_->field().frontend == "dbus" && (typesText(keyEvent, currentSym) || replayedEditKey(currentSym, keyEvent.states()) || shiftEnter) &&
+            const bool enter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
+            if (host_->field().frontend == "dbus" && (typesText(keyEvent, currentSym) || enter || replayedEditKey(currentSym, keyEvent.states())) &&
                 buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
                 keyEvent.accept();

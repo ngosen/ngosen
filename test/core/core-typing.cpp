@@ -544,7 +544,7 @@ namespace {
         // Google Docs ignores a line break inside a commit, so Shift+Enter goes out as a key too.
         const std::vector<uint32_t> shifted{'n', 'h', 'e', 's', ngosen::key::Return | ngosen::test::WithShift, 'a'};
         const std::string           lineBreak = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, shifted, gaps);
-        check(lineBreak == "nhé\na", "Enter during replacement: Shift+Enter", lineBreak);
+        check(lineBreak == "nhé\u2028a", "Enter during replacement: Shift+Enter", lineBreak);
 
         // A dbus client gets the commit after the reply to the key, so a passed Enter would land first.
         Field dbus                = makeField("dbus", false);
@@ -552,12 +552,12 @@ namespace {
         const std::string ordered = ngosen::test::typeInApp(dbus, quirks, keys, gaps);
         check(ordered == "nhé\na", "Enter during replacement: dbus", ordered);
         const std::string shiftedOnDbus = ngosen::test::typeInApp(dbus, quirks, shifted, gaps);
-        check(shiftedOnDbus == "nhé\na", "Enter during replacement: dbus Shift+Enter", shiftedOnDbus);
+        check(shiftedOnDbus == "nhé\u2028a", "Enter during replacement: dbus Shift+Enter", shiftedOnDbus);
 
         std::vector<uint32_t> shiftedMacro = macro;
         shiftedMacro[7] |= ngosen::test::WithShift;
         const std::string macroLineBreak = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, shiftedMacro, macroGaps);
-        check(macroLineBreak == "nhé được\na", "Enter during replacement: Shift+Enter after a macro", macroLineBreak);
+        check(macroLineBreak == "nhé được\u2028a", "Enter during replacement: Shift+Enter after a macro", macroLineBreak);
 
         // fcitx5-gtk4 discards forwarded keys, so its Enter can only pass through, after the commit.
         Field gtk4                    = makeField("dbus", true);
@@ -567,7 +567,7 @@ namespace {
             const std::string gtk4Text = ngosen::test::typeInApp(gtk4, gtk4Quirks, keys, g);
             check(gtk4Text == "nhé\na", "Enter during replacement: GTK4 over dbus", gtk4Text);
             const std::string gtk4Shifted = ngosen::test::typeInApp(gtk4, gtk4Quirks, shifted, g);
-            check(gtk4Shifted == "nhé\na", "Enter during replacement: GTK4 over dbus, Shift+Enter", gtk4Shifted);
+            check(gtk4Shifted == "nhé\u2028a", "Enter during replacement: GTK4 over dbus, Shift+Enter", gtk4Shifted);
         }
 
         // Tab moves to the next field, which a tab character inside the commit does not.
@@ -578,6 +578,12 @@ namespace {
             const std::string           moved = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, tabbed, gaps);
             check(moved == want, std::string("Tab during replacement: ") + (tab == ngosen::key::Tab ? "Tab" : "Shift+Tab"), moved);
         }
+
+        // A typed Tab leaves an abbreviation as it is, so a replayed one does too.
+        std::vector<uint32_t> macroTab  = macro;
+        macroTab[7]                     = ngosen::key::Tab;
+        const std::string tabAfterMacro = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, macroTab, macroGaps);
+        check(tabAfterMacro == "nhé dc⇥a", "Tab during replacement: no macro", tabAfterMacro);
     }
 
     // With Capitalize Macro on, an abbreviation typed with a capital first letter capitalizes the

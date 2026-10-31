@@ -809,7 +809,7 @@ namespace ngosen {
         return std::nullopt;
     }
 
-    // Holds the key after the commit as a typed Enter is, and leaves the keys after it for then.
+    // Holds the Enter after the commit as a typed one is, and leaves the keys after it for then.
     bool TypingState::holdReplayedKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out, ngosen::EditKey key) {
         for (size_t j = i + 1; j < keys.size() && buffered_keys_.size() < MAX_BUFFERED_KEYS; ++j)
             buffered_keys_.push_back(keys[j]);
@@ -844,6 +844,15 @@ namespace ngosen {
         // Google Docs ignores a line break inside a commit, and Tab must move focus, so these go as keys.
         const std::optional<ngosen::EditKey> sent = replayedEditKey(sym, state);
         if (keyUtf8.empty() && !sent) {
+            return false;
+        }
+        if (sent == ngosen::EditKey::Tab || sent == ngosen::EditKey::ShiftTab) {
+            // Like a typed Tab: it ends the word as it is and goes out at once, before focus moves on.
+            commitReplayed(out);
+            hasHistory_ = false;
+            ResetEngine(bambooEngine_.handle());
+            oldPreBuffer_.clear();
+            forwardTap(*sent);
             return false;
         }
 

@@ -106,14 +106,22 @@ class AutosaveTest(unittest.TestCase):
         os.makedirs(os.path.dirname(dict_path))
         with open(dict_path, "w", encoding="utf-8") as f:
             f.write("an\nanh\n")
-        fake = FakeDBusHandler(sub_configs={"app_rules": [{"App": "firefox", "Mode": "5"}]})
+        switches = [{"App": "kate", "Vietnamese": "False"}]
+        fake = FakeDBusHandler(
+            sub_configs={
+                "app_rules": [{"App": "firefox", "Mode": "5"}],
+                "app_switches": switches,
+            }
+        )
         window = self.open_window(fake)
         with mock.patch("ui.main_window.confirm", return_value=True):
             window.on_restore_defaults()
         window.save_pending()
         self.assertEqual(fake.sub_configs["app_rules"], [])
+        self.assertEqual(fake.sub_configs["app_switches"], [])
         window.btn_undo.click()
         self.assertEqual(fake.sub_configs["app_rules"], [{"App": "firefox", "Mode": "5"}])
+        self.assertEqual(fake.sub_configs["app_switches"], switches)
         with open(dict_path, encoding="utf-8") as f:
             self.assertEqual(f.read(), "an\nanh\n")
         self.assertIn("ngosen", fake.reloads)

@@ -32,7 +32,8 @@ Bản Qt trên KDE Plasma:
   Dùng được ở app cho bộ gõ đọc chữ quanh con trỏ, trừ Firefox bản snap (xem Lỗi thường gặp). Tab hoặc Esc
   trả lại phím đã gõ.
 - Phím chuyển Anh/Việt riêng: cài mới dùng Ctrl+Shift như UniKey; đã cài từ trước giữ Ctrl+Space.
-  Khi ở tiếng Anh, gõ như không có bộ gõ. Ngó Sen nhớ chế độ qua lần đăng xuất.
+  Khi ở tiếng Anh, gõ như không có bộ gõ. Mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất; app chưa
+  bấm lần nào theo lần bấm gần nhất.
 - Phím chốt chữ: bấm rồi thả riêng Ctrl (mặc định) để giữ nguyên từ, không thêm dấu hay bung macro.
   Phím tiếp theo bắt đầu từ mới. Ví dụ gõ `tunx`, bấm rồi thả Ctrl, sau đó Space sẽ giữ `tũn`.
 - Gõ tắt (macro): khi bật “Gõ tắt chữ hoa”, `ko` → `không` thì gõ `Ko` sẽ ra `Không`.

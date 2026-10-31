@@ -393,7 +393,7 @@ namespace fcitx {
         if (auto* dbusAddon = dbus()) {
             dbusObject_ = std::make_unique<NgoSenDBusObject>(this);
             if (!dbusAddon->call<IDBusModule::bus>()->addObjectVTable(NgoSenDBusObject::Path, NgoSenDBusObject::Interface, *dbusObject_)) {
-                NGOSEN_WARN("Could not register " << NgoSenDBusObject::Path << " on D-Bus; ngosen-save-log will not work");
+                NGOSEN_WARN(std::string("Could not register ") + NgoSenDBusObject::Path + " on D-Bus; ngosen-save-log will not work");
                 dbusObject_.reset();
             }
             gnomeShell_ = std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>());

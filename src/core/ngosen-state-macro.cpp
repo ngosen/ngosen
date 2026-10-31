@@ -44,6 +44,12 @@ namespace ngosen {
         std::string       deletedPart;
         std::string       addedPart;
         ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, expansion, deletedPart, addedPart);
+        // Same limits as a word a space ends: a field that cannot take the edit keeps the typed word.
+        if (!deletedPart.empty() && (!canSendBackspaces() || keepsWordRaw(deletedPart))) {
+            rawWord_ = false;
+            lastWord_.clear();
+            return false;
+        }
         NGOSEN_INFO("Macro before Enter: " + logged(oldPreBuffer_) + " -> " + logged(expansion));
         hasHistory_ = false;
         ResetEngine(bambooEngine_.handle());

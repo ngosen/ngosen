@@ -442,6 +442,13 @@ namespace {
         const std::string           kept = ngosen::test::typeInApp(shellResources, shell, lossy, keys, std::vector<int>(keys.size(), 100));
         check(kept == "được\na", "macro before Enter: a field that loses sent keys still gets its Enter", kept);
 
+        FakeResources stuckResources;
+        stuckResources.setMacros({{"dc", "được"}});
+        ngosen::test::AppQuirks shows;
+        shows.showsEnter               = true;
+        const std::string cannotDelete = ngosen::test::typeInApp(stuckResources, makeField("dbus", false), shows, keys, std::vector<int>(keys.size(), 100));
+        check(cannotDelete == "dc\na", "macro before Enter: a field nothing can delete in keeps the word and its Enter", cannotDelete);
+
         realMode = ngosen::Mode::Preedit;
         FakeLoop      loop;
         FakeResources preeditResources;

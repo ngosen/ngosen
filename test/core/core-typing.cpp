@@ -1633,8 +1633,7 @@ namespace {
     void testEmptyFieldFirstWord() {
         Field field           = surroundingOnlyField();
         field.preeditFallback = true;
-        for (const auto& [quirks, want] : {std::pair{ngosen::test::AppQuirks{.dropsForwardedKeys = true}, "việt việt "},
-                                           std::pair{ngosen::test::AppQuirks{.dropsForwardedKeys = true, .reportsEmptyText = true}, ""}}) {
+        for (const auto& quirks : {ngosen::test::AppQuirks{.dropsForwardedKeys = true}, ngosen::test::AppQuirks{.dropsForwardedKeys = true, .reportsEmptyText = true}}) {
             realMode = ngosen::Mode::Sen;
             realtextLen.store(0);
             FakeLoop            loop;
@@ -1653,10 +1652,10 @@ namespace {
             const auto lines = ngosen::test::capturedLog();
             ngosen::test::captureLog(false);
             if (!quirks.reportsEmptyText) {
-                check(app->text() == want && app->sent().preedits == 0 && countHaving(lines, "Type the word in the preedit") == 0,
+                check(app->text() == "việt việt " && app->sent().preedits == 0 && countHaving(lines, "Type the word in the preedit") == 0,
                       "empty field: the first word is typed in the field", app->text() + " " + join(lines));
             } else {
-                check(countHaving(lines, "Type the word in the preedit: no text since focus") == 1,
+                check(isEndsWith(app->text(), " việt ") && countHaving(lines, "Type the word in the preedit: no text since focus") == 1,
                       "empty field: a field that only ever reports empty types its next word in the preedit", app->text() + " " + join(lines));
             }
         }

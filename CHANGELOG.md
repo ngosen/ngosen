@@ -26,6 +26,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ Sen: bấm Shift+Enter ngay sau từ đang được thêm dấu nay không còn mất xuống dòng. Trong app GTK, Qt kết nối trực tiếp với fcitx5, Enter bấm nhanh lúc đó nay tới sau cả từ, không còn chen giữa chữ và dấu như "nhes" + Enter ra "nh", xuống dòng rồi mới tới "é" (#488).
 - Gõ Sen: bấm phím ngay sau từ đang được thêm dấu, Shift+Enter nay xuống dòng được cả trong Google Docs; Tab và Shift+Tab không còn bị mất mà chuyển sang ô kế tiếp hoặc ô trước như thường. Sau Shift+Tab, gõ chữ tiếp theo không còn làm mất dấu của từ trước (như "nhes", Shift+Tab, "a" ra "nhesa") (#489).
 - Gõ Sen trên GNOME: gõ hai phím dấu sát nhau (như w và f trong "nguowfi") không còn làm mất lần thêm dấu đầu và ra "ngời". Ngó Sen nay chờ app hiện xong lần sửa trước, tối đa 20 ms, rồi mới gửi lần sau (#490).
+- Gõ Sen: gõ nhanh trong app mà Ngó Sen xoá chữ bằng BackSpace, như Google Docs và Firefox, không còn có thể làm fcitx5 crash khi phím gõ trong lúc chờ app được gửi lại và bắt đầu lần thêm dấu kế tiếp (#493).
 
 ## [1.7.4-1] — 31/10/2026
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(fcitx5-ngosen VERSION 1.7.3)
+project(fcitx5-ngosen VERSION 1.7.4)
 # The typing log names the version it came from.
 add_definitions(-DNGOSEN_VERSION=\"${PROJECT_VERSION}\")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -32,6 +32,7 @@ set(ngosen_fcitx_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-icon-resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-plasma-theme.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-gnome-theme.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-gnome-shell.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-ui-text.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/emoji.cpp
 )

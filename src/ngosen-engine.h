@@ -35,6 +35,7 @@
 #include <fcitx-utils/event.h>
 
 namespace ngosen {
+    class GnomeShellWatcher;
     class TypingState;
 }
 
@@ -285,7 +286,8 @@ namespace fcitx {
         FCITX_ADDON_DEPENDENCY_LOADER(emoji, instance_->addonManager());
 #ifdef NGOSEN_HAS_DBUS
         FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
-        std::unique_ptr<NgoSenDBusObject> dbusObject_;
+        std::unique_ptr<NgoSenDBusObject>          dbusObject_;
+        std::unique_ptr<ngosen::GnomeShellWatcher> gnomeShell_;
 #endif
 #ifdef NGOSEN_HAS_NOTIFICATIONS
         FCITX_ADDON_DEPENDENCY_LOADER(notifications, instance_->addonManager());
@@ -437,10 +439,12 @@ namespace fcitx {
 
         // Writes the typing log and shows its path.
         void saveTypingLog(InputContext* ic);
-        void clearPanelLater(InputContext* ic, uint64_t delayUs);
+        // Null when nothing tells whether GNOME Shell loses forwarded keys.
+        const bool* shellDropsKeys() const;
+        void        clearPanelLater(InputContext* ic, uint64_t delayUs);
 
-        void handleModeMenuKey(KeyEvent& keyEvent);
-        void moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
+        void        handleModeMenuKey(KeyEvent& keyEvent);
+        void        moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
         // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.

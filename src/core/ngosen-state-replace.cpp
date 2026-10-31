@@ -288,19 +288,18 @@ namespace ngosen {
     std::unique_ptr<ngosen::Timer> TypingState::startWaitTimer(uint64_t deadlineUs, std::function<bool(ngosen::Timer&)> onTime) {
         // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms.
         return host_->startTimer(deadlineUs, 1000, [this, onTime = std::move(onTime)](ngosen::Timer& t) {
-            const ngosen::Timer* outer = running_timer_;
-            running_timer_             = &t;
-            const bool keep            = onTime(t);
-            running_timer_             = outer;
-            const bool retired         = std::any_of(retired_timers_.begin(), retired_timers_.end(), [&t](const auto& r) { return r.get() == &t; });
-            return keep && !retired;
+            running_timer_  = &t;
+            const bool keep = onTime(t);
+            running_timer_  = nullptr;
+            return keep && retired_timer_.get() != &t;
         });
     }
 
     void TypingState::replaceTimer(std::unique_ptr<ngosen::Timer>& slot, std::unique_ptr<ngosen::Timer> next) {
-        retired_timers_.erase(std::remove_if(retired_timers_.begin(), retired_timers_.end(), [this](const auto& r) { return r.get() != running_timer_; }), retired_timers_.end());
         if (slot && slot.get() == running_timer_)
-            retired_timers_.push_back(std::move(slot));
+            retired_timer_ = std::move(slot);
+        else if (retired_timer_ && retired_timer_.get() != running_timer_)
+            retired_timer_.reset();
         slot = std::move(next);
     }
 

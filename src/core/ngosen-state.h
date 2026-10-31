@@ -399,6 +399,9 @@ namespace ngosen {
         static constexpr uint64_t      EnterAfterCommitUs     = 50000;
         static constexpr uint64_t      HeldEnterReleaseWaitUs = 450000;
         void                           holdEnterAfterCommit(ngosen::KeyPress& keyEvent);
+        void                           holdEnter(bool untilRelease);
+        void                           forwardHeldEnter();
+        bool                           forwardsEnterAfterCommit() const;
         bool                           dropsForwardedKeys() const;
         void                           sendHeldEnter();
         std::unique_ptr<ngosen::Timer> held_enter_timer_;
@@ -598,7 +601,7 @@ namespace ngosen {
         void replayBufferedKeys(std::string committed = {});
         void commitReplayed(std::string& out);
         bool replaysAsEnterKey(uint32_t sym, uint32_t state) const;
-        void forwardReplayedEnter(std::string& out);
+        bool holdReplayedEnter(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         // Replays keys[i]; true when it started a replacement, which replays the rest later.
         bool replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         void replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart);

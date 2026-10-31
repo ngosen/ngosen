@@ -804,12 +804,16 @@ namespace ngosen {
         // A forwarded tap carries no modifiers, and Shift+Enter means a line break, not send, in chat apps.
         if ((state & (ngosen::modifier::Shift | ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) != 0U)
             return false;
-        return !host_->field().sendsNoKeys && canSendBackspaces();
+        return forwardsEnterAfterCommit();
     }
 
-    void TypingState::forwardReplayedEnter(std::string& out) {
+    // Holds the Enter after the commit as a typed one is, and leaves the keys after it for then.
+    bool TypingState::holdReplayedEnter(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
+        for (size_t j = i + 1; j < keys.size() && buffered_keys_.size() < MAX_BUFFERED_KEYS; ++j)
+            buffered_keys_.push_back(keys[j]);
         commitReplayed(out);
-        forwardTap(ngosen::EditKey::Return);
+        holdEnter(false);
+        return true;
     }
 
     void TypingState::commitReplayed(std::string& out) {
@@ -859,14 +863,12 @@ namespace ngosen {
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             if (enterKey && !replacing)
-                forwardReplayedEnter(out);
+                return holdReplayedEnter(keys, i, out);
             return replacing;
         }
 
-        if (enterKey) {
-            forwardReplayedEnter(out);
-            return false;
-        }
+        if (enterKey)
+            return holdReplayedEnter(keys, i, out);
         if (!processed) {
             out += keyUtf8;
             return false;

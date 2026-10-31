@@ -527,6 +527,11 @@ namespace {
         const std::string text = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, keys, gaps);
         check(text == "nhé\na", "Enter during replacement", text);
 
+        std::vector<int> keysAfterGaps(keys.size(), 1);
+        keysAfterGaps[2]         = 100;
+        const std::string queued = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, keys, keysAfterGaps);
+        check(queued == "nhé\na", "Enter during replacement: keys after it wait for it", queued);
+
         FakeResources resources;
         resources.setMacros({{"dc", "được"}});
         const std::vector<uint32_t> macro{'n', 'h', 'e', 's', ' ', 'd', 'c', ngosen::key::Return, 'a'};

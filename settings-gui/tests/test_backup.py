@@ -36,11 +36,37 @@ class LoadTest(unittest.TestCase):
             {"config": [1]},
             {"macros": 5},
             {"rules": [1]},
+            {"config": {}, "switches": "kate"},
             {"config": {}, "keymaps": None},
         ):
             with self.subTest(data):
                 with self.assertRaises(ValueError):
                     self.load(data)
+
+
+class RoundTripTest(unittest.TestCase):
+    def test_the_toggle_key_switches_come_back_with_the_rules(self):
+        rules = [{"App": "firefox", "Mode": "5"}]
+        switches = [{"App": "kate", "Vietnamese": "False"}]
+        source = fake_fcitx.FakeDBusHandler(
+            sub_configs={"app_rules": rules, "app_switches": switches}
+        )
+        target = fake_fcitx.FakeDBusHandler()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "b.json")
+            backup.export(source, path)
+            self.assertTrue(backup.apply(target, backup.load(path)))
+        self.assertEqual(target.sub_configs["app_rules"], rules)
+        self.assertEqual(target.sub_configs["app_switches"], switches)
+
+    def test_an_older_backup_brings_its_rules_back_without_todays_switches(self):
+        rules = [{"App": "kate", "Mode": "0"}]
+        target = fake_fcitx.FakeDBusHandler(
+            sub_configs={"app_switches": [{"App": "kate", "Vietnamese": "True"}]}
+        )
+        self.assertTrue(backup.apply(target, {"rules": rules}))
+        self.assertEqual(target.sub_configs["app_rules"], rules)
+        self.assertEqual(target.sub_configs["app_switches"], [])
 
 
 if __name__ == "__main__":

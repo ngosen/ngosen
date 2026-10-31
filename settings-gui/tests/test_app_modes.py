@@ -11,6 +11,7 @@ from core.app_modes import RememberedAppModes
 # isort: on
 
 FIREFOX = {"App": "firefox", "Mode": "5"}
+KATE_ENGLISH = {"App": "kate", "Vietnamese": "False"}
 
 
 class RememberedAppModesTest(unittest.TestCase):
@@ -22,6 +23,15 @@ class RememberedAppModesTest(unittest.TestCase):
         self.assertTrue(modes.is_modified())
         self.assertTrue(modes.save_data())
         self.assertEqual(fake.sub_configs["app_rules"], [])
+        self.assertFalse(modes.is_modified())
+
+    def test_defaults_forget_where_the_toggle_key_left_each_app(self):
+        fake = FakeDBusHandler(sub_configs={"app_switches": [KATE_ENGLISH]})
+        modes = RememberedAppModes(fake)
+        self.assertTrue(modes.is_modified_from_default())
+        modes.restore_defaults()
+        self.assertTrue(modes.save_data())
+        self.assertEqual(fake.sub_configs["app_switches"], [])
         self.assertFalse(modes.is_modified())
 
     def test_a_refused_save_stays_unsaved(self):

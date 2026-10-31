@@ -2127,6 +2127,7 @@ int main() {
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();
+    check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all core typing checks passed\n";
     return failures == 0 ? 0 : 1;

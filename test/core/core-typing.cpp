@@ -559,6 +559,17 @@ namespace {
         const std::string macroLineBreak = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, shiftedMacro, macroGaps);
         check(macroLineBreak == "nhé được\na", "Enter during replacement: Shift+Enter after a macro", macroLineBreak);
 
+        // fcitx5-gtk4 discards forwarded keys, so its Enter can only pass through, after the commit.
+        Field gtk4                    = makeField("dbus", true);
+        auto  gtk4Quirks              = quirks;
+        gtk4Quirks.dropsForwardedKeys = true;
+        for (const std::vector<int>& g : {gaps, keysAfterGaps}) {
+            const std::string gtk4Text = ngosen::test::typeInApp(gtk4, gtk4Quirks, keys, g);
+            check(gtk4Text == "nhé\na", "Enter during replacement: GTK4 over dbus", gtk4Text);
+            const std::string gtk4Shifted = ngosen::test::typeInApp(gtk4, gtk4Quirks, shifted, g);
+            check(gtk4Shifted == "nhé\na", "Enter during replacement: GTK4 over dbus, Shift+Enter", gtk4Shifted);
+        }
+
         // Tab moves to the next field, which a tab character inside the commit does not.
         quirks.showsTab = true;
         for (const uint32_t tab : {uint32_t{ngosen::key::Tab}, ngosen::key::ISO_Left_Tab | ngosen::test::WithShift}) {

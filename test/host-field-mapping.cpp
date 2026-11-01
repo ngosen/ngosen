@@ -100,6 +100,7 @@ namespace {
         check("with no focused app the name stays", unknown.program == "gnome-shell" && unknown.reportedProgram.empty());
         check("with no focused app the edit limits stay", ngosen::keepsLastEditPerTurn(unknown));
         focused = "firefox.desktop";
+        check("older fcitx5 reports no name for what GNOME Shell relays", field("", "ibus", &focused).program == "firefox.desktop");
         check("fcitx5's own GTK module keeps its name", field("gnome-shell", "dbus", &focused).program == "gnome-shell");
     }
 

@@ -20,7 +20,7 @@ namespace ngosen {
     // GNOME Shell 50.0 to 50.3 lose the keys an input method forwards (mutter#4853).
     bool gnomeShellDropsForwardedKeys(const std::string& version);
 
-    // The name of the app a client stands for: fcitx5 before 5.1.22 names every app GNOME Shell relays after the shell.
+    // The name of the app a client stands for: fcitx5 before 5.1.22 names every app GNOME Shell relays after the shell, or not at all.
     const std::string& relayedAppName(const std::string& program, const std::string& frontend, const std::string* shellFocusedApp);
 
 #ifdef NGOSEN_HAS_DBUS

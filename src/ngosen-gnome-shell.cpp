@@ -29,7 +29,7 @@ namespace ngosen {
     }
 
     const std::string& relayedAppName(const std::string& program, const std::string& frontend, const std::string* shellFocusedApp) {
-        if (shellFocusedApp != nullptr && !shellFocusedApp->empty() && frontend == "ibus" && program == "gnome-shell")
+        if (shellFocusedApp != nullptr && !shellFocusedApp->empty() && frontend == "ibus" && (program == "gnome-shell" || program.empty()))
             return *shellFocusedApp;
         return program;
     }

@@ -1411,7 +1411,8 @@ namespace fcitx {
 
         ic->inputPanel().reset();
         ic->inputPanel().setCandidateList(std::move(candidateList));
-        ic->inputPanel().setAuxDown(Text(_("App: ") + currentConfigureApp_));
+        const bool unnamed = isStartsWith(currentConfigureApp_, "ctx_");
+        ic->inputPanel().setAuxDown(Text(_("App: ") + (unnamed ? std::string(_("this window")) : currentConfigureApp_)));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
     }
 

@@ -123,10 +123,10 @@ def wordmark_font(pixel_size):
     return font
 
 
-def theme_icon(name):
+def theme_icon(name, fallback=None):
     """The theme's icon, or its symbolic variant for themes like Adwaita that ship only that."""
-    for candidate in (name, f"{name}-symbolic"):
-        if QIcon.hasThemeIcon(candidate):
+    for candidate in (name, f"{name}-symbolic", fallback):
+        if candidate and QIcon.hasThemeIcon(candidate):
             return QIcon.fromTheme(candidate)
     return QIcon()
 

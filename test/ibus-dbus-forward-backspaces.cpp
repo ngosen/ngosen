@@ -42,6 +42,7 @@ namespace {
     // this much before its deadline. Only lower bounds on time are checked.
     constexpr uint64_t ClockSlackUs = 3000;
     constexpr uint64_t WaitUs       = 15000;
+    constexpr uint64_t ShellWaitUs  = 40000;
     constexpr uint64_t SettleUs     = 40000;
 
     struct Harness {
@@ -70,8 +71,8 @@ namespace {
 
         // Types "tie" and reports each step to the context when it declares surrounding text. A lagging
         // field reports each step one key late, so its copy misses the last letter.
-        bool typeTie(TestInputContext& context, bool lagging = false) {
-            const bool        surrounding = context.capabilityFlags().test(fcitx::CapabilityFlag::SurroundingText);
+        bool typeTie(TestInputContext& context, bool lagging = false, bool reportsWord = true) {
+            const bool        surrounding = reportsWord && context.capabilityFlags().test(fcitx::CapabilityFlag::SurroundingText);
             const std::string word        = "tie";
             for (size_t i = 0; i < word.size(); ++i) {
                 if (!type(context, static_cast<fcitx::KeySym>(word[i]), false))
@@ -102,25 +103,66 @@ namespace {
             forwarded[1].isRelease();
     }
 
-    // fcitx5-gtk (GTK3) and fcitx5-qt keep forwarded keys in order with commits.
-    bool dbusForwardsAndWaitsForDeletion(Harness& h) {
+    // fcitx5-gtk (GTK3) and fcitx5-qt delete through the surrounding text once the field has reported
+    // the word.
+    bool dbusDeletesReportedWord(Harness& h) {
         const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix};
         auto       context = h.open("gtk3app", "dbus", caps);
         if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, true))
             return false;
+        const bool deleted = context->deletes() == std::vector<std::pair<int, unsigned int>>{{-1, 1}};
+        if (!deleted || !context->forwarded().empty() || context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure("dbus: e -> ê through the surrounding text", "deletes=1 forwarded=(none) ['ê']",
+                          "deletes=" + std::to_string(context->deletes().size()) + " forwarded=" + describeForwarded(*context) + " " + joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
+    // Firefox over D-Bus reports the word but stays on backspaces (it reports its own edits late), so
+    // the forwarded keys keep their order with the commit, which waits for the report of the deletion.
+    bool dbusForwardsAndWaitsForDeletion(Harness& h) {
+        const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix};
+        auto       context = h.open("firefox", "dbus", caps);
+        if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, true))
+            return false;
         if (!forwardedOneBackspace(*context)) {
-            reportFailure("dbus: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
+            reportFailure("dbus firefox: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
             return false;
         }
         pumpEventLoop(h.testInstance.instance, 3);
         if (!context->commits().empty()) {
-            reportFailure("dbus: no commit before the app reports the deletion", "(none)", joinCommits(*context));
+            reportFailure("dbus firefox: no commit before the app reports the deletion", "(none)", joinCommits(*context));
             return false;
         }
         Harness::setSnapshot(*context, "ti", 2);
         pumpEventLoop(h.testInstance.instance, 120);
         if (context->commits() != std::vector<std::string>{"ê"}) {
-            reportFailure("dbus: commit once the app reports the deletion", "['ê']", joinCommits(*context));
+            reportFailure("dbus firefox: commit once the app reports the deletion", "['ê']", joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
+    // Before the field reports any text no report can confirm the deletion, so the commit follows the
+    // forwarded backspace on a timer. The key's own turn must not commit; the loop then may at any time.
+    bool dbusCommitsAfterForwardBeforeFirstReport(Harness& h) {
+        const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix};
+        auto       context = h.open("gtk3app", "dbus", caps);
+        if (!h.typeTie(*context, false, false) || !h.type(*context, FcitxKey_e, true))
+            return false;
+        if (!forwardedOneBackspace(*context)) {
+            reportFailure("dbus unreported: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
+            return false;
+        }
+        if (!context->commits().empty()) {
+            reportFailure("dbus unreported: no commit in the key's own turn", "(none)", joinCommits(*context));
+            return false;
+        }
+        pumpEventLoop(h.testInstance.instance, 120);
+        if (context->commits() != std::vector<std::string>{"ê"} || context->deletes().size() != 0) {
+            reportFailure("dbus unreported: commit after the timer, no surrounding deletion", "['ê'] deletes=0",
+                          joinCommits(*context) + " deletes=" + std::to_string(context->deletes().size()));
             return false;
         }
         return true;
@@ -211,8 +253,8 @@ namespace {
             reportFailure("GNOME ibus early report: commit e -> ê", "['ê']", joinCommits(*context));
             return false;
         }
-        if (committedAt - replacedAt + ClockSlackUs < WaitUs) {
-            reportFailure("GNOME ibus early report: commit at least 15 ms after the forward", ">= 15000 us", std::to_string(committedAt - replacedAt) + " us");
+        if (committedAt - replacedAt + ClockSlackUs < ShellWaitUs) {
+            reportFailure("GNOME ibus early report: commit at least 40 ms after the forward", ">= 40000 us", std::to_string(committedAt - replacedAt) + " us");
             return false;
         }
         return true;
@@ -270,15 +312,15 @@ namespace {
         replace("tien", 'e');
         replace("tien", 'e');
         const uint64_t oneKeyUs = replace("to", 'o');
-        if (oneKeyUs + ClockSlackUs < WaitUs || oneKeyUs > 30000) {
-            reportFailure("GNOME ibus silent app: fixed wait for one backspace", "15000-30000 us", std::to_string(oneKeyUs) + " us");
+        if (oneKeyUs + ClockSlackUs < ShellWaitUs || oneKeyUs > 55000) {
+            reportFailure("GNOME ibus silent app: fixed wait for one backspace", "40000-55000 us", std::to_string(oneKeyUs) + " us");
             return false;
         }
         // Any report means the app does report, so the next replacement waits for it again.
         Harness::setSnapshot(*context, "ls -l tô ", 9);
         const uint64_t reportedUs = replace("tien", 'e');
-        if (reportedUs < 30000) {
-            reportFailure("GNOME ibus silent app: wait for a report once the app sends one", ">= 30000 us", std::to_string(reportedUs) + " us");
+        if (reportedUs < 60000) {
+            reportFailure("GNOME ibus silent app: wait for a report once the app sends one", ">= 60000 us", std::to_string(reportedUs) + " us");
             return false;
         }
         if (context->commits() != std::vector<std::string>{"ên", "ên", "ô", "ên"}) {
@@ -290,7 +332,7 @@ namespace {
 
     // Firefox over IBus and Chromium over the fcitx4 GTK module report no surrounding text; their
     // forwarded keys queue behind the commit unless the commit waits.
-    bool forwardWithoutSurroundingWaits(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+    bool forwardWithoutSurroundingWaits(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, uint64_t waitUs) {
         auto              context = h.open(program, frontend, caps);
         const std::string where   = frontend + " " + program + ": ";
         if (!h.typeTie(*context))
@@ -309,8 +351,13 @@ namespace {
             reportFailure(where + "commit e -> ê", "['ê']", joinCommits(*context));
             return false;
         }
-        if (committedAt - replacedAt + ClockSlackUs < WaitUs) {
-            reportFailure(where + "commit at least 15 ms after the forward", ">= 15000 us", std::to_string(committedAt - replacedAt) + " us");
+        if (committedAt - replacedAt + ClockSlackUs < waitUs) {
+            reportFailure(where + "commit no sooner than the forward wait", ">= " + std::to_string(waitUs) + " us", std::to_string(committedAt - replacedAt) + " us");
+            return false;
+        }
+        // Other frontends keep the short wait; the GNOME one costs 25 ms per replacement.
+        if (committedAt - replacedAt > waitUs + 15000) {
+            reportFailure(where + "commit soon after the forward wait", "<= " + std::to_string(waitUs + 15000) + " us", std::to_string(committedAt - replacedAt) + " us");
             return false;
         }
         return true;
@@ -379,12 +426,14 @@ int main() {
     config.setValueByPath("VietnameseOn", "True");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("WaitSurroundingEvent", "True");
+    // Longer than the GNOME forward wait, so waiting for a report stays distinguishable from the fixed wait.
+    config.setValueByPath("WaitSurroundingShortMs", "70");
     engine.setConfig(config);
 
     fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
     Harness                 h{testInstance, engine, entry};
 
-    if (!dbusForwardsAndWaitsForDeletion(h))
+    if (!dbusDeletesReportedWord(h) || !dbusForwardsAndWaitsForDeletion(h) || !dbusCommitsAfterForwardBeforeFirstReport(h))
         return 1;
     if (!dbusKeyDuringWaitJoinsCommit(h))
         return 1;
@@ -402,9 +451,9 @@ int main() {
         return 1;
     if (!gnomeIbusStopsWaitingForSilentApp(h))
         return 1;
-    if (!forwardWithoutSurroundingWaits(h, "gtk3-im:firefox", "ibus", fcitx::CapabilityFlags{}))
+    if (!forwardWithoutSurroundingWaits(h, "gtk3-im:firefox", "ibus", fcitx::CapabilityFlags{}, ShellWaitUs))
         return 1;
-    if (!forwardWithoutSurroundingWaits(h, "chrome", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}))
+    if (!forwardWithoutSurroundingWaits(h, "chrome", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}, WaitUs))
         return 1;
     if (!fcitx4ForwardsWithSurroundingText(h))
         return 1;

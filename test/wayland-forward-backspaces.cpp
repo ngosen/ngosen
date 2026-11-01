@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // On the Wayland frontends ("wayland" is input-method-v1 as in KWin, "wayland_v2" is v2 as in Sway and
-// Hyprland) the backspaces of a replacement go through forwardKey instead of real key presses, and the
+// Hyprland) a field that has reported its word has the replacement deleted through its surrounding text.
+// Before it reports any text, the backspaces go through forwardKey instead of real key presses, and the
 // commit still waits until the app reports the deletion done.
 #include "ngosen-engine.h"
 #include "ngosen-utils.h"
@@ -50,7 +51,9 @@ namespace {
         return out.empty() ? "(none)" : out;
     }
 
-    bool replacesThroughForward(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInstance& testInstance, const std::string& frontend) {
+    // Types "tie" into a field; one that does not report its words keeps showing only line breaks.
+    std::unique_ptr<TestInputContext> typeTie(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInstance& testInstance, const std::string& frontend,
+                                              bool reportsWord) {
         auto context = std::make_unique<TestInputContext>(&testInstance.instance, "test", frontend);
         context->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
         context->focusIn();
@@ -61,9 +64,30 @@ namespace {
         const std::string word = "tie";
         for (size_t i = 0; i < word.size(); ++i) {
             if (!type(engine, entry, *context, static_cast<fcitx::KeySym>(word[i]), false))
-                return false;
-            setSnapshot(*context, word.substr(0, i + 1) + "\n\n", static_cast<unsigned int>(i + 1));
+                return nullptr;
+            if (reportsWord)
+                setSnapshot(*context, word.substr(0, i + 1) + "\n\n", static_cast<unsigned int>(i + 1));
         }
+        return context;
+    }
+
+    bool replacesThroughSurrounding(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInstance& testInstance, const std::string& frontend) {
+        auto context = typeTie(engine, entry, testInstance, frontend, true);
+        if (!context || !type(engine, entry, *context, FcitxKey_e, true))
+            return false;
+        const bool deleted = context->deletes() == std::vector<std::pair<int, unsigned int>>{{-1, 1}};
+        if (!deleted || !context->forwarded().empty() || context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure(frontend + ": e -> ê through the surrounding text", "deletes=1 forwarded=(none) commits=['ê']",
+                          "deletes=" + std::to_string(context->deletes().size()) + " forwarded=" + describeForwarded(*context) + " commits=" + joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
+    bool replacesThroughForward(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInstance& testInstance, const std::string& frontend) {
+        auto context = typeTie(engine, entry, testInstance, frontend, false);
+        if (!context)
+            return false;
 
         // Telex "e" again: e -> ê deletes one character.
         if (!type(engine, entry, *context, FcitxKey_e, true))
@@ -110,7 +134,7 @@ int main() {
     KeySenderProbe          keys;
     fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
     for (const char* frontend : {"wayland", "wayland_v2"}) {
-        if (!replacesThroughForward(engine, entry, testInstance, frontend))
+        if (!replacesThroughSurrounding(engine, entry, testInstance, frontend) || !replacesThroughForward(engine, entry, testInstance, frontend))
             return 1;
     }
 

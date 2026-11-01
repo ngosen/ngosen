@@ -5,7 +5,14 @@
 
 import os
 
-from core.catalog import HINTS, LANGUAGE_NAMES, MENU_ENTRIES, TRAY_ICON, SettingsCategory
+from core.catalog import (
+    HINTS,
+    LANGUAGE_NAMES,
+    MENU_ENTRIES,
+    MENU_ICON_FALLBACKS,
+    TRAY_ICON,
+    SettingsCategory,
+)
 from gi.repository import Adw, Gdk, GLib, Gtk
 from i18n import _
 
@@ -84,8 +91,8 @@ def _theme():
 
 def _menu_icon(name):
     # Themes like Adwaita ship only the symbolic variant.
-    for candidate in (name, f"{name}-symbolic"):
-        if _theme().has_icon(candidate):
+    for candidate in (name, f"{name}-symbolic", MENU_ICON_FALLBACKS.get(name)):
+        if candidate and _theme().has_icon(candidate):
             return Gtk.Image(icon_name=candidate)
     # Keeps the text in line with the entries that have an icon.
     blank = Gtk.Image()

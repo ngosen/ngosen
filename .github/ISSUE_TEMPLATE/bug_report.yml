@@ -78,7 +78,7 @@ body:
     id: version
     attributes:
       label: Version Ngó Sen
-      placeholder: 1.7.4-1
+      placeholder: 1.7.5-1
     validations:
       required: true
 

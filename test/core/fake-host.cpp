@@ -13,6 +13,8 @@
 
 namespace ngosen::test {
 
+    int timersDestroyedInCallback = 0;
+
     struct FakeLoop::Entry final : Timer {
         FakeLoop*                   loop;
         uint64_t                    deadlineUs;
@@ -21,6 +23,11 @@ namespace ngosen::test {
 
         Entry(FakeLoop* l, uint64_t d, std::function<bool(Timer&)> f) : loop(l), deadlineUs(d), onTime(std::move(f)) {}
         ~Entry() override {
+            // The real hosts free a timer's source and callback here, which a running callback still uses.
+            if (loop->running_ == this) {
+                ++timersDestroyedInCallback;
+                loop->running_ = nullptr;
+            }
             loop->remove(this);
         }
         void rearm(uint64_t newDeadlineUs) override {
@@ -51,9 +58,14 @@ namespace ngosen::test {
                         next = entry;
                 }
                 if (next) {
-                    next->armed = false;
-                    next->onTime(*next);
-                    fired = true;
+                    // As on GLib, a callback that rearms its timer keeps it only by returning true.
+                    next->armed     = false;
+                    running_        = next;
+                    const bool keep = next->onTime(*next);
+                    if (running_ == next && !keep)
+                        next->armed = false;
+                    running_ = nullptr;
+                    fired    = true;
                 }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(1));

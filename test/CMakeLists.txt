@@ -108,6 +108,7 @@ set_tests_properties(default_app_mode_override PROPERTIES LABELS "integration;ap
 add_ngosen_headless_test(ctx_rule_cleanup ctx-rule-cleanup.cpp "integration;apprule")
 add_ngosen_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule")
 add_ngosen_headless_test(toggle_key toggle-key.cpp "integration;apprule")
+add_ngosen_headless_test(app_switch_memory app-switch-memory.cpp "integration;apprule")
 add_ngosen_headless_test(retype_after_switch retype-after-switch.cpp "integration;retype")
 add_ngosen_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp "integration;apprule;gnome")
 add_ngosen_headless_test(mode_name_migration mode-name-migration.cpp "integration;mode")
@@ -230,6 +231,12 @@ set_tests_properties(gnome_panel_theme PROPERTIES
     LABELS "unit;icon"
     TIMEOUT 20
 )
+
+add_executable(menu_icon menu-icon.cpp ${PROJECT_SOURCE_DIR}/src/ngosen-menu-icon.cpp)
+target_include_directories(menu_icon PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(menu_icon PRIVATE Fcitx5::Core Fcitx5::Utils)
+add_test(NAME menu_icon COMMAND menu_icon)
+set_tests_properties(menu_icon PROPERTIES LABELS "unit;icon" TIMEOUT 20)
 
 # Compares the typing logic's own UTF-8 helpers with the fcitx5 ones they replace.
 add_executable(utf8_matches_fcitx utf8-matches-fcitx.cpp ${PROJECT_SOURCE_DIR}/src/core/ngosen-utf8.cpp)

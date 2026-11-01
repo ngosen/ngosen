@@ -112,6 +112,7 @@ namespace ngosen {
          */
         void checkCursorJump();
         bool textAfterCursorChanged(const Surrounding& s) const;
+        bool showsOwnDeletion(const Surrounding& s) const;
 
         /**
          * @brief Records text another part of fcitx sent to the app, so its cursor moving past it is not
@@ -205,6 +206,8 @@ namespace ngosen {
         bool               typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
         static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
         static std::string textBeforeCursor(const Surrounding& s);
+        static bool        showsText(const Surrounding& s);
+        static bool        showsTextAfterDeleting(const Surrounding& s, unsigned int chars);
         static std::string reportKey(const Surrounding& s); ///< "text\x1fcursor", empty for no report
         static std::string loggedField(const Field& field); ///< " (frontend program)"
         bool               handleRetypeKey(ngosen::KeyPress& keyEvent);
@@ -243,6 +246,10 @@ namespace ngosen {
         // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
         // surrounding text report the commit waits this long for them.
         static constexpr uint64_t ForwardWaitUs = 15000;
+        // IBus clients, GNOME Shell above all, get forwarded keys and commits on separate paths, so a
+        // commit sent sooner can still reach the app before the backspaces.
+        static constexpr uint64_t ShellForwardWaitUs = 40000;
+        uint64_t                  forwardWaitUs() const;
         // A key sent back arrives at once; a held key repeats tens of milliseconds apart.
         static constexpr uint64_t SentBackWithinUs = 10000;
 
@@ -270,6 +277,13 @@ namespace ngosen {
         // A report while waiting for the app to apply backspaces or show a selection.
         void onWaitSurroundingUpdated();
         void onOvertypeSurroundingUpdated();
+
+        // A replay can start the next wait from inside a wait timer's callback, and destroying that
+        // timer there frees the callback while it runs. Such a timer is kept until a later replace.
+        std::unique_ptr<ngosen::Timer> startWaitTimer(uint64_t deadlineUs, std::function<bool(ngosen::Timer&)> onTime);
+        void                           replaceTimer(std::unique_ptr<ngosen::Timer>& slot, std::unique_ptr<ngosen::Timer> next = nullptr);
+        const ngosen::Timer*           running_timer_ = nullptr;
+        std::unique_ptr<ngosen::Timer> retired_timer_;
 
         // --- Sen mode: wait for the app instead of sleeping (see handleReplacementBackspace) ---
         std::unique_ptr<ngosen::Timer> surr_wait_timer_;
@@ -322,6 +336,10 @@ namespace ngosen {
         unsigned int lastSurroundingAnchor_  = 0;
         bool         hasLastSurrounding_     = false;
         unsigned int unreportedCommitLength_ = 0;
+        // Characters a surrounding deletion took that the app has not reported yet; its report can
+        // come between the deletion and the commit that follows it.
+        unsigned int unreportedDeleteLength_ = 0;
+        uint64_t     unreportedDeleteKey_    = 0; ///< keyCount_ when that deletion was sent
         bool         committing_             = false;
         uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.
@@ -388,12 +406,23 @@ namespace ngosen {
         static constexpr uint64_t      EnterAfterCommitUs     = 50000;
         static constexpr uint64_t      HeldEnterReleaseWaitUs = 450000;
         void                           holdEnterAfterCommit(ngosen::KeyPress& keyEvent);
+        void                           holdEnter(bool untilRelease, ngosen::EditKey key = ngosen::EditKey::Return);
+        void                           forwardHeldEnter();
+        bool                           forwardsEnterAfterCommit() const;
         bool                           dropsForwardedKeys() const;
         void                           sendHeldEnter();
         std::unique_ptr<ngosen::Timer> held_enter_timer_;
         bool                           held_enter_pending_ = false;
         bool                           held_enter_release_ = false;
         uint64_t                       held_enter_due_us_  = 0;
+        ngosen::EditKey                held_key_           = ngosen::EditKey::Return;
+
+        // Enter after a macro expands it, and reaches the app once the expansion is in the field.
+        bool            expandMacroBeforeEnter(ngosen::KeyPress& keyEvent);
+        void            sendEnterAfterReplacement();
+        bool            enter_after_replacement_ = false;
+        ngosen::EditKey enter_after_key_         = ngosen::EditKey::Return;
+        bool            enter_key_live_          = false;
 
         /**
          * @brief Updates emoji page status in candidate list.
@@ -460,11 +489,20 @@ namespace ngosen {
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
         bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
         void                     replaceThroughSurrounding(const Surrounding& surrounding);
+        void                     releaseKeysAfterSurroundingEdit();
         int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
         std::vector<std::string> earlierWordsBeforeReplacement() const;
         void                     trackEarlierWords(const std::string& addedPart);
         void                     replaceThroughForwardedKeys();
         void                     replaceThroughCommittedDel();
+
+        // Keys typed before the app shows a surrounding edit wait, so the next edit cannot share its turn.
+        void                           holdKeysUntilEditShown();
+        void                           finishEditHold();
+        bool                           holdKeyDuringEditHold(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        std::unique_ptr<ngosen::Timer> edit_hold_timer_;
+        bool                           edit_hold_ = false;
+        static constexpr uint64_t      EditHoldUs = 20000;
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
         struct SurroundingCheck {
@@ -507,11 +545,13 @@ namespace ngosen {
         std::string                     lastPath_;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
-        uint64_t                        keyCount_               = 0;     ///< key presses other than modifiers
-        int                             surrUnanswered_         = 0;     ///< checks in a row left unanswered in this field
-        bool                            surrAnswered_           = false; ///< a check in this field came out correct
-        bool                            surrSeenTextSinceFocus_ = false; ///< the field reported text since it got focus
-        uint64_t                        commitCount_            = 0;
+        uint64_t                        keyCount_                = 0;     ///< key presses other than modifiers
+        int                             surrUnanswered_          = 0;     ///< checks in a row left unanswered in this field
+        bool                            surrAnswered_            = false; ///< a check in this field came out correct
+        bool                            surrSeenTextSinceFocus_  = false; ///< the field reported text since it got focus
+        bool                            surrSeenEmptySinceFocus_ = false; ///< the field reported itself empty before any key since it got focus
+        uint64_t                        keysAtFocus_             = 0;     ///< keyCount_ at the last focus-in, kept over a bounce
+        uint64_t                        commitCount_             = 0;
         Surrounding                     lastReport_;
         bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
         std::unique_ptr<ngosen::Timer>  replay_timer_;
@@ -576,8 +616,10 @@ namespace ngosen {
          * replacement completes.
          * @param committed Text to commit first; it goes out in the same commit as the replayed keys.
          */
-        void replayBufferedKeys(std::string committed = {});
-        void commitReplayed(std::string& out);
+        void                           replayBufferedKeys(std::string committed = {});
+        void                           commitReplayed(std::string& out);
+        std::optional<ngosen::EditKey> replayedEditKey(uint32_t sym, uint32_t state) const;
+        bool                           holdReplayedKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out, ngosen::EditKey key);
         // Replays keys[i]; true when it started a replacement, which replays the rest later.
         bool replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         void replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart);

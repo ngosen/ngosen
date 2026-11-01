@@ -14,8 +14,6 @@ Cài lần đầu thì đăng xuất rồi đăng nhập lại, sau đó nhấn 
 
 Cập nhật thì chạy lại đúng lệnh đó: fcitx5 tự nạp version mới, gõ được ngay. Trên KDE Wayland thì đăng xuất rồi đăng nhập lại.
 
-Muốn dùng Ngó Sen cho GNOME (IBus) thay cho bản fcitx5 thì thêm `--ibus`: `curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus`. Bản này đơn giản hơn và ít tính năng hơn, xem [README của bản cho GNOME](https://github.com/ngosen/ibus-ngosen#readme).
-
 ## Tải gói bằng tay
 
 Chọn file theo distro:

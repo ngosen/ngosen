@@ -537,14 +537,16 @@ class GtkDefaultsTest(unittest.TestCase):
                 "ngosen-macro": [{"Key": "kg", "Value": "khô"}],
                 "custom_keymap": [{"Key": "s", "Value": "DauSac"}],
                 "app_rules": [{"App": "firefox", "Mode": "5"}],
+                "app_switches": [{"App": "kate", "Vietnamese": "False"}],
             },
         )
 
     def changed(self):
+        lists = ("ngosen-macro", "custom_keymap", "app_rules", "app_switches")
         return (
             self.dbus.values["SpellCheck"],
             self.dbus.values["EnableCustomKeymap"],
-            [len(self.dbus.sub_configs[k]) for k in ("ngosen-macro", "custom_keymap", "app_rules")],
+            [len(self.dbus.sub_configs[k]) for k in lists],
         )
 
     def local_words(self):
@@ -555,13 +557,13 @@ class GtkDefaultsTest(unittest.TestCase):
         self.window.dictionary.word_row.set_text("ngosen")
         self.window.dictionary.add_button.emit("clicked")
         self.window.restore_defaults()
-        self.assertEqual(self.changed(), ("True", "False", [0, 0, 0]))
+        self.assertEqual(self.changed(), ("True", "False", [0, 0, 0, 0]))
         self.assertFalse(os.path.exists(self.local))
         self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
         self.assertEqual(self.window.macros.table.entries, [])
         self.assertEqual(self.window.toast.get_title(), "Defaults restored.")
         self.window.toast.emit("button-clicked")
-        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
+        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1, 1]))
         self.assertEqual(self.local_words(), ["hello", "ngosen", "world"])
 
     def test_the_dialog_says_the_toggle_key_goes_back_to_ctrl_shift(self):
@@ -572,10 +574,10 @@ class GtkDefaultsTest(unittest.TestCase):
     def test_only_confirming_the_dialog_restores(self):
         dialog = self.window.confirm_defaults()
         dialog.emit("response", "cancel")
-        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
+        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1, 1]))
         dialog = self.window.confirm_defaults()
         dialog.emit("response", "reset")
-        self.assertEqual(self.changed(), ("True", "False", [0, 0, 0]))
+        self.assertEqual(self.changed(), ("True", "False", [0, 0, 0, 0]))
 
     def test_a_dictionary_read_in_part_is_left_as_it_is(self):
         os.makedirs(os.path.dirname(self.local), exist_ok=True)
@@ -595,7 +597,7 @@ class GtkDefaultsTest(unittest.TestCase):
     def test_nothing_is_reset_when_it_could_not_be_undone(self):
         with mock.patch.object(window.settings_snapshot, "take", return_value=None):
             self.window.restore_defaults()
-        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
+        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1, 1]))
         self.assertIsNone(self.window.toast.get_button_label())
 
     def test_a_partial_reset_says_so_and_can_be_undone(self):
@@ -603,11 +605,11 @@ class GtkDefaultsTest(unittest.TestCase):
         self.window = window.Window(None, self.dbus)
         self.addCleanup(self.window.destroy)
         self.window.restore_defaults()
-        self.assertEqual(self.changed(), ("True", "False", [0, 0, 1]))
+        self.assertEqual(self.changed(), ("True", "False", [0, 0, 1, 0]))
         self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
         self.assertEqual(self.window.toast.get_timeout(), 0)
         self.window.toast.emit("button-clicked")
-        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1]))
+        self.assertEqual(self.changed(), ("False", "True", [1, 1, 1, 1]))
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
@@ -983,6 +985,19 @@ def _children(widget):
         yield child
         yield from _children(child)
         child = child.get_next_sibling()
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkMenuIconTest(unittest.TestCase):
+    def test_missing_theme_icon_falls_back_to_own(self):
+        from ui_gtk import appearance
+
+        # A theme like Adwaita: no character-set icon, only the one Ngó Sen installs.
+        theme = mock.Mock()
+        theme.has_icon.side_effect = lambda name: name == "ngosen-charset"
+        with mock.patch.object(appearance, "_theme", return_value=theme):
+            image = appearance._menu_icon("character-set")
+        self.assertEqual(image.get_icon_name(), "ngosen-charset")
 
 
 if __name__ == "__main__":

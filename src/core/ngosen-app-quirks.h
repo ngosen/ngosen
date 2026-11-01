@@ -42,6 +42,10 @@ namespace ngosen {
     // surrounding text tens of milliseconds late, one edit at a time.
     bool surroundingTextLags(const Field& field);
 
+    // mutter sends GNOME Shell's text-input edits once per main-loop turn, and the client keeps only the
+    // last deletion and commit of a turn.
+    bool keepsLastEditPerTurn(const Field& field);
+
     // Wayland text input delivers a commit only to the field that has focus.
     bool dropsCommitsWithoutFocus(const Field& field);
 
@@ -63,5 +67,6 @@ namespace ngosen {
 
     // The address bar of Firefox and its forks sets no Url flag; callers recognise it by the text after the cursor.
     bool hidesAddressBarFlag(const Field& field);
+    bool reportsSurroundingEditsLate(const Field& field);
 
 } // namespace ngosen

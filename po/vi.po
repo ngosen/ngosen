@@ -99,6 +99,14 @@ msgstr "Chế độ gõ"
 msgid "Rules"
 msgstr "Quy tắc"
 
+#: src/ngosen-config.h:226
+msgid "Vietnamese"
+msgstr "Tiếng Việt"
+
+#: src/ngosen-config.h:229
+msgid "Switches"
+msgstr "Phím chuyển theo app"
+
 #: src/ngosen-config.h:222
 msgid "Input Method"
 msgstr "Kiểu gõ"

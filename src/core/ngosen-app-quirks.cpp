@@ -124,6 +124,11 @@ namespace ngosen {
         return field.frontend == "ibus";
     }
 
+    // Only GNOME Shell sends edits through mutter; nothing else the field reports tells it apart.
+    bool keepsLastEditPerTurn(const Field& field) {
+        return field.frontend == "ibus" && appName(field) == "gnome-shell";
+    }
+
     bool dropsCommitsWithoutFocus(const Field& field) {
         return field.frontend == "wayland" || field.frontend == "wayland_v2";
     }
@@ -133,7 +138,15 @@ namespace ngosen {
     }
 
     bool deletesThroughSurroundingFirst(const Field& field) {
-        return field.frontend == "ibus";
+        // XIM has no surrounding text; fcitx4 is the GTK module in old snaps, which nobody has measured.
+        return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2" || field.frontend == "dbus";
+    }
+
+    bool reportsSurroundingEditsLate(const Field& field) {
+        // Firefox may report our deletion and commit only after the next key, and the replacement that
+        // finds the copy stale then mixes both paths. Nothing it reports shows this before it happens.
+        // Over IBus the wait for each key's report covers it.
+        return field.frontend != "ibus" && hidesAddressBarFlag(field);
     }
 
     bool countsDeletionOnCopy(const Field& field) {

@@ -273,6 +273,33 @@ fn test_tab_macro_expansion() {
 }
 
 #[test]
+fn enter_commits_macro_expansion() {
+    // Enter still goes to the app, after the expansion.
+    for enter in [KEY_RETURN, KEY_KP_ENTER] {
+        let mut e = new_test_engine(&[], false);
+        e.macro_enabled = true;
+        e.macro_table = macro_table(&[("dc", "được")]);
+        type_keys(&mut e, "dc");
+        assert!(!e.process_key_event(enter, 0));
+        assert_eq!(e.commit_text, "được");
+    }
+
+    let mut e = new_test_engine(&[], false);
+    e.macro_enabled = true;
+    e.macro_table = macro_table(&[("dc", "được")]);
+    type_keys(&mut e, "xx");
+    assert!(!e.process_key_event(KEY_RETURN, 0));
+    assert_eq!(e.commit_text, "xx", "no macro match");
+
+    let mut e = new_test_engine(&[], false);
+    e.macro_enabled = true;
+    e.macro_table = macro_table(&[("dc", "được")]);
+    type_keys(&mut e, "dc");
+    assert!(!e.process_key_event(KEY_RETURN, CONTROL_MASK));
+    assert_eq!(e.commit_text, "dc", "Ctrl+Enter keeps the typed text");
+}
+
+#[test]
 fn backspace_deletes_digit_in_macro_mode() {
     let mut e = new_test_engine(&[], false);
     e.macro_enabled = true;

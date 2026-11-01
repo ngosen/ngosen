@@ -141,28 +141,27 @@ namespace ngosen {
             ngosen::surroundingTextLags(host_->field()) ? std::max(engine_->options().waitSurroundingTimeoutMs, LaggingReportWaitMs) : engine_->options().waitSurroundingTimeoutMs;
         const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->options().waitSurroundingShortMs : fullMs;
         const auto timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
-        // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms. Check once at the
-        // threshold first: many apps report "done" before it and then go quiet.
+        // Check once at the threshold first: many apps report "done" before it and then go quiet.
         const auto threshold     = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
         const auto firstDeadline = threshold < timeout ? surr_wait_started_at_ + threshold : surr_wait_started_at_ + timeout;
-        surr_wait_timer_         = host_->startTimer(firstDeadline, 1000, [this, timeout](ngosen::Timer& t) {
-            if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
-                return false;
-            }
-            const auto waited = ngosen::monotonicUs() - surr_wait_started_at_;
-            if (waited + 1000 < timeout) {
-                if (deletionLooksDone()) {
-                    deliverAfterSettle("threshold", true);
-                    return false;
-                }
-                t.rearm(surr_wait_started_at_ + timeout);
-                return true;
-            }
-            if (deferLaggingCommit("timeout"))
-                return false;
-            finishReplacement("timeout", true);
-            return false;
-        });
+        replaceTimer(surr_wait_timer_, startWaitTimer(firstDeadline, [this, timeout](ngosen::Timer& t) {
+                         if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
+                             return false;
+                         }
+                         const auto waited = ngosen::monotonicUs() - surr_wait_started_at_;
+                         if (waited + 1000 < timeout) {
+                             if (deletionLooksDone()) {
+                                 deliverAfterSettle("threshold", true);
+                                 return false;
+                             }
+                             t.rearm(surr_wait_started_at_ + timeout);
+                             return true;
+                         }
+                         if (deferLaggingCommit("timeout"))
+                             return false;
+                         finishReplacement("timeout", true);
+                         return false;
+                     }));
         return true;
     }
 
@@ -199,7 +198,7 @@ namespace ngosen {
         surr_wait_focus_retries_ = 0;
         surr_wait_started_at_    = ngosen::monotonicUs();
         surr_wait_deliver_at_    = surr_wait_started_at_ + (static_cast<uint64_t>(waitMs) * 1000ULL);
-        surr_wait_timer_         = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); });
+        replaceTimer(surr_wait_timer_, startWaitTimer(surr_wait_deliver_at_, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); }));
         return true;
     }
 
@@ -237,11 +236,15 @@ namespace ngosen {
         return false;
     }
 
+    uint64_t TypingState::forwardWaitUs() const {
+        return ngosen::surroundingTextLags(host_->field()) ? ShellForwardWaitUs : ForwardWaitUs;
+    }
+
     bool TypingState::deferLaggingCommit(const char* reason, uint64_t settleUs) {
         if (!ngosen::surroundingTextLags(host_->field()))
             return false;
         // A report from before the forwarded keys were applied can look like the finished deletion.
-        const uint64_t floorUs = surr_wait_started_at_ + ForwardWaitUs;
+        const uint64_t floorUs = surr_wait_started_at_ + forwardWaitUs();
         const uint64_t nowUs   = ngosen::monotonicUs();
         if (nowUs >= floorUs && host_->hasFocus() && !waitsForRedraw())
             return false;
@@ -250,7 +253,7 @@ namespace ngosen {
         surr_wait_timer_only_    = true;
         surr_wait_focus_retries_ = 0;
         surr_wait_deliver_at_    = std::max(floorUs, nowUs + std::max<uint64_t>(settleUs, 1000));
-        settle_timer_            = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); });
+        replaceTimer(settle_timer_, startWaitTimer(surr_wait_deliver_at_, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); }));
         return true;
     }
 
@@ -289,9 +292,12 @@ namespace ngosen {
             checkCursorJump();
             checkRetoneReport();
         }
-        // Edge reports an empty composer as "\n".
-        if (host_->hasFocus() && host_->surrounding().text().find_first_not_of(" \t\n") != std::string::npos)
-            surrSeenTextSinceFocus_ = true;
+        if (host_->hasFocus() && host_->surrounding().isValid()) {
+            if (showsText(host_->surrounding()))
+                surrSeenTextSinceFocus_ = true;
+            else if (keyCount_ == keysAtFocus_)
+                surrSeenEmptySinceFocus_ = true;
+        }
         noteAutofill(host_->surrounding());
         checkSurroundingReport();
         surr_silent_        = false;
@@ -307,6 +313,9 @@ namespace ngosen {
             onWaitSurroundingUpdated();
         if (overtyping)
             onOvertypeSurroundingUpdated();
+        // The check closes once the app shows the edit, which it can only do after mutter sent it.
+        if (edit_hold_ && !surrCheck_)
+            finishEditHold();
     }
 
     constexpr uint64_t KeyReportWaitUs = 20000;
@@ -407,6 +416,18 @@ namespace ngosen {
         return before.substr(std::min<size_t>(lastSurroundingCursor_, before.size())) != now.substr(std::min<size_t>(s.cursor(), now.size()));
     }
 
+    // The report of a surrounding deletion alone: the same text with only the deleted characters gone
+    // before the cursor. The commit sent with the deletion is still to come.
+    bool TypingState::showsOwnDeletion(const Surrounding& s) const {
+        // A key since then may be the user's own BackSpace, which reports the same shape.
+        if (unreportedDeleteLength_ == 0 || keyCount_ != unreportedDeleteKey_ || s.cursor() != s.anchor() || s.cursor() + unreportedDeleteLength_ != lastSurroundingCursor_ ||
+            textAfterCursorChanged(s))
+            return false;
+        const std::u32string before = ngosen::utf8::decode(lastSurroundingText_);
+        const std::u32string now    = ngosen::utf8::decode(s.text());
+        return s.cursor() <= now.size() && lastSurroundingCursor_ <= before.size() && before.compare(0, s.cursor(), now, 0, s.cursor()) == 0;
+    }
+
     // A quick switch to another field on the same context comes back like a bounce. The first settled
     // report after it tells which: the same field still has the word before the cursor.
     bool TypingState::lostWordAfterBounce(const Surrounding& s, bool settling) {
@@ -448,8 +469,10 @@ namespace ngosen {
             (hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() && (unreportedCommitLength_ == 0 || textAfterCursorChanged(s))) ||
             lostWord;
         // Firefox repeats the old state before the echo, so only a change ends the wait.
-        if (jumped || !sameText)
-            unreportedCommitLength_ = 0;
+        if (!jumped && !sameText && showsOwnDeletion(s))
+            unreportedDeleteLength_ = 0;
+        else if (jumped || !sameText)
+            unreportedCommitLength_ = unreportedDeleteLength_ = 0;
         // Calc reports the new cell empty just before the key we let through lands in it.
         // Our unreported commits do not matter here: in the same cell the key would follow them.
         const bool keyStartedCell = settling && passed_key_ && !sameText && s.text().empty() && !oldPreBuffer_.empty() && ngosen::reportsFieldOnlyOnKey(host_->field());

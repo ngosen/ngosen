@@ -255,6 +255,10 @@ namespace ngosen {
         // Xfwm clears the active window and sets it again when WPS opens a window on a double click; only
         // another app's window means the user moved elsewhere.
         void SelectionFollower::activeWindowChanged() {
+            if (ownerApp_ == 0) {
+                selection_->forget();
+                return;
+            }
             const uint32_t active = activeWindow();
             if (active != 0 && (active & ~clientMask_) != ownerApp_)
                 selection_->forget();

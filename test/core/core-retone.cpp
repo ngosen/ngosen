@@ -323,6 +323,37 @@ namespace {
         check(r.hint.empty() && r.text == "abc s xyz", "a terminal's announced selection", r.text);
     }
 
+    // WPS Office reports no text through its fcitx4 module, and a double click selects the word with the
+    // space after it (#504).
+    Run wps() {
+        Run run                       = nhanh(4, 10);
+        run.field                     = makeField("fcitx4", false);
+        run.field.program             = "wps";
+        run.field.formattedPreedit    = true;
+        run.quirks.announcesSelection = true;
+        return run;
+    }
+
+    void testAnnouncedSelectionWithSpace() {
+        Run  run = wps();
+        auto r   = retone(run);
+        check(r.text == "abc nhánh xyz" && !r.hint.empty(), "WPS: the space typed over comes back", r.text);
+        run.after = {ngosen::key::Escape};
+        r         = retone(run);
+        check(r.text == "abc sxyz", "WPS: Esc puts back what the key left", r.text);
+        run.after = {'f'};
+        r         = retone(run);
+        check(r.text == "abc nhành xyz", "WPS: another tone key keeps the space", r.text);
+        run.after = {'a', 'c', 'h', 's'};
+        r         = retone(run);
+        check(r.text == "abc sáchxyz", "WPS: a letter after the key types over as the app did", r.text);
+
+        run        = wps();
+        run.anchor = 0;
+        r          = retone(run);
+        check(r.hint.empty() && r.text == "sxyz", "WPS: two selected words are typed over", r.text);
+    }
+
     void testClickKeepsTone() {
         Run run         = nhanh();
         run.beforeAfter = [](FakeApp& app, FakeLoop& loop) {
@@ -471,6 +502,7 @@ int main() {
     testWords();
     testWhereNotOffered();
     testAnnouncedSelection();
+    testAnnouncedSelectionWithSpace();
     testClickKeepsTone();
     testToneAtCursor();
     testToneAfterBackspace();

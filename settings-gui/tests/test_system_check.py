@@ -24,11 +24,45 @@ def facts(session, desktop, env=None, **kw):
     base.update(FCITX if env is None else env)
     kw.setdefault("fcitx_running", True)
     kw.setdefault("ngosen_in_group", True)
+    kw.setdefault("input_panel_state", "ACTIVE")
     return Facts(env=base, **kw)
 
 
 def titles(found, level=None):
     return [f.title for f in found if level is None or f.level == level]
+
+
+class InputPanelTest(unittest.TestCase):
+    TITLE = "Menu and hints do not show in GNOME's search box"
+
+    def found(self, state, desktop="ubuntu:GNOME"):
+        return system_check.evaluate(facts("wayland", desktop, input_panel_state=state))
+
+    def test_gnome_without_the_panel_offers_to_install_it(self):
+        finding = self.found("")[0]
+        self.assertEqual((finding.level, finding.title), (WARN, self.TITLE))
+        self.assertEqual(finding.action, system_check.INSTALL_INPUT_PANEL)
+        self.assertIn(system_check.INPUT_PANEL_PAGE, finding.command)
+
+    def test_installed_panel_has_no_install_button(self):
+        self.assertIn("gnome-extensions enable", self.found("INACTIVE")[0].fix)
+        for state in ("INACTIVE", "ERROR", "OUT OF DATE"):
+            self.assertEqual(self.found(state)[0].action, "")
+        self.assertIn(system_check.INPUT_PANEL_PAGE, self.found("ERROR")[0].fix)
+
+    def test_running_panel_and_other_desktops_are_clean(self):
+        self.assertEqual(self.found("ACTIVE"), [])
+        self.assertNotIn(self.TITLE, titles(self.found("", desktop="sway")))
+
+    def test_install_counts_only_when_the_user_accepts(self):
+        def fix(stdout, returncode=0):
+            done = subprocess.CompletedProcess([], returncode, stdout=stdout)
+            with mock.patch.object(system_check.subprocess, "run", return_value=done):
+                return system_check.run_fix(system_check.INSTALL_INPUT_PANEL, FakeDBusHandler())
+
+        self.assertEqual(fix("('successful',)\n"), (True, None))
+        self.assertEqual(fix("('cancelled',)\n"), (False, None))
+        self.assertEqual(fix("", returncode=1), (False, None))
 
 
 class EvaluateTest(unittest.TestCase):
@@ -118,6 +152,7 @@ class StepsTest(unittest.TestCase):
                 "Older X11 apps use fcitx5",
                 "Qt apps use fcitx5",
                 "Chrome and older GTK apps use fcitx5",
+                "Menu and hints show in GNOME's search box",
             ],
         )
         self.assertEqual(titles(found, FAIL) + titles(found, WARN), [])

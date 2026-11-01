@@ -22,6 +22,8 @@ IM_VARIABLES = ("GTK_IM_MODULE", "QT_IM_MODULE", "XMODIFIERS", "SDL_IM_MODULE")
 OK, WARN, FAIL = "ok", "warn", "fail"
 
 FORWARD_KEYS = "forward-keys@ngosen.github.io"
+INPUT_PANEL = "kimpanel@kde.org"
+INPUT_PANEL_PAGE = "https://extensions.gnome.org/extension/261/"
 
 
 @dataclass
@@ -42,6 +44,7 @@ class Facts:
     gnome_shell_version: str = ""
     # As gnome-extensions reports it (ACTIVE, INACTIVE, ERROR...), empty when not installed.
     forward_keys_state: str = ""
+    input_panel_state: str = ""
 
     @property
     def session(self):
@@ -62,11 +65,12 @@ class Finding:
     command: str = ""
 
 
-START_FCITX, RESTART_FCITX, ADD_NGOSEN, ENABLE_FORWARD_KEYS = (
+START_FCITX, RESTART_FCITX, ADD_NGOSEN, ENABLE_FORWARD_KEYS, INSTALL_INPUT_PANEL = (
     "start-fcitx",
     "restart-fcitx",
     "add-ngosen",
     "enable-forward-keys",
+    "install-input-panel",
 )
 
 
@@ -185,6 +189,28 @@ def _forward_keys_findings(facts):
     return [Finding(WARN, title, fix, ENABLE_FORWARD_KEYS, command)]
 
 
+def _input_panel_findings(facts):
+    state = facts.input_panel_state
+    if state == "ACTIVE":
+        return [Finding(OK, _("Menu and hints show in GNOME's search box"))]
+    title = _("Menu and hints do not show in GNOME's search box")
+    # Only this extension draws fcitx5's popups inside GNOME Shell.
+    if not state:
+        fix = _(
+            "Run install.sh again, or install Input Method Panel from {}, then log out and back in."
+        ).format(INPUT_PANEL_PAGE)
+        return [Finding(WARN, title, fix, INSTALL_INPUT_PANEL, f"xdg-open {INPUT_PANEL_PAGE}")]
+    if state in ("ERROR", "OUT OF DATE"):
+        fix = _("The installed Input Method Panel does not run; update it from {}.").format(
+            INPUT_PANEL_PAGE
+        )
+        return [Finding(WARN, title, fix)]
+    fix = _(
+        "Turn on Input Method Panel: gnome-extensions enable {}. If it still does not show, log out and back in."
+    ).format(INPUT_PANEL)
+    return [Finding(WARN, title, fix)]
+
+
 def _desktop_findings(facts):
     if "GNOME" in facts.desktops:
         return (
@@ -203,6 +229,7 @@ def _desktop_findings(facts):
                 _("Chrome and older GTK apps use fcitx5"),
             )
             + _forward_keys_findings(facts)
+            + _input_panel_findings(facts)
         )
     if facts.session == "x11":
         return _needs(
@@ -262,6 +289,7 @@ def fix_label(action):
         RESTART_FCITX: _("Restart fcitx5"),
         ADD_NGOSEN: _("Add Ngó Sen"),
         ENABLE_FORWARD_KEYS: _("Turn on the fix"),
+        INSTALL_INPUT_PANEL: _("Install"),
     }[action]
 
 
@@ -271,11 +299,17 @@ def fixed_message(action):
         RESTART_FCITX: _("Restarted fcitx5."),
         ADD_NGOSEN: _("Added Ngó Sen to the input method list."),
         ENABLE_FORWARD_KEYS: _("Turned on the fix for GNOME."),
+        INSTALL_INPUT_PANEL: _("Installed Input Method Panel."),
     }[action]
 
 
 # fcitx5 takes a moment to come back on the bus after starting.
-SETTLE_MS = {START_FCITX: 1500, RESTART_FCITX: 1500, ENABLE_FORWARD_KEYS: 500}
+SETTLE_MS = {
+    START_FCITX: 1500,
+    RESTART_FCITX: 1500,
+    ENABLE_FORWARD_KEYS: 500,
+    INSTALL_INPUT_PANEL: 500,
+}
 # A slow machine may need longer; check again this often before calling the fix failed.
 RETRY_MS, RETRIES = 500, 8
 
@@ -327,7 +361,32 @@ def run_fix(action, dbus_handler):
         if not _succeeds(["gnome-extensions", "enable", FORWARD_KEYS]):
             return False, None
         return True, lambda: _succeeds(["gnome-extensions", "disable", FORWARD_KEYS])
+    if action == INSTALL_INPUT_PANEL:
+        return _install_input_panel(), None
     return False, None
+
+
+def _install_input_panel():
+    # GNOME asks the user first and answers "cancelled" when they say no; the call waits for them.
+    cmd = [
+        "gdbus",
+        "call",
+        "--session",
+        "--timeout",
+        "120",
+        "--dest",
+        "org.gnome.Shell.Extensions",
+        "--object-path",
+        "/org/gnome/Shell/Extensions",
+        "--method",
+        "org.gnome.Shell.Extensions.InstallRemoteExtension",
+        INPUT_PANEL,
+    ]
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=125)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return out.returncode == 0 and "successful" in out.stdout
 
 
 def _succeeds(cmd):
@@ -340,7 +399,7 @@ def _succeeds(cmd):
 
 
 # Restarting last: a change made over D-Bus is saved when the old fcitx5 exits.
-FIX_ORDER = (START_FCITX, ADD_NGOSEN, ENABLE_FORWARD_KEYS, RESTART_FCITX)
+FIX_ORDER = (START_FCITX, ADD_NGOSEN, ENABLE_FORWARD_KEYS, INSTALL_INPUT_PANEL, RESTART_FCITX)
 
 
 class Fixes:
@@ -413,7 +472,10 @@ def report(facts, findings, app_test=None):
         lines.append(f"KWin InputMethod={facts.kwin_input_method}")
     if facts.gnome_shell_version:
         state = facts.forward_keys_state or "not installed"
-        lines.append(f"GNOME Shell {facts.gnome_shell_version}, forward-keys: {state}")
+        panel = facts.input_panel_state or "not installed"
+        lines.append(
+            f"GNOME Shell {facts.gnome_shell_version}, forward-keys: {state}, input panel: {panel}"
+        )
     lines.append("")
     lines += [f"[{marks[f.level]}] {f.title}" for f in findings] or ["[OK] no setup problem found"]
     if facts.apps:
@@ -444,6 +506,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
     if "GNOME" in facts.desktops:
         facts.gnome_shell_version = _gnome_shell_version()
         facts.forward_keys_state = _extension_state(FORWARD_KEYS)
+        facts.input_panel_state = _extension_state(INPUT_PANEL)
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
     facts.ngosen_in_group = "ngosen" in (names or [])

@@ -304,7 +304,7 @@ namespace ngosen {
         surr_silent_streak_ = 0;
         if (!(host_->surrounding() == reportAtKey_))
             keySinceReport_ = false;
-        if (key_report_pending_) {
+        if (key_report_pending_ && !(key_report_until_copy_fits_ && copyGivesWrongBytes())) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
             const auto s = host_->surrounding();
             finishKeyReportWait(s.isValid() && !(ngosen::reportsFieldOnlyOnKey(host_->field()) && s.text().empty()), false);
@@ -325,17 +325,21 @@ namespace ngosen {
         return hasLastSurrounding_ && (!host_->field().surroundingText || ngosen::reportsFieldOnlyOnKey(host_->field()));
     }
 
-    void TypingState::startKeyReportWait(const std::string& deletedPart, const std::string& addedPart) {
-        key_report_key_     = *live_key_;
-        key_report_deleted_ = deletedPart;
-        key_report_added_   = addedPart;
-        key_report_pending_ = true;
+    void TypingState::startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits) {
+        key_report_until_copy_fits_ = untilCopyFits;
+        key_report_key_             = *live_key_;
+        key_report_deleted_         = deletedPart;
+        key_report_added_           = addedPart;
+        key_report_pending_         = true;
         is_deleting_.store(true, std::memory_order_release);
         if (ngosen::reportsFieldOnlyOnKey(host_->field())) {
             // The key itself never reaches the app, so give it one that types nothing.
             forwardTap(ngosen::EditKey::Shift);
         }
-        key_report_timer_ = host_->startTimer(ngosen::monotonicUs() + KeyReportWaitUs, 0, [this](ngosen::Timer&) {
+        const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
+        key_report_timer_     = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer&) {
+            if (key_report_until_copy_fits_)
+                NGOSEN_INFO("Copy of the text still short, deleting anyway");
             finishKeyReportWait(true, true);
             return false;
         });

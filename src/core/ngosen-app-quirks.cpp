@@ -117,7 +117,9 @@ namespace ngosen {
     bool typesOverPrimarySelection(const Field& field) {
         // Terminals, Emacs and Vim also own the primary selection and report the same, but type elsewhere.
         const std::string program = appName(field);
-        return !field.surroundingText && (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || program == "wps");
+        // WPS Writer, Spreadsheets and Presentation.
+        const bool wps = program == "wps" || program == "et" || program == "wpp";
+        return !field.surroundingText && (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || wps);
     }
 
     bool surroundingTextLags(const Field& field) {

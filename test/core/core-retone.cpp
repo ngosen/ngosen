@@ -352,6 +352,16 @@ namespace {
         run.anchor = 0;
         r          = retone(run);
         check(r.hint.empty() && r.text == "sxyz", "WPS: two selected words are typed over", r.text);
+
+        run               = wps();
+        run.field.program = "wpp";
+        r                 = retone(run);
+        check(r.text == "abc nhánh xyz", "WPS Presentation", r.text);
+
+        run        = announced();
+        run.cursor = 10;
+        r          = retone(run);
+        check(r.text == "abc nhánh xyz", "Chromium: a space selected after the word comes back", r.text);
     }
 
     void testClickKeepsTone() {

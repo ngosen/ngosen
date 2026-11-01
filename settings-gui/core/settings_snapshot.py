@@ -7,6 +7,7 @@ import os
 
 SUB_CONFIGS = (
     ("app_rules", "Rules"),
+    ("app_switches", "Switches"),
     ("ngosen-macro", "Macro"),
     ("custom_keymap", "CustomKeymap"),
 )

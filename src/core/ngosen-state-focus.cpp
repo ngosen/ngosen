@@ -57,8 +57,10 @@ namespace ngosen {
             if (isFocusIn) {
                 fieldReported_ = s.isValid();
                 // A GNOME app's new context gets a copy of the previous window's text before focus-in.
-                surrSeenTextSinceFocus_ = false;
-                autofillMarked_         = false;
+                surrSeenTextSinceFocus_  = false;
+                surrSeenEmptySinceFocus_ = false;
+                keysAtFocus_             = keyCount_;
+                autofillMarked_          = false;
                 lastPath_.clear();
                 surrCheck_.reset();
                 surr_check_timer_.reset();
@@ -83,7 +85,8 @@ namespace ngosen {
     }
 
     void TypingState::deactivate(bool isFocusOut) {
-        flushPendingReplacement(); // commit pending text into the field we are leaving
+        enter_after_replacement_ = false; // an Enter would land in the next field
+        flushPendingReplacement();        // commit pending text into the field we are leaving
         if (isFocusOut)
             commitNotSeen_.clear();
         lastDeactivateTime_ = nowMs();

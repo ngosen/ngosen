@@ -61,6 +61,10 @@ namespace ngosen::key {
         return sym == BackSpace || sym == 8;
     }
 
+    inline bool isEnter(uint32_t sym) {
+        return sym == Return || sym == KP_Enter;
+    }
+
 } // namespace ngosen::key
 
 namespace ngosen::modifier {

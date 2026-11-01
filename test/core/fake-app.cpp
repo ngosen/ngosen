@@ -124,22 +124,30 @@ namespace ngosen::test {
     }
 
     void FakeApp::type(uint32_t sym) {
-        const auto time = static_cast<uint32_t>(monotonicUs() / 1000);
-        FakeKey    down(sym, false, 0, time);
+        const auto     time  = static_cast<uint32_t>(monotonicUs() / 1000);
+        const uint32_t state = (sym & WithShift) != 0U ? modifier::Shift : 0U;
+        sym &= ~WithShift;
+        FakeKey down(sym, false, state, time);
         state_->keyEvent(down);
+        if (!down.accepted() && quirks_.keepsLastEditPerTurn)
+            endTurn();
         if (!down.accepted() && quirks_.resendsKeysWithoutText && keyText(sym).empty()) {
             FakeKey again(sym, false, modifier::Repeat, time);
             state_->keyEvent(again);
         }
         if (!down.accepted()) {
-            if (sym == key::BackSpace) {
+            if (sym == key::Return && quirks_.showsEnter)
+                later(quirks_.lagMs, [this, soft = state == modifier::Shift] { insert(soft ? U"\u2028" : U"\n", true); });
+            else if ((sym == key::Tab || sym == key::ISO_Left_Tab) && quirks_.showsTab)
+                later(quirks_.lagMs, [this, back = sym == key::ISO_Left_Tab || (state & modifier::Shift) != 0U] { insert(back ? U"⇤" : U"⇥", true); });
+            else if (sym == key::BackSpace) {
                 lastBackSpaceAt_ = time;
                 later(quirks_.lagMs, [this] { eraseBefore(1); });
             } else if (const auto text = keyText(down.appSym()); !text.empty() && static_cast<unsigned char>(text[0]) >= 0x20 && text[0] != '\x7f')
                 later(quirks_.lagMs, [this, text] { insert(utf8::decode(text), true); });
         }
 
-        FakeKey up(sym, true);
+        FakeKey up(sym, true, state);
         state_->keyEvent(up);
     }
 
@@ -197,6 +205,11 @@ namespace ngosen::test {
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
             return;
+        if (quirks_.keepsLastEditPerTurn) {
+            turnCommit_ = text;
+            startTurn();
+            return;
+        }
         later(quirks_.lagMs + quirks_.commitLagMs, [this, text] {
             if (focused_ && redraws_ == 0)
                 insert(utf8::decode(text));
@@ -204,6 +217,14 @@ namespace ngosen::test {
     }
 
     void FakeApp::forwardKey(EditKey key, bool release, uint32_t time) {
+        if ((key == EditKey::Tab || key == EditKey::ShiftTab) && !release && quirks_.showsTab && !quirks_.dropsForwardedKeys) {
+            later(quirks_.lagMs, [this, key] { insert(key == EditKey::ShiftTab ? U"⇤" : U"⇥", true); });
+            return;
+        }
+        if ((key == EditKey::Return || key == EditKey::ShiftReturn) && !release && quirks_.showsEnter && !quirks_.dropsForwardedKeys) {
+            later(quirks_.lagMs, [this, key] { insert(key == EditKey::ShiftReturn ? U"\u2028" : U"\n", true); });
+            return;
+        }
         if (key == EditKey::Right && !release && !quirks_.dropsForwardedKeys) {
             later(quirks_.lagMs, [this] { moveCursor(cursor_ + 1); });
             return;
@@ -255,6 +276,11 @@ namespace ngosen::test {
         // A module whose copy of the text is empty finds every deletion out of range.
         if (quirks_.ignoresSurroundingDel || quirks_.reportsEmptyText)
             return;
+        if (quirks_.keepsLastEditPerTurn && offset == -static_cast<int>(size)) {
+            turnDeleteBytes_ = reportedBytesBefore(size);
+            startTurn();
+            return;
+        }
         if (quirks_.convertsDeleteOnReportedCopy && offset == -static_cast<int>(size)) {
             const size_t bytes = reportedBytesBefore(size);
             later(quirks_.lagMs, [this, bytes] {
@@ -418,6 +444,27 @@ namespace ngosen::test {
                 state_->surroundingUpdated();
                 inReport_ = false;
             });
+    }
+
+    void FakeApp::startTurn() {
+        if (turnPending_)
+            return;
+        turnPending_ = true;
+        later(0, [this] { endTurn(); });
+    }
+
+    void FakeApp::endTurn() {
+        if (!turnPending_)
+            return;
+        turnPending_ = false;
+        if (turnDeleteBytes_) {
+            const unsigned int chars = charsForBytesBefore(*turnDeleteBytes_);
+            eraseAround(-static_cast<int>(chars), chars);
+        }
+        if (turnCommit_ && focused_)
+            insert(utf8::decode(*turnCommit_));
+        turnDeleteBytes_.reset();
+        turnCommit_.reset();
     }
 
     void FakeApp::later(int ms, std::function<void()> action) {

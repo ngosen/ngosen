@@ -263,7 +263,7 @@ namespace ngosen {
         if (is_deleting_.load(std::memory_order_acquire))
             return false;
         const bool plain = !keyEvent.hasModifier();
-        if ((sym == ngosen::key::Return || sym == ngosen::key::KP_Enter) && plain) {
+        if (ngosen::key::isEnter(sym) && plain) {
             keyEvent.accept();
             acceptRetype(host_->translate("Tab or Esc: put back what was typed"));
             return true;

@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.7.4
+Version:        1.7.5
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later AND OFL-1.1
@@ -70,6 +70,7 @@ find . -type f -name '*.py' -exec sed -i '1s|^#!.*env python3|#!/usr/bin/python3
 
 %{_datadir}/icons/hicolor/scalable/apps/*fcitx-ngosen*.svg
 %{_datadir}/icons/hicolor/scalable/apps/io.github.ngosen.NgoSen.Settings.svg
+%{_datadir}/icons/hicolor/scalable/actions/ngosen-*.svg
 %{_datadir}/icons/hicolor/scalable/status/fcitx-ngosen*.svg
 %{_datadir}/icons/hicolor/*/status/fcitx-ngosen*.png
 
@@ -99,6 +100,9 @@ else
 fi
 
 %changelog
+* Sun Nov 01 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.5-1
+- Remember English/Vietnamese per app (#469) and delete through the text on KDE, Sway, Hyprland and X11 (#477). Expand a macro before Enter (#476), keep Enter, Shift+Enter and Tab pressed right after a word in Sen mode (#487, #488, #489), wait for GNOME to show one edit before the next (#490) and after BackSpace (#481), and fix a crash with fcitx5 older than 5.1.7 (#493). Show menu icons on themes without them (#484, #486), install on Fedora remixes (#491) and print rpm-ostree commands on image-based Fedora (#494).
+
 * Sat Oct 31 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.4-1
 - Send a held Enter in Preedit on GNOME when the key is released (#465), commit the underlined word when a click in an XIM app comes without a reset (#466), and delete through the text in apps GNOME Shell 50.0-50.3 relays when the forward-keys extension is not running (#467).
 

@@ -43,6 +43,9 @@ namespace fcitx {
 
     class NgoSenDBusObject;
 
+    // fcitx5 also switches input methods when a field changes, such as leaving a password field.
+    bool switchPickedByUser(InputMethodSwitchedReason reason);
+
     // Hangs one typing state on each fcitx5 input context; the state itself does not depend on fcitx5.
     class TypingStateProperty final : public InputContextProperty {
       public:
@@ -226,6 +229,11 @@ namespace fcitx {
         // Writes the recorder to a new file in typingLogDir(); an empty path if that failed.
         std::filesystem::path writeTypingLog();
 
+        // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
+        static std::string getProgramName(InputContext* ic);
+        // The mode appName types in: its toggle-key switch, else its menu rule, else the last switch.
+        NgoSenMode modeFor(const std::string& appName) const;
+
       private:
         // A tray menu entry and the option that shows it; nullptr means always shown.
         struct MenuEntry {
@@ -243,6 +251,7 @@ namespace fcitx {
         ngosenMacroTable                            macroTables_;
         ngosen::CGoObject                           macroTableObject_;
         ngosenAppRules                              appRulesTables_;
+        ngosenAppSwitches                           appSwitchesTables_;
 
         FactoryFor<TypingStateProperty>             factory_;
         std::vector<std::string>                    imNames_;
@@ -271,6 +280,7 @@ namespace fcitx {
         std::vector<ScopedConnection>               connections_;
         ngosen::CGoObject                           dictionary_;
         std::unordered_map<std::string, NgoSenMode> appRules_;
+        std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
         bool                                        isSelectingAppMode_ = false;
         // A modifier-only toggle key fires on release, unless another key came in between.
@@ -392,17 +402,13 @@ namespace fcitx {
          */
         void saveAppRules() const;
 
-        /**
-         * @brief Get application-specific mode rules
-         * @return Current application-specific mode rules
-        */
-
-        NgoSenMode getAppRule(const std::string& appName) const;
         // The rule's own name: appName itself, or appName without ".desktop".
         std::optional<std::string> appRuleName(const std::string& appName) const;
         std::optional<NgoSenMode>  findAppRule(const std::string& appName) const;
         // The mode Vietnamese typing uses: the configured one, unless that is Off.
         NgoSenMode vietnameseMode() const;
+        // The mode Vietnamese typing uses in appName when no rule picks one.
+        NgoSenMode vietnameseModeFor(const std::string& appName) const;
         // The mode of an app without a rule: Off until the toggle key turns Vietnamese on.
         NgoSenMode globalMode() const;
         // The mode an app gets when the user has picked none for it.
@@ -418,6 +424,13 @@ namespace fcitx {
          * @param mode The mode to set
          */
         void setAppRule(const std::string& appName, NgoSenMode mode);
+
+        // The switch's own name: appName itself, or appName without ".desktop".
+        std::optional<std::string> appSwitchName(const std::string& appName) const;
+        std::optional<bool>        findAppSwitch(const std::string& appName) const;
+        // Saved unless the app has no name of its own.
+        void setAppSwitch(const std::string& appName, bool vietnamese);
+        void clearAppSwitch(const std::string& appName);
 
         /**
          * @brief Shows the application mode selection menu.
@@ -472,13 +485,6 @@ namespace fcitx {
          * @param ic Current input context.
          */
         void setMode(NgoSenMode mode, InputContext* ic);
-
-        /**
-         * @brief Get name of current program
-         * @param ic Current input context.
-         * @return Name of current program
-         */
-        static std::string getProgramName(InputContext* ic);
 
         /**
          * @brief Detects if the system is in dark mode.

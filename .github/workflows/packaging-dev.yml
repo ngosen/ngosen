@@ -268,6 +268,10 @@ jobs:
           - name: fedora-44, KDE
             image: fedora:44
             args: kde
+          # A Fedora remix: its own ID, Fedora's release number.
+          - name: ultramarine-44, KDE
+            image: ghcr.io/ultramarine-linux/ultramarine:44
+            args: kde
 
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     # Without an init, fcitx5 daemons that exit stay as zombies, and the installer takes them for a

@@ -98,6 +98,14 @@ msgstr ""
 msgid "Rules"
 msgstr ""
 
+#: src/ngosen-config.h:226
+msgid "Vietnamese"
+msgstr ""
+
+#: src/ngosen-config.h:229
+msgid "Switches"
+msgstr ""
+
 #: src/ngosen-config.h:222
 msgid "Input Method"
 msgstr ""

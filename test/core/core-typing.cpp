@@ -335,7 +335,8 @@ namespace {
         FakeHost*           host  = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
 
-        typeTie(state, *host, loop, surroundingText);
+        // A field that has not reported its word yet keeps the backspace path.
+        typeTie(state, *host, loop, false);
         const std::string what = "sen " + frontend + ": ";
         check(join(host->commits()) == "(none)", what + "plain letters go to the app as keys", join(host->commits()));
 
@@ -356,6 +357,45 @@ namespace {
         check(join(host->commits()) == "['ê']", what + "commits ê", join(host->commits()));
     }
 
+    // Once the field has reported the word, KWin, Sway and D-Bus fields delete through the surrounding text.
+    void testSenDeletesReportedWord(const std::string& frontend) {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field = makeField(frontend, true);
+        // fcitx5-gtk3 and fcitx5-qt; without the flag a D-Bus field is GTK4, which only takes deletions.
+        field.keyEventOrderFix    = frontend == "dbus";
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        typeTie(state, *host, loop, true);
+        const std::string what = "sen " + frontend + ", reported word: ";
+        check(press(state, static_cast<uint32_t>('e')), what + "e -> ê takes the key", "not accepted");
+        loop.pump(3);
+        check(host->forwarded().empty() && host->deletes().size() == 1 && join(host->commits()) == "['ê']", what + "one surrounding deletion, then ê, no backspace",
+              std::to_string(host->forwarded().size()) + " forwarded, " + std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
+    }
+
+    // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
+    void testFirefoxKeepsBackspaces() {
+        for (const char* frontend : {"wayland", "wayland_v2", "dbus"}) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop      loop;
+            FakeResources resources;
+            Field         field       = makeField(frontend, true, "firefox");
+            field.keyEventOrderFix    = std::string(frontend) == "dbus";
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            typeTie(state, *host, loop, true);
+            press(state, static_cast<uint32_t>('e'));
+            loop.pump(3);
+            check(host->deletes().empty() && host->forwarded().size() == 2, std::string("firefox ") + frontend + ": backspaces, no surrounding deletion",
+                  std::to_string(host->deletes().size()) + " deletes, " + std::to_string(host->forwarded().size()) + " forwarded");
+        }
+    }
+
     // Sway (wlroots) reports the text and then a done event; a commit sent before the done carries a
     // stale serial and is dropped.
     void testCommitAfterTheReport() {
@@ -363,8 +403,12 @@ namespace {
         ngosen::test::AppQuirks quirks;
         quirks.dropsCommitsInReport = true;
         const std::vector<uint32_t> keys{'d', 'd', 'w', 'o', 'w', 'n', 'g', 'f'};
-        const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 100));
-        check(text == "đường", "sway: commits go out after the app's report", text);
+        FakeResources               resources;
+        const auto                  run = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), 100));
+        check(run.text == "đường", "sway: commits go out after the app's report", run.text);
+        // The first replacement empties the field, so it alone goes through backspaces.
+        check(run.sent.surroundingDeletes > 0 && run.sent.forwardedBackSpaces == 1, "sway: the later replacements delete through the surrounding text",
+              std::to_string(run.sent.surroundingDeletes) + " deletes, " + std::to_string(run.sent.forwardedBackSpaces) + " backspaces");
     }
 
     // Zed leaves focus for a moment when a deletion empties its field; a commit sent then is lost (#93).
@@ -383,11 +427,15 @@ namespace {
         quirks.commitLagMs               = 5;
         const std::vector<uint32_t> keys = {'t', 'i', 'e', 'e', 'n', 'g', 's', ' ', 'v', 'i'};
         std::vector<int>            gaps(keys.size(), 30);
-        gaps[6]                = 2;
-        Field gtk3             = makeField("dbus", true);
-        gtk3.keyEventOrderFix  = true;
-        const std::string text = ngosen::test::typeInApp(gtk3, quirks, keys, gaps);
+        gaps[6]               = 2;
+        Field gtk3            = makeField("dbus", true);
+        gtk3.keyEventOrderFix = true;
+        FakeResources     resources;
+        const auto        run  = ngosen::test::typeInAppTraced(resources, gtk3, quirks, keys, gaps);
+        const std::string text = run.text;
         check(text == "tiếng vi", "dbus: a key typed before the commit arrived lands after it", text);
+        check(run.sent.surroundingDeletes > 0 && run.sent.forwardedBackSpaces == 0, "dbus: those replacements delete through the surrounding text",
+              std::to_string(run.sent.surroundingDeletes) + " deletes, " + std::to_string(run.sent.forwardedBackSpaces) + " backspaces");
         const std::vector<uint32_t> back = {'t', 'i', 'e', 'e', 'n', 'g', 's', ngosen::key::BackSpace};
         const std::string           cut  = ngosen::test::typeInApp(gtk3, quirks, back, std::vector<int>{30, 30, 30, 30, 30, 30, 2, 30});
         check(cut.find('\b') == std::string::npos, "dbus: a backspace typed before the commit arrived is not committed", cut);
@@ -399,6 +447,143 @@ namespace {
         const std::vector<uint32_t> keys{'e', ' ', 'k', 'o', ' ', 'a'};
         const std::string           text = ngosen::test::typeInApp(resources, makeField("wayland", true), {}, keys, std::vector<int>(keys.size(), 100));
         check(text == "em không a", "macro keeps its space", text);
+    }
+
+    // A macro typed right before Enter expands, and the Enter reaches the app after the expansion.
+    void testMacroBeforeEnter() {
+        struct Case {
+            const char* name;
+            Field       field;
+            int         lagMs;
+        };
+        const Case cases[] = {
+            {"sen, field reports text", makeField("wayland", true), 0},
+            {"sen, field reports nothing", makeField("wayland", false), 0},
+            {"sen, slow field", makeField("wayland", true), 5},
+        };
+        for (const auto& c : cases) {
+            FakeResources resources;
+            resources.setMacros({{"dc", "được"}});
+            ngosen::test::AppQuirks quirks;
+            quirks.showsEnter = true;
+            quirks.lagMs      = c.lagMs;
+            const std::vector<uint32_t> keys{'d', 'c', ngosen::key::Return, 'a'};
+            const std::string           text = ngosen::test::typeInApp(resources, c.field, quirks, keys, std::vector<int>(keys.size(), 100));
+            check(text == "được\na", std::string("macro before Enter: ") + c.name, text);
+        }
+        FakeResources resources;
+        resources.setMacros({{"dc", "được"}});
+        ngosen::test::AppQuirks quirks;
+        quirks.showsEnter = true;
+        const std::vector<uint32_t> word{'t', 'i', 'e', 'e', 'n', 'g', 's', ngosen::key::Return};
+        const std::string           text = ngosen::test::typeInApp(resources, makeField("wayland", true), quirks, word, std::vector<int>(word.size(), 100));
+        check(text == "tiếng\n", "macro before Enter: a plain word stays", text);
+
+        Field shell       = makeField("ibus", true);
+        shell.sendsNoKeys = true;
+        FakeResources shellResources;
+        shellResources.setMacros({{"dc", "được"}});
+        ngosen::test::AppQuirks lossy;
+        lossy.showsEnter         = true;
+        lossy.dropsForwardedKeys = true;
+        const std::vector<uint32_t> keys{'d', 'c', ngosen::key::Return, 'a'};
+        const std::string           kept = ngosen::test::typeInApp(shellResources, shell, lossy, keys, std::vector<int>(keys.size(), 100));
+        check(kept == "được\na", "macro before Enter: a field that loses sent keys still gets its Enter", kept);
+
+        FakeResources stuckResources;
+        stuckResources.setMacros({{"dc", "được"}});
+        ngosen::test::AppQuirks shows;
+        shows.showsEnter               = true;
+        const std::string cannotDelete = ngosen::test::typeInApp(stuckResources, makeField("dbus", false), shows, keys, std::vector<int>(keys.size(), 100));
+        check(cannotDelete == "dc\na", "macro before Enter: a field nothing can delete in keeps the word and its Enter", cannotDelete);
+
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop      loop;
+        FakeResources preeditResources;
+        preeditResources.setMacros({{"dc", "được"}});
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&preeditResources, std::move(owned));
+        press(state, 'd');
+        press(state, 'c');
+        press(state, ngosen::key::Return);
+        loop.pump(100);
+        std::string forwarded;
+        for (const auto& key : host->forwarded())
+            forwarded += std::string(key.key == ngosen::EditKey::Return ? "Return" : "other") + (key.release ? " up;" : " down;");
+        check(join(host->commits()) == "['được']", "macro before Enter: preedit commits the expansion", join(host->commits()));
+        check(forwarded == "Return down;Return up;", "macro before Enter: preedit sends the Enter after it", forwarded);
+    }
+
+    // An Enter typed while a replacement waits for the app's report reaches the app as a key, not as
+    // a carriage return inside the commit, which Google Docs ignores.
+    void testEnterDuringReplacement() {
+        ngosen::test::AppQuirks quirks;
+        quirks.showsEnter    = true;
+        quirks.reportDelayMs = 10;
+        const std::vector<uint32_t> keys{'n', 'h', 'e', 's', ngosen::key::Return, 'a'};
+        std::vector<int>            gaps(keys.size(), 100);
+        gaps[3]                = 2;
+        const std::string text = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, keys, gaps);
+        check(text == "nhé\na", "Enter during replacement", text);
+
+        std::vector<int> keysAfterGaps(keys.size(), 1);
+        keysAfterGaps[2]         = 100;
+        const std::string queued = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, keys, keysAfterGaps);
+        check(queued == "nhé\na", "Enter during replacement: keys after it wait for it", queued);
+
+        FakeResources resources;
+        resources.setMacros({{"dc", "được"}});
+        const std::vector<uint32_t> macro{'n', 'h', 'e', 's', ' ', 'd', 'c', ngosen::key::Return, 'a'};
+        std::vector<int>            macroGaps(macro.size(), 100);
+        for (size_t i = 3; i < 7; ++i)
+            macroGaps[i] = 1;
+        const std::string expanded = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, macro, macroGaps);
+        check(expanded == "nhé được\na", "Enter during replacement: macro before it", expanded);
+
+        // Google Docs ignores a line break inside a commit, so Shift+Enter goes out as a key too.
+        const std::vector<uint32_t> shifted{'n', 'h', 'e', 's', ngosen::key::Return | ngosen::test::WithShift, 'a'};
+        const std::string           lineBreak = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, shifted, gaps);
+        check(lineBreak == "nhé\u2028a", "Enter during replacement: Shift+Enter", lineBreak);
+
+        // A dbus client gets the commit after the reply to the key, so a passed Enter would land first.
+        Field dbus                = makeField("dbus", false);
+        dbus.keyEventOrderFix     = true;
+        const std::string ordered = ngosen::test::typeInApp(dbus, quirks, keys, gaps);
+        check(ordered == "nhé\na", "Enter during replacement: dbus", ordered);
+        const std::string shiftedOnDbus = ngosen::test::typeInApp(dbus, quirks, shifted, gaps);
+        check(shiftedOnDbus == "nhé\u2028a", "Enter during replacement: dbus Shift+Enter", shiftedOnDbus);
+
+        std::vector<uint32_t> shiftedMacro = macro;
+        shiftedMacro[7] |= ngosen::test::WithShift;
+        const std::string macroLineBreak = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, shiftedMacro, macroGaps);
+        check(macroLineBreak == "nhé được\u2028a", "Enter during replacement: Shift+Enter after a macro", macroLineBreak);
+
+        // fcitx5-gtk4 discards forwarded keys, so its Enter can only pass through, after the commit.
+        Field gtk4                    = makeField("dbus", true);
+        auto  gtk4Quirks              = quirks;
+        gtk4Quirks.dropsForwardedKeys = true;
+        for (const std::vector<int>& g : {gaps, keysAfterGaps}) {
+            const std::string gtk4Text = ngosen::test::typeInApp(gtk4, gtk4Quirks, keys, g);
+            check(gtk4Text == "nhé\na", "Enter during replacement: GTK4 over dbus", gtk4Text);
+            const std::string gtk4Shifted = ngosen::test::typeInApp(gtk4, gtk4Quirks, shifted, g);
+            check(gtk4Shifted == "nhé\u2028a", "Enter during replacement: GTK4 over dbus, Shift+Enter", gtk4Shifted);
+        }
+
+        // Tab moves to the next field, which a tab character inside the commit does not.
+        quirks.showsTab = true;
+        for (const uint32_t tab : {uint32_t{ngosen::key::Tab}, ngosen::key::ISO_Left_Tab | ngosen::test::WithShift}) {
+            const std::vector<uint32_t> tabbed{'n', 'h', 'e', 's', tab, 'a'};
+            const std::string           want  = tab == ngosen::key::Tab ? "nhé⇥a" : "nhé⇤a";
+            const std::string           moved = ngosen::test::typeInApp(makeField("wayland", true, "libreoffice-calc"), quirks, tabbed, gaps);
+            check(moved == want, std::string("Tab during replacement: ") + (tab == ngosen::key::Tab ? "Tab" : "Shift+Tab"), moved);
+        }
+
+        // A typed Tab leaves an abbreviation as it is, so a replayed one does too.
+        std::vector<uint32_t> macroTab  = macro;
+        macroTab[7]                     = ngosen::key::Tab;
+        const std::string tabAfterMacro = ngosen::test::typeInApp(resources, makeField("wayland", true, "libreoffice-calc"), quirks, macroTab, macroGaps);
+        check(tabAfterMacro == "nhé dc⇥a", "Tab during replacement: no macro", tabAfterMacro);
     }
 
     // With Capitalize Macro on, an abbreviation typed with a capital first letter capitalizes the
@@ -656,7 +841,7 @@ namespace {
         FakeHost*           host  = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
 
-        typeTie(state, *host, loop, true);
+        typeTie(state, *host, loop, false);
         press(state, static_cast<uint32_t>('e'));
         check(press(state, static_cast<uint32_t>('n')), "key during replacement: n is held back", "not accepted");
         host->setSurrounding("ti", 2);
@@ -1245,9 +1430,12 @@ namespace {
     // Browsers repeat the same report several times per key; repeats would push the keys out of the log.
     void testRecorderSkipsRepeatedReports() {
         realMode = ngosen::Mode::Sen;
-        FakeLoop            loop;
-        FakeResources       resources;
-        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "firefox"));
+        FakeLoop      loop;
+        FakeResources resources;
+        // An address bar keeps the backspace path, whose wait acts on the repeats.
+        Field addressBar          = makeField("wayland", true, "firefox");
+        addressBar.url            = true;
+        auto                owned = std::make_unique<FakeHost>(loop, addressBar);
         FakeHost*           host  = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
 
@@ -1450,6 +1638,25 @@ namespace {
         // The copy stays "tie" while the app holds tiê, then tíê: the deletion asks for as many copy
         // characters as the real ones have bytes.
         check(text == "việt nam tiếng", "quirk: bytes counted on an old copy delete whole letters", text);
+        {
+            // The deletion, "à" and "y" in one turn show "ngy", as Chromium behind GNOME Shell did.
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(), ngosen::test::AppQuirks{.keepsLastEditPerTurn = true});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("nga"))
+                app->type(static_cast<uint32_t>(c));
+            loop.pump(20);
+            app->deleteSurrounding(-1, 1);
+            app->commitText("à");
+            app->commitText("y");
+            loop.pump(20);
+            check(app->text() == "ngy", "quirk: one turn keeps only its last commit", app->text());
+        }
 
         // The cursor moves with no report, so the deletion falls before the start of the text.
         realMode = ngosen::Mode::Sen;
@@ -1567,10 +1774,14 @@ namespace {
         // Silence alone is no reason to give up on a field that has no other way to delete.
         check(countHaving(lines, "not answered") >= 3 && countHaving(lines, "untrusted") == 0, "check: an app that never reports goes unanswered", join(lines));
 
-        // A field that also takes keys keeps them, and logs what the surrounding path would have done.
-        lines = logLinesWhileTyping(makeField("wayland", true), {}, "vieetj nam ", "Surrounding path would", &run);
-        check(lines.size() == 2 && countHaving(lines, "fails: none") == 2 && run.sent.surroundingDeletes == 0, "check: one observation line per replacement on a wayland field",
+        // A field outside the surrounding rule keeps its keys, and logs what the surrounding path would have done.
+        lines = logLinesWhileTyping(makeField("fcitx4", true), {}, "vieetj nam ", "Surrounding path would", &run);
+        check(lines.size() == 2 && countHaving(lines, "fails: none") == 2 && run.sent.surroundingDeletes == 0, "check: one observation line per replacement on an fcitx4 field",
               run.text + " " + join(lines));
+
+        // A message written as `cond ? "a" : "b"` must reach the log as text, not as the condition's value.
+        lines = logLinesWhileTyping(makeField("fcitx4", true), {.reportsEmptyText = true}, "vieetj ", "Surr wait skip");
+        check(countHaving(lines, "Surr wait skip: empty snapshot") == 2, "log: a ternary message keeps its text", join(lines));
     }
 
     // An address bar that sets no Url flag still shows itself by filling in text after the cursor.
@@ -1627,6 +1838,65 @@ namespace {
         const auto                    lines = logLinesWhileTyping(field, qt, "nam tieesng ", "", &run, 150);
         check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0 && countHaving(lines, "copy shows the earlier word") > 0,
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
+    }
+
+    // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first
+    // replacement; sent at once, the app would keep only the second.
+    void testReplacementsInOneTurn() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks shell{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true};
+        const auto              keys = keysOf("nguowfi ddoofng ");
+        std::vector<int>        gaps(keys.size(), 100);
+        gaps[4]  = 0; // w and f
+        gaps[11] = 0; // the second o and f
+        FakeResources resources;
+        auto          run = ngosen::test::typeInAppTraced(resources, field, shell, keys, gaps);
+        check(run.text == "người đồng ", "one turn: a replacement waits until the app shows the one before", run.text);
+        // With no report in time the hold's own timer replays the held f, whose replacement holds the
+        // keys after it again. The copy is stale by then, so only the timer's handling is checked here.
+        shell.reportDelayMs = 30;
+        FakeResources fresh;
+        const int     destroyedBefore = ngosen::test::timersDestroyedInCallback;
+        ngosen::test::captureLog(true);
+        ngosen::test::typeInAppTraced(fresh, field, shell, keys, gaps);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(lines, "Perform replacement: ơ -> ờ") == 1, "one turn: the hold's timer replays a held tone key", join(lines));
+        check(ngosen::test::timersDestroyedInCallback == destroyedBefore, "one turn: the hold's timer is not destroyed from its own callback",
+              std::to_string(ngosen::test::timersDestroyedInCallback - destroyedBefore));
+    }
+
+    // An empty field reports an empty copy when it gets focus; that is all it can show before the first word.
+    void testEmptyFieldFirstWord() {
+        Field field           = surroundingOnlyField();
+        field.preeditFallback = true;
+        for (const auto& quirks : {ngosen::test::AppQuirks{.dropsForwardedKeys = true}, ngosen::test::AppQuirks{.dropsForwardedKeys = true, .reportsEmptyText = true}}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            ngosen::test::captureLog(true);
+            state.surroundingUpdated();
+            for (char c : std::string("vieetj vieetj ")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(300);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            if (!quirks.reportsEmptyText) {
+                check(app->text() == "việt việt " && app->sent().preedits == 0 && countHaving(lines, "Type the word in the preedit") == 0,
+                      "empty field: the first word is typed in the field", app->text() + " " + join(lines));
+            } else {
+                check(isEndsWith(app->text(), " việt ") && countHaving(lines, "Type the word in the preedit: no text since focus") == 1,
+                      "empty field: a field that only ever reports empty types its next word in the preedit", app->text() + " " + join(lines));
+            }
+        }
     }
 
     // IBus names a client "<toolkit>-im:<program>", and a snap's program repeats the snap name.
@@ -1787,6 +2057,9 @@ int main() {
     testSenForwards("wayland", true);
     testSenForwards("wayland_v2", true);
     testSenForwards("xim", false);
+    for (const char* frontend : {"wayland", "wayland_v2", "dbus"})
+        testSenDeletesReportedWord(frontend);
+    testFirefoxKeepsBackspaces();
     testForwardedKeysNewerThanTyped();
     testKeyDuringReplacement();
     testCommitAfterTheReport();
@@ -1795,6 +2068,8 @@ int main() {
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();
     testMacroKeepsSpace();
+    testMacroBeforeEnter();
+    testEnterDuringReplacement();
     testLockWord();
     testLockWordPreedit();
     testSlowBackspaceOverIbus();
@@ -1845,11 +2120,14 @@ int main() {
     testPathCheck();
     testSurroundingCheck();
     testSurroundingFallback();
+    testEmptyFieldFirstWord();
     testSlowReport();
     testStaleCopyBeforeReplacement();
+    testReplacementsInOneTurn();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();
+    check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all core typing checks passed\n";
     return failures == 0 ? 0 : 1;

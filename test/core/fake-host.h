@@ -17,6 +17,9 @@
 
 namespace ngosen::test {
 
+    // Timers destroyed from their own callback, which frees a running callback on the real hosts.
+    extern int timersDestroyedInCallback;
+
     // Timers of every FakeHost, fired by pump() on the real monotonic clock.
     class FakeLoop {
       public:
@@ -29,6 +32,7 @@ namespace ngosen::test {
 
       private:
         std::vector<Entry*> entries_;
+        Entry*              running_ = nullptr;
     };
 
     struct ForwardedKey {

@@ -9,6 +9,7 @@ from core.catalog import (
     HINTS,
     LANGUAGE_NAMES,
     MENU_ENTRIES,
+    MENU_ICON_FALLBACKS,
     MODE_BUTTON_ORDER,
     MODE_KEY_TO_INTERNAL_NAME,
     MODE_SHORTCUT_KEYS,
@@ -502,7 +503,7 @@ class DynamicSettingsPage(QWidget):
         if key in MENU_ENTRIES:
             text, icon_name = MENU_ENTRIES[key]
             cb.setText(_(text))
-            icon = brand.theme_icon(icon_name)
+            icon = brand.theme_icon(icon_name, MENU_ICON_FALLBACKS.get(icon_name))
             if icon.isNull():
                 # Keep the text in line with the entries that have an icon.
                 blank = QPixmap(cb.iconSize())

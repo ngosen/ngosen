@@ -165,6 +165,7 @@ namespace ngosen {
     // The wait returns to the event loop, so focus can move while a commit is pending. deactivate()
     // clears is_deleting_ and a later timer would drop the text, so commit now.
     void TypingState::flushPendingReplacement() {
+        // Held keys stay too: focus bouncing after the edit comes back, and the keys land then.
         if (!surr_wait_pending_) {
             return;
         }
@@ -243,13 +244,13 @@ namespace ngosen {
         surr_wait_focus_retries_ = 0;
         settle_reason_           = reason;
         surr_wait_deliver_at_    = ngosen::monotonicUs() + (static_cast<uint64_t>(settleMs) * 1000ULL);
-        settle_timer_            = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer&) {
-            if (!surr_wait_pending_ || !surr_wait_timer_only_ || !is_deleting_.load()) {
-                return false;
-            }
-            finishReplacement(settle_reason_, false);
-            return false;
-        });
+        replaceTimer(settle_timer_, startWaitTimer(surr_wait_deliver_at_, [this](ngosen::Timer&) {
+                         if (!surr_wait_pending_ || !surr_wait_timer_only_ || !is_deleting_.load()) {
+                             return false;
+                         }
+                         finishReplacement(settle_reason_, false);
+                         return false;
+                     }));
     }
 
     void TypingState::noteWaitOutcome(const char* reason) {
@@ -284,13 +285,30 @@ namespace ngosen {
         }
     }
 
+    std::unique_ptr<ngosen::Timer> TypingState::startWaitTimer(uint64_t deadlineUs, std::function<bool(ngosen::Timer&)> onTime) {
+        // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms.
+        return host_->startTimer(deadlineUs, 1000, [this, onTime = std::move(onTime)](ngosen::Timer& t) {
+            running_timer_  = &t;
+            const bool keep = onTime(t);
+            running_timer_  = nullptr;
+            return keep && retired_timer_.get() != &t;
+        });
+    }
+
+    void TypingState::replaceTimer(std::unique_ptr<ngosen::Timer>& slot, std::unique_ptr<ngosen::Timer> next) {
+        if (slot && slot.get() == running_timer_)
+            retired_timer_ = std::move(slot);
+        else if (retired_timer_ && retired_timer_.get() != running_timer_)
+            retired_timer_.reset();
+        slot = std::move(next);
+    }
+
     void TypingState::finishReplacement(const char* reason, bool fromTimer) {
         noteWaitOutcome(reason);
         surr_wait_pending_    = false;
         surr_wait_timer_only_ = false;
-        if (!fromTimer && surr_wait_timer_) {
-            surr_wait_timer_.reset(); // never reset a timer from inside its own callback
-        }
+        if (!fromTimer)
+            replaceTimer(surr_wait_timer_);
         // A previous replacement still waiting for its turn goes out first, keeping the text in order.
         flushDeferredCommit();
         // wlroots drops a commit sent while the app's report is still arriving, as answering an old state.
@@ -475,6 +493,19 @@ namespace ngosen {
         return std::string(t.begin(), it);
     }
 
+    bool TypingState::showsTextAfterDeleting(const Surrounding& s, unsigned int chars) {
+        std::u32string text = utf8::decode(s.text());
+        const size_t   end  = std::min<size_t>(s.cursor(), text.size());
+        text.erase(end - std::min<size_t>(chars, end), std::min<size_t>(chars, end));
+        // Edge reports an empty composer as "\n".
+        return text.find_first_not_of(U" \t\n") != std::u32string::npos;
+    }
+
+    bool TypingState::showsText(const Surrounding& s) {
+        // Edge reports an empty composer as "\n".
+        return s.text().find_first_not_of(" \t\n") != std::string::npos;
+    }
+
     std::string TypingState::reportKey(const Surrounding& s) {
         return s.isValid() ? s.text() + "\x1f" + std::to_string(s.cursor()) : std::string();
     }
@@ -510,6 +541,12 @@ namespace ngosen {
             fails.emplace_back("marked untrusted");
         if (field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))
             fails.emplace_back("address bar");
+        // A field the deletion empties can leave focus before the commit lands, and fcitx5 drops commits
+        // without focus (Zed, #93); the backspace path waits for focus to come back.
+        if (ngosen::dropsCommitsWithoutFocus(field) && surrounding.isValid() && !showsTextAfterDeleting(surrounding, chars))
+            fails.emplace_back("deletion empties the field");
+        if (ngosen::reportsSurroundingEditsLate(field))
+            fails.emplace_back("app reports edits late");
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");
@@ -520,7 +557,11 @@ namespace ngosen {
         const Field              field       = host_->field();
         const Surrounding        surrounding = host_->surrounding();
         std::vector<std::string> fails;
-        if (!surrSeenTextSinceFocus_)
+        // An empty field has no text to show, so its empty report counts for the first key typed there.
+        // Some apps report an empty copy whatever they hold; their later words still wait for text.
+        const bool firstKey      = keyCount_ == keysAtFocus_ + 1;
+        const bool reportedEmpty = firstKey && surrSeenEmptySinceFocus_ && !showsText(surrounding);
+        if (!surrSeenTextSinceFocus_ && !reportedEmpty)
             fails.emplace_back("no text since focus");
         if (!surrounding.isValid())
             fails.emplace_back("no copy");
@@ -684,6 +725,9 @@ namespace ngosen {
     void TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
         std::string retype;
         const int   count = surroundingDeletionCount(surrounding, retype);
+        // Set first: a host may deliver the deletion's report from inside the call.
+        unreportedDeleteLength_ = static_cast<unsigned int>(count);
+        unreportedDeleteKey_    = keyCount_;
         host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
         NGOSEN_INFO("Delete using surrounding text");
         std::this_thread::sleep_for(std::chrono::milliseconds(engine_->options().surrDeleteSleepMs * count));
@@ -697,6 +741,39 @@ namespace ngosen {
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
+        // An Enter still owed goes out as a real key, which mutter delivers only after the edit.
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && !enter_after_replacement_) {
+            is_deleting_.store(false);
+            holdKeysUntilEditShown();
+            return;
+        }
+        releaseKeysAfterSurroundingEdit();
+    }
+
+    // Keys already buffered stay for the release, so the replayed text cannot share the edit's turn.
+    // A replay from the timer can start the next hold, so the timer is rearmed rather than replaced.
+    void TypingState::holdKeysUntilEditShown() {
+        edit_hold_           = true;
+        const uint64_t until = monotonicUs() + EditHoldUs;
+        if (edit_hold_timer_) {
+            edit_hold_timer_->rearm(until);
+            return;
+        }
+        edit_hold_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+            finishEditHold();
+            return edit_hold_;
+        });
+    }
+
+    void TypingState::finishEditHold() {
+        if (!edit_hold_)
+            return;
+        edit_hold_ = false;
+        if (!is_deleting_.load(std::memory_order_acquire))
+            replayBufferedKeys();
+    }
+
+    void TypingState::releaseKeysAfterSurroundingEdit() {
         if (replaying_) {
             // The replay that led here resets the engine once this returns, so the keys after this
             // one wait for the next turn; new keys queue behind them meanwhile.
@@ -742,7 +819,7 @@ namespace ngosen {
         // XIM, IBus and D-Bus clients queue forwarded keys, and on wayland_v2 they travel apart from the
         // commit, so the commit can overtake them.
         if (host_->field().frontend != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
-            deferTimedCommit(surr_wait_started_at_ + ForwardWaitUs);
+            deferTimedCommit(surr_wait_started_at_ + forwardWaitUs());
         }
     }
 
@@ -751,6 +828,10 @@ namespace ngosen {
         // last commit_string before it, so back-to-back commits lose all but the last ("đ" then "i"
         // shows "i"). Send the replacement and the replayed keys as one commit.
         std::string out = std::move(committed);
+        if (enter_after_replacement_) {
+            commitReplayed(out);
+            sendEnterAfterReplacement();
+        }
         NGOSEN_INFO("Starting replay buffered keys");
         replaying_       = true;
         const auto guard = std::unique_ptr<bool, void (*)(bool*)>(&replaying_, [](bool* flag) { *flag = false; });
@@ -766,6 +847,26 @@ namespace ngosen {
         }
         commitReplayed(out);
         NGOSEN_INFO("Replay buffered keys done");
+    }
+
+    std::optional<ngosen::EditKey> TypingState::replayedEditKey(uint32_t sym, uint32_t state) const {
+        if ((state & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) != 0U || !forwardsEnterAfterCommit())
+            return std::nullopt;
+        const bool shift = (state & ngosen::modifier::Shift) != 0U;
+        if (ngosen::key::isEnter(sym))
+            return shift ? ngosen::EditKey::ShiftReturn : ngosen::EditKey::Return;
+        if (sym == ngosen::key::Tab || sym == ngosen::key::KP_Tab || sym == ngosen::key::ISO_Left_Tab)
+            return shift || sym == ngosen::key::ISO_Left_Tab ? ngosen::EditKey::ShiftTab : ngosen::EditKey::Tab;
+        return std::nullopt;
+    }
+
+    // Holds the Enter after the commit as a typed one is, and leaves the keys after it for then.
+    bool TypingState::holdReplayedKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out, ngosen::EditKey key) {
+        for (size_t j = i + 1; j < keys.size() && buffered_keys_.size() < MAX_BUFFERED_KEYS; ++j)
+            buffered_keys_.push_back(keys[j]);
+        commitReplayed(out);
+        holdEnter(false, key);
+        return true;
     }
 
     void TypingState::commitReplayed(std::string& out) {
@@ -791,7 +892,18 @@ namespace ngosen {
         auto        sym     = keys[i].sym;
         uint32_t    state   = keys[i].state;
         std::string keyUtf8 = host_->keyText(sym);
-        if (keyUtf8.empty()) {
+        // Google Docs ignores a line break inside a commit, and Tab must move focus, so these go as keys.
+        const std::optional<ngosen::EditKey> sent = replayedEditKey(sym, state);
+        if (keyUtf8.empty() && !sent) {
+            return false;
+        }
+        if (sent == ngosen::EditKey::Tab || sent == ngosen::EditKey::ShiftTab) {
+            // Like a typed Tab: it ends the word as it is and goes out at once, before focus moves on.
+            commitReplayed(out);
+            hasHistory_ = false;
+            ResetEngine(bambooEngine_.handle());
+            oldPreBuffer_.clear();
+            forwardTap(*sent);
             return false;
         }
 
@@ -803,17 +915,29 @@ namespace ngosen {
             std::string addedPart;
             ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitF.get(), deletedPart, addedPart);
             const bool replacing = !deletedPart.empty();
+            // The engine ends the word on Enter without taking it, so the Enter still has to go out.
+            const std::string owed = !processed && !sent && ngosen::key::isEnter(sym) ? keyUtf8 : std::string();
             if (replacing) {
-                replaceDuringReplay(keys, i, out, deletedPart, addedPart);
+                if (sent) {
+                    enter_after_replacement_ = true;
+                    enter_after_key_         = *sent;
+                }
+                replaceDuringReplay(keys, i, out, deletedPart, addedPart + owed);
             } else {
                 out += addedPart;
             }
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
+            if (sent && !replacing)
+                return holdReplayedKey(keys, i, out, *sent);
+            if (!replacing)
+                out += owed;
             return replacing;
         }
 
+        if (sent)
+            return holdReplayedKey(keys, i, out, *sent);
         if (!processed) {
             out += keyUtf8;
             return false;

@@ -33,6 +33,52 @@ namespace ngosen {
         NGOSEN_INFO("Commit: — (em-dash)");
     }
 
+    bool TypingState::expandMacroBeforeEnter(ngosen::KeyPress& keyEvent) {
+        if (oldPreBuffer_.empty() || !engine_->options().enableMacro)
+            return false;
+        EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, keyEvent.states());
+        const auto pulled = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
+        if (!pulled || *pulled.get() == 0 || oldPreBuffer_ == pulled.get())
+            return false;
+        const std::string expansion = pulled.get();
+        std::string       deletedPart;
+        std::string       addedPart;
+        ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, expansion, deletedPart, addedPart);
+        // Same limits as a word a space ends: a field that cannot take the edit keeps the typed word.
+        if (!deletedPart.empty() && (!canSendBackspaces() || keepsWordRaw(deletedPart))) {
+            rawWord_ = false;
+            lastWord_.clear();
+            return false;
+        }
+        NGOSEN_INFO("Macro before Enter: " + logged(oldPreBuffer_) + " -> " + logged(expansion));
+        hasHistory_ = false;
+        ResetEngine(bambooEngine_.handle());
+        oldPreBuffer_.clear();
+        lastWord_.clear();
+        if (deletedPart.empty()) {
+            commit(addedPart);
+            keyEvent.passToApp();
+            return true;
+        }
+        enter_after_replacement_ = true;
+        enter_after_key_         = ngosen::EditKey::Return;
+        enter_key_live_          = true;
+        performReplacement(deletedPart, addedPart);
+        enter_key_live_ = false;
+        // Done already, so the Enter can go to the app as typed.
+        if (!enter_after_replacement_)
+            keyEvent.passToApp();
+        else
+            keyEvent.accept();
+        return true;
+    }
+
+    void TypingState::sendEnterAfterReplacement() {
+        enter_after_replacement_ = false;
+        if (!enter_key_live_)
+            forwardTap(enter_after_key_);
+    }
+
     void TypingState::handleOffModeMacro(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
             keyEvent.passToApp();

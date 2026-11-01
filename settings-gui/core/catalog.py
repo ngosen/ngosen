@@ -32,6 +32,13 @@ MENU_ENTRIES = {
     "ShowMenuDictionary": (N_("Custom Dictionary"), "accessories-dictionary"),
 }
 
+# Only Breeze has these three; elsewhere (Adwaita, Yaru) the window shows the copies Ngó Sen installs.
+MENU_ICON_FALLBACKS = {
+    "character-set": "ngosen-charset",
+    "format-text-uppercase": "ngosen-capitalize-macro",
+    "format-text-capitalize": "ngosen-auto-capitalize",
+}
+
 # Groups show in this order; the first checkbox of a group carries the group name.
 SETTINGS_MAP = {
     SettingsCategory.TYPING: {

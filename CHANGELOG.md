@@ -10,6 +10,31 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.7.5-1] — 01/11/2026
+
+Phím chuyển Anh/Việt nay chỉ đổi app đang gõ, mỗi app nhớ riêng lựa chọn (#469). Enter nay bung gõ tắt trong Preedit và Gõ Sen (#476); Gõ Sen không còn mất Enter, Shift+Enter, Tab bấm ngay lúc đang thêm dấu (#487, #488, #489). Gõ Sen xoá qua surrounding text ở thêm nhiều app trên KDE, Sway và X11 (#477), và ít mất dấu hơn trên GNOME (#481, #490).
+Tải ở [ngosen-1.7.5-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.5-1).
+
+### Thay đổi
+
+- Phím chuyển Anh/Việt (Ctrl+Shift) nay chỉ đổi app đang gõ, và mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất. App chưa bấm lần nào theo lần bấm gần nhất. Nút "Mặc định", sao lưu và hoàn tác trong cửa sổ cài đặt bao luôn phần nhớ này (#469).
+- Chế độ Gõ Sen trên KDE (Wayland), Sway, Hyprland và app X11 dùng mô-đun fcitx5 (GTK3, Qt) nay nhờ app xoá thẳng chữ cũ trong ô khi thêm dấu, như trên GNOME, để xoá rồi thêm chữ đúng thứ tự, tránh BackSpace tới muộn xoá mất chữ mới khi app chậm. Ô chưa cho biết chữ bên trong, thanh địa chỉ và khi lệnh xoá làm ô trống trên Wayland vẫn dùng BackSpace như trước (#477).
+
+### Sửa
+
+- `install.sh` trên Fedora Silverblue, Kinoite, Bazzite: thay vì hỏng giữa chừng ở bước dnf, nay in sẵn lệnh `rpm-ostree` để cài tay, kèm link issue #492 cho ai muốn được hỗ trợ chính thức (#494).
+- `install.sh` nay cài được trên Ultramarine Linux và các bản dựng từ Fedora 43, 44 khác, thay vì báo "chưa có gói dựng sẵn" (#491).
+- Cửa sổ cài đặt, trang Giao diện: ba mục menu Bảng mã, Gõ tắt chữ hoa và Tự viết hoa nay có icon trên GNOME, Ubuntu và các theme không có sẵn icon đó, cả trong cửa sổ cài đặt lẫn menu ở khay hệ thống (#484, #486).
+- Preedit và Gõ Sen: bấm Enter ngay sau từ gõ tắt nay bung từ trước khi Enter tới app, ví dụ gõ "dc" rồi Enter trong ô chat sẽ gửi "được" (#476).
+- App đã chọn Preedit qua menu `` ` `` không còn chuyển sang Gõ Sen sau khi bấm phím chuyển Anh/Việt hai lần (#469).
+- Ngó Sen cho GNOME, khi bật Gõ Sen: chữ đầu tiên trong ô còn trống của app GTK, Firefox và LibreOffice không còn bị gạch chân mà gõ thẳng vào ô như các chữ sau (#473).
+- Gõ Sen trên GNOME: khi Ngó Sen phải xoá bằng BackSpace, như ở Google Docs và Firefox, dấu vừa gõ không còn lâu lâu bị mất hay chen vào giữa chữ ("chư", "dâuấ"). Ngó Sen nay chờ ít nhất 40 ms thay vì 15 ms sau BackSpace rồi mới gửi chữ mới (#481).
+- Gõ Sen trong Google Docs trên Firefox, GNOME: bấm Enter ngay sau từ vừa thêm dấu (như "nhes" → "nhé") không còn bị mất xuống dòng; Enter nay tới app bằng phím bấm thật sau từ vừa gõ (#487).
+- Gõ Sen: bấm Shift+Enter ngay sau từ đang được thêm dấu nay không còn mất xuống dòng. Trong app GTK, Qt kết nối trực tiếp với fcitx5, Enter bấm nhanh lúc đó nay tới sau cả từ, không còn chen giữa chữ và dấu như "nhes" + Enter ra "nh", xuống dòng rồi mới tới "é" (#488).
+- Gõ Sen: bấm phím ngay sau từ đang được thêm dấu, Shift+Enter nay xuống dòng được cả trong Google Docs; Tab và Shift+Tab không còn bị mất mà chuyển sang ô kế tiếp hoặc ô trước như thường. Sau Shift+Tab, gõ chữ tiếp theo không còn làm mất dấu của từ trước (như "nhes", Shift+Tab, "a" ra "nhesa") (#489).
+- Gõ Sen trên GNOME: gõ hai phím dấu sát nhau (như w và f trong "nguowfi") không còn làm mất lần thêm dấu đầu và ra "ngời". Ngó Sen nay chờ app hiện xong lần sửa trước, tối đa 20 ms, rồi mới gửi lần sau (#490).
+- Gõ Sen trên Debian 12 và các bản dựa trên nó (fcitx5 cũ hơn 5.1.7): gõ nhanh trong app mà Ngó Sen xoá chữ bằng BackSpace, như Google Docs và Firefox, không còn có thể làm fcitx5 crash khi phím gõ trong lúc chờ app được gửi lại và bắt đầu lần thêm dấu kế tiếp (#493).
+
 ## [1.7.4-1] — 31/10/2026
 
 Sửa Preedit trên GNOME mất Enter khi giữ phím (#465), mất chữ đang gõ khi click trong Alacritty và app XIM khác trên X11 (#466). Trên GNOME 50.0–50.3 không có extension chuyển phím, sửa Gõ Sen ra chữ lặp trong kitty và Preedit mất Enter (#467).

@@ -52,6 +52,11 @@ namespace ngosen::test {
         bool convertsDeleteOnReportedCopy = false;
         bool reportsNothingAfterDelete    = false; // reports nothing after a deletion until a typed key, as Qt 6 over text-input-v3 does
         bool repeatsOldTextAfterDelete    = false; // reports its text from before a deletion until a typed key, as Firefox on GNOME does
+        bool showsEnter                   = false; // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
+        bool showsTab                     = false; // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
+        // Applies deletions and commits once per main-loop turn, keeping only the last of each, as a
+        // client behind mutter's text-input-v3 does; a key let through ends the turn first.
+        bool keepsLastEditPerTurn = false;
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -162,6 +167,8 @@ namespace ngosen::test {
         void                                changed();
         void                                redrawAfterEdit();
         void                                later(int ms, std::function<void()> action);
+        void                                startTurn();
+        void                                endTurn();
 
         FakeLoop&                           loop_;
         Field                               field_;
@@ -188,6 +195,9 @@ namespace ngosen::test {
         size_t                              reportedCursor_    = 0;
         size_t                              reportedAnchor_    = 0;
         bool                                silentAfterDelete_ = false;
+        bool                                turnPending_       = false;
+        std::optional<size_t>               turnDeleteBytes_;
+        std::optional<std::string>          turnCommit_;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};
         std::vector<std::unique_ptr<Timer>> timers_;
     };
@@ -207,6 +217,9 @@ namespace ngosen::test {
     std::vector<std::string> pathMismatches(const Path& sent, const Path& expected);
 
     Typed                    typeInAppTraced(FakeResources& resources, const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs);
+
+    // Or this into a key for typeInApp to press it with Shift held.
+    inline constexpr uint32_t WithShift = 1U << 30;
 
     // The app's text after typing the keys in Gõ Sen mode, waiting gapsMs[i] after key i.
     std::string typeInApp(const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, int* slowestCommitMs = nullptr);

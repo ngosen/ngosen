@@ -104,7 +104,7 @@ namespace ngosen {
                 // A key the engine leaves to the app (Enter, Ctrl+A, Tab) acts after the word, so it is not the break to take back.
                 if (engineTook && !keyEvent.hasModifier() && rebuildable(pulled.get()))
                     lastWord_ = pulled.get();
-                if ((currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) && !engineTook && !keyEvent.hasModifier())
+                if (ngosen::key::isEnter(currentSym) && !engineTook && !keyEvent.hasModifier())
                     holdEnterAfterCommit(keyEvent);
             }
         }
@@ -124,13 +124,21 @@ namespace ngosen {
         return ngosen::ignoresForwardedKeys(host_->field()) && fieldReported_;
     }
 
+    bool TypingState::forwardsEnterAfterCommit() const {
+        return ngosen::forwardsBackspaces(host_->field()) && !dropsForwardedKeys();
+    }
+
     void TypingState::holdEnterAfterCommit(ngosen::KeyPress& keyEvent) {
-        const Field field = host_->field();
-        if (!ngosen::forwardsBackspaces(field) || dropsForwardedKeys())
+        if (!forwardsEnterAfterCommit())
             return;
         keyEvent.accept();
+        holdEnter(true);
+    }
+
+    void TypingState::holdEnter(bool untilRelease, ngosen::EditKey key) {
+        held_key_           = key;
         held_enter_pending_ = true;
-        held_enter_release_ = true;
+        held_enter_release_ = untilRelease;
         held_enter_due_us_  = ngosen::monotonicUs() + EnterAfterCommitUs;
         held_enter_timer_   = host_->startTimer(held_enter_due_us_, 1000, [this](ngosen::Timer& timer) {
             if (!held_enter_pending_)
@@ -142,7 +150,7 @@ namespace ngosen {
                 return true;
             }
             held_enter_pending_ = false;
-            forwardTap(ngosen::EditKey::Return);
+            forwardHeldEnter();
             return false;
         });
     }
@@ -152,7 +160,14 @@ namespace ngosen {
             return;
         held_enter_pending_ = false;
         held_enter_timer_.reset();
-        forwardTap(ngosen::EditKey::Return);
+        forwardHeldEnter();
+    }
+
+    void TypingState::forwardHeldEnter() {
+        forwardTap(held_key_);
+        // Keys typed after a replayed Enter waited for it.
+        if (!buffered_keys_.empty() && !is_deleting_.load(std::memory_order_acquire))
+            replayBufferedKeys();
     }
 
     bool TypingState::checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym) {
@@ -252,6 +267,8 @@ namespace ngosen {
                 ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
                 oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
             } else {
+                if (expandMacroBeforeEnter(keyEvent))
+                    return;
                 hasHistory_ = false;
                 ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
@@ -534,7 +551,7 @@ namespace ngosen {
     void TypingState::handleKey(ngosen::KeyPress& keyEvent) {
         chooseWordMode(keyEvent);
         recordKey(keyEvent);
-        if (keyEvent.sym() == ngosen::key::Return || keyEvent.sym() == ngosen::key::KP_Enter) {
+        if (ngosen::key::isEnter(keyEvent.sym())) {
             const bool heldRelease = keyEvent.isRelease() && held_enter_release_;
             held_enter_release_    = false;
             if (heldRelease) {
@@ -688,6 +705,9 @@ namespace ngosen {
 
         // A key that beats the deferred commit must not land before it.
         flushDeferredCommit();
+        // Nothing is being replaced any more, so an Enter still owed belongs to a dropped replacement.
+        if (!is_deleting_.load(std::memory_order_acquire) && !surr_wait_pending_ && !overtype_pending_ && !key_report_pending_)
+            enter_after_replacement_ = false;
         if (g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire)) {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
@@ -766,13 +786,29 @@ namespace ngosen {
         return currentSym;
     }
 
+    // Any other key ends the hold; a replay that starts a new hold must not let this key go first.
+    bool TypingState::holdKeyDuringEditHold(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (!edit_hold_ || keyEvent.isRelease())
+            return false;
+        if (typesText(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
+            keyEvent.accept();
+            return true;
+        }
+        while (edit_hold_)
+            finishEditHold();
+        return false;
+    }
+
     bool TypingState::handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (holdKeyDuringEditHold(keyEvent, currentSym))
+            return true;
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_ && ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" &&
             ngosen::forwardsBackspaces(host_->field())) {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
             NGOSEN_INFO("XIM handed back a forwarded backspace");
-            deferTimedCommit(ngosen::monotonicUs() + ForwardWaitUs);
+            deferTimedCommit(ngosen::monotonicUs() + forwardWaitUs());
             return true;
         }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_) {
@@ -783,8 +819,10 @@ namespace ngosen {
                 std::this_thread::sleep_for(std::chrono::microseconds(surr_wait_deliver_at_ - nowUs));
             }
             // A dbus client gets the commit after this key's reply and may type a key let through
-            // first, so a typing key goes out inside the commit.
-            if (host_->field().frontend == "dbus" && typesText(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            // first, so a typing key goes out inside the commit and an Enter after it.
+            const bool enter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
+            if (host_->field().frontend == "dbus" && (typesText(keyEvent, currentSym) || enter || replayedEditKey(currentSym, keyEvent.states())) &&
+                buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
                 keyEvent.accept();
                 finishReplacement("key arrived", false);
@@ -805,7 +843,7 @@ namespace ngosen {
             handleReplacementBackspace(keyEvent, currentSym, 4);
         } else {
             std::string keyUtf8Check = host_->keyText(currentSym);
-            if (!keyUtf8Check.empty() && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            if ((!keyUtf8Check.empty() || replayedEditKey(currentSym, keyEvent.states())) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 NGOSEN_WARN("Typing so fast, add key to queue");
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
             }
@@ -872,7 +910,7 @@ namespace ngosen {
         const auto& text        = surrounding.text();
         size_t      textLen     = ngosen::utf8::length(text);
         realtextLen.store(textLen, std::memory_order_release);
-        if (is_deleting_.load(std::memory_order_acquire)) {
+        if (is_deleting_.load(std::memory_order_acquire) || edit_hold_) {
             return;
         }
         tracking_modifier_tap_ = false;
@@ -958,8 +996,9 @@ namespace ngosen {
         if (is_deleting_.load(std::memory_order_acquire)) {
             return;
         }
-        tracking_modifier_tap_ = false;
-        lock_word_pending_     = false;
+        tracking_modifier_tap_   = false;
+        lock_word_pending_       = false;
+        enter_after_replacement_ = false;
         oldPreBuffer_.clear();
         lastWord_.clear();
         hasHistory_ = false;
@@ -975,6 +1014,7 @@ namespace ngosen {
         emojiBuffer_.clear();
         emojiCandidates_.clear();
         buffered_keys_.clear();
+        edit_hold_         = false;
         shouldCapitalize_  = false;
         isPrevSpace_       = false;
         isPrevHyphen_      = false;

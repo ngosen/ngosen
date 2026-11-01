@@ -12,6 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Trang "Kiểm tra máy" trên GNOME: báo khi thiếu extension Input Method Panel và có nút Cài, vì thiếu nó thì menu chế độ `` ` `` và gợi ý Cứu chữ, Cứu dấu không hiện trong ô tìm kiếm của GNOME (#508)
 - Cửa sổ cài đặt Qt và GTK có trang "Kiểm tra máy": hiện các bước cài đặt, số việc còn cần sửa và nút sửa
   từng việc hoặc "Sửa cả N việc". Ô gõ thử, test app kèm nhật ký gõ, danh sách app kết nối với fcitx5 và gửi
   kết quả qua Facebook, GitHub hoặc chép kết quả nằm cùng trang, thay hộp "Kiểm tra máy tôi…" và nút

@@ -373,13 +373,16 @@ namespace ngosen {
         // --- Wait for the app's report on a key before deleting ---
         // LibreOffice over the fcitx Qt module drops the surrounding text capability before each key
         // and reports the field right after it; over Wayland it reports only when a key reaches it. A
-        // click on another cell shows only in that report.
+        // click on another cell shows only in that report. A frontend that counts the deletion on its copy
+        // of the text (mutter) waits until that copy holds what the deletion needs.
         bool                           waitsForKeyReport() const;
-        void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart);
+        bool                           copyGivesWrongBytes() const;
+        void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);
         void                           finishKeyReportWait(bool sameField, bool fromTimer);
         void                           deleteAndCommit(const std::string& deletedPart, const std::string& addedPart);
         std::unique_ptr<ngosen::Timer> key_report_timer_;
-        bool                           key_report_pending_ = false;
+        bool                           key_report_pending_         = false;
+        bool                           key_report_until_copy_fits_ = false;
         std::optional<KeyEntry>        live_key_;   ///< key being handled, replayed if it landed in another field
         std::optional<KeyEntry>        passed_key_; ///< last key let through to the app as typed
         void                           startWordWithKey(const KeyEntry& key);

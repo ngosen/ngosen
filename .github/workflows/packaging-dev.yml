@@ -30,16 +30,18 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          fetch-depth: 2
       - id: scope
         env:
           EVENT: ${{ github.event_name }}
-          BASE: ${{ github.event.pull_request.base.sha }}
           TEST_BUILD: ${{ inputs.test-build }}
         run: |
           full=true
-          # A failed diff leaves the full set.
-          if [ "$EVENT" = pull_request ] && [ "$TEST_BUILD" != true ] && changed=$(git diff --name-only "$BASE" HEAD) &&
+          # HEAD is the pull request merged into its base branch as of the event; diffing against the first
+          # parent leaves out what other pull requests merged there. A failed diff, or a HEAD that is not
+          # such a merge, leaves the full set.
+          if [ "$EVENT" = pull_request ] && [ "$TEST_BUILD" != true ] && git rev-parse -q --verify HEAD^2 >/dev/null &&
+              changed=$(git diff --name-only HEAD^1 HEAD) &&
               ! printf '%s\n' "$changed" |
               grep -qE '^(packaging/|install\.sh$|test/install-smoke\.sh$|\.github/|cmake/|bamboo|settings-gui/|pyproject\.toml$)|CMakeLists\.txt$'; then
               full=false

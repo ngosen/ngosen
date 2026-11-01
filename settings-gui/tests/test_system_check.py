@@ -26,6 +26,7 @@ def facts(session, desktop, env=None, **kw):
     base.update(FCITX if env is None else env)
     kw.setdefault("fcitx_running", True)
     kw.setdefault("ngosen_in_group", True)
+    kw.setdefault("input_panel_state", "ACTIVE")
     return Facts(env=base, **kw)
 
 
@@ -105,6 +106,28 @@ class EvaluateTest(unittest.TestCase):
         self.assertEqual(found("", ""), [])
 
 
+class InputPanelTest(unittest.TestCase):
+    TITLE = "Menu and hints do not show in GNOME's search box"
+
+    def found(self, state, desktop="ubuntu:GNOME"):
+        return system_check.evaluate(facts("wayland", desktop, input_panel_state=state))
+
+    def test_gnome_without_the_panel_warns(self):
+        self.assertEqual(titles(self.found(""), WARN), [self.TITLE])
+        self.assertIn("install.sh", self.found("")[0].fix)
+        self.assertIn(system_check.INPUT_PANEL_PAGE, self.found("")[0].fix)
+
+    def test_installed_panel_is_turned_on_or_updated(self):
+        self.assertIn("gnome-extensions enable", self.found("INACTIVE")[0].fix)
+        for state in ("ERROR", "OUT OF DATE"):
+            self.assertIn(system_check.INPUT_PANEL_PAGE, self.found(state)[0].fix)
+            self.assertNotIn("gnome-extensions enable", self.found(state)[0].fix)
+
+    def test_running_panel_and_other_desktops_are_clean(self):
+        self.assertEqual(self.found("ACTIVE"), [])
+        self.assertNotIn(self.TITLE, titles(self.found("", desktop="sway")))
+
+
 class ReportTest(unittest.TestCase):
     def test_debug_info_gives_each_app_once(self):
         text = (
@@ -162,7 +185,11 @@ class CollectTest(unittest.TestCase):
         with mock.patch.object(system_check.subprocess, "run", side_effect=run):
             f = system_check.collect(FakeDBusHandler(), env=env)
         self.assertEqual((f.gnome_shell_version, f.forward_keys_state), ("50.1", "INACTIVE"))
-        self.assertIn("GNOME Shell 50.1, forward-keys: INACTIVE", system_check.report(f, []))
+        self.assertEqual(f.input_panel_state, "INACTIVE")
+        self.assertIn(
+            "GNOME Shell 50.1, forward-keys: INACTIVE, input panel: INACTIVE",
+            system_check.report(f, []),
+        )
 
         outputs["gnome-extensions"] = ""
         with mock.patch.object(system_check.subprocess, "run", side_effect=run):

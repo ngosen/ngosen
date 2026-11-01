@@ -1280,6 +1280,22 @@ msgid "GNOME {} drops the keys Ngó Sen sends to apps"
 msgstr "GNOME {} làm rơi phím Ngó Sen gửi cho app"
 
 #: settings-gui/core/system_check.py
+msgid "Menu and hints do not show in GNOME's search box"
+msgstr "Menu và gợi ý không hiện trong ô tìm kiếm của GNOME"
+
+#: settings-gui/core/system_check.py
+msgid "Run install.sh again, or install Input Method Panel from {}, then log out and back in."
+msgstr "Chạy lại install.sh, hoặc cài Input Method Panel ở {}, rồi đăng xuất và đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "The installed Input Method Panel does not run; update it from {}."
+msgstr "Input Method Panel đã cài không chạy được; cập nhật ở {}."
+
+#: settings-gui/core/system_check.py
+msgid "Turn on Input Method Panel: gnome-extensions enable {}. If it still does not show, log out and back in."
+msgstr "Bật Input Method Panel: gnome-extensions enable {}. Nếu vẫn không hiện, đăng xuất rồi đăng nhập lại."
+
+#: settings-gui/core/system_check.py
 msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
 msgstr "Bật bản sửa: gnome-extensions enable {}. Nếu vẫn mất phím thì đăng xuất rồi đăng nhập lại."
 

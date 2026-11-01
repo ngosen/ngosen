@@ -22,6 +22,8 @@ IM_VARIABLES = ("GTK_IM_MODULE", "QT_IM_MODULE", "XMODIFIERS", "SDL_IM_MODULE")
 OK, WARN, FAIL = "ok", "warn", "fail"
 
 FORWARD_KEYS = "forward-keys@ngosen.github.io"
+INPUT_PANEL = "kimpanel@kde.org"
+INPUT_PANEL_PAGE = "https://extensions.gnome.org/extension/261/"
 
 
 @dataclass
@@ -40,6 +42,7 @@ class Facts:
     gnome_shell_version: str = ""
     # As gnome-extensions reports it (ACTIVE, INACTIVE, ERROR...), empty when not installed.
     forward_keys_state: str = ""
+    input_panel_state: str = ""
 
     @property
     def session(self):
@@ -141,6 +144,26 @@ def _forward_keys_findings(facts):
     return [Finding(WARN, title, fix)]
 
 
+def _input_panel_findings(facts):
+    state = facts.input_panel_state
+    if state == "ACTIVE":
+        return []
+    if not state:
+        fix = _(
+            "Run install.sh again, or install Input Method Panel from {}, then log out and back in."
+        ).format(INPUT_PANEL_PAGE)
+    elif state in ("ERROR", "OUT OF DATE"):
+        fix = _("The installed Input Method Panel does not run; update it from {}.").format(
+            INPUT_PANEL_PAGE
+        )
+    else:
+        fix = _(
+            "Turn on Input Method Panel: gnome-extensions enable {}. If it still does not show, log out and back in."
+        ).format(INPUT_PANEL)
+    # Only this extension draws fcitx5's popups inside GNOME Shell.
+    return [Finding(WARN, _("Menu and hints do not show in GNOME's search box"), fix)]
+
+
 def _desktop_findings(facts):
     if "GNOME" in facts.desktops:
         return (
@@ -152,6 +175,7 @@ def _desktop_findings(facts):
                 _("Chrome and older GTK apps may have no input method"),
             )
             + _forward_keys_findings(facts)
+            + _input_panel_findings(facts)
         )
     if facts.session == "x11":
         return _needs(facts, "GTK_IM_MODULE", FAIL, _("GTK apps have no input method")) + _needs(
@@ -194,7 +218,10 @@ def report(facts, findings, app_test=None):
         lines.append(f"KWin InputMethod={facts.kwin_input_method}")
     if facts.gnome_shell_version:
         state = facts.forward_keys_state or "not installed"
-        lines.append(f"GNOME Shell {facts.gnome_shell_version}, forward-keys: {state}")
+        panel = facts.input_panel_state or "not installed"
+        lines.append(
+            f"GNOME Shell {facts.gnome_shell_version}, forward-keys: {state}, input panel: {panel}"
+        )
     lines.append("")
     lines += [f"[{marks[f.level]}] {f.title}" for f in findings] or ["[OK] no setup problem found"]
     if facts.apps:
@@ -225,6 +252,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
     if "GNOME" in facts.desktops:
         facts.gnome_shell_version = _gnome_shell_version()
         facts.forward_keys_state = _extension_state(FORWARD_KEYS)
+        facts.input_panel_state = _extension_state(INPUT_PANEL)
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
     facts.ngosen_in_group = "ngosen" in (names or [])

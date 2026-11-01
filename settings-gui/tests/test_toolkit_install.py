@@ -28,7 +28,7 @@ def answering(outputs, returncode=0):
 def install_sh_lists(toolkit_case):
     """The package lists one branch of settings_window_packages in install.sh sets, by manager."""
     body = re.search(r"settings_window_packages\(\) \{(.*?)\n\}", INSTALL_SH.read_text(), re.S)[1]
-    branch = body.split("elif")[0 if toolkit_case == "gtk" else 1]
+    branch = body.split("else")[0 if toolkit_case == "gtk" else 1]
     lists = re.findall(r"(\w+)\) [^(]*settings_packages=\(([^)]*)\)", branch)
     return {("apt-get" if m == "apt" else m): tuple(p.split()) for m, p in lists}
 

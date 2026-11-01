@@ -147,8 +147,7 @@ export default class ForwardKeys extends Extension {
 
     _updateApp() {
         const app = this._focusedApp();
-        // Between two windows nothing has focus for a moment, and no field can be typed in.
-        if (app && app !== this._sentApp)
+        if (app !== this._sentApp)
             this._sendApp(app);
     }
 

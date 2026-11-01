@@ -42,6 +42,8 @@ class Facts:
     gnome_shell_version: str = ""
     # As gnome-extensions reports it (ACTIVE, INACTIVE, ERROR...), empty when not installed.
     forward_keys_state: str = ""
+    # The running GNOME Shell has the extension's code that names apps, not just its files.
+    app_names_running: bool = False
 
     @property
     def session(self):
@@ -178,11 +180,11 @@ def _needs_shell_for_app_names(facts):
 
 
 def _app_name_findings(facts):
-    if facts.forward_keys_state == "ACTIVE":
+    if facts.app_names_running:
         return [Finding(OK, _("Apps keep their own typing mode"))]
     title = _("Some apps cannot keep their own typing mode")
     # GNOME reads an extension's files only at login, so turning it on now cannot work yet.
-    if facts.forward_keys_state in ("", "OUT OF DATE"):
+    if facts.forward_keys_state in ("", "OUT OF DATE", "ACTIVE"):
         fix = _("Log out and back in. If this stays, install Ngó Sen with install.sh.")
         return [Finding(WARN, title, fix)]
     fix = _("Turn on the extension: gnome-extensions enable {}, then log out and back in.").format(
@@ -193,11 +195,12 @@ def _app_name_findings(facts):
 
 
 def _forward_keys_findings(facts):
+    names = _app_name_findings(facts) if _needs_shell_for_app_names(facts) else []
     if not _drops_forwarded_keys(facts.gnome_shell_version):
-        return _app_name_findings(facts) if _needs_shell_for_app_names(facts) else []
+        return names
     if facts.forward_keys_state == "ACTIVE":
         title = _("The fix for GNOME {} is on").format(facts.gnome_shell_version)
-        return [Finding(OK, title)]
+        return [Finding(OK, title)] + names
     title = _("GNOME {} drops the keys Ngó Sen sends to apps").format(facts.gnome_shell_version)
     if not facts.forward_keys_state:
         fix = _(
@@ -470,6 +473,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
     if "GNOME" in facts.desktops:
         facts.gnome_shell_version = _gnome_shell_version()
         facts.forward_keys_state = _extension_state(FORWARD_KEYS)
+        facts.app_names_running = _shell_names_apps()
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
     facts.ngosen_in_group = "ngosen" in (names or [])
@@ -513,6 +517,13 @@ def _gnome_shell_version():
 def _extension_state(uuid):
     match = re.search(r"^\s*State:\s*(.+?)\s*$", _output(["gnome-extensions", "info", uuid]), re.M)
     return match.group(1) if match else ""
+
+
+def _shell_names_apps():
+    call = ["gdbus", "call", "--session", "--dest", "org.gnome.Shell"]
+    call += ["--object-path", "/io/github/ngosen/AppName"]
+    call += ["--method", "io.github.ngosen.AppName.Sync"]
+    return _output(call).strip() == "()"
 
 
 def _pids_named(name, proc="/proc"):

@@ -85,13 +85,14 @@ class EvaluateTest(unittest.TestCase):
         )
 
     def test_gnome_without_app_names_offers_the_extension(self):
-        def found(version, state, fcitx="5.1.19"):
+        def found(version, state, fcitx="5.1.19", **more):
             f = facts(
                 "wayland",
                 "ubuntu:GNOME",
                 gnome_shell_version=version,
                 forward_keys_state=state,
                 fcitx_version=fcitx,
+                **more,
             )
             return system_check.evaluate(f)
 
@@ -106,7 +107,14 @@ class EvaluateTest(unittest.TestCase):
             stale = found("46.0", state)[0]
             self.assertEqual((stale.action, stale.command), ("", ""))
             self.assertIn("Log out", stale.fix)
-        self.assertEqual(found("46.0", "ACTIVE"), [])
+        running = {"app_names_running": True}
+        self.assertEqual(found("46.0", "ACTIVE", **running), [])
+        # A package upgrade replaces the files, but the old extension runs until the next login.
+        for version in ("46.0", "50.1"):
+            old = found(version, "ACTIVE")
+            self.assertEqual(titles(old, WARN), [title], version)
+            self.assertIn("Log out", old[0].fix)
+        self.assertEqual(found("50.1", "ACTIVE", **running), [])
         ok = system_check.steps(
             facts(
                 "wayland",
@@ -114,6 +122,7 @@ class EvaluateTest(unittest.TestCase):
                 gnome_shell_version="46.0",
                 forward_keys_state="ACTIVE",
                 fcitx_version="5.1.7",
+                app_names_running=True,
             )
         )
         self.assertIn("Apps keep their own typing mode", titles(ok, OK))
@@ -390,6 +399,10 @@ class CollectTest(unittest.TestCase):
         with mock.patch.object(system_check.subprocess, "run", side_effect=run):
             f = system_check.collect(FakeDBusHandler(), env=env)
         self.assertEqual((f.gnome_shell_version, f.forward_keys_state), ("50.1", "INACTIVE"))
+        self.assertFalse(f.app_names_running)
+        outputs["gdbus"] = "()\n"
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            self.assertTrue(system_check.collect(FakeDBusHandler(), env=env).app_names_running)
         self.assertIn("GNOME Shell 50.1, forward-keys: INACTIVE", system_check.report(f, []))
 
         outputs["gnome-extensions"] = ""

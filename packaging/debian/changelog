@@ -1,3 +1,14 @@
+fcitx5-ngosen (1:1.7.5-1) unstable; urgency=medium
+
+  * Remember English/Vietnamese per app (#469) and delete through the text on KDE, Sway, Hyprland
+    and X11 (#477). Expand a macro before Enter (#476), keep Enter, Shift+Enter and Tab pressed
+    right after a word in Sen mode (#487, #488, #489), wait for GNOME to show one edit before the
+    next (#490) and after BackSpace (#481), and fix a crash with fcitx5 older than 5.1.7 (#493).
+    Show menu icons on themes without them (#484, #486), install on Fedora remixes (#491) and print
+    rpm-ostree commands on image-based Fedora (#494).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 01 Nov 2026 12:00:00 +0700
+
 fcitx5-ngosen (1:1.7.4-1) unstable; urgency=medium
 
   * Send a held Enter in Preedit on GNOME when the key is released (#465), commit the underlined

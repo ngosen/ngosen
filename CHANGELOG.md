@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.7.5-1] — 01/11/2026
+
+Phím chuyển Anh/Việt nay chỉ đổi app đang gõ, mỗi app nhớ riêng lựa chọn (#469). Enter nay bung gõ tắt trong Preedit và Gõ Sen (#476); Gõ Sen không còn mất Enter, Shift+Enter, Tab bấm ngay lúc đang thêm dấu (#487, #488, #489). Gõ Sen xoá qua surrounding text ở thêm nhiều app trên KDE, Sway và X11 (#477), và ít mất dấu hơn trên GNOME (#481, #490).
+Tải ở [ngosen-1.7.5-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.5-1).
+
 ### Thay đổi
 
 - Phím chuyển Anh/Việt (Ctrl+Shift) nay chỉ đổi app đang gõ, và mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất. App chưa bấm lần nào theo lần bấm gần nhất. Nút "Mặc định", sao lưu và hoàn tác trong cửa sổ cài đặt bao luôn phần nhớ này (#469).

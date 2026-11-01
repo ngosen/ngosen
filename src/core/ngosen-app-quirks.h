@@ -46,6 +46,10 @@ namespace ngosen {
     // last deletion and commit of a turn.
     bool keepsLastEditPerTurn(const Field& field);
 
+    // GNOME acts on Tab and Esc in its search box before the input method sees them, so nothing typed
+    // there could be taken back; retyping and retoning stay out of it.
+    bool isGnomeSearch(const Field& field);
+
     // Wayland text input delivers a commit only to the field that has focus.
     bool dropsCommitsWithoutFocus(const Field& field);
 

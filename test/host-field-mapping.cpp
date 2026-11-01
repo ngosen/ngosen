@@ -82,6 +82,27 @@ namespace {
         check("a GNOME Shell that keeps keys gets them", sendsKeys("gnome-shell", "ibus", &drops));
     }
 
+    void checkShellFocusedApp(TestInstance& testInstance) {
+        std::string focused = "firefox_firefox.desktop";
+        auto        field   = [&](const char* program, const char* frontend, const std::string* shellFocusedApp) {
+            TestInputContext context(&testInstance.instance, program, frontend);
+            return ngosen::FcitxHost(&context, &testInstance.instance, nullptr, shellFocusedApp).field();
+        };
+        const auto relayed = field("gnome-shell", "ibus", &focused);
+        check("an app GNOME Shell relays takes the focused app's name", relayed.program == "firefox_firefox.desktop");
+        check("the name GNOME Shell reported is kept", relayed.reportedProgram == "gnome-shell");
+        check("the focused app still gets GNOME Shell's edit limits", ngosen::keepsLastEditPerTurn(relayed));
+        check("an app with its own name keeps it", field("kitty", "ibus", &focused).program == "kitty");
+        check("an app with its own name has no edit limits", !ngosen::keepsLastEditPerTurn(field("kitty", "ibus", &focused)));
+        check("without the extension the name stays", field("gnome-shell", "ibus", nullptr).program == "gnome-shell");
+        focused.clear();
+        const auto unknown = field("gnome-shell", "ibus", &focused);
+        check("with no focused app the name stays", unknown.program == "gnome-shell" && unknown.reportedProgram.empty());
+        check("with no focused app the edit limits stay", ngosen::keepsLastEditPerTurn(unknown));
+        focused = "firefox.desktop";
+        check("fcitx5's own GTK module keeps its name", field("gnome-shell", "dbus", &focused).program == "gnome-shell");
+    }
+
     void checkSurrounding(TestInstance& testInstance) {
         TestInputContext  context(&testInstance.instance);
         ngosen::FcitxHost host(&context, &testInstance.instance);
@@ -255,6 +276,7 @@ int main() {
     TestInstance testInstance;
     checkFlags(testInstance);
     checkShellDropsKeys(testInstance);
+    checkShellFocusedApp(testInstance);
     checkSurrounding(testInstance);
     checkFocus(testInstance);
     checkPreedit(testInstance);

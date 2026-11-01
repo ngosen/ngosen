@@ -230,7 +230,9 @@ namespace fcitx {
         std::filesystem::path writeTypingLog();
 
         // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
-        static std::string getProgramName(InputContext* ic);
+        std::string getProgramName(InputContext* ic) const;
+        // Takes the app GNOME Shell has focused, empty when unknown, and applies that app's mode.
+        void shellFocusedAppChanged(const std::string& app);
         // The mode appName types in: its toggle-key switch, else its menu rule, else the last switch.
         NgoSenMode modeFor(const std::string& appName) const;
 
@@ -454,6 +456,7 @@ namespace fcitx {
         void saveTypingLog(InputContext* ic);
         // Null when nothing tells whether GNOME Shell loses forwarded keys.
         const bool* shellDropsKeys() const;
+        std::string shellFocusedApp_;
         void        clearPanelLater(InputContext* ic, uint64_t delayUs);
 
         void        handleModeMenuKey(KeyEvent& keyEvent);

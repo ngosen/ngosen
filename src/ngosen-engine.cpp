@@ -275,13 +275,27 @@ namespace fcitx {
 
     TypingStateProperty::~TypingStateProperty() = default;
 
+    namespace {
+        // Without a name that tells windows apart, a rule is kept per context and never saved.
+        // GNOME Shell relays every app under its own name until fcitx5 5.1.22.
+        bool namesNoWindow(const std::string& program) {
+            return program.empty() || program == "wayland" || program == "x11" || program == "gnome-shell";
+        }
+
+        std::string contextRuleName(InputContext* ic) {
+            std::ostringstream oss;
+            oss << "ctx_" << static_cast<const void*>(ic);
+            return oss.str();
+        }
+    } // namespace
+
     ngosen::TypingState* NgoSenEngine::stateFor(InputContext* ic) {
         return &ic->propertyFor(&factory_)->state();
     }
 
     NgoSenEngine::NgoSenEngine(Instance* instance) :
         instance_(instance), factory_([this](InputContext& ic) {
-            return new TypingStateProperty(std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_, shellDropsKeys())));
+            return new TypingStateProperty(std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_, shellDropsKeys(), &shellFocusedApp_)));
         }) { //NOLINT
         Init();
         {
@@ -315,8 +329,9 @@ namespace fcitx {
                                                            [this](Event& event) { stateFor(static_cast<InputContextEvent&>(event).inputContext())->fieldResetWhileOff(); }));
         // A ctx_ rule names a context address, which a later window may reuse.
         contextDestroyedWatcher_ = instance_->watchEvent(EventType::InputContextDestroyed, EventWatcherPhase::Default, [this](Event& event) {
-            auto appName = getProgramName(static_cast<InputContextEvent&>(event).inputContext());
-            if (isStartsWith(appName, "ctx_")) {
+            auto* ic = static_cast<InputContextEvent&>(event).inputContext();
+            if (namesNoWindow(ic->program())) {
+                const std::string appName = contextRuleName(ic);
                 clearAppRule(appName);
                 clearAppSwitch(appName);
             }
@@ -396,7 +411,7 @@ namespace fcitx {
                 NGOSEN_WARN(std::string("Could not register ") + NgoSenDBusObject::Path + " on D-Bus; ngosen-save-log will not work");
                 dbusObject_.reset();
             }
-            gnomeShell_ = std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>());
+            gnomeShell_ = std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>(), [this](const std::string& app) { shellFocusedAppChanged(app); });
         }
 #endif
 
@@ -1578,19 +1593,30 @@ namespace fcitx {
         return {};
     }
 
-    std::string NgoSenEngine::getProgramName(InputContext* ic) {
+    std::string NgoSenEngine::getProgramName(InputContext* ic) const {
         if (ic == nullptr) {
             return "unknown-app";
         }
-        std::string programName = ic->program();
-        // Without a name that tells windows apart, a rule is kept per context and never saved.
-        // GNOME Shell relays every app under its own name until fcitx5 5.1.22.
-        if (programName.empty() || programName == "wayland" || programName == "x11" || programName == "gnome-shell") {
-            std::ostringstream oss;
-            oss << "ctx_" << static_cast<const void*>(ic);
-            programName = oss.str();
-        }
-        return programName;
+        const std::string& programName = ngosen::relayedAppName(ic->program(), ic->frontend(), &shellFocusedApp_);
+        return namesNoWindow(programName) ? contextRuleName(ic) : programName;
+    }
+
+    void NgoSenEngine::shellFocusedAppChanged(const std::string& app) {
+        shellFocusedApp_ = app;
+        if (!factory_.registered())
+            return;
+        // The app's focus can reach us after the field's, which then got the previous app's mode.
+        instance_->inputContextManager().foreachFocused([this](InputContext* ic) {
+            const std::string appName = getProgramName(ic);
+            NGOSEN_INFO("App name: " + appName);
+            const NgoSenMode mode = modeFor(appName);
+            if (mode != realMode) {
+                setMode(mode, ic);
+                stateFor(ic)->reset();
+                fillStatusArea(ic);
+            }
+            return true;
+        });
     }
 
     void NgoSenEngine::clearAppRule(const std::string& appName) {

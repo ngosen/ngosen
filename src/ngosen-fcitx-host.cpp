@@ -6,6 +6,7 @@
 #include "ngosen-fcitx-host.h"
 #include "ngosen-app-quirks.h"
 
+#include "ngosen-gnome-shell.h"
 #include "ngosen-keysym.h"
 #include "ngosen-monitor.h"
 #include "ngosen-program-name.h"
@@ -150,7 +151,7 @@ namespace ngosen {
         const auto& caps = ic_->capabilityFlags();
         Field       f;
         f.frontend         = ic_->frontend();
-        f.program          = normalizeProgramName(ic_->program());
+        f.program          = normalizeProgramName(relayedAppName(ic_->program(), ic_->frontend(), shell_focused_app_));
         f.surroundingText  = caps.test(fcitx::CapabilityFlag::SurroundingText);
         f.preedit          = caps.test(fcitx::CapabilityFlag::Preedit);
         f.formattedPreedit = caps.test(fcitx::CapabilityFlag::FormattedPreedit);

@@ -1289,6 +1289,23 @@ msgid "The fix for GNOME {} is on"
 msgstr "Bản sửa cho GNOME {} đang bật"
 
 #: settings-gui/core/system_check.py
+msgid "Apps keep their own typing mode"
+msgstr "Mỗi app nhớ được chế độ gõ riêng"
+
+#: settings-gui/core/system_check.py
+msgid "Some apps cannot keep their own typing mode"
+msgstr "Một số app chưa nhớ được chế độ gõ riêng"
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in. If this stays, install Ngó Sen with install.sh."
+msgstr "Đăng xuất rồi đăng nhập lại. Nếu vẫn thấy dòng này, cài Ngó Sen bằng install.sh."
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "Turn on the extension: gnome-extensions enable {}, then log out and back in."
+msgstr "Bật extension: gnome-extensions enable {}, rồi đăng xuất và đăng nhập lại."
+
+#: settings-gui/core/system_check.py
 msgid "Qt apps use fcitx5"
 msgstr "App Qt gõ qua fcitx5"
 

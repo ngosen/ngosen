@@ -166,9 +166,35 @@ def _drops_forwarded_keys(version):
     return match is not None and int(match.group(1)) <= 3
 
 
+def _version_tuple(version):
+    return tuple(int(part) for part in re.findall(r"\d+", version))
+
+
+def _needs_shell_for_app_names(facts):
+    """fcitx5 before 5.1.22 cannot name apps GNOME Shell relays; the extension loads on GNOME 46 to 50."""
+    shell = _version_tuple(facts.gnome_shell_version)
+    fcitx = _version_tuple(facts.fcitx_version)
+    return bool(shell) and bool(fcitx) and 46 <= shell[0] <= 50 and fcitx < (5, 1, 22)
+
+
+def _app_name_findings(facts):
+    if facts.forward_keys_state == "ACTIVE":
+        return [Finding(OK, _("Apps keep their own typing mode"))]
+    title = _("Some apps cannot keep their own typing mode")
+    # GNOME reads an extension's files only at login, so turning it on now cannot work yet.
+    if facts.forward_keys_state in ("", "OUT OF DATE"):
+        fix = _("Log out and back in. If this stays, install Ngó Sen with install.sh.")
+        return [Finding(WARN, title, fix)]
+    fix = _("Turn on the extension: gnome-extensions enable {}, then log out and back in.").format(
+        FORWARD_KEYS
+    )
+    command = f"gnome-extensions enable {FORWARD_KEYS}"
+    return [Finding(WARN, title, fix, ENABLE_FORWARD_KEYS, command)]
+
+
 def _forward_keys_findings(facts):
     if not _drops_forwarded_keys(facts.gnome_shell_version):
-        return []
+        return _app_name_findings(facts) if _needs_shell_for_app_names(facts) else []
     if facts.forward_keys_state == "ACTIVE":
         title = _("The fix for GNOME {} is on").format(facts.gnome_shell_version)
         return [Finding(OK, title)]

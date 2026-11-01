@@ -84,6 +84,51 @@ class EvaluateTest(unittest.TestCase):
             ["Older X11 apps have no input method", "IBus is running next to fcitx5"],
         )
 
+    def test_gnome_without_app_names_offers_the_extension(self):
+        def found(version, state, fcitx="5.1.19"):
+            f = facts(
+                "wayland",
+                "ubuntu:GNOME",
+                gnome_shell_version=version,
+                forward_keys_state=state,
+                fcitx_version=fcitx,
+            )
+            return system_check.evaluate(f)
+
+        title = "Some apps cannot keep their own typing mode"
+        for version in ("46.0", "48.2", "49.1", "50.4"):
+            self.assertEqual(titles(found(version, "INACTIVE"), WARN), [title], version)
+        inactive = found("46.0", "INACTIVE", "5.1.7")[0]
+        self.assertEqual(inactive.action, system_check.ENABLE_FORWARD_KEYS)
+        self.assertIn("log out", inactive.fix)
+        # GNOME reads an extension's files only at login, so turning it on now cannot work yet.
+        for state in ("", "OUT OF DATE"):
+            stale = found("46.0", state)[0]
+            self.assertEqual((stale.action, stale.command), ("", ""))
+            self.assertIn("Log out", stale.fix)
+        self.assertEqual(found("46.0", "ACTIVE"), [])
+        ok = system_check.steps(
+            facts(
+                "wayland",
+                "GNOME",
+                gnome_shell_version="46.0",
+                forward_keys_state="ACTIVE",
+                fcitx_version="5.1.7",
+            )
+        )
+        self.assertIn("Apps keep their own typing mode", titles(ok, OK))
+        # fcitx5 names apps itself from 5.1.22, and the extension loads only on these GNOME versions.
+        self.assertEqual(found("50.4", "INACTIVE", "5.1.22"), [])
+        self.assertEqual(found("50.4", "INACTIVE", "5.10.0"), [])
+        self.assertEqual(found("45.0", "INACTIVE"), [])
+        self.assertEqual(found("51.0", "INACTIVE"), [])
+        self.assertEqual(found("50.4", "INACTIVE", ""), [])
+        # GNOME 50.0 to 50.3 say the bigger problem, once.
+        self.assertEqual(
+            titles(found("50.1", "INACTIVE"), WARN),
+            ["GNOME 50.1 drops the keys Ngó Sen sends to apps"],
+        )
+
     def test_gnome_50_without_the_forward_key_fix_warns(self):
         def found(version, state):
             f = facts(

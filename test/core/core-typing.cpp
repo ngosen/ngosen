@@ -421,6 +421,23 @@ namespace {
         check(text == "đơn", "emptied field: commit after focus comes back", text);
     }
 
+    // The overview search closes when a deletion empties it, and the commit after that is lost.
+    void testGnomeSearchFirstLetter() {
+        const Field             field = makeField("ibus", true, "gnome-shell");
+        ngosen::test::AppQuirks quirks;
+        quirks.refocusWhenEmptiedMs = 13;
+        FakeResources               resources;
+        const std::vector<uint32_t> first{'a', 'a'};
+        const auto                  emptied = ngosen::test::typeInAppTraced(resources, field, quirks, first, std::vector<int>(first.size(), 100));
+        check(emptied.text == "â", "gnome search: the first letter survives", emptied.text);
+        check(emptied.sent.surroundingDeletes == 0 && emptied.sent.forwardedBackSpaces == 1, "gnome search: emptying the field forwards a backspace",
+              std::to_string(emptied.sent.surroundingDeletes) + " deletes, " + std::to_string(emptied.sent.forwardedBackSpaces) + " backspaces");
+        const std::vector<uint32_t> later{'b', 'a', 'a'};
+        const auto                  kept = ngosen::test::typeInAppTraced(resources, field, quirks, later, std::vector<int>(later.size(), 100));
+        check(kept.text == "bâ" && kept.sent.surroundingDeletes == 1 && kept.sent.forwardedBackSpaces == 0, "gnome search: a deletion leaving text uses the surrounding text",
+              kept.text + ", " + std::to_string(kept.sent.surroundingDeletes) + " deletes, " + std::to_string(kept.sent.forwardedBackSpaces) + " backspaces");
+    }
+
     // Firefox over D-Bus applies a key it sent before our commit reached it ahead of that commit.
     void testKeyTypedBeforeCommitArrived() {
         ngosen::test::AppQuirks quirks;
@@ -2071,6 +2088,7 @@ int main() {
     testKeyDuringReplacement();
     testCommitAfterTheReport();
     testCommitAfterFieldRefocus();
+    testGnomeSearchFirstLetter();
     testKeyTypedBeforeCommitArrived();
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();

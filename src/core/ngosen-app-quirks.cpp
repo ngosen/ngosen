@@ -132,7 +132,8 @@ namespace ngosen {
     }
 
     bool dropsCommitsWithoutFocus(const Field& field) {
-        return field.frontend == "wayland" || field.frontend == "wayland_v2";
+        // GNOME's overview search closes when a deletion empties it, and only the Shell's name tells it apart.
+        return field.frontend == "wayland" || field.frontend == "wayland_v2" || (field.frontend == "ibus" && appName(field) == "gnome-shell");
     }
 
     bool appliesBackspacesLate(const Field& field) {

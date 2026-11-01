@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
+#include <initializer_list>
 #include <iostream>
 #include <optional>
 #include <spawn.h>
@@ -259,7 +260,7 @@ namespace {
         void (*disconnect_)(void*);
     };
 
-    // A key after a selection gets its text, unless another window became active in between.
+    // A key after a selection gets its text, unless another app became active in between.
     bool keepsSelectionInActiveWindow() {
         std::string display;
         const pid_t xvfb = startXvfb(display);
@@ -270,20 +271,25 @@ namespace {
         setenv("DISPLAY", display.c_str(), 1);
         bool ok = true;
         {
+            FakeApp              otherApp;
             FakeApp              app;
             ngosen::X11Selection selection;
             std::atomic<bool>    stop{false};
-            ok = app.open();
+            ok = otherApp.open() && app.open();
             std::thread watcher([&] { ngosen::watchX11PointerClicks(stop, [] {}, &selection); });
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
-            const auto selectThenActivate = [&](uint32_t active) {
+            const auto selectThenActivate = [&](std::initializer_list<uint32_t> windows) {
                 ok &= app.select("nhanh");
-                app.activate(active);
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                // The watcher reads each value before the next one is set, as it does on a real desktop.
+                for (const uint32_t window : windows) {
+                    app.activate(window);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                }
                 return selection.take();
             };
-            ok &= expectSelection("the same window made active again", selectThenActivate(app.field()), "nhanh");
-            ok &= expectSelection("another window made active", selectThenActivate(app.other()), std::nullopt);
+            ok &= expectSelection("the active window cleared and set again", selectThenActivate({0, app.field()}), "nhanh");
+            ok &= expectSelection("another window of the same app made active", selectThenActivate({app.other()}), "nhanh");
+            ok &= expectSelection("another app made active", selectThenActivate({otherApp.field()}), std::nullopt);
             stop.store(true);
             watcher.join();
         }

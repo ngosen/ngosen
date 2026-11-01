@@ -169,7 +169,7 @@ namespace ngosen {
             uint32_t             utf8_       = 0;
             uint32_t             property_   = 0;
             uint32_t             active_     = 0;
-            uint32_t             lastActive_ = 0;
+            uint32_t             ownerApp_   = 0; // client id bits of the selection's owner
             std::deque<uint64_t> tickets_;
         };
 
@@ -205,7 +205,6 @@ namespace ngosen {
             property_   = atom("NGOSEN_SELECTION");
             active_     = atom("_NET_ACTIVE_WINDOW");
             root_       = root;
-            lastActive_ = activeWindow();
             window_     = generateId(conn);
             createWindow(conn, 0, window_, root, 0, 0, 1, 1, 0, InputOnly, 0, 0, nullptr);
             changeAttribs(conn, root, EventMaskBit, &PropertyChange);
@@ -253,22 +252,22 @@ namespace ngosen {
             return value;
         }
 
-        // Window managers rewrite the same active window when an app opens another window, as WPS does
-        // on a double click; only a different window means the user moved elsewhere.
+        // Xfwm clears the active window and sets it again when WPS opens a window on a double click; only
+        // another app's window means the user moved elsewhere.
         void SelectionFollower::activeWindowChanged() {
             const uint32_t active = activeWindow();
-            if (active == lastActive_)
-                return;
-            lastActive_ = active;
-            selection_->forget();
+            if (active != 0 && (active & ~clientMask_) != ownerApp_)
+                selection_->forget();
         }
 
         void SelectionFollower::ownerChanged(uint32_t owner) {
             // Another window's selection says nothing about the field being typed in.
             if (owner == 0 || !ownedByFocusedClient(owner)) {
+                ownerApp_ = 0;
                 selection_->forget();
                 return;
             }
+            ownerApp_ = owner & ~clientMask_;
             // Replies come in request order, so each carries the ticket of the change that asked for it.
             tickets_.push_back(selection_->announce());
             convert_(conn_, window_, PrimaryAtom, utf8_, property_, 0);

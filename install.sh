@@ -201,8 +201,8 @@ has_ibus_package() {
 explain_gnome_setup() {
     say ""
     say "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus của GNOME cho tài khoản này: fcitx5 tự chạy khi"
-    say "đăng nhập, app gõ qua fcitx5, thêm biểu tượng bộ gõ lên thanh trên cùng (tải extension"
-    say "từ extensions.gnome.org nếu máy chưa có khay). Đăng xuất một lần là dùng được."
+    say "đăng nhập, app gõ qua fcitx5, thêm biểu tượng và menu bộ gõ lên thanh trên cùng (tải"
+    say "extension Input Method Panel từ extensions.gnome.org). Đăng xuất một lần là dùng được."
     say "Gỡ bằng --uninstall thì trả lại hết."
     if ibus_edition_in_use || ! has_ibus_package; then
         return 0
@@ -817,11 +817,11 @@ enable_forward_keys_extension() {
     esac
 }
 
-# Stock GNOME has no tray, so fcitx5's status icon and menu need the Input Method Panel extension,
-# which is published only on extensions.gnome.org.
+# Only the Input Method Panel draws fcitx5's popups inside GNOME Shell, such as the mode menu in the
+# overview search, and stock GNOME has no tray for the menu either. It is published only on
+# extensions.gnome.org.
 install_kimpanel() {
     local uuid=kimpanel@kde.org major info url rc=0
-    has_tray && return 0
     if ! gnome-extensions list 2>/dev/null | grep -qx "$uuid"; then
         major=$(shell_version)
         major=${major%%.*}

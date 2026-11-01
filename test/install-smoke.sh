@@ -417,6 +417,14 @@ case "$1 $2 $3" in
 esac
 STUB
     printf '#!/bin/sh\necho "GNOME Shell 50.1"\n' >"$dir/gnome-shell"
+    cat >"$dir/fcitx5" <<'STUB'
+#!/bin/bash
+if [ "${1:-}" = --version ]; then
+    cat "$HOME/.stub-fcitx5-version" 2>/dev/null || echo 5.1.19
+else
+    exec /usr/bin/fcitx5 "$@"
+fi
+STUB
     cat >"$dir/gnome-extensions" <<'STUB'
 #!/bin/bash
 case "$1" in
@@ -480,6 +488,19 @@ check_extensions_turned_back() {
     check "forward-keys the user turned on stays on" extension_on forward-keys@ngosen.github.io
     check "the Input Method Panel the user turned on stays on" extension_on kimpanel@kde.org
     check "and stays installed" test ! -e "$uninstalled_extensions"
+
+    # A GNOME that keeps forwarded keys still needs the extension for app names until fcitx5 5.1.22.
+    as_user rm -f "$changes" "$enabled_extensions"
+    printf '#!/bin/sh\necho "GNOME Shell 50.4"\n' >"$work/stubs/gnome-shell"
+    check "install on GNOME 50.4 succeeds" installer --yes
+    check "it turns forward-keys on for app names" extension_on forward-keys@ngosen.github.io
+    check "uninstall after that succeeds" installer --yes --uninstall
+    echo 5.1.22 | as_user tee "$home/.stub-fcitx5-version" >/dev/null
+    check "install on GNOME 50.4 with fcitx5 5.1.22 succeeds" installer --yes
+    check "it leaves forward-keys off" extension_off forward-keys@ngosen.github.io
+    check "uninstall after that succeeds" installer --yes --uninstall
+    as_user rm -f "$home/.stub-fcitx5-version"
+    printf '#!/bin/sh\necho "GNOME Shell 50.1"\n' >"$work/stubs/gnome-shell"
 
     as_user rm -f "$changes" "$enabled_extensions"
     : | as_user tee "$installed_extensions" >/dev/null

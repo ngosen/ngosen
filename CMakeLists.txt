@@ -99,7 +99,7 @@ fcitx5_translate_desktop_file(
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/io.github.ngosen.NgoSen.metainfo.xml" DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
 
-# GNOME 50.0-50.3 drop keys an input method forwards; the user enables this extension there.
+# Names the focused app for fcitx5 before 5.1.22 and delivers forwarded keys on GNOME 50.0-50.3.
 install(DIRECTORY gnome-shell/forward-keys@ngosen.github.io DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions)
 
 install(FILES 

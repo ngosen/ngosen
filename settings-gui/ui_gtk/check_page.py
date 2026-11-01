@@ -11,6 +11,7 @@ from core import system_check, typing_log
 
 ICONS = {
     system_check.OK: ("emblem-ok-symbolic", "success"),
+    system_check.TIP: ("dialog-information-symbolic", "dim-label"),
     system_check.WARN: ("dialog-warning-symbolic", "warning"),
     system_check.FAIL: ("dialog-error-symbolic", "error"),
 }
@@ -154,7 +155,7 @@ class CheckPage:
         self.fix_all_btn.set_label(_("Fix all ({})").format(len(fixable)))
         self.fix_all_btn.set_visible(len(fixable) > 1)
         self.fix_all_btn.set_sensitive(not self.fixes.busy)
-        self.on_count(len(self.findings))
+        self.on_count(len(system_check.problems(self.found)))
 
     def _row(self, finding):
         # A step with a button needs no instructions unless the button fails.

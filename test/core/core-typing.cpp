@@ -1921,6 +1921,8 @@ namespace {
         check(ok, "IBus Ptyxis erases with a committed DEL", said(ok));
         ok = ngosen::hidesAddressBarFlag(ibus("gtk3-im:gnome-terminal-server"));
         check(!ok, "IBus terminal is not Firefox", said(ok));
+        ok = ngosen::hidesAddressBarFlag(ibus("librewolf_librewolf.desktop"));
+        check(ok, "a snap's desktop ID is read as its program", said(ok));
         ok = ngosen::hidesAddressBarFlag(ibus("gnome-shell"));
         check(!ok, "GNOME Shell is not Firefox", said(ok));
         ok = ngosen::appliesBackspacesLate(ibus("gtk3-im:soffice_bin"));

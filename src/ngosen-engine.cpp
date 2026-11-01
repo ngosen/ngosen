@@ -625,8 +625,6 @@ namespace fcitx {
         updateAction(nullptr, capitalizeStartAction_, config_.capitalizeStartOfText, _("Start of text or line"));
         updateAction(nullptr, autoNonVnRestoreAction_, config_.autoNonVnRestore, _("Auto Non-VN Restore"));
         updateAction(nullptr, enableDictionaryAction_, config_.enableDictionary, _("Custom Dictionary"));
-        inputMethodAction_->setShortText(_("Input Method"));
-        charsetAction_->setShortText(_("Charset"));
         autoCapitalizeAction_->setShortText(_("Auto Capitalize"));
         settingsAction_->setShortText(_("Settings"));
         saveLogAction_->setShortText(_("Save typing log"));
@@ -997,28 +995,37 @@ namespace fcitx {
             choices.emplace_back(std::make_unique<SimpleAction>());
             auto* choice = choices.back().get();
             choice->setShortText(name);
-            choice->setCheckable(true);
             uiManager.registerAction(stringutils::concat(actionId, "-", name), choice);
             connections_.emplace_back(choice->connect<SimpleAction::Activated>([pick, name](InputContext* ic) { pick(ic, name); }));
             menu->addAction(choice);
         }
     }
 
-    void NgoSenEngine::checkChoice(const std::vector<std::unique_ptr<SimpleAction>>& choices, const std::string& actionId, const std::string& current, InputContext* ic) {
-        const auto name = stringutils::concat(actionId, "-", current);
+    // Kimpanel shows neither check marks nor submenu arrows, so the current choice is spelled out,
+    // without a colon: kimpanel splits an entry's fields on it.
+    void NgoSenEngine::checkChoice(SimpleAction& parent, const std::string& title, const std::vector<std::unique_ptr<SimpleAction>>& choices, const std::string& actionId,
+                                   const std::string& current, InputContext* ic) {
+        parent.setShortText(stringutils::concat(title, " (", current, ")"));
+        if (ic != nullptr)
+            parent.update(ic);
+        const auto prefix = stringutils::concat(actionId, "-");
         for (const auto& action : choices) {
-            action->setChecked(action->name() == name);
+            // An action whose id was taken elsewhere is left unregistered, with no name.
+            if (!isStartsWith(action->name(), prefix))
+                continue;
+            const auto name = action->name().substr(prefix.size());
+            action->setShortText(name == current ? stringutils::concat("✔ ", name) : name);
             if (ic != nullptr)
                 action->update(ic);
         }
     }
 
     void NgoSenEngine::updateCharsetAction(InputContext* ic) {
-        checkChoice(charsetSubAction_, CharsetActionId, *config_.outputCharset, ic);
+        checkChoice(*charsetAction_, _("Charset"), charsetSubAction_, CharsetActionId, *config_.outputCharset, ic);
     }
 
     void NgoSenEngine::updateInputMethodAction(InputContext* ic) {
-        checkChoice(inputMethodSubAction_, InputMethodActionId, *config_.inputMethod, ic);
+        checkChoice(*inputMethodAction_, _("Input Method"), inputMethodSubAction_, InputMethodActionId, *config_.inputMethod, ic);
     }
 
     void NgoSenEngine::fillStatusArea(InputContext* ic) {
@@ -1408,7 +1415,8 @@ namespace fcitx {
 
         ic->inputPanel().reset();
         ic->inputPanel().setCandidateList(std::move(candidateList));
-        ic->inputPanel().setAuxDown(Text(_("App: ") + currentConfigureApp_));
+        const bool unnamed = isStartsWith(currentConfigureApp_, "ctx_");
+        ic->inputPanel().setAuxDown(Text(_("App: ") + (unnamed ? std::string(_("this window")) : currentConfigureApp_)));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
     }
 

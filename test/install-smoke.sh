@@ -481,10 +481,11 @@ check_extensions_turned_back() {
     check "the Input Method Panel the user turned on stays on" extension_on kimpanel@kde.org
     check "and stays installed" test ! -e "$uninstalled_extensions"
 
-    as_user rm -f "$changes" "$enabled_extensions"
+    as_user rm -f "$changes"
+    echo "['ubuntu-appindicators@ubuntu.com']" | as_user tee "$enabled_extensions" >/dev/null
     : | as_user tee "$installed_extensions" >/dev/null
     check "install without the Input Method Panel succeeds" installer --yes
-    check "it installs the Input Method Panel" grep -qx kimpanel@kde.org "$installed_extensions"
+    check "it installs the Input Method Panel even with a tray" grep -qx kimpanel@kde.org "$installed_extensions"
     check "uninstall after that succeeds" installer --yes --uninstall
     check "uninstall removes the Input Method Panel it installed" grep -qx kimpanel@kde.org "$uninstalled_extensions"
 

@@ -22,7 +22,7 @@ namespace ngosen {
         // The app's own program name. IBus names a client "<toolkit>-im:<program>" (gtk3-im:firefox), and a
         // snap's program repeats the snap name (firefox_firefox).
         std::string appName(const Field& field) {
-            std::string program = field.program;
+            std::string program = stripDesktopSuffix(field.program);
             if (field.frontend == "ibus") {
                 const size_t colon = program.find(':');
                 if (colon != std::string::npos && isEndsWith(program.substr(0, colon), "-im"))
@@ -31,7 +31,7 @@ namespace ngosen {
                 if (underscore != std::string::npos && program.compare(0, underscore, program, underscore + 1) == 0)
                     program.erase(underscore);
             }
-            return stripDesktopSuffix(program);
+            return program;
         }
     } // namespace
 

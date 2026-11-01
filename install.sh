@@ -364,19 +364,18 @@ fcitx5_autostart_mask() {
     printf '[Desktop Entry]\nType=Application\nName=Fcitx 5\nHidden=true\n'
 }
 
-# Earlier installers could leave this entry to keep fcitx5 from starting; without removing it
-# fcitx5 would stay off after the setup below. Anything the user changed since stays.
+# This user entry keeps fcitx5 from starting at login. One the user changed stays.
 unmask_fcitx5_autostart() {
     local mask
     mask="$(config_home)/autostart/org.fcitx.Fcitx5.desktop"
     [ -e "$mask" ] && [ "$(cat "$mask")" = "$(fcitx5_autostart_mask)" ] || return 0
     rm -f "$mask"
+    session_changes+=("fcitx5 tự chạy khi đăng nhập")
 }
 
 enable_fcitx5_autostart() {
     local dir
     dir="$(config_home)/autostart"
-    unmask_fcitx5_autostart
     [ -e /etc/xdg/autostart/org.fcitx.Fcitx5.desktop ] && return 0
     [ -e "$dir/org.fcitx.Fcitx5.desktop" ] && return 0
     mkdir -p "$dir"
@@ -1102,6 +1101,9 @@ main() {
     fi
     install_package "$workdir/$file"
     [ "$package_changed" -eq 1 ] || say "Bản này đã được cài từ trước, không cài lại."
+    if [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ]; then
+        unmask_fcitx5_autostart
+    fi
     if wants_gnome_setup; then
         setup_gnome_session
         return

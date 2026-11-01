@@ -389,7 +389,7 @@ state=$HOME/.stub-enabled-extensions
 case "$1 $2 $3" in
     "get org.gnome.shell enabled-extensions") cat "$state" 2>/dev/null || echo "@as []" ;;
     "set org.gnome.shell enabled-extensions") printf '%s\n' "$4" >"$state" ;;
-    "get org.gnome.desktop.input-sources sources") cat "$HOME/.stub-input-sources" 2>/dev/null || echo "[('xkb', 'us')]" ;;
+    "get org.gnome.desktop.input-sources sources") echo "[('xkb', 'us')]" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -651,6 +651,11 @@ main() {
         check_installed_frontends_left_alone
     fi
 
+    if [ "$session" != kde ]; then
+        echo "== fcitx5 autostart hidden"
+        check_autostart_mask_removed
+    fi
+
     if [ "$session" = kde ]; then
         echo "== fcitx5 that KWin started"
         check_restart_through_kwin
@@ -666,8 +671,6 @@ main() {
         check_edited_environment_kept
         echo "== extensions on GNOME 50.1"
         check_extensions_turned_back
-        echo "== fcitx5 autostart hidden by an earlier install"
-        check_autostart_mask_removed
     fi
 
     finish

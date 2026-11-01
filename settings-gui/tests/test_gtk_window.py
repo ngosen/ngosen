@@ -708,6 +708,17 @@ class GtkCheckPageTest(unittest.TestCase):
     def row(self, title):
         return next(row for row in self.check.rows if row.get_title() == title)
 
+    def test_a_tip_keeps_the_machine_ready_and_has_its_own_button(self):
+        tip = system_check.Finding(
+            system_check.TIP, "tip", "", system_check.ENABLE_FORWARD_KEYS, "cmd"
+        )
+        with mock.patch.object(system_check, "steps", return_value=[tip]):
+            self.check.run()
+        self.assertEqual(self.counts[-1], 0)
+        self.assertEqual(self.check.heading.get_text(), "This machine is ready")
+        self.assertIsNotNone(self.check.rows[0].button)
+        self.assertEqual(self.check.fixes.fixable(self.check.findings), [])
+
     def test_lists_every_step_and_apps_and_copies_them(self):
         self.assertEqual(self.levels()[:2], [system_check.OK, system_check.OK])
         self.assertIn(system_check.FAIL, self.levels())

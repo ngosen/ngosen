@@ -131,11 +131,11 @@ class EvaluateTest(unittest.TestCase):
                 fcitx_version=fcitx,
                 **more,
             )
-            return system_check.evaluate(f)
+            return [x for x in system_check.steps(f) if x.level != OK]
 
-        title = "Some apps cannot keep their own typing mode"
+        title = "Optional: each app can keep its own typing mode. Typing works without it."
         for version in ("46.0", "48.2", "49.1", "50.4"):
-            self.assertEqual(titles(found(version, "INACTIVE"), WARN), [title], version)
+            self.assertEqual(titles(found(version, "INACTIVE"), system_check.TIP), [title], version)
         inactive = found("46.0", "INACTIVE", "5.1.7")[0]
         self.assertEqual(inactive.action, system_check.ENABLE_FORWARD_KEYS)
         self.assertIn("log out", inactive.fix)
@@ -149,7 +149,7 @@ class EvaluateTest(unittest.TestCase):
         # A package upgrade replaces the files, but the old extension runs until the next login.
         for version in ("46.0", "50.1"):
             old = found(version, "ACTIVE")
-            self.assertEqual(titles(old, WARN), [title], version)
+            self.assertEqual(titles(old, system_check.TIP), [title], version)
             self.assertIn("Log out", old[0].fix)
         self.assertEqual(found("50.1", "ACTIVE", **running), [])
         ok = system_check.steps(
@@ -173,6 +173,34 @@ class EvaluateTest(unittest.TestCase):
         self.assertEqual(
             titles(found("50.1", "INACTIVE"), WARN),
             ["GNOME 50.1 drops the keys Ngó Sen sends to apps"],
+        )
+
+    def test_optional_step_is_not_a_problem(self):
+        tip = system_check.Finding(
+            system_check.TIP, "tip", "", system_check.ENABLE_FORWARD_KEYS, "cmd"
+        )
+        warn = system_check.Finding(WARN, "warn", "", system_check.ADD_NGOSEN, "cmd")
+        self.assertEqual(system_check.problems([tip]), [])
+        self.assertEqual(system_check.summary([tip])[0], "This machine is ready")
+        self.assertEqual(system_check.summary([tip, warn])[0], "Steps left to fix: 1")
+        fixes = system_check.Fixes(FakeDBusHandler())
+        self.assertEqual(fixes.fixable([tip, warn]), [system_check.ADD_NGOSEN])
+        # Its own button still reports a fix that did nothing.
+        fixes.finish([system_check.ENABLE_FORWARD_KEYS], {}, [tip])
+        self.assertIn(system_check.ENABLE_FORWARD_KEYS, fixes.failed)
+        text = system_check.report(facts("wayland", "GNOME"), [tip])
+        self.assertIn("[i] tip", text)
+        # A setup with only a tip left needs no fixing.
+        f = facts(
+            "wayland",
+            "ubuntu:GNOME",
+            gnome_shell_version="46.0",
+            forward_keys_state="INACTIVE",
+            fcitx_version="5.1.7",
+        )
+        self.assertNotIn(
+            "Optional: each app can keep its own typing mode. Typing works without it.",
+            titles(system_check.evaluate(f)),
         )
 
     def test_gnome_50_without_the_forward_key_fix_warns(self):
@@ -595,6 +623,17 @@ class CheckPageTest(unittest.TestCase):
 
         while self.page.fixes.busy:
             QApplication.processEvents()
+
+    def test_a_tip_keeps_the_machine_ready_and_has_its_own_button(self):
+        tip = system_check.Finding(
+            system_check.TIP, "tip", "", system_check.ENABLE_FORWARD_KEYS, "cmd"
+        )
+        with mock.patch.object(system_check, "steps", return_value=[tip]):
+            self.page.run()
+        self.assertEqual(self.counts[-1], 0)
+        self.assertEqual(self.page.heading.text(), "This machine is ready")
+        self.assertIsNotNone(self.page.rows[0].button)
+        self.assertEqual(self.page.fixes.fixable(self.page.findings), [])
 
     def test_lists_every_step_and_copies_the_report(self):
         from qtpy.QtGui import QGuiApplication

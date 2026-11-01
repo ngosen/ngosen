@@ -27,6 +27,7 @@ from ui.typography import emphasize, mute
 
 ICONS = {
     system_check.OK: QStyle.SP_DialogApplyButton,
+    system_check.TIP: QStyle.SP_MessageBoxInformation,
     system_check.WARN: QStyle.SP_MessageBoxWarning,
     system_check.FAIL: QStyle.SP_MessageBoxCritical,
 }
@@ -191,7 +192,7 @@ class CheckPage(QWidget):
         self.fix_all_btn.setText(_("Fix all ({})").format(len(fixable)))
         self.fix_all_btn.setVisible(len(fixable) > 1)
         self.fix_all_btn.setEnabled(not self.fixes.busy)
-        self.on_count(len(self.findings))
+        self.on_count(len(system_check.problems(self.found)))
 
     def _row(self, finding):
         row = QWidget()

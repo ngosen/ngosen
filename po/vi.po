@@ -1317,8 +1317,8 @@ msgid "Apps keep their own typing mode"
 msgstr "Mỗi app nhớ được chế độ gõ riêng"
 
 #: settings-gui/core/system_check.py
-msgid "Some apps cannot keep their own typing mode"
-msgstr "Một số app chưa nhớ được chế độ gõ riêng"
+msgid "Optional: each app can keep its own typing mode. Typing works without it."
+msgstr "Không bắt buộc: mỗi app có thể nhớ chế độ gõ riêng. Không bật vẫn gõ bình thường."
 
 #: settings-gui/core/system_check.py
 msgid "Log out and back in. If this stays, install Ngó Sen with install.sh."
@@ -1764,8 +1764,8 @@ msgid "Add Ngó Sen"
 msgstr "Thêm Ngó Sen"
 
 #: settings-gui/core/system_check.py
-msgid "Turn on the fix"
-msgstr "Bật bản sửa"
+msgid "Turn on"
+msgstr "Bật"
 
 #: settings-gui/core/system_check.py
 msgid "Started fcitx5."
@@ -1780,8 +1780,8 @@ msgid "Added Ngó Sen to the input method list."
 msgstr "Đã thêm Ngó Sen vào danh sách bộ gõ."
 
 #: settings-gui/core/system_check.py
-msgid "Turned on the fix for GNOME."
-msgstr "Đã bật bản sửa cho GNOME."
+msgid "Turned on the GNOME extension."
+msgstr "Đã bật extension GNOME."
 
 #: settings-gui/core/system_check.py
 msgid "This machine is ready"

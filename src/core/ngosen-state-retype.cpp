@@ -144,7 +144,7 @@ namespace ngosen {
             return;
         const std::string typed = std::move(typedWhileOff_);
         typedWhileOff_.clear();
-        if (!bambooEngine_ || !engine_->options().retypeAfterSwitch || typed.empty())
+        if (!bambooEngine_ || !engine_->options().retypeAfterSwitch || typed.empty() || ngosen::isGnomeSearch(host_->field()))
             return;
         if (!canReplaceInApp())
             return;

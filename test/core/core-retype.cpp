@@ -412,6 +412,19 @@ namespace {
     }
 
     // Qt reports the text after each backspace, so the deletion is seen half done.
+    // GNOME acts on Tab and Esc in its search box before the input method sees them.
+    void testNoRetypeInGnomeSearch() {
+        Field search     = makeField("ibus", true);
+        search.program   = "gnome-shell-overview";
+        std::string text = retypeInApp(search, Mode::Sen, "tieengs vieetj", {});
+        check(text == "tieengs vieetj", "gnome search: switching on leaves the typed text", text);
+
+        Field firefox   = makeField("ibus", true);
+        firefox.program = "firefox.desktop";
+        text            = retypeInApp(firefox, Mode::Sen, "tieengs vieetj", {});
+        check(text == "tiếng việt", "gnome app: switching on retypes the text", text);
+    }
+
     void testRetypeInSteppingApp() {
         AppQuirks quirks;
         quirks.keyStepMs       = 2;
@@ -522,6 +535,7 @@ int main() {
     testClickDropsRetype("wayland", true);
     testClickDropsRetype("xim", false);
     testRetypeInSteppingApp();
+    testNoRetypeInGnomeSearch();
     testRetypeRightAfterSwitchKey();
     testHintGoesAway(ngosen::key::Return, "Enter");
     testHintGoesAway(ngosen::key::Tab, "Tab");

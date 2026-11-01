@@ -118,6 +118,21 @@ namespace {
         return run;
     }
 
+    // GNOME acts on Tab and Esc in its search box before the input method sees them.
+    void testNoRetoneInGnomeSearch() {
+        Run run           = nhanh();
+        run.field         = makeField("ibus", true);
+        run.field.program = "gnome-shell-overview";
+        Result r          = retone(run);
+        check(r.hint.empty() && r.text == "abc s xyz", "gnome search: a tone key over a selection is left as typed", r.text);
+
+        run               = nhanh();
+        run.field         = makeField("ibus", true);
+        run.field.program = "firefox.desktop";
+        r                 = retone(run);
+        check(r.text == "abc nhánh xyz", "gnome app: a tone key over a selection changes the word", r.text);
+    }
+
     void testRetone() {
         auto r = retone(nhanh());
         check(r.text == "abc nhánh xyz" && !r.hint.empty(), "a tone key over a selected word changes it at once", r.text);
@@ -468,6 +483,7 @@ namespace {
 
 int main() {
     testRetone();
+    testNoRetoneInGnomeSearch();
     testWords();
     testWhereNotOffered();
     testAnnouncedSelection();

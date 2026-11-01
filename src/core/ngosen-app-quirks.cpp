@@ -129,6 +129,10 @@ namespace ngosen {
         return field.frontend == "ibus" && (appName(field) == "gnome-shell" || field.reportedProgram == "gnome-shell");
     }
 
+    bool isGnomeSearch(const Field& field) {
+        return appName(field) == "gnome-shell-overview";
+    }
+
     bool dropsCommitsWithoutFocus(const Field& field) {
         return field.frontend == "wayland" || field.frontend == "wayland_v2";
     }

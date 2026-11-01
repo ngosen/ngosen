@@ -12,12 +12,16 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
-- Trang "Kiểm tra máy" trên GNOME: báo khi thiếu extension Input Method Panel và có nút Cài, vì thiếu nó thì menu chế độ `` ` `` và gợi ý Cứu chữ, Cứu dấu không hiện trong ô tìm kiếm của GNOME (#508)
+- Trang "Kiểm tra máy" trên GNOME: báo khi thiếu extension Input Method Panel và có nút Cài, vì thiếu nó thì menu chế độ `` ` `` không hiện trong ô tìm kiếm của GNOME (#508)
 - Cửa sổ cài đặt Qt và GTK có trang "Kiểm tra máy": hiện các bước cài đặt, số việc còn cần sửa và nút sửa
   từng việc hoặc "Sửa cả N việc". Ô gõ thử, test app kèm nhật ký gõ, danh sách app kết nối với fcitx5 và gửi
   kết quả qua Facebook, GitHub hoặc chép kết quả nằm cùng trang, thay hộp "Kiểm tra máy tôi…" và nút
   "Báo lỗi" ở trang Giới thiệu (#463)
 - GNOME 46–50 với fcitx5 cũ hơn 5.1.22 (Ubuntu 24.04, 26.04): extension `forward-keys@ngosen.github.io` đi kèm gói nay báo tên app qua GNOME Shell cho Ngó Sen, để mỗi app nhớ riêng chế độ gõ và Anh/Việt; app dùng module fcitx vốn đã có tên. `install.sh` tự bật extension; nâng gói bằng apt, dnf thì chưa tự bật, trang Kiểm tra máy nay gợi ý và có nút bật, sau đó cần đăng xuất, đăng nhập lại; không bật vẫn gõ bình thường. Ai đã bật extension chỉ cần đăng nhập lại sau khi nâng gói (#510)
+
+### Thay đổi
+
+- Ô tìm kiếm của GNOME: không còn Cứu chữ và Cứu dấu, vì GNOME nhận Tab và Esc trước Ngó Sen nên không trả lại được chữ đã đổi. Trình duyệt và app soạn thảo vẫn có cả hai. Cần fcitx5 5.1.22 trở lên hoặc extension của Ngó Sen báo tên app (#513).
 
 ## [1.7.5-1] — 01/11/2026
 

@@ -230,7 +230,9 @@ namespace fcitx {
         std::filesystem::path writeTypingLog();
 
         // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
-        static std::string getProgramName(InputContext* ic);
+        std::string getProgramName(InputContext* ic) const;
+        // Takes the app GNOME Shell has focused, empty when unknown, and applies that app's mode.
+        void shellFocusedAppChanged(const std::string& app);
         // The mode appName types in: its toggle-key switch, else its menu rule, else the last switch.
         NgoSenMode modeFor(const std::string& appName) const;
 
@@ -454,10 +456,14 @@ namespace fcitx {
         void saveTypingLog(InputContext* ic);
         // Null when nothing tells whether GNOME Shell loses forwarded keys.
         const bool* shellDropsKeys() const;
-        void        clearPanelLater(InputContext* ic, uint64_t delayUs);
+        std::string shellFocusedApp_;
+        // Compared only, never dereferenced: fcitx5 may drop a context without a deactivate.
+        InputContext* activeContext_ = nullptr;
+        void          showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn);
+        void          clearPanelLater(InputContext* ic, uint64_t delayUs);
 
-        void        handleModeMenuKey(KeyEvent& keyEvent);
-        void        moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
+        void          handleModeMenuKey(KeyEvent& keyEvent);
+        void          moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
         // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.

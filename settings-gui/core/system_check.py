@@ -20,6 +20,8 @@ from core.brand import ISSUE_URL
 IM_VARIABLES = ("GTK_IM_MODULE", "QT_IM_MODULE", "XMODIFIERS", "SDL_IM_MODULE")
 
 OK, WARN, FAIL = "ok", "warn", "fail"
+# Worth offering, but typing works without it, so the machine still counts as ready.
+TIP = "tip"
 
 FORWARD_KEYS = "forward-keys@ngosen.github.io"
 INPUT_PANEL = "kimpanel@kde.org"
@@ -46,6 +48,8 @@ class Facts:
     gnome_shell_version: str = ""
     # As gnome-extensions reports it (ACTIVE, INACTIVE, ERROR...), empty when not installed.
     forward_keys_state: str = ""
+    # The running GNOME Shell has the extension's code that names apps, not just its files.
+    app_names_running: bool = False
     input_panel_state: str = ""
 
     @property
@@ -163,7 +167,11 @@ def _restart_finding(facts, title):
 
 def evaluate(facts):
     """The steps that need fixing."""
-    return [f for f in steps(facts) if f.level != OK]
+    return problems(steps(facts))
+
+
+def problems(found):
+    return [f for f in found if f.level in (WARN, FAIL)]
 
 
 def _drops_forwarded_keys(version):
@@ -172,12 +180,39 @@ def _drops_forwarded_keys(version):
     return match is not None and int(match.group(1)) <= 3
 
 
+def _version_tuple(version):
+    return tuple(int(part) for part in re.findall(r"\d+", version))
+
+
+def _needs_shell_for_app_names(facts):
+    """fcitx5 before 5.1.22 cannot name apps GNOME Shell relays; the extension loads on GNOME 46 to 50."""
+    shell = _version_tuple(facts.gnome_shell_version)
+    fcitx = _version_tuple(facts.fcitx_version)
+    return bool(shell) and bool(fcitx) and 46 <= shell[0] <= 50 and fcitx < (5, 1, 22)
+
+
+def _app_name_findings(facts):
+    if facts.app_names_running:
+        return [Finding(OK, _("Apps keep their own typing mode"))]
+    title = _("Optional: each app can keep its own typing mode. Typing works without it.")
+    # GNOME reads an extension's files only at login, so turning it on now cannot work yet.
+    if facts.forward_keys_state in ("", "OUT OF DATE", "ACTIVE"):
+        fix = _("Log out and back in. If this stays, install Ngó Sen with install.sh.")
+        return [Finding(TIP, title, fix)]
+    fix = _("Turn on the extension: gnome-extensions enable {}, then log out and back in.").format(
+        FORWARD_KEYS
+    )
+    command = f"gnome-extensions enable {FORWARD_KEYS}"
+    return [Finding(TIP, title, fix, ENABLE_FORWARD_KEYS, command)]
+
+
 def _forward_keys_findings(facts):
+    names = _app_name_findings(facts) if _needs_shell_for_app_names(facts) else []
     if not _drops_forwarded_keys(facts.gnome_shell_version):
-        return []
+        return names
     if facts.forward_keys_state == "ACTIVE":
         title = _("The fix for GNOME {} is on").format(facts.gnome_shell_version)
-        return [Finding(OK, title)]
+        return [Finding(OK, title)] + names
     title = _("GNOME {} drops the keys Ngó Sen sends to apps").format(facts.gnome_shell_version)
     if not facts.forward_keys_state:
         fix = _(
@@ -290,7 +325,7 @@ def fix_label(action):
         START_FCITX: _("Start fcitx5"),
         RESTART_FCITX: _("Restart fcitx5"),
         ADD_NGOSEN: _("Add Ngó Sen"),
-        ENABLE_FORWARD_KEYS: _("Turn on the fix"),
+        ENABLE_FORWARD_KEYS: _("Turn on"),
         INSTALL_INPUT_PANEL: _("Install"),
     }[action]
 
@@ -300,7 +335,7 @@ def fixed_message(action):
         START_FCITX: _("Started fcitx5."),
         RESTART_FCITX: _("Restarted fcitx5."),
         ADD_NGOSEN: _("Added Ngó Sen to the input method list."),
-        ENABLE_FORWARD_KEYS: _("Turned on the fix for GNOME."),
+        ENABLE_FORWARD_KEYS: _("Turned on the GNOME extension."),
         INSTALL_INPUT_PANEL: _("Installed Input Method Panel."),
     }[action]
 
@@ -318,11 +353,11 @@ RETRY_MS, RETRIES = 500, 8
 
 def summary(found, failed=()):
     """Heading and text above the steps; failed fixes have no button left."""
-    problems = [f for f in found if f.level != OK]
-    if not problems:
+    left = problems(found)
+    if not left:
         return _("This machine is ready"), _("Try typing in any app.")
-    title = _("Steps left to fix: {}").format(len(problems))
-    fixable = sum(1 for f in problems if f.action and f.action not in failed)
+    title = _("Steps left to fix: {}").format(len(left))
+    fixable = sum(1 for f in left if f.action and f.action not in failed)
     if fixable > 1:
         text = _(
             "Use the button on a step, or fix them all at once. Ngó Sen only changes this "
@@ -414,7 +449,7 @@ class Fixes:
         self._retries = 0
 
     def fixable(self, findings):
-        return [f.action for f in findings if f.action and f.action not in self.failed]
+        return [f.action for f in problems(findings) if f.action and f.action not in self.failed]
 
     def run(self, actions):
         """Runs the fixes; returns (done, undos, ms to wait before checking again)."""
@@ -463,7 +498,7 @@ class Fixes:
 
 def report(facts, findings, app_test=None):
     """Plain text for the bug report; it lists app names, so the user reviews it before sending."""
-    marks = {OK: "OK", WARN: "!", FAIL: "X"}
+    marks = {OK: "OK", TIP: "i", WARN: "!", FAIL: "X"}
     desktop = ":".join(facts.desktops) or "?"
     lines = [
         f"Ngó Sen {facts.ngosen_version or '?'}, fcitx5 {facts.fcitx_version or '?'}",
@@ -508,6 +543,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
     if "GNOME" in facts.desktops:
         facts.gnome_shell_version = _gnome_shell_version()
         facts.forward_keys_state = _extension_state(FORWARD_KEYS)
+        facts.app_names_running = _shell_names_apps()
         facts.input_panel_state = _extension_state(INPUT_PANEL)
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
@@ -552,6 +588,13 @@ def _gnome_shell_version():
 def _extension_state(uuid):
     match = re.search(r"^\s*State:\s*(.+?)\s*$", _output(["gnome-extensions", "info", uuid]), re.M)
     return match.group(1) if match else ""
+
+
+def _shell_names_apps():
+    call = ["gdbus", "call", "--session", "--dest", "org.gnome.Shell"]
+    call += ["--object-path", "/io/github/ngosen/AppName"]
+    call += ["--method", "io.github.ngosen.AppName.Sync"]
+    return _output(call).strip() == "()"
 
 
 def _pids_named(name, proc="/proc"):

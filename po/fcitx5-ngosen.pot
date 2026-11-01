@@ -1661,7 +1661,7 @@ msgid "Add Ngó Sen"
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Turn on the fix"
+msgid "Turn on"
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1677,7 +1677,7 @@ msgid "Added Ngó Sen to the input method list."
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Turned on the fix for GNOME."
+msgid "Turned on the GNOME extension."
 msgstr ""
 
 #: settings-gui/core/system_check.py

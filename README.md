@@ -221,17 +221,19 @@ Gặp lỗi thì mở issue. Muốn build từ bản clone trên máy, xem mục
 
 ## Lỗi thường gặp
 
-### Ubuntu 26.04: extension sửa lỗi gõ
+### GNOME: extension sửa lỗi gõ
 
-Có từ version `0.5.0-1`. Lệnh cài tự bật extension trên GNOME 50.0 đến 50.3. Nếu cài gói bằng tay,
-đăng xuất rồi đăng nhập lại, sau đó chạy một lần:
+Gói kèm extension `forward-keys@ngosen.github.io` cho GNOME 46 đến 50. Nó báo cho Ngó Sen tên app
+đang gõ, vì fcitx5 trước 5.1.22 gọi mọi app trên GNOME là `gnome-shell`, nên không nhớ được chế độ gõ
+riêng cho từng app. Trên GNOME 50.0 đến 50.3 nó còn sửa lỗi GNOME làm mất phím mà bộ gõ gửi cho app
+([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784)); khi
+Ubuntu vá lỗi này, chỉ cần cập nhật gói.
+
+Lệnh cài tự bật extension. Nếu cài gói bằng tay, đăng xuất rồi đăng nhập lại, sau đó chạy một lần:
 
 ```
 gnome-extensions enable forward-keys@ngosen.github.io
 ```
-
-Khi Ubuntu sửa lỗi này ([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784)),
-tắt extension bằng `gnome-extensions disable forward-keys@ngosen.github.io`.
 
 ### GNOME Wayland: bấm chuột mất chữ đang gõ
 

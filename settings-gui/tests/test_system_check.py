@@ -121,6 +121,88 @@ class EvaluateTest(unittest.TestCase):
             ["Older X11 apps have no input method", "IBus is running next to fcitx5"],
         )
 
+    def test_gnome_without_app_names_offers_the_extension(self):
+        def found(version, state, fcitx="5.1.19", **more):
+            f = facts(
+                "wayland",
+                "ubuntu:GNOME",
+                gnome_shell_version=version,
+                forward_keys_state=state,
+                fcitx_version=fcitx,
+                **more,
+            )
+            return [x for x in system_check.steps(f) if x.level != OK]
+
+        title = "Optional: each app can keep its own typing mode. Typing works without it."
+        for version in ("46.0", "48.2", "49.1", "50.4"):
+            self.assertEqual(titles(found(version, "INACTIVE"), system_check.TIP), [title], version)
+        inactive = found("46.0", "INACTIVE", "5.1.7")[0]
+        self.assertEqual(inactive.action, system_check.ENABLE_FORWARD_KEYS)
+        self.assertIn("log out", inactive.fix)
+        # GNOME reads an extension's files only at login, so turning it on now cannot work yet.
+        for state in ("", "OUT OF DATE"):
+            stale = found("46.0", state)[0]
+            self.assertEqual((stale.action, stale.command), ("", ""))
+            self.assertIn("Log out", stale.fix)
+        running = {"app_names_running": True}
+        self.assertEqual(found("46.0", "ACTIVE", **running), [])
+        # A package upgrade replaces the files, but the old extension runs until the next login.
+        for version in ("46.0", "50.1"):
+            old = found(version, "ACTIVE")
+            self.assertEqual(titles(old, system_check.TIP), [title], version)
+            self.assertIn("Log out", old[0].fix)
+        self.assertEqual(found("50.1", "ACTIVE", **running), [])
+        ok = system_check.steps(
+            facts(
+                "wayland",
+                "GNOME",
+                gnome_shell_version="46.0",
+                forward_keys_state="ACTIVE",
+                fcitx_version="5.1.7",
+                app_names_running=True,
+            )
+        )
+        self.assertIn("Apps keep their own typing mode", titles(ok, OK))
+        # fcitx5 names apps itself from 5.1.22, and the extension loads only on these GNOME versions.
+        self.assertEqual(found("50.4", "INACTIVE", "5.1.22"), [])
+        self.assertEqual(found("50.4", "INACTIVE", "5.10.0"), [])
+        self.assertEqual(found("45.0", "INACTIVE"), [])
+        self.assertEqual(found("51.0", "INACTIVE"), [])
+        self.assertEqual(found("50.4", "INACTIVE", ""), [])
+        # GNOME 50.0 to 50.3 say the bigger problem, once.
+        self.assertEqual(
+            titles(found("50.1", "INACTIVE"), WARN),
+            ["GNOME 50.1 drops the keys Ngó Sen sends to apps"],
+        )
+
+    def test_optional_step_is_not_a_problem(self):
+        tip = system_check.Finding(
+            system_check.TIP, "tip", "", system_check.ENABLE_FORWARD_KEYS, "cmd"
+        )
+        warn = system_check.Finding(WARN, "warn", "", system_check.ADD_NGOSEN, "cmd")
+        self.assertEqual(system_check.problems([tip]), [])
+        self.assertEqual(system_check.summary([tip])[0], "This machine is ready")
+        self.assertEqual(system_check.summary([tip, warn])[0], "Steps left to fix: 1")
+        fixes = system_check.Fixes(FakeDBusHandler())
+        self.assertEqual(fixes.fixable([tip, warn]), [system_check.ADD_NGOSEN])
+        # Its own button still reports a fix that did nothing.
+        fixes.finish([system_check.ENABLE_FORWARD_KEYS], {}, [tip])
+        self.assertIn(system_check.ENABLE_FORWARD_KEYS, fixes.failed)
+        text = system_check.report(facts("wayland", "GNOME"), [tip])
+        self.assertIn("[i] tip", text)
+        # A setup with only a tip left needs no fixing.
+        f = facts(
+            "wayland",
+            "ubuntu:GNOME",
+            gnome_shell_version="46.0",
+            forward_keys_state="INACTIVE",
+            fcitx_version="5.1.7",
+        )
+        self.assertNotIn(
+            "Optional: each app can keep its own typing mode. Typing works without it.",
+            titles(system_check.evaluate(f)),
+        )
+
     def test_gnome_50_without_the_forward_key_fix_warns(self):
         def found(version, state):
             f = facts(
@@ -383,6 +465,10 @@ class CollectTest(unittest.TestCase):
         with mock.patch.object(system_check.subprocess, "run", side_effect=run):
             f = system_check.collect(FakeDBusHandler(), env=env)
         self.assertEqual((f.gnome_shell_version, f.forward_keys_state), ("50.1", "INACTIVE"))
+        self.assertFalse(f.app_names_running)
+        outputs["gdbus"] = "()\n"
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            self.assertTrue(system_check.collect(FakeDBusHandler(), env=env).app_names_running)
         self.assertIn("GNOME Shell 50.1, forward-keys: INACTIVE", system_check.report(f, []))
 
         outputs["gnome-extensions"] = ""
@@ -537,6 +623,17 @@ class CheckPageTest(unittest.TestCase):
 
         while self.page.fixes.busy:
             QApplication.processEvents()
+
+    def test_a_tip_keeps_the_machine_ready_and_has_its_own_button(self):
+        tip = system_check.Finding(
+            system_check.TIP, "tip", "", system_check.ENABLE_FORWARD_KEYS, "cmd"
+        )
+        with mock.patch.object(system_check, "steps", return_value=[tip]):
+            self.page.run()
+        self.assertEqual(self.counts[-1], 0)
+        self.assertEqual(self.page.heading.text(), "This machine is ready")
+        self.assertIsNotNone(self.page.rows[0].button)
+        self.assertEqual(self.page.fixes.fixable(self.page.findings), [])
 
     def test_lists_every_step_and_copies_the_report(self):
         from qtpy.QtGui import QGuiApplication

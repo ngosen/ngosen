@@ -59,7 +59,7 @@ namespace ngosen {
     struct Field {
         std::string frontend; // how the app talks to the input method: wayland, xim, ibus, dbus, fcitx4
         std::string program;
-        std::string reportedProgram;          // the name as reported, when program differs from it (a Flatpak app ID)
+        std::string reportedProgram;          // the name as reported, when program differs from it (a Flatpak app ID, gnome-shell for the app it relays)
         bool        surroundingText  = false; // the app reports the text around the cursor
         bool        preedit          = false; // the app can show uncommitted text
         bool        formattedPreedit = false;

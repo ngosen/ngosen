@@ -798,20 +798,29 @@ has_tray() {
     gnome-extensions list --enabled 2>/dev/null | grep -q appindicator
 }
 
-# GNOME 50.0 to 50.3 drop keys an input method forwards; the packaged extension delivers them.
+# fcitx5 before 5.1.22 names every app on GNOME after the shell, so it needs the packaged extension to tell
+# apps apart. GNOME 50.0 to 50.3 also drop keys an input method forwards, which the extension delivers.
+fcitx5_names_apps_on_gnome() {
+    local version
+    version=$(fcitx5 --version 2>/dev/null | head -n 1) || return 1
+    [ -n "$version" ] || return 1
+    [ "$(printf '%s\n' "$version" 5.1.22 | sort -V | head -n 1)" = 5.1.22 ]
+}
+
 enable_forward_keys_extension() {
     local uuid=forward-keys@ngosen.github.io version rc=0
     [ -d "/usr/share/gnome-shell/extensions/$uuid" ] || return 0
     version=$(shell_version)
     case "$version" in
         50.0 | 50.1 | 50.2 | 50.3) ;;
+        4[6-9].* | 50.*) fcitx5_names_apps_on_gnome && return 0 ;;
         *) return 0 ;;
     esac
     enable_shell_extension "$uuid" || rc=$?
     case "$rc" in
         0)
             note_change "extension $uuid"
-            session_changes+=("bật extension sửa lỗi gõ của GNOME $version")
+            session_changes+=("bật extension sửa lỗi gõ trên GNOME $version")
             ;;
         2) say "Chưa bật được extension sửa lỗi gõ; sau khi đăng nhập lại chạy: gnome-extensions enable $uuid" ;;
     esac

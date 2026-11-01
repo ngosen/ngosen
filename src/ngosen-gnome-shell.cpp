@@ -28,33 +28,66 @@ namespace ngosen {
         return std::regex_match(version, dropping);
     }
 
-#ifdef NGOSEN_READS_GNOME_SHELL
-    namespace {
-        constexpr const char* ShellService    = "org.gnome.Shell";
-        constexpr const char* ShellPath       = "/org/gnome/Shell";
-        constexpr const char* ExtensionUuid   = "forward-keys@ngosen.github.io";
-        constexpr double      ExtensionActive = 1; // ExtensionState.ACTIVE
-        constexpr uint64_t    ReplyTimeoutUs  = 2000000;
+    const std::string& relayedAppName(const std::string& program, const std::string& frontend, const std::string* shellFocusedApp) {
+        if (shellFocusedApp != nullptr && !shellFocusedApp->empty() && frontend == "ibus" && (program == "gnome-shell" || program.empty()))
+            return *shellFocusedApp;
+        return program;
     }
 
-    GnomeShellWatcher::GnomeShellWatcher(fcitx::dbus::Bus* bus) : bus_(bus), watcher_(*bus) {
+#ifdef NGOSEN_READS_GNOME_SHELL
+    namespace {
+        constexpr const char* ShellService     = "org.gnome.Shell";
+        constexpr const char* ShellPath        = "/org/gnome/Shell";
+        constexpr const char* ExtensionUuid    = "forward-keys@ngosen.github.io";
+        constexpr double      ExtensionActive  = 1; // ExtensionState.ACTIVE
+        constexpr uint64_t    ReplyTimeoutUs   = 2000000;
+        constexpr const char* AppNamePath      = "/io/github/ngosen/AppName";
+        constexpr const char* AppNameInterface = "io.github.ngosen.AppName";
+    }
+
+    GnomeShellWatcher::GnomeShellWatcher(fcitx::dbus::Bus* bus, std::function<void(const std::string&)> onFocusedApp) :
+        bus_(bus), watcher_(*bus), on_focused_app_(std::move(onFocusedApp)) {
         // GNOME reports an extension's state as a double, which fcitx5 does not read by default.
         fcitx::dbus::VariantTypeRegistry::defaultRegistry().registerType<double>();
         owner_entry_ = watcher_.watchService(ShellService, [this](const std::string&, const std::string&, const std::string& owner) {
             version_.clear();
             extension_active_ = false;
             update();
-            if (!owner.empty())
+            setFocusedApp("");
+            if (!owner.empty()) {
                 refresh();
+                askFocusedApp();
+            }
         });
         state_signal_ =
             bus_->addMatch(fcitx::dbus::MatchRule(ShellService, ShellPath, "org.gnome.Shell.Extensions", "ExtensionStateChanged"), [this](fcitx::dbus::Message& message) {
                 std::string uuid;
                 message >> uuid;
-                if (uuid == ExtensionUuid)
+                if (uuid == ExtensionUuid) {
                     refresh();
+                    askFocusedApp();
+                }
                 return true;
             });
+        app_signal_ = bus_->addMatch(fcitx::dbus::MatchRule(ShellService, AppNamePath, AppNameInterface, "FocusedApp"), [this](fcitx::dbus::Message& message) {
+            std::string app;
+            message >> app;
+            setFocusedApp(app);
+            return true;
+        });
+    }
+
+    // The answer comes as a FocusedApp signal, which only this process receives.
+    void GnomeShellWatcher::askFocusedApp() {
+        auto sync = bus_->createMethodCall(ShellService, AppNamePath, AppNameInterface, "Sync");
+        app_call_ = sync.callAsync(ReplyTimeoutUs, [](fcitx::dbus::Message&) { return true; });
+    }
+
+    void GnomeShellWatcher::setFocusedApp(const std::string& app) {
+        if (app == focused_app_)
+            return;
+        focused_app_ = app;
+        on_focused_app_(app);
     }
 
     void GnomeShellWatcher::refresh() {
@@ -93,7 +126,7 @@ namespace ngosen {
         NGOSEN_INFO("GNOME Shell " + version_ + (drops ? " loses forwarded keys; deleting through the text in apps it relays" : " delivers forwarded keys"));
     }
 #elif defined(NGOSEN_HAS_DBUS)
-    GnomeShellWatcher::GnomeShellWatcher(fcitx::dbus::Bus* bus) : bus_(bus), watcher_(*bus) {}
+    GnomeShellWatcher::GnomeShellWatcher(fcitx::dbus::Bus* bus, std::function<void(const std::string&)> /*onFocusedApp*/) : bus_(bus), watcher_(*bus) {}
 #endif
 
 } // namespace ngosen

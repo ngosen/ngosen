@@ -1001,10 +1001,11 @@ namespace fcitx {
         }
     }
 
-    // Kimpanel shows neither check marks nor submenu arrows, so the current choice is spelled out.
+    // Kimpanel shows neither check marks nor submenu arrows, so the current choice is spelled out,
+    // without a colon: kimpanel splits an entry's fields on it.
     void NgoSenEngine::checkChoice(SimpleAction& parent, const std::string& title, const std::vector<std::unique_ptr<SimpleAction>>& choices, const std::string& actionId,
                                    const std::string& current, InputContext* ic) {
-        parent.setShortText(stringutils::concat(title, ": ", current));
+        parent.setShortText(stringutils::concat(title, " (", current, ")"));
         if (ic != nullptr)
             parent.update(ic);
         const auto prefix = stringutils::concat(actionId, "-");

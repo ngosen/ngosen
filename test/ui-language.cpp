@@ -52,14 +52,14 @@ int main() {
     fcitx::InputContextEvent in(&context, fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, in);
 
-    check("the menu is Vietnamese by default", label(context, "ngosen-settings") == "Cài đặt" && label(context, "ngosen-charset") == "Bảng mã: Unicode");
+    check("the menu is Vietnamese by default", label(context, "ngosen-settings") == "Cài đặt" && label(context, "ngosen-charset") == "Bảng mã (Unicode)");
     const auto hint = [&] { return ngosen::FcitxHost(&context, &testInstance.instance).translate("Tab or Esc: put back what was typed"); };
     check("the Cứu chữ hint is Vietnamese by default", hint() == "Cứu chữ: Tab hoặc Esc để trả lại chữ đã gõ");
 
     fcitx::RawConfig english;
     english.setValueByPath("UiLanguage", "English");
     engine.setConfig(english);
-    check("picking English changes the menu at once", label(context, "ngosen-settings") == "Settings" && label(context, "ngosen-input-method") == "Input Method: Telex");
+    check("picking English changes the menu at once", label(context, "ngosen-settings") == "Settings" && label(context, "ngosen-input-method") == "Input Method (Telex)");
     check("picking English changes the hint", hint() == "Tab or Esc: put back what was typed");
 
     const bool spellCheck = label(context, "ngosen-spellcheck").find("✔") == 0;
@@ -70,7 +70,7 @@ int main() {
     vietnamese.setValueByPath("UiLanguage", "Vietnamese");
     engine.setConfig(vietnamese);
     check("picking Vietnamese changes it back",
-          label(context, "ngosen-charset") == "Bảng mã: Unicode" && label(context, "ngosen-spellcheck").find("Kiểm tra chính tả") != std::string::npos);
+          label(context, "ngosen-charset") == "Bảng mã (Unicode)" && label(context, "ngosen-spellcheck").find("Kiểm tra chính tả") != std::string::npos);
 
     return failures == 0 ? 0 : 1;
 }

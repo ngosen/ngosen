@@ -64,15 +64,25 @@ int main() {
     engine.activate(entry, in);
 
     auto* inputMethod = entryNamed(context, "ngosen-input-method");
-    check("the entry names the input method", inputMethod && inputMethod->shortText(&context) == "Input Method: Telex");
+    check("the entry names the input method", inputMethod && inputMethod->shortText(&context) == "Input Method (Telex)");
     check("the current input method is marked", inputMethod && choices(context, *inputMethod) == std::vector<std::string>{"✔ Telex", "VNI"});
     if (inputMethod) {
         inputMethod->menu()->actions().back()->activate(&context);
-        check("picking VNI renames the entry", inputMethod->shortText(&context) == "Input Method: VNI");
+        check("picking VNI renames the entry", inputMethod->shortText(&context) == "Input Method (VNI)");
         check("picking VNI moves the mark", choices(context, *inputMethod) == std::vector<std::string>{"Telex", "✔ VNI"});
     }
     auto* charset = entryNamed(context, "ngosen-charset");
-    check("the entry names the charset", charset && charset->shortText(&context) == "Charset: Unicode");
+    check("the entry names the charset", charset && charset->shortText(&context) == "Charset (Unicode)");
+
+    // Kimpanel sends an entry as "key:text:icon:..." and splits it on every colon.
+    bool colonFree = true;
+    for (auto* action : context.statusArea().actions(fcitx::StatusGroup::InputMethod)) {
+        colonFree = colonFree && action->shortText(&context).find(':') == std::string::npos;
+        if (action->menu())
+            for (const auto& label : choices(context, *action))
+                colonFree = colonFree && label.find(':') == std::string::npos;
+    }
+    check("no menu text has a colon", colonFree);
 
     auto names = menu(context);
     check("every entry shows by default", names.size() == 10 && has(names, "ngosen-input-method") && has(names, "ngosen-charset"));

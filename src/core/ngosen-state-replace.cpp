@@ -244,13 +244,13 @@ namespace ngosen {
         surr_wait_focus_retries_ = 0;
         settle_reason_           = reason;
         surr_wait_deliver_at_    = ngosen::monotonicUs() + (static_cast<uint64_t>(settleMs) * 1000ULL);
-        settle_timer_            = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer&) {
-            if (!surr_wait_pending_ || !surr_wait_timer_only_ || !is_deleting_.load()) {
-                return false;
-            }
-            finishReplacement(settle_reason_, false);
-            return false;
-        });
+        replaceTimer(settle_timer_, startWaitTimer(surr_wait_deliver_at_, [this](ngosen::Timer&) {
+                         if (!surr_wait_pending_ || !surr_wait_timer_only_ || !is_deleting_.load()) {
+                             return false;
+                         }
+                         finishReplacement(settle_reason_, false);
+                         return false;
+                     }));
     }
 
     void TypingState::noteWaitOutcome(const char* reason) {
@@ -285,13 +285,30 @@ namespace ngosen {
         }
     }
 
+    std::unique_ptr<ngosen::Timer> TypingState::startWaitTimer(uint64_t deadlineUs, std::function<bool(ngosen::Timer&)> onTime) {
+        // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms.
+        return host_->startTimer(deadlineUs, 1000, [this, onTime = std::move(onTime)](ngosen::Timer& t) {
+            running_timer_  = &t;
+            const bool keep = onTime(t);
+            running_timer_  = nullptr;
+            return keep && retired_timer_.get() != &t;
+        });
+    }
+
+    void TypingState::replaceTimer(std::unique_ptr<ngosen::Timer>& slot, std::unique_ptr<ngosen::Timer> next) {
+        if (slot && slot.get() == running_timer_)
+            retired_timer_ = std::move(slot);
+        else if (retired_timer_ && retired_timer_.get() != running_timer_)
+            retired_timer_.reset();
+        slot = std::move(next);
+    }
+
     void TypingState::finishReplacement(const char* reason, bool fromTimer) {
         noteWaitOutcome(reason);
         surr_wait_pending_    = false;
         surr_wait_timer_only_ = false;
-        if (!fromTimer && surr_wait_timer_) {
-            surr_wait_timer_.reset(); // never reset a timer from inside its own callback
-        }
+        if (!fromTimer)
+            replaceTimer(surr_wait_timer_);
         // A previous replacement still waiting for its turn goes out first, keeping the text in order.
         flushDeferredCommit();
         // wlroots drops a commit sent while the app's report is still arriving, as answering an old state.

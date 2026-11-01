@@ -278,6 +278,13 @@ namespace ngosen {
         void onWaitSurroundingUpdated();
         void onOvertypeSurroundingUpdated();
 
+        // A replay can start the next wait from inside a wait timer's callback, and destroying that
+        // timer there frees the callback while it runs. Such a timer is kept until a later replace.
+        std::unique_ptr<ngosen::Timer> startWaitTimer(uint64_t deadlineUs, std::function<bool(ngosen::Timer&)> onTime);
+        void                           replaceTimer(std::unique_ptr<ngosen::Timer>& slot, std::unique_ptr<ngosen::Timer> next = nullptr);
+        const ngosen::Timer*           running_timer_ = nullptr;
+        std::unique_ptr<ngosen::Timer> retired_timer_;
+
         // --- Sen mode: wait for the app instead of sleeping (see handleReplacementBackspace) ---
         std::unique_ptr<ngosen::Timer> surr_wait_timer_;
         bool                           surr_wait_watching_ = false; ///< reports go to onWaitSurroundingUpdated once a wait has started

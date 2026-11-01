@@ -141,28 +141,27 @@ namespace ngosen {
             ngosen::surroundingTextLags(host_->field()) ? std::max(engine_->options().waitSurroundingTimeoutMs, LaggingReportWaitMs) : engine_->options().waitSurroundingTimeoutMs;
         const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->options().waitSurroundingShortMs : fullMs;
         const auto timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
-        // Accuracy 0 means sd-event's default 250 ms slack, so pass 1 ms. Check once at the
-        // threshold first: many apps report "done" before it and then go quiet.
+        // Check once at the threshold first: many apps report "done" before it and then go quiet.
         const auto threshold     = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
         const auto firstDeadline = threshold < timeout ? surr_wait_started_at_ + threshold : surr_wait_started_at_ + timeout;
-        surr_wait_timer_         = host_->startTimer(firstDeadline, 1000, [this, timeout](ngosen::Timer& t) {
-            if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
-                return false;
-            }
-            const auto waited = ngosen::monotonicUs() - surr_wait_started_at_;
-            if (waited + 1000 < timeout) {
-                if (deletionLooksDone()) {
-                    deliverAfterSettle("threshold", true);
-                    return false;
-                }
-                t.rearm(surr_wait_started_at_ + timeout);
-                return true;
-            }
-            if (deferLaggingCommit("timeout"))
-                return false;
-            finishReplacement("timeout", true);
-            return false;
-        });
+        replaceTimer(surr_wait_timer_, startWaitTimer(firstDeadline, [this, timeout](ngosen::Timer& t) {
+                         if (!surr_wait_pending_ || surr_wait_timer_only_ || !is_deleting_.load()) {
+                             return false;
+                         }
+                         const auto waited = ngosen::monotonicUs() - surr_wait_started_at_;
+                         if (waited + 1000 < timeout) {
+                             if (deletionLooksDone()) {
+                                 deliverAfterSettle("threshold", true);
+                                 return false;
+                             }
+                             t.rearm(surr_wait_started_at_ + timeout);
+                             return true;
+                         }
+                         if (deferLaggingCommit("timeout"))
+                             return false;
+                         finishReplacement("timeout", true);
+                         return false;
+                     }));
         return true;
     }
 
@@ -199,7 +198,7 @@ namespace ngosen {
         surr_wait_focus_retries_ = 0;
         surr_wait_started_at_    = ngosen::monotonicUs();
         surr_wait_deliver_at_    = surr_wait_started_at_ + (static_cast<uint64_t>(waitMs) * 1000ULL);
-        surr_wait_timer_         = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); });
+        replaceTimer(surr_wait_timer_, startWaitTimer(surr_wait_deliver_at_, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); }));
         return true;
     }
 
@@ -254,7 +253,7 @@ namespace ngosen {
         surr_wait_timer_only_    = true;
         surr_wait_focus_retries_ = 0;
         surr_wait_deliver_at_    = std::max(floorUs, nowUs + std::max<uint64_t>(settleUs, 1000));
-        settle_timer_            = host_->startTimer(surr_wait_deliver_at_, 1000, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); });
+        replaceTimer(settle_timer_, startWaitTimer(surr_wait_deliver_at_, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); }));
         return true;
     }
 

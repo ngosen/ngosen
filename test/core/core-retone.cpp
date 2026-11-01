@@ -474,6 +474,7 @@ int main() {
     testClickKeepsTone();
     testToneAtCursor();
     testToneAfterBackspace();
+    check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all retone checks passed\n";
     return failures == 0 ? 0 : 1;

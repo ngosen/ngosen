@@ -24,6 +24,8 @@ OK, WARN, FAIL = "ok", "warn", "fail"
 FORWARD_KEYS = "forward-keys@ngosen.github.io"
 INPUT_PANEL = "kimpanel@kde.org"
 INPUT_PANEL_PAGE = "https://extensions.gnome.org/extension/261/"
+# Not org.gnome.Shell.Extensions: that name starts the Extensions app, which exits without replying.
+INPUT_PANEL_INSTALLER = "org.gnome.Shell"
 
 
 @dataclass
@@ -375,9 +377,9 @@ def _install_input_panel():
         "--timeout",
         "120",
         "--dest",
-        "org.gnome.Shell.Extensions",
+        INPUT_PANEL_INSTALLER,
         "--object-path",
-        "/org/gnome/Shell/Extensions",
+        "/org/gnome/Shell",
         "--method",
         "org.gnome.Shell.Extensions.InstallRemoteExtension",
         INPUT_PANEL,

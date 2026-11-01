@@ -57,8 +57,11 @@ class InputPanelTest(unittest.TestCase):
     def test_install_counts_only_when_the_user_accepts(self):
         def fix(stdout, returncode=0):
             done = subprocess.CompletedProcess([], returncode, stdout=stdout)
-            with mock.patch.object(system_check.subprocess, "run", return_value=done):
-                return system_check.run_fix(system_check.INSTALL_INPUT_PANEL, FakeDBusHandler())
+            with mock.patch.object(system_check.subprocess, "run", return_value=done) as ran:
+                result = system_check.run_fix(system_check.INSTALL_INPUT_PANEL, FakeDBusHandler())
+            cmd = ran.call_args.args[0]
+            self.assertEqual(cmd[cmd.index("--dest") + 1], "org.gnome.Shell")
+            return result
 
         self.assertEqual(fix("('successful',)\n"), (True, None))
         self.assertEqual(fix("('cancelled',)\n"), (False, None))

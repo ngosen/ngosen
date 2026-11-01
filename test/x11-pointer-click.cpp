@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <dlfcn.h>
 #include <iostream>
 #include <optional>
 #include <spawn.h>
@@ -118,6 +119,179 @@ namespace {
         ok &= expectSelection("an older selection's text after a newer one", selection.take(), "abc nhanh xyz");
         return ok;
     }
+
+    struct Cookie {
+        unsigned int sequence;
+    };
+    struct ScreenIterator {
+        const uint32_t* data;
+        int             rem;
+        int             index;
+    };
+
+    uint32_t word32(const uint8_t* data, size_t offset) {
+        uint32_t value = 0;
+        std::memcpy(&value, data + offset, sizeof(value));
+        return value;
+    }
+
+    // An X11 app with two windows on the test display, through xcb loaded at run time like the watcher.
+    class FakeApp {
+      public:
+        bool open() {
+            void* xcb = dlopen("libxcb.so.1", RTLD_NOW | RTLD_LOCAL);
+            if (xcb == nullptr)
+                return false;
+            load(xcb);
+            conn_ = connect_(nullptr, nullptr);
+            root_ = *roots_(getSetup_(conn_)).data;
+            for (uint32_t* window : {&field_, &other_}) {
+                *window = generateId_(conn_);
+                create_(conn_, 0, *window, root_, 0, 0, 10, 10, 0, 1, 0, 0, nullptr);
+                map_(conn_, *window);
+            }
+            uint8_t* answer = waitReply_(conn_, intern_(conn_, 0, 18, "_NET_ACTIVE_WINDOW").sequence, nullptr);
+            active_         = answer ? word32(answer, 8) : 0;
+            std::free(answer);
+            focus_(conn_, 1, field_, 0);
+            activate(field_);
+            return true;
+        }
+        ~FakeApp() {
+            if (conn_ != nullptr)
+                disconnect_(conn_);
+        }
+        uint32_t field() const {
+            return field_;
+        }
+        uint32_t other() const {
+            return other_;
+        }
+
+        // Sets the active window on the root, as a window manager does.
+        void activate(uint32_t window) {
+            changeProp_(conn_, 0, root_, active_, 33, 32, 1, &window);
+            sync();
+        }
+
+        // Selects text in the field and answers the first request for it.
+        bool select(const std::string& text) {
+            setOwner_(conn_, field_, 1, 0);
+            sync();
+            const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+            while (std::chrono::steady_clock::now() < deadline) {
+                uint8_t* event = pollForEvent_(conn_);
+                if (event == nullptr) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                    continue;
+                }
+                const bool request = (event[0] & 0x7f) == 30;
+                if (request)
+                    answer(event, text);
+                std::free(event);
+                if (request)
+                    return true;
+            }
+            return false;
+        }
+
+      private:
+        template <typename T>
+        static void get(void* lib, T& fn, const char* name) {
+            fn = reinterpret_cast<T>(dlsym(lib, name));
+        }
+        void load(void* xcb) {
+            get(xcb, connect_, "xcb_connect");
+            get(xcb, getSetup_, "xcb_get_setup");
+            get(xcb, roots_, "xcb_setup_roots_iterator");
+            get(xcb, create_, "xcb_create_window");
+            get(xcb, map_, "xcb_map_window");
+            get(xcb, intern_, "xcb_intern_atom");
+            get(xcb, focus_, "xcb_set_input_focus");
+            get(xcb, generateId_, "xcb_generate_id");
+            get(xcb, waitReply_, "xcb_wait_for_reply");
+            get(xcb, getFocus_, "xcb_get_input_focus");
+            get(xcb, setOwner_, "xcb_set_selection_owner");
+            get(xcb, changeProp_, "xcb_change_property");
+            get(xcb, sendEvent_, "xcb_send_event");
+            get(xcb, pollForEvent_, "xcb_poll_for_event");
+            get(xcb, disconnect_, "xcb_disconnect");
+        }
+        void sync() {
+            std::free(waitReply_(conn_, getFocus_(conn_).sequence, nullptr));
+        }
+
+        // xcb_selection_request_event_t: requestor at 12, selection at 16, target at 20, property at 24.
+        void answer(const uint8_t* request, const std::string& text) {
+            const uint32_t requestor = word32(request, 12);
+            const uint32_t target    = word32(request, 20);
+            const uint32_t property  = word32(request, 24);
+            changeProp_(conn_, 0, requestor, property, target, 8, static_cast<uint32_t>(text.size()), text.data());
+            // xcb_selection_notify_event_t: requestor at 8, selection at 12, target at 16, property at 20.
+            char notify[32] = {31};
+            std::memcpy(notify + 8, &requestor, 4);
+            std::memcpy(notify + 12, request + 16, 4);
+            std::memcpy(notify + 16, &target, 4);
+            std::memcpy(notify + 20, &property, 4);
+            sendEvent_(conn_, 0, requestor, 0, notify);
+            sync();
+        }
+
+        void*    conn_   = nullptr;
+        uint32_t root_   = 0;
+        uint32_t field_  = 0;
+        uint32_t other_  = 0;
+        uint32_t active_ = 0;
+        void* (*connect_)(const char*, int*);
+        const void* (*getSetup_)(void*);
+        ScreenIterator (*roots_)(const void*);
+        Cookie (*create_)(void*, uint8_t, uint32_t, uint32_t, int16_t, int16_t, uint16_t, uint16_t, uint16_t, uint16_t, uint32_t, uint32_t, const void*);
+        Cookie (*map_)(void*, uint32_t);
+        Cookie (*intern_)(void*, uint8_t, uint16_t, const char*);
+        Cookie (*focus_)(void*, uint8_t, uint32_t, uint32_t);
+        uint32_t (*generateId_)(void*);
+        uint8_t* (*waitReply_)(void*, unsigned int, void**);
+        Cookie (*getFocus_)(void*);
+        Cookie (*setOwner_)(void*, uint32_t, uint32_t, uint32_t);
+        Cookie (*changeProp_)(void*, uint8_t, uint32_t, uint32_t, uint32_t, uint8_t, uint32_t, const void*);
+        Cookie (*sendEvent_)(void*, uint8_t, uint32_t, uint32_t, const char*);
+        uint8_t* (*pollForEvent_)(void*);
+        void (*disconnect_)(void*);
+    };
+
+    // A key after a selection gets its text, unless another window became active in between.
+    bool keepsSelectionInActiveWindow() {
+        std::string display;
+        const pid_t xvfb = startXvfb(display);
+        if (xvfb < 0) {
+            std::cerr << "Xvfb not found: skipping the active window step\n";
+            return true;
+        }
+        setenv("DISPLAY", display.c_str(), 1);
+        bool ok = true;
+        {
+            FakeApp              app;
+            ngosen::X11Selection selection;
+            std::atomic<bool>    stop{false};
+            ok = app.open();
+            std::thread watcher([&] { ngosen::watchX11PointerClicks(stop, [] {}, &selection); });
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            const auto selectThenActivate = [&](uint32_t active) {
+                ok &= app.select("nhanh");
+                app.activate(active);
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                return selection.take();
+            };
+            ok &= expectSelection("the same window made active again", selectThenActivate(app.field()), "nhanh");
+            ok &= expectSelection("another window made active", selectThenActivate(app.other()), std::nullopt);
+            stop.store(true);
+            watcher.join();
+        }
+        kill(xvfb, SIGTERM);
+        waitpid(xvfb, nullptr, 0);
+        setenv("DISPLAY", "", 1);
+        return ok;
+    }
 } // namespace
 
 int main() {
@@ -141,5 +315,6 @@ int main() {
     }
     ok &= watchesXwaylandClicks();
     ok &= keepsSelection();
+    ok &= keepsSelectionInActiveWindow();
     return ok ? 0 : 1;
 }

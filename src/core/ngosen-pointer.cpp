@@ -151,6 +151,8 @@ namespace ngosen {
             bool                 ownedByFocusedClient(uint32_t owner);
             void                 ownerChanged(uint32_t owner);
             void                 converted(uint32_t property);
+            uint32_t             activeWindow();
+            void                 activeWindowChanged();
 
             XcbConnection*       conn_       = nullptr;
             X11Selection*        selection_  = nullptr;
@@ -162,10 +164,12 @@ namespace ngosen {
             GetPropertyFn        getProp_    = nullptr;
             uint8_t              firstEvent_ = 0;
             uint32_t             clientMask_ = 0;
+            uint32_t             root_       = 0;
             uint32_t             window_     = 0;
             uint32_t             utf8_       = 0;
             uint32_t             property_   = 0;
             uint32_t             active_     = 0;
+            uint32_t             lastActive_ = 0;
             std::deque<uint64_t> tickets_;
         };
 
@@ -200,6 +204,8 @@ namespace ngosen {
             utf8_       = atom("UTF8_STRING");
             property_   = atom("NGOSEN_SELECTION");
             active_     = atom("_NET_ACTIVE_WINDOW");
+            root_       = root;
+            lastActive_ = activeWindow();
             window_     = generateId(conn);
             createWindow(conn, 0, window_, root, 0, 0, 1, 1, 0, InputOnly, 0, 0, nullptr);
             changeAttribs(conn, root, EventMaskBit, &PropertyChange);
@@ -226,7 +232,7 @@ namespace ngosen {
             if (type == firstEvent_) // XFixesSelectionNotify: owner at byte 8
                 ownerChanged(word32(event, 8));
             else if (type == PropertyNotify && word32(event, 8) == active_) // atom at byte 8
-                selection_->forget();
+                activeWindowChanged();
             else if (type == SelectionNotify && word32(event, 8) == window_) // requestor at 8, property at 20
                 converted(word32(event, 20));
         }
@@ -237,6 +243,24 @@ namespace ngosen {
             const uint32_t focus = answer ? word32(answer, 8) : 0;
             std::free(answer);
             return focus > 1 && (focus & ~clientMask_) == (owner & ~clientMask_);
+        }
+
+        uint32_t SelectionFollower::activeWindow() {
+            uint8_t* answer = reply(getProp_(conn_, 0, root_, active_, 0, 0, 1));
+            // xcb_get_property_reply_t: format at 1, value_len at 16, value at 32.
+            const uint32_t value = answer && answer[1] == 32 && word32(answer, 16) == 1 ? word32(answer, 32) : 0;
+            std::free(answer);
+            return value;
+        }
+
+        // Window managers rewrite the same active window when an app opens another window, as WPS does
+        // on a double click; only a different window means the user moved elsewhere.
+        void SelectionFollower::activeWindowChanged() {
+            const uint32_t active = activeWindow();
+            if (active == lastActive_)
+                return;
+            lastActive_ = active;
+            selection_->forget();
         }
 
         void SelectionFollower::ownerChanged(uint32_t owner) {

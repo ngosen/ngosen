@@ -15,6 +15,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Kiểm tra máy trên GNOME: nay báo khi thiếu hoặc chưa bật extension Input Method Panel, vì thiếu nó thì menu chế độ `` ` `` và gợi ý Cứu chữ, Cứu dấu không hiện trong ô tìm kiếm của GNOME (#507).
 - GNOME: lệnh cài nay luôn thêm extension Input Method Panel, kể cả khi đã có khay như Ubuntu, để menu chế độ `` ` `` hiện được trong ô tìm kiếm của GNOME và fcitx5 không còn nhắc cài extension mỗi lần đăng nhập. Menu khay ghi rõ "Kiểu gõ (Telex)", "Bảng mã (Unicode)" và đánh dấu ✔ lựa chọn đang dùng; menu chế độ ghi "App: cửa sổ này" thay cho mã nội bộ khi GNOME không cho biết tên app (#506).
 - Gõ Sen trên GNOME: trong ô chỉ cho Ngó Sen xoá qua surrounding text, gõ nhanh hơn app phản hồi (như khi máy bận) không còn làm mất lần thêm dấu, như "vieetj" ra "vieêệt" thay vì "việt". Ngó Sen nay chờ app theo kịp, tối đa 100 ms, rồi mới xoá (#501).
+- Cứu dấu trong WPS Office trên X11: bôi đen "chuyển" rồi gõ j nay ra "chuyện" thay vì bị thay bằng "j"; giữ lại dấu cách sau chữ nếu bấm đúp chọn kèm. Cách bấm chuột ngay sau chữ rồi gõ phím dấu vẫn chưa dùng được trong WPS (#505).
 
 ## [1.7.5-1] — 01/11/2026
 

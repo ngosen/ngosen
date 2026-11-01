@@ -31,7 +31,8 @@ namespace ngosen {
         const bool        resume = bounce && deletionInterruptedAt_ > 0 && is_deleting_.load();
         deletionInterruptedAt_   = 0;
         // A page may move focus into its text field after the user selected text elsewhere on it.
-        if (isFocusIn)
+        // A bounce keeps it: WPS opens a window on a double click and takes focus straight back.
+        if (isFocusIn && !bounce)
             forgetSelection();
         if (!resume)
             is_deleting_.store(false);
@@ -107,7 +108,9 @@ namespace ngosen {
         retype_.reset();
         dropRetoneKey();
         // Keys typed while another input method is active never reach us to take the selection.
-        forgetSelection();
+        // On focus out, activate() decides once it knows whether focus only bounced.
+        if (!isFocusOut)
+            forgetSelection();
         host_->resetPanel();
         host_->refreshPanel();
         if (mode() == ngosen::Mode::Preedit || mode() == ngosen::Mode::Emoji)

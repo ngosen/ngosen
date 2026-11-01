@@ -323,6 +323,68 @@ namespace {
         check(r.hint.empty() && r.text == "abc s xyz", "a terminal's announced selection", r.text);
     }
 
+    // WPS Office declares surrounding text through its fcitx4 module but never sends any, and a double
+    // click selects the word with the space after it (#504).
+    Run wps() {
+        Run run                       = nhanh(4, 10);
+        run.field                     = makeField("fcitx4", true);
+        run.quirks.neverSendsText     = true;
+        run.field.program             = "wps";
+        run.field.formattedPreedit    = true;
+        run.quirks.announcesSelection = true;
+        return run;
+    }
+
+    void testAnnouncedSelectionWithSpace() {
+        Run  run = wps();
+        auto r   = retone(run);
+        check(r.text == "abc nhánh xyz" && !r.hint.empty(), "WPS: the space typed over comes back", r.text);
+        run.after = {ngosen::key::Escape};
+        r         = retone(run);
+        check(r.text == "abc sxyz", "WPS: Esc puts back what the key left", r.text);
+        run.after = {'f'};
+        r         = retone(run);
+        check(r.text == "abc nhành xyz", "WPS: another tone key keeps the space", r.text);
+        run.after = {'a', 'c', 'h', 's'};
+        r         = retone(run);
+        check(r.text == "abc sáchxyz", "WPS: a letter after the key types over as the app did", r.text);
+
+        run        = wps();
+        run.anchor = 0;
+        r          = retone(run);
+        check(r.hint.empty() && r.text == "sxyz", "WPS: two selected words are typed over", r.text);
+
+        run               = wps();
+        run.field.program = "wpp";
+        r                 = retone(run);
+        check(r.text == "abc nhánh xyz", "WPS Presentation", r.text);
+
+        run        = wps();
+        run.typed  = "abc trowif";
+        run.anchor = 4;
+        run.cursor = 8;
+        run.tone   = 's';
+        r          = retone(run);
+        check(r.text == "abc trới", "WPS: the last word of a line, selected without a space", r.text);
+
+        for (const int awayMs : {10, 300}) {
+            run            = wps();
+            run.beforeTone = [awayMs](FakeApp& app, FakeLoop& loop) {
+                app.leaveFocus(awayMs);
+                loop.pump(awayMs + 50);
+            };
+            r                    = retone(run);
+            const bool  bounced  = awayMs < 100;
+            const char* expected = bounced ? "abc nhánh xyz" : "abc sxyz";
+            check(r.text == expected, bounced ? "WPS: focus bounces after the double click" : "WPS: focus leaves after the double click", r.text);
+        }
+
+        run        = announced();
+        run.cursor = 10;
+        r          = retone(run);
+        check(r.text == "abc nhánh xyz", "Chromium: a space selected after the word comes back", r.text);
+    }
+
     void testClickKeepsTone() {
         Run run         = nhanh();
         run.beforeAfter = [](FakeApp& app, FakeLoop& loop) {
@@ -471,6 +533,7 @@ int main() {
     testWords();
     testWhereNotOffered();
     testAnnouncedSelection();
+    testAnnouncedSelectionWithSpace();
     testClickKeepsTone();
     testToneAtCursor();
     testToneAfterBackspace();

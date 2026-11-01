@@ -18,11 +18,11 @@
 #include "ngosen-menu-icon.h"
 #include "ngosen-plasma-theme.h"
 #include "ngosen-fcitx-host.h"
+#include "ngosen-gnome-shell.h"
 #include "ngosen-migration.h"
 #include "ngosen-ui-text.h"
 #ifdef NGOSEN_HAS_DBUS
 #include "ngosen-dbus-object.h"
-#include "ngosen-gnome-shell.h"
 #endif
 #include <optional>
 #include <utility>

@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Gõ Sen trên GNOME: trong ô chỉ cho Ngó Sen xoá qua surrounding text, gõ nhanh hơn app phản hồi (như khi máy bận) không còn làm mất lần thêm dấu, như "vieetj" ra "vieêệt" thay vì "việt". Ngó Sen nay chờ app theo kịp, tối đa 100 ms, rồi mới xoá (#501).
+- Cứu dấu trong WPS Office trên X11: bôi đen "chuyển" rồi gõ j nay ra "chuyện" thay vì bị thay bằng "j"; giữ lại dấu cách sau chữ nếu bấm đúp chọn kèm. Cách bấm chuột ngay sau chữ rồi gõ phím dấu vẫn chưa dùng được trong WPS (#505).
 
 ## [1.7.5-1] — 01/11/2026
 

@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Gõ Sen trên GNOME: trong ô chỉ cho Ngó Sen xoá qua surrounding text, gõ nhanh hơn app phản hồi (như khi máy bận) không còn làm mất lần thêm dấu, như "vieetj" ra "vieêệt" thay vì "việt". Ngó Sen nay chờ app theo kịp, tối đa 100 ms, rồi mới xoá (#501).
+
 ## [1.7.5-1] — 01/11/2026
 
 Phím chuyển Anh/Việt nay chỉ đổi app đang gõ, mỗi app nhớ riêng lựa chọn (#469). Enter nay bung gõ tắt trong Preedit và Gõ Sen (#476); Gõ Sen không còn mất Enter, Shift+Enter, Tab bấm ngay lúc đang thêm dấu (#487, #488, #489). Gõ Sen xoá qua surrounding text ở thêm nhiều app trên KDE, Sway và X11 (#477), và ít mất dấu hơn trên GNOME (#481, #490).

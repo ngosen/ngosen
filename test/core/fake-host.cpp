@@ -8,8 +8,6 @@
 #include "ngosen-clock.h"
 
 #include <algorithm>
-#include <chrono>
-#include <thread>
 
 namespace ngosen::test {
 
@@ -35,6 +33,11 @@ namespace ngosen::test {
             armed      = true;
         }
     };
+
+    FakeLoop::FakeLoop() {
+        if (fakeClockUs == 0)
+            fakeClockUs = monotonicUs();
+    }
 
     std::unique_ptr<Timer> FakeLoop::add(uint64_t deadlineUs, std::function<bool(Timer&)> onTime) {
         auto entry = std::make_unique<Entry>(this, deadlineUs, std::move(onTime));
@@ -68,7 +71,7 @@ namespace ngosen::test {
                     fired    = true;
                 }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            fakeClockUs += 1000;
         }
     }
 

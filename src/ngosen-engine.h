@@ -355,7 +355,7 @@ namespace fcitx {
         static void updateAction(InputContext* ic, std::unique_ptr<SimpleAction>& action, Option<bool>& option, const std::string& textOnOff);
 
         /**
-         * @brief Builds a submenu with one checkable action per choice.
+         * @brief Builds a submenu with one action per choice.
          * @param pick Called with the chosen name.
          */
         void initChoiceMenu(std::unique_ptr<SimpleAction>& action, std::vector<std::unique_ptr<SimpleAction>>& choices, std::unique_ptr<Menu>& menu, const std::string& actionId,
@@ -363,9 +363,10 @@ namespace fcitx {
                             const std::function<void(InputContext*, const std::string&)>& pick, UserInterfaceManager& uiManager);
 
         /**
-         * @brief Checks the choice named actionId-current and unchecks the others.
+         * @brief Marks the choice named actionId-current and names it in the parent entry.
          */
-        static void checkChoice(const std::vector<std::unique_ptr<SimpleAction>>& choices, const std::string& actionId, const std::string& current, InputContext* ic);
+        static void checkChoice(SimpleAction& parent, const std::string& title, const std::vector<std::unique_ptr<SimpleAction>>& choices, const std::string& actionId,
+                                const std::string& current, InputContext* ic);
 
         /**
          * @brief Updates the charset action UI.

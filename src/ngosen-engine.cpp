@@ -1010,6 +1010,9 @@ namespace fcitx {
             parent.update(ic);
         const auto prefix = stringutils::concat(actionId, "-");
         for (const auto& action : choices) {
+            // An action whose id was taken elsewhere is left unregistered, with no name.
+            if (!isStartsWith(action->name(), prefix))
+                continue;
             const auto name = action->name().substr(prefix.size());
             action->setShortText(name == current ? stringutils::concat("✔ ", name) : name);
             if (ic != nullptr)

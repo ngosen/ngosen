@@ -359,6 +359,14 @@ namespace {
         r                 = retone(run);
         check(r.text == "abc nhánh xyz", "WPS Presentation", r.text);
 
+        run        = wps();
+        run.typed  = "abc trowif";
+        run.anchor = 4;
+        run.cursor = 8;
+        run.tone   = 's';
+        r          = retone(run);
+        check(r.text == "abc trới", "WPS: the last word of a line, selected without a space", r.text);
+
         for (const int awayMs : {10, 300}) {
             run            = wps();
             run.beforeTone = [awayMs](FakeApp& app, FakeLoop& loop) {

@@ -323,11 +323,12 @@ namespace {
         check(r.hint.empty() && r.text == "abc s xyz", "a terminal's announced selection", r.text);
     }
 
-    // WPS Office reports no text through its fcitx4 module, and a double click selects the word with the
-    // space after it (#504).
+    // WPS Office declares surrounding text through its fcitx4 module but never sends any, and a double
+    // click selects the word with the space after it (#504).
     Run wps() {
         Run run                       = nhanh(4, 10);
-        run.field                     = makeField("fcitx4", false);
+        run.field                     = makeField("fcitx4", true);
+        run.quirks.neverSendsText     = true;
         run.field.program             = "wps";
         run.field.formattedPreedit    = true;
         run.quirks.announcesSelection = true;

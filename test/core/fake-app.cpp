@@ -344,7 +344,7 @@ namespace ngosen::test {
     }
 
     Surrounding FakeApp::surrounding() const {
-        if (!field().surroundingText)
+        if (!field().surroundingText || quirks_.neverSendsText)
             return {};
         if (quirks_.reportsEmptyText)
             return Surrounding("", 0, 0);

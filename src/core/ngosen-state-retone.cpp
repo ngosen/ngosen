@@ -109,14 +109,13 @@ namespace ngosen {
         UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         if (!preedit || keyUtf8 != preedit.get())
             return;
-        if (!field.surroundingText) {
+        // WPS's own fcitx4 module declares surrounding text but never sends any.
+        const Surrounding before = field.surroundingText ? host_->surrounding() : Surrounding();
+        if (!before.isValid() || before.text().empty()) {
             if (ngosen::typesOverPrimarySelection(field))
                 retoneAnnounced(sym, states, keyUtf8);
             return;
         }
-        const Surrounding before = host_->surrounding();
-        if (!before.isValid() || before.text().empty())
-            return;
         retoneKey_    = RetoneKey{.before           = before,
                                   .text             = keyUtf8,
                                   .sym              = sym,

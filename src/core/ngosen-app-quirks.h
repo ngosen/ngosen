@@ -34,8 +34,8 @@ namespace ngosen {
     // surrounding text and selects an inline autocompletion after the typed text.
     bool selectsOverAutocompletion(const Field& field);
 
-    // True for Chromium-based browsers that report no surrounding text, as on X11, and for WPS Office, whose
-    // own fcitx4 module never reports it: a key typed there replaces the selection, which is also the X11
+    // True for Chromium-based browsers and WPS Office: where they send no surrounding text, as Chromium on
+    // X11 and WPS's own fcitx4 module do, a key typed there replaces the selection, which is also the X11
     // primary selection.
     bool typesOverPrimarySelection(const Field& field);
 

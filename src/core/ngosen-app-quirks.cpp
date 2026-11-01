@@ -119,7 +119,7 @@ namespace ngosen {
         const std::string program = appName(field);
         // WPS Writer, Spreadsheets and Presentation.
         const bool wps = program == "wps" || program == "et" || program == "wpp";
-        return !field.surroundingText && (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || wps);
+        return isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || wps;
     }
 
     bool surroundingTextLags(const Field& field) {

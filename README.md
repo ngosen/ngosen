@@ -1,9 +1,7 @@
 # Ngó Sen
 
 Ngó Sen là bộ gõ tiếng Việt được **vibecode** cho fcitx5 trên Linux, cho trải nghiệm gõ như UniKey trên Windows.
-fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM. Có thêm
-[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, đơn giản hơn và ít
-tính năng hơn bản fcitx5.
+fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM.
 
 Cửa sổ cài đặt có hai bản: Qt và GTK (giống app GNOME). GNOME và Linux Mint (Cinnamon) mở bản GTK,
 các desktop khác mở bản Qt. Cửa sổ dùng giao diện sáng, tối của máy trên KDE và GNOME; đổi gì lưu
@@ -89,21 +87,6 @@ dùng phím chuyển cũ (thường là Ctrl+Space); muốn đổi phím, mở c
 Các bước thiết lập chỉ áp dụng cho tài khoản chạy lệnh. Tài khoản khác trên cùng máy cần đăng nhập vào
 đó rồi chạy lại lệnh cài.
 
-### Ngó Sen cho GNOME (IBus)
-
-Chọn bản này nếu dùng GNOME, muốn dùng IBus có sẵn và không cần đủ tính năng của bản fcitx5. Trên GNOME, cài
-xong là gõ được ngay, không phải thiết lập gì thêm:
-
-```
-curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus
-```
-
-Trên Xfce, Cinnamon, MATE (X11, Debian, Ubuntu, Linux Mint), lệnh dùng im-config đặt IBus làm bộ gõ và thêm
-Ngó Sen; đăng xuất rồi đăng nhập lại, bấm Ctrl+Space để chuyển qua lại Ngó Sen và bàn phím thường. Muốn quay lại bản fcitx5 thì chạy lệnh cài bản fcitx5 ở
-trên; lệnh hỏi lại rồi gỡ bản IBus.
-
-Xem cách cài và các giới hạn trong [README của Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen#readme).
-
 ### Cập nhật bằng trình quản lý gói
 
 Từ version 1.5.3, mỗi release đều có trên repo có chữ ký để nhận version mới qua update của hệ thống:
@@ -153,9 +136,6 @@ sudo zypper install fcitx5-ngosen
 ```
 
 zypper hỏi một lần có tin cậy key không; đối chiếu fingerprint rồi chọn tin cậy.
-
-[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) cũng có trong repo APT, pacman và zypper ở trên: thay
-`fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
 
 Sau khi update, khởi động lại fcitx5 theo mục “Khởi động lại sau khi cài hoặc cập nhật”.
 
@@ -348,8 +328,6 @@ Both projects are MIT licensed. All Ngó Sen packages, including Debian 12, use 
 Ngó Sen includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to
 change the tone mark of a selected word.
 
-[Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in IBus. It is simpler and has
-fewer features than the fcitx5 version.
 If you reuse Ngó Sen's code, keep the GPL and its notices, including when an AI tool rewrites it.
 If you port its approaches to another input method, credit this repository with a link.
 The rest of this page is in Vietnamese.

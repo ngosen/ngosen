@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Bỏ
+
+- Lệnh cài không còn tuỳ chọn `--ibus` và không còn giới thiệu bản IBus khi cài trên GNOME. Máy đã bị ẩn tự chạy fcitx5 thì lệnh cài vẫn bật lại (#509).
+
 ### Sửa
 
 - Kiểm tra máy trên GNOME: nay báo khi thiếu hoặc chưa bật extension Input Method Panel, vì thiếu nó thì menu chế độ `` ` `` và gợi ý Cứu chữ, Cứu dấu không hiện trong ô tìm kiếm của GNOME (#507).

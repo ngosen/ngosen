@@ -358,6 +358,18 @@ namespace {
         r                 = retone(run);
         check(r.text == "abc nhánh xyz", "WPS Presentation", r.text);
 
+        for (const int awayMs : {10, 300}) {
+            run            = wps();
+            run.beforeTone = [awayMs](FakeApp& app, FakeLoop& loop) {
+                app.leaveFocus(awayMs);
+                loop.pump(awayMs + 50);
+            };
+            r                    = retone(run);
+            const bool  bounced  = awayMs < 100;
+            const char* expected = bounced ? "abc nhánh xyz" : "abc sxyz";
+            check(r.text == expected, bounced ? "WPS: focus bounces after the double click" : "WPS: focus leaves after the double click", r.text);
+        }
+
         run        = announced();
         run.cursor = 10;
         r          = retone(run);

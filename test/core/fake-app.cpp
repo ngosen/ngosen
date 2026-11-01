@@ -329,14 +329,18 @@ namespace ngosen::test {
     bool FakeApp::leaveIfEmptied() {
         if (!text_.empty() || quirks_.refocusWhenEmptiedMs <= 0)
             return false;
+        leaveFocus(quirks_.refocusWhenEmptiedMs);
+        return true;
+    }
+
+    void FakeApp::leaveFocus(int ms) {
         focused_ = false;
         state_->deactivate(true);
-        later(quirks_.refocusWhenEmptiedMs, [this] {
+        later(ms, [this] {
             focused_ = true;
             state_->activate(Mode::Sen, true);
             changed();
         });
-        return true;
     }
 
     Surrounding FakeApp::surrounding() const {

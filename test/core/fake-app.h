@@ -83,6 +83,8 @@ namespace ngosen::test {
         void moveCursor(size_t to);
         // Selects from anchor to cursor, as Shift+arrows or a double click do; typing replaces it.
         void select(size_t anchor, size_t cursor);
+        // Leaves focus for ms and takes it back, as WPS does when it opens a window on a double click.
+        void leaveFocus(int ms);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.

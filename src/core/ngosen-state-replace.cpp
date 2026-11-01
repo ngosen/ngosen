@@ -430,9 +430,12 @@ namespace ngosen {
         deletedChars_            = expected_backspaces_;
         recordSendSnapshot(deletedPart);
         trackEarlierWords(addedPart);
-        if (live_key_ && (waitsForKeyReport() || copyGivesWrongBytes())) {
-            startKeyReportWait(deletedPart, addedPart, !waitsForKeyReport());
-            return;
+        if (live_key_) {
+            const bool forKey = waitsForKeyReport();
+            if (forKey || copyGivesWrongBytes()) {
+                startKeyReportWait(deletedPart, addedPart, !forKey);
+                return;
+            }
         }
         deleteAndCommit(deletedPart, addedPart);
     }

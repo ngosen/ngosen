@@ -338,6 +338,8 @@ namespace ngosen {
         }
         const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
         key_report_timer_     = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer&) {
+            if (key_report_until_copy_fits_)
+                NGOSEN_INFO("Copy of the text still short, deleting anyway");
             finishKeyReportWait(true, true);
             return false;
         });

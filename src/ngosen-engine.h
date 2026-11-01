@@ -457,10 +457,13 @@ namespace fcitx {
         // Null when nothing tells whether GNOME Shell loses forwarded keys.
         const bool* shellDropsKeys() const;
         std::string shellFocusedApp_;
-        void        clearPanelLater(InputContext* ic, uint64_t delayUs);
+        // Compared only, never dereferenced: fcitx5 may drop a context without a deactivate.
+        InputContext* activeContext_ = nullptr;
+        void          showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn);
+        void          clearPanelLater(InputContext* ic, uint64_t delayUs);
 
-        void        handleModeMenuKey(KeyEvent& keyEvent);
-        void        moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
+        void          handleModeMenuKey(KeyEvent& keyEvent);
+        void          moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
         // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.

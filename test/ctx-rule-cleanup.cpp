@@ -154,6 +154,23 @@ namespace {
         engine.shellFocusedAppChanged("kitty.desktop");
         check(realMode.load() == kittyMode, "Expected kitty's mode back when it gets focus");
 
+        // The signal can beat the focus-out, and the word belongs to the app being left.
+        engine.shellFocusedAppChanged("firefox.desktop");
+        for (const auto sym : {FcitxKey_v, FcitxKey_a, FcitxKey_n}) {
+            fcitx::KeyEvent key(context.get(), fcitx::Key(sym), false);
+            engine.keyEvent(entry, key);
+        }
+        engine.shellFocusedAppChanged("kitty.desktop");
+        check(!context->commits().empty() && context->commits().back() == "van", "Expected the word in preedit to be committed when the app changes");
+
+        // Another input method owns the field, so its panel and menu stay untouched.
+        fcitx::InputContextEvent left(context.get(), fcitx::EventType::InputContextFocusOut);
+        engine.deactivate(entry, left);
+        engine.shellFocusedAppChanged("firefox.desktop");
+        check(realMode.load() == kittyMode, "Expected no mode change while Ngó Sen is not active");
+        engine.shellFocusedAppChanged("kitty.desktop");
+        engine.activate(entry, focus);
+
         engine.shellFocusedAppChanged("");
         check(engine.getProgramName(context.get()).rfind("ctx_", 0) == 0, "Expected a ctx_ name once no app is reported");
         engine.shellFocusedAppChanged("kitty.desktop");

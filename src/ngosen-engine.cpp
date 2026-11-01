@@ -734,10 +734,16 @@ namespace fcitx {
         updateInputMethodAction(event.inputContext());
         updateCharsetAction(event.inputContext());
 
+        activeContext_ = ic;
+        showMode(ic, targetMode, event.type() == EventType::InputContextFocusIn);
+        stateFor(ic)->offerRetype();
+    }
+
+    void NgoSenEngine::showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn) {
         auto* state = stateFor(ic);
-        state->activate(targetMode, event.type() == EventType::InputContextFocusIn);
+        state->activate(mode, isFocusIn);
         ic->updateUserInterface(UserInterfaceComponent::StatusArea);
-        if (targetMode == NgoSenMode::Emoji) {
+        if (mode == NgoSenMode::Emoji) {
             state->updateEmojiPreedit();
         } else {
             ic->inputPanel().reset();
@@ -746,7 +752,6 @@ namespace fcitx {
                 ic->updatePreedit();
         }
         fillStatusArea(ic);
-        state->offerRetype();
     }
 
     void NgoSenEngine::keyEvent(const InputMethodEntry& /*entry*/, KeyEvent& keyEvent) {
@@ -968,6 +973,8 @@ namespace fcitx {
     }
 
     void NgoSenEngine::deactivate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
+        if (activeContext_ == event.inputContext())
+            activeContext_ = nullptr;
         stateFor(event.inputContext())->deactivate(event.type() == EventType::InputContextFocusOut);
     }
 
@@ -1610,10 +1617,13 @@ namespace fcitx {
             const std::string appName = getProgramName(ic);
             NGOSEN_INFO("App name: " + appName);
             const NgoSenMode mode = modeFor(appName);
-            if (mode != realMode) {
-                setMode(mode, ic);
-                stateFor(ic)->reset();
-                fillStatusArea(ic);
+            if (ic == activeContext_ && mode != realMode) {
+                // The word belongs to the app being left.
+                auto* state = stateFor(ic);
+                state->commitBuffer();
+                state->reset();
+                state->forgetKeysWhileOff();
+                showMode(ic, mode, false);
             }
             return true;
         });

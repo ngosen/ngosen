@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Bỏ
 
 - Lệnh cài không còn tuỳ chọn `--ibus` và không còn giới thiệu bản IBus khi cài trên GNOME. Máy đã bị ẩn tự chạy fcitx5 thì lệnh cài vẫn bật lại (#509).
+- Kho APT, pacman và zypper của Ngó Sen không còn phát gói `ibus-ngosen`. Máy đã cài vẫn giữ gói đó (#PRNUM).
 
 ### Sửa
 

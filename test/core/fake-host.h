@@ -33,6 +33,7 @@ namespace ngosen::test {
         void remove(Entry* entry);
 
       private:
+        void                fireDue();
         std::vector<Entry*> entries_;
         Entry*              running_ = nullptr;
     };

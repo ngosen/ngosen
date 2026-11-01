@@ -729,12 +729,12 @@ namespace ngosen {
         unreportedDeleteKey_    = keyCount_;
         host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
         NGOSEN_INFO("Delete using surrounding text");
-        ngosen::sleepUs(static_cast<uint64_t>(engine_->options().surrDeleteSleepMs * count) * 1000ULL);
+        ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrDeleteSleepMs * count, 0)) * 1000ULL);
         const std::string text = retype + pending_commit_string_;
         if (!text.empty()) {
             commit(text);
             NGOSEN_INFO("Commit: " + logged(text));
-            ngosen::sleepUs(static_cast<uint64_t>(engine_->options().surrCommitSleepMs * ngosen::utf8::length(text)) * 1000ULL);
+            ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrCommitSleepMs * static_cast<int>(ngosen::utf8::length(text)), 0)) * 1000ULL);
         }
         openSurroundingCheck(surrounding, retype);
         expected_backspaces_     = 0;

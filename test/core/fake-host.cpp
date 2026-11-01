@@ -49,30 +49,36 @@ namespace ngosen::test {
         entries_.erase(std::remove(entries_.begin(), entries_.end(), entry), entries_.end());
     }
 
+    void FakeLoop::fireDue() {
+        // A callback may add or destroy timers, so pick one due timer at a time. After a stall
+        // several are due at once; the earliest deadline goes first, as on a real event loop.
+        for (bool fired = true; fired;) {
+            fired       = false;
+            Entry* next = nullptr;
+            for (Entry* entry : entries_) {
+                if (entry->armed && entry->deadlineUs <= monotonicUs() && (!next || entry->deadlineUs < next->deadlineUs))
+                    next = entry;
+            }
+            if (next) {
+                // As on GLib, a callback that rearms its timer keeps it only by returning true.
+                next->armed     = false;
+                running_        = next;
+                const bool keep = next->onTime(*next);
+                if (running_ == next && !keep)
+                    next->armed = false;
+                running_ = nullptr;
+                fired    = true;
+            }
+        }
+    }
+
     void FakeLoop::pump(int ms) {
         for (int i = 0; i < ms; ++i) {
-            // A callback may add or destroy timers, so pick one due timer at a time. After a stall
-            // several are due at once; the earliest deadline goes first, as on a real event loop.
-            for (bool fired = true; fired;) {
-                fired       = false;
-                Entry* next = nullptr;
-                for (Entry* entry : entries_) {
-                    if (entry->armed && entry->deadlineUs <= monotonicUs() && (!next || entry->deadlineUs < next->deadlineUs))
-                        next = entry;
-                }
-                if (next) {
-                    // As on GLib, a callback that rearms its timer keeps it only by returning true.
-                    next->armed     = false;
-                    running_        = next;
-                    const bool keep = next->onTime(*next);
-                    if (running_ == next && !keep)
-                        next->armed = false;
-                    running_ = nullptr;
-                    fired    = true;
-                }
-            }
+            fireDue();
             fakeClockUs += 1000;
         }
+        // A timer due when the pump ends runs before the next key, as one would after a real sleep.
+        fireDue();
     }
 
     void FakeHost::showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick) {

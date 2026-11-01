@@ -1766,7 +1766,7 @@ namespace {
         // The app lags behind the keys: the next replacement comes before it answers the first, and the
         // Space before it answers the second.
         lines =
-            logLinesWhileTyping(surroundingOnlyField(), {.lagMs = 50, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true}, "vieetj ", "Surrounding check", &run, 20);
+            logLinesWhileTyping(surroundingOnlyField(), {.lagMs = 60, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true}, "vieetj ", "Surrounding check", &run, 20);
         check(run.text == "việt " && countHaving(lines, "not answered before the next replacement") == 1 && countHaving(lines, ": correct") == 1,
               "check: a lagging app answers only the last replacement", run.text + " " + join(lines));
 

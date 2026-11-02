@@ -245,7 +245,7 @@ def _label(text, *css, markup=False):
 
 
 def _link_button(label, uri):
-    button = Gtk.Button(label=label, css_classes=["pill"])
+    button = Gtk.Button(label=label, css_classes=["pill"], halign=Gtk.Align.CENTER)
     button.connect("clicked", lambda b: open_uri(b, uri))
     return button
 

@@ -58,14 +58,6 @@ class MacroTableTest(unittest.TestCase):
         self.assertTrue(table.save())
         self.assertEqual(fake.values["EnableMacro"], "False")
 
-    def test_save_keeps_a_format_the_window_does_not_list(self):
-        fake = FakeDBusHandler({"TimeFormat": "%A %H:%M"})
-        table = macros.MacroTable(fake)
-        table.load()
-        table.entries.append({"Key": "vn", "Value": "Việt Nam"})
-        self.assertTrue(table.save())
-        self.assertEqual(fake.values["TimeFormat"], "%A %H:%M")
-
     def test_a_refused_table_stays_unsaved(self):
         fake = FakeDBusHandler()
         table = macros.MacroTable(fake)

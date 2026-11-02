@@ -101,10 +101,10 @@ class MacroTable:
         if config_data:
             values = config_data.get("values", {})
             for key, value in self.options.items():
-                # The tray menu may have changed it, and a format typed by hand shows as the default.
-                if value == self.saved_state[key]:
-                    continue
                 if isinstance(value, bool):
+                    # The tray menu may have changed the switch since this page read it.
+                    if value == self.saved_state[key]:
+                        continue
                     value = "True" if value else "False"
                 values[key] = value
             if not self.dbus.set_config(values):

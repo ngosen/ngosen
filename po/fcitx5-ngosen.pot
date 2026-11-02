@@ -848,22 +848,6 @@ msgstr ""
 msgid "[ Press Key... ]"
 msgstr ""
 
-#: settings-gui/ui/helpers.py:14
-msgid "Text goes straight into the field, without an underline."
-msgstr ""
-
-#: settings-gui/ui/helpers.py:14
-msgid "You can type tone marks at the end of the word or anywhere inside."
-msgstr ""
-
-#: settings-gui/ui/helpers.py:26
-msgid ""
-"Automatically revert the typed sequence if the resulting word is not in the "
-"dictionary.\n"
-"This helps prevent accidental Vietnamese transformations on English words or "
-"mixed text."
-msgstr ""
-
 #: settings-gui/ui/main_window.py:33
 #: settings-gui/io.github.ngosen.NgoSen.Settings.desktop.in:2
 msgid "Ngó Sen Settings"

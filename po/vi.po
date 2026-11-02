@@ -867,25 +867,6 @@ msgstr "[ Đang ghi lại... ]"
 msgid "[ Press Key... ]"
 msgstr "[ Nhấn phím... ]"
 
-#: settings-gui/ui/helpers.py:14
-msgid "Text goes straight into the field, without an underline."
-msgstr "Chữ hiện thẳng vào ô, không gạch chân."
-
-#: settings-gui/ui/helpers.py:14
-msgid "You can type tone marks at the end of the word or anywhere inside."
-msgstr "Bạn có thể gõ dấu câu ở cuối từ hoặc bất cứ đâu."
-
-#: settings-gui/ui/helpers.py:26
-msgid ""
-"Automatically revert the typed sequence if the resulting word is not in the "
-"dictionary.\n"
-"This helps prevent accidental Vietnamese transformations on English words or "
-"mixed text."
-msgstr ""
-"Tự động khôi phục chuỗi vừa gõ nếu từ đó không có trong từ điển.\n"
-"Nó giúp tránh các trường hợp gõ các từ tiếng Anh mà bị chuyển đổi qua Tiếng "
-"việt hoặc gõ song ngữ."
-
 #: settings-gui/ui/main_window.py:33
 #: settings-gui/io.github.ngosen.NgoSen.Settings.desktop.in:2
 msgid "Ngó Sen Settings"

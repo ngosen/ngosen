@@ -440,7 +440,7 @@ namespace {
     }
 
     // The Chromium address bar replaces by selecting with Shift+Left through XTEST, and those keys come back to us.
-    void testRetypeOverSelection(const std::string& program, bool bounceFocus) {
+    void testRetypeOverSelection(const std::string& program, int caretWidth, bool bounceFocus) {
         constexpr uint32_t ShiftMask = 1U << 0;
         realMode                     = Mode::Off;
         FakeLoop      loop;
@@ -448,7 +448,7 @@ namespace {
         Field         field       = makeField("dbus", false);
         field.program             = program;
         field.keyEventOrderFix    = true;
-        field.caretWidth          = 1;
+        field.caretWidth          = caretWidth;
         field.caretHeight         = 17;
         auto                owned = std::make_unique<FakeHost>(loop, field);
         FakeHost*           host  = owned.get();
@@ -526,8 +526,8 @@ int main() {
     testRetypeInApp("wayland", true, Mode::Preedit);
     // Deletes through the surrounding text where forwarded keys do not work.
     testRetypeInApp("other", true, Mode::Sen);
-    testRetypeOverSelection("vivaldi-bin", false);
-    testRetypeOverSelection("google-chrome", true);
+    testRetypeOverSelection("vivaldi-bin", 73, false);
+    testRetypeOverSelection("google-chrome", 1, true);
     testClickDropsRetype("wayland", true);
     testClickDropsRetype("xim", false);
     testRetypeInSteppingApp();

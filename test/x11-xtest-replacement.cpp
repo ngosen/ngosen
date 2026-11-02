@@ -100,9 +100,9 @@ namespace {
 
     // The Chromium address bar selects an inline autocompletion after the typed text, so a BackSpace
     // would only remove that. Widening the selection with Shift+Left and typing over it replaces both.
-    bool chromiumSelectsAndOvertypes(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, int bounceAfterMs = -1) {
+    bool chromiumSelectsAndOvertypes(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, int bounceAfterMs = -1, int caretWidth = 1) {
         const std::string where   = frontend + " " + program + " with focus bounce after " + std::to_string(bounceAfterMs) + " ms: ";
-        auto              context = h.open(program, frontend, caps, 1);
+        auto              context = h.open(program, frontend, caps, caretWidth);
         if (!h.typeTieE(*context))
             return false;
         if (h.sent != std::vector<int>{-1}) {
@@ -274,7 +274,10 @@ int main() {
     if (!chromiumSelectsAndOvertypes(h, "chromium", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}))
         return 1;
     // Vivaldi's address bar is a web page field, which keeps focus while Shift+Left selects.
-    if (!chromiumSelectsAndOvertypes(h, "vivaldi-bin", "dbus", chromeCaps))
+    if (!chromiumSelectsAndOvertypes(h, "vivaldi-bin", "dbus", chromeCaps, -1, 73))
+        return 1;
+    // Google Docs in Vivaldi reports a thin caret, and a commit there does not replace a selection.
+    if (!keepsForwarding(h, "vivaldi-bin", "dbus", chromeCaps, 2))
         return 1;
     if (!fieldKeepingFocusDeletesWithBackSpace(h, "microsoft-edge", "dbus", chromeCaps))
         return 1;

@@ -8,6 +8,7 @@ from core.catalog import (
     DEPENDS,
     HINTS,
     MODE_BUTTON_ORDER,
+    MODE_HINTS,
     SETTINGS_MAP,
     TYPING_EXAMPLES,
     TYPING_GROUP,
@@ -85,6 +86,8 @@ class SettingsPage:
                 row.set_active(self.value(key).lower() == "true")
             elif isinstance(row, Adw.ComboRow) and self.value(key) in row.values:
                 row.set_selected(row.values.index(self.value(key)))
+        if "Mode" in self.rows and self.value("Mode") in self.mode_buttons:
+            self.mode_buttons[self.value("Mode")].set_active(True)
         self._following = False
         self._apply_locks()
 
@@ -113,6 +116,7 @@ class SettingsPage:
         box = Gtk.Box(css_classes=["linked"], valign=Gtk.Align.CENTER)
         modes = set(annotations.get("Enum", {}).values())
         first = None
+        self.mode_buttons = {}
         for mode in MODE_BUTTON_ORDER:
             if mode not in modes:
                 continue
@@ -122,12 +126,18 @@ class SettingsPage:
             button.set_active(mode == self.value(key))
             button.connect("toggled", self._on_mode, key, mode)
             box.append(button)
+            self.mode_buttons[mode] = button
         row.add_suffix(box)
         self.rows[key] = row
+        self._show_mode_hint(self.value(key))
         return row
+
+    def _show_mode_hint(self, mode):
+        self.rows["Mode"].set_subtitle(_(MODE_HINTS[mode]) if mode in MODE_HINTS else "")
 
     def _on_mode(self, button, key, mode):
         if button.get_active():
+            self._show_mode_hint(mode)
             self._changed(key, mode)
 
     def _combo_row(self, key, label, enum):

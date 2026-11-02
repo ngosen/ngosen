@@ -1336,10 +1336,6 @@ msgid "No desktop session bus. Run this as your own user in a desktop terminal."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Sen types straight into the app. Preedit underlines the word until it is done; use it in an app that Sen does not work with."
-msgstr ""
-
-#: settings-gui/ui/pages/dynamic_settings.py
 msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
 msgstr ""
 
@@ -1766,4 +1762,20 @@ msgstr ""
 
 #: settings-gui/ui/main_window.py
 msgid "Restore &defaults…"
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "Text goes straight into the app as you type."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "The word is underlined until it is done. Use it in an app that Sen does not work with."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "Type an emoji name, then pick from the list."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "To type English, press the English/Vietnamese key."
 msgstr ""

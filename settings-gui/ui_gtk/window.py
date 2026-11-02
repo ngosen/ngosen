@@ -13,7 +13,7 @@ gi.require_version("Adw", "1")
 gi.require_version("PangoCairo", "1.0")
 
 from core.brand import APP_ID  # noqa: E402
-from core.catalog import MODE_SHORTCUT_TO_VISIBILITY  # noqa: E402
+from core.catalog import MODE_SHORTCUT_TO_VISIBILITY, locked_by  # noqa: E402
 from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
 from core.dictionary import Dictionary  # noqa: E402
@@ -340,14 +340,14 @@ class Window(Adw.ApplicationWindow):
         self.side_stack.set_visible_child_name("results" if text.strip() else "pages")
         if not text.strip():
             return
-        for title, row, name in search.find(self.search_pages, text):
+        for title, row, name, key in search.find(self.search_pages, text):
             result = Gtk.ListBoxRow()
             box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=4, margin_bottom=4)
             box.append(Gtk.Label(label=title, xalign=0, wrap=True))
             page = Gtk.Label(label=self.page_titles[name], xalign=0, css_classes=["dim-label"])
             box.append(page)
             result.set_child(box)
-            result.found = (row, name)
+            result.found = (row, name, key)
             self.results.append(result)
         if self.results.get_row_at_index(0) is None:
             empty = Gtk.ListBoxRow(activatable=False, selectable=False)
@@ -371,11 +371,12 @@ class Window(Adw.ApplicationWindow):
         """Shows the page and tab holding a found row and puts the focus on it."""
         if not hasattr(result, "found"):
             return
-        row, name = result.found
+        row, name, key = result.found
         self.search_entry.set_text("")
         self.side_stack.set_visible_child_name("pages")
-        self.show_page(name)
-        focus_when_laid_out(row)
+        if key is None or not self.open_setting(key):
+            self.show_page(name)
+            focus_when_laid_out(row)
 
     def _on_row(self, _listbox, row):
         name, title, _icon = self.pages[row.get_index()]
@@ -407,7 +408,8 @@ class Window(Adw.ApplicationWindow):
             control = page.control_for(key) if page else None
             if control is not None:
                 self.show_page(name)
-                focus_when_laid_out(control)
+                # A locked row takes no focus, so the user lands on what unlocks it.
+                focus_when_laid_out(page.control_for(locked_by(key, page.value_of) or key))
                 return True
         return False
 

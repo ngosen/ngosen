@@ -46,6 +46,9 @@ class SettingsPage:
                         group.add(row)
             self._add_extras(title, group)
             self.page.add(group)
+        for key, row in self.rows.items():
+            row.setting_key = key
+        self._apply_locks()
 
     def _add_header(self):
         """Rows a page shows above its settings."""
@@ -56,6 +59,17 @@ class SettingsPage:
     def control_for(self, key):
         """The row that edits a setting, for the window to show and focus."""
         return self.rows.get(key)
+
+    def value_of(self, key):
+        return self.model.value_of(key)
+
+    def _apply_locks(self):
+        for key, row in self.rows.items():
+            row.set_sensitive(self.model.locked_by(key) is None)
+
+    def _changed(self, key, value):
+        self.on_change(key, value)
+        self._apply_locks()
 
     def _shown(self, key, value):
         return _(value)
@@ -97,7 +111,7 @@ class SettingsPage:
 
     def _on_mode(self, button, key, mode):
         if button.get_active():
-            self.on_change(key, mode)
+            self._changed(key, mode)
 
     def _combo_row(self, key, label, enum):
         values = [
@@ -113,7 +127,7 @@ class SettingsPage:
         return row
 
     def _on_combo(self, row, _param, key):
-        self.on_change(key, row.values[row.get_selected()])
+        self._changed(key, row.values[row.get_selected()])
 
     def _example_row(self, combo):
         row = Adw.ActionRow(css_classes=["typed"])
@@ -136,7 +150,7 @@ class SettingsPage:
         return row
 
     def _on_switch(self, row, _param, key):
-        self.on_change(key, "True" if row.get_active() else "False")
+        self._changed(key, "True" if row.get_active() else "False")
 
 
 class TypingPage(SettingsPage):

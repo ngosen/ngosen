@@ -20,7 +20,7 @@ REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
 
 if CAN_RUN:
     from core.brand import MESSENGER_URL
-    from core.catalog import SETTINGS_MAP, SettingsCategory
+    from core.catalog import DEPENDS, SETTINGS_MAP, SettingsCategory
     from gi.repository import Adw, Gdk, Gio, GLib, Gtk
     from ui_gtk import brand, check_page, window
     from ui_gtk.hotkey_button import HotkeyButton
@@ -484,6 +484,102 @@ class GtkTypingPageTest(unittest.TestCase):
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkLocksTest(unittest.TestCase):
+    def setUp(self):
+        isolate(self)
+
+    def window(self, values):
+        w = window.Window(None, FakeDBusHandler(values))
+        self.addCleanup(w.destroy)
+        w.present()
+        return w
+
+    @staticmethod
+    def page_with(w, key):
+        pages = (w.typing, w.shortcuts, w.appearance, w.macros)
+        return next(p for p in pages if p.control_for(key) is not None)
+
+    @staticmethod
+    def locked_values():
+        return {c: "False" if v == "True" else "True" for c, v in DEPENDS.values()}
+
+    def test_every_locked_setting_is_insensitive_and_opens_what_unlocks_it(self):
+        w = self.window(self.locked_values())
+        for key, (controller, _needed) in DEPENDS.items():
+            page = self.page_with(w, key)
+            locked = w.shortcuts.mode_keys[key] if page is w.shortcuts else page.control_for(key)
+            self.assertFalse(locked.get_sensitive(), key)
+            self.assertTrue(w.open_setting(key), key)
+            self.assertIs(w.get_focus(), page.control_for(controller), key)
+
+    def test_every_setting_is_sensitive_and_opens_itself_when_unlocked(self):
+        w = self.window({c: v for c, v in DEPENDS.values()})
+        for key in DEPENDS:
+            page = self.page_with(w, key)
+            locked = w.shortcuts.mode_keys[key] if page is w.shortcuts else page.control_for(key)
+            self.assertTrue(locked.get_sensitive(), key)
+            self.assertTrue(w.open_setting(key), key)
+            self.assertIs(w.get_focus(), page.control_for(key), key)
+
+    def test_a_search_result_for_a_locked_setting_opens_what_unlocks_it(self):
+        w = self.window(self.locked_values())
+        for key, (controller, _needed) in DEPENDS.items():
+            page = self.page_with(w, key)
+            w.search_entry.set_text(page.control_for(key).get_title())
+            w._on_search(w.search_entry)
+            index = 0
+            while w.results.get_row_at_index(index).found[2] != key:
+                index += 1
+            w.open_result(w.results.get_row_at_index(index))
+            self.assertIs(w.get_focus(), page.control_for(controller), key)
+
+    def test_a_controller_locks_and_unlocks_at_once(self):
+        w = self.window(
+            {"AutoNonVnRestore": "True", "UseLotusIcons": "False", "EnableMacro": "True"}
+        )
+        for controller, locked, switch in (
+            (w.typing.rows["AutoNonVnRestore"], w.typing.rows["DdFreeStyle"], True),
+            (w.appearance.rows["UseLotusIcons"], w.appearance.rows["IconTheme"], False),
+            (w.macros.switches["EnableMacro"], w.macros.formats["DateFormat"], True),
+        ):
+            self.assertTrue(locked.get_sensitive())
+            controller.set_active(not switch)
+            self.assertFalse(locked.get_sensitive())
+            controller.set_active(switch)
+            self.assertTrue(locked.get_sensitive())
+
+    def test_a_locked_mode_keeps_its_checkbox_and_row(self):
+        w = self.window({"ShowModeEmoji": "True"})
+        page = w.shortcuts
+        page.mode_checks["ShowModeEmoji"].set_active(False)
+        self.assertFalse(page.mode_keys["ShortcutEmoji"].get_sensitive())
+        self.assertTrue(page.mode_checks["ShowModeEmoji"].get_sensitive())
+        self.assertTrue(page.mode_rows["ShortcutEmoji"].get_sensitive())
+
+    def test_a_locked_mode_stays_locked_after_reordering(self):
+        w = self.window({"ShowModeEmoji": "False"})
+        self.assertTrue(w.shortcuts.move("Emoji", "Sen"))
+        self.assertFalse(w.shortcuts.mode_keys["ShortcutEmoji"].get_sensitive())
+
+    def test_locks_follow_undo_and_the_defaults(self):
+        w = self.window({"AutoNonVnRestore": "True"})
+        w.typing.rows["AutoNonVnRestore"].set_active(False)
+        self.assertFalse(w.typing.rows["SpellCheck"].get_sensitive())
+        w.undo()
+        self.assertTrue(w.typing.rows["SpellCheck"].get_sensitive())
+        w.typing.rows["AutoNonVnRestore"].set_active(False)
+        w.restore_defaults()
+        self.assertTrue(w.typing.rows["SpellCheck"].get_sensitive())
+
+    def test_the_macro_locks_follow_undo(self):
+        w = self.window({"EnableMacro": "True"})
+        w.macros.switches["EnableMacro"].set_active(False)
+        self.assertFalse(w.macros.formats["TimeFormat"].get_sensitive())
+        w.undo()
+        self.assertTrue(w.macros.formats["TimeFormat"].get_sensitive())
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkUndoTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -941,7 +1037,7 @@ class GtkWhatsNewPageTest(unittest.TestCase):
     def test_a_search_result_on_a_page_never_shown_is_scrolled_to(self):
         def open_found(w):
             result = Gtk.ListBoxRow()
-            result.found = (w.appearance.control_for("SettingsToolkit"), "appearance")
+            result.found = (w.appearance.control_for("SettingsToolkit"), "appearance", None)
             w.open_result(result)
             return result.found[0]
 

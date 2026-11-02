@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The Macros page: its switches and formats, an editor and the list, each saved at once."""
 
+from core.catalog import locked_by
 from gi.repository import Adw, Gtk
 from i18n import N_, _
 
@@ -42,6 +43,7 @@ class MacroPage:
             row = Adw.SwitchRow(title=_(title), use_markup=False)
             row.set_active(self.table.options[key])
             row.connect("notify::active", self._on_switch, key)
+            row.setting_key = key
             self.switches[key] = row
             group.add(row)
         self.formats = {}
@@ -50,6 +52,7 @@ class MacroPage:
             row.set_model(Gtk.StringList.new([_(macros.EXAMPLES[f]) for f in macros.FORMATS[key]]))
             row.set_selected(macros.FORMATS[key].index(self.table.options[key]))
             row.connect("notify::selected", self._on_format, key)
+            row.setting_key = key
             self.formats[key] = row
             group.add(row)
         return group
@@ -57,6 +60,9 @@ class MacroPage:
     def control_for(self, key):
         """The row that edits a setting, for the window to show and focus."""
         return self.switches.get(key) or self.formats.get(key)
+
+    def value_of(self, key):
+        return self.table.options.get(key)
 
     def _on_switch(self, row, _param, key):
         if not self._syncing:
@@ -165,6 +171,8 @@ class MacroPage:
         for key, row in self.formats.items():
             row.set_selected(macros.FORMATS[key].index(self.table.options[key]))
         self._syncing = False
+        for key, row in (*self.switches.items(), *self.formats.items()):
+            row.set_sensitive(locked_by(key, self.value_of) is None)
         self.list.remove_all()
         for entry in self.table.entries:
             self.list.append(self._row(entry))

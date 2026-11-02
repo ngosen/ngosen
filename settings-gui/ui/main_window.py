@@ -9,6 +9,7 @@ import os
 from datetime import datetime
 
 from core.app_modes import RememberedAppModes
+from core.catalog import locked_by
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import Qt, QTimer
@@ -176,9 +177,9 @@ class NgoSenSettingsWindow(QMainWindow):
         pages = [
             p for p in self._pages if isinstance(p, QWidget) and getattr(p, "searchable", True)
         ]
-        for label, target, page in search.find(pages, text):
+        for label, target, page, key in search.find(pages, text):
             item = QListWidgetItem(f"{label} — {self._page_titles[page]}")
-            item.setData(Qt.UserRole, (target, page))
+            item.setData(Qt.UserRole, (target, page, key))
             self.search_results.addItem(item)
         if not self.search_results.count():
             item = QListWidgetItem(_("No settings found"))
@@ -195,9 +196,9 @@ class NgoSenSettingsWindow(QMainWindow):
         found = item.data(Qt.UserRole)
         if not found:
             return
-        target, page = found
+        target, page, key = found
         self.search_field.clear()
-        self.reveal(target, page)
+        self.reveal(self._control_to_open(page, key) if key else target, page)
 
     def reveal(self, target, page):
         """Shows the page and tab holding a widget, scrolls to it and puts the focus on it."""
@@ -221,9 +222,14 @@ class NgoSenSettingsWindow(QMainWindow):
         for page in self._pages:
             control = getattr(page, "control_for", lambda _key: None)(key)
             if control is not None:
-                self.reveal(control, page)
+                self.reveal(self._control_to_open(page, key), page)
                 return True
         return False
+
+    @staticmethod
+    def _control_to_open(page, key):
+        # A locked control takes no focus, so the user lands on what unlocks it.
+        return page.control_for(locked_by(key, page.value_of) or key)
 
     def show_page(self, name):
         """Shows the page registered under `name` and returns it."""

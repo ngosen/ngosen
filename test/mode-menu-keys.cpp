@@ -92,6 +92,23 @@ int main() {
     press(engine, entry, *context, FcitxKey_F12);
     check(realMode.load() == ngosen::Mode::Preedit, "the cycle key steps from Sen to Preedit", modeName(realMode.load()));
 
+    // GNOME Shell relays every app under its own name, so the menu cannot name the app.
+    auto relayed = std::make_unique<TestInputContext>(&testInstance.instance, "gnome-shell");
+    relayed->focusIn();
+    fcitx::InputContextEvent relayedFocus(relayed.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, relayedFocus);
+    press(engine, entry, *relayed, FcitxKey_grave);
+    const auto relayedApp = relayed->inputPanel().auxDown().toString();
+    check(relayedApp == "App: this window", "a relayed app is shown as this window", relayedApp);
+    press(engine, entry, *relayed, FcitxKey_Escape);
+    relayed->focusOut();
+    context->focusIn();
+    engine.activate(entry, focus);
+    press(engine, entry, *context, FcitxKey_grave);
+    const auto namedApp = context->inputPanel().auxDown().toString();
+    check(namedApp == "App: gedit", "a named app is shown by name", namedApp);
+    press(engine, entry, *context, FcitxKey_Escape);
+
     // With a label, GNOME's kimpanel shows text in the top bar instead of the Ngó Sen icon.
     for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Off, ngosen::Mode::Emoji}) {
         realMode         = mode;

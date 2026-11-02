@@ -47,6 +47,13 @@ class DictionaryTest(unittest.TestCase):
         self.assertEqual(self.fake.values["EnableDictionary"], "True")
         self.assertFalse(self.dictionary.is_modified())
 
+    def test_save_keeps_a_switch_changed_elsewhere(self):
+        self.dictionary.load()
+        self.fake.values["EnableDictionary"] = "True"
+        self.dictionary.words.append("ngosen")
+        self.assertTrue(self.dictionary.save())
+        self.assertEqual(self.fake.values["EnableDictionary"], "True")
+
     def test_the_bundled_words_leave_no_local_copy(self):
         self.write_local(b"hello\nworld\nextra\n")
         self.dictionary.load()

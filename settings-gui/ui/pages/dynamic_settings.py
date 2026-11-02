@@ -106,7 +106,10 @@ class TipLine(QToolButton):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         room = self.width() - self._padding()
-        self.setText(self.fontMetrics().elidedText(self._text, Qt.ElideRight, room))
+        metrics = self.fontMetrics()
+        # elidedText rounds differently from horizontalAdvance, so it can cut a tip that fits exactly.
+        fits = metrics.horizontalAdvance(self._text) <= room
+        self.setText(self._text if fits else metrics.elidedText(self._text, Qt.ElideRight, room))
 
 
 class CardWidget(QFrame):

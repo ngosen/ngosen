@@ -469,7 +469,11 @@ class CollectTest(unittest.TestCase):
         outputs["gdbus"] = "()\n"
         with mock.patch.object(system_check.subprocess, "run", side_effect=run):
             self.assertTrue(system_check.collect(FakeDBusHandler(), env=env).app_names_running)
-        self.assertIn("GNOME Shell 50.1, forward-keys: INACTIVE", system_check.report(f, []))
+        self.assertEqual(f.input_panel_state, "INACTIVE")
+        self.assertIn(
+            "GNOME Shell 50.1, forward-keys: INACTIVE, input panel: INACTIVE",
+            system_check.report(f, []),
+        )
 
         outputs["gnome-extensions"] = ""
         with mock.patch.object(system_check.subprocess, "run", side_effect=run):

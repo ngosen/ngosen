@@ -109,14 +109,13 @@ namespace ngosen {
         UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         if (!preedit || keyUtf8 != preedit.get())
             return;
-        if (!field.surroundingText) {
+        // WPS's own fcitx4 module declares surrounding text but never sends any.
+        const Surrounding before = field.surroundingText ? host_->surrounding() : Surrounding();
+        if (!before.isValid() || before.text().empty()) {
             if (ngosen::typesOverPrimarySelection(field))
                 retoneAnnounced(sym, states, keyUtf8);
             return;
         }
-        const Surrounding before = host_->surrounding();
-        if (!before.isValid() || before.text().empty())
-            return;
         retoneKey_    = RetoneKey{.before           = before,
                                   .text             = keyUtf8,
                                   .sym              = sym,
@@ -132,9 +131,15 @@ namespace ngosen {
 
     void TypingState::retoneAnnounced(uint32_t sym, uint32_t states, const std::string& keyUtf8) {
         // The field cannot show which word the key replaced; the X server says what was selected.
-        const std::optional<std::string> word = std::exchange(selectedBeforeKey_, std::nullopt);
-        if (word && isRetonable(utf8::decode(*word)))
-            offerRetone(*word, keyUtf8, 0, sym, states, keyUtf8);
+        std::optional<std::string> word = std::exchange(selectedBeforeKey_, std::nullopt);
+        if (!word)
+            return;
+        // A double click in WPS also selects the space after the word.
+        const size_t end   = word->find_last_not_of(' ');
+        std::string  after = end == std::string::npos ? std::string() : word->substr(end + 1);
+        word->resize(word->size() - after.size());
+        if (isRetonable(utf8::decode(*word)))
+            offerRetone(*word, keyUtf8, 0, sym, states, keyUtf8, std::move(after));
     }
 
     void TypingState::forgetSelection() {
@@ -142,12 +147,12 @@ namespace ngosen {
         host_->takeSelection();
     }
 
-    void TypingState::offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key) {
+    void TypingState::offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key, std::string after) {
         const std::string toned = retoned(word, sym, states);
         if (toned.empty() || toned == word || withoutToneMark(toned) != withoutToneMark(word))
             return;
         NGOSEN_INFO("Retone: " + logged(word) + " -> " + logged(toned));
-        Retype retype{.typed = std::move(typed), .marked = toned, .atOnce = true, .retone = true, .inWord = tail > 0, .key = key};
+        Retype retype{.typed = std::move(typed), .marked = toned, .atOnce = true, .retone = true, .inWord = tail > 0, .key = key, .after = std::move(after)};
         if (tail > 0) {
             retoneAtWordEnd(tail, std::move(retype));
             return;
@@ -228,7 +233,7 @@ namespace ngosen {
         if (!toned.empty() && toned != shown && withoutToneMark(toned) == withoutToneMark(shown)) {
             keyEvent.accept();
             NGOSEN_INFO("Retone: " + logged(shown) + " -> " + logged(toned));
-            replaceRetyped(shown, toned);
+            replaceRetyped(shown + retype_->after, toned + retype_->after);
             retype_->marked = toned;
             return true;
         }

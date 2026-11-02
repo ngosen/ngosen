@@ -174,8 +174,9 @@ namespace ngosen {
         if (!retype_)
             return;
         hideOffer();
-        const bool undo = retype_->applied;
-        replaceRetyped(undo ? retype_->marked : retype_->typed, undo ? retype_->typed : retype_->marked);
+        const bool        undo   = retype_->applied;
+        const std::string marked = retype_->marked + retype_->after;
+        replaceRetyped(undo ? marked : retype_->typed, undo ? retype_->typed : marked);
         if (undo)
             retype_.reset();
         else
@@ -213,7 +214,7 @@ namespace ngosen {
         // The field still shows the retoned word, so the next key replaces it with the key and itself.
         // A key inside the word has no place at its end, where the cursor now is.
         EngineRebuildFromText(bambooEngine_.handle(), (retype_->inWord ? retype_->marked : retype_->typed).c_str());
-        oldPreBuffer_ = retype_->marked;
+        oldPreBuffer_ = retype_->marked + retype_->after;
         dropRetype();
     }
 

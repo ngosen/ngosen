@@ -188,6 +188,7 @@ namespace ngosen {
             bool        retone  = false; // a selected word retoned; a letter after it puts the key back
             bool        inWord  = false; // the key went inside the word, so a letter after it keeps the tone
             std::string key     = {};    // the tone key of a retone
+            std::string after   = {};    // spaces selected after the retoned word, which the key typed over
         };
         std::string                    typedWhileOff_;
         std::optional<Retype>          retype_;
@@ -237,11 +238,11 @@ namespace ngosen {
         void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8);
         void                           retoneAnnounced(uint32_t sym, uint32_t states, const std::string& keyUtf8);
         void                           forgetSelection();
-        void                           offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key);
-        void                           dropRetoneKey();
-        void                           checkRetoneReport();
-        bool                           handleKeyAfterRetone(ngosen::KeyPress& keyEvent);
-        std::string                    retoned(const std::string& word, uint32_t sym, uint32_t states) const;
+        void        offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key, std::string after = {});
+        void        dropRetoneKey();
+        void        checkRetoneReport();
+        bool        handleKeyAfterRetone(ngosen::KeyPress& keyEvent);
+        std::string retoned(const std::string& word, uint32_t sym, uint32_t states) const;
 
         // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
         // surrounding text report the commit waits this long for them.
@@ -373,13 +374,16 @@ namespace ngosen {
         // --- Wait for the app's report on a key before deleting ---
         // LibreOffice over the fcitx Qt module drops the surrounding text capability before each key
         // and reports the field right after it; over Wayland it reports only when a key reaches it. A
-        // click on another cell shows only in that report.
+        // click on another cell shows only in that report. A frontend that counts the deletion on its copy
+        // of the text (mutter) waits until that copy holds what the deletion needs.
         bool                           waitsForKeyReport() const;
-        void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart);
+        bool                           copyGivesWrongBytes() const;
+        void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);
         void                           finishKeyReportWait(bool sameField, bool fromTimer);
         void                           deleteAndCommit(const std::string& deletedPart, const std::string& addedPart);
         std::unique_ptr<ngosen::Timer> key_report_timer_;
-        bool                           key_report_pending_ = false;
+        bool                           key_report_pending_         = false;
+        bool                           key_report_until_copy_fits_ = false;
         std::optional<KeyEntry>        live_key_;   ///< key being handled, replayed if it landed in another field
         std::optional<KeyEntry>        passed_key_; ///< last key let through to the app as typed
         void                           startWordWithKey(const KeyEntry& key);

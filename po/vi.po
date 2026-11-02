@@ -1427,10 +1427,6 @@ msgid "fcitx5 has other input methods too; its own key still switches to them."
 msgstr "fcitx5 còn bộ gõ khác; phím chuyển của fcitx5 vẫn đưa sang các bộ gõ đó."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Sen types straight into the app. Preedit underlines the word until it is done; use it in an app that Sen does not work with."
-msgstr "Gõ Sen đưa chữ thẳng vào app. Gạch chân giữ chữ đang gõ có gạch dưới cho tới khi gõ xong; dùng khi app không tương thích với Gõ Sen."
-
-#: settings-gui/ui/pages/dynamic_settings.py
 msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
 msgstr "Cứ để Unicode, trừ khi văn bản hay app cũ cần bảng mã khác như TCVN3 (ABC). Cứu dấu chỉ chạy với Unicode."
 
@@ -1859,3 +1855,19 @@ msgstr "Đóng"
 #: settings-gui/ui/main_window.py
 msgid "Restore &defaults…"
 msgstr "Đưa về &mặc định…"
+
+#: settings-gui/core/catalog.py
+msgid "Text goes straight into the app, with no underline."
+msgstr "Chữ đi thẳng vào app, không có gạch dưới."
+
+#: settings-gui/core/catalog.py
+msgid "The word is underlined until it is done. Use it in an app that Sen does not work with."
+msgstr "Chữ đang gõ có gạch dưới cho tới khi gõ xong. Dùng khi app không tương thích với Gõ Sen."
+
+#: settings-gui/core/catalog.py
+msgid "Type an emoji name, then pick from the list."
+msgstr "Gõ tên emoji rồi chọn trong danh sách."
+
+#: settings-gui/core/catalog.py
+msgid "Types plain letters, with no tone marks."
+msgstr "Gõ chữ thường, không thêm dấu."

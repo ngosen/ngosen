@@ -6,6 +6,7 @@ import time
 import unittest
 from unittest import mock
 
+from core.catalog import MODE_BUTTON_ORDER, MODE_HINTS
 from qtpy.QtCore import QEvent
 from qtpy.QtWidgets import (
     QCheckBox,
@@ -310,10 +311,60 @@ def vietnamese_catalog():
     return {k.replace('\\"', '"'): v for k, v in entries.items()}
 
 
+class ModeHintTest(unittest.TestCase):
+    def page(self, fake=None):
+        return DynamicSettingsPage(fake or FakeDBusHandler(), category=SettingsCategory.TYPING)
+
+    def button(self, page, mode):
+        return page._mode_buttons[mode]
+
+    def test_the_line_says_what_the_picked_mode_does(self):
+        page = self.page()
+        for mode in MODE_BUTTON_ORDER:
+            with self.subTest(mode=mode):
+                self.button(page, mode).click()
+                self.assertEqual(page._mode_hint.text(), MODE_HINTS[mode])
+
+    def test_the_line_opens_on_the_saved_mode(self):
+        page = self.page(FakeDBusHandler({"Mode": "Preedit"}))
+        self.assertEqual(page._mode_hint.text(), MODE_HINTS["Preedit"])
+
+    def test_the_line_grows_and_shrinks_with_its_text(self):
+        page = self.page()
+        page.resize(420, 500)
+        page.show()
+        self.addCleanup(page.close)
+        heights = {}
+        for mode in ("Sen", "Preedit", "Sen"):
+            self.button(page, mode).click()
+            app.processEvents()
+            heights.setdefault(mode, []).append(page._mode_hint.height())
+        self.assertGreater(heights["Preedit"][0], heights["Sen"][0])
+        self.assertEqual(heights["Sen"][0], heights["Sen"][1])
+
+    def test_a_mode_changed_from_the_tray_moves_the_button_and_the_line(self):
+        fake = FakeDBusHandler()
+        page = self.page(fake)
+        fake.values["Mode"] = "OFF"
+        page.refresh_status()
+        self.assertTrue(self.button(page, "OFF").isChecked())
+        self.assertEqual(page._mode_hint.text(), MODE_HINTS["OFF"])
+
+    def test_search_does_not_find_the_line(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        self.addCleanup(window.close)
+        window.show()
+        app.processEvents()
+        window.search_field.setText("straight into the app")
+        app.processEvents()
+        box = window.search_results
+        self.assertEqual([box.item(r).text() for r in range(box.count())], ["No settings found"])
+
+
 class HintTest(unittest.TestCase):
     # The input method shows a typing example, the mode keys share one line under their list, and
     # the menu entries are named by their checkboxes.
-    NO_HINT = {"InputMethod", *MENU_ENTRIES}
+    NO_HINT = {"InputMethod", "Mode", *MENU_ENTRIES}
 
     def test_every_option_explains_itself(self):
         for category in (
@@ -329,6 +380,13 @@ class HintTest(unittest.TestCase):
                         continue
                     with self.subTest(key=key):
                         self.assertIn(HINTS.get(key), shown)
+
+    def test_every_mode_has_a_vietnamese_line(self):
+        catalog = vietnamese_catalog()
+        self.assertEqual(set(MODE_HINTS), set(MODE_BUTTON_ORDER))
+        for mode, text in MODE_HINTS.items():
+            with self.subTest(mode=mode):
+                self.assertTrue(catalog.get(text), text)
 
     def test_mode_keys_say_when_they_work(self):
         page = DynamicSettingsPage(FakeDBusHandler(), category=SettingsCategory.SHORTCUTS)

@@ -20,7 +20,13 @@ REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
 
 if CAN_RUN:
     from core.brand import MESSENGER_URL
-    from core.catalog import DEPENDS, SETTINGS_MAP, SettingsCategory
+    from core.catalog import (
+        DEPENDS,
+        MODE_BUTTON_ORDER,
+        MODE_HINTS,
+        SETTINGS_MAP,
+        SettingsCategory,
+    )
     from gi.repository import Adw, Gdk, Gio, GLib, Gtk
     from ui_gtk import brand, check_page, window
     from ui_gtk.hotkey_button import HotkeyButton
@@ -96,6 +102,21 @@ class GtkWindowTest(unittest.TestCase):
         buttons = [b for b in _children(box) if isinstance(b, window.Gtk.ToggleButton)]
         buttons[1].set_active(True)
         self.assertEqual(self.dbus.values["Mode"], "Preedit")
+
+    def test_the_mode_line_says_what_the_picked_mode_does(self):
+        page = self.window.typing
+        for mode in MODE_BUTTON_ORDER:
+            page.mode_buttons[mode].set_active(True)
+            self.assertEqual(page.rows["Mode"].get_subtitle(), MODE_HINTS[mode], mode)
+
+    def test_a_mode_changed_from_the_tray_moves_the_button_and_the_line(self):
+        page = self.window.typing
+        self.dbus.values["Mode"] = "OFF"
+        before = dict(self.dbus.values)
+        page.refresh_status()
+        self.assertTrue(page.mode_buttons["OFF"].get_active())
+        self.assertEqual(page.rows["Mode"].get_subtitle(), MODE_HINTS["OFF"])
+        self.assertEqual(self.dbus.values, before)
 
     def test_show_page_switches_and_ignores_pages_not_built_yet(self):
         self.window.show_page("about")

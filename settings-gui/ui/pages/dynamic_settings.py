@@ -13,6 +13,7 @@ from core.catalog import (
     MENU_ENTRIES,
     MENU_ICON_FALLBACKS,
     MODE_BUTTON_ORDER,
+    MODE_HINTS,
     MODE_KEY_TO_INTERNAL_NAME,
     MODE_SHORTCUT_KEYS,
     MODE_SHORTCUT_TO_VISIBILITY,
@@ -268,6 +269,8 @@ class DynamicSettingsPage(QWidget):
             self._fields.clear()
             self._custom_hint = None
             self._retone_note = None
+            self._mode_hint = None
+            self._mode_buttons = {}
             self._tray_preview = None
 
             # Without fcitx5 the window already says it cannot be reached; without metadata there is
@@ -428,6 +431,7 @@ class DynamicSettingsPage(QWidget):
                 control.setChecked(str(value).lower() == "true")
             elif isinstance(control, QComboBox) and control.findData(str(value)) >= 0:
                 control.setCurrentIndex(control.findData(str(value)))
+        self._show_mode()
         self._following = False
         self._apply_locks()
 
@@ -586,9 +590,23 @@ class DynamicSettingsPage(QWidget):
             button.clicked.connect(lambda _checked=False, m=mode: self.update_config(key, m))
             group.addButton(button)
             layout.addWidget(button)
+            self._mode_buttons[mode] = button
         brand.follow_theme(row, self._style_mode_buttons, source=self)
         self.button_groups.append(group)
-        self.form.addRow(_(label) + ":", self._with_hint(row, key))
+        wrapper, self._mode_hint = with_hint_below(row, "")
+        # It changes with the mode, so search would find it only some of the time.
+        self._mode_hint.searchable = False
+        self._fields[key] = wrapper
+        self._show_mode()
+        self.form.addRow(_(label) + ":", wrapper)
+
+    def _show_mode(self):
+        if self._mode_hint is None:
+            return
+        mode = str(self.model.value_of("Mode"))
+        if mode in self._mode_buttons:
+            self._mode_buttons[mode].setChecked(True)
+        self._mode_hint.setText(_(MODE_HINTS[mode]) if mode in MODE_HINTS else "")
 
     def _style_mode_buttons(self, row):
         enamel = brand.pick(self, brand.ENAMEL)
@@ -875,6 +893,8 @@ class DynamicSettingsPage(QWidget):
         self.model.set(key, new_value)
         self._last_changed_key = key
         self._apply_locks()
+        if key == "Mode":
+            self._show_mode()
         if key in ("InputMethod", "OutputCharset", "RetoneSelection"):
             self.refresh_status()
         if key in ("UseLotusIcons", "IconTheme"):

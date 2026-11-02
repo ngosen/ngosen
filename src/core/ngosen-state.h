@@ -362,6 +362,7 @@ namespace ngosen {
         void                           selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest = false);
         void                           finishOvertype(const char* reason, bool fromTimer);
         void                           abandonOvertype();
+        void                           deleteOverIgnoredSelection();
         std::unique_ptr<ngosen::Timer> overtype_timer_;
         bool                           overtype_watching_       = false; ///< reports go to onOvertypeSurroundingUpdated once an overtype has started
         bool                           overtype_pending_        = false;
@@ -371,6 +372,10 @@ namespace ngosen {
         uint64_t                       overtype_started_at_     = 0;
         bool                           overtype_via_xtest_      = false;
         bool                           overtype_shift_released_ = false;
+        uint64_t                       overtype_released_at_    = 0;
+        bool                           overtype_focus_bounced_  = false;
+        std::string                    overtype_deleted_;
+        bool                           field_keeps_focus_on_selection_ = false; ///< until focus moves, so the next field is asked again
 
         // --- Wait for the app's report on a key before deleting ---
         // LibreOffice over the fcitx Qt module drops the surrounding text capability before each key
@@ -381,6 +386,8 @@ namespace ngosen {
         bool                           copyGivesWrongBytes() const;
         void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);
         void                           finishKeyReportWait(bool sameField, bool fromTimer);
+        void                           forgetWaitingReplacement();
+        void                           dropReplacementAfterFocusLoss();
         void                           deleteAndCommit(const std::string& deletedPart, const std::string& addedPart);
         std::unique_ptr<ngosen::Timer> key_report_timer_;
         bool                           key_report_pending_         = false;
@@ -422,8 +429,8 @@ namespace ngosen {
         uint64_t                       held_enter_due_us_  = 0;
         ngosen::EditKey                held_key_           = ngosen::EditKey::Return;
 
-        // Enter after a macro expands it, and reaches the app once the expansion is in the field.
-        bool            expandMacroBeforeEnter(ngosen::KeyPress& keyEvent);
+        // Enter after a word the engine changes at its end, such as a macro, reaches the app once the new text is in the field.
+        bool            finishWordBeforeEnter(ngosen::KeyPress& keyEvent);
         void            sendEnterAfterReplacement();
         bool            enter_after_replacement_ = false;
         ngosen::EditKey enter_after_key_         = ngosen::EditKey::Return;

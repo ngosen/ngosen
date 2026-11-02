@@ -27,6 +27,8 @@ namespace ngosen {
 
     // Gives up on a selection whose Shift release never comes back.
     constexpr uint64_t XTestSelectTimeoutUs = 500000;
+    // A field that has not dropped focus this long after Shift is released keeps it.
+    constexpr uint64_t SelectionBounceWaitUs = 150000;
 
     namespace {
         const char* matchName(SurroundingDeletion::Match match) {
@@ -349,6 +351,7 @@ namespace ngosen {
         is_deleting_.store(true, std::memory_order_release);
         overtype_via_xtest_      = viaXTest;
         overtype_shift_released_ = false;
+        overtype_focus_bounced_  = false;
         pending_commit_string_   = addedPart;
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
@@ -362,13 +365,19 @@ namespace ngosen {
         overtype_started_at_     = ngosen::monotonicUs();
         overtype_watching_       = true;
         const uint64_t timeoutUs = viaXTest ? XTestSelectTimeoutUs : 150000ULL;
-        overtype_timer_          = host_->startTimer(overtype_started_at_ + timeoutUs, 1000, [this](ngosen::Timer&) {
-            if (overtype_pending_ && is_deleting_.load()) {
-                if (overtype_shift_released_) {
-                    finishOvertype("selection settled", true);
-                } else {
-                    abandonOvertype();
-                }
+        overtype_timer_          = host_->startTimer(overtype_started_at_ + timeoutUs, 1000, [this](ngosen::Timer& timer) {
+            if (!overtype_pending_ || !is_deleting_.load()) {
+                return false;
+            }
+            if (!overtype_shift_released_) {
+                abandonOvertype();
+            } else if (overtype_focus_bounced_ || !ngosen::focusChangeShowsBrowserField(host_->field())) {
+                finishOvertype("selection settled", true);
+            } else if (const uint64_t deadline = overtype_released_at_ + SelectionBounceWaitUs; ngosen::monotonicUs() < deadline) {
+                timer.rearm(deadline);
+                return true;
+            } else {
+                deleteOverIgnoredSelection();
             }
             return false;
         });
@@ -402,6 +411,20 @@ namespace ngosen {
         is_deleting_.store(false);
         // Keys typed during the wait are user input; the cursor is back, so replay them.
         replayBufferedKeys();
+    }
+
+    // Not the address bar, and a commit would not replace the selection there: delete like any page field.
+    void TypingState::deleteOverIgnoredSelection() {
+        NGOSEN_INFO("No focus change after selecting, deleting with backspaces");
+        field_keeps_focus_on_selection_ = true;
+        overtype_pending_               = false;
+        overtype_via_xtest_             = false;
+        forwardTap(ngosen::EditKey::Right);
+        expected_backspaces_     = static_cast<int>(ngosen::utf8::length(overtype_deleted_));
+        deletedChars_            = expected_backspaces_;
+        current_backspace_count_ = 0;
+        const std::string added  = pending_commit_string_;
+        deleteAndCommit(overtype_deleted_, added);
     }
 
     void TypingState::finishOvertype(const char* reason, bool fromTimer) {
@@ -444,7 +467,8 @@ namespace ngosen {
         const auto surrounding = host_->surrounding();
         // A BackSpace in the Chromium address bar would only remove the selected autocompletion. XTEST,
         // unlike forwardKey, keeps Shift, so widen the selection over the old text and type over both.
-        if (xtestAvailable() && ngosen::selectsOverAutocompletion(host_->field()) && !deletedPart.empty()) {
+        if (xtestAvailable() && ngosen::selectsOverAutocompletion(host_->field()) && !field_keeps_focus_on_selection_ && !deletedPart.empty()) {
+            overtype_deleted_ = deletedPart;
             selectAndOvertype(addedPart, static_cast<int>(ngosen::utf8::length(deletedPart)), true);
             return;
         }

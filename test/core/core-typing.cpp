@@ -1753,6 +1753,35 @@ namespace {
         return static_cast<size_t>(std::count_if(lines.begin(), lines.end(), [&](const std::string& line) { return has(line, part); }));
     }
 
+    // Leaves the field while the replacement for the second "e" waits for the app's copy of the text,
+    // then types "n" after coming back.
+    void checkLeavingDuringReportWait(int leaveAfterMs, int awayMs, const std::string& expected, int expectedDeletes, const std::string& name, int gapMs = 40,
+                                      bool otherFieldReplacing = false) {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(),
+                                                                      ngosen::test::AppQuirks{.lagMs = 150, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true});
+        auto*         app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (char c : std::string("viee")) {
+            loop.pump(gapMs);
+            app->type(static_cast<uint32_t>(c));
+        }
+        const bool waiting = app->sent().surroundingDeletes == 0;
+        loop.pump(leaveAfterMs);
+        app->leaveFocus(awayMs);
+        if (otherFieldReplacing)
+            is_deleting_.store(false);
+        loop.pump(awayMs + 10);
+        app->type(static_cast<uint32_t>('n'));
+        loop.pump(400);
+        check(waiting && app->text() == expected && app->sent().surroundingDeletes == expectedDeletes, name,
+              app->text() + " deletes " + std::to_string(app->sent().surroundingDeletes));
+    }
+
     // After a deletion through the surrounding text, the next reports tell what the app did with it.
     void testSurroundingCheck() {
         ngosen::test::Typed run;
@@ -1776,6 +1805,13 @@ namespace {
                                         &run, gapMs);
             check(run.text == "việt ", "check: keys " + std::to_string(gapMs) + " ms apart in an app " + std::to_string(lagMs) + " ms behind", run.text + " " + join(lines));
         }
+
+        checkLeavingDuringReportWait(0, 300, "vien", 0, "wait: the replacement does not edit a field the user left");
+        checkLeavingDuringReportWait(0, 5, "viên", 1, "wait: a focus bounce keeps the replacement");
+        checkLeavingDuringReportWait(20, 95, "vien", 0, "wait: keys still work after focus returns to a dropped replacement");
+        checkLeavingDuringReportWait(0, 5, "vien", 0, "wait: another field replacing meanwhile ends the wait", 40, true);
+        // The deadline falls inside the bounce. The copy is still short, so the timer deletes anyway, as without one.
+        checkLeavingDuringReportWait(98, 5, "vieên", 1, "wait: a focus bounce across the deadline keeps the replacement", 5);
 
         lines = logLinesWhileTyping(surroundingOnlyField(), {.reports = false, .dropsForwardedKeys = true}, "vieetj nam tieesng ", "Surrounding check");
         // Silence alone is no reason to give up on a field that has no other way to delete.
@@ -2240,7 +2276,37 @@ namespace {
     }
 } // namespace
 
+namespace {
+    void testEnglishWordKeepsDoubledLetter() {
+        const auto typed = [](const std::string& word, uint32_t end) {
+            std::vector<uint32_t> keys(word.begin(), word.end());
+            keys.push_back(end);
+            return keys;
+        };
+        ngosen::test::FakeResources resources;
+        const Field                 field = makeField("wayland", true);
+        for (const uint32_t end : {uint32_t{ngosen::key::space}, uint32_t{ngosen::key::Return}}) {
+            const auto        keys = typed("issue", end);
+            const std::string sen  = ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
+            check(sen.rfind("issue", 0) == 0, "sen: issue keeps both letters before key " + std::to_string(end), sen);
+            const std::string preedit = ngosen::test::telexOutput(resources, keys);
+            check(preedit.rfind("issue", 0) == 0, "preedit: issue keeps both letters before key " + std::to_string(end), preedit);
+        }
+        ngosen::test::FakeResources noMacros;
+        noMacros.mutableOptions().enableMacro = false;
+        const auto        enterKeys           = typed("issue", ngosen::key::Return);
+        const std::string senNoMacros         = ngosen::test::typeInApp(noMacros, field, {}, enterKeys, std::vector<int>(enterKeys.size(), 20));
+        check(senNoMacros.rfind("issue", 0) == 0, "sen: issue keeps both letters before Enter with macros off", senNoMacros);
+        const std::string tab = ngosen::test::telexOutput(resources, typed("issue", ngosen::key::Tab));
+        check(tab.rfind("issue", 0) == 0, "preedit: issue keeps both letters before Tab", tab);
+        const auto        keys = typed("tesst", ngosen::key::space);
+        const std::string sen  = ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
+        check(sen == "test ", "sen: a doubled key still undoes the tone", sen);
+    }
+}
+
 int main() {
+    testEnglishWordKeepsDoubledLetter();
     testQuirks();
     testPreeditTelex();
     testPreeditEnterAfterCommit();

@@ -10,6 +10,15 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Khi bật tự khôi phục (mặc định), gõ issue, sorry, coffee không còn mất chữ thành isue, sory, cofee; tests không còn ra tets. Gõ đúp để bỏ dấu vẫn như cũ: tesst ra test, iss ra is, off ra of (#534).
+
+## [1.7.6-1] — 02/11/2026
+
+Google Docs, Slides trên Chrome, Edge, Brave, Opera, Vivaldi ở X11 hết lặp chữ khi thêm dấu (#523, #527). GNOME hết mất dấu khi gõ nhanh ở ô chỉ xoá qua surrounding text (#501). Cứu dấu đổi được dấu chữ bôi đen trong WPS Office ở X11 (#505). Trên GNOME, lệnh cài luôn thêm extension Input Method Panel để menu `` ` `` hiện trong ô tìm kiếm, Kiểm tra máy báo khi thiếu (#506, #507). Cửa sổ cài đặt hết vỡ icon, cắt chữ (#514), lưu đúng từ điển, gõ tắt đổi từ khay (#517). Không còn gửi phần xoá và chữ mới sang app khác khi focus đổi lúc đang chờ trên GNOME (#535). Bỏ --ibus và gói ibus-ngosen (#509, #511).
+Tải ở [ngosen-1.7.6-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.6-1).
+
 ### Bỏ
 
 - Lệnh cài không còn tuỳ chọn `--ibus` và không còn giới thiệu bản IBus khi cài trên GNOME. Máy đã bị ẩn tự chạy fcitx5 thì lệnh cài vẫn bật lại (#509).
@@ -17,6 +26,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Gõ Sen trên GNOME: không còn gửi phần xoá và chữ mới sang app khác khi focus đổi trong lúc chờ surrounding text tối đa 100 ms (#535).
+- Gõ Sen trong Google Docs và Google Slides trên Chrome, Edge, Brave, Opera, Vivaldi trên X11: thêm dấu không còn ra chữ lặp như "trenên" thay vì "trên", "dauâuấu" thay vì "dấu" (#523, #527).
 - Cửa sổ cài đặt: giữ lựa chọn từ điển, gõ tắt đổi ở menu khay khi lưu trang đó (#517).
 - Cửa sổ cài đặt: bản Qt nói rõ nút Mặc định xoá dữ liệu đã lưu và có thể hoàn tác ngay (#517).
 - Gõ Sen trên GNOME: gõ chậm trong Firefox không còn khiến Ngó Sen chuyển hẳn sang xoá bằng BackSpace sau vài từ đầu, làm mỗi từ gõ lâu hơn dù chữ vẫn đúng. Ngó Sen nay chờ app báo lại lần xoá tới 1 giây, không bỏ surrounding text chỉ vì app im lặng; app bỏ lệnh xoá hoặc xoá sai thì vẫn chuyển sang BackSpace (#515).

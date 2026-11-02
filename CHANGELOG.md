@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.7.6-1] — 02/11/2026
+
+Google Docs, Slides trên Chrome, Edge, Brave, Opera, Vivaldi ở X11 hết lặp chữ khi thêm dấu (#523, #527). GNOME hết mất dấu khi gõ nhanh ở ô chỉ xoá qua surrounding text (#501). Cứu dấu đổi được dấu chữ bôi đen trong WPS Office ở X11 (#505). Trên GNOME, lệnh cài luôn thêm extension Input Method Panel để menu `` ` `` hiện trong ô tìm kiếm, Kiểm tra máy báo khi thiếu (#506, #507). Cửa sổ cài đặt hết vỡ icon, cắt chữ (#514), lưu đúng từ điển, gõ tắt đổi từ khay (#517). Bỏ --ibus và gói ibus-ngosen (#509, #511).
+Tải ở [ngosen-1.7.6-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.6-1).
+
 ### Bỏ
 
 - Lệnh cài không còn tuỳ chọn `--ibus` và không còn giới thiệu bản IBus khi cài trên GNOME. Máy đã bị ẩn tự chạy fcitx5 thì lệnh cài vẫn bật lại (#509).

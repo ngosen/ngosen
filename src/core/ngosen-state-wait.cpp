@@ -304,7 +304,8 @@ namespace ngosen {
         surr_silent_streak_ = 0;
         if (!(host_->surrounding() == reportAtKey_))
             keySinceReport_ = false;
-        if (key_report_pending_ && !(key_report_until_copy_fits_ && copyGivesWrongBytes())) {
+        // A report with focus away may be another app's; the next report or the timer ends the wait.
+        if (key_report_pending_ && host_->hasFocus() && !(key_report_until_copy_fits_ && copyGivesWrongBytes())) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
             const auto s = host_->surrounding();
             finishKeyReportWait(s.isValid() && !(ngosen::reportsFieldOnlyOnKey(host_->field()) && s.text().empty()), false);
@@ -331,13 +332,23 @@ namespace ngosen {
         key_report_deleted_         = deletedPart;
         key_report_added_           = addedPart;
         key_report_pending_         = true;
+        surr_wait_focus_retries_    = 0;
         is_deleting_.store(true, std::memory_order_release);
         if (ngosen::reportsFieldOnlyOnKey(host_->field())) {
             // The key itself never reaches the app, so give it one that types nothing.
             forwardTap(ngosen::EditKey::Shift);
         }
         const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
-        key_report_timer_     = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer&) {
+        key_report_timer_     = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer& t) {
+            if (!host_->hasFocus()) {
+                // A bounce can span the deadline, so give it a moment to come back.
+                if (++surr_wait_focus_retries_ <= 5) {
+                    t.rearm(ngosen::monotonicUs() + 2000);
+                    return true;
+                }
+                dropReplacementAfterFocusLoss();
+                return false;
+            }
             if (key_report_until_copy_fits_)
                 NGOSEN_INFO("Copy of the text still short, deleting anyway");
             finishKeyReportWait(true, true);
@@ -358,15 +369,28 @@ namespace ngosen {
             return;
         }
         NGOSEN_INFO("Key went to another field, starting a new word");
+        forgetWaitingReplacement();
+        is_deleting_.store(false, std::memory_order_release);
+        buffered_keys_.insert(buffered_keys_.begin(), key_report_key_);
+        replayBufferedKeys();
+    }
+
+    void TypingState::forgetWaitingReplacement() {
         pending_commit_string_.clear();
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         hasHistory_              = false;
         ResetEngine(bambooEngine_.handle());
         oldPreBuffer_.clear();
-        is_deleting_.store(false, std::memory_order_release);
-        buffered_keys_.insert(buffered_keys_.begin(), key_report_key_);
-        replayBufferedKeys();
+    }
+
+    // The word stays as typed, since its edit would land in whatever has focus now. is_deleting_ is
+    // left alone because it is shared and the new field may be replacing.
+    void TypingState::dropReplacementAfterFocusLoss() {
+        NGOSEN_INFO("Focus left during the wait, dropping the replacement");
+        key_report_pending_ = false;
+        forgetWaitingReplacement();
+        buffered_keys_.clear();
     }
 
     void TypingState::onWaitSurroundingUpdated() {

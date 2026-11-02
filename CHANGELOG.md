@@ -17,6 +17,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Gõ Sen trên GNOME: không còn gửi phần xoá và chữ mới sang app khác khi focus đổi trong lúc chờ surrounding text tối đa 100 ms (#535).
 - Gõ Sen trong Google Docs và Google Slides trên Chrome, Edge, Brave, Opera, Vivaldi trên X11: thêm dấu không còn ra chữ lặp như "trenên" thay vì "trên", "dauâuấu" thay vì "dấu" (#523, #527).
 - Cửa sổ cài đặt: giữ lựa chọn từ điển, gõ tắt đổi ở menu khay khi lưu trang đó (#517).
 - Cửa sổ cài đặt: bản Qt nói rõ nút Mặc định xoá dữ liệu đã lưu và có thể hoàn tác ngay (#517).

@@ -357,7 +357,7 @@ namespace ngosen::test {
             return {};
         if (quirks_.reportsEmptyText)
             return Surrounding("", 0, 0);
-        if (silentAfterDelete_)
+        if (silentAfterDelete_ || quirks_.reportsTextAtChange)
             return Surrounding(encode(reportedText_), static_cast<unsigned int>(reportedCursor_), static_cast<unsigned int>(reportedAnchor_));
         if (quirks_.staleReport)
             return Surrounding(encode(previousText_), static_cast<unsigned int>(previousCursor_), static_cast<unsigned int>(previousCursor_));
@@ -457,8 +457,12 @@ namespace ngosen::test {
         if (silentAfterDelete_ && !quirks_.repeatsOldTextAfterDelete)
             return;
         if (field_.surroundingText && quirks_.reports)
-            later(quirks_.reportDelayMs, [this] {
-                if (!silentAfterDelete_) {
+            later(quirks_.reportDelayMs, [this, text = text_, cursor = cursor_, anchor = anchor_] {
+                if (quirks_.reportsTextAtChange) {
+                    reportedText_   = text;
+                    reportedCursor_ = cursor;
+                    reportedAnchor_ = anchor;
+                } else if (!silentAfterDelete_) {
                     reportedText_   = text_;
                     reportedCursor_ = cursor_;
                     reportedAnchor_ = anchor_;

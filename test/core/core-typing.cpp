@@ -1899,6 +1899,42 @@ namespace {
         }
     }
 
+    bool lastReplacementDeletedThroughCopy(const std::vector<std::string>& lines) {
+        bool deleted = false;
+        for (const auto& line : lines) {
+            if (line.find("Perform replacement") != std::string::npos)
+                deleted = false;
+            else if (line.find("Delete using surrounding") != std::string::npos)
+                deleted = true;
+        }
+        return deleted;
+    }
+
+    // A report still on its way can show the word a Backspace left while the app holds other text.
+    void testLateReportAfterBackspace() {
+        const Field gnome = makeField("ibus", true);
+        auto        keys  = keysOf("muoons tieesng<<ng ");
+        std::replace(keys.begin(), keys.end(), static_cast<uint32_t>('<'), static_cast<uint32_t>(ngosen::key::BackSpace));
+        std::vector<int> gapsMs(keys.size(), 500);
+        // From the s of the word, so the report of its commit lands just before the key after the Backspaces.
+        gapsMs[11] = 20;
+        std::fill(gapsMs.begin() + 12, gapsMs.begin() + 16, 15);
+        FakeResources resources;
+        ngosen::test::captureLog(true);
+        const auto run   = ngosen::test::typeInAppTraced(resources, gnome, {.reportDelayMs = 80, .reportsTextAtChange = true}, keys, gapsMs);
+        auto       lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(run.text == "muốn tiếng " && !lastReplacementDeletedThroughCopy(lines), "late report: the word goes on through backspaces after the user's Backspace",
+              run.text + " " + join(lines));
+
+        auto text = typedWithBackspaces(gnome, {}, "too<oo too ", 400, lines);
+        check(text == "tô tô " && lastReplacementDeletedThroughCopy(lines), "late report: the next word uses the surrounding text again", text + " " + join(lines));
+
+        ngosen::test::Path sent;
+        text = typedWithBackspaces(makeField("wayland", true, "someapp"), {}, "too<oo ", 400, lines, &sent);
+        check(text == "tô " && sent.forwardedBackSpaces == 0, "late report: other frontends keep the surrounding text", text + " " + join(lines));
+    }
+
     // A long check must still see a deletion the app dropped.
     void testDroppedDeletionInLongCheck() {
         const Field              gnome = makeField("ibus", true);
@@ -2280,6 +2316,7 @@ int main() {
     testSilentFromFirstDeletion();
     testBothPathsInOneWord();
     testBackspacePathDuringLongCheck();
+    testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();

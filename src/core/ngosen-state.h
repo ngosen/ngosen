@@ -233,6 +233,7 @@ namespace ngosen {
         std::optional<RetoneMove>      retoneMove_;
         std::unique_ptr<ngosen::Timer> retone_timer_;
         bool                           backspaceBeforeKey_ = false; ///< the last key was a backspace that left no word being typed
+        bool                           backspaceInWord_    = false; ///< the user pressed Backspace in the word being typed
         std::optional<std::string>     selectedBeforeKey_;          ///< what the X server announced as selected right before this key
         void                           retoneAtWordEnd(size_t tail, Retype retype);
         void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8);

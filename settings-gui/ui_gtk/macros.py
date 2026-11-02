@@ -7,7 +7,8 @@ from core.catalog import locked_by
 from gi.repository import Adw, Gtk
 from i18n import N_, _
 
-from core import macros
+from core import macros, page_status
+from ui_gtk.status_row import show_status, status_row
 
 SWITCHES = {
     "EnableMacro": N_("Enable Macro"),
@@ -32,12 +33,15 @@ class MacroPage:
         self.page.add(self._editor())
         self.page.add(self._list())
         self.refresh()
+        self.refresh_status()
 
     def _options(self):
         group = Adw.PreferencesGroup(
             title=_("Macros"),
             description=_("Macros support dynamic placeholders: $TIME and $DATE."),
         )
+        self.status = status_row()
+        group.add(self.status)
         self.switches = {}
         for key, title in SWITCHES.items():
             row = Adw.SwitchRow(title=_(title), use_markup=False)
@@ -63,6 +67,22 @@ class MacroPage:
 
     def value_of(self, key):
         return self.table.options.get(key)
+
+    def _apply_locks(self):
+        for key, row in (*self.switches.items(), *self.formats.items()):
+            row.set_sensitive(locked_by(key, self.value_of) is None)
+
+    def refresh_status(self):
+        """Shows why this page is not in use now, without rebuilding it."""
+        model = page_status.read(self.table.dbus)
+        if model and not self.table.is_modified():
+            self.table.follow(model.value_of)
+            self._syncing = True
+            for key, row in self.switches.items():
+                row.set_active(self.table.options[key])
+            self._syncing = False
+            self._apply_locks()
+        show_status(self.status, page_status.macro_line(model) if model else "")
 
     def _on_switch(self, row, _param, key):
         if not self._syncing:
@@ -171,8 +191,7 @@ class MacroPage:
         for key, row in self.formats.items():
             row.set_selected(macros.FORMATS[key].index(self.table.options[key]))
         self._syncing = False
-        for key, row in (*self.switches.items(), *self.formats.items()):
-            row.set_sensitive(locked_by(key, self.value_of) is None)
+        self._apply_locks()
         self.list.remove_all()
         for entry in self.table.entries:
             self.list.append(self._row(entry))

@@ -60,6 +60,8 @@ class Window(Adw.ApplicationWindow):
 
         for name, title, icon, widget, searchable in self._data_pages():
             self._add_page(name, title, icon, widget, searchable)
+        # The tray menu can change what a status line says while another window has the focus.
+        self.connect("notify::is-active", lambda w, _p: w.is_active() and w._refresh_statuses())
         self.whats_new = WhatsNewPage(self.open_setting, self.show_page)
         self._add_page(
             "whats-new",
@@ -167,6 +169,11 @@ class Window(Adw.ApplicationWindow):
         self._undo_to = None
         self.reload()
         self._show(Adw.Toast(title=_("Change undone.")))
+
+    def _refresh_statuses(self):
+        for page in (self.typing, self.macros, self.dictionary, self.keymap):
+            if page:
+                page.refresh_status()
 
     def _tabs(self, parent, **pages):
         """Pages that share a sidebar entry, as tabs like the Qt window's."""
@@ -382,6 +389,7 @@ class Window(Adw.ApplicationWindow):
         name, title, _icon = self.pages[row.get_index()]
         self.stack.set_visible_child_name(name)
         self.content.set_title(title)
+        self._refresh_statuses()
         if name == "check":
             self.check.run()
         self.split.set_show_content(True)
@@ -450,6 +458,7 @@ class Window(Adw.ApplicationWindow):
         before = settings_snapshot.take(self.dbus)
         ok = self.model.save()
         self.model.modified.update(held)
+        self._refresh_statuses()
         if key in held:
             self._show(Adw.Toast(title=conflicts[0][0], timeout=0))
         else:
@@ -460,6 +469,7 @@ class Window(Adw.ApplicationWindow):
         # Taken now, since fcitx5 remembers app modes while the window is open.
         before = settings_snapshot.take(self.dbus)
         ok = write()
+        self._refresh_statuses()
         self._report(ok, label, before)
         return ok
 

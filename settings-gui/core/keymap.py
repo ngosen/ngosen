@@ -222,6 +222,13 @@ class Keymap:
     def is_modified(self):
         return self.state() != self.saved_state
 
+    def follow(self, value_of):
+        """Takes the switch as fcitx5 holds it now; only with nothing waiting to be saved."""
+        value = value_of("EnableCustomKeymap")
+        if value is not None:
+            self.enabled = str(value).lower() == "true"
+            self.saved_state["EnableCustomKeymap"] = self.enabled
+
     def save(self):
         """Writes the switch and the table. False when fcitx5 cannot be reached or refuses."""
         config_data = self.dbus.get_config()

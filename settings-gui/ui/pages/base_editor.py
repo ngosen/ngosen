@@ -10,6 +10,10 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
+from core import page_status
+from ui.pages.dynamic_settings import HintLabel
+from ui.typography import mute
+
 
 class BaseEditorPage(QWidget):
     """Base UI for table-based editors."""
@@ -17,6 +21,27 @@ class BaseEditorPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.table = None
+
+    def _add_status_line(self, layout):
+        self.status_line = HintLabel("")
+        self.status_line.setObjectName("StatusLine")
+        self.status_line.searchable = False
+        mute(self.status_line)
+        self.status_line.hide()
+        layout.addWidget(self.status_line)
+
+    def refresh_status(self):
+        """Shows why this page is not in use now, without rebuilding it."""
+        model = page_status.read(self.dbus)
+        if model is None:
+            self.status_line.hide()
+            return
+        if not self.is_modified():
+            self._follow(model.value_of)
+        model.current.update(self._shown_switches())
+        text = self._status_text(model)
+        self.status_line.setText(text)
+        self.status_line.setVisible(bool(text))
 
     def apply_table_style(self):
         """Applies modern styling to the table and connects signals."""

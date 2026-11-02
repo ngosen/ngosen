@@ -28,6 +28,7 @@ from i18n import _
 from qtpy.QtCore import QEvent, QSize, Qt, QTimer
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap
 from qtpy.QtWidgets import (
+    QWIDGETSIZE_MAX,
     QButtonGroup,
     QCheckBox,
     QComboBox,
@@ -45,6 +46,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
+from core import page_status
 from ui import brand
 from ui.components import (
     HotkeyEditorWidget,
@@ -68,8 +70,23 @@ class HintLabel(QLabel):
     # hints; pin the height to the width the label really got.
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        # Pinning the height resizes the label again.
+        if event.size().width() != event.oldSize().width():
+            self._fit_height()
+
+    def setText(self, text):
+        if text == self.text():
+            return
+        super().setText(text)
+        # The pinned height was for the old text, and a label that keeps its width gets no resize.
+        self._fit_height()
+
+    def _fit_height(self):
+        # A pinned label measures no shorter than its pin.
+        self.setMinimumHeight(0)
+        self.setMaximumHeight(QWIDGETSIZE_MAX)
         height = self.heightForWidth(self.width())
-        if height > 0 and height != self.minimumHeight():
+        if height > 0:
             self.setFixedHeight(height)
 
 
@@ -153,6 +170,9 @@ class DynamicSettingsPage(QWidget):
         self.list_widgets = []  # Track list widgets for layout refresh
         self._controls = {}
         self._fields = {}
+        self._custom_hint = None
+        self._retone_note = None
+        self._following = False
 
         self._setup_ui()
         self.load_config()
@@ -225,6 +245,8 @@ class DynamicSettingsPage(QWidget):
             self.list_widgets.clear()
             self._controls.clear()
             self._fields.clear()
+            self._custom_hint = None
+            self._retone_note = None
             self._tray_preview = None
 
             # Without fcitx5 the window already says it cannot be reached; without metadata there is
@@ -294,6 +316,7 @@ class DynamicSettingsPage(QWidget):
                 self.form.addRow(_("Try it:"), try_it)
 
             self._apply_locks()
+            self.refresh_status()
             self.container_layout.addStretch()
         finally:
             self.blockSignals(False)
@@ -357,8 +380,48 @@ class DynamicSettingsPage(QWidget):
             )
             hint.setContentsMargins(indent, 0, 0, 0)
         layout.addWidget(hint)
+        if key == "RetoneSelection":
+            self._retone_note = HintLabel("")
+            self._retone_note.setContentsMargins(hint.contentsMargins())
+            self._retone_note.setObjectName("RetoneNote")
+            self._retone_note.searchable = False
+            mute(self._retone_note)
+            self._retone_note.hide()
+            layout.addWidget(self._retone_note)
         self._fields[key] = wrapper
         return wrapper
+
+    def refresh_status(self):
+        """Shows the notes that depend on what fcitx5 holds, without rebuilding the page."""
+        if self._custom_hint is None and self._retone_note is None:
+            return
+        model = page_status.read(self.dbus)
+        if model is not None:
+            if self.model.modified:
+                model.current.update(self.model.modified)
+            else:
+                self.model.follow(model)
+                self._show_values()
+        for label, line in (
+            (self._custom_hint, lambda: page_status.custom_without_keys_line(model, self.dbus)),
+            (self._retone_note, lambda: page_status.retone_line(model)),
+        ):
+            if label is not None:
+                text = line() if model is not None else ""
+                label.setText(text)
+                label.setVisible(bool(text))
+
+    def _show_values(self):
+        """Moves the controls to the model's values, as nothing the user changed."""
+        self._following = True
+        for key, control in self._controls.items():
+            value = self.model.value_of(key)
+            if isinstance(control, QCheckBox):
+                control.setChecked(str(value).lower() == "true")
+            elif isinstance(control, QComboBox) and control.findData(str(value)) >= 0:
+                control.setCurrentIndex(control.findData(str(value)))
+        self._following = False
+        self._apply_locks()
 
     def _apply_locks(self):
         for key in DEPENDS:
@@ -479,21 +542,17 @@ class DynamicSettingsPage(QWidget):
         example.setFont(brand.typed_font(16))
         layout.addWidget(example)
         # Custom takes its keys only from the Keymap tab, so without one it types no marks.
-        custom_hint = HintLabel(
-            _("Custom has no keys yet: turn on Custom Keymap and add keys in Keys › Keymap.")
-        )
-        custom_hint.setObjectName("CustomKeymapHint")
-        mute(custom_hint)
-        layout.addWidget(custom_hint)
-        has_keymap = str(
-            self.current_values.get("EnableCustomKeymap", "False")
-        ).lower() == "true" and bool(self.dbus.get_sub_config_list("custom_keymap", "CustomKeymap"))
+        self._custom_hint = HintLabel("")
+        self._custom_hint.setObjectName("CustomKeymapHint")
+        self._custom_hint.searchable = False
+        mute(self._custom_hint)
+        self._custom_hint.hide()
+        layout.addWidget(self._custom_hint)
 
         def show_example():
             text = TYPING_EXAMPLES.get(combo.currentData(), "")
             example.setText(text)
             example.setVisible(bool(text))
-            custom_hint.setVisible(combo.currentData() == "Custom" and not has_keymap)
 
         combo.currentIndexChanged.connect(lambda _index: show_example())
         show_example()
@@ -803,9 +862,13 @@ class DynamicSettingsPage(QWidget):
 
     def update_config(self, key: str, new_value):
         """Updates internal state and notifies parent window of change."""
+        if self._following:
+            return
         self.model.set(key, new_value)
         self._last_changed_key = key
         self._apply_locks()
+        if key in ("InputMethod", "OutputCharset", "RetoneSelection"):
+            self.refresh_status()
         if key in ("UseLotusIcons", "IconTheme"):
             self._update_tray_preview()
 

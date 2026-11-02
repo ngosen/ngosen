@@ -8,7 +8,7 @@ Implements UI with row reordering and TSV import/export.
 
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
-from qtpy.QtCore import QItemSelectionModel, QSize, QStringListModel, Qt
+from qtpy.QtCore import QItemSelectionModel, QSignalBlocker, QSize, QStringListModel, Qt
 from qtpy.QtGui import QColor, QIcon
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -22,7 +22,7 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
 )
 
-from core import dictionary
+from core import dictionary, page_status
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
 from ui.typography import mute, page_title
@@ -94,6 +94,7 @@ class DictEditorPage(BaseEditorPage):
         explanation.setWordWrap(True)
         mute(explanation)
         main_layout.addWidget(explanation)
+        self._add_status_line(main_layout)
 
         # Dictionary behavior toggles
         toggles_card = CardWidget()
@@ -101,6 +102,7 @@ class DictEditorPage(BaseEditorPage):
         self.cb_enable = QCheckBox(_("Custom Dictionary"))
         self.cb_enable.toggled.connect(self._on_enable_toggled)
         self.cb_enable.toggled.connect(self._on_item_changed)
+        self.cb_enable.toggled.connect(lambda _checked: self.refresh_status())
         toggles_layout.addWidget(self.cb_enable)
         toggles_layout.addStretch()
 
@@ -197,6 +199,7 @@ class DictEditorPage(BaseEditorPage):
             self.blockSignals(False)
             self.on_search_changed()
             self.update_button_states()
+            self.refresh_status()
 
     def _show_words(self):
         needle = self.search_input.text().strip().casefold()
@@ -237,6 +240,17 @@ class DictEditorPage(BaseEditorPage):
         """Returns True if the dictionary is on or its words differ from the bundled ones."""
         self._ensure_loaded()
         return self.dictionary.is_modified_from_default()
+
+    def _follow(self, value_of):
+        self.dictionary.follow(value_of)
+        with QSignalBlocker(self.cb_enable):
+            self.cb_enable.setChecked(self.dictionary.enabled)
+
+    def _shown_switches(self):
+        return {"EnableDictionary": self.cb_enable.isChecked()}
+
+    def _status_text(self, model):
+        return page_status.dictionary_line(model)
 
     def is_modified(self):
         if not self._is_loaded:

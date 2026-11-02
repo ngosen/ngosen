@@ -8,6 +8,7 @@ Implements custom keymap presets and TSV import/export.
 
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
+from qtpy.QtCore import QSignalBlocker
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -23,7 +24,7 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
 )
 
-from core import keymap
+from core import keymap, page_status
 from ui.confirm import confirm
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
@@ -47,6 +48,7 @@ class KeymapEditorPage(BaseEditorPage):
 
         title = page_title(_("Keymap"))
         main_layout.addWidget(title)
+        self._add_status_line(main_layout)
 
         # Configuration card
         config_card = CardWidget()
@@ -56,6 +58,7 @@ class KeymapEditorPage(BaseEditorPage):
         top_row = QHBoxLayout()
         self.cb_enable = QCheckBox(_("Custom Keymap"))
         self.cb_enable.toggled.connect(self._on_item_changed)
+        self.cb_enable.toggled.connect(lambda _checked: self.refresh_status())
         top_row.addWidget(self.cb_enable)
         top_row.addStretch()
 
@@ -148,6 +151,18 @@ class KeymapEditorPage(BaseEditorPage):
         finally:
             self.blockSignals(False)
             self.on_search_changed()
+            self.refresh_status()
+
+    def _follow(self, value_of):
+        self.keymap.follow(value_of)
+        with QSignalBlocker(self.cb_enable):
+            self.cb_enable.setChecked(self.keymap.enabled)
+
+    def _shown_switches(self):
+        return {"EnableCustomKeymap": self.cb_enable.isChecked()}
+
+    def _status_text(self, model):
+        return page_status.keymap_line(model)
 
     def restore_defaults(self):
         """Clears all custom keymap entries and turns the custom keymap off."""

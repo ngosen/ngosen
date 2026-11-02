@@ -1088,7 +1088,7 @@ msgstr ""
 msgid "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
 msgstr ""
 
-#: settings-gui/ui/pages/dynamic_settings.py
+#: settings-gui/core/page_status.py
 msgid "Custom has no keys yet: turn on Custom Keymap and add keys in Keys › Keymap."
 msgstr ""
 
@@ -1764,4 +1764,20 @@ msgstr ""
 
 #: settings-gui/core/system_check.py
 msgid "Log out and back in to start the installed version."
+msgstr ""
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: turn on {}."
+msgstr ""
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: turn on {} and choose Custom in {}."
+msgstr ""
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: choose Custom in {}."
+msgstr ""
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: Cứu dấu works only with Unicode."
 msgstr ""

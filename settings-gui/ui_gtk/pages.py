@@ -16,8 +16,10 @@ from core.catalog import (
 from gi.repository import Adw, Gtk
 from i18n import _
 
+from core import page_status
 from ui_gtk import brand
 from ui_gtk.check_page import open_uri
+from ui_gtk.status_row import show_status, status_row
 from ui_gtk.whats_new import tip_text
 
 
@@ -35,6 +37,7 @@ class SettingsPage:
         self.model = model
         self.on_change = on_change
         self.rows = {}
+        self._following = False
         self.page = Adw.PreferencesPage(title=title, icon_name=icon)
         self._add_header()
         for title, keys in SETTINGS_MAP[category].items():
@@ -69,7 +72,20 @@ class SettingsPage:
             self.rows[key].set_sensitive(self.model.locked_by(key) is None)
 
     def _changed(self, key, value):
+        if self._following:
+            return
         self.on_change(key, value)
+        self._apply_locks()
+
+    def _show_values(self):
+        """Moves the rows to the model's values, as nothing the user changed."""
+        self._following = True
+        for key, row in self.rows.items():
+            if isinstance(row, Adw.SwitchRow):
+                row.set_active(self.value(key).lower() == "true")
+            elif isinstance(row, Adw.ComboRow) and self.value(key) in row.values:
+                row.set_selected(row.values.index(self.value(key)))
+        self._following = False
         self._apply_locks()
 
     def _shown(self, key, value):
@@ -160,6 +176,8 @@ class TypingPage(SettingsPage):
     def __init__(self, model, on_change, tip=None, on_tip=None):
         self.tip = tip
         self.on_tip = on_tip
+        self.custom_note = status_row()
+        self.retone_note = status_row()
         super().__init__(
             model, on_change, SettingsCategory.TYPING, _("Typing"), "input-keyboard-symbolic"
         )
@@ -168,6 +186,27 @@ class TypingPage(SettingsPage):
         entry.add_css_class("typed")
         try_it.add(entry)
         self.page.add(try_it)
+        self.refresh_status()
+
+    def _rows_for(self, item):
+        rows = super()._rows_for(item)
+        if item[0] == "InputMethod":
+            rows.append(self.custom_note)
+        elif item[0] == "RetoneSelection":
+            rows.append(self.retone_note)
+        return rows
+
+    def refresh_status(self):
+        """Shows the notes that depend on what fcitx5 holds, without rebuilding the page."""
+        model = page_status.read(self.model.dbus)
+        if model and not self.model.modified:
+            self.model.follow(model)
+            self._show_values()
+        show_status(
+            self.custom_note,
+            page_status.custom_without_keys_line(model, self.model.dbus) if model else "",
+        )
+        show_status(self.retone_note, page_status.retone_line(model) if model else "")
 
     def _add_header(self):
         if self.tip is None:

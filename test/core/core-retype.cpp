@@ -440,13 +440,13 @@ namespace {
     }
 
     // The Chromium address bar replaces by selecting with Shift+Left through XTEST, and those keys come back to us.
-    void testRetypeOverSelection() {
+    void testRetypeOverSelection(const std::string& program, bool bounceFocus) {
         constexpr uint32_t ShiftMask = 1U << 0;
         realMode                     = Mode::Off;
         FakeLoop      loop;
         FakeResources resources;
         Field         field       = makeField("dbus", false);
-        field.program             = "google-chrome";
+        field.program             = program;
         field.keyEventOrderFix    = true;
         field.caretWidth          = 1;
         field.caretHeight         = 17;
@@ -466,9 +466,17 @@ namespace {
             pressInState(state, ngosen::key::Left, ShiftMask);
         FakeKey shiftUp(ngosen::key::Shift_R, true, ShiftMask);
         state.keyEvent(shiftUp);
+        if (bounceFocus) {
+            state.deactivate(true);
+            state.activate(Mode::Sen, true);
+        }
         loop.pump(150);
         const std::string commits = host->commits().empty() ? "(none)" : host->commits().back();
         check(commits == "tiếng việt", "selection: the retyped text goes over the selection", commits);
+        if (bounceFocus) {
+            setXTestSenderForTest(nullptr);
+            return;
+        }
 
         pressInState(state, ngosen::key::Escape);
         loop.pump(20);
@@ -518,7 +526,8 @@ int main() {
     testRetypeInApp("wayland", true, Mode::Preedit);
     // Deletes through the surrounding text where forwarded keys do not work.
     testRetypeInApp("other", true, Mode::Sen);
-    testRetypeOverSelection();
+    testRetypeOverSelection("vivaldi-bin", false);
+    testRetypeOverSelection("google-chrome", true);
     testClickDropsRetype("wayland", true);
     testClickDropsRetype("xim", false);
     testRetypeInSteppingApp();

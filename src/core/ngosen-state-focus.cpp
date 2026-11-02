@@ -88,8 +88,11 @@ namespace ngosen {
     void TypingState::deactivate(bool isFocusOut) {
         enter_after_replacement_ = false; // an Enter would land in the next field
         flushPendingReplacement();        // commit pending text into the field we are leaving
-        if (isFocusOut)
+        if (isFocusOut) {
             commitNotSeen_.clear();
+            overtype_focus_bounced_         = overtype_pending_;
+            field_keeps_focus_on_selection_ = false;
+        }
         lastDeactivateTime_ = nowMs();
         if (mode() == ngosen::Mode::Preedit && !isFocusOut) {
             commitBuffer();

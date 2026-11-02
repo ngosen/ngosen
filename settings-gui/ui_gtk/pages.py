@@ -107,7 +107,9 @@ class SettingsPage:
             return [self._mode_row(key, label, annotations)]
         if "Enum" in annotations:
             row = self._combo_row(key, label, annotations["Enum"])
-            return [row, self._example_row(row)] if key == "InputMethod" else [row]
+            if key == "InputMethod":
+                self._show_example(row)
+            return [row]
         if kind == "Boolean":
             return [self._switch_row(key, label)]
         return []
@@ -157,18 +159,15 @@ class SettingsPage:
     def _on_combo(self, row, _param, key):
         self._changed(key, row.values[row.get_selected()])
 
-    def _example_row(self, combo):
-        row = Adw.ActionRow(css_classes=["typed"])
-        row.set_use_markup(False)
+    def _show_example(self, combo):
+        self.example = Gtk.Label(css_classes=["typed"], valign=Gtk.Align.CENTER)
 
         def show(*_args):
-            text = TYPING_EXAMPLES.get(combo.values[combo.get_selected()], "")
-            row.set_title(text)
-            row.set_visible(bool(text))
+            self.example.set_text(TYPING_EXAMPLES.get(combo.values[combo.get_selected()], ""))
 
         combo.connect("notify::selected", show)
         show()
-        return row
+        combo.add_suffix(self.example)
 
     def _switch_row(self, key, label):
         row = _hinted(Adw.SwitchRow(title=self._switch_title(key, label)), key)

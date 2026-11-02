@@ -46,8 +46,12 @@ class ShortcutsPage:
             toggle = key == "ToggleKey"
             shown = self.model.shown_toggle_key(key) if toggle else self._first(key)
             row = Adw.ActionRow(title=_(item[2]), use_markup=False)
-            if key in HINTS:
-                row.set_subtitle(_(HINTS[key]))
+            lines = [_(HINTS[key])] if key in HINTS else []
+            if toggle and other_methods:
+                lines.append(
+                    _("fcitx5 has other input methods too; its own key still switches to them.")
+                )
+            row.set_subtitle(" ".join(lines))
             button = HotkeyButton(shown)
             button.connect("recorded", lambda _b, text, k=key: self._record(k, text))
             clear = Gtk.Button(
@@ -63,13 +67,6 @@ class ShortcutsPage:
             group.add(row)
             if toggle:
                 group.add(self._offer(key))
-                if other_methods:
-                    note = _(
-                        "fcitx5 has other input methods too; its own key still switches to them."
-                    )
-                    group.add(
-                        Adw.ActionRow(title=note, use_markup=False, css_classes=["dim-label"])
-                    )
         return group
 
     def _offer(self, key):

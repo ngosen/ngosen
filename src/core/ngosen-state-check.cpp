@@ -136,7 +136,7 @@ namespace ngosen {
                 fixDroppedDeletion(check, *report);
         } else if (verdict == SurroundingVerdict::WrongEarlierPart && !onlyWay) {
             markSurroundingUntrusted("the text before a commit changed");
-        } else if (!surrAnswered_ && surrUnanswered_ >= UnansweredLimit && !onlyWay) {
+        } else if (!surrAnswered_ && surrUnanswered_ >= UnansweredLimit && !onlyWay && !checkWaitsForLaterKey()) {
             markSurroundingUntrusted(std::to_string(surrUnanswered_) + " deletions in a row went unanswered");
         }
     }

@@ -1938,6 +1938,14 @@ namespace {
         }
     }
 
+    // An app that answers nothing in time gets no mark over IBus: each word still picks its own way.
+    void testUnansweredChecksLeaveNoMark() {
+        std::vector<std::string> lines;
+        const auto               text = typedWithBackspaces(makeField("ibus", true), {.repeatsOldTextAfterDelete = true}, "vieetj nam tieesng tooi ", 1600, lines);
+        check(text == "việt nam tiếng tôi " && countHaving(lines, "not answered") > 0 && countHaving(lines, "untrusted") == 0, "no mark: unanswered checks over IBus",
+              text + " " + join(lines));
+    }
+
     // An app whose copy still holds the replaced characters until the next key, as Firefox on GNOME
     // does: a deletion counted on that copy takes too many.
     void testSlowReport() {
@@ -2256,6 +2264,7 @@ int main() {
     testDroppedDeletionInLongCheck();
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();
+    testUnansweredChecksLeaveNoMark();
     check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

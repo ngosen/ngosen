@@ -5,6 +5,7 @@
 
 from core.brand import FEATURE_REQUEST_URL, REPO_URL
 from core.catalog import (
+    DEPENDS,
     HINTS,
     MODE_BUTTON_ORDER,
     SETTINGS_MAP,
@@ -64,8 +65,8 @@ class SettingsPage:
         return self.model.value_of(key)
 
     def _apply_locks(self):
-        for key, row in self.rows.items():
-            row.set_sensitive(self.model.locked_by(key) is None)
+        for key in DEPENDS.keys() & self.rows.keys():
+            self.rows[key].set_sensitive(self.model.locked_by(key) is None)
 
     def _changed(self, key, value):
         self.on_change(key, value)

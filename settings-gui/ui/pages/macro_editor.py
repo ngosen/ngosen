@@ -226,7 +226,7 @@ class MacroEditorPage(BaseEditorPage):
         return self.controls.get(key)
 
     def value_of(self, key):
-        return self._shown_values()[0].get(key)
+        return self._shown_options().get(key)
 
     def _apply_locks(self):
         for key, control in self.controls.items():
@@ -258,16 +258,19 @@ class MacroEditorPage(BaseEditorPage):
             combo.setCurrentIndex(combo.findData(options[key]))
         self._apply_locks()
 
-    def _shown_values(self):
-        # Read without storing: the main window asks is_modified() while load_data
-        # is still filling the widgets from the model.
-        options = {
+    def _shown_options(self):
+        return {
             "EnableMacro": self.cb_enable.isChecked(),
             "CapitalizeMacro": self.cb_capitalize.isChecked(),
             "EnableMacroInOffMode": self.cb_enable_off_mode.isChecked(),
             "TimeFormat": self.input_time_format.currentData(),
             "DateFormat": self.input_date_format.currentData(),
         }
+
+    def _shown_values(self):
+        # Read without storing: the main window asks is_modified() while load_data
+        # is still filling the widgets from the model.
+        options = self._shown_options()
         entries = []
         for row in range(self.table.rowCount()):
             key_item = self.table.item(row, 0)

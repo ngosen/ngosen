@@ -198,7 +198,7 @@ class NgoSenSettingsWindow(QMainWindow):
             return
         target, page, key = found
         self.search_field.clear()
-        self.reveal(self._control_to_open(page, key) if key else target, page)
+        self.reveal((self._control_to_open(page, key) if key else None) or target, page)
 
     def reveal(self, target, page):
         """Shows the page and tab holding a widget, scrolls to it and puts the focus on it."""

@@ -9,6 +9,7 @@ from core.catalog import DEPENDS, locked_by
 from core.settings_model import SettingsModel
 from qtpy.QtCore import Qt
 from qtpy.QtTest import QTest
+from qtpy.QtWidgets import QCheckBox
 from ui.main_window import NgoSenSettingsWindow
 from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
 from ui.pages.macro_editor import MacroEditorPage
@@ -85,16 +86,35 @@ class QtWindowLocksTest(unittest.TestCase):
 
     def test_a_search_result_for_a_locked_setting_opens_what_unlocks_it(self):
         window = self.window(ALL_LOCKED)
-        for text, controller in (
-            ("time format", "EnableMacro"),
-            ("shortcut for preedit", "ShowModePreedit"),
-        ):
-            window.search_field.setText(text)
-            box = window.search_results
-            self.assertTrue(box.count() and box.item(0).data(Qt.UserRole), text)
-            window.open_search_result(box.item(0))
-            page = self.page_with(window, controller)
-            self.assertIs(window.focusWidget(), page.control_for(controller), text)
+        box = window.search_results
+        for key, (controller, _needed) in DEPENDS.items():
+            page = self.page_with(window, key)
+            window.search_field.setText(self.shown_name(page, key))
+            found = [
+                box.item(r) for r in range(box.count()) if box.item(r).data(Qt.UserRole)[2] == key
+            ]
+            self.assertTrue(found, key)
+            window.open_search_result(found[0])
+            self.assertIs(window.focusWidget(), page.control_for(controller), key)
+
+    @staticmethod
+    def shown_name(page, key):
+        control = page.control_for(key)
+        if isinstance(control, QCheckBox):
+            return control.text()
+        if isinstance(page, MacroEditorPage):
+            label = page.time_label if key == "TimeFormat" else page.date_label
+        else:
+            label = page.shortcut_labels.get(key) or page.form.labelForField(page._fields[key])
+        return label.text().rstrip(":")
+
+    def test_a_search_result_whose_setting_is_gone_opens_its_label(self):
+        window = self.window(ALL_LOCKED)
+        window.search_field.setText("time format")
+        item = window.search_results.item(0)
+        self.page_with(window, "TimeFormat").controls.clear()
+        window.open_search_result(item)
+        self.assertEqual(window.search_field.text(), "")
 
     def test_a_form_label_finds_the_setting_inside_its_wrapper(self):
         window = self.window(ALL_LOCKED)
@@ -140,7 +160,7 @@ class QtPageLocksTest(unittest.TestCase):
         self.assertFalse(page.shortcut_labels["ShortcutEmoji"].isEnabled())
         self.assertTrue(page.control_for("ShowModeEmoji").isEnabled())
 
-    def test_a_locked_mode_key_does_not_hide_a_conflict_message(self):
+    def test_hiding_a_mode_ends_its_key_conflict(self):
         fake = FakeDBusHandler({"ShortcutPreedit": "w", "ShortcutEmoji": "w"})
         page = DynamicSettingsPage(fake, category=SettingsCategory.SHORTCUTS)
         self.assertTrue(page.has_validation_errors())

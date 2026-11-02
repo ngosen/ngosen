@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import re
 import tempfile
 import unittest
 from unittest import mock
@@ -89,6 +90,21 @@ class LinesTest(unittest.TestCase):
         self.assertEqual(page_status.dictionary_line(model), "")
         self.assertEqual(page_status.keymap_line(model), "")
         self.assertEqual(page_status.retone_line(model), "")
+
+
+class TranslationTest(unittest.TestCase):
+    def test_every_line_has_a_vietnamese_text(self):
+        po = os.path.join(os.path.dirname(__file__), "..", "..", "po", "vi.po")
+        with open(po, encoding="utf-8") as f:
+            text = f.read()
+        for msgid in (
+            "Not in use now: turn on {}.",
+            "Not in use now: turn on {} and choose Custom in {}.",
+            "Not in use now: choose Custom in {}.",
+            "Not in use now: Cứu dấu works only with Unicode.",
+            "Custom has no keys yet: turn on Custom Keymap and add keys in Keys › Keymap.",
+        ):
+            self.assertRegex(text, f'msgid "{re.escape(msgid)}"\nmsgstr "[^"]+"')
 
 
 class HintLabelTest(unittest.TestCase):

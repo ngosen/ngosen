@@ -1941,7 +1941,7 @@ namespace {
 
         ngosen::test::Path sent;
         text = typedWithBackspaces(makeField("wayland", true, "someapp"), {}, "too<oo ", 400, lines, &sent);
-        check(text == "tô " && sent.forwardedBackSpaces == 0, "late report: other frontends keep the surrounding text", text + " " + join(lines));
+        check(text == "tô " && sent.forwardedBackSpaces > 0, "late report: other frontends go on through backspaces too", text + " " + join(lines));
     }
 
     // A long check must still see a deletion the app dropped.

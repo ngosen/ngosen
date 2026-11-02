@@ -43,12 +43,16 @@ class InputPanelTest(unittest.TestCase):
         self.assertEqual((finding.level, finding.title), (WARN, self.TITLE))
         self.assertEqual(finding.action, system_check.INSTALL_INPUT_PANEL)
         self.assertIn(system_check.INPUT_PANEL_PAGE, finding.command)
+        self.assertIn("install.sh", finding.fix)
+        self.assertIn(system_check.INPUT_PANEL_PAGE, finding.fix)
 
     def test_installed_panel_has_no_install_button(self):
         self.assertIn("gnome-extensions enable", self.found("INACTIVE")[0].fix)
         for state in ("INACTIVE", "ERROR", "OUT OF DATE"):
             self.assertEqual(self.found(state)[0].action, "")
-        self.assertIn(system_check.INPUT_PANEL_PAGE, self.found("ERROR")[0].fix)
+        for state in ("ERROR", "OUT OF DATE"):
+            self.assertIn(system_check.INPUT_PANEL_PAGE, self.found(state)[0].fix)
+            self.assertNotIn("gnome-extensions enable", self.found(state)[0].fix)
 
     def test_running_panel_and_other_desktops_are_clean(self):
         self.assertEqual(self.found("ACTIVE"), [])

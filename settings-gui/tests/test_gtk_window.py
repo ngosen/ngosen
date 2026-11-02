@@ -483,6 +483,7 @@ class GtkTypingPageTest(unittest.TestCase):
         self.assertEqual([k for k in self.page.rows if k in keys], keys)
 
 
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkUndoTest(unittest.TestCase):
     def setUp(self):
         Adw.init()

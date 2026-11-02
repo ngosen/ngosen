@@ -248,9 +248,11 @@ class DynamicSettingsPage(QWidget):
                     continue
                 group_label = _(group) + ":"
                 name_line = None
-                if group in GROUPS_WITH_NAME_LINE:
+                shown = [k for k in keys if k in self.all_metadata]
+                if group in GROUPS_WITH_NAME_LINE and shown:
                     name_line = QLabel(group_label)
                     self.form.addRow(name_line, QWidget())
+                    group_label = ""
                 for k in keys:
                     item = self.all_metadata.get(k)
                     if not item:
@@ -270,7 +272,7 @@ class DynamicSettingsPage(QWidget):
                         group_label = ""
                 if name_line:
                     # Search opens the group at its first setting.
-                    name_line.setBuddy(self._controls.get(keys[0]))
+                    name_line.setBuddy(self._controls.get(shown[0]))
                 if group == TRAY_ICON:
                     self._render_tray_preview()
 

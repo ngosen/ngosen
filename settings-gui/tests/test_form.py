@@ -69,9 +69,9 @@ class TypingPageTest(unittest.TestCase):
         )
 
     def test_auto_restore_comes_before_what_depends_on_it(self):
-        keys = SETTINGS_MAP[SettingsCategory.TYPING]["Fixing words"]
-        self.assertLess(keys.index("AutoNonVnRestore"), keys.index("SpellCheck"))
-        self.assertLess(keys.index("AutoNonVnRestore"), keys.index("DdFreeStyle"))
+        shown = list(self.page._controls)
+        self.assertLess(shown.index("AutoNonVnRestore"), shown.index("SpellCheck"))
+        self.assertLess(shown.index("AutoNonVnRestore"), shown.index("DdFreeStyle"))
 
     def test_hint_sits_under_its_setting(self):
         cb = next(
@@ -164,8 +164,7 @@ class AppearancePageTest(unittest.TestCase):
         self.page = DynamicSettingsPage(self.fake, category=SettingsCategory.APPEARANCE)
 
     def test_language_stays_first(self):
-        page = DynamicSettingsPage(FakeDBusHandler(), category=SettingsCategory.APPEARANCE)
-        self.assertEqual(row_labels(form_of(page))[0], "Interface Language:")
+        self.assertEqual(row_labels(form_of(self.page))[0], "Interface Language:")
 
     def menu_checkbox(self, text):
         return next(c for c in self.page.findChildren(QCheckBox) if c.text() == text)

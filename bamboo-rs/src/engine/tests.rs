@@ -283,6 +283,50 @@ fn test_doubled_key_still_undoes_a_tone() {
 }
 
 #[test]
+fn test_doubled_key_still_types_a_capitalized_name() {
+    for (keys, shown) in [("Marry", "Mary"), ("Loss", "Los"), ("Less", "Les")] {
+        let mut e = new_test_engine(&[], true);
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{shown} "), "keys {keys}");
+    }
+    let mut e = new_test_engine(&[], true);
+    type_keys(&mut e, "loss");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "loss ");
+}
+
+#[test]
+fn test_doubled_key_still_types_a_short_word() {
+    let mut e = new_test_engine(&[], true);
+    type_keys(&mut e, "arr");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "ar ");
+}
+
+#[test]
+fn test_english_word_with_a_digit_after_it() {
+    let mut e = new_test_engine(&[], true);
+    e.macro_enabled = true;
+    type_keys(&mut e, "issue1");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "issue1 ");
+}
+
+#[test]
+fn test_english_word_is_kept_when_committed_without_a_break() {
+    let mut e = new_test_engine(&[], true);
+    type_keys(&mut e, "issue");
+    e.commit_preedit();
+    assert_eq!(e.commit_text, "issue");
+
+    let mut e = new_test_engine(&[], true);
+    type_keys(&mut e, "issue");
+    e.process_key_event(KEY_RETURN, CONTROL_MASK);
+    assert_eq!(e.commit_text, "issue");
+}
+
+#[test]
 fn test_english_word_list_needs_auto_restore() {
     let mut e = new_test_engine(&[], true);
     e.auto_non_vn_restore = false;

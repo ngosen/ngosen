@@ -75,7 +75,6 @@ affronting
 affronts
 armrest
 armrests
-arr
 arraign
 arraigned
 arraigning
@@ -901,7 +900,6 @@ duffs
 dusts
 dustsheet
 dustsheets
-eff
 efface
 effaced
 effacement

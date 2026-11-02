@@ -80,10 +80,25 @@ def main():
         word
         for word, shown in changed
         if word in ALWAYS_IN
-        or (word not in LEFT_OUT and (shown not in shown_english or not re.search(r"(.)\1", word)))
+        or (
+            word not in LEFT_OUT
+            and len(word) > 3
+            and (shown not in shown_english or not re.search(r"(.)\1", word))
+        )
     ]
-    (ROOT / "bamboo-rs/src/engine/english-words.txt").write_text("\n".join(kept) + "\n")
-    print(f"{len(kept)} words")
+    shown_of = dict(changed)
+    names = english([shown_of[word].capitalize() for word in kept])
+    shorter = [
+        word
+        for word in kept
+        if word not in ALWAYS_IN
+        and re.search(r"(.)\1", word)
+        and shown_of[word].capitalize() in names
+    ]
+    engine = ROOT / "bamboo-rs/src/engine"
+    (engine / "english-words.txt").write_text("\n".join(kept) + "\n")
+    (engine / "english-words-shorter-capitalized.txt").write_text("\n".join(shorter) + "\n")
+    print(f"{len(kept)} words, {len(shorter)} shorter when capitalized")
 
 
 if __name__ == "__main__":

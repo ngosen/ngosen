@@ -1,4 +1,4 @@
-english-words.txt is derived from the hunspell en_US dictionary, itself from SCOWL
+The english-words files are derived from the hunspell en_US dictionary, itself from SCOWL
 (https://wordlist.aspell.net), by misc/gen-english-words.py.
 
 Copyright 2000-2026 by Kevin Atkinson

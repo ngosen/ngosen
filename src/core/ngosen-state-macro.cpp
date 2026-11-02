@@ -33,8 +33,8 @@ namespace ngosen {
         NGOSEN_INFO("Commit: — (em-dash)");
     }
 
-    bool TypingState::expandMacroBeforeEnter(ngosen::KeyPress& keyEvent) {
-        if (oldPreBuffer_.empty() || !engine_->options().enableMacro)
+    bool TypingState::finishWordBeforeEnter(ngosen::KeyPress& keyEvent) {
+        if (oldPreBuffer_.empty())
             return false;
         EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, keyEvent.states());
         const auto pulled = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
@@ -50,7 +50,7 @@ namespace ngosen {
             lastWord_.clear();
             return false;
         }
-        NGOSEN_INFO("Macro before Enter: " + logged(oldPreBuffer_) + " -> " + logged(expansion));
+        NGOSEN_INFO("Word before Enter: " + logged(oldPreBuffer_) + " -> " + logged(expansion));
         hasHistory_ = false;
         ResetEngine(bambooEngine_.handle());
         oldPreBuffer_.clear();

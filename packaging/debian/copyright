@@ -23,6 +23,16 @@ Copyright: 2018 Luong Thanh Lam <ltlam93@gmail.com>
            2026 Ngó Sen contributors
 License: LGPL-2.1-or-later
 
+Files: bamboo-rs/src/engine/english-words*
+Copyright: 2000-2026 Kevin Atkinson
+License: SCOWL
+ Permission to use, copy, modify, distribute, and sell any part of SCOWLv2, or
+ word lists created from it, is hereby granted without fee, provided that the
+ above copyright notice appears in all copies and that both the above
+ copyright notice and this notice appear in supporting documentation.  Kevin
+ Atkinson makes no representations about the suitability of this database for
+ any purpose.  It is provided "as is" without express or implied warranty.
+
 Files: bamboo-rs/vendor/bamboo-core/*
 Copyright: 2018 Luong Thanh Lam <ltlam93@gmail.com>
            2024 nguien <nguyen10t2lhp@gmail.com>

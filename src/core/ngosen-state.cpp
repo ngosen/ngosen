@@ -266,7 +266,7 @@ namespace ngosen {
                 ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
                 oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
             } else {
-                if (expandMacroBeforeEnter(keyEvent))
+                if (finishWordBeforeEnter(keyEvent))
                     return;
                 hasHistory_ = false;
                 ResetEngine(bambooEngine_.handle());

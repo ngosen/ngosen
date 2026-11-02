@@ -2069,6 +2069,11 @@ namespace {
             const std::string preedit = ngosen::test::telexOutput(resources, keys);
             check(preedit.rfind("issue", 0) == 0, "preedit: issue keeps both letters before key " + std::to_string(end), preedit);
         }
+        ngosen::test::FakeResources noMacros;
+        noMacros.mutableOptions().enableMacro = false;
+        const auto        enterKeys           = typed("issue", ngosen::key::Return);
+        const std::string senNoMacros         = ngosen::test::typeInApp(noMacros, field, {}, enterKeys, std::vector<int>(enterKeys.size(), 20));
+        check(senNoMacros.rfind("issue", 0) == 0, "sen: issue keeps both letters before Enter with macros off", senNoMacros);
         const std::string tab = ngosen::test::telexOutput(resources, typed("issue", ngosen::key::Tab));
         check(tab.rfind("issue", 0) == 0, "preedit: issue keeps both letters before Tab", tab);
         const auto        keys = typed("tesst", ngosen::key::space);

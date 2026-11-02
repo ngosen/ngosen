@@ -157,6 +157,8 @@ pub fn default_config() -> Config {
 // English words Telex keys would show without a letter (`issue` as `isue`). A doubled key can't be
 // told from one typed on purpose to undo a tone (`tesst` for "test") without knowing the word.
 const ENGLISH_WORDS: &str = include_str!("english-words.txt");
+// Those whose shorter form is a name: `Marry` is how people type "Mary", `marry` means marry.
+const WORDS_SHORTER_WHEN_CAPITALIZED: &str = include_str!("english-words-shorter-capitalized.txt");
 
 pub struct BambooEngine {
     pub(crate) preeditor: Engine,
@@ -324,8 +326,22 @@ impl BambooEngine {
         if raw == shown {
             return false;
         }
-        let raw = raw.to_ascii_lowercase();
-        ENGLISH_WORDS.lines().any(|word| word == raw)
+        // With macros on, a digit stays in the word instead of ending it.
+        let letters = raw.trim_end_matches(|c: char| c.is_ascii_digit());
+        let lower = letters.to_ascii_lowercase();
+        let listed = |words: &str| words.lines().any(|word| word == lower);
+        listed(ENGLISH_WORDS)
+            && !(letters.starts_with(|c: char| c.is_ascii_uppercase())
+                && listed(WORDS_SHORTER_WHEN_CAPITALIZED))
+    }
+
+    fn text_of_finished_word(&self) -> String {
+        let shown = self.get_preedit_string();
+        if self.lost_a_letter_of_english_word(&shown) {
+            self.raw_text()
+        } else {
+            shown
+        }
     }
 
     /// Commits a word break typed right after a key that appends it, such as `[[` -> `[`.
@@ -459,9 +475,7 @@ impl BambooEngine {
     }
 
     fn get_composed_string(&self, old_text: String) -> String {
-        if (has_any_vietnamese_rune(&old_text) && self.must_fallback_to_english())
-            || self.lost_a_letter_of_english_word(&old_text)
-        {
+        if has_any_vietnamese_rune(&old_text) && self.must_fallback_to_english() {
             return self.raw_text();
         }
         old_text
@@ -522,15 +536,7 @@ impl BambooEngine {
                     && Self::is_valid_state(state);
                 let text = match self.get_macro_text() {
                     Some(macro_text) if enter => macro_text,
-                    _ if enter || key_val == KEY_TAB => {
-                        let shown = self.get_preedit_string();
-                        if self.lost_a_letter_of_english_word(&shown) {
-                            self.raw_text()
-                        } else {
-                            shown
-                        }
-                    }
-                    _ => self.get_preedit_string(),
+                    _ => self.text_of_finished_word(),
                 };
                 self.commit_preedit_and_reset(text);
             }
@@ -558,8 +564,8 @@ impl BambooEngine {
     }
 
     pub fn commit_preedit(&mut self) {
-        let preedit = self.get_preedit_string();
-        self.commit_preedit_and_reset(preedit);
+        let text = self.text_of_finished_word();
+        self.commit_preedit_and_reset(text);
     }
 
     pub fn reset(&mut self) {

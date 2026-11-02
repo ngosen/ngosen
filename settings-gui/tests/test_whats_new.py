@@ -133,6 +133,15 @@ class TipLineTest(unittest.TestCase):
         line.click()
         self.assertEqual(window.sidebar.currentItem().text(), "What's new & tips")
 
+    def test_a_tip_with_room_is_not_cut(self):
+        for tip in whats_new_content.TIPS:
+            line = TipLine(tip["text"])
+            self.addCleanup(line.close)
+            line.resize(line.sizeHint())
+            line.show()
+            app.processEvents()
+            self.assertEqual(line.text(), tip["text"])
+
     def test_a_long_tip_is_cut_to_the_line(self):
         line = TipLine("word " * 80)
         line.resize(300, 30)

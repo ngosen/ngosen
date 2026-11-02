@@ -25,6 +25,7 @@ from qtpy.QtWidgets import (
 )
 
 from core import keymap, page_status
+from ui.components import NoWheelComboBox
 from ui.confirm import confirm
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
@@ -74,7 +75,7 @@ class KeymapEditorPage(BaseEditorPage):
         # Row 2: Original Input Method (Preset)
         bottom_row = QHBoxLayout()
         bottom_row.addWidget(QLabel(_("Original Input Method:")))
-        self.combo_preset = QComboBox()
+        self.combo_preset = NoWheelComboBox()
         self.combo_preset.addItems(keymap.PRESETS.keys())
         bottom_row.addWidget(self.combo_preset)
 
@@ -100,7 +101,7 @@ class KeymapEditorPage(BaseEditorPage):
         self.input_key.setMaxLength(1)
         self.input_key.setClearButtonEnabled(True)
 
-        self.combo_action = QComboBox()
+        self.combo_action = NoWheelComboBox()
         for action_code, action_name in keymap.BAMBOO_ACTIONS:
             self.combo_action.addItem(action_name, action_code)
 
@@ -289,7 +290,7 @@ class KeymapEditorPage(BaseEditorPage):
         row = self.table.rowCount()
         self.table.insertRow(row)
         self.table.setItem(row, 0, QTableWidgetItem(key))
-        cell_combo = QComboBox()
+        cell_combo = NoWheelComboBox()
         for code, name in keymap.BAMBOO_ACTIONS:
             cell_combo.addItem(name, code)
 

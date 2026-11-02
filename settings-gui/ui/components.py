@@ -15,7 +15,7 @@ from core.hotkeys import (
 from i18n import _
 from qtpy.QtCore import QEvent, Qt, Signal
 from qtpy.QtGui import QIcon, QKeySequence
-from qtpy.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
+from qtpy.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QWidget
 
 from ui.typography import emphasize, mute
 
@@ -31,6 +31,13 @@ MODIFIER_FLAGS = [
     (Qt.MetaModifier, "Super"),
     (Qt.ShiftModifier, "Shift"),
 ]
+
+
+class NoWheelComboBox(QComboBox):
+    """Leaves the wheel to the page: scrolling past a box must not change a saved choice."""
+
+    def wheelEvent(self, event):
+        event.ignore()
 
 
 class KeyCap(QLabel):

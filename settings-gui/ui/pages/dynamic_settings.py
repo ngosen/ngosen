@@ -50,6 +50,7 @@ from core import page_status
 from ui import brand
 from ui.components import (
     HotkeyEditorWidget,
+    NoWheelComboBox,
     SingleKeyCaptureWidget,
 )
 from ui.toolkit_switch import toolkit_field
@@ -518,7 +519,7 @@ class DynamicSettingsPage(QWidget):
         key, type_str, label, default, annotations = item
         val = str(self.current_values.get(key, default))
 
-        combo = QComboBox()
+        combo = NoWheelComboBox()
         combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self._controls[key] = combo
         enum_dict = annotations.get("Enum", {})

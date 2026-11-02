@@ -14,7 +14,6 @@ from qtpy.QtGui import QColor, QIcon
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
-    QComboBox,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -30,6 +29,7 @@ from qtpy.QtWidgets import (
 )
 
 from core import macros, page_status
+from ui.components import NoWheelComboBox
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget, with_hint_below
 from ui.typography import mute, page_title
@@ -69,6 +69,7 @@ class MacroEditorPage(BaseEditorPage):
         # Macro behavior toggles
         toggles_card = CardWidget()
         toggles_layout = QVBoxLayout()
+        self._hinted = {}
         self.cb_enable = QCheckBox(_("Enable Macro"))
         self.cb_capitalize = QCheckBox(_("Capitalize Macro"))
         self.cb_enable_off_mode = QCheckBox(_("Macro in Off Mode"))
@@ -82,7 +83,8 @@ class MacroEditorPage(BaseEditorPage):
             (self.cb_capitalize, "CapitalizeMacro"),
             (self.cb_enable_off_mode, "EnableMacroInOffMode"),
         ):
-            toggles_layout.addWidget(with_hint_below(box, _(HINTS[key]))[0])
+            self._hinted[key] = with_hint_below(box, _(HINTS[key]))[0]
+            toggles_layout.addWidget(self._hinted[key])
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText(_("Search macros..."))
@@ -103,10 +105,10 @@ class MacroEditorPage(BaseEditorPage):
         dynamic_layout = QVBoxLayout()
 
         # Hint text
-        hint_label = QLabel(_("Macros support dynamic placeholders: $TIME and $DATE."))
-        hint_label.setWordWrap(True)
-        mute(hint_label)
-        dynamic_layout.addWidget(hint_label)
+        self.placeholder_hint = QLabel(_("Macros support dynamic placeholders: $TIME and $DATE."))
+        self.placeholder_hint.setWordWrap(True)
+        mute(self.placeholder_hint)
+        dynamic_layout.addWidget(self.placeholder_hint)
 
         # Format Inputs
         fmt_container = QWidget()
@@ -116,7 +118,7 @@ class MacroEditorPage(BaseEditorPage):
         fmt_grid.setColumnStretch(2, 1)
 
         # Time Format
-        self.input_time_format = QComboBox()
+        self.input_time_format = NoWheelComboBox()
         self.input_time_format.setEditable(False)
         self.input_time_format.currentIndexChanged.connect(self._on_item_changed)
 
@@ -129,7 +131,7 @@ class MacroEditorPage(BaseEditorPage):
         fmt_grid.addWidget(self.input_time_format, 0, 1)
 
         # Date Format
-        self.input_date_format = QComboBox()
+        self.input_date_format = NoWheelComboBox()
         self.input_date_format.setEditable(False)
         self.input_date_format.currentIndexChanged.connect(self._on_item_changed)
 
@@ -163,9 +165,13 @@ class MacroEditorPage(BaseEditorPage):
         self.input_key.textChanged.connect(self._update_add_button_icon)
         self.input_val.textChanged.connect(self._update_add_button_icon)
 
-        input_layout.addWidget(QLabel(_("Abbreviation:")))
+        key_label = QLabel(_("Abbreviation:"))
+        key_label.setBuddy(self.input_key)
+        input_layout.addWidget(key_label)
         input_layout.addWidget(self.input_key, 1)
-        input_layout.addWidget(QLabel(_("Expanded Text:")))
+        value_label = QLabel(_("Expanded Text:"))
+        value_label.setBuddy(self.input_val)
+        input_layout.addWidget(value_label)
         input_layout.addWidget(self.input_val, 2)
         input_layout.addWidget(self.btn_add)
         content_layout.addLayout(input_layout)
@@ -241,7 +247,8 @@ class MacroEditorPage(BaseEditorPage):
 
     def _apply_locks(self):
         for key, control in self.controls.items():
-            control.setEnabled(locked_by(key, self.value_of) is None)
+            self._hinted.get(key, control).setEnabled(locked_by(key, self.value_of) is None)
+        self.placeholder_hint.setEnabled(self.input_time_format.isEnabled())
         self.time_label.setEnabled(self.input_time_format.isEnabled())
         self.date_label.setEnabled(self.input_date_format.isEnabled())
 

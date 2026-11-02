@@ -7,6 +7,8 @@ import unittest
 
 # isort: off
 from support import FakeDBusHandler, app
+from qtpy.QtCore import QPoint, QPointF, Qt
+from qtpy.QtGui import QWheelEvent
 from qtpy.QtWidgets import (
     QAbstractButton,
     QComboBox,
@@ -15,6 +17,7 @@ from qtpy.QtWidgets import (
     QScrollArea,
     QStyleFactory,
 )
+from ui.main_window import NgoSenSettingsWindow
 from ui.pages.macro_editor import MacroEditorPage
 
 from core import macros
@@ -38,22 +41,36 @@ class WordsTest(unittest.TestCase):
     def test_each_format_saves_its_own_value(self):
         fake = FakeDBusHandler()
         page = MacroEditorPage(fake)
-        for combo, key in (
-            (page.input_time_format, "TimeFormat"),
-            (page.input_date_format, "DateFormat"),
-        ):
+        for name, key in (("input_time_format", "TimeFormat"), ("input_date_format", "DateFormat")):
+            combo = getattr(page, name)
             for value in macros.FORMATS[key]:
                 combo.setCurrentIndex(combo.findData(value))
                 self.assertTrue(page.save_data())
                 self.assertEqual(fake.values[key], value)
-                fresh = MacroEditorPage(fake)
-                self.assertEqual(getattr(fresh, combo_name(page, combo)).currentData(), value)
+                self.assertEqual(getattr(MacroEditorPage(fake), name).currentData(), value)
 
     def test_the_editor_labels_match_the_table(self):
         texts = [label.text() for label in self.page.findChildren(QLabel)]
         self.assertIn("Abbreviation:", texts)
         self.assertIn("Expanded Text:", texts)
         self.assertNotIn("Key:", texts)
+
+    def test_the_editor_labels_lead_to_their_boxes(self):
+        buddies = {label.text(): label.buddy() for label in self.page.findChildren(QLabel)}
+        self.assertIs(buddies["Abbreviation:"], self.page.input_key)
+        self.assertIs(buddies["Expanded Text:"], self.page.input_val)
+
+    def test_the_hints_dim_with_their_switch(self):
+        hints = [
+            label
+            for label in self.page.findChildren(QLabel)
+            if label.text().startswith(("kg gives", "Abbreviations also", "Macros support"))
+        ]
+        self.assertEqual(len(hints), 3)
+        self.page.cb_enable.setChecked(False)
+        self.assertEqual([hint.isEnabled() for hint in hints], [False] * 3)
+        self.page.cb_enable.setChecked(True)
+        self.assertEqual([hint.isEnabled() for hint in hints], [True] * 3)
 
     def test_new_texts_have_a_vietnamese_text(self):
         po = os.path.join(os.path.dirname(__file__), "..", "..", "po", "vi.po")
@@ -68,11 +85,47 @@ class WordsTest(unittest.TestCase):
             self.assertRegex(text, f'msgid "{re.escape(msgid)}"\\nmsgstr "[^"]+"')
 
 
-def combo_name(page, combo):
-    return "input_time_format" if combo is page.input_time_format else "input_date_format"
+def wheel_down(widget):
+    center = QPointF(widget.rect().center())
+    event = QWheelEvent(
+        center,
+        QPointF(widget.mapToGlobal(widget.rect().center())),
+        QPoint(0, 0),
+        QPoint(0, -120),
+        Qt.NoButton,
+        Qt.NoModifier,
+        Qt.NoScrollPhase,
+        False,
+    )
+    app.sendEvent(widget, event)
+    return event
+
+
+class WheelTest(unittest.TestCase):
+    def test_the_wheel_changes_no_combo_box_in_the_window(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        self.addCleanup(window.close)
+        combos = [c for c in window.findChildren(QComboBox) if c.count() > 1 and c.isEnabled()]
+        self.assertGreater(len(combos), 3)
+        for combo in combos:
+            combo.setCurrentIndex(0)
+            wheel_down(combo)
+            self.assertEqual(combo.currentIndex(), 0, combo)
+
+    def test_a_format_box_leaves_the_wheel_to_the_page(self):
+        page = MacroEditorPage(FakeDBusHandler())
+        self.assertFalse(wheel_down(page.input_time_format).isAccepted())
 
 
 class ScrollTest(unittest.TestCase):
+    def test_the_format_boxes_take_a_row_each(self):
+        page = MacroEditorPage(FakeDBusHandler())
+        page.resize(550, 400)
+        page.show()
+        self.addCleanup(page.close)
+        app.processEvents()
+        self.assertGreater(page.input_date_format.y(), page.input_time_format.y())
+
     def test_every_control_can_be_reached_at_the_smallest_window(self):
         self.assert_every_control_can_be_reached()
 

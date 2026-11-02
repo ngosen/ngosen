@@ -52,10 +52,26 @@ class TypingPageTest(unittest.TestCase):
             row_labels(form_of(self.page))[:3], ["Mode:", "Input Method:", "Output Charset:"]
         )
 
-    def test_options_are_grouped(self):
+    def test_groups_keep_their_order(self):
         labels = row_labels(form_of(self.page))
-        self.assertIn("Tone marks:", labels)
-        self.assertIn("Quick typing:", labels)
+        groups = ["Fixing words:", "Tone marks:", "Typing keys:", "Quick typing:"]
+        self.assertEqual([label for label in labels if label in groups], groups)
+
+    def test_a_group_of_combo_boxes_shows_its_name_above_them(self):
+        labels = row_labels(form_of(self.page))
+        self.assertEqual(
+            labels[labels.index("Typing keys:") + 1 :][:3],
+            [
+                "Type w to Produce ư:",
+                "Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư:",
+                "Key to Keep the Word as Typed:",
+            ],
+        )
+
+    def test_auto_restore_comes_before_what_depends_on_it(self):
+        shown = list(self.page._controls)
+        self.assertLess(shown.index("AutoNonVnRestore"), shown.index("SpellCheck"))
+        self.assertLess(shown.index("AutoNonVnRestore"), shown.index("DdFreeStyle"))
 
     def test_hint_sits_under_its_setting(self):
         cb = next(
@@ -63,10 +79,6 @@ class TypingPageTest(unittest.TestCase):
         )
         hints = [w.text() for w in cb.parentWidget().findChildren(QLabel)]
         self.assertIn("Typing windows still gives windows.", hints)
-
-    def test_lock_key_sits_under_tone_marks(self):
-        labels = row_labels(form_of(self.page))
-        self.assertLess(labels.index("Tone marks:"), labels.index("Key to Keep the Word as Typed:"))
 
     def test_hints_take_one_line(self):
         self.page.resize(760, 900)
@@ -150,6 +162,9 @@ class AppearancePageTest(unittest.TestCase):
     def setUp(self):
         self.fake = FakeDBusHandler({"ShowMenuCharset": "True"})
         self.page = DynamicSettingsPage(self.fake, category=SettingsCategory.APPEARANCE)
+
+    def test_language_stays_first(self):
+        self.assertEqual(row_labels(form_of(self.page))[0], "Interface Language:")
 
     def menu_checkbox(self, text):
         return next(c for c in self.page.findChildren(QCheckBox) if c.text() == text)

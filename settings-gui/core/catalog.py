@@ -14,6 +14,8 @@ class SettingsCategory(Enum):
     SHORTCUTS = "shortcuts"
 
 
+TYPING_GROUP = N_("Typing")
+TYPING_KEYS = N_("Typing keys")
 MODE_SWITCHING = N_("Mode switching")
 TRAY_ICON = N_("Tray icon")
 
@@ -42,25 +44,22 @@ MENU_ICON_FALLBACKS = {
 # Groups show in this order; the first checkbox of a group carries the group name.
 SETTINGS_MAP = {
     SettingsCategory.TYPING: {
-        N_("Typing"): ["Mode", "InputMethod", "OutputCharset"],
-        N_("Tone marks"): [
-            "SpellCheck",
+        TYPING_GROUP: ["Mode", "InputMethod", "OutputCharset"],
+        # The switch others depend on comes first.
+        N_("Fixing words"): [
             "AutoNonVnRestore",
-            "LockWordModifier",
+            "SpellCheck",
             "DdFreeStyle",
-            "ModernStyle",
-            "FreeMarking",
-            "BackspaceRemovesTone",
-            "W2U",
-            "BracketTransform",
+            "RetypeAfterSwitch",
+            "RetoneSelection",
         ],
+        N_("Tone marks"): ["ModernStyle", "FreeMarking", "BackspaceRemovesTone"],
+        TYPING_KEYS: ["W2U", "BracketTransform", "LockWordModifier"],
         N_("Quick typing"): [
             "DoubleSpaceToPeriod",
             "DoubleHyphenToEmDash",
             "AutoCapitalizeAfterPunctuation",
             "CapitalizeStartOfText",
-            "RetypeAfterSwitch",
-            "RetoneSelection",
         ],
     },
     SettingsCategory.SHORTCUTS: {
@@ -80,6 +79,9 @@ SETTINGS_MAP = {
         N_("Settings Window"): ["SettingsToolkit"],
     },
 }
+
+# These groups have no checkbox to carry their name, so the Qt window gives it a line of its own.
+GROUPS_WITH_NAME_LINE = {TYPING_KEYS}
 
 # One line under a setting, saying what the user sees.
 HINTS = {

@@ -6,7 +6,7 @@ import unittest
 # isort: off
 from support import FakeDBusHandler, app
 from core.text import fold
-from qtpy.QtWidgets import QTabWidget
+from qtpy.QtWidgets import QComboBox, QTabWidget
 from ui.main_window import NgoSenSettingsWindow
 
 # isort: on
@@ -50,6 +50,12 @@ class SearchTest(unittest.TestCase):
         self.assertEqual(tabs.tabText(tabs.currentIndex()), "Keymap")
         self.assertEqual(self.window.search_field.text(), "")
         self.assertTrue(self.window.sidebar.isVisible())
+
+    def test_a_group_name_opens_its_first_setting(self):
+        self.window.search_field.setText("typing keys")
+        self.open_result("Typing keys")
+        self.assertEqual(self.window.sidebar.currentItem().text(), "Typing")
+        self.assertIsInstance(self.window.focusWidget(), QComboBox)
 
     def test_no_match_says_so(self):
         self.window.search_field.setText("zzzz")

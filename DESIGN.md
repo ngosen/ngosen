@@ -68,7 +68,8 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
   its form.
 - Page: title in the system font (semibold, about 1.3× body), then a form layout (`QFormLayout`):
   labels right-aligned with a colon, controls left-aligned. Groups are separated by a thin line,
-  the group name in the label column ("Cách bỏ dấu:", "Gõ nhanh:").
+  the group name in the label column ("Cách bỏ dấu:", "Gõ nhanh:"). A group with no checkbox to
+  carry the name ("Phím gõ:") gets a line of its own.
 - The most common changes come first on Gõ chữ: Chế độ gõ, Kiểu gõ, Bảng mã.
 - Bottom bar: Mặc định on the left; Sao lưu… and Khôi phục… on the right.
 

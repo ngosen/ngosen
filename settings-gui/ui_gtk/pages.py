@@ -9,6 +9,7 @@ from core.catalog import (
     MODE_BUTTON_ORDER,
     SETTINGS_MAP,
     TYPING_EXAMPLES,
+    TYPING_GROUP,
     SettingsCategory,
 )
 from gi.repository import Adw, Gtk
@@ -36,7 +37,8 @@ class SettingsPage:
         self.page = Adw.PreferencesPage(title=title, icon_name=icon)
         self._add_header()
         for title, keys in SETTINGS_MAP[category].items():
-            group = Adw.PreferencesGroup(title=_(title))
+            # The page title already says this one.
+            group = Adw.PreferencesGroup(title="" if title == TYPING_GROUP else _(title))
             for key in keys:
                 item = model.metadata.get(key)
                 if item:

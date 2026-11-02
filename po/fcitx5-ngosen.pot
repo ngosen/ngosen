@@ -1006,7 +1006,15 @@ msgstr ""
 msgid "Change undone."
 msgstr ""
 
-#: settings-gui/ui/pages/dynamic_settings.py
+#: settings-gui/core/catalog.py
+msgid "Fixing words"
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "Typing keys"
+msgstr ""
+
+#: settings-gui/core/catalog.py
 msgid "Tone marks"
 msgstr ""
 

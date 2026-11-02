@@ -6,6 +6,7 @@ Dynamic Settings Page with Card-based Layout matching modern guidelines.
 """
 
 from core.catalog import (
+    GROUPS_WITH_NAME_LINE,
     HINTS,
     LANGUAGE_NAMES,
     MENU_ENTRIES,
@@ -246,6 +247,12 @@ class DynamicSettingsPage(QWidget):
                     self._render_mode_list(_(group) + ":")
                     continue
                 group_label = _(group) + ":"
+                name_line = None
+                shown = [k for k in keys if k in self.all_metadata]
+                if group in GROUPS_WITH_NAME_LINE and shown:
+                    name_line = QLabel(group_label)
+                    self.form.addRow(name_line, QWidget())
+                    group_label = ""
                 for k in keys:
                     item = self.all_metadata.get(k)
                     if not item:
@@ -263,6 +270,9 @@ class DynamicSettingsPage(QWidget):
                     elif item[1] == "Boolean":
                         self._render_checkbox(item, group_label)
                         group_label = ""
+                if name_line:
+                    # Search opens the group at its first setting.
+                    name_line.setBuddy(self._controls.get(shown[0]))
                 if group == TRAY_ICON:
                     self._render_tray_preview()
 

@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Khi bật tự khôi phục (mặc định), gõ issue, sorry, coffee không còn mất chữ thành isue, sory, cofee; tests không còn ra tets. Gõ đúp để bỏ dấu vẫn như cũ: tesst ra test, iss ra is, off ra of (#534).
+- Gõ Sen trên GNOME: gõ chậm trong Firefox không còn khiến Ngó Sen chuyển hẳn sang xoá bằng BackSpace sau vài từ đầu, làm mỗi từ gõ lâu hơn dù chữ vẫn đúng. Ngó Sen nay chờ app báo lại lần xoá tới 1 giây, không bỏ surrounding text chỉ vì app im lặng; app bỏ lệnh xoá hoặc xoá sai thì vẫn chuyển sang BackSpace (#515).
 
 ## [1.7.6-1] — 02/11/2026
 
@@ -30,7 +31,6 @@ Tải ở [ngosen-1.7.6-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 - Gõ Sen trong Google Docs và Google Slides trên Chrome, Edge, Brave, Opera, Vivaldi trên X11: thêm dấu không còn ra chữ lặp như "trenên" thay vì "trên", "dauâuấu" thay vì "dấu" (#523, #527).
 - Cửa sổ cài đặt: giữ lựa chọn từ điển, gõ tắt đổi ở menu khay khi lưu trang đó (#517).
 - Cửa sổ cài đặt: bản Qt nói rõ nút Mặc định xoá dữ liệu đã lưu và có thể hoàn tác ngay (#517).
-- Gõ Sen trên GNOME: gõ chậm trong Firefox không còn khiến Ngó Sen chuyển hẳn sang xoá bằng BackSpace sau vài từ đầu, làm mỗi từ gõ lâu hơn dù chữ vẫn đúng. Ngó Sen nay chờ app báo lại lần xoá tới 1 giây, không bỏ surrounding text chỉ vì app im lặng; app bỏ lệnh xoá hoặc xoá sai thì vẫn chuyển sang BackSpace (#515).
 - Cửa sổ cài đặt: bản GTK trên GNOME không còn hiện icon ảnh vỡ ở các bước Kiểm tra máy đã đạt; bản Qt không còn cắt cụt dòng Mẹo khi vẫn còn chỗ; "Không phải đầu từ" đổi thành "Trong từ" và "Phím tắt cho Chế độ gõ mặc định" thành "Phím tắt cho Mặc định" để không bị cắt chữ (#514).
 - Kiểm tra máy trên GNOME: nay báo khi thiếu hoặc chưa bật extension Input Method Panel, vì thiếu nó thì menu chế độ `` ` `` và gợi ý Cứu chữ, Cứu dấu không hiện trong ô tìm kiếm của GNOME (#507).
 - GNOME: lệnh cài nay luôn thêm extension Input Method Panel, kể cả khi đã có khay như Ubuntu, để menu chế độ `` ` `` hiện được trong ô tìm kiếm của GNOME và fcitx5 không còn nhắc cài extension mỗi lần đăng nhập. Menu khay ghi rõ "Kiểu gõ (Telex)", "Bảng mã (Unicode)" và đánh dấu ✔ lựa chọn đang dùng; menu chế độ ghi "App: cửa sổ này" thay cho mã nội bộ khi GNOME không cho biết tên app (#506).

@@ -40,7 +40,7 @@ msgstr "Tắt"
 
 #: src/ngosen-config.h:58 src/ngosen-config.h:69
 msgid "Non-Start"
-msgstr "Không phải đầu từ"
+msgstr "Trong từ"
 
 #: src/ngosen-config.h:58 src/ngosen-config.h:69
 msgid "Everywhere"
@@ -269,7 +269,7 @@ msgstr "Hiển thị chế độ gõ mặc định"
 
 #: src/ngosen-config.h:264
 msgid "Shortcut for Default Typing"
-msgstr "Phím tắt cho Chế độ gõ mặc định"
+msgstr "Phím tắt cho Mặc định"
 
 #: src/ngosen-config.h:265
 msgid "Allow Macro in Off Mode"
@@ -350,6 +350,9 @@ msgstr "Gõ"
 #: src/ngosen-engine.cpp:1074
 msgid "App: "
 msgstr "App: "
+
+msgid "this window"
+msgstr "cửa sổ này"
 
 #: src/ngosen-engine.cpp:1099
 msgid "Unknown Mode"
@@ -1277,6 +1280,22 @@ msgid "GNOME {} drops the keys Ngó Sen sends to apps"
 msgstr "GNOME {} làm rơi phím Ngó Sen gửi cho app"
 
 #: settings-gui/core/system_check.py
+msgid "Menu and hints do not show in GNOME's search box"
+msgstr "Menu và gợi ý không hiện trong ô tìm kiếm của GNOME"
+
+#: settings-gui/core/system_check.py
+msgid "Run install.sh again, or install Input Method Panel from {}, then log out and back in."
+msgstr "Chạy lại install.sh, hoặc cài Input Method Panel ở {}, rồi đăng xuất và đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "The installed Input Method Panel does not run; update it from {}."
+msgstr "Input Method Panel đã cài không chạy được; cập nhật ở {}."
+
+#: settings-gui/core/system_check.py
+msgid "Turn on Input Method Panel: gnome-extensions enable {}. If it still does not show, log out and back in."
+msgstr "Bật Input Method Panel: gnome-extensions enable {}. Nếu vẫn không hiện, đăng xuất rồi đăng nhập lại."
+
+#: settings-gui/core/system_check.py
 msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
 msgstr "Bật bản sửa: gnome-extensions enable {}. Nếu vẫn mất phím thì đăng xuất rồi đăng nhập lại."
 
@@ -1431,7 +1450,7 @@ msgstr "hoà, khoẻ, thuý, tuỳ. Tắt: hòa, khỏe, thúy, tùy."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Non-Start: nhw → như, but w alone stays w. Everywhere: w alone gives ư too. uw always gives ư."
-msgstr "Không phải đầu từ: nhw → như, còn w đứng riêng vẫn là w. Mọi nơi: w đứng riêng cũng ra ư. uw thì luôn ra ư."
+msgstr "Trong từ: nhw → như, còn w đứng riêng vẫn là w. Mọi nơi: w đứng riêng cũng ra ư. uw thì luôn ra ư."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "ch]a → chưa, m[f → mờ. Type a bracket twice to get it back: [[ → [."
@@ -1594,7 +1613,7 @@ msgstr "Đưa về mặc định…"
 msgid "Menu"
 msgstr "Menu"
 
-#: settings-gui/ui_gtk/window.py
+#: settings-gui/core/defaults.py
 msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
 msgstr "Gõ tắt, từ đã thêm vào từ điển, phím tự đặt và kiểu gõ đã nhớ cho từng app cũng bị xoá. Có thể hoàn tác ngay sau đó."
 

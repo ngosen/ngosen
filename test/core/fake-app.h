@@ -47,6 +47,7 @@ namespace ngosen::test {
         bool announcesSelection     = false; // makes a selection the X11 primary selection, as Chromium on X11 does
         bool ignoresSurroundingDel  = false; // takes no deletion through its surrounding text, as WPS over D-Bus does
         bool reportsEmptyText       = false; // declares surrounding text but reports none and drops deletions through it, as Konsole does
+        bool neverSendsText         = false; // declares surrounding text but never sends any, as WPS's own fcitx4 module does
         // Turns a deletion of characters into bytes on the text it reported last, as mutter does for
         // text-input-v3 and fcitx5 does on Wayland.
         bool convertsDeleteOnReportedCopy = false;
@@ -83,6 +84,8 @@ namespace ngosen::test {
         void moveCursor(size_t to);
         // Selects from anchor to cursor, as Shift+arrows or a double click do; typing replaces it.
         void select(size_t anchor, size_t cursor);
+        // Leaves focus for ms and takes it back, as WPS does when it opens a window on a double click.
+        void leaveFocus(int ms);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.

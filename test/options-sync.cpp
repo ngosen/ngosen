@@ -180,10 +180,10 @@ int main() {
     auto* vni   = dynamic_cast<fcitx::SimpleAction*>(ui.lookupAction("ngosen-input-method-VNI"));
     check("input method menu lists Telex and VNI", telex != nullptr && vni != nullptr);
     if (telex != nullptr && vni != nullptr) {
-        check("the current method is checked", vni->isChecked(&context) && !telex->isChecked(&context));
+        check("the current method is marked", vni->shortText(&context) == "✔ VNI" && telex->shortText(&context) == "Telex");
         telex->activate(&context);
         check("input method menu changes the copy", engine.options().inputMethod == "Telex");
-        check("the picked method is checked", telex->isChecked(&context) && !vni->isChecked(&context));
+        check("the picked method is marked", telex->shortText(&context) == "✔ Telex" && vni->shortText(&context) == "VNI");
         checkMatches("input method menu", engine);
     }
 

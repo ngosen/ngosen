@@ -39,6 +39,18 @@ int main() {
     expect("no old tails and a stale copy", ngosen::countSurroundingDeletion("tie", "ti", "ê", {}), Match::None, 1);
     expect("the word would have to be crossed", ngosen::countSurroundingDeletion("ê", "", "e", {"ê"}), Match::None, 1);
 
+    // mutter turns the count into bytes on its copy; a copy behind the app gives the wrong number.
+    auto wrongBytes = [](const std::string& name, const ngosen::SurroundingDeletion& got, bool want) {
+        if (got.wrongBytes == want)
+            return;
+        std::cerr << "FAIL: " << name << ": wrongBytes=" << got.wrongBytes << '\n';
+        ++failures;
+    };
+    wrongBytes("an empty copy cannot hold the deleted letter", ngosen::countSurroundingDeletion("", "vi", "e", {}), true);
+    wrongBytes("a one-byte letter for a one-byte part", ngosen::countSurroundingDeletion("v", "vi", "e", {}), false);
+    wrongBytes("one-byte letters for a part with ê", ngosen::countSurroundingDeletion("vi", "vi", "êt", {}), true);
+    wrongBytes("a fresh copy", ngosen::countSurroundingDeletion("tiê", "ti", "ê", {"tie"}), false);
+
     using Verdict = ngosen::SurroundingVerdict;
     expectVerdict("the replaced word", ngosen::judgeSurroundingReport("nam tiê", "ti", "e", "ê", 0), Verdict::Correct);
     expectVerdict("the replaced word with keys typed after it", ngosen::judgeSurroundingReport("nam tiên", "ti", "e", "ê", 1), Verdict::Correct);

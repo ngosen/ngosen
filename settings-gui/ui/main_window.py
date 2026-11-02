@@ -392,12 +392,11 @@ class NgoSenSettingsWindow(QMainWindow):
         self.save_pending()
         model = SettingsModel(self.dbus_handler)
         model.load()
-        note = defaults.toggle_key_note(model)
         question = _("Restore all settings to defaults?")
         if confirm(
             self,
             _("Confirm Reset"),
-            f"{question}\n\n{note}" if note else question,
+            f"{question}\n\n{defaults.warning(model)}",
             _("&Restore defaults"),
         ):
             self._build_all_pages()

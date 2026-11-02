@@ -350,6 +350,9 @@ msgstr ""
 msgid "App: "
 msgstr ""
 
+msgid "this window"
+msgstr ""
+
 #: src/ngosen-engine.cpp:1099
 msgid "Unknown Mode"
 msgstr ""
@@ -1212,6 +1215,22 @@ msgid "GNOME {} drops the keys Ngó Sen sends to apps"
 msgstr ""
 
 #: settings-gui/core/system_check.py
+msgid "Menu and hints do not show in GNOME's search box"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Run install.sh again, or install Input Method Panel from {}, then log out and back in."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "The installed Input Method Panel does not run; update it from {}."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Turn on Input Method Panel: gnome-extensions enable {}. If it still does not show, log out and back in."
+msgstr ""
+
+#: settings-gui/core/system_check.py
 msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
 msgstr ""
 
@@ -1508,7 +1527,7 @@ msgstr ""
 msgid "Menu"
 msgstr ""
 
-#: settings-gui/ui_gtk/window.py
+#: settings-gui/core/defaults.py
 msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
 msgstr ""
 

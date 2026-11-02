@@ -30,8 +30,13 @@ namespace ngosen {
         const bool        bounce = targetMode == ngosen::Mode::Sen && lastDeactivateTime_ > 0 && now - lastDeactivateTime_ < FocusBounceMs;
         const bool        resume = bounce && deletionInterruptedAt_ > 0 && is_deleting_.load();
         deletionInterruptedAt_   = 0;
+        if (key_report_pending_ && !resume) {
+            key_report_timer_.reset();
+            dropReplacementAfterFocusLoss();
+        }
         // A page may move focus into its text field after the user selected text elsewhere on it.
-        if (isFocusIn)
+        // A bounce keeps it: WPS opens a window on a double click and takes focus straight back.
+        if (isFocusIn && !bounce)
             forgetSelection();
         if (!resume)
             is_deleting_.store(false);
@@ -87,8 +92,11 @@ namespace ngosen {
     void TypingState::deactivate(bool isFocusOut) {
         enter_after_replacement_ = false; // an Enter would land in the next field
         flushPendingReplacement();        // commit pending text into the field we are leaving
-        if (isFocusOut)
+        if (isFocusOut) {
             commitNotSeen_.clear();
+            overtype_focus_bounced_         = overtype_pending_;
+            field_keeps_focus_on_selection_ = false;
+        }
         lastDeactivateTime_ = nowMs();
         if (mode() == ngosen::Mode::Preedit && !isFocusOut) {
             commitBuffer();
@@ -107,7 +115,9 @@ namespace ngosen {
         retype_.reset();
         dropRetoneKey();
         // Keys typed while another input method is active never reach us to take the selection.
-        forgetSelection();
+        // On focus out, activate() decides once it knows whether focus only bounced.
+        if (!isFocusOut)
+            forgetSelection();
         host_->resetPanel();
         host_->refreshPanel();
         if (mode() == ngosen::Mode::Preedit || mode() == ngosen::Mode::Emoji)

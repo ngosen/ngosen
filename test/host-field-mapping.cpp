@@ -202,6 +202,11 @@ namespace {
         check("a Vivaldi field without a selection does not select over autocompletion", !ngosen::selectsOverAutocompletion(vivaldi));
         vivaldi.caretWidth = 73;
         check("the Vivaldi address bar autocompletion is selected over", ngosen::selectsOverAutocompletion(vivaldi));
+        vivaldi.caretWidth  = 2;
+        vivaldi.caretHeight = 17;
+        check("the thin caret of Google Docs in Vivaldi is not selected over", !ngosen::selectsOverAutocompletion(vivaldi));
+        vivaldi.caretHeight = 9;
+        check("the caret of small text in Vivaldi is not selected over", !ngosen::selectsOverAutocompletion(vivaldi));
         auto terminal             = field("dbus", "gnome-terminal-server");
         terminal.keyEventOrderFix = true;
         check("a terminal does not select over autocompletion", !ngosen::selectsOverAutocompletion(terminal));

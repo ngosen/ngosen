@@ -93,7 +93,9 @@ class Dictionary:
         if config_data:
             values = config_data.get("values", {})
             previous = values.get("EnableDictionary")
-            values["EnableDictionary"] = "True" if self.enabled else "False"
+            # The tray menu may have changed the switch since this page read it.
+            if self.enabled != self.saved_state["EnableDictionary"]:
+                values["EnableDictionary"] = "True" if self.enabled else "False"
             if not self.dbus.set_config(values):
                 return False
         elif not self.dbus.iface:

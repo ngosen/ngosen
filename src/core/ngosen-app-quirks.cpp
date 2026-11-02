@@ -103,9 +103,10 @@ namespace ngosen {
             return false;
         const std::string program = appName(field);
         // Vivaldi draws its address bar as a web page field, so only the selected autocompletion sets it
-        // apart from a zero-width page caret.
+        // apart from the caret of a page field. Google Docs and Slides report that caret 2 wide at any
+        // text size, so comparing with the height would take small text for a selection.
         if (isStartsWith(program, "vivaldi"))
-            return true;
+            return field.caretWidth > 2;
         // Chromium reports a thin caret for its own text fields. A web page field with a selection reports
         // the selection instead (Google Sheets autocompletion), and Shift+Left there loses text.
         if (field.caretWidth * 8 > field.caretHeight)
@@ -114,10 +115,16 @@ namespace ngosen {
         return isChromiumBrowser(program);
     }
 
+    bool focusChangeShowsBrowserField(const Field& field) {
+        return field.frontend == "dbus" && !isStartsWith(appName(field), "vivaldi");
+    }
+
     bool typesOverPrimarySelection(const Field& field) {
         // Terminals, Emacs and Vim also own the primary selection and report the same, but type elsewhere.
         const std::string program = appName(field);
-        return !field.surroundingText && (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc"));
+        // WPS Writer, Spreadsheets and Presentation.
+        const bool wps = program == "wps" || program == "et" || program == "wpp";
+        return isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || wps;
     }
 
     bool surroundingTextLags(const Field& field) {

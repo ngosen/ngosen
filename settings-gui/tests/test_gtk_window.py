@@ -109,13 +109,13 @@ class GtkWindowTest(unittest.TestCase):
             page.mode_buttons[mode].set_active(True)
             self.assertEqual(page.rows["Mode"].get_subtitle(), MODE_HINTS[mode], mode)
 
-    def test_a_mode_changed_from_the_tray_moves_the_button_and_the_line(self):
+    def test_a_mode_saved_outside_the_window_moves_the_button_and_the_line(self):
         page = self.window.typing
-        self.dbus.values["Mode"] = "OFF"
+        self.dbus.values["Mode"] = "Preedit"
         before = dict(self.dbus.values)
         page.refresh_status()
-        self.assertTrue(page.mode_buttons["OFF"].get_active())
-        self.assertEqual(page.rows["Mode"].get_subtitle(), MODE_HINTS["OFF"])
+        self.assertTrue(page.mode_buttons["Preedit"].get_active())
+        self.assertEqual(page.rows["Mode"].get_subtitle(), MODE_HINTS["Preedit"])
         self.assertEqual(self.dbus.values, before)
 
     def test_show_page_switches_and_ignores_pages_not_built_yet(self):

@@ -572,7 +572,6 @@ class DynamicSettingsPage(QWidget):
 
     def _render_mode_buttons(self, item):
         key, type_str, label, default, annotations = item
-        val = str(self.current_values.get(key, default))
         row = QWidget()
         row.setObjectName("ModeButtons")
         row.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -586,7 +585,6 @@ class DynamicSettingsPage(QWidget):
                 continue
             button = QPushButton(_(mode))
             button.setCheckable(True)
-            button.setChecked(mode == val)
             button.clicked.connect(lambda _checked=False, m=mode: self.update_config(key, m))
             group.addButton(button)
             layout.addWidget(button)

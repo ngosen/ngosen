@@ -1857,8 +1857,8 @@ msgid "Restore &defaults…"
 msgstr "Đưa về &mặc định…"
 
 #: settings-gui/core/catalog.py
-msgid "Text goes straight into the app, with no underline."
-msgstr "Chữ đi thẳng vào app, không có gạch dưới."
+msgid "Text goes straight into the app as you type."
+msgstr "Chữ đi thẳng vào app ngay khi gõ."
 
 #: settings-gui/core/catalog.py
 msgid "The word is underlined until it is done. Use it in an app that Sen does not work with."
@@ -1869,5 +1869,5 @@ msgid "Type an emoji name, then pick from the list."
 msgstr "Gõ tên emoji rồi chọn trong danh sách."
 
 #: settings-gui/core/catalog.py
-msgid "Types plain letters, with no tone marks."
-msgstr "Gõ chữ thường, không thêm dấu."
+msgid "To type English, press the English/Vietnamese key."
+msgstr "Muốn gõ tiếng Anh, bấm phím chuyển Anh/Việt."

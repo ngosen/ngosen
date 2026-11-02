@@ -342,13 +342,13 @@ class ModeHintTest(unittest.TestCase):
         self.assertGreater(heights["Preedit"][0], heights["Sen"][0])
         self.assertEqual(heights["Sen"][0], heights["Sen"][1])
 
-    def test_a_mode_changed_from_the_tray_moves_the_button_and_the_line(self):
+    def test_a_mode_saved_outside_the_window_moves_the_button_and_the_line(self):
         fake = FakeDBusHandler()
         page = self.page(fake)
-        fake.values["Mode"] = "OFF"
+        fake.values["Mode"] = "Preedit"
         page.refresh_status()
-        self.assertTrue(self.button(page, "OFF").isChecked())
-        self.assertEqual(page._mode_hint.text(), MODE_HINTS["OFF"])
+        self.assertTrue(self.button(page, "Preedit").isChecked())
+        self.assertEqual(page._mode_hint.text(), MODE_HINTS["Preedit"])
 
     def test_search_does_not_find_the_line(self):
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
@@ -362,8 +362,8 @@ class ModeHintTest(unittest.TestCase):
 
 
 class HintTest(unittest.TestCase):
-    # The input method shows a typing example, the mode keys share one line under their list, and
-    # the menu entries are named by their checkboxes.
+    # The input method shows a typing example, the mode line follows the picked mode, the mode keys
+    # share one line under their list, and the menu entries are named by their checkboxes.
     NO_HINT = {"InputMethod", "Mode", *MENU_ENTRIES}
 
     def test_every_option_explains_itself(self):

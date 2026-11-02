@@ -1765,7 +1765,7 @@ msgid "Restore &defaults…"
 msgstr ""
 
 #: settings-gui/core/catalog.py
-msgid "Text goes straight into the app, with no underline."
+msgid "Text goes straight into the app as you type."
 msgstr ""
 
 #: settings-gui/core/catalog.py
@@ -1777,5 +1777,5 @@ msgid "Type an emoji name, then pick from the list."
 msgstr ""
 
 #: settings-gui/core/catalog.py
-msgid "Types plain letters, with no tone marks."
+msgid "To type English, press the English/Vietnamese key."
 msgstr ""

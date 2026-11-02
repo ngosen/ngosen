@@ -1070,6 +1070,14 @@ msgid "Change undone."
 msgstr "Đã hoàn tác."
 
 #: settings-gui/ui/pages/dynamic_settings.py
+msgid "Fixing words"
+msgstr "Sửa chữ"
+
+#: settings-gui/core/catalog.py
+msgid "Typing keys"
+msgstr "Phím gõ"
+
+#: settings-gui/core/catalog.py
 msgid "Tone marks"
 msgstr "Cách bỏ dấu"
 

@@ -20,6 +20,7 @@ REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
 
 if CAN_RUN:
     from core.brand import MESSENGER_URL
+    from core.catalog import SETTINGS_MAP, SettingsCategory
     from gi.repository import Adw, Gdk, Gio, GLib, Gtk
     from ui_gtk import brand, check_page, window
     from ui_gtk.hotkey_button import HotkeyButton
@@ -463,6 +464,25 @@ class GtkAppearancePageTest(unittest.TestCase):
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkTypingPageTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        isolate(self)
+        self.page = window.Window(None, FakeDBusHandler()).typing
+
+    def test_only_the_first_group_has_no_title(self):
+        groups = [w for w in _children(self.page.page) if isinstance(w, Adw.PreferencesGroup)]
+        titled = [group.get_title() for group in groups if group.get_title()]
+        self.assertEqual(titled, ["Fixing words", "Tone marks", "Typing keys", "Quick typing"])
+        mode_row = self.page.rows["InputMethod"]
+        first = next(g for g in groups if mode_row in _children(g))
+        self.assertEqual(first.get_title(), "")
+
+    def test_rows_follow_the_catalog(self):
+        keys = [k for group in SETTINGS_MAP[SettingsCategory.TYPING].values() for k in group]
+        self.assertEqual([k for k in self.page.rows if k in keys], keys)
+
+
 class GtkUndoTest(unittest.TestCase):
     def setUp(self):
         Adw.init()

@@ -30,6 +30,10 @@ namespace ngosen {
         const bool        bounce = targetMode == ngosen::Mode::Sen && lastDeactivateTime_ > 0 && now - lastDeactivateTime_ < FocusBounceMs;
         const bool        resume = bounce && deletionInterruptedAt_ > 0 && is_deleting_.load();
         deletionInterruptedAt_   = 0;
+        if (key_report_pending_ && !resume) {
+            key_report_timer_.reset();
+            dropReplacementAfterFocusLoss();
+        }
         // A page may move focus into its text field after the user selected text elsewhere on it.
         // A bounce keeps it: WPS opens a window on a double click and takes focus straight back.
         if (isFocusIn && !bounce)

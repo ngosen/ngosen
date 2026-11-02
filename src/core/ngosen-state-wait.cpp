@@ -304,7 +304,7 @@ namespace ngosen {
         surr_silent_streak_ = 0;
         if (!(host_->surrounding() == reportAtKey_))
             keySinceReport_ = false;
-        // With focus away the wait stays open: it ends when focus returns or when its timer gives up.
+        // A report with focus away may be another app's; the next report or the timer ends the wait.
         if (key_report_pending_ && host_->hasFocus() && !(key_report_until_copy_fits_ && copyGivesWrongBytes())) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
             const auto s = host_->surrounding();
@@ -332,14 +332,20 @@ namespace ngosen {
         key_report_deleted_         = deletedPart;
         key_report_added_           = addedPart;
         key_report_pending_         = true;
+        surr_wait_focus_retries_    = 0;
         is_deleting_.store(true, std::memory_order_release);
         if (ngosen::reportsFieldOnlyOnKey(host_->field())) {
             // The key itself never reaches the app, so give it one that types nothing.
             forwardTap(ngosen::EditKey::Shift);
         }
         const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
-        key_report_timer_     = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer&) {
+        key_report_timer_     = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer& t) {
             if (!host_->hasFocus()) {
+                // A bounce can span the deadline, so give it a moment to come back.
+                if (++surr_wait_focus_retries_ <= 5) {
+                    t.rearm(ngosen::monotonicUs() + 2000);
+                    return true;
+                }
                 dropReplacementAfterFocusLoss();
                 return false;
             }

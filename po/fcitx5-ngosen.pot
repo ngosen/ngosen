@@ -745,14 +745,6 @@ msgstr ""
 msgid "Full text (e.g. khô gà)"
 msgstr ""
 
-#: settings-gui/ui/pages/macro_editor.py:193
-msgid "Key:"
-msgstr ""
-
-#: settings-gui/ui/pages/macro_editor.py:195
-msgid "Value:"
-msgstr ""
-
 #: settings-gui/ui/pages/macro_editor.py:202
 msgid "Abbreviation"
 msgstr ""
@@ -854,38 +846,6 @@ msgstr ""
 
 #: settings-gui/ui/components.py:450
 msgid "[ Press Key... ]"
-msgstr ""
-
-#: settings-gui/ui/helpers.py:14
-msgid "Text goes straight into the field, without an underline."
-msgstr ""
-
-#: settings-gui/ui/helpers.py:14
-msgid "You can type tone marks at the end of the word or anywhere inside."
-msgstr ""
-
-#: settings-gui/ui/helpers.py:19
-msgid ""
-"Automatically match expansion case to trigger key case.\n"
-"\n"
-"Example if 'kg' is 'Khô gà':\n"
-"- kg -> khô gà\n"
-"- Kg -> Khô gà\n"
-"- KG -> KHÔ GÀ"
-msgstr ""
-
-#: settings-gui/ui/helpers.py:26
-msgid ""
-"Automatically revert the typed sequence if the resulting word is not in the "
-"dictionary.\n"
-"This helps prevent accidental Vietnamese transformations on English words or "
-"mixed text."
-msgstr ""
-
-#: settings-gui/ui/helpers.py:30
-msgid ""
-"Allow macros to work when the input mode is OFF.\n"
-"When disabled, macros are only available in active typing modes."
 msgstr ""
 
 #: settings-gui/ui/main_window.py:33
@@ -1780,4 +1740,20 @@ msgstr ""
 
 #: settings-gui/core/page_status.py
 msgid "Not in use now: Cứu dấu works only with Unicode."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "kg gives khô gà, Kg gives Khô gà, KG gives KHÔ GÀ."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "Abbreviations also expand while the mode is Off."
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Abbreviation:"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expanded Text:"
 msgstr ""

@@ -87,6 +87,8 @@ GROUPS_WITH_NAME_LINE = {TYPING_KEYS}
 HINTS = {
     "ToggleKey": N_("Tap it alone to switch. The tray icon shows V while typing Vietnamese."),
     "SpellCheck": N_("Words that are not Vietnamese get no tone marks."),
+    "CapitalizeMacro": N_("kg gives khô gà, Kg gives Khô gà, KG gives KHÔ GÀ."),
+    "EnableMacroInOffMode": N_("Abbreviations also expand while the mode is Off."),
     "AutoNonVnRestore": N_("Typing windows still gives windows."),
     "LockWordModifier": N_(
         "Tap the key alone to keep the word as shown: tunx, Ctrl → tũn, with no restore or macro. Alt also shows the menu bar in some apps."

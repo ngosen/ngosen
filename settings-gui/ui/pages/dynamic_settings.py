@@ -50,6 +50,7 @@ from core import page_status
 from ui import brand
 from ui.components import (
     HotkeyEditorWidget,
+    NoWheelComboBox,
     SingleKeyCaptureWidget,
 )
 from ui.toolkit_switch import toolkit_field
@@ -88,6 +89,26 @@ class HintLabel(QLabel):
         height = self.heightForWidth(self.width())
         if height > 0:
             self.setFixedHeight(height)
+
+
+def with_hint_below(widget, text):
+    """Returns a widget holding the control and its hint, and the hint."""
+    wrapper = QWidget()
+    layout = QVBoxLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(0)
+    layout.addWidget(widget)
+    hint = HintLabel(text)
+    mute(hint)
+    if isinstance(widget, QCheckBox):
+        # Line the hint up with the checkbox text, not its box.
+        style = widget.style()
+        indent = style.pixelMetric(QStyle.PM_IndicatorWidth) + style.pixelMetric(
+            QStyle.PM_CheckBoxLabelSpacing
+        )
+        hint.setContentsMargins(indent, 0, 0, 0)
+    layout.addWidget(hint)
+    return wrapper, hint
 
 
 class TipLine(QToolButton):
@@ -365,21 +386,8 @@ class DynamicSettingsPage(QWidget):
         self._fields[key] = widget
         if not hint_text:
             return widget
-        wrapper = QWidget()
-        layout = QVBoxLayout(wrapper)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        layout.addWidget(widget)
-        hint = HintLabel(_(hint_text))
-        mute(hint)
-        if isinstance(widget, QCheckBox):
-            # Line the hint up with the checkbox text, not its box.
-            style = widget.style()
-            indent = style.pixelMetric(QStyle.PM_IndicatorWidth) + style.pixelMetric(
-                QStyle.PM_CheckBoxLabelSpacing
-            )
-            hint.setContentsMargins(indent, 0, 0, 0)
-        layout.addWidget(hint)
+        wrapper, hint = with_hint_below(widget, _(hint_text))
+        layout = wrapper.layout()
         if key == "RetoneSelection":
             self._retone_note = HintLabel("")
             self._retone_note.setContentsMargins(hint.contentsMargins())
@@ -511,7 +519,7 @@ class DynamicSettingsPage(QWidget):
         key, type_str, label, default, annotations = item
         val = str(self.current_values.get(key, default))
 
-        combo = QComboBox()
+        combo = NoWheelComboBox()
         combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self._controls[key] = combo
         enum_dict = annotations.get("Enum", {})

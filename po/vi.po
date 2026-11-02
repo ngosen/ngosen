@@ -764,14 +764,6 @@ msgstr "Từ viết tắt (ví dụ: kg)"
 msgid "Full text (e.g. khô gà)"
 msgstr "Từ đầy đủ (ví dụ: khô gà)"
 
-#: settings-gui/ui/pages/macro_editor.py:193
-msgid "Key:"
-msgstr "Khoá:"
-
-#: settings-gui/ui/pages/macro_editor.py:195
-msgid "Value:"
-msgstr "Giá trị:"
-
 #: settings-gui/ui/pages/macro_editor.py:202
 msgid "Abbreviation"
 msgstr "Từ viết tắt"
@@ -874,49 +866,6 @@ msgstr "[ Đang ghi lại... ]"
 #: settings-gui/ui/components.py:450
 msgid "[ Press Key... ]"
 msgstr "[ Nhấn phím... ]"
-
-#: settings-gui/ui/helpers.py:14
-msgid "Text goes straight into the field, without an underline."
-msgstr "Chữ hiện thẳng vào ô, không gạch chân."
-
-#: settings-gui/ui/helpers.py:14
-msgid "You can type tone marks at the end of the word or anywhere inside."
-msgstr "Bạn có thể gõ dấu câu ở cuối từ hoặc bất cứ đâu."
-
-#: settings-gui/ui/helpers.py:19
-msgid ""
-"Automatically match expansion case to trigger key case.\n"
-"\n"
-"Example if 'kg' is 'Khô gà':\n"
-"- kg -> khô gà\n"
-"- Kg -> Khô gà\n"
-"- KG -> KHÔ GÀ"
-msgstr ""
-"Tự động khớp chữ hoa/thường của từ được kích hoạt.\n"
-"\n"
-"Ví dụ nếu 'kg' là 'khô gà':\n"
-"- kg -> khô gà\n"
-"- Kg -> Khô gà\n"
-"- KG -> KHÔ GÀ"
-
-#: settings-gui/ui/helpers.py:26
-msgid ""
-"Automatically revert the typed sequence if the resulting word is not in the "
-"dictionary.\n"
-"This helps prevent accidental Vietnamese transformations on English words or "
-"mixed text."
-msgstr ""
-"Tự động khôi phục chuỗi vừa gõ nếu từ đó không có trong từ điển.\n"
-"Nó giúp tránh các trường hợp gõ các từ tiếng Anh mà bị chuyển đổi qua Tiếng "
-"việt hoặc gõ song ngữ."
-
-#: settings-gui/ui/helpers.py:30
-msgid ""
-"Allow macros to work when the input mode is OFF.\n"
-"When disabled, macros are only available in active typing modes."
-msgstr ""
-"Cho phép gõ tắt hoạt động khi chế độ gõ đang là \"Tắt\"\n"
-"Khi vô hiệu hoá, gõ tắt chỉ khả dụng trong các chế độ gõ được kích hoạt."
 
 #: settings-gui/ui/main_window.py:33
 #: settings-gui/io.github.ngosen.NgoSen.Settings.desktop.in:2
@@ -1884,3 +1833,19 @@ msgstr "Chưa có tác dụng: hãy chọn Custom ở {}."
 #: settings-gui/core/page_status.py
 msgid "Not in use now: Cứu dấu works only with Unicode."
 msgstr "Chưa có tác dụng: Cứu dấu chỉ chạy với Unicode."
+
+#: settings-gui/core/catalog.py
+msgid "kg gives khô gà, Kg gives Khô gà, KG gives KHÔ GÀ."
+msgstr "kg ra khô gà, Kg ra Khô gà, KG ra KHÔ GÀ."
+
+#: settings-gui/core/catalog.py
+msgid "Abbreviations also expand while the mode is Off."
+msgstr "Từ viết tắt vẫn được bung ra khi chế độ gõ là Tắt."
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Abbreviation:"
+msgstr "Từ viết tắt:"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expanded Text:"
+msgstr "Từ đầy đủ:"

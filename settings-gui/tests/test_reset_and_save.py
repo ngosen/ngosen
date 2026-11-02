@@ -136,6 +136,18 @@ class ConfirmButtonsTest(unittest.TestCase):
         shown = self.buttons_shown(window.on_restore_defaults)
         self.assertEqual(shown, ["&Cancel", "&Restore defaults"])
 
+    def test_reset_says_what_else_it_clears(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        texts = []
+
+        def record(box):
+            texts.append(box.text())
+            return 0
+
+        with mock.patch.object(QMessageBox, "exec", record):
+            window.on_restore_defaults()
+        self.assertIn("Macros, words added to the dictionary", texts[0])
+
     def test_keymap_preset_names_its_buttons(self):
         page = KeymapEditorPage(FakeDBusHandler())
         shown = self.buttons_shown(page.on_load_preset)

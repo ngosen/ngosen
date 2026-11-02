@@ -100,8 +100,8 @@ namespace {
 
     // The Chromium address bar selects an inline autocompletion after the typed text, so a BackSpace
     // would only remove that. Widening the selection with Shift+Left and typing over it replaces both.
-    bool chromiumSelectsAndOvertypes(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, bool bounceFocus = false) {
-        const std::string where   = frontend + " " + program + (bounceFocus ? " with focus bounce" : "") + ": ";
+    bool chromiumSelectsAndOvertypes(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, int bounceAfterMs = -1) {
+        const std::string where   = frontend + " " + program + " with focus bounce after " + std::to_string(bounceAfterMs) + " ms: ";
         auto              context = h.open(program, frontend, caps, 1);
         if (!h.typeTieE(*context))
             return false;
@@ -125,17 +125,67 @@ namespace {
         if (!h.key(*context, fcitx::Key(FcitxKey_Shift_R, fcitx::KeyStates(fcitx::KeyState::Shift)), true, false))
             return false;
         const uint64_t releasedAt = nowUs();
-        if (bounceFocus)
+        if (bounceAfterMs >= 0) {
+            h.pumpUntil([] { return false; }, releasedAt + bounceAfterMs * 1000ULL);
             h.bounceFocus(*context);
+        }
         const uint64_t committedAt = h.pumpUntil([&] { return !context->commits().empty(); }, releasedAt + 500000);
         if (context->commits() != std::vector<std::string>{"ê"}) {
             reportFailure(where + "type ê over the selection", "['ê']", joinCommits(*context));
+            return false;
+        }
+        if (!context->forwarded().empty()) {
+            reportFailure(where + "no backspace in the address bar", "(none)", std::to_string(context->forwarded().size()) + " keys");
             return false;
         }
         // Chromium asks the input method about each key before it handles the key, so the Left presses
         // may still be pending when the Shift release comes back.
         if (committedAt - releasedAt + ClockSlackUs < SettleUs) {
             reportFailure(where + "commit at least 50 ms after Shift is released", ">= 50000 us", std::to_string(committedAt - releasedAt) + " us");
+            return false;
+        }
+        return true;
+    }
+
+    bool isTap(const std::vector<fcitx::ForwardKeyEvent>& keys, size_t at, fcitx::KeySym sym) {
+        return keys.size() >= at + 2 && keys[at].key().sym() == sym && keys[at + 1].key().sym() == sym;
+    }
+
+    // Google Docs and Slides report a thin caret like the address bar, but keep focus when Shift+Left
+    // selects, and a commit then does not replace the selection (#516).
+    bool fieldKeepingFocusDeletesWithBackSpace(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+        const std::string where   = frontend + " " + program + " keeping focus: ";
+        auto              context = h.open(program, frontend, caps, 2);
+        if (!h.typeTieE(*context))
+            return false;
+        const auto shiftLeft = fcitx::Key(FcitxKey_Left, fcitx::KeyStates(fcitx::KeyState::Shift));
+        if (!h.key(*context, fcitx::Key(FcitxKey_Shift_R), false, false) || !h.key(*context, shiftLeft, false, false) || !h.key(*context, shiftLeft, true, false) ||
+            !h.key(*context, fcitx::Key(FcitxKey_Shift_R, fcitx::KeyStates(fcitx::KeyState::Shift)), true, false))
+            return false;
+        h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 800000);
+        if (context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure(where + "commit ê", "['ê']", joinCommits(*context));
+            return false;
+        }
+        if (context->forwarded().size() != 4 || !isTap(context->forwarded(), 0, FcitxKey_Right) || !isTap(context->forwarded(), 2, FcitxKey_BackSpace)) {
+            reportFailure(where + "drop the selection, then delete with a backspace", "[Right][BackSpace]", std::to_string(context->forwarded().size()) + " keys");
+            return false;
+        }
+        // The field has answered: the next replacement goes straight to backspaces.
+        h.sent.clear();
+        if (!h.key(*context, fcitx::Key(FcitxKey_s), false, true))
+            return false;
+        h.pumpUntil([&] { return context->commits().size() >= 2; }, nowUs() + 800000);
+        if (!h.sent.empty() || context->commits().size() != 2 || context->commits()[1] != "íê" || context->forwarded().size() != 8) {
+            reportFailure(where + "no second selection", "no XTEST, íê after two more backspaces", joinCounts(h.sent) + ", " + joinCommits(*context));
+            return false;
+        }
+        // Focus may now be in another field, so ask again.
+        h.bounceFocus(*context);
+        if (!h.key(*context, fcitx::Key(FcitxKey_space), false, false) || !h.typeTieE(*context))
+            return false;
+        if (h.sent != std::vector<int>{-1}) {
+            reportFailure(where + "select again after focus moved", "[-1]", joinCounts(h.sent));
             return false;
         }
         return true;
@@ -216,11 +266,17 @@ int main() {
     Harness                 h{testInstance, engine, entry, sent};
 
     const auto              chromeCaps = fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit, fcitx::CapabilityFlag::KeyEventOrderFix};
-    if (!chromiumSelectsAndOvertypes(h, "microsoft-edge", "dbus", chromeCaps))
+    if (!chromiumSelectsAndOvertypes(h, "microsoft-edge", "dbus", chromeCaps, 0))
         return 1;
-    if (!chromiumSelectsAndOvertypes(h, "microsoft-edge", "dbus", chromeCaps, true))
+    // A busy machine delays the focus change past the usual settling time.
+    if (!chromiumSelectsAndOvertypes(h, "microsoft-edge", "dbus", chromeCaps, 100))
         return 1;
     if (!chromiumSelectsAndOvertypes(h, "chromium", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}))
+        return 1;
+    // Vivaldi's address bar is a web page field, which keeps focus while Shift+Left selects.
+    if (!chromiumSelectsAndOvertypes(h, "vivaldi-bin", "dbus", chromeCaps))
+        return 1;
+    if (!fieldKeepingFocusDeletesWithBackSpace(h, "microsoft-edge", "dbus", chromeCaps))
         return 1;
     if (!pressesBackSpaceThroughXTest(h, "Medieval2", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}))
         return 1;

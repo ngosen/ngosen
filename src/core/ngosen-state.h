@@ -361,6 +361,7 @@ namespace ngosen {
         void                           selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest = false);
         void                           finishOvertype(const char* reason, bool fromTimer);
         void                           abandonOvertype();
+        void                           deleteOverIgnoredSelection();
         std::unique_ptr<ngosen::Timer> overtype_timer_;
         bool                           overtype_watching_       = false; ///< reports go to onOvertypeSurroundingUpdated once an overtype has started
         bool                           overtype_pending_        = false;
@@ -370,6 +371,10 @@ namespace ngosen {
         uint64_t                       overtype_started_at_     = 0;
         bool                           overtype_via_xtest_      = false;
         bool                           overtype_shift_released_ = false;
+        uint64_t                       overtype_released_at_    = 0;
+        bool                           overtype_focus_bounced_  = false;
+        std::string                    overtype_deleted_;
+        bool                           field_keeps_focus_on_selection_ = false; ///< until focus moves, so the next field is asked again
 
         // --- Wait for the app's report on a key before deleting ---
         // LibreOffice over the fcitx Qt module drops the surrounding text capability before each key

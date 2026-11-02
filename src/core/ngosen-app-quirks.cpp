@@ -114,6 +114,10 @@ namespace ngosen {
         return isChromiumBrowser(program);
     }
 
+    bool focusChangeShowsBrowserField(const Field& field) {
+        return field.frontend == "dbus" && !isStartsWith(appName(field), "vivaldi");
+    }
+
     bool typesOverPrimarySelection(const Field& field) {
         // Terminals, Emacs and Vim also own the primary selection and report the same, but type elsewhere.
         const std::string program = appName(field);

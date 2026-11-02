@@ -385,6 +385,8 @@ namespace ngosen {
         bool                           copyGivesWrongBytes() const;
         void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);
         void                           finishKeyReportWait(bool sameField, bool fromTimer);
+        void                           forgetWaitingReplacement();
+        void                           dropReplacementAfterFocusLoss();
         void                           deleteAndCommit(const std::string& deletedPart, const std::string& addedPart);
         std::unique_ptr<ngosen::Timer> key_report_timer_;
         bool                           key_report_pending_         = false;

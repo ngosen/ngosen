@@ -49,9 +49,11 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
    - Typed text in Xanh Mono: the keys-to-result example under the input method
      (`vieetj → việt`) and the test field.
 3. **Ngó Sen's own name and marks.** No lotus flower logo; the README credits the projects it builds on.
-4. **Changes save at once.** No OK, Apply or Cancel. After a change, an inline message at the top
-   of the page says "Đã lưu “<setting>”." with a Hoàn tác button (`KMessageWidget`-style: enamel
-   border, light enamel fill; `saved-*` colours). One message, replaced by the next change.
+4. **Changes save at once.** No OK, Apply or Cancel. After a change, a message floats over the
+   bottom of the page, moving nothing, and says "Đã lưu “<setting>”." with a Hoàn tác button
+   (`KMessageWidget`-style: enamel border, light enamel fill; `saved-*` colours). One message,
+   replaced by the next change. It leaves after 5 seconds unless the pointer or focus is on it;
+   errors and the messages after Defaults or Restore stay until closed.
 5. **Ship one font.** Xanh Mono (OFL) is bundled with the settings GUI. If it is missing, fall back
    to the system monospace font; nothing else changes.
 

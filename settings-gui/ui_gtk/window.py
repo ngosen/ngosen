@@ -207,7 +207,7 @@ class Window(Adw.ApplicationWindow):
     def _header(self):
         menu = Gio.Menu()
         for label, name, run in (
-            (_("Back &Up…"), "backup", self.choose_backup_file),
+            (_("Back U&p…"), "backup", self.choose_backup_file),
             (_("Res&tore…"), "restore-backup", self.choose_restore_file),
             (_("Restore defaults…"), "restore-defaults", self.confirm_defaults),
         ):
@@ -255,7 +255,8 @@ class Window(Adw.ApplicationWindow):
         # Even a partial write changed fcitx5, so the pages show what it holds and undo stays.
         self.reload()
         self._undo_to = before
-        toast = Adw.Toast(title=done) if ok else Adw.Toast(title=failed, timeout=0)
+        # Undo is the only way back from replacing whole lists, so it stays until closed.
+        toast = Adw.Toast(title=done if ok else failed, timeout=0)
         self._show(self._with_undo(toast))
 
     def choose_backup_file(self):

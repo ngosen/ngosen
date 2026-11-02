@@ -776,6 +776,7 @@ class GtkDefaultsTest(unittest.TestCase):
         self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
         self.assertEqual(self.window.macros.table.entries, [])
         self.assertEqual(self.window.toast.get_title(), "Defaults restored.")
+        self.assertEqual(self.window.toast.get_timeout(), 0)
         self.window.toast.emit("button-clicked")
         self.assertEqual(self.changed(), ("False", "True", [1, 1, 1, 1]))
         self.assertEqual(self.local_words(), ["hello", "ngosen", "world"])

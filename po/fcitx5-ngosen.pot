@@ -1057,7 +1057,7 @@ msgid "&Defaults"
 msgstr ""
 
 #: settings-gui/ui/main_window.py
-msgid "Back &Up…"
+msgid "Back U&p…"
 msgstr ""
 
 #: settings-gui/ui/main_window.py
@@ -1756,4 +1756,8 @@ msgstr ""
 
 #: settings-gui/ui/pages/macro_editor.py
 msgid "Expanded Text:"
+msgstr ""
+
+#: settings-gui/ui/message_bar.py
+msgid "Close"
 msgstr ""

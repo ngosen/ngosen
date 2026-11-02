@@ -162,7 +162,7 @@ class HotkeyCaptureWidget(QPushButton):
                 emphasize(lbl)
                 self.main_layout.addWidget(lbl)
         elif not self.current_key:
-            lbl = QLabel(_("None"))
+            lbl = QLabel(_("Not set"))
             mute(lbl)
             self.main_layout.addWidget(lbl)
         else:
@@ -243,7 +243,7 @@ class SingleKeyCaptureWidget(HotkeyCaptureWidget):
             emphasize(lbl)
             self.main_layout.addWidget(lbl)
         elif not self.current_key:
-            lbl = QLabel(_("None"))
+            lbl = QLabel(_("Not set"))
             mute(lbl)
             self.main_layout.addWidget(lbl)
         else:

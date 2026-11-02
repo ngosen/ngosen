@@ -13,7 +13,7 @@ colors:
 typography:
   wordmark:
     fontFamily: "'Xanh Mono', 'DejaVu Sans Mono', monospace"
-    fontSize: "22px"
+    fontSize: "22px in the Qt window, 26px in the GTK window"
     wordSpacing: "-0.28em"
   typed:
     fontFamily: "'Xanh Mono', 'DejaVu Sans Mono', monospace"
@@ -44,7 +44,7 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 2. **Four brand marks, nothing more.**
    - The tray icon (`fcitx-ngosen`, a lotus-root slice on enamel green) at the top of the sidebar.
    - The wordmark "Ngó Sen" in Xanh Mono next to it, with diacritics, never in bold.
-   - The current typing mode (Sen, Preedit, Emoji) as a segmented row of buttons; the checked
+   - The current typing mode (Gõ Sen, Gạch chân, Chọn Emoji) as a segmented row of buttons; the checked
      one is filled enamel with `on-enamel` text.
    - Typed text in Xanh Mono: the keys-to-result example under the input method
      (`vieetj → việt`) and the test field.
@@ -62,8 +62,8 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 
 - Window: sidebar list on the left, page on the right. Below about 620px wide the form labels go
   above their fields.
-- Sidebar: icon and wordmark, a search field, then six pages with a small line icon each:
-  Gõ chữ, Gõ tắt & Từ điển, Phím, Giao diện, Có gì mới & mẹo, Giới thiệu. The current page uses
+- Sidebar: icon and wordmark, a search field, then seven pages with a small line icon each:
+  Gõ chữ, Gõ tắt & Từ điển, Phím, Giao diện, Có gì mới & mẹo, Kiểm tra máy, Giới thiệu. The current page uses
   the platform's selection look.
 - Có gì mới & mẹo: one card per recent feature (name, how to use it, a typed example in Xanh
   Mono, an "Mở cài đặt" button that jumps to the setting), then the tips as plain lines. Nothing
@@ -110,7 +110,7 @@ settings only through `settings-gui/core/`, so both windows save the same values
 
 - **libadwaita 1.5 or newer** (Ubuntu 24.04, Mint 22, Debian 13, Fedora 43). Where the system has an
   older one (Debian 12, Mint 21) the installer picks the Qt window.
-- **Stock widgets.** `AdwNavigationSplitView` with the six pages in the sidebar, as in GNOME
+- **Stock widgets.** `AdwNavigationSplitView` with the seven pages in the sidebar, as in GNOME
   Settings; below about 600sp only one side shows. Each page is an `AdwPreferencesPage` of
   `AdwPreferencesGroup`s with `AdwSwitchRow`, `AdwComboRow`, `AdwEntryRow` and `AdwSpinRow`. A
   hint is the row's subtitle. No CSS beyond the brand marks and the accent colour.
@@ -120,9 +120,8 @@ settings only through `settings-gui/core/`, so both windows save the same values
   `AdwToggleGroup`.
 - **Changes save at once.** Each change shows an `AdwToast` "Đã lưu “<setting>”." with Hoàn tác,
   one at a time, instead of the Qt window's inline message.
-- **Bottom bar as in the Qt window**, an `AdwToolbarView` bottom bar: Mặc định on the left, Sao
-  lưu… and Khôi phục… on the right, so both windows put them in the same place. Mặc định asks
-  first in an `AdwAlertDialog`.
+- **A header menu instead of the Qt window's bottom bar**, holding Sao lưu…, Khôi phục… and Đưa về
+  mặc định…, as GNOME apps do. Đưa về mặc định… asks first in an `AdwAlertDialog`.
 - **Enamel is the window's accent.** The app sets libadwaita's accent colours to `enamel` (light)
   and `enamel-dark` (dark) with `on-enamel` text, so switches, checkboxes, focus rings
   and suggested buttons are enamel. This one window ignores the accent the user picked in GNOME.

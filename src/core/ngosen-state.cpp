@@ -496,7 +496,7 @@ namespace ngosen {
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;
             if (ngosen::key::isBackspace(keyEvent.sym()))
-                closeCheckOnBackspace();
+                closeCheckBeforeOtherEdit();
         }
         handleKey(keyEvent);
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {

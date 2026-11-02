@@ -464,6 +464,7 @@ namespace ngosen {
             replaceThroughSurrounding(surrounding);
             return;
         }
+        closeCheckBeforeOtherEdit();
         if (ngosen::forwardsBackspaces(host_->field())) {
             replaceThroughForwardedKeys();
             return;

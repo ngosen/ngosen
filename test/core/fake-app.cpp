@@ -252,7 +252,10 @@ namespace ngosen::test {
         } else if (quirks_.handsBackKeys)
             later(quirks_.lagMs, [this] { type(key::BackSpace); });
         else
-            later(quirks_.lagMs + quirks_.backspaceLagMs, [this] { eraseBefore(1); });
+            later(quirks_.lagMs + quirks_.backspaceLagMs, [this] {
+                noteTypedKey();
+                eraseBefore(1);
+            });
     }
 
     bool FakeApp::pressSystemKeys(int count) {

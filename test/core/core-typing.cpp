@@ -1889,6 +1889,16 @@ namespace {
         }
     }
 
+    // A replacement through backspaces while a check is open changes what stands before that check's commit.
+    void testBackspacePathDuringLongCheck() {
+        std::vector<std::string> lines;
+        for (const int gapMs : {100, 240, 400}) {
+            const auto text = typedWithBackspaces(makeField("ibus", true), {.repeatsOldTextAfterDelete = true}, "tieesng tieesng ", gapMs, lines);
+            check(text == "tiếng tiếng " && countHaving(lines, "Surrounding text untrusted") == 0,
+                  "long check: backspaces in the next replacement, keys " + std::to_string(gapMs) + " ms", text + " " + join(lines));
+        }
+    }
+
     // A long check must still see a deletion the app dropped.
     void testDroppedDeletionInLongCheck() {
         const Field              gnome = makeField("ibus", true);
@@ -2269,6 +2279,7 @@ int main() {
     testReportWithNextKey();
     testSilentFromFirstDeletion();
     testBothPathsInOneWord();
+    testBackspacePathDuringLongCheck();
     testDroppedDeletionInLongCheck();
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();

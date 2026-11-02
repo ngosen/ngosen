@@ -89,8 +89,9 @@ namespace ngosen {
         });
     }
 
-    void TypingState::closeCheckOnBackspace() {
-        // The user's Backspace also changes what stands before the commit, so later reports prove nothing.
+    void TypingState::closeCheckBeforeOtherEdit() {
+        // The user's Backspace or a replacement through backspaces also changes what stands before the
+        // commit, so later reports prove nothing.
         if (!surrCheck_ || !surrCheck_->waitsForKey)
             return;
         surr_check_timer_.reset();

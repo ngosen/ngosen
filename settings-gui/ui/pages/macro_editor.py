@@ -6,6 +6,7 @@ Macro Editor Page. Edits ngosen-macro-table.conf.
 Implements UI with row reordering and TSV import/export.
 """
 
+from core.catalog import locked_by
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import Qt
@@ -61,6 +62,7 @@ class MacroEditorPage(BaseEditorPage):
         self.cb_capitalize = QCheckBox(_("Capitalize Macro"))
         self.cb_enable_off_mode = QCheckBox(_("Macro in Off Mode"))
         self.cb_enable.toggled.connect(self._on_item_changed)
+        self.cb_enable.toggled.connect(lambda _checked: self._apply_locks())
         self.cb_capitalize.toggled.connect(self._on_item_changed)
         self.cb_enable_off_mode.toggled.connect(self._on_item_changed)
         toggles_layout.addWidget(self.cb_enable)
@@ -93,9 +95,8 @@ class MacroEditorPage(BaseEditorPage):
         editor_card = CardWidget()
         content_layout = QVBoxLayout()
         editor_card.content_layout.addLayout(content_layout)
-        main_layout.addWidget(editor_card)
 
-        # Dynamic Macro Settings (Moved below the macro table)
+        # Next to the switch that locks it; the macro table would push it far away.
         dynamic_card = CardWidget()
         dynamic_layout = QVBoxLayout()
 
@@ -123,7 +124,9 @@ class MacroEditorPage(BaseEditorPage):
                 self.input_time_format.count() - 1, _(macros.EXAMPLES[fmt]), Qt.ToolTipRole
             )
 
-        time_layout.addWidget(QLabel(_("Time Format:")))
+        self.time_label = QLabel(_("Time Format:"))
+        self.time_label.setBuddy(self.input_time_format)
+        time_layout.addWidget(self.time_label)
         time_layout.addWidget(self.input_time_format, 1)
 
         # Date Format
@@ -138,7 +141,9 @@ class MacroEditorPage(BaseEditorPage):
                 self.input_date_format.count() - 1, _(macros.EXAMPLES[fmt]), Qt.ToolTipRole
             )
 
-        date_layout.addWidget(QLabel(_("Date Format:")))
+        self.date_label = QLabel(_("Date Format:"))
+        self.date_label.setBuddy(self.input_date_format)
+        date_layout.addWidget(self.date_label)
         date_layout.addWidget(self.input_date_format, 1)
 
         fmt_hbox.addLayout(time_layout)
@@ -148,6 +153,7 @@ class MacroEditorPage(BaseEditorPage):
 
         dynamic_card.content_layout.addLayout(dynamic_layout)
         main_layout.addWidget(dynamic_card)
+        main_layout.addWidget(editor_card)
 
         # 1. Input Row (Top)
         input_layout = QHBoxLayout()
@@ -207,6 +213,26 @@ class MacroEditorPage(BaseEditorPage):
 
         content_layout.addLayout(toolbar_layout)
         self.update_button_states()
+        self.controls = {
+            "EnableMacro": self.cb_enable,
+            "CapitalizeMacro": self.cb_capitalize,
+            "EnableMacroInOffMode": self.cb_enable_off_mode,
+            "TimeFormat": self.input_time_format,
+            "DateFormat": self.input_date_format,
+        }
+
+    def control_for(self, key):
+        """The widget that edits a setting, for the window to scroll to and focus."""
+        return self.controls.get(key)
+
+    def value_of(self, key):
+        return self._shown_options().get(key)
+
+    def _apply_locks(self):
+        for key, control in self.controls.items():
+            control.setEnabled(locked_by(key, self.value_of) is None)
+        self.time_label.setEnabled(self.input_time_format.isEnabled())
+        self.date_label.setEnabled(self.input_date_format.isEnabled())
 
     def load_data(self):
         self.blockSignals(True)
@@ -230,17 +256,21 @@ class MacroEditorPage(BaseEditorPage):
             (self.input_date_format, "DateFormat"),
         ):
             combo.setCurrentIndex(combo.findData(options[key]))
+        self._apply_locks()
 
-    def _shown_values(self):
-        # Read without storing: the main window asks is_modified() while load_data
-        # is still filling the widgets from the model.
-        options = {
+    def _shown_options(self):
+        return {
             "EnableMacro": self.cb_enable.isChecked(),
             "CapitalizeMacro": self.cb_capitalize.isChecked(),
             "EnableMacroInOffMode": self.cb_enable_off_mode.isChecked(),
             "TimeFormat": self.input_time_format.currentData(),
             "DateFormat": self.input_date_format.currentData(),
         }
+
+    def _shown_values(self):
+        # Read without storing: the main window asks is_modified() while load_data
+        # is still filling the widgets from the model.
+        options = self._shown_options()
         entries = []
         for row in range(self.table.rowCount()):
             key_item = self.table.item(row, 0)

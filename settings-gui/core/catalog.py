@@ -170,3 +170,25 @@ MODE_KEY_TO_INTERNAL_NAME = {
 }
 
 MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
+
+# Settings that do nothing unless another one, shown next to them, holds this value.
+DEPENDS = {
+    "SpellCheck": ("AutoNonVnRestore", "True"),
+    "DdFreeStyle": ("AutoNonVnRestore", "True"),
+    "IconTheme": ("UseLotusIcons", "False"),
+    "CapitalizeMacro": ("EnableMacro", "True"),
+    "EnableMacroInOffMode": ("EnableMacro", "True"),
+    "TimeFormat": ("EnableMacro", "True"),
+    "DateFormat": ("EnableMacro", "True"),
+    **{shortcut: (shown, "True") for shortcut, shown in MODE_SHORTCUT_TO_VISIBILITY.items()},
+}
+
+
+def locked_by(key, value_of):
+    """The setting that keeps key from doing anything right now, or None.
+
+    value_of(name) gives a setting's value, or None when fcitx5 does not report that setting.
+    """
+    controller, needed = DEPENDS.get(key, (None, None))
+    value = value_of(controller) if controller else None
+    return None if value is None or str(value).lower() == needed.lower() else controller

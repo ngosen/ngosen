@@ -85,7 +85,10 @@ class ShortcutsPage:
 
     def control_for(self, key):
         """The row or button that edits a setting, for the window to show and focus."""
-        return self.hotkeys.get(key) or self.mode_rows.get(key)
+        return self.hotkeys.get(key) or self.mode_rows.get(key) or self.mode_checks.get(key)
+
+    def value_of(self, key):
+        return self.model.value_of(key)
 
     def _first(self, key):
         return next(iter(self.model.hotkeys(key)), "")
@@ -103,6 +106,11 @@ class ShortcutsPage:
     def _changed(self, key, value):
         self.on_change(key, value)
         self.show_conflicts()
+        self._apply_locks()
+
+    def _apply_locks(self):
+        for key, button in self.mode_keys.items():
+            button.set_sensitive(self.model.locked_by(key) is None)
 
     def _use_ctrl_shift(self, key):
         self.hotkeys[key].set_active(False)
@@ -117,6 +125,8 @@ class ShortcutsPage:
         )
         self.modes = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE, css_classes=["boxed-list"])
         self.mode_rows = {}
+        self.mode_checks = {}
+        self.mode_keys = {}
         group.add(self.modes)
         hint = Gtk.Label(
             label=_(HINTS["ModeOrder"]),
@@ -138,11 +148,14 @@ class ShortcutsPage:
     def _fill_modes(self):
         self.modes.remove_all()
         self.mode_rows.clear()
+        self.mode_checks.clear()
+        self.mode_keys.clear()
         keys = {name: key for key, name in MODE_KEY_TO_INTERNAL_NAME.items()}
         for name in self.order():
             key = keys.get(name)
             if key and key in self.model.metadata:
                 self.modes.append(self._mode_row(key, name))
+        self._apply_locks()
 
     def _mode_row(self, key, name):
         row = Adw.ActionRow(title=_(self.model.metadata[key][2]), use_markup=False)
@@ -154,11 +167,14 @@ class ShortcutsPage:
             "toggled", lambda b: self._changed(visible_key, "True" if b.get_active() else "False")
         )
         row.add_prefix(shown)
+        self.mode_checks[visible_key] = shown
         button = HotkeyButton(
             str(self.model.current.get(key, self.model.default(key))), single=True
         )
         button.connect("recorded", lambda _b, text: self._changed(key, text))
         row.add_suffix(button)
+        self.mode_keys[key] = button
+        row.setting_key = key
 
         source = Gtk.DragSource(actions=Gdk.DragAction.MOVE)
         source.connect("prepare", lambda *_a: Gdk.ContentProvider.new_for_value(name))

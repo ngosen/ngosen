@@ -6,6 +6,7 @@ Dynamic Settings Page with Card-based Layout matching modern guidelines.
 """
 
 from core.catalog import (
+    DEPENDS,
     GROUPS_WITH_NAME_LINE,
     HINTS,
     LANGUAGE_NAMES,
@@ -151,6 +152,7 @@ class DynamicSettingsPage(QWidget):
         self.validation_errors = []
         self.list_widgets = []  # Track list widgets for layout refresh
         self._controls = {}
+        self._fields = {}
 
         self._setup_ui()
         self.load_config()
@@ -166,6 +168,13 @@ class DynamicSettingsPage(QWidget):
     @property
     def all_metadata(self):
         return self.model.metadata
+
+    @property
+    def controls(self):
+        return self._controls
+
+    def value_of(self, key):
+        return self.model.value_of(key)
 
     def showEvent(self, event):
         """Force layout refresh when page becomes visible to fix initialization overflow."""
@@ -215,6 +224,7 @@ class DynamicSettingsPage(QWidget):
             self.shortcut_warning_labels.clear()
             self.list_widgets.clear()
             self._controls.clear()
+            self._fields.clear()
             self._tray_preview = None
 
             # Without fcitx5 the window already says it cannot be reached; without metadata there is
@@ -283,6 +293,7 @@ class DynamicSettingsPage(QWidget):
                 try_it.setFont(brand.typed_font(17))
                 self.form.addRow(_("Try it:"), try_it)
 
+            self._apply_locks()
             self.container_layout.addStretch()
         finally:
             self.blockSignals(False)
@@ -328,6 +339,7 @@ class DynamicSettingsPage(QWidget):
 
     def _with_hint(self, widget, key):
         hint_text = HINTS.get(key)
+        self._fields[key] = widget
         if not hint_text:
             return widget
         wrapper = QWidget()
@@ -345,7 +357,19 @@ class DynamicSettingsPage(QWidget):
             )
             hint.setContentsMargins(indent, 0, 0, 0)
         layout.addWidget(hint)
+        self._fields[key] = wrapper
         return wrapper
+
+    def _apply_locks(self):
+        for key in DEPENDS:
+            if key not in self._controls:
+                continue
+            enabled = self.model.locked_by(key) is None
+            field = self._fields.get(key, self._controls[key])
+            field.setEnabled(enabled)
+            for label in (self.form.labelForField(field), self.shortcut_labels.get(key)):
+                if label:
+                    label.setEnabled(enabled)
 
     def _render_hotkey(self, item):
         key, type_str, label, default, annotations = item
@@ -571,6 +595,7 @@ class DynamicSettingsPage(QWidget):
         visibility_key = MODE_SHORTCUT_TO_VISIBILITY[key]
         visibility_val = self.current_values.get(visibility_key, "True")
         cb = QCheckBox()
+        self._controls[visibility_key] = cb
         cb.setChecked(str(visibility_val).lower() == "true")
         cb.toggled.connect(
             lambda checked, k=visibility_key: self.update_config(k, "True" if checked else "False")
@@ -583,6 +608,8 @@ class DynamicSettingsPage(QWidget):
 
         capture_btn = SingleKeyCaptureWidget(val)
         capture_btn.setFixedWidth(100)
+        self._controls[key] = capture_btn
+        label_widget.setBuddy(capture_btn)
         capture_btn.textChanged.connect(lambda text, k=key: self.update_config(k, text))
         row_layout.addWidget(capture_btn)
 
@@ -778,6 +805,7 @@ class DynamicSettingsPage(QWidget):
         """Updates internal state and notifies parent window of change."""
         self.model.set(key, new_value)
         self._last_changed_key = key
+        self._apply_locks()
         if key in ("UseLotusIcons", "IconTheme"):
             self._update_tray_preview()
 

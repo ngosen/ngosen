@@ -71,6 +71,9 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
   the group name in the label column ("Cách bỏ dấu:", "Gõ nhanh:"). A group with no checkbox to
   carry the name ("Phím gõ:") gets a line of its own.
 - The most common changes come first on Gõ chữ: Chế độ gõ, Kiểu gõ, Bảng mã.
+- A setting that does nothing because of a switch next to it is disabled, keeping its value
+  (`DEPENDS` in `core/catalog.py`). Search and "Mở cài đặt" land on that switch. Lists the user
+  writes (macros, dictionary, keymap) stay editable, so they can be filled before being turned on.
 - Bottom bar: Mặc định on the left; Sao lưu… and Khôi phục… on the right.
 
 ## Colour

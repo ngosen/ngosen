@@ -4,7 +4,7 @@
 """The custom keymap: which key does which Vietnamese edit, and whether it is on."""
 
 BAMBOO_ACTIONS = [
-    ("XoaDauThanh", "Xóa dấu thanh"),
+    ("XoaDauThanh", "Xoá dấu thanh"),
     ("DauSac", "Dấu sắc"),
     ("DauHuyen", "Dấu huyền"),
     ("DauHoi", "Dấu hỏi"),

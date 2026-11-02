@@ -729,6 +729,10 @@ msgstr ""
 msgid "None"
 msgstr ""
 
+#: settings-gui/ui/components.py settings-gui/ui_gtk/hotkey_button.py
+msgid "Not set"
+msgstr ""
+
 #: settings-gui/ui/pages/macro_editor.py:143
 msgid "Time Format:"
 msgstr ""
@@ -1602,7 +1606,7 @@ msgid "See the GTK look"
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
-msgid "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
+msgid "A new GTK look that fits GNOME. Prefer the Qt look? Switch on the Appearance page."
 msgstr ""
 
 #: settings-gui/core/system_check.py

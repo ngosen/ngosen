@@ -18,7 +18,7 @@ FEATURES = [
         "version": "1.7",
         "title": N_("GTK look for GNOME"),
         "how": N_(
-            "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
+            "A new GTK look that fits GNOME. Prefer the Qt look? Switch on the Appearance page."
         ),
         "example": "",
         "target": ("setting", "SettingsToolkit"),

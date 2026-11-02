@@ -185,7 +185,7 @@ msgstr "Gõ tự do"
 
 #: src/ngosen-config.h
 msgid "Backspace Removes the Tone Mark"
-msgstr "Backspace xóa dấu thanh"
+msgstr "Backspace xoá dấu thanh"
 
 #: src/ngosen-config.h:242
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
@@ -748,6 +748,10 @@ msgstr ""
 msgid "None"
 msgstr "Rỗng"
 
+#: settings-gui/ui/components.py settings-gui/ui_gtk/hotkey_button.py
+msgid "Not set"
+msgstr "Chưa đặt"
+
 #: settings-gui/ui/pages/macro_editor.py:143
 msgid "Time Format:"
 msgstr "Định dạng giờ:"
@@ -1064,7 +1068,7 @@ msgstr "Đổi chế độ"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Try it:"
-msgstr "Gõ thử:"
+msgstr "Test:"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Type here to test"
@@ -1100,7 +1104,7 @@ msgstr "Menu khay đổi ngay, cửa sổ này đổi ở lần mở sau."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
-msgstr "Kể cả khi tắt mục này, phím z (Telex) hay 0 (VNI) vẫn xóa dấu thanh. Chữ không có dấu thanh thì Backspace xóa chữ như thường."
+msgstr "Kể cả khi tắt mục này, phím z (Telex) hay 0 (VNI) vẫn xoá dấu thanh. Chữ không có dấu thanh thì Backspace xoá chữ như thường."
 
 #: settings-gui/core/page_status.py
 msgid "Custom has no keys yet: turn on Custom Keymap and add keys in Keys › Keymap."
@@ -1694,8 +1698,8 @@ msgid "See the GTK look"
 msgstr "Xem giao diện GTK"
 
 #: settings-gui/core/whats_new_content.py
-msgid "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
-msgstr "Thêm giao diện GTK, hợp với GNOME. Không thích giao diện Qt cũ thì đổi ở trang Giao diện."
+msgid "A new GTK look that fits GNOME. Prefer the Qt look? Switch on the Appearance page."
+msgstr "Thêm giao diện GTK, hợp với GNOME. Thích giao diện Qt hơn thì đổi ở trang Giao diện."
 
 #: settings-gui/core/system_check.py
 msgid "Use the button on a step, or fix them all at once. Ngó Sen only changes this account's settings."
@@ -1772,7 +1776,7 @@ msgstr "App không có trong danh sách chưa kết nối với bộ gõ: mở l
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "Try typing here"
-msgstr "Gõ thử ngay tại đây"
+msgstr "Test gõ ngay tại đây"
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "In Telex, vieetj becomes việt."

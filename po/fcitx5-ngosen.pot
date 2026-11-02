@@ -1775,7 +1775,3 @@ msgstr ""
 #: settings-gui/core/catalog.py
 msgid "Type an emoji name, then pick from the list."
 msgstr ""
-
-#: settings-gui/core/catalog.py
-msgid "To type English, press the English/Vietnamese key."
-msgstr ""

@@ -22,6 +22,7 @@ from core.catalog import (
     TRAY_ICON,
     TYPING_EXAMPLES,
     SettingsCategory,
+    shown_mode,
 )
 from core.dbus_handler import NgoSenDBusHandler
 from core.settings_model import SettingsModel
@@ -601,7 +602,7 @@ class DynamicSettingsPage(QWidget):
     def _show_mode(self):
         if self._mode_hint is None:
             return
-        mode = str(self.model.value_of("Mode"))
+        mode = shown_mode(str(self.model.value_of("Mode")))
         if mode in self._mode_buttons:
             self._mode_buttons[mode].setChecked(True)
         self._mode_hint.setText(_(MODE_HINTS[mode]) if mode in MODE_HINTS else "")

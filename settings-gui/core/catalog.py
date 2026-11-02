@@ -137,15 +137,20 @@ HINTS = {
     ),
 }
 
-MODE_BUTTON_ORDER = ["Sen", "Preedit", "Emoji Picker", "OFF"]
+MODE_BUTTON_ORDER = ["Sen", "Preedit", "Emoji Picker"]
 MODE_HINTS = {
     "Sen": N_("Text goes straight into the app as you type."),
     "Preedit": N_(
         "The word is underlined until it is done. Use it in an app that Sen does not work with."
     ),
     "Emoji Picker": N_("Type an emoji name, then pick from the list."),
-    "OFF": N_("To type English, press the English/Vietnamese key."),
 }
+
+
+def shown_mode(saved):
+    """The switch key picks English, so a saved OFF types as Sen."""
+    return "Sen" if saved == "OFF" else saved
+
 
 # Each language is named in itself, so it can be found whichever one the window is in.
 LANGUAGE_NAMES = {"Vietnamese": "Tiếng Việt", "English": "English"}

@@ -41,6 +41,11 @@ class SettingsModel:
         item = self.metadata.get(key)
         return item[3] if item else fallback
 
+    def follow(self, fresh):
+        """Takes what another read of fcitx5 got; only with nothing waiting to be saved."""
+        self.current = fresh.current
+        self.saved = fresh.saved
+
     def value_of(self, key):
         return self.current.get(key, self.default(key, None))
 

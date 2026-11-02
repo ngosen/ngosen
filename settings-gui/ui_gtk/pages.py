@@ -37,6 +37,7 @@ class SettingsPage:
         self.model = model
         self.on_change = on_change
         self.rows = {}
+        self._following = False
         self.page = Adw.PreferencesPage(title=title, icon_name=icon)
         self._add_header()
         for title, keys in SETTINGS_MAP[category].items():
@@ -71,7 +72,20 @@ class SettingsPage:
             self.rows[key].set_sensitive(self.model.locked_by(key) is None)
 
     def _changed(self, key, value):
+        if self._following:
+            return
         self.on_change(key, value)
+        self._apply_locks()
+
+    def _show_values(self):
+        """Moves the rows to the model's values, as nothing the user changed."""
+        self._following = True
+        for key, row in self.rows.items():
+            if isinstance(row, Adw.SwitchRow):
+                row.set_active(self.value(key).lower() == "true")
+            elif isinstance(row, Adw.ComboRow) and self.value(key) in row.values:
+                row.set_selected(row.values.index(self.value(key)))
+        self._following = False
         self._apply_locks()
 
     def _shown(self, key, value):
@@ -182,14 +196,12 @@ class TypingPage(SettingsPage):
             rows.append(self.retone_note)
         return rows
 
-    def _changed(self, key, value):
-        super()._changed(key, value)
-        if key in ("InputMethod", "OutputCharset", "RetoneSelection"):
-            self.refresh_status()
-
     def refresh_status(self):
         """Shows the notes that depend on what fcitx5 holds, without rebuilding the page."""
         model = page_status.read(self.model.dbus)
+        if model and not self.model.modified:
+            self.model.follow(model)
+            self._show_values()
         show_status(
             self.custom_note,
             page_status.custom_without_keys_line(model, self.model.dbus) if model else "",

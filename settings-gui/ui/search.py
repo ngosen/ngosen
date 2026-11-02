@@ -18,6 +18,9 @@ def find(pages, query):
         for kind in (QCheckBox, QRadioButton, QLabel):
             widgets += page.findChildren(kind)
         for widget in widgets:
+            # A line about a state, not a setting to find.
+            if not getattr(widget, "searchable", True):
+                continue
             text = widget.text().replace("&", "").strip().rstrip(":")
             if not text or len(text) > 80 or not all(w in fold(text) for w in words):
                 continue

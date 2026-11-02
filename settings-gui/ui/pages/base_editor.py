@@ -25,6 +25,7 @@ class BaseEditorPage(QWidget):
     def _add_status_line(self, layout):
         self.status_line = HintLabel("")
         self.status_line.setObjectName("StatusLine")
+        self.status_line.searchable = False
         mute(self.status_line)
         self.status_line.hide()
         layout.addWidget(self.status_line)

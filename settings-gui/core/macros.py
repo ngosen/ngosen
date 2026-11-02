@@ -98,8 +98,9 @@ class MacroTable:
     def follow(self, value_of):
         """Takes the switches as fcitx5 holds them now; only with nothing waiting to be saved."""
         for key, default in DEFAULTS.items():
-            if isinstance(default, bool):
-                self.options[key] = str(value_of(key)).lower() == "true"
+            value = value_of(key)
+            if isinstance(default, bool) and value is not None:
+                self.options[key] = str(value).lower() == "true"
                 self.saved_state[key] = self.options[key]
 
     def save(self):

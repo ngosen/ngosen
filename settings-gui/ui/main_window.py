@@ -502,6 +502,7 @@ class NgoSenSettingsWindow(QMainWindow):
         # The tray menu and the other pages can change what a status line says.
         if event.type() == QEvent.ActivationChange and self.isActiveWindow():
             self._refresh_statuses()
+            self.update_reset_button_state()
 
     def show_check_message(self, text, undo):
         """A message from the check page, with Undo when its fix can be taken back."""

@@ -28,6 +28,7 @@ from i18n import _
 from qtpy.QtCore import QEvent, QSize, Qt, QTimer
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap
 from qtpy.QtWidgets import (
+    QWIDGETSIZE_MAX,
     QButtonGroup,
     QCheckBox,
     QComboBox,
@@ -58,9 +59,6 @@ from ui.typography import emphasize, mute, page_title
 NARROW_WIDTH = 620
 
 
-QWIDGETSIZE_MAX = 16777215
-
-
 class HintLabel(QLabel):
     """A hint that wraps when the page is too narrow for it, and is as tall as its lines."""
 
@@ -72,9 +70,13 @@ class HintLabel(QLabel):
     # hints; pin the height to the width the label really got.
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        self._fit_height()
+        # Pinning the height resizes the label again.
+        if event.size().width() != event.oldSize().width():
+            self._fit_height()
 
     def setText(self, text):
+        if text == self.text():
+            return
         super().setText(text)
         # The pinned height was for the old text, and a label that keeps its width gets no resize.
         self._fit_height()
@@ -170,6 +172,7 @@ class DynamicSettingsPage(QWidget):
         self._fields = {}
         self._custom_hint = None
         self._retone_note = None
+        self._following = False
 
         self._setup_ui()
         self.load_config()
@@ -381,6 +384,7 @@ class DynamicSettingsPage(QWidget):
             self._retone_note = HintLabel("")
             self._retone_note.setContentsMargins(hint.contentsMargins())
             self._retone_note.setObjectName("RetoneNote")
+            self._retone_note.searchable = False
             mute(self._retone_note)
             self._retone_note.hide()
             layout.addWidget(self._retone_note)
@@ -389,10 +393,15 @@ class DynamicSettingsPage(QWidget):
 
     def refresh_status(self):
         """Shows the notes that depend on what fcitx5 holds, without rebuilding the page."""
+        if self._custom_hint is None and self._retone_note is None:
+            return
         model = page_status.read(self.dbus)
         if model is not None:
-            # This page's own choices may still be waiting to be saved.
-            model.current.update(self.model.modified)
+            if self.model.modified:
+                model.current.update(self.model.modified)
+            else:
+                self.model.follow(model)
+                self._show_values()
         for label, line in (
             (self._custom_hint, lambda: page_status.custom_without_keys_line(model, self.dbus)),
             (self._retone_note, lambda: page_status.retone_line(model)),
@@ -401,6 +410,18 @@ class DynamicSettingsPage(QWidget):
                 text = line() if model is not None else ""
                 label.setText(text)
                 label.setVisible(bool(text))
+
+    def _show_values(self):
+        """Moves the controls to the model's values, as nothing the user changed."""
+        self._following = True
+        for key, control in self._controls.items():
+            value = self.model.value_of(key)
+            if isinstance(control, QCheckBox):
+                control.setChecked(str(value).lower() == "true")
+            elif isinstance(control, QComboBox) and control.findData(str(value)) >= 0:
+                control.setCurrentIndex(control.findData(str(value)))
+        self._following = False
+        self._apply_locks()
 
     def _apply_locks(self):
         for key in DEPENDS:
@@ -523,6 +544,7 @@ class DynamicSettingsPage(QWidget):
         # Custom takes its keys only from the Keymap tab, so without one it types no marks.
         self._custom_hint = HintLabel("")
         self._custom_hint.setObjectName("CustomKeymapHint")
+        self._custom_hint.searchable = False
         mute(self._custom_hint)
         self._custom_hint.hide()
         layout.addWidget(self._custom_hint)
@@ -840,6 +862,8 @@ class DynamicSettingsPage(QWidget):
 
     def update_config(self, key: str, new_value):
         """Updates internal state and notifies parent window of change."""
+        if self._following:
+            return
         self.model.set(key, new_value)
         self._last_changed_key = key
         self._apply_locks()

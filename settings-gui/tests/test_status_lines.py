@@ -83,6 +83,12 @@ class LinesTest(unittest.TestCase):
             line(model_of({"RetoneSelection": "True", "OutputCharset": "VIQR"})), ""
         )
 
+    def test_a_key_without_a_label_names_itself(self):
+        model = model_of({"EnableMacro": "False", "InputMethod": "Telex"})
+        model.metadata = {}
+        self.assertIn("EnableMacro", page_status.macro_line(model))
+        self.assertIn("InputMethod", page_status.keymap_line(model))
+
     def test_a_key_fcitx5_does_not_report_blocks_nothing(self):
         model = model_of({})
         model.metadata = {}
@@ -112,11 +118,11 @@ class HintLabelTest(unittest.TestCase):
         label = HintLabel("short")
         label.resize(120, 20)
         app.processEvents()
-        label.setText("short")
+        label.setText("tiny")
         short = label.height()
         label.setText("a much longer line of text that has to wrap over a few lines here " * 3)
         self.assertGreater(label.height(), short)
-        label.setText("short")
+        label.setText("tiny")
         self.assertEqual(label.height(), short)
 
 
@@ -192,6 +198,14 @@ class EditorPageTest(unittest.TestCase):
             page.refresh_status()
         changed.assert_not_called()
 
+    def test_a_switch_fcitx5_does_not_report_keeps_its_value(self):
+        fake = FakeDBusHandler({"CapitalizeMacro": "True"})
+        page = MacroEditorPage(fake)
+        with mock.patch("core.settings_model.SettingsModel.value_of", return_value=None):
+            page.refresh_status()
+        self.assertTrue(page.cb_capitalize.isChecked())
+        self.assertFalse(page.is_modified())
+
     def test_the_line_hides_without_fcitx5(self):
         fake = NoFcitx({"EnableMacro": "False"})
         page = MacroEditorPage(fake)
@@ -221,6 +235,30 @@ class TypingPageTest(unittest.TestCase):
         fake.down = True
         page.refresh_status()
         self.assertFalse(hint_shown(page, "CustomKeymapHint"))
+
+    def test_the_controls_follow_a_change_from_the_tray(self):
+        fake = FakeDBusHandler({"AutoNonVnRestore": "True", "OutputCharset": "Unicode"})
+        page = self.page(fake)
+        written = dict(fake.values)
+        fake.values.update(AutoNonVnRestore="False", OutputCharset="VIQR")
+        written.update(AutoNonVnRestore="False", OutputCharset="VIQR")
+        page.refresh_status()
+        self.assertFalse(page.control_for("AutoNonVnRestore").isChecked())
+        self.assertFalse(page.control_for("SpellCheck").isEnabled())
+        self.assertEqual(page.control_for("OutputCharset").currentData(), "VIQR")
+        self.assertFalse(page.modified_values)
+        self.assertEqual(fake.values, written)
+
+    def test_a_choice_waiting_to_be_saved_is_not_overwritten(self):
+        fake = FakeDBusHandler({"OutputCharset": "Unicode", "SpellCheck": "True"})
+        page = self.page(fake)
+        page.control_for("OutputCharset").setCurrentIndex(
+            page.control_for("OutputCharset").findData("VIQR")
+        )
+        fake.values["SpellCheck"] = "False"
+        page.refresh_status()
+        self.assertEqual(page.control_for("OutputCharset").currentData(), "VIQR")
+        self.assertTrue(page.control_for("SpellCheck").isChecked())
 
     def test_refreshing_keeps_the_page_widgets(self):
         page = self.page(FakeDBusHandler())
@@ -284,6 +322,20 @@ class WindowStatusTest(unittest.TestCase):
             app.sendEvent(window, QEvent(QEvent.ActivationChange))
         self.assertFalse(page.cb_enable.isChecked())
         self.assertFalse(page.status_line.isHidden())
+
+    def test_a_status_line_is_not_a_search_result(self):
+        window = self.window(FakeDBusHandler({"EnableMacro": "False"}))
+        page = next(p for p in window._pages if isinstance(p, MacroEditorPage))
+        window.search_field.setText(page.status_line.text())
+        self.assertEqual(window.search_results.item(0).text(), "No settings found")
+
+    def test_coming_back_updates_the_reset_button(self):
+        fake = FakeDBusHandler({"EnableMacro": "True"})
+        window = self.window(fake)
+        with mock.patch.object(window, "update_reset_button_state") as update:
+            with mock.patch.object(window, "isActiveWindow", return_value=True):
+                app.sendEvent(window, QEvent(QEvent.ActivationChange))
+        update.assert_called()
 
     def test_undo_and_the_defaults_refresh_the_lines(self):
         fake = FakeDBusHandler({"EnableMacro": "True"})

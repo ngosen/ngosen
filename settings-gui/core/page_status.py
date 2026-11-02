@@ -23,8 +23,12 @@ def _off(model, key):
     return value is not None and not is_on(value)
 
 
+def _name(model, key):
+    return model.label(key) or key
+
+
 def _turn_on(model, keys):
-    off = [model.label(key) for key in keys if _off(model, key)]
+    off = [_name(model, key) for key in keys if _off(model, key)]
     return _("Not in use now: turn on {}.").format(", ".join(off)) if off else ""
 
 
@@ -43,10 +47,10 @@ def keymap_line(model):
     switch_off = _off(model, "EnableCustomKeymap")
     if other_method and switch_off:
         return _("Not in use now: turn on {} and choose Custom in {}.").format(
-            model.label("EnableCustomKeymap"), model.label("InputMethod")
+            _name(model, "EnableCustomKeymap"), _name(model, "InputMethod")
         )
     if other_method:
-        return _("Not in use now: choose Custom in {}.").format(model.label("InputMethod"))
+        return _("Not in use now: choose Custom in {}.").format(_name(model, "InputMethod"))
     return _turn_on(model, ("EnableCustomKeymap",))
 
 

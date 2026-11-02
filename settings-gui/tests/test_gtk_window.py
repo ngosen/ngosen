@@ -655,6 +655,18 @@ class GtkStatusLinesTest(unittest.TestCase):
         w._refresh_statuses()
         self.assertFalse(w.macros.status.get_visible())
 
+    def test_the_typing_rows_follow_a_change_from_the_tray(self):
+        fake = FakeDBusHandler({"AutoNonVnRestore": "True", "OutputCharset": "Unicode"})
+        w = self.window(fake)
+        fake.values.update(AutoNonVnRestore="False", OutputCharset="VIQR")
+        written = dict(fake.values)
+        w._refresh_statuses()
+        self.assertFalse(w.typing.rows["AutoNonVnRestore"].get_active())
+        self.assertFalse(w.typing.rows["SpellCheck"].get_sensitive())
+        row = w.typing.rows["OutputCharset"]
+        self.assertEqual(row.values[row.get_selected()], "VIQR")
+        self.assertEqual(fake.values, written)
+
     def test_a_status_line_is_not_a_search_result(self):
         fake = FakeDBusHandler({"EnableMacro": "False"})
         w = self.window(fake)

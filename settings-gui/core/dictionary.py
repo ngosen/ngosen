@@ -83,8 +83,10 @@ class Dictionary:
 
     def follow(self, value_of):
         """Takes the switch as fcitx5 holds it now; only with nothing waiting to be saved."""
-        self.enabled = str(value_of("EnableDictionary")).lower() == "true"
-        self.saved_state["EnableDictionary"] = self.enabled
+        value = value_of("EnableDictionary")
+        if value is not None:
+            self.enabled = str(value).lower() == "true"
+            self.saved_state["EnableDictionary"] = self.enabled
 
     def save(self):
         """Writes the switch and the words. False when fcitx5 cannot be reached.

@@ -691,6 +691,12 @@ class GtkUndoTest(unittest.TestCase):
         self.assertTrue(self.window.toast.get_button_label())
         self.window.toast.emit("button-clicked")
 
+    def test_a_fix_with_undo_stays_until_closed(self):
+        self.window.show_check_message("Fixed.", lambda: True)
+        self.assertEqual(self.window.toast.get_timeout(), 0)
+        self.window.show_check_message("Paste it.", None)
+        self.assertEqual(self.window.toast.get_timeout(), 5)
+
     def test_undo_puts_a_setting_back_and_shows_it(self):
         self.window.typing.rows["SpellCheck"].set_active(False)
         self.assertEqual(self.dbus.values["SpellCheck"], "False")

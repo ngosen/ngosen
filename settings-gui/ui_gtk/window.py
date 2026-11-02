@@ -431,7 +431,7 @@ class Window(Adw.ApplicationWindow):
 
     def show_check_message(self, text, undo):
         """A toast from the check page, with Undo when its fix can be taken back."""
-        toast = Adw.Toast(title=text)
+        toast = Adw.Toast(title=text, timeout=0 if undo is not None else 5)
         if undo is not None:
             _undo_button(toast, lambda: self._undo_fix(undo))
         self._show(toast)

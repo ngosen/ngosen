@@ -4,7 +4,7 @@
 """The one message over the bottom of the pages: what was saved, or what went wrong."""
 
 from i18n import _
-from qtpy.QtCore import QEvent, QPoint, QSize, Qt, QTimer
+from qtpy.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Signal
 from qtpy.QtGui import QIcon, QPainter
 from qtpy.QtWidgets import (
     QApplication,
@@ -41,6 +41,8 @@ class MessageLabel(QLabel):
 class MessageBar(QFrame):
     """Floats over `host` instead of taking room in a layout, so showing it moves no control."""
 
+    gone = Signal()
+
     def __init__(self, host, on_undo):
         super().__init__(host.parentWidget())
         self.host = host
@@ -71,20 +73,23 @@ class MessageBar(QFrame):
         host.installEventFilter(self)
         QApplication.instance().focusChanged.connect(self._keep_focus_clear)
 
-    def show_message(self, text, undo=False, error=False, keep=False):
+    def show_message(self, text, undo=False, error=False, keep=False, closable=True):
         """Errors and `keep` messages stay until closed; the rest leave by themselves."""
         if error:
-            fill, border = brand.pick(self, brand.ERROR_FILL), brand.pick(self, brand.ERROR_BORDER)
+            colors = brand.ERROR_FILL, brand.ERROR_BORDER
         else:
-            fill, border = brand.pick(self, brand.SAVED_FILL), brand.pick(self, brand.SAVED_BORDER)
+            colors = brand.SAVED_FILL, brand.SAVED_BORDER
+        # From the host: a widget with a style sheet of its own keeps its old palette.
+        fill, border = (brand.pick(self.host, color) for color in colors)
         self.setStyleSheet(
             f"QFrame#SaveMessage {{ background: {fill}; border: 1px solid {border};"
             " border-radius: 6px; }"
         )
-        self.label.setWordWrap(error)
+        self.label.setWordWrap(error or keep)
         self.label.setText(text)
-        self.label.setToolTip("" if error else text)
+        self.label.setToolTip("" if error or keep else text)
         self.undo_button.setVisible(undo)
+        self.close_button.setVisible(closable)
         self.show()
         self.raise_()
         self.place()
@@ -96,6 +101,7 @@ class MessageBar(QFrame):
     def dismiss(self):
         self.timer.stop()
         self.hide()
+        self.gone.emit()
 
     def room_needed(self):
         """Height a page must keep free at its end, so its last control can clear one line."""
@@ -113,6 +119,7 @@ class MessageBar(QFrame):
             height = layout.totalHeightForWidth(width)
         else:
             height = layout.totalSizeHint().height()
+        height = min(height, self.host.height() - 2 * GAP)
         y = corner.y() + self.host.height() - height - GAP
         self.setGeometry(corner.x() + SIDE_MARGIN, y, width, height)
         self._keep_focus_clear()
@@ -123,14 +130,19 @@ class MessageBar(QFrame):
         return False
 
     def _expire(self):
-        if self.underMouse() or self.isAncestorOf(QApplication.focusWidget()):
+        # Close takes focus when Undo hides itself, and must not hold the message up.
+        held = self.underMouse() or QApplication.focusWidget() is self.undo_button
+        if held or not self.isActiveWindow():
             self.timer.start()
         else:
-            self.hide()
+            self.dismiss()
 
     def _keep_focus_clear(self, *_widgets):
         focused = QApplication.focusWidget()
         if self.isHidden() or focused is None or not self.host.isAncestorOf(focused):
+            return
+        # Scrolling between press and release would lose the click.
+        if QApplication.mouseButtons() != Qt.NoButton:
             return
         scroll = focused.parentWidget()
         while scroll is not None and not isinstance(scroll, QScrollArea):

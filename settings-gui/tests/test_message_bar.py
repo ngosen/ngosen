@@ -9,17 +9,20 @@ from unittest import mock
 # isort: off
 from support import FakeDBusHandler, app
 from qtpy.QtCore import QPoint, QRect, Qt
+from qtpy.QtGui import QColor, QPalette
 from qtpy.QtTest import QTest
 from qtpy.QtWidgets import (
     QAbstractButton,
     QAbstractItemView,
     QApplication,
+    QCheckBox,
     QComboBox,
     QLineEdit,
     QScrollArea,
     QStyleFactory,
     QTabWidget,
 )
+from ui import brand
 from ui.main_window import NgoSenSettingsWindow
 
 # isort: on
@@ -47,6 +50,8 @@ class WindowCase(unittest.TestCase):
         self.addCleanup(self.window.close)
         self.window.resize(750, 500)
         self.window.show()
+        self.window.activateWindow()
+        QTest.qWaitForWindowActive(self.window)
         app.processEvents()
 
     def every_page(self):
@@ -67,6 +72,8 @@ class WindowCase(unittest.TestCase):
 class StaysPutTest(WindowCase):
     def test_showing_a_message_moves_nothing(self):
         for page in self.every_page():
+            # A page settles a moment after it first opens, with or without a message.
+            app.processEvents()
             self.window.message_bar.hide()
             app.processEvents()
             before = [on_screen(widget) for widget in controls_of(page)]
@@ -160,6 +167,29 @@ class CoverTest(WindowCase):
         self.assertTrue(on_screen(scroll.viewport()).contains(on_screen(target)))
 
 
+class ClickTest(WindowCase):
+    def test_a_click_on_a_control_near_the_bar_lands(self):
+        page = next(self.every_page())
+        self.window._show_message("Saved.", undo=True)
+        app.processEvents()
+        scroll = page.findChild(QScrollArea)
+        box = next(b for b in page.findChildren(QCheckBox) if b.isVisible())
+        bar_top = on_screen(self.window.message_bar).top()
+        # Half the box above the bar, so giving it focus would scroll the page.
+        overlap = on_screen(box).bottom() - bar_top - box.height() // 2
+        scroll.verticalScrollBar().setValue(scroll.verticalScrollBar().value() + overlap)
+        app.processEvents()
+        self.assertTrue(on_screen(box).intersects(on_screen(self.window.message_bar)))
+        self.window.sidebar.setFocus()
+        before = box.isChecked()
+        # The pointer stays still: if the page scrolls, the release lands elsewhere on the box.
+        pointer = box.mapToGlobal(QPoint(8, 3))
+        QTest.mousePress(box, Qt.LeftButton, Qt.NoModifier, QPoint(8, 3))
+        app.processEvents()
+        QTest.mouseRelease(box, Qt.LeftButton, Qt.NoModifier, box.mapFromGlobal(pointer))
+        self.assertNotEqual(box.isChecked(), before)
+
+
 class LifeTest(WindowCase):
     def expire(self):
         self.window.message_bar.timer.timeout.emit()
@@ -192,6 +222,40 @@ class LifeTest(WindowCase):
         self.expire()
         self.assertFalse(self.window.message_bar.isHidden())
 
+    def test_focus_left_on_close_after_undo_does_not_hold_it(self):
+        self.window._show_message("Saved.", undo=True)
+        self.window.message_bar.close_button.setFocus()
+        app.processEvents()
+        self.assertIs(QApplication.focusWidget(), self.window.message_bar.close_button)
+        self.expire()
+        self.assertTrue(self.window.message_bar.isHidden())
+
+    def test_it_stays_while_the_window_is_in_the_background(self):
+        self.window._show_message("Paste it into the message.")
+        with mock.patch.object(self.window.message_bar, "isActiveWindow", return_value=False):
+            self.expire()
+        self.assertFalse(self.window.message_bar.isHidden())
+
+    def test_a_fix_with_undo_stays_and_shows_all_its_text(self):
+        self.window.show_check_message("Fixed one. Fixed another.", lambda: True)
+        self.assertFalse(self.window.message_bar.timer.isActive())
+        self.assertTrue(self.window.message_label.wordWrap())
+        self.window.show_check_message("Paste it.", None)
+        self.assertTrue(self.window.message_bar.timer.isActive())
+
+    def test_colours_follow_the_window_palette(self):
+        self.window._show_message("Saved.")
+        palette = QPalette(app.palette())
+        self.addCleanup(app.setPalette, QPalette(app.palette()))
+        palette.setColor(QPalette.Window, QColor("#222222"))
+        palette.setColor(QPalette.WindowText, QColor("#eeeeee"))
+        app.setPalette(palette)
+        app.processEvents()
+        self.window._show_message("Saved.")
+        fill = brand.pick(self.window, brand.SAVED_FILL)
+        self.assertEqual(fill, brand.SAVED_FILL[1])
+        self.assertIn(fill, self.window.message_bar.styleSheet())
+
     def test_errors_and_replace_all_messages_stay_until_closed(self):
         for kwargs in ({"error": True}, {"keep": True}):
             self.window._show_message("Message.", **kwargs)
@@ -222,6 +286,36 @@ class LifeTest(WindowCase):
         self.assertFalse(window.message_bar.timer.isActive())
         window.on_changed()
         self.assertTrue(window.message_bar.isHidden())
+
+    def conflict(self):
+        window = self.window
+        return (
+            mock.patch.object(window, "has_validation_errors", return_value=True),
+            mock.patch.object(window, "validation_message", return_value="Same key twice."),
+        )
+
+    def test_a_conflict_cannot_be_closed(self):
+        errors, message = self.conflict()
+        with errors, message:
+            self.window.on_changed()
+        self.assertTrue(self.window.message_bar.close_button.isHidden())
+        self.window._show_message("Saved.")
+        self.assertFalse(self.window.message_bar.close_button.isHidden())
+
+    def test_a_conflict_comes_back_after_another_message(self):
+        errors, message = self.conflict()
+        with errors, message:
+            self.window.on_changed()
+            self.window._show_message("Backed up.")
+            self.expire()
+        self.assertEqual(self.window.message_label.text(), "Same key twice.")
+        self.assertFalse(self.window.message_bar.isHidden())
+
+    def test_a_huge_error_stays_inside_the_pages(self):
+        self.window._show_message("\n".join(["A line"] * 60), error=True)
+        app.processEvents()
+        stack = on_screen(self.window.content_stack)
+        self.assertTrue(stack.contains(on_screen(self.window.message_bar)))
 
     def test_another_error_stays_after_a_later_change(self):
         self.window._show_message("Could not save.", error=True)

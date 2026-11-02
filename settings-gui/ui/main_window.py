@@ -116,6 +116,7 @@ class NgoSenSettingsWindow(QMainWindow):
         self.message_bar = MessageBar(self.content_stack, self.undo)
         self.message_label = self.message_bar.label
         self.btn_undo = self.message_bar.undo_button
+        self.message_bar.gone.connect(self._on_message_gone)
 
         # Pages Mapping
         self._setup_pages()
@@ -279,10 +280,19 @@ class NgoSenSettingsWindow(QMainWindow):
 
         layout.addWidget(container)
 
-    def _show_message(self, text, undo=False, error=False, keep=False):
+    def _show_message(self, text, undo=False, error=False, keep=False, closable=True):
         self._undo_fix = None
         self._showing_conflict = False
-        self.message_bar.show_message(text, undo=undo, error=error, keep=keep)
+        self.message_bar.show_message(text, undo=undo, error=error, keep=keep, closable=closable)
+
+    def _show_conflict(self):
+        # Nothing saves until it is fixed, so it can be neither closed nor outlived.
+        self._show_message(self.validation_message(), error=True, closable=False)
+        self._showing_conflict = True
+
+    def _on_message_gone(self):
+        if self.has_validation_errors():
+            self._show_conflict()
 
     def _setup_pages(self):
         def create_typing():
@@ -414,8 +424,7 @@ class NgoSenSettingsWindow(QMainWindow):
         self.update_reset_button_state()
         if self.has_validation_errors():
             self._save_timer.stop()
-            self._show_message(self.validation_message(), error=True)
-            self._showing_conflict = True
+            self._show_conflict()
             return
         if self._showing_conflict:
             self._showing_conflict = False
@@ -485,7 +494,7 @@ class NgoSenSettingsWindow(QMainWindow):
     def show_check_message(self, text, undo):
         """A message from the check page, with Undo when its fix can be taken back."""
         self._undo_to = None
-        self._show_message(text, undo=undo is not None)
+        self._show_message(text, undo=undo is not None, keep=undo is not None)
         self._undo_fix = undo
 
     def _show_count(self, count):

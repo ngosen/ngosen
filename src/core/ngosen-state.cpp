@@ -497,6 +497,8 @@ namespace ngosen {
             ++keyCount_;
             if (ngosen::key::isBackspace(keyEvent.sym()))
                 closeCheckBeforeOtherEdit();
+            if (oldPreBuffer_.empty())
+                backspaceInWord_ = false;
         }
         handleKey(keyEvent);
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
@@ -504,8 +506,9 @@ namespace ngosen {
             clickBeforeKey_ = false;
             // A backspace that leaves no word being typed can end right after an older word.
             backspaceBeforeKey_ = ngosen::key::isBackspace(keyEvent.sym()) && oldPreBuffer_.empty();
-            backspaceInWord_    = !oldPreBuffer_.empty() && (backspaceInWord_ || ngosen::key::isBackspace(keyEvent.sym()));
-            reportAtKey_        = host_->surrounding();
+            if (ngosen::key::isBackspace(keyEvent.sym()) && !oldPreBuffer_.empty())
+                backspaceInWord_ = true;
+            reportAtKey_ = host_->surrounding();
         }
         // A report with the cursor at the end of the text tells how long the text is.
         const ngosen::Surrounding s = host_->surrounding();
@@ -1002,7 +1005,6 @@ namespace ngosen {
         tracking_modifier_tap_   = false;
         lock_word_pending_       = false;
         enter_after_replacement_ = false;
-        backspaceInWord_         = false;
         oldPreBuffer_.clear();
         lastWord_.clear();
         hasHistory_ = false;

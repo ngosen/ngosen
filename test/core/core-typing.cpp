@@ -1823,18 +1823,23 @@ namespace {
     }
 
     // '<' stands for a Backspace press.
-    std::string typedWithBackspaces(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, int gapMs, std::vector<std::string>& lines,
+    std::string typedWithBackspaces(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::vector<int>& gapsMs, std::vector<std::string>& lines,
                                     ngosen::test::Path* sent = nullptr) {
         FakeResources resources;
         auto          keys = keysOf(typed);
         std::replace(keys.begin(), keys.end(), static_cast<uint32_t>('<'), static_cast<uint32_t>(ngosen::key::BackSpace));
         ngosen::test::captureLog(true);
-        const auto run = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), gapMs));
+        const auto run = ngosen::test::typeInAppTraced(resources, field, quirks, keys, gapsMs);
         lines          = ngosen::test::capturedLog();
         ngosen::test::captureLog(false);
         if (sent != nullptr)
             *sent = run.sent;
         return run.text;
+    }
+
+    std::string typedWithBackspaces(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, int gapMs, std::vector<std::string>& lines,
+                                    ngosen::test::Path* sent = nullptr) {
+        return typedWithBackspaces(field, quirks, typed, std::vector<int>(typed.size(), gapMs), lines, sent);
     }
 
     // An app over IBus may report a replacement only with a later key, so its check stays open that long.
@@ -1912,23 +1917,27 @@ namespace {
 
     // A report still on its way can show the word a Backspace left while the app holds other text.
     void testLateReportAfterBackspace() {
-        const Field gnome = makeField("ibus", true);
-        auto        keys  = keysOf("muoons tieesng<<ng ");
-        std::replace(keys.begin(), keys.end(), static_cast<uint32_t>('<'), static_cast<uint32_t>(ngosen::key::BackSpace));
-        std::vector<int> gapsMs(keys.size(), 500);
+        const Field              gnome = makeField("ibus", true);
+        std::vector<std::string> lines;
+        const std::string        typed = "muoons tieesng<<ng ";
+        std::vector<int>         gapsMs(typed.size(), 500);
         // From the s of the word, so the report of its commit lands just before the key after the Backspaces.
         gapsMs[11] = 20;
         std::fill(gapsMs.begin() + 12, gapsMs.begin() + 16, 15);
-        FakeResources resources;
-        ngosen::test::captureLog(true);
-        const auto run   = ngosen::test::typeInAppTraced(resources, gnome, {.reportDelayMs = 80, .reportsTextAtChange = true}, keys, gapsMs);
-        auto       lines = ngosen::test::capturedLog();
-        ngosen::test::captureLog(false);
-        check(run.text == "muốn tiếng " && !lastReplacementDeletedThroughCopy(lines), "late report: the word goes on through backspaces after the user's Backspace",
-              run.text + " " + join(lines));
+        auto text = typedWithBackspaces(gnome, {.reportDelayMs = 80, .reportsTextAtChange = true}, typed, gapsMs, lines);
+        check(text == "muốn tiếng " && !lastReplacementDeletedThroughCopy(lines), "late report: the word goes on through backspaces after the user's Backspace",
+              text + " " + join(lines));
 
-        auto text = typedWithBackspaces(gnome, {}, "too<oo too ", 400, lines);
+        text = typedWithBackspaces(gnome, {}, "too<oo too ", 400, lines);
         check(text == "tô tô " && lastReplacementDeletedThroughCopy(lines), "late report: the next word uses the surrounding text again", text + " " + join(lines));
+
+        // The space comes during the s's replacement, so it ends the word only when replayed.
+        const std::string quick = "too<oos too ";
+        gapsMs.assign(quick.size(), 400);
+        gapsMs[6] = 5;
+        text      = typedWithBackspaces(gnome, {.lagMs = 40}, quick, gapsMs, lines);
+        check(text == "tố tô " && lastReplacementDeletedThroughCopy(lines), "late report: the next word uses the surrounding text after a replayed space",
+              text + " " + join(lines));
 
         ngosen::test::Path sent;
         text = typedWithBackspaces(makeField("wayland", true, "someapp"), {}, "too<oo ", 400, lines, &sent);

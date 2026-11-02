@@ -679,6 +679,13 @@ class GtkCheckDialogTest(unittest.TestCase):
         with mock.patch.dict(os.environ, self.NO_IM, clear=True):
             self.check = check_dialog.CheckDialog(FakeDBusHandler(), "1.4.2")
 
+    def test_every_result_icon_is_in_adwaita(self):
+        # GNOME's own theme: a name it lacks draws as a broken image there, while Breeze may have it.
+        theme = Gtk.IconTheme()
+        theme.set_theme_name("Adwaita")
+        for icon, _css in check_dialog.ICONS.values():
+            self.assertTrue(theme.has_icon(icon), icon)
+
     def clipboard(self):
         text = []
         clipboard = Gdk.Display.get_default().get_clipboard()

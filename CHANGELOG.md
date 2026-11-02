@@ -17,6 +17,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Cửa sổ cài đặt: bản GTK trên GNOME không còn hiện icon ảnh vỡ ở các bước Kiểm tra máy đã đạt; bản Qt không còn cắt cụt dòng Mẹo khi vẫn còn chỗ; "Không phải đầu từ" đổi thành "Trong từ" và "Phím tắt cho Chế độ gõ mặc định" thành "Phím tắt cho Mặc định" để không bị cắt chữ.
 - Kiểm tra máy trên GNOME: nay báo khi thiếu hoặc chưa bật extension Input Method Panel, vì thiếu nó thì menu chế độ `` ` `` và gợi ý Cứu chữ, Cứu dấu không hiện trong ô tìm kiếm của GNOME (#507).
 - GNOME: lệnh cài nay luôn thêm extension Input Method Panel, kể cả khi đã có khay như Ubuntu, để menu chế độ `` ` `` hiện được trong ô tìm kiếm của GNOME và fcitx5 không còn nhắc cài extension mỗi lần đăng nhập. Menu khay ghi rõ "Kiểu gõ (Telex)", "Bảng mã (Unicode)" và đánh dấu ✔ lựa chọn đang dùng; menu chế độ ghi "App: cửa sổ này" thay cho mã nội bộ khi GNOME không cho biết tên app (#506).
 - Gõ Sen trên GNOME: trong ô chỉ cho Ngó Sen xoá qua surrounding text, gõ nhanh hơn app phản hồi (như khi máy bận) không còn làm mất lần thêm dấu, như "vieetj" ra "vieêệt" thay vì "việt". Ngó Sen nay chờ app theo kịp, tối đa 100 ms, rồi mới xoá (#501).

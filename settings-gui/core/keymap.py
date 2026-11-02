@@ -229,7 +229,9 @@ class Keymap:
         if config_data:
             values = config_data.get("values", {})
             previous = values.get("EnableCustomKeymap")
-            values["EnableCustomKeymap"] = "True" if self.enabled else "False"
+            # Something else may have changed the switch since this page read it.
+            if self.enabled != self.saved_state["EnableCustomKeymap"]:
+                values["EnableCustomKeymap"] = "True" if self.enabled else "False"
             if not self.dbus.set_config(values):
                 return False
         elif not self.dbus.iface:

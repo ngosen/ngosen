@@ -17,6 +17,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Cửa sổ cài đặt: giữ lựa chọn từ điển, gõ tắt đổi ở menu khay khi lưu trang đó (#517).
+- Cửa sổ cài đặt: bản Qt nói rõ nút Mặc định xoá dữ liệu đã lưu và có thể hoàn tác ngay (#517).
 - Gõ Sen trên GNOME: gõ chậm trong Firefox không còn khiến Ngó Sen chuyển hẳn sang xoá bằng BackSpace sau vài từ đầu, làm mỗi từ gõ lâu hơn dù chữ vẫn đúng. Ngó Sen nay chờ app báo lại lần xoá tới 1 giây, không bỏ surrounding text chỉ vì app im lặng; app bỏ lệnh xoá hoặc xoá sai thì vẫn chuyển sang BackSpace (#515).
 - Cửa sổ cài đặt: bản GTK trên GNOME không còn hiện icon ảnh vỡ ở các bước Kiểm tra máy đã đạt; bản Qt không còn cắt cụt dòng Mẹo khi vẫn còn chỗ; "Không phải đầu từ" đổi thành "Trong từ" và "Phím tắt cho Chế độ gõ mặc định" thành "Phím tắt cho Mặc định" để không bị cắt chữ (#514).
 - Kiểm tra máy trên GNOME: nay báo khi thiếu hoặc chưa bật extension Input Method Panel, vì thiếu nó thì menu chế độ `` ` `` và gợi ý Cứu chữ, Cứu dấu không hiện trong ô tìm kiếm của GNOME (#507).

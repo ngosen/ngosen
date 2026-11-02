@@ -45,11 +45,18 @@ class WhatsNewPage:
 
     def _feature_rows(self, feature):
         row = Adw.ActionRow(title=_(feature["title"]), subtitle=_(feature["how"]), use_markup=False)
+        if feature["example"]:
+            row.add_suffix(
+                Gtk.Label(
+                    label=feature["example"],
+                    css_classes=["typed"],
+                    valign=Gtk.Align.CENTER,
+                    wrap=True,
+                    width_chars=14,
+                )
+            )
         self._add_button(row, feature["target"])
-        if not feature["example"]:
-            return [row]
-        example = Adw.ActionRow(title=feature["example"], use_markup=False, css_classes=["typed"])
-        return [row, example]
+        return [row]
 
     def _add_button(self, row, target):
         if target is None:

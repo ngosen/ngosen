@@ -1167,6 +1167,26 @@ class GtkWhatsNewPageTest(unittest.TestCase):
             else:
                 self.assertEqual(w.stack.get_visible_child_name(), name)
 
+    def test_an_example_shares_the_row_of_its_feature(self):
+        w = window.Window(None, FakeDBusHandler())
+        self.addCleanup(w.destroy)
+        rows = [r for r in _children(w.whats_new.page) if isinstance(r, Adw.ActionRow)]
+        titled = {r.get_title(): r for r in rows}
+        examples = [f for f in whats_new_content.FEATURES if f["example"]]
+        self.assertTrue(examples)
+        for feature in examples:
+            labels = [c for c in _children(titled[feature["title"]]) if isinstance(c, Gtk.Label)]
+            self.assertIn(feature["example"], [label.get_text() for label in labels])
+        self.assertEqual([r for r in rows if r.has_css_class("typed")], [])
+
+    def test_the_about_button_fits_its_label(self):
+        w = window.Window(None, FakeDBusHandler())
+        self.addCleanup(w.destroy)
+        about = w.stack.get_child_by_name("about")
+        buttons = [c for c in _children(about) if isinstance(c, Gtk.Button)]
+        pills = [b for b in buttons if b.has_css_class("pill")]
+        self.assertEqual([b.get_halign() for b in pills], [Gtk.Align.CENTER])
+
     def assert_scrolled_to(self, open_it):
         """open_it(window) focuses a row low on a page never shown; the page must scroll to it."""
         w = window.Window(None, FakeDBusHandler())

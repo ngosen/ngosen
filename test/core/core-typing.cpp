@@ -1897,6 +1897,10 @@ namespace {
         check(text == "tô tô " && countHaving(lines, "Fix the dropped deletion") == 1 && countHaving(lines, "Surrounding text untrusted") == 1,
               "long check: a late report of a dropped deletion is fixed", text + " " + join(lines));
 
+        text = typedWithBackspaces(gnome, {.repeatsOldTextAfterDelete = true, .deletesOneTooMany = true}, "coo too too ", 400, lines);
+        check(countHaving(lines, "text before it wrong") >= 1 && countHaving(lines, "Surrounding text untrusted") == 1,
+              "long check: a wrong deletion reported late marks the field", text + " " + join(lines));
+
         text = typedWithBackspaces(gnome, {.ignoresSurroundingDel = true, .repeatsOldTextAfterDelete = true}, "too too ", 400, lines);
         check(text == "toô tô " && countHaving(lines, "Leave the dropped deletion") == 1 && countHaving(lines, "Surrounding text untrusted") == 1,
               "long check: a dropped deletion seen after a key costs one word", text + " " + join(lines));
@@ -1906,7 +1910,7 @@ namespace {
     void testEditsDuringLongCheck() {
         const Field              gnome = makeField("ibus", true);
         std::vector<std::string> lines;
-        for (const int gapMs : {150, 300}) {
+        for (const int gapMs : {90, 150, 300}) {
             const auto text = typedWithBackspaces(gnome, {.repeatsOldTextAfterDelete = true}, "coo too<<", gapMs, lines);
             check(countHaving(lines, "Surrounding text untrusted") == 0 && countHaving(lines, "text before it wrong") == 0,
                   "long check: Backspace is not a wrong report, " + std::to_string(gapMs) + " ms apart", text + " " + join(lines));
@@ -1932,9 +1936,13 @@ namespace {
                 app->type(static_cast<uint32_t>(typed[i]));
                 loop.pump(i + 1 == typed.size() ? 100 : 600);
             }
+            ngosen::test::captureLog(true);
             app->leaveFocus(2000);
             loop.pump(1000);
-            check(app->text() != "xin t", "long check: no fix while out of focus, report after " + std::to_string(delayMs) + " ms", app->text());
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(app->text() == "xin toô" && countHaving(lines, "Fix the dropped deletion") == 0,
+                  "long check: no fix while out of focus, report after " + std::to_string(delayMs) + " ms", app->text() + " " + join(lines));
         }
     }
 

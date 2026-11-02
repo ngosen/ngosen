@@ -55,6 +55,7 @@ namespace ngosen::test {
         bool repeatsOldTextAfterDelete    = false; // reports its text from before a deletion until a typed key, as Firefox on GNOME does
         int  keysBeforeNewReport          = 1;     // typed keys it takes to end repeatsOldTextAfterDelete
         bool silentFromFirstDeletion      = false; // stops reporting at its first deletion through the surrounding text, for good
+        bool deletesOneTooMany            = false; // takes one more character than a deletion through the surrounding text asks for
         bool showsEnter                   = false; // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
         bool showsTab                     = false; // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
         // Applies deletions and commits once per main-loop turn, keeping only the last of each, as a

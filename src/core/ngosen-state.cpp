@@ -493,8 +493,11 @@ namespace ngosen {
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
         // Counted first, so a replacement this key starts does not count it as a later key.
-        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+        if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;
+            if (ngosen::key::isBackspace(keyEvent.sym()))
+                closeCheckOnBackspace();
+        }
         handleKey(keyEvent);
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             keySinceReport_ = true;

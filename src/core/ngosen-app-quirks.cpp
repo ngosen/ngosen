@@ -147,6 +147,7 @@ namespace ngosen {
     bool reportsSurroundingEditsLate(const Field& field) {
         // Firefox may report our deletion and commit only after the next key, and the replacement that
         // finds the copy stale then mixes both paths. Nothing it reports shows this before it happens.
+        // Over IBus the mixed words come out right, so it keeps the faster path there.
         return field.frontend != "ibus" && hidesAddressBarFlag(field);
     }
 

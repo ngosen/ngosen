@@ -525,6 +525,7 @@ namespace ngosen {
         bool               checkWaitsForLaterKey() const;
         void               openSurroundingCheck(const Surrounding& sent, const std::string& retype);
         void               checkSurroundingReport();
+        void               closeCheckOnBackspace();
         SurroundingVerdict judgeOpenCheck(const Surrounding& report) const;
         void               closeSurroundingCheck(SurroundingVerdict verdict, const Surrounding* report, bool beforeNext = false);
         void               fixDroppedDeletion(const SurroundingCheck& check, const Surrounding& report);

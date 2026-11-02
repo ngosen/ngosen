@@ -294,7 +294,8 @@ namespace ngosen::test {
             });
             return;
         }
-        later(quirks_.lagMs, [this, offset, size] { eraseAround(offset, size); });
+        const int extra = quirks_.deletesOneTooMany ? 1 : 0;
+        later(quirks_.lagMs, [this, offset, size, extra] { eraseAround(offset - extra, size + extra); });
     }
 
     size_t FakeApp::reportedBytesBefore(unsigned int size) const {

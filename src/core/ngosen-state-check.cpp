@@ -80,13 +80,21 @@ namespace ngosen {
                                                    .commitsAtSend = commitCount_,
                                                    .sentAtUs      = monotonicUs()};
         const bool waitsForKey  = surrCheck_->waitsForKey;
-        const int  waitMs       = waitsForKey ? LaterKeyCheckWaitMs : std::max(engine_->options().waitSurroundingTimeoutMs, SurroundingCheckWaitMs);
+        const int  waitMs       = std::max(engine_->options().waitSurroundingTimeoutMs, waitsForKey ? LaterKeyCheckWaitMs : SurroundingCheckWaitMs);
         surr_check_timer_       = host_->startTimer(monotonicUs() + static_cast<uint64_t>(waitMs) * 1000ULL, waitsForKey ? 1000 : 0, [this](Timer&) {
             // The timer is still running here, so closing must not reset it.
             if (surrCheck_)
                 closeSurroundingCheck(SurroundingVerdict::NoAnswer, nullptr);
             return false;
         });
+    }
+
+    void TypingState::closeCheckOnBackspace() {
+        // The user's Backspace also changes what stands before the commit, so later reports prove nothing.
+        if (!surrCheck_ || !surrCheck_->waitsForKey)
+            return;
+        surr_check_timer_.reset();
+        closeSurroundingCheck(SurroundingVerdict::NoAnswer, nullptr);
     }
 
     SurroundingVerdict TypingState::judgeOpenCheck(const Surrounding& report) const {
@@ -107,10 +115,6 @@ namespace ngosen {
         const auto        verdict = judgeOpenCheck(report);
         // A deletion and its commit can reach the app as two changes; wait for the commit.
         if (verdict == SurroundingVerdict::NoAnswer)
-            return;
-        // By now the user may have edited the text, which also changes what stands before the commit.
-        const bool pastUsualWait = monotonicUs() - surrCheck_->sentAtUs > static_cast<uint64_t>(SurroundingCheckWaitMs) * 1000ULL;
-        if (verdict == SurroundingVerdict::WrongEarlierPart && surrCheck_->waitsForKey && pastUsualWait)
             return;
         surr_check_timer_.reset();
         closeSurroundingCheck(verdict, &report);

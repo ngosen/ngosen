@@ -571,6 +571,7 @@ class DynamicSettingsPage(QWidget):
         visibility_key = MODE_SHORTCUT_TO_VISIBILITY[key]
         visibility_val = self.current_values.get(visibility_key, "True")
         cb = QCheckBox()
+        self._controls[visibility_key] = cb
         cb.setChecked(str(visibility_val).lower() == "true")
         cb.toggled.connect(
             lambda checked, k=visibility_key: self.update_config(k, "True" if checked else "False")
@@ -583,6 +584,8 @@ class DynamicSettingsPage(QWidget):
 
         capture_btn = SingleKeyCaptureWidget(val)
         capture_btn.setFixedWidth(100)
+        self._controls[key] = capture_btn
+        label_widget.setBuddy(capture_btn)
         capture_btn.textChanged.connect(lambda text, k=key: self.update_config(k, text))
         row_layout.addWidget(capture_btn)
 

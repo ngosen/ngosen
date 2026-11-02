@@ -402,6 +402,7 @@ class Window(Adw.ApplicationWindow):
             ("typing", self.typing),
             ("shortcuts", self.shortcuts),
             ("appearance", self.appearance),
+            ("macros", self.macros),
         ):
             control = page.control_for(key) if page else None
             if control is not None:

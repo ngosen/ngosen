@@ -960,6 +960,18 @@ class GtkWhatsNewPageTest(unittest.TestCase):
         self.assertEqual(self.window.tabs["shortcuts"].get_visible_child_name(), "shortcuts")
         self.assertIs(self.window.get_focus(), self.window.shortcuts.hotkeys["ModeMenuKey"])
 
+    def test_open_setting_reaches_the_macro_and_mode_settings(self):
+        w = self.window
+        for key, control, tab in (
+            ("EnableMacro", w.macros.switches["EnableMacro"], "macros"),
+            ("TimeFormat", w.macros.formats["TimeFormat"], "macros"),
+            ("ShowModeSen", w.shortcuts.mode_checks["ShowModeSen"], "shortcuts"),
+            ("ShortcutSen", w.shortcuts.mode_rows["ShortcutSen"], "shortcuts"),
+        ):
+            self.assertTrue(w.open_setting(key), key)
+            self.assertEqual(w.tabs[tab].get_visible_child_name(), tab)
+            self.assertIs(w.get_focus(), control, key)
+
     def test_the_tip_on_the_typing_page_opens_the_tips(self):
         self.window.typing.tip_row.emit("activated")
         self.assertEqual(self.window.stack.get_visible_child_name(), "whats-new")

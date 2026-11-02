@@ -123,7 +123,9 @@ class MacroEditorPage(BaseEditorPage):
                 self.input_time_format.count() - 1, _(macros.EXAMPLES[fmt]), Qt.ToolTipRole
             )
 
-        time_layout.addWidget(QLabel(_("Time Format:")))
+        time_label = QLabel(_("Time Format:"))
+        time_label.setBuddy(self.input_time_format)
+        time_layout.addWidget(time_label)
         time_layout.addWidget(self.input_time_format, 1)
 
         # Date Format
@@ -138,7 +140,9 @@ class MacroEditorPage(BaseEditorPage):
                 self.input_date_format.count() - 1, _(macros.EXAMPLES[fmt]), Qt.ToolTipRole
             )
 
-        date_layout.addWidget(QLabel(_("Date Format:")))
+        date_label = QLabel(_("Date Format:"))
+        date_label.setBuddy(self.input_date_format)
+        date_layout.addWidget(date_label)
         date_layout.addWidget(self.input_date_format, 1)
 
         fmt_hbox.addLayout(time_layout)
@@ -207,6 +211,17 @@ class MacroEditorPage(BaseEditorPage):
 
         content_layout.addLayout(toolbar_layout)
         self.update_button_states()
+        self.controls = {
+            "EnableMacro": self.cb_enable,
+            "CapitalizeMacro": self.cb_capitalize,
+            "EnableMacroInOffMode": self.cb_enable_off_mode,
+            "TimeFormat": self.input_time_format,
+            "DateFormat": self.input_date_format,
+        }
+
+    def control_for(self, key):
+        """The widget that edits a setting, for the window to scroll to and focus."""
+        return self.controls.get(key)
 
     def load_data(self):
         self.blockSignals(True)

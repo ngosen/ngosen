@@ -54,6 +54,10 @@ class MacroPage:
             group.add(row)
         return group
 
+    def control_for(self, key):
+        """The row that edits a setting, for the window to show and focus."""
+        return self.switches.get(key) or self.formats.get(key)
+
     def _on_switch(self, row, _param, key):
         if not self._syncing:
             self._change(

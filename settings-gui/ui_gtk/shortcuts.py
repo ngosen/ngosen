@@ -85,7 +85,7 @@ class ShortcutsPage:
 
     def control_for(self, key):
         """The row or button that edits a setting, for the window to show and focus."""
-        return self.hotkeys.get(key) or self.mode_rows.get(key)
+        return self.hotkeys.get(key) or self.mode_rows.get(key) or self.mode_checks.get(key)
 
     def _first(self, key):
         return next(iter(self.model.hotkeys(key)), "")
@@ -117,6 +117,7 @@ class ShortcutsPage:
         )
         self.modes = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE, css_classes=["boxed-list"])
         self.mode_rows = {}
+        self.mode_checks = {}
         group.add(self.modes)
         hint = Gtk.Label(
             label=_(HINTS["ModeOrder"]),
@@ -138,6 +139,7 @@ class ShortcutsPage:
     def _fill_modes(self):
         self.modes.remove_all()
         self.mode_rows.clear()
+        self.mode_checks.clear()
         keys = {name: key for key, name in MODE_KEY_TO_INTERNAL_NAME.items()}
         for name in self.order():
             key = keys.get(name)
@@ -154,6 +156,7 @@ class ShortcutsPage:
             "toggled", lambda b: self._changed(visible_key, "True" if b.get_active() else "False")
         )
         row.add_prefix(shown)
+        self.mode_checks[visible_key] = shown
         button = HotkeyButton(
             str(self.model.current.get(key, self.model.default(key))), single=True
         )

@@ -25,12 +25,15 @@ namespace ngosen::test {
       public:
         struct Entry;
 
+        // Switches the process to the fake clock, so pumping takes no real time.
+        FakeLoop();
         std::unique_ptr<Timer> add(uint64_t deadlineUs, std::function<bool(Timer&)> onTime);
-        // Fires due timers for about ms milliseconds, sleeping 1 ms between rounds.
+        // Fires due timers for ms milliseconds of the fake clock, advancing it 1 ms between rounds.
         void pump(int ms);
         void remove(Entry* entry);
 
       private:
+        void                fireDue();
         std::vector<Entry*> entries_;
         Entry*              running_ = nullptr;
     };

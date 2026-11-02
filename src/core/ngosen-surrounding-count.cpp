@@ -14,6 +14,24 @@ namespace ngosen {
         bool startsChar(const std::string& text, size_t at) {
             return at >= text.size() || (static_cast<unsigned char>(text[at]) & 0xc0) != 0x80;
         }
+
+        // Bytes of the last chars characters of text, or npos if text is shorter.
+        size_t bytesOfLastChars(const std::string& text, unsigned int chars) {
+            size_t start = text.size();
+            for (unsigned int n = 0; n < chars; ++n) {
+                if (start == 0)
+                    return std::string::npos;
+                do
+                    --start;
+                while (start > 0 && !startsChar(text, start));
+            }
+            return text.size() - start;
+        }
+
+        SurroundingDeletion unmatched(SurroundingDeletion result, const std::string& copyBeforeCursor, const std::string& deleted) {
+            result.wrongBytes = bytesOfLastChars(copyBeforeCursor, result.chars) != deleted.size();
+            return result;
+        }
     } // namespace
 
     SurroundingDeletion countSurroundingDeletion(const std::string& copyBeforeCursor, const std::string& prefix, const std::string& deleted,
@@ -29,7 +47,7 @@ namespace ngosen {
         for (const auto& word : earlierWords)
             shown = shown || (!word.empty() && isEndsWith(copyBeforeCursor, word));
         if (!shown)
-            return result;
+            return unmatched(result, copyBeforeCursor, deleted);
 
         // The frontend deletes the bytes of the last n characters of its copy; pick the smallest n
         // whose bytes cover the deleted part and end on a character boundary of the real text.
@@ -49,7 +67,7 @@ namespace ngosen {
             result.retype = known.substr(known.size() - bytes, bytes - target);
             return result;
         }
-        return result;
+        return unmatched(result, copyBeforeCursor, deleted);
     }
 
 } // namespace ngosen

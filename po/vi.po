@@ -40,7 +40,7 @@ msgstr "Tắt"
 
 #: src/ngosen-config.h:58 src/ngosen-config.h:69
 msgid "Non-Start"
-msgstr "Không phải đầu từ"
+msgstr "Trong từ"
 
 #: src/ngosen-config.h:58 src/ngosen-config.h:69
 msgid "Everywhere"
@@ -269,7 +269,7 @@ msgstr "Hiển thị chế độ gõ mặc định"
 
 #: src/ngosen-config.h:264
 msgid "Shortcut for Default Typing"
-msgstr "Phím tắt cho Chế độ gõ mặc định"
+msgstr "Phím tắt cho Mặc định"
 
 #: src/ngosen-config.h:265
 msgid "Allow Macro in Off Mode"
@@ -350,6 +350,9 @@ msgstr "Gõ"
 #: src/ngosen-engine.cpp:1074
 msgid "App: "
 msgstr "App: "
+
+msgid "this window"
+msgstr "cửa sổ này"
 
 #: src/ngosen-engine.cpp:1099
 msgid "Unknown Mode"
@@ -1484,7 +1487,7 @@ msgstr "hoà, khoẻ, thuý, tuỳ. Tắt: hòa, khỏe, thúy, tùy."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Non-Start: nhw → như, but w alone stays w. Everywhere: w alone gives ư too. uw always gives ư."
-msgstr "Không phải đầu từ: nhw → như, còn w đứng riêng vẫn là w. Mọi nơi: w đứng riêng cũng ra ư. uw thì luôn ra ư."
+msgstr "Trong từ: nhw → như, còn w đứng riêng vẫn là w. Mọi nơi: w đứng riêng cũng ra ư. uw thì luôn ra ư."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "ch]a → chưa, m[f → mờ. Type a bracket twice to get it back: [[ → [."
@@ -1647,7 +1650,7 @@ msgstr "Đưa về mặc định…"
 msgid "Menu"
 msgstr "Menu"
 
-#: settings-gui/ui_gtk/window.py
+#: settings-gui/core/defaults.py
 msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
 msgstr "Gõ tắt, từ đã thêm vào từ điển, phím tự đặt và kiểu gõ đã nhớ cho từng app cũng bị xoá. Có thể hoàn tác ngay sau đó."
 

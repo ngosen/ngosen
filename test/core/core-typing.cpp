@@ -1770,6 +1770,13 @@ namespace {
         check(run.text == "việt " && countHaving(lines, "not answered before the next replacement") == 1 && countHaving(lines, ": correct") == 1,
               "check: a lagging app answers only the last replacement", run.text + " " + join(lines));
 
+        // Keys faster than the app: its copy does not hold the letter yet when the first deletion goes out.
+        for (const auto [lagMs, gapMs] : std::vector<std::pair<int, int>>{{60, 15}, {60, 19}, {150, 40}, {150, 50}, {150, 60}}) {
+            lines = logLinesWhileTyping(surroundingOnlyField(), {.lagMs = lagMs, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true}, "vieetj ", "Surrounding check",
+                                        &run, gapMs);
+            check(run.text == "việt ", "check: keys " + std::to_string(gapMs) + " ms apart in an app " + std::to_string(lagMs) + " ms behind", run.text + " " + join(lines));
+        }
+
         lines = logLinesWhileTyping(surroundingOnlyField(), {.reports = false, .dropsForwardedKeys = true}, "vieetj nam tieesng ", "Surrounding check");
         // Silence alone is no reason to give up on a field that has no other way to delete.
         check(countHaving(lines, "not answered") >= 3 && countHaving(lines, "untrusted") == 0, "check: an app that never reports goes unanswered", join(lines));

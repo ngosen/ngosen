@@ -1,7 +1,6 @@
 #!/bin/bash
 # Builds the signed openSUSE Tumbleweed repository from release RPMs named by
-# collect-release-files.sh (fcitx5-ngosen-<version>.opensuse-tumbleweed.x86_64.rpm), and the
-# ibus-ngosen ones its release names the same way.
+# collect-release-files.sh (fcitx5-ngosen-<version>.opensuse-tumbleweed.x86_64.rpm).
 # zypper checks the signed repomd.xml, which lists every package's checksum.
 # Signs with the default secret key in the caller's GnuPG home. Needs createrepo_c.
 set -euo pipefail
@@ -13,7 +12,7 @@ url=${3:-https://ngosen.github.io/ngosen/opensuse}
 rm -rf "$out"
 mkdir -p "$out/x86_64"
 found=0
-for rpm in "$src"/fcitx5-ngosen-*.opensuse-tumbleweed.x86_64.rpm "$src"/ibus-ngosen-*.opensuse-tumbleweed.x86_64.rpm; do
+for rpm in "$src"/fcitx5-ngosen-*.opensuse-tumbleweed.x86_64.rpm; do
     [ -e "$rpm" ] || continue
     cp "$rpm" "$out/x86_64/"
     found=1

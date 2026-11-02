@@ -49,6 +49,15 @@ class MacroTableTest(unittest.TestCase):
         self.assertEqual(fake.sub_configs["ngosen-macro"], [{"Key": "vn", "Value": "Việt Nam"}])
         self.assertFalse(table.is_modified())
 
+    def test_save_keeps_a_switch_changed_elsewhere(self):
+        fake = FakeDBusHandler({"EnableMacro": "True"})
+        table = macros.MacroTable(fake)
+        table.load()
+        fake.values["EnableMacro"] = "False"
+        table.entries.append({"Key": "vn", "Value": "Việt Nam"})
+        self.assertTrue(table.save())
+        self.assertEqual(fake.values["EnableMacro"], "False")
+
     def test_a_refused_table_stays_unsaved(self):
         fake = FakeDBusHandler()
         table = macros.MacroTable(fake)

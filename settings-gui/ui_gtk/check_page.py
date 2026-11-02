@@ -10,7 +10,7 @@ from i18n import _
 from core import system_check, typing_log
 
 ICONS = {
-    system_check.OK: ("emblem-ok-symbolic", "success"),
+    system_check.OK: ("object-select-symbolic", "success"),
     system_check.TIP: ("dialog-information-symbolic", "dim-label"),
     system_check.WARN: ("dialog-warning-symbolic", "warning"),
     system_check.FAIL: ("dialog-error-symbolic", "error"),

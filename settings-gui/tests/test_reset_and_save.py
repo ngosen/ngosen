@@ -32,6 +32,23 @@ class ResetTest(unittest.TestCase):
         self.assertTrue(page.save_data())
         self.assertEqual(fake.values["SpellCheck"], "True")
 
+    def test_reset_covers_a_switch_changed_outside_the_window(self):
+        fake = FakeDBusHandler({"EnableMacro": "True", "EnableDictionary": "False"})
+        window = NgoSenSettingsWindow(dbus_handler=fake)
+        window._build_all_pages()
+        window.reload_pages()
+        fake.values["EnableMacro"] = "False"
+        fake.values["EnableDictionary"] = "True"
+        with (
+            tempfile.TemporaryDirectory() as home,
+            mock.patch.dict(os.environ, {"XDG_DATA_HOME": home}),
+            mock.patch("ui.main_window.confirm", return_value=True),
+        ):
+            window.on_restore_defaults()
+            window.save_pending()
+        self.assertEqual(fake.values["EnableMacro"], "True")
+        self.assertEqual(fake.values["EnableDictionary"], "False")
+
     def asked(self, window):
         with mock.patch("ui.main_window.confirm", return_value=False) as question:
             window.on_restore_defaults()
@@ -135,6 +152,18 @@ class ConfirmButtonsTest(unittest.TestCase):
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
         shown = self.buttons_shown(window.on_restore_defaults)
         self.assertEqual(shown, ["&Cancel", "&Restore defaults"])
+
+    def test_reset_says_what_else_it_clears(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        texts = []
+
+        def record(box):
+            texts.append(box.text())
+            return 0
+
+        with mock.patch.object(QMessageBox, "exec", record):
+            window.on_restore_defaults()
+        self.assertIn("Macros, words added to the dictionary", texts[0])
 
     def test_keymap_preset_names_its_buttons(self):
         page = KeymapEditorPage(FakeDBusHandler())

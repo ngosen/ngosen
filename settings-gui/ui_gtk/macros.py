@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The Macros page: its switches and formats, an editor and the list, each saved at once."""
 
-from core.catalog import locked_by
+from core.catalog import HINTS, locked_by
 from gi.repository import Adw, Gtk
 from i18n import N_, _
 
@@ -45,6 +45,8 @@ class MacroPage:
         self.switches = {}
         for key, title in SWITCHES.items():
             row = Adw.SwitchRow(title=_(title), use_markup=False)
+            if key in HINTS:
+                row.set_subtitle(_(HINTS[key]))
             row.set_active(self.table.options[key])
             row.connect("notify::active", self._on_switch, key)
             row.setting_key = key

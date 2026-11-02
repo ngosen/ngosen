@@ -47,23 +47,6 @@ class KeyCap(QLabel):
         )
 
 
-class HelpIcon(QLabel):
-    """A reusable help icon with a tooltip."""
-
-    def __init__(self, text="", parent=None):
-        super().__init__(parent)
-        # Try symbolic icon first for monochrome look, fall back to standard
-        icon = QIcon.fromTheme("help-about-symbolic")
-        if icon.isNull():
-            icon = QIcon.fromTheme("help-about")
-
-        self.setPixmap(icon.pixmap(32, 32))
-        self.setScaledContents(True)
-        if text:
-            self.setToolTip(text)
-        self.setFixedSize(16, 16)
-
-
 class HotkeyEditorWidget(QWidget):
     """A widget containing HotkeyCaptureWidget with a clear button."""
 

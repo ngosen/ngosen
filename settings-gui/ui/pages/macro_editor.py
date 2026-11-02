@@ -6,7 +6,7 @@ Macro Editor Page. Edits ngosen-macro-table.conf.
 Implements UI with row reordering and TSV import/export.
 """
 
-from core.catalog import locked_by
+from core.catalog import HINTS, locked_by
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
 from qtpy.QtCore import QSignalBlocker, Qt
@@ -15,11 +15,13 @@ from qtpy.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QComboBox,
+    QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
     QPushButton,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -27,9 +29,8 @@ from qtpy.QtWidgets import (
 )
 
 from core import macros, page_status
-from ui.helpers import add_help_icon
 from ui.pages.base_editor import BaseEditorPage
-from ui.pages.dynamic_settings import CardWidget
+from ui.pages.dynamic_settings import CardWidget, with_hint_below
 from ui.typography import mute, page_title
 
 
@@ -48,7 +49,15 @@ class MacroEditorPage(BaseEditorPage):
         self.load_data()
 
     def _setup_ui(self):
-        main_layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        outer.addWidget(scroll)
+        content = QWidget()
+        scroll.setWidget(content)
+        main_layout = QVBoxLayout(content)
         main_layout.setContentsMargins(30, 20, 30, 20)
         main_layout.setSpacing(15)
 
@@ -58,7 +67,7 @@ class MacroEditorPage(BaseEditorPage):
 
         # Macro behavior toggles
         toggles_card = CardWidget()
-        toggles_layout = QHBoxLayout()
+        toggles_layout = QVBoxLayout()
         self.cb_enable = QCheckBox(_("Enable Macro"))
         self.cb_capitalize = QCheckBox(_("Capitalize Macro"))
         self.cb_enable_off_mode = QCheckBox(_("Macro in Off Mode"))
@@ -68,26 +77,16 @@ class MacroEditorPage(BaseEditorPage):
         self.cb_capitalize.toggled.connect(self._on_item_changed)
         self.cb_enable_off_mode.toggled.connect(self._on_item_changed)
         toggles_layout.addWidget(self.cb_enable)
-
-        cap_layout = QHBoxLayout()
-        cap_layout.setSpacing(5)
-        cap_layout.addWidget(self.cb_capitalize)
-        add_help_icon(cap_layout, "CapitalizeMacro")
-
-        toggles_layout.addLayout(cap_layout)
-
-        off_mode_layout = QHBoxLayout()
-        off_mode_layout.setSpacing(5)
-        off_mode_layout.addWidget(self.cb_enable_off_mode)
-        add_help_icon(off_mode_layout, "EnableMacroInOffMode")
-        toggles_layout.addLayout(off_mode_layout)
-
-        toggles_layout.addStretch()
+        for box, key in (
+            (self.cb_capitalize, "CapitalizeMacro"),
+            (self.cb_enable_off_mode, "EnableMacroInOffMode"),
+        ):
+            toggles_layout.addWidget(with_hint_below(box, _(HINTS[key]))[0])
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText(_("Search macros..."))
         self.search_input.setClearButtonEnabled(True)
-        self.search_input.setFixedWidth(200)
+        self.search_input.setMaximumWidth(200)
         self.search_input.textChanged.connect(self.on_search_changed)
 
         toggles_card.content_layout.addLayout(toggles_layout)
@@ -121,10 +120,7 @@ class MacroEditorPage(BaseEditorPage):
         self.input_time_format.currentIndexChanged.connect(self._on_item_changed)
 
         for fmt in macros.FORMATS["TimeFormat"]:
-            self.input_time_format.addItem(fmt, fmt)
-            self.input_time_format.setItemData(
-                self.input_time_format.count() - 1, _(macros.EXAMPLES[fmt]), Qt.ToolTipRole
-            )
+            self.input_time_format.addItem(_(macros.EXAMPLES[fmt]), fmt)
 
         self.time_label = QLabel(_("Time Format:"))
         self.time_label.setBuddy(self.input_time_format)
@@ -138,10 +134,7 @@ class MacroEditorPage(BaseEditorPage):
         self.input_date_format.currentIndexChanged.connect(self._on_item_changed)
 
         for fmt in macros.FORMATS["DateFormat"]:
-            self.input_date_format.addItem(fmt, fmt)
-            self.input_date_format.setItemData(
-                self.input_date_format.count() - 1, _(macros.EXAMPLES[fmt]), Qt.ToolTipRole
-            )
+            self.input_date_format.addItem(_(macros.EXAMPLES[fmt]), fmt)
 
         self.date_label = QLabel(_("Date Format:"))
         self.date_label.setBuddy(self.input_date_format)
@@ -173,15 +166,17 @@ class MacroEditorPage(BaseEditorPage):
         self.input_key.textChanged.connect(self._update_add_button_icon)
         self.input_val.textChanged.connect(self._update_add_button_icon)
 
-        input_layout.addWidget(QLabel(_("Key:")))
+        input_layout.addWidget(QLabel(_("Abbreviation:")))
         input_layout.addWidget(self.input_key, 1)
-        input_layout.addWidget(QLabel(_("Value:")))
+        input_layout.addWidget(QLabel(_("Expanded Text:")))
         input_layout.addWidget(self.input_val, 2)
         input_layout.addWidget(self.btn_add)
         content_layout.addLayout(input_layout)
 
         # 2. Table Area
         self.table = QTableWidget(0, 2)
+        # The page scrolls before the table gets too short to use.
+        self.table.setMinimumHeight(180)
         self.table.setHorizontalHeaderLabels([_("Abbreviation"), _("Expanded Text")])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)

@@ -31,6 +31,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt: bản Qt và GTK giải thích chế độ đang chọn (#526).
 - Cửa sổ cài đặt: bản GTK đặt ví dụ gõ cạnh Kiểu gõ và ghi chú fcitx5 trong mô tả Phím chuyển Anh/Việt, tránh trông như tuỳ chọn bấm được (#529).
 - Cửa sổ cài đặt: ở bản GTK, trang Có gì mới & mẹo hiển thị ví dụ gõ cùng dòng với tính năng, còn nút Đề xuất tính năng ở trang Giới thiệu chỉ rộng vừa chữ (#530).
+- Cửa sổ cài đặt: bản Qt và GTK hiển thị “Chưa đặt” cho phím tắt chưa gán, dùng “Test”, thống nhất “xoá” và không còn gọi bản Qt là “cũ” (#532).
 - Ô tìm kiếm của GNOME: không còn Cứu chữ và Cứu dấu, vì GNOME nhận Tab và Esc trước Ngó Sen nên không trả lại được chữ đã đổi. Trình duyệt và app soạn thảo vẫn có cả hai. Cần fcitx5 5.1.22 trở lên hoặc extension của Ngó Sen báo tên app (#513).
 
 ### Bỏ

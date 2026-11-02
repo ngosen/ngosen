@@ -34,6 +34,16 @@ def _button(label, on_click, *css):
     return button
 
 
+def _button_row(*buttons, **box_args):
+    # Labels wrap so that a row of buttons fits the narrowest window.
+    row = Gtk.Box(spacing=12, **box_args)
+    for button in buttons:
+        button.get_child().set_wrap(True)
+        button.get_child().set_justify(Gtk.Justification.CENTER)
+        row.append(button)
+    return row
+
+
 def _copy(text):
     Gdk.Display.get_default().get_clipboard().set(text)
 
@@ -75,12 +85,9 @@ class CheckPage:
         self.summary = _text("dim-label")
         box.append(self.heading)
         box.append(self.summary)
-        buttons = Gtk.Box(spacing=12, margin_top=6)
-        self.fix_all_btn = _button("", self.fix_all, "suggested-action", "pill")
+        self.fix_all_btn = _button(" ", self.fix_all, "suggested-action", "pill")
         self.again_btn = _button(_("Check again"), self.run, "pill")
-        buttons.append(self.fix_all_btn)
-        buttons.append(self.again_btn)
-        box.append(buttons)
+        box.append(_button_row(self.fix_all_btn, self.again_btn, margin_top=6))
         group.add(box)
         return group
 
@@ -102,14 +109,12 @@ class CheckPage:
                 "choose “Save typing log” in the Ngó Sen menu and read the log here."
             ).format(sample=typing_log.SAMPLE, telex=typing_log.SAMPLE_TELEX),
         )
-        row = Gtk.Box(spacing=12)
-        row.append(_button(_("Read typing log"), self.read_typing_log))
+        read_btn = _button(_("Read typing log"), self.read_typing_log)
         self.right_btn = _button(_("It typed right"), lambda: self._set_verdict(typing_log.RIGHT))
         self.wrong_btn = _button(_("It typed wrong"), lambda: self._set_verdict(typing_log.WRONG))
         for button in (self.right_btn, self.wrong_btn):
             button.set_visible(False)
-            row.append(button)
-        group.add(row)
+        group.add(_button_row(read_btn, self.right_btn, self.wrong_btn))
         self.app_result = _text()
         self.app_result.set_margin_top(12)
         self.app_result.set_visible(False)
@@ -124,13 +129,10 @@ class CheckPage:
                 "Nothing is sent until you press a button below."
             ),
         )
-        row = Gtk.Box(spacing=12)
         self.message_btn = _button(_("Message on Facebook…"), self.open_chat, "suggested-action")
         self.report_btn = _button(_("Report on GitHub…"), self.open_report)
         self.copy_btn = _button(_("Copy result"), self.copy_report)
-        for button in (self.message_btn, self.report_btn, self.copy_btn):
-            row.append(button)
-        group.add(row)
+        group.add(_button_row(self.message_btn, self.report_btn, self.copy_btn))
         return group
 
     def run(self):

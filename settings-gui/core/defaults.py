@@ -31,11 +31,16 @@ def restore(dbus):
     return _restore_dictionary(dbus) and ok
 
 
-def toggle_key_note(model):
-    """What a reset changes about switching languages, or "" when the key is already the default."""
+def warning(model):
+    """What a reset does beyond the settings the user can see on the pages."""
+    cleared = _(
+        "Macros, words added to the dictionary, custom keys and the modes remembered"
+        " for each app are cleared too. You can undo this right after."
+    )
     if not model.metadata or model.toggle_is_ctrl_shift():
-        return ""
-    return _("The key that switches between Vietnamese and English goes back to Ctrl+Shift.")
+        return cleared
+    note = _("The key that switches between Vietnamese and English goes back to Ctrl+Shift.")
+    return f"{note} {cleared}"
 
 
 def _restore_dictionary(dbus):

@@ -29,6 +29,15 @@ class KeymapTest(unittest.TestCase):
         table.load()
         self.assertEqual(table.entries, [{"Key": "s", "Value": keymap.BAMBOO_ACTIONS[0][0]}])
 
+    def test_save_keeps_a_switch_changed_elsewhere(self):
+        fake = FakeDBusHandler()
+        table = keymap.Keymap(fake)
+        table.load()
+        fake.values["EnableCustomKeymap"] = "True"
+        table.entries.append({"Key": "f", "Value": "DauHuyen"})
+        self.assertTrue(table.save())
+        self.assertEqual(fake.values["EnableCustomKeymap"], "True")
+
     def test_save_writes_the_switch_and_the_table(self):
         fake = FakeDBusHandler()
         table = keymap.Keymap(fake)

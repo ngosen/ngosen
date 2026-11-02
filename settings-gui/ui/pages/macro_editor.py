@@ -14,14 +14,12 @@ from qtpy.QtGui import QColor, QIcon
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
-    QFrame,
     QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
     QPushButton,
-    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -50,17 +48,7 @@ class MacroEditorPage(BaseEditorPage):
         self.load_data()
 
     def _setup_ui(self):
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        outer.addWidget(scroll)
-        content = QWidget()
-        scroll.setWidget(content)
-        main_layout = QVBoxLayout(content)
-        main_layout.setContentsMargins(30, 20, 30, 20)
-        main_layout.setSpacing(15)
+        main_layout = self._scrolling_layout()
 
         title = page_title(_("Macros"))
         main_layout.addWidget(title)

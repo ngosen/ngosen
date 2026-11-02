@@ -79,9 +79,7 @@ class DictEditorPage(BaseEditorPage):
         return dictionary.bundled_path()
 
     def _setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(30, 20, 30, 20)
-        main_layout.setSpacing(15)
+        main_layout = self._scrolling_layout()
 
         title = page_title(_("Custom Dictionary"))
         main_layout.addWidget(title)
@@ -143,6 +141,8 @@ class DictEditorPage(BaseEditorPage):
         # data() of every word on each key press.
         self.model = WordListModel(self)
         self.list_view = QListView()
+        # The page scrolls before the list gets too short to use.
+        self.list_view.setMinimumHeight(180)
         self.list_view.setModel(self.model)
         self.list_view.setFlow(QListView.LeftToRight)
         self.list_view.setWrapping(True)

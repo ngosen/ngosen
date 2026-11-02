@@ -7,6 +7,9 @@ Base class for Table-based editors (Macros, Keymap).
 
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (
+    QFrame,
+    QScrollArea,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -21,6 +24,21 @@ class BaseEditorPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.table = None
+
+    def _scrolling_layout(self):
+        """The layout for the page's content; the page scrolls when the window is too small."""
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        outer.addWidget(scroll)
+        content = QWidget()
+        scroll.setWidget(content)
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(30, 20, 30, 20)
+        layout.setSpacing(15)
+        return layout
 
     def _add_status_line(self, layout):
         self.status_line = HintLabel("")

@@ -109,6 +109,18 @@ class GtkWindowTest(unittest.TestCase):
             page.mode_buttons[mode].set_active(True)
             self.assertEqual(page.rows["Mode"].get_subtitle(), MODE_HINTS[mode], mode)
 
+    def test_english_is_left_to_the_switch_key(self):
+        self.assertEqual(list(self.window.typing.mode_buttons), MODE_BUTTON_ORDER)
+        self.assertNotIn("OFF", MODE_BUTTON_ORDER)
+
+    def test_a_saved_off_shows_as_the_sen_it_types(self):
+        dbus = FakeDBusHandler({"Mode": "OFF"})
+        opened = window.Window(None, dbus)
+        self.addCleanup(opened.destroy)
+        self.assertTrue(opened.typing.mode_buttons["Sen"].get_active())
+        self.assertEqual(opened.typing.rows["Mode"].get_subtitle(), MODE_HINTS["Sen"])
+        self.assertEqual(dbus.values["Mode"], "OFF")
+
     def test_a_mode_saved_outside_the_window_moves_the_button_and_the_line(self):
         page = self.window.typing
         self.dbus.values["Mode"] = "Preedit"

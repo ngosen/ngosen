@@ -13,6 +13,7 @@ from core.catalog import (
     TYPING_EXAMPLES,
     TYPING_GROUP,
     SettingsCategory,
+    shown_mode,
 )
 from gi.repository import Adw, Gtk
 from i18n import _
@@ -86,8 +87,8 @@ class SettingsPage:
                 row.set_active(self.value(key).lower() == "true")
             elif isinstance(row, Adw.ComboRow) and self.value(key) in row.values:
                 row.set_selected(row.values.index(self.value(key)))
-        if "Mode" in self.rows and self.value("Mode") in self.mode_buttons:
-            self.mode_buttons[self.value("Mode")].set_active(True)
+        if "Mode" in self.rows and shown_mode(self.value("Mode")) in self.mode_buttons:
+            self.mode_buttons[shown_mode(self.value("Mode"))].set_active(True)
         self._following = False
         self._apply_locks()
 
@@ -123,13 +124,13 @@ class SettingsPage:
             button = Gtk.ToggleButton(label=_(mode), css_classes=["mode-button"])
             button.set_group(first)
             first = first or button
-            button.set_active(mode == self.value(key))
+            button.set_active(mode == shown_mode(self.value(key)))
             button.connect("toggled", self._on_mode, key, mode)
             box.append(button)
             self.mode_buttons[mode] = button
         row.add_suffix(box)
         self.rows[key] = row
-        self._show_mode_hint(self.value(key))
+        self._show_mode_hint(shown_mode(self.value(key)))
         return row
 
     def _show_mode_hint(self, mode):

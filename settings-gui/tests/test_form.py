@@ -350,6 +350,13 @@ class ModeHintTest(unittest.TestCase):
         self.assertTrue(self.button(page, "Preedit").isChecked())
         self.assertEqual(page._mode_hint.text(), MODE_HINTS["Preedit"])
 
+    def test_a_saved_off_shows_as_the_sen_it_types(self):
+        fake = FakeDBusHandler({"Mode": "OFF"})
+        page = self.page(fake)
+        self.assertTrue(self.button(page, "Sen").isChecked())
+        self.assertEqual(page._mode_hint.text(), MODE_HINTS["Sen"])
+        self.assertEqual(fake.values["Mode"], "OFF")
+
     def test_search_does_not_find_the_line(self):
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
         self.addCleanup(window.close)

@@ -7,7 +7,14 @@ import unittest
 
 # isort: off
 from support import FakeDBusHandler, app
-from qtpy.QtWidgets import QAbstractButton, QComboBox, QLabel, QLineEdit, QScrollArea
+from qtpy.QtWidgets import (
+    QAbstractButton,
+    QComboBox,
+    QLabel,
+    QLineEdit,
+    QScrollArea,
+    QStyleFactory,
+)
 from ui.pages.macro_editor import MacroEditorPage
 
 from core import macros
@@ -67,6 +74,21 @@ def combo_name(page, combo):
 
 class ScrollTest(unittest.TestCase):
     def test_every_control_can_be_reached_at_the_smallest_window(self):
+        self.assert_every_control_can_be_reached()
+
+    @unittest.skipUnless("Breeze" in QStyleFactory.keys(), "Breeze style is not installed")
+    def test_every_control_can_be_reached_on_the_wider_kde_style(self):
+        previous_font = app.font()
+        previous_style = app.style().objectName()
+        self.addCleanup(app.setFont, previous_font)
+        self.addCleanup(app.setStyle, previous_style)
+        app.setStyle("Breeze")
+        font = app.font()
+        font.setPointSize(10)
+        app.setFont(font)
+        self.assert_every_control_can_be_reached()
+
+    def assert_every_control_can_be_reached(self):
         page = MacroEditorPage(FakeDBusHandler())
         # The window's minimum size less the sidebar and the bottom bar.
         page.resize(550, 400)

@@ -16,6 +16,7 @@ from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -109,12 +110,12 @@ class MacroEditorPage(BaseEditorPage):
 
         # Format Inputs
         fmt_container = QWidget()
-        fmt_hbox = QHBoxLayout(fmt_container)
-        fmt_hbox.setContentsMargins(0, 5, 0, 0)
-        fmt_hbox.setSpacing(20)
+        # One row each: side by side they overflow the smallest window on Breeze.
+        fmt_grid = QGridLayout(fmt_container)
+        fmt_grid.setContentsMargins(0, 5, 0, 0)
+        fmt_grid.setColumnStretch(2, 1)
 
         # Time Format
-        time_layout = QHBoxLayout()
         self.input_time_format = QComboBox()
         self.input_time_format.setEditable(False)
         self.input_time_format.currentIndexChanged.connect(self._on_item_changed)
@@ -124,11 +125,10 @@ class MacroEditorPage(BaseEditorPage):
 
         self.time_label = QLabel(_("Time Format:"))
         self.time_label.setBuddy(self.input_time_format)
-        time_layout.addWidget(self.time_label)
-        time_layout.addWidget(self.input_time_format, 1)
+        fmt_grid.addWidget(self.time_label, 0, 0)
+        fmt_grid.addWidget(self.input_time_format, 0, 1)
 
         # Date Format
-        date_layout = QHBoxLayout()
         self.input_date_format = QComboBox()
         self.input_date_format.setEditable(False)
         self.input_date_format.currentIndexChanged.connect(self._on_item_changed)
@@ -138,11 +138,8 @@ class MacroEditorPage(BaseEditorPage):
 
         self.date_label = QLabel(_("Date Format:"))
         self.date_label.setBuddy(self.input_date_format)
-        date_layout.addWidget(self.date_label)
-        date_layout.addWidget(self.input_date_format, 1)
-
-        fmt_hbox.addLayout(time_layout)
-        fmt_hbox.addLayout(date_layout)
+        fmt_grid.addWidget(self.date_label, 1, 0)
+        fmt_grid.addWidget(self.input_date_format, 1, 1)
 
         dynamic_layout.addWidget(fmt_container)
 

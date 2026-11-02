@@ -1,3 +1,4 @@
+#include <unistd.h>
 /*
  * SPDX-FileCopyrightText: 2022-2022 CSSlayer <wengxt@gmail.com>
  * SPDX-FileCopyrightText: 2025 Võ Ngô Hoàng Thành <thanhpy2009@gmail.com>
@@ -808,6 +809,10 @@ namespace ngosen {
         if (!edit_hold_)
             return;
         edit_hold_ = false;
+        if (::access("/tmp/ngosen-probe-nudge", F_OK) == 0) {
+            host_->commitText("");
+            NGOSEN_INFO("Probe: nudged with an empty commit");
+        }
         if (!is_deleting_.load(std::memory_order_acquire))
             replayBufferedKeys();
     }

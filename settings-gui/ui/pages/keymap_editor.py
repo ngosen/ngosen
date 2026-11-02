@@ -43,9 +43,7 @@ class KeymapEditorPage(BaseEditorPage):
         self.load_data()
 
     def _setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(30, 20, 30, 20)
-        main_layout.setSpacing(15)
+        main_layout = self._scrolling_layout()
 
         title = page_title(_("Keymap"))
         main_layout.addWidget(title)
@@ -117,6 +115,8 @@ class KeymapEditorPage(BaseEditorPage):
 
         # Table
         self.table = QTableWidget(0, 2)
+        # The page scrolls before the table gets too short to use.
+        self.table.setMinimumHeight(180)
         self.table.setHorizontalHeaderLabels([_("Key"), _("Action")])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)

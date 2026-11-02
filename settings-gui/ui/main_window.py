@@ -36,6 +36,7 @@ from qtpy.QtWidgets import (
 from core import backup, settings_snapshot
 from ui import brand, search
 from ui.confirm import confirm
+from ui.message_bar import MessageBar
 
 try:
     from version import __version__
@@ -65,6 +66,7 @@ class NgoSenSettingsWindow(QMainWindow):
         self._save_timer.timeout.connect(self.save_pending)
         self._undo_to = None
         self._undo_fix = None
+        self._showing_conflict = False
         self._check_item = None
 
         self._setup_ui()
@@ -103,18 +105,18 @@ class NgoSenSettingsWindow(QMainWindow):
 
         self.content_stack = QStackedWidget()
 
-        page_layout = QVBoxLayout()
-        page_layout.setContentsMargins(0, 0, 0, 0)
-        page_layout.addWidget(self._setup_message_bar())
-        page_layout.addWidget(self.content_stack, 1)
-
         main_h_layout.addWidget(self._setup_navigation())
-        main_h_layout.addLayout(page_layout, 1)
+        main_h_layout.addWidget(self.content_stack, 1)
 
         main_v_layout.addLayout(main_h_layout, 1)
 
         # Bottom Bar
         self._setup_bottom_bar(main_v_layout)
+
+        self.message_bar = MessageBar(self.content_stack, self.undo)
+        self.message_label = self.message_bar.label
+        self.btn_undo = self.message_bar.undo_button
+        self.message_bar.gone.connect(self._on_message_gone)
 
         # Pages Mapping
         self._setup_pages()
@@ -268,7 +270,7 @@ class NgoSenSettingsWindow(QMainWindow):
 
         bar_layout.addStretch()
 
-        btn_backup = QPushButton(QIcon.fromTheme("document-save-as"), _("Back &Up…"))
+        btn_backup = QPushButton(QIcon.fromTheme("document-save-as"), _("Back U&p…"))
         btn_backup.clicked.connect(self.on_export_backup)
         bar_layout.addWidget(btn_backup)
         btn_restore = QPushButton(QIcon.fromTheme("document-open"), _("Res&tore…"))
@@ -278,38 +280,19 @@ class NgoSenSettingsWindow(QMainWindow):
 
         layout.addWidget(container)
 
-    def _setup_message_bar(self):
-        self.message_bar = QFrame()
-        self.message_bar.setObjectName("SaveMessage")
-        bar_layout = QHBoxLayout(self.message_bar)
-        bar_layout.setContentsMargins(12, 6, 6, 6)
-        self.message_label = QLabel()
-        self.message_label.setWordWrap(True)
-        bar_layout.addWidget(self.message_label, 1)
-        self.btn_undo = QPushButton(_("&Undo"))
-        self.btn_undo.clicked.connect(self.undo)
-        bar_layout.addWidget(self.btn_undo)
-        self.message_bar.hide()
-
-        wrapper = QWidget()
-        wrapper_layout = QVBoxLayout(wrapper)
-        wrapper_layout.setContentsMargins(20, 12, 20, 0)
-        wrapper_layout.addWidget(self.message_bar)
-        return wrapper
-
-    def _show_message(self, text, undo=False, error=False):
+    def _show_message(self, text, undo=False, error=False, keep=False, closable=True):
         self._undo_fix = None
-        if error:
-            fill, border = brand.pick(self, brand.ERROR_FILL), brand.pick(self, brand.ERROR_BORDER)
-        else:
-            fill, border = brand.pick(self, brand.SAVED_FILL), brand.pick(self, brand.SAVED_BORDER)
-        self.message_bar.setStyleSheet(
-            f"QFrame#SaveMessage {{ background: {fill}; border: 1px solid {border};"
-            " border-radius: 6px; }"
-        )
-        self.message_label.setText(text)
-        self.btn_undo.setVisible(undo)
-        self.message_bar.show()
+        self._showing_conflict = False
+        self.message_bar.show_message(text, undo=undo, error=error, keep=keep, closable=closable)
+
+    def _show_conflict(self):
+        # Nothing saves until it is fixed, so it can be neither closed nor outlived.
+        self._show_message(self.validation_message(), error=True, closable=False)
+        self._showing_conflict = True
+
+    def _on_message_gone(self):
+        if self.has_validation_errors():
+            self._show_conflict()
 
     def _setup_pages(self):
         def create_typing():
@@ -441,8 +424,11 @@ class NgoSenSettingsWindow(QMainWindow):
         self.update_reset_button_state()
         if self.has_validation_errors():
             self._save_timer.stop()
-            self._show_message(self.validation_message(), error=True)
+            self._show_conflict()
             return
+        if self._showing_conflict:
+            self._showing_conflict = False
+            self.message_bar.dismiss()
         if self._modified_pages():
             self._save_timer.start()
 
@@ -487,8 +473,9 @@ class NgoSenSettingsWindow(QMainWindow):
             text = _("Saved “{}”.").format(label)
         else:
             text = _("Saved.")
+        # Undo is the only way back from replacing whole lists, so it stays until closed.
+        self._show_message(text, undo=before is not None, keep=self._reset_pending)
         self._reset_pending = False
-        self._show_message(text, undo=before is not None)
         self.update_reset_button_state()
         self._refresh_statuses()
 
@@ -507,7 +494,7 @@ class NgoSenSettingsWindow(QMainWindow):
     def show_check_message(self, text, undo):
         """A message from the check page, with Undo when its fix can be taken back."""
         self._undo_to = None
-        self._show_message(text, undo=undo is not None)
+        self._show_message(text, undo=undo is not None, keep=undo is not None)
         self._undo_fix = undo
 
     def _show_count(self, count):
@@ -589,7 +576,9 @@ class NgoSenSettingsWindow(QMainWindow):
             return
         self._undo_to = before
         self._show_message(
-            _("Restored from {}.").format(os.path.basename(path)), undo=before is not None
+            _("Restored from {}.").format(os.path.basename(path)),
+            undo=before is not None,
+            keep=True,
         )
 
     def closeEvent(self, event):
@@ -618,6 +607,12 @@ class NgoSenSettingsWindow(QMainWindow):
             if index + 1 < self.sidebar.count():
                 self.sidebar.setCurrentRow(index + 1)
 
+    def _leave_room_for_message(self, page):
+        layout = page.findChild(QScrollArea).widget().layout()
+        margins = layout.contentsMargins()
+        margins.setBottom(max(margins.bottom(), self.message_bar.room_needed()))
+        layout.setContentsMargins(margins)
+
     def _page_for_item(self, item):
         if item.data(Qt.UserRole) != "page":
             return None
@@ -638,6 +633,7 @@ class NgoSenSettingsWindow(QMainWindow):
                     for title in page.findChildren(QLabel, "CategoryTitle"):
                         title.hide()
                 self._pages.append(page)
+                self._leave_room_for_message(page)
                 self._page_titles[page] = tab or item.text()
                 self._page_rows[page] = self.sidebar.row(item)
             self.content_stack.addWidget(widget)

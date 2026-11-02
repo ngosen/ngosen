@@ -26,6 +26,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt: Qt và GTK nay giải thích tuỳ chọn đang chặn Từ điển, Keymap, Gõ tắt và Cứu dấu; GTK gợi ý khi Custom chưa có phím; thông báo và công tắc cập nhật sau khi đổi ở menu khay (#521).
 - Cửa sổ cài đặt: trang Gõ tắt bản Qt hiển thị định dạng giờ/ngày dễ đọc mà không đổi giá trị đã lưu, dùng nhãn Từ viết tắt/Từ đầy đủ, giải thích các công tắc và cuộn được khi cửa sổ nhỏ (#522).
 - Cửa sổ cài đặt: lăn chuột trên ô chọn không còn đổi và tự lưu giá trị (#522).
+- Cửa sổ cài đặt: thông báo đã lưu nổi ở đáy trang, không còn đẩy nội dung, tự tắt sau 5 giây và có nút đóng; thông báo sau Mặc định, Khôi phục và nút sửa ở Kiểm tra máy giữ tới khi đóng; trang Keymap, Từ điển cuộn được khi cửa sổ nhỏ (#524).
 - Ô tìm kiếm của GNOME: không còn Cứu chữ và Cứu dấu, vì GNOME nhận Tab và Esc trước Ngó Sen nên không trả lại được chữ đã đổi. Trình duyệt và app soạn thảo vẫn có cả hai. Cần fcitx5 5.1.22 trở lên hoặc extension của Ngó Sen báo tên app (#513).
 
 ### Bỏ

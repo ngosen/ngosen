@@ -1111,7 +1111,7 @@ msgid "&Defaults"
 msgstr "&Mặc định"
 
 #: settings-gui/ui/main_window.py
-msgid "Back &Up…"
+msgid "Back U&p…"
 msgstr "Sao &lưu…"
 
 #: settings-gui/ui/main_window.py
@@ -1849,3 +1849,7 @@ msgstr "Từ viết tắt:"
 #: settings-gui/ui/pages/macro_editor.py
 msgid "Expanded Text:"
 msgstr "Từ đầy đủ:"
+
+#: settings-gui/ui/message_bar.py
+msgid "Close"
+msgstr "Đóng"

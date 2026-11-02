@@ -1106,7 +1106,7 @@ msgstr "Kể cả khi tắt mục này, phím z (Telex) hay 0 (VNI) vẫn xóa d
 msgid "Custom has no keys yet: turn on Custom Keymap and add keys in Keys › Keymap."
 msgstr "Custom chưa có phím nào: bật Keymap tuỳ chỉnh rồi thêm phím ở Phím › Keymap."
 
-#: settings-gui/ui/main_window.py
+#: settings-gui/ui_gtk/window.py
 msgid "&Defaults"
 msgstr "&Mặc định"
 
@@ -1592,8 +1592,10 @@ msgid "“Save typing log” in the tray menu records what you type, to attach t
 msgstr "“Lưu nhật ký gõ” trong menu khay ghi lại chữ gõ, để gửi kèm báo lỗi."
 
 #: settings-gui/ui/whats_new_content.py
-msgid "“Back Up…” and “Restore…” below keep your settings, macros and dictionary."
-msgstr "“Sao lưu…” và “Khôi phục…” ở dưới giữ cài đặt, gõ tắt và từ điển."
+msgid ""
+"“Back Up…” and “Restore…” at the bottom of the settings pages keep your "
+"settings, macros and dictionary."
+msgstr "“Sao lưu…” và “Khôi phục…” ở đáy các trang cài đặt giữ cài đặt, gõ tắt và từ điển."
 
 #: settings-gui/ui/whats_new_content.py
 msgid "“Back Up…” and “Restore…” in the window menu keep your settings, macros and dictionary."
@@ -1853,3 +1855,7 @@ msgstr "Từ đầy đủ:"
 #: settings-gui/ui/message_bar.py
 msgid "Close"
 msgstr "Đóng"
+
+#: settings-gui/ui/main_window.py
+msgid "Restore &defaults…"
+msgstr "Đưa về &mặc định…"

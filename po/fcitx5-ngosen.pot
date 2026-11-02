@@ -1052,7 +1052,7 @@ msgstr ""
 msgid "Custom has no keys yet: turn on Custom Keymap and add keys in Keys › Keymap."
 msgstr ""
 
-#: settings-gui/ui/main_window.py
+#: settings-gui/ui_gtk/window.py
 msgid "&Defaults"
 msgstr ""
 
@@ -1500,7 +1500,9 @@ msgid "“Save typing log” in the tray menu records what you type, to attach t
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
-msgid "“Back Up…” and “Restore…” below keep your settings, macros and dictionary."
+msgid ""
+"“Back Up…” and “Restore…” at the bottom of the settings pages keep your "
+"settings, macros and dictionary."
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
@@ -1760,4 +1762,8 @@ msgstr ""
 
 #: settings-gui/ui/message_bar.py
 msgid "Close"
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Restore &defaults…"
 msgstr ""

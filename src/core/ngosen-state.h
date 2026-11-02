@@ -428,8 +428,8 @@ namespace ngosen {
         uint64_t                       held_enter_due_us_  = 0;
         ngosen::EditKey                held_key_           = ngosen::EditKey::Return;
 
-        // Enter after a macro expands it, and reaches the app once the expansion is in the field.
-        bool            expandMacroBeforeEnter(ngosen::KeyPress& keyEvent);
+        // Enter after a word the engine changes at its end, such as a macro, reaches the app once the new text is in the field.
+        bool            finishWordBeforeEnter(ngosen::KeyPress& keyEvent);
         void            sendEnterAfterReplacement();
         bool            enter_after_replacement_ = false;
         ngosen::EditKey enter_after_key_         = ngosen::EditKey::Return;

@@ -2089,7 +2089,37 @@ namespace {
     }
 } // namespace
 
+namespace {
+    void testEnglishWordKeepsDoubledLetter() {
+        const auto typed = [](const std::string& word, uint32_t end) {
+            std::vector<uint32_t> keys(word.begin(), word.end());
+            keys.push_back(end);
+            return keys;
+        };
+        ngosen::test::FakeResources resources;
+        const Field                 field = makeField("wayland", true);
+        for (const uint32_t end : {uint32_t{ngosen::key::space}, uint32_t{ngosen::key::Return}}) {
+            const auto        keys = typed("issue", end);
+            const std::string sen  = ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
+            check(sen.rfind("issue", 0) == 0, "sen: issue keeps both letters before key " + std::to_string(end), sen);
+            const std::string preedit = ngosen::test::telexOutput(resources, keys);
+            check(preedit.rfind("issue", 0) == 0, "preedit: issue keeps both letters before key " + std::to_string(end), preedit);
+        }
+        ngosen::test::FakeResources noMacros;
+        noMacros.mutableOptions().enableMacro = false;
+        const auto        enterKeys           = typed("issue", ngosen::key::Return);
+        const std::string senNoMacros         = ngosen::test::typeInApp(noMacros, field, {}, enterKeys, std::vector<int>(enterKeys.size(), 20));
+        check(senNoMacros.rfind("issue", 0) == 0, "sen: issue keeps both letters before Enter with macros off", senNoMacros);
+        const std::string tab = ngosen::test::telexOutput(resources, typed("issue", ngosen::key::Tab));
+        check(tab.rfind("issue", 0) == 0, "preedit: issue keeps both letters before Tab", tab);
+        const auto        keys = typed("tesst", ngosen::key::space);
+        const std::string sen  = ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
+        check(sen == "test ", "sen: a doubled key still undoes the tone", sen);
+    }
+}
+
 int main() {
+    testEnglishWordKeepsDoubledLetter();
     testQuirks();
     testPreeditTelex();
     testPreeditEnterAfterCommit();

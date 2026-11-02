@@ -299,6 +299,7 @@ Lõi biến `tieengs` thành `tiếng` là bản Rust [bamboo-core](https://gith
 [@nguyen10t2](https://github.com/nguyen10t2), port từ bản Go
 [bamboo-core](https://github.com/BambooEngine/bamboo-core) của
 [@t1ld3x](https://github.com/t1ld3x). Cả hai dự án dùng giấy phép MIT.
+Danh sách từ tiếng Anh trong lõi lấy từ [SCOWL](https://wordlist.aspell.net) của Kevin Atkinson.
 Mọi gói Ngó Sen, kể cả Debian 12, đều dùng bản Rust.
 
 Issue và pull request trước ngày 10/10/2026 nằm ở repo lưu trữ
@@ -324,6 +325,7 @@ and uses the Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) by
 [@nguyen10t2](https://github.com/nguyen10t2), ported from the original Go
 [bamboo-core](https://github.com/BambooEngine/bamboo-core) by [@t1ld3x](https://github.com/t1ld3x).
 Both projects are MIT licensed. All Ngó Sen packages, including Debian 12, use the Rust core.
+The core's English word list comes from [SCOWL](https://wordlist.aspell.net) by Kevin Atkinson.
 
 Ngó Sen includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to
 change the tone mark of a selected word.

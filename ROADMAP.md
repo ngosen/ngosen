@@ -20,6 +20,6 @@ Chưa có số version, xếp theo thứ tự định làm:
 6. Đưa Ngó Sen vào repo của các distro: từ 1.5.3 đã có repo riêng có chữ ký cho Fedora (COPR),
    Debian và Ubuntu (APT), Arch (pacman) và openSUSE Tumbleweed. nixpkgs đang chờ review
    ([NixOS/nixpkgs#575620](https://github.com/NixOS/nixpkgs/pull/575620)). Còn AUR, rồi Debian.
-8. Làm lại cách chèn emoji (#110).
-9. Gộp "Kiểm tra chính tả" vào "Tự khôi phục từ gõ sai", vì nó chỉ có tác dụng khi Tự khôi phục
+7. Làm lại cách chèn emoji (#110).
+8. Gộp "Kiểm tra chính tả" vào "Tự khôi phục từ gõ sai", vì nó chỉ có tác dụng khi Tự khôi phục
    đang bật (#112).

@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.7.5
+Version:        1.7.6
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later AND OFL-1.1
@@ -100,6 +100,9 @@ else
 fi
 
 %changelog
+* Mon Nov 02 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.6-1
+- Stop repeating letters in Google Docs and Slides on Chromium browsers on X11 (#523, #527). Keep tones when typing faster than a surrounding-text-only field on GNOME answers (#501). Retone a selected word in WPS Office on X11 (#505). Always add the Input Method Panel extension on GNOME and report when it is missing (#506, #507). Fix settings window icons, clipped text and saving of the dictionary and macro choices (#514, #517). Drop --ibus and the ibus-ngosen packages from the installer and repositories (#509, #511).
+
 * Sun Nov 01 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.5-1
 - Remember English/Vietnamese per app (#469) and delete through the text on KDE, Sway, Hyprland and X11 (#477). Expand a macro before Enter (#476), keep Enter, Shift+Enter and Tab pressed right after a word in Sen mode (#487, #488, #489), wait for GNOME to show one edit before the next (#490) and after BackSpace (#481), and fix a crash with fcitx5 older than 5.1.7 (#493). Show menu icons on themes without them (#484, #486), install on Fedora remixes (#491) and print rpm-ostree commands on image-based Fedora (#494).
 

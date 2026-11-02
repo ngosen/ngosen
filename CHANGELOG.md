@@ -36,17 +36,31 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Bỏ
 
-- Lệnh cài không còn tuỳ chọn `--ibus` và không còn giới thiệu bản IBus khi cài trên GNOME. Máy đã bị ẩn tự chạy fcitx5 thì lệnh cài vẫn bật lại (#509).
-- Kho APT, pacman và zypper của Ngó Sen không còn phát gói `ibus-ngosen`. Máy đã cài vẫn giữ gói đó (#511).
 - Cửa sổ cài đặt: bỏ nút “Tắt” khỏi Chế độ gõ trên Qt và GTK; máy từng chọn “Tắt” nay hiện Gõ Sen, dùng phím chuyển Anh/Việt để gõ tiếng Anh (#528).
 
 ### Sửa
 
 - Cửa sổ cài đặt: bản GTK tiếng Anh không còn bị cắt bên phải khi thu hẹp cửa sổ hết cỡ (#537).
 - Cửa sổ cài đặt: bản GTK không còn cắt phần bên phải khi thu hẹp cửa sổ ở tiếng Việt (#531).
+
+## [1.7.6-1] — 02/11/2026
+
+Google Docs, Slides trên Chrome, Edge, Brave, Opera, Vivaldi ở X11 hết lặp chữ khi thêm dấu (#523, #527). GNOME hết mất dấu khi gõ nhanh ở ô chỉ xoá qua surrounding text (#501). Cứu dấu đổi được dấu chữ bôi đen trong WPS Office ở X11 (#505). Trên GNOME, lệnh cài luôn thêm extension Input Method Panel để menu `` ` `` hiện trong ô tìm kiếm, Kiểm tra máy báo khi thiếu (#506, #507). Cửa sổ cài đặt hết vỡ icon, cắt chữ (#514), lưu đúng từ điển, gõ tắt đổi từ khay (#517). Không còn gửi phần xoá và chữ mới sang app khác khi focus đổi lúc đang chờ trên GNOME (#535). Bỏ --ibus và gói ibus-ngosen (#509, #511).
+Tải ở [ngosen-1.7.6-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.6-1).
+
+### Bỏ
+
+- Lệnh cài không còn tuỳ chọn `--ibus` và không còn giới thiệu bản IBus khi cài trên GNOME. Máy đã bị ẩn tự chạy fcitx5 thì lệnh cài vẫn bật lại (#509).
+- Kho APT, pacman và zypper của Ngó Sen không còn phát gói `ibus-ngosen`. Máy đã cài vẫn giữ gói đó (#511).
+
+### Sửa
+
+- Gõ Sen trên GNOME: không còn gửi phần xoá và chữ mới sang app khác khi focus đổi trong lúc chờ surrounding text tối đa 100 ms (#535).
+- Gõ Sen trong Google Docs và Google Slides trên Chrome, Edge, Brave, Opera, Vivaldi trên X11: thêm dấu không còn ra chữ lặp như "trenên" thay vì "trên", "dauâuấu" thay vì "dấu" (#523, #527).
 - Cửa sổ cài đặt: giữ lựa chọn từ điển, gõ tắt đổi ở menu khay khi lưu trang đó (#517).
 - Cửa sổ cài đặt: bản Qt nói rõ nút Mặc định xoá dữ liệu đã lưu và có thể hoàn tác ngay (#517).
 - Cửa sổ cài đặt: bản GTK trên GNOME không còn hiện icon ảnh vỡ ở các bước Kiểm tra máy đã đạt; bản Qt không còn cắt cụt dòng Mẹo khi vẫn còn chỗ; "Không phải đầu từ" đổi thành "Trong từ" và "Phím tắt cho Chế độ gõ mặc định" thành "Phím tắt cho Mặc định" để không bị cắt chữ (#514).
+- Kiểm tra máy trên GNOME: nay báo khi thiếu hoặc chưa bật extension Input Method Panel, vì thiếu nó thì menu chế độ `` ` `` và gợi ý Cứu chữ, Cứu dấu không hiện trong ô tìm kiếm của GNOME (#507).
 - GNOME: lệnh cài nay luôn thêm extension Input Method Panel, kể cả khi đã có khay như Ubuntu, để menu chế độ `` ` `` hiện được trong ô tìm kiếm của GNOME và fcitx5 không còn nhắc cài extension mỗi lần đăng nhập. Menu khay ghi rõ "Kiểu gõ (Telex)", "Bảng mã (Unicode)" và đánh dấu ✔ lựa chọn đang dùng; menu chế độ ghi "App: cửa sổ này" thay cho mã nội bộ khi GNOME không cho biết tên app (#506).
 - Gõ Sen trên GNOME: trong ô chỉ cho Ngó Sen xoá qua surrounding text, gõ nhanh hơn app phản hồi (như khi máy bận) không còn làm mất lần thêm dấu, như "vieetj" ra "vieêệt" thay vì "việt". Ngó Sen nay chờ app theo kịp, tối đa 100 ms, rồi mới xoá (#501).
 - Cứu dấu trong WPS Office trên X11: bôi đen "chuyển" rồi gõ j nay ra "chuyện" thay vì bị thay bằng "j"; giữ lại dấu cách sau chữ nếu bấm đúp chọn kèm. Cách bấm chuột ngay sau chữ rồi gõ phím dấu vẫn chưa dùng được trong WPS (#505).

@@ -154,11 +154,15 @@ class GtkWindowTest(unittest.TestCase):
         self.assertEqual(page.rows["Mode"].get_subtitle(), MODE_HINTS["Preedit"])
         self.assertEqual(self.dbus.values, before)
 
-    def test_the_check_page_fits_the_narrowest_window(self):
+    def test_every_page_fits_the_narrowest_window(self):
         # A breakpoint window does not grow for its content, and the stack takes its widest page's
         # width, so one wide page cuts off every page on the right.
-        page = self.window.stack.get_child_by_name("check")
-        self.assertLessEqual(page.measure(Gtk.Orientation.HORIZONTAL, -1)[0], NARROWEST_WINDOW)
+        pages = self.window.stack.get_pages()
+        for i in range(pages.get_n_items()):
+            page = pages.get_item(i)
+            with self.subTest(page=page.get_name()):
+                width = page.get_child().measure(Gtk.Orientation.HORIZONTAL, -1)[0]
+                self.assertLessEqual(width, NARROWEST_WINDOW)
 
     def test_show_page_switches_and_ignores_pages_not_built_yet(self):
         self.window.show_page("about")

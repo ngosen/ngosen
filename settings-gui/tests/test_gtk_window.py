@@ -119,18 +119,9 @@ class GtkWindowTest(unittest.TestCase):
         self.assertEqual(page.example.get_text(), TYPING_EXAMPLES["Telex"])
         combo.set_selected(combo.values.index("VNI"))
         self.assertEqual(page.example.get_text(), TYPING_EXAMPLES["VNI"])
-        group = combo.get_ancestor(Adw.PreferencesGroup)
-        self.assertEqual(self.rows_with_class(group, "typed"), [])
-
-    def rows_with_class(self, widget, name):
-        found = []
-        child = widget.get_first_child()
-        while child is not None:
-            if isinstance(child, Adw.PreferencesRow) and child.has_css_class(name):
-                found.append(child)
-            found += self.rows_with_class(child, name)
-            child = child.get_next_sibling()
-        return found
+        rows = _children(combo.get_ancestor(Adw.PreferencesGroup))
+        typed = [r for r in rows if isinstance(r, Adw.PreferencesRow) and r.has_css_class("typed")]
+        self.assertEqual(typed, [])
 
     def test_the_fcitx5_note_is_part_of_the_switch_key_row(self):
         note = "fcitx5 has other input methods too; its own key still switches to them."

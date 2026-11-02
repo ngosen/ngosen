@@ -258,13 +258,14 @@ class NgoSenSettingsWindow(QMainWindow):
     def _setup_bottom_bar(self, layout):
         container = QFrame()
         container.setObjectName("BottomBar")
+        self.bottom_bar = container
         bar_layout = QHBoxLayout(container)
         bar_layout.setContentsMargins(20, 12, 20, 12)
         bar_layout.setSpacing(10)
 
         bar_layout.addSpacing(180)
 
-        self.btn_reset = QPushButton(QIcon.fromTheme("edit-undo"), _("&Defaults"))
+        self.btn_reset = QPushButton(QIcon.fromTheme("edit-undo"), _("Restore &defaults…"))
         self.btn_reset.clicked.connect(self.on_restore_defaults)
         bar_layout.addWidget(self.btn_reset)
 
@@ -378,18 +379,21 @@ class NgoSenSettingsWindow(QMainWindow):
             ("dialog-information", "help-about-symbolic"),
             (None, create_whats_new),
             names=["whats-new"],
+            bottom_bar=False,
         )
         self._add_page(
             _("Check my machine"),
             ("emblem-system", "emblem-system-symbolic", "preferences-system"),
             (None, create_check),
             names=["check"],
+            bottom_bar=False,
         )
         self._add_page(
             _("About"),
             ("help-about", "help-about-symbolic", "dialog-information"),
             (None, create_about),
             names=["about"],
+            bottom_bar=False,
         )
 
     def on_restore_defaults(self):
@@ -596,6 +600,7 @@ class NgoSenSettingsWindow(QMainWindow):
             if self._save_timer.isActive():
                 self.save_pending()
             widget = self._page_for_item(item)
+            self.bottom_bar.setVisible(item.data(Qt.UserRole + 3))
             self._refresh_statuses()
             if widget:
                 self.content_stack.setCurrentWidget(widget)
@@ -673,7 +678,7 @@ class NgoSenSettingsWindow(QMainWindow):
         layout.addWidget(self.check_badge)
         return overlay
 
-    def _add_page(self, title: str, icon_name, *parts, names=()):
+    def _add_page(self, title: str, icon_name, *parts, names=(), bottom_bar=True):
         """Adds a sidebar entry; several (tab title, factory) parts show as tabs.
 
         `names` gives the parts internal names for show_page, one per part.
@@ -684,6 +689,7 @@ class NgoSenSettingsWindow(QMainWindow):
         item.setData(Qt.UserRole, "page")
         item.setData(Qt.UserRole + 1, list(parts))
         item.setData(Qt.UserRole + 2, None)
+        item.setData(Qt.UserRole + 3, bottom_bar)
 
         self.sidebar.addItem(item)
         if "check" in names:

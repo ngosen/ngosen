@@ -52,7 +52,54 @@ class LayoutTest(unittest.TestCase):
     def test_backup_buttons_sit_in_the_bottom_bar(self):
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
         texts = {b.text().replace("&", "") for b in window.findChildren(QPushButton)}
-        self.assertTrue({"Defaults", "Back Up…", "Restore…"} <= texts)
+        self.assertTrue({"Restore defaults…", "Back Up…", "Restore…"} <= texts)
+
+    def test_the_bottom_bar_shows_only_on_settings_pages(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        self.addCleanup(window.close)
+        window.show()
+        for name, shown in (
+            ("typing", True),
+            ("macros", True),
+            ("whats-new", False),
+            ("check", False),
+            ("about", False),
+        ):
+            window.show_page(name)
+            self.assertEqual(window.bottom_bar.isVisible(), shown, name)
+
+    def test_opening_straight_on_a_page_hides_the_bottom_bar(self):
+        for name in ("check", "whats-new"):
+            window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+            self.addCleanup(window.close)
+            window.show_page(name)
+            window.show()
+            app.processEvents()
+            self.assertFalse(window.bottom_bar.isVisible(), name)
+
+    def test_a_message_follows_the_page_bottom_when_the_bar_comes_back(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        self.addCleanup(window.close)
+        window.resize(750, 500)
+        window.show()
+        window.show_page("check")
+        app.processEvents()
+        window._show_message("Saved.", keep=True)
+        app.processEvents()
+        window.show_page("typing")
+        app.processEvents()
+        message = window.message_bar.geometry()
+        self.assertLessEqual(message.bottom(), window.content_stack.geometry().bottom())
+        self.assertLess(window.content_stack.geometry().bottom() - message.bottom(), 20)
+        self.assertFalse(message.intersects(window.bottom_bar.geometry()))
+
+    def test_the_backup_tip_does_not_depend_on_the_page_it_shows_on(self):
+        po = os.path.join(os.path.dirname(__file__), "..", "..", "po", "vi.po")
+        with open(po, encoding="utf-8") as f:
+            text = f.read()
+        self.assertIn('msgstr "“Sao lưu…” và “Khôi phục…” ở đáy các trang cài đặt', text)
+        self.assertIn('msgid "Restore &defaults…"\nmsgstr "Đưa về &mặc định…"', text)
+        self.assertNotIn("and “Restore…” below", text)
 
     def test_change_on_a_second_tab_is_saved(self):
         fake = FakeDBusHandler({"EnableCustomKeymap": "False"})

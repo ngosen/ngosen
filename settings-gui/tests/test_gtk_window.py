@@ -22,14 +22,17 @@ if CAN_RUN:
     from core.brand import MESSENGER_URL
     from core.catalog import (
         DEPENDS,
+        HINTS,
         MODE_BUTTON_ORDER,
         MODE_HINTS,
         SETTINGS_MAP,
+        TYPING_EXAMPLES,
         SettingsCategory,
     )
     from gi.repository import Adw, Gdk, Gio, GLib, Gtk
     from ui_gtk import brand, check_page, window
     from ui_gtk.hotkey_button import HotkeyButton
+    from ui_gtk.shortcuts import ShortcutsPage
 
     from core import dictionary, keymap, page_status, system_check, typing_log, whats_new_content
 
@@ -108,6 +111,34 @@ class GtkWindowTest(unittest.TestCase):
         for mode in MODE_BUTTON_ORDER:
             page.mode_buttons[mode].set_active(True)
             self.assertEqual(page.rows["Mode"].get_subtitle(), MODE_HINTS[mode], mode)
+
+    def test_the_example_is_on_the_input_method_row(self):
+        page = self.window.typing
+        combo = page.rows["InputMethod"]
+        self.assertIs(page.example.get_ancestor(Adw.ComboRow), combo)
+        self.assertEqual(page.example.get_text(), TYPING_EXAMPLES["Telex"])
+        combo.set_selected(combo.values.index("VNI"))
+        self.assertEqual(page.example.get_text(), TYPING_EXAMPLES["VNI"])
+        group = combo.get_ancestor(Adw.PreferencesGroup)
+        self.assertEqual(self.rows_with_class(group, "typed"), [])
+
+    def rows_with_class(self, widget, name):
+        found = []
+        child = widget.get_first_child()
+        while child is not None:
+            if isinstance(child, Adw.PreferencesRow) and child.has_css_class(name):
+                found.append(child)
+            found += self.rows_with_class(child, name)
+            child = child.get_next_sibling()
+        return found
+
+    def test_the_fcitx5_note_is_part_of_the_switch_key_row(self):
+        note = "fcitx5 has other input methods too; its own key still switches to them."
+        for other_methods, expected in ((True, True), (False, False)):
+            page = ShortcutsPage(self.window.model, lambda *_args: None, other_methods)
+            row = page.hotkeys["ToggleKey"].get_ancestor(Adw.ActionRow)
+            self.assertEqual(note in row.get_subtitle(), expected)
+            self.assertIn(HINTS["ToggleKey"], row.get_subtitle())
 
     def test_english_is_left_to_the_switch_key(self):
         self.assertEqual(list(self.window.typing.mode_buttons), MODE_BUTTON_ORDER)

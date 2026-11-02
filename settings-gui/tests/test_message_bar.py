@@ -164,7 +164,10 @@ class CoverTest(WindowCase):
         self.window._show_message("Saved.", undo=True)
         app.processEvents()
         self.assertFalse(on_screen(target).intersects(on_screen(self.window.message_bar)))
-        self.assertTrue(on_screen(scroll.viewport()).contains(on_screen(target)))
+        view = on_screen(scroll.viewport())
+        # Height only: a wide font can make the page scroll sideways too.
+        self.assertGreaterEqual(on_screen(target).top(), view.top())
+        self.assertLessEqual(on_screen(target).bottom(), view.bottom())
 
 
 class ClickTest(WindowCase):
@@ -173,13 +176,16 @@ class ClickTest(WindowCase):
         self.window._show_message("Saved.", undo=True)
         app.processEvents()
         scroll = page.findChild(QScrollArea)
-        box = next(b for b in page.findChildren(QCheckBox) if b.isVisible())
-        bar_top = on_screen(self.window.message_bar).top()
-        # Half the box above the bar, so giving it focus would scroll the page.
-        overlap = on_screen(box).bottom() - bar_top - box.height() // 2
-        scroll.verticalScrollBar().setValue(scroll.verticalScrollBar().value() + overlap)
-        app.processEvents()
-        self.assertTrue(on_screen(box).intersects(on_screen(self.window.message_bar)))
+        bar = on_screen(self.window.message_bar)
+        for box in (b for b in page.findChildren(QCheckBox) if b.isVisible()):
+            # Half the box above the bar, so giving it focus would scroll the page.
+            overlap = on_screen(box).bottom() - bar.top() - box.height() // 2
+            scroll.verticalScrollBar().setValue(scroll.verticalScrollBar().value() + overlap)
+            app.processEvents()
+            if on_screen(box).intersects(bar):
+                break
+        else:
+            self.fail("No checkbox reaches the bar")
         self.window.sidebar.setFocus()
         before = box.isChecked()
         # The pointer stays still: if the page scrolls, the release lands elsewhere on the box.

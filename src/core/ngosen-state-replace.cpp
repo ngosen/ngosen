@@ -488,6 +488,7 @@ namespace ngosen {
             replaceThroughSurrounding(surrounding);
             return;
         }
+        closeCheckBeforeOtherEdit();
         if (ngosen::forwardsBackspaces(host_->field())) {
             replaceThroughForwardedKeys();
             return;
@@ -563,6 +564,9 @@ namespace ngosen {
         // counted on that copy would take characters already gone.
         if (unreportedCommitLength_ > 0)
             fails.emplace_back("copy older than the last commit");
+        // A late report can match the word a Backspace left while the app holds other text.
+        if (backspaceInWord_)
+            fails.emplace_back("Backspace in this word");
         if (surroundingUntrusted())
             fails.emplace_back("marked untrusted");
         if (field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))

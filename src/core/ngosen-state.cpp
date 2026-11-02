@@ -493,15 +493,22 @@ namespace ngosen {
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
         // Counted first, so a replacement this key starts does not count it as a later key.
-        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+        if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;
+            if (ngosen::key::isBackspace(keyEvent.sym()))
+                closeCheckBeforeOtherEdit();
+            if (oldPreBuffer_.empty())
+                backspaceInWord_ = false;
+        }
         handleKey(keyEvent);
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             keySinceReport_ = true;
             clickBeforeKey_ = false;
             // A backspace that leaves no word being typed can end right after an older word.
             backspaceBeforeKey_ = ngosen::key::isBackspace(keyEvent.sym()) && oldPreBuffer_.empty();
-            reportAtKey_        = host_->surrounding();
+            if (ngosen::key::isBackspace(keyEvent.sym()) && !oldPreBuffer_.empty())
+                backspaceInWord_ = true;
+            reportAtKey_ = host_->surrounding();
         }
         // A report with the cursor at the end of the text tells how long the text is.
         const ngosen::Surrounding s = host_->surrounding();

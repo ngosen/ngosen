@@ -19,6 +19,8 @@ namespace ngosen {
     namespace {
         // Apps that lag report within LaggingReportWaitMs; twice that leaves room for a slow one.
         constexpr int SurroundingCheckWaitMs = 200;
+        // Covers the gap to the next key at most typing speeds.
+        constexpr int LaterKeyCheckWaitMs = 1000;
         // Unanswered checks in a row, with none correct, that would make the field untrusted.
         constexpr int UnansweredLimit = 3;
     } // namespace
@@ -55,6 +57,11 @@ namespace ngosen {
         NGOSEN_INFO("Surrounding text untrusted" + loggedField(field) + ": " + why + "; from now " + next);
     }
 
+    // A field with another way to delete can afford to wait: a word that finds the copy stale uses it.
+    bool TypingState::checkWaitsForLaterKey() const {
+        return !deletesOnlyThroughSurrounding() && ngosen::reportsReplacementsWithLaterKey(host_->field());
+    }
+
     void TypingState::openSurroundingCheck(const Surrounding& sent, const std::string& retype) {
         if (surrCheck_) {
             surr_check_timer_.reset();
@@ -68,16 +75,27 @@ namespace ngosen {
                                                    .sentReport    = reportKey(sent),
                                                    .sentAfter     = sent.isValid() ? text.substr(textBeforeCursor(sent).size()) : std::string(),
                                                    .password      = host_->field().password,
+                                                   .waitsForKey   = checkWaitsForLaterKey(),
                                                    .keysAtSend    = keyCount_,
                                                    .commitsAtSend = commitCount_,
                                                    .sentAtUs      = monotonicUs()};
-        const int waitMs        = std::max(engine_->options().waitSurroundingTimeoutMs, SurroundingCheckWaitMs);
-        surr_check_timer_       = host_->startTimer(monotonicUs() + static_cast<uint64_t>(waitMs) * 1000ULL, 0, [this](Timer&) {
+        const bool waitsForKey  = surrCheck_->waitsForKey;
+        const int  waitMs       = std::max(engine_->options().waitSurroundingTimeoutMs, waitsForKey ? LaterKeyCheckWaitMs : SurroundingCheckWaitMs);
+        surr_check_timer_       = host_->startTimer(monotonicUs() + static_cast<uint64_t>(waitMs) * 1000ULL, waitsForKey ? 1000 : 0, [this](Timer&) {
             // The timer is still running here, so closing must not reset it.
             if (surrCheck_)
                 closeSurroundingCheck(SurroundingVerdict::NoAnswer, nullptr);
             return false;
         });
+    }
+
+    void TypingState::closeCheckBeforeOtherEdit() {
+        // The user's Backspace or a replacement through backspaces also changes what stands before the
+        // commit, so later reports prove nothing.
+        if (!surrCheck_ || !surrCheck_->waitsForKey)
+            return;
+        surr_check_timer_.reset();
+        closeSurroundingCheck(SurroundingVerdict::NoAnswer, nullptr);
     }
 
     SurroundingVerdict TypingState::judgeOpenCheck(const Surrounding& report) const {
@@ -90,6 +108,9 @@ namespace ngosen {
 
     void TypingState::checkSurroundingReport() {
         if (!surrCheck_)
+            return;
+        // Backspaces fixing a dropped deletion would land but their commit would not.
+        if (surrCheck_->waitsForKey && !host_->hasFocus())
             return;
         const Surrounding report  = host_->surrounding();
         const auto        verdict = judgeOpenCheck(report);
@@ -120,7 +141,7 @@ namespace ngosen {
                 fixDroppedDeletion(check, *report);
         } else if (verdict == SurroundingVerdict::WrongEarlierPart && !onlyWay) {
             markSurroundingUntrusted("the text before a commit changed");
-        } else if (!surrAnswered_ && surrUnanswered_ >= UnansweredLimit && !onlyWay) {
+        } else if (!surrAnswered_ && surrUnanswered_ >= UnansweredLimit && !onlyWay && !checkWaitsForLaterKey()) {
             markSurroundingUntrusted(std::to_string(surrUnanswered_) + " deletions in a row went unanswered");
         }
     }

@@ -12,7 +12,7 @@ from core.app_modes import RememberedAppModes
 from core.catalog import locked_by
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
-from qtpy.QtCore import Qt, QTimer
+from qtpy.QtCore import QEvent, Qt, QTimer
 from qtpy.QtGui import QIcon, QKeySequence
 from qtpy.QtWidgets import (
     QApplication,
@@ -490,6 +490,18 @@ class NgoSenSettingsWindow(QMainWindow):
         self._reset_pending = False
         self._show_message(text, undo=before is not None)
         self.update_reset_button_state()
+        self._refresh_statuses()
+
+    def _refresh_statuses(self):
+        for page in self._pages:
+            if hasattr(page, "refresh_status"):
+                page.refresh_status()
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        # The tray menu and the other pages can change what a status line says.
+        if event.type() == QEvent.ActivationChange and self.isActiveWindow():
+            self._refresh_statuses()
 
     def show_check_message(self, text, undo):
         """A message from the check page, with Undo when its fix can be taken back."""
@@ -528,6 +540,7 @@ class NgoSenSettingsWindow(QMainWindow):
             elif hasattr(page, "load_config"):
                 page.load_config()
         self.update_reset_button_state()
+        self._refresh_statuses()
 
     def on_export_backup(self):
         name = f"ngosen-backup-{datetime.now():%Y%m%d-%H%M%S}.json"
@@ -589,7 +602,11 @@ class NgoSenSettingsWindow(QMainWindow):
 
         role = item.data(Qt.UserRole)
         if role == "page":
+            # What the next page reads must include what this one has not saved yet.
+            if self._save_timer.isActive():
+                self.save_pending()
             widget = self._page_for_item(item)
+            self._refresh_statuses()
             if widget:
                 self.content_stack.setCurrentWidget(widget)
                 if item is self._check_item:

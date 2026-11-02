@@ -1153,7 +1153,7 @@ msgstr "Menu khay đổi ngay, cửa sổ này đổi ở lần mở sau."
 msgid "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
 msgstr "Kể cả khi tắt mục này, phím z (Telex) hay 0 (VNI) vẫn xóa dấu thanh. Chữ không có dấu thanh thì Backspace xóa chữ như thường."
 
-#: settings-gui/ui/pages/dynamic_settings.py
+#: settings-gui/core/page_status.py
 msgid "Custom has no keys yet: turn on Custom Keymap and add keys in Keys › Keymap."
 msgstr "Custom chưa có phím nào: bật Keymap tuỳ chỉnh rồi thêm phím ở Phím › Keymap."
 
@@ -1868,3 +1868,19 @@ msgstr "Chưa có app nào kết nối với fcitx5"
 #: settings-gui/core/system_check.py
 msgid "Log out and back in to start the installed version."
 msgstr "Đăng xuất rồi đăng nhập lại để chạy version vừa cài."
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: turn on {}."
+msgstr "Chưa có tác dụng: hãy bật {}."
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: turn on {} and choose Custom in {}."
+msgstr "Chưa có tác dụng: hãy bật {} và chọn Custom ở {}."
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: choose Custom in {}."
+msgstr "Chưa có tác dụng: hãy chọn Custom ở {}."
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: Cứu dấu works only with Unicode."
+msgstr "Chưa có tác dụng: Cứu dấu chỉ chạy với Unicode."

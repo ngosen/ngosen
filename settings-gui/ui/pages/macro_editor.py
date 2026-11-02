@@ -9,7 +9,7 @@ Implements UI with row reordering and TSV import/export.
 from core.catalog import locked_by
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
-from qtpy.QtCore import Qt
+from qtpy.QtCore import QSignalBlocker, Qt
 from qtpy.QtGui import QColor, QIcon
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -26,7 +26,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import macros
+from core import macros, page_status
 from ui.helpers import add_help_icon
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
@@ -54,6 +54,7 @@ class MacroEditorPage(BaseEditorPage):
 
         title = page_title(_("Macros"))
         main_layout.addWidget(title)
+        self._add_status_line(main_layout)
 
         # Macro behavior toggles
         toggles_card = CardWidget()
@@ -63,6 +64,7 @@ class MacroEditorPage(BaseEditorPage):
         self.cb_enable_off_mode = QCheckBox(_("Macro in Off Mode"))
         self.cb_enable.toggled.connect(self._on_item_changed)
         self.cb_enable.toggled.connect(lambda _checked: self._apply_locks())
+        self.cb_enable.toggled.connect(lambda _checked: self.refresh_status())
         self.cb_capitalize.toggled.connect(self._on_item_changed)
         self.cb_enable_off_mode.toggled.connect(self._on_item_changed)
         toggles_layout.addWidget(self.cb_enable)
@@ -228,6 +230,23 @@ class MacroEditorPage(BaseEditorPage):
     def value_of(self, key):
         return self._shown_options().get(key)
 
+    def _follow(self, value_of):
+        self.macros.follow(value_of)
+        for key, box in (
+            ("EnableMacro", self.cb_enable),
+            ("CapitalizeMacro", self.cb_capitalize),
+            ("EnableMacroInOffMode", self.cb_enable_off_mode),
+        ):
+            with QSignalBlocker(box):
+                box.setChecked(self.macros.options[key])
+        self._apply_locks()
+
+    def _shown_switches(self):
+        return {"EnableMacro": self.cb_enable.isChecked()}
+
+    def _status_text(self, model):
+        return page_status.macro_line(model)
+
     def _apply_locks(self):
         for key, control in self.controls.items():
             control.setEnabled(locked_by(key, self.value_of) is None)
@@ -245,6 +264,7 @@ class MacroEditorPage(BaseEditorPage):
             self.on_search_changed()
         finally:
             self.blockSignals(False)
+        self.refresh_status()
 
     def _show_options(self):
         options = self.macros.options

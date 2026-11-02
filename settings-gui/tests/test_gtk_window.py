@@ -25,7 +25,7 @@ if CAN_RUN:
     from ui_gtk import brand, check_page, window
     from ui_gtk.hotkey_button import HotkeyButton
 
-    from core import dictionary, keymap, system_check, typing_log, whats_new_content
+    from core import dictionary, keymap, page_status, system_check, typing_log, whats_new_content
 
 
 def isolate(test):
@@ -577,6 +577,91 @@ class GtkLocksTest(unittest.TestCase):
         self.assertFalse(w.macros.formats["TimeFormat"].get_sensitive())
         w.undo()
         self.assertTrue(w.macros.formats["TimeFormat"].get_sensitive())
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkStatusLinesTest(unittest.TestCase):
+    def setUp(self):
+        isolate(self)
+
+    def window(self, fake):
+        w = window.Window(None, fake)
+        self.addCleanup(w.destroy)
+        return w
+
+    def test_each_page_says_why_it_is_not_in_use(self):
+        fake = FakeDBusHandler(
+            {"EnableDictionary": "False", "EnableCustomKeymap": "False", "EnableMacro": "False"}
+        )
+        w = self.window(fake)
+        model = page_status.read(fake)
+        for page, line in (
+            (w.dictionary, page_status.dictionary_line),
+            (w.keymap, page_status.keymap_line),
+            (w.macros, page_status.macro_line),
+        ):
+            self.assertTrue(page.status.get_visible())
+            self.assertEqual(page.status.get_title(), line(model))
+
+    def test_a_line_goes_when_its_switch_is_turned_on(self):
+        fake = FakeDBusHandler({"EnableMacro": "False"})
+        w = self.window(fake)
+        self.assertTrue(w.macros.status.get_visible())
+        w.macros.switches["EnableMacro"].set_active(True)
+        self.assertFalse(w.macros.status.get_visible())
+
+    def test_a_setting_on_another_page_changes_the_line(self):
+        fake = FakeDBusHandler(
+            {"EnableDictionary": "True", "AutoNonVnRestore": "True", "SpellCheck": "True"}
+        )
+        w = self.window(fake)
+        self.assertFalse(w.dictionary.status.get_visible())
+        w.typing.rows["SpellCheck"].set_active(False)
+        self.assertTrue(w.dictionary.status.get_visible())
+
+    def test_the_switch_follows_a_change_from_the_tray(self):
+        fake = FakeDBusHandler({"EnableMacro": "True", "EnableDictionary": "False"})
+        w = self.window(fake)
+        fake.values.update(EnableMacro="False", EnableDictionary="True")
+        written = dict(fake.values)
+        w._refresh_statuses()
+        self.assertFalse(w.macros.switches["EnableMacro"].get_active())
+        self.assertFalse(w.macros.formats["TimeFormat"].get_sensitive())
+        self.assertTrue(w.dictionary.switch.get_active())
+        self.assertEqual(fake.values, written)
+
+    def test_the_custom_note_needs_keys_as_in_the_qt_window(self):
+        fake = FakeDBusHandler({"InputMethod": "Custom"})
+        w = self.window(fake)
+        self.assertTrue(w.typing.custom_note.get_visible())
+        fake.values["EnableCustomKeymap"] = "True"
+        fake.sub_configs["custom_keymap"] = [{"Key": "q", "Value": "XoaDauThanh"}]
+        w._refresh_statuses()
+        self.assertFalse(w.typing.custom_note.get_visible())
+
+    def test_the_retone_note_follows_the_charset(self):
+        fake = FakeDBusHandler({"RetoneSelection": "True", "OutputCharset": "Unicode"})
+        w = self.window(fake)
+        row = w.typing.rows["OutputCharset"]
+        self.assertFalse(w.typing.retone_note.get_visible())
+        row.set_selected(row.values.index("VIQR"))
+        self.assertTrue(w.typing.retone_note.get_visible())
+
+    def test_the_lines_hide_without_fcitx5(self):
+        fake = Restarting({"EnableMacro": "False"})
+        w = self.window(fake)
+        self.assertTrue(w.macros.status.get_visible())
+        fake.down = True
+        w._refresh_statuses()
+        self.assertFalse(w.macros.status.get_visible())
+
+    def test_a_status_line_is_not_a_search_result(self):
+        fake = FakeDBusHandler({"EnableMacro": "False"})
+        w = self.window(fake)
+        title = w.macros.status.get_title()
+        w.search_entry.set_text(title)
+        w._on_search(w.search_entry)
+        self.assertFalse(hasattr(w.results.get_row_at_index(0), "found"))
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")

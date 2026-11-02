@@ -16,8 +16,10 @@ from core.catalog import (
 from gi.repository import Adw, Gtk
 from i18n import _
 
+from core import page_status
 from ui_gtk import brand
 from ui_gtk.check_page import open_uri
+from ui_gtk.status_row import show_status, status_row
 from ui_gtk.whats_new import tip_text
 
 
@@ -160,6 +162,8 @@ class TypingPage(SettingsPage):
     def __init__(self, model, on_change, tip=None, on_tip=None):
         self.tip = tip
         self.on_tip = on_tip
+        self.custom_note = status_row()
+        self.retone_note = status_row()
         super().__init__(
             model, on_change, SettingsCategory.TYPING, _("Typing"), "input-keyboard-symbolic"
         )
@@ -168,6 +172,29 @@ class TypingPage(SettingsPage):
         entry.add_css_class("typed")
         try_it.add(entry)
         self.page.add(try_it)
+        self.refresh_status()
+
+    def _rows_for(self, item):
+        rows = super()._rows_for(item)
+        if item[0] == "InputMethod":
+            rows.append(self.custom_note)
+        elif item[0] == "RetoneSelection":
+            rows.append(self.retone_note)
+        return rows
+
+    def _changed(self, key, value):
+        super()._changed(key, value)
+        if key in ("InputMethod", "OutputCharset", "RetoneSelection"):
+            self.refresh_status()
+
+    def refresh_status(self):
+        """Shows the notes that depend on what fcitx5 holds, without rebuilding the page."""
+        model = page_status.read(self.model.dbus)
+        show_status(
+            self.custom_note,
+            page_status.custom_without_keys_line(model, self.model.dbus) if model else "",
+        )
+        show_status(self.retone_note, page_status.retone_line(model) if model else "")
 
     def _add_header(self):
         if self.tip is None:

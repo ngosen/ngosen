@@ -623,7 +623,8 @@ namespace ngosen {
             keyEvent.passToApp();
             if (keyEvent.isRelease() && !overtype_shift_released_ && overtype_timer_) {
                 overtype_shift_released_ = true;
-                overtype_timer_->rearm(ngosen::monotonicUs() + XTestSelectSettleUs);
+                overtype_released_at_    = ngosen::monotonicUs();
+                overtype_timer_->rearm(overtype_released_at_ + XTestSelectSettleUs);
             }
             return true;
         }

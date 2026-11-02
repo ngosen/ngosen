@@ -225,6 +225,95 @@ fn test_auto_non_vn_restore_disabled() {
 }
 
 #[test]
+fn test_english_word_keeps_a_letter_telex_undid() {
+    for word in [
+        "issue",
+        "sorry",
+        "coffee",
+        "different",
+        "mess",
+        "tests",
+        "costs",
+    ] {
+        let mut e = new_test_engine(&[], true);
+        type_keys(&mut e, word);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{word} "));
+    }
+}
+
+#[test]
+fn test_english_word_keeps_its_case() {
+    for word in ["Issue", "ISSUE"] {
+        let mut e = new_test_engine(&[], true);
+        type_keys(&mut e, word);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{word} "));
+    }
+}
+
+#[test]
+fn test_english_word_is_kept_at_tab_and_enter() {
+    for key in [KEY_TAB, KEY_RETURN] {
+        let mut e = new_test_engine(&[], true);
+        type_keys(&mut e, "issue");
+        e.process_key_event(key, 0);
+        assert_eq!(e.commit_text, "issue");
+    }
+}
+
+#[test]
+fn test_doubled_key_still_undoes_a_tone() {
+    // How people type an English word that would otherwise take a tone.
+    for (keys, shown) in [
+        ("tesst", "test"),
+        ("besst", "best"),
+        ("iss", "is"),
+        ("thiss", "this"),
+        ("off", "of"),
+        ("ass", "as"),
+        ("rooom", "room"),
+        ("dowwn", "down"),
+    ] {
+        let mut e = new_test_engine(&[], true);
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{shown} "), "keys {keys}");
+    }
+}
+
+#[test]
+fn test_english_word_list_needs_auto_restore() {
+    let mut e = new_test_engine(&[], true);
+    e.auto_non_vn_restore = false;
+    type_keys(&mut e, "issue");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "isue ");
+}
+
+#[test]
+fn test_english_word_list_is_typed_back() {
+    for word in ENGLISH_WORDS.lines() {
+        let mut e = new_test_engine(&[], true);
+        type_keys(&mut e, word);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{word} "));
+    }
+}
+
+// Prints what each word in NGOSEN_WORDS shows before its word ends, for misc/gen-english-words.py.
+#[test]
+#[ignore = "generator input, not a check"]
+fn print_shown_words() {
+    let path = std::env::var("NGOSEN_WORDS").unwrap();
+    for word in std::fs::read_to_string(path).unwrap().lines() {
+        let mut e = new_test_engine(&[], true);
+        type_keys(&mut e, word);
+        println!("SHOWN\t{word}\t{}", e.preedit_text);
+    }
+}
+
+#[test]
 fn test_to_upper() {
     let mut e = new_test_engine(&[], false);
     assert_eq!(e.to_upper('b'), 'b');

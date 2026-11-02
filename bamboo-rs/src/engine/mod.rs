@@ -154,6 +154,10 @@ pub fn default_config() -> Config {
         .build()
 }
 
+// English words Telex keys would show without a letter (`issue` as `isue`). A doubled key can't be
+// told from one typed on purpose to undo a tone (`tesst` for "test") without knowing the word.
+const ENGLISH_WORDS: &str = include_str!("english-words.txt");
+
 pub struct BambooEngine {
     pub(crate) preeditor: Engine,
     pub(crate) macro_table: Arc<MacroTable>,
@@ -312,6 +316,18 @@ impl BambooEngine {
         !self.preeditor.is_valid_word()
     }
 
+    fn lost_a_letter_of_english_word(&self, shown: &str) -> bool {
+        if !self.auto_non_vn_restore || !shown.is_ascii() {
+            return false;
+        }
+        let raw = self.raw_text();
+        if raw == shown {
+            return false;
+        }
+        let raw = raw.to_ascii_lowercase();
+        ENGLISH_WORDS.lines().any(|word| word == raw)
+    }
+
     /// Commits a word break typed right after a key that appends it, such as `[[` -> `[`.
     fn break_after_appended_key(&mut self) {
         self.preeditor.remove_last_output_char();
@@ -370,7 +386,9 @@ impl BambooEngine {
             self.preeditor.reset();
             return (format!("{expanded}{key}"), true);
         }
-        if has_any_vietnamese_rune(old_text) && self.must_fallback_to_english() {
+        if (has_any_vietnamese_rune(old_text) && self.must_fallback_to_english())
+            || self.lost_a_letter_of_english_word(old_text)
+        {
             self.preeditor
                 .restore_last_word_as(LastWordForm::RawKeystrokes);
             let new_text = format!("{}{key}", self.raw_text());
@@ -441,7 +459,9 @@ impl BambooEngine {
     }
 
     fn get_composed_string(&self, old_text: String) -> String {
-        if has_any_vietnamese_rune(&old_text) && self.must_fallback_to_english() {
+        if (has_any_vietnamese_rune(&old_text) && self.must_fallback_to_english())
+            || self.lost_a_letter_of_english_word(&old_text)
+        {
             return self.raw_text();
         }
         old_text
@@ -502,6 +522,14 @@ impl BambooEngine {
                     && Self::is_valid_state(state);
                 let text = match self.get_macro_text() {
                     Some(macro_text) if enter => macro_text,
+                    _ if enter || key_val == KEY_TAB => {
+                        let shown = self.get_preedit_string();
+                        if self.lost_a_letter_of_english_word(&shown) {
+                            self.raw_text()
+                        } else {
+                            shown
+                        }
+                    }
                     _ => self.get_preedit_string(),
                 };
                 self.commit_preedit_and_reset(text);

@@ -11,15 +11,13 @@ mới có số version, và thứ tự có thể đổi. Muốn đề nghị hay
 
 Chưa có số version, xếp theo thứ tự định làm:
 
-1. Chữ tiếng Anh có chữ cái đôi không còn mất phím khi trả về: `affect` không thành `afect`, `coffee`
-   không thành `cofee`.
-2. Bớt đổi nhầm chữ tiếng Anh thành tiếng Việt, như `nest` thành `nét`, `too` thành `tô`.
-3. Đoán dấu: gõ cả câu không dấu rồi bấm một phím để thêm dấu.
-4. Bôi đen một đoạn rồi thêm dấu, bỏ dấu hoặc chuyển chữ mã cũ (TCVN3, VNI) sang Unicode.
-5. Sửa lỗi gõ vội, như `tiếgn` thành `tiếng`.
-6. Tự chạy "Kiểm tra máy tôi" lần đầu mở cửa sổ cài đặt. Có thêm bảng các app gõ được, lấy từ kết quả test
+1. Bớt đổi nhầm chữ tiếng Anh thành tiếng Việt, như `nest` thành `nét`, `too` thành `tô`.
+2. Đoán dấu: gõ cả câu không dấu rồi bấm một phím để thêm dấu.
+3. Bôi đen một đoạn rồi thêm dấu, bỏ dấu hoặc chuyển chữ mã cũ (TCVN3, VNI) sang Unicode.
+4. Sửa lỗi gõ vội, như `tiếgn` thành `tiếng`.
+5. Tự chạy "Kiểm tra máy tôi" lần đầu mở cửa sổ cài đặt. Có thêm bảng các app gõ được, lấy từ kết quả test
    người dùng gửi về.
-7. Đưa Ngó Sen vào repo của các distro: từ 1.5.3 đã có repo riêng có chữ ký cho Fedora (COPR),
+6. Đưa Ngó Sen vào repo của các distro: từ 1.5.3 đã có repo riêng có chữ ký cho Fedora (COPR),
    Debian và Ubuntu (APT), Arch (pacman) và openSUSE Tumbleweed. nixpkgs đang chờ review
    ([NixOS/nixpkgs#575620](https://github.com/NixOS/nixpkgs/pull/575620)). Còn AUR, rồi Debian.
 8. Làm lại cách chèn emoji (#110).

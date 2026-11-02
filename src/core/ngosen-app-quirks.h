@@ -70,4 +70,8 @@ namespace ngosen {
     bool hidesAddressBarFlag(const Field& field);
     bool reportsSurroundingEditsLate(const Field& field);
 
+    // An app behind IBus may show a replacement in its report only when a later key arrives, so a
+    // report that does not come at once says nothing about the deletion.
+    bool reportsReplacementsWithLaterKey(const Field& field);
+
 } // namespace ngosen

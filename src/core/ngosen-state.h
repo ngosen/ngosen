@@ -517,10 +517,12 @@ namespace ngosen {
             std::string sentReport; ///< reportKey() when the deletion was sent
             std::string sentAfter;  ///< the text after the cursor then
             bool        password      = false;
+            bool        waitsForKey   = false; ///< stays open for a report that comes with a later key
             uint64_t    keysAtSend    = 0;
             uint64_t    commitsAtSend = 0;
             uint64_t    sentAtUs      = 0;
         };
+        bool               checkWaitsForLaterKey() const;
         void               openSurroundingCheck(const Surrounding& sent, const std::string& retype);
         void               checkSurroundingReport();
         SurroundingVerdict judgeOpenCheck(const Surrounding& report) const;

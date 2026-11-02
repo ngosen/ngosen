@@ -142,7 +142,10 @@ namespace ngosen::test {
                 later(quirks_.lagMs, [this, back = sym == key::ISO_Left_Tab || (state & modifier::Shift) != 0U] { insert(back ? U"⇤" : U"⇥", true); });
             else if (sym == key::BackSpace) {
                 lastBackSpaceAt_ = time;
-                later(quirks_.lagMs, [this] { eraseBefore(1); });
+                later(quirks_.lagMs, [this] {
+                    noteTypedKey();
+                    eraseBefore(1);
+                });
             } else if (const auto text = keyText(down.appSym()); !text.empty() && static_cast<unsigned char>(text[0]) >= 0x20 && text[0] != '\x7f')
                 later(quirks_.lagMs, [this, text] { insert(utf8::decode(text), true); });
         }
@@ -273,6 +276,8 @@ namespace ngosen::test {
 
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
         ++sent_.surroundingDeletes;
+        if (quirks_.ignoresSurroundingDel)
+            goSilentAfterDelete();
         // A module whose copy of the text is empty finds every deletion out of range.
         if (quirks_.ignoresSurroundingDel || quirks_.reportsEmptyText)
             return;
@@ -313,9 +318,9 @@ namespace ngosen::test {
         const long from = static_cast<long>(cursor_) + offset;
         if (from < 0 || static_cast<size_t>(from) + size > text_.size())
             return;
-        silentAfterDelete_ = quirks_.reportsNothingAfterDelete || quirks_.repeatsOldTextAfterDelete;
-        previousText_      = text_;
-        previousCursor_    = cursor_;
+        goSilentAfterDelete();
+        previousText_   = text_;
+        previousCursor_ = cursor_;
         text_.erase(static_cast<size_t>(from), size);
         if (cursor_ > static_cast<size_t>(from))
             cursor_ = cursor_ >= static_cast<size_t>(from) + size ? cursor_ - size : static_cast<size_t>(from);
@@ -378,7 +383,7 @@ namespace ngosen::test {
 
     void FakeApp::insert(const std::u32string& text, bool typed) {
         if (typed)
-            silentAfterDelete_ = false;
+            noteTypedKey();
         if (quirks_.erasesOnDel && !text.empty() && text[0] == U'\x7f') {
             const size_t dels = text.find_first_not_of(U'\x7f');
             eraseBefore(dels == std::u32string::npos ? text.size() : dels);
@@ -395,6 +400,16 @@ namespace ngosen::test {
         changed();
         if (!quirks_.redrawsOnlyOnDeletion)
             redrawAfterEdit();
+    }
+
+    void FakeApp::noteTypedKey() {
+        if (!quirks_.silentFromFirstDeletion && ++keysSinceDelete_ >= quirks_.keysBeforeNewReport)
+            silentAfterDelete_ = false;
+    }
+
+    void FakeApp::goSilentAfterDelete() {
+        silentAfterDelete_ = quirks_.reportsNothingAfterDelete || quirks_.repeatsOldTextAfterDelete || quirks_.silentFromFirstDeletion;
+        keysSinceDelete_   = 0;
     }
 
     void FakeApp::redrawAfterEdit() {

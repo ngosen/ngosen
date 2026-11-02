@@ -42,6 +42,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Cửa sổ cài đặt: bản GTK tiếng Anh không còn bị cắt bên phải khi thu hẹp cửa sổ hết cỡ (#537).
 - Cửa sổ cài đặt: bản GTK không còn cắt phần bên phải khi thu hẹp cửa sổ ở tiếng Việt (#531).
 - Cửa sổ cài đặt: giữ lựa chọn từ điển, gõ tắt đổi ở menu khay khi lưu trang đó (#517).
 - Cửa sổ cài đặt: bản Qt nói rõ nút Mặc định xoá dữ liệu đã lưu và có thể hoàn tác ngay (#517).

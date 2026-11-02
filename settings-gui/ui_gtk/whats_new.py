@@ -69,6 +69,7 @@ class WhatsNewPage:
             label = _("Open the {} page").format(PAGE_TITLES[name])
             button = Gtk.Button(label=label, valign=Gtk.Align.CENTER)
             button.connect("clicked", lambda _b: self.show_page(name))
+        button.get_child().set_wrap(True)
         button.target = target
         row.add_suffix(button)
 

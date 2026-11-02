@@ -17,6 +17,8 @@ import ui_gtk
 CAN_RUN = ui_gtk.available() and bool(os.environ.get("DISPLAY"))
 # The GTK CI job sets this, so a missing package fails the run instead of skipping these tests.
 REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
+# The smallest width libadwaita's adaptive windows are meant to fit.
+NARROWEST_WINDOW = 360
 
 if CAN_RUN:
     from core.brand import MESSENGER_URL
@@ -156,8 +158,7 @@ class GtkWindowTest(unittest.TestCase):
         # A breakpoint window does not grow for its content, and the stack takes its widest page's
         # width, so one wide page cuts off every page on the right.
         page = self.window.stack.get_child_by_name("check")
-        narrowest = self.window.measure(Gtk.Orientation.HORIZONTAL, -1)[0]
-        self.assertLessEqual(page.measure(Gtk.Orientation.HORIZONTAL, -1)[0], narrowest)
+        self.assertLessEqual(page.measure(Gtk.Orientation.HORIZONTAL, -1)[0], NARROWEST_WINDOW)
 
     def test_show_page_switches_and_ignores_pages_not_built_yet(self):
         self.window.show_page("about")

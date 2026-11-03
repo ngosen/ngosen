@@ -2101,8 +2101,9 @@ namespace {
     void testReportRequestKeepsNextEdit() {
         Field field   = surroundingOnlyField();
         field.program = "gnome-shell";
-        ngosen::test::AppQuirks shell{.reportDelayMs = 30, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true, .turnMs = 3};
-        const auto              keys = keysOf("nguwx ");
+        ngosen::test::AppQuirks shell{
+            .reportDelayMs = 30, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .keepsLastEditPerTurn = true, .turnMs = 3};
+        const auto keys = keysOf("nguwx ");
         for (const int gap : {38, 39, 40, 41}) {
             std::vector<int> gaps(keys.size(), 100);
             gaps[3] = gap; // w and x
@@ -2179,6 +2180,19 @@ namespace {
         const auto              keys = keysOf("vieetj nam ");
         const auto              run  = ngosen::test::typeInAppTraced(resources, field, shell, keys, std::vector<int>(keys.size(), 200));
         check(run.text == "việt nam ", "a long turn: asking for a report keeps the edit", run.text);
+    }
+
+    // Firefox's cursor stays past the real one after a deletion and a commit in one turn, so the next
+    // deletion would take what follows the word.
+    void testEditBeforeOtherText() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        FakeResources           resources;
+        ngosen::test::AppQuirks firefox{
+            .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true, .turnMs = 3, .cursorStaysPastEdit = true, .textAfterCursor = "chào"};
+        const auto keys = keysOf("nguwx ");
+        const auto run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 150));
+        check(run.text == "ngữ chào", "text after the cursor: the deletion and the commit go apart", run.text);
     }
 
     // Ace keeps a line break after its line, and the cursor can stay past it after a commit.
@@ -2566,6 +2580,7 @@ int main() {
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();
     testLongTurnKeepsTheEdit();
+    testEditBeforeOtherText();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

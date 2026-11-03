@@ -817,8 +817,8 @@ namespace ngosen {
     }
 
     void TypingState::finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype) {
-        reportSinceEdit_ = false;
-        editSentAtUs_    = monotonicUs();
+        reportSinceEdit_       = false;
+        editSentAtUs_          = monotonicUs();
         const std::string text = retype + pending_commit_string_;
         if (!text.empty()) {
             commit(text);

@@ -399,7 +399,8 @@ namespace ngosen {
         KeyEntry                       key_report_key_{};
         KeyEntry                       replayed_key_{};
         std::unique_ptr<ngosen::Timer> split_edit_timer_;
-        bool                           copyWaitTimedOut_ = false; ///< keeps replayed keys from each waiting out a copy that never fits
+        bool                           split_edit_pending_ = false;
+        bool                           copyWaitTimedOut_   = false; ///< keeps replayed keys from each waiting out a copy that never fits
         std::string                    key_report_deleted_;
         std::string                    key_report_added_;
 

@@ -2,7 +2,7 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: fcitx5-ngosen
 Upstream-Contact: Nguyen Phi <nguyenphidt@gmail.com>
 Source: https://github.com/ngosen/ngosen
-Comment: Ngó Sen is a fork of https://github.com/LotusInputMethod/fcitx5-lotus
+Comment: Ngó Sen is based on code from https://github.com/LotusInputMethod/fcitx5-lotus and https://github.com/thanhpy2009/VMK
 
 Files: *
 Copyright: 2022 CSSlayer <wengxt@gmail.com>

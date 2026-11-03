@@ -2138,6 +2138,20 @@ namespace {
         check(qtRun.text == "bè bè bè bè tiếng ", "an app that rarely answers keeps the count for its real text", qtRun.text);
     }
 
+    // A copy one key behind can hold the same number of bytes as the word, yet the deletion lands at
+    // that copy's cursor, in front of the key the copy lacks.
+    void testCopyBehindByAKey() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks firefox{.reportDelayMs = 40, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .deletesAtReportedCursor = true};
+        FakeResources           resources;
+        const auto              keys = keysOf("vieetj nam ");
+        std::vector<int>        gaps(keys.size(), 150);
+        gaps[4]        = 5; // t and j
+        const auto run = ngosen::test::typeInAppTraced(resources, field, firefox, keys, gaps);
+        check(run.text == "việt nam ", "copy behind by a key: the replacement waits for the copy to catch up", run.text);
+    }
+
     // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first
     // replacement; sent at once, the app would keep only the second.
     void testReplacementsInOneTurn() {
@@ -2455,6 +2469,7 @@ int main() {
     testFirefoxReportsOnlyAfterCommit();
     testReportRequestKeepsNextEdit();
     testAnsweringAppGetsPlainCount();
+    testCopyBehindByAKey();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

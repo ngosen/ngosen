@@ -46,6 +46,17 @@ int main() {
         std::cerr << "FAIL: " << name << ": wrongBytes=" << got.wrongBytes << '\n';
         ++failures;
     };
+    auto behind = [](const std::string& name, const ngosen::SurroundingDeletion& got, bool want) {
+        if (got.behind == want)
+            return;
+        std::cerr << "FAIL: " << name << ": behind=" << got.behind << '\n';
+        ++failures;
+    };
+    behind("the copy lacks the last key", ngosen::countSurroundingDeletion("viê", "vi", "êt", {}), true);
+    behind("the copy lacks the only deleted letter", ngosen::countSurroundingDeletion("vi", "vi", "e", {}), true);
+    behind("a fresh copy is not behind", ngosen::countSurroundingDeletion("viêt", "vi", "êt", {}), false);
+    behind("another word is not behind", ngosen::countSurroundingDeletion("nam", "vi", "êt", {}), false);
+    behind("an empty copy with no prefix says nothing", ngosen::countSurroundingDeletion("", "", "e", {}), false);
     wrongBytes("an empty copy cannot hold the deleted letter", ngosen::countSurroundingDeletion("", "vi", "e", {}), true);
     wrongBytes("a one-byte letter for a one-byte part", ngosen::countSurroundingDeletion("v", "vi", "e", {}), false);
     wrongBytes("one-byte letters for a part with ê", ngosen::countSurroundingDeletion("vi", "vi", "êt", {}), true);

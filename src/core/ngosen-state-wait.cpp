@@ -305,7 +305,7 @@ namespace ngosen {
         if (!(host_->surrounding() == reportAtKey_))
             keySinceReport_ = false;
         // A report with focus away may be another app's; the next report or the timer ends the wait.
-        if (key_report_pending_ && host_->hasFocus() && !(key_report_until_copy_fits_ && copyGivesWrongBytes())) {
+        if (key_report_pending_ && host_->hasFocus() && !(key_report_until_copy_fits_ && copyGivesWrongDeletion())) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
             const auto s = host_->surrounding();
             finishKeyReportWait(s.isValid() && !(ngosen::reportsFieldOnlyOnKey(host_->field()) && s.text().empty()), false);

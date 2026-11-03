@@ -309,6 +309,10 @@ namespace ngosen::test {
         if (quirks_.convertsDeleteOnReportedCopy && offset == -static_cast<int>(size)) {
             const size_t bytes = reportedBytesBefore(size);
             later(quirks_.lagMs, [this, bytes] {
+                if (quirks_.deletesAtReportedCursor && reportedCursor_ <= text_.size()) {
+                    cursor_ = reportedCursor_;
+                    anchor_ = cursor_;
+                }
                 const unsigned int chars = charsForBytesBefore(bytes);
                 eraseAround(-static_cast<int>(chars), chars);
             });

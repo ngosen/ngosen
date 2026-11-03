@@ -59,9 +59,10 @@ namespace ngosen::test {
         bool             reportsTextAtChange          = false; // a late report shows the text as it was at that change, not as it is on arrival
         int              emptyCommitsBeforeReport     = 0;     // empty commits it takes to end repeatsOldTextAfterDelete, as Firefox on GNOME
         std::vector<int> ignoresRequestsOnEdits;               // these deletions get no report for empty commits, as Firefox on GNOME now and then
-        int              reportsOnEdit = 0;                    // the nth deletion is reported anyway, as Qt now and then
-        bool             showsEnter    = false;                // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
-        bool             showsTab      = false;                // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
+        bool             deletesAtReportedCursor = false;      // deletes at the cursor of its last report and leaves the cursor there, as Firefox over GTK does
+        int              reportsOnEdit           = 0;          // the nth deletion is reported anyway, as Qt now and then
+        bool             showsEnter              = false;      // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
+        bool             showsTab                = false;      // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
         // Applies deletions and commits once per main-loop turn, keeping only the last of each, as a
         // client behind mutter's text-input-v3 does; a key let through ends the turn first.
         bool keepsLastEditPerTurn = false;

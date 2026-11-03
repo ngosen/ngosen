@@ -455,7 +455,7 @@ namespace ngosen {
         trackEarlierWords(addedPart);
         if (live_key_) {
             const bool forKey = waitsForKeyReport();
-            if (forKey || copyGivesWrongBytes()) {
+            if (forKey || copyGivesWrongDeletion()) {
                 startKeyReportWait(deletedPart, addedPart, !forKey);
                 return;
             }
@@ -744,11 +744,12 @@ namespace ngosen {
 
     // The frontend turns a deletion into bytes on its copy of the text, which can still lack what the
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
-    bool TypingState::copyGivesWrongBytes() const {
+    bool TypingState::copyGivesWrongDeletion() const {
         const auto surrounding = host_->surrounding();
         if (!ngosen::countsDeletionOnCopy(host_->field()) || !deletesOnlyThroughSurrounding() || !surrounding.isValid())
             return false;
-        return countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_).wrongBytes;
+        const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        return deletion.wrongBytes || deletion.behind;
     }
 
     int TypingState::surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const {

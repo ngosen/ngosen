@@ -122,9 +122,6 @@ namespace ngosen {
     }
 
     void TypingState::closeSurroundingCheck(SurroundingVerdict verdict, const Surrounding* report, bool beforeNext) {
-        // The next deletion needs the copy fresh even after the check gives up, so only an answer ends the requests.
-        if (verdict != SurroundingVerdict::NoAnswer)
-            report_requests_left_ = 0;
         const auto check = *surrCheck_;
         surrCheck_.reset();
         std::string line = std::string("Surrounding check: ") + verdictName(verdict) + (beforeNext ? " before the next replacement" : "") + " after " +
@@ -134,6 +131,10 @@ namespace ngosen {
         NGOSEN_INFO(line);
         if (verdict == SurroundingVerdict::Correct)
             surrAnswered_ = true;
+        if (verdict == SurroundingVerdict::Correct && keyCount_ == check.keysAtSend)
+            ++surrAnsweredUnasked_;
+        else if (verdict == SurroundingVerdict::NoAnswer)
+            ++surrMissed_;
         surrUnanswered_ = verdict == SurroundingVerdict::NoAnswer ? surrUnanswered_ + 1 : 0;
         // Calc reports an empty field and GTK 4 an old copy as a matter of course, so with no other way
         // to delete only a dropped deletion is worth giving up on the field for.

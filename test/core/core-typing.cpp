@@ -2111,19 +2111,16 @@ namespace {
         }
     }
 
-    // Firefox can stay silent for hundreds of milliseconds, so the requests go on past the first moments.
-    void testSlowReportStillAsked() {
+    // Firefox reports most edits unasked and misses a few; its copy for the deletion is then as old as
+    // mutter's, so counting on it takes one letter too many. Qt, which rarely reports, needs that count.
+    void testAnsweringAppGetsPlainCount() {
         Field field   = surroundingOnlyField();
         field.program = "gnome-shell";
-        ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 5};
+        ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 1, .ignoresRequestsOnEdit = 9};
         FakeResources           resources;
-        const auto              keys = keysOf("bef owr tieesng ");
-        ngosen::test::captureLog(true);
-        const auto run   = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 500));
-        const auto lines = ngosen::test::capturedLog();
-        ngosen::test::captureLog(false);
-        check(run.text == "bè ở tiếng ", "Firefox on GNOME: a report that takes five requests still arrives", run.text);
-        check(countHaving(lines, "copy shows the earlier word") == 0, "Firefox on GNOME: later requests leave no old copy to count on", join(lines));
+        const auto              keys = keysOf("bef owr bef owr vieetj tieesng ");
+        const auto              run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 150));
+        check(run.text == "bè ở bè ở việt tiếng ", "an app that mostly answers keeps its letters when it misses one report", run.text);
     }
 
     // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first
@@ -2442,7 +2439,7 @@ int main() {
     testReplacementsInOneTurn();
     testFirefoxReportsOnlyAfterCommit();
     testReportRequestKeepsNextEdit();
-    testSlowReportStillAsked();
+    testAnsweringAppGetsPlainCount();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

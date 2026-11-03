@@ -517,7 +517,7 @@ namespace ngosen {
         static constexpr uint64_t      EditHoldUs = 20000;
         std::unique_ptr<ngosen::Timer> report_timer_;
         int                            report_requests_left_ = 0;
-        static constexpr int           ReportRequests        = 5;
+        static constexpr int           ReportRequests        = 4;
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
         struct SurroundingCheck {
@@ -568,6 +568,9 @@ namespace ngosen {
         uint64_t                        keyCount_                = 0;     ///< key presses other than modifiers
         int                             surrUnanswered_          = 0;     ///< checks in a row left unanswered in this field
         bool                            surrAnswered_            = false; ///< a check in this field came out correct
+        int                             surrAnsweredUnasked_     = 0;     ///< checks in this field answered with no key since the edit
+        int                             surrMissed_              = 0;     ///< checks in this field left unanswered
+        static constexpr int            MinAnswersForPlainCount  = 3;
         bool                            surrSeenTextSinceFocus_  = false; ///< the field reported text since it got focus
         bool                            surrSeenEmptySinceFocus_ = false; ///< the field reported itself empty before any key since it got focus
         uint64_t                        keysAtFocus_             = 0;     ///< keyCount_ at the last focus-in, kept over a bounce

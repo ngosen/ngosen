@@ -205,7 +205,7 @@ namespace ngosen::test {
             forwardedAt_     = 0;
         }
         if (text.empty() && quirks_.emptyCommitsBeforeReport > 0) {
-            if (silentAfterDelete_ && ++emptyCommits_ >= quirks_.emptyCommitsBeforeReport) {
+            if (silentAfterDelete_ && deletions_ != quirks_.ignoresRequestsOnEdit && ++emptyCommits_ >= quirks_.emptyCommitsBeforeReport) {
                 silentAfterDelete_ = false;
                 changed();
             }
@@ -293,6 +293,7 @@ namespace ngosen::test {
 
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
         ++sent_.surroundingDeletes;
+        ++deletions_;
         if (quirks_.ignoresSurroundingDel)
             goSilentAfterDelete();
         // A module whose copy of the text is empty finds every deletion out of range.

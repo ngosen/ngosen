@@ -755,6 +755,12 @@ namespace ngosen {
         if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
             return deletedChars_;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        // An app that reports its edits unasked turns the bytes back into characters on the same old
+        // copy, so the count it needs is the plain one. Qt applies the bytes to its real text.
+        if (deletion.match == SurroundingDeletion::Match::OldTail && surrAnsweredUnasked_ >= MinAnswersForPlainCount && surrAnsweredUnasked_ > surrMissed_) {
+            NGOSEN_INFO("Surrounding copy shows the earlier word in an app that reports: delete " + std::to_string(deletedChars_));
+            return deletedChars_;
+        }
         NGOSEN_INFO(std::string("Surrounding copy shows the ") + matchName(deletion.match) + " word: delete " + std::to_string(deletion.chars) + " of " +
                     std::to_string(deletedChars_));
         retype = deletion.retype;
@@ -809,20 +815,17 @@ namespace ngosen {
     // the next deletion's bytes into characters on that old copy. GTK asks for a new copy when a commit
     // arrives, and an empty one changes nothing in the field.
     void TypingState::askForReportAfterEdit() {
-        if (!surrCheck_)
-            return;
         report_requests_left_ = ReportRequests;
         requestReportWhileUnanswered();
     }
 
     void TypingState::requestReportWhileUnanswered() {
-        if (report_requests_left_ == 0 || !host_->hasFocus())
+        if (!surrCheck_ || report_requests_left_ == 0 || !host_->hasFocus())
             return;
         --report_requests_left_;
         host_->commitText("");
         NGOSEN_INFO("Ask the app for a report");
-        // Most reports come within 75 ms, the rest only after hundreds, so the requests spread out.
-        const uint64_t until = monotonicUs() + (EditHoldUs << (ReportRequests - report_requests_left_ - 1));
+        const uint64_t until = monotonicUs() + EditHoldUs;
         if (report_timer_) {
             report_timer_->rearm(until);
             return;

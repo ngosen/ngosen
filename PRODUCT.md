@@ -24,8 +24,8 @@ the setting, change it, see it take effect, leave.
 
 ## Positioning
 
-Ngó Sen is a fork of fcitx5-lotus that now has its own name and direction. The settings window must
-not look or read like the Lotus original.
+Ngó Sen is its own project, built on code from fcitx5-lotus and VMK, with its own name and direction.
+The settings window must not look or read like the Lotus original.
 
 ## Operating Context
 

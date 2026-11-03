@@ -2197,6 +2197,17 @@ namespace {
         check(plasma.sent.forwardedBackSpaces > 0, "a line break past the word leaves the surrounding path", std::to_string(plasma.sent.forwardedBackSpaces));
     }
 
+    // wlroots drops an edit sent before the done event that follows a report, and the wait for the copy
+    // ends on a report.
+    void testCopyWaitEndsAfterTheReport() {
+        FakeResources resources;
+        const auto    keys = keysOf("tieengs vieetj nam ");
+        const auto run = ngosen::test::typeInAppTraced(resources, makeField("wayland_v2", true, "firefox"),
+                                                       {.reportDelayMs = 30, .dropsCommitsInReport = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
+                                                       std::vector<int>(keys.size(), 20));
+        check(run.text == "tiếng việt nam ", "sway: an edit waiting for the copy goes out after the report", run.text);
+    }
+
     // A copy that comes a moment late is no reason to leave the surrounding path.
     void testLateCopyKeepsSurroundingPath() {
         {
@@ -2566,6 +2577,7 @@ int main() {
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();
     testLongTurnKeepsTheEdit();
+    testCopyWaitEndsAfterTheReport();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

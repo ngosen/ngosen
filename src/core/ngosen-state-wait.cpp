@@ -306,7 +306,11 @@ namespace ngosen {
         if (!(host_->surrounding() == reportAtKey_))
             keySinceReport_ = false;
         // A report with focus away may be another app's; the next report or the timer ends the wait.
-        if (key_report_pending_ && host_->hasFocus() && !(key_report_until_copy_fits_ && copyGivesWrongDeletion())) {
+        // wlroots drops an edit sent before the done event that follows this report, so the timer sends it.
+        if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !copyGivesWrongDeletion()) {
+            key_report_copy_fits_ = true;
+            key_report_timer_->rearm(ngosen::monotonicUs());
+        } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
             const auto s = host_->surrounding();
             finishKeyReportWait(s.isValid() && !(ngosen::reportsFieldOnlyOnKey(host_->field()) && s.text().empty()), false);
@@ -329,6 +333,7 @@ namespace ngosen {
 
     void TypingState::startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits) {
         key_report_until_copy_fits_ = untilCopyFits;
+        key_report_copy_fits_       = false;
         key_report_key_             = live_key_ ? *live_key_ : replayed_key_;
         key_report_deleted_         = deletedPart;
         key_report_added_           = addedPart;
@@ -343,7 +348,12 @@ namespace ngosen {
         if (untilCopyFits && ngosen::keepsOldCopyAfterEdit(host_->field()))
             askForReportAfterEdit();
         const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(2 * LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
-        key_report_timer_     = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer& t) {
+        // A replay from the timer can start the next wait, so the timer is rearmed rather than replaced.
+        if (key_report_timer_) {
+            key_report_timer_->rearm(ngosen::monotonicUs() + waitUs);
+            return;
+        }
+        key_report_timer_ = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer& t) {
             if (!host_->hasFocus()) {
                 // A bounce can span the deadline, so give it a moment to come back.
                 if (++surr_wait_focus_retries_ <= 5) {
@@ -354,11 +364,12 @@ namespace ngosen {
                 return false;
             }
             if (key_report_until_copy_fits_) {
-                NGOSEN_INFO("Copy of the text still short, deleting anyway");
-                copyWaitTimedOut_ = true;
+                if (!key_report_copy_fits_)
+                    NGOSEN_INFO("Copy of the text still short, deleting anyway");
+                copyWaitTimedOut_ = !key_report_copy_fits_;
             }
             finishKeyReportWait(true, true);
-            return false;
+            return key_report_pending_;
         });
     }
 

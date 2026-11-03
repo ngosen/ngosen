@@ -777,7 +777,9 @@ namespace ngosen {
         return static_cast<int>(deletion.chars);
     }
 
-    void TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
+    constexpr uint64_t SplitEditWaitUs = 30000;
+
+    void               TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
         std::string retype;
         const int   count = surroundingDeletionCount(surrounding, retype);
         // Set first: a host may deliver the deletion's report from inside the call.
@@ -788,6 +790,35 @@ namespace ngosen {
         host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
         NGOSEN_INFO("Delete using surrounding text");
         ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrDeleteSleepMs * count, 0)) * 1000ULL);
+        // Firefox's cursor stays one past the real one when a deletion and a commit of the same length
+        // arrive together, and the next deletion then takes what follows the word. It shows only the
+        // current line, so a line below cannot be told from the end of the text.
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && !(retype + pending_commit_string_).empty()) {
+            split_edit_pending_      = true;
+            surr_wait_focus_retries_ = 0;
+            split_edit_timer_        = host_->startTimer(monotonicUs() + SplitEditWaitUs, 0, [this, surrounding, retype](Timer& t) {
+                if (!host_->hasFocus()) {
+                    if (++surr_wait_focus_retries_ <= 5) {
+                        t.rearm(monotonicUs() + 2000);
+                        return true;
+                    }
+                    split_edit_pending_ = false;
+                    dropReplacementAfterFocusLoss();
+                    is_deleting_.store(false);
+                    return false;
+                }
+                split_edit_pending_ = false;
+                finishSurroundingEdit(surrounding, retype);
+                return false;
+            });
+            return;
+        }
+        finishSurroundingEdit(surrounding, retype);
+    }
+
+    void TypingState::finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype) {
+        reportSinceEdit_       = false;
+        editSentAtUs_          = monotonicUs();
         const std::string text = retype + pending_commit_string_;
         if (!text.empty()) {
             commit(text);
@@ -841,7 +872,7 @@ namespace ngosen {
             return;
         // mutter keeps one commit per turn and a busy shell can hold a turn open, so asking before the
         // edit has come out could replace its commit.
-        if (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs) {
+        if (split_edit_pending_ || (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs)) {
             report_request_waits_ = true;
             startReportRequestTimer();
             return;

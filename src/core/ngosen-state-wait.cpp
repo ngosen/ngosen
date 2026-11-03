@@ -344,8 +344,8 @@ namespace ngosen {
             // The key itself never reaches the app, so give it one that types nothing.
             forwardTap(ngosen::EditKey::Shift);
         }
-        // Firefox on Plasma can stay quiet about typed keys after an edit until something asks.
-        if (untilCopyFits && ngosen::keepsOldCopyAfterEdit(host_->field()))
+        // Firefox over GTK 3 can stay quiet about typed keys after an edit until something asks.
+        if (untilCopyFits && (ngosen::keepsOldCopyAfterEdit(host_->field()) || ngosen::keepsLastEditPerTurn(host_->field())))
             askForReportAfterEdit();
         const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(2 * LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
         // A replay from the timer can start the next wait, so the timer is rearmed rather than replaced.

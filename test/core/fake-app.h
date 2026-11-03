@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "ngosen-utf8.h"
 #include "fake-host.h"
 
 #include <cstdint>
@@ -70,6 +71,10 @@ namespace ngosen::test {
         // client behind mutter's text-input-v3 does; a key let through ends the turn first.
         bool keepsLastEditPerTurn = false;
         int  turnMs               = 0; // how long such a turn stays open
+        // Its cursor stays past the real one after a deletion and a commit in one turn, as Firefox's does,
+        // until a typed key corrects it.
+        bool        cursorStaysPastEdit = false;
+        std::string textAfterCursor; // text the field starts with, after the cursor
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -84,7 +89,9 @@ namespace ngosen::test {
 
     class FakeApp final : public Host {
       public:
-        FakeApp(FakeLoop& loop, Field field, AppQuirks quirks) : loop_(loop), field_(std::move(field)), quirks_(quirks) {}
+        FakeApp(FakeLoop& loop, Field field, AppQuirks quirks) : loop_(loop), field_(std::move(field)), quirks_(quirks) {
+            text_ = utf8::decode(quirks_.textAfterCursor);
+        }
 
         void attach(TypingState* state) {
             state_ = state;
@@ -216,6 +223,7 @@ namespace ngosen::test {
         bool                                turnPending_       = false;
         std::optional<size_t>               turnDeleteBytes_;
         std::optional<std::string>          turnCommit_;
+        size_t                              cursorPastBy_ = 0;
         int                                 emptyCommits_ = 0;
         int                                 deletions_    = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};

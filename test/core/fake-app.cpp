@@ -133,6 +133,8 @@ namespace ngosen::test {
         state_->keyEvent(down);
         if (!down.accepted() && quirks_.keepsLastEditPerTurn)
             endTurn();
+        if (!down.accepted())
+            cursorPastBy_ = 0;
         if (!down.accepted() && quirks_.resendsKeysWithoutText && keyText(sym).empty()) {
             FakeKey again(sym, false, modifier::Repeat, time);
             state_->keyEvent(again);
@@ -390,7 +392,7 @@ namespace ngosen::test {
             const auto start = static_cast<unsigned int>(std::min(anchor_, cursor_));
             return Surrounding(encode(text_), start, start);
         }
-        return Surrounding(encode(text_), static_cast<unsigned int>(cursor_), static_cast<unsigned int>(anchor_));
+        return Surrounding(encode(text_), static_cast<unsigned int>(cursor_ + cursorPastBy_), static_cast<unsigned int>(anchor_ + cursorPastBy_));
     }
 
     std::string FakeApp::keyText(uint32_t sym) const {
@@ -519,13 +521,19 @@ namespace ngosen::test {
     void FakeApp::endTurn() {
         if (!turnPending_)
             return;
-        turnPending_ = false;
+        turnPending_           = false;
+        const bool oneTurnEdit = quirks_.cursorStaysPastEdit && turnDeleteBytes_ && turnCommit_ && !turnCommit_->empty();
         if (turnDeleteBytes_) {
+            cursor_ += cursorPastBy_;
+            anchor_                  = cursor_;
+            cursorPastBy_            = 0;
             const unsigned int chars = charsForBytesBefore(*turnDeleteBytes_);
             eraseAround(-static_cast<int>(chars), chars);
         }
         if (turnCommit_ && focused_)
             insert(utf8::decode(*turnCommit_));
+        if (oneTurnEdit)
+            cursorPastBy_ = utf8::decode(*turnCommit_).size();
         turnDeleteBytes_.reset();
         turnCommit_.reset();
     }

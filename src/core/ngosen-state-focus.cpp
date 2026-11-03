@@ -34,6 +34,11 @@ namespace ngosen {
             key_report_timer_.reset();
             dropReplacementAfterFocusLoss();
         }
+        if (split_edit_pending_ && !resume) {
+            split_edit_pending_ = false;
+            split_edit_timer_.reset();
+            dropReplacementAfterFocusLoss();
+        }
         // A page may move focus into its text field after the user selected text elsewhere on it.
         // A bounce keeps it: WPS opens a window on a double click and takes focus straight back.
         if (isFocusIn && !bounce)

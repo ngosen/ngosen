@@ -91,6 +91,8 @@ namespace ngosen::test {
             FakeApp*    app   = owned.get();
             TypingState state(&resources, std::move(owned));
             app->attach(&state);
+            if (quirks.reportsOnFocus)
+                state.surroundingUpdated();
             for (size_t i = 0; i < keys.size(); ++i) {
                 app->type(keys[i]);
                 loop.pump(gapsMs[i]);

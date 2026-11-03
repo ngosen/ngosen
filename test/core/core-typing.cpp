@@ -2065,7 +2065,7 @@ namespace {
         ngosen::test::Typed run;
         Field               field = surroundingOnlyField();
         field.preeditFallback     = true;
-        const ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true};
+        const ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .reportsTextOnceFilled = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true};
         const auto                    lines = logLinesWhileTyping(field, qt, "nam tieesng ", "", &run, 150);
         check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0 && countHaving(lines, "copy shows the earlier word") > 0,
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
@@ -2129,13 +2129,21 @@ namespace {
         const auto    earlyRun = ngosen::test::typeInAppTraced(early, field, firefox, keys, std::vector<int>(keys.size(), 150));
         check(earlyRun.text == "bè ở bè ở việt tiếng ", "an app that answered once keeps its letters when it misses the next reports", earlyRun.text);
 
+        // CodeMirror in Firefox hardly answers, but it reported its empty field, which Qt does not do.
+        ngosen::test::AppQuirks silent{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 9, .reportsOnFocus = true};
+        FakeResources           silentResources;
+        const auto              silentKeys = keysOf("bef owr tieesng ");
+        const auto              silentRun  = ngosen::test::typeInAppTraced(silentResources, field, silent, silentKeys, std::vector<int>(silentKeys.size(), 150));
+        check(silentRun.text == "bè ở tiếng ", "an app that reported its empty field keeps its letters without answering", silentRun.text);
+
         // Qt answers now and then too, but it applies the bytes to its real text.
-        ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true, .reportsOnEdit = 1};
-        FakeResources           qtResources;
-        Field                   qtField = surroundingOnlyField();
-        qtField.preeditFallback         = true;
-        const auto qtKeys               = keysOf("bef bef bef bef tieesng ");
-        const auto qtRun                = ngosen::test::typeInAppTraced(qtResources, qtField, qt, qtKeys, std::vector<int>(qtKeys.size(), 500));
+        ngosen::test::AppQuirks qt{
+            .dropsForwardedKeys = true, .reportsTextOnceFilled = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true, .reportsOnEdit = 1};
+        FakeResources qtResources;
+        Field         qtField   = surroundingOnlyField();
+        qtField.preeditFallback = true;
+        const auto qtKeys       = keysOf("bef bef bef bef tieesng ");
+        const auto qtRun        = ngosen::test::typeInAppTraced(qtResources, qtField, qt, qtKeys, std::vector<int>(qtKeys.size(), 500));
         check(qtRun.text == "bè bè bè bè tiếng ", "an app that rarely answers keeps the count for its real text", qtRun.text);
     }
 

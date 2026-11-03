@@ -59,6 +59,7 @@ namespace ngosen::test {
         bool             reportsTextAtChange          = false; // a late report shows the text as it was at that change, not as it is on arrival
         int              emptyCommitsBeforeReport     = 0;     // empty commits it takes to end repeatsOldTextAfterDelete, as Firefox on GNOME
         std::vector<int> ignoresRequestsOnEdits;               // these deletions get no report for empty commits, as Firefox on GNOME now and then
+        bool             reportsOnFocus          = false;      // reports its field, empty or not, when it gets focus, as Firefox over GTK does
         bool             deletesAtReportedCursor = false;      // deletes at the cursor of its last report and leaves the cursor there, as Firefox over GTK does
         int              reportsOnEdit           = 0;          // the nth deletion is reported anyway, as Qt now and then
         bool             showsEnter              = false;      // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028

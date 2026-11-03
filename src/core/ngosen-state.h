@@ -519,6 +519,10 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> report_timer_;
         int                            report_requests_left_ = 0;
         static constexpr int           ReportRequests        = 4;
+        static constexpr uint64_t      EditOutWaitUs         = 80000;
+        bool                           reportSinceEdit_      = true;
+        bool                           report_request_waits_ = false;
+        uint64_t                       editSentAtUs_         = 0;
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
         struct SurroundingCheck {

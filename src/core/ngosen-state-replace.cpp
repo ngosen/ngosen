@@ -779,6 +779,8 @@ namespace ngosen {
         std::string retypeAfter;
         const int   count = surroundingDeletionCount(surrounding, retype, retypeAfter);
         // Set first: a host may deliver the deletion's report from inside the call.
+        reportSinceEdit_        = false;
+        editSentAtUs_           = monotonicUs();
         unreportedDeleteLength_ = static_cast<unsigned int>(count);
         unreportedDeleteKey_    = keyCount_;
         host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
@@ -835,6 +837,13 @@ namespace ngosen {
     void TypingState::requestReportWhileUnanswered() {
         if ((!surrCheck_ && !(key_report_pending_ && key_report_until_copy_fits_)) || report_requests_left_ == 0 || !host_->hasFocus())
             return;
+        // mutter keeps one commit per turn and a busy shell can hold a turn open, so asking before the
+        // edit has come out could replace its commit.
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs) {
+            report_request_waits_ = true;
+            startReportRequestTimer();
+            return;
+        }
         --report_requests_left_;
         host_->commitText("");
         NGOSEN_INFO("Ask the app for a report");
@@ -848,9 +857,10 @@ namespace ngosen {
             return;
         }
         report_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
-            const int left = report_requests_left_;
+            const int left        = report_requests_left_;
+            report_request_waits_ = false;
             requestReportWhileUnanswered();
-            return report_requests_left_ != left;
+            return report_requests_left_ != left || report_request_waits_;
         });
     }
 

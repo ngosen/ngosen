@@ -2170,6 +2170,17 @@ namespace {
         check(countHaving(silentLines, "Copy of the text still short") <= 1, "firefox on plasma: a field that does not answer stops holding keys", join(silentLines));
     }
 
+    // A busy shell can keep a turn open for longer than the hold, and an empty commit would replace the edit's.
+    void testLongTurnKeepsTheEdit() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        FakeResources           resources;
+        ngosen::test::AppQuirks shell{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true, .turnMs = 45};
+        const auto              keys = keysOf("vieetj nam ");
+        const auto              run  = ngosen::test::typeInAppTraced(resources, field, shell, keys, std::vector<int>(keys.size(), 200));
+        check(run.text == "việt nam ", "a long turn: asking for a report keeps the edit", run.text);
+    }
+
     // Ace keeps a line break after its line, and the cursor can stay past it after a commit.
     void testLineBreakPastTheWord() {
         FakeResources resources;
@@ -2537,6 +2548,7 @@ int main() {
     testLateCopyKeepsSurroundingPath();
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();
+    testLongTurnKeepsTheEdit();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

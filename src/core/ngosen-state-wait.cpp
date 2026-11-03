@@ -283,6 +283,7 @@ namespace ngosen {
         const bool        overtyping = overtype_watching_;
         const std::string report     = host_->field().password ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
         fieldReported_               = fieldReported_ || host_->surrounding().isValid();
+        reportSinceEdit_             = true;
         // A repeat that a wait acts on stays in the log for its timing.
         if (waiting || overtyping || key_report_pending_)
             engine_->recorder().add("app", report);

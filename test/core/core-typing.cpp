@@ -1757,13 +1757,13 @@ namespace {
     // Leaves the field while the replacement for the second "e" waits for the app's copy of the text,
     // then types "n" after coming back.
     void checkLeavingDuringReportWait(int leaveAfterMs, int awayMs, const std::string& expected, int expectedDeletes, const std::string& name, int gapMs = 40,
-                                      bool otherFieldReplacing = false) {
+                                      bool otherFieldReplacing = false, int lagMs = 150) {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
         FakeLoop      loop;
         FakeResources resources;
         auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(),
-                                                                      ngosen::test::AppQuirks{.lagMs = 150, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true});
+                                                                      ngosen::test::AppQuirks{.lagMs = lagMs, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true});
         auto*         app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
@@ -1809,10 +1809,10 @@ namespace {
 
         checkLeavingDuringReportWait(0, 300, "vien", 0, "wait: the replacement does not edit a field the user left");
         checkLeavingDuringReportWait(0, 5, "viên", 1, "wait: a focus bounce keeps the replacement");
-        checkLeavingDuringReportWait(20, 95, "vien", 0, "wait: keys still work after focus returns to a dropped replacement");
+        checkLeavingDuringReportWait(120, 95, "vien", 0, "wait: keys still work after focus returns to a dropped replacement", 40, false, 250);
         checkLeavingDuringReportWait(0, 5, "vien", 0, "wait: another field replacing meanwhile ends the wait", 40, true);
         // The deadline falls inside the bounce. The copy is still short, so the timer deletes anyway, as without one.
-        checkLeavingDuringReportWait(98, 5, "vieên", 1, "wait: a focus bounce across the deadline keeps the replacement", 5);
+        checkLeavingDuringReportWait(198, 5, "vieên", 1, "wait: a focus bounce across the deadline keeps the replacement", 5, false, 250);
 
         lines = logLinesWhileTyping(surroundingOnlyField(), {.reports = false, .dropsForwardedKeys = true}, "vieetj nam tieesng ", "Surrounding check");
         // Silence alone is no reason to give up on a field that has no other way to delete.

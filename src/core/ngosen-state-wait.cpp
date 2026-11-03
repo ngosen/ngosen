@@ -338,7 +338,7 @@ namespace ngosen {
             // The key itself never reaches the app, so give it one that types nothing.
             forwardTap(ngosen::EditKey::Shift);
         }
-        const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
+        const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(2 * LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
         key_report_timer_     = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer& t) {
             if (!host_->hasFocus()) {
                 // A bounce can span the deadline, so give it a moment to come back.

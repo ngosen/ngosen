@@ -54,6 +54,7 @@ int main() {
     };
     behind("the copy lacks the last key", ngosen::countSurroundingDeletion("viê", "vi", "êt", {}), true);
     behind("the copy lacks the only deleted letter", ngosen::countSurroundingDeletion("vi", "vi", "e", {}), true);
+    behind("the copy lacks letters before the deleted part", ngosen::countSurroundingDeletion("t", "ti", "e", {}), true);
     behind("a fresh copy is not behind", ngosen::countSurroundingDeletion("viêt", "vi", "êt", {}), false);
     behind("another word is not behind", ngosen::countSurroundingDeletion("nam", "vi", "êt", {}), false);
     behind("an empty copy with no prefix says nothing", ngosen::countSurroundingDeletion("", "", "e", {}), false);

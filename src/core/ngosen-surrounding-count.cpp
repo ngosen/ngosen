@@ -30,11 +30,11 @@ namespace ngosen {
 
         bool lacksLastKeys(const std::string& copyBeforeCursor, const std::string& prefix, const std::string& deleted) {
             std::string shorter = prefix + deleted;
-            for (size_t left = deleted.size(); left > 0;) {
+            for (size_t left = shorter.size(); left > 0;) {
                 do
                     --left;
-                while (left > 0 && !startsChar(deleted, left));
-                shorter.resize(prefix.size() + left);
+                while (left > 0 && !startsChar(shorter, left));
+                shorter.resize(left);
                 if (!shorter.empty() && isEndsWith(copyBeforeCursor, shorter))
                     return true;
             }

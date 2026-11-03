@@ -575,8 +575,6 @@ namespace ngosen {
         // without focus (Zed, #93); the backspace path waits for focus to come back.
         if (ngosen::dropsCommitsWithoutFocus(field) && surrounding.isValid() && !showsTextAfterDeleting(surrounding, chars))
             fails.emplace_back("deletion empties the field");
-        if (ngosen::reportsSurroundingEditsLate(field))
-            fails.emplace_back("app reports edits late");
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");

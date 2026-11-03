@@ -379,7 +379,7 @@ namespace {
 
     // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
     void testFirefoxDeletesThroughSurrounding() {
-        for (const char* frontend : {"wayland", "wayland_v2"}) {
+        for (const char* frontend : {"wayland", "wayland_v2", "dbus"}) {
             realMode = ngosen::Mode::Sen;
             FakeLoop      loop;
             FakeResources resources;
@@ -1032,7 +1032,7 @@ namespace {
     void testRecorderKeepsTheReplacement() {
         realMode = ngosen::Mode::Sen;
         // Flatpak Firefox: the log shows the app ID it reported too.
-        Field firefox            = makeField("dbus", true, "firefox");
+        Field firefox            = makeField("fcitx4", true, "firefox");
         firefox.reportedProgram  = "org.mozilla.firefox";
         firefox.keyEventOrderFix = true;
 
@@ -1049,7 +1049,7 @@ namespace {
         loop.pump(150);
 
         const std::string log = resources.recorder().dump();
-        check(has(log, "\tfield\tfrontend=dbus program=firefox (org.mozilla.firefox) surrounding=1 preedit=1 mode=Sen\n"), "recorder: notes the field and mode", log);
+        check(has(log, "\tfield\tfrontend=fcitx4 program=firefox (org.mozilla.firefox) surrounding=1 preedit=1 mode=Sen\n"), "recorder: notes the field and mode", log);
         check(has(log, "\tkey\tdown 0x0065 e\n"), "recorder: notes the key", log);
         check(has(log, "\tforward\tBackSpace down\n"), "recorder: notes the forwarded backspace", log);
         check(has(log, "\tapp\t\"ti|\" cursor=2 anchor=2 length=2\n"), "recorder: notes the app's report", log);

@@ -52,6 +52,12 @@ int main() {
         std::cerr << "FAIL: " << name << ": behind=" << got.behind << '\n';
         ++failures;
     };
+    const auto pastBreak = ngosen::countSurroundingDeletion("ngư\n", "ng", "ư", {});
+    expect("a line break past the word is deleted with it", pastBreak, Match::Fresh, 2);
+    if (pastBreak.retypeAfter != "\n") {
+        std::cerr << "FAIL: a line break past the word is put back\n";
+        ++failures;
+    }
     behind("the copy lacks the last key", ngosen::countSurroundingDeletion("viê", "vi", "êt", {}), true);
     behind("the copy lacks the only deleted letter", ngosen::countSurroundingDeletion("vi", "vi", "e", {}), true);
     behind("the copy lacks letters before the deleted part", ngosen::countSurroundingDeletion("t", "ti", "e", {}), true);

@@ -503,7 +503,7 @@ namespace ngosen {
         bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
         void                     replaceThroughSurrounding(const Surrounding& surrounding);
         void                     releaseKeysAfterSurroundingEdit();
-        int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
+        int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype, std::string& retypeAfter) const;
         std::vector<std::string> earlierWordsBeforeReplacement() const;
         void                     trackEarlierWords(const std::string& addedPart);
         void                     replaceThroughForwardedKeys();

@@ -755,7 +755,7 @@ namespace ngosen {
             (unreportedCommitLength_ > 0 || deletion.match == SurroundingDeletion::Match::None);
     }
 
-    int TypingState::surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const {
+    int TypingState::surroundingDeletionCount(const Surrounding& surrounding, std::string& retype, std::string& retypeAfter) const {
         if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
             return deletedChars_;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
@@ -769,20 +769,22 @@ namespace ngosen {
         }
         NGOSEN_INFO(std::string("Surrounding copy shows the ") + matchName(deletion.match) + " word: delete " + std::to_string(deletion.chars) + " of " +
                     std::to_string(deletedChars_));
-        retype = deletion.retype;
+        retype      = deletion.retype;
+        retypeAfter = deletion.retypeAfter;
         return static_cast<int>(deletion.chars);
     }
 
     void TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
         std::string retype;
-        const int   count = surroundingDeletionCount(surrounding, retype);
+        std::string retypeAfter;
+        const int   count = surroundingDeletionCount(surrounding, retype, retypeAfter);
         // Set first: a host may deliver the deletion's report from inside the call.
         unreportedDeleteLength_ = static_cast<unsigned int>(count);
         unreportedDeleteKey_    = keyCount_;
         host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
         NGOSEN_INFO("Delete using surrounding text");
         ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrDeleteSleepMs * count, 0)) * 1000ULL);
-        const std::string text = retype + pending_commit_string_;
+        const std::string text = retype + pending_commit_string_ + retypeAfter;
         if (!text.empty()) {
             commit(text);
             NGOSEN_INFO("Commit: " + logged(text));

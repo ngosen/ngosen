@@ -421,8 +421,16 @@ namespace ngosen::test {
         previousText_   = text_;
         previousCursor_ = cursor_;
         eraseSelection();
+        if (quirks_.keepsLineBreakAfterCommit && cursor_ > 0 && cursor_ == text_.size() && text_.back() == U'\n') {
+            text_.pop_back();
+            --cursor_;
+        }
         text_.insert(cursor_, text);
         cursor_ += text.size();
+        if (quirks_.keepsLineBreakAfterCommit && !typed && text_.back() != U'\n') {
+            text_.push_back(U'\n');
+            ++cursor_;
+        }
         anchor_ = cursor_;
         changed();
         if (!quirks_.redrawsOnlyOnDeletion)

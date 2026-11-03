@@ -2170,6 +2170,15 @@ namespace {
         check(countHaving(silentLines, "Copy of the text still short") <= 1, "firefox on plasma: a field that does not answer stops holding keys", join(silentLines));
     }
 
+    // Ace keeps a line break after its line, and the cursor can stay past it after a commit.
+    void testLineBreakPastTheWord() {
+        FakeResources resources;
+        const Field   field = makeField("wayland", true, "firefox");
+        const auto    keys  = keysOf("nguwx cuar");
+        const auto    run   = ngosen::test::typeInAppTraced(resources, field, {.keepsLineBreakAfterCommit = true}, keys, std::vector<int>(keys.size(), 150));
+        check(run.text.rfind("ngữ của", 0) == 0, "a line break past the word stays out of the word", run.text);
+    }
+
     // A copy that comes a moment late is no reason to leave the surrounding path.
     void testLateCopyKeepsSurroundingPath() {
         {
@@ -2527,6 +2536,7 @@ int main() {
     testCopyBehindByAKey();
     testLateCopyKeepsSurroundingPath();
     testFirefoxOnPlasmaDeletesThroughSurrounding();
+    testLineBreakPastTheWord();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

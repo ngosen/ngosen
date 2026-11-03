@@ -57,6 +57,14 @@ namespace ngosen {
             result.match = SurroundingDeletion::Match::Fresh;
             return result;
         }
+        // Ace keeps a line break after its line and the cursor can stay past it after a commit, so a
+        // deletion counted from there would take the line break and leave the letter.
+        if (isEndsWith(copyBeforeCursor, known + "\n")) {
+            result.match       = SurroundingDeletion::Match::Fresh;
+            result.chars       = result.chars + 1;
+            result.retypeAfter = "\n";
+            return result;
+        }
         bool shown = false;
         for (const auto& word : earlierWords)
             shown = shown || (!word.empty() && isEndsWith(copyBeforeCursor, word));

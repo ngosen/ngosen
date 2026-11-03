@@ -54,8 +54,8 @@ int main() {
     };
     const auto pastBreak = ngosen::countSurroundingDeletion("ngư\n", "ng", "ư", {});
     expect("a line break past the word is deleted with it", pastBreak, Match::Fresh, 2);
-    if (pastBreak.retypeAfter != "\n") {
-        std::cerr << "FAIL: a line break past the word is put back\n";
+    if (!pastBreak.pastLineBreak) {
+        std::cerr << "FAIL: a line break past the word is noted\n";
         ++failures;
     }
     behind("the copy lacks the last key", ngosen::countSurroundingDeletion("viê", "vi", "êt", {}), true);

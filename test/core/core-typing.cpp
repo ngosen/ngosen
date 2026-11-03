@@ -2183,11 +2183,18 @@ namespace {
 
     // Ace keeps a line break after its line, and the cursor can stay past it after a commit.
     void testLineBreakPastTheWord() {
+        Field shell        = surroundingOnlyField();
+        shell.program      = "gnome-shell";
+        const auto    keys = keysOf("nguwx cuar");
         FakeResources resources;
-        const Field   field = makeField("wayland", true, "firefox");
-        const auto    keys  = keysOf("nguwx cuar");
-        const auto    run   = ngosen::test::typeInAppTraced(resources, field, {.keepsLineBreakAfterCommit = true}, keys, std::vector<int>(keys.size(), 150));
+        const auto run = ngosen::test::typeInAppTraced(resources, shell, {.dropsForwardedKeys = true, .keepsLineBreakAfterCommit = true}, keys, std::vector<int>(keys.size(), 150));
         check(run.text.rfind("ngữ của", 0) == 0, "a line break past the word stays out of the word", run.text);
+
+        // Where backspaces reach the app, they act at its real cursor, so the copy's says nothing.
+        FakeResources plasmaResources;
+        const auto    plasma =
+            ngosen::test::typeInAppTraced(plasmaResources, makeField("wayland", true, "firefox"), {.keepsLineBreakAfterCommit = true}, keys, std::vector<int>(keys.size(), 150));
+        check(plasma.sent.forwardedBackSpaces > 0, "a line break past the word leaves the surrounding path", std::to_string(plasma.sent.forwardedBackSpaces));
     }
 
     // A copy that comes a moment late is no reason to leave the surrounding path.

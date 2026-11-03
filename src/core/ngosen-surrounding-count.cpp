@@ -57,12 +57,13 @@ namespace ngosen {
             result.match = SurroundingDeletion::Match::Fresh;
             return result;
         }
-        // Ace keeps a line break after its line and the cursor can stay past it after a commit, so a
-        // deletion counted from there would take the line break and leave the letter.
+        // Ace keeps a line break after its line and the copy's cursor can stay past it after a commit,
+        // so a deletion counted from there would take the line break and leave the letter. Ace puts the
+        // line break back itself and shows a committed one as a new line.
         if (isEndsWith(copyBeforeCursor, known + "\n")) {
-            result.match       = SurroundingDeletion::Match::Fresh;
-            result.chars       = result.chars + 1;
-            result.retypeAfter = "\n";
+            result.match         = SurroundingDeletion::Match::Fresh;
+            result.chars         = result.chars + 1;
+            result.pastLineBreak = true;
             return result;
         }
         bool shown = false;

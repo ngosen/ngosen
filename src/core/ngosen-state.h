@@ -398,6 +398,7 @@ namespace ngosen {
         void                           startWordWithKey(const KeyEntry& key);
         KeyEntry                       key_report_key_{};
         KeyEntry                       replayed_key_{};
+        std::unique_ptr<ngosen::Timer> split_edit_timer_;
         bool                           copyWaitTimedOut_ = false; ///< keeps replayed keys from each waiting out a copy that never fits
         std::string                    key_report_deleted_;
         std::string                    key_report_added_;
@@ -504,6 +505,7 @@ namespace ngosen {
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
         bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
         void                     replaceThroughSurrounding(const Surrounding& surrounding);
+        void                     finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype);
         void                     releaseKeysAfterSurroundingEdit();
         int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
         std::vector<std::string> earlierWordsBeforeReplacement() const;

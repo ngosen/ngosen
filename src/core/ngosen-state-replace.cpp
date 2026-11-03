@@ -777,6 +777,8 @@ namespace ngosen {
         return static_cast<int>(deletion.chars);
     }
 
+    constexpr uint64_t SplitEditWaitUs = 30000;
+
     void TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
         std::string retype;
         const int   count = surroundingDeletionCount(surrounding, retype);
@@ -788,6 +790,19 @@ namespace ngosen {
         host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
         NGOSEN_INFO("Delete using surrounding text");
         ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrDeleteSleepMs * count, 0)) * 1000ULL);
+        // Firefox's cursor stays one past the real one when a deletion and a commit of the same length
+        // arrive together with text after the cursor, and the next deletion then takes that text.
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && textBeforeCursor(surrounding).size() < surrounding.text().size()) {
+            split_edit_timer_ = host_->startTimer(monotonicUs() + SplitEditWaitUs, 0, [this, surrounding, retype](Timer&) {
+                finishSurroundingEdit(surrounding, retype);
+                return false;
+            });
+            return;
+        }
+        finishSurroundingEdit(surrounding, retype);
+    }
+
+    void TypingState::finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype) {
         const std::string text = retype + pending_commit_string_;
         if (!text.empty()) {
             commit(text);

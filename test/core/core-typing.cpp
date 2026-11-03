@@ -379,7 +379,7 @@ namespace {
 
     // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
     void testFirefoxKeepsBackspaces() {
-        for (const char* frontend : {"wayland", "wayland_v2", "dbus"}) {
+        for (const char* frontend : {"wayland_v2", "dbus"}) {
             realMode = ngosen::Mode::Sen;
             FakeLoop      loop;
             FakeResources resources;
@@ -1032,7 +1032,7 @@ namespace {
     void testRecorderKeepsTheReplacement() {
         realMode = ngosen::Mode::Sen;
         // Flatpak Firefox: the log shows the app ID it reported too.
-        Field firefox           = makeField("wayland", true, "firefox");
+        Field firefox           = makeField("wayland_v2", true, "firefox");
         firefox.reportedProgram = "org.mozilla.firefox";
 
         FakeLoop            loop;
@@ -1048,7 +1048,7 @@ namespace {
         loop.pump(150);
 
         const std::string log = resources.recorder().dump();
-        check(has(log, "\tfield\tfrontend=wayland program=firefox (org.mozilla.firefox) surrounding=1 preedit=1 mode=Sen\n"), "recorder: notes the field and mode", log);
+        check(has(log, "\tfield\tfrontend=wayland_v2 program=firefox (org.mozilla.firefox) surrounding=1 preedit=1 mode=Sen\n"), "recorder: notes the field and mode", log);
         check(has(log, "\tkey\tdown 0x0065 e\n"), "recorder: notes the key", log);
         check(has(log, "\tforward\tBackSpace down\n"), "recorder: notes the forwarded backspace", log);
         check(has(log, "\tapp\t\"ti|\" cursor=2 anchor=2 length=2\n"), "recorder: notes the app's report", log);
@@ -2138,6 +2138,18 @@ namespace {
         check(qtRun.text == "bè bè bè bè tiếng ", "an app that rarely answers keeps the count for its real text", qtRun.text);
     }
 
+    // Backspaces reach Firefox on Plasma after the commit often enough to eat the new letter when typing fast.
+    void testFirefoxOnPlasmaDeletesThroughSurrounding() {
+        const Field             field = makeField("wayland", true, "firefox");
+        ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 1};
+        FakeResources           resources;
+        const auto              keys = keysOf("tieengs vieetj nguwx ");
+        const auto              run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 8));
+        check(run.text == "tiếng việt ngữ ", "firefox on plasma: the words come out right when typing fast", run.text);
+        check(run.sent.surroundingDeletes > 0 && run.sent.forwardedBackSpaces == 0, "firefox on plasma: no backspaces",
+              std::to_string(run.sent.surroundingDeletes) + " " + std::to_string(run.sent.forwardedBackSpaces));
+    }
+
     // A copy one key behind can hold the same number of bytes as the word, yet the deletion lands at
     // that copy's cursor, in front of the key the copy lacks.
     void testCopyBehindByAKey() {
@@ -2470,6 +2482,7 @@ int main() {
     testReportRequestKeepsNextEdit();
     testAnsweringAppGetsPlainCount();
     testCopyBehindByAKey();
+    testFirefoxOnPlasmaDeletesThroughSurrounding();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

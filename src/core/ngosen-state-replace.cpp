@@ -745,9 +745,12 @@ namespace ngosen {
     // The frontend turns a deletion into bytes on its copy of the text, which can still lack what the
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
     bool TypingState::copyGivesWrongDeletion() const {
-        const auto surrounding = host_->surrounding();
-        if (!ngosen::countsDeletionOnCopy(host_->field()) || !deletesOnlyThroughSurrounding() || !surrounding.isValid())
+        const auto surrounding  = host_->surrounding();
+        const bool keepsOldCopy = ngosen::keepsOldCopyAfterEdit(host_->field());
+        if (!ngosen::countsDeletionOnCopy(host_->field()) || (!deletesOnlyThroughSurrounding() && !keepsOldCopy) || !surrounding.isValid())
             return false;
+        if (keepsOldCopy && unreportedCommitLength_ > 0)
+            return true;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
         return deletion.wrongBytes || deletion.behind;
     }
@@ -787,6 +790,11 @@ namespace ngosen {
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
+        // KWin keeps both edits of a turn, so here no hold has to come first.
+        if (ngosen::keepsOldCopyAfterEdit(host_->field())) {
+            report_requests_left_ = ReportRequests;
+            startReportRequestTimer();
+        }
         // An Enter still owed goes out as a real key, which mutter delivers only after the edit.
         if (ngosen::keepsLastEditPerTurn(host_->field()) && !enter_after_replacement_) {
             is_deleting_.store(false);
@@ -826,6 +834,10 @@ namespace ngosen {
         --report_requests_left_;
         host_->commitText("");
         NGOSEN_INFO("Ask the app for a report");
+        startReportRequestTimer();
+    }
+
+    void TypingState::startReportRequestTimer() {
         const uint64_t until = monotonicUs() + EditHoldUs;
         if (report_timer_) {
             report_timer_->rearm(until);

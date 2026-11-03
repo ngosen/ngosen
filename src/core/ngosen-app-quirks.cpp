@@ -153,7 +153,12 @@ namespace ngosen {
         // Firefox may report our deletion and commit only after the next key, and the replacement that
         // finds the copy stale then mixes both paths. Nothing it reports shows this before it happens.
         // Over IBus the mixed words come out right, so it keeps the faster path there.
-        return field.frontend != "ibus" && hidesAddressBarFlag(field);
+        return field.frontend != "ibus" && field.frontend != "wayland" && hidesAddressBarFlag(field);
+    }
+
+    bool keepsOldCopyAfterEdit(const Field& field) {
+        // Firefox over GTK 3 asks for a new copy only when a commit arrives, and nothing it reports shows this.
+        return field.frontend == "wayland" && hidesAddressBarFlag(field);
     }
 
     bool reportsReplacementsWithLaterKey(const Field& field) {

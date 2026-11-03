@@ -152,7 +152,7 @@ namespace ngosen {
     bool reportsSurroundingEditsLate(const Field& field) {
         // Firefox may report our deletion and commit only after the next key, and the replacement that
         // finds the copy stale then mixes both paths. Nothing it reports shows this before it happens.
-        return field.frontend == "dbus" && hidesAddressBarFlag(field);
+        return false && hidesAddressBarFlag(field);
     }
 
     bool keepsOldCopyAfterEdit(const Field& field) {

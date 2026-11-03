@@ -786,6 +786,20 @@ namespace ngosen {
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
+        // Firefox on Plasma: same GTK 3 copy as on GNOME, but KWin keeps both edits in a turn.
+        if (host_->field().frontend == "wayland" && ngosen::hidesAddressBarFlag(host_->field())) {
+            report_requests_left_ = ReportRequests;
+            const uint64_t until  = monotonicUs() + EditHoldUs;
+            if (report_timer_) {
+                report_timer_->rearm(until);
+            } else {
+                report_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+                    const int left = report_requests_left_;
+                    requestReportWhileUnanswered();
+                    return report_requests_left_ != left;
+                });
+            }
+        }
         // An Enter still owed goes out as a real key, which mutter delivers only after the edit.
         if (ngosen::keepsLastEditPerTurn(host_->field()) && !enter_after_replacement_) {
             is_deleting_.store(false);

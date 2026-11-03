@@ -2116,11 +2116,26 @@ namespace {
     void testAnsweringAppGetsPlainCount() {
         Field field   = surroundingOnlyField();
         field.program = "gnome-shell";
-        ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 1, .ignoresRequestsOnEdit = 9};
+        ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 1, .ignoresRequestsOnEdits = {9}};
         FakeResources           resources;
         const auto              keys = keysOf("bef owr bef owr vieetj tieesng ");
         const auto              run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 150));
         check(run.text == "bè ở bè ở việt tiếng ", "an app that mostly answers keeps its letters when it misses one report", run.text);
+
+        // On a fresh page the misses can come before there are many answers to weigh them against.
+        firefox.ignoresRequestsOnEdits = {2, 3};
+        FakeResources early;
+        const auto    earlyRun = ngosen::test::typeInAppTraced(early, field, firefox, keys, std::vector<int>(keys.size(), 150));
+        check(earlyRun.text == "bè ở bè ở việt tiếng ", "an app that answered once keeps its letters when it misses the next reports", earlyRun.text);
+
+        // Qt answers now and then too, but it applies the bytes to its real text.
+        ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true, .reportsOnEdit = 1};
+        FakeResources           qtResources;
+        Field                   qtField = surroundingOnlyField();
+        qtField.preeditFallback         = true;
+        const auto qtKeys               = keysOf("bef bef bef bef tieesng ");
+        const auto qtRun                = ngosen::test::typeInAppTraced(qtResources, qtField, qt, qtKeys, std::vector<int>(qtKeys.size(), 500));
+        check(qtRun.text == "bè bè bè bè tiếng ", "an app that rarely answers keeps the count for its real text", qtRun.text);
     }
 
     // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first

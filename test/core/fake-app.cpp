@@ -205,7 +205,9 @@ namespace ngosen::test {
             forwardedAt_     = 0;
         }
         if (text.empty() && quirks_.emptyCommitsBeforeReport > 0) {
-            if (silentAfterDelete_ && deletions_ != quirks_.ignoresRequestsOnEdit && ++emptyCommits_ >= quirks_.emptyCommitsBeforeReport) {
+            const auto& ignored         = quirks_.ignoresRequestsOnEdits;
+            const bool  ignoresRequests = std::find(ignored.begin(), ignored.end(), deletions_) != ignored.end();
+            if (silentAfterDelete_ && !ignoresRequests && ++emptyCommits_ >= quirks_.emptyCommitsBeforeReport) {
                 silentAfterDelete_ = false;
                 changed();
             }
@@ -427,7 +429,7 @@ namespace ngosen::test {
     }
 
     void FakeApp::goSilentAfterDelete() {
-        silentAfterDelete_ = quirks_.reportsNothingAfterDelete || quirks_.repeatsOldTextAfterDelete || quirks_.silentFromFirstDeletion;
+        silentAfterDelete_ = (quirks_.reportsNothingAfterDelete && deletions_ != quirks_.reportsOnEdit) || quirks_.repeatsOldTextAfterDelete || quirks_.silentFromFirstDeletion;
         keysSinceDelete_   = 0;
         emptyCommits_      = 0;
     }

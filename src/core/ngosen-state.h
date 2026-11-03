@@ -570,7 +570,6 @@ namespace ngosen {
         bool                            surrAnswered_            = false; ///< a check in this field came out correct
         int                             surrAnsweredUnasked_     = 0;     ///< checks in this field answered with no key since the edit
         int                             surrMissed_              = 0;     ///< checks in this field left unanswered
-        static constexpr int            MinAnswersForPlainCount  = 3;
         bool                            surrSeenTextSinceFocus_  = false; ///< the field reported text since it got focus
         bool                            surrSeenEmptySinceFocus_ = false; ///< the field reported itself empty before any key since it got focus
         uint64_t                        keysAtFocus_             = 0;     ///< keyCount_ at the last focus-in, kept over a bounce

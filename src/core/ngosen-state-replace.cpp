@@ -756,8 +756,8 @@ namespace ngosen {
             return deletedChars_;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
         // An app that reports its edits unasked turns the bytes back into characters on the same old
-        // copy, so the count it needs is the plain one. Qt applies the bytes to its real text.
-        if (deletion.match == SurroundingDeletion::Match::OldTail && surrAnsweredUnasked_ >= MinAnswersForPlainCount && surrAnsweredUnasked_ > surrMissed_) {
+        // copy, so the count it needs is the plain one. Qt applies the bytes to its real text, and answers rarely.
+        if (deletion.match == SurroundingDeletion::Match::OldTail && surrAnsweredUnasked_ > 0 && 2 * surrAnsweredUnasked_ >= surrMissed_) {
             NGOSEN_INFO("Surrounding copy shows the earlier word in an app that reports: delete " + std::to_string(deletedChars_));
             return deletedChars_;
         }

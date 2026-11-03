@@ -353,7 +353,7 @@ namespace ngosen {
             key_report_timer_->rearm(ngosen::monotonicUs() + waitUs);
             return;
         }
-        key_report_timer_ = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer& t) {
+        key_report_timer_ = host_->startTimer(ngosen::monotonicUs() + waitUs, 1000, [this](ngosen::Timer& t) {
             if (!host_->hasFocus()) {
                 // A bounce can span the deadline, so give it a moment to come back.
                 if (++surr_wait_focus_retries_ <= 5) {

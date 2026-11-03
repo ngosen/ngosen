@@ -796,7 +796,7 @@ namespace ngosen {
         if (ngosen::keepsLastEditPerTurn(host_->field()) && !(retype + pending_commit_string_).empty()) {
             split_edit_pending_      = true;
             surr_wait_focus_retries_ = 0;
-            split_edit_timer_        = host_->startTimer(monotonicUs() + SplitEditWaitUs, 0, [this, surrounding, retype](Timer& t) {
+            split_edit_timer_        = host_->startTimer(monotonicUs() + SplitEditWaitUs, 1000, [this, surrounding, retype](Timer& t) {
                 if (!host_->hasFocus()) {
                     if (++surr_wait_focus_retries_ <= 5) {
                         t.rearm(monotonicUs() + 2000);
@@ -852,7 +852,12 @@ namespace ngosen {
             edit_hold_timer_->rearm(until);
             return;
         }
-        edit_hold_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+        edit_hold_timer_ = host_->startTimer(until, 1000, [this](Timer& t) {
+            // The turn can still be open, and a commit sent now would replace the edit's.
+            if (edit_hold_ && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs) {
+                t.rearm(monotonicUs() + 5000);
+                return true;
+            }
             askForReportAfterEdit();
             finishEditHold();
             return edit_hold_;

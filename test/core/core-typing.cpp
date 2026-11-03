@@ -2180,6 +2180,12 @@ namespace {
         const auto              keys = keysOf("vieetj nam ");
         const auto              run  = ngosen::test::typeInAppTraced(resources, field, shell, keys, std::vector<int>(keys.size(), 200));
         check(run.text == "việt nam ", "a long turn: asking for a report keeps the edit", run.text);
+
+        // A key replayed while that turn is open would replace the edit's commit too.
+        FakeResources fastResources;
+        shell.turnMs    = 25;
+        const auto fast = ngosen::test::typeInAppTraced(fastResources, field, shell, keys, std::vector<int>(keys.size(), 40));
+        check(fast.text == "việt nam ", "a long turn: a replayed key waits for the edit to come out", fast.text);
     }
 
     // Firefox's cursor stays past the real one after a deletion and a commit in one turn, so the next

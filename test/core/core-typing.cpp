@@ -2070,6 +2070,32 @@ namespace {
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
     }
 
+    // Firefox on GNOME turns the deletion's bytes back into characters on a copy it updates only when
+    // a commit arrives after the edit, so a count made for that old copy takes letters from the real text.
+    void testFirefoxReportsOnlyAfterCommit() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        for (const int commits : {1, 2}) {
+            ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = commits};
+            FakeResources           resources;
+            const auto              keys = keysOf("bef owr tieesng ");
+            const std::vector<int>  gaps(keys.size(), 150);
+            ngosen::test::captureLog(true);
+            const auto run   = ngosen::test::typeInAppTraced(resources, field, firefox, keys, gaps);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(run.text == "bè ở tiếng ", "Firefox on GNOME: a replacement right after a replacement keeps the letters before it", run.text + " " + join(lines));
+            check(countHaving(lines, "copy shows the earlier word") == 0, "Firefox on GNOME: asking for a report leaves no old copy to count on", join(lines));
+        }
+        FakeResources resources;
+        const auto    keys = keysOf("bef owr tieesng ");
+        ngosen::test::captureLog(true);
+        const auto run   = ngosen::test::typeInAppTraced(resources, field, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 150));
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(run.text == "bè ở tiếng " && countHaving(lines, "Ask the app for a report") == 0, "an app that reports in time gets no empty commit", run.text + " " + join(lines));
+    }
+
     // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first
     // replacement; sent at once, the app would keep only the second.
     void testReplacementsInOneTurn() {
@@ -2384,6 +2410,7 @@ int main() {
     testSlowReport();
     testStaleCopyBeforeReplacement();
     testReplacementsInOneTurn();
+    testFirefoxReportsOnlyAfterCommit();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

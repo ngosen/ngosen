@@ -57,6 +57,7 @@ namespace ngosen::test {
         bool silentFromFirstDeletion      = false; // stops reporting at its first deletion through the surrounding text, for good
         bool deletesOneTooMany            = false; // takes one more character than a deletion through the surrounding text asks for
         bool reportsTextAtChange          = false; // a late report shows the text as it was at that change, not as it is on arrival
+        int  emptyCommitsBeforeReport     = 0;     // empty commits it takes to end repeatsOldTextAfterDelete, as Firefox on GNOME
         bool showsEnter                   = false; // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
         bool showsTab                     = false; // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
         // Applies deletions and commits once per main-loop turn, keeping only the last of each, as a
@@ -208,6 +209,7 @@ namespace ngosen::test {
         bool                                turnPending_       = false;
         std::optional<size_t>               turnDeleteBytes_;
         std::optional<std::string>          turnCommit_;
+        int                                 emptyCommits_ = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};
         std::vector<std::unique_ptr<Timer>> timers_;
     };

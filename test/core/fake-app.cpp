@@ -204,6 +204,13 @@ namespace ngosen::test {
             slowestCommitMs_ = std::max(slowestCommitMs_, static_cast<int>((monotonicUs() - forwardedAt_) / 1000));
             forwardedAt_     = 0;
         }
+        if (text.empty() && quirks_.emptyCommitsBeforeReport > 0) {
+            if (silentAfterDelete_ && ++emptyCommits_ >= quirks_.emptyCommitsBeforeReport) {
+                silentAfterDelete_ = false;
+                changed();
+            }
+            return;
+        }
         // Focus and redraws are checked again when the app gets to the commit, which can be after a
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
@@ -414,6 +421,7 @@ namespace ngosen::test {
     void FakeApp::goSilentAfterDelete() {
         silentAfterDelete_ = quirks_.reportsNothingAfterDelete || quirks_.repeatsOldTextAfterDelete || quirks_.silentFromFirstDeletion;
         keysSinceDelete_   = 0;
+        emptyCommits_      = 0;
     }
 
     void FakeApp::redrawAfterEdit() {

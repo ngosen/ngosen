@@ -515,6 +515,9 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> edit_hold_timer_;
         bool                           edit_hold_ = false;
         static constexpr uint64_t      EditHoldUs = 20000;
+        std::unique_ptr<ngosen::Timer> report_timer_;
+        int                            report_requests_left_ = 0;
+        static constexpr int           ReportRequests        = 4;
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
         struct SurroundingCheck {
@@ -540,6 +543,8 @@ namespace ngosen {
         void               markSurroundingUntrusted(const std::string& why);
         // The field takes no keys or applies them out of order, so surrounding text is its only way to delete.
         bool deletesOnlyThroughSurrounding() const;
+        void askForReportAfterEdit();
+        void requestReportWhileUnanswered();
         // That only way failed and the host has no preedit to fall back on: keys go to the app as they are.
         bool stopsReplacing() const;
         // Something can remove text already in the field, and the field has not been left raw.

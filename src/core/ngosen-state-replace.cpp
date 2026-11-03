@@ -799,8 +799,35 @@ namespace ngosen {
             return;
         }
         edit_hold_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+            askForReportAfterEdit();
             finishEditHold();
             return edit_hold_;
+        });
+    }
+
+    // Firefox on GNOME applies an edit a moment after it reports, then stays silent, while GTK 3 turns
+    // the next deletion's bytes into characters on that old copy. GTK asks for a new copy when a commit
+    // arrives, and an empty one changes nothing in the field.
+    void TypingState::askForReportAfterEdit() {
+        report_requests_left_ = ReportRequests;
+        requestReportWhileUnanswered();
+    }
+
+    void TypingState::requestReportWhileUnanswered() {
+        if (!surrCheck_ || report_requests_left_ == 0 || !host_->hasFocus())
+            return;
+        --report_requests_left_;
+        host_->commitText("");
+        NGOSEN_INFO("Ask the app for a report");
+        const uint64_t until = monotonicUs() + EditHoldUs;
+        if (report_timer_) {
+            report_timer_->rearm(until);
+            return;
+        }
+        report_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+            const int left = report_requests_left_;
+            requestReportWhileUnanswered();
+            return report_requests_left_ != left;
         });
     }
 

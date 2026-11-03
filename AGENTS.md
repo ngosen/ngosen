@@ -43,6 +43,10 @@ a careful human wrote it, and the person sending it must be able to explain ever
   use `isStartsWith` (`src/core/ngosen-strings.h`).
 - **A bug fix comes with a test that fails without it.** Check this by undoing the fix (or breaking
   its guard) and watching that test, and only that test, fail.
+- **Keep the evidence of every measured run.** Each run in a real app, right or wrong, saves what a
+  fault could need: the full fcitx5 log, the typing log (`SaveTypingLog`), the text typed and
+  expected, package and app versions, and a screenshot of a wrong run. A run with something missing
+  says so. Repeating a long round because nothing was kept costs far more than storing it.
 - **Handle apps by how they behave, not by name.** Check what the field reports (capability flags,
   surrounding text, frontend) before matching a program name; match a name only when nothing the app
   reports tells it apart, and say in a comment what behaviour the name stands for.

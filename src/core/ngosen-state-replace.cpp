@@ -749,8 +749,9 @@ namespace ngosen {
         const bool keepsOldCopy = ngosen::keepsOldCopyAfterEdit(host_->field());
         if (!ngosen::countsDeletionOnCopy(host_->field()) || (!deletesOnlyThroughSurrounding() && !keepsOldCopy) || !surrounding.isValid())
             return false;
-        if (keepsOldCopy && unreportedCommitLength_ > 0)
-            return true;
+        // A field that leaves requests unanswered would only make every replacement late.
+        if (keepsOldCopy)
+            return unreportedCommitLength_ > 0 && surrAnsweredUnasked_ >= surrMissed_;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
         return deletion.wrongBytes || deletion.behind;
     }

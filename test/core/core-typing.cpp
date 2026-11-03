@@ -2148,6 +2148,16 @@ namespace {
         check(run.text == "tiếng việt ngữ ", "firefox on plasma: the words come out right when typing fast", run.text);
         check(run.sent.surroundingDeletes > 0 && run.sent.forwardedBackSpaces == 0, "firefox on plasma: no backspaces",
               std::to_string(run.sent.surroundingDeletes) + " " + std::to_string(run.sent.forwardedBackSpaces));
+
+        // CodeMirror and Ace in Firefox answer only on the next key, so waiting for them only adds delay.
+        ngosen::test::AppQuirks silent{.repeatsOldTextAfterDelete = true, .keysBeforeNewReport = 3, .emptyCommitsBeforeReport = 9};
+        FakeResources           silentResources;
+        ngosen::test::captureLog(true);
+        const auto silentRun   = ngosen::test::typeInAppTraced(silentResources, field, silent, keys, std::vector<int>(keys.size(), 150));
+        const auto silentLines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(silentRun.text == "tiếng việt ngữ ", "firefox on plasma: a field that does not answer still types right", silentRun.text);
+        check(countHaving(silentLines, "Copy of the text still short") <= 1, "firefox on plasma: a field that does not answer stops holding keys", join(silentLines));
     }
 
     // A copy one key behind can hold the same number of bytes as the word, yet the deletion lands at

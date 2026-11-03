@@ -745,15 +745,16 @@ namespace ngosen {
     // The frontend turns a deletion into bytes on its copy of the text, which can still lack what the
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
     bool TypingState::copyGivesWrongDeletion() const {
-        const auto surrounding  = host_->surrounding();
-        const bool keepsOldCopy = ngosen::keepsOldCopyAfterEdit(host_->field());
-        if (!ngosen::countsDeletionOnCopy(host_->field()) || (!deletesOnlyThroughSurrounding() && !keepsOldCopy) || !surrounding.isValid())
+        const auto surrounding = host_->surrounding();
+        if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
             return false;
-        // A field that leaves requests unanswered would only make every replacement late.
-        if (keepsOldCopy)
-            return unreportedCommitLength_ > 0 && surrAnsweredUnasked_ >= surrMissed_;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
-        return deletion.wrongBytes || deletion.behind;
+        if (deletesOnlyThroughSurrounding())
+            return deletion.wrongBytes || deletion.behind;
+        // Backspaces are there to fall back on, and a field that leaves checks unanswered would only
+        // make every replacement late.
+        return !ngosen::reportsReplacementsWithLaterKey(host_->field()) && surrAnsweredUnasked_ >= surrMissed_ && surrSeenTextSinceFocus_ && !backspaceInWord_ &&
+            (unreportedCommitLength_ > 0 || deletion.match == SurroundingDeletion::Match::None);
     }
 
     int TypingState::surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const {

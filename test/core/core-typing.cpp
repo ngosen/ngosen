@@ -2160,6 +2160,20 @@ namespace {
         check(countHaving(silentLines, "Copy of the text still short") <= 1, "firefox on plasma: a field that does not answer stops holding keys", join(silentLines));
     }
 
+    // A copy that comes a moment late is no reason to leave the surrounding path.
+    void testLateCopyKeepsSurroundingPath() {
+        for (const char* frontend : {"wayland", "wayland_v2"}) {
+            const Field   field = makeField(frontend, true, "chromium");
+            FakeResources resources;
+            const auto    keys = keysOf("tieengs vieetj nguwx ");
+            const auto    run  = ngosen::test::typeInAppTraced(resources, field, {.reportDelayMs = 30, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
+                                                               std::vector<int>(keys.size(), 10));
+            check(run.text == "tiếng việt ngữ ", std::string(frontend) + " late copy: the words come out right", run.text);
+            check(run.sent.forwardedBackSpaces <= 1, std::string(frontend) + " late copy: backspaces only before the field has shown text",
+                  std::to_string(run.sent.forwardedBackSpaces));
+        }
+    }
+
     // A copy one key behind can hold the same number of bytes as the word, yet the deletion lands at
     // that copy's cursor, in front of the key the copy lacks.
     void testCopyBehindByAKey() {
@@ -2492,6 +2506,7 @@ int main() {
     testReportRequestKeepsNextEdit();
     testAnsweringAppGetsPlainCount();
     testCopyBehindByAKey();
+    testLateCopyKeepsSurroundingPath();
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testCursorBounceBack();
     testIbusClientNames();

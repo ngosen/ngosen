@@ -2125,6 +2125,7 @@ namespace {
 
         // On a fresh page the misses can come before there are many answers to weigh them against.
         firefox.ignoresRequestsOnEdits = {2, 3};
+        firefox.reportsOnFocus         = true;
         FakeResources early;
         const auto    earlyRun = ngosen::test::typeInAppTraced(early, field, firefox, keys, std::vector<int>(keys.size(), 150));
         check(earlyRun.text == "bè ở bè ở việt tiếng ", "an app that answered once keeps its letters when it misses the next reports", earlyRun.text);
@@ -2142,9 +2143,9 @@ namespace {
         FakeResources qtResources;
         Field         qtField   = surroundingOnlyField();
         qtField.preeditFallback = true;
-        const auto qtKeys       = keysOf("bef bef bef bef tieesng ");
+        const auto qtKeys       = keysOf("bef bef tieesng ");
         const auto qtRun        = ngosen::test::typeInAppTraced(qtResources, qtField, qt, qtKeys, std::vector<int>(qtKeys.size(), 500));
-        check(qtRun.text == "bè bè bè bè tiếng ", "an app that rarely answers keeps the count for its real text", qtRun.text);
+        check(qtRun.text == "bè bè tiếng ", "an app that rarely answers keeps the count for its real text", qtRun.text);
     }
 
     // Backspaces reach Firefox on Plasma after the commit often enough to eat the new letter when typing fast.

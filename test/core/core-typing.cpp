@@ -2172,6 +2172,15 @@ namespace {
 
     // A copy that comes a moment late is no reason to leave the surrounding path.
     void testLateCopyKeepsSurroundingPath() {
+        {
+            const Field             field = makeField("wayland", true, "firefox");
+            ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .keysBeforeNewReport = 99, .emptyCommitsBeforeReport = 1, .reportsOnlyWhenAsked = true};
+            FakeResources           resources;
+            const auto              keys = keysOf("tieengs vieetj nguwx ");
+            const auto              run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 40));
+            check(run.text == "tiếng việt ngữ ", "quiet copy: the words come out right", run.text);
+            check(run.sent.forwardedBackSpaces == 0, "quiet copy: the wait asks for a report instead of leaving the path", std::to_string(run.sent.forwardedBackSpaces));
+        }
         for (const char* frontend : {"wayland", "wayland_v2"}) {
             const Field   field = makeField(frontend, true, "chromium");
             FakeResources resources;

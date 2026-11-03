@@ -833,7 +833,7 @@ namespace ngosen {
     }
 
     void TypingState::requestReportWhileUnanswered() {
-        if (!surrCheck_ || report_requests_left_ == 0 || !host_->hasFocus())
+        if ((!surrCheck_ && !(key_report_pending_ && key_report_until_copy_fits_)) || report_requests_left_ == 0 || !host_->hasFocus())
             return;
         --report_requests_left_;
         host_->commitText("");

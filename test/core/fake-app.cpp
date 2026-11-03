@@ -494,6 +494,10 @@ namespace ngosen::test {
                 inReport_ = true;
                 state_->surroundingUpdated();
                 inReport_ = false;
+                if (quirks_.reportsOnlyWhenAsked && deletions_ > 0) {
+                    silentAfterDelete_ = true;
+                    emptyCommits_      = 0;
+                }
             });
     }
 

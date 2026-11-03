@@ -63,6 +63,7 @@ namespace ngosen::test {
         // Applies deletions and commits once per main-loop turn, keeping only the last of each, as a
         // client behind mutter's text-input-v3 does; a key let through ends the turn first.
         bool keepsLastEditPerTurn = false;
+        int  turnMs               = 0; // how long such a turn stays open
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what

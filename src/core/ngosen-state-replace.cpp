@@ -809,17 +809,20 @@ namespace ngosen {
     // the next deletion's bytes into characters on that old copy. GTK asks for a new copy when a commit
     // arrives, and an empty one changes nothing in the field.
     void TypingState::askForReportAfterEdit() {
+        if (!surrCheck_)
+            return;
         report_requests_left_ = ReportRequests;
         requestReportWhileUnanswered();
     }
 
     void TypingState::requestReportWhileUnanswered() {
-        if (!surrCheck_ || report_requests_left_ == 0 || !host_->hasFocus())
+        if (report_requests_left_ == 0 || !host_->hasFocus())
             return;
         --report_requests_left_;
         host_->commitText("");
         NGOSEN_INFO("Ask the app for a report");
-        const uint64_t until = monotonicUs() + EditHoldUs;
+        // Most reports come within 75 ms, the rest only after hundreds, so the requests spread out.
+        const uint64_t until = monotonicUs() + (EditHoldUs << (ReportRequests - report_requests_left_ - 1));
         if (report_timer_) {
             report_timer_->rearm(until);
             return;

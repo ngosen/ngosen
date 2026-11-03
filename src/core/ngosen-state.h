@@ -517,7 +517,7 @@ namespace ngosen {
         static constexpr uint64_t      EditHoldUs = 20000;
         std::unique_ptr<ngosen::Timer> report_timer_;
         int                            report_requests_left_ = 0;
-        static constexpr int           ReportRequests        = 4;
+        static constexpr int           ReportRequests        = 5;
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
         struct SurroundingCheck {

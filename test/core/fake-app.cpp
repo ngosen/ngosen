@@ -211,6 +211,13 @@ namespace ngosen::test {
             }
             return;
         }
+        // mutter keeps one commit per turn, so even an empty one replaces the commit before it.
+        if (text.empty() && quirks_.keepsLastEditPerTurn && turnPending_) {
+            turnCommit_ = text;
+            return;
+        }
+        if (text.empty())
+            return;
         // Focus and redraws are checked again when the app gets to the commit, which can be after a
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
@@ -485,7 +492,7 @@ namespace ngosen::test {
         if (turnPending_)
             return;
         turnPending_ = true;
-        later(0, [this] { endTurn(); });
+        later(quirks_.turnMs, [this] { endTurn(); });
     }
 
     void FakeApp::endTurn() {

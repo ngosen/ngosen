@@ -2096,6 +2096,36 @@ namespace {
         check(run.text == "bè ở tiếng " && countHaving(lines, "Ask the app for a report") == 0, "an app that reports in time gets no empty commit", run.text + " " + join(lines));
     }
 
+    // The request left over from one edit must not land in the next edit's turn and replace its commit.
+    void testReportRequestKeepsNextEdit() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks shell{.reportDelayMs = 30, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true, .turnMs = 3};
+        const auto              keys = keysOf("nguwx ");
+        for (const int gap : {38, 39, 40, 41}) {
+            std::vector<int> gaps(keys.size(), 100);
+            gaps[3] = gap; // w and x
+            FakeResources resources;
+            const auto    run = ngosen::test::typeInAppTraced(resources, field, shell, keys, gaps);
+            check(run.text == "ngữ ", "a report request stays out of the next edit's turn, gap " + std::to_string(gap), run.text);
+        }
+    }
+
+    // Firefox can stay silent for hundreds of milliseconds, so the requests go on past the first moments.
+    void testSlowReportStillAsked() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 5};
+        FakeResources           resources;
+        const auto              keys = keysOf("bef owr tieesng ");
+        ngosen::test::captureLog(true);
+        const auto run   = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 500));
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(run.text == "bè ở tiếng ", "Firefox on GNOME: a report that takes five requests still arrives", run.text);
+        check(countHaving(lines, "copy shows the earlier word") == 0, "Firefox on GNOME: later requests leave no old copy to count on", join(lines));
+    }
+
     // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first
     // replacement; sent at once, the app would keep only the second.
     void testReplacementsInOneTurn() {
@@ -2411,6 +2441,8 @@ int main() {
     testStaleCopyBeforeReplacement();
     testReplacementsInOneTurn();
     testFirefoxReportsOnlyAfterCommit();
+    testReportRequestKeepsNextEdit();
+    testSlowReportStillAsked();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

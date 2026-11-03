@@ -122,6 +122,9 @@ namespace ngosen {
     }
 
     void TypingState::closeSurroundingCheck(SurroundingVerdict verdict, const Surrounding* report, bool beforeNext) {
+        // The next deletion needs the copy fresh even after the check gives up, so only an answer ends the requests.
+        if (verdict != SurroundingVerdict::NoAnswer)
+            report_requests_left_ = 0;
         const auto check = *surrCheck_;
         surrCheck_.reset();
         std::string line = std::string("Surrounding check: ") + verdictName(verdict) + (beforeNext ? " before the next replacement" : "") + " after " +

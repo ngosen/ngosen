@@ -2208,6 +2208,16 @@ namespace {
             check(run.text == "tiếng việt ngữ ", "quiet copy: the words come out right", run.text);
             check(run.sent.forwardedBackSpaces == 0, "quiet copy: the wait asks for a report instead of leaving the path", std::to_string(run.sent.forwardedBackSpaces));
         }
+        {
+            // A key replayed right after a commit finds a copy that cannot show that commit yet.
+            const Field   field = makeField("wayland", true, "firefox");
+            FakeResources resources;
+            const auto    keys = keysOf("tieengs vieetj nguwx ");
+            const auto    run  = ngosen::test::typeInAppTraced(resources, field, {.reportDelayMs = 60, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
+                                                               std::vector<int>(keys.size(), 20));
+            check(run.text == "tiếng việt ngữ ", "replayed keys: the words come out right", run.text);
+            check(run.sent.forwardedBackSpaces == 0, "replayed keys: the wait covers them too", std::to_string(run.sent.forwardedBackSpaces));
+        }
         for (const char* frontend : {"wayland", "wayland_v2"}) {
             const Field   field = makeField(frontend, true, "chromium");
             FakeResources resources;

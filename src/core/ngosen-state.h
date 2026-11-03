@@ -397,6 +397,8 @@ namespace ngosen {
         std::optional<KeyEntry>        passed_key_; ///< last key let through to the app as typed
         void                           startWordWithKey(const KeyEntry& key);
         KeyEntry                       key_report_key_{};
+        KeyEntry                       replayed_key_{};
+        bool                           copyWaitTimedOut_ = false; ///< keeps replayed keys from each waiting out a copy that never fits
         std::string                    key_report_deleted_;
         std::string                    key_report_added_;
 

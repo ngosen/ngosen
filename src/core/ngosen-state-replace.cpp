@@ -459,6 +459,10 @@ namespace ngosen {
                 startKeyReportWait(deletedPart, addedPart, !forKey);
                 return;
             }
+        } else if (replaying_ && !copyWaitTimedOut_ && copyGivesWrongDeletion()) {
+            // The commit just before this replayed key cannot be in the copy yet.
+            startKeyReportWait(deletedPart, addedPart, true);
+            return;
         }
         deleteAndCommit(deletedPart, addedPart);
     }
@@ -982,6 +986,7 @@ namespace ngosen {
             }
         }
         commitReplayed(out);
+        replayed_key_ = keys[i];
         performReplacement(deletedPart, addedPart);
     }
 

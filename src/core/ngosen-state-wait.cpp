@@ -329,7 +329,7 @@ namespace ngosen {
 
     void TypingState::startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits) {
         key_report_until_copy_fits_ = untilCopyFits;
-        key_report_key_             = *live_key_;
+        key_report_key_             = live_key_ ? *live_key_ : replayed_key_;
         key_report_deleted_         = deletedPart;
         key_report_added_           = addedPart;
         key_report_pending_         = true;
@@ -353,8 +353,10 @@ namespace ngosen {
                 dropReplacementAfterFocusLoss();
                 return false;
             }
-            if (key_report_until_copy_fits_)
+            if (key_report_until_copy_fits_) {
                 NGOSEN_INFO("Copy of the text still short, deleting anyway");
+                copyWaitTimedOut_ = true;
+            }
             finishKeyReportWait(true, true);
             return false;
         });
@@ -366,8 +368,10 @@ namespace ngosen {
         if (!key_report_pending_)
             return;
         key_report_pending_ = false;
-        if (!fromTimer)
+        if (!fromTimer) {
             key_report_timer_.reset(); // never reset a timer from inside its own callback
+            copyWaitTimedOut_ = false;
+        }
         if (sameField) {
             deleteAndCommit(key_report_deleted_, key_report_added_);
             return;

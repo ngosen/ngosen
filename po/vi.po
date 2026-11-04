@@ -1228,8 +1228,8 @@ msgid "Menu and hints show in GNOME's search box"
 msgstr "Menu và gợi ý hiện được trong ô tìm kiếm của GNOME"
 
 #: settings-gui/core/system_check.py
-msgid "Run install.sh again, or install Input Method Panel from {}, then log out and back in."
-msgstr "Chạy lại install.sh, hoặc cài Input Method Panel ở {}, rồi đăng xuất và đăng nhập lại."
+msgid "Install Input Method Panel from {}, then log out and back in."
+msgstr "Cài extension Input Method Panel từ {}, rồi đăng xuất và đăng nhập lại."
 
 #: settings-gui/core/system_check.py
 msgid "The installed Input Method Panel does not run; update it from {}."
@@ -1248,8 +1248,8 @@ msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out 
 msgstr "Bật bản sửa: gnome-extensions enable {}. Nếu vẫn mất phím thì đăng xuất rồi đăng nhập lại."
 
 #: settings-gui/core/system_check.py
-msgid "Install Ngó Sen with install.sh, which adds the fix for this GNOME version, then log out and back in."
-msgstr "Cài Ngó Sen bằng install.sh, lệnh này thêm bản sửa cho version GNOME này, rồi đăng xuất và đăng nhập lại."
+msgid "Update to GNOME 50.4 or newer, then log out and back in."
+msgstr "Cập nhật lên GNOME 50.4 hoặc mới hơn, rồi đăng xuất và đăng nhập lại."
 
 #: settings-gui/core/system_check.py
 msgid "fcitx5 still runs Ngó Sen from before the update"
@@ -1285,8 +1285,8 @@ msgid "Optional: each app can keep its own typing mode. Typing works without it.
 msgstr "Không bắt buộc: mỗi app có thể nhớ chế độ gõ riêng. Không bật vẫn gõ bình thường."
 
 #: settings-gui/core/system_check.py
-msgid "Log out and back in. If this stays, install Ngó Sen with install.sh."
-msgstr "Đăng xuất rồi đăng nhập lại. Nếu vẫn thấy dòng này, cài Ngó Sen bằng install.sh."
+msgid "Log out and back in. If this stays, update Ngó Sen and fcitx5."
+msgstr "Đăng xuất rồi đăng nhập lại. Nếu vẫn thấy dòng này, cập nhật Ngó Sen và fcitx5."
 
 #: settings-gui/core/system_check.py
 #, python-brace-format

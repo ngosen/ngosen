@@ -43,7 +43,7 @@ class InputPanelTest(unittest.TestCase):
         self.assertEqual((finding.level, finding.title), (WARN, self.TITLE))
         self.assertEqual(finding.action, system_check.INSTALL_INPUT_PANEL)
         self.assertIn(system_check.INPUT_PANEL_PAGE, finding.command)
-        self.assertIn("install.sh", finding.fix)
+        self.assertNotIn("install.sh", finding.fix)
         self.assertIn(system_check.INPUT_PANEL_PAGE, finding.fix)
 
     def test_installed_panel_has_no_install_button(self):
@@ -148,6 +148,7 @@ class EvaluateTest(unittest.TestCase):
             stale = found("46.0", state)[0]
             self.assertEqual((stale.action, stale.command), ("", ""))
             self.assertIn("Log out", stale.fix)
+            self.assertNotIn("install.sh", stale.fix)
         running = {"app_names_running": True}
         self.assertEqual(found("46.0", "ACTIVE", **running), [])
         # A package upgrade replaces the files, but the old extension runs until the next login.
@@ -217,7 +218,8 @@ class EvaluateTest(unittest.TestCase):
         title = "GNOME 50.1 drops the keys Ngó Sen sends to apps"
         self.assertEqual(titles(found("50.1", "INACTIVE"), WARN), [title])
         self.assertIn("gnome-extensions enable", found("50.1", "INACTIVE")[0].fix)
-        self.assertIn("install.sh", found("50.1", "")[0].fix)
+        self.assertNotIn("install.sh", found("50.1", "")[0].fix)
+        self.assertIn("GNOME 50.4", found("50.1", "")[0].fix)
         self.assertEqual(found("50.1", "ACTIVE"), [])
         ok = system_check.steps(
             facts("wayland", "GNOME", gnome_shell_version="50.1", forward_keys_state="ACTIVE")

@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
-- Lệnh cài trên Sway và Hyprland nay bật fcitx5 để gõ ngay và in dòng config cho lần đăng nhập sau. (#PR)
+- Lệnh cài trên Sway và Hyprland nay bật fcitx5 để gõ ngay và in dòng config cho lần đăng nhập sau (#557).
 - Người đóng gói distro có thể dùng thư viện Rust của distro, còn package hiện có vẫn mặc định dùng bản kèm trong source (#550).
 - Trang "Kiểm tra máy" trên GNOME: báo khi thiếu extension Input Method Panel và có nút Cài, vì thiếu nó thì menu chế độ `` ` `` không hiện trong ô tìm kiếm của GNOME (#507, #508)
 - Cửa sổ cài đặt Qt và GTK có trang "Kiểm tra máy": hiện các bước cài đặt, số việc còn cần sửa và nút sửa

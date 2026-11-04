@@ -96,6 +96,8 @@ else go into `next`; a fix for a bug in the current release goes into `patch`, w
 X.Y.Z+1 and is then merged into `next`. Never merge into `main` directly: `install.sh` is downloaded from
 there, so whatever lands on `main` runs on users' machines. What to update
 after a merge and for a release is listed in [RELEASING.md](RELEASING.md).
+A PR that changes what `install.sh` sets up for a desktop also updates "Thiết lập sau khi cài package" in
+the README: people who install from a repository or a package file only get those steps from there.
 Each such PR adds a line under `## [Chưa phát hành]` in [CHANGELOG.md](CHANGELOG.md): what
 changed for the user, with the PR number. The changelog is written in Vietnamese, since most of its
 readers are Vietnamese users; keep English tech terms as in "Writing issues and PR text" below.

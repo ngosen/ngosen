@@ -161,6 +161,15 @@ vào danh sách bộ gõ. Ctrl+Space sẽ chưa gõ được tiếng Việt.
   [Input Method Panel](https://extensions.gnome.org/extension/261/).
   Với GNOME version 50.0 đến 50.3, chạy thêm
   `gnome-extensions enable forward-keys@ngosen.github.io` để sửa lỗi gõ.
+- Với KDE Plasma (Wayland), chọn Fcitx 5 ở System Settings → Virtual Keyboard, rồi đăng xuất và đăng nhập lại
+  để KDE tự chạy fcitx5 và app Qt như Kate, Dolphin gõ được. App X11 chạy qua XWayland (như Minecraft bản cũ)
+  cần thêm biến môi trường: chạy khối lệnh sau trước khi đăng xuất.
+
+  ```sh
+  mkdir -p ~/.config/environment.d
+  echo 'XMODIFIERS=@im=fcitx' > ~/.config/environment.d/90-ngosen.conf
+  ```
+
 - Với Xfce, Cinnamon, MATE trên Debian/Ubuntu/Mint, chạy `im-config -n fcitx5`, rồi đăng xuất và đăng nhập
   lại. Nếu có IBus, bước này giúp fcitx5 khởi động khi đăng nhập và gõ được trong app dùng XIM như PlanMaker.
 

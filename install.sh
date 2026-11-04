@@ -98,7 +98,7 @@ detect_distribution() {
     # Fedora remixes (Ultramarine, Nobara) have an ID of their own but keep Fedora's release number.
     if [ "$id" = fedora ] || [[ " $like " == *" fedora "* ]]; then
         case "$version" in
-            43 | 44) ;;
+            43 | 44 | 45) ;;
             *) unsupported "${id} ${version:-không rõ phiên bản}" ;;
         esac
         manager=dnf

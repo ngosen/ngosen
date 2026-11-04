@@ -20,7 +20,7 @@ Cập nhật thì chạy lại đúng lệnh đó: fcitx5 tự nạp version m�
 
 Chọn file theo distro:
 
-- Fedora 44, 43: `fcitx5-ngosen-*.fc44.x86_64.rpm`, `fcitx5-ngosen-*.fc43.x86_64.rpm`
+- Fedora 45, 44, 43: `fcitx5-ngosen-*.fc45.x86_64.rpm`, `fcitx5-ngosen-*.fc44.x86_64.rpm`, `fcitx5-ngosen-*.fc43.x86_64.rpm`
 - Arch, CachyOS: `fcitx5-ngosen-*-x86_64.pkg.tar.zst`
 - openSUSE Tumbleweed: `fcitx5-ngosen-*.opensuse-tumbleweed.x86_64.rpm`
 - Ubuntu 26.10, 26.04, 24.04: `…_stonking_amd64.deb`, `…_resolute_amd64.deb`, `…_noble_amd64.deb`

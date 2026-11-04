@@ -12,6 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Tài liệu
 
+- README hướng dẫn thiết lập GNOME khi cài từ repo hoặc package: tự chạy fcitx5 khi đăng nhập, biến môi trường và extension (#559).
 - Sửa README để nói rõ từ version 0.5.0, Ngó Sen không còn dùng uinput (#554).
 - README ghi rõ app hỗ trợ Cứu dấu trên X11 và giới hạn trong OnlyOffice (#553).
 - README bỏ ghi chú và mục lỗi về Firefox snap, ghi chú chưa test NixOS và câu không cam kết hỗ trợ ở phần tiếng Anh (#549).

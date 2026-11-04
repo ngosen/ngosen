@@ -148,10 +148,23 @@ vào danh sách bộ gõ. Ctrl+Space sẽ chưa gõ được tiếng Việt.
 
 - Mở “Cấu hình Fcitx 5” bằng `fcitx5-configtool`, vào tab bộ gõ và thêm “Ngó Sen” vào danh sách. Máy để
   ngôn ngữ hiển thị tiếng Việt thì fcitx5 tự thêm Ngó Sen ở lần chạy đầu, không cần bước này.
+- Với GNOME, cài từ repo hoặc package chưa đặt fcitx5 thay IBus. Chạy khối lệnh sau để bật fcitx5
+  tự chạy khi đăng nhập và đặt biến môi trường để app gõ qua fcitx5, rồi đăng xuất và đăng nhập lại:
+
+  ```sh
+  mkdir -p ~/.config/autostart ~/.config/environment.d
+  [ -e /etc/xdg/autostart/org.fcitx.Fcitx5.desktop ] || cp /usr/share/applications/org.fcitx.Fcitx5.desktop ~/.config/autostart/
+  printf 'GTK_IM_MODULE=fcitx\nQT_IM_MODULE=fcitx\nXMODIFIERS=@im=fcitx\nSDL_IM_MODULE=fcitx\n' > ~/.config/environment.d/90-ngosen.conf
+  ```
+
+  Nếu thanh trên cùng không có icon bộ gõ, cài extension
+  [Input Method Panel](https://extensions.gnome.org/extension/261/).
+  Với GNOME version 50.0 đến 50.3, chạy thêm
+  `gnome-extensions enable forward-keys@ngosen.github.io` để sửa lỗi gõ.
 - Với Xfce, Cinnamon, MATE trên Debian/Ubuntu/Mint, chạy `im-config -n fcitx5`, rồi đăng xuất và đăng nhập
   lại. Nếu có IBus, bước này giúp fcitx5 khởi động khi đăng nhập và gõ được trong app dùng XIM như PlanMaker.
 
-Có thể chạy lệnh cài một dòng ở trên để làm cả hai bước.
+Có thể chạy lệnh cài một dòng ở trên để làm các bước này.
 Nếu đã dùng lệnh cài một dòng và chỉ thêm repo để update, không cần làm thêm.
 
 ### Cài bằng tay hoặc tự build

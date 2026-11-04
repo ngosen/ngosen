@@ -221,7 +221,7 @@ tắt extension bằng `gnome-extensions disable forward-keys@ngosen.github.io`.
 Wayland mất chữ đang gõ dở khi bấm chuột, dù cùng ô hay ô khác. App GTK và mọi app trên X11 không bị.
 
 Lỗi ở fcitx5 5.1.19 trở về trước: khi app reset, fcitx5 bảo GNOME Shell bỏ chữ đang gõ dở. Version 5.1.20 đã
-sửa. Ubuntu 24.04, Ubuntu 26.04, Debian 13 và openSUSE Tumbleweed còn fcitx5 cũ; Arch, Fedora 44 và Debian sid
+sửa. Ubuntu 24.04, Ubuntu 26.04, Debian 13 và openSUSE Tumbleweed còn fcitx5 cũ; Arch, Fedora 44, Fedora 45 và Debian sid
 đã có bản mới. Đã nhờ Ubuntu đưa bản sửa vào ([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/fcitx5/+bug/2172006)).
 
 Trong lúc chờ, nên dùng chế độ Gõ Sen, hoặc gõ xong chữ bằng phím cách rồi mới bấm chuột.

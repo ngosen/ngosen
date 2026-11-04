@@ -10,6 +10,9 @@ option(NGOSEN_VENDORED_CRATES "Build the Rust core from bamboo-rs/vendor; off us
 if (NGOSEN_VENDORED_CRATES)
     set(NGOSEN_CARGO_LOCKED --locked)
     set(NGOSEN_CARGO_VENDOR_FILES Cargo.lock .cargo/config.toml)
+elseif (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/bamboo-rs/vendor")
+    message(WARNING "NGOSEN_VENDORED_CRATES is off but bamboo-rs/vendor exists: bamboo-rs/.cargo/config.toml still selects it. "
+                    "Delete bamboo-rs/vendor and point that config at the system crates.")
 endif()
 
 if (NGOSEN_CORE_ONLY)

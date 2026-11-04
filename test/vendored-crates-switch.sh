@@ -29,20 +29,32 @@ case "$on" in
     fail=1
     ;;
 esac
+case "$on" in
+*Cargo.lock*config.toml*) ;;
+*)
+    echo "the default build no longer rebuilds when the lock file or vendor config changes" >&2
+    fail=1
+    ;;
+esac
 
 off=$(rules off -DNGOSEN_VENDORED_CRATES=OFF) || exit 1
 case "$off" in
-*"--offline --lib"*) ;;
-*)
-    echo "NGOSEN_VENDORED_CRATES=OFF does not run cargo without --locked" >&2
+*--locked*)
+    echo "NGOSEN_VENDORED_CRATES=OFF still passes --locked" >&2
     fail=1
     ;;
 esac
 case "$off" in
-*Cargo.lock*)
-    echo "NGOSEN_VENDORED_CRATES=OFF still needs Cargo.lock, which distributions delete" >&2
+*Cargo.lock* | *config.toml*)
+    echo "NGOSEN_VENDORED_CRATES=OFF still needs files distributions delete" >&2
     fail=1
     ;;
 esac
+# Cargo keeps reading bamboo-rs/.cargo/config.toml, so a packager who leaves vendor/ in place would
+# ship the bundled crates without noticing.
+grep -q "bamboo-rs/vendor" "$work/off.log" || {
+    echo "NGOSEN_VENDORED_CRATES=OFF does not warn about bamboo-rs/vendor" >&2
+    fail=1
+}
 
 exit $fail

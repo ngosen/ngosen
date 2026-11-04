@@ -57,8 +57,7 @@ Gõ chữ, chọn Gõ Sen ở hàng Chế độ gõ.
 
 Gõ Sen đưa chữ thẳng vào app, không gạch chân. Gợi ý ở thanh địa chỉ hay ô tìm kiếm hiện theo từng phím.
 Trình duyệt, terminal, Zalo, LibreOffice đều dùng Gõ Sen; Ngó Sen tự nhận ra cách app nhận chữ, không cần
-đổi chế độ. Chế độ này trước đây tên là `Uinput`; cấu hình cũ và chế độ Surrounding Text cũ tự chuyển
-thành Gõ Sen.
+đổi chế độ. Từ version 0.5.0, Ngó Sen không còn dùng uinput.
 
 Telex được dùng và test hằng ngày. VNI và các kiểu khác dùng được nhưng chưa test kỹ.
 

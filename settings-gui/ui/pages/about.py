@@ -59,7 +59,7 @@ class AboutPage(QWidget):
 
         title = QLabel("Ngó Sen")
         title.setObjectName("Wordmark")
-        title.setFont(brand.wordmark_font(30))
+        title.setFont(brand.sized_font(30))
         layout.addWidget(title, alignment=Qt.AlignCenter)
 
         version = QLabel(_("Version {}").format(__version__))

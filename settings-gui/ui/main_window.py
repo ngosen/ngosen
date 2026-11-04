@@ -141,7 +141,7 @@ class NgoSenSettingsWindow(QMainWindow):
             header.addWidget(logo)
         wordmark = QLabel("Ngó Sen")
         wordmark.setObjectName("Wordmark")
-        wordmark.setFont(brand.wordmark_font(22))
+        wordmark.setFont(brand.sized_font(22))
         header.addWidget(wordmark)
         header.addStretch()
         layout.addLayout(header)

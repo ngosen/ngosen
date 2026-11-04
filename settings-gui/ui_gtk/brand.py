@@ -1,31 +1,23 @@
 # SPDX-FileCopyrightText: 2026 Ngó Sen contributors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The Ngó Sen marks for the GTK window: enamel as the accent, Xanh Mono for typed text."""
-
-import ctypes
-import ctypes.util
-import os
+"""The Ngó Sen marks for the GTK window: enamel as the accent."""
 
 import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-gi.require_version("PangoCairo", "1.0")
 
-from core.brand import ENAMEL, FONT_FILE, LOGO, ON_ENAMEL  # noqa: E402, F401
+from core.brand import ENAMEL, LOGO, ON_ENAMEL  # noqa: E402, F401
 from core.catalog import TRAY_PANEL  # noqa: E402
-from gi.repository import Adw, Gdk, Gtk, PangoCairo  # noqa: E402
-
-# GTK has no word-spacing; a thin space sets the two words as close as the logo does.
-WORDMARK = "Ngó\u2009Sen"
+from gi.repository import Adw, Gdk, Gtk  # noqa: E402
 
 # Enamel as text or a focus ring on the window; a dark window needs a lighter shade.
 ENAMEL_TEXT = ("#1c6b5f", "#5fb8a6")
 
 MARKS = """
-.wordmark { font-family: "Xanh Mono", monospace; font-size: 26px; }
-.typed, .typed text, .typed-input text { font-family: "Xanh Mono", monospace; font-size: 17px; }
+.wordmark { font-size: 26px; }
+.typed, .typed text, .typed-input text { font-size: 17px; }
 .mode-button:checked { background: %(bg)s; color: %(fg)s; }
 .tray-preview { padding: 6px; border-radius: 4px; }
 .tray-light { background: %(panel_light)s; }
@@ -35,22 +27,6 @@ MARKS = """
   min-width: 12px; padding: 0 6px; font-size: smaller; font-weight: bold;
 }
 """
-
-
-def load_font(path=FONT_FILE):
-    """Makes Xanh Mono available to this process only; the system monospace font stands in if not."""
-    if not os.path.exists(path):
-        return
-    font_map = PangoCairo.FontMap.get_default()
-    if hasattr(font_map, "add_font_file"):  # Pango 1.56
-        try:
-            font_map.add_font_file(path)
-            return
-        except Exception:
-            pass
-    library = ctypes.util.find_library("fontconfig")
-    if library:
-        ctypes.CDLL(library).FcConfigAppFontAddFile(None, path.encode())
 
 
 def css(dark, adw_minor):

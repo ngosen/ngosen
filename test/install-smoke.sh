@@ -672,9 +672,7 @@ check_hyprland_config_messages() {
 
 # Sway and Hyprland: what the final message says for each config, and when to stay out of the way.
 check_sway_hyprland_setup() {
-    local dead=$work/dead-fcitx5
-    bus=$(sudo -u "$user" dbus-daemon --session --fork --print-address=1 | head -n 1)
-    printf '# seeded by install-smoke\n' | as_user tee "$desktop_config" >/dev/null
+    prepare_compositor_session
 
     check "install with a config succeeds" install_fresh
     check "it says typing works" says_typing_works
@@ -687,7 +685,7 @@ check_sway_hyprland_setup() {
     as_user touch "$other"
     check "install with another XDG_CONFIG_HOME succeeds" install_fresh XDG_CONFIG_HOME="$home/other"
     check "it points at that directory" grep -qF "$other" "$install_log"
-    stop_fcitx5
+    check "fcitx5 stops after that directory" stop_fcitx5
     as_user rm -rf "$home/other"
 
     if [ "$session" = sway ]; then
@@ -699,15 +697,27 @@ check_sway_hyprland_setup() {
         check_hyprland_config_messages
     fi
 
+    check_no_compositor_setup
+    check_next_to_other_input_methods
+    check_fcitx5_that_dies
+
+    as_user rm -f "$desktop_config"
+    pkill -u "$user" dbus-daemon || :
+    bus=
+}
+
+check_no_compositor_setup() {
     check "install without WAYLAND_DISPLAY succeeds" install_fresh -u WAYLAND_DISPLAY
     expect_no_setup "without WAYLAND_DISPLAY"
     check "install on labwc succeeds" install_fresh -u SWAYSOCK -u HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP=labwc:wlroots
     expect_no_setup "on labwc"
-    stop_fcitx5
+    check "fcitx5 stops after labwc" stop_fcitx5
     as_user rm -f "$profile"
     check "install with --no-setup succeeds" install_no_setup
     expect_no_setup "with --no-setup"
+}
 
+check_next_to_other_input_methods() {
     printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[Groups/0/Items/1]\nName=unikey\nLayout=\n\n[GroupOrder]\n0=Default\n' |
         as_user tee "$profile" >/dev/null
     check "install next to another input method succeeds" install_logged
@@ -716,14 +726,17 @@ check_sway_hyprland_setup() {
     check "it keeps the other input method" has_line "$profile" 'Name=unikey'
     check "it adds ngosen" has_line "$profile" 'Name=ngosen'
     check "a keyboard default becomes ngosen" has_line "$profile" 'DefaultIM=ngosen'
-    stop_fcitx5
+    check "fcitx5 stops next to another input method" stop_fcitx5
     printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=unikey\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[Groups/0/Items/1]\nName=unikey\nLayout=\n\n[GroupOrder]\n0=Default\n' |
         as_user tee "$profile" >/dev/null
     check "install with another default input method succeeds" install_logged
     check "it keeps that default" has_line "$profile" 'DefaultIM=unikey'
-    stop_fcitx5
+    check "fcitx5 stops with another default" stop_fcitx5
+}
 
-    # A daemon that dies a moment after fcitx5 -d has returned, so only waiting catches it.
+# A daemon that dies a moment after fcitx5 -d has returned, so only waiting catches it.
+check_fcitx5_that_dies() {
+    local dead=$work/dead-fcitx5
     mkdir -p "$dead"
     cat >"$dead/fcitx5" <<'STUB'
 #!/bin/bash
@@ -736,12 +749,9 @@ STUB
     stub_path=$dead:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
     check "install with an fcitx5 that dies succeeds" install_fresh
     check "it does not say typing works" refuses says_typing_works
+    check "it names no toggle key that cannot work" refuses install_names Ctrl+Shift
     stub_path=
-    stop_fcitx5
-
-    as_user rm -f "$desktop_config"
-    pkill -u "$user" dbus-daemon || :
-    bus=
+    check "fcitx5 stops after the stub" stop_fcitx5
 }
 
 # Prints the pid of the fcitx5 the fake KWin started, once it holds its bus name.
@@ -815,7 +825,7 @@ main() {
         check "an account already on fcitx5 gets no explanation" lacks_gnome_explanation
     fi
     # The later parts expect to start fcitx5 themselves.
-    [ -z "$desktop_config" ] || stop_fcitx5
+    [ -z "$desktop_config" ] || check "fcitx5 stops before the uninstall" stop_fcitx5
 
     echo "== uninstall"
     check "uninstall succeeds" uninstall_logged
@@ -849,7 +859,6 @@ main() {
 
     if [ -n "$desktop_config" ]; then
         echo "== Sway and Hyprland setup"
-        stop_fcitx5
         check_sway_hyprland_setup
     fi
 

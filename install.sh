@@ -866,28 +866,29 @@ setup_kde_session() {
     report_session_changes
 }
 
-# Without an init in a container, or before it reaps one, a dead fcitx5 stays as a zombie.
-fcitx5_is_alive() {
-    ps -u "$(id -u)" -o stat=,comm= | awk '$2 == "fcitx5" && $1 !~ /^Z/ { found = 1 } END { exit !found }'
+fcitx5_is_running() {
+    pgrep -u "$(id -u)" -x fcitx5 >/dev/null
 }
 
 setup_sway_hyprland_session() {
     say ""
     configure_fcitx5
-    fcitx5_is_alive || fcitx5 -d >/dev/null 2>&1 || :
+    fcitx5_is_running || fcitx5 -d >/dev/null 2>&1 || :
     # fcitx5 -d returns before the daemon has had a chance to fail.
     sleep 1
     report_sway_hyprland_session
 }
 
 report_sway_hyprland_session() {
-    report_dropped_keyboard
-    if fcitx5_is_alive; then
-        say "Xong. fcitx5 đang chạy, gõ được ngay."
-    else
+    if ! fcitx5_is_running; then
         say "Đã cài xong nhưng fcitx5 chưa chạy được. Thử bật trong terminal của phiên này:  fcitx5 -d"
+    elif [ "$keyboard_dropped" -eq 1 ]; then
+        say "Xong. fcitx5 đang chạy, gõ được ngay."
+        report_dropped_keyboard
+    else
+        say "Xong. fcitx5 đang chạy, gõ được ngay."
+        say "Bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
     fi
-    say "Bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
     say ""
     if [ -n "${SWAYSOCK:-}" ]; then
         report_sway_autostart

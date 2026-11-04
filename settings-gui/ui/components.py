@@ -50,7 +50,7 @@ class KeyCap(QLabel):
         self.setStyleSheet(
             "QLabel#KeyCap { background-color: palette(button); color: palette(button-text);"
             " border: 1px solid palette(mid); border-bottom: 2px solid palette(dark);"
-            " border-radius: 4px; padding: 2px 6px; font-weight: bold; font-family: monospace; }"
+            " border-radius: 4px; padding: 2px 6px; font-weight: bold; }"
         )
 
 

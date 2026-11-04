@@ -63,6 +63,8 @@ class TypingMarksTest(unittest.TestCase):
         try_it = self.page.findChildren(QLineEdit)[-1]
         self.assertTrue(uses_system_font(example))
         self.assertTrue(uses_system_font(try_it))
+        self.assertEqual(example.font().pixelSize(), 16)
+        self.assertEqual(try_it.font().pixelSize(), 17)
 
 
 class SidebarMarksTest(unittest.TestCase):
@@ -71,6 +73,7 @@ class SidebarMarksTest(unittest.TestCase):
         wordmark = window.findChild(QLabel, "Wordmark")
         self.assertEqual(wordmark.text(), "Ngó Sen")
         self.assertTrue(uses_system_font(wordmark))
+        self.assertEqual(wordmark.font().pixelSize(), 22)
         self.assertFalse(wordmark.font().bold())
 
 

@@ -1,6 +1,6 @@
 ---
 name: Ngó Sen settings
-description: A native KDE/GNOME settings window with a few marks borrowed from the website.
+description: A native KDE/GNOME settings window with a few Ngó Sen marks.
 colors:
   enamel: "#1c6b5f"
   enamel-dark: "#247b6c"
@@ -11,9 +11,9 @@ colors:
   saved-border: "#1c6b5f"
   saved-border-dark: "#3f9c8b"
 typography:
-  family: "system font (QApplication default)"
+  family: "system font"
   wordmark:
-    fontSize: "22px in the Qt window, 26px in the GTK window"
+    fontSize: "22px in the Qt sidebar, 30px on the Qt About page, 26px in the GTK window"
   typed:
     fontSize: "16-17px"
 ---
@@ -23,7 +23,7 @@ typography:
 The window looks like it belongs to the desktop it runs on. Layout, widgets and fonts come from the
 platform style (Breeze on KDE, the Qt style in use on GNOME); the accent colour is Ngó Sen's enamel
 green. Ngó Sen also shows itself in the icon, the wordmark, the current typing mode and text that
-shows typing, all taken from the website's design (`ngosen.github.io`, its `DESIGN.md`).
+shows typing. The colours and icon come from the website's design (`ngosen.github.io`, its `DESIGN.md`); the type does not.
 
 Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9fvc4bBDQs>
 (board "Giao diện hệ thống + chút website").
@@ -40,10 +40,10 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
    seen through (`settings-gui/ui/scroll_bars.py`).
 2. **Four brand marks, nothing more.**
    - The tray icon (`fcitx-ngosen`, a lotus-root slice on enamel green) at the top of the sidebar.
-   - The wordmark "Ngó Sen" next to it, larger than the text around it, with diacritics, never in bold.
+   - The wordmark "Ngó Sen" next to it, at a fixed large size, with diacritics, never in bold.
    - The current typing mode (Gõ Sen, Gạch chân, Chọn Emoji) as a segmented row of buttons; the checked
      one is filled enamel with `on-enamel` text.
-   - Typed text, slightly larger than the text around it: the keys-to-result example under the input method
+   - Typed text at a fixed size: the keys-to-result example under the input method
      (`vieetj → việt`) and the test field.
 3. **Ngó Sen's own name and marks.** No lotus flower logo; the README credits the projects it builds on.
 4. **Changes save at once.** No OK, Apply or Cancel. After a change, a message floats over the

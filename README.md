@@ -27,7 +27,7 @@ Bản Qt trên KDE Plasma:
   thành `tiếng việt`. Tab hoặc Esc trả lại chữ đã gõ. Nếu đoạn có chữ không đổi được như `abc`, Ngó Sen
   chỉ hiện gợi ý; bấm Enter để nhận. Cứu chữ không ghi nhớ gì trong ô mật khẩu.
 - Cứu dấu: bôi đen chữ rồi gõ phím dấu để thêm, đổi hoặc bỏ dấu thanh, như `nhanh` + `s` → `nhánh`.
-  Dùng được ở app cho bộ gõ đọc chữ quanh con trỏ, trừ Firefox bản snap (xem Lỗi thường gặp). Tab hoặc Esc
+  Dùng được ở app cho bộ gõ đọc chữ quanh con trỏ. Tab hoặc Esc
   trả lại phím đã gõ.
 - Phím chuyển Anh/Việt riêng: cài mới dùng Ctrl+Shift như UniKey; đã cài từ trước giữ Ctrl+Space.
   Khi ở tiếng Anh, gõ như không có bộ gõ. Mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất; app chưa
@@ -196,7 +196,7 @@ i18n.inputMethod = {
 };
 ```
 
-CI build gói, chạy test và nạp vào fcitx5 trên màn hình X ảo; chưa ai test trên máy NixOS thật.
+CI build gói, chạy test và nạp vào fcitx5 trên màn hình X ảo.
 Gặp lỗi thì mở issue. Muốn build từ bản clone trên máy, xem mục NixOS trong [TU-DUNG.md](TU-DUNG.md#nixos).
 
 ## Lỗi thường gặp
@@ -317,8 +317,7 @@ kể cả khi chỉ lấy ý tưởng, thì ghi nguồn kèm link tới repo nà
 ## English
 
 Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: an AI coding
-agent writes the code, then the maintainer measures and uses it daily. It is licensed under GPL-3.0-or-later
-and published as is, with no promise of support.
+agent writes the code, then the maintainer measures and uses it daily. It is licensed under GPL-3.0-or-later.
 
 Since 1.0, Ngó Sen has two typing modes, Gõ Sen (for fast typing, browsers and Electron apps) and Preedit,
 and uses the Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) by

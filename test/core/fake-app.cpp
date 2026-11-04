@@ -168,6 +168,16 @@ namespace ngosen::test {
             changed();
     }
 
+    void FakeApp::copyTextAfterStartCursor() {
+        previousText_   = text_;
+        previousCursor_ = cursor_;
+        text_ += text_;
+        cursor_ = 0;
+        anchor_ = 0;
+        announced_.reset();
+        changed();
+    }
+
     void FakeApp::select(size_t anchor, size_t cursor) {
         previousText_   = text_;
         previousCursor_ = cursor_;

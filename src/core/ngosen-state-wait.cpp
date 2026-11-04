@@ -497,14 +497,18 @@ namespace ngosen {
         }
         const bool         sameText       = hasLastSurrounding_ && s.text() == lastSurroundingText_;
         const unsigned int previousCursor = lastSurroundingCursor_;
-        bool               jumped         = sameText && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
+        // VS Code's editor adds to the line while it shows the cursor at the line start, so what stood before
+        // the cursor is still there.
+        const std::u32string textBeforeCursor      = ngosen::utf8::decode(lastSurroundingText_).substr(0, previousCursor);
+        const bool           keepsTextBeforeCursor = hasLastSurrounding_ && ngosen::utf8::decode(s.text()).compare(0, textBeforeCursor.size(), textBeforeCursor) == 0;
+        bool                 jumped                = sameText && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
         // Some editors (Lark in Firefox) report the cursor past our commit before the committed text.
         const bool echo = jumped && unreportedCommitLength_ > 0 && s.cursor() == s.anchor() && s.cursor() == lastSurroundingCursor_ + unreportedCommitLength_;
         // Typing the next letter of an inline suggestion keeps the text and steps over that letter.
         // Edge reports the suggestion selected; Firefox does not, so a click one letter on looks the same
         // and only the timing tells them apart.
         const uint64_t sinceInputUs   = ngosen::monotonicUs() - lastInputAtUs_;
-        const bool     intoSuggestion = jumped && passed_key_ && s.cursor() == lastSurroundingCursor_ + 1 &&
+        const bool     intoSuggestion = jumped && !jumpedFrom_ && passed_key_ && s.cursor() == lastSurroundingCursor_ + 1 &&
             ngosen::utf8::decode(s.text())[lastSurroundingCursor_] == passed_key_->sym &&
             ((s.anchor() == s.cursor() && sinceInputUs < SuggestionStepUs) || (s.anchor() == lastSurroundingAnchor_ && s.anchor() > s.cursor()));
         const bool settling = sinceInputUs < CaretSettleUs;
@@ -549,8 +553,8 @@ namespace ngosen {
         if (!jumped || is_deleting_.load(std::memory_order_acquire))
             return;
         NGOSEN_INFO("Cursor moved without an edit");
-        // Only a move on the same text can come back; a new field's text never stood at the old cursor.
-        if (sameText && !needEngineReset.load())
+        // Only a move on text that stood at the old cursor can come back.
+        if ((sameText || keepsTextBeforeCursor) && !needEngineReset.load())
             jumpedFrom_ = std::make_pair(s.text(), previousCursor);
         needEngineReset.store(true, std::memory_order_release);
         g_mouse_clicked.store(true, std::memory_order_release);

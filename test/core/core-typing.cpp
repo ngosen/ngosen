@@ -2467,6 +2467,38 @@ namespace {
         }
     }
 
+    // VS Code's editor shows the cursor at the line start for a moment after a line's first letter.
+    void testFirstLetterCursorBounce() {
+        for (const int lateMs : {20, 36, 46}) {
+            for (const bool comesBack : {true, false}) {
+                realMode = ngosen::Mode::Sen;
+                realtextLen.store(0);
+                FakeLoop            loop;
+                FakeResources       resources;
+                auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true), ngosen::test::AppQuirks{});
+                auto*               app   = owned.get();
+                ngosen::TypingState state(&resources, std::move(owned));
+                app->attach(&state);
+                app->type('t');
+                loop.pump(lateMs);
+                app->copyTextAfterStartCursor();
+                if (comesBack) {
+                    loop.pump(2);
+                    app->moveCursor(1);
+                }
+                loop.pump(250);
+                for (const char c : std::string(comesBack ? "ieengs vieetj " : "ieetj")) {
+                    app->type(static_cast<uint32_t>(c));
+                    loop.pump(250);
+                }
+                if (comesBack)
+                    check(app->text() == "tiếng việt t", "first letter: the cursor coming back keeps the word", std::to_string(lateMs) + " ms: " + app->text());
+                else if (lateMs > 30)
+                    check(app->text() == "iệttt", "first letter: a cursor staying at the line start forgets the word", std::to_string(lateMs) + " ms: " + app->text());
+            }
+        }
+    }
+
     // The ways out when a deletion through the surrounding text goes wrong.
     void testSurroundingFallback() {
         ngosen::test::Typed run;
@@ -2656,6 +2688,7 @@ int main() {
     testCopyWaitEndsAfterTheReport();
     testEditBeforeOtherText();
     testCursorBounceBack();
+    testFirstLetterCursorBounce();
     testIbusClientNames();
     testAutofillMark();
     testReportWithNextKey();

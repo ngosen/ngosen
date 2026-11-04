@@ -102,6 +102,9 @@ namespace ngosen::test {
         std::string text() const;
         // Moves the cursor without an edit, as a click does.
         void moveCursor(size_t to);
+        // Adds a copy of the text after the cursor and shows the cursor at its start, as VS Code's editor
+        // on GNOME does for the first letter of a line.
+        void copyTextAfterStartCursor();
         // Selects from anchor to cursor, as Shift+arrows or a double click do; typing replaces it.
         void select(size_t anchor, size_t cursor);
         // Leaves focus for ms and takes it back, as WPS does when it opens a window on a double click.

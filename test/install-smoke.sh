@@ -615,7 +615,7 @@ installs_from() {
 reports_no_package() {
     local dir=$work/no-package
     mkdir -p "$dir"
-    : >"$dir/SHA256SUMS"
+    printf '%064d  %s\n' 0 fcitx5-ngosen-1-1.fc1.noarch.rpm >"$dir/SHA256SUMS"
     chmod -R a+rX "$dir"
     ! installs_from "$dir" && grep -qF "chưa có gói dựng sẵn" "$install_log"
 }
@@ -628,6 +628,8 @@ check_new_fedora_release() {
     rpm=$(find "$work/release" -name "*.fc$version.$(uname -m).rpm")
     [ -n "$rpm" ] || return 0
     next=$((version + 1))
+    # An installed package of the same version would turn the install below into a no-op.
+    uninstall_logged || :
     mkdir -p "$dir"
     cp "$rpm" "$dir/$(basename "${rpm/.fc$version./.fc$next.}")"
     (cd "$dir" && sha256sum -- * >SHA256SUMS)
@@ -636,6 +638,9 @@ check_new_fedora_release() {
     sed -i --follow-symlinks "s/^VERSION_ID=.*/VERSION_ID=$next/" /etc/os-release
     check "a newer Fedora installs from its published package" installs_from "$dir"
     check "it picks the package of that release" grep -qF ".fc$next." "$install_log"
+    check "that package is installed" is_installed fcitx5-ngosen
+    sed -i --follow-symlinks "s/^VERSION_ID=.*/VERSION_ID=${version%?}./" /etc/os-release
+    check "a version that is not a number is refused" refuses installs_from "$work/release"
     cp "$work/os-release.orig" /etc/os-release
 }
 

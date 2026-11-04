@@ -75,7 +75,7 @@ x86_64_only() {
     [ "$2" = x86_64 ] || unsupported "$1 trên máy $2"
 }
 
-# Sets manager and pattern; pattern is a regular expression for the package's file name.
+# Sets manager, pattern and, on Fedora, distribution; pattern is a regular expression for the package's file name.
 detect_distribution() {
     local machine deb_arch
     machine=$(uname -m)
@@ -99,7 +99,10 @@ detect_distribution() {
     # Fedora remixes (Ultramarine, Nobara) have an ID of their own but keep Fedora's release number.
     if [ "$id" = fedora ] || [[ " $like " == *" fedora "* ]]; then
         # The published packages decide which releases are supported; see find_package.
-        distribution="${id} ${version:-không rõ phiên bản}"
+        case "$version" in
+            '' | *[!0-9]*) unsupported "${id} ${version:-không rõ phiên bản}" ;;
+        esac
+        distribution="${id} ${version} trên máy ${machine}"
         manager=dnf
         is_ostree && manager=rpm-ostree
         pattern="${package_name}-[0-9][^ /]*\\.fc${version}\\.${machine}\\.rpm"

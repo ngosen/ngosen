@@ -31,6 +31,12 @@ namespace ngosen {
         }
     }
 
+    // A busy Firefox has not reported the letter being replaced, so the same report later says nothing
+    // about the backspace, and a commit sent now can arrive first and be erased by it.
+    bool TypingState::sentSnapshotPredatesLetter() const {
+        return ngosen::reportsSurroundingEditsLate(host_->field()) && !surr_wait_sent_snapshot_fresh_ && !surr_wait_saw_other_snapshot_;
+    }
+
     bool TypingState::deletionLooksDone() const {
         const auto s = host_->surrounding();
         if (!s.isValid()) {
@@ -41,6 +47,8 @@ namespace ngosen {
         // content alone: when the app lags by a couple of keys, the stale snapshot looks exactly like
         // the finished state.
         if (!surr_wait_sent_snapshot_.empty() && t + "\x1f" + std::to_string(s.cursor()) == surr_wait_sent_snapshot_) {
+            if (sentSnapshotPredatesLetter())
+                return false;
             // Firefox may never send another state, so accept it after WaitSurroundingMinPerKeyMs per
             // backspace, as long as a plain sleep. The immediate check still rejects it.
             const auto waited  = (ngosen::monotonicUs() - surr_wait_started_at_) / 1000;
@@ -137,8 +145,9 @@ namespace ngosen {
         // until an event matches again.
         // Behind GNOME Shell's IBus bridge a slow app can apply our backspace after the commit sent once we stop
         // waiting, and the backspace then erases the new letter (#362).
-        const int fullMs =
-            ngosen::surroundingTextLags(host_->field()) ? std::max(engine_->options().waitSurroundingTimeoutMs, LaggingReportWaitMs) : engine_->options().waitSurroundingTimeoutMs;
+        const int  fullMs    = ngosen::surroundingTextLags(host_->field()) || sentSnapshotPredatesLetter() ?
+            std::max(engine_->options().waitSurroundingTimeoutMs, LaggingReportWaitMs) :
+            engine_->options().waitSurroundingTimeoutMs;
         const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->options().waitSurroundingShortMs : fullMs;
         const auto timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
         // Check once at the threshold first: many apps report "done" before it and then go quiet.

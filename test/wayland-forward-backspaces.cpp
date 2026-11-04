@@ -115,6 +115,56 @@ namespace {
         return true;
     }
 
+    // A busy Firefox has not reported the letter being replaced yet, so its old report looks like the
+    // finished deletion. Committing then lets the backspace land after the commit and erase it.
+    std::unique_ptr<TestInputContext> typeDIntoLaggingFirefox(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInstance& testInstance) {
+        auto context = std::make_unique<TestInputContext>(&testInstance.instance, "firefox", "wayland_v2");
+        context->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);
+        context->focusIn();
+        fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, focus);
+        setSnapshot(*context, "a ", 2);
+        if (!type(engine, entry, *context, FcitxKey_d, false) || !type(engine, entry, *context, FcitxKey_d, true))
+            return nullptr;
+        return context;
+    }
+
+    bool waitsPastStaleReport(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInstance& testInstance) {
+        auto context = typeDIntoLaggingFirefox(engine, entry, testInstance);
+        if (!context)
+            return false;
+        pumpEventLoop(testInstance.instance, 30);
+        if (!context->commits().empty()) {
+            reportFailure("no commit on a report older than the replaced letter", "commits=(none)", "commits=" + joinCommits(*context));
+            return false;
+        }
+        setSnapshot(*context, "a d", 3);
+        pumpEventLoop(testInstance.instance, 3);
+        if (!context->commits().empty()) {
+            reportFailure("no commit while the letter is still there", "commits=(none)", "commits=" + joinCommits(*context));
+            return false;
+        }
+        setSnapshot(*context, "a ", 2);
+        pumpEventLoop(testInstance.instance, 30);
+        if (context->commits() != std::vector<std::string>{"đ"}) {
+            reportFailure("commit once the letter has come and gone", "commits=['đ']", "commits=" + joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
+    bool commitsWhenStaleReportNeverMoves(fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, TestInstance& testInstance) {
+        auto context = typeDIntoLaggingFirefox(engine, entry, testInstance);
+        if (!context)
+            return false;
+        pumpEventLoop(testInstance.instance, 200);
+        if (context->commits() != std::vector<std::string>{"đ"}) {
+            reportFailure("the commit still goes out when the app stays silent", "commits=['đ']", "commits=" + joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
 } // namespace
 
 int main() {
@@ -137,6 +187,8 @@ int main() {
         if (!replacesThroughSurrounding(engine, entry, testInstance, frontend) || !replacesThroughForward(engine, entry, testInstance, frontend))
             return 1;
     }
+    if (!waitsPastStaleReport(engine, entry, testInstance) || !commitsWhenStaleReportNeverMoves(engine, entry, testInstance))
+        return 1;
 
     if (const int requests = keys.requests(); requests != 0) {
         reportFailure("no real key press", "0", std::to_string(requests));

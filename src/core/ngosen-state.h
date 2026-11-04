@@ -313,6 +313,7 @@ namespace ngosen {
         bool surr_silent_           = false;
         int  surr_timeout_streak_   = 0;    ///< two or more switches to the short timeout
         bool surr_snapshot_trusted_ = true; ///< false after a timeout, true again on a matching event
+        bool sentSnapshotPredatesLetter() const;
         bool deletionLooksDone() const;
 
         // Messenger repaints its composer a few ms after the snapshot shows the deletion done, and

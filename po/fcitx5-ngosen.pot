@@ -1194,7 +1194,7 @@ msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out 
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Update to GNOME 50.4 or newer, then log out and back in."
+msgid "Log out and back in. If this stays, update Ngó Sen or update to GNOME 50.4."
 msgstr ""
 
 #: settings-gui/core/system_check.py

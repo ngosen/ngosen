@@ -149,6 +149,7 @@ class EvaluateTest(unittest.TestCase):
             self.assertEqual((stale.action, stale.command), ("", ""))
             self.assertIn("Log out", stale.fix)
             self.assertNotIn("install.sh", stale.fix)
+            self.assertIn("update Ngó Sen", stale.fix)
         running = {"app_names_running": True}
         self.assertEqual(found("46.0", "ACTIVE", **running), [])
         # A package upgrade replaces the files, but the old extension runs until the next login.
@@ -219,7 +220,9 @@ class EvaluateTest(unittest.TestCase):
         self.assertEqual(titles(found("50.1", "INACTIVE"), WARN), [title])
         self.assertIn("gnome-extensions enable", found("50.1", "INACTIVE")[0].fix)
         self.assertNotIn("install.sh", found("50.1", "")[0].fix)
-        self.assertIn("GNOME 50.4", found("50.1", "")[0].fix)
+        # Just installed looks the same as never installed until the next login.
+        for advice in ("Log out", "update Ngó Sen", "GNOME 50.4"):
+            self.assertIn(advice, found("50.1", "")[0].fix)
         self.assertEqual(found("50.1", "ACTIVE"), [])
         ok = system_check.steps(
             facts("wayland", "GNOME", gnome_shell_version="50.1", forward_keys_state="ACTIVE")

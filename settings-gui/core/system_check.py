@@ -197,7 +197,7 @@ def _app_name_findings(facts):
     title = _("Optional: each app can keep its own typing mode. Typing works without it.")
     # GNOME reads an extension's files only at login, so turning it on now cannot work yet.
     if facts.forward_keys_state in ("", "OUT OF DATE", "ACTIVE"):
-        fix = _("Log out and back in. If this stays, update Ngó Sen and fcitx5.")
+        fix = _("Log out and back in. If this stays, update Ngó Sen.")
         return [Finding(TIP, title, fix)]
     fix = _("Turn on the extension: gnome-extensions enable {}, then log out and back in.").format(
         FORWARD_KEYS
@@ -215,7 +215,7 @@ def _forward_keys_findings(facts):
         return [Finding(OK, title)] + names
     title = _("GNOME {} drops the keys Ngó Sen sends to apps").format(facts.gnome_shell_version)
     if not facts.forward_keys_state:
-        fix = _("Update to GNOME 50.4 or newer, then log out and back in.")
+        fix = _("Log out and back in. If this stays, update Ngó Sen or update to GNOME 50.4.")
         return [Finding(WARN, title, fix)]
     fix = _(
         "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."

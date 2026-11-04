@@ -4,15 +4,14 @@
 import unittest
 
 from qtpy.QtCore import QEvent
-from qtpy.QtGui import QFontInfo
-from qtpy.QtWidgets import QComboBox, QLabel, QLineEdit, QPushButton
+from qtpy.QtWidgets import QApplication, QComboBox, QLabel, QLineEdit, QPushButton
 from support import FakeDBusHandler, app
 from ui.main_window import NgoSenSettingsWindow
 from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
 
 
-def family(widget):
-    return QFontInfo(widget.font()).family()
+def uses_system_font(widget):
+    return widget.font().family() == QApplication.font().family()
 
 
 class TypingMarksTest(unittest.TestCase):
@@ -59,19 +58,22 @@ class TypingMarksTest(unittest.TestCase):
         page = DynamicSettingsPage(dbus, category=SettingsCategory.TYPING)
         self.assertFalse(self.custom_hint(page))
 
-    def test_typed_text_uses_xanh_mono(self):
+    def test_typed_text_uses_the_system_font(self):
         example = self.page.findChild(QLabel, "TypingExample")
         try_it = self.page.findChildren(QLineEdit)[-1]
-        self.assertEqual(family(example), "Xanh Mono")
-        self.assertEqual(family(try_it), "Xanh Mono")
+        self.assertTrue(uses_system_font(example))
+        self.assertTrue(uses_system_font(try_it))
+        self.assertEqual(example.font().pixelSize(), 16)
+        self.assertEqual(try_it.font().pixelSize(), 17)
 
 
 class SidebarMarksTest(unittest.TestCase):
-    def test_wordmark_in_xanh_mono(self):
+    def test_wordmark_in_the_system_font(self):
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
         wordmark = window.findChild(QLabel, "Wordmark")
         self.assertEqual(wordmark.text(), "Ngó Sen")
-        self.assertEqual(family(wordmark), "Xanh Mono")
+        self.assertTrue(uses_system_font(wordmark))
+        self.assertEqual(wordmark.font().pixelSize(), 22)
         self.assertFalse(wordmark.font().bold())
 
 

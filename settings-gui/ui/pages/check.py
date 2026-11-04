@@ -97,7 +97,7 @@ class CheckPage(QWidget):
         layout.addWidget(mute(_wrapped(_("In Telex, vieetj becomes việt."))))
         try_it = QLineEdit()
         try_it.setPlaceholderText(_("Type here to test"))
-        try_it.setFont(brand.typed_font(17))
+        try_it.setFont(brand.sized_font(17))
         layout.addWidget(try_it)
 
         layout.addWidget(self._heading(_("Test an app")))

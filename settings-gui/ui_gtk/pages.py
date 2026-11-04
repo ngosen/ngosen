@@ -255,7 +255,7 @@ def about_page(version):
     box.set_margin_top(24)
     box.set_margin_bottom(24)
     box.append(Gtk.Image(icon_name=brand.LOGO, pixel_size=80))
-    box.append(_label(brand.WORDMARK, "wordmark"))
+    box.append(_label("Ngó Sen", "wordmark"))
     box.append(_label(_("Version {}").format(version), "dim-label"))
     box.append(
         _label(_("Vietnamese input method for fcitx5 on Linux that types like UniKey on Windows."))

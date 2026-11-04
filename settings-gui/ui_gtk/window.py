@@ -10,7 +10,6 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-gi.require_version("PangoCairo", "1.0")
 
 from core.brand import APP_ID  # noqa: E402
 from core.catalog import MODE_SHORTCUT_TO_VISIBILITY, locked_by  # noqa: E402
@@ -307,7 +306,7 @@ class Window(Adw.ApplicationWindow):
         header = Adw.HeaderBar(show_title=False)
         mark = Gtk.Box(spacing=8)
         mark.append(Gtk.Image(icon_name=brand.LOGO, pixel_size=28))
-        mark.append(Gtk.Label(label=brand.WORDMARK, css_classes=["wordmark"]))
+        mark.append(Gtk.Label(label="Ngó Sen", css_classes=["wordmark"]))
         header.pack_start(mark)
         self.sidebar = Gtk.ListBox(css_classes=["navigation-sidebar"])
         for name, title, icon in self.pages:
@@ -519,7 +518,6 @@ class App(Adw.Application):
 
     def do_startup(self):
         Adw.Application.do_startup(self)
-        brand.load_font()
         brand.install()
 
     def do_command_line(self, command_line):

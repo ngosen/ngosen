@@ -337,7 +337,7 @@ class DynamicSettingsPage(QWidget):
                 self.form.addRow(self._separator())
                 try_it = QLineEdit()
                 try_it.setPlaceholderText(_("Type here to test"))
-                try_it.setFont(brand.typed_font(17))
+                try_it.setFont(brand.sized_font(17))
                 self.form.addRow(_("Try it:"), try_it)
 
             self._apply_locks()
@@ -552,7 +552,7 @@ class DynamicSettingsPage(QWidget):
         layout.addWidget(combo)
         example = QLabel()
         example.setObjectName("TypingExample")
-        example.setFont(brand.typed_font(16))
+        example.setFont(brand.sized_font(16))
         layout.addWidget(example)
         # Custom takes its keys only from the Keymap tab, so without one it types no marks.
         self._custom_hint = HintLabel("")

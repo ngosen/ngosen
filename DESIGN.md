@@ -1,6 +1,6 @@
 ---
 name: Ngó Sen settings
-description: A native KDE/GNOME settings window with a few marks borrowed from the website.
+description: A native KDE/GNOME settings window with a few Ngó Sen marks.
 colors:
   enamel: "#1c6b5f"
   enamel-dark: "#247b6c"
@@ -11,14 +11,11 @@ colors:
   saved-border: "#1c6b5f"
   saved-border-dark: "#3f9c8b"
 typography:
+  family: "system font"
   wordmark:
-    fontFamily: "'Xanh Mono', 'DejaVu Sans Mono', monospace"
-    fontSize: "22px in the Qt window, 26px in the GTK window"
-    wordSpacing: "-0.28em"
+    fontSize: "22px in the Qt sidebar, 30px on the Qt About page, 26px in the GTK window"
   typed:
-    fontFamily: "'Xanh Mono', 'DejaVu Sans Mono', monospace"
     fontSize: "16-17px"
-  everything-else: "system font (QApplication default)"
 ---
 
 # Design: Ngó Sen settings window
@@ -26,7 +23,7 @@ typography:
 The window looks like it belongs to the desktop it runs on. Layout, widgets and fonts come from the
 platform style (Breeze on KDE, the Qt style in use on GNOME); the accent colour is Ngó Sen's enamel
 green. Ngó Sen also shows itself in the icon, the wordmark, the current typing mode and text that
-shows typing, all taken from the website's design (`ngosen.github.io`, its `DESIGN.md`).
+shows typing. The colours and icon come from the website's design (`ngosen.github.io`, its `DESIGN.md`); the type does not.
 
 Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9fvc4bBDQs>
 (board "Giao diện hệ thống + chút website").
@@ -43,10 +40,10 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
    seen through (`settings-gui/ui/scroll_bars.py`).
 2. **Four brand marks, nothing more.**
    - The tray icon (`fcitx-ngosen`, a lotus-root slice on enamel green) at the top of the sidebar.
-   - The wordmark "Ngó Sen" in Xanh Mono next to it, with diacritics, never in bold.
+   - The wordmark "Ngó Sen" next to it, at a fixed large size, with diacritics, never in bold.
    - The current typing mode (Gõ Sen, Gạch chân, Chọn Emoji) as a segmented row of buttons; the checked
      one is filled enamel with `on-enamel` text.
-   - Typed text in Xanh Mono: the keys-to-result example under the input method
+   - Typed text at a fixed size: the keys-to-result example under the input method
      (`vieetj → việt`) and the test field.
 3. **Ngó Sen's own name and marks.** No lotus flower logo; the README credits the projects it builds on.
 4. **Changes save at once.** No OK, Apply or Cancel. After a change, a message floats over the
@@ -55,8 +52,8 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
    (`KMessageWidget`-style: enamel border, light enamel fill; `saved-*` colours). One message,
    replaced by the next change. It leaves after 5 seconds unless the pointer or focus is on it;
    errors and messages whose Undo takes back a whole fix or list stay until closed.
-5. **Ship one font.** Xanh Mono (OFL) is bundled with the settings GUI. If it is missing, fall back
-   to the system monospace font; nothing else changes.
+5. **Ship no font.** All text uses the system font: distributions keep fonts in their own packages,
+   and a monospace fallback can misplace stacked Vietnamese tones.
 
 ## Layout
 
@@ -65,8 +62,7 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 - Sidebar: icon and wordmark, a search field, then seven pages with a small line icon each:
   Gõ chữ, Gõ tắt & Từ điển, Phím, Giao diện, Có gì mới & mẹo, Kiểm tra máy, Giới thiệu. The current page uses
   the platform's selection look.
-- Có gì mới & mẹo: one card per recent feature (name, how to use it, a typed example in Xanh
-  Mono, an "Mở cài đặt" button that jumps to the setting), then the tips as plain lines. Nothing
+- Có gì mới & mẹo: one card per recent feature (name, how to use it, a typed example, an "Mở cài đặt" button that jumps to the setting), then the tips as plain lines. Nothing
   on it is a control, so the search field skips it. Gõ chữ shows one tip, picked at random, above
   its form.
 - Page: title in the system font (semibold, about 1.3× body), then a form layout (`QFormLayout`):
@@ -115,7 +111,7 @@ settings only through `settings-gui/core/`, so both windows save the same values
   `AdwPreferencesGroup`s with `AdwSwitchRow`, `AdwComboRow`, `AdwEntryRow` and `AdwSpinRow`. A
   hint is the row's subtitle. No CSS beyond the brand marks and the accent colour.
 - **The same four brand marks.** The icon and wordmark at the top of the sidebar; typed text in
-  Xanh Mono through a `.typed` class; the typing mode as linked toggle buttons, the checked one
+  a larger size through a `.typed` class; the typing mode as linked toggle buttons, the checked one
   filled enamel with `on-enamel` text (`enamel-dark` in dark mode). libadwaita 1.5 has no
   `AdwToggleGroup`.
 - **Changes save at once.** Each change shows an `AdwToast` "Đã lưu “<setting>”." with Hoàn tác,

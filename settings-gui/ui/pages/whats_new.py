@@ -80,7 +80,7 @@ class WhatsNewPage(QWidget):
         if feature["example"]:
             example = QLabel(feature["example"])
             example.setObjectName("TypingExample")
-            example.setFont(brand.typed_font(16))
+            example.setFont(brand.sized_font(16))
             card.content_layout.addWidget(example)
         buttons = QHBoxLayout()
         buttons.addStretch()

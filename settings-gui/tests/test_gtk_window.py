@@ -179,6 +179,9 @@ class GtkWindowTest(unittest.TestCase):
         self.assertIn("@define-color accent_bg_color #1c6b5f", brand.css(False, 5))
         self.assertIn("--accent-bg-color: #247b6c", brand.css(True, 6))
 
+    def test_the_marks_keep_the_system_font(self):
+        self.assertNotIn("font-family", brand.css(False, 6))
+
     def test_the_accent_beats_the_users_gtk_css(self):
         # Desktops such as Plasma write their accent to ~/.config/gtk-4.0/gtk.css.
         theme = Gtk.CssProvider()

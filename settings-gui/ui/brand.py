@@ -1,14 +1,12 @@
 # SPDX-FileCopyrightText: 2026 Ngó Sen contributors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The few marks taken from the Ngó Sen website: enamel green and the Xanh Mono typeface."""
+"""The Ngó Sen marks for the Qt window: enamel as the accent."""
 
-from core.brand import ENAMEL, FONT_FILE, LOGO, ON_ENAMEL  # noqa: F401
+from core.brand import ENAMEL, LOGO, ON_ENAMEL  # noqa: F401
 from core.catalog import TRAY_PANEL
 from qtpy.QtCore import QEvent, QObject, QStandardPaths, Qt
-from qtpy.QtGui import QColor, QFont, QFontDatabase, QIcon, QPainter, QPalette, QPixmap
-
-TYPED_FAMILY = "Xanh Mono"
+from qtpy.QtGui import QColor, QFont, QIcon, QPainter, QPalette, QPixmap
 
 # (light, dark) pairs; dark is picked from the window background, not the desktop name.
 SAVED_FILL = ("#e1efe9", "#183a33")
@@ -17,8 +15,6 @@ ERROR_FILL = ("#f8e3df", "#3d1d18")
 ERROR_BORDER = ("#c2301c", "#d0533f")
 # A neutral light or dark desktop panel, behind the tray icon preview.
 PANEL = TRAY_PANEL
-
-_font_loaded = False
 
 
 def is_dark_palette(palette):
@@ -104,22 +100,9 @@ def follow_theme(widget, apply, source=None):
     return widget
 
 
-def typed_font(pixel_size):
-    """Xanh Mono for text that shows typing; the system monospace font if it is missing."""
-    global _font_loaded
-    if not _font_loaded:
-        QFontDatabase.addApplicationFont(FONT_FILE)
-        _font_loaded = True
-    font = QFont(TYPED_FAMILY)
-    font.setStyleHint(QFont.TypeWriter)
+def sized_font(pixel_size):
+    font = QFont()
     font.setPixelSize(pixel_size)
-    return font
-
-
-def wordmark_font(pixel_size):
-    # A monospace space is a full cell wide; the logo sets the two words closer.
-    font = typed_font(pixel_size)
-    font.setWordSpacing(-pixel_size * 0.27)
     return font
 
 

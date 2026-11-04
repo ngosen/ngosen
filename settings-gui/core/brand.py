@@ -3,11 +3,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The marks and links both windows share."""
 
-import os
-
-FONT_FILE = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "fonts", "XanhMono-Regular.ttf"
-)
 APP_ID = "io.github.ngosen.NgoSen.Settings"
 # The icon is installed under the app id, as desktop files expect.
 LOGO = APP_ID

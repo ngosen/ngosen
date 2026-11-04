@@ -27,7 +27,7 @@ Bản Qt trên KDE Plasma:
   thành `tiếng việt`. Tab hoặc Esc trả lại chữ đã gõ. Nếu đoạn có chữ không đổi được như `abc`, Ngó Sen
   chỉ hiện gợi ý; bấm Enter để nhận. Cứu chữ không ghi nhớ gì trong ô mật khẩu.
 - Cứu dấu: bôi đen chữ rồi gõ phím dấu để thêm, đổi hoặc bỏ dấu thanh, như `nhanh` + `s` → `nhánh`.
-  Dùng được ở app cho bộ gõ đọc chữ quanh con trỏ, trừ Firefox bản snap (xem Lỗi thường gặp). Tab hoặc Esc
+  Dùng được ở app cho bộ gõ đọc chữ quanh con trỏ. Tab hoặc Esc
   trả lại phím đã gõ.
 - Phím chuyển Anh/Việt riêng: cài mới dùng Ctrl+Shift như UniKey; đã cài từ trước giữ Ctrl+Space.
   Khi ở tiếng Anh, gõ như không có bộ gõ. Mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất; app chưa
@@ -196,7 +196,7 @@ i18n.inputMethod = {
 };
 ```
 
-CI build gói, chạy test và nạp vào fcitx5 trên màn hình X ảo; chưa ai test trên máy NixOS thật.
+CI build gói, chạy test và nạp vào fcitx5 trên màn hình X ảo.
 Gặp lỗi thì mở issue. Muốn build từ bản clone trên máy, xem mục NixOS trong [TU-DUNG.md](TU-DUNG.md#nixos).
 
 ## Lỗi thường gặp
@@ -240,17 +240,6 @@ sed -i 's|^Exec=/snap/bin/code|Exec=env GTK_IM_MODULE=xim XMODIFIERS=@im=fcitx /
 
 Tắt hẳn VS Code rồi mở lại từ menu. Qua XIM, khoảng một câu trong mười có một chữ sai dấu.
 Muốn bỏ cách này thì xoá file `~/.local/share/applications/code_code.desktop`.
-
-### Ubuntu: Cứu dấu không chạy trong Firefox bản snap
-
-Firefox cài sẵn trên Ubuntu là bản snap. Bôi đen `nhanh` rồi gõ `s` trong đó ra `s`, không ra `nhánh`. Bản
-snap nối với bộ gõ qua module GTK của fcitx4. Module này không báo chữ nào đang được bôi đen, và chỉ báo chữ
-trong ô khi người dùng bấm phím tiếp theo, nên Ngó Sen không biết phím dấu vừa thay chữ nào. Gõ chữ bình thường
-không bị ảnh hưởng.
-
-Chưa có cách sửa từ phía Ngó Sen. Muốn dùng Cứu dấu trong Firefox thì cài Firefox từ
-[kho APT của Mozilla](https://support.mozilla.org/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions);
-bản đó nối với bộ gõ qua module của fcitx5 như các app GTK khác.
 
 Gặp lỗi khác thì báo ở [Issues](https://github.com/ngosen/ngosen/issues) trên GitHub. Không có tài khoản
 GitHub thì nhắn trang [Facebook](https://www.facebook.com/profile.php?id=61595753582618). Trong cửa sổ cài đặt,
@@ -317,8 +306,7 @@ kể cả khi chỉ lấy ý tưởng, thì ghi nguồn kèm link tới repo nà
 ## English
 
 Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: an AI coding
-agent writes the code, then the maintainer measures and uses it daily. It is licensed under GPL-3.0-or-later
-and published as is, with no promise of support.
+agent writes the code, then the maintainer measures and uses it daily. It is licensed under GPL-3.0-or-later.
 
 Since 1.0, Ngó Sen has two typing modes, Gõ Sen (for fast typing, browsers and Electron apps) and Preedit,
 and uses the Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) by

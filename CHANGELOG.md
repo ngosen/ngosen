@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Tài liệu
 
-- README bỏ ba ghi chú: ngoại lệ Firefox snap, chưa test NixOS và không cam kết hỗ trợ ở phần tiếng Anh (#549).
+- README bỏ ghi chú và mục lỗi về Firefox snap, ghi chú chưa test NixOS và câu không cam kết hỗ trợ ở phần tiếng Anh (#549).
 
 ### Sửa
 

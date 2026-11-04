@@ -241,17 +241,6 @@ sed -i 's|^Exec=/snap/bin/code|Exec=env GTK_IM_MODULE=xim XMODIFIERS=@im=fcitx /
 Tắt hẳn VS Code rồi mở lại từ menu. Qua XIM, khoảng một câu trong mười có một chữ sai dấu.
 Muốn bỏ cách này thì xoá file `~/.local/share/applications/code_code.desktop`.
 
-### Ubuntu: Cứu dấu không chạy trong Firefox bản snap
-
-Firefox cài sẵn trên Ubuntu là bản snap. Bôi đen `nhanh` rồi gõ `s` trong đó ra `s`, không ra `nhánh`. Bản
-snap nối với bộ gõ qua module GTK của fcitx4. Module này không báo chữ nào đang được bôi đen, và chỉ báo chữ
-trong ô khi người dùng bấm phím tiếp theo, nên Ngó Sen không biết phím dấu vừa thay chữ nào. Gõ chữ bình thường
-không bị ảnh hưởng.
-
-Chưa có cách sửa từ phía Ngó Sen. Muốn dùng Cứu dấu trong Firefox thì cài Firefox từ
-[kho APT của Mozilla](https://support.mozilla.org/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions);
-bản đó nối với bộ gõ qua module của fcitx5 như các app GTK khác.
-
 Gặp lỗi khác thì báo ở [Issues](https://github.com/ngosen/ngosen/issues) trên GitHub. Không có tài khoản
 GitHub thì nhắn trang [Facebook](https://www.facebook.com/profile.php?id=61595753582618). Trong cửa sổ cài đặt,
 vào trang “Giới thiệu”, bấm “Kiểm tra máy tôi…” rồi “Nhắn qua Facebook…” để chép sẵn thông tin máy, dán vào tin

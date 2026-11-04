@@ -27,8 +27,11 @@ Bản Qt trên KDE Plasma:
   thành `tiếng việt`. Tab hoặc Esc trả lại chữ đã gõ. Nếu đoạn có chữ không đổi được như `abc`, Ngó Sen
   chỉ hiện gợi ý; bấm Enter để nhận. Cứu chữ không ghi nhớ gì trong ô mật khẩu.
 - Cứu dấu: bôi đen chữ rồi gõ phím dấu để thêm, đổi hoặc bỏ dấu thanh, như `nhanh` + `s` → `nhánh`.
-  Dùng được ở app cho bộ gõ đọc chữ quanh con trỏ. Tab hoặc Esc
-  trả lại phím đã gõ.
+  Dùng được ở app cho bộ gõ đọc surrounding text. Chromium, Vivaldi, Cốc Cốc và WPS trên X11
+  cũng dùng được qua chữ đang bôi đen. Tab hoặc Esc trả lại phím đã gõ. OnlyOffice chưa dùng
+  được vì app không báo surrounding text hay chữ đang bôi đen cho bộ gõ. Đã test OnlyOffice
+  10.0.0 Document Editor trên X11. Gõ phím dấu sẽ đè lên chữ đang bôi đen như gõ thường.
+  Ctrl+Z lấy lại chữ.
 - Phím chuyển Anh/Việt riêng: cài mới dùng Ctrl+Shift như UniKey; đã cài từ trước giữ Ctrl+Space.
   Khi ở tiếng Anh, gõ như không có bộ gõ. Mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất; app chưa
   bấm lần nào theo lần bấm gần nhất.

@@ -98,7 +98,7 @@ detect_distribution() {
     # Fedora remixes (Ultramarine, Nobara) have an ID of their own but keep Fedora's release number.
     if [ "$id" = fedora ] || [[ " $like " == *" fedora "* ]]; then
         case "$version" in
-            43 | 44) ;;
+            43 | 44 | 45) ;;
             *) unsupported "${id} ${version:-không rõ phiên bản}" ;;
         esac
         manager=dnf
@@ -206,7 +206,7 @@ find_package() {
         die "không tải được danh sách gói từ $RELEASE_URL"
     line=$(printf '%s\n' "$sums" | grep -E "^[0-9a-f]{64}  ${pattern}\$" || true)
     count=$(printf '%s\n' "$line" | grep -c . || true)
-    [ "$count" -eq 1 ] || die "bản phát hành mới nhất không có đúng một gói cho máy này (tìm thấy $count)"
+    [ "$count" -eq 1 ] || die "bản phát hành mới nhất không có đúng một gói cho máy này (tìm thấy $count). Cài từ mã theo hướng dẫn: $SOURCE_GUIDE"
     printf '%s %s\n' "${line%% *}" "${line##* }"
 }
 

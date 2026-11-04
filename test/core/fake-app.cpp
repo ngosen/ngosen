@@ -300,6 +300,12 @@ namespace ngosen::test {
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
         ++sent_.surroundingDeletes;
         ++deletions_;
+        if (quirks_.oldTextAfterDeleteMs > 0) {
+            oldText_        = text_;
+            oldCursor_      = cursor_;
+            oldTextUntilUs_ = monotonicUs() + static_cast<uint64_t>(quirks_.oldTextAfterDeleteMs) * 1000;
+            later(quirks_.oldTextAfterDeleteMs, [this] { changed(); });
+        }
         if (quirks_.ignoresSurroundingDel)
             goSilentAfterDelete();
         // A module whose copy of the text is empty finds every deletion out of range.
@@ -492,7 +498,11 @@ namespace ngosen::test {
             return;
         if (field_.surroundingText && quirks_.reports)
             later(quirks_.reportDelayMs, [this, text = text_, cursor = cursor_, anchor = anchor_] {
-                if (quirks_.reportsTextAtChange) {
+                if (monotonicUs() < oldTextUntilUs_) {
+                    reportedText_   = oldText_;
+                    reportedCursor_ = oldCursor_;
+                    reportedAnchor_ = oldCursor_;
+                } else if (quirks_.reportsTextAtChange) {
                     reportedText_   = text;
                     reportedCursor_ = cursor;
                     reportedAnchor_ = anchor;

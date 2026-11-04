@@ -2289,6 +2289,46 @@ namespace {
         check(run.text == "việt nam ", "copy behind by a key: the replacement waits for the copy to catch up", run.text);
     }
 
+    // The copy can still end at the word before the keys just replayed, and a deletion counted on it
+    // leaves part of the word in place.
+    void testCopyBehindReplayedKey() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks firefox{
+            .reportDelayMs = 3, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .keepsLastEditPerTurn = true, .turnMs = 3};
+        const auto keys = keysOf("bef owr vieetj nam ");
+        for (const int delay : {60, 80, 100, 120}) {
+            firefox.oldTextAfterDeleteMs = delay;
+            for (int gap = 5; gap <= 80; gap += 5) {
+                // Slow words first, so the app counts as one that reports its edits.
+                std::vector<int> gaps(keys.size(), 400);
+                gaps[11] = 5;   // the second e and t: t waits behind the edit and is replayed
+                gaps[12] = gap; // t and j
+                FakeResources resources;
+                const auto    run = ngosen::test::typeInAppTraced(resources, field, firefox, keys, gaps);
+                check(run.text == "bè ở việt nam ", "copy behind a replayed key, delay " + std::to_string(delay) + ", gap " + std::to_string(gap), run.text);
+            }
+        }
+    }
+
+    // A report request sent right after a replayed key would replace that key's commit while the turn
+    // is open, and the word loses the letter.
+    void testReportRequestKeepsReplayedKey() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks shell{
+            .reportDelayMs = 5, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .keepsLastEditPerTurn = true, .turnMs = 15};
+        const auto keys = keysOf("vieetj nam ");
+        for (int gap = 10; gap <= 100; gap += 5) {
+            std::vector<int> gaps(keys.size(), 120);
+            gaps[3] = 5;   // the second e and t: t waits behind the edit and is replayed
+            gaps[4] = gap; // t and j
+            FakeResources resources;
+            const auto    run = ngosen::test::typeInAppTraced(resources, field, shell, keys, gaps);
+            check(run.text == "việt nam ", "a report request keeps a replayed key, gap " + std::to_string(gap), run.text);
+        }
+    }
+
     // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first
     // replacement; sent at once, the app would keep only the second.
     void testReplacementsInOneTurn() {
@@ -2607,6 +2647,8 @@ int main() {
     testReportRequestKeepsNextEdit();
     testAnsweringAppGetsPlainCount();
     testCopyBehindByAKey();
+    testCopyBehindReplayedKey();
+    testReportRequestKeepsReplayedKey();
     testLateCopyKeepsSurroundingPath();
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();

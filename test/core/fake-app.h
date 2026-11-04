@@ -73,8 +73,9 @@ namespace ngosen::test {
         int  turnMs               = 0; // how long such a turn stays open
         // Its cursor stays past the real one after a deletion and a commit in one turn, as Firefox's does,
         // until a typed key corrects it.
-        bool        cursorStaysPastEdit = false;
-        std::string textAfterCursor; // text the field starts with, after the cursor
+        bool        cursorStaysPastEdit  = false;
+        int         oldTextAfterDeleteMs = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
+        std::string textAfterCursor;          // text the field starts with, after the cursor
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -216,7 +217,10 @@ namespace ngosen::test {
         std::u32string                      previousText_;
         size_t                              previousCursor_ = 0;
         std::u32string                      reportedText_;
-        size_t                              reportedCursor_    = 0;
+        size_t                              reportedCursor_ = 0;
+        std::u32string                      oldText_;
+        size_t                              oldCursor_         = 0;
+        uint64_t                            oldTextUntilUs_    = 0;
         size_t                              reportedAnchor_    = 0;
         bool                                silentAfterDelete_ = false;
         int                                 keysSinceDelete_   = 0;

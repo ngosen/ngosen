@@ -384,6 +384,7 @@ namespace ngosen {
         // of the text (mutter) waits until that copy holds what the deletion needs.
         bool                           waitsForKeyReport() const;
         bool                           copyGivesWrongDeletion() const;
+        bool                           reportsItsEdits() const;
         void                           startReportRequestTimer();
         void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);
         void                           finishKeyReportWait(bool sameField, bool fromTimer);

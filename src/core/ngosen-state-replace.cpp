@@ -751,12 +751,18 @@ namespace ngosen {
         if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
             return false;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        // A copy that ends at the earlier word is about to catch up in an app that reports, and a deletion
+        // counted on it would leave part of the word in place.
         if (deletesOnlyThroughSurrounding())
-            return deletion.wrongBytes || deletion.behind;
+            return deletion.wrongBytes || deletion.behind || (deletion.match == SurroundingDeletion::Match::OldTail && reportsItsEdits());
         // Backspaces are there to fall back on, and a field that leaves checks unanswered would only
         // make every replacement late.
         return !ngosen::reportsReplacementsWithLaterKey(host_->field()) && surrAnsweredUnasked_ >= surrMissed_ && surrSeenTextSinceFocus_ && !backspaceInWord_ &&
             (unreportedCommitLength_ > 0 || deletion.match == SurroundingDeletion::Match::None);
+    }
+
+    bool TypingState::reportsItsEdits() const {
+        return surrSeenEmptySinceFocus_ || (surrAnsweredUnasked_ >= MinAnswersForPlainCount && surrAnsweredUnasked_ > surrMissed_);
     }
 
     int TypingState::surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const {
@@ -766,8 +772,7 @@ namespace ngosen {
         // An app that reports its edits unasked turns the bytes back into characters on the same old
         // copy, so the count it needs is the plain one. Qt applies the bytes to its real text, answers rarely
         // and reports no copy until the field has text.
-        const bool reportsEdits = surrSeenEmptySinceFocus_ || (surrAnsweredUnasked_ >= MinAnswersForPlainCount && surrAnsweredUnasked_ > surrMissed_);
-        if (deletion.match == SurroundingDeletion::Match::OldTail && reportsEdits) {
+        if (deletion.match == SurroundingDeletion::Match::OldTail && reportsItsEdits()) {
             NGOSEN_INFO("Surrounding copy shows the earlier word in an app that reports: delete " + std::to_string(deletedChars_));
             return deletedChars_;
         }
@@ -1008,6 +1013,9 @@ namespace ngosen {
 
     void TypingState::commitReplayed(std::string& out) {
         if (!out.empty()) {
+            // A report request sent while this commit's turn is open would replace it.
+            reportSinceEdit_ = false;
+            editSentAtUs_    = monotonicUs();
             commit(out);
             NGOSEN_INFO("Commit: " + logged(out));
             out.clear();

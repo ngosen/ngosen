@@ -197,7 +197,7 @@ def _app_name_findings(facts):
     title = _("Optional: each app can keep its own typing mode. Typing works without it.")
     # GNOME reads an extension's files only at login, so turning it on now cannot work yet.
     if facts.forward_keys_state in ("", "OUT OF DATE", "ACTIVE"):
-        fix = _("Log out and back in. If this stays, install Ngó Sen with install.sh.")
+        fix = _("Log out and back in. If this stays, update Ngó Sen.")
         return [Finding(TIP, title, fix)]
     fix = _("Turn on the extension: gnome-extensions enable {}, then log out and back in.").format(
         FORWARD_KEYS
@@ -215,9 +215,7 @@ def _forward_keys_findings(facts):
         return [Finding(OK, title)] + names
     title = _("GNOME {} drops the keys Ngó Sen sends to apps").format(facts.gnome_shell_version)
     if not facts.forward_keys_state:
-        fix = _(
-            "Install Ngó Sen with install.sh, which adds the fix for this GNOME version, then log out and back in."
-        )
+        fix = _("Log out and back in. If this stays, update Ngó Sen or update to GNOME 50.4.")
         return [Finding(WARN, title, fix)]
     fix = _(
         "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
@@ -233,9 +231,9 @@ def _input_panel_findings(facts):
     title = _("Menu and hints do not show in GNOME's search box")
     # Only this extension draws fcitx5's popups inside GNOME Shell.
     if not state:
-        fix = _(
-            "Run install.sh again, or install Input Method Panel from {}, then log out and back in."
-        ).format(INPUT_PANEL_PAGE)
+        fix = _("Install Input Method Panel from {}, then log out and back in.").format(
+            INPUT_PANEL_PAGE
+        )
         return [Finding(WARN, title, fix, INSTALL_INPUT_PANEL, f"xdg-open {INPUT_PANEL_PAGE}")]
     if state in ("ERROR", "OUT OF DATE"):
         fix = _("The installed Input Method Panel does not run; update it from {}.").format(

@@ -1174,7 +1174,7 @@ msgid "Menu and hints show in GNOME's search box"
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Run install.sh again, or install Input Method Panel from {}, then log out and back in."
+msgid "Install Input Method Panel from {}, then log out and back in."
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1194,7 +1194,7 @@ msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out 
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Install Ngó Sen with install.sh, which adds the fix for this GNOME version, then log out and back in."
+msgid "Log out and back in. If this stays, update Ngó Sen or update to GNOME 50.4."
 msgstr ""
 
 #: settings-gui/core/system_check.py

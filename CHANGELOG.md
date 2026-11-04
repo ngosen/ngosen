@@ -21,6 +21,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thay đổi
 
+- Trang Kiểm tra máy không còn yêu cầu chạy install.sh, vì lệnh đó tải package GitHub đè lên package từ kho distro, và giờ nói thẳng việc cần làm (#551).
 - Chữ “Ngó Sen” cạnh logo và chữ gõ mẫu trong cài đặt Qt/GTK dùng font hệ thống thay cho Xanh Mono trên mọi distro (#548).
 - Cửa sổ cài đặt: trang Gõ chữ chia lại nhóm theo công dụng, giữ nguyên cài đặt đã lưu (#519).
 - Cửa sổ cài đặt: bản Qt và GTK làm mờ nhưng giữ giá trị các ô vô tác dụng, tìm kiếm chuyển tới ô bật chúng, còn bảng gõ tắt vẫn sửa được khi tắt Bật gõ tắt (#520).

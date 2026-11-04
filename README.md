@@ -80,6 +80,11 @@ Lệnh cài thêm Ngó Sen vào danh sách bộ gõ và thiết lập theo deskt
 - KDE Plasma (Wayland): chọn fcitx5 ở System Settings → Virtual Keyboard để app Qt như Kate, Dolphin
   cũng gõ được.
 - Xfce, Cinnamon, MATE (X11, Debian và Ubuntu): dùng im-config đặt fcitx5 làm bộ gõ.
+- Sway, Hyprland: chạy lệnh cài một dòng từ terminal trong phiên desktop để thêm Ngó Sen vào
+  danh sách bộ gõ và bật fcitx5. Không cần đăng xuất, chỉ cần bấm phím chuyển là gõ được ngay.
+  Lệnh cài không sửa file config của desktop. Để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng
+  lệnh được in ra. Nếu Sway chưa có config riêng, hãy chạy thêm lệnh chép config của máy được in
+  trước đó.
 
 Cài xong, đăng xuất rồi đăng nhập lại; nhấn rồi thả Ctrl+Shift như UniKey để chuyển giữa tiếng Anh
 và tiếng Việt, biểu tượng khay hiện chữ V khi đang gõ tiếng Việt. Nếu đã cài Ngó Sen từ trước, bạn vẫn
@@ -275,6 +280,8 @@ curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bas
   gỡ hẳn bằng `sudo apt remove fcitx5`.
 - KDE: giữ fcitx5 làm bàn phím ảo vì có thể đang dùng cho bộ gõ khác. Muốn bỏ thì chọn None ở
   System Settings → Virtual Keyboard.
+- Sway, Hyprland: khi gỡ bằng `--uninstall`, bỏ dòng đã dán, rồi đăng xuất và đăng nhập
+  lại.
 
 Gỡ bằng tay:
 

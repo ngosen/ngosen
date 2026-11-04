@@ -2,7 +2,7 @@
 # Runs install.sh in a throwaway container: install, uninstall, then a reinstall over an fcitx5
 # that is running without the addon. Checks packages and the user's files, not typing.
 #
-#   test/install-smoke.sh [--no-recommends] x11|gnome|kde <release-dir>
+#   test/install-smoke.sh [--no-recommends] x11|gnome|kde|sway|hyprland <release-dir>
 #
 # Run as root in a fresh Debian, Ubuntu or Fedora container; <release-dir> holds the packages and
 # SHA256SUMS laid out as in a release. It changes the system, so never run it on a real machine.
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 [--no-recommends] x11|gnome|kde <release-dir>" >&2
+    echo "usage: $0 [--no-recommends] x11|gnome|kde|sway|hyprland <release-dir>" >&2
     exit 2
 }
 
@@ -25,7 +25,7 @@ fi
 session=$1
 release_dir=$(realpath "$2")
 case "$session" in
-    x11 | gnome | kde) ;;
+    x11 | gnome | kde | sway | hyprland) ;;
     *) usage ;;
 esac
 [ "$(id -u)" -eq 0 ] || {
@@ -40,6 +40,21 @@ work=/srv/install-smoke
 failures=0
 bus=
 stub_path=
+compositor_env=()
+desktop_config=
+autostart_line=
+case "$session" in
+    sway)
+        compositor_env=(WAYLAND_DISPLAY=wayland-1 SWAYSOCK=/tmp/sway-ipc.sock)
+        desktop_config=$home/.config/sway/config
+        autostart_line='exec fcitx5 -d'
+        ;;
+    hyprland)
+        compositor_env=(WAYLAND_DISPLAY=wayland-1 HYPRLAND_INSTANCE_SIGNATURE=test)
+        desktop_config=$home/.config/hypr/hyprland.lua
+        autostart_line='hl.on("hyprland.start", function() hl.exec_cmd("fcitx5 -d") end)'
+        ;;
+esac
 
 check() {
     local name=$1
@@ -96,8 +111,10 @@ as_user() {
     case "$session" in
         gnome) desktop=GNOME type=wayland ;;
         kde) desktop=KDE type=wayland ;;
+        sway) desktop=sway:wlroots type=wayland ;;
+        hyprland) desktop=Hyprland type=wayland ;;
     esac
-    sudo -u "$user" -H env XDG_SESSION_TYPE="$type" XDG_CURRENT_DESKTOP="$desktop" \
+    sudo -u "$user" -H env XDG_SESSION_TYPE="$type" XDG_CURRENT_DESKTOP="$desktop" "${compositor_env[@]}" \
         NGOSEN_RELEASE_URL="file://$work/release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} \
         ${stub_path:+PATH="$stub_path"} "$@"
 }
@@ -163,6 +180,11 @@ check_session_files() {
         check "KWin starts fcitx5 as its input method" has_line "$kwinrc" "$kwin_im"
         check "XWayland apps find fcitx5 through XIM" has_line "$im_env" 'XMODIFIERS=@im=fcitx'
         check "environment.d leaves the GTK module unset" lacks_line "$im_env" 'GTK_IM_MODULE=fcitx'
+    elif [ -n "$desktop_config" ]; then
+        check "fcitx5 is running after install" fcitx5_running
+        check "the final message names the toggle key" install_names Ctrl+Shift
+        check "the final message has the autostart line" has_autostart_line
+        check "the desktop config is untouched" desktop_config_untouched
     else
         check "environment.d selects fcitx" has_line "$im_env" 'GTK_IM_MODULE=fcitx'
         check "fcitx5 starts at login" test -e "$autostart"
@@ -182,6 +204,9 @@ check_uninstalled_state() {
         # fcitx5 may serve other input methods, so KDE keeps it.
         check "KWin still starts fcitx5" has_line "$kwinrc" "$kwin_im"
         check "XWayland apps still find fcitx5" has_line "$im_env" 'XMODIFIERS=@im=fcitx'
+    elif [ -n "$desktop_config" ]; then
+        check "uninstall names the autostart line" grep -qF 'fcitx5 -d' "$install_log"
+        check "the desktop config is still untouched" desktop_config_untouched
     else
         check "environment.d file is removed" test ! -e "$im_env"
         check "autostart entry is removed" test ! -e "$autostart"
@@ -343,6 +368,11 @@ install_shown() {
 install_names() { grep -q "Bấm $1 " "$install_log"; }
 explains_gnome_setup() { grep -qF "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus" "$install_log"; }
 lacks_gnome_explanation() { ! explains_gnome_setup; }
+has_autostart_line() { grep -qF -- "$autostart_line" "$install_log"; }
+lacks_autostart_line() { ! has_autostart_line; }
+says_typing_works() { grep -qF "gõ được ngay" "$install_log"; }
+leaves_steps_to_the_user() { grep -qF "Việc còn lại" "$install_log"; }
+desktop_config_untouched() { [ "$(sha256sum "$desktop_config")" = "$desktop_config_hash" ]; }
 lists_undone_under_a_heading() { grep -A1 -F "Đã trả lại những gì lệnh cài đã đặt:" "$install_log" | grep -q '^  - '; }
 fcitx5_stopped() { ! fcitx5_running; }
 
@@ -577,6 +607,143 @@ STUB
     fake_kwin=$dir/kwin_wayland
 }
 
+# The session bus and the config a logged-in compositor session already has.
+prepare_compositor_session() {
+    bus=$(sudo -u "$user" dbus-daemon --session --fork --print-address=1 | head -n 1)
+    as_user mkdir -p "$(dirname "$desktop_config")"
+    printf '# seeded by install-smoke\n' | as_user tee "$desktop_config" >/dev/null
+    desktop_config_hash=$(sha256sum "$desktop_config")
+}
+
+# Arguments go to env for the installer. A clean slate each time, so nothing leaks between cases.
+install_fresh() {
+    stop_fcitx5
+    as_user rm -f "$profile"
+    as_user env "$@" bash "$work/install.sh" --yes >"$install_log" 2>&1
+}
+
+install_no_setup() { installer --yes --no-setup >"$install_log" 2>&1; }
+
+# Other Wayland desktops and installs that opt out must not start anything.
+expect_no_setup() {
+    check "$1: it leaves the steps to the user" leaves_steps_to_the_user
+    check "$1: it starts no fcitx5" fcitx5_stopped
+    check "$1: it adds nothing to the profile" lacks_line "$profile" 'Name=ngosen'
+}
+
+check_sway_config_messages() {
+    local copy
+    as_user rm -f "$desktop_config"
+    mkdir -p /etc/sway
+    printf 'bindsym Mod4+Return exec foot\n' >/etc/sway/config
+    check "install without a Sway config succeeds" install_fresh
+    copy=$(sed -n 's/^  \(mkdir -p .*\)$/\1/p' "$install_log")
+    check "it prints a command to copy the system config" test -n "$copy"
+    check "that command works" as_user bash -c "$copy"
+    check "it keeps the system config's key bindings" has_line "$desktop_config" 'bindsym Mod4+Return exec foot'
+
+    as_user rm -f "$desktop_config"
+    rm -f /etc/sway/config
+    check "install with no Sway config at all succeeds" install_fresh
+    check "it prints no copy command" refuses grep -qF 'cp -n' "$install_log"
+    check "it still has the autostart line" has_autostart_line
+
+    as_user mkdir -p "$home/.i3"
+    printf '# i3\n' | as_user tee "$home/.i3/config" >/dev/null
+    check "install with only an i3 config succeeds" install_fresh
+    check "it points at the file Sway reads" grep -qF "$home/.i3/config" "$install_log"
+    as_user rm -rf "$home/.i3"
+}
+
+check_hyprland_config_messages() {
+    local conf_line='exec-once = fcitx5 -d' lua=$desktop_config conf=${desktop_config%.lua}.conf
+    as_user rm -f "$lua"
+    printf '# conf\n' | as_user tee "$conf" >/dev/null
+    check "install with only hyprland.conf succeeds" install_fresh
+    check "it prints the exec-once line" grep -qF "$conf_line" "$install_log"
+    check "it does not print the Lua line" lacks_autostart_line
+
+    as_user rm -f "$conf"
+    check "install with no Hyprland config succeeds" install_fresh
+    check "it prints both forms" grep -qF "$conf_line" "$install_log"
+    check "and the Lua one" has_autostart_line
+    check "it names no file to create" refuses grep -qF "$conf" "$install_log"
+}
+
+# Sway and Hyprland: what the final message says for each config, and when to stay out of the way.
+check_sway_hyprland_setup() {
+    local dead=$work/dead-fcitx5
+    bus=$(sudo -u "$user" dbus-daemon --session --fork --print-address=1 | head -n 1)
+    printf '# seeded by install-smoke\n' | as_user tee "$desktop_config" >/dev/null
+
+    check "install with a config succeeds" install_fresh
+    check "it says typing works" says_typing_works
+    check "a second run succeeds" install_logged
+    check "it still names the toggle key" install_names Ctrl+Shift
+    check "it still has the autostart line" has_autostart_line
+
+    local other=$home/other/${desktop_config#"$home"/.config/}
+    as_user mkdir -p "$(dirname "$other")"
+    as_user touch "$other"
+    check "install with another XDG_CONFIG_HOME succeeds" install_fresh XDG_CONFIG_HOME="$home/other"
+    check "it points at that directory" grep -qF "$other" "$install_log"
+    stop_fcitx5
+    as_user rm -rf "$home/other"
+
+    if [ "$session" = sway ]; then
+        check_sway_config_messages
+        check "install from a text console login succeeds" install_fresh XDG_SESSION_TYPE=tty XDG_CURRENT_DESKTOP=
+        check "it adds ngosen from a text console login" has_line "$profile" 'Name=ngosen'
+        check "it starts fcitx5 from a text console login" fcitx5_running
+    else
+        check_hyprland_config_messages
+    fi
+
+    check "install without WAYLAND_DISPLAY succeeds" install_fresh -u WAYLAND_DISPLAY
+    expect_no_setup "without WAYLAND_DISPLAY"
+    check "install on labwc succeeds" install_fresh -u SWAYSOCK -u HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP=labwc:wlroots
+    expect_no_setup "on labwc"
+    stop_fcitx5
+    as_user rm -f "$profile"
+    check "install with --no-setup succeeds" install_no_setup
+    expect_no_setup "with --no-setup"
+
+    printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[Groups/0/Items/1]\nName=unikey\nLayout=\n\n[GroupOrder]\n0=Default\n' |
+        as_user tee "$profile" >/dev/null
+    check "install next to another input method succeeds" install_logged
+    # Read before fcitx5 exits: without the unikey addon here it drops that entry as it saves.
+    check "it keeps the keyboard" has_line "$profile" 'Name=keyboard-us'
+    check "it keeps the other input method" has_line "$profile" 'Name=unikey'
+    check "it adds ngosen" has_line "$profile" 'Name=ngosen'
+    check "a keyboard default becomes ngosen" has_line "$profile" 'DefaultIM=ngosen'
+    stop_fcitx5
+    printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=unikey\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[Groups/0/Items/1]\nName=unikey\nLayout=\n\n[GroupOrder]\n0=Default\n' |
+        as_user tee "$profile" >/dev/null
+    check "install with another default input method succeeds" install_logged
+    check "it keeps that default" has_line "$profile" 'DefaultIM=unikey'
+    stop_fcitx5
+
+    # A daemon that dies a moment after fcitx5 -d has returned, so only waiting catches it.
+    mkdir -p "$dead"
+    cat >"$dead/fcitx5" <<'STUB'
+#!/bin/bash
+[ "${1:-}" = -d ] || exec /usr/bin/fcitx5 "$@"
+# The second command keeps bash from replacing this process, which carries the name fcitx5, with sleep.
+( sleep 0.2; : ) >/dev/null 2>&1 &
+STUB
+    chmod -R a+rX "$dead"
+    chmod a+x "$dead/fcitx5"
+    stub_path=$dead:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+    check "install with an fcitx5 that dies succeeds" install_fresh
+    check "it does not say typing works" refuses says_typing_works
+    stub_path=
+    stop_fcitx5
+
+    as_user rm -f "$desktop_config"
+    pkill -u "$user" dbus-daemon || :
+    bus=
+}
+
 # Prints the pid of the fcitx5 the fake KWin started, once it holds its bus name.
 start_fake_kwin() {
     local pid tries=40
@@ -631,6 +798,7 @@ check_restart_through_kwin() {
 
 main() {
     prepare_system
+    [ -z "$desktop_config" ] || prepare_compositor_session
 
     echo "== install"
     # A failed install leaves the session files half done, so only the packages say anything.
@@ -646,6 +814,8 @@ main() {
         check "a second install succeeds" install_logged
         check "an account already on fcitx5 gets no explanation" lacks_gnome_explanation
     fi
+    # The later parts expect to start fcitx5 themselves.
+    [ -z "$desktop_config" ] || stop_fcitx5
 
     echo "== uninstall"
     check "uninstall succeeds" uninstall_logged
@@ -675,6 +845,12 @@ main() {
     if [ "$session" != kde ]; then
         echo "== fcitx5 autostart hidden"
         check_autostart_mask_removed
+    fi
+
+    if [ -n "$desktop_config" ]; then
+        echo "== Sway and Hyprland setup"
+        stop_fcitx5
+        check_sway_hyprland_setup
     fi
 
     if [ "$session" = kde ]; then

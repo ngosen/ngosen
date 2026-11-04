@@ -356,6 +356,14 @@ wants_kde_setup() {
     command -v kwriteconfig6 >/dev/null 2>&1 && command -v kreadconfig6 >/dev/null 2>&1
 }
 
+# Each compositor sets its own variable. XDG_CURRENT_DESKTOP comes from the display manager, so it
+# is missing when Sway starts from a text console.
+wants_sway_hyprland_setup() {
+    [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ] || return 1
+    [ -n "${WAYLAND_DISPLAY:-}" ] || return 1
+    [ -n "${SWAYSOCK:-}" ] || [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]
+}
+
 config_home() {
     printf '%s' "${XDG_CONFIG_HOME:-$HOME/.config}"
 }
@@ -858,6 +866,81 @@ setup_kde_session() {
     report_session_changes
 }
 
+# Without an init in a container, or before it reaps one, a dead fcitx5 stays as a zombie.
+fcitx5_is_alive() {
+    ps -u "$(id -u)" -o stat=,comm= | awk '$2 == "fcitx5" && $1 !~ /^Z/ { found = 1 } END { exit !found }'
+}
+
+setup_sway_hyprland_session() {
+    say ""
+    configure_fcitx5
+    fcitx5_is_alive || fcitx5 -d >/dev/null 2>&1 || :
+    # fcitx5 -d returns before the daemon has had a chance to fail.
+    sleep 1
+    report_sway_hyprland_session
+}
+
+report_sway_hyprland_session() {
+    report_dropped_keyboard
+    if fcitx5_is_alive; then
+        say "Xong. fcitx5 đang chạy, gõ được ngay."
+    else
+        say "Đã cài xong nhưng fcitx5 chưa chạy được. Thử bật trong terminal của phiên này:  fcitx5 -d"
+    fi
+    say "Bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
+    say ""
+    if [ -n "${SWAYSOCK:-}" ]; then
+        report_sway_autostart
+    else
+        report_hyprland_autostart
+    fi
+}
+
+# In the order Sway looks for its config.
+report_sway_autostart() {
+    local dir config source
+    dir=$(config_home)
+    for config in "$HOME/.sway/config" "$dir/sway/config" "$HOME/.i3/config" "$dir/i3/config"; do
+        if [ -e "$config" ]; then
+            say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $config:"
+            say "  exec fcitx5 -d"
+            return
+        fi
+    done
+    for source in /etc/sway/config /etc/i3/config; do
+        if [ -e "$source" ]; then
+            # A new file with only this line would hide the system config and its key bindings.
+            say "Để fcitx5 tự chạy ở lần đăng nhập sau, chép cấu hình của máy trước:"
+            say "  mkdir -p \"$dir/sway\" && cp -n $source \"$dir/sway/config\""
+            say "rồi dán dòng này vào $dir/sway/config:"
+            say "  exec fcitx5 -d"
+            return
+        fi
+    done
+    say "Để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng này vào file cấu hình Sway đang dùng:"
+    say "  exec fcitx5 -d"
+}
+
+# hl.exec_cmd at the top level would run while the config loads, before the Wayland socket exists,
+# and again on every reload.
+report_hyprland_autostart() {
+    local dir lua_line='hl.on("hyprland.start", function() hl.exec_cmd("fcitx5 -d") end)' conf_line='exec-once = fcitx5 -d'
+    dir="$(config_home)/hypr"
+    if [ -e "$dir/hyprland.lua" ]; then
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $dir/hyprland.lua:"
+        say "  $lua_line"
+    elif [ -e "$dir/hyprland.conf" ]; then
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $dir/hyprland.conf:"
+        say "  $conf_line"
+    else
+        # Hyprland writes its own config when it finds none, so this one lives elsewhere and a new
+        # file here could hide it.
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, dán vào file cấu hình Hyprland đang dùng:"
+        say "  file .lua:   $lua_line"
+        say "  file .conf:  $conf_line"
+    fi
+}
+
 report_session_changes() {
     local change
     if [ "${#session_changes[@]}" -eq 0 ]; then
@@ -1031,6 +1114,8 @@ uninstall() {
         # fcitx5 may serve other input methods, so KDE keeps it.
         say "Xong. Đăng xuất rồi đăng nhập lại. fcitx5 vẫn là bộ gõ của KDE, gõ tiếng Anh như bàn phím."
         say "Bỏ fcitx5: System Settings → Virtual Keyboard (Bàn phím ảo) → None."
+    elif wants_sway_hyprland_setup; then
+        say "Xong. Bỏ dòng fcitx5 -d đã dán vào file cấu hình (nếu có), rồi đăng xuất và đăng nhập lại."
     else
         say "Xong. Khởi động lại fcitx5:  fcitx5 -rd"
     fi
@@ -1092,6 +1177,9 @@ main() {
         say "Sau đó fcitx5 được đặt làm bộ gõ của KDE cho tài khoản này."
     elif wants_x11_setup; then
         say "Sau đó fcitx5 được đặt làm bộ gõ cho tài khoản này."
+    elif wants_sway_hyprland_setup; then
+        say "Sau đó Ngó Sen được thêm vào danh sách bộ gõ của fcitx5 và fcitx5 được bật. Nếu danh sách chỉ có"
+        say "một bàn phím thì Ngó Sen thay bàn phím đó. File cấu hình của desktop được giữ nguyên."
     fi
     confirm "Tiếp tục?" || {
         say "Đã dừng, chưa cài gì."
@@ -1123,6 +1211,10 @@ main() {
     fi
     if wants_x11_setup; then
         setup_x11_session
+        return
+    fi
+    if wants_sway_hyprland_setup; then
+        setup_sway_hyprland_session
         return
     fi
 

@@ -132,7 +132,7 @@ int main() {
     engine.activate(entry, shellFocus);
     press(engine, entry, *shellField, FcitxKey_grave);
     const auto shellApp = shellField->inputPanel().auxDown().toString();
-    check(shellApp == "App: apps with no name", "a field GNOME Shell relays is shown as all unnamed apps", shellApp);
+    check(shellApp == "App: apps with no name (the Ngó Sen extension tells them apart)", "a field GNOME Shell relays points to the extension", shellApp);
     press(engine, entry, *shellField, FcitxKey_Escape);
     shellField->focusOut();
 

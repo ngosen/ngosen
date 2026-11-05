@@ -441,8 +441,8 @@ namespace {
         check(cut.find('\b') == std::string::npos, "dbus: a backspace typed before the commit arrived is not committed", cut);
     }
 
-    // A terminal behind GNOME Shell's IBus bridge reports no text, so each replacement waits on a timer,
-    // and a key let through after the commit still reached Zed ahead of it ("looxi" gave "liỗ").
+    // A field behind GNOME Shell's IBus bridge that reports no text waits on a timer after each
+    // replacement, and a key let through after the commit can reach the app ahead of it (#569).
     void testGnomeKeyDuringTimedWaitJoinsCommit() {
         ngosen::test::AppQuirks quirks;
         quirks.reportsEmptyText = true;
@@ -458,6 +458,33 @@ namespace {
         }
         const std::string text = ngosen::test::typeInApp(makeField("ibus", true), quirks, keys, gaps);
         check(text == "lỗi đi lỗi đi lỗi ", "GNOME ibus: a key typed during a timed wait lands after the replacement", text);
+    }
+
+    // Types `text` with `fastKey` arriving 2 ms after the previous key, inside the wait for the commit.
+    std::string typeWithHeldKey(FakeResources& resources, const std::string& text, size_t fastKey) {
+        ngosen::test::AppQuirks quirks;
+        quirks.reportsEmptyText = true;
+        quirks.commitLagMs      = 5;
+        std::vector<uint32_t> keys;
+        std::vector<int>      gaps;
+        for (size_t i = 0; i < text.size(); ++i) {
+            keys.push_back(text[i] == '\b' ? 0xff08U : static_cast<uint32_t>(text[i]));
+            gaps.push_back(i + 1 == fastKey ? 2 : 100);
+        }
+        return ngosen::test::typeInApp(resources, makeField("ibus", true), quirks, keys, gaps);
+    }
+
+    void testHeldSpaceCountsForDoubleSpace() {
+        FakeResources resources;
+        resources.mutableOptions().doubleSpaceToPeriod = true;
+        const std::string text                         = typeWithHeldKey(resources, "chaof  ", 5);
+        check(text == "chào. ", "ibus: a space held during a timed wait still counts for double space", text);
+    }
+
+    void testHeldSpaceReopensWord() {
+        FakeResources     resources;
+        const std::string text = typeWithHeldKey(resources, "vieetj \bs", 6);
+        check(text == "viết", "ibus: backspace after a held space reopens the word", text);
     }
 
     void testMacroKeepsSpace() {
@@ -2390,6 +2417,8 @@ int main() {
     testCommitAfterFieldRefocus();
     testKeyTypedBeforeCommitArrived();
     testGnomeKeyDuringTimedWaitJoinsCommit();
+    testHeldSpaceCountsForDoubleSpace();
+    testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();
     testMacroKeepsSpace();

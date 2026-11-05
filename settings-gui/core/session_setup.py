@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Reads and writes what a desktop session needs to start fcitx5, the way install.sh writes it.
 
-install.sh --uninstall removes these files only when they still hold exactly this text, so the
-contents here have to stay the same as in install.sh.
+On GNOME, install.sh --uninstall removes these files only when they still hold exactly this text,
+so the contents here have to stay the same as in install.sh.
 """
 
 import configparser
@@ -82,6 +82,14 @@ def xinputrc_runs_fcitx5(env):
     return re.search(r"^run_im fcitx5$", text, re.M) is not None
 
 
+def _im_config_choice(env):
+    """What the user picked in ~/.xinputrc, leaving out what only hands the pick back to im-config."""
+    choice = re.search(r"^run_im (\S+)$", _read(os.path.join(_home(env), ".xinputrc")) or "", re.M)
+    if choice and choice.group(1) not in ("REMOVE", "auto", "default"):
+        return choice.group(1)
+    return None
+
+
 def has_im_config():
     return shutil.which("im-config") is not None
 
@@ -115,9 +123,9 @@ def starts_at_login(env):
     # Only im-config reads ~/.xinputrc, and a choice made there beats its default.
     if not has_im_config():
         return False
-    choice = re.search(r"^run_im (\S+)$", _read(os.path.join(_home(env), ".xinputrc")) or "", re.M)
+    choice = _im_config_choice(env)
     if choice:
-        return choice.group(1) == "fcitx5"
+        return choice == "fcitx5"
     return _im_config_default_is_fcitx5()
 
 
@@ -181,6 +189,24 @@ def enable_autostart(env):
     return True, undo
 
 
+def changes_file(env):
+    state = env.get("XDG_STATE_HOME") or os.path.join(_home(env), ".local", "state")
+    return os.path.join(state, "ngosen", "install-changes")
+
+
+def _note_change(env, change):
+    # install.sh --uninstall takes back only the changes listed here.
+    path = changes_file(env)
+    if change in (_read(path) or "").splitlines():
+        return
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(change + "\n")
+    except OSError:
+        pass
+
+
 def _reload_user_environment():
     # The systemd user manager can outlive a logout and would keep the old variables.
     _succeeds(["systemctl", "--user", "daemon-reload"])
@@ -199,7 +225,7 @@ def set_environment(env):
     _reload_user_environment()
     undo_im_config = None
     # Debian's im-config otherwise picks IBus for X11 sessions and overrides these variables.
-    if env_text == GNOME_ENV and has_im_config() and not xinputrc_runs_fcitx5(env):
+    if env_text == GNOME_ENV and has_im_config() and _im_config_choice(env) is None:
         _done, undo_im_config = use_im_config(env)
 
     def undo():
@@ -219,6 +245,7 @@ def use_im_config(env):
         ["im-config", "-w", "fcitx5"]
     ):
         return False, None
+    _note_change(env, "im-config")
 
     def undo():
         if before is None:
@@ -234,7 +261,12 @@ def use_im_config(env):
 
 
 def set_kwin_input_method(previous):
-    """Returns (done, undo). KWin reads this at login; only an fcitx5 it starts serves Qt apps."""
+    """Returns (done, undo). KWin reads this at login; only an fcitx5 it starts serves Qt apps.
+
+    An input method the user chose stays theirs.
+    """
+    if previous or not os.path.exists(AUTOSTART_SOURCE):
+        return False, None
     key = ["kwriteconfig6", "--file", "kwinrc", "--group", "Wayland", "--key", "InputMethod"]
     if not _succeeds([*key, AUTOSTART_SOURCE]):
         return False, None

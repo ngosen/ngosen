@@ -92,6 +92,13 @@ class StartsAtLoginTest(SessionSetupCase):
         with mock.patch.object(session_setup.subprocess, "run", return_value=done):
             self.assertFalse(self.starts())
 
+    def test_non_choice_leaves_the_default_in_charge(self):
+        self.has_im_config.return_value = True
+        self.write(os.path.join(self.home, ".xinputrc"), "run_im REMOVE\n")
+        done = subprocess.CompletedProcess([], 0, stdout="active\nuser\nfcitx5\n")
+        with mock.patch.object(session_setup.subprocess, "run", return_value=done):
+            self.assertTrue(self.starts())
+
     def test_im_config_is_read_untranslated(self):
         self.has_im_config.return_value = True
         done = subprocess.CompletedProcess([], 0, stdout="")
@@ -224,15 +231,29 @@ class EnvironmentFixTest(SessionSetupCase):
         self.has_im_config.return_value = True
         self.env["XDG_CURRENT_DESKTOP"] = "GNOME"
         xinputrc = os.path.join(self.home, ".xinputrc")
-        self.write(xinputrc, "run_im ibus\n")
+        self.write(xinputrc, "# mine\n")
         _done, undo = session_setup.set_environment(self.env)
         self.ran.assert_any_call(["im-config", "-n", "fcitx5"])
         self.write(xinputrc, "run_im fcitx5\n")
         self.assertTrue(undo())
-        self.assertEqual(self.read(xinputrc), "run_im ibus\n")
+        self.assertEqual(self.read(xinputrc), "# mine\n")
+
+    def test_gnome_keeps_another_im_config_choice(self):
+        self.has_im_config.return_value = True
+        self.env["XDG_CURRENT_DESKTOP"] = "GNOME"
+        self.write(os.path.join(self.home, ".xinputrc"), "run_im ibus\n")
+        self.assertTrue(session_setup.set_environment(self.env)[0])
+        self.assertNotIn(mock.call(["im-config", "-n", "fcitx5"]), self.ran.call_args_list)
 
 
 class ImConfigFixTest(SessionSetupCase):
+    def test_fix_is_noted_for_uninstall(self):
+        with mock.patch.object(session_setup, "_succeeds", return_value=True):
+            session_setup.use_im_config(self.env)
+            session_setup.use_im_config(self.env)
+        noted = os.path.join(self.home, ".local", "state", "ngosen", "install-changes")
+        self.assertEqual(self.read(noted), "im-config\n")
+
     def test_uses_the_new_flag_when_the_old_one_fails(self):
         with mock.patch.object(session_setup, "_succeeds", side_effect=[False, True]) as ran:
             self.assertTrue(session_setup.use_im_config(self.env)[0])
@@ -251,13 +272,32 @@ class ImConfigFixTest(SessionSetupCase):
 
 
 class KwinFixTest(SessionSetupCase):
-    def test_writes_the_setting_and_undo_puts_the_old_one_back(self):
+    def setUp(self):
+        super().setUp()
+        launcher = os.path.join(self.home, "launcher.desktop")
+        self.write(launcher, ENTRY)
+        patcher = mock.patch.object(session_setup, "AUTOSTART_SOURCE", launcher)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_writes_the_setting_and_undo_empties_it_again(self):
         with mock.patch.object(session_setup, "_succeeds", return_value=True) as ran:
-            done, undo = session_setup.set_kwin_input_method("/old.desktop")
+            done, undo = session_setup.set_kwin_input_method("")
             self.assertTrue(done)
             self.assertEqual(ran.call_args.args[0][-1], session_setup.AUTOSTART_SOURCE)
             undo()
-            self.assertEqual(ran.call_args.args[0][-1], "/old.desktop")
+            self.assertEqual(ran.call_args.args[0][-1], "")
+
+    def test_keeps_another_input_method(self):
+        with mock.patch.object(session_setup, "_succeeds", return_value=True) as ran:
+            self.assertEqual(session_setup.set_kwin_input_method("/maliit.desktop"), (False, None))
+        ran.assert_not_called()
+
+    def test_no_launcher_is_a_failure(self):
+        os.remove(session_setup.AUTOSTART_SOURCE)
+        with mock.patch.object(session_setup, "_succeeds", return_value=True) as ran:
+            self.assertEqual(session_setup.set_kwin_input_method(""), (False, None))
+        ran.assert_not_called()
 
     def test_no_kwriteconfig_is_a_failure(self):
         with mock.patch.object(session_setup.subprocess, "run", side_effect=OSError):
@@ -275,6 +315,9 @@ class SameAsInstallerTest(SessionSetupCase):
 
     def test_gnome_variables(self):
         self.assertEqual(self.installer("im_environment_entry"), session_setup.GNOME_ENV)
+
+    def test_changes_file(self):
+        self.assertEqual(self.installer("changes_file"), session_setup.changes_file(os.environ))
 
     def test_autostart_mask(self):
         self.assertEqual(self.installer("fcitx5_autostart_mask"), session_setup.AUTOSTART_MASK)

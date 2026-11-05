@@ -403,6 +403,8 @@ namespace ngosen {
         bool                           copyWaitTimedOut_     = false; ///< keeps replayed keys from each waiting out a copy that never fits
         std::unique_ptr<ngosen::Timer> split_edit_timer_;
         bool                           split_edit_pending_ = false;
+        Surrounding                    split_edit_surrounding_;
+        std::string                    split_edit_retype_;
         std::string                    key_report_deleted_;
         std::string                    key_report_added_;
 

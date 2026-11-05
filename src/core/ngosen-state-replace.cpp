@@ -759,6 +759,10 @@ namespace ngosen {
         // counted on it would leave part of the word in place.
         if (deletesOnlyThroughSurrounding())
             return deletion.wrongBytes || deletion.behind || (deletion.match == SurroundingDeletion::Match::OldTail && reportsItsEdits());
+        // These go to backspaces whatever the copy shows, so waiting for it gains nothing.
+        const Field field = host_->field();
+        if (surroundingUntrusted() || fieldBounces_ > 0 || field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))
+            return false;
         // Backspaces are there to fall back on, and a field that leaves checks unanswered would only
         // make every replacement late.
         return !ngosen::reportsReplacementsWithLaterKey(host_->field()) && surrAnsweredUnasked_ >= surrMissed_ && surrSeenTextSinceFocus_ && !backspaceInWord_ &&
@@ -787,8 +791,10 @@ namespace ngosen {
     }
 
     constexpr uint64_t SplitEditWaitUs = 30000;
+    // As long as a focus bounce lasts; the deletion is out, so giving up loses the word's letters.
+    constexpr int SplitEditFocusRetries = 50;
 
-    void               TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
+    void          TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
         std::string retype;
         const int   count = surroundingDeletionCount(surrounding, retype);
         // Set first: a host may deliver the deletion's report from inside the call.
@@ -805,9 +811,17 @@ namespace ngosen {
         if (ngosen::keepsLastEditPerTurn(host_->field()) && !(retype + pending_commit_string_).empty()) {
             split_edit_pending_      = true;
             surr_wait_focus_retries_ = 0;
-            split_edit_timer_        = host_->startTimer(monotonicUs() + SplitEditWaitUs, 1000, [this, surrounding, retype](Timer& t) {
+            split_edit_surrounding_  = surrounding;
+            split_edit_retype_       = retype;
+            const uint64_t until     = monotonicUs() + SplitEditWaitUs;
+            // A replay from the timer can start the next split, so the timer is rearmed rather than replaced.
+            if (split_edit_timer_) {
+                split_edit_timer_->rearm(until);
+                return;
+            }
+            split_edit_timer_ = host_->startTimer(until, 1000, [this](Timer& t) {
                 if (!host_->hasFocus()) {
-                    if (++surr_wait_focus_retries_ <= 5) {
+                    if (++surr_wait_focus_retries_ <= SplitEditFocusRetries) {
                         t.rearm(monotonicUs() + 2000);
                         return true;
                     }
@@ -816,9 +830,11 @@ namespace ngosen {
                     is_deleting_.store(false);
                     return false;
                 }
-                split_edit_pending_ = false;
-                finishSurroundingEdit(surrounding, retype);
-                return false;
+                split_edit_pending_    = false;
+                const Surrounding copy = split_edit_surrounding_;
+                const std::string text = split_edit_retype_;
+                finishSurroundingEdit(copy, text);
+                return split_edit_pending_;
             });
             return;
         }
@@ -892,7 +908,10 @@ namespace ngosen {
             return;
         }
         --report_requests_left_;
+        // Not input: it must not look like a key to the checks timed from the last one.
+        committing_ = true;
         host_->commitText("");
+        committing_ = false;
         NGOSEN_INFO("Ask the app for a report");
         startReportRequestTimer();
     }

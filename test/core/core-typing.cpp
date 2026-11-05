@@ -2158,6 +2158,136 @@ namespace {
         }
     }
 
+    // A macro taken on Enter skips the hold, so keys typed during the split replay from the split's timer.
+    void testSplitTimerSurvivesReplay() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks shell{.dropsForwardedKeys = true, .keepsLastEditPerTurn = true};
+        std::vector<uint32_t>   keys = keysOf("ko");
+        keys.push_back(ngosen::key::Return);
+        for (const uint32_t key : keysOf("aa"))
+            keys.push_back(key);
+        FakeResources resources;
+        resources.setMacros({{"ko", "không"}});
+        const int destroyedBefore = ngosen::test::timersDestroyedInCallback;
+        ngosen::test::captureLog(true);
+        ngosen::test::typeInAppTraced(resources, field, shell, keys, std::vector<int>(keys.size(), 3));
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(lines, "Starting replay buffered keys") > 0, "split: keys typed during it replay from its timer", join(lines));
+        check(ngosen::test::timersDestroyedInCallback == destroyedBefore, "split: its timer is not destroyed from its own callback",
+              std::to_string(ngosen::test::timersDestroyedInCallback - destroyedBefore));
+    }
+
+    // The deletion is already out, so an app that bounces focus past the split must still get the commit.
+    void testSplitOutlastsFocusBounce() {
+        realMode      = ngosen::Mode::Sen;
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        const std::string   typed = "tie";
+        for (size_t i = 0; i < typed.size(); ++i) {
+            press(state, static_cast<uint32_t>(typed[i]));
+            host->setSurrounding(typed.substr(0, i + 1), static_cast<unsigned int>(i + 1));
+            state.surroundingUpdated();
+            loop.pump(100);
+        }
+        press(state, 'e');
+        host->setHasFocus(false);
+        state.deactivate(true);
+        loop.pump(50);
+        host->setHasFocus(true);
+        state.activate(ngosen::Mode::Sen, true);
+        loop.pump(100);
+        check(!host->commits().empty() && host->commits().front() == "ê", "split: the commit waits out a focus bounce", join(host->commits()));
+    }
+
+    // An empty commit asking for a report is not input, so a bounce after it says nothing about redraws.
+    void testReportRequestIsNotInput() {
+        realMode                  = ngosen::Mode::Sen;
+        Field               field = makeField("ibus", true, "gnome-shell");
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setCommitWatcher([&state](const std::string& text) { state.noteCommit(text); });
+        const std::string typed = "tie";
+        for (size_t i = 0; i < typed.size(); ++i) {
+            press(state, static_cast<uint32_t>(typed[i]));
+            host->setSurrounding(typed.substr(0, i + 1), static_cast<unsigned int>(i + 1));
+            state.surroundingUpdated();
+            loop.pump(100);
+        }
+        press(state, 'e');
+        loop.pump(170);
+        ngosen::test::captureLog(true);
+        state.deactivate(true);
+        state.activate(ngosen::Mode::Sen, true);
+        loop.pump(200);
+        host->setSurrounding("tiê", 3);
+        state.surroundingUpdated();
+        press(state, 's');
+        loop.pump(100);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(lines, "field refocuses after edits") == 0, "a report request does not make a bounce look like a redraw", join(lines));
+    }
+
+    // A field going to backspaces anyway has nothing to gain from the copy.
+    void testNoCopyWaitForBackspaceField() {
+        realMode    = ngosen::Mode::Sen;
+        Field field = makeField("wayland", true);
+        field.url   = true;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        const std::string   typed = "tie";
+        for (size_t i = 0; i < typed.size(); ++i) {
+            press(state, static_cast<uint32_t>(typed[i]));
+            host->setSurrounding(typed.substr(0, i + 1), static_cast<unsigned int>(i + 1));
+            state.surroundingUpdated();
+            loop.pump(100);
+        }
+        host->setSurrounding("other", 5);
+        state.surroundingUpdated();
+        press(state, 'e');
+        check(!host->forwarded().empty(), "an address bar does not wait for a copy it will not use", "no backspaces at once");
+    }
+
+    // Focus moved inside the context to a field with no surrounding text while waiting for the copy.
+    void testCopyWaitEndsOnInvalidReport() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        const std::string   typed = "tie";
+        for (size_t i = 0; i < typed.size(); ++i) {
+            press(state, static_cast<uint32_t>(typed[i]));
+            host->setSurrounding(typed.substr(0, i + 1), static_cast<unsigned int>(i + 1));
+            state.surroundingUpdated();
+            loop.pump(100);
+        }
+        ngosen::test::captureLog(true);
+        host->setSurrounding("other", 5);
+        state.surroundingUpdated();
+        press(state, 'e');
+        host->forgetSurrounding();
+        state.surroundingUpdated();
+        loop.pump(400);
+        check(host->commits() == std::vector<std::string>{"e"}, "a field that stops reporting gets no replacement",
+              join(host->commits()) + " | " + join(ngosen::test::capturedLog()));
+        ngosen::test::captureLog(false);
+    }
+
     // Firefox reports most edits unasked and misses a few; its copy for the deletion is then as old as
     // mutter's, so counting on it takes one letter too many. Qt, which rarely reports, needs that count.
     void testAnsweringAppGetsPlainCount() {
@@ -2725,6 +2855,11 @@ int main() {
     testFirefoxReportsOnlyAfterCommit();
     testReportRequestKeepsNextEdit();
     testAnsweringAppGetsPlainCount();
+    testSplitTimerSurvivesReplay();
+    testSplitOutlastsFocusBounce();
+    testReportRequestIsNotInput();
+    testNoCopyWaitForBackspaceField();
+    testCopyWaitEndsOnInvalidReport();
     testCopyBehindByAKey();
     testCopyBehindReplayedKey();
     testReportRequestKeepsReplayedKey();

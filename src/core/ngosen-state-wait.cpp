@@ -309,7 +309,10 @@ namespace ngosen {
             keySinceReport_ = false;
         // A report with focus away may be another app's; the next report or the timer ends the wait.
         // wlroots drops an edit sent before the done event that follows this report, so the timer sends it.
-        if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !copyGivesWrongDeletion()) {
+        if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !host_->surrounding().isValid()) {
+            // A field that stops reporting is not the one the word was typed in.
+            finishKeyReportWait(false, false);
+        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !copyGivesWrongDeletion()) {
             key_report_copy_fits_ = true;
             key_report_timer_->rearm(ngosen::monotonicUs());
         } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {
@@ -481,7 +484,7 @@ namespace ngosen {
     // Only the field's first word can be told apart this way, and text shrinking from its last report
     // is an edit or another field.
     bool TypingState::reportTrailsFirstWord(const Surrounding& s) const {
-        if (!ngosen::reportsSurroundingEditsLate(host_->field()) || s.cursor() != s.anchor() || !isStartsWith(s.text(), lastSurroundingText_))
+        if (!ngosen::reportsTrailKeys(host_->field()) || s.cursor() != s.anchor() || !isStartsWith(s.text(), lastSurroundingText_))
             return false;
         const std::u32string word = ngosen::utf8::decode(oldPreBuffer_);
         const std::u32string text = ngosen::utf8::decode(s.text());

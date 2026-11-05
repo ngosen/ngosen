@@ -50,6 +50,10 @@ namespace ngosen {
     // surrounding text tens of milliseconds late, one edit at a time.
     bool surroundingTextLags(const Field& field);
 
+    // A key passed to the app right after a commit can reach it first: a dbus client gets the commit
+    // after the key's reply, and GNOME Shell's IBus bridge relays the two separately.
+    bool keyOvertakesCommit(const Field& field);
+
     // mutter sends GNOME Shell's text-input edits once per main-loop turn, and the client keeps only the
     // last deletion and commit of a turn.
     bool keepsLastEditPerTurn(const Field& field);

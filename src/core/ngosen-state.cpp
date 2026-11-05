@@ -807,6 +807,24 @@ namespace ngosen {
         return false;
     }
 
+    bool TypingState::holdsKeyDuringTimedWait(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const {
+        const Field field = host_->field();
+        if (!ngosen::keyOvertakesCommit(field))
+            return false;
+        if (typesText(keyEvent, currentSym))
+            return true;
+        if (field.frontend != "dbus")
+            return false;
+        const bool plainEnter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
+        return plainEnter || replayedEditKey(currentSym, keyEvent.states()).has_value();
+    }
+
+    // A held key skips handleDoubledKey, but the next one still has to see it.
+    void TypingState::noteHeldKeyForDoubling(const ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        isPrevSpace_  = !keyEvent.hasModifier() && (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);
+        isPrevHyphen_ = !keyEvent.hasModifier() && (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract);
+    }
+
     bool TypingState::handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (holdKeyDuringEditHold(keyEvent, currentSym))
             return true;
@@ -819,17 +837,15 @@ namespace ngosen {
             return true;
         }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_) {
-            // A key arrived during a timer-only wait. Replaying it via commitString loses text on
-            // Chromium X11, so finish the wait, commit, then handle the key normally.
+            // A key arrived during a timer-only wait: finish the wait and commit. Where a key let
+            // through can overtake that commit it goes out inside it; elsewhere it is handled normally
+            // afterwards, since replaying it via commitString loses text on Chromium X11 outside IBus.
             const uint64_t nowUs = ngosen::monotonicUs();
             if (surr_wait_deliver_at_ > nowUs) {
                 ngosen::sleepUs(surr_wait_deliver_at_ - nowUs);
             }
-            // A dbus client gets the commit after this key's reply and may type a key let through
-            // first, so a typing key goes out inside the commit and an Enter after it.
-            const bool enter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
-            if (host_->field().frontend == "dbus" && (typesText(keyEvent, currentSym) || enter || replayedEditKey(currentSym, keyEvent.states())) &&
-                buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            if (holdsKeyDuringTimedWait(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+                noteHeldKeyForDoubling(keyEvent, currentSym);
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
                 keyEvent.accept();
                 finishReplacement("key arrived", false);

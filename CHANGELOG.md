@@ -21,6 +21,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Gõ Sen trên GNOME: gõ nhanh trong app không báo lại chữ cho bộ gõ, như terminal của Zed, không còn đảo chữ: `looxi` ra `liỗ`, `ddi` ra `iđ`. Phím gõ trong lúc chờ thêm dấu nay đi cùng chữ có dấu (#571).
 - Gõ Sen trong WPS Office trên GNOME Wayland gõ đúng dấu khi cài package thiếu biến môi trường install.sh (#570).
 - Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Đóng hẳn menu `` ` `` khi cửa sổ mất focus hoặc bị đóng, tránh nuốt chữ và để phím e tắt tiếng Việt của app cũ; gõ ra `` ` `` khi app đi qua GNOME Shell mà thiếu extension kimpanel; sửa nhãn menu để nói rõ cài đặt dùng chung cho mọi app chưa có tên (#565).

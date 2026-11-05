@@ -351,8 +351,8 @@ msgstr "Gõ"
 msgid "App: "
 msgstr "App: "
 
-msgid "apps with no name"
-msgstr "mọi app chưa có tên"
+msgid "this window"
+msgstr "cửa sổ này"
 
 msgid "apps with no name (the Ngó Sen extension tells them apart)"
 msgstr "app chưa có tên (bật extension Ngó Sen để đặt riêng)"

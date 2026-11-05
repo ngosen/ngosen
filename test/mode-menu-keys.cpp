@@ -91,6 +91,7 @@ int main() {
 
     press(engine, entry, *context, FcitxKey_1);
     check(!menu(*context), "picking a mode closes the menu", "menu still open");
+    list.reset();
     check(realMode.load() == ngosen::Mode::Sen, "shortcut 1 picks Sen", modeName(realMode.load()));
 
     press(engine, entry, *context, FcitxKey_grave);
@@ -106,14 +107,14 @@ int main() {
     press(engine, entry, *context, FcitxKey_F12);
     check(realMode.load() == ngosen::Mode::Preedit, "the cycle key steps from Sen to Preedit", modeName(realMode.load()));
 
-    // GNOME Shell relays every app under its own name, so the menu cannot name the app.
+    // A field that reports no app of its own, away from GNOME Shell's frontend.
     auto relayed = std::make_unique<TestInputContext>(&testInstance.instance, "gnome-shell");
     relayed->focusIn();
     fcitx::InputContextEvent relayedFocus(relayed.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, relayedFocus);
     press(engine, entry, *relayed, FcitxKey_grave);
     const auto relayedApp = relayed->inputPanel().auxDown().toString();
-    check(relayedApp == "App: apps with no name", "a relayed app is shown as one of the unnamed apps", relayedApp);
+    check(relayedApp == "App: this window", "a window with its own field is shown as this window", relayedApp);
     press(engine, entry, *relayed, FcitxKey_Escape);
     relayed->focusOut();
     context->focusIn();
@@ -158,8 +159,17 @@ int main() {
     other->focusIn();
     press(engine, entry, *other, FcitxKey_e);
     check(!hasRule(engine, "reader"), "a key in another app picks nothing for the first", "reader got a rule");
-    check(!menu(*reader), "a key in another app closes the menu", "menu still open");
     check(realMode.load() != ngosen::Mode::Off, "a key in another app keeps the mode", modeName(realMode.load()));
+
+    // Anything clearing the panel closes the menu, so no key picks from a menu nobody sees.
+    auto cleared = std::make_unique<TestInputContext>(&testInstance.instance, "cleared");
+    cleared->focusIn();
+    fcitx::InputContextEvent clearedFocus(cleared.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, clearedFocus);
+    press(engine, entry, *cleared, FcitxKey_grave);
+    cleared->inputPanel().reset();
+    press(engine, entry, *cleared, FcitxKey_e);
+    check(!hasRule(engine, "cleared"), "a key after the panel was cleared picks nothing", "cleared got a rule");
 
     // A window closed with its menu open leaves nothing for later keys to pick for.
     auto closing = std::make_unique<TestInputContext>(&testInstance.instance, "closing");

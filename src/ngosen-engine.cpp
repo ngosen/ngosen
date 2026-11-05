@@ -316,11 +316,7 @@ namespace fcitx {
                                                            [this](Event& event) { stateFor(static_cast<InputContextEvent&>(event).inputContext())->fieldResetWhileOff(); }));
         // A ctx_ rule names a context address, which a later window may reuse.
         contextDestroyedWatcher_ = instance_->watchEvent(EventType::InputContextDestroyed, EventWatcherPhase::Default, [this](Event& event) {
-            auto* ic = static_cast<InputContextEvent&>(event).inputContext();
-            if (modeMenuContext_ == ic) {
-                modeMenuContext_ = nullptr;
-            }
-            auto appName = getProgramName(ic);
+            auto appName = getProgramName(static_cast<InputContextEvent&>(event).inputContext());
             if (isStartsWith(appName, "ctx_")) {
                 clearAppRule(appName);
                 clearAppSwitch(appName);
@@ -741,18 +737,14 @@ namespace fcitx {
         auto* ic = keyEvent.inputContext();
         dropStaleSurroundingText(ic);
 
-        if (modeMenuContext_ && modeMenuContext_ != ic) {
-            closeModeMenuPanel(modeMenuContext_, false);
-        }
-        if (modeMenuContext_ && g_mouse_clicked.load(std::memory_order_acquire)) {
-            closeAppModeMenu();
+        if (isModeMenuOpen(ic) && g_mouse_clicked.load(std::memory_order_acquire)) {
             closeModeMenuPanel(ic, true);
         }
 
         if (handleToggleKey(keyEvent))
             return;
 
-        if (modeMenuContext_) {
+        if (isModeMenuOpen(ic)) {
             handleModeMenuKey(keyEvent);
             return;
         }
@@ -848,8 +840,12 @@ namespace fcitx {
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
     }
 
+    bool NgoSenEngine::isModeMenuOpen(InputContext* ic) const {
+        const auto list = modeMenuList_.lock();
+        return list && ic->inputPanel().candidateList() == list;
+    }
+
     void NgoSenEngine::closeModeMenuPanel(InputContext* ic, bool resetState) {
-        modeMenuContext_ = nullptr;
         ic->inputPanel().reset();
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
         if (resetState) {
@@ -964,9 +960,6 @@ namespace fcitx {
     }
 
     void NgoSenEngine::deactivate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
-        if (modeMenuContext_ == event.inputContext()) {
-            closeModeMenuPanel(modeMenuContext_, false);
-        }
         stateFor(event.inputContext())->deactivate(event.type() == EventType::InputContextFocusOut);
     }
 
@@ -1231,8 +1224,7 @@ namespace fcitx {
     }
 
     void NgoSenEngine::toggleVietnamese(InputContext* ic, bool offerRetype) {
-        if (modeMenuContext_) {
-            closeAppModeMenu();
+        if (isModeMenuOpen(ic)) {
             closeModeMenuPanel(ic, true);
         } else if (auto* state = stateFor(ic)) {
             // Finish the word being typed in the mode it was typed in.
@@ -1346,11 +1338,6 @@ namespace fcitx {
         safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
     }
 
-    void NgoSenEngine::closeAppModeMenu() {
-        modeMenuContext_ = nullptr;
-        g_mouse_clicked.store(false, std::memory_order_release);
-    }
-
     std::vector<NgoSenEngine::ModeMenuItem> NgoSenEngine::modeMenuItems() {
         auto                                          getShortcut = [](const std::string& shortcut) { return Key(shortcut).sym(); };
 
@@ -1380,8 +1367,6 @@ namespace fcitx {
     }
 
     void NgoSenEngine::showAppModeMenu(InputContext* ic) {
-        modeMenuContext_ = ic;
-
         auto candidateList = std::make_unique<CommonCandidateList>();
 
         candidateList->setLayoutHint(CandidateLayoutHint::Vertical);
@@ -1431,10 +1416,11 @@ namespace fcitx {
 
         ic->inputPanel().reset();
         ic->inputPanel().setCandidateList(std::move(candidateList));
-        // A rule without a name holds for every app sharing the field, as all do through GNOME Shell.
+        modeMenuList_        = ic->inputPanel().candidateList();
         std::string appLabel = currentConfigureApp_;
         if (isStartsWith(currentConfigureApp_, "ctx_")) {
-            appLabel = std::string_view(ic->frontend()) == "ibus" ? _("apps with no name (the Ngó Sen extension tells them apart)") : _("apps with no name");
+            // GNOME Shell relays every app through one field, so a rule without a name holds for all of them.
+            appLabel = std::string_view(ic->frontend()) == "ibus" ? _("apps with no name (the Ngó Sen extension tells them apart)") : _("this window");
         }
         ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);

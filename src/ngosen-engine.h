@@ -60,15 +60,15 @@ namespace fcitx {
         std::unique_ptr<ngosen::TypingState> state_;
     };
 
+    // Whether the mode menu reaches the screen: keys go to a menu nobody sees otherwise.
+    bool modeMenuCanDraw(const std::string& currentUi, const std::string& display, bool clientDrawsPanel);
+
     /**
      * @brief Main engine class for the Ngó Sen input method.
      *
      * Handles input processing, configuration management, and UI actions.
      * Implements fcitx InputMethodEngine interface.
      */
-    // Whether the mode menu reaches the screen: keys go to a menu nobody sees otherwise.
-    bool modeMenuCanDraw(const std::string& currentUi, const std::string& display, bool clientDrawsPanel);
-
     class NgoSenEngine final : public InputMethodEngineV2, public ngosen::EngineResources {
       public:
         /**
@@ -285,8 +285,7 @@ namespace fcitx {
         std::unordered_map<std::string, NgoSenMode> appRules_;
         std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
-        // The field whose mode menu is open; keys picking from it must come from there.
-        InputContext* modeMenuContext_ = nullptr;
+        std::weak_ptr<CandidateList>                modeMenuList_;
         // A modifier-only toggle key fires on release, unless another key came in between.
         bool                             toggleTapArmed_  = false;
         uint64_t                         toggleTapTime_   = 0;
@@ -468,6 +467,8 @@ namespace fcitx {
         // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.
         void pickMenuMode(InputContext* ic, NgoSenMode mode, bool isDefault);
         void openModeMenu(InputContext* ic);
+        // Focus changes, resets and timers all clear the panel, so the menu is open only while ic's panel still shows it.
+        bool isModeMenuOpen(InputContext* ic) const;
         // The modes the cycle key steps through, in the configured order.
         std::vector<NgoSenMode> cycleModes(const std::string& appName);
         void                    cycleMode(InputContext* ic);
@@ -478,11 +479,6 @@ namespace fcitx {
          * @param ic Current input context.
          */
         void showCycleModeNotification(NgoSenMode mode, InputContext* ic);
-
-        /**
-         * @brief Closes the application mode selection menu.
-         */
-        void closeAppModeMenu();
 
         /**
          * @brief Sets the current input mode.

@@ -1421,7 +1421,7 @@ namespace fcitx {
         std::string appLabel = currentConfigureApp_;
         if (isStartsWith(currentConfigureApp_, "ctx_")) {
             // GNOME Shell relays every app through one field, so a rule without a name holds for all of them.
-            appLabel = std::string_view(ic->frontend()) == "ibus" ? _("apps with no name (the Ngó Sen extension tells them apart)") : _("this window");
+            appLabel = std::string_view(ic->frontend()) == "ibus" ? _("apps with no name") : _("this window");
         }
         ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);

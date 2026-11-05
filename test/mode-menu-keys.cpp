@@ -124,7 +124,7 @@ int main() {
     check(namedApp == "App: gedit", "a named app is shown by name", namedApp);
     press(engine, entry, *context, FcitxKey_Escape);
 
-    // GNOME Shell's own frontend is the one the extension can tell apart.
+    // GNOME Shell relays every app through one field, so a pick holds for all of them.
     context->focusOut();
     auto shellField = std::make_unique<TestInputContext>(&testInstance.instance, "", "ibus");
     shellField->focusIn();
@@ -132,7 +132,7 @@ int main() {
     engine.activate(entry, shellFocus);
     press(engine, entry, *shellField, FcitxKey_grave);
     const auto shellApp = shellField->inputPanel().auxDown().toString();
-    check(shellApp == "App: apps with no name (the Ngó Sen extension tells them apart)", "the unnamed label points GNOME to the extension", shellApp);
+    check(shellApp == "App: apps with no name", "a field GNOME Shell relays is shown as all unnamed apps", shellApp);
     press(engine, entry, *shellField, FcitxKey_Escape);
     shellField->focusOut();
 

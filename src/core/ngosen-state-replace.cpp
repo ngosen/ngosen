@@ -903,12 +903,12 @@ namespace ngosen {
         return std::nullopt;
     }
 
-    // Holds the Enter after the commit as a typed one is, and leaves the keys after it for then.
+    // Holds an Enter or Backspace after the commit as a typed Enter is, and leaves the keys after it for then.
     bool TypingState::holdReplayedKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out, ngosen::EditKey key) {
         for (size_t j = i + 1; j < keys.size() && buffered_keys_.size() < MAX_BUFFERED_KEYS; ++j)
             buffered_keys_.push_back(keys[j]);
         commitReplayed(out);
-        holdEnter(false, key);
+        holdEnter(ngosen::surroundingTextLags(host_->field()), key);
         return true;
     }
 
@@ -937,6 +937,13 @@ namespace ngosen {
         std::string keyUtf8 = host_->keyText(sym);
         // Google Docs ignores a line break inside a commit, and Tab must move focus, so these go as keys.
         const std::optional<ngosen::EditKey> sent = replayedEditKey(sym, state);
+        if (ngosen::key::isBackspace(sym)) {
+            // Like a typed backspace: the engine drops a letter and the app deletes it after the commit.
+            dropLetterForBackspace();
+            if (realtextLen.load(std::memory_order_acquire) > 0)
+                realtextLen.fetch_sub(1, std::memory_order_acq_rel);
+            return holdReplayedKey(keys, i, out, ngosen::EditKey::BackSpace);
+        }
         if (keyUtf8.empty() && !sent) {
             return false;
         }

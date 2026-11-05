@@ -480,6 +480,33 @@ set_im_environment() {
     session_changes+=("app dùng fcitx5 thay IBus")
 }
 
+compositor_environment_entry() {
+    printf 'QT_IM_MODULE=fcitx\nQT_IM_MODULES=fcitx;wayland\nXMODIFIERS=@im=fcitx\n'
+}
+
+# Qt 5 has no text-input protocol for these compositors and X11 apps need XIM. Qt 6 prefers fcitx5's
+# module too: when a Qt 6 app on the Wayland protocol closes, Hyprland keeps sending keys through the
+# input method, and the next app without that protocol loses letters. The list falls back to Wayland
+# for a Qt 6 app that has no such module.
+set_compositor_environment() {
+    local dir file
+    dir="$(config_home)/environment.d"
+    file="$dir/90-ngosen-sway-hyprland.conf"
+    [ -e "$file" ] && return 0
+    grep -qs -E '^(QT_IM_MODULES?|XMODIFIERS)=' "$dir"/*.conf && return 0
+    mkdir -p "$dir"
+    compositor_environment_entry >"$file"
+    reload_user_environment
+}
+
+undo_compositor_environment() {
+    local file
+    file="$(config_home)/environment.d/90-ngosen-sway-hyprland.conf"
+    [ -e "$file" ] && [ "$(cat "$file")" = "$(compositor_environment_entry)" ] || return 0
+    rm -f "$file"
+    reload_user_environment
+}
+
 # KWin serves Wayland apps itself; X11 apps under XWayland reach fcitx5 only through XIM.
 # GTK_IM_MODULE and QT_IM_MODULE stay unset, as fcitx5 asks for on Plasma.
 set_xim_environment() {
@@ -882,6 +909,7 @@ fcitx5_is_running() {
 setup_sway_hyprland_session() {
     say ""
     configure_fcitx5
+    set_compositor_environment
     fcitx5_is_running || fcitx5 -d >/dev/null 2>&1 || :
     # fcitx5 -d returns before the daemon has had a chance to fail.
     sleep 1
@@ -917,6 +945,9 @@ report_sway_hyprland_session() {
     else
         say "Xong. fcitx5 đang chạy, gõ được ngay."
         say "Bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
+    fi
+    if [ -e "$(config_home)/environment.d/90-ngosen-sway-hyprland.conf" ]; then
+        say "App Qt 5 và app X11 qua XWayland gõ được từ lần đăng nhập sau, nếu vào desktop từ màn hình đăng nhập."
     fi
     say ""
     if [ -n "${SWAYSOCK:-}" ]; then
@@ -1145,6 +1176,7 @@ uninstall() {
         say "Xong. Đăng xuất rồi đăng nhập lại. fcitx5 vẫn là bộ gõ của KDE, gõ tiếng Anh như bàn phím."
         say "Bỏ fcitx5: System Settings → Virtual Keyboard (Bàn phím ảo) → None."
     elif wants_sway_hyprland_setup; then
+        undo_compositor_environment
         say "Xong. Bỏ dòng fcitx5 -d đã dán vào file cấu hình (nếu có), rồi đăng xuất và đăng nhập lại."
     else
         say "Xong. Khởi động lại fcitx5:  fcitx5 -rd"

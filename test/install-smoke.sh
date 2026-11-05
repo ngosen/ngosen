@@ -140,6 +140,7 @@ lacks_keyboard() { ! grep -qs '^Name=keyboard-' "$1"; }
 profile=$home/.config/fcitx5/profile
 config=$home/.config/fcitx5/config
 im_env=$home/.config/environment.d/90-ngosen.conf
+compositor_env_file=$home/.config/environment.d/90-ngosen-sway-hyprland.conf
 autostart=$home/.config/autostart/org.fcitx.Fcitx5.desktop
 hidden_launcher=$home/.local/share/applications/org.fcitx.Fcitx5.desktop
 kwinrc=$home/.config/kwinrc
@@ -207,6 +208,7 @@ check_uninstalled_state() {
     elif [ -n "$desktop_config" ]; then
         check "uninstall names the autostart line" grep -qF 'fcitx5 -d' "$install_log"
         check "the desktop config is still untouched" desktop_config_untouched
+        check "uninstall removes the variables it wrote" test ! -e "$compositor_env_file"
     else
         check "environment.d file is removed" test ! -e "$im_env"
         check "autostart entry is removed" test ! -e "$autostart"
@@ -679,6 +681,11 @@ check_sway_hyprland_setup() {
     check "a second run succeeds" install_logged
     check "it still names the toggle key" install_names Ctrl+Shift
     check "it still has the autostart line" has_autostart_line
+    check "it sets the module Qt 5 reads" has_line "$compositor_env_file" 'QT_IM_MODULE=fcitx'
+    check "Qt 6 prefers fcitx5's module and falls back to Wayland" has_line "$compositor_env_file" 'QT_IM_MODULES=fcitx;wayland'
+    check "it points X11 apps at fcitx5" has_line "$compositor_env_file" 'XMODIFIERS=@im=fcitx'
+    check "it says those apps wait for the next login" grep -qF 'từ lần đăng nhập sau' "$install_log"
+    check_compositor_env_is_kept
 
     local other=$home/other/${desktop_config#"$home"/.config/}
     as_user mkdir -p "$(dirname "$other")"
@@ -706,8 +713,26 @@ check_sway_hyprland_setup() {
     bus=
 }
 
+# A variable the user chose stays theirs, and undoing leaves a file they edited.
+check_compositor_env_is_kept() {
+    local own=$home/.config/environment.d/50-own.conf
+    as_user mkdir -p "$(dirname "$own")"
+    as_user rm -f "$compositor_env_file"
+    printf 'QT_IM_MODULE=ibus\n' | as_user tee "$own" >/dev/null
+    check "install with the user's own Qt module succeeds" install_logged
+    check "it adds no file beside the user's variable" test ! -e "$compositor_env_file"
+    printf 'QT_IM_MODULES=wayland\n' | as_user tee "$own" >/dev/null
+    check "install with the user's own Qt module list succeeds" install_logged
+    check "it adds no file beside the user's list" test ! -e "$compositor_env_file"
+    as_user rm -f "$own"
+    check "install without the user's variable succeeds" install_logged
+    check "it writes the file again" test -e "$compositor_env_file"
+}
+
 check_no_compositor_setup() {
+    as_user rm -f "$compositor_env_file"
     check "install without WAYLAND_DISPLAY succeeds" install_fresh -u WAYLAND_DISPLAY
+    check "it writes no variables without WAYLAND_DISPLAY" test ! -e "$compositor_env_file"
     expect_no_setup "without WAYLAND_DISPLAY"
     check "install on labwc succeeds" install_fresh -u SWAYSOCK -u HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP=labwc:wlroots
     expect_no_setup "on labwc"

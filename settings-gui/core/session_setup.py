@@ -24,7 +24,7 @@ KDE_ENV = "XMODIFIERS=@im=fcitx\n"
 _RUNS_FCITX5 = re.compile(r"fcitx5(?![\w-])")
 
 ENABLE_AUTOSTART_COMMAND = (
-    f"mkdir -p ~/.config/autostart && cp {AUTOSTART_SOURCE} ~/.config/autostart/"
+    f"mkdir -p ~/.config/autostart && cp -n {AUTOSTART_SOURCE} ~/.config/autostart/"
 )
 IM_CONFIG_COMMAND = "im-config -n fcitx5"
 KWIN_COMMAND = f"kwriteconfig6 --file kwinrc --group Wayland --key InputMethod {AUTOSTART_SOURCE}"
@@ -33,7 +33,8 @@ KWIN_COMMAND = f"kwriteconfig6 --file kwinrc --group Wayland --key InputMethod {
 def set_environment_command(env_text):
     path = f"~/.config/environment.d/{ENV_FILE}"
     text = env_text.replace("\n", "\\n")
-    return f"mkdir -p ~/.config/environment.d && [ -e {path} ] || printf '{text}' > {path}"
+    # Appending keeps what the file already holds and still sets these.
+    return f"mkdir -p ~/.config/environment.d && printf '{text}' >> {path}"
 
 
 def _home(env):
@@ -85,9 +86,16 @@ def has_im_config():
     return shutil.which("im-config") is not None
 
 
+def has_kwriteconfig():
+    return shutil.which("kwriteconfig6") is not None
+
+
 def _im_config_output(flag):
+    # Untranslated labels, so the line below can be found on any desktop language.
+    env = {**os.environ, "LC_ALL": "C"}
     try:
-        return subprocess.run(["im-config", flag], capture_output=True, text=True, timeout=3).stdout
+        cmd = ["im-config", flag]
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=3, env=env).stdout
     except (OSError, subprocess.SubprocessError):
         return ""
 
@@ -104,9 +112,13 @@ def _im_config_default_is_fcitx5():
 def starts_at_login(env):
     if any(_entry_starts_fcitx5(path) for path in _autostart_entries(env)):
         return True
-    if xinputrc_runs_fcitx5(env):
-        return True
-    return has_im_config() and _im_config_default_is_fcitx5()
+    # Only im-config reads ~/.xinputrc, and a choice made there beats its default.
+    if not has_im_config():
+        return False
+    choice = re.search(r"^run_im (\S+)$", _read(os.path.join(_home(env), ".xinputrc")) or "", re.M)
+    if choice:
+        return choice.group(1) == "fcitx5"
+    return _im_config_default_is_fcitx5()
 
 
 def saved_environment(env):
@@ -198,20 +210,6 @@ def set_environment(env):
     return True, undo
 
 
-def _note_im_config(env):
-    """Lets install.sh --uninstall know the im-config choice is ours to take back."""
-    state_home = env.get("XDG_STATE_HOME") or os.path.join(_home(env), ".local", "state")
-    path = os.path.join(state_home, "ngosen", "install-changes")
-    if "im-config" in (_read(path) or "").splitlines():
-        return
-    try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "a", encoding="utf-8") as f:
-            f.write("im-config\n")
-    except OSError:
-        pass
-
-
 def use_im_config(env):
     """Returns (done, undo). im-config sets the variables and starts fcitx5 at login."""
     path = os.path.join(_home(env), ".xinputrc")
@@ -221,7 +219,6 @@ def use_im_config(env):
         ["im-config", "-w", "fcitx5"]
     ):
         return False, None
-    _note_im_config(env)
 
     def undo():
         if before is None:

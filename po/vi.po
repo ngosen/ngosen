@@ -1939,3 +1939,7 @@ msgstr "Đã chọn Fcitx 5. Đăng xuất rồi đăng nhập lại để dùng
 #: settings-gui/core/system_check.py
 msgid "Copied the command."
 msgstr "Đã chép lệnh."
+
+#: settings-gui/core/system_check.py
+msgid "~/.config/environment.d sets {} to another value; change it to use fcitx5."
+msgstr "~/.config/environment.d đang đặt {} thành giá trị khác; đổi lại để dùng fcitx5."

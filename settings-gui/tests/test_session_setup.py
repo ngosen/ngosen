@@ -81,11 +81,32 @@ class StartsAtLoginTest(SessionSetupCase):
         self.write(self.user_entry, "not a desktop file\n\xff\n")
         self.assertFalse(self.starts())
 
+    def test_leftover_xinputrc_without_im_config_does_not_count(self):
+        self.write(os.path.join(self.home, ".xinputrc"), "run_im fcitx5\n")
+        self.assertFalse(self.starts())
+
+    def test_another_im_config_choice_beats_the_default(self):
+        self.has_im_config.return_value = True
+        self.write(os.path.join(self.home, ".xinputrc"), "run_im ibus\n")
+        done = subprocess.CompletedProcess([], 0, stdout="active\nuser\nfcitx5\n")
+        with mock.patch.object(session_setup.subprocess, "run", return_value=done):
+            self.assertFalse(self.starts())
+
+    def test_im_config_is_read_untranslated(self):
+        self.has_im_config.return_value = True
+        done = subprocess.CompletedProcess([], 0, stdout="")
+        with mock.patch.object(session_setup.subprocess, "run", return_value=done) as ran:
+            self.starts()
+        self.assertEqual(ran.call_args.kwargs["env"]["LC_ALL"], "C")
+
     def test_im_config_choice_counts(self):
+        self.has_im_config.return_value = True
         self.write(os.path.join(self.home, ".xinputrc"), "# im-config\nrun_im fcitx5\n")
         self.assertTrue(self.starts())
+        done = subprocess.CompletedProcess([], 0, stdout="")
         self.write(os.path.join(self.home, ".xinputrc"), "run_im ibus\n")
-        self.assertFalse(self.starts())
+        with mock.patch.object(session_setup.subprocess, "run", return_value=done):
+            self.assertFalse(self.starts())
 
     def test_im_config_default_counts(self):
         self.has_im_config.return_value = True
@@ -212,15 +233,6 @@ class EnvironmentFixTest(SessionSetupCase):
 
 
 class ImConfigFixTest(SessionSetupCase):
-    def changes(self):
-        return os.path.join(self.home, ".local", "state", "ngosen", "install-changes")
-
-    def test_tells_the_uninstall_once(self):
-        with mock.patch.object(session_setup, "_succeeds", return_value=True):
-            self.assertTrue(session_setup.use_im_config(self.env)[0])
-            self.assertTrue(session_setup.use_im_config(self.env)[0])
-        self.assertEqual(self.read(self.changes()), "im-config\n")
-
     def test_uses_the_new_flag_when_the_old_one_fails(self):
         with mock.patch.object(session_setup, "_succeeds", side_effect=[False, True]) as ran:
             self.assertTrue(session_setup.use_im_config(self.env)[0])
@@ -229,7 +241,6 @@ class ImConfigFixTest(SessionSetupCase):
     def test_failure_changes_nothing(self):
         with mock.patch.object(session_setup, "_succeeds", return_value=False):
             self.assertEqual(session_setup.use_im_config(self.env), (False, None))
-        self.assertFalse(os.path.exists(self.changes()))
 
     def test_undo_removes_a_file_that_was_not_there(self):
         with mock.patch.object(session_setup, "_succeeds", return_value=True):
@@ -272,17 +283,18 @@ class SameAsInstallerTest(SessionSetupCase):
         with open(INSTALL_SH, encoding="utf-8") as f:
             self.assertIn(f"echo '{session_setup.KDE_ENV.strip()}'", f.read())
 
-    def test_environment_command_writes_the_same_file(self):
+    def run_command(self, command):
+        env = {"HOME": self.home, "PATH": os.defpath}
+        subprocess.run(["bash", "-c", command], env=env, check=True)
+
+    def test_commands_never_replace_a_file(self):
         command = session_setup.set_environment_command(session_setup.GNOME_ENV)
-        subprocess.run(
-            ["bash", "-c", command], env={"HOME": self.home, "PATH": os.defpath}, check=True
-        )
+        self.run_command(command)
         self.assertEqual(self.read(self.env_file), session_setup.GNOME_ENV)
         self.write(self.env_file, "FOO=bar\n")
-        subprocess.run(
-            ["bash", "-c", command], env={"HOME": self.home, "PATH": os.defpath}, check=True
-        )
-        self.assertEqual(self.read(self.env_file), "FOO=bar\n")
+        self.run_command(command)
+        self.assertEqual(self.read(self.env_file), "FOO=bar\n" + session_setup.GNOME_ENV)
+        self.assertIn("cp -n ", session_setup.ENABLE_AUTOSTART_COMMAND)
 
 
 if __name__ == "__main__":

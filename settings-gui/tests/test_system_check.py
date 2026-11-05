@@ -333,8 +333,46 @@ class LoginSetupStepsTest(unittest.TestCase):
         found = system_check.evaluate(facts("wayland", "GNOME", ibus_owns_session=True))
         self.assertEqual(titles(found), ["IBus is running next to fcitx5"])
 
+    def test_im_config_fix_waits_for_login(self):
+        found = system_check.evaluate(
+            facts("x11", "XFCE", env={}, has_im_config=True, im_config_chosen=True)
+        )
+        self.assertEqual(titles(found), [self.NOTICE])
+        fixes = system_check.Fixes(FakeDBusHandler())
+        text, _undo = fixes.finish([system_check.USE_IM_CONFIG], {}, found)
+        self.assertIn("Log out", text)
+        self.assertEqual(fixes.failed, set())
+
+    def test_saved_variable_where_it_is_not_read_keeps_its_fix(self):
+        saved = {"XMODIFIERS": "@im=fcitx"}
+        found = system_check.evaluate(
+            facts("x11", "XFCE", env={}, saved_env=saved, has_im_config=True)
+        )
+        self.assertNotIn(self.NOTICE, titles(found))
+        self.assertIn("Older X11 apps have no input method", titles(found))
+
+    def test_conflicting_value_offers_no_button(self):
+        found = system_check.evaluate(
+            facts("wayland", "GNOME", env={}, saved_env={"QT_IM_MODULE": "ibus"})
+        )
+        self.assertEqual({f.action for f in found}, {""})
+        self.assertEqual({f.command for f in found}, {""})
+        self.assertIn("QT_IM_MODULE", found[0].fix)
+
+    def test_kde_x11_does_not_use_im_config(self):
+        found = system_check.evaluate(
+            facts("x11", "KDE", env={}, starts_at_login=False, has_im_config=True)
+        )
+        self.assertNotIn(system_check.USE_IM_CONFIG, {f.action for f in found})
+        self.assertIn(system_check.ENABLE_AUTOSTART, {f.action for f in found})
+
+    def test_kde_without_kwriteconfig6_only_explains(self):
+        found = system_check.evaluate(facts("wayland", "KDE", {"XMODIFIERS": "@im=fcitx"}))
+        self.assertEqual(found[0].action, "")
+        self.assertIn("Virtual Keyboard", found[0].fix)
+
     def test_kde_offers_its_setting_and_only_xmodifiers(self):
-        found = system_check.evaluate(facts("wayland", "KDE", env={}))
+        found = system_check.evaluate(facts("wayland", "KDE", env={}, has_kwriteconfig=True))
         by_action = {f.action: f for f in found}
         self.assertIn(system_check.SET_KWIN_INPUT_METHOD, by_action)
         self.assertIn(session_setup.AUTOSTART_SOURCE, by_action["set-kwin-input-method"].command)

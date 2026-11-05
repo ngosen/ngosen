@@ -57,6 +57,9 @@ class Facts:
     # What environment.d will give the next login, which the running session has not read.
     saved_env: dict = field(default_factory=dict)
     has_im_config: bool = False
+    # ~/.xinputrc picks fcitx5, so im-config sets the variables at the next login.
+    im_config_chosen: bool = False
+    has_kwriteconfig: bool = False
     # False when fcitx5 runs but KWin did not start it, so Qt apps cannot type through it yet.
     started_by_kwin: bool = True
 
@@ -109,15 +112,35 @@ def _is_kde_wayland(facts):
     return facts.session == "wayland" and "KDE" in facts.desktops
 
 
+def _reads_environment_d(facts):
+    return "GNOME" in facts.desktops or _is_kde_wayland(facts)
+
+
+def _uses_im_config(facts):
+    """install.sh leaves KDE out, so its uninstall would not take the choice back there."""
+    return (
+        facts.session == "x11"
+        and facts.has_im_config
+        and "GNOME" not in facts.desktops
+        and "KDE" not in facts.desktops
+    )
+
+
 def _environment_fix(facts, assignment):
     """(fix text, action, command) for a missing variable, by what this desktop reads at login."""
-    if "GNOME" in facts.desktops or _is_kde_wayland(facts):
+    if _reads_environment_d(facts):
         env_text = session_setup.KDE_ENV if _is_kde_wayland(facts) else session_setup.GNOME_ENV
+        wanted = dict(line.split("=", 1) for line in env_text.splitlines())
+        # The user chose these values, so neither the button nor a copied command replaces them.
+        chosen = [n for n, v in wanted.items() if facts.saved_env.get(n, v) != v]
+        if chosen:
+            fix = _("~/.config/environment.d sets {} to another value; change it to use fcitx5.")
+            return fix.format(", ".join(chosen)), "", ""
         fix = _("Add {} to ~/.config/environment.d/{}, then log out and back in.").format(
             assignment, session_setup.ENV_FILE
         )
         return fix, SET_ENVIRONMENT, session_setup.set_environment_command(env_text)
-    if facts.session == "x11" and facts.has_im_config:
+    if _uses_im_config(facts):
         fix = _("Run {}, then log out and back in.").format(session_setup.IM_CONFIG_COMMAND)
         return fix, USE_IM_CONFIG, session_setup.IM_CONFIG_COMMAND
     return _("Set {} in the session environment.").format(assignment), "", ""
@@ -126,7 +149,8 @@ def _environment_fix(facts, assignment):
 def _variable_finding(facts, variable, value, level, title, ok_title):
     if facts.env.get(variable) == value:
         return Finding(OK, ok_title)
-    if facts.saved_env.get(variable) == value:
+    saved = _reads_environment_d(facts) and facts.saved_env.get(variable) == value
+    if saved or (_uses_im_config(facts) and facts.im_config_chosen):
         return Finding(level, title, after_login=True)
     fix, action, command = _environment_fix(facts, f"{variable}={value}")
     return Finding(level, title, fix, action, command)
@@ -147,7 +171,7 @@ def _login_start_findings(facts):
     if facts.starts_at_login:
         return [Finding(OK, _("fcitx5 starts at login"))]
     title = _("fcitx5 will not start at the next login")
-    if "GNOME" not in facts.desktops and facts.has_im_config:
+    if _uses_im_config(facts):
         fix = _("Run {}, then log out and back in.").format(session_setup.IM_CONFIG_COMMAND)
         return [Finding(WARN, title, fix, USE_IM_CONFIG, session_setup.IM_CONFIG_COMMAND)]
     fix = _("Copy {} to ~/.config/autostart/.").format(session_setup.AUTOSTART_SOURCE)
@@ -356,15 +380,13 @@ def _desktop_findings(facts):
         found = []
         title = _("KDE does not start fcitx5 as its virtual keyboard")
         if "fcitx" not in facts.kwin_input_method.lower():
-            found.append(
-                Finding(
-                    FAIL,
-                    title,
-                    _("System Settings → Keyboard → Virtual Keyboard: choose Fcitx 5."),
-                    SET_KWIN_INPUT_METHOD,
-                    session_setup.KWIN_COMMAND,
-                )
-            )
+            fix = _("System Settings → Keyboard → Virtual Keyboard: choose Fcitx 5.")
+            # Plasma 5 only has kwriteconfig5, and install.sh sets this up on Plasma 6 only.
+            if facts.has_kwriteconfig:
+                action, command = SET_KWIN_INPUT_METHOD, session_setup.KWIN_COMMAND
+                found.append(Finding(FAIL, title, fix, action, command))
+            else:
+                found.append(Finding(FAIL, title, fix))
         elif facts.started_by_kwin:
             found.append(Finding(OK, _("KDE starts fcitx5 as its virtual keyboard")))
         else:
@@ -656,6 +678,8 @@ def collect(dbus_handler, ngosen_version="", env=None):
     facts.kwin_input_method = _kwin_input_method(env)
     facts.saved_env = session_setup.saved_environment(env)
     facts.has_im_config = session_setup.has_im_config()
+    facts.im_config_chosen = facts.has_im_config and session_setup.xinputrc_runs_fcitx5(env)
+    facts.has_kwriteconfig = session_setup.has_kwriteconfig()
     if _checks_login_start(facts):
         facts.starts_at_login = session_setup.starts_at_login(env)
     if _is_kde_wayland(facts):

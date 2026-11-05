@@ -1125,6 +1125,7 @@ namespace ngosen {
             return false;
         }
 
+        lastWord_.clear();
         bool processed = EngineProcessKeyEvent(bambooEngine_.handle(), sym, state) != 0U;
 
         auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
@@ -1147,6 +1148,7 @@ namespace ngosen {
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
+            lastWord_ = rebuildable(commitF.get()) ? commitF.get() : std::string();
             if (sent && !replacing)
                 return holdReplayedKey(keys, i, out, *sent);
             if (!replacing)

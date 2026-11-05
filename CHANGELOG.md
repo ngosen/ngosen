@@ -12,6 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Trang "Kiểm tra máy" nay kiểm tra fcitx5 có tự chạy khi đăng nhập hay không, kèm các nút đặt tự chạy, đặt biến môi trường, chọn Fcitx 5 làm Virtual Keyboard trên KDE và chạy im-config trên X11. Người cài từ repo hoặc package tải về có thể bấm nút, hoặc làm theo hướng dẫn từng bước và nút chép lệnh để tự thiết lập (#563).
 - Lệnh cài trên Sway và Hyprland nay bật fcitx5 để gõ ngay và in dòng config cho lần đăng nhập sau (#557).
 - Người đóng gói distro có thể dùng thư viện Rust của distro, còn package hiện có vẫn mặc định dùng bản kèm trong source (#550).
 - Trang "Kiểm tra máy" trên GNOME: báo khi thiếu extension Input Method Panel và có nút Cài, vì thiếu nó thì menu chế độ `` ` `` không hiện trong ô tìm kiếm của GNOME (#507, #508)
@@ -46,6 +47,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Gõ Sen trong Firefox trên KDE ít sai chữ hơn hẳn khi gõ nhanh (#543).
 - Gõ Sen trong Firefox trên GNOME khi tắt extension ít sai chữ hơn hẳn khi gõ nhanh; VS Code hết sai chữ đầu (#541).
+- Gõ Sen trên GNOME: gõ nhanh trong app không báo lại chữ cho bộ gõ, như terminal của Zed, không còn đảo chữ: `looxi` ra `liỗ`, `ddi` ra `iđ`. Phím gõ trong lúc chờ thêm dấu nay đi cùng chữ có dấu (#571).
 - Gõ Sen trong WPS Office trên GNOME Wayland gõ đúng dấu khi cài package thiếu biến môi trường install.sh (#570).
 - Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Đóng hẳn menu `` ` `` khi cửa sổ mất focus hoặc bị đóng, tránh nuốt chữ và để phím e tắt tiếng Việt của app cũ; gõ ra `` ` `` khi app đi qua GNOME Shell mà thiếu extension kimpanel; sửa nhãn menu để nói rõ cài đặt dùng chung cho mọi app chưa có tên (#565).

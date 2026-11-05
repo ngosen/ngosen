@@ -270,6 +270,8 @@ namespace ngosen {
         bool     atStartOfLine() const;
         void     forwardTap(ngosen::EditKey key);
         bool     handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool     holdsKeyDuringTimedWait(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
+        void     noteHeldKeyForDoubling(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
         bool     handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
 
         // Presses real keys through XTEST, for frontends that cannot forward them.

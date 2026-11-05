@@ -69,15 +69,13 @@ namespace ngosen {
     }
 
     bool takesSentKeyEvents(const Field& field) {
-        if (!xsendAvailable())
-            return false;
         // WPS over IBus ignores forwarded keys and surrounding deletions, and reports the same flags as
         // Qt clients that honour them.
         if (field.frontend == "ibus")
-            return isWps(appName(field));
+            return isWps(appName(field)) && xsendAvailable();
         // Wine applies forwarded keys after a later commit and reports nothing that sets it apart;
         // xterm and XInput2 clients drop sent events, so the rest keep forwarding.
-        return field.frontend == "xim" && isStartsWith(appName(field), "wine");
+        return field.frontend == "xim" && isStartsWith(appName(field), "wine") && xsendAvailable();
     }
 
     bool ignoresForwardedKeys(const Field& field) {

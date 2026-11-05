@@ -220,6 +220,18 @@ namespace {
         return true;
     }
 
+    bool commitsWhenBackspacesFail(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+        auto context = h.open(program, frontend, caps);
+        if (!h.typeTieE(*context))
+            return false;
+        h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 500000);
+        if (context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure(frontend + " " + program + ": commit when the backspaces cannot be sent", "['ê']", joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
     // Clients whose forwarded keys already work keep forwarding.
     bool keepsForwarding(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, int caretWidth = 0) {
         const std::string where   = frontend + " " + program + ": ";
@@ -300,8 +312,9 @@ int main() {
     if (!keepsForwarding(h, "gtk3app", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix}))
         return 1;
 
-    // Without Xwayland there is no sender for WPS, so it stays on forwarded keys.
-    if (!keepsForwarding(h, "wps", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
+    // WPS over IBus is only known to ignore forwarded keys under Xwayland.
+    const auto wpsCaps = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText};
+    if (!keepsForwarding(h, "wps", "ibus", wpsCaps))
         return 1;
 
     // Under Xwayland XTEST asks the user first, so Wine gets key events sent to its window.
@@ -314,13 +327,22 @@ int main() {
     if (!pressesBackSpaceThroughXTest(h, "wine-preloader", "xim", fcitx::CapabilityFlags{}, fcitx::KeyStates(fcitx::KeyState::Repeat)))
         return 1;
     // WPS over IBus ignores forwarded keys and deletions through the surrounding text it claims to support.
-    const auto wpsCaps = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText};
     if (!pressesBackSpaceThroughXTest(h, "wps", "ibus", wpsCaps))
         return 1;
     if (!pressesBackSpaceThroughXTest(h, "et", "ibus", wpsCaps))
         return 1;
+    if (!pressesBackSpaceThroughXTest(h, "wpp", "ibus", wpsCaps))
+        return 1;
     if (!keepsForwarding(h, "qt5app", "ibus", wpsCaps))
         return 1;
+    // With no sentinel coming, the word must not wait for one.
+    setXSendSenderForTest([](int) { return false; });
+    if (!commitsWhenBackspacesFail(h, "wps", "ibus", wpsCaps))
+        return 1;
+    setXSendSenderForTest([&sent](int count) {
+        sent.push_back(count);
+        return true;
+    });
     // xterm drops sent events, so it keeps forwarding.
     if (!keepsForwarding(h, "xterm", "xim", fcitx::CapabilityFlags{}))
         return 1;

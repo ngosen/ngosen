@@ -45,6 +45,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Gõ Sen trên thanh địa chỉ Chrome ở GNOME nay ra đúng tiếng Việt khi tắt extension và có gợi ý tự điền (#543).
 - Gõ Sen trong Firefox trên KDE ít sai chữ hơn hẳn khi gõ nhanh (#543).
 - Gõ Sen trong Firefox trên GNOME khi tắt extension ít sai chữ hơn hẳn khi gõ nhanh; VS Code hết sai chữ đầu (#541).
 - Gõ Sen trên GNOME: gõ nhanh trong app không báo lại chữ cho bộ gõ, như terminal của Zed, không còn đảo chữ: `looxi` ra `liỗ`, `ddi` ra `iđ`. Phím gõ trong lúc chờ thêm dấu nay đi cùng chữ có dấu (#571).

@@ -136,7 +136,7 @@ namespace {
     constexpr uint32_t KeyReleaseMask = 2;
 
     // Under Xwayland, XTEST input goes through the compositor, which asks the user first. Events sent to
-    // the focused X window stay inside Xwayland and reach the client through its XIM filter like typed keys.
+    // the focused X window stay inside Xwayland and reach the client through its input method module like typed keys.
     class XSend {
       public:
         XSend() {

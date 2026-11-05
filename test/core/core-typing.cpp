@@ -441,6 +441,25 @@ namespace {
         check(cut.find('\b') == std::string::npos, "dbus: a backspace typed before the commit arrived is not committed", cut);
     }
 
+    // A terminal behind GNOME Shell's IBus bridge reports no text, so each replacement waits on a timer,
+    // and a key let through after the commit still reached Zed ahead of it ("looxi" gave "liỗ").
+    void testGnomeKeyDuringTimedWaitJoinsCommit() {
+        ngosen::test::AppQuirks quirks;
+        quirks.reportsEmptyText = true;
+        quirks.commitLagMs      = 5;
+        std::vector<uint32_t> keys;
+        std::vector<int>      gaps;
+        // The last letter of each word comes 2 ms after the key that adds the mark.
+        for (const std::string word : {"looxi ", "ddi ", "looxi ", "ddi ", "looxi "}) {
+            for (size_t i = 0; i < word.size(); ++i) {
+                keys.push_back(static_cast<uint32_t>(word[i]));
+                gaps.push_back(i + 3 == word.size() ? 2 : 100);
+            }
+        }
+        const std::string text = ngosen::test::typeInApp(makeField("ibus", true), quirks, keys, gaps);
+        check(text == "lỗi đi lỗi đi lỗi ", "GNOME ibus: a key typed during a timed wait lands after the replacement", text);
+    }
+
     void testMacroKeepsSpace() {
         FakeResources resources;
         resources.setMacros({{"e", "em"}, {"ko", "không"}});
@@ -2325,6 +2344,7 @@ int main() {
     testCommitAfterTheReport();
     testCommitAfterFieldRefocus();
     testKeyTypedBeforeCommitArrived();
+    testGnomeKeyDuringTimedWaitJoinsCommit();
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();
     testMacroKeepsSpace();

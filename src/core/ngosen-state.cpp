@@ -826,10 +826,13 @@ namespace ngosen {
                 ngosen::sleepUs(surr_wait_deliver_at_ - nowUs);
             }
             // A dbus client gets the commit after this key's reply and may type a key let through
-            // first, so a typing key goes out inside the commit and an Enter after it.
-            const bool enter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
-            if (host_->field().frontend == "dbus" && (typesText(keyEvent, currentSym) || enter || replayedEditKey(currentSym, keyEvent.states())) &&
-                buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            // first, and behind GNOME Shell's IBus bridge such a key reached Zed ahead of the commit,
+            // so a typing key goes out inside the commit; on dbus an Enter follows it as a key.
+            const Field field = host_->field();
+            const bool  enter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
+            const bool  held  = field.frontend == "dbus" ? typesText(keyEvent, currentSym) || enter || replayedEditKey(currentSym, keyEvent.states()) :
+                                                           ngosen::surroundingTextLags(field) && typesText(keyEvent, currentSym);
+            if (held && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
                 keyEvent.accept();
                 finishReplacement("key arrived", false);

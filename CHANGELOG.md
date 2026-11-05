@@ -10,10 +10,61 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Lệnh cài trên Sway và Hyprland nay bật fcitx5 để gõ ngay và in dòng config cho lần đăng nhập sau (#557).
+- Người đóng gói distro có thể dùng thư viện Rust của distro, còn package hiện có vẫn mặc định dùng bản kèm trong source (#550).
+- Trang "Kiểm tra máy" trên GNOME: báo khi thiếu extension Input Method Panel và có nút Cài, vì thiếu nó thì menu chế độ `` ` `` không hiện trong ô tìm kiếm của GNOME (#507, #508)
+- Cửa sổ cài đặt Qt và GTK có trang "Kiểm tra máy": hiện các bước cài đặt, số việc còn cần sửa và nút sửa
+  từng việc hoặc "Sửa cả N việc". Ô gõ thử, test app kèm nhật ký gõ, danh sách app kết nối với fcitx5 và gửi
+  kết quả qua Facebook, GitHub hoặc chép kết quả nằm cùng trang, thay hộp "Kiểm tra máy tôi…" và nút
+  "Báo lỗi" ở trang Giới thiệu (#463)
+- GNOME 46–50 với fcitx5 cũ hơn 5.1.22 (Ubuntu 24.04, 26.04): extension `forward-keys@ngosen.github.io` đi kèm gói nay báo tên app qua GNOME Shell cho Ngó Sen, để mỗi app nhớ riêng chế độ gõ và Anh/Việt; app dùng module fcitx vốn đã có tên. `install.sh` tự bật extension; nâng gói bằng apt, dnf thì chưa tự bật, trang Kiểm tra máy nay gợi ý và có nút bật, sau đó cần đăng xuất, đăng nhập lại; không bật vẫn gõ bình thường. Ai đã bật extension chỉ cần đăng nhập lại sau khi nâng gói (#510)
+
+### Thay đổi
+
+- Trang Kiểm tra máy không còn yêu cầu chạy install.sh, vì lệnh đó tải package GitHub đè lên package từ kho distro, và giờ nói thẳng việc cần làm (#551).
+- Chữ “Ngó Sen” cạnh logo và chữ gõ mẫu trong cài đặt Qt/GTK dùng font hệ thống thay cho Xanh Mono trên mọi distro (#548).
+- Cửa sổ cài đặt: trang Gõ chữ chia lại nhóm theo công dụng, giữ nguyên cài đặt đã lưu (#519).
+- Cửa sổ cài đặt: bản Qt và GTK làm mờ nhưng giữ giá trị các ô vô tác dụng, tìm kiếm chuyển tới ô bật chúng, còn bảng gõ tắt vẫn sửa được khi tắt Bật gõ tắt (#520).
+- Cửa sổ cài đặt: Qt và GTK nay giải thích tuỳ chọn đang chặn Từ điển, Keymap, Gõ tắt và Cứu dấu; GTK gợi ý khi Custom chưa có phím; thông báo và công tắc cập nhật sau khi đổi ở menu khay (#521).
+- Cửa sổ cài đặt: trang Gõ tắt bản Qt hiển thị định dạng giờ/ngày dễ đọc mà không đổi giá trị đã lưu, dùng nhãn Từ viết tắt/Từ đầy đủ, giải thích các công tắc và cuộn được khi cửa sổ nhỏ (#522).
+- Cửa sổ cài đặt: lăn chuột trên ô chọn không còn đổi và tự lưu giá trị (#522).
+- Cửa sổ cài đặt: thông báo đã lưu nổi ở đáy trang, không còn đẩy nội dung, tự tắt sau 5 giây và có nút đóng; thông báo sau Mặc định, Khôi phục và nút sửa ở Kiểm tra máy giữ tới khi đóng; trang Keymap, Từ điển cuộn được khi cửa sổ nhỏ (#524).
+- Cửa sổ cài đặt: bản Qt đổi nút “Mặc định” thành “Đưa về mặc định…” và ẩn thanh nút dưới cùng ở Có gì mới, Kiểm tra máy và Giới thiệu (#525).
+- Cửa sổ cài đặt: bản Qt và GTK giải thích chế độ đang chọn (#526).
+- Cửa sổ cài đặt: bản GTK đặt ví dụ gõ cạnh Kiểu gõ và ghi chú fcitx5 trong mô tả Phím chuyển Anh/Việt, tránh trông như tuỳ chọn bấm được (#529).
+- Cửa sổ cài đặt: ở bản GTK, trang Có gì mới & mẹo hiển thị ví dụ gõ cùng dòng với tính năng, còn nút Đề xuất tính năng ở trang Giới thiệu chỉ rộng vừa chữ (#530).
+- Cửa sổ cài đặt: bản Qt và GTK hiển thị “Chưa đặt” cho phím tắt chưa gán, dùng “Test”, thống nhất “xoá” và không còn gọi bản Qt là “cũ” (#532).
+- Ô tìm kiếm của GNOME: không còn Cứu chữ và Cứu dấu, vì GNOME nhận Tab và Esc trước Ngó Sen nên không trả lại được chữ đã đổi. Trình duyệt và app soạn thảo vẫn có cả hai. Cần fcitx5 5.1.22 trở lên hoặc extension của Ngó Sen báo tên app (#513).
+
+### Bỏ
+
+- Cửa sổ cài đặt: bỏ nút “Tắt” khỏi Chế độ gõ trên Qt và GTK; máy từng chọn “Tắt” nay hiện Gõ Sen, dùng phím chuyển Anh/Việt để gõ tiếng Anh (#528).
+
 ### Sửa
 
+- Gõ Sen trong WPS Office trên GNOME Wayland gõ đúng dấu khi cài package thiếu biến môi trường install.sh (#570).
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
+- Đóng hẳn menu `` ` `` khi cửa sổ mất focus hoặc bị đóng, tránh nuốt chữ và để phím e tắt tiếng Việt của app cũ; gõ ra `` ` `` khi app đi qua GNOME Shell mà thiếu extension kimpanel; sửa nhãn menu để nói rõ cài đặt dùng chung cho mọi app chưa có tên (#565).
+- Cài được Ngó Sen bằng lệnh một dòng trên Fedora 45; release có thêm gói cho x86_64 và aarch64 (#556).
+- Lệnh cài một dòng trên Fedora hỗ trợ bản mới ngay khi release có gói; nếu chưa có gói dựng sẵn, báo rõ và hướng dẫn cài từ mã nguồn (#558).
 - Khi bật tự khôi phục (mặc định), gõ issue, sorry, coffee không còn mất chữ thành isue, sory, cofee; tests không còn ra tets. Gõ đúp để bỏ dấu vẫn như cũ: tesst ra test, iss ra is, off ra of (#534).
 - Gõ Sen trên GNOME: gõ chậm trong Firefox không còn khiến Ngó Sen chuyển hẳn sang xoá bằng BackSpace sau vài từ đầu, làm mỗi từ gõ lâu hơn dù chữ vẫn đúng. Ngó Sen nay chờ app báo lại lần xoá tới 1 giây, không bỏ surrounding text chỉ vì app im lặng; app bỏ lệnh xoá hoặc xoá sai thì vẫn chuyển sang BackSpace (#515).
+- Lệnh cài nay đặt biến để app Qt 5 gõ được tiếng Việt trên Sway và Hyprland từ lần đăng nhập sau, nếu vào desktop từ màn hình đăng nhập; trên Hyprland cũng hết cảnh app Qt 5 mất chữ khi mở ngay sau khi đóng Konsole (#566).
+- Lệnh cài trên Sway và Hyprland nay chỉ đúng phím Ctrl+Space để bật bộ gõ khi máy có bộ gõ khác như Unikey, và in lệnh chuyển sang Ngó Sen nếu bộ gõ mặc định là bộ khác (#566).
+- Sửa thông tin giấy phép của từ điển trong package Debian thành GPLv3, với phần dữ liệu từ Wiktionary theo CC-BY-SA (#552).
+- Cửa sổ cài đặt: bản GTK tiếng Anh không còn bị cắt bên phải khi thu hẹp cửa sổ hết cỡ (#537).
+- Cửa sổ cài đặt: bản GTK không còn cắt phần bên phải khi thu hẹp cửa sổ ở tiếng Việt (#531).
+
+### Tài liệu
+
+- README sửa phím chuyển Anh/Việt khi cài từ repo hoặc package từ Ctrl+Space thành Ctrl+Shift, đúng với bản cài mới (#562).
+- README hướng dẫn thiết lập KDE Wayland khi cài từ repo hoặc package (#560).
+- README hướng dẫn thiết lập GNOME khi cài từ repo hoặc package: tự chạy fcitx5 khi đăng nhập, biến môi trường và extension (#559).
+- Sửa README để nói rõ từ version 0.5.0, Ngó Sen không còn dùng uinput (#554).
+- README ghi rõ app hỗ trợ Cứu dấu trên X11 và giới hạn trong OnlyOffice (#553).
+- README bỏ ghi chú và mục lỗi về Firefox snap, ghi chú chưa test NixOS và câu không cam kết hỗ trợ ở phần tiếng Anh (#549).
 
 ## [1.7.6-1] — 02/11/2026
 

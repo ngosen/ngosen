@@ -65,6 +65,8 @@ The release is `X.Y.Z-N` (`N` is the packaging revision) with epoch 1, tagged `n
 
 5. Check the draft release before publishing:
    - all packages and `SHA256SUMS` are attached, and the sums match;
+   - every numbered Fedora row in `.github/package-matrix.json` has its package, since the release
+     publishes whatever was built;
    - every package reports `1:X.Y.Z-N`;
    - each pattern `install.sh` looks for matches exactly one line of `SHA256SUMS`.
 6. The maintainer publishes it:

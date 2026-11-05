@@ -12,11 +12,12 @@
 namespace ngosen {
 
     // True when the frontend can deliver backspaces itself, so XTEST is not needed: the Wayland
-    // input-method frontend, XIM clients under Xwayland, and IBus, D-Bus and fcitx4 clients other than SDL.
+    // input-method frontend, XIM clients under Xwayland, and IBus, D-Bus and fcitx4 clients other than SDL
+    // and those takesSentKeyEvents picks.
     bool forwardsBackspaces(const Field& field);
 
-    // True for Wine over XIM under Xwayland, where XTEST asks the user first: backspaces go
-    // as key events sent to the focused X window instead.
+    // True for Wine over XIM and WPS over IBus under Xwayland, where XTEST asks the user first:
+    // backspaces go as key events sent to the focused X window instead.
     bool takesSentKeyEvents(const Field& field);
 
     // True for GTK4 clients, whose IM modules drop forwarded keys; delete through surrounding text there.
@@ -52,6 +53,10 @@ namespace ngosen {
     // mutter sends GNOME Shell's text-input edits once per main-loop turn, and the client keeps only the
     // last deletion and commit of a turn.
     bool keepsLastEditPerTurn(const Field& field);
+
+    // GNOME acts on Tab and Esc in its search box before the input method sees them, so nothing typed
+    // there could be taken back; retyping and retoning stay out of it.
+    bool isGnomeSearch(const Field& field);
 
     // Wayland text input delivers a commit only to the field that has focus.
     bool dropsCommitsWithoutFocus(const Field& field);

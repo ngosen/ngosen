@@ -22,7 +22,7 @@ namespace ngosen {
         // The app's own program name. IBus names a client "<toolkit>-im:<program>" (gtk3-im:firefox), and a
         // snap's program repeats the snap name (firefox_firefox).
         std::string appName(const Field& field) {
-            std::string program = field.program;
+            std::string program = stripDesktopSuffix(field.program);
             if (field.frontend == "ibus") {
                 const size_t colon = program.find(':');
                 if (colon != std::string::npos && isEndsWith(program.substr(0, colon), "-im"))
@@ -31,7 +31,12 @@ namespace ngosen {
                 if (underscore != std::string::npos && program.compare(0, underscore, program, underscore + 1) == 0)
                     program.erase(underscore);
             }
-            return stripDesktopSuffix(program);
+            return program;
+        }
+
+        // WPS Writer, Spreadsheets and Presentation.
+        bool isWps(const std::string& program) {
+            return program == "wps" || program == "et" || program == "wpp";
         }
     } // namespace
 
@@ -49,7 +54,7 @@ namespace ngosen {
         }
         if (field.frontend == "ibus") {
             // SDL takes only commits and preedit from the IM.
-            return !isStartsWith(field.program, "SDL");
+            return !isStartsWith(field.program, "SDL") && !takesSentKeyEvents(field);
         }
         if (field.frontend == "dbus") {
             // fcitx5-gtk and fcitx5-qt set one of these; SDL sets neither and handles only commits and preedit.
@@ -64,11 +69,13 @@ namespace ngosen {
     }
 
     bool takesSentKeyEvents(const Field& field) {
-        if (field.frontend != "xim" || !xsendAvailable())
-            return false;
+        // WPS over IBus ignores forwarded keys and surrounding deletions, and reports the same flags as
+        // Qt clients that honour them.
+        if (field.frontend == "ibus")
+            return isWps(appName(field)) && xsendAvailable();
         // Wine applies forwarded keys after a later commit and reports nothing that sets it apart;
         // xterm and XInput2 clients drop sent events, so the rest keep forwarding.
-        return isStartsWith(appName(field), "wine");
+        return field.frontend == "xim" && isStartsWith(appName(field), "wine") && xsendAvailable();
     }
 
     bool ignoresForwardedKeys(const Field& field) {
@@ -122,9 +129,7 @@ namespace ngosen {
     bool typesOverPrimarySelection(const Field& field) {
         // Terminals, Emacs and Vim also own the primary selection and report the same, but type elsewhere.
         const std::string program = appName(field);
-        // WPS Writer, Spreadsheets and Presentation.
-        const bool wps = program == "wps" || program == "et" || program == "wpp";
-        return isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || wps;
+        return isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || isWps(program);
     }
 
     bool surroundingTextLags(const Field& field) {
@@ -133,7 +138,11 @@ namespace ngosen {
 
     // Only GNOME Shell sends edits through mutter; nothing else the field reports tells it apart.
     bool keepsLastEditPerTurn(const Field& field) {
-        return field.frontend == "ibus" && appName(field) == "gnome-shell";
+        return field.frontend == "ibus" && (appName(field) == "gnome-shell" || field.reportedProgram == "gnome-shell");
+    }
+
+    bool isGnomeSearch(const Field& field) {
+        return appName(field) == "gnome-shell-overview";
     }
 
     bool dropsCommitsWithoutFocus(const Field& field) {

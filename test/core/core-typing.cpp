@@ -1194,6 +1194,51 @@ namespace {
             else
                 check(taken, "focus bounce with the word still there: keeps it", "e went to the app as a plain key");
         }
+
+        // Firefox bounces focus while a page loads and its reports trail the keys, so the first word can
+        // look lost when it is only not reported yet.
+        struct BounceReports {
+            const char*              label;
+            const char*              program;
+            std::string              reportedBefore;
+            std::vector<std::string> reports;
+            bool                     keepsWord;
+        };
+        const std::vector<BounceReports> cases = {
+            {"firefox, report one letter short", "firefox", "", {"ti"}, true},     {"firefox, report still empty", "firefox", "", {""}, true},
+            {"firefox, report catching up", "firefox", "t", {"ti"}, true},         {"firefox, empty report then another field's text", "firefox", "", {"", "xin chao"}, false},
+            {"firefox, another field's text", "firefox", "", {"xin chao"}, false}, {"firefox, whole word reported, then an empty field", "firefox", "tie", {""}, false},
+            {"other app, report still empty", "gedit", "", {""}, false},
+        };
+        for (const auto& c : cases) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland_v2", true, c.program));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            host->setSurrounding("", 0);
+            state.surroundingUpdated();
+            press(state, static_cast<uint32_t>('t'));
+            press(state, static_cast<uint32_t>('i'));
+            press(state, static_cast<uint32_t>('e'));
+            loop.pump(40);
+            if (!c.reportedBefore.empty()) {
+                host->setSurrounding(c.reportedBefore, static_cast<unsigned int>(c.reportedBefore.size()));
+                state.surroundingUpdated();
+                loop.pump(40);
+            }
+            state.deactivate(true);
+            loop.pump(3);
+            state.activate(ngosen::Mode::Sen, true);
+            for (const auto& report : c.reports) {
+                host->setSurrounding(report, static_cast<unsigned int>(report.size()));
+                state.surroundingUpdated();
+            }
+            const bool taken = press(state, static_cast<uint32_t>('e'));
+            check(taken == c.keepsWord, std::string("focus bounce, ") + c.label + (c.keepsWord ? ": keeps the word" : ": starts a new word"),
+                  taken ? "e changed the old word" : "e went to the app as a plain key");
+        }
     }
 
     void testHomeDictionaryPath() {
@@ -2410,6 +2455,8 @@ namespace {
         check(ok, "IBus Ptyxis erases with a committed DEL", said(ok));
         ok = ngosen::hidesAddressBarFlag(ibus("gtk3-im:gnome-terminal-server"));
         check(!ok, "IBus terminal is not Firefox", said(ok));
+        ok = ngosen::hidesAddressBarFlag(ibus("librewolf_librewolf.desktop"));
+        check(ok, "a snap's desktop ID is read as its program", said(ok));
         ok = ngosen::hidesAddressBarFlag(ibus("gnome-shell"));
         check(!ok, "GNOME Shell is not Firefox", said(ok));
         ok = ngosen::appliesBackspacesLate(ibus("gtk3-im:soffice_bin"));

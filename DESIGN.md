@@ -1,6 +1,6 @@
 ---
 name: Ngó Sen settings
-description: A native KDE/GNOME settings window with a few marks borrowed from the website.
+description: A native KDE/GNOME settings window with a few Ngó Sen marks.
 colors:
   enamel: "#1c6b5f"
   enamel-dark: "#247b6c"
@@ -11,14 +11,11 @@ colors:
   saved-border: "#1c6b5f"
   saved-border-dark: "#3f9c8b"
 typography:
+  family: "system font"
   wordmark:
-    fontFamily: "'Xanh Mono', 'DejaVu Sans Mono', monospace"
-    fontSize: "22px"
-    wordSpacing: "-0.28em"
+    fontSize: "22px in the Qt sidebar, 30px on the Qt About page, 26px in the GTK window"
   typed:
-    fontFamily: "'Xanh Mono', 'DejaVu Sans Mono', monospace"
     fontSize: "16-17px"
-  everything-else: "system font (QApplication default)"
 ---
 
 # Design: Ngó Sen settings window
@@ -26,7 +23,7 @@ typography:
 The window looks like it belongs to the desktop it runs on. Layout, widgets and fonts come from the
 platform style (Breeze on KDE, the Qt style in use on GNOME); the accent colour is Ngó Sen's enamel
 green. Ngó Sen also shows itself in the icon, the wordmark, the current typing mode and text that
-shows typing, all taken from the website's design (`ngosen.github.io`, its `DESIGN.md`).
+shows typing. The colours and icon come from the website's design (`ngosen.github.io`, its `DESIGN.md`); the type does not.
 
 Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9fvc4bBDQs>
 (board "Giao diện hệ thống + chút website").
@@ -43,34 +40,41 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
    seen through (`settings-gui/ui/scroll_bars.py`).
 2. **Four brand marks, nothing more.**
    - The tray icon (`fcitx-ngosen`, a lotus-root slice on enamel green) at the top of the sidebar.
-   - The wordmark "Ngó Sen" in Xanh Mono next to it, with diacritics, never in bold.
-   - The current typing mode (Sen, Preedit, Emoji, Tắt) as a segmented row of buttons; the checked
+   - The wordmark "Ngó Sen" next to it, at a fixed large size, with diacritics, never in bold.
+   - The current typing mode (Gõ Sen, Gạch chân, Chọn Emoji) as a segmented row of buttons; the checked
      one is filled enamel with `on-enamel` text.
-   - Typed text in Xanh Mono: the keys-to-result example under the input method
+   - Typed text at a fixed size: the keys-to-result example under the input method
      (`vieetj → việt`) and the test field.
 3. **Ngó Sen's own name and marks.** No lotus flower logo; the README credits the projects it builds on.
-4. **Changes save at once.** No OK, Apply or Cancel. After a change, an inline message at the top
-   of the page says "Đã lưu “<setting>”." with a Hoàn tác button (`KMessageWidget`-style: enamel
-   border, light enamel fill; `saved-*` colours). One message, replaced by the next change.
-5. **Ship one font.** Xanh Mono (OFL) is bundled with the settings GUI. If it is missing, fall back
-   to the system monospace font; nothing else changes.
+4. **Changes save at once.** No OK, Apply or Cancel. After a change, a message floats over the
+   bottom of the page, which scrolls only if the focused control would be under it, and says
+   "Đã lưu “<setting>”." with a Hoàn tác button
+   (`KMessageWidget`-style: enamel border, light enamel fill; `saved-*` colours). One message,
+   replaced by the next change. It leaves after 5 seconds unless the pointer or focus is on it;
+   errors and messages whose Undo takes back a whole fix or list stay until closed.
+5. **Ship no font.** All text uses the system font: distributions keep fonts in their own packages,
+   and a monospace fallback can misplace stacked Vietnamese tones.
 
 ## Layout
 
 - Window: sidebar list on the left, page on the right. Below about 620px wide the form labels go
   above their fields.
-- Sidebar: icon and wordmark, a search field, then six pages with a small line icon each:
-  Gõ chữ, Gõ tắt & Từ điển, Phím, Giao diện, Có gì mới & mẹo, Giới thiệu. The current page uses
+- Sidebar: icon and wordmark, a search field, then seven pages with a small line icon each:
+  Gõ chữ, Gõ tắt & Từ điển, Phím, Giao diện, Có gì mới & mẹo, Kiểm tra máy, Giới thiệu. The current page uses
   the platform's selection look.
-- Có gì mới & mẹo: one card per recent feature (name, how to use it, a typed example in Xanh
-  Mono, an "Mở cài đặt" button that jumps to the setting), then the tips as plain lines. Nothing
+- Có gì mới & mẹo: one card per recent feature (name, how to use it, a typed example, an "Mở cài đặt" button that jumps to the setting), then the tips as plain lines. Nothing
   on it is a control, so the search field skips it. Gõ chữ shows one tip, picked at random, above
   its form.
 - Page: title in the system font (semibold, about 1.3× body), then a form layout (`QFormLayout`):
   labels right-aligned with a colon, controls left-aligned. Groups are separated by a thin line,
-  the group name in the label column ("Cách bỏ dấu:", "Gõ nhanh:").
+  the group name in the label column ("Cách bỏ dấu:", "Gõ nhanh:"). A group with no checkbox to
+  carry the name ("Phím gõ:") gets a line of its own.
 - The most common changes come first on Gõ chữ: Chế độ gõ, Kiểu gõ, Bảng mã.
-- Bottom bar: Mặc định on the left; Sao lưu… and Khôi phục… on the right.
+- A setting that does nothing because of a switch next to it is disabled, keeping its value
+  (`DEPENDS` in `core/catalog.py`). Search and "Mở cài đặt" land on that switch. Lists the user
+  writes (macros, dictionary, keymap) stay editable, so they can be filled before being turned on.
+- Bottom bar: Đưa về mặc định… on the left; Sao lưu… and Khôi phục… on the right. Only on pages with
+  settings: Có gì mới, Kiểm tra máy and Giới thiệu have nothing there to reset or back up.
 
 ## Colour
 
@@ -102,19 +106,18 @@ settings only through `settings-gui/core/`, so both windows save the same values
 
 - **libadwaita 1.5 or newer** (Ubuntu 24.04, Mint 22, Debian 13, Fedora 43). Where the system has an
   older one (Debian 12, Mint 21) the installer picks the Qt window.
-- **Stock widgets.** `AdwNavigationSplitView` with the six pages in the sidebar, as in GNOME
+- **Stock widgets.** `AdwNavigationSplitView` with the seven pages in the sidebar, as in GNOME
   Settings; below about 600sp only one side shows. Each page is an `AdwPreferencesPage` of
   `AdwPreferencesGroup`s with `AdwSwitchRow`, `AdwComboRow`, `AdwEntryRow` and `AdwSpinRow`. A
   hint is the row's subtitle. No CSS beyond the brand marks and the accent colour.
 - **The same four brand marks.** The icon and wordmark at the top of the sidebar; typed text in
-  Xanh Mono through a `.typed` class; the typing mode as linked toggle buttons, the checked one
+  a larger size through a `.typed` class; the typing mode as linked toggle buttons, the checked one
   filled enamel with `on-enamel` text (`enamel-dark` in dark mode). libadwaita 1.5 has no
   `AdwToggleGroup`.
 - **Changes save at once.** Each change shows an `AdwToast` "Đã lưu “<setting>”." with Hoàn tác,
   one at a time, instead of the Qt window's inline message.
-- **Bottom bar as in the Qt window**, an `AdwToolbarView` bottom bar: Mặc định on the left, Sao
-  lưu… and Khôi phục… on the right, so both windows put them in the same place. Mặc định asks
-  first in an `AdwAlertDialog`.
+- **A header menu instead of the Qt window's bottom bar**, holding Sao lưu…, Khôi phục… and Đưa về
+  mặc định…, as GNOME apps do. Đưa về mặc định… asks first in an `AdwAlertDialog`.
 - **Enamel is the window's accent.** The app sets libadwaita's accent colours to `enamel` (light)
   and `enamel-dark` (dark) with `on-enamel` text, so switches, checkboxes, focus rings
   and suggested buttons are enamel. This one window ignores the accent the user picked in GNOME.

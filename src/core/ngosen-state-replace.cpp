@@ -497,7 +497,11 @@ namespace ngosen {
             replaceThroughForwardedKeys();
             return;
         }
-        sendBackspaceKeys(expected_backspaces_);
+        // No sentinel will come back, and waiting for it would swallow everything typed next.
+        if (!sendBackspaceKeys(expected_backspaces_)) {
+            finishReplacement("backspaces not sent", false);
+            return;
+        }
         NGOSEN_INFO("Send " + std::to_string(expected_backspaces_) + " backspaces");
     }
 

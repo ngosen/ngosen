@@ -18,10 +18,10 @@ file(GLOB_RECURSE NGOSEN_BAMBOO_SRCS src/*.rs src/*.txt)
 
 # Cargo reads the vendored-sources config from the working directory, not the manifest's.
 add_custom_command(OUTPUT "${NGOSEN_BAMBOO_LIB}"
-    DEPENDS ${NGOSEN_BAMBOO_SRCS} Cargo.toml Cargo.lock .cargo/config.toml
+    DEPENDS ${NGOSEN_BAMBOO_SRCS} Cargo.toml ${NGOSEN_CARGO_VENDOR_FILES}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${NGOSEN_CARGO_TARGET_DIR}
-            ${CARGO_EXECUTABLE} build ${NGOSEN_CARGO_PROFILE_FLAG} --offline --locked --lib
+            ${CARGO_EXECUTABLE} build ${NGOSEN_CARGO_PROFILE_FLAG} --offline ${NGOSEN_CARGO_LOCKED} --lib
     VERBATIM)
 add_custom_target(ngosen-bamboo DEPENDS "${NGOSEN_BAMBOO_LIB}")
 

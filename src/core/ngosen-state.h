@@ -272,7 +272,7 @@ namespace ngosen {
         bool     handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
 
         // Presses real keys through XTEST, for frontends that cannot forward them.
-        void sendBackspaceKeys(int count) const;
+        bool sendBackspaceKeys(int count) const;
         // Sends text to the app and records it as ours.
         void commit(const std::string& text);
 
@@ -487,6 +487,7 @@ namespace ngosen {
         bool deferLaggingCommit(const char* reason, uint64_t settleUs = 0);
         void noteWaitOutcome(const char* reason);
         bool lostWordAfterBounce(const Surrounding& s, bool settling);
+        bool reportTrailsFirstWord(const Surrounding& s) const;
         void forwardBackspaces(int count);
         // True when a replacement can delete text: through backspaces the frontend forwards or XTEST presses, or, where
         // the app takes no keys, through its surrounding text or a DEL in a terminal.

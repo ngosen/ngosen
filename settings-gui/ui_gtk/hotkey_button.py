@@ -73,7 +73,7 @@ class HotkeyButton(Gtk.ToggleButton):
         elif self.key:
             parts = pretty_format_hotkey_parts(self.key)
         else:
-            parts = [_("None")]
+            parts = [_("Not set")]
         for part in parts:
             label = Gtk.Label(label=part)
             if self.key and not self.get_active() or part in MODIFIER_ORDER:

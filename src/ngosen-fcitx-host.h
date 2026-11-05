@@ -21,8 +21,10 @@ namespace ngosen {
 
     class FcitxHost final : public Host {
       public:
-        // shellDropsKeys, when set, says whether GNOME Shell currently loses the keys we forward.
-        FcitxHost(fcitx::InputContext* ic, fcitx::Instance* instance, const bool* shellDropsKeys = nullptr) : ic_(ic), instance_(instance), shell_drops_keys_(shellDropsKeys) {}
+        // shellDropsKeys, when set, says whether GNOME Shell currently loses the keys we forward;
+        // shellFocusedApp, when set, names the app GNOME Shell has focused.
+        FcitxHost(fcitx::InputContext* ic, fcitx::Instance* instance, const bool* shellDropsKeys = nullptr, const std::string* shellFocusedApp = nullptr) :
+            ic_(ic), instance_(instance), shell_drops_keys_(shellDropsKeys), shell_focused_app_(shellFocusedApp) {}
 
         void                         commitText(const std::string& text) override;
         void                         forwardKey(EditKey key, bool release, uint32_t time) override;
@@ -60,6 +62,7 @@ namespace ngosen {
         fcitx::InputContext*                        ic_;
         fcitx::Instance*                            instance_;
         const bool*                                 shell_drops_keys_;
+        const std::string*                          shell_focused_app_;
     };
 
     class FcitxKeyPress final : public KeyPress {

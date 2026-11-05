@@ -3,10 +3,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The Macros page: its switches and formats, an editor and the list, each saved at once."""
 
+from core.catalog import HINTS, locked_by
 from gi.repository import Adw, Gtk
 from i18n import N_, _
 
-from core import macros
+from core import macros, page_status
+from ui_gtk.status_row import show_status, status_row
 
 SWITCHES = {
     "EnableMacro": N_("Enable Macro"),
@@ -31,17 +33,23 @@ class MacroPage:
         self.page.add(self._editor())
         self.page.add(self._list())
         self.refresh()
+        self.refresh_status()
 
     def _options(self):
         group = Adw.PreferencesGroup(
             title=_("Macros"),
             description=_("Macros support dynamic placeholders: $TIME and $DATE."),
         )
+        self.status = status_row()
+        group.add(self.status)
         self.switches = {}
         for key, title in SWITCHES.items():
             row = Adw.SwitchRow(title=_(title), use_markup=False)
+            if key in HINTS:
+                row.set_subtitle(_(HINTS[key]))
             row.set_active(self.table.options[key])
             row.connect("notify::active", self._on_switch, key)
+            row.setting_key = key
             self.switches[key] = row
             group.add(row)
         self.formats = {}
@@ -50,9 +58,33 @@ class MacroPage:
             row.set_model(Gtk.StringList.new([_(macros.EXAMPLES[f]) for f in macros.FORMATS[key]]))
             row.set_selected(macros.FORMATS[key].index(self.table.options[key]))
             row.connect("notify::selected", self._on_format, key)
+            row.setting_key = key
             self.formats[key] = row
             group.add(row)
         return group
+
+    def control_for(self, key):
+        """The row that edits a setting, for the window to show and focus."""
+        return self.switches.get(key) or self.formats.get(key)
+
+    def value_of(self, key):
+        return self.table.options.get(key)
+
+    def _apply_locks(self):
+        for key, row in (*self.switches.items(), *self.formats.items()):
+            row.set_sensitive(locked_by(key, self.value_of) is None)
+
+    def refresh_status(self):
+        """Shows why this page is not in use now, without rebuilding it."""
+        model = page_status.read(self.table.dbus)
+        if model and not self.table.is_modified():
+            self.table.follow(model.value_of)
+            self._syncing = True
+            for key, row in self.switches.items():
+                row.set_active(self.table.options[key])
+            self._syncing = False
+            self._apply_locks()
+        show_status(self.status, page_status.macro_line(model) if model else "")
 
     def _on_switch(self, row, _param, key):
         if not self._syncing:
@@ -161,6 +193,7 @@ class MacroPage:
         for key, row in self.formats.items():
             row.set_selected(macros.FORMATS[key].index(self.table.options[key]))
         self._syncing = False
+        self._apply_locks()
         self.list.remove_all()
         for entry in self.table.entries:
             self.list.append(self._row(entry))

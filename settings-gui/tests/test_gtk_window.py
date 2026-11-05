@@ -17,14 +17,26 @@ import ui_gtk
 CAN_RUN = ui_gtk.available() and bool(os.environ.get("DISPLAY"))
 # The GTK CI job sets this, so a missing package fails the run instead of skipping these tests.
 REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
+# The smallest width libadwaita's adaptive windows are meant to fit.
+NARROWEST_WINDOW = 360
 
 if CAN_RUN:
     from core.brand import MESSENGER_URL
+    from core.catalog import (
+        DEPENDS,
+        HINTS,
+        MODE_BUTTON_ORDER,
+        MODE_HINTS,
+        SETTINGS_MAP,
+        TYPING_EXAMPLES,
+        SettingsCategory,
+    )
     from gi.repository import Adw, Gdk, Gio, GLib, Gtk
-    from ui_gtk import brand, check_dialog, window
+    from ui_gtk import brand, check_page, window
     from ui_gtk.hotkey_button import HotkeyButton
+    from ui_gtk.shortcuts import ShortcutsPage
 
-    from core import dictionary, keymap, system_check, typing_log, whats_new_content
+    from core import dictionary, keymap, page_status, system_check, typing_log, whats_new_content
 
 
 def isolate(test):
@@ -96,6 +108,62 @@ class GtkWindowTest(unittest.TestCase):
         buttons[1].set_active(True)
         self.assertEqual(self.dbus.values["Mode"], "Preedit")
 
+    def test_the_mode_line_says_what_the_picked_mode_does(self):
+        page = self.window.typing
+        for mode in MODE_BUTTON_ORDER:
+            page.mode_buttons[mode].set_active(True)
+            self.assertEqual(page.rows["Mode"].get_subtitle(), MODE_HINTS[mode], mode)
+
+    def test_the_example_is_on_the_input_method_row(self):
+        page = self.window.typing
+        combo = page.rows["InputMethod"]
+        self.assertIs(page.example.get_ancestor(Adw.ComboRow), combo)
+        self.assertEqual(page.example.get_text(), TYPING_EXAMPLES["Telex"])
+        combo.set_selected(combo.values.index("VNI"))
+        self.assertEqual(page.example.get_text(), TYPING_EXAMPLES["VNI"])
+        rows = _children(combo.get_ancestor(Adw.PreferencesGroup))
+        typed = [r for r in rows if isinstance(r, Adw.PreferencesRow) and r.has_css_class("typed")]
+        self.assertEqual(typed, [])
+
+    def test_the_fcitx5_note_is_part_of_the_switch_key_row(self):
+        note = "fcitx5 has other input methods too; its own key still switches to them."
+        for other_methods, expected in ((True, True), (False, False)):
+            page = ShortcutsPage(self.window.model, lambda *_args: None, other_methods)
+            row = page.hotkeys["ToggleKey"].get_ancestor(Adw.ActionRow)
+            self.assertEqual(note in row.get_subtitle(), expected)
+            self.assertIn(HINTS["ToggleKey"], row.get_subtitle())
+
+    def test_english_is_left_to_the_switch_key(self):
+        self.assertEqual(list(self.window.typing.mode_buttons), MODE_BUTTON_ORDER)
+        self.assertNotIn("OFF", MODE_BUTTON_ORDER)
+
+    def test_a_saved_off_shows_as_the_sen_it_types(self):
+        dbus = FakeDBusHandler({"Mode": "OFF"})
+        opened = window.Window(None, dbus)
+        self.addCleanup(opened.destroy)
+        self.assertTrue(opened.typing.mode_buttons["Sen"].get_active())
+        self.assertEqual(opened.typing.rows["Mode"].get_subtitle(), MODE_HINTS["Sen"])
+        self.assertEqual(dbus.values["Mode"], "OFF")
+
+    def test_a_mode_saved_outside_the_window_moves_the_button_and_the_line(self):
+        page = self.window.typing
+        self.dbus.values["Mode"] = "Preedit"
+        before = dict(self.dbus.values)
+        page.refresh_status()
+        self.assertTrue(page.mode_buttons["Preedit"].get_active())
+        self.assertEqual(page.rows["Mode"].get_subtitle(), MODE_HINTS["Preedit"])
+        self.assertEqual(self.dbus.values, before)
+
+    def test_every_page_fits_the_narrowest_window(self):
+        # A breakpoint window does not grow for its content, and the stack takes its widest page's
+        # width, so one wide page cuts off every page on the right.
+        pages = self.window.stack.get_pages()
+        for i in range(pages.get_n_items()):
+            page = pages.get_item(i)
+            with self.subTest(page=page.get_name()):
+                width = page.get_child().measure(Gtk.Orientation.HORIZONTAL, -1)[0]
+                self.assertLessEqual(width, NARROWEST_WINDOW)
+
     def test_show_page_switches_and_ignores_pages_not_built_yet(self):
         self.window.show_page("about")
         self.assertEqual(self.window.stack.get_visible_child_name(), "about")
@@ -110,6 +178,9 @@ class GtkWindowTest(unittest.TestCase):
     def test_the_accent_follows_the_libadwaita_version(self):
         self.assertIn("@define-color accent_bg_color #1c6b5f", brand.css(False, 5))
         self.assertIn("--accent-bg-color: #247b6c", brand.css(True, 6))
+
+    def test_the_marks_keep_the_system_font(self):
+        self.assertNotIn("font-family", brand.css(False, 6))
 
     def test_the_accent_beats_the_users_gtk_css(self):
         # Desktops such as Plasma write their accent to ~/.config/gtk-4.0/gtk.css.
@@ -463,6 +534,219 @@ class GtkAppearancePageTest(unittest.TestCase):
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkTypingPageTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        isolate(self)
+        self.page = window.Window(None, FakeDBusHandler()).typing
+
+    def test_only_the_first_group_has_no_title(self):
+        groups = [w for w in _children(self.page.page) if isinstance(w, Adw.PreferencesGroup)]
+        titled = [group.get_title() for group in groups if group.get_title()]
+        self.assertEqual(titled, ["Fixing words", "Tone marks", "Typing keys", "Quick typing"])
+        mode_row = self.page.rows["InputMethod"]
+        first = next(g for g in groups if mode_row in _children(g))
+        self.assertEqual(first.get_title(), "")
+
+    def test_rows_follow_the_catalog(self):
+        keys = [k for group in SETTINGS_MAP[SettingsCategory.TYPING].values() for k in group]
+        self.assertEqual([k for k in self.page.rows if k in keys], keys)
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkLocksTest(unittest.TestCase):
+    def setUp(self):
+        isolate(self)
+
+    def window(self, values):
+        w = window.Window(None, FakeDBusHandler(values))
+        self.addCleanup(w.destroy)
+        w.present()
+        return w
+
+    @staticmethod
+    def page_with(w, key):
+        pages = (w.typing, w.shortcuts, w.appearance, w.macros)
+        return next(p for p in pages if p.control_for(key) is not None)
+
+    @staticmethod
+    def locked_values():
+        return {c: "False" if v == "True" else "True" for c, v in DEPENDS.values()}
+
+    def test_every_locked_setting_is_insensitive_and_opens_what_unlocks_it(self):
+        w = self.window(self.locked_values())
+        for key, (controller, _needed) in DEPENDS.items():
+            page = self.page_with(w, key)
+            locked = w.shortcuts.mode_keys[key] if page is w.shortcuts else page.control_for(key)
+            self.assertFalse(locked.get_sensitive(), key)
+            self.assertTrue(w.open_setting(key), key)
+            self.assertIs(w.get_focus(), page.control_for(controller), key)
+
+    def test_every_setting_is_sensitive_and_opens_itself_when_unlocked(self):
+        w = self.window({c: v for c, v in DEPENDS.values()})
+        for key in DEPENDS:
+            page = self.page_with(w, key)
+            locked = w.shortcuts.mode_keys[key] if page is w.shortcuts else page.control_for(key)
+            self.assertTrue(locked.get_sensitive(), key)
+            self.assertTrue(w.open_setting(key), key)
+            self.assertIs(w.get_focus(), page.control_for(key), key)
+
+    def test_a_search_result_for_a_locked_setting_opens_what_unlocks_it(self):
+        w = self.window(self.locked_values())
+        for key, (controller, _needed) in DEPENDS.items():
+            page = self.page_with(w, key)
+            w.search_entry.set_text(page.control_for(key).get_title())
+            w._on_search(w.search_entry)
+            index = 0
+            while w.results.get_row_at_index(index).found[2] != key:
+                index += 1
+            w.open_result(w.results.get_row_at_index(index))
+            self.assertIs(w.get_focus(), page.control_for(controller), key)
+
+    def test_a_controller_locks_and_unlocks_at_once(self):
+        w = self.window(
+            {"AutoNonVnRestore": "True", "UseLotusIcons": "False", "EnableMacro": "True"}
+        )
+        for controller, locked, switch in (
+            (w.typing.rows["AutoNonVnRestore"], w.typing.rows["DdFreeStyle"], True),
+            (w.appearance.rows["UseLotusIcons"], w.appearance.rows["IconTheme"], False),
+            (w.macros.switches["EnableMacro"], w.macros.formats["DateFormat"], True),
+        ):
+            self.assertTrue(locked.get_sensitive())
+            controller.set_active(not switch)
+            self.assertFalse(locked.get_sensitive())
+            controller.set_active(switch)
+            self.assertTrue(locked.get_sensitive())
+
+    def test_a_locked_mode_keeps_its_checkbox_and_row(self):
+        w = self.window({"ShowModeEmoji": "True"})
+        page = w.shortcuts
+        page.mode_checks["ShowModeEmoji"].set_active(False)
+        self.assertFalse(page.mode_keys["ShortcutEmoji"].get_sensitive())
+        self.assertTrue(page.mode_checks["ShowModeEmoji"].get_sensitive())
+        self.assertTrue(page.mode_rows["ShortcutEmoji"].get_sensitive())
+
+    def test_a_locked_mode_stays_locked_after_reordering(self):
+        w = self.window({"ShowModeEmoji": "False"})
+        self.assertTrue(w.shortcuts.move("Emoji", "Sen"))
+        self.assertFalse(w.shortcuts.mode_keys["ShortcutEmoji"].get_sensitive())
+
+    def test_locks_follow_undo_and_the_defaults(self):
+        w = self.window({"AutoNonVnRestore": "True"})
+        w.typing.rows["AutoNonVnRestore"].set_active(False)
+        self.assertFalse(w.typing.rows["SpellCheck"].get_sensitive())
+        w.undo()
+        self.assertTrue(w.typing.rows["SpellCheck"].get_sensitive())
+        w.typing.rows["AutoNonVnRestore"].set_active(False)
+        w.restore_defaults()
+        self.assertTrue(w.typing.rows["SpellCheck"].get_sensitive())
+
+    def test_the_macro_locks_follow_undo(self):
+        w = self.window({"EnableMacro": "True"})
+        w.macros.switches["EnableMacro"].set_active(False)
+        self.assertFalse(w.macros.formats["TimeFormat"].get_sensitive())
+        w.undo()
+        self.assertTrue(w.macros.formats["TimeFormat"].get_sensitive())
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkStatusLinesTest(unittest.TestCase):
+    def setUp(self):
+        isolate(self)
+
+    def window(self, fake):
+        w = window.Window(None, fake)
+        self.addCleanup(w.destroy)
+        return w
+
+    def test_each_page_says_why_it_is_not_in_use(self):
+        fake = FakeDBusHandler(
+            {"EnableDictionary": "False", "EnableCustomKeymap": "False", "EnableMacro": "False"}
+        )
+        w = self.window(fake)
+        model = page_status.read(fake)
+        for page, line in (
+            (w.dictionary, page_status.dictionary_line),
+            (w.keymap, page_status.keymap_line),
+            (w.macros, page_status.macro_line),
+        ):
+            self.assertTrue(page.status.get_visible())
+            self.assertEqual(page.status.get_title(), line(model))
+
+    def test_a_line_goes_when_its_switch_is_turned_on(self):
+        fake = FakeDBusHandler({"EnableMacro": "False"})
+        w = self.window(fake)
+        self.assertTrue(w.macros.status.get_visible())
+        w.macros.switches["EnableMacro"].set_active(True)
+        self.assertFalse(w.macros.status.get_visible())
+
+    def test_a_setting_on_another_page_changes_the_line(self):
+        fake = FakeDBusHandler(
+            {"EnableDictionary": "True", "AutoNonVnRestore": "True", "SpellCheck": "True"}
+        )
+        w = self.window(fake)
+        self.assertFalse(w.dictionary.status.get_visible())
+        w.typing.rows["SpellCheck"].set_active(False)
+        self.assertTrue(w.dictionary.status.get_visible())
+
+    def test_the_switch_follows_a_change_from_the_tray(self):
+        fake = FakeDBusHandler({"EnableMacro": "True", "EnableDictionary": "False"})
+        w = self.window(fake)
+        fake.values.update(EnableMacro="False", EnableDictionary="True")
+        written = dict(fake.values)
+        w._refresh_statuses()
+        self.assertFalse(w.macros.switches["EnableMacro"].get_active())
+        self.assertFalse(w.macros.formats["TimeFormat"].get_sensitive())
+        self.assertTrue(w.dictionary.switch.get_active())
+        self.assertEqual(fake.values, written)
+
+    def test_the_custom_note_needs_keys_as_in_the_qt_window(self):
+        fake = FakeDBusHandler({"InputMethod": "Custom"})
+        w = self.window(fake)
+        self.assertTrue(w.typing.custom_note.get_visible())
+        fake.values["EnableCustomKeymap"] = "True"
+        fake.sub_configs["custom_keymap"] = [{"Key": "q", "Value": "XoaDauThanh"}]
+        w._refresh_statuses()
+        self.assertFalse(w.typing.custom_note.get_visible())
+
+    def test_the_retone_note_follows_the_charset(self):
+        fake = FakeDBusHandler({"RetoneSelection": "True", "OutputCharset": "Unicode"})
+        w = self.window(fake)
+        row = w.typing.rows["OutputCharset"]
+        self.assertFalse(w.typing.retone_note.get_visible())
+        row.set_selected(row.values.index("VIQR"))
+        self.assertTrue(w.typing.retone_note.get_visible())
+
+    def test_the_lines_hide_without_fcitx5(self):
+        fake = Restarting({"EnableMacro": "False"})
+        w = self.window(fake)
+        self.assertTrue(w.macros.status.get_visible())
+        fake.down = True
+        w._refresh_statuses()
+        self.assertFalse(w.macros.status.get_visible())
+
+    def test_the_typing_rows_follow_a_change_from_the_tray(self):
+        fake = FakeDBusHandler({"AutoNonVnRestore": "True", "OutputCharset": "Unicode"})
+        w = self.window(fake)
+        fake.values.update(AutoNonVnRestore="False", OutputCharset="VIQR")
+        written = dict(fake.values)
+        w._refresh_statuses()
+        self.assertFalse(w.typing.rows["AutoNonVnRestore"].get_active())
+        self.assertFalse(w.typing.rows["SpellCheck"].get_sensitive())
+        row = w.typing.rows["OutputCharset"]
+        self.assertEqual(row.values[row.get_selected()], "VIQR")
+        self.assertEqual(fake.values, written)
+
+    def test_a_status_line_is_not_a_search_result(self):
+        fake = FakeDBusHandler({"EnableMacro": "False"})
+        w = self.window(fake)
+        title = w.macros.status.get_title()
+        w.search_entry.set_text(title)
+        w._on_search(w.search_entry)
+        self.assertFalse(hasattr(w.results.get_row_at_index(0), "found"))
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkUndoTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -476,6 +760,12 @@ class GtkUndoTest(unittest.TestCase):
     def undo(self):
         self.assertTrue(self.window.toast.get_button_label())
         self.window.toast.emit("button-clicked")
+
+    def test_a_fix_with_undo_stays_until_closed(self):
+        self.window.show_check_message("Fixed.", lambda: True)
+        self.assertEqual(self.window.toast.get_timeout(), 0)
+        self.window.show_check_message("Paste it.", None)
+        self.assertEqual(self.window.toast.get_timeout(), 5)
 
     def test_undo_puts_a_setting_back_and_shows_it(self):
         self.window.typing.rows["SpellCheck"].set_active(False)
@@ -562,6 +852,7 @@ class GtkDefaultsTest(unittest.TestCase):
         self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
         self.assertEqual(self.window.macros.table.entries, [])
         self.assertEqual(self.window.toast.get_title(), "Defaults restored.")
+        self.assertEqual(self.window.toast.get_timeout(), 0)
         self.window.toast.emit("button-clicked")
         self.assertEqual(self.changed(), ("False", "True", [1, 1, 1, 1]))
         self.assertEqual(self.local_words(), ["hello", "ngosen", "world"])
@@ -666,7 +957,7 @@ class GtkBackupTest(unittest.TestCase):
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
-class GtkCheckDialogTest(unittest.TestCase):
+class GtkCheckPageTest(unittest.TestCase):
     NO_IM = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
 
     def setUp(self):
@@ -676,14 +967,24 @@ class GtkCheckDialogTest(unittest.TestCase):
             patcher = mock.patch.object(system_check, name, return_value=False)
             patcher.start()
             self.addCleanup(patcher.stop)
-        with mock.patch.dict(os.environ, self.NO_IM, clear=True):
-            self.check = check_dialog.CheckDialog(FakeDBusHandler(), "1.4.2")
+        env = mock.patch.dict(os.environ, self.NO_IM, clear=True)
+        env.start()
+        self.addCleanup(env.stop)
+        self.dbus = FakeDBusHandler()
+        self.toasts = []
+        self.counts = []
+        self.check = check_page.CheckPage(
+            self.dbus,
+            "1.4.2",
+            lambda text, undo: self.toasts.append((text, undo)),
+            self.counts.append,
+        )
 
     def test_every_result_icon_is_in_adwaita(self):
         # GNOME's own theme: a name it lacks draws as a broken image there, while Breeze may have it.
         theme = Gtk.IconTheme()
         theme.set_theme_name("Adwaita")
-        for icon, _css in check_dialog.ICONS.values():
+        for icon, _css in check_page.ICONS.values():
             self.assertTrue(theme.has_icon(icon), icon)
 
     def clipboard(self):
@@ -698,33 +999,82 @@ class GtkCheckDialogTest(unittest.TestCase):
     def levels(self):
         return [row.level for row in self.check.rows]
 
-    def test_lists_findings_again_and_copies_them(self):
+    def settle(self):
+        while self.check.fixes.busy:
+            GLib.MainContext.default().iteration(True)
+
+    def row(self, title):
+        return next(row for row in self.check.rows if row.get_title() == title)
+
+    def test_a_tip_keeps_the_machine_ready_and_has_its_own_button(self):
+        tip = system_check.Finding(
+            system_check.TIP, "tip", "", system_check.ENABLE_FORWARD_KEYS, "cmd"
+        )
+        with mock.patch.object(system_check, "steps", return_value=[tip]):
+            self.check.run()
+        self.assertEqual(self.counts[-1], 0)
+        self.assertEqual(self.check.heading.get_text(), "This machine is ready")
+        self.assertIsNotNone(self.check.rows[0].button)
+        self.assertEqual(self.check.fixes.fixable(self.check.findings), [])
+
+    def test_lists_every_step_and_apps_and_copies_them(self):
+        self.assertEqual(self.levels()[:2], [system_check.OK, system_check.OK])
         self.assertIn(system_check.FAIL, self.levels())
-        self.assertIn("kate (wayland)", self.check.apps.get_text())
+        self.assertEqual(self.counts[-1], 3)
+        self.assertEqual([r.get_title() for r in self.check.app_rows], ["kate"])
         fixed = dict(
             self.NO_IM, GTK_IM_MODULE="fcitx", QT_IM_MODULE="fcitx", XMODIFIERS="@im=fcitx"
         )
         old = self.check.rows
         with mock.patch.dict(os.environ, fixed, clear=True):
             self.check.run()
-        self.assertEqual(self.levels(), [system_check.OK])
+        self.assertNotIn(system_check.FAIL, self.levels())
+        self.assertEqual(self.counts[-1], 0)
+        self.assertEqual(self.check.heading.get_text(), "This machine is ready")
         self.assertEqual([row.get_parent() for row in old], [None] * len(old))
-        with mock.patch.dict(os.environ, self.NO_IM, clear=True):
-            self.check.run()
+        self.check.run()
         self.check.copy_btn.emit("clicked")
         self.assertIn("[X] GTK apps have no input method", self.clipboard())
-        self.assertEqual(self.check.status.get_text(), "Copied the result.")
+        self.assertEqual(self.toasts[-1][0], "Copied the result.")
+
+    def test_adding_ngosen_fixes_the_step_and_can_be_undone(self):
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.check.run()
+        title = "Ngó Sen is not in the fcitx5 input method list"
+        self.row(title).button.emit("clicked")
+        self.assertEqual(self.check.heading.get_text(), "Fixing…")
+        self.settle()
+        self.assertEqual(self.dbus.input_method_names(), ["ngosen"])
+        self.assertNotIn(title, [row.get_title() for row in self.check.rows])
+        text, undo = self.toasts[-1]
+        self.assertEqual(text, "Added Ngó Sen to the input method list.")
+        undo()
+        self.assertEqual(self.dbus.input_method_names(), ["keyboard-us"])
+        self.assertIn(title, [row.get_title() for row in self.check.rows])
+
+    def test_a_failed_fix_offers_its_command(self):
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.dbus.set_input_method_group = lambda *args: False
+        self.check.run()
+        title = "Ngó Sen is not in the fcitx5 input method list"
+        self.row(title).button.emit("clicked")
+        self.settle()
+        button = self.row(title).button
+        self.assertEqual(button.get_label(), "Copy command")
+        self.assertEqual(self.toasts, [])
+        button.emit("clicked")
+        self.assertEqual(self.clipboard(), "fcitx5-configtool")
 
     def test_messaging_copies_the_result_and_opens_the_chat(self):
         Gdk.Display.get_default().get_clipboard().set("")
-        with mock.patch.object(check_dialog, "open_uri") as open_uri:
+        with mock.patch.object(check_page, "open_uri") as open_uri:
             self.check.message_btn.emit("clicked")
         self.assertEqual(open_uri.call_args[0][1], MESSENGER_URL)
         self.assertIn("Ngó Sen 1.4.2", self.clipboard())
-        self.assertIn("Paste", self.check.status.get_text())
+        self.assertIn("Paste", self.toasts[-1][0])
 
     def test_reporting_opens_an_issue_with_the_result(self):
-        with mock.patch.object(check_dialog, "open_uri") as open_uri:
+        with mock.patch.object(check_page, "open_uri") as open_uri:
             self.check.report_btn.emit("clicked")
         self.assertIn("1.4.2", unquote(open_uri.call_args[0][1]))
 
@@ -738,15 +1088,13 @@ class GtkCheckDialogTest(unittest.TestCase):
         self.assertFalse(self.check.wrong_btn.get_visible())
         self.assertIn("result: wrong", self.check.report_text())
 
-    def test_the_about_page_opens_one_dialog_and_checks_again(self):
+    def test_window_counts_steps_left_and_checks_again_on_opening(self):
         win = window.Window(None, FakeDBusHandler())
         self.addCleanup(win.destroy)
-        with mock.patch.object(Adw.Dialog, "present"):
-            win.open_system_check()
-            first = win.check
-            with mock.patch.object(first, "run") as run:
-                win.open_system_check()
-        self.assertIs(win.check, first)
+        self.assertEqual(win.badge.get_text(), "3")
+        self.assertTrue(win.badge.get_visible())
+        with mock.patch.object(win.check, "run") as run:
+            win.show_page("check")
         run.assert_called_once()
 
 
@@ -834,6 +1182,26 @@ class GtkWhatsNewPageTest(unittest.TestCase):
             else:
                 self.assertEqual(w.stack.get_visible_child_name(), name)
 
+    def test_an_example_shares_the_row_of_its_feature(self):
+        w = window.Window(None, FakeDBusHandler())
+        self.addCleanup(w.destroy)
+        rows = [r for r in _children(w.whats_new.page) if isinstance(r, Adw.ActionRow)]
+        titled = {r.get_title(): r for r in rows}
+        examples = [f for f in whats_new_content.FEATURES if f["example"]]
+        self.assertTrue(examples)
+        for feature in examples:
+            labels = [c for c in _children(titled[feature["title"]]) if isinstance(c, Gtk.Label)]
+            self.assertIn(feature["example"], [label.get_text() for label in labels])
+        self.assertEqual([r for r in rows if r.has_css_class("typed")], [])
+
+    def test_the_about_button_fits_its_label(self):
+        w = window.Window(None, FakeDBusHandler())
+        self.addCleanup(w.destroy)
+        about = w.stack.get_child_by_name("about")
+        buttons = [c for c in _children(about) if isinstance(c, Gtk.Button)]
+        pills = [b for b in buttons if b.has_css_class("pill")]
+        self.assertEqual([b.get_halign() for b in pills], [Gtk.Align.CENTER])
+
     def assert_scrolled_to(self, open_it):
         """open_it(window) focuses a row low on a page never shown; the page must scroll to it."""
         w = window.Window(None, FakeDBusHandler())
@@ -863,7 +1231,7 @@ class GtkWhatsNewPageTest(unittest.TestCase):
     def test_a_search_result_on_a_page_never_shown_is_scrolled_to(self):
         def open_found(w):
             result = Gtk.ListBoxRow()
-            result.found = (w.appearance.control_for("SettingsToolkit"), "appearance")
+            result.found = (w.appearance.control_for("SettingsToolkit"), "appearance", None)
             w.open_result(result)
             return result.found[0]
 
@@ -881,6 +1249,18 @@ class GtkWhatsNewPageTest(unittest.TestCase):
         self.assertEqual(self.window.stack.get_visible_child_name(), "keys")
         self.assertEqual(self.window.tabs["shortcuts"].get_visible_child_name(), "shortcuts")
         self.assertIs(self.window.get_focus(), self.window.shortcuts.hotkeys["ModeMenuKey"])
+
+    def test_open_setting_reaches_the_macro_and_mode_settings(self):
+        w = self.window
+        for key, control, tab in (
+            ("EnableMacro", w.macros.switches["EnableMacro"], "macros"),
+            ("TimeFormat", w.macros.formats["TimeFormat"], "macros"),
+            ("ShowModeSen", w.shortcuts.mode_checks["ShowModeSen"], "shortcuts"),
+            ("ShortcutSen", w.shortcuts.mode_rows["ShortcutSen"], "shortcuts"),
+        ):
+            self.assertTrue(w.open_setting(key), key)
+            self.assertEqual(w.tabs[tab].get_visible_child_name(), tab)
+            self.assertIs(w.get_focus(), control, key)
 
     def test_the_tip_on_the_typing_page_opens_the_tips(self):
         self.window.typing.tip_row.emit("activated")

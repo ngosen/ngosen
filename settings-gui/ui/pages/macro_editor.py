@@ -6,14 +6,15 @@ Macro Editor Page. Edits ngosen-macro-table.conf.
 Implements UI with row reordering and TSV import/export.
 """
 
+from core.catalog import HINTS, locked_by
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
-from qtpy.QtCore import Qt
+from qtpy.QtCore import QSignalBlocker, Qt
 from qtpy.QtGui import QColor, QIcon
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
-    QComboBox,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -25,10 +26,10 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import macros
-from ui.helpers import add_help_icon
+from core import macros, page_status
+from ui.components import NoWheelComboBox
 from ui.pages.base_editor import BaseEditorPage
-from ui.pages.dynamic_settings import CardWidget
+from ui.pages.dynamic_settings import CardWidget, with_hint_below
 from ui.typography import mute, page_title
 
 
@@ -47,43 +48,36 @@ class MacroEditorPage(BaseEditorPage):
         self.load_data()
 
     def _setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(30, 20, 30, 20)
-        main_layout.setSpacing(15)
+        main_layout = self._scrolling_layout()
 
         title = page_title(_("Macros"))
         main_layout.addWidget(title)
+        self._add_status_line(main_layout)
 
         # Macro behavior toggles
         toggles_card = CardWidget()
-        toggles_layout = QHBoxLayout()
+        toggles_layout = QVBoxLayout()
+        self._hinted = {}
         self.cb_enable = QCheckBox(_("Enable Macro"))
         self.cb_capitalize = QCheckBox(_("Capitalize Macro"))
         self.cb_enable_off_mode = QCheckBox(_("Macro in Off Mode"))
         self.cb_enable.toggled.connect(self._on_item_changed)
+        self.cb_enable.toggled.connect(lambda _checked: self._apply_locks())
+        self.cb_enable.toggled.connect(lambda _checked: self.refresh_status())
         self.cb_capitalize.toggled.connect(self._on_item_changed)
         self.cb_enable_off_mode.toggled.connect(self._on_item_changed)
         toggles_layout.addWidget(self.cb_enable)
-
-        cap_layout = QHBoxLayout()
-        cap_layout.setSpacing(5)
-        cap_layout.addWidget(self.cb_capitalize)
-        add_help_icon(cap_layout, "CapitalizeMacro")
-
-        toggles_layout.addLayout(cap_layout)
-
-        off_mode_layout = QHBoxLayout()
-        off_mode_layout.setSpacing(5)
-        off_mode_layout.addWidget(self.cb_enable_off_mode)
-        add_help_icon(off_mode_layout, "EnableMacroInOffMode")
-        toggles_layout.addLayout(off_mode_layout)
-
-        toggles_layout.addStretch()
+        for box, key in (
+            (self.cb_capitalize, "CapitalizeMacro"),
+            (self.cb_enable_off_mode, "EnableMacroInOffMode"),
+        ):
+            self._hinted[key] = with_hint_below(box, _(HINTS[key]))[0]
+            toggles_layout.addWidget(self._hinted[key])
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText(_("Search macros..."))
         self.search_input.setClearButtonEnabled(True)
-        self.search_input.setFixedWidth(200)
+        self.search_input.setMaximumWidth(200)
         self.search_input.textChanged.connect(self.on_search_changed)
 
         toggles_card.content_layout.addLayout(toggles_layout)
@@ -93,61 +87,55 @@ class MacroEditorPage(BaseEditorPage):
         editor_card = CardWidget()
         content_layout = QVBoxLayout()
         editor_card.content_layout.addLayout(content_layout)
-        main_layout.addWidget(editor_card)
 
-        # Dynamic Macro Settings (Moved below the macro table)
+        # Next to the switch that locks it; the macro table would push it far away.
         dynamic_card = CardWidget()
         dynamic_layout = QVBoxLayout()
 
         # Hint text
-        hint_label = QLabel(_("Macros support dynamic placeholders: $TIME and $DATE."))
-        hint_label.setWordWrap(True)
-        mute(hint_label)
-        dynamic_layout.addWidget(hint_label)
+        self.placeholder_hint = QLabel(_("Macros support dynamic placeholders: $TIME and $DATE."))
+        self.placeholder_hint.setWordWrap(True)
+        mute(self.placeholder_hint)
+        dynamic_layout.addWidget(self.placeholder_hint)
 
         # Format Inputs
         fmt_container = QWidget()
-        fmt_hbox = QHBoxLayout(fmt_container)
-        fmt_hbox.setContentsMargins(0, 5, 0, 0)
-        fmt_hbox.setSpacing(20)
+        # One row each: side by side they overflow the smallest window on Breeze.
+        fmt_grid = QGridLayout(fmt_container)
+        fmt_grid.setContentsMargins(0, 5, 0, 0)
+        fmt_grid.setColumnStretch(2, 1)
 
         # Time Format
-        time_layout = QHBoxLayout()
-        self.input_time_format = QComboBox()
+        self.input_time_format = NoWheelComboBox()
         self.input_time_format.setEditable(False)
         self.input_time_format.currentIndexChanged.connect(self._on_item_changed)
 
         for fmt in macros.FORMATS["TimeFormat"]:
-            self.input_time_format.addItem(fmt, fmt)
-            self.input_time_format.setItemData(
-                self.input_time_format.count() - 1, _(macros.EXAMPLES[fmt]), Qt.ToolTipRole
-            )
+            self.input_time_format.addItem(_(macros.EXAMPLES[fmt]), fmt)
 
-        time_layout.addWidget(QLabel(_("Time Format:")))
-        time_layout.addWidget(self.input_time_format, 1)
+        self.time_label = QLabel(_("Time Format:"))
+        self.time_label.setBuddy(self.input_time_format)
+        fmt_grid.addWidget(self.time_label, 0, 0)
+        fmt_grid.addWidget(self.input_time_format, 0, 1)
 
         # Date Format
-        date_layout = QHBoxLayout()
-        self.input_date_format = QComboBox()
+        self.input_date_format = NoWheelComboBox()
         self.input_date_format.setEditable(False)
         self.input_date_format.currentIndexChanged.connect(self._on_item_changed)
 
         for fmt in macros.FORMATS["DateFormat"]:
-            self.input_date_format.addItem(fmt, fmt)
-            self.input_date_format.setItemData(
-                self.input_date_format.count() - 1, _(macros.EXAMPLES[fmt]), Qt.ToolTipRole
-            )
+            self.input_date_format.addItem(_(macros.EXAMPLES[fmt]), fmt)
 
-        date_layout.addWidget(QLabel(_("Date Format:")))
-        date_layout.addWidget(self.input_date_format, 1)
-
-        fmt_hbox.addLayout(time_layout)
-        fmt_hbox.addLayout(date_layout)
+        self.date_label = QLabel(_("Date Format:"))
+        self.date_label.setBuddy(self.input_date_format)
+        fmt_grid.addWidget(self.date_label, 1, 0)
+        fmt_grid.addWidget(self.input_date_format, 1, 1)
 
         dynamic_layout.addWidget(fmt_container)
 
         dynamic_card.content_layout.addLayout(dynamic_layout)
         main_layout.addWidget(dynamic_card)
+        main_layout.addWidget(editor_card)
 
         # 1. Input Row (Top)
         input_layout = QHBoxLayout()
@@ -165,15 +153,21 @@ class MacroEditorPage(BaseEditorPage):
         self.input_key.textChanged.connect(self._update_add_button_icon)
         self.input_val.textChanged.connect(self._update_add_button_icon)
 
-        input_layout.addWidget(QLabel(_("Key:")))
+        key_label = QLabel(_("Abbreviation:"))
+        key_label.setBuddy(self.input_key)
+        input_layout.addWidget(key_label)
         input_layout.addWidget(self.input_key, 1)
-        input_layout.addWidget(QLabel(_("Value:")))
+        value_label = QLabel(_("Expanded Text:"))
+        value_label.setBuddy(self.input_val)
+        input_layout.addWidget(value_label)
         input_layout.addWidget(self.input_val, 2)
         input_layout.addWidget(self.btn_add)
         content_layout.addLayout(input_layout)
 
         # 2. Table Area
         self.table = QTableWidget(0, 2)
+        # The page scrolls before the table gets too short to use.
+        self.table.setMinimumHeight(180)
         self.table.setHorizontalHeaderLabels([_("Abbreviation"), _("Expanded Text")])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -207,6 +201,44 @@ class MacroEditorPage(BaseEditorPage):
 
         content_layout.addLayout(toolbar_layout)
         self.update_button_states()
+        self.controls = {
+            "EnableMacro": self.cb_enable,
+            "CapitalizeMacro": self.cb_capitalize,
+            "EnableMacroInOffMode": self.cb_enable_off_mode,
+            "TimeFormat": self.input_time_format,
+            "DateFormat": self.input_date_format,
+        }
+
+    def control_for(self, key):
+        """The widget that edits a setting, for the window to scroll to and focus."""
+        return self.controls.get(key)
+
+    def value_of(self, key):
+        return self._shown_options().get(key)
+
+    def _follow(self, value_of):
+        self.macros.follow(value_of)
+        for key, box in (
+            ("EnableMacro", self.cb_enable),
+            ("CapitalizeMacro", self.cb_capitalize),
+            ("EnableMacroInOffMode", self.cb_enable_off_mode),
+        ):
+            with QSignalBlocker(box):
+                box.setChecked(self.macros.options[key])
+        self._apply_locks()
+
+    def _shown_switches(self):
+        return {"EnableMacro": self.cb_enable.isChecked()}
+
+    def _status_text(self, model):
+        return page_status.macro_line(model)
+
+    def _apply_locks(self):
+        for key, control in self.controls.items():
+            self._hinted.get(key, control).setEnabled(locked_by(key, self.value_of) is None)
+        self.placeholder_hint.setEnabled(self.input_time_format.isEnabled())
+        self.time_label.setEnabled(self.input_time_format.isEnabled())
+        self.date_label.setEnabled(self.input_date_format.isEnabled())
 
     def load_data(self):
         self.blockSignals(True)
@@ -219,6 +251,7 @@ class MacroEditorPage(BaseEditorPage):
             self.on_search_changed()
         finally:
             self.blockSignals(False)
+        self.refresh_status()
 
     def _show_options(self):
         options = self.macros.options
@@ -230,17 +263,21 @@ class MacroEditorPage(BaseEditorPage):
             (self.input_date_format, "DateFormat"),
         ):
             combo.setCurrentIndex(combo.findData(options[key]))
+        self._apply_locks()
 
-    def _shown_values(self):
-        # Read without storing: the main window asks is_modified() while load_data
-        # is still filling the widgets from the model.
-        options = {
+    def _shown_options(self):
+        return {
             "EnableMacro": self.cb_enable.isChecked(),
             "CapitalizeMacro": self.cb_capitalize.isChecked(),
             "EnableMacroInOffMode": self.cb_enable_off_mode.isChecked(),
             "TimeFormat": self.input_time_format.currentData(),
             "DateFormat": self.input_date_format.currentData(),
         }
+
+    def _shown_values(self):
+        # Read without storing: the main window asks is_modified() while load_data
+        # is still filling the widgets from the model.
+        options = self._shown_options()
         entries = []
         for row in range(self.table.rowCount()):
             key_item = self.table.item(row, 0)

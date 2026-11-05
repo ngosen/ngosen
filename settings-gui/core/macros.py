@@ -95,6 +95,14 @@ class MacroTable:
     def is_modified(self):
         return self.state() != self.saved_state
 
+    def follow(self, value_of):
+        """Takes the switches as fcitx5 holds them now; only with nothing waiting to be saved."""
+        for key, default in DEFAULTS.items():
+            value = value_of(key)
+            if isinstance(default, bool) and value is not None:
+                self.options[key] = str(value).lower() == "true"
+                self.saved_state[key] = self.options[key]
+
     def save(self):
         """Writes the options and the table. False when fcitx5 cannot be reached or refuses."""
         config_data = self.dbus.get_config()

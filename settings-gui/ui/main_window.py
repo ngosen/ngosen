@@ -9,9 +9,10 @@ import os
 from datetime import datetime
 
 from core.app_modes import RememberedAppModes
+from core.catalog import locked_by
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
-from qtpy.QtCore import Qt, QTimer
+from qtpy.QtCore import QEvent, Qt, QTimer
 from qtpy.QtGui import QIcon, QKeySequence
 from qtpy.QtWidgets import (
     QApplication,
@@ -35,6 +36,12 @@ from qtpy.QtWidgets import (
 from core import backup, settings_snapshot
 from ui import brand, search
 from ui.confirm import confirm
+from ui.message_bar import MessageBar
+
+try:
+    from version import __version__
+except ImportError:
+    __version__ = "dev version"
 
 # Lazy loading pages on demand
 
@@ -58,6 +65,9 @@ class NgoSenSettingsWindow(QMainWindow):
         self._save_timer.setInterval(400)
         self._save_timer.timeout.connect(self.save_pending)
         self._undo_to = None
+        self._undo_fix = None
+        self._showing_conflict = False
+        self._check_item = None
 
         self._setup_ui()
         self._setup_window_size()
@@ -95,18 +105,18 @@ class NgoSenSettingsWindow(QMainWindow):
 
         self.content_stack = QStackedWidget()
 
-        page_layout = QVBoxLayout()
-        page_layout.setContentsMargins(0, 0, 0, 0)
-        page_layout.addWidget(self._setup_message_bar())
-        page_layout.addWidget(self.content_stack, 1)
-
         main_h_layout.addWidget(self._setup_navigation())
-        main_h_layout.addLayout(page_layout, 1)
+        main_h_layout.addWidget(self.content_stack, 1)
 
         main_v_layout.addLayout(main_h_layout, 1)
 
         # Bottom Bar
         self._setup_bottom_bar(main_v_layout)
+
+        self.message_bar = MessageBar(self.content_stack, self.undo)
+        self.message_label = self.message_bar.label
+        self.btn_undo = self.message_bar.undo_button
+        self.message_bar.gone.connect(self._on_message_gone)
 
         # Pages Mapping
         self._setup_pages()
@@ -131,7 +141,7 @@ class NgoSenSettingsWindow(QMainWindow):
             header.addWidget(logo)
         wordmark = QLabel("Ngó Sen")
         wordmark.setObjectName("Wordmark")
-        wordmark.setFont(brand.wordmark_font(22))
+        wordmark.setFont(brand.sized_font(22))
         header.addWidget(wordmark)
         header.addStretch()
         layout.addLayout(header)
@@ -169,9 +179,9 @@ class NgoSenSettingsWindow(QMainWindow):
         pages = [
             p for p in self._pages if isinstance(p, QWidget) and getattr(p, "searchable", True)
         ]
-        for label, target, page in search.find(pages, text):
+        for label, target, page, key in search.find(pages, text):
             item = QListWidgetItem(f"{label} — {self._page_titles[page]}")
-            item.setData(Qt.UserRole, (target, page))
+            item.setData(Qt.UserRole, (target, page, key))
             self.search_results.addItem(item)
         if not self.search_results.count():
             item = QListWidgetItem(_("No settings found"))
@@ -188,9 +198,9 @@ class NgoSenSettingsWindow(QMainWindow):
         found = item.data(Qt.UserRole)
         if not found:
             return
-        target, page = found
+        target, page, key = found
         self.search_field.clear()
-        self.reveal(target, page)
+        self.reveal((self._control_to_open(page, key) if key else None) or target, page)
 
     def reveal(self, target, page):
         """Shows the page and tab holding a widget, scrolls to it and puts the focus on it."""
@@ -214,9 +224,14 @@ class NgoSenSettingsWindow(QMainWindow):
         for page in self._pages:
             control = getattr(page, "control_for", lambda _key: None)(key)
             if control is not None:
-                self.reveal(control, page)
+                self.reveal(self._control_to_open(page, key), page)
                 return True
         return False
+
+    @staticmethod
+    def _control_to_open(page, key):
+        # A locked control takes no focus, so the user lands on what unlocks it.
+        return page.control_for(locked_by(key, page.value_of) or key)
 
     def show_page(self, name):
         """Shows the page registered under `name` and returns it."""
@@ -243,19 +258,20 @@ class NgoSenSettingsWindow(QMainWindow):
     def _setup_bottom_bar(self, layout):
         container = QFrame()
         container.setObjectName("BottomBar")
+        self.bottom_bar = container
         bar_layout = QHBoxLayout(container)
         bar_layout.setContentsMargins(20, 12, 20, 12)
         bar_layout.setSpacing(10)
 
         bar_layout.addSpacing(180)
 
-        self.btn_reset = QPushButton(QIcon.fromTheme("edit-undo"), _("&Defaults"))
+        self.btn_reset = QPushButton(QIcon.fromTheme("edit-undo"), _("Restore &defaults…"))
         self.btn_reset.clicked.connect(self.on_restore_defaults)
         bar_layout.addWidget(self.btn_reset)
 
         bar_layout.addStretch()
 
-        btn_backup = QPushButton(QIcon.fromTheme("document-save-as"), _("Back &Up…"))
+        btn_backup = QPushButton(QIcon.fromTheme("document-save-as"), _("Back U&p…"))
         btn_backup.clicked.connect(self.on_export_backup)
         bar_layout.addWidget(btn_backup)
         btn_restore = QPushButton(QIcon.fromTheme("document-open"), _("Res&tore…"))
@@ -265,37 +281,19 @@ class NgoSenSettingsWindow(QMainWindow):
 
         layout.addWidget(container)
 
-    def _setup_message_bar(self):
-        self.message_bar = QFrame()
-        self.message_bar.setObjectName("SaveMessage")
-        bar_layout = QHBoxLayout(self.message_bar)
-        bar_layout.setContentsMargins(12, 6, 6, 6)
-        self.message_label = QLabel()
-        self.message_label.setWordWrap(True)
-        bar_layout.addWidget(self.message_label, 1)
-        self.btn_undo = QPushButton(_("&Undo"))
-        self.btn_undo.clicked.connect(self.undo)
-        bar_layout.addWidget(self.btn_undo)
-        self.message_bar.hide()
+    def _show_message(self, text, undo=False, error=False, keep=False, closable=True):
+        self._undo_fix = None
+        self._showing_conflict = False
+        self.message_bar.show_message(text, undo=undo, error=error, keep=keep, closable=closable)
 
-        wrapper = QWidget()
-        wrapper_layout = QVBoxLayout(wrapper)
-        wrapper_layout.setContentsMargins(20, 12, 20, 0)
-        wrapper_layout.addWidget(self.message_bar)
-        return wrapper
+    def _show_conflict(self):
+        # Nothing saves until it is fixed, so it can be neither closed nor outlived.
+        self._show_message(self.validation_message(), error=True, closable=False)
+        self._showing_conflict = True
 
-    def _show_message(self, text, undo=False, error=False):
-        if error:
-            fill, border = brand.pick(self, brand.ERROR_FILL), brand.pick(self, brand.ERROR_BORDER)
-        else:
-            fill, border = brand.pick(self, brand.SAVED_FILL), brand.pick(self, brand.SAVED_BORDER)
-        self.message_bar.setStyleSheet(
-            f"QFrame#SaveMessage {{ background: {fill}; border: 1px solid {border};"
-            " border-radius: 6px; }"
-        )
-        self.message_label.setText(text)
-        self.btn_undo.setVisible(undo)
-        self.message_bar.show()
+    def _on_message_gone(self):
+        if self.has_validation_errors():
+            self._show_conflict()
 
     def _setup_pages(self):
         def create_typing():
@@ -339,6 +337,13 @@ class NgoSenSettingsWindow(QMainWindow):
 
             return AboutPage(self.dbus_handler)
 
+        def create_check():
+            from ui.pages.check import CheckPage
+
+            return CheckPage(
+                self.dbus_handler, __version__, self.show_check_message, self._show_count
+            )
+
         def create_whats_new():
             from ui.pages.whats_new import WhatsNewPage
 
@@ -374,12 +379,21 @@ class NgoSenSettingsWindow(QMainWindow):
             ("dialog-information", "help-about-symbolic"),
             (None, create_whats_new),
             names=["whats-new"],
+            bottom_bar=False,
+        )
+        self._add_page(
+            _("Check my machine"),
+            ("emblem-system", "emblem-system-symbolic", "preferences-system"),
+            (None, create_check),
+            names=["check"],
+            bottom_bar=False,
         )
         self._add_page(
             _("About"),
             ("help-about", "help-about-symbolic", "dialog-information"),
             (None, create_about),
             names=["about"],
+            bottom_bar=False,
         )
 
     def on_restore_defaults(self):
@@ -414,8 +428,11 @@ class NgoSenSettingsWindow(QMainWindow):
         self.update_reset_button_state()
         if self.has_validation_errors():
             self._save_timer.stop()
-            self._show_message(self.validation_message(), error=True)
+            self._show_conflict()
             return
+        if self._showing_conflict:
+            self._showing_conflict = False
+            self.message_bar.dismiss()
         if self._modified_pages():
             self._save_timer.start()
 
@@ -460,13 +477,44 @@ class NgoSenSettingsWindow(QMainWindow):
             text = _("Saved “{}”.").format(label)
         else:
             text = _("Saved.")
+        # Undo is the only way back from replacing whole lists, so it stays until closed.
+        self._show_message(text, undo=before is not None, keep=self._reset_pending)
         self._reset_pending = False
-        self._show_message(text, undo=before is not None)
         self.update_reset_button_state()
+        self._refresh_statuses()
+
+    def _refresh_statuses(self):
+        for page in self._pages:
+            if hasattr(page, "refresh_status"):
+                page.refresh_status()
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        # The tray menu and the other pages can change what a status line says.
+        if event.type() == QEvent.ActivationChange and self.isActiveWindow():
+            self._refresh_statuses()
+            self.update_reset_button_state()
+
+    def show_check_message(self, text, undo):
+        """A message from the check page, with Undo when its fix can be taken back."""
+        self._undo_to = None
+        self._show_message(text, undo=undo is not None, keep=undo is not None)
+        self._undo_fix = undo
+
+    def _show_count(self, count):
+        self.check_badge.setText(str(count))
+        self.check_badge.setVisible(count > 0)
+        self.check_badge.setAccessibleName(_("Steps left to fix: {}").format(count))
 
     def undo(self):
-        """Puts back the settings from before the last save."""
+        """Puts back the settings from before the last save, or the last fix."""
         self._save_timer.stop()
+        if self._undo_fix is not None:
+            if self._undo_fix():
+                self._show_message(_("Change undone."))
+            else:
+                self._show_message(_("Could not undo. Check that fcitx5 is running."), error=True)
+            return
         if self._undo_to is None:
             return
         if not settings_snapshot.restore(self.dbus_handler, self._undo_to):
@@ -484,6 +532,7 @@ class NgoSenSettingsWindow(QMainWindow):
             elif hasattr(page, "load_config"):
                 page.load_config()
         self.update_reset_button_state()
+        self._refresh_statuses()
 
     def on_export_backup(self):
         name = f"ngosen-backup-{datetime.now():%Y%m%d-%H%M%S}.json"
@@ -531,7 +580,9 @@ class NgoSenSettingsWindow(QMainWindow):
             return
         self._undo_to = before
         self._show_message(
-            _("Restored from {}.").format(os.path.basename(path)), undo=before is not None
+            _("Restored from {}.").format(os.path.basename(path)),
+            undo=before is not None,
+            keep=True,
         )
 
     def closeEvent(self, event):
@@ -545,14 +596,27 @@ class NgoSenSettingsWindow(QMainWindow):
 
         role = item.data(Qt.UserRole)
         if role == "page":
+            # What the next page reads must include what this one has not saved yet.
+            if self._save_timer.isActive():
+                self.save_pending()
             widget = self._page_for_item(item)
+            self.bottom_bar.setVisible(item.data(Qt.UserRole + 3))
+            self._refresh_statuses()
             if widget:
                 self.content_stack.setCurrentWidget(widget)
+                if item is self._check_item:
+                    widget.run()
             self.update_reset_button_state()
         elif role == "header":
             # Don't allow selecting headers, move to next item
             if index + 1 < self.sidebar.count():
                 self.sidebar.setCurrentRow(index + 1)
+
+    def _leave_room_for_message(self, page):
+        layout = page.findChild(QScrollArea).widget().layout()
+        margins = layout.contentsMargins()
+        margins.setBottom(max(margins.bottom(), self.message_bar.room_needed()))
+        layout.setContentsMargins(margins)
 
     def _page_for_item(self, item):
         if item.data(Qt.UserRole) != "page":
@@ -574,6 +638,7 @@ class NgoSenSettingsWindow(QMainWindow):
                     for title in page.findChildren(QLabel, "CategoryTitle"):
                         title.hide()
                 self._pages.append(page)
+                self._leave_room_for_message(page)
                 self._page_titles[page] = tab or item.text()
                 self._page_rows[page] = self.sidebar.row(item)
             self.content_stack.addWidget(widget)
@@ -598,7 +663,22 @@ class NgoSenSettingsWindow(QMainWindow):
         self.resize(w, h)
         self.move((screen.width() - w) // 2, (screen.height() - h) // 2)
 
-    def _add_page(self, title: str, icon_name, *parts, names=()):
+    def _badge_overlay(self):
+        """Lies over the check entry, so the list still draws and selects the entry itself."""
+        overlay = QWidget()
+        overlay.setAttribute(Qt.WA_TransparentForMouseEvents)
+        layout = QHBoxLayout(overlay)
+        layout.setContentsMargins(0, 0, 8, 0)
+        layout.addStretch()
+        self.check_badge = QLabel()
+        self.check_badge.setObjectName("CheckBadge")
+        self.check_badge.setAlignment(Qt.AlignCenter)
+        self.check_badge.hide()
+        brand.follow_theme(self.check_badge, _paint_badge)
+        layout.addWidget(self.check_badge)
+        return overlay
+
+    def _add_page(self, title: str, icon_name, *parts, names=(), bottom_bar=True):
         """Adds a sidebar entry; several (tab title, factory) parts show as tabs.
 
         `names` gives the parts internal names for show_page, one per part.
@@ -609,7 +689,18 @@ class NgoSenSettingsWindow(QMainWindow):
         item.setData(Qt.UserRole, "page")
         item.setData(Qt.UserRole + 1, list(parts))
         item.setData(Qt.UserRole + 2, None)
+        item.setData(Qt.UserRole + 3, bottom_bar)
 
         self.sidebar.addItem(item)
+        if "check" in names:
+            self._check_item = item
+            self.sidebar.setItemWidget(item, self._badge_overlay())
         for index, name in enumerate(names):
             self._page_names[name] = (self.sidebar.row(item), index)
+
+
+def _paint_badge(label):
+    label.setStyleSheet(
+        f"QLabel#CheckBadge {{ background: {brand.pick(label, brand.ERROR_BORDER)}; color: white;"
+        " border-radius: 8px; padding: 0 6px; font-weight: bold; min-width: 4px; }"
+    )

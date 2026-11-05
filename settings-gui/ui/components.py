@@ -15,7 +15,7 @@ from core.hotkeys import (
 from i18n import _
 from qtpy.QtCore import QEvent, Qt, Signal
 from qtpy.QtGui import QIcon, QKeySequence
-from qtpy.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
+from qtpy.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QWidget
 
 from ui.typography import emphasize, mute
 
@@ -33,6 +33,13 @@ MODIFIER_FLAGS = [
 ]
 
 
+class NoWheelComboBox(QComboBox):
+    """Leaves the wheel to the page: scrolling past a box must not change a saved choice."""
+
+    def wheelEvent(self, event):
+        event.ignore()
+
+
 class KeyCap(QLabel):
     """A label styled as a keyboard keycap."""
 
@@ -43,25 +50,8 @@ class KeyCap(QLabel):
         self.setStyleSheet(
             "QLabel#KeyCap { background-color: palette(button); color: palette(button-text);"
             " border: 1px solid palette(mid); border-bottom: 2px solid palette(dark);"
-            " border-radius: 4px; padding: 2px 6px; font-weight: bold; font-family: monospace; }"
+            " border-radius: 4px; padding: 2px 6px; font-weight: bold; }"
         )
-
-
-class HelpIcon(QLabel):
-    """A reusable help icon with a tooltip."""
-
-    def __init__(self, text="", parent=None):
-        super().__init__(parent)
-        # Try symbolic icon first for monochrome look, fall back to standard
-        icon = QIcon.fromTheme("help-about-symbolic")
-        if icon.isNull():
-            icon = QIcon.fromTheme("help-about")
-
-        self.setPixmap(icon.pixmap(32, 32))
-        self.setScaledContents(True)
-        if text:
-            self.setToolTip(text)
-        self.setFixedSize(16, 16)
 
 
 class HotkeyEditorWidget(QWidget):
@@ -172,7 +162,7 @@ class HotkeyCaptureWidget(QPushButton):
                 emphasize(lbl)
                 self.main_layout.addWidget(lbl)
         elif not self.current_key:
-            lbl = QLabel(_("None"))
+            lbl = QLabel(_("Not set"))
             mute(lbl)
             self.main_layout.addWidget(lbl)
         else:
@@ -253,7 +243,7 @@ class SingleKeyCaptureWidget(HotkeyCaptureWidget):
             emphasize(lbl)
             self.main_layout.addWidget(lbl)
         elif not self.current_key:
-            lbl = QLabel(_("None"))
+            lbl = QLabel(_("Not set"))
             mute(lbl)
             self.main_layout.addWidget(lbl)
         else:

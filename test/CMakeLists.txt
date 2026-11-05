@@ -273,9 +273,13 @@ set_tests_properties(settings_gui_install PROPERTIES LABELS "unit;packaging" TIM
 # The typing core's own tests.
 add_test(NAME bamboo_rs_cargo_test
     COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${NGOSEN_CARGO_TARGET_DIR}
-            ${CARGO_EXECUTABLE} test --offline --locked
+            ${CARGO_EXECUTABLE} test --offline ${NGOSEN_CARGO_LOCKED}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bamboo-rs)
 set_tests_properties(bamboo_rs_cargo_test PROPERTIES LABELS "unit;core" TIMEOUT 600)
+
+add_test(NAME vendored_crates_switch
+         COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/vendored-crates-switch.sh ${CMAKE_COMMAND} ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
+set_tests_properties(vendored_crates_switch PROPERTIES LABELS "unit;packaging" TIMEOUT 60)
 
 # Tests of the typing logic alone; NGOSEN_CORE_ONLY builds just these.
 add_subdirectory(core)

@@ -60,6 +60,9 @@ namespace fcitx {
         std::unique_ptr<ngosen::TypingState> state_;
     };
 
+    // Whether the mode menu reaches the screen: keys go to a menu nobody sees otherwise.
+    bool modeMenuCanDraw(const std::string& currentUi, const std::string& frontend, const std::string& display, bool clientDrawsPanel);
+
     /**
      * @brief Main engine class for the Ngó Sen input method.
      *
@@ -230,7 +233,9 @@ namespace fcitx {
         std::filesystem::path writeTypingLog();
 
         // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
-        static std::string getProgramName(InputContext* ic);
+        std::string getProgramName(InputContext* ic) const;
+        // Takes the app GNOME Shell has focused, empty when unknown, and applies that app's mode.
+        void shellFocusedAppChanged(const std::string& app);
         // The mode appName types in: its toggle-key switch, else its menu rule, else the last switch.
         NgoSenMode modeFor(const std::string& appName) const;
 
@@ -282,7 +287,7 @@ namespace fcitx {
         std::unordered_map<std::string, NgoSenMode> appRules_;
         std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
-        bool                                        isSelectingAppMode_ = false;
+        std::weak_ptr<CandidateList>                modeMenuList_;
         // A modifier-only toggle key fires on release, unless another key came in between.
         bool                             toggleTapArmed_  = false;
         uint64_t                         toggleTapTime_   = 0;
@@ -455,15 +460,21 @@ namespace fcitx {
         void saveTypingLog(InputContext* ic);
         // Null when nothing tells whether GNOME Shell loses forwarded keys.
         const bool* shellDropsKeys() const;
-        void        clearPanelLater(InputContext* ic, uint64_t delayUs);
+        std::string shellFocusedApp_;
+        // Compared only, never dereferenced: fcitx5 may drop a context without a deactivate.
+        InputContext* activeContext_ = nullptr;
+        void          showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn);
+        void          clearPanelLater(InputContext* ic, uint64_t delayUs);
 
-        void        handleModeMenuKey(KeyEvent& keyEvent);
-        void        moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
+        void          handleModeMenuKey(KeyEvent& keyEvent);
+        void          moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
         // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.
         void pickMenuMode(InputContext* ic, NgoSenMode mode, bool isDefault);
         void openModeMenu(InputContext* ic);
+        // Focus changes and timers can clear the panel, so the menu is open only while ic's panel still shows it.
+        bool isModeMenuOpen(InputContext* ic) const;
         // The modes the cycle key steps through, in the configured order.
         std::vector<NgoSenMode> cycleModes(const std::string& appName);
         void                    cycleMode(InputContext* ic);
@@ -474,11 +485,6 @@ namespace fcitx {
          * @param ic Current input context.
          */
         void showCycleModeNotification(NgoSenMode mode, InputContext* ic);
-
-        /**
-         * @brief Closes the application mode selection menu.
-         */
-        void closeAppModeMenu();
 
         /**
          * @brief Sets the current input mode.

@@ -8,7 +8,7 @@ from gi.repository import Adw
 
 
 def find(pages, query):
-    """Returns (title, row, page name) for each row whose title holds every word of query.
+    """Returns (title, row, page name, setting key or None) for each row whose title matches.
 
     pages is a list of (name, widget); a widget with searchable = False is skipped with
     everything inside it, so lists of the user's own entries do not show up as settings.
@@ -21,7 +21,7 @@ def find(pages, query):
         for row in _rows(widget):
             title = row.get_title().strip().rstrip(":")
             if title and len(title) <= 80 and all(w in fold(title) for w in words):
-                found.append((title, row, name))
+                found.append((title, row, name, getattr(row, "setting_key", None)))
     return found
 
 

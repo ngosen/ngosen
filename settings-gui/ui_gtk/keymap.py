@@ -6,7 +6,8 @@
 from gi.repository import Adw, Gtk
 from i18n import _
 
-from core import keymap
+from core import keymap, page_status
+from ui_gtk.status_row import show_status, status_row
 
 ACTION_CODES = [code for code, _name in keymap.BAMBOO_ACTIONS]
 ACTION_NAMES = [name for _code, name in keymap.BAMBOO_ACTIONS]
@@ -26,9 +27,12 @@ class KeymapPage:
         self.page.add(self._editor())
         self.page.add(self._list())
         self.refresh()
+        self.refresh_status()
 
     def _options(self):
         group = Adw.PreferencesGroup()
+        self.status = status_row()
+        group.add(self.status)
         self.switch = Adw.SwitchRow(title=_("Custom Keymap"), use_markup=False)
         self.switch.connect("notify::active", self._on_switch)
         group.add(self.switch)
@@ -39,6 +43,16 @@ class KeymapPage:
         self.preset.add_suffix(apply)
         group.add(self.preset)
         return group
+
+    def refresh_status(self):
+        """Shows why this page is not in use now, without rebuilding it."""
+        model = page_status.read(self.table.dbus)
+        if model and not self.table.is_modified():
+            self.table.follow(model.value_of)
+            self._syncing = True
+            self.switch.set_active(self.table.enabled)
+            self._syncing = False
+        show_status(self.status, page_status.keymap_line(model) if model else "")
 
     def _on_switch(self, row, _param):
         if not self._syncing:

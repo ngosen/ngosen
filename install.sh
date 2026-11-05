@@ -640,6 +640,20 @@ has_lone_keyboard_in_profile() {
 
 # The key the engine picks: settings from before its toggle key, including lotus.conf that is
 # copied over on the next start, keep Ctrl+Space; defaults are left out of the file.
+fcitx5_trigger_key() {
+    local key
+    key=$(awk '/^\[/ { section = $0 } section == "[Hotkey/TriggerKeys]" && /^0=/ { sub(/^0=/, ""); print; exit }' "$(config_home)/fcitx5/config" 2>/dev/null)
+    printf '%s' "${key:-Control+space}"
+}
+
+key_display_name() {
+    case "$1" in
+        "" | Control+Shift_L | Control+Shift_R | Shift+Control_L | Shift+Control_R) printf 'Ctrl+Shift' ;;
+        Control+space) printf 'Ctrl+Space' ;;
+        *) printf '%s' "$1" ;;
+    esac
+}
+
 toggle_key_name() {
     local dir key
     dir="$(config_home)/fcitx5/conf"
@@ -647,14 +661,9 @@ toggle_key_name() {
     if [ -z "$key" ] && { [ -f "$dir/lotus.conf" ] || [ -f "$dir/ngosen.conf" ] || has_lone_keyboard_in_profile; } &&
         ! grep -qs '^SettingsVersion=' "$dir/ngosen.conf"; then
         # Not upgraded yet: Ngó Sen takes over fcitx5's switch key, Ctrl+Space by default.
-        key=$(awk '/^\[/ { section = $0 } section == "[Hotkey/TriggerKeys]" && /^0=/ { sub(/^0=/, ""); print; exit }' "$(config_home)/fcitx5/config" 2>/dev/null)
-        key=${key:-Control+space}
+        key=$(fcitx5_trigger_key)
     fi
-    case "${key:-}" in
-        "" | Control+Shift_L | Control+Shift_R | Shift+Control_L | Shift+Control_R) printf 'Ctrl+Shift' ;;
-        Control+space) printf 'Ctrl+Space' ;;
-        *) printf '%s' "$key" ;;
-    esac
+    key_display_name "${key:-}"
 }
 
 report_dropped_keyboard() {
@@ -879,12 +888,32 @@ setup_sway_hyprland_session() {
     report_sway_hyprland_session
 }
 
+# fcitx5 starts on the first entry of its list, a keyboard, so the switch key of an input method
+# does nothing until fcitx5's own key turns input on.
+has_other_input_methods() {
+    [ "$(grep -c '^\[Groups/0/Items/' "$(config_home)/fcitx5/profile" 2>/dev/null)" -gt 1 ] && ! has_lone_keyboard_in_profile
+}
+
+report_other_input_methods() {
+    local default trigger
+    default=$(sed -n 's/^DefaultIM=//p' "$(config_home)/fcitx5/profile" | head -n 1)
+    trigger=$(key_display_name "$(fcitx5_trigger_key)")
+    say "Xong. fcitx5 đang chạy."
+    if [ "$default" = ngosen ]; then
+        say "Máy còn bộ gõ khác, nên bấm $trigger để bật Ngó Sen. Sau đó bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
+    else
+        say "Bộ gõ mặc định vẫn là $default, bấm $trigger để bật. Muốn chuyển sang Ngó Sen:  fcitx5-remote -s ngosen"
+    fi
+}
+
 report_sway_hyprland_session() {
     if ! fcitx5_is_running; then
         say "Đã cài xong nhưng fcitx5 chưa chạy được. Thử bật trong terminal của phiên này:  fcitx5 -d"
     elif [ "$keyboard_dropped" -eq 1 ]; then
         say "Xong. fcitx5 đang chạy, gõ được ngay."
         report_dropped_keyboard
+    elif has_other_input_methods; then
+        report_other_input_methods
     else
         say "Xong. fcitx5 đang chạy, gõ được ngay."
         say "Bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."

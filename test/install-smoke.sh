@@ -726,11 +726,16 @@ check_next_to_other_input_methods() {
     check "it keeps the other input method" has_line "$profile" 'Name=unikey'
     check "it adds ngosen" has_line "$profile" 'Name=ngosen'
     check "a keyboard default becomes ngosen" has_line "$profile" 'DefaultIM=ngosen'
+    check "it names the key that turns input on" grep -qF 'bấm Ctrl+Space để bật Ngó Sen' "$install_log"
+    check "it does not promise typing next to another input method" refuses says_typing_works
     check "fcitx5 stops next to another input method" stop_fcitx5
     printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=unikey\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[Groups/0/Items/1]\nName=unikey\nLayout=\n\n[GroupOrder]\n0=Default\n' |
         as_user tee "$profile" >/dev/null
     check "install with another default input method succeeds" install_logged
     check "it keeps that default" has_line "$profile" 'DefaultIM=unikey'
+    check "it names that default" grep -qF 'Bộ gõ mặc định vẫn là unikey' "$install_log"
+    check "it says how to reach Ngó Sen" grep -qF 'fcitx5-remote -s ngosen' "$install_log"
+    check "it does not promise typing with another default" refuses says_typing_works
     check "fcitx5 stops with another default" stop_fcitx5
 }
 

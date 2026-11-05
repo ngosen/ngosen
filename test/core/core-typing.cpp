@@ -1199,15 +1199,15 @@ namespace {
         struct BounceReports {
             const char*              label;
             const char*              program;
+            std::string              reportedBefore;
             std::vector<std::string> reports;
             bool                     keepsWord;
         };
         const std::vector<BounceReports> cases = {
-            {"firefox, report one letter short", "firefox", {"ti"}, true},
-            {"firefox, report still empty", "firefox", {""}, true},
-            {"firefox, empty report then another field's text", "firefox", {"", "xin chao"}, false},
-            {"firefox, another field's text", "firefox", {"xin chao"}, false},
-            {"other app, report still empty", "gedit", {""}, false},
+            {"firefox, report one letter short", "firefox", "", {"ti"}, true},     {"firefox, report still empty", "firefox", "", {""}, true},
+            {"firefox, report catching up", "firefox", "t", {"ti"}, true},         {"firefox, empty report then another field's text", "firefox", "", {"", "xin chao"}, false},
+            {"firefox, another field's text", "firefox", "", {"xin chao"}, false}, {"firefox, whole word reported, then an empty field", "firefox", "tie", {""}, false},
+            {"other app, report still empty", "gedit", "", {""}, false},
         };
         for (const auto& c : cases) {
             realMode = ngosen::Mode::Sen;
@@ -1222,6 +1222,11 @@ namespace {
             press(state, static_cast<uint32_t>('i'));
             press(state, static_cast<uint32_t>('e'));
             loop.pump(40);
+            if (!c.reportedBefore.empty()) {
+                host->setSurrounding(c.reportedBefore, static_cast<unsigned int>(c.reportedBefore.size()));
+                state.surroundingUpdated();
+                loop.pump(40);
+            }
             state.deactivate(true);
             loop.pump(3);
             state.activate(ngosen::Mode::Sen, true);

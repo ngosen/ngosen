@@ -457,9 +457,10 @@ namespace ngosen {
     }
 
     // Firefox's reports trail the keys, so a field holding only the start of the word has not caught up.
-    // Only the field's first word can be told apart this way.
+    // Only the field's first word can be told apart this way, and text shrinking from its last report
+    // is an edit or another field.
     bool TypingState::reportTrailsFirstWord(const Surrounding& s) const {
-        if (!ngosen::reportsSurroundingEditsLate(host_->field()) || s.cursor() != s.anchor())
+        if (!ngosen::reportsSurroundingEditsLate(host_->field()) || s.cursor() != s.anchor() || !isStartsWith(s.text(), lastSurroundingText_))
             return false;
         const std::u32string word = ngosen::utf8::decode(oldPreBuffer_);
         const std::u32string text = ngosen::utf8::decode(s.text());

@@ -209,8 +209,7 @@ class CheckPage(QWidget):
         text = QVBoxLayout()
         text.setSpacing(2)
         text.addWidget(_wrapped(finding.title))
-        # A step with a button needs no instructions unless the button fails.
-        subtitle = "" if finding.action else finding.fix
+        subtitle = finding.fix
         trailing = None
         if finding.action in self.fixes.busy:
             subtitle = _("Fixing…")
@@ -229,10 +228,15 @@ class CheckPage(QWidget):
         if subtitle:
             text.addWidget(mute(_wrapped(subtitle)))
         box.addLayout(text, 1)
-        if trailing is not None:
-            box.addWidget(trailing)
         if isinstance(trailing, QPushButton):
             row.button = trailing
+        row.copy_button = None
+        # The button does it for you; the text and this command are for doing it yourself.
+        if row.button is not None and finding.action not in self.fixes.failed and finding.command:
+            row.copy_button = _button(_("Copy command"), lambda: self.copy_command(finding.command))
+            box.addWidget(row.copy_button)
+        if trailing is not None:
+            box.addWidget(trailing)
         return row
 
     def fix_all(self):
@@ -271,7 +275,7 @@ class CheckPage(QWidget):
 
     def copy_command(self, command):
         QGuiApplication.clipboard().setText(command)
-        self.notify(_("Copied: {}").format(command), None)
+        self.notify(system_check.copied_text(command), None)
 
     def read_typing_log(self):
         self.app_test = typing_log.read_latest()

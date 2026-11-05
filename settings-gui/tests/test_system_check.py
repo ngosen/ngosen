@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlparse
 # support puts the settings window on sys.path, so it has to come first.
 # isort: off
 from support import FakeDBusHandler, app  # noqa: F401
-from core import system_check
+from core import session_setup, system_check
 from core.system_check import FAIL, OK, WARN, Facts
 
 # isort: on
@@ -26,6 +26,15 @@ def facts(session, desktop, env=None, **kw):
     kw.setdefault("ngosen_in_group", True)
     kw.setdefault("input_panel_state", "ACTIVE")
     return Facts(env=base, **kw)
+
+
+def quiet_session_setup(test):
+    """The login setup of the machine running the tests must not add a row."""
+    answers = {"starts_at_login": True, "saved_environment": {}, "has_im_config": False}
+    for name, value in answers.items():
+        patcher = mock.patch.object(session_setup, name, return_value=value)
+        patcher.start()
+        test.addCleanup(patcher.stop)
 
 
 def titles(found, level=None):
@@ -243,6 +252,7 @@ class StepsTest(unittest.TestCase):
             [
                 "fcitx5 is running",
                 "Ngó Sen is in the fcitx5 input method list",
+                "fcitx5 starts at login",
                 "Older X11 apps use fcitx5",
                 "Qt apps use fcitx5",
                 "Chrome and older GTK apps use fcitx5",
@@ -265,6 +275,108 @@ class StepsTest(unittest.TestCase):
         )
         # Not installed: the window has nothing to turn on.
         self.assertEqual(action(gnome_shell_version="50.1", forward_keys_state=""), [("", "")])
+
+
+class LoginSetupStepsTest(unittest.TestCase):
+    LOGIN = "fcitx5 will not start at the next login"
+    NOTICE = "Log out and back in to finish the setup"
+
+    def test_running_fcitx5_that_will_not_start_next_time_is_a_step(self):
+        found = system_check.steps(facts("wayland", "GNOME", starts_at_login=False))
+        row = next(f for f in found if f.title == self.LOGIN)
+        self.assertEqual((row.level, row.action), (WARN, system_check.ENABLE_AUTOSTART))
+        self.assertIn("~/.config/autostart", row.command)
+        self.assertIn(session_setup.AUTOSTART_SOURCE, row.fix)
+
+    def test_login_start_is_not_checked_where_the_compositor_starts_fcitx5(self):
+        for session, desktop in (("wayland", "KDE"), ("wayland", "sway")):
+            found = system_check.steps(facts(session, desktop, starts_at_login=False))
+            self.assertNotIn(self.LOGIN, titles(found), desktop)
+            self.assertNotIn("fcitx5 starts at login", titles(found), desktop)
+
+    def test_x11_with_im_config_uses_it_for_login_and_variables(self):
+        found = system_check.evaluate(
+            facts("x11", "XFCE", env={}, starts_at_login=False, has_im_config=True)
+        )
+        self.assertEqual({f.action for f in found}, {system_check.USE_IM_CONFIG})
+
+    def test_x11_without_im_config_only_explains_the_variables(self):
+        found = system_check.evaluate(facts("x11", "XFCE", env={}))
+        self.assertEqual({f.action for f in found}, {""})
+        self.assertIn("XMODIFIERS=@im=fcitx", found[0].fix)
+
+    def test_gnome_variables_share_one_fix(self):
+        found = system_check.evaluate(facts("wayland", "GNOME", env={}))
+        self.assertEqual(len(found), 3)
+        self.assertEqual({f.action for f in found}, {system_check.SET_ENVIRONMENT})
+        self.assertIn("QT_IM_MODULE=fcitx", session_setup.GNOME_ENV)
+        self.assertIn(session_setup.ENV_FILE, found[0].command)
+        fixes = system_check.Fixes(FakeDBusHandler())
+        self.assertEqual(fixes.fixable(found), [system_check.SET_ENVIRONMENT])
+        self.assertIn("Use the button on the step", system_check.summary(found)[1])
+
+    def test_saved_variables_wait_for_login_under_one_notice(self):
+        saved = dict(line.split("=", 1) for line in session_setup.GNOME_ENV.splitlines())
+        found = system_check.evaluate(
+            facts("wayland", "GNOME", env={}, saved_env=saved, ibus_owns_session=True)
+        )
+        self.assertEqual(titles(found), [self.NOTICE])
+        self.assertEqual(found[0].action, "")
+
+    def test_a_variable_set_to_something_else_is_not_waiting_for_login(self):
+        found = system_check.evaluate(
+            facts("wayland", "GNOME", env={}, saved_env={"QT_IM_MODULE": "ibus"})
+        )
+        self.assertNotIn(self.NOTICE, titles(found))
+
+    def test_ibus_stays_a_step_when_nothing_waits_for_login(self):
+        found = system_check.evaluate(facts("wayland", "GNOME", ibus_owns_session=True))
+        self.assertEqual(titles(found), ["IBus is running next to fcitx5"])
+
+    def test_kde_offers_its_setting_and_only_xmodifiers(self):
+        found = system_check.evaluate(facts("wayland", "KDE", env={}))
+        by_action = {f.action: f for f in found}
+        self.assertIn(system_check.SET_KWIN_INPUT_METHOD, by_action)
+        self.assertIn(session_setup.AUTOSTART_SOURCE, by_action["set-kwin-input-method"].command)
+        self.assertIn("XMODIFIERS=@im=fcitx", by_action["set-environment"].command)
+        self.assertNotIn("QT_IM_MODULE", by_action["set-environment"].command)
+
+    def test_kde_setting_chosen_waits_until_kwin_starts_fcitx5(self):
+        method = session_setup.AUTOSTART_SOURCE
+        xim = {"XMODIFIERS": "@im=fcitx"}
+        waiting = facts("wayland", "KDE", xim, kwin_input_method=method, started_by_kwin=False)
+        self.assertEqual(titles(system_check.evaluate(waiting)), [self.NOTICE])
+        ready = facts("wayland", "KDE", xim, kwin_input_method=method, started_by_kwin=True)
+        self.assertEqual(system_check.evaluate(ready), [])
+
+    def test_report_shows_what_waits_for_login(self):
+        f = facts("wayland", "GNOME", env={}, saved_env={"QT_IM_MODULE": "fcitx"})
+        self.assertIn("environment.d: QT_IM_MODULE=fcitx", system_check.report(f, []))
+
+    def test_copied_message_leaves_out_a_long_command(self):
+        self.assertEqual(system_check.copied_text("fcitx5 -d"), "Copied: fcitx5 -d")
+        command = session_setup.set_environment_command(session_setup.GNOME_ENV)
+        self.assertEqual(system_check.copied_text(command), "Copied the command.")
+
+
+class KwinParentTest(unittest.TestCase):
+    def proc(self, parent):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        for pid, comm, stat in (
+            ("10", parent, "10 (x) S 1 0"),
+            ("20", "fcitx5", "20 (fcitx5) S 10 20"),
+        ):
+            os.makedirs(os.path.join(tmp.name, pid))
+            with open(os.path.join(tmp.name, pid, "comm"), "w", encoding="utf-8") as f:
+                f.write(comm + "\n")
+            with open(os.path.join(tmp.name, pid, "stat"), "w", encoding="utf-8") as f:
+                f.write(stat + "\n")
+        return tmp.name
+
+    def test_only_kwin_as_the_parent_counts(self):
+        self.assertTrue(system_check._fcitx5_started_by_kwin(self.proc("kwin_wayland")))
+        self.assertFalse(system_check._fcitx5_started_by_kwin(self.proc("gnome-session")))
 
 
 class FixTest(unittest.TestCase):
@@ -615,6 +727,7 @@ class CheckPageTest(unittest.TestCase):
             patcher = mock.patch.object(system_check, name, return_value=False)
             patcher.start()
             self.addCleanup(patcher.stop)
+        quiet_session_setup(self)
         env = mock.patch.dict(os.environ, self.NO_IM, clear=True)
         env.start()
         self.addCleanup(env.stop)
@@ -681,6 +794,19 @@ class CheckPageTest(unittest.TestCase):
         self.assertEqual(self.dbus.input_method_names(), ["keyboard-us"])
         self.assertIn(self.TITLE, [row.title for row in self.page.rows])
 
+    def test_a_step_with_a_button_also_says_how_to_do_it_by_hand(self):
+        from qtpy.QtGui import QGuiApplication
+        from qtpy.QtWidgets import QLabel
+
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.page.run()
+        row = self.row(self.TITLE)
+        shown = [label.text() for label in row.findChildren(QLabel)]
+        self.assertIn("Open Fcitx 5 Configuration and add Ngó Sen under Input Method.", shown)
+        self.assertEqual(row.button.text(), "Add Ngó Sen")
+        row.copy_button.click()
+        self.assertEqual(QGuiApplication.clipboard().text(), "fcitx5-configtool")
+
     def test_a_failed_fix_offers_its_command(self):
         from qtpy.QtGui import QGuiApplication
 
@@ -713,6 +839,7 @@ class CheckPageWindowTest(unittest.TestCase):
             patcher = mock.patch.object(system_check, name, return_value=False)
             patcher.start()
             self.addCleanup(patcher.stop)
+        quiet_session_setup(self)
         env = mock.patch.dict(os.environ, CheckPageTest.NO_IM, clear=True)
         env.start()
         self.addCleanup(env.stop)

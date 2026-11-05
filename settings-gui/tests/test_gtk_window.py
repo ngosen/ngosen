@@ -36,7 +36,15 @@ if CAN_RUN:
     from ui_gtk.hotkey_button import HotkeyButton
     from ui_gtk.shortcuts import ShortcutsPage
 
-    from core import dictionary, keymap, page_status, system_check, typing_log, whats_new_content
+    from core import (
+        dictionary,
+        keymap,
+        page_status,
+        session_setup,
+        system_check,
+        typing_log,
+        whats_new_content,
+    )
 
 
 def isolate(test):
@@ -967,6 +975,12 @@ class GtkCheckPageTest(unittest.TestCase):
             patcher = mock.patch.object(system_check, name, return_value=False)
             patcher.start()
             self.addCleanup(patcher.stop)
+        # The login setup of the machine running the tests must not add a row.
+        answers = {"starts_at_login": True, "saved_environment": {}, "has_im_config": False}
+        for name, value in answers.items():
+            patcher = mock.patch.object(session_setup, name, return_value=value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
         env = mock.patch.dict(os.environ, self.NO_IM, clear=True)
         env.start()
         self.addCleanup(env.stop)
@@ -979,6 +993,21 @@ class GtkCheckPageTest(unittest.TestCase):
             lambda text, undo: self.toasts.append((text, undo)),
             self.counts.append,
         )
+
+    def test_a_step_with_a_button_also_says_how_to_do_it_by_hand(self):
+        title = "Ngó Sen is not in the fcitx5 input method list"
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.check.run()
+        row = self.row(title)
+        self.assertIn("Fcitx 5 Configuration", row.get_subtitle())
+        self.assertEqual(row.button.get_label(), "Add Ngó Sen")
+        row.copy_button.emit("clicked")
+        self.assertEqual(self.clipboard(), "fcitx5-configtool")
+
+    def test_copy_icon_is_in_adwaita(self):
+        theme = Gtk.IconTheme()
+        theme.set_theme_name("Adwaita")
+        self.assertTrue(theme.has_icon("edit-copy-symbolic"))
 
     def test_every_result_icon_is_in_adwaita(self):
         # GNOME's own theme: a name it lacks draws as a broken image there, while Breeze may have it.

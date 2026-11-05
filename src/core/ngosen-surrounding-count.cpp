@@ -30,11 +30,11 @@ namespace ngosen {
 
         bool lacksLastKeys(const std::string& copyBeforeCursor, const std::string& prefix, const std::string& deleted) {
             std::string shorter = prefix + deleted;
-            for (size_t left = deleted.size(); left > 0;) {
+            for (size_t left = shorter.size(); left > 0;) {
                 do
                     --left;
-                while (left > 0 && !startsChar(deleted, left));
-                shorter.resize(prefix.size() + left);
+                while (left > 0 && !startsChar(shorter, left));
+                shorter.resize(left);
                 if (!shorter.empty() && isEndsWith(copyBeforeCursor, shorter))
                     return true;
             }
@@ -55,6 +55,15 @@ namespace ngosen {
         const std::string known = prefix + deleted;
         if (isEndsWith(copyBeforeCursor, known)) {
             result.match = SurroundingDeletion::Match::Fresh;
+            return result;
+        }
+        // Ace keeps a line break after its line and the copy's cursor can stay past it after a commit,
+        // so a deletion counted from there would take the line break and leave the letter. Ace puts the
+        // line break back itself and shows a committed one as a new line.
+        if (isEndsWith(copyBeforeCursor, known + "\n")) {
+            result.match         = SurroundingDeletion::Match::Fresh;
+            result.chars         = result.chars + 1;
+            result.pastLineBreak = true;
             return result;
         }
         bool shown = false;

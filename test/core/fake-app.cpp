@@ -91,6 +91,8 @@ namespace ngosen::test {
             FakeApp*    app   = owned.get();
             TypingState state(&resources, std::move(owned));
             app->attach(&state);
+            if (quirks.reportsOnFocus)
+                state.surroundingUpdated();
             for (size_t i = 0; i < keys.size(); ++i) {
                 app->type(keys[i]);
                 loop.pump(gapsMs[i]);
@@ -131,6 +133,8 @@ namespace ngosen::test {
         state_->keyEvent(down);
         if (!down.accepted() && quirks_.keepsLastEditPerTurn)
             endTurn();
+        if (!down.accepted())
+            cursorPastBy_ = 0;
         if (!down.accepted() && quirks_.resendsKeysWithoutText && keyText(sym).empty()) {
             FakeKey again(sym, false, modifier::Repeat, time);
             state_->keyEvent(again);
@@ -162,6 +166,16 @@ namespace ngosen::test {
         announced_.reset();
         if (!quirks_.hidesCursorMoves)
             changed();
+    }
+
+    void FakeApp::copyTextAfterStartCursor() {
+        previousText_   = text_;
+        previousCursor_ = cursor_;
+        text_ += text_;
+        cursor_ = 0;
+        anchor_ = 0;
+        announced_.reset();
+        changed();
     }
 
     void FakeApp::select(size_t anchor, size_t cursor) {
@@ -296,6 +310,12 @@ namespace ngosen::test {
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
         ++sent_.surroundingDeletes;
         ++deletions_;
+        if (quirks_.oldTextAfterDeleteMs > 0) {
+            oldText_        = text_;
+            oldCursor_      = cursor_;
+            oldTextUntilUs_ = monotonicUs() + static_cast<uint64_t>(quirks_.oldTextAfterDeleteMs) * 1000;
+            later(quirks_.oldTextAfterDeleteMs, [this] { changed(); });
+        }
         if (quirks_.ignoresSurroundingDel)
             goSilentAfterDelete();
         // A module whose copy of the text is empty finds every deletion out of range.
@@ -388,7 +408,7 @@ namespace ngosen::test {
             const auto start = static_cast<unsigned int>(std::min(anchor_, cursor_));
             return Surrounding(encode(text_), start, start);
         }
-        return Surrounding(encode(text_), static_cast<unsigned int>(cursor_), static_cast<unsigned int>(anchor_));
+        return Surrounding(encode(text_), static_cast<unsigned int>(cursor_ + cursorPastBy_), static_cast<unsigned int>(anchor_ + cursorPastBy_));
     }
 
     std::string FakeApp::keyText(uint32_t sym) const {
@@ -419,8 +439,16 @@ namespace ngosen::test {
         previousText_   = text_;
         previousCursor_ = cursor_;
         eraseSelection();
+        if (quirks_.keepsLineBreakAfterCommit && cursor_ > 0 && cursor_ == text_.size() && text_.back() == U'\n') {
+            text_.pop_back();
+            --cursor_;
+        }
         text_.insert(cursor_, text);
         cursor_ += text.size();
+        if (quirks_.keepsLineBreakAfterCommit && !typed && text_.back() != U'\n') {
+            text_.push_back(U'\n');
+            ++cursor_;
+        }
         anchor_ = cursor_;
         changed();
         if (!quirks_.redrawsOnlyOnDeletion)
@@ -480,7 +508,11 @@ namespace ngosen::test {
             return;
         if (field_.surroundingText && quirks_.reports)
             later(quirks_.reportDelayMs, [this, text = text_, cursor = cursor_, anchor = anchor_] {
-                if (quirks_.reportsTextAtChange) {
+                if (monotonicUs() < oldTextUntilUs_) {
+                    reportedText_   = oldText_;
+                    reportedCursor_ = oldCursor_;
+                    reportedAnchor_ = oldCursor_;
+                } else if (quirks_.reportsTextAtChange) {
                     reportedText_   = text;
                     reportedCursor_ = cursor;
                     reportedAnchor_ = anchor;
@@ -492,6 +524,10 @@ namespace ngosen::test {
                 inReport_ = true;
                 state_->surroundingUpdated();
                 inReport_ = false;
+                if (quirks_.reportsOnlyWhenAsked && deletions_ > 0) {
+                    silentAfterDelete_ = true;
+                    emptyCommits_      = 0;
+                }
             });
     }
 
@@ -505,13 +541,19 @@ namespace ngosen::test {
     void FakeApp::endTurn() {
         if (!turnPending_)
             return;
-        turnPending_ = false;
+        turnPending_           = false;
+        const bool oneTurnEdit = quirks_.cursorStaysPastEdit && turnDeleteBytes_ && turnCommit_ && !turnCommit_->empty();
         if (turnDeleteBytes_) {
+            cursor_ += cursorPastBy_;
+            anchor_                  = cursor_;
+            cursorPastBy_            = 0;
             const unsigned int chars = charsForBytesBefore(*turnDeleteBytes_);
             eraseAround(-static_cast<int>(chars), chars);
         }
         if (turnCommit_ && focused_)
             insert(utf8::decode(*turnCommit_));
+        if (oneTurnEdit)
+            cursorPastBy_ = utf8::decode(*turnCommit_).size();
         turnDeleteBytes_.reset();
         turnCommit_.reset();
     }

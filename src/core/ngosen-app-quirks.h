@@ -83,7 +83,10 @@ namespace ngosen {
 
     // The address bar of Firefox and its forks sets no Url flag; callers recognise it by the text after the cursor.
     bool hidesAddressBarFlag(const Field& field);
-    bool reportsSurroundingEditsLate(const Field& field);
+    bool keepsOldCopyAfterEdit(const Field& field);
+
+    // Firefox and its forks outside IBus can report a field holding only the start of the word just typed.
+    bool reportsTrailKeys(const Field& field);
 
     // An app behind IBus may show a replacement in its report only when a later key arrives, so a
     // report that does not come at once says nothing about the deletion.

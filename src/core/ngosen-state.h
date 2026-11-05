@@ -207,6 +207,7 @@ namespace ngosen {
         bool               typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
         static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
         static std::string textBeforeCursor(const Surrounding& s);
+        static bool        cursorIsBeforeAutofill(const Surrounding& s);
         static bool        showsText(const Surrounding& s);
         static bool        showsTextAfterDeleting(const Surrounding& s, unsigned int chars);
         static std::string reportKey(const Surrounding& s); ///< "text\x1fcursor", empty for no report
@@ -386,6 +387,8 @@ namespace ngosen {
         // of the text (mutter) waits until that copy holds what the deletion needs.
         bool                           waitsForKeyReport() const;
         bool                           copyGivesWrongDeletion() const;
+        bool                           reportsItsEdits() const;
+        void                           startReportRequestTimer();
         void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);
         void                           finishKeyReportWait(bool sameField, bool fromTimer);
         void                           forgetWaitingReplacement();
@@ -398,6 +401,16 @@ namespace ngosen {
         std::optional<KeyEntry>        passed_key_; ///< last key let through to the app as typed
         void                           startWordWithKey(const KeyEntry& key);
         KeyEntry                       key_report_key_{};
+        KeyEntry                       replayed_key_{};
+        bool                           key_report_copy_fits_ = false;
+        bool                           copyWaitTimedOut_     = false; ///< keeps replayed keys from each waiting out a copy that never fits
+        std::unique_ptr<ngosen::Timer> split_edit_timer_;
+        bool                           split_edit_pending_ = false;
+        Surrounding                    split_edit_surrounding_;
+        std::string                    split_edit_retype_;
+        std::unique_ptr<ngosen::Timer> tail_clear_timer_;
+        bool                           tail_clear_pending_ = false;
+        Surrounding                    tail_clear_copy_;
         std::string                    key_report_deleted_;
         std::string                    key_report_added_;
 
@@ -503,7 +516,9 @@ namespace ngosen {
         void recordSendSnapshot(const std::string& deletedPart);
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
         bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
-        void                     replaceThroughSurrounding(const Surrounding& surrounding);
+        void                     replaceThroughSurrounding(const Surrounding& surrounding, int extraBeforeCursor = 0);
+        void                     clearSelectedTailThenReplace(const Surrounding& surrounding);
+        void                     finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype);
         void                     releaseKeysAfterSurroundingEdit();
         int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
         std::vector<std::string> earlierWordsBeforeReplacement() const;
@@ -521,6 +536,10 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> report_timer_;
         int                            report_requests_left_ = 0;
         static constexpr int           ReportRequests        = 4;
+        static constexpr uint64_t      EditOutWaitUs         = 80000;
+        bool                           reportSinceEdit_      = true;
+        bool                           report_request_waits_ = false;
+        uint64_t                       editSentAtUs_         = 0;
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
         struct SurroundingCheck {
@@ -573,6 +592,7 @@ namespace ngosen {
         bool                            surrAnswered_            = false; ///< a check in this field came out correct
         int                             surrAnsweredUnasked_     = 0;     ///< checks in this field answered with no key since the edit
         int                             surrMissed_              = 0;     ///< checks in this field left unanswered
+        static constexpr int            MinAnswersForPlainCount  = 2;
         bool                            surrSeenTextSinceFocus_  = false; ///< the field reported text since it got focus
         bool                            surrSeenEmptySinceFocus_ = false; ///< the field reported itself empty before any key since it got focus
         uint64_t                        keysAtFocus_             = 0;     ///< keyCount_ at the last focus-in, kept over a bounce

@@ -22,6 +22,8 @@ namespace ngosen {
         unsigned int chars = 0;
         // Text the deletion removes before the deleted part, to commit again ahead of the replacement.
         std::string retype;
+        // The cursor is past a line break the app keeps after the word, which the deletion has to cover.
+        bool pastLineBreak = false;
         // The copy turns chars into a different number of bytes than the deleted part has, so the
         // deletion would go wrong until the copy catches up.
         bool wrongBytes = false;

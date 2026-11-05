@@ -285,6 +285,7 @@ namespace ngosen {
         const bool        overtyping = overtype_watching_;
         const std::string report     = host_->field().password ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
         fieldReported_               = fieldReported_ || host_->surrounding().isValid();
+        reportSinceEdit_             = true;
         // A repeat that a wait acts on stays in the log for its timing.
         if (waiting || overtyping || key_report_pending_)
             engine_->recorder().add("app", report);
@@ -307,7 +308,11 @@ namespace ngosen {
         if (!(host_->surrounding() == reportAtKey_))
             keySinceReport_ = false;
         // A report with focus away may be another app's; the next report or the timer ends the wait.
-        if (key_report_pending_ && host_->hasFocus() && !(key_report_until_copy_fits_ && copyGivesWrongBytes())) {
+        // wlroots drops an edit sent before the done event that follows this report, so the timer sends it.
+        if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !copyGivesWrongDeletion()) {
+            key_report_copy_fits_ = true;
+            key_report_timer_->rearm(ngosen::monotonicUs());
+        } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
             const auto s = host_->surrounding();
             finishKeyReportWait(s.isValid() && !(ngosen::reportsFieldOnlyOnKey(host_->field()) && s.text().empty()), false);
@@ -330,7 +335,8 @@ namespace ngosen {
 
     void TypingState::startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits) {
         key_report_until_copy_fits_ = untilCopyFits;
-        key_report_key_             = *live_key_;
+        key_report_copy_fits_       = false;
+        key_report_key_             = live_key_ ? *live_key_ : replayed_key_;
         key_report_deleted_         = deletedPart;
         key_report_added_           = addedPart;
         key_report_pending_         = true;
@@ -340,8 +346,16 @@ namespace ngosen {
             // The key itself never reaches the app, so give it one that types nothing.
             forwardTap(ngosen::EditKey::Shift);
         }
-        const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
-        key_report_timer_     = host_->startTimer(ngosen::monotonicUs() + waitUs, 0, [this](ngosen::Timer& t) {
+        // Firefox over GTK 3 can stay quiet about typed keys after an edit until something asks.
+        if (untilCopyFits && (ngosen::keepsOldCopyAfterEdit(host_->field()) || ngosen::keepsLastEditPerTurn(host_->field())))
+            askForReportAfterEdit();
+        const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(2 * LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
+        // A replay from the timer can start the next wait, so the timer is rearmed rather than replaced.
+        if (key_report_timer_) {
+            key_report_timer_->rearm(ngosen::monotonicUs() + waitUs);
+            return;
+        }
+        key_report_timer_ = host_->startTimer(ngosen::monotonicUs() + waitUs, 1000, [this](ngosen::Timer& t) {
             if (!host_->hasFocus()) {
                 // A bounce can span the deadline, so give it a moment to come back.
                 if (++surr_wait_focus_retries_ <= 5) {
@@ -351,10 +365,13 @@ namespace ngosen {
                 dropReplacementAfterFocusLoss();
                 return false;
             }
-            if (key_report_until_copy_fits_)
-                NGOSEN_INFO("Copy of the text still short, deleting anyway");
+            if (key_report_until_copy_fits_) {
+                if (!key_report_copy_fits_)
+                    NGOSEN_INFO("Copy of the text still short, deleting anyway");
+                copyWaitTimedOut_ = !key_report_copy_fits_;
+            }
             finishKeyReportWait(true, true);
-            return false;
+            return key_report_pending_;
         });
     }
 
@@ -364,8 +381,10 @@ namespace ngosen {
         if (!key_report_pending_)
             return;
         key_report_pending_ = false;
-        if (!fromTimer)
+        if (!fromTimer) {
             key_report_timer_.reset(); // never reset a timer from inside its own callback
+            copyWaitTimedOut_ = false;
+        }
         if (sameField) {
             deleteAndCommit(key_report_deleted_, key_report_added_);
             return;
@@ -493,14 +512,18 @@ namespace ngosen {
         }
         const bool         sameText       = hasLastSurrounding_ && s.text() == lastSurroundingText_;
         const unsigned int previousCursor = lastSurroundingCursor_;
-        bool               jumped         = sameText && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
+        // VS Code's editor adds to the line while it shows the cursor at the line start, so what stood before
+        // the cursor is still there.
+        const std::u32string textBeforeCursor      = ngosen::utf8::decode(lastSurroundingText_).substr(0, previousCursor);
+        const bool           keepsTextBeforeCursor = hasLastSurrounding_ && ngosen::utf8::decode(s.text()).compare(0, textBeforeCursor.size(), textBeforeCursor) == 0;
+        bool                 jumped                = sameText && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
         // Some editors (Lark in Firefox) report the cursor past our commit before the committed text.
         const bool echo = jumped && unreportedCommitLength_ > 0 && s.cursor() == s.anchor() && s.cursor() == lastSurroundingCursor_ + unreportedCommitLength_;
         // Typing the next letter of an inline suggestion keeps the text and steps over that letter.
         // Edge reports the suggestion selected; Firefox does not, so a click one letter on looks the same
         // and only the timing tells them apart.
         const uint64_t sinceInputUs   = ngosen::monotonicUs() - lastInputAtUs_;
-        const bool     intoSuggestion = jumped && passed_key_ && s.cursor() == lastSurroundingCursor_ + 1 &&
+        const bool     intoSuggestion = jumped && !jumpedFrom_ && passed_key_ && s.cursor() == lastSurroundingCursor_ + 1 &&
             ngosen::utf8::decode(s.text())[lastSurroundingCursor_] == passed_key_->sym &&
             ((s.anchor() == s.cursor() && sinceInputUs < SuggestionStepUs) || (s.anchor() == lastSurroundingAnchor_ && s.anchor() > s.cursor()));
         const bool settling = sinceInputUs < CaretSettleUs;
@@ -545,8 +568,8 @@ namespace ngosen {
         if (!jumped || is_deleting_.load(std::memory_order_acquire))
             return;
         NGOSEN_INFO("Cursor moved without an edit");
-        // Only a move on the same text can come back; a new field's text never stood at the old cursor.
-        if (sameText && !needEngineReset.load())
+        // Only a move on text that stood at the old cursor can come back.
+        if ((sameText || keepsTextBeforeCursor) && !needEngineReset.load())
             jumpedFrom_ = std::make_pair(s.text(), previousCursor);
         needEngineReset.store(true, std::memory_order_release);
         g_mouse_clicked.store(true, std::memory_order_release);
@@ -577,7 +600,9 @@ namespace ngosen {
         // A field that rewrites what we commit never shows it; keep only the latest commits.
         if (mode() == ngosen::Mode::Sen && ngosen::appliesEarlyKeysFirst(host_->field()))
             commitNotSeen_ = commitNotSeen_.size() + text.size() > 64 ? text : commitNotSeen_ + text;
-        committing_ = true;
+        // mutter keeps one commit per turn, so a request's empty commit could replace this one.
+        report_requests_left_ = 0;
+        committing_           = true;
         host_->commitText(text);
         committing_ = false;
     }

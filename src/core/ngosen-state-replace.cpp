@@ -455,10 +455,14 @@ namespace ngosen {
         trackEarlierWords(addedPart);
         if (live_key_) {
             const bool forKey = waitsForKeyReport();
-            if (forKey || copyGivesWrongBytes()) {
+            if (forKey || copyGivesWrongDeletion()) {
                 startKeyReportWait(deletedPart, addedPart, !forKey);
                 return;
             }
+        } else if (replaying_ && !copyWaitTimedOut_ && copyGivesWrongDeletion()) {
+            // The commit just before this replayed key cannot be in the copy yet.
+            startKeyReportWait(deletedPart, addedPart, true);
+            return;
         }
         deleteAndCommit(deletedPart, addedPart);
     }
@@ -561,7 +565,7 @@ namespace ngosen {
                 fails.emplace_back("cursor too close to the start");
             if (surrounding.cursor() != surrounding.anchor())
                 fails.emplace_back("selection");
-            if (deletion.match == SurroundingDeletion::Match::None)
+            if (deletion.match == SurroundingDeletion::Match::None || deletion.pastLineBreak)
                 fails.emplace_back("copy shows another word");
         }
         // Some apps report nothing after a commit, or repeat the old text, until the next key; a deletion
@@ -579,8 +583,6 @@ namespace ngosen {
         // without focus (Zed, #93); the backspace path waits for focus to come back.
         if (ngosen::dropsCommitsWithoutFocus(field) && surrounding.isValid() && !showsTextAfterDeleting(surrounding, chars))
             fails.emplace_back("deletion empties the field");
-        if (ngosen::reportsSurroundingEditsLate(field))
-            fails.emplace_back("app reports edits late");
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");
@@ -623,7 +625,7 @@ namespace ngosen {
         } else {
             // The replacement has not been tracked yet, so the copy may still show the word before the last one.
             const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), prefix, deletedPart, earlierWordsBeforeReplacement());
-            if (deletion.match == SurroundingDeletion::Match::None)
+            if (deletion.match == SurroundingDeletion::Match::None || deletion.pastLineBreak)
                 fails.emplace_back("copy shows another word");
             else if (surrounding.cursor() < deletion.chars)
                 fails.emplace_back("cursor too close to the start");
@@ -748,32 +750,84 @@ namespace ngosen {
 
     // The frontend turns a deletion into bytes on its copy of the text, which can still lack what the
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
-    bool TypingState::copyGivesWrongBytes() const {
+    bool TypingState::copyGivesWrongDeletion() const {
         const auto surrounding = host_->surrounding();
-        if (!ngosen::countsDeletionOnCopy(host_->field()) || !deletesOnlyThroughSurrounding() || !surrounding.isValid())
+        if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
             return false;
-        return countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_).wrongBytes;
+        const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        // A copy that ends at the earlier word is about to catch up in an app that reports, and a deletion
+        // counted on it would leave part of the word in place.
+        if (deletesOnlyThroughSurrounding())
+            return deletion.wrongBytes || deletion.behind || (deletion.match == SurroundingDeletion::Match::OldTail && reportsItsEdits());
+        // Backspaces are there to fall back on, and a field that leaves checks unanswered would only
+        // make every replacement late.
+        return !ngosen::reportsReplacementsWithLaterKey(host_->field()) && surrAnsweredUnasked_ >= surrMissed_ && surrSeenTextSinceFocus_ && !backspaceInWord_ &&
+            (unreportedCommitLength_ > 0 || deletion.match == SurroundingDeletion::Match::None);
+    }
+
+    bool TypingState::reportsItsEdits() const {
+        return surrSeenEmptySinceFocus_ || (surrAnsweredUnasked_ >= MinAnswersForPlainCount && surrAnsweredUnasked_ > surrMissed_);
     }
 
     int TypingState::surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const {
         if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
             return deletedChars_;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        // An app that reports its edits unasked turns the bytes back into characters on the same old
+        // copy, so the count it needs is the plain one. Qt applies the bytes to its real text, answers rarely
+        // and reports no copy until the field has text.
+        if (deletion.match == SurroundingDeletion::Match::OldTail && reportsItsEdits()) {
+            NGOSEN_INFO("Surrounding copy shows the earlier word in an app that reports: delete " + std::to_string(deletedChars_));
+            return deletedChars_;
+        }
         NGOSEN_INFO(std::string("Surrounding copy shows the ") + matchName(deletion.match) + " word: delete " + std::to_string(deletion.chars) + " of " +
                     std::to_string(deletedChars_));
         retype = deletion.retype;
         return static_cast<int>(deletion.chars);
     }
 
-    void TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
+    constexpr uint64_t SplitEditWaitUs = 30000;
+
+    void               TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
         std::string retype;
         const int   count = surroundingDeletionCount(surrounding, retype);
         // Set first: a host may deliver the deletion's report from inside the call.
+        reportSinceEdit_        = false;
+        editSentAtUs_           = monotonicUs();
         unreportedDeleteLength_ = static_cast<unsigned int>(count);
         unreportedDeleteKey_    = keyCount_;
         host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
         NGOSEN_INFO("Delete using surrounding text");
         ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrDeleteSleepMs * count, 0)) * 1000ULL);
+        // Firefox's cursor stays one past the real one when a deletion and a commit of the same length
+        // arrive together, and the next deletion then takes what follows the word. It shows only the
+        // current line, so a line below cannot be told from the end of the text.
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && !(retype + pending_commit_string_).empty()) {
+            split_edit_pending_      = true;
+            surr_wait_focus_retries_ = 0;
+            split_edit_timer_        = host_->startTimer(monotonicUs() + SplitEditWaitUs, 1000, [this, surrounding, retype](Timer& t) {
+                if (!host_->hasFocus()) {
+                    if (++surr_wait_focus_retries_ <= 5) {
+                        t.rearm(monotonicUs() + 2000);
+                        return true;
+                    }
+                    split_edit_pending_ = false;
+                    dropReplacementAfterFocusLoss();
+                    is_deleting_.store(false);
+                    return false;
+                }
+                split_edit_pending_ = false;
+                finishSurroundingEdit(surrounding, retype);
+                return false;
+            });
+            return;
+        }
+        finishSurroundingEdit(surrounding, retype);
+    }
+
+    void TypingState::finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype) {
+        reportSinceEdit_       = false;
+        editSentAtUs_          = monotonicUs();
         const std::string text = retype + pending_commit_string_;
         if (!text.empty()) {
             commit(text);
@@ -784,6 +838,11 @@ namespace ngosen {
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
+        // KWin keeps both edits of a turn, so here no hold has to come first.
+        if (ngosen::keepsOldCopyAfterEdit(host_->field())) {
+            report_requests_left_ = ReportRequests;
+            startReportRequestTimer();
+        }
         // An Enter still owed goes out as a real key, which mutter delivers only after the edit.
         if (ngosen::keepsLastEditPerTurn(host_->field()) && !enter_after_replacement_) {
             is_deleting_.store(false);
@@ -802,9 +861,53 @@ namespace ngosen {
             edit_hold_timer_->rearm(until);
             return;
         }
-        edit_hold_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+        edit_hold_timer_ = host_->startTimer(until, 1000, [this](Timer& t) {
+            // The turn can still be open, and a commit sent now would replace the edit's.
+            if (edit_hold_ && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs) {
+                t.rearm(monotonicUs() + 5000);
+                return true;
+            }
+            askForReportAfterEdit();
             finishEditHold();
             return edit_hold_;
+        });
+    }
+
+    // Firefox on GNOME applies an edit a moment after it reports, then stays silent, while GTK 3 turns
+    // the next deletion's bytes into characters on that old copy. GTK asks for a new copy when a commit
+    // arrives, and an empty one changes nothing in the field.
+    void TypingState::askForReportAfterEdit() {
+        report_requests_left_ = ReportRequests;
+        requestReportWhileUnanswered();
+    }
+
+    void TypingState::requestReportWhileUnanswered() {
+        if ((!surrCheck_ && !(key_report_pending_ && key_report_until_copy_fits_)) || report_requests_left_ == 0 || !host_->hasFocus())
+            return;
+        // mutter keeps one commit per turn and a busy shell can hold a turn open, so asking before the
+        // edit has come out could replace its commit.
+        if (split_edit_pending_ || (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs)) {
+            report_request_waits_ = true;
+            startReportRequestTimer();
+            return;
+        }
+        --report_requests_left_;
+        host_->commitText("");
+        NGOSEN_INFO("Ask the app for a report");
+        startReportRequestTimer();
+    }
+
+    void TypingState::startReportRequestTimer() {
+        const uint64_t until = monotonicUs() + EditHoldUs;
+        if (report_timer_) {
+            report_timer_->rearm(until);
+            return;
+        }
+        report_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+            const int left        = report_requests_left_;
+            report_request_waits_ = false;
+            requestReportWhileUnanswered();
+            return report_requests_left_ != left || report_request_waits_;
         });
     }
 
@@ -914,6 +1017,9 @@ namespace ngosen {
 
     void TypingState::commitReplayed(std::string& out) {
         if (!out.empty()) {
+            // A report request sent while this commit's turn is open would replace it.
+            reportSinceEdit_ = false;
+            editSentAtUs_    = monotonicUs();
             commit(out);
             NGOSEN_INFO("Commit: " + logged(out));
             out.clear();
@@ -928,6 +1034,7 @@ namespace ngosen {
             }
         }
         commitReplayed(out);
+        replayed_key_ = keys[i];
         performReplacement(deletedPart, addedPart);
     }
 

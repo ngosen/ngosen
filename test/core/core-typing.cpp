@@ -378,7 +378,7 @@ namespace {
     }
 
     // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
-    void testFirefoxKeepsBackspaces() {
+    void testFirefoxDeletesThroughSurrounding() {
         for (const char* frontend : {"wayland", "wayland_v2", "dbus"}) {
             realMode = ngosen::Mode::Sen;
             FakeLoop      loop;
@@ -391,7 +391,7 @@ namespace {
             typeTie(state, *host, loop, true);
             press(state, static_cast<uint32_t>('e'));
             loop.pump(3);
-            check(host->deletes().empty() && host->forwarded().size() == 2, std::string("firefox ") + frontend + ": backspaces, no surrounding deletion",
+            check(host->deletes().size() == 1 && host->forwarded().empty(), std::string("firefox ") + frontend + ": surrounding deletion, no backspaces",
                   std::to_string(host->deletes().size()) + " deletes, " + std::to_string(host->forwarded().size()) + " forwarded");
         }
     }
@@ -1032,8 +1032,9 @@ namespace {
     void testRecorderKeepsTheReplacement() {
         realMode = ngosen::Mode::Sen;
         // Flatpak Firefox: the log shows the app ID it reported too.
-        Field firefox           = makeField("wayland", true, "firefox");
-        firefox.reportedProgram = "org.mozilla.firefox";
+        Field firefox            = makeField("fcitx4", true, "firefox");
+        firefox.reportedProgram  = "org.mozilla.firefox";
+        firefox.keyEventOrderFix = true;
 
         FakeLoop            loop;
         FakeResources       resources;
@@ -1048,7 +1049,7 @@ namespace {
         loop.pump(150);
 
         const std::string log = resources.recorder().dump();
-        check(has(log, "\tfield\tfrontend=wayland program=firefox (org.mozilla.firefox) surrounding=1 preedit=1 mode=Sen\n"), "recorder: notes the field and mode", log);
+        check(has(log, "\tfield\tfrontend=fcitx4 program=firefox (org.mozilla.firefox) surrounding=1 preedit=1 mode=Sen\n"), "recorder: notes the field and mode", log);
         check(has(log, "\tkey\tdown 0x0065 e\n"), "recorder: notes the key", log);
         check(has(log, "\tforward\tBackSpace down\n"), "recorder: notes the forwarded backspace", log);
         check(has(log, "\tapp\t\"ti|\" cursor=2 anchor=2 length=2\n"), "recorder: notes the app's report", log);
@@ -1801,13 +1802,13 @@ namespace {
     // Leaves the field while the replacement for the second "e" waits for the app's copy of the text,
     // then types "n" after coming back.
     void checkLeavingDuringReportWait(int leaveAfterMs, int awayMs, const std::string& expected, int expectedDeletes, const std::string& name, int gapMs = 40,
-                                      bool otherFieldReplacing = false) {
+                                      bool otherFieldReplacing = false, int lagMs = 150) {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
         FakeLoop      loop;
         FakeResources resources;
         auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(),
-                                                                      ngosen::test::AppQuirks{.lagMs = 150, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true});
+                                                                      ngosen::test::AppQuirks{.lagMs = lagMs, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true});
         auto*         app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
@@ -1853,10 +1854,10 @@ namespace {
 
         checkLeavingDuringReportWait(0, 300, "vien", 0, "wait: the replacement does not edit a field the user left");
         checkLeavingDuringReportWait(0, 5, "viên", 1, "wait: a focus bounce keeps the replacement");
-        checkLeavingDuringReportWait(20, 95, "vien", 0, "wait: keys still work after focus returns to a dropped replacement");
+        checkLeavingDuringReportWait(120, 95, "vien", 0, "wait: keys still work after focus returns to a dropped replacement", 40, false, 250);
         checkLeavingDuringReportWait(0, 5, "vien", 0, "wait: another field replacing meanwhile ends the wait", 40, true);
         // The deadline falls inside the bounce. The copy is still short, so the timer deletes anyway, as without one.
-        checkLeavingDuringReportWait(98, 5, "vieên", 1, "wait: a focus bounce across the deadline keeps the replacement", 5);
+        checkLeavingDuringReportWait(198, 5, "vieên", 1, "wait: a focus bounce across the deadline keeps the replacement", 5, false, 250);
 
         lines = logLinesWhileTyping(surroundingOnlyField(), {.reports = false, .dropsForwardedKeys = true}, "vieetj nam tieesng ", "Surrounding check");
         // Silence alone is no reason to give up on a field that has no other way to delete.
@@ -2109,10 +2110,268 @@ namespace {
         ngosen::test::Typed run;
         Field               field = surroundingOnlyField();
         field.preeditFallback     = true;
-        const ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true};
+        const ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .reportsTextOnceFilled = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true};
         const auto                    lines = logLinesWhileTyping(field, qt, "nam tieesng ", "", &run, 150);
         check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0 && countHaving(lines, "copy shows the earlier word") > 0,
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
+    }
+
+    // Firefox on GNOME turns the deletion's bytes back into characters on a copy it updates only when
+    // a commit arrives after the edit, so a count made for that old copy takes letters from the real text.
+    void testFirefoxReportsOnlyAfterCommit() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        for (const int commits : {1, 2}) {
+            ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = commits};
+            FakeResources           resources;
+            const auto              keys = keysOf("bef owr tieesng ");
+            const std::vector<int>  gaps(keys.size(), 150);
+            ngosen::test::captureLog(true);
+            const auto run   = ngosen::test::typeInAppTraced(resources, field, firefox, keys, gaps);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(run.text == "bè ở tiếng ", "Firefox on GNOME: a replacement right after a replacement keeps the letters before it", run.text + " " + join(lines));
+            check(countHaving(lines, "copy shows the earlier word") == 0, "Firefox on GNOME: asking for a report leaves no old copy to count on", join(lines));
+        }
+        FakeResources resources;
+        const auto    keys = keysOf("bef owr tieesng ");
+        ngosen::test::captureLog(true);
+        const auto run   = ngosen::test::typeInAppTraced(resources, field, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 150));
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(run.text == "bè ở tiếng " && countHaving(lines, "Ask the app for a report") == 0, "an app that reports in time gets no empty commit", run.text + " " + join(lines));
+    }
+
+    // The request left over from one edit must not land in the next edit's turn and replace its commit.
+    void testReportRequestKeepsNextEdit() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks shell{
+            .reportDelayMs = 30, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .keepsLastEditPerTurn = true, .turnMs = 3};
+        const auto keys = keysOf("nguwx ");
+        for (const int gap : {38, 39, 40, 41}) {
+            std::vector<int> gaps(keys.size(), 100);
+            gaps[3] = gap; // w and x
+            FakeResources resources;
+            const auto    run = ngosen::test::typeInAppTraced(resources, field, shell, keys, gaps);
+            check(run.text == "ngữ ", "a report request stays out of the next edit's turn, gap " + std::to_string(gap), run.text);
+        }
+    }
+
+    // Firefox reports most edits unasked and misses a few; its copy for the deletion is then as old as
+    // mutter's, so counting on it takes one letter too many. Qt, which rarely reports, needs that count.
+    void testAnsweringAppGetsPlainCount() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 1, .ignoresRequestsOnEdits = {9}};
+        FakeResources           resources;
+        const auto              keys = keysOf("bef owr bef owr vieetj tieesng ");
+        const auto              run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 150));
+        check(run.text == "bè ở bè ở việt tiếng ", "an app that mostly answers keeps its letters when it misses one report", run.text);
+
+        // On a fresh page the misses can come before there are many answers to weigh them against.
+        firefox.ignoresRequestsOnEdits = {2, 3};
+        firefox.reportsOnFocus         = true;
+        FakeResources early;
+        const auto    earlyRun = ngosen::test::typeInAppTraced(early, field, firefox, keys, std::vector<int>(keys.size(), 150));
+        check(earlyRun.text == "bè ở bè ở việt tiếng ", "an app that answered once keeps its letters when it misses the next reports", earlyRun.text);
+
+        // CodeMirror in Firefox hardly answers, but it reported its empty field, which Qt does not do.
+        ngosen::test::AppQuirks silent{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 9, .reportsOnFocus = true};
+        FakeResources           silentResources;
+        const auto              silentKeys = keysOf("bef owr tieesng ");
+        const auto              silentRun  = ngosen::test::typeInAppTraced(silentResources, field, silent, silentKeys, std::vector<int>(silentKeys.size(), 150));
+        check(silentRun.text == "bè ở tiếng ", "an app that reported its empty field keeps its letters without answering", silentRun.text);
+
+        // Qt answers now and then too, but it applies the bytes to its real text.
+        ngosen::test::AppQuirks qt{
+            .dropsForwardedKeys = true, .reportsTextOnceFilled = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true, .reportsOnEdit = 1};
+        FakeResources qtResources;
+        Field         qtField   = surroundingOnlyField();
+        qtField.preeditFallback = true;
+        const auto qtKeys       = keysOf("bef bef tieesng ");
+        const auto qtRun        = ngosen::test::typeInAppTraced(qtResources, qtField, qt, qtKeys, std::vector<int>(qtKeys.size(), 500));
+        check(qtRun.text == "bè bè tiếng ", "an app that rarely answers keeps the count for its real text", qtRun.text);
+    }
+
+    // Backspaces reach Firefox on Plasma after the commit often enough to eat the new letter when typing fast.
+    void testFirefoxOnPlasmaDeletesThroughSurrounding() {
+        const Field             field = makeField("wayland", true, "firefox");
+        ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 1};
+        FakeResources           resources;
+        const auto              keys = keysOf("tieengs vieetj nguwx ");
+        const auto              run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 8));
+        check(run.text == "tiếng việt ngữ ", "firefox on plasma: the words come out right when typing fast", run.text);
+        check(run.sent.surroundingDeletes > 0 && run.sent.forwardedBackSpaces == 0, "firefox on plasma: no backspaces",
+              std::to_string(run.sent.surroundingDeletes) + " " + std::to_string(run.sent.forwardedBackSpaces));
+
+        // CodeMirror and Ace in Firefox answer only on the next key, so waiting for them only adds delay.
+        ngosen::test::AppQuirks silent{.repeatsOldTextAfterDelete = true, .keysBeforeNewReport = 3, .emptyCommitsBeforeReport = 9};
+        FakeResources           silentResources;
+        ngosen::test::captureLog(true);
+        const auto silentRun   = ngosen::test::typeInAppTraced(silentResources, field, silent, keys, std::vector<int>(keys.size(), 150));
+        const auto silentLines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(silentRun.text == "tiếng việt ngữ ", "firefox on plasma: a field that does not answer still types right", silentRun.text);
+        check(countHaving(silentLines, "Copy of the text still short") <= 1, "firefox on plasma: a field that does not answer stops holding keys", join(silentLines));
+    }
+
+    // A busy shell can keep a turn open for longer than the hold, and an empty commit would replace the edit's.
+    void testLongTurnKeepsTheEdit() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        FakeResources           resources;
+        ngosen::test::AppQuirks shell{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true, .turnMs = 45};
+        const auto              keys = keysOf("vieetj nam ");
+        const auto              run  = ngosen::test::typeInAppTraced(resources, field, shell, keys, std::vector<int>(keys.size(), 200));
+        check(run.text == "việt nam ", "a long turn: asking for a report keeps the edit", run.text);
+
+        // A key replayed while that turn is open would replace the edit's commit too.
+        FakeResources fastResources;
+        shell.turnMs    = 25;
+        const auto fast = ngosen::test::typeInAppTraced(fastResources, field, shell, keys, std::vector<int>(keys.size(), 40));
+        check(fast.text == "việt nam ", "a long turn: a replayed key waits for the edit to come out", fast.text);
+    }
+
+    // Firefox's cursor stays past the real one after a deletion and a commit in one turn, so the next
+    // deletion would take what follows the word.
+    void testEditBeforeOtherText() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        FakeResources           resources;
+        ngosen::test::AppQuirks firefox{
+            .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true, .turnMs = 3, .cursorStaysPastEdit = true, .textAfterCursor = "chào"};
+        const auto keys = keysOf("nguwx ");
+        const auto run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 150));
+        check(run.text == "ngữ chào", "text after the cursor: the deletion and the commit go apart", run.text);
+
+        // GTK asks for a new copy only when a commit arrives, so a wait for the copy has to send one.
+        ngosen::test::AppQuirks quiet{.dropsForwardedKeys           = true,
+                                      .convertsDeleteOnReportedCopy = true,
+                                      .repeatsOldTextAfterDelete    = true,
+                                      .keysBeforeNewReport          = 99,
+                                      .emptyCommitsBeforeReport     = 1,
+                                      .reportsOnlyWhenAsked         = true,
+                                      .keepsLastEditPerTurn         = true,
+                                      .turnMs                       = 3};
+        FakeResources           quietResources;
+        const auto              fast  = keysOf("tieengs vieetj laf ");
+        const auto              quick = ngosen::test::typeInAppTraced(quietResources, field, quiet, fast, std::vector<int>(fast.size(), 40));
+        check(quick.text == "tiếng việt là ", "quiet copy on GNOME: the words come out right when typing fast", quick.text);
+    }
+
+    // Ace keeps a line break after its line, and the cursor can stay past it after a commit.
+    void testLineBreakPastTheWord() {
+        Field shell        = surroundingOnlyField();
+        shell.program      = "gnome-shell";
+        const auto    keys = keysOf("nguwx cuar");
+        FakeResources resources;
+        const auto run = ngosen::test::typeInAppTraced(resources, shell, {.dropsForwardedKeys = true, .keepsLineBreakAfterCommit = true}, keys, std::vector<int>(keys.size(), 150));
+        check(run.text.rfind("ngữ của", 0) == 0, "a line break past the word stays out of the word", run.text);
+
+        // Where backspaces reach the app, they act at its real cursor, so the copy's says nothing.
+        FakeResources plasmaResources;
+        const auto    plasma =
+            ngosen::test::typeInAppTraced(plasmaResources, makeField("wayland", true, "firefox"), {.keepsLineBreakAfterCommit = true}, keys, std::vector<int>(keys.size(), 150));
+        check(plasma.sent.forwardedBackSpaces > 0, "a line break past the word leaves the surrounding path", std::to_string(plasma.sent.forwardedBackSpaces));
+    }
+
+    // wlroots drops an edit sent before the done event that follows a report, and the wait for the copy
+    // ends on a report.
+    void testCopyWaitEndsAfterTheReport() {
+        FakeResources resources;
+        const auto    keys = keysOf("tieengs vieetj nam ");
+        const auto run = ngosen::test::typeInAppTraced(resources, makeField("wayland_v2", true, "firefox"),
+                                                       {.reportDelayMs = 30, .dropsCommitsInReport = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
+                                                       std::vector<int>(keys.size(), 20));
+        check(run.text == "tiếng việt nam ", "sway: an edit waiting for the copy goes out after the report", run.text);
+    }
+
+    // A copy that comes a moment late is no reason to leave the surrounding path.
+    void testLateCopyKeepsSurroundingPath() {
+        {
+            const Field             field = makeField("wayland", true, "firefox");
+            ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .keysBeforeNewReport = 99, .emptyCommitsBeforeReport = 1, .reportsOnlyWhenAsked = true};
+            FakeResources           resources;
+            const auto              keys = keysOf("tieengs vieetj nguwx ");
+            const auto              run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 40));
+            check(run.text == "tiếng việt ngữ ", "quiet copy: the words come out right", run.text);
+            check(run.sent.forwardedBackSpaces == 0, "quiet copy: the wait asks for a report instead of leaving the path", std::to_string(run.sent.forwardedBackSpaces));
+        }
+        {
+            // A key replayed right after a commit finds a copy that cannot show that commit yet.
+            const Field   field = makeField("wayland", true, "firefox");
+            FakeResources resources;
+            const auto    keys = keysOf("tieengs vieetj nguwx ");
+            const auto    run  = ngosen::test::typeInAppTraced(resources, field, {.reportDelayMs = 60, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
+                                                               std::vector<int>(keys.size(), 20));
+            check(run.text == "tiếng việt ngữ ", "replayed keys: the words come out right", run.text);
+            check(run.sent.forwardedBackSpaces == 0, "replayed keys: the wait covers them too", std::to_string(run.sent.forwardedBackSpaces));
+        }
+        for (const char* frontend : {"wayland", "wayland_v2"}) {
+            const Field   field = makeField(frontend, true, "chromium");
+            FakeResources resources;
+            const auto    keys = keysOf("tieengs vieetj nguwx ");
+            const auto    run  = ngosen::test::typeInAppTraced(resources, field, {.reportDelayMs = 30, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
+                                                               std::vector<int>(keys.size(), 10));
+            check(run.text == "tiếng việt ngữ ", std::string(frontend) + " late copy: the words come out right", run.text);
+            check(run.sent.forwardedBackSpaces <= 1, std::string(frontend) + " late copy: backspaces only before the field has shown text",
+                  std::to_string(run.sent.forwardedBackSpaces));
+        }
+    }
+
+    // A copy one key behind can hold the same number of bytes as the word, yet the deletion lands at
+    // that copy's cursor, in front of the key the copy lacks.
+    void testCopyBehindByAKey() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks firefox{.reportDelayMs = 40, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .deletesAtReportedCursor = true};
+        FakeResources           resources;
+        const auto              keys = keysOf("vieetj nam ");
+        std::vector<int>        gaps(keys.size(), 150);
+        gaps[4]        = 5; // t and j
+        const auto run = ngosen::test::typeInAppTraced(resources, field, firefox, keys, gaps);
+        check(run.text == "việt nam ", "copy behind by a key: the replacement waits for the copy to catch up", run.text);
+    }
+
+    // The copy can still end at the word before the keys just replayed, and a deletion counted on it
+    // leaves part of the word in place.
+    void testCopyBehindReplayedKey() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks firefox{
+            .reportDelayMs = 3, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .keepsLastEditPerTurn = true, .turnMs = 3};
+        const auto keys = keysOf("bef owr vieetj nam ");
+        for (const int delay : {60, 80, 100, 120}) {
+            firefox.oldTextAfterDeleteMs = delay;
+            for (int gap = 5; gap <= 80; gap += 5) {
+                // Slow words first, so the app counts as one that reports its edits.
+                std::vector<int> gaps(keys.size(), 400);
+                gaps[11] = 5;   // the second e and t: t waits behind the edit and is replayed
+                gaps[12] = gap; // t and j
+                FakeResources resources;
+                const auto    run = ngosen::test::typeInAppTraced(resources, field, firefox, keys, gaps);
+                check(run.text == "bè ở việt nam ", "copy behind a replayed key, delay " + std::to_string(delay) + ", gap " + std::to_string(gap), run.text);
+            }
+        }
+    }
+
+    // A report request sent right after a replayed key would replace that key's commit while the turn
+    // is open, and the word loses the letter.
+    void testReportRequestKeepsReplayedKey() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks shell{
+            .reportDelayMs = 5, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .keepsLastEditPerTurn = true, .turnMs = 15};
+        const auto keys = keysOf("vieetj nam ");
+        for (int gap = 10; gap <= 100; gap += 5) {
+            std::vector<int> gaps(keys.size(), 120);
+            gaps[3] = 5;   // the second e and t: t waits behind the edit and is replayed
+            gaps[4] = gap; // t and j
+            FakeResources resources;
+            const auto    run = ngosen::test::typeInAppTraced(resources, field, shell, keys, gaps);
+            check(run.text == "việt nam ", "a report request keeps a replayed key, gap " + std::to_string(gap), run.text);
+        }
     }
 
     // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first
@@ -2255,6 +2514,38 @@ namespace {
         }
     }
 
+    // VS Code's editor shows the cursor at the line start for a moment after a line's first letter.
+    void testFirstLetterCursorBounce() {
+        for (const int lateMs : {20, 36, 46}) {
+            for (const bool comesBack : {true, false}) {
+                realMode = ngosen::Mode::Sen;
+                realtextLen.store(0);
+                FakeLoop            loop;
+                FakeResources       resources;
+                auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true), ngosen::test::AppQuirks{});
+                auto*               app   = owned.get();
+                ngosen::TypingState state(&resources, std::move(owned));
+                app->attach(&state);
+                app->type('t');
+                loop.pump(lateMs);
+                app->copyTextAfterStartCursor();
+                if (comesBack) {
+                    loop.pump(2);
+                    app->moveCursor(1);
+                }
+                loop.pump(250);
+                for (const char c : std::string(comesBack ? "ieengs vieetj " : "ieetj")) {
+                    app->type(static_cast<uint32_t>(c));
+                    loop.pump(250);
+                }
+                if (comesBack)
+                    check(app->text() == "tiếng việt t", "first letter: the cursor coming back keeps the word", std::to_string(lateMs) + " ms: " + app->text());
+                else if (lateMs > 30)
+                    check(app->text() == "iệttt", "first letter: a cursor staying at the line start forgets the word", std::to_string(lateMs) + " ms: " + app->text());
+            }
+        }
+    }
+
     // The ways out when a deletion through the surrounding text goes wrong.
     void testSurroundingFallback() {
         ngosen::test::Typed run;
@@ -2366,7 +2657,7 @@ int main() {
     testSenForwards("xim", false);
     for (const char* frontend : {"wayland", "wayland_v2", "dbus"})
         testSenDeletesReportedWord(frontend);
-    testFirefoxKeepsBackspaces();
+    testFirefoxDeletesThroughSurrounding();
     testForwardedKeysNewerThanTyped();
     testKeyDuringReplacement();
     testCommitAfterTheReport();
@@ -2431,7 +2722,20 @@ int main() {
     testSlowReport();
     testStaleCopyBeforeReplacement();
     testReplacementsInOneTurn();
+    testFirefoxReportsOnlyAfterCommit();
+    testReportRequestKeepsNextEdit();
+    testAnsweringAppGetsPlainCount();
+    testCopyBehindByAKey();
+    testCopyBehindReplayedKey();
+    testReportRequestKeepsReplayedKey();
+    testLateCopyKeepsSurroundingPath();
+    testFirefoxOnPlasmaDeletesThroughSurrounding();
+    testLineBreakPastTheWord();
+    testLongTurnKeepsTheEdit();
+    testCopyWaitEndsAfterTheReport();
+    testEditBeforeOtherText();
     testCursorBounceBack();
+    testFirstLetterCursorBounce();
     testIbusClientNames();
     testAutofillMark();
     testReportWithNextKey();

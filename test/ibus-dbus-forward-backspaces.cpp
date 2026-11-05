@@ -119,26 +119,26 @@ namespace {
         return true;
     }
 
-    // Firefox over D-Bus reports the word but stays on backspaces (it reports its own edits late), so
-    // the forwarded keys keep their order with the commit, which waits for the report of the deletion.
+    // An address bar reports the word but stays on backspaces, so the forwarded keys keep their
+    // order with the commit, which waits for the report of the deletion.
     bool dbusForwardsAndWaitsForDeletion(Harness& h) {
-        const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix};
+        const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix, fcitx::CapabilityFlag::Url};
         auto       context = h.open("firefox", "dbus", caps);
         if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, true))
             return false;
         if (!forwardedOneBackspace(*context)) {
-            reportFailure("dbus firefox: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
+            reportFailure("dbus address bar: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
             return false;
         }
         pumpEventLoop(h.testInstance.instance, 3);
         if (!context->commits().empty()) {
-            reportFailure("dbus firefox: no commit before the app reports the deletion", "(none)", joinCommits(*context));
+            reportFailure("dbus address bar: no commit before the app reports the deletion", "(none)", joinCommits(*context));
             return false;
         }
         Harness::setSnapshot(*context, "ti", 2);
         pumpEventLoop(h.testInstance.instance, 120);
         if (context->commits() != std::vector<std::string>{"ê"}) {
-            reportFailure("dbus firefox: commit once the app reports the deletion", "['ê']", joinCommits(*context));
+            reportFailure("dbus address bar: commit once the app reports the deletion", "['ê']", joinCommits(*context));
             return false;
         }
         return true;

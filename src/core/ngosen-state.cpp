@@ -1021,11 +1021,12 @@ namespace ngosen {
         emojiBuffer_.clear();
         emojiCandidates_.clear();
         buffered_keys_.clear();
-        edit_hold_         = false;
-        shouldCapitalize_  = false;
-        isPrevSpace_       = false;
-        isPrevHyphen_      = false;
-        isPrevPunctuation_ = false;
+        edit_hold_            = false;
+        report_requests_left_ = 0;
+        shouldCapitalize_     = false;
+        isPrevSpace_          = false;
+        isPrevHyphen_         = false;
+        isPrevPunctuation_    = false;
         if (bambooEngine_)
             ResetEngine(bambooEngine_.handle());
     }

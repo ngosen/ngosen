@@ -456,10 +456,22 @@ namespace ngosen {
         return s.cursor() <= now.size() && lastSurroundingCursor_ <= before.size() && before.compare(0, s.cursor(), now, 0, s.cursor()) == 0;
     }
 
+    // Firefox's reports trail the keys, so a field holding only the start of the word has not caught up.
+    // Only the field's first word can be told apart this way.
+    bool TypingState::reportTrailsFirstWord(const Surrounding& s) const {
+        if (!ngosen::reportsSurroundingEditsLate(host_->field()) || s.cursor() != s.anchor())
+            return false;
+        const std::u32string word = ngosen::utf8::decode(oldPreBuffer_);
+        const std::u32string text = ngosen::utf8::decode(s.text());
+        return s.cursor() == text.size() && text.size() < word.size() && word.compare(0, text.size(), text) == 0;
+    }
+
     // A quick switch to another field on the same context comes back like a bounce. The first settled
     // report after it tells which: the same field still has the word before the cursor.
     bool TypingState::lostWordAfterBounce(const Surrounding& s, bool settling) {
         if (!checkWordAfterBounce_ || is_deleting_.load(std::memory_order_acquire) || deferred_commit_pending_ || unreportedCommitLength_ > 0)
+            return false;
+        if (reportTrailsFirstWord(s))
             return false;
         checkWordAfterBounce_ = false;
         if (settling || mode() != ngosen::Mode::Sen || oldPreBuffer_.empty() || s.cursor() != s.anchor())
@@ -493,8 +505,8 @@ namespace ngosen {
         const bool caretSettling = jumped && s.cursor() == s.anchor() && sinceInputUs < SuggestionStepUs && s.cursor() + 1 == lastSurroundingCursor_;
         // A spreadsheet reports a click on another cell only as that cell's text with the cursor at its start.
         const bool lostWord = lostWordAfterBounce(s, settling);
-        const bool newField =
-            (hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() && (unreportedCommitLength_ == 0 || textAfterCursorChanged(s))) ||
+        const bool newField = (hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() &&
+                               (unreportedCommitLength_ == 0 || textAfterCursorChanged(s)) && !reportTrailsFirstWord(s)) ||
             lostWord;
         // Firefox repeats the old state before the echo, so only a change ends the wait.
         if (!jumped && !sameText && showsOwnDeletion(s))

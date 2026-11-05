@@ -2,7 +2,7 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: fcitx5-ngosen
 Upstream-Contact: Nguyen Phi <nguyenphidt@gmail.com>
 Source: https://github.com/ngosen/ngosen
-Comment: Ngó Sen is a fork of https://github.com/LotusInputMethod/fcitx5-lotus
+Comment: Ngó Sen is based on code from https://github.com/LotusInputMethod/fcitx5-lotus and https://github.com/thanhpy2009/VMK
 
 Files: *
 Copyright: 2022 CSSlayer <wengxt@gmail.com>
@@ -22,6 +22,16 @@ Copyright: 2018 Luong Thanh Lam <ltlam93@gmail.com>
            2026 Nguyen Hoang Ky <nhktmdzhg@gmail.com>
            2026 Ngó Sen contributors
 License: LGPL-2.1-or-later
+
+Files: bamboo-rs/src/engine/english-words*
+Copyright: 2000-2026 Kevin Atkinson
+License: SCOWL
+ Permission to use, copy, modify, distribute, and sell any part of SCOWLv2, or
+ word lists created from it, is hereby granted without fee, provided that the
+ above copyright notice appears in all copies and that both the above
+ copyright notice and this notice appear in supporting documentation.  Kevin
+ Atkinson makes no representations about the suitability of this database for
+ any purpose.  It is provided "as is" without express or implied warranty.
 
 Files: bamboo-rs/vendor/bamboo-core/*
 Copyright: 2018 Luong Thanh Lam <ltlam93@gmail.com>

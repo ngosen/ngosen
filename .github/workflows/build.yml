@@ -39,6 +39,13 @@ jobs:
       - name: No lotus in new names
         run: misc/check-new-names.sh origin/main
 
+  release-files:
+    name: Check release file selection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: test/collect-release-files.sh
+
   check:
     name: Build and test (${{ matrix.compiler }})
     runs-on: ubuntu-latest

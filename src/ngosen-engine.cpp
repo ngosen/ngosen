@@ -56,7 +56,6 @@
 
 #include <fcntl.h>
 #include <sstream>
-#include <string_view>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -1421,7 +1420,7 @@ namespace fcitx {
         std::string appLabel = currentConfigureApp_;
         if (isStartsWith(currentConfigureApp_, "ctx_")) {
             // GNOME Shell relays every app through one field, so a rule without a name holds for all of them.
-            appLabel = std::string_view(ic->frontend()) == "ibus" ? _("apps with no name") : _("this window");
+            appLabel = std::string(ic->frontend()) == "ibus" ? _("apps with no name") : _("this window");
         }
         ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);

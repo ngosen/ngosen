@@ -171,6 +171,13 @@ int main() {
     press(engine, entry, *cleared, FcitxKey_e);
     check(!hasRule(engine, "cleared"), "a key after the panel was cleared picks nothing", "cleared got a rule");
 
+    // A click reported by X11 closes the menu.
+    engine.activate(entry, clearedFocus);
+    press(engine, entry, *cleared, FcitxKey_grave);
+    g_mouse_clicked.store(true, std::memory_order_release);
+    press(engine, entry, *cleared, FcitxKey_a);
+    check(!menu(*cleared), "a click closes the menu", "menu still open");
+
     // A window closed with its menu open leaves nothing for later keys to pick for.
     auto closing = std::make_unique<TestInputContext>(&testInstance.instance, "closing");
     closing->focusIn();

@@ -467,7 +467,7 @@ namespace fcitx {
         // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.
         void pickMenuMode(InputContext* ic, NgoSenMode mode, bool isDefault);
         void openModeMenu(InputContext* ic);
-        // Focus changes, resets and timers all clear the panel, so the menu is open only while ic's panel still shows it.
+        // Focus changes and timers can clear the panel, so the menu is open only while ic's panel still shows it.
         bool isModeMenuOpen(InputContext* ic) const;
         // The modes the cycle key steps through, in the configured order.
         std::vector<NgoSenMode> cycleModes(const std::string& appName);

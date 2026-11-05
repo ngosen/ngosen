@@ -756,15 +756,14 @@ namespace fcitx {
         auto* ic = keyEvent.inputContext();
         dropStaleSurroundingText(ic);
 
-        if (isSelectingAppMode_ && g_mouse_clicked.load(std::memory_order_acquire)) {
-            closeAppModeMenu();
+        if (isModeMenuOpen(ic) && g_mouse_clicked.load(std::memory_order_acquire)) {
             closeModeMenuPanel(ic, true);
         }
 
         if (handleToggleKey(keyEvent))
             return;
 
-        if (isSelectingAppMode_) {
+        if (isModeMenuOpen(ic)) {
             handleModeMenuKey(keyEvent);
             return;
         }
@@ -776,7 +775,8 @@ namespace fcitx {
         }
 
         // In English the menu key types its character; ` is common in code and Markdown.
-        if (realMode != NgoSenMode::Off && !keyEvent.isRelease() && !config_.modeMenuKey->empty() && keyEvent.key().checkKeyList(*config_.modeMenuKey)) {
+        if (realMode != NgoSenMode::Off && !keyEvent.isRelease() && !config_.modeMenuKey->empty() && keyEvent.key().checkKeyList(*config_.modeMenuKey) &&
+            modeMenuCanDraw(instance_->currentUI(), ic->frontend(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel))) {
             openModeMenu(ic);
             keyEvent.filterAndAccept();
             return;
@@ -784,6 +784,11 @@ namespace fcitx {
         auto*                 state = stateFor(keyEvent.inputContext());
         ngosen::FcitxKeyPress press(keyEvent);
         state->keyEvent(press);
+    }
+
+    bool modeMenuCanDraw(const std::string& currentUi, const std::string& frontend, const std::string& display, bool clientDrawsPanel) {
+        // fcitx5's own panel has no surface to draw on for a field GNOME Shell relays on Wayland.
+        return clientDrawsPanel || currentUi != "classicui" || frontend != "ibus" || !isStartsWith(display, "wayland:");
     }
 
     void NgoSenEngine::handleModeMenuKey(KeyEvent& keyEvent) {
@@ -855,8 +860,12 @@ namespace fcitx {
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
     }
 
+    bool NgoSenEngine::isModeMenuOpen(InputContext* ic) const {
+        const auto list = modeMenuList_.lock();
+        return list && ic->inputPanel().candidateList() == list;
+    }
+
     void NgoSenEngine::closeModeMenuPanel(InputContext* ic, bool resetState) {
-        isSelectingAppMode_ = false;
         ic->inputPanel().reset();
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
         if (resetState) {
@@ -1237,8 +1246,7 @@ namespace fcitx {
     }
 
     void NgoSenEngine::toggleVietnamese(InputContext* ic, bool offerRetype) {
-        if (isSelectingAppMode_) {
-            closeAppModeMenu();
+        if (isModeMenuOpen(ic)) {
             closeModeMenuPanel(ic, true);
         } else if (auto* state = stateFor(ic)) {
             // Finish the word being typed in the mode it was typed in.
@@ -1352,11 +1360,6 @@ namespace fcitx {
         safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
     }
 
-    void NgoSenEngine::closeAppModeMenu() {
-        isSelectingAppMode_ = false;
-        g_mouse_clicked.store(false, std::memory_order_release);
-    }
-
     std::vector<NgoSenEngine::ModeMenuItem> NgoSenEngine::modeMenuItems() {
         auto                                          getShortcut = [](const std::string& shortcut) { return Key(shortcut).sym(); };
 
@@ -1386,8 +1389,6 @@ namespace fcitx {
     }
 
     void NgoSenEngine::showAppModeMenu(InputContext* ic) {
-        isSelectingAppMode_ = true;
-
         auto candidateList = std::make_unique<CommonCandidateList>();
 
         candidateList->setLayoutHint(CandidateLayoutHint::Vertical);
@@ -1437,8 +1438,13 @@ namespace fcitx {
 
         ic->inputPanel().reset();
         ic->inputPanel().setCandidateList(std::move(candidateList));
-        const bool unnamed = isStartsWith(currentConfigureApp_, "ctx_");
-        ic->inputPanel().setAuxDown(Text(_("App: ") + (unnamed ? std::string(_("this window")) : currentConfigureApp_)));
+        modeMenuList_        = ic->inputPanel().candidateList();
+        std::string appLabel = currentConfigureApp_;
+        if (isStartsWith(currentConfigureApp_, "ctx_")) {
+            // GNOME Shell relays every app through one field, so a rule without a name holds for all of them.
+            appLabel = std::string(ic->frontend()) == "ibus" ? _("apps with no name") : _("this window");
+        }
+        ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
     }
 

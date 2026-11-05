@@ -14,7 +14,7 @@ endif()
 set(NGOSEN_CARGO_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/target" CACHE INTERNAL "")
 set(NGOSEN_BAMBOO_LIB "${NGOSEN_CARGO_TARGET_DIR}/${NGOSEN_CARGO_PROFILE_DIR}/libngosen_bamboo.a")
 
-file(GLOB_RECURSE NGOSEN_BAMBOO_SRCS src/*.rs)
+file(GLOB_RECURSE NGOSEN_BAMBOO_SRCS src/*.rs src/*.txt)
 
 # Cargo reads the vendored-sources config from the working directory, not the manifest's.
 add_custom_command(OUTPUT "${NGOSEN_BAMBOO_LIB}"

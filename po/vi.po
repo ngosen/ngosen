@@ -354,6 +354,9 @@ msgstr "App: "
 msgid "this window"
 msgstr "cửa sổ này"
 
+msgid "apps with no name"
+msgstr "mọi app chưa có tên"
+
 #: src/ngosen-engine.cpp:1099
 msgid "Unknown Mode"
 msgstr "Không rõ chế độ"

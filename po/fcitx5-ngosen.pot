@@ -353,6 +353,9 @@ msgstr ""
 msgid "this window"
 msgstr ""
 
+msgid "apps with no name"
+msgstr ""
+
 #: src/ngosen-engine.cpp:1099
 msgid "Unknown Mode"
 msgstr ""

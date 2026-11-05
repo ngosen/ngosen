@@ -270,6 +270,12 @@ jobs:
           - name: fedora-44, KDE
             image: fedora:44
             args: kde
+          - name: fedora-45, GNOME
+            image: fedora:45
+            args: gnome
+          - name: fedora-45, KDE
+            image: fedora:45
+            args: kde
           # A Fedora remix: its own ID, Fedora's release number.
           - name: ultramarine-44, KDE
             image: ghcr.io/ultramarine-linux/ultramarine:44

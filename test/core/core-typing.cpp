@@ -1903,6 +1903,193 @@ namespace {
               "fallback: text filled in after the cursor sends the next words to the preedit", app->text() + " " + join(lines));
     }
 
+    // '<' stands for a Backspace press.
+    std::string typedWithBackspaces(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::vector<int>& gapsMs, std::vector<std::string>& lines,
+                                    ngosen::test::Path* sent = nullptr) {
+        FakeResources resources;
+        auto          keys = keysOf(typed);
+        std::replace(keys.begin(), keys.end(), static_cast<uint32_t>('<'), static_cast<uint32_t>(ngosen::key::BackSpace));
+        ngosen::test::captureLog(true);
+        const auto run = ngosen::test::typeInAppTraced(resources, field, quirks, keys, gapsMs);
+        lines          = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        if (sent != nullptr)
+            *sent = run.sent;
+        return run.text;
+    }
+
+    std::string typedWithBackspaces(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, int gapMs, std::vector<std::string>& lines,
+                                    ngosen::test::Path* sent = nullptr) {
+        return typedWithBackspaces(field, quirks, typed, std::vector<int>(typed.size(), gapMs), lines, sent);
+    }
+
+    // An app over IBus may report a replacement only with a later key, so its check stays open that long.
+    void testReportWithNextKey() {
+        const Field              gnome = makeField("ibus", true);
+        std::vector<std::string> lines;
+        ngosen::test::Path       sent;
+        for (const int gapMs : {290, 400, 670}) {
+            const auto text = typedWithBackspaces(gnome, {.repeatsOldTextAfterDelete = true}, "vieetj nam tieesng tooi ", gapMs, lines, &sent);
+            check(text == "việt nam tiếng tôi " && countHaving(lines, ": correct") > 0 && countHaving(lines, "1 keys later") > 0 && countHaving(lines, "untrusted") == 0 &&
+                      sent.surroundingDeletes > 0,
+                  "next key: its report answers the check, " + std::to_string(gapMs) + " ms apart", text + " " + join(lines));
+        }
+        for (const int gapMs : {290, 400}) {
+            const auto text = typedWithBackspaces(gnome, {.repeatsOldTextAfterDelete = true, .keysBeforeNewReport = 2}, "vieetj nam tieesng tooi ", gapMs, lines, &sent);
+            check(text == "việt nam tiếng tôi " && countHaving(lines, "2 keys later") > 0 && countHaving(lines, "untrusted") == 0,
+                  "next key: the report may come with the second key, " + std::to_string(gapMs) + " ms apart", text + " " + join(lines));
+        }
+
+        // Other frontends keep the short check, and the mark where the field has another way to delete.
+        auto text = typedWithBackspaces(makeField("wayland", true, "someapp"), {.repeatsOldTextAfterDelete = true}, "vieetj nam tieesng tooi ", 400, lines);
+        check(text == "việt nam tiếng tôi " && countHaving(lines, "after 200 ms") > 0 && countHaving(lines, "went unanswered") == 1, "next key: wayland keeps the short check",
+              text + " " + join(lines));
+        text = typedWithBackspaces(makeField("dbus", true, "someapp"), {.repeatsOldTextAfterDelete = true}, "vieetj nam tieesng tooi ", 400, lines);
+        check(text == "việt nam tiếng tôi " && countHaving(lines, "after 200 ms") > 0 && countHaving(lines, ": correct") == 0, "next key: dbus keeps the short check",
+              text + " " + join(lines));
+    }
+
+    // An app silent from its first deletion is caught by the copy check, so no mark is needed.
+    void testSilentFromFirstDeletion() {
+        const Field              gnome = makeField("ibus", true);
+        std::vector<std::string> lines;
+        ngosen::test::Path       sent;
+        auto                     text = typedWithBackspaces(gnome, {.silentFromFirstDeletion = true}, "vieetj nam ", 400, lines);
+        check(text == "việt nam " && countHaving(lines, "went unanswered") == 0, "silent: words after the first delete with backspaces", text + " " + join(lines));
+
+        text = typedWithBackspaces(gnome, {.ignoresSurroundingDel = true, .silentFromFirstDeletion = true}, "vieetj nam ", 400, lines, &sent);
+        check(sent.surroundingDeletes == 1, "silent: a dropped deletion costs one word", text + " " + join(lines));
+
+        Field preeditHost           = surroundingOnlyField();
+        preeditHost.preeditFallback = true;
+        text                        = typedWithBackspaces(preeditHost, {.silentFromFirstDeletion = true}, "too too too too ", 400, lines);
+        check(countHaving(lines, "went unanswered") == 1, "silent: a host with a preedit still gives up on the field", text + " " + join(lines));
+    }
+
+    void testBothPathsInOneWord() {
+        std::vector<std::string> lines;
+        ngosen::test::Path       sent;
+        for (const auto& quirks : {ngosen::test::AppQuirks{.reportDelayMs = 300}, ngosen::test::AppQuirks{.reportDelayMs = 300, .repeatsOldTextAfterDelete = true}}) {
+            const auto text = typedWithBackspaces(makeField("ibus", true), quirks, "tieesng<<ng", 120, lines, &sent);
+            check(text == "tiếng" && sent.surroundingDeletes > 0 && sent.forwardedBackSpaces > 0, "both paths: one word mixes them and stays right", text + " " + join(lines));
+        }
+    }
+
+    // A replacement through backspaces while a check is open changes what stands before that check's commit.
+    void testBackspacePathDuringLongCheck() {
+        std::vector<std::string> lines;
+        for (const int gapMs : {100, 240, 400}) {
+            const auto text = typedWithBackspaces(makeField("ibus", true), {.repeatsOldTextAfterDelete = true}, "tieesng tieesng ", gapMs, lines);
+            check(text == "tiếng tiếng " && countHaving(lines, "Surrounding text untrusted") == 0,
+                  "long check: backspaces in the next replacement, keys " + std::to_string(gapMs) + " ms", text + " " + join(lines));
+        }
+    }
+
+    bool lastReplacementDeletedThroughCopy(const std::vector<std::string>& lines) {
+        bool deleted = false;
+        for (const auto& line : lines) {
+            if (line.find("Perform replacement") != std::string::npos)
+                deleted = false;
+            else if (line.find("Delete using surrounding") != std::string::npos)
+                deleted = true;
+        }
+        return deleted;
+    }
+
+    // A report still on its way can show the word a Backspace left while the app holds other text.
+    void testLateReportAfterBackspace() {
+        const Field              gnome = makeField("ibus", true);
+        std::vector<std::string> lines;
+        const std::string        typed = "muoons tieesng<<ng ";
+        std::vector<int>         gapsMs(typed.size(), 500);
+        // From the s of the word, so the report of its commit lands just before the key after the Backspaces.
+        gapsMs[11] = 20;
+        std::fill(gapsMs.begin() + 12, gapsMs.begin() + 16, 15);
+        auto text = typedWithBackspaces(gnome, {.reportDelayMs = 80, .reportsTextAtChange = true}, typed, gapsMs, lines);
+        check(text == "muốn tiếng " && !lastReplacementDeletedThroughCopy(lines), "late report: the word goes on through backspaces after the user's Backspace",
+              text + " " + join(lines));
+
+        text = typedWithBackspaces(gnome, {}, "too<oo too ", 400, lines);
+        check(text == "tô tô " && lastReplacementDeletedThroughCopy(lines), "late report: the next word uses the surrounding text again", text + " " + join(lines));
+
+        // The space comes during the s's replacement, so it ends the word only when replayed.
+        const std::string quick = "too<oos too ";
+        gapsMs.assign(quick.size(), 400);
+        gapsMs[6] = 5;
+        text      = typedWithBackspaces(gnome, {.lagMs = 40}, quick, gapsMs, lines);
+        check(text == "tố tô " && lastReplacementDeletedThroughCopy(lines), "late report: the next word uses the surrounding text after a replayed space",
+              text + " " + join(lines));
+
+        ngosen::test::Path sent;
+        text = typedWithBackspaces(makeField("wayland", true, "someapp"), {}, "too<oo ", 400, lines, &sent);
+        check(text == "tô " && sent.forwardedBackSpaces > 0, "late report: other frontends go on through backspaces too", text + " " + join(lines));
+    }
+
+    // A long check must still see a deletion the app dropped.
+    void testDroppedDeletionInLongCheck() {
+        const Field              gnome = makeField("ibus", true);
+        std::vector<std::string> lines;
+        auto                     text = typedWithBackspaces(gnome, {.reportDelayMs = 300, .ignoresSurroundingDel = true}, "too too ", 400, lines);
+        check(text == "tô tô " && countHaving(lines, "Fix the dropped deletion") == 1 && countHaving(lines, "Surrounding text untrusted") == 1,
+              "long check: a late report of a dropped deletion is fixed", text + " " + join(lines));
+
+        text = typedWithBackspaces(gnome, {.repeatsOldTextAfterDelete = true, .deletesOneTooMany = true}, "coo too too ", 400, lines);
+        check(countHaving(lines, "text before it wrong") >= 1 && countHaving(lines, "Surrounding text untrusted") == 1,
+              "long check: a wrong deletion reported late marks the field", text + " " + join(lines));
+
+        text = typedWithBackspaces(gnome, {.ignoresSurroundingDel = true, .repeatsOldTextAfterDelete = true}, "too too ", 400, lines);
+        check(text == "toô tô " && countHaving(lines, "Leave the dropped deletion") == 1 && countHaving(lines, "Surrounding text untrusted") == 1,
+              "long check: a dropped deletion seen after a key costs one word", text + " " + join(lines));
+    }
+
+    // The user's own edits while a long check is open say nothing about the app.
+    void testEditsDuringLongCheck() {
+        const Field              gnome = makeField("ibus", true);
+        std::vector<std::string> lines;
+        for (const int gapMs : {90, 150, 300}) {
+            const auto text = typedWithBackspaces(gnome, {.repeatsOldTextAfterDelete = true}, "coo too<<", gapMs, lines);
+            check(countHaving(lines, "Surrounding text untrusted") == 0 && countHaving(lines, "text before it wrong") == 0,
+                  "long check: Backspace is not a wrong report, " + std::to_string(gapMs) + " ms apart", text + " " + join(lines));
+        }
+        const auto text = typedWithBackspaces(gnome, {.repeatsOldTextAfterDelete = true}, "coos<o ", 400, lines);
+        check(countHaving(lines, "Surrounding text untrusted") == 0 && countHaving(lines, "Fix the dropped deletion") == 0,
+              "long check: a word typed crooked is not a dropped deletion", text + " " + join(lines));
+    }
+
+    // Backspaces reach an app out of focus but a commit does not, so a fix then would lose the word.
+    void testLongCheckLeavesFocus() {
+        for (const int delayMs : {300, 500, 800}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop      loop;
+            FakeResources resources;
+            auto  owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true), ngosen::test::AppQuirks{.reportDelayMs = delayMs, .ignoresSurroundingDel = true});
+            auto* app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            const std::string typed = "xin too";
+            for (size_t i = 0; i < typed.size(); ++i) {
+                app->type(static_cast<uint32_t>(typed[i]));
+                loop.pump(i + 1 == typed.size() ? 100 : 600);
+            }
+            ngosen::test::captureLog(true);
+            app->leaveFocus(2000);
+            loop.pump(1000);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(app->text() == "xin toô" && countHaving(lines, "Fix the dropped deletion") == 0,
+                  "long check: no fix while out of focus, report after " + std::to_string(delayMs) + " ms", app->text() + " " + join(lines));
+        }
+    }
+
+    // An app that answers nothing in time gets no mark over IBus: each word still picks its own way.
+    void testUnansweredChecksLeaveNoMark() {
+        std::vector<std::string> lines;
+        const auto               text = typedWithBackspaces(makeField("ibus", true), {.repeatsOldTextAfterDelete = true}, "vieetj nam tieesng tooi ", 1600, lines);
+        check(text == "việt nam tiếng tôi " && countHaving(lines, "not answered") > 0 && countHaving(lines, "untrusted") == 0, "no mark: unanswered checks over IBus",
+              text + " " + join(lines));
+    }
+
     // An app whose copy still holds the replaced characters until the next key, as Firefox on GNOME
     // does: a deletion counted on that copy takes too many.
     void testSlowReport() {
@@ -2136,7 +2323,37 @@ namespace {
     }
 } // namespace
 
+namespace {
+    void testEnglishWordKeepsDoubledLetter() {
+        const auto typed = [](const std::string& word, uint32_t end) {
+            std::vector<uint32_t> keys(word.begin(), word.end());
+            keys.push_back(end);
+            return keys;
+        };
+        ngosen::test::FakeResources resources;
+        const Field                 field = makeField("wayland", true);
+        for (const uint32_t end : {uint32_t{ngosen::key::space}, uint32_t{ngosen::key::Return}}) {
+            const auto        keys = typed("issue", end);
+            const std::string sen  = ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
+            check(sen.rfind("issue", 0) == 0, "sen: issue keeps both letters before key " + std::to_string(end), sen);
+            const std::string preedit = ngosen::test::telexOutput(resources, keys);
+            check(preedit.rfind("issue", 0) == 0, "preedit: issue keeps both letters before key " + std::to_string(end), preedit);
+        }
+        ngosen::test::FakeResources noMacros;
+        noMacros.mutableOptions().enableMacro = false;
+        const auto        enterKeys           = typed("issue", ngosen::key::Return);
+        const std::string senNoMacros         = ngosen::test::typeInApp(noMacros, field, {}, enterKeys, std::vector<int>(enterKeys.size(), 20));
+        check(senNoMacros.rfind("issue", 0) == 0, "sen: issue keeps both letters before Enter with macros off", senNoMacros);
+        const std::string tab = ngosen::test::telexOutput(resources, typed("issue", ngosen::key::Tab));
+        check(tab.rfind("issue", 0) == 0, "preedit: issue keeps both letters before Tab", tab);
+        const auto        keys = typed("tesst", ngosen::key::space);
+        const std::string sen  = ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
+        check(sen == "test ", "sen: a doubled key still undoes the tone", sen);
+    }
+}
+
 int main() {
+    testEnglishWordKeepsDoubledLetter();
     testQuirks();
     testPreeditTelex();
     testPreeditEnterAfterCommit();
@@ -2217,6 +2434,15 @@ int main() {
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();
+    testReportWithNextKey();
+    testSilentFromFirstDeletion();
+    testBothPathsInOneWord();
+    testBackspacePathDuringLongCheck();
+    testLateReportAfterBackspace();
+    testDroppedDeletionInLongCheck();
+    testEditsDuringLongCheck();
+    testLongCheckLeavesFocus();
+    testUnansweredChecksLeaveNoMark();
     check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

@@ -53,6 +53,10 @@ namespace ngosen::test {
         bool convertsDeleteOnReportedCopy = false;
         bool reportsNothingAfterDelete    = false; // reports nothing after a deletion until a typed key, as Qt 6 over text-input-v3 does
         bool repeatsOldTextAfterDelete    = false; // reports its text from before a deletion until a typed key, as Firefox on GNOME does
+        int  keysBeforeNewReport          = 1;     // typed keys it takes to end repeatsOldTextAfterDelete
+        bool silentFromFirstDeletion      = false; // stops reporting at its first deletion through the surrounding text, for good
+        bool deletesOneTooMany            = false; // takes one more character than a deletion through the surrounding text asks for
+        bool reportsTextAtChange          = false; // a late report shows the text as it was at that change, not as it is on arrival
         bool showsEnter                   = false; // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
         bool showsTab                     = false; // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
         // Applies deletions and commits once per main-loop turn, keeping only the last of each, as a
@@ -161,6 +165,8 @@ namespace ngosen::test {
 
       private:
         void                                insert(const std::u32string& text, bool typed = false);
+        void                                noteTypedKey();
+        void                                goSilentAfterDelete();
         bool                                eraseSelection();
         void                                eraseBefore(size_t count);
         void                                eraseAround(int offset, unsigned int size);
@@ -198,6 +204,7 @@ namespace ngosen::test {
         size_t                              reportedCursor_    = 0;
         size_t                              reportedAnchor_    = 0;
         bool                                silentAfterDelete_ = false;
+        int                                 keysSinceDelete_   = 0;
         bool                                turnPending_       = false;
         std::optional<size_t>               turnDeleteBytes_;
         std::optional<std::string>          turnCommit_;

@@ -56,6 +56,7 @@
 
 #include <fcntl.h>
 #include <sstream>
+#include <string_view>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -315,7 +316,11 @@ namespace fcitx {
                                                            [this](Event& event) { stateFor(static_cast<InputContextEvent&>(event).inputContext())->fieldResetWhileOff(); }));
         // A ctx_ rule names a context address, which a later window may reuse.
         contextDestroyedWatcher_ = instance_->watchEvent(EventType::InputContextDestroyed, EventWatcherPhase::Default, [this](Event& event) {
-            auto appName = getProgramName(static_cast<InputContextEvent&>(event).inputContext());
+            auto* ic = static_cast<InputContextEvent&>(event).inputContext();
+            if (modeMenuContext_ == ic) {
+                modeMenuContext_ = nullptr;
+            }
+            auto appName = getProgramName(ic);
             if (isStartsWith(appName, "ctx_")) {
                 clearAppRule(appName);
                 clearAppSwitch(appName);
@@ -736,7 +741,10 @@ namespace fcitx {
         auto* ic = keyEvent.inputContext();
         dropStaleSurroundingText(ic);
 
-        if (isSelectingAppMode_ && g_mouse_clicked.load(std::memory_order_acquire)) {
+        if (modeMenuContext_ && modeMenuContext_ != ic) {
+            closeModeMenuPanel(modeMenuContext_, false);
+        }
+        if (modeMenuContext_ && g_mouse_clicked.load(std::memory_order_acquire)) {
             closeAppModeMenu();
             closeModeMenuPanel(ic, true);
         }
@@ -744,7 +752,7 @@ namespace fcitx {
         if (handleToggleKey(keyEvent))
             return;
 
-        if (isSelectingAppMode_) {
+        if (modeMenuContext_) {
             handleModeMenuKey(keyEvent);
             return;
         }
@@ -756,7 +764,8 @@ namespace fcitx {
         }
 
         // In English the menu key types its character; ` is common in code and Markdown.
-        if (realMode != NgoSenMode::Off && !keyEvent.isRelease() && !config_.modeMenuKey->empty() && keyEvent.key().checkKeyList(*config_.modeMenuKey)) {
+        if (realMode != NgoSenMode::Off && !keyEvent.isRelease() && !config_.modeMenuKey->empty() && keyEvent.key().checkKeyList(*config_.modeMenuKey) &&
+            modeMenuCanDraw(instance_->currentUI(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel))) {
             openModeMenu(ic);
             keyEvent.filterAndAccept();
             return;
@@ -764,6 +773,10 @@ namespace fcitx {
         auto*                 state = stateFor(keyEvent.inputContext());
         ngosen::FcitxKeyPress press(keyEvent);
         state->keyEvent(press);
+    }
+
+    bool modeMenuCanDraw(const std::string& currentUi, const std::string& display, bool clientDrawsPanel) {
+        return clientDrawsPanel || currentUi != "classicui" || !display.empty();
     }
 
     void NgoSenEngine::handleModeMenuKey(KeyEvent& keyEvent) {
@@ -836,7 +849,7 @@ namespace fcitx {
     }
 
     void NgoSenEngine::closeModeMenuPanel(InputContext* ic, bool resetState) {
-        isSelectingAppMode_ = false;
+        modeMenuContext_ = nullptr;
         ic->inputPanel().reset();
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
         if (resetState) {
@@ -951,6 +964,9 @@ namespace fcitx {
     }
 
     void NgoSenEngine::deactivate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
+        if (modeMenuContext_ == event.inputContext()) {
+            closeModeMenuPanel(modeMenuContext_, false);
+        }
         stateFor(event.inputContext())->deactivate(event.type() == EventType::InputContextFocusOut);
     }
 
@@ -1215,7 +1231,7 @@ namespace fcitx {
     }
 
     void NgoSenEngine::toggleVietnamese(InputContext* ic, bool offerRetype) {
-        if (isSelectingAppMode_) {
+        if (modeMenuContext_) {
             closeAppModeMenu();
             closeModeMenuPanel(ic, true);
         } else if (auto* state = stateFor(ic)) {
@@ -1331,7 +1347,7 @@ namespace fcitx {
     }
 
     void NgoSenEngine::closeAppModeMenu() {
-        isSelectingAppMode_ = false;
+        modeMenuContext_ = nullptr;
         g_mouse_clicked.store(false, std::memory_order_release);
     }
 
@@ -1364,7 +1380,7 @@ namespace fcitx {
     }
 
     void NgoSenEngine::showAppModeMenu(InputContext* ic) {
-        isSelectingAppMode_ = true;
+        modeMenuContext_ = ic;
 
         auto candidateList = std::make_unique<CommonCandidateList>();
 
@@ -1415,8 +1431,12 @@ namespace fcitx {
 
         ic->inputPanel().reset();
         ic->inputPanel().setCandidateList(std::move(candidateList));
-        const bool unnamed = isStartsWith(currentConfigureApp_, "ctx_");
-        ic->inputPanel().setAuxDown(Text(_("App: ") + (unnamed ? std::string(_("this window")) : currentConfigureApp_)));
+        // A rule without a name holds for every app sharing the field, as all do through GNOME Shell.
+        std::string appLabel = currentConfigureApp_;
+        if (isStartsWith(currentConfigureApp_, "ctx_")) {
+            appLabel = std::string_view(ic->frontend()) == "ibus" ? _("apps with no name (the Ngó Sen extension tells them apart)") : _("apps with no name");
+        }
+        ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
     }
 

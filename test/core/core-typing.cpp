@@ -2179,6 +2179,70 @@ namespace {
               std::to_string(ngosen::test::timersDestroyedInCallback - destroyedBefore));
     }
 
+    // Types "tie" with what the app shows after it, then the key that replaces its e.
+    struct TailRun {
+        FakeLoop                             loop;
+        FakeResources                        resources;
+        FakeHost*                            host = nullptr;
+        std::unique_ptr<ngosen::TypingState> state;
+
+        TailRun(const std::string& shown, unsigned int anchor) {
+            realMode                = ngosen::Mode::Sen;
+            Field field             = surroundingOnlyField();
+            field.program           = "gnome-shell";
+            auto owned              = std::make_unique<FakeHost>(loop, field);
+            host                    = owned.get();
+            state                   = std::make_unique<ngosen::TypingState>(&resources, std::move(owned));
+            const std::string typed = "tie";
+            for (size_t i = 0; i < typed.size(); ++i) {
+                press(*state, static_cast<uint32_t>(typed[i]));
+                host->setSurrounding(typed.substr(0, i + 1), static_cast<unsigned int>(i + 1));
+                state->surroundingUpdated();
+                loop.pump(100);
+            }
+            host->setSurrounding(shown, 3, anchor);
+            state->surroundingUpdated();
+            press(*state, 'e');
+        }
+    };
+
+    // Firefox's address bar drops its autocompletion only for a commit in the deletion's own turn.
+    void testAutofillTailCommitsWithDeletion() {
+        TailRun url("tieng.lan:8765/", 3);
+        check(url.host->commits() == std::vector<std::string>{"ê"}, "autofill tail: the commit goes with the deletion", join(url.host->commits()));
+        TailRun words("tie chào", 3);
+        check(words.host->commits().empty(), "autofill tail: text with a space after the cursor keeps the split", join(words.host->commits()));
+    }
+
+    // Chromium's address bar spends a deletion on its selected autocompletion and keeps the letters.
+    void testSelectedTailGoesFirst() {
+        TailRun run("tieng.lan:8765/", 15);
+        using Deletes = std::vector<std::pair<int, unsigned int>>;
+        check(run.host->deletes() == Deletes{{0, 12}}, "selected tail: deleted before the letters", std::to_string(run.host->deletes().size()));
+        check(run.host->commits().empty(), "selected tail: nothing committed yet", join(run.host->commits()));
+        run.host->setSurrounding("tie", 3);
+        run.state->surroundingUpdated();
+        run.loop.pump(200);
+        check(run.host->deletes() == Deletes{{0, 12}, {-1, 1}}, "selected tail: then the letters", std::to_string(run.host->deletes().size()));
+        check(!run.host->commits().empty() && run.host->commits().front() == "ê", "selected tail: then the commit", join(run.host->commits()));
+
+        TailRun silent("tieng.lan:8765/", 15);
+        silent.loop.pump(200);
+        check(silent.host->deletes() == Deletes{{0, 12}, {-1, 1}}, "selected tail: no report does not repeat its deletion", std::to_string(silent.host->deletes().size()));
+
+        TailRun moved("tieng.lan:8765/", 15);
+        moved.host->setHasFocus(false);
+        moved.state->deactivate(true);
+        moved.loop.pump(105);
+        moved.host->setHasFocus(true);
+        moved.state->activate(ngosen::Mode::Sen, true);
+        moved.loop.pump(200);
+        check(moved.host->deletes() == Deletes{{0, 12}} && moved.host->commits().empty(), "selected tail: another field gets none of the rest", join(moved.host->commits()));
+
+        TailRun inside("tieng.lan:8765/ x", 15);
+        check(inside.host->deletes() == Deletes{{-1, 1}}, "selected tail: a selection ending before the text's end is the user's", std::to_string(inside.host->deletes().size()));
+    }
+
     // The deletion is already out, so an app that bounces focus past the split must still get the commit.
     void testSplitOutlastsFocusBounce() {
         realMode      = ngosen::Mode::Sen;
@@ -2857,6 +2921,8 @@ int main() {
     testAnsweringAppGetsPlainCount();
     testSplitTimerSurvivesReplay();
     testSplitOutlastsFocusBounce();
+    testAutofillTailCommitsWithDeletion();
+    testSelectedTailGoesFirst();
     testReportRequestIsNotInput();
     testNoCopyWaitForBackspaceField();
     testCopyWaitEndsOnInvalidReport();

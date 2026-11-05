@@ -74,6 +74,11 @@ namespace ngosen {
             }
         }
 
+        // A selection running on to the end of the text starts at the cursor, as an autocompletion does.
+        bool selectsToTheEnd(const ngosen::Surrounding& s) {
+            return s.isValid() && s.anchor() > s.cursor() && s.anchor() == ngosen::utf8::length(s.text());
+        }
+
         bool textAfterCursorLooksLikeUrl(const ngosen::Surrounding& s) {
             if (!s.isValid() || s.cursor() != s.anchor()) {
                 return false;
@@ -795,6 +800,10 @@ namespace ngosen {
     constexpr int SplitEditFocusRetries = 50;
 
     void          TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && selectsToTheEnd(surrounding)) {
+            clearSelectedTailThenReplace(surrounding);
+            return;
+        }
         std::string retype;
         const int   count = surroundingDeletionCount(surrounding, retype);
         // Set first: a host may deliver the deletion's report from inside the call.
@@ -807,8 +816,9 @@ namespace ngosen {
         ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrDeleteSleepMs * count, 0)) * 1000ULL);
         // Firefox's cursor stays one past the real one when a deletion and a commit of the same length
         // arrive together, and the next deletion then takes what follows the word. It shows only the
-        // current line, so a line below cannot be told from the end of the text.
-        if (ngosen::keepsLastEditPerTurn(host_->field()) && !(retype + pending_commit_string_).empty()) {
+        // current line, so a line below cannot be told from the end of the text. An address bar keeps its
+        // autocompletion unless the commit comes in the deletion's turn.
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && !textAfterCursorLooksLikeUrl(surrounding) && !(retype + pending_commit_string_).empty()) {
             split_edit_pending_      = true;
             surr_wait_focus_retries_ = 0;
             split_edit_surrounding_  = surrounding;
@@ -839,6 +849,38 @@ namespace ngosen {
             return;
         }
         finishSurroundingEdit(surrounding, retype);
+    }
+
+    // Chromium's address bar spends a deletion on its selected autocompletion and keeps the word's letters.
+    void TypingState::clearSelectedTailThenReplace(const Surrounding& surrounding) {
+        tail_clear_pending_      = true;
+        surr_wait_focus_retries_ = 0;
+        tail_clear_copy_         = Surrounding(textBeforeCursor(surrounding), surrounding.cursor(), surrounding.cursor());
+        host_->deleteSurrounding(0, surrounding.anchor() - surrounding.cursor());
+        NGOSEN_INFO("Delete the selected text after the cursor first");
+        const uint64_t until = monotonicUs() + SplitEditWaitUs;
+        // A replay from the timer can select again, so the timer is rearmed rather than replaced.
+        if (tail_clear_timer_) {
+            tail_clear_timer_->rearm(until);
+            return;
+        }
+        tail_clear_timer_ = host_->startTimer(until, 1000, [this](Timer& t) {
+            if (!host_->hasFocus()) {
+                if (++surr_wait_focus_retries_ <= SplitEditFocusRetries) {
+                    t.rearm(monotonicUs() + 2000);
+                    return true;
+                }
+                tail_clear_pending_ = false;
+                dropReplacementAfterFocusLoss();
+                is_deleting_.store(false);
+                return false;
+            }
+            tail_clear_pending_    = false;
+            const Surrounding now  = host_->surrounding();
+            const Surrounding copy = now.isValid() && now.cursor() == now.anchor() ? now : tail_clear_copy_;
+            replaceThroughSurrounding(copy);
+            return tail_clear_pending_;
+        });
     }
 
     void TypingState::finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype) {
@@ -902,7 +944,7 @@ namespace ngosen {
             return;
         // mutter keeps one commit per turn and a busy shell can hold a turn open, so asking before the
         // edit has come out could replace its commit.
-        if (split_edit_pending_ || (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs)) {
+        if (split_edit_pending_ || tail_clear_pending_ || (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs)) {
             report_request_waits_ = true;
             startReportRequestTimer();
             return;

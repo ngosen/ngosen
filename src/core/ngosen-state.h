@@ -405,6 +405,9 @@ namespace ngosen {
         bool                           split_edit_pending_ = false;
         Surrounding                    split_edit_surrounding_;
         std::string                    split_edit_retype_;
+        std::unique_ptr<ngosen::Timer> tail_clear_timer_;
+        bool                           tail_clear_pending_ = false;
+        Surrounding                    tail_clear_copy_;
         std::string                    key_report_deleted_;
         std::string                    key_report_added_;
 
@@ -511,6 +514,7 @@ namespace ngosen {
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
         bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
         void                     replaceThroughSurrounding(const Surrounding& surrounding);
+        void                     clearSelectedTailThenReplace(const Surrounding& surrounding);
         void                     finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype);
         void                     releaseKeysAfterSurroundingEdit();
         int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;

@@ -12,11 +12,12 @@
 namespace ngosen {
 
     // True when the frontend can deliver backspaces itself, so XTEST is not needed: the Wayland
-    // input-method frontend, XIM clients under Xwayland, and IBus, D-Bus and fcitx4 clients other than SDL.
+    // input-method frontend, XIM clients under Xwayland, and IBus, D-Bus and fcitx4 clients other than SDL
+    // and those takesSentKeyEvents picks.
     bool forwardsBackspaces(const Field& field);
 
-    // True for Wine over XIM under Xwayland, where XTEST asks the user first: backspaces go
-    // as key events sent to the focused X window instead.
+    // True for Wine over XIM and WPS over IBus under Xwayland, where XTEST asks the user first:
+    // backspaces go as key events sent to the focused X window instead.
     bool takesSentKeyEvents(const Field& field);
 
     // True for GTK4 clients, whose IM modules drop forwarded keys; delete through surrounding text there.

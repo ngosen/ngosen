@@ -2214,21 +2214,21 @@ namespace {
         check(words.host->commits().empty(), "autofill tail: text with a space after the cursor keeps the split", join(words.host->commits()));
     }
 
-    // Chromium's address bar spends a deletion on its selected autocompletion and keeps the letters.
+    // Chromium's address bar ignores deletions while its autocompletion is selected; a commit removes that.
     void testSelectedTailGoesFirst() {
-        TailRun run("tieng.lan:8765/", 15);
         using Deletes = std::vector<std::pair<int, unsigned int>>;
-        check(run.host->deletes() == Deletes{{0, 12}}, "selected tail: deleted before the letters", std::to_string(run.host->deletes().size()));
-        check(run.host->commits().empty(), "selected tail: nothing committed yet", join(run.host->commits()));
-        run.host->setSurrounding("tie", 3);
+        TailRun run("tieng.lan:8765/", 15);
+        check(run.host->commits() == std::vector<std::string>{" "}, "selected tail: a space goes over it first", join(run.host->commits()));
+        check(run.host->deletes().empty(), "selected tail: no deletion while it stands", std::to_string(run.host->deletes().size()));
+        run.host->setSurrounding("tie ", 4);
         run.state->surroundingUpdated();
         run.loop.pump(200);
-        check(run.host->deletes() == Deletes{{0, 12}, {-1, 1}}, "selected tail: then the letters", std::to_string(run.host->deletes().size()));
-        check(!run.host->commits().empty() && run.host->commits().front() == "ê", "selected tail: then the commit", join(run.host->commits()));
+        check(run.host->deletes() == Deletes{{-2, 2}}, "selected tail: then the space and the letters", std::to_string(run.host->deletes().size()));
+        check(run.host->commits().size() > 1 && run.host->commits()[1] == "ê", "selected tail: then the commit", join(run.host->commits()));
 
         TailRun silent("tieng.lan:8765/", 15);
         silent.loop.pump(200);
-        check(silent.host->deletes() == Deletes{{0, 12}, {-1, 1}}, "selected tail: no report does not repeat its deletion", std::to_string(silent.host->deletes().size()));
+        check(silent.host->deletes() == Deletes{{-2, 2}}, "selected tail: no report changes nothing", std::to_string(silent.host->deletes().size()));
 
         TailRun moved("tieng.lan:8765/", 15);
         moved.host->setHasFocus(false);
@@ -2237,7 +2237,7 @@ namespace {
         moved.host->setHasFocus(true);
         moved.state->activate(ngosen::Mode::Sen, true);
         moved.loop.pump(200);
-        check(moved.host->deletes() == Deletes{{0, 12}} && moved.host->commits().empty(), "selected tail: another field gets none of the rest", join(moved.host->commits()));
+        check(moved.host->deletes().empty(), "selected tail: another field gets none of the rest", std::to_string(moved.host->deletes().size()));
 
         TailRun inside("tieng.lan:8765/ x", 15);
         check(inside.host->deletes() == Deletes{{-1, 1}}, "selected tail: a selection ending before the text's end is the user's", std::to_string(inside.host->deletes().size()));

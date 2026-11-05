@@ -799,7 +799,7 @@ namespace ngosen {
     // As long as a focus bounce lasts; the deletion is out, so giving up loses the word's letters.
     constexpr int SplitEditFocusRetries = 50;
 
-    void          TypingState::replaceThroughSurrounding(const Surrounding& surrounding) {
+    void          TypingState::replaceThroughSurrounding(const Surrounding& surrounding, int extraBeforeCursor) {
         if (ngosen::keepsLastEditPerTurn(host_->field()) && selectsToTheEnd(surrounding)) {
             clearSelectedTailThenReplace(surrounding);
             return;
@@ -811,7 +811,7 @@ namespace ngosen {
         editSentAtUs_           = monotonicUs();
         unreportedDeleteLength_ = static_cast<unsigned int>(count);
         unreportedDeleteKey_    = keyCount_;
-        host_->deleteSurrounding(-count, static_cast<unsigned int>(count));
+        host_->deleteSurrounding(-(count + extraBeforeCursor), static_cast<unsigned int>(count + extraBeforeCursor));
         NGOSEN_INFO("Delete using surrounding text");
         ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrDeleteSleepMs * count, 0)) * 1000ULL);
         // Firefox's cursor stays one past the real one when a deletion and a commit of the same length
@@ -851,13 +851,16 @@ namespace ngosen {
         finishSurroundingEdit(surrounding, retype);
     }
 
-    // Chromium's address bar spends a deletion on its selected autocompletion and keeps the word's letters.
+    // Chromium's address bar ignores deletions while its autocompletion is selected, and only a commit
+    // removes that. The space cannot complete to anything, and goes with the word's old letters.
     void TypingState::clearSelectedTailThenReplace(const Surrounding& surrounding) {
         tail_clear_pending_      = true;
         surr_wait_focus_retries_ = 0;
         tail_clear_copy_         = Surrounding(textBeforeCursor(surrounding), surrounding.cursor(), surrounding.cursor());
-        host_->deleteSurrounding(0, surrounding.anchor() - surrounding.cursor());
-        NGOSEN_INFO("Delete the selected text after the cursor first");
+        committing_              = true;
+        host_->commitText(" ");
+        committing_ = false;
+        NGOSEN_INFO("Commit a space over the selected text after the cursor");
         const uint64_t until = monotonicUs() + SplitEditWaitUs;
         // A replay from the timer can select again, so the timer is rearmed rather than replaced.
         if (tail_clear_timer_) {
@@ -876,9 +879,8 @@ namespace ngosen {
                 return false;
             }
             tail_clear_pending_    = false;
-            const Surrounding now  = host_->surrounding();
-            const Surrounding copy = now.isValid() && now.cursor() == now.anchor() ? now : tail_clear_copy_;
-            replaceThroughSurrounding(copy);
+            const Surrounding copy = tail_clear_copy_;
+            replaceThroughSurrounding(copy, 1);
             return tail_clear_pending_;
         });
     }

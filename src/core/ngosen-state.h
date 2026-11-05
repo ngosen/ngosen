@@ -513,7 +513,7 @@ namespace ngosen {
         void recordSendSnapshot(const std::string& deletedPart);
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
         bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
-        void                     replaceThroughSurrounding(const Surrounding& surrounding);
+        void                     replaceThroughSurrounding(const Surrounding& surrounding, int extraBeforeCursor = 0);
         void                     clearSelectedTailThenReplace(const Surrounding& surrounding);
         void                     finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype);
         void                     releaseKeysAfterSurroundingEdit();

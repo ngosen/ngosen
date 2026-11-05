@@ -2210,6 +2210,8 @@ namespace {
     void testAutofillTailCommitsWithDeletion() {
         TailRun url("tieng.lan:8765/", 3);
         check(url.host->commits() == std::vector<std::string>{"ê"}, "autofill tail: the commit goes with the deletion", join(url.host->commits()));
+        TailRun plainWord("tiechao", 3);
+        check(plainWord.host->commits().empty(), "autofill tail: a plain word after the cursor keeps the split", join(plainWord.host->commits()));
         TailRun words("tie chào", 3);
         check(words.host->commits().empty(), "autofill tail: text with a space after the cursor keeps the split", join(words.host->commits()));
     }

@@ -525,6 +525,11 @@ namespace ngosen {
         }
     }
 
+    // A plain word after the cursor must keep the split, so the tail needs what only an address holds.
+    bool TypingState::cursorIsBeforeAutofill(const Surrounding& s) {
+        return textAfterCursorLooksLikeUrl(s) && s.text().find_first_of("./:", textBeforeCursor(s).size()) != std::string::npos;
+    }
+
     std::string TypingState::textBeforeCursor(const Surrounding& s) {
         const std::string& t  = s.text();
         auto               it = t.begin();
@@ -818,7 +823,7 @@ namespace ngosen {
         // arrive together, and the next deletion then takes what follows the word. It shows only the
         // current line, so a line below cannot be told from the end of the text. An address bar keeps its
         // autocompletion unless the commit comes in the deletion's turn.
-        if (ngosen::keepsLastEditPerTurn(host_->field()) && !textAfterCursorLooksLikeUrl(surrounding) && !(retype + pending_commit_string_).empty()) {
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && !cursorIsBeforeAutofill(surrounding) && !(retype + pending_commit_string_).empty()) {
             split_edit_pending_      = true;
             surr_wait_focus_retries_ = 0;
             split_edit_surrounding_  = surrounding;

@@ -207,6 +207,7 @@ namespace ngosen {
         bool               typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
         static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
         static std::string textBeforeCursor(const Surrounding& s);
+        static bool        cursorIsBeforeAutofill(const Surrounding& s);
         static bool        showsText(const Surrounding& s);
         static bool        showsTextAfterDeleting(const Surrounding& s, unsigned int chars);
         static std::string reportKey(const Surrounding& s); ///< "text\x1fcursor", empty for no report

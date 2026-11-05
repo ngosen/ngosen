@@ -44,6 +44,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Lệnh cài nay đặt biến để app Qt 5 gõ được tiếng Việt trên Sway và Hyprland từ lần đăng nhập sau, nếu vào desktop từ màn hình đăng nhập; trên Hyprland cũng hết cảnh app Qt 5 mất chữ khi mở ngay sau khi đóng Konsole (#566).
+- Lệnh cài trên Sway và Hyprland nay chỉ đúng phím Ctrl+Space để bật bộ gõ khi máy có bộ gõ khác như Unikey, và in lệnh chuyển sang Ngó Sen nếu bộ gõ mặc định là bộ khác (#566).
 - Sửa thông tin giấy phép của từ điển trong package Debian thành GPLv3, với phần dữ liệu từ Wiktionary theo CC-BY-SA (#552).
 - Cửa sổ cài đặt: bản GTK tiếng Anh không còn bị cắt bên phải khi thu hẹp cửa sổ hết cỡ (#537).
 - Cửa sổ cài đặt: bản GTK không còn cắt phần bên phải khi thu hẹp cửa sổ ở tiếng Việt (#531).

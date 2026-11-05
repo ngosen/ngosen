@@ -757,7 +757,7 @@ namespace fcitx {
 
         // In English the menu key types its character; ` is common in code and Markdown.
         if (realMode != NgoSenMode::Off && !keyEvent.isRelease() && !config_.modeMenuKey->empty() && keyEvent.key().checkKeyList(*config_.modeMenuKey) &&
-            modeMenuCanDraw(instance_->currentUI(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel))) {
+            modeMenuCanDraw(instance_->currentUI(), ic->frontend(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel))) {
             openModeMenu(ic);
             keyEvent.filterAndAccept();
             return;
@@ -767,8 +767,9 @@ namespace fcitx {
         state->keyEvent(press);
     }
 
-    bool modeMenuCanDraw(const std::string& currentUi, const std::string& display, bool clientDrawsPanel) {
-        return clientDrawsPanel || currentUi != "classicui" || !display.empty();
+    bool modeMenuCanDraw(const std::string& currentUi, const std::string& frontend, const std::string& display, bool clientDrawsPanel) {
+        // fcitx5's own panel has no surface to draw on for a field GNOME Shell relays on Wayland.
+        return clientDrawsPanel || currentUi != "classicui" || frontend != "ibus" || !isStartsWith(display, "wayland:");
     }
 
     void NgoSenEngine::handleModeMenuKey(KeyEvent& keyEvent) {

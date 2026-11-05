@@ -182,11 +182,11 @@ int main() {
     press(engine, entry, *other, FcitxKey_e);
     check(!hasRule(engine, "closing"), "a key after the window closed picks nothing", "closing got a rule");
 
-    // fcitx5's own panel draws by display, and GNOME Shell's frontend reports none.
-    check(!fcitx::modeMenuCanDraw("classicui", "", false), "no display, no panel to draw on", "true");
-    check(fcitx::modeMenuCanDraw("classicui", "wayland:", false), "a field with a display can draw", "false");
-    check(fcitx::modeMenuCanDraw("kimpanel", "", false), "the panel extension draws for any field", "false");
-    check(fcitx::modeMenuCanDraw("classicui", "", true), "a client that draws its own panel can draw", "false");
+    check(!fcitx::modeMenuCanDraw("classicui", "ibus", "wayland:", false), "a field relayed on Wayland has no panel", "true");
+    check(fcitx::modeMenuCanDraw("classicui", "ibus", "x11::0", false), "a relayed field on X11 can draw", "false");
+    check(fcitx::modeMenuCanDraw("classicui", "dbus", "wayland:", false), "another frontend can draw", "false");
+    check(fcitx::modeMenuCanDraw("kimpanel", "ibus", "wayland:", false), "the panel extension draws for any field", "false");
+    check(fcitx::modeMenuCanDraw("classicui", "ibus", "wayland:", true), "a client that draws its own panel can draw", "false");
 
     // With a label, GNOME's kimpanel shows text in the top bar instead of the Ngó Sen icon.
     for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Off, ngosen::Mode::Emoji}) {

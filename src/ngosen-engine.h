@@ -61,7 +61,7 @@ namespace fcitx {
     };
 
     // Whether the mode menu reaches the screen: keys go to a menu nobody sees otherwise.
-    bool modeMenuCanDraw(const std::string& currentUi, const std::string& display, bool clientDrawsPanel);
+    bool modeMenuCanDraw(const std::string& currentUi, const std::string& frontend, const std::string& display, bool clientDrawsPanel);
 
     /**
      * @brief Main engine class for the Ngó Sen input method.

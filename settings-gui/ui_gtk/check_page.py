@@ -160,13 +160,12 @@ class CheckPage:
         self.on_count(len(system_check.problems(self.found)))
 
     def _row(self, finding):
-        # A step with a button needs no instructions unless the button fails.
-        subtitle = "" if finding.action else finding.fix
-        row = Adw.ActionRow(title=finding.title, subtitle=subtitle, use_markup=False)
+        row = Adw.ActionRow(title=finding.title, subtitle=finding.fix, use_markup=False)
         icon, css = ICONS[finding.level]
         row.add_prefix(Gtk.Image(icon_name=icon, css_classes=[css]))
         row.level = finding.level
         row.button = None
+        row.copy_button = None
         if finding.action in self.fixes.busy:
             row.set_subtitle(_("Fixing…"))
             row.add_suffix(Gtk.Spinner(spinning=True, valign=Gtk.Align.CENTER))
@@ -176,11 +175,27 @@ class CheckPage:
                 row.button = _button(_("Copy command"), lambda: self.copy_command(finding.command))
                 row.add_suffix(row.button)
         elif finding.action:
+            # The button does it for you; the text and this command are for doing it yourself.
+            if finding.command:
+                row.copy_button = self._copy_button(finding.command)
+                row.add_suffix(row.copy_button)
             row.button = _button(
                 system_check.fix_label(finding.action), lambda: self.fix([finding.action])
             )
             row.add_suffix(row.button)
         return row
+
+    def _copy_button(self, command):
+        # An icon, because two labelled buttons leave a narrow row no room for its text.
+        button = Gtk.Button(
+            icon_name="edit-copy-symbolic",
+            tooltip_text=_("Copy command"),
+            valign=Gtk.Align.CENTER,
+            css_classes=["flat"],
+        )
+        button.update_property([Gtk.AccessibleProperty.LABEL], [_("Copy command")])
+        button.connect("clicked", lambda _b: self.copy_command(command))
+        return button
 
     def _show_apps(self):
         for row in self.app_rows:
@@ -230,7 +245,7 @@ class CheckPage:
 
     def copy_command(self, command):
         _copy(command)
-        self.notify(_("Copied: {}").format(command), None)
+        self.notify(system_check.copied_text(command), None)
 
     def read_typing_log(self):
         self.app_test = typing_log.read_latest()

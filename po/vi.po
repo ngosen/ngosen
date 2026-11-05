@@ -1874,3 +1874,75 @@ msgstr "Chữ đang gõ có gạch dưới cho tới khi gõ xong. Dùng khi app
 #: settings-gui/core/catalog.py
 msgid "Type an emoji name, then pick from the list."
 msgstr "Gõ tên emoji rồi chọn trong danh sách."
+
+#: settings-gui/core/system_check.py
+msgid "Add {} to ~/.config/environment.d/{}, then log out and back in."
+msgstr "Thêm {} vào ~/.config/environment.d/{}, rồi đăng xuất và đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "Run {}, then log out and back in."
+msgstr "Chạy {}, rồi đăng xuất và đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 starts at login"
+msgstr "fcitx5 tự chạy khi đăng nhập"
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 will not start at the next login"
+msgstr "Lần đăng nhập sau fcitx5 sẽ không tự chạy"
+
+#: settings-gui/core/system_check.py
+msgid "Copy {} to ~/.config/autostart/."
+msgstr "Chép {} vào ~/.config/autostart/."
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in to finish the setup"
+msgstr "Đăng xuất rồi đăng nhập lại để thiết lập xong"
+
+#: settings-gui/core/system_check.py
+msgid ""
+"The settings are saved, but apps read them at login. If this stays after "
+"that, something else overrides them: send the result to Ngó Sen."
+msgstr ""
+"Đã lưu thiết lập, nhưng app chỉ đọc khi đăng nhập. Nếu đăng nhập lại mà dòng "
+"này vẫn còn thì có thứ khác đang ghi đè: gửi kết quả cho Ngó Sen."
+
+#: settings-gui/core/system_check.py
+msgid "Start at login"
+msgstr "Tự chạy khi đăng nhập"
+
+#: settings-gui/core/system_check.py
+msgid "Set for this account"
+msgstr "Đặt cho tài khoản này"
+
+#: settings-gui/core/system_check.py
+msgid "Choose fcitx5"
+msgstr "Chọn fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Choose Fcitx 5"
+msgstr "Chọn Fcitx 5"
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 will start at login."
+msgstr "fcitx5 sẽ tự chạy khi đăng nhập."
+
+#: settings-gui/core/system_check.py
+msgid "Saved the settings. Log out and back in to use them."
+msgstr "Đã lưu thiết lập. Đăng xuất rồi đăng nhập lại để dùng."
+
+#: settings-gui/core/system_check.py
+msgid "Chose fcitx5. Log out and back in to use it."
+msgstr "Đã chọn fcitx5. Đăng xuất rồi đăng nhập lại để dùng."
+
+#: settings-gui/core/system_check.py
+msgid "Chose Fcitx 5. Log out and back in to use it."
+msgstr "Đã chọn Fcitx 5. Đăng xuất rồi đăng nhập lại để dùng."
+
+#: settings-gui/core/system_check.py
+msgid "Copied the command."
+msgstr "Đã chép lệnh."
+
+#: settings-gui/core/system_check.py
+msgid "~/.config/environment.d sets {} to another value; change it to use fcitx5."
+msgstr "~/.config/environment.d đang đặt {} thành giá trị khác; đổi lại để dùng fcitx5."

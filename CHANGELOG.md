@@ -44,12 +44,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Đóng hẳn menu `` ` `` khi cửa sổ mất focus hoặc bị đóng, tránh nuốt chữ và để phím e tắt tiếng Việt của app cũ; gõ ra `` ` `` khi app đi qua GNOME Shell mà thiếu extension kimpanel; sửa nhãn menu để nói rõ cài đặt dùng chung cho mọi app chưa có tên (#565).
 - Cài được Ngó Sen bằng lệnh một dòng trên Fedora 45; release có thêm gói cho x86_64 và aarch64 (#556).
 - Lệnh cài một dòng trên Fedora hỗ trợ bản mới ngay khi release có gói; nếu chưa có gói dựng sẵn, báo rõ và hướng dẫn cài từ mã nguồn (#558).
 - Khi bật tự khôi phục (mặc định), gõ issue, sorry, coffee không còn mất chữ thành isue, sory, cofee; tests không còn ra tets. Gõ đúp để bỏ dấu vẫn như cũ: tesst ra test, iss ra is, off ra of (#534).
 - Gõ Sen trên GNOME: gõ chậm trong Firefox không còn khiến Ngó Sen chuyển hẳn sang xoá bằng BackSpace sau vài từ đầu, làm mỗi từ gõ lâu hơn dù chữ vẫn đúng. Ngó Sen nay chờ app báo lại lần xoá tới 1 giây, không bỏ surrounding text chỉ vì app im lặng; app bỏ lệnh xoá hoặc xoá sai thì vẫn chuyển sang BackSpace (#515).
-- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Lệnh cài nay đặt biến để app Qt 5 gõ được tiếng Việt trên Sway và Hyprland từ lần đăng nhập sau, nếu vào desktop từ màn hình đăng nhập; trên Hyprland cũng hết cảnh app Qt 5 mất chữ khi mở ngay sau khi đóng Konsole (#566).
 - Lệnh cài trên Sway và Hyprland nay chỉ đúng phím Ctrl+Space để bật bộ gõ khi máy có bộ gõ khác như Unikey, và in lệnh chuyển sang Ngó Sen nếu bộ gõ mặc định là bộ khác (#566).
 - Sửa thông tin giấy phép của từ điển trong package Debian thành GPLv3, với phần dữ liệu từ Wiktionary theo CC-BY-SA (#552).

@@ -144,7 +144,7 @@ Sau khi update, khởi động lại fcitx5 theo mục “Khởi động lại s
 ### Thiết lập sau khi cài package
 
 Nếu máy chưa từng thiết lập Ngó Sen, cài từ repo, package tải về hoặc dùng `--no-setup` chưa thêm Ngó Sen
-vào danh sách bộ gõ. Ctrl+Space sẽ chưa gõ được tiếng Việt.
+vào danh sách bộ gõ. Ctrl+Shift sẽ chưa gõ được tiếng Việt.
 
 - Mở “Cấu hình Fcitx 5” bằng `fcitx5-configtool`, vào tab bộ gõ và thêm “Ngó Sen” vào danh sách. Máy để
   ngôn ngữ hiển thị tiếng Việt thì fcitx5 tự thêm Ngó Sen ở lần chạy đầu, không cần bước này.

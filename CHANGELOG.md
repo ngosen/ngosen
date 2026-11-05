@@ -12,6 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Tài liệu
 
+- README sửa phím chuyển Anh/Việt khi cài từ repo hoặc package từ Ctrl+Space thành Ctrl+Shift, đúng với bản cài mới (#562).
 - README hướng dẫn thiết lập KDE Wayland khi cài từ repo hoặc package (#560).
 - README hướng dẫn thiết lập GNOME khi cài từ repo hoặc package: tự chạy fcitx5 khi đăng nhập, biến môi trường và extension (#559).
 - Sửa README để nói rõ từ version 0.5.0, Ngó Sen không còn dùng uinput (#554).

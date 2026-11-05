@@ -21,6 +21,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Đóng hẳn menu `` ` `` khi cửa sổ mất focus hoặc bị đóng, tránh nuốt chữ và để phím e tắt tiếng Việt của app cũ; gõ ra `` ` `` khi app đi qua GNOME Shell mà thiếu extension kimpanel; sửa nhãn menu để nói rõ cài đặt dùng chung cho mọi app chưa có tên (#565).
 - Cài được Ngó Sen bằng lệnh một dòng trên Fedora 45; release có thêm gói cho x86_64 và aarch64 (#556).
 - Lệnh cài một dòng trên Fedora hỗ trợ bản mới ngay khi release có gói; nếu chưa có gói dựng sẵn, báo rõ và hướng dẫn cài từ mã nguồn (#558).
@@ -39,6 +40,7 @@ Tải ở [ngosen-1.7.6-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Gõ Sen trên GNOME: không còn gửi phần xoá và chữ mới sang app khác khi focus đổi trong lúc chờ surrounding text tối đa 100 ms (#535).
 - Gõ Sen trong Google Docs và Google Slides trên Chrome, Edge, Brave, Opera, Vivaldi trên X11: thêm dấu không còn ra chữ lặp như "trenên" thay vì "trên", "dauâuấu" thay vì "dấu" (#523, #527).
 - Cửa sổ cài đặt: giữ lựa chọn từ điển, gõ tắt đổi ở menu khay khi lưu trang đó (#517).
@@ -61,6 +63,7 @@ Tải ở [ngosen-1.7.5-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - `install.sh` trên Fedora Silverblue, Kinoite, Bazzite: thay vì hỏng giữa chừng ở bước dnf, nay in sẵn lệnh `rpm-ostree` để cài tay, kèm link issue #492 cho ai muốn được hỗ trợ chính thức (#494).
 - `install.sh` nay cài được trên Ultramarine Linux và các bản dựng từ Fedora 43, 44 khác, thay vì báo "chưa có gói dựng sẵn" (#491).
 - Cửa sổ cài đặt, trang Giao diện: ba mục menu Bảng mã, Gõ tắt chữ hoa và Tự viết hoa nay có icon trên GNOME, Ubuntu và các theme không có sẵn icon đó, cả trong cửa sổ cài đặt lẫn menu ở khay hệ thống (#484, #486).
@@ -81,6 +84,7 @@ Tải ở [ngosen-1.7.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Preedit trên GNOME: bấm Enter sau chữ đang gạch chân không còn bị mất Enter khi giữ phím lâu một chút như gõ bình thường; Enter nay đi lúc nhả phím (#465).
 - Ở chế độ gạch chân (Preedit), click trong Alacritty và app XIM khác không còn làm mất chữ đang gõ dở (#466).
 - GNOME 50.0–50.3 khi không có extension chuyển phím: Gõ Sen trong kitty không còn ra chữ lặp kiểu "tieêngếng" mà chuyển sang gạch chân; Enter sau chữ gạch chân ở Preedit không còn bị mất (#467).
@@ -94,6 +98,7 @@ Tải ở [ngosen-1.7.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Trên X11, Firefox (kể cả bản snap), Chrome và LibreOffice khi kết nối qua mô-đun IBus GTK được Ngó Sen nhận
   đúng tên app và xử lý như khi kết nối trực tiếp với fcitx5 (#458).
 
@@ -105,6 +110,7 @@ Tải ở [ngosen-1.7.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Ngó Sen cho GNOME (bản IBus, lõi gõ dùng chung): Gõ Sen trong app Qt không còn ra "tiêsng" khi gõ "tieesng"
   (#452).
 - Gõ Sen trong VS Code trên GNOME không còn quên chữ đang gõ ("xin vieetj" thay vì "xin việt") khi VS Code báo con
@@ -134,6 +140,7 @@ Tải ở [ngosen-1.7.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Kiểm tra máy không còn báo "IBus đang chạy song song" khi IBus đó chỉ phục vụ chương trình khác (như IBus
   xpra tự bật); chỉ báo khi IBus thật sự giành bộ gõ của phiên đang dùng (#442).
 - Nhật ký gõ lưu ra file không còn bị gãy dòng ở phím Enter hay khi app báo chữ có xuống dòng: mỗi sự kiện
@@ -206,6 +213,7 @@ Tải ở [ngosen-1.7.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - deepin-editor: mặc định dùng chế độ gạch chân để gõ nhanh không còn đảo chữ, mất hoặc lặp dấu như khi
   dùng Gõ Sen; vẫn giữ chế độ đã chọn cho app qua menu `, không đổi các app khác (#421).
 - Cửa sổ cài đặt: bấm "Mặc định" nay báo trước phím chuyển Anh/Việt sẽ về Ctrl+Shift nếu đang dùng phím khác,
@@ -253,6 +261,7 @@ Tải ở [ngosen-1.6.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Cửa sổ cài đặt không còn lỗi không mở được khi file từ điển riêng có chữ không phải UTF-8.
   Trang Từ điển báo không đọc trọn được file (#376).
 - Cửa sổ cài đặt: "Hoàn tác" chỉ trả lại đúng thay đổi vừa lưu, không còn làm mất kiểu gõ đã nhớ cho app
@@ -287,6 +296,7 @@ Tải ở [ngosen-1.6.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Antigravity trên GNOME: gõ trong vùng soạn thảo không còn để nguyên chữ thô (`vieetj`), và ô chat
   không còn mất hay rối chữ khi gõ nhanh (#362, #365).
 - Sửa lỗi Cứu dấu khi backspace về chữ trước (`sưa oke|` → backspace 4 lần → `sưa|` + `s` → `sứa`) hoặc
@@ -312,6 +322,7 @@ Tải ở [ngosen-1.6.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - `install.sh --uninstall` chỉ tắt những gì lệnh cài đã bật: extension Input Method Panel, extension sửa lỗi
   gõ của GNOME 50 và im-config mà người dùng tự bật từ trước được giữ nguyên (#328).
 - Ghi chú dưới ô Cứu dấu trong cửa sổ cài đặt nói rõ chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng):
@@ -326,6 +337,7 @@ Tải ở [ngosen-1.6.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Khi bật log để gỡ lỗi, chữ gõ trong ô mật khẩu không còn bị ghi vào log; log chỉ ghi "(hidden)" (#321).
 - Cài Ngó Sen bằng package (apt, package tải về) trên máy để ngôn ngữ tiếng Việt: lần đầu fcitx5 chạy, Ngó Sen
   tự có trong danh sách bộ gõ, không phải thêm tay. Máy để tiếng Anh vẫn cần thêm tay hoặc dùng lệnh cài một dòng (#300, #316).
@@ -432,6 +444,7 @@ Tải ở [ngosen-1.6.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Gỡ bằng `install.sh --uninstall` trên GNOME không còn xoá file `~/.config/environment.d/90-ngosen.conf`
   khi người dùng đã sửa nó sau khi cài; chỉ xoá khi file còn đúng như lúc cài (#317).
 - Sửa biểu tượng Ngó Sen trên thanh trên cùng GNOME nhỏ hơn biểu tượng mạng, loa. (#245, #246)
@@ -471,6 +484,7 @@ Tải ở [ngosen-1.5.8-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Cửa sổ cài đặt của 1.5.7 không lưu được gì và báo “Không lưu được”, dù fcitx5 vẫn chạy (#303, #305).
 
 ### Tài liệu
@@ -489,6 +503,7 @@ Tải ở [ngosen-1.5.7-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - KDE Plasma Wayland: chọn "Cài đặt" trong menu tray thì cửa sổ cài đặt đóng ngay, không hiện ra, khi
   máy có PyQt5 do gói khác cài vào (gặp trên CachyOS). Giờ cửa sổ mở được (#278).
 - Nếu cửa sổ cài đặt đang mở lúc fcitx5 khởi động lại (ví dụ sau khi cài version mới), đổi cài đặt hiện
@@ -522,6 +537,7 @@ Tải ở [ngosen-1.5.6-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Sửa mô tả ở trang Giới thiệu trong cửa sổ cài đặt cho khớp với README (#249).
 - KDE Plasma Wayland: app X11 chạy qua XWayland, như Minecraft 26.2 trở về trước hay xterm, không gõ được tiếng
   Việt mà chỉ ra chữ Telex thô, vì lệnh cài chưa đặt biến `XMODIFIERS`. Giờ lệnh cài đặt biến này; đăng xuất rồi
@@ -574,6 +590,7 @@ Tải ở [ngosen-1.5.5-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Gõ dấu trên thanh địa chỉ Firefox cài từ Flatpak khi đang autofill URL (phần địa chỉ tự điền
   sau con trỏ được bôi đen) không còn làm rối từ: `ee` ra `ê` thay vì `eê`, `es` ra `é` thay vì
   `eé`, `dduowcj` ra `được` thay vì `dđược`. Trước đây app Flatpak báo app ID `org.mozilla.firefox`
@@ -623,6 +640,7 @@ Tải ở [ngosen-1.5.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Gõ Sen trong Chrome/Chromium trên Wayland không còn để nguyên `ddungs rooif` thay vì `đúng rồi` trong bình
   luận TikTok hay không ghép dấu ở từ đầu ô Draft.js khi chữ gợi ý biến mất. Chrome trên GNOME cũng sửa lỗi mất
   chữ trong bình luận TikTok và ô Draft.js thường: `xin chào` thành `xin ch`, `đẹp` thành `ẹp`. Ngó Sen giữ từ
@@ -645,6 +663,7 @@ Tải ở [ngosen-1.5.3-2](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Sửa lỗi build Fedora COPR khiến `dnf upgrade` từ kho nguyenphi/ngosen không nhận được version 1.5.3 (#169).
 
 ## [1.5.3-1] — 19/10/2026
@@ -668,6 +687,7 @@ Tải ở [ngosen-1.5.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Gõ Sen trong WordCraft và các app dùng XIM trên phiên X11 không còn rối chữ (như `dââấ` thay vì `dấu`): Ngó
   Sen xoá chữ bằng phím thật qua XTEST thay vì gửi backspace qua XIM (#156).
 - Gõ Sen trong Wine 11 (phần mềm Windows) trên phiên Wayland không còn rối chữ (như `tiêến` thay vì `tiếng`):
@@ -697,6 +717,7 @@ Tải ở [ngosen-1.5.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Ở trang Phím › Phím tắt, nút phím ở cuối mỗi hàng chế độ không còn bị cắt mép, và không biến mất khi phóng to
   cửa sổ (#128).
 
@@ -734,6 +755,7 @@ Tải ở [ngosen-1.5.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Chọn kiểu gõ Custom khi chưa bật "Keymap tuỳ chỉnh" hay chưa có phím nào thì gõ không ra dấu mà cửa sổ cài đặt
   không nói gì. Giờ dưới hàng Kiểu gõ có dòng nhắc bật Keymap tuỳ chỉnh và thêm phím ở Phím › Keymap (#123).
 - Ở trang Phím › Phím tắt, khi hai chế độ trùng phím, dòng cảnh báo không còn đè lên tên chế độ và nút phím không
@@ -757,6 +779,7 @@ Tải ở [ngosen-1.4.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Bỏ chọn "Từ điển tuỳ chỉnh" thì Ngó Sen quay về từ điển gốc trên distro có fcitx5 cũ hơn 5.1.13: Ubuntu 22.04, 24.04 (cả Mint 22), Debian 12, 13 (cả MX 25). Trước đây từ thêm vào từ điển tuỳ chỉnh vẫn được giữ dấu sau khi bỏ chọn (#111).
 
 ### Tài liệu
@@ -785,6 +808,7 @@ Tải ở [ngosen-1.4.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Gõ Sen làm mất chữ khi gõ `dd`, `ow`… làm chữ đầu tiên trong ô trống trên Wayland, như ô hỏi của Gemini
   trên Chromium hay Zed: ô bị xoá trống thì mất focus một lúc, chữ gửi lúc đó bị bỏ. Giờ Ngó Sen chờ ô có focus lại rồi mới gửi (#94).
 - Bật kiểm chính tả bằng từ điển thì vài chữ đúng bị trả về phím đã gõ khi kiểu đặt dấu khác cách từ điển ghi:
@@ -860,6 +884,7 @@ Tải ở [ngosen-1.4.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Gỡ rồi cài lại trên GNOME không còn làm mất Ngó Sen khỏi danh sách bộ gõ. Nếu fcitx5 đang chạy mà
   không có Ngó Sen, nó ghi đè danh sách khi tắt; lệnh cài giờ tắt fcitx5 trước khi đọc danh sách (#60).
 - Build gói lại được: repo `LotusInputMethod/bamboo-core` (lõi Go) đã bị xoá nên mọi lần build đều lỗi
@@ -891,6 +916,7 @@ Tải ở [ngosen-1.3.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Dòng gợi ý dưới tuỳ chọn trong cửa sổ cài đặt tự xuống dòng khi không đủ chỗ, thay vì bị cắt và bắt cuộn
   ngang (#39).
 - Lời nhắc sau khi cài hoặc cập nhật nói thêm: trên KDE Wayland phải đăng xuất rồi đăng nhập lại, vì
@@ -962,6 +988,7 @@ nhanh trong gnome-terminal. Tải ở [ngosen-1.2.0-1](https://github.com/ngosen
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Gõ nhanh trong gnome-terminal và các app GTK3 khác, bấm chồng hai phím có lúc làm đảo chữ: "rồi" ra
   "riồ", "ngày" ra "ngyà". Phím bấm trong lúc Ngó Sen đang thay chữ giờ được gửi chung với chữ đó (#11).
 - Cửa sổ cài đặt: nút Reset đưa mọi trang về mặc định, kể cả trang chưa mở, luật cho từng app và từ điển
@@ -1033,6 +1060,7 @@ và Google Sheets. Tải ở [ngosen-1.0.0-1](https://github.com/ngosen/ngosen/r
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Google Sheets trên Wayland: click chuột sang ô khác rồi gõ, sau vài ô thì chữ ra lẫn chữ của ô trước và
   không thành tiếng Việt (vd. `afoc`, `ieengs`). Nay mỗi ô mới bắt đầu một chữ mới ([#86](https://github.com/ngosen/ngosen-fork-archive/pull/86)).
 - LibreOffice Calc trên Wayland: click chuột sang ô khác rồi gõ, sau chữ có dấu thì bộ gõ xoá nhầm và mở
@@ -1076,6 +1104,7 @@ Sửa lỗi Gõ Sen trên Sway và Hyprland, và cài mới thì dùng Gõ Sen l
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Chế độ Gõ Sen gõ được trên Sway, Hyprland và các compositor dùng input-method-v2. Trước đây chữ đầu tiên cần
   thêm dấu làm bộ gõ kẹt, mọi phím sau đó không ra chữ ([#73](https://github.com/ngosen/ngosen-fork-archive/pull/73)).
 
@@ -1168,6 +1197,7 @@ Version đầu tiên đánh số riêng; số `0.5` ứng với khoảng nửa c
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - VS Code bản Flatpak, và bản `.deb` chạy Wayland, gõ được tiếng Việt: bộ gõ không còn coi việc VS Code
   nhích con trỏ ngay sau mỗi phím là một cú bấm chuột ([#58](https://github.com/ngosen/ngosen-fork-archive/pull/58)).
 - VS Code bản snap (gõ qua XIM) ít gõ sai hơn, như "nười", "đôồn": bộ gõ không đếm hai lần một phím mà
@@ -1267,6 +1297,7 @@ Release đầu tiên có gói build sẵn:
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Gói Fedora: khi cập nhật, tài khoản `uinput_proxy` tự được gỡ khỏi nhóm `input`, và luật quyền cho
   chuột, bàn chạm được áp ngay cho thiết bị đang cắm, không phải khởi động lại máy hay cắm lại ([#19](https://github.com/ngosen/ngosen-fork-archive/pull/19)).
 - Uinput server giữ tối đa 1024 phím xoá trong hàng chờ và bỏ hàng chờ khi bộ gõ ngắt kết nối. Trước đây
@@ -1330,6 +1361,7 @@ các commit lấy thêm từ bản gốc ngày 24/09/2026. Mọi mục dưới �
 
 ### Sửa
 
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
 - Server xử lý hết hàng sự kiện libinput ở mỗi vòng lặp, không để sự kiện nằm chờ
   (LotusInputMethod/fcitx5-lotus#507).
 - Cách chặn lặp chữ do gợi ý tự điền chỉ bật ở thanh địa chỉ trình duyệt.

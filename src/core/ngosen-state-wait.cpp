@@ -25,10 +25,12 @@ namespace ngosen {
         constexpr int LaggingReportWaitMs = 100;
     } // namespace
 
-    void TypingState::sendBackspaceKeys(int count) const {
+    bool TypingState::sendBackspaceKeys(int count) const {
         if (!host_->pressSystemKeys(count)) {
-            NGOSEN_ERROR("Cannot send backspaces: XTEST is unavailable");
+            NGOSEN_ERROR("Cannot send backspaces");
+            return false;
         }
+        return true;
     }
 
     bool TypingState::deletionLooksDone() const {

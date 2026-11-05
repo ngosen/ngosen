@@ -480,6 +480,33 @@ set_im_environment() {
     session_changes+=("app dùng fcitx5 thay IBus")
 }
 
+compositor_environment_entry() {
+    printf 'QT_IM_MODULE=fcitx\nQT_IM_MODULES=fcitx;wayland\nXMODIFIERS=@im=fcitx\n'
+}
+
+# Qt 5 has no text-input protocol for these compositors and X11 apps need XIM. Qt 6 prefers fcitx5's
+# module too: when a Qt 6 app on the Wayland protocol closes, Hyprland keeps sending keys through the
+# input method, and the next app without that protocol loses letters. The list falls back to Wayland
+# for a Qt 6 app that has no such module.
+set_compositor_environment() {
+    local dir file
+    dir="$(config_home)/environment.d"
+    file="$dir/90-ngosen-sway-hyprland.conf"
+    [ -e "$file" ] && return 0
+    grep -qs -E '^(QT_IM_MODULES?|XMODIFIERS)=' "$dir"/*.conf && return 0
+    mkdir -p "$dir"
+    compositor_environment_entry >"$file"
+    reload_user_environment
+}
+
+undo_compositor_environment() {
+    local file
+    file="$(config_home)/environment.d/90-ngosen-sway-hyprland.conf"
+    [ -e "$file" ] && [ "$(cat "$file")" = "$(compositor_environment_entry)" ] || return 0
+    rm -f "$file"
+    reload_user_environment
+}
+
 # KWin serves Wayland apps itself; X11 apps under XWayland reach fcitx5 only through XIM.
 # GTK_IM_MODULE and QT_IM_MODULE stay unset, as fcitx5 asks for on Plasma.
 set_xim_environment() {
@@ -640,6 +667,20 @@ has_lone_keyboard_in_profile() {
 
 # The key the engine picks: settings from before its toggle key, including lotus.conf that is
 # copied over on the next start, keep Ctrl+Space; defaults are left out of the file.
+fcitx5_trigger_key() {
+    local key
+    key=$(awk '/^\[/ { section = $0 } section == "[Hotkey/TriggerKeys]" && /^0=/ { sub(/^0=/, ""); print; exit }' "$(config_home)/fcitx5/config" 2>/dev/null)
+    printf '%s' "${key:-Control+space}"
+}
+
+key_display_name() {
+    case "$1" in
+        "" | Control+Shift_L | Control+Shift_R | Shift+Control_L | Shift+Control_R) printf 'Ctrl+Shift' ;;
+        Control+space) printf 'Ctrl+Space' ;;
+        *) printf '%s' "$1" ;;
+    esac
+}
+
 toggle_key_name() {
     local dir key
     dir="$(config_home)/fcitx5/conf"
@@ -647,14 +688,9 @@ toggle_key_name() {
     if [ -z "$key" ] && { [ -f "$dir/lotus.conf" ] || [ -f "$dir/ngosen.conf" ] || has_lone_keyboard_in_profile; } &&
         ! grep -qs '^SettingsVersion=' "$dir/ngosen.conf"; then
         # Not upgraded yet: Ngó Sen takes over fcitx5's switch key, Ctrl+Space by default.
-        key=$(awk '/^\[/ { section = $0 } section == "[Hotkey/TriggerKeys]" && /^0=/ { sub(/^0=/, ""); print; exit }' "$(config_home)/fcitx5/config" 2>/dev/null)
-        key=${key:-Control+space}
+        key=$(fcitx5_trigger_key)
     fi
-    case "${key:-}" in
-        "" | Control+Shift_L | Control+Shift_R | Shift+Control_L | Shift+Control_R) printf 'Ctrl+Shift' ;;
-        Control+space) printf 'Ctrl+Space' ;;
-        *) printf '%s' "$key" ;;
-    esac
+    key_display_name "${key:-}"
 }
 
 report_dropped_keyboard() {
@@ -873,10 +909,29 @@ fcitx5_is_running() {
 setup_sway_hyprland_session() {
     say ""
     configure_fcitx5
+    set_compositor_environment
     fcitx5_is_running || fcitx5 -d >/dev/null 2>&1 || :
     # fcitx5 -d returns before the daemon has had a chance to fail.
     sleep 1
     report_sway_hyprland_session
+}
+
+# fcitx5 starts on the first entry of its list, a keyboard, so the switch key of an input method
+# does nothing until fcitx5's own key turns input on.
+has_other_input_methods() {
+    [ "$(grep -c '^\[Groups/0/Items/' "$(config_home)/fcitx5/profile" 2>/dev/null)" -gt 1 ] && ! has_lone_keyboard_in_profile
+}
+
+report_other_input_methods() {
+    local default trigger
+    default=$(sed -n 's/^DefaultIM=//p' "$(config_home)/fcitx5/profile" | head -n 1)
+    trigger=$(key_display_name "$(fcitx5_trigger_key)")
+    say "Xong. fcitx5 đang chạy."
+    if [ "$default" = ngosen ]; then
+        say "Máy còn bộ gõ khác, nên bấm $trigger để bật Ngó Sen. Sau đó bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
+    else
+        say "Bộ gõ mặc định vẫn là $default, bấm $trigger để bật. Muốn chuyển sang Ngó Sen:  fcitx5-remote -s ngosen"
+    fi
 }
 
 report_sway_hyprland_session() {
@@ -885,9 +940,14 @@ report_sway_hyprland_session() {
     elif [ "$keyboard_dropped" -eq 1 ]; then
         say "Xong. fcitx5 đang chạy, gõ được ngay."
         report_dropped_keyboard
+    elif has_other_input_methods; then
+        report_other_input_methods
     else
         say "Xong. fcitx5 đang chạy, gõ được ngay."
         say "Bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
+    fi
+    if [ -e "$(config_home)/environment.d/90-ngosen-sway-hyprland.conf" ]; then
+        say "App Qt 5 và app X11 qua XWayland gõ được từ lần đăng nhập sau, nếu vào desktop từ màn hình đăng nhập."
     fi
     say ""
     if [ -n "${SWAYSOCK:-}" ]; then
@@ -1116,6 +1176,7 @@ uninstall() {
         say "Xong. Đăng xuất rồi đăng nhập lại. fcitx5 vẫn là bộ gõ của KDE, gõ tiếng Anh như bàn phím."
         say "Bỏ fcitx5: System Settings → Virtual Keyboard (Bàn phím ảo) → None."
     elif wants_sway_hyprland_setup; then
+        undo_compositor_environment
         say "Xong. Bỏ dòng fcitx5 -d đã dán vào file cấu hình (nếu có), rồi đăng xuất và đăng nhập lại."
     else
         say "Xong. Khởi động lại fcitx5:  fcitx5 -rd"

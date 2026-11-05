@@ -2161,6 +2161,88 @@ namespace {
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
     }
 
+    // Firefox on GNOME turns the deletion's bytes back into characters on a copy it updates only when
+    // a commit arrives after the edit, so a count made for that old copy takes letters from the real text.
+    void testFirefoxReportsOnlyAfterCommit() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        for (const int commits : {1, 2}) {
+            ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = commits};
+            FakeResources           resources;
+            const auto              keys = keysOf("bef owr tieesng ");
+            const std::vector<int>  gaps(keys.size(), 150);
+            ngosen::test::captureLog(true);
+            const auto run   = ngosen::test::typeInAppTraced(resources, field, firefox, keys, gaps);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(run.text == "bè ở tiếng ", "Firefox on GNOME: a replacement right after a replacement keeps the letters before it", run.text + " " + join(lines));
+            check(countHaving(lines, "copy shows the earlier word") == 0, "Firefox on GNOME: asking for a report leaves no old copy to count on", join(lines));
+        }
+        FakeResources resources;
+        const auto    keys = keysOf("bef owr tieesng ");
+        ngosen::test::captureLog(true);
+        const auto run   = ngosen::test::typeInAppTraced(resources, field, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 150));
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(run.text == "bè ở tiếng " && countHaving(lines, "Ask the app for a report") == 0, "an app that reports in time gets no empty commit", run.text + " " + join(lines));
+    }
+
+    // The request left over from one edit must not land in the next edit's turn and replace its commit.
+    void testReportRequestKeepsNextEdit() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks shell{.reportDelayMs = 30, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true, .turnMs = 3};
+        const auto              keys = keysOf("nguwx ");
+        for (const int gap : {38, 39, 40, 41}) {
+            std::vector<int> gaps(keys.size(), 100);
+            gaps[3] = gap; // w and x
+            FakeResources resources;
+            const auto    run = ngosen::test::typeInAppTraced(resources, field, shell, keys, gaps);
+            check(run.text == "ngữ ", "a report request stays out of the next edit's turn, gap " + std::to_string(gap), run.text);
+        }
+    }
+
+    // Firefox reports most edits unasked and misses a few; its copy for the deletion is then as old as
+    // mutter's, so counting on it takes one letter too many. Qt, which rarely reports, needs that count.
+    void testAnsweringAppGetsPlainCount() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks firefox{.repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 1, .ignoresRequestsOnEdits = {9}};
+        FakeResources           resources;
+        const auto              keys = keysOf("bef owr bef owr vieetj tieesng ");
+        const auto              run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 150));
+        check(run.text == "bè ở bè ở việt tiếng ", "an app that mostly answers keeps its letters when it misses one report", run.text);
+
+        // On a fresh page the misses can come before there are many answers to weigh them against.
+        firefox.ignoresRequestsOnEdits = {2, 3};
+        FakeResources early;
+        const auto    earlyRun = ngosen::test::typeInAppTraced(early, field, firefox, keys, std::vector<int>(keys.size(), 150));
+        check(earlyRun.text == "bè ở bè ở việt tiếng ", "an app that answered once keeps its letters when it misses the next reports", earlyRun.text);
+
+        // Qt answers now and then too, but it applies the bytes to its real text.
+        ngosen::test::AppQuirks qt{.dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true, .reportsOnEdit = 1};
+        FakeResources           qtResources;
+        Field                   qtField = surroundingOnlyField();
+        qtField.preeditFallback         = true;
+        const auto qtKeys               = keysOf("bef bef bef bef tieesng ");
+        const auto qtRun                = ngosen::test::typeInAppTraced(qtResources, qtField, qt, qtKeys, std::vector<int>(qtKeys.size(), 500));
+        check(qtRun.text == "bè bè bè bè tiếng ", "an app that rarely answers keeps the count for its real text", qtRun.text);
+    }
+
+    // A copy one key behind can hold the same number of bytes as the word, yet the deletion lands at
+    // that copy's cursor, in front of the key the copy lacks.
+    void testCopyBehindByAKey() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks firefox{.reportDelayMs = 40, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .deletesAtReportedCursor = true};
+        FakeResources           resources;
+        const auto              keys = keysOf("vieetj nam ");
+        std::vector<int>        gaps(keys.size(), 150);
+        gaps[4]        = 5; // t and j
+        const auto run = ngosen::test::typeInAppTraced(resources, field, firefox, keys, gaps);
+        check(run.text == "việt nam ", "copy behind by a key: the replacement waits for the copy to catch up", run.text);
+    }
+
     // Two tone keys can reach us within one GNOME Shell turn, before the app has shown the first
     // replacement; sent at once, the app would keep only the second.
     void testReplacementsInOneTurn() {
@@ -2480,6 +2562,10 @@ int main() {
     testSlowReport();
     testStaleCopyBeforeReplacement();
     testReplacementsInOneTurn();
+    testFirefoxReportsOnlyAfterCommit();
+    testReportRequestKeepsNextEdit();
+    testAnsweringAppGetsPlainCount();
+    testCopyBehindByAKey();
     testCursorBounceBack();
     testIbusClientNames();
     testAutofillMark();

@@ -204,6 +204,22 @@ namespace ngosen::test {
             slowestCommitMs_ = std::max(slowestCommitMs_, static_cast<int>((monotonicUs() - forwardedAt_) / 1000));
             forwardedAt_     = 0;
         }
+        if (text.empty() && quirks_.emptyCommitsBeforeReport > 0) {
+            const auto& ignored         = quirks_.ignoresRequestsOnEdits;
+            const bool  ignoresRequests = std::find(ignored.begin(), ignored.end(), deletions_) != ignored.end();
+            if (silentAfterDelete_ && !ignoresRequests && ++emptyCommits_ >= quirks_.emptyCommitsBeforeReport) {
+                silentAfterDelete_ = false;
+                changed();
+            }
+            return;
+        }
+        // mutter keeps one commit per turn, so even an empty one replaces the commit before it.
+        if (text.empty() && quirks_.keepsLastEditPerTurn && turnPending_) {
+            turnCommit_ = text;
+            return;
+        }
+        if (text.empty())
+            return;
         // Focus and redraws are checked again when the app gets to the commit, which can be after a
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
@@ -279,6 +295,7 @@ namespace ngosen::test {
 
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
         ++sent_.surroundingDeletes;
+        ++deletions_;
         if (quirks_.ignoresSurroundingDel)
             goSilentAfterDelete();
         // A module whose copy of the text is empty finds every deletion out of range.
@@ -292,6 +309,10 @@ namespace ngosen::test {
         if (quirks_.convertsDeleteOnReportedCopy && offset == -static_cast<int>(size)) {
             const size_t bytes = reportedBytesBefore(size);
             later(quirks_.lagMs, [this, bytes] {
+                if (quirks_.deletesAtReportedCursor && reportedCursor_ <= text_.size()) {
+                    cursor_ = reportedCursor_;
+                    anchor_ = cursor_;
+                }
                 const unsigned int chars = charsForBytesBefore(bytes);
                 eraseAround(-static_cast<int>(chars), chars);
             });
@@ -412,8 +433,9 @@ namespace ngosen::test {
     }
 
     void FakeApp::goSilentAfterDelete() {
-        silentAfterDelete_ = quirks_.reportsNothingAfterDelete || quirks_.repeatsOldTextAfterDelete || quirks_.silentFromFirstDeletion;
+        silentAfterDelete_ = (quirks_.reportsNothingAfterDelete && deletions_ != quirks_.reportsOnEdit) || quirks_.repeatsOldTextAfterDelete || quirks_.silentFromFirstDeletion;
         keysSinceDelete_   = 0;
+        emptyCommits_      = 0;
     }
 
     void FakeApp::redrawAfterEdit() {
@@ -477,7 +499,7 @@ namespace ngosen::test {
         if (turnPending_)
             return;
         turnPending_ = true;
-        later(0, [this] { endTurn(); });
+        later(quirks_.turnMs, [this] { endTurn(); });
     }
 
     void FakeApp::endTurn() {

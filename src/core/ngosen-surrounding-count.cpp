@@ -28,8 +28,22 @@ namespace ngosen {
             return text.size() - start;
         }
 
-        SurroundingDeletion unmatched(SurroundingDeletion result, const std::string& copyBeforeCursor, const std::string& deleted) {
+        bool lacksLastKeys(const std::string& copyBeforeCursor, const std::string& prefix, const std::string& deleted) {
+            std::string shorter = prefix + deleted;
+            for (size_t left = deleted.size(); left > 0;) {
+                do
+                    --left;
+                while (left > 0 && !startsChar(deleted, left));
+                shorter.resize(prefix.size() + left);
+                if (!shorter.empty() && isEndsWith(copyBeforeCursor, shorter))
+                    return true;
+            }
+            return false;
+        }
+
+        SurroundingDeletion unmatched(SurroundingDeletion result, const std::string& copyBeforeCursor, const std::string& prefix, const std::string& deleted) {
             result.wrongBytes = bytesOfLastChars(copyBeforeCursor, result.chars) != deleted.size();
+            result.behind     = lacksLastKeys(copyBeforeCursor, prefix, deleted);
             return result;
         }
     } // namespace
@@ -47,7 +61,7 @@ namespace ngosen {
         for (const auto& word : earlierWords)
             shown = shown || (!word.empty() && isEndsWith(copyBeforeCursor, word));
         if (!shown)
-            return unmatched(result, copyBeforeCursor, deleted);
+            return unmatched(result, copyBeforeCursor, prefix, deleted);
 
         // The frontend deletes the bytes of the last n characters of its copy; pick the smallest n
         // whose bytes cover the deleted part and end on a character boundary of the real text.
@@ -67,7 +81,7 @@ namespace ngosen {
             result.retype = known.substr(known.size() - bytes, bytes - target);
             return result;
         }
-        return unmatched(result, copyBeforeCursor, deleted);
+        return unmatched(result, copyBeforeCursor, prefix, deleted);
     }
 
 } // namespace ngosen

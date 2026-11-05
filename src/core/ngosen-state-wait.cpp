@@ -307,7 +307,7 @@ namespace ngosen {
         if (!(host_->surrounding() == reportAtKey_))
             keySinceReport_ = false;
         // A report with focus away may be another app's; the next report or the timer ends the wait.
-        if (key_report_pending_ && host_->hasFocus() && !(key_report_until_copy_fits_ && copyGivesWrongBytes())) {
+        if (key_report_pending_ && host_->hasFocus() && !(key_report_until_copy_fits_ && copyGivesWrongDeletion())) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
             const auto s = host_->surrounding();
             finishKeyReportWait(s.isValid() && !(ngosen::reportsFieldOnlyOnKey(host_->field()) && s.text().empty()), false);
@@ -577,7 +577,9 @@ namespace ngosen {
         // A field that rewrites what we commit never shows it; keep only the latest commits.
         if (mode() == ngosen::Mode::Sen && ngosen::appliesEarlyKeysFirst(host_->field()))
             commitNotSeen_ = commitNotSeen_.size() + text.size() > 64 ? text : commitNotSeen_ + text;
-        committing_ = true;
+        // mutter keeps one commit per turn, so a request's empty commit could replace this one.
+        report_requests_left_ = 0;
+        committing_           = true;
         host_->commitText(text);
         committing_ = false;
     }

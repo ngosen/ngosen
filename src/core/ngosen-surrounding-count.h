@@ -25,6 +25,8 @@ namespace ngosen {
         // The copy turns chars into a different number of bytes than the deleted part has, so the
         // deletion would go wrong until the copy catches up.
         bool wrongBytes = false;
+        // The copy ends where the word stood before its last keys, so its cursor is short of the app's.
+        bool behind = false;
     };
 
     // copyBeforeCursor is the frontend's copy up to the cursor; prefix + deleted is the word the app

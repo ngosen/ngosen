@@ -455,7 +455,7 @@ namespace ngosen {
         trackEarlierWords(addedPart);
         if (live_key_) {
             const bool forKey = waitsForKeyReport();
-            if (forKey || copyGivesWrongBytes()) {
+            if (forKey || copyGivesWrongDeletion()) {
                 startKeyReportWait(deletedPart, addedPart, !forKey);
                 return;
             }
@@ -748,17 +748,24 @@ namespace ngosen {
 
     // The frontend turns a deletion into bytes on its copy of the text, which can still lack what the
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
-    bool TypingState::copyGivesWrongBytes() const {
+    bool TypingState::copyGivesWrongDeletion() const {
         const auto surrounding = host_->surrounding();
         if (!ngosen::countsDeletionOnCopy(host_->field()) || !deletesOnlyThroughSurrounding() || !surrounding.isValid())
             return false;
-        return countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_).wrongBytes;
+        const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        return deletion.wrongBytes || deletion.behind;
     }
 
     int TypingState::surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const {
         if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
             return deletedChars_;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        // An app that reports its edits unasked turns the bytes back into characters on the same old
+        // copy, so the count it needs is the plain one. Qt applies the bytes to its real text, and answers rarely.
+        if (deletion.match == SurroundingDeletion::Match::OldTail && surrAnsweredUnasked_ > 0 && 2 * surrAnsweredUnasked_ >= surrMissed_) {
+            NGOSEN_INFO("Surrounding copy shows the earlier word in an app that reports: delete " + std::to_string(deletedChars_));
+            return deletedChars_;
+        }
         NGOSEN_INFO(std::string("Surrounding copy shows the ") + matchName(deletion.match) + " word: delete " + std::to_string(deletion.chars) + " of " +
                     std::to_string(deletedChars_));
         retype = deletion.retype;
@@ -803,8 +810,35 @@ namespace ngosen {
             return;
         }
         edit_hold_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+            askForReportAfterEdit();
             finishEditHold();
             return edit_hold_;
+        });
+    }
+
+    // Firefox on GNOME applies an edit a moment after it reports, then stays silent, while GTK 3 turns
+    // the next deletion's bytes into characters on that old copy. GTK asks for a new copy when a commit
+    // arrives, and an empty one changes nothing in the field.
+    void TypingState::askForReportAfterEdit() {
+        report_requests_left_ = ReportRequests;
+        requestReportWhileUnanswered();
+    }
+
+    void TypingState::requestReportWhileUnanswered() {
+        if (!surrCheck_ || report_requests_left_ == 0 || !host_->hasFocus())
+            return;
+        --report_requests_left_;
+        host_->commitText("");
+        NGOSEN_INFO("Ask the app for a report");
+        const uint64_t until = monotonicUs() + EditHoldUs;
+        if (report_timer_) {
+            report_timer_->rearm(until);
+            return;
+        }
+        report_timer_ = host_->startTimer(until, 1000, [this](Timer&) {
+            const int left = report_requests_left_;
+            requestReportWhileUnanswered();
+            return report_requests_left_ != left;
         });
     }
 

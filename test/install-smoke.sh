@@ -140,6 +140,7 @@ lacks_keyboard() { ! grep -qs '^Name=keyboard-' "$1"; }
 profile=$home/.config/fcitx5/profile
 config=$home/.config/fcitx5/config
 im_env=$home/.config/environment.d/90-ngosen.conf
+compositor_env_file=$home/.config/environment.d/90-ngosen-sway-hyprland.conf
 autostart=$home/.config/autostart/org.fcitx.Fcitx5.desktop
 hidden_launcher=$home/.local/share/applications/org.fcitx.Fcitx5.desktop
 kwinrc=$home/.config/kwinrc
@@ -207,6 +208,7 @@ check_uninstalled_state() {
     elif [ -n "$desktop_config" ]; then
         check "uninstall names the autostart line" grep -qF 'fcitx5 -d' "$install_log"
         check "the desktop config is still untouched" desktop_config_untouched
+        check "uninstall removes the variables it wrote" test ! -e "$compositor_env_file"
     else
         check "environment.d file is removed" test ! -e "$im_env"
         check "autostart entry is removed" test ! -e "$autostart"
@@ -679,6 +681,11 @@ check_sway_hyprland_setup() {
     check "a second run succeeds" install_logged
     check "it still names the toggle key" install_names Ctrl+Shift
     check "it still has the autostart line" has_autostart_line
+    check "it sets the module Qt 5 reads" has_line "$compositor_env_file" 'QT_IM_MODULE=fcitx'
+    check "Qt 6 prefers fcitx5's module and falls back to Wayland" has_line "$compositor_env_file" 'QT_IM_MODULES=fcitx;wayland'
+    check "it points X11 apps at fcitx5" has_line "$compositor_env_file" 'XMODIFIERS=@im=fcitx'
+    check "it says those apps wait for the next login" grep -qF 'từ lần đăng nhập sau' "$install_log"
+    check_compositor_env_is_kept
 
     local other=$home/other/${desktop_config#"$home"/.config/}
     as_user mkdir -p "$(dirname "$other")"
@@ -706,8 +713,26 @@ check_sway_hyprland_setup() {
     bus=
 }
 
+# A variable the user chose stays theirs, and undoing leaves a file they edited.
+check_compositor_env_is_kept() {
+    local own=$home/.config/environment.d/50-own.conf
+    as_user mkdir -p "$(dirname "$own")"
+    as_user rm -f "$compositor_env_file"
+    printf 'QT_IM_MODULE=ibus\n' | as_user tee "$own" >/dev/null
+    check "install with the user's own Qt module succeeds" install_logged
+    check "it adds no file beside the user's variable" test ! -e "$compositor_env_file"
+    printf 'QT_IM_MODULES=wayland\n' | as_user tee "$own" >/dev/null
+    check "install with the user's own Qt module list succeeds" install_logged
+    check "it adds no file beside the user's list" test ! -e "$compositor_env_file"
+    as_user rm -f "$own"
+    check "install without the user's variable succeeds" install_logged
+    check "it writes the file again" test -e "$compositor_env_file"
+}
+
 check_no_compositor_setup() {
+    as_user rm -f "$compositor_env_file"
     check "install without WAYLAND_DISPLAY succeeds" install_fresh -u WAYLAND_DISPLAY
+    check "it writes no variables without WAYLAND_DISPLAY" test ! -e "$compositor_env_file"
     expect_no_setup "without WAYLAND_DISPLAY"
     check "install on labwc succeeds" install_fresh -u SWAYSOCK -u HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP=labwc:wlroots
     expect_no_setup "on labwc"
@@ -726,11 +751,16 @@ check_next_to_other_input_methods() {
     check "it keeps the other input method" has_line "$profile" 'Name=unikey'
     check "it adds ngosen" has_line "$profile" 'Name=ngosen'
     check "a keyboard default becomes ngosen" has_line "$profile" 'DefaultIM=ngosen'
+    check "it names the key that turns input on" grep -qF 'bấm Ctrl+Space để bật Ngó Sen' "$install_log"
+    check "it does not promise typing next to another input method" refuses says_typing_works
     check "fcitx5 stops next to another input method" stop_fcitx5
     printf '[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=unikey\n\n[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n[Groups/0/Items/1]\nName=unikey\nLayout=\n\n[GroupOrder]\n0=Default\n' |
         as_user tee "$profile" >/dev/null
     check "install with another default input method succeeds" install_logged
     check "it keeps that default" has_line "$profile" 'DefaultIM=unikey'
+    check "it names that default" grep -qF 'Bộ gõ mặc định vẫn là unikey' "$install_log"
+    check "it says how to reach Ngó Sen" grep -qF 'fcitx5-remote -s ngosen' "$install_log"
+    check "it does not promise typing with another default" refuses says_typing_works
     check "fcitx5 stops with another default" stop_fcitx5
 }
 
@@ -806,6 +836,42 @@ check_restart_through_kwin() {
     bus=
 }
 
+installs_from() {
+    as_user env NGOSEN_RELEASE_URL="file://$1" bash "$work/install.sh" --yes >"$install_log" 2>&1
+}
+
+reports_no_package() {
+    local dir=$work/no-package
+    mkdir -p "$dir"
+    printf '%064d  %s\n' 0 fcitx5-ngosen-1-1.fc1.noarch.rpm >"$dir/SHA256SUMS"
+    chmod -R a+rX "$dir"
+    ! installs_from "$dir" && grep -qF "chưa có gói dựng sẵn" "$install_log"
+}
+
+# A new Fedora release must install once its package is published, with no change to install.sh.
+check_new_fedora_release() {
+    local version next rpm dir=$work/next-release
+    # shellcheck disable=SC1091
+    version=$(. /etc/os-release && printf '%s' "${VERSION_ID:-}")
+    rpm=$(find "$work/release" -name "*.fc$version.$(uname -m).rpm")
+    [ -n "$rpm" ] || return 0
+    next=$((version + 1))
+    # An installed package of the same version would turn the install below into a no-op.
+    uninstall_logged || :
+    mkdir -p "$dir"
+    cp "$rpm" "$dir/$(basename "${rpm/.fc$version./.fc$next.}")"
+    (cd "$dir" && sha256sum -- * >SHA256SUMS)
+    chmod -R a+rX "$dir"
+    cp /etc/os-release "$work/os-release.orig"
+    sed -i --follow-symlinks "s/^VERSION_ID=.*/VERSION_ID=$next/" /etc/os-release
+    check "a newer Fedora installs from its published package" installs_from "$dir"
+    check "it picks the package of that release" grep -qF ".fc$next." "$install_log"
+    check "that package is installed" is_installed fcitx5-ngosen
+    sed -i --follow-symlinks "s/^VERSION_ID=.*/VERSION_ID=${version%?}./" /etc/os-release
+    check "a version that is not a number is refused" refuses installs_from "$work/release"
+    cp "$work/os-release.orig" /etc/os-release
+}
+
 main() {
     prepare_system
     [ -z "$desktop_config" ] || prepare_compositor_session
@@ -878,6 +944,10 @@ main() {
         echo "== extensions on GNOME 50.1"
         check_extensions_turned_back
     fi
+
+    echo "== which releases have packages"
+    check "a release with no package for the machine says so" reports_no_package
+    check_new_fedora_release
 
     finish
 }

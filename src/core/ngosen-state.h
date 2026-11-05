@@ -233,6 +233,7 @@ namespace ngosen {
         std::optional<RetoneMove>      retoneMove_;
         std::unique_ptr<ngosen::Timer> retone_timer_;
         bool                           backspaceBeforeKey_ = false; ///< the last key was a backspace that left no word being typed
+        bool                           backspaceInWord_    = false; ///< the user pressed Backspace in the word being typed
         std::optional<std::string>     selectedBeforeKey_;          ///< what the X server announced as selected right before this key
         void                           retoneAtWordEnd(size_t tail, Retype retype);
         void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8);
@@ -271,7 +272,7 @@ namespace ngosen {
         bool     handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
 
         // Presses real keys through XTEST, for frontends that cannot forward them.
-        void sendBackspaceKeys(int count) const;
+        bool sendBackspaceKeys(int count) const;
         // Sends text to the app and records it as ours.
         void commit(const std::string& text);
 
@@ -428,8 +429,8 @@ namespace ngosen {
         uint64_t                       held_enter_due_us_  = 0;
         ngosen::EditKey                held_key_           = ngosen::EditKey::Return;
 
-        // Enter after a macro expands it, and reaches the app once the expansion is in the field.
-        bool            expandMacroBeforeEnter(ngosen::KeyPress& keyEvent);
+        // Enter after a word the engine changes at its end, such as a macro, reaches the app once the new text is in the field.
+        bool            finishWordBeforeEnter(ngosen::KeyPress& keyEvent);
         void            sendEnterAfterReplacement();
         bool            enter_after_replacement_ = false;
         ngosen::EditKey enter_after_key_         = ngosen::EditKey::Return;
@@ -479,6 +480,7 @@ namespace ngosen {
         bool deferLaggingCommit(const char* reason, uint64_t settleUs = 0);
         void noteWaitOutcome(const char* reason);
         bool lostWordAfterBounce(const Surrounding& s, bool settling);
+        bool reportTrailsFirstWord(const Surrounding& s) const;
         void forwardBackspaces(int count);
         // True when a replacement can delete text: through backspaces the frontend forwards or XTEST presses, or, where
         // the app takes no keys, through its surrounding text or a DEL in a terminal.
@@ -524,12 +526,15 @@ namespace ngosen {
             std::string sentReport; ///< reportKey() when the deletion was sent
             std::string sentAfter;  ///< the text after the cursor then
             bool        password      = false;
+            bool        waitsForKey   = false; ///< stays open for a report that comes with a later key
             uint64_t    keysAtSend    = 0;
             uint64_t    commitsAtSend = 0;
             uint64_t    sentAtUs      = 0;
         };
+        bool               checkWaitsForLaterKey() const;
         void               openSurroundingCheck(const Surrounding& sent, const std::string& retype);
         void               checkSurroundingReport();
+        void               closeCheckBeforeOtherEdit();
         SurroundingVerdict judgeOpenCheck(const Surrounding& report) const;
         void               closeSurroundingCheck(SurroundingVerdict verdict, const Surrounding* report, bool beforeNext = false);
         void               fixDroppedDeletion(const SurroundingCheck& check, const Surrounding& report);

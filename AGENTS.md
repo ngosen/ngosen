@@ -3,15 +3,16 @@
 Rules for anyone (human or coding agent) changing this repository. [CONTRIBUTING](CONTRIBUTING.en.md)
 still applies; this file adds what it leaves out.
 
-These rules exist because upstream reviewers said our patches were hard to read: Vietnamese
-identifiers, too many core changes at once, long AI-sounding PR text, and claims they could not
-check (upstream #476, #492). Measured on 2026-09-26:
+These rules exist because fcitx5-lotus reviewers, when we still sent patches there, said they were
+hard to read: Vietnamese identifiers, too many core changes at once, long AI-sounding PR text, and
+claims they could not check (LotusInputMethod/fcitx5-lotus#476 and
+LotusInputMethod/fcitx5-lotus#492). Measured on 2026-09-26:
 
-|                                                 | Upstream               | This fork          |
+|                                                 | fcitx5-lotus           | Our patches        |
 | ----------------------------------------------- | ---------------------- | ------------------ |
 | Comment lines per code line (`src/`, `server/`) | 0.04                   | 0.29 (added lines) |
 | Median comment block                            | 1 line                 | 3 lines            |
-| Median issue/PR comment on upstream             | 140 chars (maintainer) | 2,174 chars        |
+| Median issue/PR comment there                   | 140 chars (maintainer) | 2,174 chars        |
 
 Most of this work is done with an AI coding agent. That is allowed, but the output has to read like
 a careful human wrote it, and the person sending it must be able to explain every line.
@@ -43,6 +44,10 @@ a careful human wrote it, and the person sending it must be able to explain ever
   use `isStartsWith` (`src/core/ngosen-strings.h`).
 - **A bug fix comes with a test that fails without it.** Check this by undoing the fix (or breaking
   its guard) and watching that test, and only that test, fail.
+- **Keep the evidence of every measured run.** Each run in a real app, right or wrong, saves what a
+  fault could need: the full fcitx5 log, the typing log (`SaveTypingLog`), the text typed and
+  expected, package and app versions, and a screenshot of a wrong run. A run with something missing
+  says so. Repeating a long round because nothing was kept costs far more than storing it.
 - **Handle apps by how they behave, not by name.** Check what the field reports (capability flags,
   surrounding text, frontend) before matching a program name; match a name only when nothing the app
   reports tells it apart, and say in a comment what behaviour the name stands for.
@@ -86,23 +91,25 @@ right Shift`.
 
 ## Pull requests
 
-Inside this fork: every change goes through a PR (branches are deleted on merge). Features and everything
+In this repository, every change goes through a PR (branches are deleted on merge). Features and everything
 else go into `next`; a fix for a bug in the current release goes into `patch`, which ships as the next
 X.Y.Z+1 and is then merged into `next`. Never merge into `main` directly: `install.sh` is downloaded from
 there, so whatever lands on `main` runs on users' machines. What to update
 after a merge and for a release is listed in [RELEASING.md](RELEASING.md).
+A PR that changes what `install.sh` sets up for a desktop also updates "Thiết lập sau khi cài package" in
+the README: people who install from a repository or a package file only get those steps from there.
 Each such PR adds a line under `## [Chưa phát hành]` in [CHANGELOG.md](CHANGELOG.md): what
 changed for the user, with the PR number. The changelog is written in Vietnamese, since most of its
 readers are Vietnamese users; keep English tech terms as in "Writing issues and PR text" below.
-Refer to upstream issues as `LotusInputMethod/fcitx5-lotus#123`, since a bare `#123` links to this
-fork.
+Refer to issues in other repositories as `owner/repo#123`, since a bare `#123` links to this one.
+Ngó Sen does not take patches from fcitx5-lotus; learn from other input methods and write the code here.
 
-To upstream:
+To other projects:
 
 - **Open an issue first**, get the maintainer's agreement on the direction, then send code. PRs sent
-  cold have been closed without comment (upstream #452).
-- **One concern per PR**, based on current upstream `dev`. A bug fix, a refactor and a rename are
-  three PRs. If the description needs headings, the PR is probably too big.
+  cold have been closed without comment (LotusInputMethod/fcitx5-lotus#452).
+- **One concern per PR**, based on that project's current development branch. A bug fix, a refactor
+  and a rename are three PRs. If the description needs headings, the PR is probably too big.
 - **Keep core changes small.** The maintainer reviews alone in spare time; a PR worth sending costs
   less to review than it gives back. Prefer an off-by-default option over a behaviour change.
 - **CI must pass** (clang-format, build, tests) before asking for review.
@@ -111,10 +118,10 @@ To upstream:
 
 ## Writing issues and PR text
 
-Upstream issues and PRs are written in Vietnamese; the rules below apply to that prose.
+These rules apply to text posted to other projects, written in that project's language.
 
 - **Short.** Aim for under 800 characters, excluding code blocks and logs. Longer detail goes in a
-  linked file in this fork, not in the comment.
+  linked file in this repository, not in the comment.
 - **Problem first:** what the user sees, how to reproduce, environment (version, desktop, app,
   `fcitx5-diagnose`). Then the proposed fix in one or two sentences, pointing at the function.
 - **Keep English tech terms**: focus, commit, preedit, surrounding text, backspace, event, timeout,
@@ -127,7 +134,7 @@ Upstream issues and PRs are written in Vietnamese; the rules below apply to that
 - **The human sends it.** Draft with the agent if needed, then cut it down and make sure you can
   answer questions about every sentence without asking the agent.
 
-## Checklist before posting upstream
+## Checklist before posting to another project
 
 1. Would the maintainer understand the problem from the first two sentences?
 2. Is it under 800 characters (not counting code)?

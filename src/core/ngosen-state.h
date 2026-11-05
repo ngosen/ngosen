@@ -272,7 +272,7 @@ namespace ngosen {
         bool     handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
 
         // Presses real keys through XTEST, for frontends that cannot forward them.
-        void sendBackspaceKeys(int count) const;
+        bool sendBackspaceKeys(int count) const;
         // Sends text to the app and records it as ours.
         void commit(const std::string& text);
 

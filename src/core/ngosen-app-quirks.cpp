@@ -33,6 +33,11 @@ namespace ngosen {
             }
             return program;
         }
+
+        // WPS Writer, Spreadsheets and Presentation.
+        bool isWps(const std::string& program) {
+            return program == "wps" || program == "et" || program == "wpp";
+        }
     } // namespace
 
     bool forwardsBackspaces(const Field& field) {
@@ -49,7 +54,7 @@ namespace ngosen {
         }
         if (field.frontend == "ibus") {
             // SDL takes only commits and preedit from the IM.
-            return !isStartsWith(field.program, "SDL");
+            return !isStartsWith(field.program, "SDL") && !takesSentKeyEvents(field);
         }
         if (field.frontend == "dbus") {
             // fcitx5-gtk and fcitx5-qt set one of these; SDL sets neither and handles only commits and preedit.
@@ -64,11 +69,13 @@ namespace ngosen {
     }
 
     bool takesSentKeyEvents(const Field& field) {
-        if (field.frontend != "xim" || !xsendAvailable())
-            return false;
+        // WPS over IBus ignores forwarded keys and surrounding deletions, and reports the same flags as
+        // Qt clients that honour them.
+        if (field.frontend == "ibus")
+            return isWps(appName(field)) && xsendAvailable();
         // Wine applies forwarded keys after a later commit and reports nothing that sets it apart;
         // xterm and XInput2 clients drop sent events, so the rest keep forwarding.
-        return isStartsWith(appName(field), "wine");
+        return field.frontend == "xim" && isStartsWith(appName(field), "wine") && xsendAvailable();
     }
 
     bool ignoresForwardedKeys(const Field& field) {
@@ -122,9 +129,7 @@ namespace ngosen {
     bool typesOverPrimarySelection(const Field& field) {
         // Terminals, Emacs and Vim also own the primary selection and report the same, but type elsewhere.
         const std::string program = appName(field);
-        // WPS Writer, Spreadsheets and Presentation.
-        const bool wps = program == "wps" || program == "et" || program == "wpp";
-        return isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || wps;
+        return isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || isWps(program);
     }
 
     bool surroundingTextLags(const Field& field) {

@@ -18,6 +18,8 @@
 #include "ngosen-utf8.h"
 #include "ngosen-xtest.h"
 
+#include <fstream>
+
 #include <cstddef>
 #include <algorithm>
 #include <string>
@@ -689,7 +691,21 @@ namespace ngosen {
         lastPath_ = path;
     }
 
+    // Throwaway probe: /tmp/ngosen-probe selects how WPS over IBus deletes. Never merged.
+    static std::string wpsProbe(const Field& field) {
+        if (field.frontend != "ibus" || field.program != "wps")
+            return {};
+        std::ifstream file("/tmp/ngosen-probe");
+        std::string   mode;
+        file >> mode;
+        return mode;
+    }
+
     bool TypingState::deletesThroughSurrounding(const ngosen::Surrounding& surrounding) {
+        if (wpsProbe(host_->field()) == "surround") {
+            notePath("surrounding", "probe");
+            return true;
+        }
         if (deletesOnlyThroughSurrounding()) {
             notePath("surrounding", "the field takes no keys");
             return true;
@@ -943,7 +959,10 @@ namespace ngosen {
     void TypingState::replaceThroughForwardedKeys() {
         // The XTEST count includes a sentinel that comes back to us; forwarded keys never do.
         const int count = expected_backspaces_ - 1;
-        if (host_->field().frontend == "xim") {
+        if (wpsProbe(host_->field()) == "xsend") {
+            const bool sent = xsendAvailable() && xsendKeys(count);
+            NGOSEN_INFO("Probe: sent " + std::to_string(count) + " backspaces to the X window, ok=" + std::to_string(sent));
+        } else if (host_->field().frontend == "xim") {
             // We are inside the client's synchronous XIM request for the key that triggered this
             // replacement. Keys forwarded now reach the client before its reply, and libX11 may
             // hand them back to us unprocessed. Forward them once the reply has gone out.

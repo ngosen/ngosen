@@ -41,6 +41,7 @@ namespace ngosen::test {
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
         int  backspaceLagMs         = 0;     // applies forwarded backspaces this late but commits at once, as Antigravity's editor on GNOME sometimes does
+        bool backspacesSkipLag      = false; // applies forwarded backspaces ahead of what lagMs holds back, as GNOME Shell's IBus bridge with forward-keys@ngosen.github.io does
         bool hidesCursorMoves       = false; // reports no click and shows the cursor where the last edit left it, as GTK 3 on Plasma does
         bool dropsForwardedKeys     = false; // never gets keys the input method sends, as under GNOME Shell's IBus bridge
         bool erasesOnDel            = false; // erases the character before the cursor for each DEL committed, as a terminal does
@@ -99,6 +100,10 @@ namespace ngosen::test {
 
         void attach(TypingState* state) {
             state_ = state;
+        }
+        // Lets a test hold up one stretch of reports, as an app busy for a moment does.
+        void setReportDelay(int ms) {
+            quirks_.reportDelayMs = ms;
         }
         // Presses and releases a key; the app inserts it when the input method lets it through.
         void        type(uint32_t sym);

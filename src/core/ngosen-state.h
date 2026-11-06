@@ -405,6 +405,8 @@ namespace ngosen {
         KeyEntry                       replayed_key_{};
         bool                           key_report_copy_fits_ = false;
         bool                           copyWaitTimedOut_     = false; ///< keeps replayed keys from each waiting out a copy that never fits
+        int                            copyWaitsRunOut_      = 0;     ///< copy waits in a row that ran out in this field
+        static constexpr int           MaxCopyWaitsRunOut    = 2;
         std::unique_ptr<ngosen::Timer> split_edit_timer_;
         bool                           split_edit_pending_ = false;
         Surrounding                    split_edit_surrounding_;

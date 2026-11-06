@@ -372,6 +372,7 @@ namespace ngosen {
                 if (!key_report_copy_fits_)
                     NGOSEN_INFO("Copy of the text still short, deleting anyway");
                 copyWaitTimedOut_ = !key_report_copy_fits_;
+                copyWaitsRunOut_  = copyWaitTimedOut_ ? copyWaitsRunOut_ + 1 : 0;
             }
             finishKeyReportWait(true, true);
             return key_report_pending_;

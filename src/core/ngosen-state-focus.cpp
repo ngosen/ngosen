@@ -83,6 +83,7 @@ namespace ngosen {
                 surrAnswered_        = false;
                 surrAnsweredUnasked_ = 0;
                 surrMissed_          = 0;
+                copyWaitsRunOut_     = 0;
             }
         }
 

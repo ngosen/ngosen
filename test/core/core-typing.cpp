@@ -2496,6 +2496,22 @@ namespace {
         check(fast.text == "việt nam ", "a long turn: a replayed key waits for the edit to come out", fast.text);
     }
 
+    // The cursor moving over our own edit is not a click, so the word goes on.
+    void testCursorMovesBeforeEditText() {
+        realMode = ngosen::Mode::Sen;
+        FakeResources           resources;
+        ngosen::test::AppQuirks slate{.movesCursorBeforeText = true, .textAfterCursor = "chào"};
+        const auto              keys = keysOf("nguwx ");
+        const auto              run  = ngosen::test::typeInAppTraced(resources, makeField("wayland", true, "firefox"), slate, keys, std::vector<int>(keys.size(), 150));
+        check(run.text == "ngữ chào", "cursor shown over the edit first: the word keeps its tone", run.text);
+
+        // A deletion longer than one letter steps the cursor back further than a caret settling.
+        FakeResources longResources;
+        const auto    longKeys = keysOf("nguoiwf ");
+        const auto    longRun  = ngosen::test::typeInAppTraced(longResources, makeField("wayland", true, "firefox"), slate, longKeys, std::vector<int>(longKeys.size(), 150));
+        check(longRun.text == "người chào", "cursor shown over a longer edit first: the word keeps its tone", longRun.text);
+    }
+
     // Firefox's cursor stays past the real one after a deletion and a commit in one turn, so the next
     // deletion would take what follows the word.
     void testEditBeforeOtherText() {
@@ -3140,6 +3156,7 @@ int main() {
     testLongTurnKeepsTheEdit();
     testCopyWaitEndsAfterTheReport();
     testEditBeforeOtherText();
+    testCursorMovesBeforeEditText();
     testCursorBounceBack();
     testFirstLetterCursorBounce();
     testIbusClientNames();

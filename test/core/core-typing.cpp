@@ -2631,8 +2631,18 @@ namespace {
         }
     }
 
-    // A field whose copy never catches up waits once, then deletes as before until focus moves on.
-    void testCopyWaitRunsOutOncePerField() {
+    void typeRolledInto(ngosen::test::FakeApp* app, FakeLoop& loop, const std::string& typed, const std::vector<size_t>& rolled) {
+        const auto keys = keysOf(typed);
+        const auto gaps = rolledGaps(typed, rolled, 60);
+        for (size_t i = 0; i < keys.size(); ++i) {
+            app->type(keys[i]);
+            loop.pump(gaps[i]);
+        }
+        loop.pump(300);
+    }
+
+    // A field whose copy never catches up stops waiting after two waits in a row run out, until focus moves on.
+    void testCopyWaitsRunOutPerField() {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
         FakeLoop      loop;
@@ -2642,25 +2652,44 @@ namespace {
         auto*         app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
-        const auto typeRolled = [&](const std::string& typed, const std::vector<size_t>& rolled) {
-            const auto keys = keysOf(typed);
-            const auto gaps = rolledGaps(typed, rolled, 60);
-            for (size_t i = 0; i < keys.size(); ++i) {
-                app->type(keys[i]);
-                loop.pump(gaps[i]);
-            }
-            loop.pump(300);
-        };
         ngosen::test::captureLog(true);
-        typeRolled("nguoiwf tieengs vieetj ", {5, 14, 21});
+        typeRolledInto(app, loop, "nguoiwf tieengs vieetj ", {5, 14, 21});
         const auto inOneField = countHaving(ngosen::test::capturedLog(), "still short");
         app->leaveFocus(500);
         loop.pump(600);
-        typeRolled("nguoiwf ", {5});
+        typeRolledInto(app, loop, "nguoiwf ", {5});
         const auto lines = ngosen::test::capturedLog();
         ngosen::test::captureLog(false);
-        check(inOneField == 1, "a copy that never fits is waited for once in a field", std::to_string(inOneField) + " " + join(lines));
-        check(countHaving(lines, "still short") == 2, "a new focus waits for the copy again", std::to_string(countHaving(lines, "still short")));
+        check(inOneField == 2, "a copy that never fits is waited for twice in a field", std::to_string(inOneField) + " " + join(lines));
+        check(countHaving(lines, "still short") > inOneField, "a new focus waits for the copy again", std::to_string(countHaving(lines, "still short")));
+    }
+
+    // One report held up past the wait is no reason to stop waiting in that field.
+    void testOneLateCopyKeepsWaiting() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(
+            loop, makeField("ibus", true, "antigravity-ide"),
+            ngosen::test::AppQuirks{.reportDelayMs = 8, .lagMs = 15, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+        auto*               app = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        ngosen::test::captureLog(true);
+        typeRolledInto(app, loop, "nguoiwf ", {5});
+        typeRolledInto(app, loop, "tie", {});
+        app->setReportDelay(400);
+        typeRolledInto(app, loop, "es", {0});
+        app->setReportDelay(8);
+        typeRolledInto(app, loop, "ng ", {});
+        const int before = app->sent().forwardedBackSpaces;
+        typeRolledInto(app, loop, "nguoiwf nguoiwf ", {5, 13});
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(lines, "still short") == 1, "one late copy: the held-up report runs one wait out", join(lines));
+        check(isEndsWith(app->text(), "người người "), "one late copy: the words after it keep their letters", app->text());
+        check(app->sent().forwardedBackSpaces == before, "one late copy: the words after it send no backspaces", std::to_string(app->sent().forwardedBackSpaces - before));
     }
 
     // A copy one key behind can hold the same number of bytes as the word, yet the deletion lands at
@@ -3085,7 +3114,8 @@ int main() {
     testReportRequestKeepsReplayedKey();
     testLateCopyKeepsSurroundingPath();
     testRolledKeysWaitForIbusCopy();
-    testCopyWaitRunsOutOncePerField();
+    testCopyWaitsRunOutPerField();
+    testOneLateCopyKeepsWaiting();
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();
     testLongTurnKeepsTheEdit();

@@ -311,9 +311,8 @@ namespace ngosen {
 
     void TypingState::finishReplacement(const char* reason, bool fromTimer) {
         noteWaitOutcome(reason);
-        surr_wait_pending_       = false;
-        surr_wait_timer_only_    = false;
-        backspacesForUnseenWord_ = false;
+        surr_wait_pending_    = false;
+        surr_wait_timer_only_ = false;
         if (!fromTimer)
             replaceTimer(surr_wait_timer_);
         // A previous replacement still waiting for its turn goes out first, keeping the text in order.
@@ -474,7 +473,8 @@ namespace ngosen {
     }
 
     void TypingState::deleteAndCommit(const std::string& deletedPart, const std::string& addedPart) {
-        const auto surrounding = host_->surrounding();
+        const auto surrounding   = host_->surrounding();
+        backspacesForUnseenWord_ = false;
         // A BackSpace in the Chromium address bar would only remove the selected autocompletion. XTEST,
         // unlike forwardKey, keeps Shift, so widen the selection over the old text and type over both.
         if (xtestAvailable() && ngosen::selectsOverAutocompletion(host_->field()) && !field_keeps_focus_on_selection_ && !deletedPart.empty()) {
@@ -1035,7 +1035,8 @@ namespace ngosen {
         }
         NGOSEN_INFO("Forward " + std::to_string(count) + " backspaces");
         // If the copy never showed the word, a report from before its last key looks like one after the backspaces.
-        backspacesForUnseenWord_ = host_->field().frontend == "wayland_v2" && surrSeenTextSinceFocus_ && host_->surrounding().isValid() && !surr_wait_sent_snapshot_fresh_;
+        backspacesForUnseenWord_ = host_->field().frontend == "wayland_v2" && surrSeenTextSinceFocus_ && host_->surrounding().isValid() &&
+            !isEndsWith(textBeforeCursor(host_->surrounding()), surr_wait_prefix_ + surr_wait_deleted_);
         waitForDeletion(nullptr, 4);
         // XIM, IBus and D-Bus clients queue forwarded keys, and on wayland_v2 they travel apart from the
         // commit, so the commit can overtake them.

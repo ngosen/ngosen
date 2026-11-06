@@ -273,6 +273,7 @@ namespace ngosen {
         bool     holdsKeyDuringTimedWait(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
         void     noteHeldKeyForDoubling(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
         bool     handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        void     dropLetterForBackspace();
 
         // Presses real keys through XTEST, for frontends that cannot forward them.
         bool sendBackspaceKeys(int count) const;

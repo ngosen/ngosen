@@ -487,6 +487,27 @@ namespace {
         check(text == "viết", "ibus: backspace after a held space reopens the word", text);
     }
 
+    // `keys` typed in a GNOME field that reports no text, `gaps[i]` ms after the key before.
+    std::string typeInSilentIbusField(const std::vector<uint32_t>& keys, const std::vector<int>& gaps) {
+        ngosen::test::AppQuirks quirks;
+        quirks.reportsEmptyText = true;
+        quirks.commitLagMs      = 5;
+        quirks.showsEnter       = true;
+        return ngosen::test::typeInApp(makeField("ibus", true), quirks, keys, gaps);
+    }
+
+    void testEnterDuringTimedWaitFollowsCommit() {
+        const std::string text = typeInSilentIbusField({'l', 'o', 'o', 'x', 0xff0d, 'b'}, {100, 100, 100, 2, 100, 100});
+        check(text == "lỗ\nb", "ibus: an Enter typed during a timed wait goes after the commit", text);
+    }
+
+    void testBackspaceDuringTimedWaitFollowsCommit() {
+        const std::string once = typeInSilentIbusField({'l', 'o', 'o', 'x', 0xff08, 'a'}, {100, 100, 100, 2, 100, 100});
+        check(once == "la", "ibus: a backspace typed during a timed wait deletes the new letter", once);
+        const std::string twice = typeInSilentIbusField({'l', 'o', 'o', 'x', 0xff08, 0xff08, 'a'}, {100, 100, 100, 2, 30, 100, 100});
+        check(twice == "a", "ibus: two quick backspaces after a timed wait delete the word", twice);
+    }
+
     void testMacroKeepsSpace() {
         FakeResources resources;
         resources.setMacros({{"e", "em"}, {"ko", "không"}});
@@ -2906,6 +2927,8 @@ int main() {
     testCommitAfterFieldRefocus();
     testKeyTypedBeforeCommitArrived();
     testGnomeKeyDuringTimedWaitJoinsCommit();
+    testEnterDuringTimedWaitFollowsCommit();
+    testBackspaceDuringTimedWaitFollowsCommit();
     testHeldSpaceCountsForDoubleSpace();
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();

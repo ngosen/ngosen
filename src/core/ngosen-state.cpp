@@ -139,7 +139,12 @@ namespace ngosen {
         held_enter_pending_ = true;
         held_enter_release_ = untilRelease;
         held_enter_due_us_  = ngosen::monotonicUs() + EnterAfterCommitUs;
-        held_enter_timer_   = host_->startTimer(held_enter_due_us_, 1000, [this](ngosen::Timer& timer) {
+        // The replay a held key releases can hold the next one, so the running timer is rearmed rather than replaced.
+        if (held_enter_timer_) {
+            held_enter_timer_->rearm(held_enter_due_us_);
+            return;
+        }
+        held_enter_timer_ = host_->startTimer(held_enter_due_us_, 1000, [this](ngosen::Timer& timer) {
             if (!held_enter_pending_)
                 return false;
             // GNOME Shell loses a forwarded Enter while the user still holds Enter down, so the release sends it.
@@ -150,7 +155,7 @@ namespace ngosen {
             }
             held_enter_pending_ = false;
             forwardHeldEnter();
-            return false;
+            return held_enter_pending_;
         });
     }
 
@@ -510,7 +515,9 @@ namespace ngosen {
             clickBeforeKey_ = false;
             // A backspace that leaves no word being typed can end right after an older word.
             backspaceBeforeKey_ = ngosen::key::isBackspace(keyEvent.sym()) && oldPreBuffer_.empty();
-            if (ngosen::key::isBackspace(keyEvent.sym()) && !oldPreBuffer_.empty())
+            // A held Backspace is counted when it replays, after the keys typed before it.
+            const bool held = key_report_pending_ && !buffered_keys_.empty() && buffered_keys_.back().heldForCopy;
+            if (ngosen::key::isBackspace(keyEvent.sym()) && !oldPreBuffer_.empty() && !held)
                 backspaceInWord_ = true;
             reportAtKey_ = host_->surrounding();
         }
@@ -820,11 +827,25 @@ namespace ngosen {
         if (field.frontend != "dbus") {
             if (ngosen::key::isEnter(currentSym))
                 return replayedEditKey(currentSym, keyEvent.states()).has_value();
-            // The replay drops a whole letter, so a backspace that only removes the tone goes through as before.
-            return ngosen::key::isBackspace(currentSym) && !keyEvent.hasModifier() && forwardsEnterAfterCommit() && !engine_->options().backspaceRemovesTone;
+            return holdsBackspace(keyEvent, currentSym);
         }
         const bool plainEnter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
         return plainEnter || replayedEditKey(currentSym, keyEvent.states()).has_value();
+    }
+
+    // Sent now, the Backspace would reach the app ahead of the edit's commit, so it follows the commit instead.
+    // After an edit that ended the word, the replay could still let it overtake. IBus only, as for the timed wait.
+    bool TypingState::holdBackspaceForCopy(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (oldPreBuffer_.empty() || host_->field().frontend != "ibus" || !holdsBackspace(keyEvent, currentSym) || buffered_keys_.size() >= MAX_BUFFERED_KEYS)
+            return false;
+        buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .heldForCopy = true});
+        keyEvent.accept();
+        return true;
+    }
+
+    // The replay drops a whole letter, so a backspace that only removes the tone goes through as before.
+    bool TypingState::holdsBackspace(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const {
+        return ngosen::key::isBackspace(currentSym) && !keyEvent.hasModifier() && forwardsEnterAfterCommit() && !engine_->options().backspaceRemovesTone;
     }
 
     // A held key skips handleDoubledKey, but the next one still has to see it.
@@ -861,9 +882,12 @@ namespace ngosen {
             }
             finishReplacement("key arrived", false);
         }
-        // The user's Backspace would be counted as one of the replacement's, so the edit goes out now.
-        if (key_report_pending_ && key_report_until_copy_fits_ && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()))
+        if (key_report_pending_ && key_report_until_copy_fits_ && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field())) {
+            if (holdBackspaceForCopy(keyEvent, currentSym))
+                return true;
+            // The user's Backspace would be counted as one of the replacement's, so the edit goes out now.
             finishKeyReportWait(true, false);
+        }
         if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_pending_) {
             // Forwarded backspaces never come back, so this one is the user's: finish the replacement
             // first, then handle it normally.

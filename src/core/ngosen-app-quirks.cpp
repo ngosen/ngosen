@@ -145,6 +145,11 @@ namespace ngosen {
         return field.frontend == "ibus" && (appName(field) == "gnome-shell" || field.reportedProgram == "gnome-shell");
     }
 
+    // With its extension off, GNOME Shell relays every app under its own name.
+    bool namesNoApp(const Field& field) {
+        return field.frontend == "ibus" && appName(field) == "gnome-shell";
+    }
+
     bool isGnomeSearch(const Field& field) {
         return appName(field) == "gnome-shell-overview";
     }

@@ -595,6 +595,7 @@ namespace ngosen {
         // Logs a line when the path differs from the last replacement's in this field.
         void                            notePath(const char* path, const std::string& why);
         bool                            surroundingUntrusted() const;
+        bool                            appMarkedUntrusted() const;
         std::string                     lastPath_;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
@@ -612,6 +613,7 @@ namespace ngosen {
         bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
         std::unique_ptr<ngosen::Timer>  replay_timer_;
         bool                            autofillMarked_ = false; ///< this field filled in text after the cursor without a key
+        bool                            fieldUntrusted_ = false; ///< the untrusted mark of an app GNOME Shell does not name
         bool                            rawWord_        = false; ///< the rest of this word goes to the app as typed
 
         /**

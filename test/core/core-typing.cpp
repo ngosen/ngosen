@@ -3114,6 +3114,20 @@ namespace {
             check(run.text == "vieetj " && off.empty(), "fallback: the mark holds for the next field of the app", run.text + " " + join(off));
         }
 
+        // Without a name from GNOME Shell every app looks the same, so the mark stays with the field.
+        {
+            FakeResources resources;
+            Field         unnamed = surroundingOnlyField();
+            unnamed.program       = "gnome-shell";
+            const auto first      = keysOf("too too ");
+            run                   = ngosen::test::typeInAppTraced(resources, unnamed, dropsAll, first, std::vector<int>(first.size(), 100));
+            check(run.text == "toô too ", "fallback: an unnamed app is marked within its field", run.text);
+            const auto next = keysOf("vieetj ");
+            run             = ngosen::test::typeInAppTraced(resources, unnamed, {.dropsForwardedKeys = true}, next, std::vector<int>(next.size(), 100));
+            off             = ngosen::test::pathMismatches(run.sent, {.surroundingDeletes = 2});
+            check(run.text == "việt " && off.empty(), "fallback: the mark on an unnamed app stays out of the next app", run.text + " " + join(off));
+        }
+
         Field preeditHost           = surroundingOnlyField();
         preeditHost.preeditFallback = true;
         lines                       = logLinesWhileTyping(preeditHost, dropsAll, "too too too ", "", &run);

@@ -247,6 +247,16 @@ namespace ngosen {
         return true;
     }
 
+    void TypingState::dropLetterForBackspace() {
+        hasHistory_ = true;
+        if (oldPreBuffer_.empty() && !lastWord_.empty())
+            reopenLastWord();
+        else
+            EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::BackSpace, 0);
+        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
+        oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+    }
+
     void TypingState::handleSenMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
             keyEvent.passToApp();
@@ -258,13 +268,7 @@ namespace ngosen {
 
         if (ngosen::key::isBackspace(currentSym) || currentSym == ngosen::key::Return) {
             if (ngosen::key::isBackspace(currentSym)) {
-                hasHistory_ = true;
-                if (oldPreBuffer_.empty() && !lastWord_.empty())
-                    reopenLastWord();
-                else
-                    EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::BackSpace, 0);
-                ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
-                oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+                dropLetterForBackspace();
             } else {
                 if (finishWordBeforeEnter(keyEvent))
                     return;
@@ -557,7 +561,7 @@ namespace ngosen {
     void TypingState::handleKey(ngosen::KeyPress& keyEvent) {
         chooseWordMode(keyEvent);
         recordKey(keyEvent);
-        if (ngosen::key::isEnter(keyEvent.sym())) {
+        if (held_key_ == ngosen::EditKey::BackSpace ? ngosen::key::isBackspace(keyEvent.sym()) : ngosen::key::isEnter(keyEvent.sym())) {
             const bool heldRelease = keyEvent.isRelease() && held_enter_release_;
             held_enter_release_    = false;
             if (heldRelease) {
@@ -813,8 +817,12 @@ namespace ngosen {
             return false;
         if (typesText(keyEvent, currentSym))
             return true;
-        if (field.frontend != "dbus")
-            return false;
+        if (field.frontend != "dbus") {
+            if (ngosen::key::isEnter(currentSym))
+                return replayedEditKey(currentSym, keyEvent.states()).has_value();
+            // The replay drops a whole letter, so a backspace that only removes the tone goes through as before.
+            return ngosen::key::isBackspace(currentSym) && !keyEvent.hasModifier() && forwardsEnterAfterCommit() && !engine_->options().backspaceRemovesTone;
+        }
         const bool plainEnter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
         return plainEnter || replayedEditKey(currentSym, keyEvent.states()).has_value();
     }

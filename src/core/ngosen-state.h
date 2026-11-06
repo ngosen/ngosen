@@ -404,10 +404,13 @@ namespace ngosen {
         void                           startWordWithKey(const KeyEntry& key);
         KeyEntry                       key_report_key_{};
         KeyEntry                       replayed_key_{};
-        bool                           key_report_copy_fits_ = false;
-        bool                           copyWaitTimedOut_     = false; ///< keeps replayed keys from each waiting out a copy that never fits
-        int                            copyWaitsRunOut_      = 0;     ///< copy waits in a row that ran out in this field
-        static constexpr int           MaxCopyWaitsRunOut    = 2;
+        bool                           key_report_copy_fits_  = false;
+        uint64_t                       key_report_started_us_ = 0;
+        bool                           key_report_waits_long_ = false; ///< no report has shown the app stuck on its old copy
+        ngosen::Surrounding            key_report_start_copy_;
+        bool                           copyWaitTimedOut_  = false; ///< keeps replayed keys from each waiting out a copy that never fits
+        int                            copyWaitsRunOut_   = 0;     ///< copy waits in a row that ran out in this field
+        static constexpr int           MaxCopyWaitsRunOut = 2;
         std::unique_ptr<ngosen::Timer> split_edit_timer_;
         bool                           split_edit_pending_ = false;
         Surrounding                    split_edit_surrounding_;

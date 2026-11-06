@@ -97,7 +97,8 @@ namespace ngosen::test {
                 app->type(keys[i]);
                 loop.pump(gapsMs[i]);
             }
-            loop.pump(300);
+            // Longer than the longest copy wait, so keys held for it have been replayed.
+            loop.pump(700);
             if (slowestCommitMs != nullptr)
                 *slowestCommitMs = app->slowestCommitMs();
             return {.text = app->text(), .sent = app->sent()};

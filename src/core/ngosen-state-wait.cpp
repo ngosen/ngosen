@@ -23,6 +23,8 @@ namespace ngosen {
 
     namespace {
         constexpr int LaggingReportWaitMs = 100;
+        // A busy app can stay quiet past the usual wait, and over IBus the backspaces sent then overtake its commits.
+        constexpr int IbusCopyWaitMs = 500;
     } // namespace
 
     bool TypingState::sendBackspaceKeys(int count) const {
@@ -314,7 +316,12 @@ namespace ngosen {
             finishKeyReportWait(false, false);
         } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !copyGivesWrongDeletion()) {
             key_report_copy_fits_ = true;
+            NGOSEN_DEBUG("Copy fits after " + std::to_string((ngosen::monotonicUs() - key_report_started_us_) / 1000) + " ms");
             key_report_timer_->rearm(ngosen::monotonicUs());
+        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && key_report_waits_long_ && host_->surrounding() == key_report_start_copy_) {
+            // An app that repeats the copy it had when the wait began is not just busy: it waits for a key we hold.
+            key_report_waits_long_ = false;
+            key_report_timer_->rearm(std::max(ngosen::monotonicUs(), key_report_started_us_ + static_cast<uint64_t>(2 * LaggingReportWaitMs) * 1000));
         } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
             const auto s = host_->surrounding();
@@ -352,7 +359,13 @@ namespace ngosen {
         // Firefox over GTK 3 can stay quiet about typed keys after an edit until something asks.
         if (untilCopyFits && (ngosen::keepsOldCopyAfterEdit(host_->field()) || ngosen::keepsLastEditPerTurn(host_->field())))
             askForReportAfterEdit();
-        const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(2 * LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
+        // Only where the edit falls back to backspaces, so a field that deletes through surrounding text waits as before.
+        const int      copyWaitMs = checkWaitsForLaterKey() && forwardsEnterAfterCommit() ? IbusCopyWaitMs : 2 * LaggingReportWaitMs;
+        const uint64_t waitUs     = untilCopyFits ? static_cast<uint64_t>(copyWaitMs) * 1000ULL : KeyReportWaitUs;
+        key_report_started_us_    = ngosen::monotonicUs();
+        key_report_waits_long_    = untilCopyFits && copyWaitMs == IbusCopyWaitMs;
+        if (key_report_waits_long_)
+            key_report_start_copy_ = host_->surrounding();
         // A replay from the timer can start the next wait, so the timer is rearmed rather than replaced.
         if (key_report_timer_) {
             key_report_timer_->rearm(ngosen::monotonicUs() + waitUs);

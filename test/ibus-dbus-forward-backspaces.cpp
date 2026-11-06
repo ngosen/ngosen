@@ -333,7 +333,7 @@ namespace {
             const uint64_t replacedAt = nowUs();
             if (!h.type(*context, static_cast<fcitx::KeySym>(key), true))
                 return 0;
-            const uint64_t waited = h.pumpUntil([&] { return context->commits().size() > before; }, replacedAt + 500000) - replacedAt;
+            const uint64_t waited = h.pumpUntil([&] { return context->commits().size() > before; }, replacedAt + 1000000) - replacedAt;
             h.type(*context, FcitxKey_space, false);
             return waited;
         };

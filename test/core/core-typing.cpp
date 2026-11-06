@@ -2661,7 +2661,7 @@ namespace {
             app->type(keys[i]);
             loop.pump(gaps[i]);
         }
-        loop.pump(300);
+        loop.pump(700);
     }
 
     // A field whose copy never catches up stops waiting after two waits in a row run out, until focus moves on.
@@ -2676,7 +2676,10 @@ namespace {
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
         ngosen::test::captureLog(true);
-        typeRolledInto(app, loop, "nguoiwf tieengs vieetj ", {5, 14, 21});
+        // One word at a time: typed in one go, the rest of the sentence queues behind the first run-out and skips its own wait.
+        typeRolledInto(app, loop, "nguoiwf ", {5});
+        typeRolledInto(app, loop, "tieengs ", {5});
+        typeRolledInto(app, loop, "vieetj ", {4});
         const auto inOneField = countHaving(ngosen::test::capturedLog(), "still short");
         app->leaveFocus(500);
         loop.pump(600);
@@ -2685,6 +2688,60 @@ namespace {
         ngosen::test::captureLog(false);
         check(inOneField == 2, "a copy that never fits is waited for twice in a field", std::to_string(inOneField) + " " + join(lines));
         check(countHaving(lines, "still short") > inOneField, "a new focus waits for the copy again", std::to_string(countHaving(lines, "still short")));
+    }
+
+    // A busy app can stay quiet past the usual wait; the keys typed meanwhile must keep their letters.
+    void testKeysBehindALateCopyWait() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(
+            loop, makeField("ibus", true, "antigravity-ide"),
+            ngosen::test::AppQuirks{.reportDelayMs = 8, .lagMs = 15, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+        auto*               app = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        ngosen::test::captureLog(true);
+        typeRolledInto(app, loop, "nguoiwf tieengs vieet", {5});
+        app->setReportDelay(250);
+        typeRolledInto(app, loop, "j cos daaus khoong ", {});
+        app->setReportDelay(8);
+        typeRolledInto(app, loop, "bij ", {});
+        loop.pump(1000);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(app->text() == "người tiếng việt có dấu không bị ", "keys behind a late copy wait keep their letters", app->text() + " || " + join(lines));
+    }
+
+    // The longer wait is for IBus fields that fall back to backspaces; the others still give up at the usual time.
+    void testLongCopyWaitOnlyWithBackspaces() {
+        // A gtk4-im field deletes through the surrounding text only and never waits for a copy, so it is not here.
+        for (const auto& [field, waitsLong] : {std::pair{makeField("ibus", true, "antigravity-ide"), true}, std::pair{makeField("wayland", true, "chromium"), false},
+                                               std::pair{makeField("ibus", true, "soffice"), false}}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop      loop;
+            FakeResources resources;
+            auto          owned = std::make_unique<ngosen::test::FakeApp>(
+                loop, field,
+                ngosen::test::AppQuirks{.reportDelayMs = 8, .lagMs = 15, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+            auto*               app = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            ngosen::test::captureLog(true);
+            typeRolledInto(app, loop, "nguoiwf ", {5});
+            app->setReportDelay(450);
+            typeRolledInto(app, loop, "tiees", {4});
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            int longestFitMs = 0;
+            for (const auto& line : lines) {
+                if (const size_t at = line.find("Copy fits after "); at != std::string::npos)
+                    longestFitMs = std::max(longestFitMs, std::stoi(line.substr(at + 16)));
+            }
+            check((longestFitMs > 200) == waitsLong, "the long copy wait: " + field.frontend + " " + field.program, std::to_string(longestFitMs) + " ms " + join(lines));
+        }
     }
 
     // SDL takes no deletion from us, so a copy that lags would only hold its keys back.
@@ -2720,7 +2777,7 @@ namespace {
         ngosen::test::captureLog(true);
         typeRolledInto(app, loop, "nguoiwf ", {5});
         typeRolledInto(app, loop, "tie", {});
-        app->setReportDelay(400);
+        app->setReportDelay(700);
         typeRolledInto(app, loop, "es", {0});
         app->setReportDelay(8);
         typeRolledInto(app, loop, "ng ", {});
@@ -3259,6 +3316,8 @@ int main() {
     testOneLateCopyKeepsWaiting();
     testBackspaceDuringCopyWait();
     testNoCopyWaitWithoutBackspaces();
+    testKeysBehindALateCopyWait();
+    testLongCopyWaitOnlyWithBackspaces();
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();
     testLongTurnKeepsTheEdit();

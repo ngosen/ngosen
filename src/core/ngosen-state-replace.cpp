@@ -776,7 +776,10 @@ namespace ngosen {
         // Backspaces are there to fall back on, and a field that leaves checks unanswered would only
         // make every replacement late. Over IBus a backspace can reach the app ahead of the commit before
         // it, and the answer counts include keys we hold, so waits that keep running out here decide.
-        const bool waitPays = ngosen::reportsReplacementsWithLaterKey(field) ? copyWaitsRunOut_ < MaxCopyWaitsRunOut : surrAnsweredUnasked_ >= surrMissed_;
+        const bool overIbus = ngosen::reportsReplacementsWithLaterKey(field);
+        if (overIbus && !ngosen::forwardsBackspaces(field))
+            return false;
+        const bool waitPays = overIbus ? copyWaitsRunOut_ < MaxCopyWaitsRunOut : surrAnsweredUnasked_ >= surrMissed_;
         return waitPays && surrSeenTextSinceFocus_ && !backspaceInWord_ && (unreportedCommitLength_ > 0 || deletion.match == SurroundingDeletion::Match::None);
     }
 

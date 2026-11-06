@@ -2664,6 +2664,24 @@ namespace {
         check(countHaving(lines, "still short") > inOneField, "a new focus waits for the copy again", std::to_string(countHaving(lines, "still short")));
     }
 
+    // SDL takes no deletion from us, so a copy that lags would only hold its keys back.
+    void testNoCopyWaitWithoutBackspaces() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "SDL_App"),
+                                                                      ngosen::test::AppQuirks{.reportDelayMs = 8, .staleReport = true, .lagMs = 15, .backspacesSkipLag = true});
+        auto*         app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        ngosen::test::captureLog(true);
+        typeRolledInto(app, loop, "nguoiwf tieengs ", {5, 14});
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(lines, "still short") == 0, "no copy wait in an IBus field that takes no backspaces", join(lines));
+    }
+
     // One report held up past the wait is no reason to stop waiting in that field.
     void testOneLateCopyKeepsWaiting() {
         realMode = ngosen::Mode::Sen;
@@ -3116,6 +3134,7 @@ int main() {
     testRolledKeysWaitForIbusCopy();
     testCopyWaitsRunOutPerField();
     testOneLateCopyKeepsWaiting();
+    testNoCopyWaitWithoutBackspaces();
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();
     testLongTurnKeepsTheEdit();

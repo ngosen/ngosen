@@ -2733,6 +2733,106 @@ namespace {
         check(app->sent().forwardedBackSpaces == before, "one late copy: the words after it send no backspaces", std::to_string(app->sent().forwardedBackSpaces - before));
     }
 
+    struct KeysInWait {
+        const char*           name;
+        std::string           word;     // typed 30 ms apart; its last key starts the copy wait
+        std::vector<uint32_t> editKeys; // the first `afterMs` after the word, the rest `gapMs` apart
+        bool                  doubleSpaceToPeriod = false;
+        int                   gapMs               = 30;
+        int                   maxLagMs            = 45;
+    };
+
+    struct TypedInWait {
+        std::string        text;
+        ngosen::test::Path sent;
+    };
+
+    // Types into a GNOME IBus app field whose backspaces overtake commits, with the app's reports late
+    // around the edit keys.
+    TypedInWait typedWithKeysInWait(const KeysInWait& c, int reportDelayMs, int afterMs, int lagMs, std::vector<std::string>& lines) {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.setMacros({{"ko", "không"}});
+        resources.mutableOptions().doubleSpaceToPeriod = c.doubleSpaceToPeriod;
+        auto owned                                     = std::make_unique<ngosen::test::FakeApp>(
+            loop, makeField("ibus", true, "antigravity-ide"),
+            ngosen::test::AppQuirks{
+                .reportDelayMs = 8, .lagMs = lagMs, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .showsEnter = true});
+        auto*               app = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        ngosen::test::captureLog(true);
+        typeRolledInto(app, loop, "nguoiwf ", {5});
+        const auto before = app->sent();
+        app->setReportDelay(reportDelayMs);
+        for (size_t i = 0; i < c.word.size(); ++i) {
+            app->type(static_cast<uint32_t>(c.word[i]));
+            loop.pump(i + 1 < c.word.size() ? 30 : afterMs);
+        }
+        for (const uint32_t key : c.editKeys) {
+            app->type(key);
+            loop.pump(c.gapMs);
+        }
+        loop.pump(600);
+        app->setReportDelay(8);
+        typeRolledInto(app, loop, "ng ", {});
+        lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        ngosen::test::Path sent = app->sent();
+        sent.surroundingDeletes -= before.surroundingDeletes;
+        sent.forwardedBackSpaces -= before.forwardedBackSpaces;
+        return {app->text(), sent};
+    }
+
+    // Keys typed during a copy wait land as they would without it, with no more deletions sent.
+    void testBackspaceDuringCopyWait() {
+        constexpr uint32_t       bs = ngosen::key::BackSpace;
+        std::vector<std::string> lines;
+        const auto               unedited = typedWithKeysInWait({"none", "tiees", {}}, 150, 40, 15, lines);
+        check(unedited.text == "người tiếng ", "backspace in a copy wait: the late report alone keeps the word", unedited.text + " " + join(lines));
+        const std::vector<KeysInWait> cases = {
+            {"backspace", "tiees", {bs}},
+            {"two backspaces", "tiees", {bs, bs}},
+            {"backspace then letter", "tiees", {bs, 'n'}},
+            {"enter", "tiees", {ngosen::key::Return}},
+            {"letter then backspace", "tiees", {'n', bs}},
+            {"tone then backspace", "tiees", {'f', bs}},
+            // After an edit that ended the word, a Backspace goes as without the wait, which a slow app overtakes.
+            {"enter expands a macro, then backspace", "ko", {ngosen::key::Return, bs}, false, 30, 15},
+            {"space and backspace, then a toned word", "tiees", {' ', bs, ' ', 'v', 'i', 'e', 'e', 't', 'j'}},
+            // The wait starts on a typed key here, not on one the replay sends.
+            {"backspace after the word's only edit", "tiengs", {bs}},
+            {"two backspaces after the word's only edit", "tiengs", {bs, bs}},
+            {"space and backspace, then a tone", "tiees", {' ', bs, 'f'}},
+            {"backspace held down", "tiees", {bs, bs, bs, bs}},
+            {"space takes a macro, then backspace and space", "ko ", {bs, ' '}, true, 30, 15},
+            // The second space comes after the wait, so it is typed rather than replayed.
+            {"space takes a macro, then backspace and a later space", "ko ", {bs, ' '}, true, 100, 15},
+        };
+        for (const auto& c : cases) {
+            const auto expected = typedWithKeysInWait(c, 8, 40, 15, lines);
+            // A held Backspace goes out as a forwarded key, where without the wait the app got it directly.
+            const int typedBackspaces = static_cast<int>(std::count(c.editKeys.begin(), c.editKeys.end(), bs));
+            // A busy app shows edits later than a forwarded BackSpace waits for them.
+            for (const int lagMs : {15, 45}) {
+                if (lagMs > c.maxLagMs)
+                    continue;
+                for (const int afterMs : {10, 40, 100}) {
+                    const auto got   = typedWithKeysInWait(c, 150, afterMs, lagMs, lines);
+                    const auto label = std::string("backspace in a copy wait: ") + c.name + (lagMs > 15 ? ", lag " + std::to_string(lagMs) : std::string()) + " at " +
+                        std::to_string(afterMs) + " ms";
+                    check(got.text == expected.text, label + " lands as without the wait", got.text + " vs " + expected.text + " " + join(lines));
+                    check(got.sent.surroundingDeletes + got.sent.forwardedBackSpaces <= expected.sent.surroundingDeletes + expected.sent.forwardedBackSpaces + typedBackspaces,
+                          label + " sends no extra deletion",
+                          std::to_string(got.sent.surroundingDeletes) + "/" + std::to_string(got.sent.forwardedBackSpaces) + " vs " +
+                              std::to_string(expected.sent.surroundingDeletes) + "/" + std::to_string(expected.sent.forwardedBackSpaces));
+                }
+            }
+        }
+    }
+
     // A copy one key behind can hold the same number of bytes as the word, yet the deletion lands at
     // that copy's cursor, in front of the key the copy lacks.
     void testCopyBehindByAKey() {
@@ -3157,6 +3257,7 @@ int main() {
     testRolledKeysWaitForIbusCopy();
     testCopyWaitsRunOutPerField();
     testOneLateCopyKeepsWaiting();
+    testBackspaceDuringCopyWait();
     testNoCopyWaitWithoutBackspaces();
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();

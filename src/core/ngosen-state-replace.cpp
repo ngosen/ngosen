@@ -1083,7 +1083,8 @@ namespace ngosen {
         for (size_t j = i + 1; j < keys.size() && buffered_keys_.size() < MAX_BUFFERED_KEYS; ++j)
             buffered_keys_.push_back(keys[j]);
         commitReplayed(out);
-        holdEnter(ngosen::surroundingTextLags(host_->field()), key);
+        // A Backspace held for the copy is never one GNOME Shell drops while it is down: its fields drop all forwarded keys.
+        holdEnter(ngosen::surroundingTextLags(host_->field()) && !keys[i].heldForCopy, key);
         return true;
     }
 
@@ -1116,11 +1117,17 @@ namespace ngosen {
         std::string keyUtf8 = host_->keyText(sym);
         // Google Docs ignores a line break inside a commit, and Tab must move focus, so these go as keys.
         const std::optional<ngosen::EditKey> sent = replayedEditKey(sym, state);
+        // As for a typed key: a word that ended in the replay takes no Backspace into the next one.
+        if (oldPreBuffer_.empty())
+            backspaceInWord_ = false;
         if (ngosen::key::isBackspace(sym)) {
             // Like a typed backspace: the engine drops a letter and the app deletes it after the commit.
             dropLetterForBackspace();
             if (realtextLen.load(std::memory_order_acquire) > 0)
                 realtextLen.fetch_sub(1, std::memory_order_acq_rel);
+            // Counted against the word as it is now, which keys replayed before it may have ended or reopened.
+            if (!oldPreBuffer_.empty())
+                backspaceInWord_ = true;
             return holdReplayedKey(keys, i, out, ngosen::EditKey::BackSpace);
         }
         if (keyUtf8.empty() && !sent) {

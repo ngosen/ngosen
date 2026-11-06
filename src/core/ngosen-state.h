@@ -36,8 +36,9 @@ struct EmojiEntry;
  * @brief Key event entry for replay buffer.
  */
 struct KeyEntry {
-    uint32_t sym;   ///< Key symbol
-    uint32_t state; ///< Key state (modifiers)
+    uint32_t sym;                 ///< Key symbol
+    uint32_t state;               ///< Key state (modifiers)
+    bool     heldForCopy = false; ///< a Backspace that waited for the copy so it reaches the app after the edit
 };
 
 namespace fcitx {
@@ -439,6 +440,8 @@ namespace ngosen {
         void                           holdEnter(bool untilRelease, ngosen::EditKey key = ngosen::EditKey::Return);
         void                           forwardHeldEnter();
         bool                           forwardsEnterAfterCommit() const;
+        bool                           holdsBackspace(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
+        bool                           holdBackspaceForCopy(ngosen::KeyPress& keyEvent, uint32_t currentSym);
         bool                           dropsForwardedKeys() const;
         void                           sendHeldEnter();
         std::unique_ptr<ngosen::Timer> held_enter_timer_;

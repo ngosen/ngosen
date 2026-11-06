@@ -243,6 +243,14 @@ namespace ngosen::test {
             startTurn();
             return;
         }
+        if (heldDelete_) {
+            const size_t cursor = cursor_;
+            const size_t size   = *heldDelete_;
+            reportMovedCursor(cursor + utf8::decode(text).size());
+            later(35, [this, cursor, size] { reportMovedCursor(cursor >= size ? cursor - size : 0); });
+            later(47, [this, text] { applyHeldEdit(text); });
+            return;
+        }
         later(quirks_.lagMs + quirks_.commitLagMs, [this, text] {
             if (focused_ && redraws_ == 0)
                 insert(utf8::decode(text));
@@ -338,6 +346,11 @@ namespace ngosen::test {
             });
             return;
         }
+        if (quirks_.movesCursorBeforeText && offset == -static_cast<int>(size)) {
+            heldDelete_ = size;
+            later(60, [this] { applyHeldEdit(""); });
+            return;
+        }
         const int extra = quirks_.deletesOneTooMany ? 1 : 0;
         later(quirks_.lagMs, [this, offset, size, extra] { eraseAround(offset - extra, size + extra); });
     }
@@ -398,7 +411,7 @@ namespace ngosen::test {
             return {};
         if (quirks_.reportsEmptyText)
             return Surrounding("", 0, 0);
-        if (silentAfterDelete_ || quirks_.reportsTextAtChange)
+        if (silentAfterDelete_ || quirks_.reportsTextAtChange || showsMovedCursor_)
             return Surrounding(encode(reportedText_), static_cast<unsigned int>(reportedCursor_), static_cast<unsigned int>(reportedAnchor_));
         if (quirks_.staleReport)
             return Surrounding(encode(previousText_), static_cast<unsigned int>(previousCursor_), static_cast<unsigned int>(previousCursor_));
@@ -529,6 +542,26 @@ namespace ngosen::test {
                     emptyCommits_      = 0;
                 }
             });
+    }
+
+    void FakeApp::reportMovedCursor(size_t cursor) {
+        reportedText_   = text_;
+        reportedCursor_ = reportedAnchor_ = std::min(cursor, text_.size());
+        showsMovedCursor_                 = true;
+        inReport_                         = true;
+        state_->surroundingUpdated();
+        inReport_ = false;
+    }
+
+    void FakeApp::applyHeldEdit(const std::string& text) {
+        if (!heldDelete_)
+            return;
+        const unsigned int size = *heldDelete_;
+        heldDelete_.reset();
+        showsMovedCursor_ = false;
+        eraseAround(-static_cast<int>(size), size);
+        if (!text.empty() && focused_)
+            insert(utf8::decode(text));
     }
 
     void FakeApp::startTurn() {

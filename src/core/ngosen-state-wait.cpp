@@ -520,8 +520,11 @@ namespace ngosen {
         const std::u32string textBeforeCursor      = ngosen::utf8::decode(lastSurroundingText_).substr(0, previousCursor);
         const bool           keepsTextBeforeCursor = hasLastSurrounding_ && ngosen::utf8::decode(s.text()).compare(0, textBeforeCursor.size(), textBeforeCursor) == 0;
         bool                 jumped                = sameText && (s.cursor() != lastSurroundingCursor_ || s.anchor() != lastSurroundingAnchor_);
-        // Some editors (Lark in Firefox) report the cursor past our commit before the committed text.
-        const bool echo = jumped && unreportedCommitLength_ > 0 && s.cursor() == s.anchor() && s.cursor() == lastSurroundingCursor_ + unreportedCommitLength_;
+        // Some editors (Lark and Slate in Firefox) report the cursor past our commit, or back over our deletion,
+        // before the edited text.
+        const bool echo = jumped && s.cursor() == s.anchor() &&
+            ((unreportedCommitLength_ > 0 && s.cursor() == lastSurroundingCursor_ + unreportedCommitLength_) ||
+             (unreportedCommitLength_ > 0 && unreportedDeleteLength_ > 0 && s.cursor() + unreportedDeleteLength_ == lastSurroundingCursor_));
         // Typing the next letter of an inline suggestion keeps the text and steps over that letter.
         // Edge reports the suggestion selected; Firefox does not, so a click one letter on looks the same
         // and only the timing tells them apart.
@@ -540,7 +543,7 @@ namespace ngosen {
         // Firefox repeats the old state before the echo, so only a change ends the wait.
         if (!jumped && !sameText && showsOwnDeletion(s))
             unreportedDeleteLength_ = 0;
-        else if (jumped || !sameText)
+        else if ((jumped && !echo) || !sameText)
             unreportedCommitLength_ = unreportedDeleteLength_ = 0;
         // Calc reports the new cell empty just before the key we let through lands in it.
         // Our unreported commits do not matter here: in the same cell the key would follow them.
@@ -549,8 +552,8 @@ namespace ngosen {
         const bool ownMove   = retoneMove_.has_value();
         jumped               = ((jumped && !echo && !intoSuggestion && !caretSettling && !ownMove) || newField) && !settling;
         lastSurroundingText_ = s.text();
-        // Keep the real caret, so the app reporting it again is not a move either.
-        if (!caretSettling) {
+        // Keep the real caret, so the app reporting it again, or the rest of our edit, is not a move either.
+        if (!caretSettling && !echo) {
             lastSurroundingCursor_ = s.cursor();
             lastSurroundingAnchor_ = s.anchor();
         }

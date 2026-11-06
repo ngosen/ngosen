@@ -73,9 +73,12 @@ namespace ngosen::test {
         int  turnMs               = 0; // how long such a turn stays open
         // Its cursor stays past the real one after a deletion and a commit in one turn, as Firefox's does,
         // until a typed key corrects it.
-        bool        cursorStaysPastEdit  = false;
-        int         oldTextAfterDeleteMs = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
-        std::string textAfterCursor;          // text the field starts with, after the cursor
+        bool cursorStaysPastEdit  = false;
+        int  oldTextAfterDeleteMs = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
+        // Reports the cursor moving over a deletion and its commit on the old text before the new text, as
+        // Slate in Firefox on Plasma does.
+        bool        movesCursorBeforeText = false;
+        std::string textAfterCursor; // text the field starts with, after the cursor
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -197,6 +200,8 @@ namespace ngosen::test {
         void                                later(int ms, std::function<void()> action);
         void                                startTurn();
         void                                endTurn();
+        void                                reportMovedCursor(size_t cursor);
+        void                                applyHeldEdit(const std::string& text);
 
         FakeLoop&                           loop_;
         Field                               field_;
@@ -231,8 +236,10 @@ namespace ngosen::test {
         std::optional<size_t>               turnDeleteBytes_;
         std::optional<std::string>          turnCommit_;
         size_t                              cursorPastBy_ = 0;
-        int                                 emptyCommits_ = 0;
-        int                                 deletions_    = 0;
+        std::optional<unsigned int>         heldDelete_;
+        bool                                showsMovedCursor_ = false;
+        int                                 emptyCommits_     = 0;
+        int                                 deletions_        = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};
         std::vector<std::unique_ptr<Timer>> timers_;
     };

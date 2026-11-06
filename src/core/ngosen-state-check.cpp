@@ -34,14 +34,17 @@ namespace ngosen {
         return field.surroundingText && (isLibreOffice || dropsForwardedKeys() || field.sendsNoKeys);
     }
 
-    bool TypingState::surroundingUntrusted() const {
+    bool TypingState::appMarkedUntrusted() const {
         const Field field = host_->field();
-        return autofillMarked_ || engine_->surroundingUntrusted(field.frontend, field.program);
+        return ngosen::namesNoApp(field) ? fieldUntrusted_ : engine_->surroundingUntrusted(field.frontend, field.program);
+    }
+
+    bool TypingState::surroundingUntrusted() const {
+        return autofillMarked_ || appMarkedUntrusted();
     }
 
     bool TypingState::stopsReplacing() const {
-        const Field field = host_->field();
-        return !field.preeditFallback && deletesOnlyThroughSurrounding() && engine_->surroundingUntrusted(field.frontend, field.program);
+        return !host_->field().preeditFallback && deletesOnlyThroughSurrounding() && appMarkedUntrusted();
     }
 
     bool TypingState::canReplaceInApp() const {
@@ -50,9 +53,13 @@ namespace ngosen {
 
     void TypingState::markSurroundingUntrusted(const std::string& why) {
         const Field field = host_->field();
-        if (engine_->surroundingUntrusted(field.frontend, field.program))
+        if (appMarkedUntrusted())
             return;
-        engine_->markSurroundingUntrusted(field.frontend, field.program);
+        // Under one shared name a mark would spread to every app.
+        if (ngosen::namesNoApp(field))
+            fieldUntrusted_ = true;
+        else
+            engine_->markSurroundingUntrusted(field.frontend, field.program);
         const char* next = !deletesOnlyThroughSurrounding() ? "delete with backspaces" : field.preeditFallback ? "type words in the preedit" : "type keys as they are";
         NGOSEN_INFO("Surrounding text untrusted" + loggedField(field) + ": " + why + "; from now " + next);
     }

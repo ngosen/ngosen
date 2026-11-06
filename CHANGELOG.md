@@ -45,6 +45,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Gõ Sen trên GNOME khi tắt extension: một app làm rơi lệnh xoá một lần, như gợi ý tự điền của thanh địa chỉ Chrome, không còn khiến mọi app gõ ra chữ thô như "vieetj" tới khi fcitx5 khởi động lại; nay chỉ ô đó bị ảnh hưởng, tới khi đổi focus (#586).
 - Gõ Sen trên GNOME khi bật extension: gõ nhanh tới mức hai phím đè nhau không còn mất chữ trong Antigravity và các app khác đi qua IBus, như "người" ra "ời" (#362, #581).
 - Gõ Sen trên GNOME khi bật extension: bấm Backspace ngay sau khi gõ dấu không còn xoá nhầm chữ trong các app đi qua IBus (#362, #584).
 - Gõ Sen trong Firefox trên KDE không còn mất dấu khi chèn chữ vào giữa câu trong web editor như Slate, CKEditor (#580, #582).

@@ -76,6 +76,7 @@ namespace ngosen {
                 surrSeenEmptySinceFocus_ = false;
                 keysAtFocus_             = keyCount_;
                 autofillMarked_          = false;
+                fieldUntrusted_          = false;
                 lastPath_.clear();
                 surrCheck_.reset();
                 surr_check_timer_.reset();

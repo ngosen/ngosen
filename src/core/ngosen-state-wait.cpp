@@ -35,7 +35,8 @@ namespace ngosen {
 
     bool TypingState::deletionLooksDone() const {
         const auto s = host_->surrounding();
-        if (!s.isValid()) {
+        // Until the app shows the word, its reports come from before the backspaces.
+        if (!s.isValid() || (backspacesForUnseenWord_ && !unseenWordShown_)) {
             return false;
         }
         const std::string& t = s.text();
@@ -157,6 +158,11 @@ namespace ngosen {
                                  return false;
                              }
                              t.rearm(surr_wait_started_at_ + timeout);
+                             return true;
+                         }
+                         if (backspacesForUnseenWord_ && waited + 1000 < UnseenWordForwardWaitUs) {
+                             NGOSEN_INFO("Copy has not shown the word, wait longer before the commit");
+                             t.rearm(surr_wait_started_at_ + UnseenWordForwardWaitUs);
                              return true;
                          }
                          if (deferLaggingCommit("timeout"))
@@ -432,6 +438,8 @@ namespace ngosen {
             if (current.text() + "\x1f" + std::to_string(current.cursor()) != surr_wait_sent_snapshot_) {
                 surr_wait_saw_other_snapshot_ = true;
             }
+            if (backspacesForUnseenWord_ && isEndsWith(textBeforeCursor(current), surr_wait_prefix_ + surr_wait_deleted_))
+                unseenWordShown_ = true;
         }
         if (!surr_snapshot_trusted_ && waitedUs < minimumUs) {
             // Stale buffer catching up after a timeout: ignore.

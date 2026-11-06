@@ -211,7 +211,7 @@ int main() {
     engine.reloadConfig();
     keys.focus(*unnamed);
     check(realMode.load() == ngosen::Mode::Off, "an unnamed window keeps its switch through a reload", modeName(realMode.load()));
-    const std::string unnamedName = fcitx::NgoSenEngine::getProgramName(unnamed.get());
+    const std::string unnamedName = engine.getProgramName(unnamed.get());
     unnamed.reset();
     check(engine.modeFor(unnamedName) == ngosen::Mode::Sen, "a closed window's switch is forgotten", modeName(engine.modeFor(unnamedName)));
 
@@ -289,7 +289,7 @@ int main() {
     keys.ctrlShift(*chat);
     if ((realMode.load() != ngosen::Mode::Off) == unnamedOn)
         keys.ctrlShift(*chat);
-    const std::string unnamedOpenName = fcitx::NgoSenEngine::getProgramName(unnamedOpen.get());
+    const std::string unnamedOpenName = engine.getProgramName(unnamedOpen.get());
 
     // What follows checks the older settings, not the switches.
     fcitx::RawConfig noSwitches;

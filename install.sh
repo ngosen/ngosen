@@ -21,6 +21,7 @@ package_changed=1
 fcitx5_current=0
 manager=
 pattern=
+distribution="máy này"
 # Packages apt upgrades along with the install on a distribution that needs it.
 apt_upgrades=()
 workdir=
@@ -74,7 +75,7 @@ x86_64_only() {
     [ "$2" = x86_64 ] || unsupported "$1 trên máy $2"
 }
 
-# Sets manager and pattern; pattern is a regular expression for the package's file name.
+# Sets manager, pattern and, on Fedora, distribution; pattern is a regular expression for the package's file name.
 detect_distribution() {
     local machine deb_arch
     machine=$(uname -m)
@@ -97,10 +98,11 @@ detect_distribution() {
 
     # Fedora remixes (Ultramarine, Nobara) have an ID of their own but keep Fedora's release number.
     if [ "$id" = fedora ] || [[ " $like " == *" fedora "* ]]; then
+        # The published packages decide which releases are supported; see find_package.
         case "$version" in
-            43 | 44) ;;
-            *) unsupported "${id} ${version:-không rõ phiên bản}" ;;
+            '' | *[!0-9]*) unsupported "${id} ${version:-không rõ phiên bản}" ;;
         esac
+        distribution="${id} ${version} trên máy ${machine}"
         manager=dnf
         is_ostree && manager=rpm-ostree
         pattern="${package_name}-[0-9][^ /]*\\.fc${version}\\.${machine}\\.rpm"
@@ -206,6 +208,7 @@ find_package() {
         die "không tải được danh sách gói từ $RELEASE_URL"
     line=$(printf '%s\n' "$sums" | grep -E "^[0-9a-f]{64}  ${pattern}\$" || true)
     count=$(printf '%s\n' "$line" | grep -c . || true)
+    [ "$count" -ne 0 ] || unsupported "$distribution"
     [ "$count" -eq 1 ] || die "bản phát hành mới nhất không có đúng một gói cho máy này (tìm thấy $count)"
     printf '%s %s\n' "${line%% *}" "${line##* }"
 }
@@ -356,6 +359,14 @@ wants_kde_setup() {
     command -v kwriteconfig6 >/dev/null 2>&1 && command -v kreadconfig6 >/dev/null 2>&1
 }
 
+# Each compositor sets its own variable. XDG_CURRENT_DESKTOP comes from the display manager, so it
+# is missing when Sway starts from a text console.
+wants_sway_hyprland_setup() {
+    [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ] || return 1
+    [ -n "${WAYLAND_DISPLAY:-}" ] || return 1
+    [ -n "${SWAYSOCK:-}" ] || [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]
+}
+
 config_home() {
     printf '%s' "${XDG_CONFIG_HOME:-$HOME/.config}"
 }
@@ -470,6 +481,33 @@ set_im_environment() {
         note_change im-config
     fi
     session_changes+=("app dùng fcitx5 thay IBus")
+}
+
+compositor_environment_entry() {
+    printf 'QT_IM_MODULE=fcitx\nQT_IM_MODULES=fcitx;wayland\nXMODIFIERS=@im=fcitx\n'
+}
+
+# Qt 5 has no text-input protocol for these compositors and X11 apps need XIM. Qt 6 prefers fcitx5's
+# module too: when a Qt 6 app on the Wayland protocol closes, Hyprland keeps sending keys through the
+# input method, and the next app without that protocol loses letters. The list falls back to Wayland
+# for a Qt 6 app that has no such module.
+set_compositor_environment() {
+    local dir file
+    dir="$(config_home)/environment.d"
+    file="$dir/90-ngosen-sway-hyprland.conf"
+    [ -e "$file" ] && return 0
+    grep -qs -E '^(QT_IM_MODULES?|XMODIFIERS)=' "$dir"/*.conf && return 0
+    mkdir -p "$dir"
+    compositor_environment_entry >"$file"
+    reload_user_environment
+}
+
+undo_compositor_environment() {
+    local file
+    file="$(config_home)/environment.d/90-ngosen-sway-hyprland.conf"
+    [ -e "$file" ] && [ "$(cat "$file")" = "$(compositor_environment_entry)" ] || return 0
+    rm -f "$file"
+    reload_user_environment
 }
 
 # KWin serves Wayland apps itself; X11 apps under XWayland reach fcitx5 only through XIM.
@@ -632,6 +670,20 @@ has_lone_keyboard_in_profile() {
 
 # The key the engine picks: settings from before its toggle key, including lotus.conf that is
 # copied over on the next start, keep Ctrl+Space; defaults are left out of the file.
+fcitx5_trigger_key() {
+    local key
+    key=$(awk '/^\[/ { section = $0 } section == "[Hotkey/TriggerKeys]" && /^0=/ { sub(/^0=/, ""); print; exit }' "$(config_home)/fcitx5/config" 2>/dev/null)
+    printf '%s' "${key:-Control+space}"
+}
+
+key_display_name() {
+    case "$1" in
+        "" | Control+Shift_L | Control+Shift_R | Shift+Control_L | Shift+Control_R) printf 'Ctrl+Shift' ;;
+        Control+space) printf 'Ctrl+Space' ;;
+        *) printf '%s' "$1" ;;
+    esac
+}
+
 toggle_key_name() {
     local dir key
     dir="$(config_home)/fcitx5/conf"
@@ -639,14 +691,9 @@ toggle_key_name() {
     if [ -z "$key" ] && { [ -f "$dir/lotus.conf" ] || [ -f "$dir/ngosen.conf" ] || has_lone_keyboard_in_profile; } &&
         ! grep -qs '^SettingsVersion=' "$dir/ngosen.conf"; then
         # Not upgraded yet: Ngó Sen takes over fcitx5's switch key, Ctrl+Space by default.
-        key=$(awk '/^\[/ { section = $0 } section == "[Hotkey/TriggerKeys]" && /^0=/ { sub(/^0=/, ""); print; exit }' "$(config_home)/fcitx5/config" 2>/dev/null)
-        key=${key:-Control+space}
+        key=$(fcitx5_trigger_key)
     fi
-    case "${key:-}" in
-        "" | Control+Shift_L | Control+Shift_R | Shift+Control_L | Shift+Control_R) printf 'Ctrl+Shift' ;;
-        Control+space) printf 'Ctrl+Space' ;;
-        *) printf '%s' "$key" ;;
-    esac
+    key_display_name "${key:-}"
 }
 
 report_dropped_keyboard() {
@@ -731,20 +778,29 @@ has_tray() {
     gnome-extensions list --enabled 2>/dev/null | grep -q appindicator
 }
 
-# GNOME 50.0 to 50.3 drop keys an input method forwards; the packaged extension delivers them.
+# fcitx5 before 5.1.22 names every app on GNOME after the shell, so it needs the packaged extension to tell
+# apps apart. GNOME 50.0 to 50.3 also drop keys an input method forwards, which the extension delivers.
+fcitx5_names_apps_on_gnome() {
+    local version
+    version=$(fcitx5 --version 2>/dev/null | head -n 1) || return 1
+    [ -n "$version" ] || return 1
+    [ "$(printf '%s\n' "$version" 5.1.22 | sort -V | head -n 1)" = 5.1.22 ]
+}
+
 enable_forward_keys_extension() {
     local uuid=forward-keys@ngosen.github.io version rc=0
     [ -d "/usr/share/gnome-shell/extensions/$uuid" ] || return 0
     version=$(shell_version)
     case "$version" in
         50.0 | 50.1 | 50.2 | 50.3) ;;
+        4[6-9].* | 50.*) fcitx5_names_apps_on_gnome && return 0 ;;
         *) return 0 ;;
     esac
     enable_shell_extension "$uuid" || rc=$?
     case "$rc" in
         0)
             note_change "extension $uuid"
-            session_changes+=("bật extension sửa lỗi gõ của GNOME $version")
+            session_changes+=("bật extension sửa lỗi gõ trên GNOME $version")
             ;;
         2) say "Chưa bật được extension sửa lỗi gõ; sau khi đăng nhập lại chạy: gnome-extensions enable $uuid" ;;
     esac
@@ -847,6 +903,106 @@ setup_kde_session() {
         return
     fi
     report_session_changes
+}
+
+fcitx5_is_running() {
+    pgrep -u "$(id -u)" -x fcitx5 >/dev/null
+}
+
+setup_sway_hyprland_session() {
+    say ""
+    configure_fcitx5
+    set_compositor_environment
+    fcitx5_is_running || fcitx5 -d >/dev/null 2>&1 || :
+    # fcitx5 -d returns before the daemon has had a chance to fail.
+    sleep 1
+    report_sway_hyprland_session
+}
+
+# fcitx5 starts on the first entry of its list, a keyboard, so the switch key of an input method
+# does nothing until fcitx5's own key turns input on.
+has_other_input_methods() {
+    [ "$(grep -c '^\[Groups/0/Items/' "$(config_home)/fcitx5/profile" 2>/dev/null)" -gt 1 ] && ! has_lone_keyboard_in_profile
+}
+
+report_other_input_methods() {
+    local default trigger
+    default=$(sed -n 's/^DefaultIM=//p' "$(config_home)/fcitx5/profile" | head -n 1)
+    trigger=$(key_display_name "$(fcitx5_trigger_key)")
+    say "Xong. fcitx5 đang chạy."
+    if [ "$default" = ngosen ]; then
+        say "Máy còn bộ gõ khác, nên bấm $trigger để bật Ngó Sen. Sau đó bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
+    else
+        say "Bộ gõ mặc định vẫn là $default, bấm $trigger để bật. Muốn chuyển sang Ngó Sen:  fcitx5-remote -s ngosen"
+    fi
+}
+
+report_sway_hyprland_session() {
+    if ! fcitx5_is_running; then
+        say "Đã cài xong nhưng fcitx5 chưa chạy được. Thử bật trong terminal của phiên này:  fcitx5 -d"
+    elif [ "$keyboard_dropped" -eq 1 ]; then
+        say "Xong. fcitx5 đang chạy, gõ được ngay."
+        report_dropped_keyboard
+    elif has_other_input_methods; then
+        report_other_input_methods
+    else
+        say "Xong. fcitx5 đang chạy, gõ được ngay."
+        say "Bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
+    fi
+    if [ -e "$(config_home)/environment.d/90-ngosen-sway-hyprland.conf" ]; then
+        say "App Qt 5 và app X11 qua XWayland gõ được từ lần đăng nhập sau, nếu vào desktop từ màn hình đăng nhập."
+    fi
+    say ""
+    if [ -n "${SWAYSOCK:-}" ]; then
+        report_sway_autostart
+    else
+        report_hyprland_autostart
+    fi
+}
+
+# In the order Sway looks for its config.
+report_sway_autostart() {
+    local dir config source
+    dir=$(config_home)
+    for config in "$HOME/.sway/config" "$dir/sway/config" "$HOME/.i3/config" "$dir/i3/config"; do
+        if [ -e "$config" ]; then
+            say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $config:"
+            say "  exec fcitx5 -d"
+            return
+        fi
+    done
+    for source in /etc/sway/config /etc/i3/config; do
+        if [ -e "$source" ]; then
+            # A new file with only this line would hide the system config and its key bindings.
+            say "Để fcitx5 tự chạy ở lần đăng nhập sau, chép cấu hình của máy trước:"
+            say "  mkdir -p \"$dir/sway\" && cp -n $source \"$dir/sway/config\""
+            say "rồi dán dòng này vào $dir/sway/config:"
+            say "  exec fcitx5 -d"
+            return
+        fi
+    done
+    say "Để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng này vào file cấu hình Sway đang dùng:"
+    say "  exec fcitx5 -d"
+}
+
+# hl.exec_cmd at the top level would run while the config loads, before the Wayland socket exists,
+# and again on every reload.
+report_hyprland_autostart() {
+    local dir lua_line='hl.on("hyprland.start", function() hl.exec_cmd("fcitx5 -d") end)' conf_line='exec-once = fcitx5 -d'
+    dir="$(config_home)/hypr"
+    if [ -e "$dir/hyprland.lua" ]; then
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $dir/hyprland.lua:"
+        say "  $lua_line"
+    elif [ -e "$dir/hyprland.conf" ]; then
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $dir/hyprland.conf:"
+        say "  $conf_line"
+    else
+        # Hyprland writes its own config when it finds none, so this one lives elsewhere and a new
+        # file here could hide it.
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, dán vào file cấu hình Hyprland đang dùng:"
+        say "  file .lua:   $lua_line"
+        say "  file .conf:  $conf_line"
+    fi
 }
 
 report_session_changes() {
@@ -1022,6 +1178,9 @@ uninstall() {
         # fcitx5 may serve other input methods, so KDE keeps it.
         say "Xong. Đăng xuất rồi đăng nhập lại. fcitx5 vẫn là bộ gõ của KDE, gõ tiếng Anh như bàn phím."
         say "Bỏ fcitx5: System Settings → Virtual Keyboard (Bàn phím ảo) → None."
+    elif wants_sway_hyprland_setup; then
+        undo_compositor_environment
+        say "Xong. Bỏ dòng fcitx5 -d đã dán vào file cấu hình (nếu có), rồi đăng xuất và đăng nhập lại."
     else
         say "Xong. Khởi động lại fcitx5:  fcitx5 -rd"
     fi
@@ -1083,6 +1242,9 @@ main() {
         say "Sau đó fcitx5 được đặt làm bộ gõ của KDE cho tài khoản này."
     elif wants_x11_setup; then
         say "Sau đó fcitx5 được đặt làm bộ gõ cho tài khoản này."
+    elif wants_sway_hyprland_setup; then
+        say "Sau đó Ngó Sen được thêm vào danh sách bộ gõ của fcitx5 và fcitx5 được bật. Nếu danh sách chỉ có"
+        say "một bàn phím thì Ngó Sen thay bàn phím đó. File cấu hình của desktop được giữ nguyên."
     fi
     confirm "Tiếp tục?" || {
         say "Đã dừng, chưa cài gì."
@@ -1114,6 +1276,10 @@ main() {
     fi
     if wants_x11_setup; then
         setup_x11_session
+        return
+    fi
+    if wants_sway_hyprland_setup; then
+        setup_sway_hyprland_session
         return
     fi
 

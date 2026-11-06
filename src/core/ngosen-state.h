@@ -36,8 +36,9 @@ struct EmojiEntry;
  * @brief Key event entry for replay buffer.
  */
 struct KeyEntry {
-    uint32_t sym;   ///< Key symbol
-    uint32_t state; ///< Key state (modifiers)
+    uint32_t sym;                 ///< Key symbol
+    uint32_t state;               ///< Key state (modifiers)
+    bool     heldForCopy = false; ///< a Backspace that waited for the copy so it reaches the app after the edit
 };
 
 namespace fcitx {
@@ -110,9 +111,9 @@ namespace ngosen {
         /**
          * @brief Treats a cursor move within unchanged surrounding text, or a jump into another spreadsheet cell, as a mouse click.
          */
-        void checkCursorJump();
-        bool textAfterCursorChanged(const Surrounding& s) const;
-        bool showsOwnDeletion(const Surrounding& s) const;
+        void                  checkCursorJump();
+        bool                  textAfterCursorChanged(const Surrounding& s) const;
+        std::optional<size_t> ownDeletionCursor(const Surrounding& s) const;
 
         /**
          * @brief Records text another part of fcitx sent to the app, so its cursor moving past it is not
@@ -207,6 +208,7 @@ namespace ngosen {
         bool               typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
         static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
         static std::string textBeforeCursor(const Surrounding& s);
+        static bool        cursorIsBeforeAutofill(const Surrounding& s);
         static bool        showsText(const Surrounding& s);
         static bool        showsTextAfterDeleting(const Surrounding& s, unsigned int chars);
         static std::string reportKey(const Surrounding& s); ///< "text\x1fcursor", empty for no report
@@ -233,6 +235,7 @@ namespace ngosen {
         std::optional<RetoneMove>      retoneMove_;
         std::unique_ptr<ngosen::Timer> retone_timer_;
         bool                           backspaceBeforeKey_ = false; ///< the last key was a backspace that left no word being typed
+        bool                           backspaceInWord_    = false; ///< the user pressed Backspace in the word being typed
         std::optional<std::string>     selectedBeforeKey_;          ///< what the X server announced as selected right before this key
         void                           retoneAtWordEnd(size_t tail, Retype retype);
         void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8);
@@ -250,6 +253,9 @@ namespace ngosen {
         // IBus clients, GNOME Shell above all, get forwarded keys and commits on separate paths, so a
         // commit sent sooner can still reach the app before the backspaces.
         static constexpr uint64_t ShellForwardWaitUs = 40000;
+        // On wayland_v2 the backspaces go through a virtual keyboard, as typed keys, and a Firefox that has
+        // not yet shown the word applies commits ahead of them once it catches up.
+        static constexpr uint64_t UnseenWordForwardWaitUs = 300000;
         uint64_t                  forwardWaitUs() const;
         // A key sent back arrives at once; a held key repeats tens of milliseconds apart.
         static constexpr uint64_t SentBackWithinUs = 10000;
@@ -268,10 +274,13 @@ namespace ngosen {
         bool     atStartOfLine() const;
         void     forwardTap(ngosen::EditKey key);
         bool     handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool     holdsKeyDuringTimedWait(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
+        void     noteHeldKeyForDoubling(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
         bool     handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        void     dropLetterForBackspace();
 
         // Presses real keys through XTEST, for frontends that cannot forward them.
-        void sendBackspaceKeys(int count) const;
+        bool sendBackspaceKeys(int count) const;
         // Sends text to the app and records it as ours.
         void commit(const std::string& text);
 
@@ -300,6 +309,8 @@ namespace ngosen {
         std::string                    surr_wait_sent_snapshot_;         ///< "text\x1fcursor" when the backspaces were sent
         int                            surr_wait_event_count_         = 0;
         bool                           surr_wait_saw_other_snapshot_  = false; ///< an event differed from the send-time snapshot
+        bool                           backspacesForUnseenWord_       = false;
+        bool                           unseenWordShown_               = false;
         bool                           surr_wait_sent_snapshot_fresh_ = false; ///< send-time snapshot still showed the text to delete
 
         // "Frozen": a wait timed out and every event matched the send-time snapshot. After two in a
@@ -382,7 +393,9 @@ namespace ngosen {
         // click on another cell shows only in that report. A frontend that counts the deletion on its copy
         // of the text (mutter) waits until that copy holds what the deletion needs.
         bool                           waitsForKeyReport() const;
-        bool                           copyGivesWrongBytes() const;
+        bool                           copyGivesWrongDeletion() const;
+        bool                           reportsItsEdits() const;
+        void                           startReportRequestTimer();
         void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);
         void                           finishKeyReportWait(bool sameField, bool fromTimer);
         void                           forgetWaitingReplacement();
@@ -395,6 +408,18 @@ namespace ngosen {
         std::optional<KeyEntry>        passed_key_; ///< last key let through to the app as typed
         void                           startWordWithKey(const KeyEntry& key);
         KeyEntry                       key_report_key_{};
+        KeyEntry                       replayed_key_{};
+        bool                           key_report_copy_fits_ = false;
+        bool                           copyWaitTimedOut_     = false; ///< keeps replayed keys from each waiting out a copy that never fits
+        int                            copyWaitsRunOut_      = 0;     ///< copy waits in a row that ran out in this field
+        static constexpr int           MaxCopyWaitsRunOut    = 2;
+        std::unique_ptr<ngosen::Timer> split_edit_timer_;
+        bool                           split_edit_pending_ = false;
+        Surrounding                    split_edit_surrounding_;
+        std::string                    split_edit_retype_;
+        std::unique_ptr<ngosen::Timer> tail_clear_timer_;
+        bool                           tail_clear_pending_ = false;
+        Surrounding                    tail_clear_copy_;
         std::string                    key_report_deleted_;
         std::string                    key_report_added_;
 
@@ -420,6 +445,8 @@ namespace ngosen {
         void                           holdEnter(bool untilRelease, ngosen::EditKey key = ngosen::EditKey::Return);
         void                           forwardHeldEnter();
         bool                           forwardsEnterAfterCommit() const;
+        bool                           holdsBackspace(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
+        bool                           holdBackspaceForCopy(ngosen::KeyPress& keyEvent, uint32_t currentSym);
         bool                           dropsForwardedKeys() const;
         void                           sendHeldEnter();
         std::unique_ptr<ngosen::Timer> held_enter_timer_;
@@ -428,8 +455,8 @@ namespace ngosen {
         uint64_t                       held_enter_due_us_  = 0;
         ngosen::EditKey                held_key_           = ngosen::EditKey::Return;
 
-        // Enter after a macro expands it, and reaches the app once the expansion is in the field.
-        bool            expandMacroBeforeEnter(ngosen::KeyPress& keyEvent);
+        // Enter after a word the engine changes at its end, such as a macro, reaches the app once the new text is in the field.
+        bool            finishWordBeforeEnter(ngosen::KeyPress& keyEvent);
         void            sendEnterAfterReplacement();
         bool            enter_after_replacement_ = false;
         ngosen::EditKey enter_after_key_         = ngosen::EditKey::Return;
@@ -479,6 +506,7 @@ namespace ngosen {
         bool deferLaggingCommit(const char* reason, uint64_t settleUs = 0);
         void noteWaitOutcome(const char* reason);
         bool lostWordAfterBounce(const Surrounding& s, bool settling);
+        bool reportTrailsFirstWord(const Surrounding& s) const;
         void forwardBackspaces(int count);
         // True when a replacement can delete text: through backspaces the frontend forwards or XTEST presses, or, where
         // the app takes no keys, through its surrounding text or a DEL in a terminal.
@@ -499,7 +527,9 @@ namespace ngosen {
         void recordSendSnapshot(const std::string& deletedPart);
         // True to delete through the surrounding text; otherwise counts the backspaces to send.
         bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
-        void                     replaceThroughSurrounding(const Surrounding& surrounding);
+        void                     replaceThroughSurrounding(const Surrounding& surrounding, int extraBeforeCursor = 0);
+        void                     clearSelectedTailThenReplace(const Surrounding& surrounding);
+        void                     finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype);
         void                     releaseKeysAfterSurroundingEdit();
         int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
         std::vector<std::string> earlierWordsBeforeReplacement() const;
@@ -514,6 +544,13 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> edit_hold_timer_;
         bool                           edit_hold_ = false;
         static constexpr uint64_t      EditHoldUs = 20000;
+        std::unique_ptr<ngosen::Timer> report_timer_;
+        int                            report_requests_left_ = 0;
+        static constexpr int           ReportRequests        = 4;
+        static constexpr uint64_t      EditOutWaitUs         = 80000;
+        bool                           reportSinceEdit_      = true;
+        bool                           report_request_waits_ = false;
+        uint64_t                       editSentAtUs_         = 0;
 
         // What the app did with a deletion through its surrounding text, read from its next reports.
         struct SurroundingCheck {
@@ -524,18 +561,23 @@ namespace ngosen {
             std::string sentReport; ///< reportKey() when the deletion was sent
             std::string sentAfter;  ///< the text after the cursor then
             bool        password      = false;
+            bool        waitsForKey   = false; ///< stays open for a report that comes with a later key
             uint64_t    keysAtSend    = 0;
             uint64_t    commitsAtSend = 0;
             uint64_t    sentAtUs      = 0;
         };
+        bool               checkWaitsForLaterKey() const;
         void               openSurroundingCheck(const Surrounding& sent, const std::string& retype);
         void               checkSurroundingReport();
+        void               closeCheckBeforeOtherEdit();
         SurroundingVerdict judgeOpenCheck(const Surrounding& report) const;
         void               closeSurroundingCheck(SurroundingVerdict verdict, const Surrounding* report, bool beforeNext = false);
         void               fixDroppedDeletion(const SurroundingCheck& check, const Surrounding& report);
         void               markSurroundingUntrusted(const std::string& why);
         // The field takes no keys or applies them out of order, so surrounding text is its only way to delete.
         bool deletesOnlyThroughSurrounding() const;
+        void askForReportAfterEdit();
+        void requestReportWhileUnanswered();
         // That only way failed and the host has no preedit to fall back on: keys go to the app as they are.
         bool stopsReplacing() const;
         // Something can remove text already in the field, and the field has not been left raw.
@@ -553,12 +595,16 @@ namespace ngosen {
         // Logs a line when the path differs from the last replacement's in this field.
         void                            notePath(const char* path, const std::string& why);
         bool                            surroundingUntrusted() const;
+        bool                            appMarkedUntrusted() const;
         std::string                     lastPath_;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
         uint64_t                        keyCount_                = 0;     ///< key presses other than modifiers
         int                             surrUnanswered_          = 0;     ///< checks in a row left unanswered in this field
         bool                            surrAnswered_            = false; ///< a check in this field came out correct
+        int                             surrAnsweredUnasked_     = 0;     ///< checks in this field answered with no key since the edit
+        int                             surrMissed_              = 0;     ///< checks in this field left unanswered
+        static constexpr int            MinAnswersForPlainCount  = 2;
         bool                            surrSeenTextSinceFocus_  = false; ///< the field reported text since it got focus
         bool                            surrSeenEmptySinceFocus_ = false; ///< the field reported itself empty before any key since it got focus
         uint64_t                        keysAtFocus_             = 0;     ///< keyCount_ at the last focus-in, kept over a bounce
@@ -567,6 +613,7 @@ namespace ngosen {
         bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
         std::unique_ptr<ngosen::Timer>  replay_timer_;
         bool                            autofillMarked_ = false; ///< this field filled in text after the cursor without a key
+        bool                            fieldUntrusted_ = false; ///< the untrusted mark of an app GNOME Shell does not name
         bool                            rawWord_        = false; ///< the rest of this word goes to the app as typed
 
         /**

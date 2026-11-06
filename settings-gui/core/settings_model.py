@@ -5,7 +5,7 @@
 
 from i18n import _
 
-from core.catalog import MODE_SHORTCUT_TO_VISIBILITY
+from core.catalog import MODE_SHORTCUT_TO_VISIBILITY, locked_by
 
 
 class SettingsModel:
@@ -40,6 +40,17 @@ class SettingsModel:
     def default(self, key, fallback=""):
         item = self.metadata.get(key)
         return item[3] if item else fallback
+
+    def follow(self, fresh):
+        """Takes what another read of fcitx5 got; only with nothing waiting to be saved."""
+        self.current = fresh.current
+        self.saved = fresh.saved
+
+    def value_of(self, key):
+        return self.current.get(key, self.default(key, None))
+
+    def locked_by(self, key):
+        return locked_by(key, self.value_of)
 
     def label(self, key):
         item = self.metadata.get(key)

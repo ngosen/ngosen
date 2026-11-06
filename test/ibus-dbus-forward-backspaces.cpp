@@ -119,26 +119,26 @@ namespace {
         return true;
     }
 
-    // Firefox over D-Bus reports the word but stays on backspaces (it reports its own edits late), so
-    // the forwarded keys keep their order with the commit, which waits for the report of the deletion.
+    // An address bar reports the word but stays on backspaces, so the forwarded keys keep their
+    // order with the commit, which waits for the report of the deletion.
     bool dbusForwardsAndWaitsForDeletion(Harness& h) {
-        const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix};
+        const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix, fcitx::CapabilityFlag::Url};
         auto       context = h.open("firefox", "dbus", caps);
         if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, true))
             return false;
         if (!forwardedOneBackspace(*context)) {
-            reportFailure("dbus firefox: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
+            reportFailure("dbus address bar: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
             return false;
         }
         pumpEventLoop(h.testInstance.instance, 3);
         if (!context->commits().empty()) {
-            reportFailure("dbus firefox: no commit before the app reports the deletion", "(none)", joinCommits(*context));
+            reportFailure("dbus address bar: no commit before the app reports the deletion", "(none)", joinCommits(*context));
             return false;
         }
         Harness::setSnapshot(*context, "ti", 2);
         pumpEventLoop(h.testInstance.instance, 120);
         if (context->commits() != std::vector<std::string>{"ê"}) {
-            reportFailure("dbus firefox: commit once the app reports the deletion", "['ê']", joinCommits(*context));
+            reportFailure("dbus address bar: commit once the app reports the deletion", "['ê']", joinCommits(*context));
             return false;
         }
         return true;
@@ -213,25 +213,53 @@ namespace {
         return true;
     }
 
-    // GNOME Shell passes the forwarded keys on to the app and its reports back to us one edit at a time,
-    // sometimes later than any fixed wait. The commit waits for the report that shows the deletion.
-    bool gnomeIbusWaitsForReportedDeletion(Harness& h) {
+    // GNOME Shell passes the app's reports back to us one edit at a time, and a backspace sent before the
+    // report would land ahead of the commit it follows (#362). The edit waits for the copy instead.
+    bool gnomeIbusWaitsForLaggingCopy(Harness& h) {
         auto context = h.open("window:1", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
         if (!h.typeTie(*context, true))
             return false;
         pumpEventLoop(h.testInstance.instance, 1);
         if (!h.type(*context, FcitxKey_e, true))
             return false;
+        h.pumpUntil([&] { return !context->commits().empty() || !context->forwarded().empty(); }, nowUs() + 30000);
+        if (!context->commits().empty() || !context->forwarded().empty()) {
+            reportFailure("GNOME ibus: nothing sent before the copy shows the word", "(none)", joinCommits(*context) + describeForwarded(*context));
+            return false;
+        }
         Harness::setSnapshot(*context, "tie", 3);
         h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 30000);
+        if (context->commits() != std::vector<std::string>{"ê"} || context->deletes() != std::vector<std::pair<int, unsigned int>>{{-1, 1}} || !context->forwarded().empty()) {
+            reportFailure("GNOME ibus: delete through the caught-up copy, then commit", "['ê'], one delete (-1, 1), no forwarded key",
+                          joinCommits(*context) + " " + std::to_string(context->deletes().size()) + " deletes " + describeForwarded(*context));
+            return false;
+        }
+        return true;
+    }
+
+    // A copy that never catches up ends in backspaces, and the commit still waits until the app reports
+    // the deletion.
+    bool gnomeIbusBackspacesWaitForReportedDeletion(Harness& h) {
+        auto context = h.open("window:6", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
+        if (!h.typeTie(*context, true))
+            return false;
+        pumpEventLoop(h.testInstance.instance, 1);
+        if (!h.type(*context, FcitxKey_e, true))
+            return false;
+        h.pumpUntil([&] { return !context->forwarded().empty(); }, nowUs() + 500000);
+        if (!forwardedOneBackspace(*context) || !context->commits().empty()) {
+            reportFailure("GNOME ibus stale copy: one backspace, no commit yet", "1 backspace, no commit", describeForwarded(*context) + " " + joinCommits(*context));
+            return false;
+        }
+        h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 30000);
         if (!context->commits().empty()) {
-            reportFailure("GNOME ibus: no commit before the app reports the deletion", "(none)", joinCommits(*context));
+            reportFailure("GNOME ibus stale copy: no commit before the app reports the deletion", "(none)", joinCommits(*context));
             return false;
         }
         Harness::setSnapshot(*context, "ti", 2);
         h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 10000);
         if (context->commits() != std::vector<std::string>{"ê"}) {
-            reportFailure("GNOME ibus: commit once the app reports the deletion", "['ê']", joinCommits(*context));
+            reportFailure("GNOME ibus stale copy: commit once the app reports the deletion", "['ê']", joinCommits(*context));
             return false;
         }
         return true;
@@ -443,7 +471,9 @@ int main() {
         return 1;
     if (!deletesThroughSurroundingText(h, "window:5", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
         return 1;
-    if (!gnomeIbusWaitsForReportedDeletion(h))
+    if (!gnomeIbusWaitsForLaggingCopy(h))
+        return 1;
+    if (!gnomeIbusBackspacesWaitForReportedDeletion(h))
         return 1;
     if (!gnomeIbusCommitsNoSoonerThanForwardWait(h))
         return 1;

@@ -43,7 +43,7 @@ class PageTest(unittest.TestCase):
 
     def test_sits_above_about(self):
         titles = [self.window.sidebar.item(r).text() for r in range(self.window.sidebar.count())]
-        self.assertEqual(titles[-2:], ["What's new & tips", "About"])
+        self.assertEqual(titles[-3:], ["What's new & tips", "Check my machine", "About"])
 
     def test_page_option_opens_it(self):
         page = self.window.show_page("whats-new")

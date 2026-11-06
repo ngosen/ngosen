@@ -12,11 +12,12 @@
 namespace ngosen {
 
     // True when the frontend can deliver backspaces itself, so XTEST is not needed: the Wayland
-    // input-method frontend, XIM clients under Xwayland, and IBus, D-Bus and fcitx4 clients other than SDL.
+    // input-method frontend, XIM clients under Xwayland, and IBus, D-Bus and fcitx4 clients other than SDL
+    // and those takesSentKeyEvents picks.
     bool forwardsBackspaces(const Field& field);
 
-    // True for Wine over XIM under Xwayland, where XTEST asks the user first: backspaces go
-    // as key events sent to the focused X window instead.
+    // True for Wine over XIM and WPS over IBus under Xwayland, where XTEST asks the user first:
+    // backspaces go as key events sent to the focused X window instead.
     bool takesSentKeyEvents(const Field& field);
 
     // True for GTK4 clients, whose IM modules drop forwarded keys; delete through surrounding text there.
@@ -49,9 +50,19 @@ namespace ngosen {
     // surrounding text tens of milliseconds late, one edit at a time.
     bool surroundingTextLags(const Field& field);
 
+    // A key passed to the app right after a commit can reach it first: a dbus client gets the commit
+    // after the key's reply, and GNOME Shell's IBus bridge relays the two separately.
+    bool keyOvertakesCommit(const Field& field);
+
     // mutter sends GNOME Shell's text-input edits once per main-loop turn, and the client keeps only the
     // last deletion and commit of a turn.
     bool keepsLastEditPerTurn(const Field& field);
+
+    bool namesNoApp(const Field& field);
+
+    // GNOME acts on Tab and Esc in its search box before the input method sees them, so nothing typed
+    // there could be taken back; retyping and retoning stay out of it.
+    bool isGnomeSearch(const Field& field);
 
     // Wayland text input delivers a commit only to the field that has focus.
     bool dropsCommitsWithoutFocus(const Field& field);
@@ -74,6 +85,13 @@ namespace ngosen {
 
     // The address bar of Firefox and its forks sets no Url flag; callers recognise it by the text after the cursor.
     bool hidesAddressBarFlag(const Field& field);
-    bool reportsSurroundingEditsLate(const Field& field);
+    bool keepsOldCopyAfterEdit(const Field& field);
+
+    // Firefox and its forks outside IBus can report a field holding only the start of the word just typed.
+    bool reportsTrailKeys(const Field& field);
+
+    // An app behind IBus may show a replacement in its report only when a later key arrives, so a
+    // report that does not come at once says nothing about the deletion.
+    bool reportsReplacementsWithLaterKey(const Field& field);
 
 } // namespace ngosen

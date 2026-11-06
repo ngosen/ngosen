@@ -139,7 +139,12 @@ namespace ngosen {
         held_enter_pending_ = true;
         held_enter_release_ = untilRelease;
         held_enter_due_us_  = ngosen::monotonicUs() + EnterAfterCommitUs;
-        held_enter_timer_   = host_->startTimer(held_enter_due_us_, 1000, [this](ngosen::Timer& timer) {
+        // The replay a held key releases can hold the next one, so the running timer is rearmed rather than replaced.
+        if (held_enter_timer_) {
+            held_enter_timer_->rearm(held_enter_due_us_);
+            return;
+        }
+        held_enter_timer_ = host_->startTimer(held_enter_due_us_, 1000, [this](ngosen::Timer& timer) {
             if (!held_enter_pending_)
                 return false;
             // GNOME Shell loses a forwarded Enter while the user still holds Enter down, so the release sends it.
@@ -150,7 +155,7 @@ namespace ngosen {
             }
             held_enter_pending_ = false;
             forwardHeldEnter();
-            return false;
+            return held_enter_pending_;
         });
     }
 
@@ -247,6 +252,16 @@ namespace ngosen {
         return true;
     }
 
+    void TypingState::dropLetterForBackspace() {
+        hasHistory_ = true;
+        if (oldPreBuffer_.empty() && !lastWord_.empty())
+            reopenLastWord();
+        else
+            EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::BackSpace, 0);
+        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
+        oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+    }
+
     void TypingState::handleSenMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (checkForwardSpecialKey(keyEvent, currentSym)) {
             keyEvent.passToApp();
@@ -258,15 +273,9 @@ namespace ngosen {
 
         if (ngosen::key::isBackspace(currentSym) || currentSym == ngosen::key::Return) {
             if (ngosen::key::isBackspace(currentSym)) {
-                hasHistory_ = true;
-                if (oldPreBuffer_.empty() && !lastWord_.empty())
-                    reopenLastWord();
-                else
-                    EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::BackSpace, 0);
-                ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
-                oldPreBuffer_ = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+                dropLetterForBackspace();
             } else {
-                if (expandMacroBeforeEnter(keyEvent))
+                if (finishWordBeforeEnter(keyEvent))
                     return;
                 hasHistory_ = false;
                 ResetEngine(bambooEngine_.handle());
@@ -493,15 +502,24 @@ namespace ngosen {
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
         // Counted first, so a replacement this key starts does not count it as a later key.
-        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+        if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;
+            if (ngosen::key::isBackspace(keyEvent.sym()))
+                closeCheckBeforeOtherEdit();
+            if (oldPreBuffer_.empty())
+                backspaceInWord_ = false;
+        }
         handleKey(keyEvent);
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             keySinceReport_ = true;
             clickBeforeKey_ = false;
             // A backspace that leaves no word being typed can end right after an older word.
             backspaceBeforeKey_ = ngosen::key::isBackspace(keyEvent.sym()) && oldPreBuffer_.empty();
-            reportAtKey_        = host_->surrounding();
+            // A held Backspace is counted when it replays, after the keys typed before it.
+            const bool held = key_report_pending_ && !buffered_keys_.empty() && buffered_keys_.back().heldForCopy;
+            if (ngosen::key::isBackspace(keyEvent.sym()) && !oldPreBuffer_.empty() && !held)
+                backspaceInWord_ = true;
+            reportAtKey_ = host_->surrounding();
         }
         // A report with the cursor at the end of the text tells how long the text is.
         const ngosen::Surrounding s = host_->surrounding();
@@ -550,7 +568,7 @@ namespace ngosen {
     void TypingState::handleKey(ngosen::KeyPress& keyEvent) {
         chooseWordMode(keyEvent);
         recordKey(keyEvent);
-        if (ngosen::key::isEnter(keyEvent.sym())) {
+        if (held_key_ == ngosen::EditKey::BackSpace ? ngosen::key::isBackspace(keyEvent.sym()) : ngosen::key::isEnter(keyEvent.sym())) {
             const bool heldRelease = keyEvent.isRelease() && held_enter_release_;
             held_enter_release_    = false;
             if (heldRelease) {
@@ -800,6 +818,42 @@ namespace ngosen {
         return false;
     }
 
+    bool TypingState::holdsKeyDuringTimedWait(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const {
+        const Field field = host_->field();
+        if (!ngosen::keyOvertakesCommit(field))
+            return false;
+        if (typesText(keyEvent, currentSym))
+            return true;
+        if (field.frontend != "dbus") {
+            if (ngosen::key::isEnter(currentSym))
+                return replayedEditKey(currentSym, keyEvent.states()).has_value();
+            return holdsBackspace(keyEvent, currentSym);
+        }
+        const bool plainEnter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
+        return plainEnter || replayedEditKey(currentSym, keyEvent.states()).has_value();
+    }
+
+    // Sent now, the Backspace would reach the app ahead of the edit's commit, so it follows the commit instead.
+    // After an edit that ended the word, the replay could still let it overtake. IBus only, as for the timed wait.
+    bool TypingState::holdBackspaceForCopy(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (oldPreBuffer_.empty() || host_->field().frontend != "ibus" || !holdsBackspace(keyEvent, currentSym) || buffered_keys_.size() >= MAX_BUFFERED_KEYS)
+            return false;
+        buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .heldForCopy = true});
+        keyEvent.accept();
+        return true;
+    }
+
+    // The replay drops a whole letter, so a backspace that only removes the tone goes through as before.
+    bool TypingState::holdsBackspace(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const {
+        return ngosen::key::isBackspace(currentSym) && !keyEvent.hasModifier() && forwardsEnterAfterCommit() && !engine_->options().backspaceRemovesTone;
+    }
+
+    // A held key skips handleDoubledKey, but the next one still has to see it.
+    void TypingState::noteHeldKeyForDoubling(const ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        isPrevSpace_  = !keyEvent.hasModifier() && (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);
+        isPrevHyphen_ = !keyEvent.hasModifier() && (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract);
+    }
+
     bool TypingState::handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (holdKeyDuringEditHold(keyEvent, currentSym))
             return true;
@@ -812,23 +866,27 @@ namespace ngosen {
             return true;
         }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_) {
-            // A key arrived during a timer-only wait. Replaying it via commitString loses text on
-            // Chromium X11, so finish the wait, commit, then handle the key normally.
+            // A key arrived during a timer-only wait: finish the wait and commit. Where a key let
+            // through can overtake that commit it goes out inside it; elsewhere it is handled normally
+            // afterwards, since replaying it via commitString loses text on Chromium X11 outside IBus.
             const uint64_t nowUs = ngosen::monotonicUs();
             if (surr_wait_deliver_at_ > nowUs) {
                 ngosen::sleepUs(surr_wait_deliver_at_ - nowUs);
             }
-            // A dbus client gets the commit after this key's reply and may type a key let through
-            // first, so a typing key goes out inside the commit and an Enter after it.
-            const bool enter = ngosen::key::isEnter(currentSym) && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
-            if (host_->field().frontend == "dbus" && (typesText(keyEvent, currentSym) || enter || replayedEditKey(currentSym, keyEvent.states())) &&
-                buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            if (holdsKeyDuringTimedWait(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+                noteHeldKeyForDoubling(keyEvent, currentSym);
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
                 keyEvent.accept();
                 finishReplacement("key arrived", false);
                 return true;
             }
             finishReplacement("key arrived", false);
+        }
+        if (key_report_pending_ && key_report_until_copy_fits_ && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field())) {
+            if (holdBackspaceForCopy(keyEvent, currentSym))
+                return true;
+            // The user's Backspace would be counted as one of the replacement's, so the edit goes out now.
+            finishKeyReportWait(true, false);
         }
         if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_pending_) {
             // Forwarded backspaces never come back, so this one is the user's: finish the replacement
@@ -1014,11 +1072,12 @@ namespace ngosen {
         emojiBuffer_.clear();
         emojiCandidates_.clear();
         buffered_keys_.clear();
-        edit_hold_         = false;
-        shouldCapitalize_  = false;
-        isPrevSpace_       = false;
-        isPrevHyphen_      = false;
-        isPrevPunctuation_ = false;
+        edit_hold_            = false;
+        report_requests_left_ = 0;
+        shouldCapitalize_     = false;
+        isPrevSpace_          = false;
+        isPrevHyphen_         = false;
+        isPrevPunctuation_    = false;
         if (bambooEngine_)
             ResetEngine(bambooEngine_.handle());
     }

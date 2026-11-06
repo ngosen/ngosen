@@ -10,7 +10,7 @@ from ui.pages.about import AboutPage
 from ui.pages.dynamic_settings import DynamicSettingsPage
 
 # The only widgets DESIGN.md lets carry a stylesheet.
-BRAND_WIDGETS = {"ModeButtons", "SaveMessage", "KeyCap"}
+BRAND_WIDGETS = {"ModeButtons", "SaveMessage", "KeyCap", "CheckBadge"}
 
 
 class NativeLookTest(unittest.TestCase):

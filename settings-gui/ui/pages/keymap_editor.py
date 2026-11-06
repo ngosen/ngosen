@@ -8,6 +8,7 @@ Implements custom keymap presets and TSV import/export.
 
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
+from qtpy.QtCore import QSignalBlocker
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -23,7 +24,8 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
 )
 
-from core import keymap
+from core import keymap, page_status
+from ui.components import NoWheelComboBox
 from ui.confirm import confirm
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
@@ -41,12 +43,11 @@ class KeymapEditorPage(BaseEditorPage):
         self.load_data()
 
     def _setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(30, 20, 30, 20)
-        main_layout.setSpacing(15)
+        main_layout = self._scrolling_layout()
 
         title = page_title(_("Keymap"))
         main_layout.addWidget(title)
+        self._add_status_line(main_layout)
 
         # Configuration card
         config_card = CardWidget()
@@ -56,6 +57,7 @@ class KeymapEditorPage(BaseEditorPage):
         top_row = QHBoxLayout()
         self.cb_enable = QCheckBox(_("Custom Keymap"))
         self.cb_enable.toggled.connect(self._on_item_changed)
+        self.cb_enable.toggled.connect(lambda _checked: self.refresh_status())
         top_row.addWidget(self.cb_enable)
         top_row.addStretch()
 
@@ -71,7 +73,7 @@ class KeymapEditorPage(BaseEditorPage):
         # Row 2: Original Input Method (Preset)
         bottom_row = QHBoxLayout()
         bottom_row.addWidget(QLabel(_("Original Input Method:")))
-        self.combo_preset = QComboBox()
+        self.combo_preset = NoWheelComboBox()
         self.combo_preset.addItems(keymap.PRESETS.keys())
         bottom_row.addWidget(self.combo_preset)
 
@@ -97,7 +99,7 @@ class KeymapEditorPage(BaseEditorPage):
         self.input_key.setMaxLength(1)
         self.input_key.setClearButtonEnabled(True)
 
-        self.combo_action = QComboBox()
+        self.combo_action = NoWheelComboBox()
         for action_code, action_name in keymap.BAMBOO_ACTIONS:
             self.combo_action.addItem(action_name, action_code)
 
@@ -113,6 +115,8 @@ class KeymapEditorPage(BaseEditorPage):
 
         # Table
         self.table = QTableWidget(0, 2)
+        # The page scrolls before the table gets too short to use.
+        self.table.setMinimumHeight(180)
         self.table.setHorizontalHeaderLabels([_("Key"), _("Action")])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -148,6 +152,18 @@ class KeymapEditorPage(BaseEditorPage):
         finally:
             self.blockSignals(False)
             self.on_search_changed()
+            self.refresh_status()
+
+    def _follow(self, value_of):
+        self.keymap.follow(value_of)
+        with QSignalBlocker(self.cb_enable):
+            self.cb_enable.setChecked(self.keymap.enabled)
+
+    def _shown_switches(self):
+        return {"EnableCustomKeymap": self.cb_enable.isChecked()}
+
+    def _status_text(self, model):
+        return page_status.keymap_line(model)
 
     def restore_defaults(self):
         """Clears all custom keymap entries and turns the custom keymap off."""
@@ -274,7 +290,7 @@ class KeymapEditorPage(BaseEditorPage):
         row = self.table.rowCount()
         self.table.insertRow(row)
         self.table.setItem(row, 0, QTableWidgetItem(key))
-        cell_combo = QComboBox()
+        cell_combo = NoWheelComboBox()
         for code, name in keymap.BAMBOO_ACTIONS:
             cell_combo.addItem(name, code)
 

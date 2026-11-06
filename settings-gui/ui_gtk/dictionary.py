@@ -6,6 +6,9 @@
 from gi.repository import Adw, Gtk
 from i18n import N_, _
 
+from core import page_status
+from ui_gtk.status_row import show_status, status_row
+
 INVALID_WORD = N_("Warning: Dictionary words should not contain spaces.")
 
 
@@ -28,6 +31,7 @@ class DictionaryPage:
             group.set_sensitive(not dictionary.load_failed)
         self.switch.set_sensitive(not dictionary.load_failed)
         self.refresh()
+        self.refresh_status()
 
     def _options(self, error):
         group = Adw.PreferencesGroup()
@@ -37,10 +41,22 @@ class DictionaryPage:
             ).format(error)
             row = Adw.ActionRow(title=message, use_markup=False, css_classes=["error"])
             group.add(row)
+        self.status = status_row()
+        group.add(self.status)
         self.switch = Adw.SwitchRow(title=_("Custom Dictionary"), use_markup=False)
         self.switch.connect("notify::active", self._on_switch)
         group.add(self.switch)
         return group
+
+    def refresh_status(self):
+        """Shows why this page is not in use now, without rebuilding it."""
+        model = page_status.read(self.dictionary.dbus)
+        if model and not self.dictionary.is_modified():
+            self.dictionary.follow(model.value_of)
+            self._syncing = True
+            self.switch.set_active(self.dictionary.enabled)
+            self._syncing = False
+        show_status(self.status, page_status.dictionary_line(model) if model else "")
 
     def _on_switch(self, row, _param):
         if not self._syncing:

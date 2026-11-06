@@ -1,10 +1,10 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.7.6
+Version:        1.8.0
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
-License:        GPL-3.0-or-later AND OFL-1.1
+License:        GPL-3.0-or-later
 URL:            https://github.com/ngosen/ngosen
 Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 
@@ -49,7 +49,6 @@ Ngó Sen is a Vietnamese input method for fcitx5.
 %files -f %{name}.lang
 %{_datadir}/licenses/%{name}/GPL-3.0-or-later.txt
 %{_datadir}/licenses/%{name}/LGPL-2.1-or-later.txt
-%{_datadir}/licenses/%{name}/OFL-1.1.txt
 
 %dir %{_datadir}/licenses/%{name}
 %{_bindir}/fcitx5-ngosen-settings
@@ -101,6 +100,9 @@ else
 fi
 
 %changelog
+* Sat Nov 07 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.8.0-1
+- Add a Check my machine page with setup steps, one-click fixes, a typing test and bug reporting (#463, #563). On GNOME without the extension, type better in Firefox and Chrome's address bar and keep one failing app from making every app type raw keys (#541, #543, #586); with the extension, stop losing letters when typing fast or pressing Backspace (#581, #584). Keep tones in Firefox on KDE and letters on Hyprland and Sway (#582, #583). Install on Fedora 45 and set up Sway and Hyprland (#556, #557, #566). Clearer settings window (#519, #521, #522).
+
 * Mon Nov 02 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.7.6-1
 - Stop repeating letters in Google Docs and Slides on Chromium browsers on X11 (#523, #527). Keep tones when typing faster than a surrounding-text-only field on GNOME answers (#501). Retone a selected word in WPS Office on X11 (#505). Always add the Input Method Panel extension on GNOME and report when it is missing (#506, #507). Fix settings window icons, clipped text and saving of the dictionary and macro choices (#514, #517). Drop --ibus and the ibus-ngosen packages from the installer and repositories (#509, #511).
 

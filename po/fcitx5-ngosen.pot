@@ -331,7 +331,7 @@ msgid "What's new in Ngó Sen?"
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.7: the settings window also comes in a GTK edition that looks like a GNOME app. See also Cứu chữ (retype words typed with Vietnamese off), Cứu dấu (select a word and type a tone mark to change it), the English/Vietnamese key and typing tips."
+msgid "Version 1.8: the new Check my machine page shows what keeps Vietnamese typing from working, with a button to fix each item. See also the GTK settings window, Cứu chữ, Cứu dấu and typing tips."
 msgstr ""
 
 #: src/ngosen-engine.cpp
@@ -351,6 +351,9 @@ msgid "App: "
 msgstr ""
 
 msgid "this window"
+msgstr ""
+
+msgid "apps with no name (the Ngó Sen extension tells them apart)"
 msgstr ""
 
 #: src/ngosen-engine.cpp:1099
@@ -401,10 +404,6 @@ msgstr ""
 
 #: settings-gui/ui/pages/about.py:90
 msgid "Vietnamese input method for fcitx5 on Linux that types like UniKey on Windows."
-msgstr ""
-
-#: settings-gui/ui/pages/about.py:103
-msgid "Report Bug"
 msgstr ""
 
 #: settings-gui/ui/pages/about.py:112
@@ -733,6 +732,10 @@ msgstr ""
 msgid "None"
 msgstr ""
 
+#: settings-gui/ui/components.py settings-gui/ui_gtk/hotkey_button.py
+msgid "Not set"
+msgstr ""
+
 #: settings-gui/ui/pages/macro_editor.py:143
 msgid "Time Format:"
 msgstr ""
@@ -747,14 +750,6 @@ msgstr ""
 
 #: settings-gui/ui/pages/macro_editor.py:184
 msgid "Full text (e.g. khô gà)"
-msgstr ""
-
-#: settings-gui/ui/pages/macro_editor.py:193
-msgid "Key:"
-msgstr ""
-
-#: settings-gui/ui/pages/macro_editor.py:195
-msgid "Value:"
 msgstr ""
 
 #: settings-gui/ui/pages/macro_editor.py:202
@@ -858,38 +853,6 @@ msgstr ""
 
 #: settings-gui/ui/components.py:450
 msgid "[ Press Key... ]"
-msgstr ""
-
-#: settings-gui/ui/helpers.py:14
-msgid "Text goes straight into the field, without an underline."
-msgstr ""
-
-#: settings-gui/ui/helpers.py:14
-msgid "You can type tone marks at the end of the word or anywhere inside."
-msgstr ""
-
-#: settings-gui/ui/helpers.py:19
-msgid ""
-"Automatically match expansion case to trigger key case.\n"
-"\n"
-"Example if 'kg' is 'Khô gà':\n"
-"- kg -> khô gà\n"
-"- Kg -> Khô gà\n"
-"- KG -> KHÔ GÀ"
-msgstr ""
-
-#: settings-gui/ui/helpers.py:26
-msgid ""
-"Automatically revert the typed sequence if the resulting word is not in the "
-"dictionary.\n"
-"This helps prevent accidental Vietnamese transformations on English words or "
-"mixed text."
-msgstr ""
-
-#: settings-gui/ui/helpers.py:30
-msgid ""
-"Allow macros to work when the input mode is OFF.\n"
-"When disabled, macros are only available in active typing modes."
 msgstr ""
 
 #: settings-gui/ui/main_window.py:33
@@ -1010,7 +973,15 @@ msgstr ""
 msgid "Change undone."
 msgstr ""
 
-#: settings-gui/ui/pages/dynamic_settings.py
+#: settings-gui/core/catalog.py
+msgid "Fixing words"
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "Typing keys"
+msgstr ""
+
+#: settings-gui/core/catalog.py
 msgid "Tone marks"
 msgstr ""
 
@@ -1084,16 +1055,16 @@ msgstr ""
 msgid "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
 msgstr ""
 
-#: settings-gui/ui/pages/dynamic_settings.py
+#: settings-gui/core/page_status.py
 msgid "Custom has no keys yet: turn on Custom Keymap and add keys in Keys › Keymap."
 msgstr ""
 
-#: settings-gui/ui/main_window.py
+#: settings-gui/ui_gtk/window.py
 msgid "&Defaults"
 msgstr ""
 
 #: settings-gui/ui/main_window.py
-msgid "Back &Up…"
+msgid "Back U&p…"
 msgstr ""
 
 #: settings-gui/ui/main_window.py
@@ -1132,16 +1103,8 @@ msgstr ""
 msgid "No settings found"
 msgstr ""
 
-#: settings-gui/ui/pages/about.py
-msgid "Check my machine…"
-msgstr ""
-
 #: settings-gui/ui/system_check_dialog.py
 msgid "Check my machine"
-msgstr ""
-
-#: settings-gui/ui/system_check_dialog.py
-msgid "How fcitx5 is set up on this machine. Nothing is sent until you send a bug report, and it lists the apps below, so read it before sending."
 msgstr ""
 
 #: settings-gui/ui/system_check_dialog.py
@@ -1166,15 +1129,6 @@ msgstr ""
 
 #: settings-gui/ui/system_check_dialog.py
 msgid "Copied the result. Paste it into the message and say what went wrong."
-msgstr ""
-
-#: settings-gui/ui/system_check_dialog.py
-#, python-brace-format
-msgid "Apps connected to fcitx5: {}"
-msgstr ""
-
-#: settings-gui/ui/system_check_dialog.py
-msgid "No setup problem found"
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1219,7 +1173,11 @@ msgid "Menu and hints do not show in GNOME's search box"
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Run install.sh again, or install Input Method Panel from {}, then log out and back in."
+msgid "Menu and hints show in GNOME's search box"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Install Input Method Panel from {}, then log out and back in."
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1231,11 +1189,15 @@ msgid "Turn on Input Method Panel: gnome-extensions enable {}. If it still does 
 msgstr ""
 
 #: settings-gui/core/system_check.py
+msgid "Installed Input Method Panel."
+msgstr ""
+
+#: settings-gui/core/system_check.py
 msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Install Ngó Sen with install.sh, which adds the fix for this GNOME version, then log out and back in."
+msgid "Log out and back in. If this stays, update Ngó Sen or update to GNOME 50.4."
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1243,11 +1205,44 @@ msgid "fcitx5 still runs Ngó Sen from before the update"
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Log out and back in to start the installed version."
+msgid "Restart fcitx5, or log out and back in, to start the installed version."
 msgstr ""
 
-#: settings-gui/ui/pages/about.py
-msgid "Typing still uses the Ngó Sen that ran before the update. Log out and back in to start version {}."
+#: settings-gui/core/system_check.py
+msgid "fcitx5 is running"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Ngó Sen is in the fcitx5 input method list"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Older X11 apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "The fix for GNOME {} is on"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Qt apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Chrome and older GTK apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "GTK apps use fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "KDE starts fcitx5 as its virtual keyboard"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Qt 5 apps use fcitx5"
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1345,10 +1340,6 @@ msgstr ""
 
 #: settings-gui/save_log.py
 msgid "No desktop session bus. Run this as your own user in a desktop terminal."
-msgstr ""
-
-#: settings-gui/ui/pages/dynamic_settings.py
-msgid "Sen types straight into the app. Preedit underlines the word until it is done; use it in an app that Sen does not work with."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
@@ -1504,7 +1495,7 @@ msgid "$DATE and $TIME in a macro type today's date and time: hn → Hôm nay $D
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
-msgid "Typing wrong in some app? “Check my machine…” on the About page says why."
+msgid "Typing wrong in some app? The Check my machine page says why."
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
@@ -1512,7 +1503,9 @@ msgid "“Save typing log” in the tray menu records what you type, to attach t
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
-msgid "“Back Up…” and “Restore…” below keep your settings, macros and dictionary."
+msgid ""
+"“Back Up…” and “Restore…” at the bottom of the settings pages keep your "
+"settings, macros and dictionary."
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
@@ -1608,6 +1601,10 @@ msgid "Check that fcitx5 is running."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
+msgid "Shows what keeps Vietnamese typing from working on this machine, with a button to fix each item. Test typing in an app and send a bug report from the same page."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
 msgid "GTK look for GNOME"
 msgstr ""
 
@@ -1616,5 +1613,176 @@ msgid "See the GTK look"
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
-msgid "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
+msgid "A new GTK look that fits GNOME. Prefer the Qt look? Switch on the Appearance page."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Use the button on a step, or fix them all at once. Ngó Sen only changes this account's settings."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Use the button on the step. Ngó Sen only changes this account's settings."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Each step says what to do."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Start fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Restart fcitx5"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Add Ngó Sen"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Turn on"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Started fcitx5."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Restarted fcitx5."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Added Ngó Sen to the input method list."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Turned on the GNOME extension."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "This machine is ready"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Try typing in any app."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "Steps left to fix: {}"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Fixing…"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Steps to type Vietnamese"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Apps connected to fcitx5"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "An app missing here has not connected to the input method: open it again, or send the result to Ngó Sen."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Try typing here"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "In Telex, vieetj becomes việt."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Send the result to Ngó Sen"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "The result lists the steps above, the apps connected and the typing log you read. Nothing is sent until you press a button below."
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Fix all ({})"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Could not fix this."
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 started before Ngó Sen was installed"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Copy command"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Copied: {}"
+msgstr ""
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "No app is connected yet"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in to start the installed version."
+msgstr ""
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: turn on {}."
+msgstr ""
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: turn on {} and choose Custom in {}."
+msgstr ""
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: choose Custom in {}."
+msgstr ""
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: Cứu dấu works only with Unicode."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "kg gives khô gà, Kg gives Khô gà, KG gives KHÔ GÀ."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "Abbreviations also expand while the mode is Off."
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Abbreviation:"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expanded Text:"
+msgstr ""
+
+#: settings-gui/ui/message_bar.py
+msgid "Close"
+msgstr ""
+
+#: settings-gui/ui/main_window.py
+msgid "Restore &defaults…"
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "Text goes straight into the app as you type."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "The word is underlined until it is done. Use it in an app that Sen does not work with."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "Type an emoji name, then pick from the list."
 msgstr ""

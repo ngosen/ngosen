@@ -1,11 +1,19 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(fcitx5-ngosen VERSION 1.7.6)
+project(fcitx5-ngosen VERSION 1.8.0)
 # The typing log names the version it came from.
 add_definitions(-DNGOSEN_VERSION=\"${PROJECT_VERSION}\")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(BUILD_TESTING "Build the tests" OFF)
 option(NGOSEN_CORE_ONLY "Build only the typing logic and its tests, without fcitx5" OFF)
+option(NGOSEN_VENDORED_CRATES "Build the Rust core from bamboo-rs/vendor; off uses the crates cargo is configured with" ON)
+if (NGOSEN_VENDORED_CRATES)
+    set(NGOSEN_CARGO_LOCKED --locked)
+    set(NGOSEN_CARGO_VENDOR_FILES Cargo.lock .cargo/config.toml)
+elseif (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/bamboo-rs/vendor")
+    message(WARNING "NGOSEN_VENDORED_CRATES is off but bamboo-rs/vendor exists: bamboo-rs/.cargo/config.toml still selects it. "
+                    "Delete bamboo-rs/vendor and point that config at the system crates.")
+endif()
 
 if (NGOSEN_CORE_ONLY)
     set(CMAKE_CXX_STANDARD 17)
@@ -99,13 +107,12 @@ fcitx5_translate_desktop_file(
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/io.github.ngosen.NgoSen.metainfo.xml" DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
 
-# GNOME 50.0-50.3 drop keys an input method forwards; the user enables this extension there.
+# Names the focused app for fcitx5 before 5.1.22 and delivers forwarded keys on GNOME 50.0-50.3.
 install(DIRECTORY gnome-shell/forward-keys@ngosen.github.io DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions)
 
 install(FILES 
         LICENSES/GPL-3.0-or-later.txt
         LICENSES/LGPL-2.1-or-later.txt
-        LICENSES/OFL-1.1.txt
         DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/${PROJECT_NAME}
 )
 

@@ -15,10 +15,20 @@ from i18n import N_
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
     {
+        "version": "1.8",
+        "title": N_("Check my machine"),
+        "how": N_(
+            "Shows what keeps Vietnamese typing from working on this machine, with a button to fix "
+            "each item. Test typing in an app and send a bug report from the same page."
+        ),
+        "example": "",
+        "target": ("page", "check"),
+    },
+    {
         "version": "1.7",
         "title": N_("GTK look for GNOME"),
         "how": N_(
-            "A new GTK look that fits GNOME. Don't like the old Qt look? Switch on the Appearance page."
+            "A new GTK look that fits GNOME. Prefer the Qt look? Switch on the Appearance page."
         ),
         "example": "",
         "target": ("setting", "SettingsToolkit"),
@@ -98,8 +108,8 @@ TIPS = [
         "target": ("page", "macros"),
     },
     {
-        "text": N_("Typing wrong in some app? “Check my machine…” on the About page says why."),
-        "target": ("page", "about"),
+        "text": N_("Typing wrong in some app? The Check my machine page says why."),
+        "target": ("page", "check"),
     },
     {
         "text": N_(
@@ -108,7 +118,9 @@ TIPS = [
         "target": None,
     },
     {
-        "text": N_("“Back Up…” and “Restore…” below keep your settings, macros and dictionary."),
+        "text": N_(
+            "“Back Up…” and “Restore…” at the bottom of the settings pages keep your settings, macros and dictionary."
+        ),
         # The GTK window has these in its header menu, not along the bottom.
         "gtk_text": N_(
             "“Back Up…” and “Restore…” in the window menu keep your settings, macros and dictionary."

@@ -14,6 +14,8 @@ class SettingsCategory(Enum):
     SHORTCUTS = "shortcuts"
 
 
+TYPING_GROUP = N_("Typing")
+TYPING_KEYS = N_("Typing keys")
 MODE_SWITCHING = N_("Mode switching")
 TRAY_ICON = N_("Tray icon")
 
@@ -42,25 +44,22 @@ MENU_ICON_FALLBACKS = {
 # Groups show in this order; the first checkbox of a group carries the group name.
 SETTINGS_MAP = {
     SettingsCategory.TYPING: {
-        N_("Typing"): ["Mode", "InputMethod", "OutputCharset"],
-        N_("Tone marks"): [
-            "SpellCheck",
+        TYPING_GROUP: ["Mode", "InputMethod", "OutputCharset"],
+        # The switch others depend on comes first.
+        N_("Fixing words"): [
             "AutoNonVnRestore",
-            "LockWordModifier",
+            "SpellCheck",
             "DdFreeStyle",
-            "ModernStyle",
-            "FreeMarking",
-            "BackspaceRemovesTone",
-            "W2U",
-            "BracketTransform",
+            "RetypeAfterSwitch",
+            "RetoneSelection",
         ],
+        N_("Tone marks"): ["ModernStyle", "FreeMarking", "BackspaceRemovesTone"],
+        TYPING_KEYS: ["W2U", "BracketTransform", "LockWordModifier"],
         N_("Quick typing"): [
             "DoubleSpaceToPeriod",
             "DoubleHyphenToEmDash",
             "AutoCapitalizeAfterPunctuation",
             "CapitalizeStartOfText",
-            "RetypeAfterSwitch",
-            "RetoneSelection",
         ],
     },
     SettingsCategory.SHORTCUTS: {
@@ -81,10 +80,15 @@ SETTINGS_MAP = {
     },
 }
 
+# These groups have no checkbox to carry their name, so the Qt window gives it a line of its own.
+GROUPS_WITH_NAME_LINE = {TYPING_KEYS}
+
 # One line under a setting, saying what the user sees.
 HINTS = {
     "ToggleKey": N_("Tap it alone to switch. The tray icon shows V while typing Vietnamese."),
     "SpellCheck": N_("Words that are not Vietnamese get no tone marks."),
+    "CapitalizeMacro": N_("kg gives khô gà, Kg gives Khô gà, KG gives KHÔ GÀ."),
+    "EnableMacroInOffMode": N_("Abbreviations also expand while the mode is Off."),
     "AutoNonVnRestore": N_("Typing windows still gives windows."),
     "LockWordModifier": N_(
         "Tap the key alone to keep the word as shown: tunx, Ctrl → tũn, with no restore or macro. Alt also shows the menu bar in some apps."
@@ -96,9 +100,6 @@ HINTS = {
     ),
     "BackspaceRemovesTone": N_(
         "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
-    ),
-    "Mode": N_(
-        "Sen types straight into the app. Preedit underlines the word until it is done; use it in an app that Sen does not work with."
     ),
     "OutputCharset": N_(
         "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
@@ -136,7 +137,20 @@ HINTS = {
     ),
 }
 
-MODE_BUTTON_ORDER = ["Sen", "Preedit", "Emoji Picker", "OFF"]
+MODE_BUTTON_ORDER = ["Sen", "Preedit", "Emoji Picker"]
+MODE_HINTS = {
+    "Sen": N_("Text goes straight into the app as you type."),
+    "Preedit": N_(
+        "The word is underlined until it is done. Use it in an app that Sen does not work with."
+    ),
+    "Emoji Picker": N_("Type an emoji name, then pick from the list."),
+}
+
+
+def shown_mode(saved):
+    """The switch key picks English, so a saved OFF types as Sen."""
+    return "Sen" if saved == "OFF" else saved
+
 
 # Each language is named in itself, so it can be found whichever one the window is in.
 LANGUAGE_NAMES = {"Vietnamese": "Tiếng Việt", "English": "English"}
@@ -168,3 +182,25 @@ MODE_KEY_TO_INTERNAL_NAME = {
 }
 
 MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
+
+# Settings that do nothing unless another one, shown next to them, holds this value.
+DEPENDS = {
+    "SpellCheck": ("AutoNonVnRestore", "True"),
+    "DdFreeStyle": ("AutoNonVnRestore", "True"),
+    "IconTheme": ("UseLotusIcons", "False"),
+    "CapitalizeMacro": ("EnableMacro", "True"),
+    "EnableMacroInOffMode": ("EnableMacro", "True"),
+    "TimeFormat": ("EnableMacro", "True"),
+    "DateFormat": ("EnableMacro", "True"),
+    **{shortcut: (shown, "True") for shortcut, shown in MODE_SHORTCUT_TO_VISIBILITY.items()},
+}
+
+
+def locked_by(key, value_of):
+    """The setting that keeps key from doing anything right now, or None.
+
+    value_of(name) gives a setting's value, or None when fcitx5 does not report that setting.
+    """
+    controller, needed = DEPENDS.get(key, (None, None))
+    value = value_of(controller) if controller else None
+    return None if value is None or str(value).lower() == needed.lower() else controller

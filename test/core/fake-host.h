@@ -52,6 +52,8 @@ namespace ngosen::test {
 
         void commitText(const std::string& text) override {
             commits_.push_back(text);
+            if (commitWatcher_)
+                commitWatcher_(text);
         }
         void forwardKey(EditKey key, bool release, uint32_t time) override {
             forwarded_.push_back({key, release, time});
@@ -71,7 +73,7 @@ namespace ngosen::test {
             return field_;
         }
         bool hasFocus() const override {
-            return true;
+            return hasFocus_;
         }
         std::optional<std::string> takeSelection() override {
             return std::nullopt;
@@ -127,6 +129,13 @@ namespace ngosen::test {
         void forgetSurrounding() {
             surrounding_ = Surrounding();
         }
+        // What fcitx5's commit watcher does on the real host.
+        void setCommitWatcher(std::function<void(const std::string&)> watcher) {
+            commitWatcher_ = std::move(watcher);
+        }
+        void setHasFocus(bool hasFocus) {
+            hasFocus_ = hasFocus;
+        }
         void setSystemKeysWork(bool works) {
             systemKeysWork_ = works;
         }
@@ -153,6 +162,8 @@ namespace ngosen::test {
         }
 
       private:
+        bool                                      hasFocus_ = true;
+        std::function<void(const std::string&)>   commitWatcher_;
         FakeLoop&                                 loop_;
         Field                                     field_;
         Surrounding                               surrounding_;

@@ -94,7 +94,6 @@ stdenv.mkDerivation {
     license = with lib.licenses; [
       gpl3Plus
       lgpl21Plus
-      ofl
     ];
     platforms = lib.platforms.linux;
   };

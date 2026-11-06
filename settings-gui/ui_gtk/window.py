@@ -10,10 +10,9 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-gi.require_version("PangoCairo", "1.0")
 
 from core.brand import APP_ID  # noqa: E402
-from core.catalog import MODE_SHORTCUT_TO_VISIBILITY  # noqa: E402
+from core.catalog import MODE_SHORTCUT_TO_VISIBILITY, locked_by  # noqa: E402
 from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
 from core.dictionary import Dictionary  # noqa: E402
@@ -27,7 +26,7 @@ from i18n import _  # noqa: E402
 from core import backup, defaults, settings_snapshot  # noqa: E402
 from ui_gtk import brand, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
-from ui_gtk.check_dialog import CheckDialog  # noqa: E402
+from ui_gtk.check_page import CheckPage  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
 from ui_gtk.focus import focus_when_laid_out  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
@@ -60,6 +59,8 @@ class Window(Adw.ApplicationWindow):
 
         for name, title, icon, widget, searchable in self._data_pages():
             self._add_page(name, title, icon, widget, searchable)
+        # The tray menu can change what a status line says while another window has the focus.
+        self.connect("notify::is-active", lambda w, _p: w.is_active() and w._refresh_statuses())
         self.whats_new = WhatsNewPage(self.open_setting, self.show_page)
         self._add_page(
             "whats-new",
@@ -68,13 +69,16 @@ class Window(Adw.ApplicationWindow):
             self.whats_new.page,
             searchable=False,
         )
-        self.check = None
+        self.badge = Gtk.Label(css_classes=["check-badge"], visible=False, valign=Gtk.Align.CENTER)
+        self.check = CheckPage(self.dbus, __version__, self.show_check_message, self._show_count)
         self._add_page(
-            "about",
-            _("About"),
-            "help-about-symbolic",
-            pages.about_page(__version__, self.open_system_check),
+            "check",
+            _("Check my machine"),
+            "emblem-system-symbolic",
+            self.check.page,
+            searchable=False,
         )
+        self._add_page("about", _("About"), "help-about-symbolic", pages.about_page(__version__))
 
         self.split = Adw.NavigationSplitView(min_sidebar_width=220)
         self.split.set_sidebar(Adw.NavigationPage(title="Ngó Sen", child=self._sidebar()))
@@ -165,6 +169,11 @@ class Window(Adw.ApplicationWindow):
         self.reload()
         self._show(Adw.Toast(title=_("Change undone.")))
 
+    def _refresh_statuses(self):
+        for page in (self.typing, self.macros, self.dictionary, self.keymap):
+            if page:
+                page.refresh_status()
+
     def _tabs(self, parent, **pages):
         """Pages that share a sidebar entry, as tabs like the Qt window's."""
         if None in pages.values():
@@ -197,7 +206,7 @@ class Window(Adw.ApplicationWindow):
     def _header(self):
         menu = Gio.Menu()
         for label, name, run in (
-            (_("Back &Up…"), "backup", self.choose_backup_file),
+            (_("Back U&p…"), "backup", self.choose_backup_file),
             (_("Res&tore…"), "restore-backup", self.choose_restore_file),
             (_("Restore defaults…"), "restore-defaults", self.confirm_defaults),
         ):
@@ -245,7 +254,8 @@ class Window(Adw.ApplicationWindow):
         # Even a partial write changed fcitx5, so the pages show what it holds and undo stays.
         self.reload()
         self._undo_to = before
-        toast = Adw.Toast(title=done) if ok else Adw.Toast(title=failed, timeout=0)
+        # Undo is the only way back from replacing whole lists, so it stays until closed.
+        toast = Adw.Toast(title=done if ok else failed, timeout=0)
         self._show(self._with_undo(toast))
 
     def choose_backup_file(self):
@@ -296,13 +306,15 @@ class Window(Adw.ApplicationWindow):
         header = Adw.HeaderBar(show_title=False)
         mark = Gtk.Box(spacing=8)
         mark.append(Gtk.Image(icon_name=brand.LOGO, pixel_size=28))
-        mark.append(Gtk.Label(label=brand.WORDMARK, css_classes=["wordmark"]))
+        mark.append(Gtk.Label(label="Ngó Sen", css_classes=["wordmark"]))
         header.pack_start(mark)
         self.sidebar = Gtk.ListBox(css_classes=["navigation-sidebar"])
-        for _name, title, icon in self.pages:
+        for name, title, icon in self.pages:
             row = Gtk.Box(spacing=12)
             row.append(Gtk.Image(icon_name=icon))
-            row.append(Gtk.Label(label=title, xalign=0))
+            row.append(Gtk.Label(label=title, xalign=0, hexpand=True))
+            if name == "check":
+                row.append(self.badge)
             self.sidebar.append(row)
         self.sidebar.connect("row-activated", self._on_row)
         self.sidebar.select_row(self.sidebar.get_row_at_index(0))
@@ -335,14 +347,14 @@ class Window(Adw.ApplicationWindow):
         self.side_stack.set_visible_child_name("results" if text.strip() else "pages")
         if not text.strip():
             return
-        for title, row, name in search.find(self.search_pages, text):
+        for title, row, name, key in search.find(self.search_pages, text):
             result = Gtk.ListBoxRow()
             box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=4, margin_bottom=4)
             box.append(Gtk.Label(label=title, xalign=0, wrap=True))
             page = Gtk.Label(label=self.page_titles[name], xalign=0, css_classes=["dim-label"])
             box.append(page)
             result.set_child(box)
-            result.found = (row, name)
+            result.found = (row, name, key)
             self.results.append(result)
         if self.results.get_row_at_index(0) is None:
             empty = Gtk.ListBoxRow(activatable=False, selectable=False)
@@ -366,16 +378,20 @@ class Window(Adw.ApplicationWindow):
         """Shows the page and tab holding a found row and puts the focus on it."""
         if not hasattr(result, "found"):
             return
-        row, name = result.found
+        row, name, key = result.found
         self.search_entry.set_text("")
         self.side_stack.set_visible_child_name("pages")
-        self.show_page(name)
-        focus_when_laid_out(row)
+        if key is None or not self.open_setting(key):
+            self.show_page(name)
+            focus_when_laid_out(row)
 
     def _on_row(self, _listbox, row):
         name, title, _icon = self.pages[row.get_index()]
         self.stack.set_visible_child_name(name)
         self.content.set_title(title)
+        self._refresh_statuses()
+        if name == "check":
+            self.check.run()
         self.split.set_show_content(True)
 
     def show_page(self, name):
@@ -395,20 +411,35 @@ class Window(Adw.ApplicationWindow):
             ("typing", self.typing),
             ("shortcuts", self.shortcuts),
             ("appearance", self.appearance),
+            ("macros", self.macros),
         ):
             control = page.control_for(key) if page else None
             if control is not None:
                 self.show_page(name)
-                focus_when_laid_out(control)
+                # A locked row takes no focus, so the user lands on what unlocks it.
+                focus_when_laid_out(page.control_for(locked_by(key, page.value_of) or key))
                 return True
         return False
 
-    def open_system_check(self):
-        if self.check is None:
-            self.check = CheckDialog(self.dbus, __version__)
-        else:
-            self.check.run()
-        self.check.dialog.present(self)
+    def _show_count(self, count):
+        self.badge.set_text(str(count))
+        self.badge.set_visible(count > 0)
+        self.badge.update_property(
+            [Gtk.AccessibleProperty.LABEL], [_("Steps left to fix: {}").format(count)]
+        )
+
+    def show_check_message(self, text, undo):
+        """A toast from the check page, with Undo when its fix can be taken back."""
+        toast = Adw.Toast(title=text, timeout=0 if undo is not None else 5)
+        if undo is not None:
+            _undo_button(toast, lambda: self._undo_fix(undo))
+        self._show(toast)
+
+    def _undo_fix(self, undo):
+        if not undo():
+            self._show(
+                Adw.Toast(title=_("Could not undo. Check that fcitx5 is running."), timeout=0)
+            )
 
     def show_tips(self):
         self.show_page("whats-new")
@@ -427,6 +458,7 @@ class Window(Adw.ApplicationWindow):
         before = settings_snapshot.take(self.dbus)
         ok = self.model.save()
         self.model.modified.update(held)
+        self._refresh_statuses()
         if key in held:
             self._show(Adw.Toast(title=conflicts[0][0], timeout=0))
         else:
@@ -437,6 +469,7 @@ class Window(Adw.ApplicationWindow):
         # Taken now, since fcitx5 remembers app modes while the window is open.
         before = settings_snapshot.take(self.dbus)
         ok = write()
+        self._refresh_statuses()
         self._report(ok, label, before)
         return ok
 
@@ -451,8 +484,7 @@ class Window(Adw.ApplicationWindow):
 
     def _with_undo(self, toast):
         if self._undo_to is not None:
-            toast.set_button_label(_("&Undo").replace("&", "_"))
-            toast.connect("button-clicked", lambda _t: self.undo())
+            _undo_button(toast, self.undo)
         return toast
 
     def _show(self, toast):
@@ -461,6 +493,11 @@ class Window(Adw.ApplicationWindow):
         self.toast = toast
         toast.set_use_markup(False)
         self.toasts.add_toast(toast)
+
+
+def _undo_button(toast, undo):
+    toast.set_button_label(_("&Undo").replace("&", "_"))
+    toast.connect("button-clicked", lambda _t: undo())
 
 
 def _widget(page):
@@ -481,7 +518,6 @@ class App(Adw.Application):
 
     def do_startup(self):
         Adw.Application.do_startup(self)
-        brand.load_font()
         brand.install()
 
     def do_command_line(self, command_line):

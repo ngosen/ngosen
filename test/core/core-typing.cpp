@@ -2582,6 +2582,7 @@ namespace {
         const auto              keys = keysOf(slow + "nguwx cuar ");
         std::vector<int>        gaps(keys.size(), 60);
         std::fill_n(gaps.begin(), slow.size(), 400);
+        gaps.back()    = 1000;
         const auto run = ngosen::test::typeInAppTraced(resources, makeField("wayland_v2", true, "firefox"), firefox, keys, gaps);
         check(run.text == "tiếng ngữ của ", "wlroots: a late backspace is not overtaken by the commit", run.text);
     }

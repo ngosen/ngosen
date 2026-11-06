@@ -35,7 +35,8 @@ namespace ngosen {
 
     bool TypingState::deletionLooksDone() const {
         const auto s = host_->surrounding();
-        if (!s.isValid()) {
+        // Until the app shows the word, its reports come from before the backspaces.
+        if (!s.isValid() || (backspacesForUnseenWord_ && !unseenWordShown_)) {
             return false;
         }
         const std::string& t = s.text();
@@ -159,6 +160,10 @@ namespace ngosen {
                              t.rearm(surr_wait_started_at_ + timeout);
                              return true;
                          }
+                         if (backspacesForUnseenWord_ && waited + 1000 < UnseenWordForwardWaitUs) {
+                             t.rearm(surr_wait_started_at_ + UnseenWordForwardWaitUs);
+                             return true;
+                         }
                          if (deferLaggingCommit("timeout"))
                              return false;
                          finishReplacement("timeout", true);
@@ -243,10 +248,10 @@ namespace ngosen {
     }
 
     bool TypingState::deferLaggingCommit(const char* reason, uint64_t settleUs) {
-        if (!ngosen::surroundingTextLags(host_->field()) && !backspacesForUnseenWord_)
+        if (!ngosen::surroundingTextLags(host_->field()))
             return false;
         // A report from before the forwarded keys were applied can look like the finished deletion.
-        const uint64_t floorUs = surr_wait_started_at_ + (backspacesForUnseenWord_ ? UnseenWordForwardWaitUs : forwardWaitUs());
+        const uint64_t floorUs = surr_wait_started_at_ + forwardWaitUs();
         const uint64_t nowUs   = ngosen::monotonicUs();
         if (nowUs >= floorUs && host_->hasFocus() && !waitsForRedraw())
             return false;
@@ -432,6 +437,8 @@ namespace ngosen {
             if (current.text() + "\x1f" + std::to_string(current.cursor()) != surr_wait_sent_snapshot_) {
                 surr_wait_saw_other_snapshot_ = true;
             }
+            if (backspacesForUnseenWord_ && isEndsWith(textBeforeCursor(current), surr_wait_prefix_ + surr_wait_deleted_))
+                unseenWordShown_ = true;
         }
         if (!surr_snapshot_trusted_ && waitedUs < minimumUs) {
             // Stale buffer catching up after a timeout: ignore.

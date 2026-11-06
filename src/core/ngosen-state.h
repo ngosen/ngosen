@@ -110,9 +110,9 @@ namespace ngosen {
         /**
          * @brief Treats a cursor move within unchanged surrounding text, or a jump into another spreadsheet cell, as a mouse click.
          */
-        void checkCursorJump();
-        bool textAfterCursorChanged(const Surrounding& s) const;
-        bool showsOwnDeletion(const Surrounding& s) const;
+        void                  checkCursorJump();
+        bool                  textAfterCursorChanged(const Surrounding& s) const;
+        std::optional<size_t> ownDeletionCursor(const Surrounding& s) const;
 
         /**
          * @brief Records text another part of fcitx sent to the app, so its cursor moving past it is not

@@ -161,6 +161,7 @@ namespace ngosen {
                              return true;
                          }
                          if (backspacesForUnseenWord_ && waited + 1000 < UnseenWordForwardWaitUs) {
+                             NGOSEN_INFO("Copy has not shown the word, wait longer before the commit");
                              t.rearm(surr_wait_started_at_ + UnseenWordForwardWaitUs);
                              return true;
                          }

@@ -1038,8 +1038,6 @@ namespace ngosen {
         backspacesForUnseenWord_ = host_->field().frontend == "wayland_v2" && surrSeenTextSinceFocus_ && host_->surrounding().isValid() &&
             !isEndsWith(textBeforeCursor(host_->surrounding()), surr_wait_prefix_ + surr_wait_deleted_);
         unseenWordShown_ = false;
-        if (backspacesForUnseenWord_)
-            NGOSEN_INFO("Copy does not show the word yet, wait for it before the commit");
         waitForDeletion(nullptr, 4);
         // XIM, IBus and D-Bus clients queue forwarded keys, and on wayland_v2 they travel apart from the
         // commit, so the commit can overtake them.

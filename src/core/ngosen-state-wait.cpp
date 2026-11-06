@@ -482,7 +482,8 @@ namespace ngosen {
             return std::nullopt;
         const std::u32string before = ngosen::utf8::decode(lastSurroundingText_);
         const std::u32string now    = ngosen::utf8::decode(s.text());
-        if (at > now.size() || lastSurroundingCursor_ > before.size() || before.compare(0, at, now, 0, at) != 0 || before.substr(lastSurroundingCursor_) != now.substr(at))
+        if (at > now.size() || s.cursor() > now.size() || lastSurroundingCursor_ > before.size() || before.compare(0, at, now, 0, at) != 0 ||
+            before.substr(lastSurroundingCursor_) != now.substr(at))
             return std::nullopt;
         return at;
     }

@@ -2573,6 +2573,19 @@ namespace {
         check(run.text == "tiếng việt nam ", "sway: an edit waiting for the copy goes out after the report", run.text);
     }
 
+    // On Sway and Hyprland forwarded backspaces go through a virtual keyboard, apart from the commit. When Firefox
+    // reports too late for the copy wait, a commit sent before it shows the deletion can land first.
+    void testSlowBackspaceOnWlroots() {
+        ngosen::test::AppQuirks firefox{.reportDelayMs = 250, .backspaceLagMs = 60, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true};
+        FakeResources           resources;
+        const std::string       slow = "tieengs ";
+        const auto              keys = keysOf(slow + "nguwx cuar ");
+        std::vector<int>        gaps(keys.size(), 60);
+        std::fill_n(gaps.begin(), slow.size(), 400);
+        const auto run = ngosen::test::typeInAppTraced(resources, makeField("wayland_v2", true, "firefox"), firefox, keys, gaps);
+        check(run.text == "tiếng ngữ của ", "wlroots: a late backspace is not overtaken by the commit", run.text);
+    }
+
     // A copy that comes a moment late is no reason to leave the surrounding path.
     void testLateCopyKeepsSurroundingPath() {
         {
@@ -3089,6 +3102,7 @@ int main() {
     testLockWord();
     testLockWordPreedit();
     testSlowBackspaceOverIbus();
+    testSlowBackspaceOnWlroots();
     testLockWordNotOnChord();
     testMacroCapitalized();
     testMacroKeyCase();

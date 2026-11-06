@@ -311,8 +311,9 @@ namespace ngosen {
 
     void TypingState::finishReplacement(const char* reason, bool fromTimer) {
         noteWaitOutcome(reason);
-        surr_wait_pending_    = false;
-        surr_wait_timer_only_ = false;
+        surr_wait_pending_       = false;
+        surr_wait_timer_only_    = false;
+        backspacesForUnseenWord_ = false;
         if (!fromTimer)
             replaceTimer(surr_wait_timer_);
         // A previous replacement still waiting for its turn goes out first, keeping the text in order.
@@ -1033,11 +1034,13 @@ namespace ngosen {
             forwardBackspaces(count);
         }
         NGOSEN_INFO("Forward " + std::to_string(count) + " backspaces");
+        // If the copy never showed the word, a report from before its last key looks like one after the backspaces.
+        backspacesForUnseenWord_ = host_->field().frontend == "wayland_v2" && surrSeenTextSinceFocus_ && host_->surrounding().isValid() && !surr_wait_sent_snapshot_fresh_;
         waitForDeletion(nullptr, 4);
         // XIM, IBus and D-Bus clients queue forwarded keys, and on wayland_v2 they travel apart from the
         // commit, so the commit can overtake them.
         if (host_->field().frontend != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
-            deferTimedCommit(surr_wait_started_at_ + forwardWaitUs());
+            deferTimedCommit(surr_wait_started_at_ + (backspacesForUnseenWord_ ? UnseenWordForwardWaitUs : forwardWaitUs()));
         }
     }
 

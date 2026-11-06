@@ -252,6 +252,9 @@ namespace ngosen {
         // IBus clients, GNOME Shell above all, get forwarded keys and commits on separate paths, so a
         // commit sent sooner can still reach the app before the backspaces.
         static constexpr uint64_t ShellForwardWaitUs = 40000;
+        // On wayland_v2 the backspaces go through a virtual keyboard, and a copy that never showed the word
+        // cannot tell when they have landed.
+        static constexpr uint64_t UnseenWordForwardWaitUs = 150000;
         uint64_t                  forwardWaitUs() const;
         // A key sent back arrives at once; a held key repeats tens of milliseconds apart.
         static constexpr uint64_t SentBackWithinUs = 10000;
@@ -305,6 +308,7 @@ namespace ngosen {
         std::string                    surr_wait_sent_snapshot_;         ///< "text\x1fcursor" when the backspaces were sent
         int                            surr_wait_event_count_         = 0;
         bool                           surr_wait_saw_other_snapshot_  = false; ///< an event differed from the send-time snapshot
+        bool                           backspacesForUnseenWord_       = false;
         bool                           surr_wait_sent_snapshot_fresh_ = false; ///< send-time snapshot still showed the text to delete
 
         // "Frozen": a wait timed out and every event matched the send-time snapshot. After two in a

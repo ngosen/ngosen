@@ -774,9 +774,10 @@ namespace ngosen {
         if (surroundingUntrusted() || fieldBounces_ > 0 || field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))
             return false;
         // Backspaces are there to fall back on, and a field that leaves checks unanswered would only
-        // make every replacement late.
-        return !ngosen::reportsReplacementsWithLaterKey(host_->field()) && surrAnsweredUnasked_ >= surrMissed_ && surrSeenTextSinceFocus_ && !backspaceInWord_ &&
-            (unreportedCommitLength_ > 0 || deletion.match == SurroundingDeletion::Match::None);
+        // make every replacement late. Over IBus a backspace can reach the app ahead of the commit before
+        // it, and the answer counts include keys we hold, so a wait that ran out in this field decides.
+        const bool waitPays = ngosen::reportsReplacementsWithLaterKey(field) ? !copyWaitTimedOutInField_ : surrAnsweredUnasked_ >= surrMissed_;
+        return waitPays && surrSeenTextSinceFocus_ && !backspaceInWord_ && (unreportedCommitLength_ > 0 || deletion.match == SurroundingDeletion::Match::None);
     }
 
     bool TypingState::reportsItsEdits() const {

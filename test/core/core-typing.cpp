@@ -2583,6 +2583,86 @@ namespace {
         }
     }
 
+    // Rolled keys over GNOME Shell's IBus bridge: the next key comes before the app has shown the
+    // commit, and a backspace sent then reaches the app ahead of that commit.
+    std::vector<int> rolledGaps(const std::string& typed, const std::vector<size_t>& rolled, int gapMs) {
+        std::vector<int> gaps(typed.size(), gapMs);
+        for (const size_t i : rolled)
+            gaps[i] = 0;
+        return gaps;
+    }
+
+    void testRolledKeysWaitForIbusCopy() {
+        const Field                   antigravity = makeField("ibus", true, "antigravity-ide");
+        const ngosen::test::AppQuirks lagging{.reportDelayMs = 8, .lagMs = 15, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true};
+        {
+            FakeResources     resources;
+            const std::string typed = "nguoiwf ";
+            const auto        run   = ngosen::test::typeInAppTraced(resources, antigravity, lagging, keysOf(typed), rolledGaps(typed, {5}, 60));
+            check(run.text == "người ", "rolled keys: the first word of a session waits for the copy", run.text);
+            check(run.sent.forwardedBackSpaces == 0, "rolled keys: the first word sends no backspaces", std::to_string(run.sent.forwardedBackSpaces));
+        }
+        {
+            FakeResources     resources;
+            const std::string typed = "nguoiwf dduowcj tieengs vieetj chuwx nhes ";
+            ngosen::test::captureLog(true);
+            const auto run   = ngosen::test::typeInAppTraced(resources, antigravity, lagging, keysOf(typed), rolledGaps(typed, {5, 22, 29, 35, 40}, 60));
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(run.text == "người được tiếng việt chữ nhé ", "rolled keys: a sentence keeps its letters", run.text + " " + join(lines));
+            check(run.sent.forwardedBackSpaces == 0, "rolled keys: a sentence sends no backspaces", std::to_string(run.sent.forwardedBackSpaces));
+        }
+        {
+            // f is held while the wait for w's copy is open.
+            FakeResources     resources;
+            const std::string typed = "nguoiwf ";
+            const auto        run   = ngosen::test::typeInAppTraced(resources, antigravity, lagging, keysOf(typed), rolledGaps(typed, {5, 6}, 60));
+            check(run.text == "người ", "rolled keys: a key held during the wait comes after it", run.text);
+            check(run.sent.forwardedBackSpaces == 0, "rolled keys: a held key sends no backspaces", std::to_string(run.sent.forwardedBackSpaces));
+        }
+        {
+            // Firefox on GNOME answers an empty commit; a copy wait there must still give the right words.
+            FakeResources     resources;
+            const std::string typed = "nguoiwf tieengs vieetj ";
+            const auto        run   = ngosen::test::typeInAppTraced(resources, makeField("ibus", true, "firefox"),
+                                                                    {.lagMs = 15, .backspacesSkipLag = true, .repeatsOldTextAfterDelete = true, .emptyCommitsBeforeReport = 1},
+                                                                    keysOf(typed), rolledGaps(typed, {5, 14, 21}, 60));
+            check(run.text == "người tiếng việt ", "rolled keys: Firefox keeps its letters", run.text);
+        }
+    }
+
+    // A field whose copy never catches up waits once, then deletes as before until focus moves on.
+    void testCopyWaitRunsOutOncePerField() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "antigravity-ide"),
+                                                                      ngosen::test::AppQuirks{.reportDelayMs = 8, .staleReport = true, .lagMs = 15, .backspacesSkipLag = true});
+        auto*         app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeRolled = [&](const std::string& typed, const std::vector<size_t>& rolled) {
+            const auto keys = keysOf(typed);
+            const auto gaps = rolledGaps(typed, rolled, 60);
+            for (size_t i = 0; i < keys.size(); ++i) {
+                app->type(keys[i]);
+                loop.pump(gaps[i]);
+            }
+            loop.pump(300);
+        };
+        ngosen::test::captureLog(true);
+        typeRolled("nguoiwf tieengs vieetj ", {5, 14, 21});
+        const auto inOneField = countHaving(ngosen::test::capturedLog(), "still short");
+        app->leaveFocus(500);
+        loop.pump(600);
+        typeRolled("nguoiwf ", {5});
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(inOneField == 1, "a copy that never fits is waited for once in a field", std::to_string(inOneField) + " " + join(lines));
+        check(countHaving(lines, "still short") == 2, "a new focus waits for the copy again", std::to_string(countHaving(lines, "still short")));
+    }
+
     // A copy one key behind can hold the same number of bytes as the word, yet the deletion lands at
     // that copy's cursor, in front of the key the copy lacks.
     void testCopyBehindByAKey() {
@@ -3004,6 +3084,8 @@ int main() {
     testCopyBehindReplayedKey();
     testReportRequestKeepsReplayedKey();
     testLateCopyKeepsSurroundingPath();
+    testRolledKeysWaitForIbusCopy();
+    testCopyWaitRunsOutOncePerField();
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();
     testLongTurnKeepsTheEdit();

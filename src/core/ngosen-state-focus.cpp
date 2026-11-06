@@ -79,10 +79,11 @@ namespace ngosen {
                 lastPath_.clear();
                 surrCheck_.reset();
                 surr_check_timer_.reset();
-                surrUnanswered_      = 0;
-                surrAnswered_        = false;
-                surrAnsweredUnasked_ = 0;
-                surrMissed_          = 0;
+                surrUnanswered_          = 0;
+                surrAnswered_            = false;
+                surrAnsweredUnasked_     = 0;
+                surrMissed_              = 0;
+                copyWaitTimedOutInField_ = false;
             }
         }
 

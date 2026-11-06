@@ -861,6 +861,9 @@ namespace ngosen {
             }
             finishReplacement("key arrived", false);
         }
+        // The user's Backspace would be counted as one of the replacement's, so the edit goes out now.
+        if (key_report_pending_ && key_report_until_copy_fits_ && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()))
+            finishKeyReportWait(true, false);
         if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_pending_) {
             // Forwarded backspaces never come back, so this one is the user's: finish the replacement
             // first, then handle it normally.

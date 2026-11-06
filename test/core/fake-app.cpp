@@ -282,7 +282,7 @@ namespace ngosen::test {
         } else if (quirks_.handsBackKeys)
             later(quirks_.lagMs, [this] { type(key::BackSpace); });
         else
-            later(quirks_.lagMs + quirks_.backspaceLagMs, [this] {
+            later((quirks_.backspacesSkipLag ? 0 : quirks_.lagMs) + quirks_.backspaceLagMs, [this] {
                 noteTypedKey();
                 eraseBefore(1);
             });

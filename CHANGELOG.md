@@ -46,6 +46,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Gõ Sen trên GNOME khi bật extension: gõ nhanh tới mức hai phím đè nhau không còn mất chữ trong Antigravity và các app khác đi qua IBus, như "người" ra "ời" (#362, #581).
+- Gõ Sen trên GNOME khi bật extension: bấm Backspace ngay sau khi gõ dấu không còn xoá nhầm chữ trong các app đi qua IBus (#362, #584).
 - Gõ Sen trong Firefox trên KDE không còn mất dấu khi chèn chữ vào giữa câu trong web editor như Slate, CKEditor (#580, #582).
 - Gõ Sen trên thanh địa chỉ Chrome ở GNOME nay ra đúng tiếng Việt khi tắt extension và có gợi ý tự điền (#543).
 - Gõ Sen trong Firefox trên KDE ít sai chữ hơn hẳn khi gõ nhanh (#543).

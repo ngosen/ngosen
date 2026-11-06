@@ -91,15 +91,16 @@ namespace ngosen::test {
 
     class FakeApp final : public Host {
       public:
-        void setReportDelay(int ms) {
-            quirks_.reportDelayMs = ms;
-        }
         FakeApp(FakeLoop& loop, Field field, AppQuirks quirks) : loop_(loop), field_(std::move(field)), quirks_(quirks) {
             text_ = utf8::decode(quirks_.textAfterCursor);
         }
 
         void attach(TypingState* state) {
             state_ = state;
+        }
+        // Lets a test hold up one stretch of reports, as an app busy for a moment does.
+        void setReportDelay(int ms) {
+            quirks_.reportDelayMs = ms;
         }
         // Presses and releases a key; the app inserts it when the input method lets it through.
         void        type(uint32_t sym);

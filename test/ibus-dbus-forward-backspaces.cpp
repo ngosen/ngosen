@@ -237,6 +237,34 @@ namespace {
         return true;
     }
 
+    // A copy that never catches up ends in backspaces, and the commit still waits until the app reports
+    // the deletion.
+    bool gnomeIbusBackspacesWaitForReportedDeletion(Harness& h) {
+        auto context = h.open("window:6", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
+        if (!h.typeTie(*context, true))
+            return false;
+        pumpEventLoop(h.testInstance.instance, 1);
+        if (!h.type(*context, FcitxKey_e, true))
+            return false;
+        h.pumpUntil([&] { return !context->forwarded().empty(); }, nowUs() + 500000);
+        if (!forwardedOneBackspace(*context) || !context->commits().empty()) {
+            reportFailure("GNOME ibus stale copy: one backspace, no commit yet", "1 backspace, no commit", describeForwarded(*context) + " " + joinCommits(*context));
+            return false;
+        }
+        h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 30000);
+        if (!context->commits().empty()) {
+            reportFailure("GNOME ibus stale copy: no commit before the app reports the deletion", "(none)", joinCommits(*context));
+            return false;
+        }
+        Harness::setSnapshot(*context, "ti", 2);
+        h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 10000);
+        if (context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure("GNOME ibus stale copy: commit once the app reports the deletion", "['ê']", joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
     // A report can arrive from before the forwarded keys were applied, so a commit never goes out
     // sooner than the fixed wait would have sent it.
     bool gnomeIbusCommitsNoSoonerThanForwardWait(Harness& h) {
@@ -444,6 +472,8 @@ int main() {
     if (!deletesThroughSurroundingText(h, "window:5", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
         return 1;
     if (!gnomeIbusWaitsForLaggingCopy(h))
+        return 1;
+    if (!gnomeIbusBackspacesWaitForReportedDeletion(h))
         return 1;
     if (!gnomeIbusCommitsNoSoonerThanForwardWait(h))
         return 1;

@@ -2510,6 +2510,13 @@ namespace {
         const auto    longKeys = keysOf("nguoiwf ");
         const auto    longRun  = ngosen::test::typeInAppTraced(longResources, makeField("wayland", true, "firefox"), slate, longKeys, std::vector<int>(longKeys.size(), 150));
         check(longRun.text == "người chào", "cursor shown over a longer edit first: the word keeps its tone", longRun.text);
+
+        // CKEditor shows the deletion before the cursor comes back from past the commit.
+        FakeResources           ckResources;
+        ngosen::test::AppQuirks ckeditor     = slate;
+        ckeditor.showsDeletionWithCursorPast = true;
+        const auto ckRun = ngosen::test::typeInAppTraced(ckResources, makeField("wayland", true, "firefox"), ckeditor, keys, std::vector<int>(keys.size(), 150));
+        check(ckRun.text == "ngữ chào", "deletion shown with the cursor past the commit: the word keeps its tone", ckRun.text);
     }
 
     // Firefox's cursor stays past the real one after a deletion and a commit in one turn, so the next

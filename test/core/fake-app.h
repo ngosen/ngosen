@@ -78,7 +78,10 @@ namespace ngosen::test {
         int  oldTextAfterDeleteMs = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
         // Reports the cursor moving over a deletion and its commit on the old text before the new text, as
         // Slate in Firefox on Plasma does.
-        bool        movesCursorBeforeText = false;
+        bool movesCursorBeforeText = false;
+        // With movesCursorBeforeText, shows the deletion first with the cursor still past the commit, as
+        // CKEditor in Firefox on Plasma does.
+        bool        showsDeletionWithCursorPast = false;
         std::string textAfterCursor; // text the field starts with, after the cursor
     };
 
@@ -205,7 +208,7 @@ namespace ngosen::test {
         void                                later(int ms, std::function<void()> action);
         void                                startTurn();
         void                                endTurn();
-        void                                reportMovedCursor(size_t cursor);
+        void                                reportMovedCursor(const std::u32string& text, size_t cursor);
         void                                applyHeldEdit(const std::string& text);
 
         FakeLoop&                           loop_;

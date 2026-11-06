@@ -244,10 +244,20 @@ namespace ngosen::test {
             return;
         }
         if (heldDelete_) {
-            const size_t cursor = cursor_;
-            const size_t size   = *heldDelete_;
-            reportMovedCursor(cursor + utf8::decode(text).size());
-            later(35, [this, cursor, size] { reportMovedCursor(cursor >= size ? cursor - size : 0); });
+            const size_t   cursor  = cursor_;
+            const size_t   size    = *heldDelete_;
+            const size_t   back    = cursor >= size ? cursor - size : 0;
+            const size_t   past    = cursor + utf8::decode(text).size();
+            std::u32string deleted = text_;
+            deleted.erase(back, cursor - back);
+            reportMovedCursor(text_, past);
+            if (quirks_.showsDeletionWithCursorPast) {
+                later(24, [this, deleted, past] { reportMovedCursor(deleted, past); });
+                later(41, [this, deleted, back] { reportMovedCursor(deleted, back); });
+                later(42, [this, text] { applyHeldEdit(text); });
+                return;
+            }
+            later(35, [this, back] { reportMovedCursor(text_, back); });
             later(47, [this, text] { applyHeldEdit(text); });
             return;
         }
@@ -544,9 +554,9 @@ namespace ngosen::test {
             });
     }
 
-    void FakeApp::reportMovedCursor(size_t cursor) {
-        reportedText_   = text_;
-        reportedCursor_ = reportedAnchor_ = std::min(cursor, text_.size());
+    void FakeApp::reportMovedCursor(const std::u32string& text, size_t cursor) {
+        reportedText_   = text;
+        reportedCursor_ = reportedAnchor_ = std::min(cursor, text.size());
         showsMovedCursor_                 = true;
         inReport_                         = true;
         state_->surroundingUpdated();

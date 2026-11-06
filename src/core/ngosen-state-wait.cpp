@@ -470,15 +470,21 @@ namespace ngosen {
     }
 
     // The report of a surrounding deletion alone: the same text with only the deleted characters gone
-    // before the cursor. The commit sent with the deletion is still to come.
-    bool TypingState::showsOwnDeletion(const Surrounding& s) const {
+    // before the cursor. The commit sent with the deletion is still to come. Gives the cursor after the deletion.
+    std::optional<size_t> TypingState::ownDeletionCursor(const Surrounding& s) const {
         // A key since then may be the user's own BackSpace, which reports the same shape.
-        if (unreportedDeleteLength_ == 0 || keyCount_ != unreportedDeleteKey_ || s.cursor() != s.anchor() || s.cursor() + unreportedDeleteLength_ != lastSurroundingCursor_ ||
-            textAfterCursorChanged(s))
-            return false;
+        if (unreportedDeleteLength_ == 0 || keyCount_ != unreportedDeleteKey_ || s.cursor() != s.anchor() || lastSurroundingCursor_ < unreportedDeleteLength_)
+            return std::nullopt;
+        // CKEditor in Firefox shows the deletion with the cursor still past our commit.
+        const bool   pastCommit = unreportedCommitLength_ > 0 && s.cursor() == lastSurroundingCursor_ + unreportedCommitLength_;
+        const size_t at         = lastSurroundingCursor_ - unreportedDeleteLength_;
+        if (s.cursor() != at && !pastCommit)
+            return std::nullopt;
         const std::u32string before = ngosen::utf8::decode(lastSurroundingText_);
         const std::u32string now    = ngosen::utf8::decode(s.text());
-        return s.cursor() <= now.size() && lastSurroundingCursor_ <= before.size() && before.compare(0, s.cursor(), now, 0, s.cursor()) == 0;
+        if (at > now.size() || lastSurroundingCursor_ > before.size() || before.compare(0, at, now, 0, at) != 0 || before.substr(lastSurroundingCursor_) != now.substr(at))
+            return std::nullopt;
+        return at;
     }
 
     // Firefox's reports trail the keys, so a field holding only the start of the word has not caught up.
@@ -542,7 +548,8 @@ namespace ngosen {
                                (unreportedCommitLength_ == 0 || textAfterCursorChanged(s)) && !reportTrailsFirstWord(s)) ||
             lostWord;
         // Firefox repeats the old state before the echo, so only a change ends the wait.
-        if (!jumped && !sameText && showsOwnDeletion(s))
+        const std::optional<size_t> deletedTo = !jumped && !sameText ? ownDeletionCursor(s) : std::nullopt;
+        if (deletedTo)
             unreportedDeleteLength_ = 0;
         else if ((jumped && !echo) || !sameText)
             unreportedCommitLength_ = unreportedDeleteLength_ = 0;
@@ -554,7 +561,9 @@ namespace ngosen {
         jumped               = ((jumped && !echo && !intoSuggestion && !caretSettling && !ownMove) || newField) && !settling;
         lastSurroundingText_ = s.text();
         // Keep the real caret, so the app reporting it again, or the rest of our edit, is not a move either.
-        if (!caretSettling && !echo) {
+        if (deletedTo) {
+            lastSurroundingCursor_ = lastSurroundingAnchor_ = static_cast<unsigned int>(*deletedTo);
+        } else if (!caretSettling && !echo) {
             lastSurroundingCursor_ = s.cursor();
             lastSurroundingAnchor_ = s.anchor();
         }

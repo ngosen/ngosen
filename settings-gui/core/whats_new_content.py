@@ -15,6 +15,16 @@ from i18n import N_
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
     {
+        "version": "1.8",
+        "title": N_("Check my machine"),
+        "how": N_(
+            "Shows what keeps Vietnamese typing from working on this machine, with a button to fix "
+            "each item. Test typing in an app and send a bug report from the same page."
+        ),
+        "example": "",
+        "target": ("page", "check"),
+    },
+    {
         "version": "1.7",
         "title": N_("GTK look for GNOME"),
         "how": N_(

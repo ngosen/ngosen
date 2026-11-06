@@ -332,8 +332,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.7: the settings window also comes in a GTK edition that looks like a GNOME app. See also Cứu chữ (retype words typed with Vietnamese off), Cứu dấu (select a word and type a tone mark to change it), the English/Vietnamese key and typing tips."
-msgstr "Version 1.7: cửa sổ cài đặt có thêm bản GTK giống app GNOME. Xem thêm Cứu chữ (gõ lại chữ lỡ gõ khi chưa bật tiếng Việt), Cứu dấu (bôi đen chữ rồi gõ phím dấu để đổi dấu), phím chuyển Anh/Việt và mẹo gõ."
+msgid "Version 1.8: the new Check my machine page shows what keeps Vietnamese typing from working, with a button to fix each item. See also the GTK settings window, Cứu chữ, Cứu dấu and typing tips."
+msgstr "Version 1.8: trang Kiểm tra máy mới cho biết điều gì làm máy chưa gõ được tiếng Việt, kèm nút sửa từng việc. Xem thêm cửa sổ cài đặt bản GTK, Cứu chữ, Cứu dấu và mẹo gõ."
 
 #: src/ngosen-engine.cpp
 msgid "Show"
@@ -1691,6 +1691,10 @@ msgstr "Không đổi được"
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
 msgstr "Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Shows what keeps Vietnamese typing from working on this machine, with a button to fix each item. Test typing in an app and send a bug report from the same page."
+msgstr "Cho biết điều gì làm máy chưa gõ được tiếng Việt, kèm nút sửa từng việc. Test gõ trong app và gửi báo lỗi ngay trên cùng trang."
 
 #: settings-gui/core/whats_new_content.py
 msgid "GTK look for GNOME"

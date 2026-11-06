@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.8.0-1] — 07/11/2026
+
+Trang Kiểm tra máy hướng dẫn thiết lập, có nút sửa từng việc, ô gõ thử và gửi kết quả (#463, #563). GNOME tắt extension: Firefox ít sai chữ khi gõ nhanh, thanh địa chỉ Chrome gõ đúng, một app lỗi không còn làm mọi app ra chữ thô (#541, #543, #586). GNOME bật extension hết mất chữ khi gõ nhanh và xoá nhầm khi Backspace (#581, #584). Firefox trên KDE hết mất dấu khi chèn chữ giữa câu; trên Hyprland, Sway hết mất chữ khi gõ nhanh (#582, #583). install.sh hỗ trợ Fedora 45, bật fcitx5 ngay và thiết lập app Qt 5 trên Sway, Hyprland (#556, #557, #566). Cửa sổ cài đặt chia nhóm rõ hơn, giải thích ô bị khoá và không đổi giá trị khi lăn chuột (#519, #521, #522).
+Tải ở [ngosen-1.8.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.0-1).
+
 ### Thêm
 
 - Trang "Kiểm tra máy" nay kiểm tra fcitx5 có tự chạy khi đăng nhập hay không, kèm các nút đặt tự chạy, đặt biến môi trường, chọn Fcitx 5 làm Virtual Keyboard trên KDE và chạy im-config trên X11. Người cài từ repo hoặc package tải về có thể bấm nút, hoặc làm theo hướng dẫn từng bước và nút chép lệnh để tự thiết lập (#563).

@@ -1634,6 +1634,9 @@ namespace fcitx {
         instance_->inputContextManager().foreachFocused([this](InputContext* ic) {
             const std::string appName = getProgramName(ic);
             NGOSEN_INFO("App name: " + appName);
+            // The menu's label and items were built for the app it opened in.
+            if (isModeMenuOpen(ic) && appName != currentConfigureApp_)
+                closeModeMenuPanel(ic, false);
             const NgoSenMode mode = modeFor(appName);
             if (ic == activeContext_ && mode != realMode) {
                 // The word belongs to the app being left.

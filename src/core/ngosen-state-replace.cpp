@@ -576,7 +576,7 @@ namespace ngosen {
     std::vector<std::string> TypingState::surroundingPathFails(const Surrounding& surrounding, unsigned int& chars) const {
         const Field              field = host_->field();
         std::vector<std::string> fails;
-        if (!surrSeenTextSinceFocus_)
+        if (!sinceFocus_.seenText)
             fails.emplace_back("no text since focus");
         chars = static_cast<unsigned int>(deletedChars_);
         if (!surrounding.isValid()) {
@@ -619,9 +619,9 @@ namespace ngosen {
         std::vector<std::string> fails;
         // An empty field has no text to show, so its empty report counts for the first key typed there.
         // Some apps report an empty copy whatever they hold; their later words still wait for text.
-        const bool firstKey      = keyCount_ == keysAtFocus_ + 1;
-        const bool reportedEmpty = firstKey && surrSeenEmptySinceFocus_ && !showsText(surrounding);
-        if (!surrSeenTextSinceFocus_ && !reportedEmpty)
+        const bool firstKey      = keyCount_ == sinceFocus_.keysAtFocus + 1;
+        const bool reportedEmpty = firstKey && sinceFocus_.seenEmpty && !showsText(surrounding);
+        if (!sinceFocus_.seenText && !reportedEmpty)
             fails.emplace_back("no text since focus");
         if (!surrounding.isValid())
             fails.emplace_back("no copy");
@@ -693,14 +693,14 @@ namespace ngosen {
         const Surrounding previous = lastReport_;
         lastReport_                = report;
         // A key's own report can carry the suggestion too; only one that comes on its own is told apart.
-        if (autofillMarked_ || oldPreBuffer_.empty() || keySinceReport_ || !previous.isValid() || !report.isValid())
+        if (sinceFocus_.autofillMarked || oldPreBuffer_.empty() || keySinceReport_ || !previous.isValid() || !report.isValid())
             return;
         const std::string before = textBeforeCursor(report);
         if (before != textBeforeCursor(previous) || !isEndsWith(before, oldPreBuffer_))
             return;
         if (report.text().size() - before.size() <= previous.text().size() - before.size())
             return;
-        autofillMarked_ = true;
+        sinceFocus_.autofillMarked = true;
         NGOSEN_INFO("Text appeared after the cursor without a key" + loggedField(field) + "; type the next words in the preedit");
     }
 
@@ -712,9 +712,9 @@ namespace ngosen {
     }
 
     void TypingState::notePath(const char* path, const std::string& why) {
-        if (lastPath_ != path)
+        if (sinceFocus_.lastPath != path)
             NGOSEN_INFO(std::string("Path changed to ") + path + loggedField(host_->field()) + ": " + why);
-        lastPath_ = path;
+        sinceFocus_.lastPath = path;
     }
 
     void TypingState::startReplaceLog(const char* wait) {
@@ -809,12 +809,12 @@ namespace ngosen {
         const bool overIbus = ngosen::reportsReplacementsWithLaterKey(field);
         if (overIbus && !ngosen::forwardsBackspaces(field))
             return false;
-        const bool waitPays = overIbus ? copyWaitsRunOut_ < MaxCopyWaitsRunOut : surrAnsweredUnasked_ >= surrMissed_;
-        return waitPays && surrSeenTextSinceFocus_ && !backspaceInWord_ && (unreportedCommitLength_ > 0 || deletion.match == SurroundingDeletion::Match::None);
+        const bool waitPays = overIbus ? copyWaitsRunOut_ < MaxCopyWaitsRunOut : sinceFocus_.answeredUnasked >= sinceFocus_.checksMissed;
+        return waitPays && sinceFocus_.seenText && !backspaceInWord_ && (unreportedCommitLength_ > 0 || deletion.match == SurroundingDeletion::Match::None);
     }
 
     bool TypingState::reportsItsEdits() const {
-        return surrSeenEmptySinceFocus_ || (surrAnsweredUnasked_ >= MinAnswersForPlainCount && surrAnsweredUnasked_ > surrMissed_);
+        return sinceFocus_.seenEmpty || (sinceFocus_.answeredUnasked >= MinAnswersForPlainCount && sinceFocus_.answeredUnasked > sinceFocus_.checksMissed);
     }
 
     int TypingState::surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const {
@@ -1066,7 +1066,7 @@ namespace ngosen {
         }
         NGOSEN_INFO("Forward " + std::to_string(count) + " backspaces");
         // If the copy never showed the word, a report from before its last key looks like one after the backspaces.
-        backspacesForUnseenWord_ = host_->field().frontend == "wayland_v2" && surrSeenTextSinceFocus_ && host_->surrounding().isValid() &&
+        backspacesForUnseenWord_ = host_->field().frontend == "wayland_v2" && sinceFocus_.seenText && host_->surrounding().isValid() &&
             !isEndsWith(textBeforeCursor(host_->surrounding()), surr_wait_prefix_ + surr_wait_deleted_);
         unseenWordShown_ = false;
         waitForDeletion(nullptr, 4);

@@ -120,7 +120,7 @@ namespace ngosen {
     // WPS over D-Bus sets the same flags as fcitx5-gtk4 but never reports its text, takes forwarded
     // keys and ignores deletions through the surrounding text.
     bool TypingState::dropsForwardedKeys() const {
-        return ngosen::ignoresForwardedKeys(host_->field()) && fieldReported_;
+        return ngosen::ignoresForwardedKeys(host_->field()) && sinceFocus_.reported;
     }
 
     bool TypingState::forwardsEnterAfterCommit() const {

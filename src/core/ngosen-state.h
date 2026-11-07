@@ -180,7 +180,6 @@ namespace ngosen {
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
         bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key
-        bool                     fieldReported_         = false; ///< the field reported its text since it got focus
         Surrounding              reportAtKey_;
 
         struct Retype {
@@ -602,25 +601,32 @@ namespace ngosen {
         void                            notePath(const char* path, const std::string& why);
         bool                            surroundingUntrusted() const;
         bool                            appMarkedUntrusted() const;
-        std::string                     lastPath_;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
-        uint64_t                        keyCount_                = 0;     ///< key presses other than modifiers
-        int                             surrUnanswered_          = 0;     ///< checks in a row left unanswered in this field
-        bool                            surrAnswered_            = false; ///< a check in this field came out correct
-        int                             surrAnsweredUnasked_     = 0;     ///< checks in this field answered with no key since the edit
-        int                             surrMissed_              = 0;     ///< checks in this field left unanswered
-        static constexpr int            MinAnswersForPlainCount  = 2;
-        bool                            surrSeenTextSinceFocus_  = false; ///< the field reported text since it got focus
-        bool                            surrSeenEmptySinceFocus_ = false; ///< the field reported itself empty before any key since it got focus
-        uint64_t                        keysAtFocus_             = 0;     ///< keyCount_ at the last focus-in, kept over a bounce
-        uint64_t                        commitCount_             = 0;
+        uint64_t                        keyCount_               = 0; ///< key presses other than modifiers
+        int                             surrUnanswered_         = 0; ///< checks in a row left unanswered in this field
+        static constexpr int            MinAnswersForPlainCount = 2;
+        uint64_t                        commitCount_            = 0;
         Surrounding                     lastReport_;
         bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
         std::unique_ptr<ngosen::Timer>  replay_timer_;
-        bool                            autofillMarked_ = false; ///< this field filled in text after the cursor without a key
-        bool                            fieldUntrusted_ = false; ///< the untrusted mark of an app GNOME Shell does not name
-        bool                            rawWord_        = false; ///< the rest of this word goes to the app as typed
+        bool                            rawWord_ = false; ///< the rest of this word goes to the app as typed
+
+        // What the field showed since it got focus. A focus-in that is not a bounce starts it over, and
+        // nothing else does.
+        struct FieldHistory {
+            bool        reported       = false;  ///< any valid report, the copy at focus-in included
+            bool        seenText       = false;  ///< a report with text while it had focus
+            bool        seenEmpty      = false;  ///< reported itself empty before any key
+            uint64_t    keysAtFocus    = 0;      ///< keyCount_ when it got focus
+            bool        autofillMarked = false;  ///< filled in text after the cursor without a key
+            bool        untrusted      = false;  ///< the untrusted mark of an app GNOME Shell does not name
+            std::string lastPath;                ///< how its last replacement deleted
+            bool        checkAnswered   = false; ///< a check came out correct
+            int         answeredUnasked = 0;     ///< checks answered with no key since the edit
+            int         checksMissed    = 0;     ///< checks left unanswered
+        };
+        FieldHistory sinceFocus_;
 
         // One debug line per replacement: how it deleted, what it waited for first, how it ended.
         void        startReplaceLog(const char* wait);

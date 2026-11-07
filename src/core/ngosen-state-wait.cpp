@@ -291,7 +291,7 @@ namespace ngosen {
         const bool        waiting    = surr_wait_watching_;
         const bool        overtyping = overtype_watching_;
         const std::string report     = host_->field().password ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
-        fieldReported_               = fieldReported_ || host_->surrounding().isValid();
+        sinceFocus_.reported         = sinceFocus_.reported || host_->surrounding().isValid();
         reportSinceEdit_             = true;
         // A repeat that a wait acts on stays in the log for its timing.
         if (waiting || overtyping || key_report_pending_)
@@ -304,9 +304,9 @@ namespace ngosen {
         }
         if (host_->hasFocus() && host_->surrounding().isValid()) {
             if (showsText(host_->surrounding()))
-                surrSeenTextSinceFocus_ = true;
-            else if (keyCount_ == keysAtFocus_)
-                surrSeenEmptySinceFocus_ = true;
+                sinceFocus_.seenText = true;
+            else if (keyCount_ == sinceFocus_.keysAtFocus)
+                sinceFocus_.seenEmpty = true;
         }
         noteAutofill(host_->surrounding());
         checkSurroundingReport();

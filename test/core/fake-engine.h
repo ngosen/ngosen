@@ -84,9 +84,10 @@ namespace ngosen::test {
         bool hasModifier() const override {
             return (states_ & ~modifier::Repeat) != 0;
         }
-        bool        isCursorMove() const override;
+        bool isCursorMove() const override;
+        // As fcitx::Key::toString names a plain letter.
         std::string name() const override {
-            return std::to_string(appSym_);
+            return appSym_ > 0x20 && appSym_ < 0x7f ? std::string(1, static_cast<char>(appSym_)) : std::to_string(appSym_);
         }
         void replaceSym(uint32_t sym) override {
             appSym_ = sym;

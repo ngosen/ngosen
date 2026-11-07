@@ -12,7 +12,21 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
-- Gõ Sen trong Firefox trên Hyprland và Sway: gõ nhanh một lúc không còn khựng tới khoảng 0,3 giây mỗi từ cho tới khi đổi ô; nay Ngó Sen quay về cách xoá nhanh khi Firefox phản hồi kịp trở lại (#607).
+- Bớt những lúc gõ Sen nhanh bị khựng trong Firefox trên Hyprland, Sway và KDE Plasma: quay lại chờ bản chữ của Firefox khi app phản hồi kịp trở lại, thay vì xoá bằng Backspace (#607).
+
+## [1.8.2-1] — 07/11/2026
+
+Cứu chữ hết xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt (#605), gõ tắt khi đang tiếng Anh hết thành "vnviệt nam" ở ô không cho đọc chữ (#604), và kho APT, pacman, zypper của Ngó Sen phát lại gói `ibus-ngosen` (#598).
+Tải ở [ngosen-1.8.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.2-1).
+
+### Sửa
+
+- Cứu chữ không còn xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt: bấm Enter hay Esc lúc đó giữ nguyên chữ trong ô, và lời mời gõ lại bị bỏ khi app báo con trỏ đã dời đi (#605).
+- Gõ tắt khi đang tiếng Anh không còn chèn cụm chữ đầy đủ sau chữ tắt (thành "vnviệt nam") ở ô không cho đọc chữ quanh con trỏ; chữ tắt được giữ nguyên (#604).
+
+### Thêm
+
+- Kho APT, pacman và zypper của Ngó Sen phát lại gói `ibus-ngosen` (Ngó Sen cho GNOME); `pacman -Syu`, `apt upgrade` và `zypper up` lấy bản `ibus-ngosen` mới sau khi kho được làm mới; gói tải về được đối chiếu SHA256SUMS của release trước khi ký (#598).
 
 ## [1.8.1-1] — 07/11/2026
 

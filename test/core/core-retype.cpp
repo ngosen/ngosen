@@ -224,11 +224,10 @@ namespace {
     }
 
     // Types text in the app while Ngó Sen types English, switches Vietnamese on, then presses keys.
-    std::string retypeInApp(const Field& field, Mode mode, const std::string& typed, const std::vector<uint32_t>& after, AppQuirks quirks = {}) {
+    std::string retypeInApp(FakeResources& resources, const Field& field, Mode mode, const std::string& typed, const std::vector<uint32_t>& after, AppQuirks quirks = {}) {
         realMode = Mode::Off;
         realtextLen.store(0);
-        FakeLoop      loop;
-        FakeResources resources;
+        FakeLoop loop;
         quirks.handsBackKeys      = quirks.handsBackKeys || field.frontend == "xim";
         auto                owned = std::make_unique<FakeApp>(loop, field, quirks);
         FakeApp*            app   = owned.get();
@@ -248,6 +247,22 @@ namespace {
         }
         loop.pump(300);
         return app->text();
+    }
+
+    std::string retypeInApp(const Field& field, Mode mode, const std::string& typed, const std::vector<uint32_t>& after, AppQuirks quirks = {}) {
+        FakeResources resources;
+        return retypeInApp(resources, field, mode, typed, after, quirks);
+    }
+
+    // Pinned so moving the replacement code keeps it.
+    void testRetypeWithNoWayToDelete() {
+        FakeResources resources;
+        resources.markSurroundingUntrusted("ibus", "qtapp");
+        Field field            = makeField("ibus", true);
+        field.sendsNoKeys      = true;
+        field.program          = "qtapp";
+        const std::string text = retypeInApp(resources, field, Mode::Sen, "tieengs vieetj", {}, {.dropsForwardedKeys = true});
+        check(text == "tieengs vieetj", "retype where nothing can delete leaves the text", text);
     }
 
     void testRetypeInApp(const std::string& frontend, bool surroundingText, Mode mode) {
@@ -534,6 +549,7 @@ int main() {
     testOptionOff();
     testFocusInDoesNotOffer();
     testOwnEnglish();
+    testRetypeWithNoWayToDelete();
     testRetypeInApp("wayland", true, Mode::Sen);
     testRetypeInApp("xim", false, Mode::Sen);
     testRetypeInApp("wayland", true, Mode::Preedit);

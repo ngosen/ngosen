@@ -2185,6 +2185,69 @@ namespace {
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
     }
 
+    // < is a backspace. Returns the replacement lines without their timing.
+    std::vector<std::string> replaceLines(FakeResources& resources, const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, ngosen::test::Typed& run) {
+        std::vector<uint32_t> keys;
+        for (char c : typed)
+            keys.push_back(c == '<' ? ngosen::key::BackSpace : static_cast<uint32_t>(c));
+        ngosen::test::captureLog(true);
+        run = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), 150));
+        std::vector<std::string> lines;
+        for (const auto& line : ngosen::test::capturedLog()) {
+            if (has(line, "Replace: "))
+                lines.push_back(line.substr(0, line.find(" after ")));
+        }
+        ngosen::test::captureLog(false);
+        return lines;
+    }
+
+    std::string escaped(const std::string& text) {
+        std::string out;
+        for (char c : text)
+            out += c == '\n' ? std::string("\\n") : std::string(1, c);
+        return out;
+    }
+
+    // How replacements end when they cannot go as planned, pinned so moving the code keeps them.
+    void testReplacementFailures() {
+        ngosen::test::Typed run;
+        {
+            FakeResources resources;
+            Field         qt   = surroundingOnlyField();
+            qt.preeditFallback = true;
+            const auto lines =
+                replaceLines(resources, qt, {.dropsForwardedKeys = true, .reportsTextOnceFilled = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true},
+                             "nam tieesng<<ng ", run);
+            check(run.text == "nam tiếng " && countHaving(lines, "method=surrounding") == 3, "Qt over GNOME Shell: a word typed again after backspaces",
+                  run.text + " " + join(lines));
+        }
+        {
+            // SDL over IBus with no XTEST: nothing can send the backspaces.
+            FakeResources resources;
+            const auto    lines = replaceLines(resources, makeField("ibus", false, "SDL_app"), {}, "vieetj ", run);
+            check(run.text == "vieeettjjệt " && countHaving(lines, "ended=backspaces not sent") == 1, "backspaces that cannot be sent", escaped(run.text) + " " + join(lines));
+        }
+        {
+            // The fake app takes no selection keys, so the selection never shows.
+            FakeResources resources;
+            setXTestSenderForTest([](int) { return true; });
+            const auto lines = replaceLines(resources, makeField("xim", true), {.takesXTest = true, .textAfterCursor = "\n\n"}, "vieetj ", run);
+            setXTestSenderForTest({});
+            check(run.text == "vie\ntj \n" && countHaving(lines, "method=overtype wait=none ended=overtype gave up") == 1, "an overtype that times out",
+                  escaped(run.text) + " " + join(lines));
+        }
+        {
+            // A field that takes no keys and whose surrounding text is untrusted, with a macro.
+            FakeResources resources;
+            resources.setMacros({{"ko", "không"}});
+            resources.markSurroundingUntrusted("ibus", "qtapp");
+            Field field      = surroundingOnlyField();
+            field.program    = "qtapp";
+            const auto lines = replaceLines(resources, field, {.dropsForwardedKeys = true}, "vieetj ko ", run);
+            check(run.text == "vieetj ko " && lines.empty(), "no way to delete: words and a macro", escaped(run.text) + " " + join(lines));
+        }
+    }
+
     // Firefox on GNOME turns the deletion's bytes back into characters on a copy it updates only when
     // a commit arrives after the edit, so a count made for that old copy takes letters from the real text.
     void testFirefoxReportsOnlyAfterCommit() {
@@ -3320,6 +3383,7 @@ int main() {
     testEmptyFieldFirstWord();
     testSlowReport();
     testStaleCopyBeforeReplacement();
+    testReplacementFailures();
     testReplacementsInOneTurn();
     testFirefoxReportsOnlyAfterCommit();
     testReportRequestKeepsNextEdit();

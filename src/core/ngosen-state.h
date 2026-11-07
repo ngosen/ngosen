@@ -622,6 +622,14 @@ namespace ngosen {
         bool                            fieldUntrusted_ = false; ///< the untrusted mark of an app GNOME Shell does not name
         bool                            rawWord_        = false; ///< the rest of this word goes to the app as typed
 
+        // One debug line per replacement: how it deleted, what it waited for first, how it ended.
+        void        startReplaceLog(const char* wait);
+        void        logReplaceEnd(const char* ended);
+        bool        replace_logging_    = false;
+        const char* replace_method_     = "none";
+        const char* replace_wait_       = "none";
+        uint64_t    replace_started_us_ = 0;
+
         /**
          * @brief Handles the double space to period replacement.
          */

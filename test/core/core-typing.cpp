@@ -1623,11 +1623,16 @@ namespace {
     }
 
     // ^ is a Ctrl tap, + a Shift tap and < a backspace.
-    void expectTyped(FakeResources& resources, const Field& field, const std::string& typed, const std::string& want, const std::string& what, ngosen::test::AppQuirks quirks = {},
-                     int gapMs = 30) {
+    std::vector<uint32_t> editKeysOf(const std::string& typed) {
         std::vector<uint32_t> keys;
         for (char c : typed)
             keys.push_back(c == '^' ? ngosen::key::Control_L : c == '+' ? ngosen::key::Shift_L : c == '<' ? ngosen::key::BackSpace : static_cast<uint32_t>(c));
+        return keys;
+    }
+
+    void expectTyped(FakeResources& resources, const Field& field, const std::string& typed, const std::string& want, const std::string& what, ngosen::test::AppQuirks quirks = {},
+                     int gapMs = 30) {
+        const auto        keys = editKeysOf(typed);
         const std::string text = ngosen::test::typeInApp(resources, field, quirks, keys, std::vector<int>(keys.size(), gapMs));
         check(text == want, what, text);
     }
@@ -1847,10 +1852,8 @@ namespace {
     }
 
     // Types keys with every log line kept; returns the lines that contain `start`.
-    std::vector<std::string> logLinesWhileTyping(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::string& start,
-                                                 ngosen::test::Typed* run = nullptr, int gapMs = 100) {
-        FakeResources resources;
-        const auto    keys = keysOf(typed);
+    std::vector<std::string> logLinesWhileTyping(FakeResources& resources, const Field& field, ngosen::test::AppQuirks quirks, const std::vector<uint32_t>& keys,
+                                                 const std::string& start, ngosen::test::Typed* run, int gapMs) {
         ngosen::test::captureLog(true);
         const auto               typedRun = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), gapMs));
         std::vector<std::string> lines;
@@ -1862,6 +1865,12 @@ namespace {
         if (run != nullptr)
             *run = typedRun;
         return lines;
+    }
+
+    std::vector<std::string> logLinesWhileTyping(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::string& start,
+                                                 ngosen::test::Typed* run = nullptr, int gapMs = 100) {
+        FakeResources resources;
+        return logLinesWhileTyping(resources, field, quirks, keysOf(typed), start, run, gapMs);
     }
 
     size_t countHaving(const std::vector<std::string>& lines, const std::string& part) {
@@ -2183,6 +2192,61 @@ namespace {
         const auto                    lines = logLinesWhileTyping(field, qt, "nam tieesng ", "", &run, 150);
         check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0 && countHaving(lines, "copy shows the earlier word") > 0,
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
+    }
+
+    // The replacement lines without their timing.
+    std::vector<std::string> replaceLines(FakeResources& resources, const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, ngosen::test::Typed& run) {
+        auto lines = logLinesWhileTyping(resources, field, quirks, editKeysOf(typed), "Replace: ", &run, 150);
+        for (auto& line : lines)
+            line = line.substr(0, line.find(" after "));
+        return lines;
+    }
+
+    std::string escaped(const std::string& text) {
+        std::string out;
+        for (char c : text)
+            out += c == '\n' ? std::string("\\n") : std::string(1, c);
+        return out;
+    }
+
+    // How replacements end when they cannot go as planned, pinned so moving the code keeps them.
+    void testReplacementFailures() {
+        ngosen::test::Typed run;
+        {
+            FakeResources resources;
+            Field         qt   = surroundingOnlyField();
+            qt.preeditFallback = true;
+            const auto lines =
+                replaceLines(resources, qt, {.dropsForwardedKeys = true, .reportsTextOnceFilled = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true},
+                             "nam tieesng<<ng ", run);
+            check(run.text == "nam tiếng " && countHaving(lines, "method=surrounding") == 3, "Qt over GNOME Shell: a word typed again after backspaces",
+                  run.text + " " + join(lines));
+        }
+        {
+            // SDL over IBus with no XTEST. The text is wrong: each key is committed by name and also reaches the app.
+            FakeResources resources;
+            const auto    lines = replaceLines(resources, makeField("ibus", false, "SDL_app"), {}, "vieetj ", run);
+            check(run.text == "vieeettjjệt " && countHaving(lines, "ended=backspaces not sent") == 1, "backspaces that cannot be sent", escaped(run.text) + " " + join(lines));
+        }
+        {
+            // The fake app takes no selection keys, so the selection never shows.
+            FakeResources resources;
+            setXTestSenderForTest([](int) { return true; });
+            const auto lines = replaceLines(resources, makeField("xim", true), {.takesXTest = true, .textAfterCursor = "\n\n"}, "vieetj ", run);
+            setXTestSenderForTest({});
+            check(run.text == "vie\ntj \n" && countHaving(lines, "method=overtype wait=none ended=overtype gave up") == 1, "an overtype that times out",
+                  escaped(run.text) + " " + join(lines));
+        }
+        {
+            // A field that takes no keys and whose surrounding text is untrusted, with a macro.
+            FakeResources resources;
+            resources.setMacros({{"ko", "không"}});
+            resources.markSurroundingUntrusted("ibus", "qtapp");
+            Field field      = surroundingOnlyField();
+            field.program    = "qtapp";
+            const auto lines = replaceLines(resources, field, {.dropsForwardedKeys = true}, "vieetj ko ", run);
+            check(run.text == "vieetj ko " && lines.empty(), "no way to delete: words and a macro", escaped(run.text) + " " + join(lines));
+        }
     }
 
     // Firefox on GNOME turns the deletion's bytes back into characters on a copy it updates only when
@@ -3320,6 +3384,7 @@ int main() {
     testEmptyFieldFirstWord();
     testSlowReport();
     testStaleCopyBeforeReplacement();
+    testReplacementFailures();
     testReplacementsInOneTurn();
     testFirefoxReportsOnlyAfterCommit();
     testReportRequestKeepsNextEdit();

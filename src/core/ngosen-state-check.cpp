@@ -180,6 +180,7 @@ namespace ngosen {
         surr_wait_deleted_             = extra;
         surr_wait_sent_snapshot_       = reportKey(report);
         surr_wait_sent_snapshot_fresh_ = true;
+        startReplaceLog("none");
         deleteAndCommit(extra, check.added);
     }
 

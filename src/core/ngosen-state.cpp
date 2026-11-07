@@ -135,7 +135,8 @@ namespace ngosen {
     }
 
     void TypingState::holdEnter(bool untilRelease, ngosen::EditKey key) {
-        held_key_           = key;
+        held_key_ = key;
+        held_field_key_.reset();
         held_enter_pending_ = true;
         held_enter_release_ = untilRelease;
         held_enter_due_us_  = ngosen::monotonicUs() + EnterAfterCommitUs;
@@ -168,7 +169,13 @@ namespace ngosen {
     }
 
     void TypingState::forwardHeldEnter() {
-        forwardTap(held_key_);
+        if (held_field_key_) {
+            const KeyEntry key = *held_field_key_;
+            held_field_key_.reset();
+            forwardKeyTap(key);
+        } else {
+            forwardTap(held_key_);
+        }
         // Keys typed after a replayed Enter waited for it.
         if (!buffered_keys_.empty() && !is_deleting_.load(std::memory_order_acquire))
             replayBufferedKeys();
@@ -568,7 +575,7 @@ namespace ngosen {
     void TypingState::handleKey(ngosen::KeyPress& keyEvent) {
         chooseWordMode(keyEvent);
         recordKey(keyEvent);
-        if (held_key_ == ngosen::EditKey::BackSpace ? ngosen::key::isBackspace(keyEvent.sym()) : ngosen::key::isEnter(keyEvent.sym())) {
+        if (heldKeyIs(keyEvent.sym())) {
             const bool heldRelease = keyEvent.isRelease() && held_enter_release_;
             held_enter_release_    = false;
             if (heldRelease) {
@@ -679,6 +686,27 @@ namespace ngosen {
             return true;
         }
         return false;
+    }
+
+    bool TypingState::heldKeyIs(uint32_t sym) const {
+        if (held_field_key_)
+            return sym == held_field_key_->sym;
+        return held_key_ == ngosen::EditKey::BackSpace ? ngosen::key::isBackspace(sym) : ngosen::key::isEnter(sym);
+    }
+
+    void TypingState::forwardKeyTap(const KeyEntry& key) {
+        const uint32_t time = lastPressTime_ + ++forwardsSincePress_;
+        host_->forwardKeyPress(key.sym, key.state, key.code, false, time);
+        host_->forwardKeyPress(key.sym, key.state, key.code, true, time);
+    }
+
+    // Replayed as text these would type a letter or nothing, so they wait for the commit and go out as pressed.
+    bool TypingState::actsOnField(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const {
+        if (keyEvent.isModifier() || ngosen::key::isBackspace(currentSym))
+            return false;
+        const bool shortcut = (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) != 0U;
+        const bool editKey  = ngosen::key::isEnter(currentSym) || currentSym == ngosen::key::Tab || currentSym == ngosen::key::KP_Tab || currentSym == ngosen::key::ISO_Left_Tab;
+        return shortcut || (!editKey && !typesText(keyEvent, currentSym));
     }
 
     void TypingState::forwardTap(ngosen::EditKey key) {
@@ -822,7 +850,7 @@ namespace ngosen {
         const Field field = host_->field();
         if (!ngosen::keyOvertakesCommit(field))
             return false;
-        if (typesText(keyEvent, currentSym))
+        if (typesText(keyEvent, currentSym) || actsOnField(keyEvent, currentSym))
             return true;
         if (field.frontend != "dbus") {
             if (ngosen::key::isEnter(currentSym))
@@ -875,7 +903,7 @@ namespace ngosen {
             }
             if (holdsKeyDuringTimedWait(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 noteHeldKeyForDoubling(keyEvent, currentSym);
-                buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
+                buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code(), .actsOnField = actsOnField(keyEvent, currentSym)});
                 keyEvent.accept();
                 finishReplacement("key arrived", false);
                 return true;
@@ -900,10 +928,10 @@ namespace ngosen {
                 realtextLen.fetch_sub(1, std::memory_order_acq_rel);
             handleReplacementBackspace(keyEvent, currentSym, 4);
         } else {
-            std::string keyUtf8Check = host_->keyText(currentSym);
-            if ((!keyUtf8Check.empty() || replayedEditKey(currentSym, keyEvent.states())) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            const bool fieldKey = actsOnField(keyEvent, currentSym);
+            if ((fieldKey || !host_->keyText(currentSym).empty() || replayedEditKey(currentSym, keyEvent.states())) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 NGOSEN_WARN("Typing so fast, add key to queue");
-                buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states()});
+                buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code(), .actsOnField = fieldKey});
             }
             keyEvent.accept();
         }

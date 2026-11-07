@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Gõ Sen: phím mũi tên, Home, End, Delete, Esc và Ctrl+phím bấm ngay sau một chữ không còn bị nuốt hay ra thành chữ cái, mà tới app sau khi chữ đã sửa xong (#591).
+
 ### Tài liệu
 
 - README hướng dẫn báo lỗi qua trang “Kiểm tra máy” thay cho hộp “Kiểm tra máy tôi…” đã bỏ ở version 1.8.0 (#590).

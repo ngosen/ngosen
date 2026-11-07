@@ -547,26 +547,28 @@ namespace ngosen {
     }
 
     void TypingState::deleteAndCommit(const std::string& deletedPart, const std::string& addedPart) {
+        struct Method {
+            const char* name;
+            bool (TypingState::*usable)(const ReplaceRequest&);
+            void (TypingState::*run)(const ReplaceRequest&);
+        };
+        // Tried in this order; system backspaces are always usable, so one of them runs.
+        static constexpr Method methods[] = {
+            {"overtype xtest", &TypingState::overtypeXTestUsable, &TypingState::runOvertypeXTest},
+            {"overtype", &TypingState::overtypeUsable, &TypingState::runOvertype},
+            {"del", &TypingState::delUsable, &TypingState::runDel},
+            {"surrounding", &TypingState::surroundingUsable, &TypingState::runSurrounding},
+            {"forwarded backspaces", &TypingState::forwardedBackspacesUsable, &TypingState::runForwardedBackspaces},
+            {"system backspaces", &TypingState::systemBackspacesUsable, &TypingState::runSystemBackspaces},
+        };
         const ReplaceRequest request{.deleted = deletedPart, .added = addedPart, .copy = host_->surrounding()};
         backspacesForUnseenWord_ = false;
-        if (overtypeXTestUsable(request)) {
-            replace_method_ = "overtype xtest";
-            runOvertypeXTest(request);
-        } else if (overtypeUsable(request)) {
-            replace_method_ = "overtype";
-            runOvertype(request);
-        } else if (delUsable(request)) {
-            replace_method_ = "del";
-            runDel(request);
-        } else if (surroundingUsable(request)) {
-            replace_method_ = "surrounding";
-            runSurrounding(request);
-        } else if (forwardedBackspacesUsable(request)) {
-            replace_method_ = "forwarded backspaces";
-            runForwardedBackspaces(request);
-        } else {
-            replace_method_ = "system backspaces";
-            runSystemBackspaces(request);
+        for (const Method& method : methods) {
+            if ((this->*method.usable)(request)) {
+                replace_method_ = method.name;
+                (this->*method.run)(request);
+                return;
+            }
         }
     }
 

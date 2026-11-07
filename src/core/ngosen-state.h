@@ -530,8 +530,29 @@ namespace ngosen {
         void performReplacement(const std::string& deletedPart, const std::string& addedPart);
         // Remembers what the app showed when the replacement started, to tell when it is done.
         void recordSendSnapshot(const std::string& deletedPart);
-        // True to delete through the surrounding text; otherwise counts the backspaces to send.
-        bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
+        bool deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
+        // What one replacement deletes and adds, and the app's text as read after any wait for it. The
+        // strings are copies: callers pass members that a way may overwrite while it runs.
+        struct ReplaceRequest {
+            std::string deleted;
+            std::string added;
+            Surrounding copy;
+        };
+        // Each way to replace the word: whether this field can use it, and how it runs.
+        bool overtypeXTestUsable(const ReplaceRequest& request);
+        void runOvertypeXTest(const ReplaceRequest& request);
+        bool overtypeUsable(const ReplaceRequest& request);
+        void runOvertype(const ReplaceRequest& request);
+        bool delUsable(const ReplaceRequest& request);
+        void runDel(const ReplaceRequest& request);
+        bool surroundingUsable(const ReplaceRequest& request);
+        void runSurrounding(const ReplaceRequest& request);
+        bool forwardedBackspacesUsable(const ReplaceRequest& request);
+        void runForwardedBackspaces(const ReplaceRequest& request);
+        void runSystemBackspaces(const ReplaceRequest& request);
+        void startBackspaces(const ReplaceRequest& request);
+        // The word's characters plus the autofill a Backspace removes first.
+        void                     countBackspaces(const ngosen::Surrounding& surrounding);
         void                     replaceThroughSurrounding(const Surrounding& surrounding, int extraBeforeCursor = 0);
         void                     clearSelectedTailThenReplace(const Surrounding& surrounding);
         void                     finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype);

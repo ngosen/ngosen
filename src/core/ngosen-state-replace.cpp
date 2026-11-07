@@ -479,49 +479,95 @@ namespace ngosen {
         deleteAndCommit(deletedPart, addedPart);
     }
 
-    void TypingState::deleteAndCommit(const std::string& deletedPart, const std::string& addedPart) {
-        const auto surrounding   = host_->surrounding();
-        backspacesForUnseenWord_ = false;
-        // A BackSpace in the Chromium address bar would only remove the selected autocompletion. XTEST,
-        // unlike forwardKey, keeps Shift, so widen the selection over the old text and type over both.
-        if (xtestAvailable() && ngosen::selectsOverAutocompletion(host_->field()) && !field_keeps_focus_on_selection_ && !deletedPart.empty()) {
-            overtype_deleted_ = deletedPart;
-            replace_method_   = "overtype xtest";
-            selectAndOvertype(addedPart, static_cast<int>(ngosen::utf8::length(deletedPart)), true);
-            return;
-        }
-        // Facebook composers only: other fields do not report a selection-only change, so the
-        // overtype would time out and drop the tone mark.
-        if (engine_->options().messengerSelectOvertype && !ngosen::forwardsBackspaces(host_->field()) && !host_->field().sendsNoKeys && looksLikeFacebookComposer(surrounding)) {
-            replace_method_ = "overtype";
-            selectAndOvertype(addedPart, static_cast<int>(ngosen::utf8::length(deletedPart)));
-            return;
-        }
-        if (ngosen::erasesWithCommittedDel(host_->field())) {
-            replace_method_ = "del";
-            replaceThroughCommittedDel();
-            return;
-        }
-        const bool isSurrText = deletesThroughSurrounding(surrounding);
+    // A BackSpace in the Chromium address bar would only remove the selected autocompletion. XTEST,
+    // unlike forwardKey, keeps Shift, so widen the selection over the old text and type over both.
+    bool TypingState::overtypeXTestUsable(const ReplaceRequest& request) {
+        return xtestAvailable() && ngosen::selectsOverAutocompletion(host_->field()) && !field_keeps_focus_on_selection_ && !request.deleted.empty();
+    }
+
+    void TypingState::runOvertypeXTest(const ReplaceRequest& request) {
+        overtype_deleted_ = request.deleted;
+        selectAndOvertype(request.added, static_cast<int>(ngosen::utf8::length(request.deleted)), true);
+    }
+
+    // Facebook composers only: other fields do not report a selection-only change, so the
+    // overtype would time out and drop the tone mark.
+    bool TypingState::overtypeUsable(const ReplaceRequest& request) {
+        return engine_->options().messengerSelectOvertype && !ngosen::forwardsBackspaces(host_->field()) && !host_->field().sendsNoKeys && looksLikeFacebookComposer(request.copy);
+    }
+
+    void TypingState::runOvertype(const ReplaceRequest& request) {
+        selectAndOvertype(request.added, static_cast<int>(ngosen::utf8::length(request.deleted)));
+    }
+
+    bool TypingState::delUsable(const ReplaceRequest& /*request*/) {
+        return ngosen::erasesWithCommittedDel(host_->field());
+    }
+
+    void TypingState::runDel(const ReplaceRequest& /*request*/) {
+        replaceThroughCommittedDel();
+    }
+
+    // Also logs a change of path, so it runs only once the ways before it were turned down.
+    bool TypingState::surroundingUsable(const ReplaceRequest& request) {
+        return deletesThroughSurrounding(request.copy);
+    }
+
+    void TypingState::runSurrounding(const ReplaceRequest& request) {
         is_deleting_.store(true, std::memory_order_release);
-        if (isSurrText) {
-            replace_method_ = "surrounding";
-            replaceThroughSurrounding(surrounding);
-            return;
-        }
+        replaceThroughSurrounding(request.copy);
+    }
+
+    bool TypingState::forwardedBackspacesUsable(const ReplaceRequest& /*request*/) {
+        return ngosen::forwardsBackspaces(host_->field());
+    }
+
+    void TypingState::startBackspaces(const ReplaceRequest& request) {
+        countBackspaces(request.copy);
+        is_deleting_.store(true, std::memory_order_release);
         closeCheckBeforeOtherEdit();
-        if (ngosen::forwardsBackspaces(host_->field())) {
-            replace_method_ = "forwarded backspaces";
-            replaceThroughForwardedKeys();
-            return;
-        }
-        replace_method_ = "system backspaces";
+    }
+
+    void TypingState::runForwardedBackspaces(const ReplaceRequest& request) {
+        startBackspaces(request);
+        replaceThroughForwardedKeys();
+    }
+
+    void TypingState::runSystemBackspaces(const ReplaceRequest& request) {
+        startBackspaces(request);
         // No sentinel will come back, and waiting for it would swallow everything typed next.
         if (!sendBackspaceKeys(expected_backspaces_)) {
             finishReplacement("backspaces not sent", false);
             return;
         }
         NGOSEN_INFO("Send " + std::to_string(expected_backspaces_) + " backspaces");
+    }
+
+    void TypingState::deleteAndCommit(const std::string& deletedPart, const std::string& addedPart) {
+        struct Method {
+            const char* name;
+            bool (TypingState::*usable)(const ReplaceRequest&);
+            void (TypingState::*run)(const ReplaceRequest&);
+        };
+        // Tried in this order; system backspaces run when no other way can.
+        static constexpr Method methods[] = {
+            {"overtype xtest", &TypingState::overtypeXTestUsable, &TypingState::runOvertypeXTest},
+            {"overtype", &TypingState::overtypeUsable, &TypingState::runOvertype},
+            {"del", &TypingState::delUsable, &TypingState::runDel},
+            {"surrounding", &TypingState::surroundingUsable, &TypingState::runSurrounding},
+            {"forwarded backspaces", &TypingState::forwardedBackspacesUsable, &TypingState::runForwardedBackspaces},
+        };
+        const ReplaceRequest request{.deleted = deletedPart, .added = addedPart, .copy = host_->surrounding()};
+        backspacesForUnseenWord_ = false;
+        for (const Method& method : methods) {
+            if ((this->*method.usable)(request)) {
+                replace_method_ = method.name;
+                (this->*method.run)(request);
+                return;
+            }
+        }
+        replace_method_ = "system backspaces";
+        runSystemBackspaces(request);
     }
 
     void TypingState::recordSendSnapshot(const std::string& deletedPart) {
@@ -751,6 +797,10 @@ namespace ngosen {
                 NGOSEN_INFO("Surrounding path would delete " + std::to_string(chars) + loggedField(host_->field()) + "; fails: " + joined(fails));
             }
         }
+        return false;
+    }
+
+    void TypingState::countBackspaces(const ngosen::Surrounding& surrounding) {
         ++expected_backspaces_;
         // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
         // the autofill shape on Firefox.
@@ -766,7 +816,6 @@ namespace ngosen {
                 ++expected_backspaces_;
             }
         }
-        return false;
     }
 
     std::vector<std::string> TypingState::earlierWordsBeforeReplacement() const {

@@ -10,9 +10,14 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.8.1-1] — 07/11/2026
+
+Gõ Sen hết nuốt hoặc đảo thứ tự phím điều hướng và phím tắt Ctrl bấm ngay sau một chữ; riêng app Wayland trên GNOME vẫn nhận Ctrl+phím thành chữ (#591).
+Tải ở [ngosen-1.8.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.1-1).
+
 ### Sửa
 
-- Gõ Sen: phím mũi tên, Home, End, Delete, Esc và Ctrl+phím bấm ngay sau một chữ không còn bị nuốt hay ra thành chữ cái, mà tới app sau khi chữ đã sửa xong (#591).
+- Gõ Sen hết nuốt hoặc đảo thứ tự phím mũi tên, Home, End, Delete, Esc và phím tắt Ctrl bấm ngay sau một chữ; riêng app Wayland trên GNOME vẫn nhận Ctrl+phím thành chữ (#591).
 
 ### Tài liệu
 

@@ -69,10 +69,19 @@ def vietnamese():
         else:
             after_vowel.append(f"{keys}{tone}\t{word}")
     return {
-        "vietnamese-tone-last": last,
-        "vietnamese-tone-after-vowel": after_vowel,
-        "retone-generated": retone,
+        "vietnamese-tone-last": unambiguous(last),
+        "vietnamese-tone-after-vowel": unambiguous(after_vowel),
+        "retone-generated": unambiguous(retone),
     }
+
+
+def unambiguous(lines):
+    """Drops keys that Telex types for more than one word (mốc and moóc are both `moocs`)."""
+    words = {}
+    for line in lines:
+        keys, _, word = line.partition("\t")
+        words.setdefault(keys, set()).add(word)
+    return [line for line in dict.fromkeys(lines) if len(words[line.partition("\t")[0]]) == 1]
 
 
 def english():
@@ -167,7 +176,10 @@ def run(out_dir):
 
 def load(path):
     rows = [line.split("\t") for line in path.read_text(encoding="utf-8").splitlines() if line]
-    return {keys: (want, got) for keys, want, got in rows}
+    result = {keys: (want, got) for keys, want, got in rows}
+    if len(result) != len(set(map(tuple, rows))):
+        sys.exit(f"{path}: the same keys with different results")
+    return result
 
 
 def compare(base_dir, new_dir, limit=20):

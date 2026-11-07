@@ -39,6 +39,8 @@ struct KeyEntry {
     uint32_t sym;                 ///< Key symbol
     uint32_t state;               ///< Key state (modifiers)
     bool     heldForCopy = false; ///< a Backspace that waited for the copy so it reaches the app after the edit
+    uint32_t code        = 0;     ///< hardware keycode, for a key forwarded as pressed
+    bool     actsOnField = false; ///< moves the cursor or runs a shortcut, so it follows the commit unchanged
 };
 
 namespace fcitx {
@@ -273,6 +275,8 @@ namespace ngosen {
         uint32_t trackCapitalization(ngosen::KeyPress& keyEvent);
         bool     atStartOfLine() const;
         void     forwardTap(ngosen::EditKey key);
+        void     forwardKeyTap(const KeyEntry& key);
+        bool     actsOnField(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
         bool     handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym);
         bool     holdsKeyDuringTimedWait(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
         void     noteHeldKeyForDoubling(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
@@ -454,6 +458,8 @@ namespace ngosen {
         bool                           held_enter_release_ = false;
         uint64_t                       held_enter_due_us_  = 0;
         ngosen::EditKey                held_key_           = ngosen::EditKey::Return;
+        std::optional<KeyEntry>        held_field_key_; ///< held in place of held_key_
+        bool                           heldKeyIs(uint32_t sym) const;
 
         // Enter after a word the engine changes at its end, such as a macro, reaches the app once the new text is in the field.
         bool            finishWordBeforeEnter(ngosen::KeyPress& keyEvent);
@@ -678,6 +684,7 @@ namespace ngosen {
         void                           commitReplayed(std::string& out);
         std::optional<ngosen::EditKey> replayedEditKey(uint32_t sym, uint32_t state) const;
         bool                           holdReplayedKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out, ngosen::EditKey key);
+        bool                           holdReplayedFieldKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         // Replays keys[i]; true when it started a replacement, which replays the rest later.
         bool replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         void replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart);

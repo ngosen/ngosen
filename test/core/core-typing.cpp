@@ -499,6 +499,8 @@ namespace {
     void testEnterDuringTimedWaitFollowsCommit() {
         const std::string text = typeInSilentIbusField({'l', 'o', 'o', 'x', 0xff0d, 'b'}, {100, 100, 100, 2, 100, 100});
         check(text == "lỗ\nb", "ibus: an Enter typed during a timed wait goes after the commit", text);
+        const std::string moved = typeInSilentIbusField({'l', 'o', 'o', 'x', ngosen::key::Left, 'b'}, {100, 100, 100, 2, 100, 100});
+        check(moved == "lbỗ", "ibus: Left typed during a timed wait moves the cursor after the commit", moved);
     }
 
     void testBackspaceDuringTimedWaitFollowsCommit() {
@@ -2656,6 +2658,29 @@ namespace {
             const auto        run   = ngosen::test::typeInAppTraced(resources, antigravity, lagging, keysOf(typed), rolledGaps(typed, {5, 6}, 60));
             check(run.text == "người ", "rolled keys: a key held during the wait comes after it", run.text);
             check(run.sent.forwardedBackSpaces == 0, "rolled keys: a held key sends no backspaces", std::to_string(run.sent.forwardedBackSpaces));
+        }
+        {
+            // Keys with no text pressed during the wait reach the field after the word, not as text or not at all.
+            const auto during = [&](uint32_t sym, const std::string& after) {
+                FakeResources resources;
+                auto          keys = keysOf("nguoiwf");
+                keys.push_back(sym);
+                const auto tail = keysOf(after);
+                keys.insert(keys.end(), tail.begin(), tail.end());
+                return ngosen::test::typeInAppTraced(resources, antigravity, lagging, keys, rolledGaps("nguoiwf" + std::string(1 + after.size(), ' '), {5, 6}, 60));
+            };
+            auto run = during(ngosen::key::Left, "x");
+            check(run.text == "ngườxi", "rolled keys: Left during the wait moves the cursor after the word", run.text);
+            run = during(ngosen::key::Home, "x");
+            check(run.text == "xngười", "rolled keys: Home during the wait moves the cursor after the word", run.text);
+            run = during(ngosen::key::Escape, "");
+            check(run.text == "người", "rolled keys: Escape during the wait types nothing", run.text);
+            ngosen::test::captureLog(true);
+            run              = during('a' | ngosen::test::WithCtrl, "");
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(run.text == "người" && run.shortcuts == 1, "rolled keys: Ctrl+A during the wait reaches the app as a shortcut",
+                  run.text + " shortcuts=" + std::to_string(run.shortcuts) + " " + join(lines));
         }
         {
             // Firefox on GNOME answers an empty commit; a copy wait there must still give the right words.

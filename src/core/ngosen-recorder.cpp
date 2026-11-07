@@ -66,6 +66,10 @@ namespace ngosen {
                 recorder_.add("forward", std::string(editKeyName(key)) + (release ? " up" : " down"));
                 host_->forwardKey(key, release, time);
             }
+            void forwardKeyPress(uint32_t sym, uint32_t states, uint32_t code, bool release, uint32_t time) override {
+                recorder_.add("forward", "key=" + std::to_string(sym) + " states=" + std::to_string(states) + (release ? " up" : " down"));
+                host_->forwardKeyPress(sym, states, code, release, time);
+            }
             void deleteSurrounding(int offset, unsigned int size) override {
                 recorder_.add("delete", "offset=" + std::to_string(offset) + " size=" + std::to_string(size));
                 host_->deleteSurrounding(offset, size);

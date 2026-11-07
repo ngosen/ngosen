@@ -149,7 +149,7 @@ tracker that links to it.
 
 ## How to help
 
-- **Linux users:** open Ngó Sen's settings, run "Kiểm tra máy tôi" (Check my machine) and report
+- **Linux users:** open the "Kiểm tra máy" (Check my machine) page in Ngó Sen's settings and report
   apps that still type wrong at https://github.com/ngosen/ngosen/issues, with the app, its version
   and your desktop. Each report either adds a test case or finds a bug above.
 - **App and toolkit developers:** on Linux, report surrounding text to the input method and honour

@@ -508,6 +508,7 @@ namespace ngosen {
         replaceThroughCommittedDel();
     }
 
+    // Also logs a change of path, so it runs only once the ways before it were turned down.
     bool TypingState::surroundingUsable(const ReplaceRequest& request) {
         return deletesThroughSurrounding(request.copy);
     }
@@ -532,10 +533,6 @@ namespace ngosen {
         replaceThroughForwardedKeys();
     }
 
-    bool TypingState::systemBackspacesUsable(const ReplaceRequest& /*request*/) {
-        return true;
-    }
-
     void TypingState::runSystemBackspaces(const ReplaceRequest& request) {
         startBackspaces(request);
         // No sentinel will come back, and waiting for it would swallow everything typed next.
@@ -552,14 +549,13 @@ namespace ngosen {
             bool (TypingState::*usable)(const ReplaceRequest&);
             void (TypingState::*run)(const ReplaceRequest&);
         };
-        // Tried in this order; system backspaces are always usable, so one of them runs.
+        // Tried in this order; system backspaces run when no other way can.
         static constexpr Method methods[] = {
             {"overtype xtest", &TypingState::overtypeXTestUsable, &TypingState::runOvertypeXTest},
             {"overtype", &TypingState::overtypeUsable, &TypingState::runOvertype},
             {"del", &TypingState::delUsable, &TypingState::runDel},
             {"surrounding", &TypingState::surroundingUsable, &TypingState::runSurrounding},
             {"forwarded backspaces", &TypingState::forwardedBackspacesUsable, &TypingState::runForwardedBackspaces},
-            {"system backspaces", &TypingState::systemBackspacesUsable, &TypingState::runSystemBackspaces},
         };
         const ReplaceRequest request{.deleted = deletedPart, .added = addedPart, .copy = host_->surrounding()};
         backspacesForUnseenWord_ = false;
@@ -570,6 +566,8 @@ namespace ngosen {
                 return;
             }
         }
+        replace_method_ = "system backspaces";
+        runSystemBackspaces(request);
     }
 
     void TypingState::recordSendSnapshot(const std::string& deletedPart) {

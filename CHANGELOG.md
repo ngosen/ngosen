@@ -10,6 +10,15 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.8.2-1] — 07/11/2026
+
+Kho APT, pacman và zypper của Ngó Sen phát lại gói `ibus-ngosen` (Ngó Sen cho GNOME); gói `fcitx5-ngosen` không đổi so với 1.8.1-1 (#598).
+Tải ở [ngosen-1.8.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.2-1).
+
+### Thêm
+
+- Kho APT, pacman và zypper của Ngó Sen phát lại gói `ibus-ngosen` (Ngó Sen cho GNOME); `pacman -Syu`, `apt upgrade` và `zypper up` lấy bản `ibus-ngosen` mới sau khi kho được làm mới; gói tải về được đối chiếu SHA256SUMS của release trước khi ký (#598).
+
 ## [1.8.1-1] — 07/11/2026
 
 Gõ Sen hết nuốt hoặc đảo thứ tự phím điều hướng và phím tắt Ctrl bấm ngay sau một chữ; riêng app Wayland trên GNOME vẫn nhận Ctrl+phím thành chữ (#591).

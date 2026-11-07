@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Gõ Sen trong Firefox trên Hyprland và Sway: gõ nhanh một lúc không còn khựng tới khoảng 0,3 giây mỗi từ cho tới khi đổi ô; nay Ngó Sen quay về cách xoá nhanh khi Firefox phản hồi kịp trở lại (#607).
+
 ## [1.8.1-1] — 07/11/2026
 
 Gõ Sen hết nuốt hoặc đảo thứ tự phím điều hướng và phím tắt Ctrl bấm ngay sau một chữ; riêng app Wayland trên GNOME vẫn nhận Ctrl+phím thành chữ (#591).

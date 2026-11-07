@@ -615,8 +615,8 @@ namespace ngosen {
         // What the field showed since it got focus. A focus-in that is not a bounce starts it over, and
         // nothing else does.
         struct FieldHistory {
-            bool        reported       = false;  ///< reported its text
-            bool        seenText       = false;  ///< reported text
+            bool        reported       = false;  ///< any valid report, the copy at focus-in included
+            bool        seenText       = false;  ///< a report with text while it had focus
             bool        seenEmpty      = false;  ///< reported itself empty before any key
             uint64_t    keysAtFocus    = 0;      ///< keyCount_ when it got focus
             bool        autofillMarked = false;  ///< filled in text after the cursor without a key

@@ -68,12 +68,14 @@ namespace ngosen {
             clearAllBuffers();
             fieldBounces_         = 0;
             checkWordAfterBounce_ = false;
-            // GTK sends its text again only when it changes.
             if (isFocusIn) {
-                // A GNOME app's new context gets a copy of the previous window's text before focus-in.
-                sinceFocus_             = FieldHistory{};
+                // A GNOME app's new context gets a copy of the previous window's text before focus-in, so
+                // that copy is not text this field showed.
+                sinceFocus_ = FieldHistory{};
+                // GTK sends its text again only when it changes, so the copy at focus-in counts as a report.
                 sinceFocus_.reported    = s.isValid();
                 sinceFocus_.keysAtFocus = keyCount_;
+                // These also start over at other times, so they stay out of FieldHistory.
                 surrCheck_.reset();
                 surr_check_timer_.reset();
                 surrUnanswered_  = 0;

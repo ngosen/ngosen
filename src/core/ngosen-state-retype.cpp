@@ -144,6 +144,9 @@ namespace ngosen {
             return;
         const std::string typed = std::move(typedWhileOff_);
         typedWhileOff_.clear();
+        // A click since the last key moved the cursor away from the typed text.
+        if (g_mouse_clicked.load(std::memory_order_acquire))
+            return;
         if (!bambooEngine_ || !engine_->options().retypeAfterSwitch || typed.empty() || ngosen::isGnomeSearch(host_->field()))
             return;
         if (!canReplaceInApp())

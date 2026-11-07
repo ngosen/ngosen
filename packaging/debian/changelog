@@ -1,6 +1,6 @@
 fcitx5-ngosen (1:1.8.2-1) unstable; urgency=medium
 
-  * Publish ibus-ngosen from the APT, pacman and zypper repositories again (#598); fcitx5-ngosen is unchanged.
+  * Retype no longer deletes text after a click right after the switch key (#605); a macro typed in English no longer lands after its abbreviation in fields that hide their text (#604); publish ibus-ngosen from the APT, pacman and zypper repositories again (#598).
 
  -- Nguyen Phi <nguyenphidt@gmail.com>  Sat, 07 Nov 2026 18:00:00 +0700
 

@@ -518,6 +518,41 @@ namespace {
         return host->status().empty() && !host->candidates() ? "(no offer)" : "(offered)";
     }
 
+    // A macro typed in English in a field that deletes only through its surrounding text. Returns the
+    // commits, the deletions and whether the space reached the app.
+    std::string expandInEnglish(bool reportsText) {
+        realMode = Mode::Off;
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().enableMacro          = true;
+        resources.mutableOptions().enableMacroInOffMode = true;
+        resources.setMacros({{"vn", "Việt Nam"}});
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("other", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        state.activate(Mode::Off, true);
+        typeInEnglish(state, "vn");
+        if (reportsText)
+            host->setSurrounding("vn", 2);
+        FakeKey space(' ');
+        state.keyEvent(space);
+        loop.pump(150);
+        std::string out = "commits=";
+        for (const auto& c : host->commits())
+            out += "[" + c + "]";
+        out += " deletes=" + std::to_string(host->deletes().size());
+        out += space.accepted() ? " space=taken" : " space=passed";
+        return out;
+    }
+
+    void testMacroInEnglishNeedsDeletion() {
+        auto got = expandInEnglish(true);
+        check(got == "commits=[việt nam ] deletes=1 space=taken", "a macro in English replaces the abbreviation", got);
+        // Committing the expansion without deleting would leave "vnViệt Nam".
+        got = expandInEnglish(false);
+        check(got == "commits= deletes=0 space=passed", "no expansion when the abbreviation cannot be deleted", got);
+    }
+
     void testOptionOff() {
         auto offer = offerWithOption(true, false);
         check(offer == "(no offer)", "turning the option off drops what was typed", offer);
@@ -532,6 +567,7 @@ namespace {
 int main() {
     testOffer();
     testOptionOff();
+    testMacroInEnglishNeedsDeletion();
     testFocusInDoesNotOffer();
     testOwnEnglish();
     testRetypeInApp("wayland", true, Mode::Sen);

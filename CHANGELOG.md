@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Gõ tắt khi đang tiếng Anh không còn chèn cụm chữ đầy đủ sau chữ tắt (thành "vnviệt nam") ở ô không cho đọc chữ quanh con trỏ; chữ tắt được giữ nguyên (#604).
+
 ## [1.8.2-1] — 07/11/2026
 
 Kho APT, pacman và zypper của Ngó Sen phát lại gói `ibus-ngosen` (Ngó Sen cho GNOME); gói `fcitx5-ngosen` không đổi so với 1.8.1-1 (#598).

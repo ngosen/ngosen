@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
-- Cứu chữ không còn xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt: bấm Enter hay Esc lúc đó giữ nguyên chữ trong ô, và lời mời gõ lại bị bỏ khi app báo con trỏ đã dời đi.
+- Cứu chữ không còn xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt: bấm Enter hay Esc lúc đó giữ nguyên chữ trong ô, và lời mời gõ lại bị bỏ khi app báo con trỏ đã dời đi (#605).
 
 ## [1.8.2-1] — 07/11/2026
 

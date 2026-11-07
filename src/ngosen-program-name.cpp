@@ -16,6 +16,7 @@
 #endif
 
 #include <cstdio>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -34,22 +35,15 @@ namespace ngosen {
             return found;
         }
 
-        std::string resolve(const std::string& program) {
-            const std::string appId = flatpakAppIdCandidate(program);
-            if (appId.empty())
-                return program;
-            for (const auto& path : desktopFiles(appId)) {
-                if (!isFlatpakExport(path))
-                    continue;
-                FILE* file = std::fopen(path.c_str(), "r");
-                if (!file)
-                    continue;
-                fcitx::RawConfig entry;
-                fcitx::readFromIni(entry, file);
-                std::fclose(file);
-                return programForFlatpakApp(appId, entry.valueByPath("Desktop Entry/StartupWMClass"));
-            }
-            return program;
+        std::optional<std::string> readStartupWmClass(const std::string& path) {
+            FILE* file = std::fopen(path.c_str(), "r");
+            if (!file)
+                return std::nullopt;
+            fcitx::RawConfig entry;
+            fcitx::readFromIni(entry, file);
+            std::fclose(file);
+            const std::string* wmClass = entry.valueByPath("Desktop Entry/StartupWMClass");
+            return wmClass ? *wmClass : std::string();
         }
     } // namespace
 
@@ -57,7 +51,7 @@ namespace ngosen {
         static std::unordered_map<std::string, std::string> cache;
         auto                                                it = cache.find(program);
         if (it == cache.end())
-            it = cache.emplace(program, resolve(program)).first;
+            it = cache.emplace(program, flatpakProgramName(program, desktopFiles, readStartupWmClass)).first;
         return it->second;
     }
 

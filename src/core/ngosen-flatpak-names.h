@@ -5,21 +5,21 @@
  */
 #pragma once
 
+#include <functional>
+#include <optional>
 #include <string>
+#include <vector>
 
 namespace ngosen {
 
+    // Paths of the desktop files named appId + ".desktop" on the XDG data path, in lookup order.
+    using DesktopFileFinder = std::function<std::vector<std::string>(const std::string& appId)>;
+    // The file's StartupWMClass ("" when it has none), or nullopt when the file cannot be read.
+    using StartupWmClassReader = std::function<std::optional<std::string>(const std::string& path)>;
+
     // A Flatpak app reports its app ID (org.mozilla.firefox) where the distro package reports its
-    // program name (firefox), which is what the app checks match. The shell finds the desktop file;
-    // these functions hold the rule, so every shell maps names the same way.
-
-    // The app ID to look up a desktop file for, or empty when the name cannot be one.
-    std::string flatpakAppIdCandidate(const std::string& program);
-
-    // A native app may use a reverse-DNS name too; only a Flatpak export proves the app ID.
-    bool isFlatpakExport(const std::string& desktopFilePath);
-
-    // startupWmClass is the desktop file's StartupWMClass, or nullptr when it has none.
-    std::string programForFlatpakApp(const std::string& appId, const std::string* startupWmClass);
+    // program name (firefox), which is what the app checks match. The shell only finds and reads
+    // desktop files, so every shell maps names the same way. Unmapped names are returned as is.
+    std::string flatpakProgramName(const std::string& program, const DesktopFileFinder& findDesktopFiles, const StartupWmClassReader& readStartupWmClass);
 
 } // namespace ngosen

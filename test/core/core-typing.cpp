@@ -499,6 +499,8 @@ namespace {
     void testEnterDuringTimedWaitFollowsCommit() {
         const std::string text = typeInSilentIbusField({'l', 'o', 'o', 'x', 0xff0d, 'b'}, {100, 100, 100, 2, 100, 100});
         check(text == "lỗ\nb", "ibus: an Enter typed during a timed wait goes after the commit", text);
+        const std::string moved = typeInSilentIbusField({'l', 'o', 'o', 'x', ngosen::key::Left, 'b'}, {100, 100, 100, 2, 100, 100});
+        check(moved == "lbỗ", "ibus: Left typed during a timed wait moves the cursor after the commit", moved);
     }
 
     void testBackspaceDuringTimedWaitFollowsCommit() {
@@ -2658,6 +2660,29 @@ namespace {
             check(run.sent.forwardedBackSpaces == 0, "rolled keys: a held key sends no backspaces", std::to_string(run.sent.forwardedBackSpaces));
         }
         {
+            // Keys with no text pressed during the wait reach the field after the word, not as text or not at all.
+            const auto during = [&](uint32_t sym, const std::string& after) {
+                FakeResources resources;
+                auto          keys = keysOf("nguoiwf");
+                keys.push_back(sym);
+                const auto tail = keysOf(after);
+                keys.insert(keys.end(), tail.begin(), tail.end());
+                return ngosen::test::typeInAppTraced(resources, antigravity, lagging, keys, rolledGaps("nguoiwf" + std::string(1 + after.size(), ' '), {5, 6}, 60));
+            };
+            auto run = during(ngosen::key::Left, "x");
+            check(run.text == "ngườxi", "rolled keys: Left during the wait moves the cursor after the word", run.text);
+            run = during(ngosen::key::Home, "x");
+            check(run.text == "xngười", "rolled keys: Home during the wait moves the cursor after the word", run.text);
+            run = during(ngosen::key::Escape, "");
+            check(run.text == "người", "rolled keys: Escape during the wait types nothing", run.text);
+            ngosen::test::captureLog(true);
+            run              = during('a' | ngosen::test::WithCtrl, "");
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(run.text == "người" && run.shortcuts == 1, "rolled keys: Ctrl+A during the wait reaches the app as a shortcut",
+                  run.text + " shortcuts=" + std::to_string(run.shortcuts) + " " + join(lines));
+        }
+        {
             // Firefox on GNOME answers an empty commit; a copy wait there must still give the right words.
             FakeResources     resources;
             const std::string typed = "nguoiwf tieengs vieetj ";
@@ -2699,6 +2724,33 @@ namespace {
         ngosen::test::captureLog(false);
         check(inOneField == 2, "a copy that never fits is waited for twice in a field", std::to_string(inOneField) + " " + join(lines));
         check(countHaving(lines, "still short") > inOneField, "a new focus waits for the copy again", std::to_string(countHaving(lines, "still short")));
+    }
+
+    // Keys held for a replacement that focus leaves are lost; the log says how many.
+    void testFocusLossLogsDroppedKeys() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(
+            loop, makeField("ibus", true, "antigravity-ide"),
+            ngosen::test::AppQuirks{.reportDelayMs = 8, .lagMs = 15, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+        auto*               app = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        ngosen::test::captureLog(true);
+        const std::string typed = "nguoiwfa";
+        const auto        keys  = keysOf(typed);
+        const auto        gaps  = rolledGaps(typed, {5, 6}, 60);
+        for (size_t i = 0; i < keys.size(); ++i) {
+            app->type(keys[i]);
+            loop.pump(i + 1 < keys.size() ? gaps[i] : 0);
+        }
+        app->leaveFocus(500);
+        loop.pump(600);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(lines, "dropping the replacement and 1 held keys") == 1, "focus loss: the log counts the lost key", join(lines));
     }
 
     // SDL takes no deletion from us, so a copy that lags would only hold its keys back.
@@ -3285,6 +3337,7 @@ int main() {
     testLateCopyKeepsSurroundingPath();
     testRolledKeysWaitForIbusCopy();
     testCopyWaitsRunOutPerField();
+    testFocusLossLogsDroppedKeys();
     testOneLateCopyKeepsWaiting();
     testBackspaceDuringCopyWait();
     testNoCopyWaitWithoutBackspaces();

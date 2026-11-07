@@ -101,6 +101,8 @@ namespace ngosen {
         virtual void commitText(const std::string& text) = 0;
         // time is the X server time XIM stamps on the key; other frontends ignore it.
         virtual void forwardKey(EditKey key, bool release, uint32_t time) = 0;
+        // Any key as the user pressed it, with its modifier states and hardware keycode.
+        virtual void forwardKeyPress(uint32_t sym, uint32_t states, uint32_t code, bool release, uint32_t time) = 0;
         // Deletes size characters starting offset characters from the cursor.
         virtual void deleteSurrounding(int offset, unsigned int size) = 0;
         // Presses keys at the X server: count > 0 presses BackSpace count times, count < 0 selects

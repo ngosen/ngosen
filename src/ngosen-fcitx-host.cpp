@@ -128,6 +128,10 @@ namespace ngosen {
         ic_->forwardKey(toFcitxKey(key), release, static_cast<int>(time));
     }
 
+    void FcitxHost::forwardKeyPress(uint32_t sym, uint32_t states, uint32_t code, bool release, uint32_t time) {
+        ic_->forwardKey(fcitx::Key(static_cast<fcitx::KeySym>(sym), fcitx::KeyStates(states), static_cast<int>(code)), release, static_cast<int>(time));
+    }
+
     void FcitxHost::deleteSurrounding(int offset, unsigned int size) {
         ic_->deleteSurroundingText(offset, size);
     }

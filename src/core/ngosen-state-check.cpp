@@ -142,6 +142,12 @@ namespace ngosen {
             ++sinceFocus_.answeredUnasked;
         else if (verdict == SurroundingVerdict::NoAnswer)
             ++sinceFocus_.checksMissed;
+        // An answer after later keys still shows the field keeps up; only the copy wait counts it.
+        if (verdict == SurroundingVerdict::Correct || verdict == SurroundingVerdict::NoAnswer) {
+            sinceFocus_.recentAnswers <<= 1;
+            sinceFocus_.recentAnswers[0] = verdict == SurroundingVerdict::Correct;
+            sinceFocus_.recentChecks     = std::min(sinceFocus_.recentChecks + 1, RecentChecks);
+        }
         surrUnanswered_ = verdict == SurroundingVerdict::NoAnswer ? surrUnanswered_ + 1 : 0;
         // Calc reports an empty field and GTK 4 an old copy as a matter of course, so with no other way
         // to delete only a dropped deletion is worth giving up on the field for.

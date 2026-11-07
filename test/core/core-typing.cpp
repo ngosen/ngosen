@@ -2653,6 +2653,74 @@ namespace {
         check(run.text == "tiếng ngữ của ", "wlroots: a late backspace is not overtaken by the commit", run.text);
     }
 
+    // Firefox on Hyprland answers after the next key when typing fast, and a report held up past the check
+    // counts as a miss. A field that then catches up must get back to the surrounding text.
+    std::vector<std::string> replacementsAfterLateWords(bool recovery, int laterDelayMs = 120, int laterGapMs = 60, int laterRounds = 1) {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().copyWaitRecovery = recovery;
+        auto owned                                  = std::make_unique<ngosen::test::FakeApp>(
+            loop, makeField("wayland_v2", true, "firefox"),
+            ngosen::test::AppQuirks{.reportDelayMs = 30, .backspaceLagMs = 60, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+        auto*               app = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        auto typeAt = [&](const std::string& typed, int gapMs) {
+            for (const uint32_t key : keysOf(typed)) {
+                app->type(key);
+                loop.pump(gapMs);
+            }
+            loop.pump(400);
+        };
+        typeAt("tieengs ", 150);
+        app->setReportDelay(250);
+        typeAt("vieetj tieesng ", 150);
+        app->setReportDelay(laterDelayMs);
+        ngosen::test::captureLog(true);
+        for (int i = 0; i < laterRounds; ++i)
+            typeAt("nguwx cuar ddeepj nguwowif tieengs vieetj ", laterGapMs);
+        auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        lines.push_back("text=" + app->text());
+        return lines;
+    }
+
+    std::vector<std::string> replaceMethods(const std::vector<std::string>& lines) {
+        std::vector<std::string> methods;
+        for (const auto& line : lines) {
+            const auto at = line.find("Replace: method=");
+            if (at != std::string::npos)
+                methods.push_back(line.substr(at + 16, line.find(" wait=") - at - 16));
+        }
+        return methods;
+    }
+
+    void testLateCopiesRecoverOnWlroots() {
+        const auto lines   = replacementsAfterLateWords(true);
+        const auto methods = replaceMethods(lines);
+        check(lines.back() == "text=tiếng việt tiếng ngữ của đệp người tiếng việt ", "wlroots late copies: the words come out right", lines.back());
+        const auto backspaces = std::count(methods.begin(), methods.end(), "forwarded backspaces");
+        check(backspaces <= 4, "wlroots late copies: backspaces only until the field is tried again", std::to_string(backspaces) + " of " + std::to_string(methods.size()));
+        check(countHaving(lines, "Wait for the copy again") >= 1, "wlroots late copies: the copy wait comes back", join(lines));
+        const bool tailSurrounding = methods.size() >= 6 && std::all_of(methods.end() - 6, methods.end(), [](const std::string& m) { return m == "surrounding"; });
+        check(tailSurrounding, "wlroots late copies: the last words go through the surrounding text", join(lines));
+
+        // With CopyWaitRecovery off, the field stays on backspaces.
+        const auto oldLines   = replacementsAfterLateWords(false);
+        const auto oldMethods = replaceMethods(oldLines);
+        check(oldLines.back() == lines.back(), "wlroots late copies, recovery off: the words come out right", oldLines.back());
+        check(countHaving(oldLines, "Wait for the copy again") == 0 && oldMethods.back() == "forwarded backspaces", "wlroots late copies, recovery off: no wait again",
+              join(oldLines));
+
+        // A field that stays behind is not held up again and again.
+        const auto behind = replacementsAfterLateWords(true, 600, 150, 3);
+        check(behind.back() == "text=tiếng việt tiếng ngữ của đệp người tiếng việt ngữ của đệp người tiếng việt ngữ của đệp người tiếng việt ",
+              "wlroots copies stay late: the words come out right", behind.back());
+        check(countHaving(behind, "Wait for the copy again") <= 2, "wlroots copies stay late: the copy wait comes back at most twice", join(behind));
+    }
+
     // A copy that comes a moment late is no reason to leave the surrounding path.
     void testLateCopyKeepsSurroundingPath() {
         {
@@ -3334,6 +3402,7 @@ int main() {
     testLockWordPreedit();
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();
+    testLateCopiesRecoverOnWlroots();
     testLockWordNotOnChord();
     testMacroCapitalized();
     testMacroKeyCase();

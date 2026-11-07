@@ -463,14 +463,15 @@ namespace ngosen {
         recordSendSnapshot(deletedPart);
         trackEarlierWords(addedPart);
         startReplaceLog("none");
+        sinceFocus_.copyWaitsHeldBack = checksGetAnswered() ? 0 : sinceFocus_.copyWaitsHeldBack + 1;
         if (live_key_) {
             const bool forKey = waitsForKeyReport();
-            if (forKey || copyGivesWrongDeletion()) {
+            if (forKey || waitsForCopy()) {
                 replace_wait_ = forKey ? "key report" : "copy";
                 startKeyReportWait(deletedPart, addedPart, !forKey);
                 return;
             }
-        } else if (replaying_ && !copyWaitTimedOut_ && copyGivesWrongDeletion()) {
+        } else if (replaying_ && !copyWaitTimedOut_ && waitsForCopy()) {
             // The commit just before this replayed key cannot be in the copy yet.
             replace_wait_ = "copy";
             startKeyReportWait(deletedPart, addedPart, true);
@@ -839,27 +840,52 @@ namespace ngosen {
 
     // The frontend turns a deletion into bytes on its copy of the text, which can still lack what the
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
-    bool TypingState::copyGivesWrongDeletion() const {
+    TypingState::CopyWait TypingState::copyWaitNeed() const {
         const auto surrounding = host_->surrounding();
         if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
-            return false;
+            return CopyWait::No;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
         // A copy that ends at the earlier word is about to catch up in an app that reports, and a deletion
         // counted on it would leave part of the word in place.
         if (deletesOnlyThroughSurrounding())
-            return deletion.wrongBytes || deletion.behind || (deletion.match == SurroundingDeletion::Match::OldTail && reportsItsEdits());
+            return deletion.wrongBytes || deletion.behind || (deletion.match == SurroundingDeletion::Match::OldTail && reportsItsEdits()) ? CopyWait::Yes : CopyWait::No;
         // These go to backspaces whatever the copy shows, so waiting for it gains nothing.
         const Field field = host_->field();
         if (surroundingUntrusted() || fieldBounces_ > 0 || field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))
-            return false;
+            return CopyWait::No;
         // Backspaces are there to fall back on, and a field that leaves checks unanswered would only
         // make every replacement late. Over IBus a backspace can reach the app ahead of the commit before
         // it, and the answer counts include keys we hold, so waits that keep running out here decide.
         const bool overIbus = ngosen::reportsReplacementsWithLaterKey(field);
         if (overIbus && !ngosen::forwardsBackspaces(field))
+            return CopyWait::No;
+        if (!sinceFocus_.seenText || backspaceInWord_ || (unreportedCommitLength_ == 0 && deletion.match != SurroundingDeletion::Match::None))
+            return CopyWait::No;
+        if (overIbus)
+            return copyWaitsRunOut_ < MaxCopyWaitsRunOut ? CopyWait::Yes : CopyWait::No;
+        return checksGetAnswered() || copyWaitRetry_ ? CopyWait::Yes : CopyWait::HeldBack;
+    }
+
+    bool TypingState::checksGetAnswered() const {
+        if (!engine_->options().copyWaitRecovery)
+            return sinceFocus_.answeredUnasked >= sinceFocus_.checksMissed;
+        const int answered = static_cast<int>(sinceFocus_.recentAnswers.count());
+        return answered >= sinceFocus_.recentChecks - answered;
+    }
+
+    // Backspaces bring no checks, so a field held back by unanswered ones waits again now and then to
+    // show whether it has caught up. One that never answered, or stayed behind on the last tries, gains nothing.
+    bool TypingState::waitsForCopy() {
+        const CopyWait need = copyWaitNeed();
+        if (need != CopyWait::HeldBack)
+            return need == CopyWait::Yes;
+        if (!engine_->options().copyWaitRecovery || !sinceFocus_.checkAnswered || sinceFocus_.retriesRunOut >= MaxCopyWaitsRunOut ||
+            sinceFocus_.copyWaitsHeldBack <= CopyWaitsHeldBackLimit)
             return false;
-        const bool waitPays = overIbus ? copyWaitsRunOut_ < MaxCopyWaitsRunOut : sinceFocus_.answeredUnasked >= sinceFocus_.checksMissed;
-        return waitPays && sinceFocus_.seenText && !backspaceInWord_ && (unreportedCommitLength_ > 0 || deletion.match == SurroundingDeletion::Match::None);
+        NGOSEN_INFO("Wait for the copy again after " + std::to_string(sinceFocus_.copyWaitsHeldBack - 1) + " replacements without it");
+        sinceFocus_.copyWaitsHeldBack = 0;
+        copyWaitRetry_                = true;
+        return true;
     }
 
     bool TypingState::reportsItsEdits() const {

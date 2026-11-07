@@ -290,6 +290,9 @@ namespace fcitx {
                                                   ngosen::defaultOptions.waitSurroundingSettleMs};
         HiddenOption<bool> messengerSelectOvertype{this, "MessengerSelectOvertype", _("Experiment: select with Shift+Left and type over it in the Messenger composer"),
                                                    ngosen::defaultOptions.messengerSelectOvertype};
+        HiddenOption<bool> copyWaitRecovery{this, "CopyWaitRecovery",
+                                            _("Experiment: in a field whose checks go unanswered, wait for its copy of the text again every few replacements"),
+                                            ngosen::defaultOptions.copyWaitRecovery};
         HiddenOption<int>  waitSurroundingSettleFirstWordMs{this, "WaitSurroundingSettleFirstWordMs",
                                                             _("Experiment: settle wait for the first word of a Messenger message (composer still loading)"),
                                                             ngosen::defaultOptions.waitSurroundingSettleFirstWordMs};

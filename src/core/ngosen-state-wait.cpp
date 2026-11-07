@@ -319,7 +319,7 @@ namespace ngosen {
         if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !host_->surrounding().isValid()) {
             // A field that stops reporting is not the one the word was typed in.
             finishKeyReportWait(false, false);
-        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !copyGivesWrongDeletion()) {
+        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && copyWaitNeed() == CopyWait::No) {
             key_report_copy_fits_ = true;
             key_report_timer_->rearm(ngosen::monotonicUs());
         } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {
@@ -380,6 +380,8 @@ namespace ngosen {
                     NGOSEN_INFO("Copy of the text still short, deleting anyway");
                 copyWaitTimedOut_ = !key_report_copy_fits_;
                 copyWaitsRunOut_  = copyWaitTimedOut_ ? copyWaitsRunOut_ + 1 : 0;
+                if (copyWaitRetry_)
+                    sinceFocus_.retriesRunOut = copyWaitTimedOut_ ? sinceFocus_.retriesRunOut + 1 : 0;
             }
             finishKeyReportWait(true, true);
             return key_report_pending_;
@@ -392,6 +394,7 @@ namespace ngosen {
         if (!key_report_pending_)
             return;
         key_report_pending_ = false;
+        copyWaitRetry_      = false;
         if (!fromTimer) {
             key_report_timer_.reset(); // never reset a timer from inside its own callback
             copyWaitTimedOut_ = false;
@@ -424,6 +427,7 @@ namespace ngosen {
         NGOSEN_INFO("Focus left during the wait, dropping the replacement and " + std::to_string(buffered_keys_.size()) + " held keys");
         logReplaceEnd("focus lost, text dropped");
         key_report_pending_ = false;
+        copyWaitRetry_      = false;
         forgetWaitingReplacement();
         buffered_keys_.clear();
     }

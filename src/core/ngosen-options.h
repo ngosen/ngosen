@@ -45,6 +45,7 @@ namespace ngosen {
 
         // How old text is replaced in the app.
         bool messengerSelectOvertype          = true;
+        bool copyWaitRecovery                 = true;
         bool waitSurroundingEvent             = true;
         int  waitSurroundingMinPerKeyMs       = 8;
         int  waitSurroundingTimeoutMs         = 50;

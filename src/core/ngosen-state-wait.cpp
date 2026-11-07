@@ -400,6 +400,7 @@ namespace ngosen {
             return;
         }
         NGOSEN_INFO("Key went to another field, starting a new word");
+        logReplaceEnd("key went to another field");
         forgetWaitingReplacement();
         is_deleting_.store(false, std::memory_order_release);
         buffered_keys_.insert(buffered_keys_.begin(), key_report_key_);
@@ -420,6 +421,7 @@ namespace ngosen {
     void TypingState::dropReplacementAfterFocusLoss() {
         // Only the count: the keys are text the user typed.
         NGOSEN_INFO("Focus left during the wait, dropping the replacement and " + std::to_string(buffered_keys_.size()) + " held keys");
+        logReplaceEnd("focus lost");
         key_report_pending_ = false;
         forgetWaitingReplacement();
         buffered_keys_.clear();

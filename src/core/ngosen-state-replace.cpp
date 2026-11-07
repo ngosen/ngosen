@@ -311,6 +311,7 @@ namespace ngosen {
 
     void TypingState::finishReplacement(const char* reason, bool fromTimer) {
         noteWaitOutcome(reason);
+        logReplaceEnd(reason);
         surr_wait_pending_    = false;
         surr_wait_timer_only_ = false;
         if (!fromTimer)
@@ -405,6 +406,7 @@ namespace ngosen {
             forwardTap(ngosen::EditKey::Right);
         }
         NGOSEN_INFO("Overtype gave up after " + std::to_string((ngosen::monotonicUs() - overtype_started_at_) / 1000) + " ms, moved cursor right " + std::to_string(rightPresses));
+        logReplaceEnd("overtype gave up");
         overtype_pending_   = false;
         overtype_via_xtest_ = false;
         pending_commit_string_.clear();
@@ -421,6 +423,8 @@ namespace ngosen {
     // Not the address bar, and a commit would not replace the selection there: delete like any page field.
     void TypingState::deleteOverIgnoredSelection() {
         NGOSEN_INFO("No focus change after selecting, deleting with backspaces");
+        logReplaceEnd("no focus change");
+        startReplaceLog(replace_wait_);
         field_keeps_focus_on_selection_ = true;
         overtype_pending_               = false;
         overtype_via_xtest_             = false;
@@ -435,6 +439,7 @@ namespace ngosen {
     void TypingState::finishOvertype(const char* reason, bool fromTimer) {
         const auto elapsedMs = (ngosen::monotonicUs() - overtype_started_at_) / 1000;
         NGOSEN_INFO("Overtype " + std::string(reason) + " after " + std::to_string(elapsedMs) + " ms");
+        logReplaceEnd(reason);
         overtype_pending_   = false;
         overtype_via_xtest_ = false;
         if (!fromTimer && overtype_timer_) {
@@ -458,14 +463,17 @@ namespace ngosen {
         deletedChars_            = expected_backspaces_;
         recordSendSnapshot(deletedPart);
         trackEarlierWords(addedPart);
+        startReplaceLog("none");
         if (live_key_) {
             const bool forKey = waitsForKeyReport();
             if (forKey || copyGivesWrongDeletion()) {
+                replace_wait_ = forKey ? "key report" : "copy";
                 startKeyReportWait(deletedPart, addedPart, !forKey);
                 return;
             }
         } else if (replaying_ && !copyWaitTimedOut_ && copyGivesWrongDeletion()) {
             // The commit just before this replayed key cannot be in the copy yet.
+            replace_wait_ = "copy";
             startKeyReportWait(deletedPart, addedPart, true);
             return;
         }
@@ -479,30 +487,36 @@ namespace ngosen {
         // unlike forwardKey, keeps Shift, so widen the selection over the old text and type over both.
         if (xtestAvailable() && ngosen::selectsOverAutocompletion(host_->field()) && !field_keeps_focus_on_selection_ && !deletedPart.empty()) {
             overtype_deleted_ = deletedPart;
+            replace_method_   = "overtype xtest";
             selectAndOvertype(addedPart, static_cast<int>(ngosen::utf8::length(deletedPart)), true);
             return;
         }
         // Facebook composers only: other fields do not report a selection-only change, so the
         // overtype would time out and drop the tone mark.
         if (engine_->options().messengerSelectOvertype && !ngosen::forwardsBackspaces(host_->field()) && !host_->field().sendsNoKeys && looksLikeFacebookComposer(surrounding)) {
+            replace_method_ = "overtype";
             selectAndOvertype(addedPart, static_cast<int>(ngosen::utf8::length(deletedPart)));
             return;
         }
         if (ngosen::erasesWithCommittedDel(host_->field())) {
+            replace_method_ = "del";
             replaceThroughCommittedDel();
             return;
         }
         const bool isSurrText = deletesThroughSurrounding(surrounding);
         is_deleting_.store(true, std::memory_order_release);
         if (isSurrText) {
+            replace_method_ = "surrounding";
             replaceThroughSurrounding(surrounding);
             return;
         }
         closeCheckBeforeOtherEdit();
         if (ngosen::forwardsBackspaces(host_->field())) {
+            replace_method_ = "forwarded backspaces";
             replaceThroughForwardedKeys();
             return;
         }
+        replace_method_ = "system backspaces";
         // No sentinel will come back, and waiting for it would swallow everything typed next.
         if (!sendBackspaceKeys(expected_backspaces_)) {
             finishReplacement("backspaces not sent", false);
@@ -702,6 +716,22 @@ namespace ngosen {
         if (lastPath_ != path)
             NGOSEN_INFO(std::string("Path changed to ") + path + loggedField(host_->field()) + ": " + why);
         lastPath_ = path;
+    }
+
+    void TypingState::startReplaceLog(const char* wait) {
+        logReplaceEnd("superseded");
+        replace_logging_    = true;
+        replace_method_     = "none";
+        replace_wait_       = wait;
+        replace_started_us_ = monotonicUs();
+    }
+
+    void TypingState::logReplaceEnd(const char* ended) {
+        if (!replace_logging_)
+            return;
+        replace_logging_ = false;
+        NGOSEN_DEBUG(std::string("Replace: method=") + replace_method_ + " wait=" + replace_wait_ + " ended=" + ended + " after " +
+                     std::to_string((monotonicUs() - replace_started_us_) / 1000) + " ms");
     }
 
     bool TypingState::deletesThroughSurrounding(const ngosen::Surrounding& surrounding) {
@@ -905,6 +935,7 @@ namespace ngosen {
             ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrCommitSleepMs * static_cast<int>(ngosen::utf8::length(text)), 0)) * 1000ULL);
         }
         openSurroundingCheck(surrounding, retype);
+        logReplaceEnd("committed");
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
@@ -1014,6 +1045,7 @@ namespace ngosen {
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
         pending_commit_string_.clear();
+        logReplaceEnd("committed");
         replayBufferedKeys(std::move(out));
     }
 

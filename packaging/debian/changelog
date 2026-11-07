@@ -1,3 +1,9 @@
+fcitx5-ngosen (1:1.8.2-1) unstable; urgency=medium
+
+  * Publish ibus-ngosen from the APT, pacman and zypper repositories again (#598); fcitx5-ngosen is unchanged.
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sat, 07 Nov 2026 18:00:00 +0700
+
 fcitx5-ngosen (1:1.8.1-1) unstable; urgency=medium
 
   * Fix swallowed or reordered navigation keys and Ctrl shortcuts pressed right after a word; Ctrl+key still types a letter in Wayland apps on GNOME (#591).

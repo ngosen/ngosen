@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
-- Gõ tắt khi đang tiếng Anh không còn chèn cụm chữ đầy đủ sau chữ tắt (thành "vnviệt nam") ở ô không cho đọc chữ quanh con trỏ; chữ tắt được giữ nguyên.
+- Gõ tắt khi đang tiếng Anh không còn chèn cụm chữ đầy đủ sau chữ tắt (thành "vnviệt nam") ở ô không cho đọc chữ quanh con trỏ; chữ tắt được giữ nguyên (#604).
 
 ## [1.8.2-1] — 07/11/2026
 

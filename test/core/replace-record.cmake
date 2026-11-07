@@ -1,7 +1,9 @@
 # Runs a core test with the replacement record on and compares the record with the one kept in
 # the repository. NGOSEN_RECORD_UPDATE=1 in the environment writes the new record there instead.
 set(actual "${OUT_DIR}/${NAME}.txt")
-execute_process(COMMAND ${CMAKE_COMMAND} -E env NGOSEN_REPLACE_RECORD=${actual} DISPLAY= ${BIN} RESULT_VARIABLE result OUTPUT_QUIET ERROR_QUIET)
+# The fuzz settings change which keys core_fuzz types, so the record runs on the defaults.
+execute_process(COMMAND ${CMAKE_COMMAND} -E env --unset=NGOSEN_FUZZ_RUNS --unset=NGOSEN_FUZZ_SEED NGOSEN_REPLACE_RECORD=${actual} DISPLAY= ${BIN}
+                RESULT_VARIABLE result)
 if (NOT result EQUAL 0)
     message(FATAL_ERROR "${NAME} failed with the record on")
 endif ()

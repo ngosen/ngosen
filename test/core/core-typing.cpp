@@ -1623,11 +1623,16 @@ namespace {
     }
 
     // ^ is a Ctrl tap, + a Shift tap and < a backspace.
-    void expectTyped(FakeResources& resources, const Field& field, const std::string& typed, const std::string& want, const std::string& what, ngosen::test::AppQuirks quirks = {},
-                     int gapMs = 30) {
+    std::vector<uint32_t> editKeysOf(const std::string& typed) {
         std::vector<uint32_t> keys;
         for (char c : typed)
             keys.push_back(c == '^' ? ngosen::key::Control_L : c == '+' ? ngosen::key::Shift_L : c == '<' ? ngosen::key::BackSpace : static_cast<uint32_t>(c));
+        return keys;
+    }
+
+    void expectTyped(FakeResources& resources, const Field& field, const std::string& typed, const std::string& want, const std::string& what, ngosen::test::AppQuirks quirks = {},
+                     int gapMs = 30) {
+        const auto        keys = editKeysOf(typed);
         const std::string text = ngosen::test::typeInApp(resources, field, quirks, keys, std::vector<int>(keys.size(), gapMs));
         check(text == want, what, text);
     }
@@ -1847,10 +1852,8 @@ namespace {
     }
 
     // Types keys with every log line kept; returns the lines that contain `start`.
-    std::vector<std::string> logLinesWhileTyping(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::string& start,
-                                                 ngosen::test::Typed* run = nullptr, int gapMs = 100) {
-        FakeResources resources;
-        const auto    keys = keysOf(typed);
+    std::vector<std::string> logLinesWhileTyping(FakeResources& resources, const Field& field, ngosen::test::AppQuirks quirks, const std::vector<uint32_t>& keys,
+                                                 const std::string& start, ngosen::test::Typed* run, int gapMs) {
         ngosen::test::captureLog(true);
         const auto               typedRun = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), gapMs));
         std::vector<std::string> lines;
@@ -1862,6 +1865,12 @@ namespace {
         if (run != nullptr)
             *run = typedRun;
         return lines;
+    }
+
+    std::vector<std::string> logLinesWhileTyping(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::string& start,
+                                                 ngosen::test::Typed* run = nullptr, int gapMs = 100) {
+        FakeResources resources;
+        return logLinesWhileTyping(resources, field, quirks, keysOf(typed), start, run, gapMs);
     }
 
     size_t countHaving(const std::vector<std::string>& lines, const std::string& part) {
@@ -2185,19 +2194,11 @@ namespace {
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
     }
 
-    // < is a backspace. Returns the replacement lines without their timing.
+    // The replacement lines without their timing.
     std::vector<std::string> replaceLines(FakeResources& resources, const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, ngosen::test::Typed& run) {
-        std::vector<uint32_t> keys;
-        for (char c : typed)
-            keys.push_back(c == '<' ? ngosen::key::BackSpace : static_cast<uint32_t>(c));
-        ngosen::test::captureLog(true);
-        run = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), 150));
-        std::vector<std::string> lines;
-        for (const auto& line : ngosen::test::capturedLog()) {
-            if (has(line, "Replace: "))
-                lines.push_back(line.substr(0, line.find(" after ")));
-        }
-        ngosen::test::captureLog(false);
+        auto lines = logLinesWhileTyping(resources, field, quirks, editKeysOf(typed), "Replace: ", &run, 150);
+        for (auto& line : lines)
+            line = line.substr(0, line.find(" after "));
         return lines;
     }
 
@@ -2222,7 +2223,7 @@ namespace {
                   run.text + " " + join(lines));
         }
         {
-            // SDL over IBus with no XTEST: nothing can send the backspaces.
+            // SDL over IBus with no XTEST. The text is wrong: each key is committed by name and also reaches the app.
             FakeResources resources;
             const auto    lines = replaceLines(resources, makeField("ibus", false, "SDL_app"), {}, "vieetj ", run);
             check(run.text == "vieeettjjệt " && countHaving(lines, "ended=backspaces not sent") == 1, "backspaces that cannot be sent", escaped(run.text) + " " + join(lines));

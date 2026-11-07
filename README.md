@@ -274,8 +274,8 @@ Muốn bỏ cách này thì xoá file `~/.local/share/applications/code_code.des
 
 Gặp lỗi khác thì báo ở [Issues](https://github.com/ngosen/ngosen/issues) trên GitHub. Không có tài khoản
 GitHub thì nhắn trang [Facebook](https://www.facebook.com/profile.php?id=61595753582618). Trong cửa sổ cài đặt,
-vào trang “Giới thiệu”, bấm “Kiểm tra máy tôi…” rồi “Nhắn qua Facebook…” để chép sẵn thông tin máy, dán vào tin
-nhắn. Trang Facebook cũng đăng tin version mới và bài blog.
+vào trang “Kiểm tra máy”, bấm “Nhắn qua Facebook…” để chép sẵn thông tin máy, dán vào tin nhắn.
+Trang Facebook cũng đăng tin version mới và bài blog.
 
 ## Gỡ
 

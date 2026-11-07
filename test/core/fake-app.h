@@ -136,9 +136,13 @@ namespace ngosen::test {
         int slowestCommitMs() const {
             return slowestCommitMs_;
         }
+        int shortcuts() const {
+            return shortcuts_;
+        }
 
         void        commitText(const std::string& text) override;
         void        forwardKey(EditKey key, bool release, uint32_t time) override;
+        void        forwardKeyPress(uint32_t sym, uint32_t states, uint32_t code, bool release, uint32_t time) override;
         void        deleteSurrounding(int offset, unsigned int size) override;
         bool        pressSystemKeys(int count) override;
 
@@ -210,6 +214,7 @@ namespace ngosen::test {
         void                                endTurn();
         void                                reportMovedCursor(const std::u32string& text, size_t cursor);
         void                                applyHeldEdit(const std::string& text);
+        bool                                applyFieldKey(uint32_t sym, uint32_t state);
 
         FakeLoop&                           loop_;
         Field                               field_;
@@ -222,6 +227,7 @@ namespace ngosen::test {
         uint64_t                            forwardedAt_     = 0;
         uint32_t                            lastBackSpaceAt_ = 0;
         int                                 slowestCommitMs_ = 0;
+        int                                 shortcuts_       = 0;
         std::u32string                      text_;
         std::optional<std::string>          announced_;
         size_t                              cursor_      = 0;
@@ -261,6 +267,7 @@ namespace ngosen::test {
     struct Typed {
         std::string text;
         Path        sent;
+        int         shortcuts = 0; // Ctrl or Alt keys that reached the app
     };
 
     // The ways what was sent departs from the expected path, empty when they match.
@@ -270,6 +277,8 @@ namespace ngosen::test {
 
     // Or this into a key for typeInApp to press it with Shift held.
     inline constexpr uint32_t WithShift = 1U << 30;
+    // Or this in to press it with Ctrl held.
+    inline constexpr uint32_t WithCtrl = 1U << 29;
 
     // The app's text after typing the keys in Gõ Sen mode, waiting gapsMs[i] after key i.
     std::string typeInApp(const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, int* slowestCommitMs = nullptr);

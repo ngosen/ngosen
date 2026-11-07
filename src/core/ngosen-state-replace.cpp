@@ -1093,6 +1093,21 @@ namespace ngosen {
         return true;
     }
 
+    // The word ends here as on a typed cursor move.
+    bool TypingState::holdReplayedFieldKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
+        hasHistory_ = false;
+        ResetEngine(bambooEngine_.handle());
+        oldPreBuffer_.clear();
+        lastWord_.clear();
+        for (size_t j = i + 1; j < keys.size() && buffered_keys_.size() < MAX_BUFFERED_KEYS; ++j)
+            buffered_keys_.push_back(keys[j]);
+        commitReplayed(out);
+        // The key was released during the wait, so waiting for its release would only add delay.
+        holdEnter(false);
+        held_field_key_ = keys[i];
+        return true;
+    }
+
     void TypingState::commitReplayed(std::string& out) {
         if (!out.empty()) {
             // A report request sent while this commit's turn is open would replace it.
@@ -1117,6 +1132,8 @@ namespace ngosen {
     }
 
     bool TypingState::replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
+        if (keys[i].actsOnField)
+            return holdReplayedFieldKey(keys, i, out);
         auto        sym     = keys[i].sym;
         uint32_t    state   = keys[i].state;
         std::string keyUtf8 = host_->keyText(sym);

@@ -28,6 +28,7 @@ namespace ngosen {
 
         void                         commitText(const std::string& text) override;
         void                         forwardKey(EditKey key, bool release, uint32_t time) override;
+        void                         forwardKeyPress(uint32_t sym, uint32_t states, uint32_t code, bool release, uint32_t time) override;
         void                         deleteSurrounding(int offset, unsigned int size) override;
         bool                         pressSystemKeys(int count) override;
 

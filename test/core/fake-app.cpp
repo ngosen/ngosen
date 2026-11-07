@@ -100,7 +100,7 @@ namespace ngosen::test {
             loop.pump(300);
             if (slowestCommitMs != nullptr)
                 *slowestCommitMs = app->slowestCommitMs();
-            return {.text = app->text(), .sent = app->sent()};
+            return {.text = app->text(), .sent = app->sent(), .shortcuts = app->shortcuts()};
         }
     } // namespace
 
@@ -127,8 +127,8 @@ namespace ngosen::test {
 
     void FakeApp::type(uint32_t sym) {
         const auto     time  = static_cast<uint32_t>(monotonicUs() / 1000);
-        const uint32_t state = (sym & WithShift) != 0U ? modifier::Shift : 0U;
-        sym &= ~WithShift;
+        const uint32_t state = ((sym & WithShift) != 0U ? modifier::Shift : 0U) | ((sym & WithCtrl) != 0U ? modifier::Ctrl : 0U);
+        sym &= ~(WithShift | WithCtrl);
         FakeKey down(sym, false, state, time);
         state_->keyEvent(down);
         if (!down.accepted() && quirks_.keepsLastEditPerTurn)
@@ -150,6 +150,8 @@ namespace ngosen::test {
                     noteTypedKey();
                     eraseBefore(1);
                 });
+            } else if ((state & modifier::Ctrl) != 0U || keyText(sym).empty() || sym == key::Delete || sym == key::Escape) {
+                later(quirks_.lagMs, [this, sym, state] { applyFieldKey(sym, state); });
             } else if (const auto text = keyText(down.appSym()); !text.empty() && static_cast<unsigned char>(text[0]) >= 0x20 && text[0] != '\x7f')
                 later(quirks_.lagMs, [this, text] { insert(utf8::decode(text), true); });
         }
@@ -265,6 +267,30 @@ namespace ngosen::test {
             if (focused_ && redraws_ == 0)
                 insert(utf8::decode(text));
         });
+    }
+
+    void FakeApp::forwardKeyPress(uint32_t sym, uint32_t states, uint32_t /*code*/, bool release, uint32_t /*time*/) {
+        if (!release && !quirks_.dropsForwardedKeys)
+            later(quirks_.lagMs, [this, sym, states] { applyFieldKey(sym, states); });
+    }
+
+    // Keys that move the cursor, delete after it or run a shortcut; the rest change nothing here.
+    bool FakeApp::applyFieldKey(uint32_t sym, uint32_t state) {
+        if ((state & (modifier::Ctrl | modifier::Alt)) != 0U) {
+            ++shortcuts_;
+            return true;
+        }
+        switch (sym) {
+            case key::Left: moveCursor(cursor_ > 0 ? cursor_ - 1 : 0); return true;
+            case key::Right: moveCursor(cursor_ + 1); return true;
+            case key::Home: moveCursor(0); return true;
+            case key::End: moveCursor(text_.size()); return true;
+            case key::Delete:
+                eraseAround(0, 1);
+                changed();
+                return true;
+            default: return false;
+        }
     }
 
     void FakeApp::forwardKey(EditKey key, bool release, uint32_t time) {

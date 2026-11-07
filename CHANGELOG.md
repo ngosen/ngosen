@@ -10,6 +10,19 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.8.1-1] — 07/11/2026
+
+Gõ Sen hết nuốt hoặc đảo thứ tự phím điều hướng và phím tắt Ctrl bấm ngay sau một chữ; riêng app Wayland trên GNOME vẫn nhận Ctrl+phím thành chữ (#591).
+Tải ở [ngosen-1.8.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.1-1).
+
+### Sửa
+
+- Gõ Sen hết nuốt hoặc đảo thứ tự phím mũi tên, Home, End, Delete, Esc và phím tắt Ctrl bấm ngay sau một chữ; riêng app Wayland trên GNOME vẫn nhận Ctrl+phím thành chữ (#591).
+
+### Tài liệu
+
+- README hướng dẫn báo lỗi qua trang “Kiểm tra máy” thay cho hộp “Kiểm tra máy tôi…” đã bỏ ở version 1.8.0 (#590).
+
 ## [1.8.0-1] — 07/11/2026
 
 Trang Kiểm tra máy hướng dẫn thiết lập, có nút sửa từng việc, ô gõ thử và gửi kết quả (#463, #563). GNOME tắt extension: Firefox ít sai chữ khi gõ nhanh, thanh địa chỉ Chrome gõ đúng, một app lỗi không còn làm mọi app ra chữ thô (#541, #543, #586). GNOME bật extension hết mất chữ khi gõ nhanh và xoá nhầm khi Backspace (#581, #584). Firefox trên KDE hết mất dấu khi chèn chữ giữa câu; trên Hyprland, Sway hết mất chữ khi gõ nhanh (#582, #583). install.sh hỗ trợ Fedora 45, bật fcitx5 ngay và thiết lập app Qt 5 trên Sway, Hyprland (#556, #557, #566). Cửa sổ cài đặt chia nhóm rõ hơn, giải thích ô bị khoá và không đổi giá trị khi lăn chuột (#519, #521, #522).

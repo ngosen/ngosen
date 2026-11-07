@@ -58,6 +58,9 @@ namespace ngosen::test {
         void forwardKey(EditKey key, bool release, uint32_t time) override {
             forwarded_.push_back({key, release, time});
         }
+        void forwardKeyPress(uint32_t sym, uint32_t /*states*/, uint32_t /*code*/, bool release, uint32_t /*time*/) override {
+            forwardedPresses_.push_back({sym, release});
+        }
         void deleteSurrounding(int offset, unsigned int size) override {
             deletes_.emplace_back(offset, size);
         }
@@ -170,6 +173,7 @@ namespace ngosen::test {
         bool                                      systemKeysWork_ = false;
         std::vector<std::string>                  commits_;
         std::vector<ForwardedKey>                 forwarded_;
+        std::vector<std::pair<uint32_t, bool>>    forwardedPresses_;
         std::vector<std::pair<int, unsigned int>> deletes_;
         std::vector<int>                          systemKeys_;
         std::string                               preedit_;

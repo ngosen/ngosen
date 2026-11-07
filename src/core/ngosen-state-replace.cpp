@@ -503,6 +503,8 @@ namespace ngosen {
             return;
         }
         const bool isSurrText = deletesThroughSurrounding(surrounding);
+        if (!isSurrText)
+            countBackspaces(surrounding);
         is_deleting_.store(true, std::memory_order_release);
         if (isSurrText) {
             replace_method_ = "surrounding";
@@ -751,6 +753,10 @@ namespace ngosen {
                 NGOSEN_INFO("Surrounding path would delete " + std::to_string(chars) + loggedField(host_->field()) + "; fails: " + joined(fails));
             }
         }
+        return false;
+    }
+
+    void TypingState::countBackspaces(const ngosen::Surrounding& surrounding) {
         ++expected_backspaces_;
         // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
         // the autofill shape on Firefox.
@@ -766,7 +772,6 @@ namespace ngosen {
                 ++expected_backspaces_;
             }
         }
-        return false;
     }
 
     std::vector<std::string> TypingState::earlierWordsBeforeReplacement() const {

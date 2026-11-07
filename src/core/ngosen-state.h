@@ -530,8 +530,9 @@ namespace ngosen {
         void performReplacement(const std::string& deletedPart, const std::string& addedPart);
         // Remembers what the app showed when the replacement started, to tell when it is done.
         void recordSendSnapshot(const std::string& deletedPart);
-        // True to delete through the surrounding text; otherwise counts the backspaces to send.
-        bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
+        bool deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
+        // The word's characters plus the autofill a Backspace removes first.
+        void                     countBackspaces(const ngosen::Surrounding& surrounding);
         void                     replaceThroughSurrounding(const Surrounding& surrounding, int extraBeforeCursor = 0);
         void                     clearSelectedTailThenReplace(const Surrounding& surrounding);
         void                     finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype);

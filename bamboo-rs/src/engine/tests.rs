@@ -225,6 +225,22 @@ fn test_auto_non_vn_restore_disabled() {
 }
 
 #[test]
+fn test_restore_word_before_digits_with_macros() {
+    for (keys, want) in [
+        ("Sose2026", "Sose2026 "),
+        ("sose2", "sose2 "),
+        ("tooi2", "tôi2 "),
+        ("2026", "2026 "),
+    ] {
+        let mut e = new_test_engine(&["tôi"], true);
+        e.macro_enabled = true;
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, want, "{keys}");
+    }
+}
+
+#[test]
 fn test_english_word_keeps_a_letter_telex_undid() {
     for word in [
         "issue",

@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
-- Kho APT, pacman và zypper của Ngó Sen phát lại gói `ibus-ngosen` (Ngó Sen cho GNOME); `pacman -Syu`, `apt upgrade` và `zypper up` tự lên bản mới (#PRNUM).
+- Kho APT, pacman và zypper của Ngó Sen phát lại gói `ibus-ngosen` (Ngó Sen cho GNOME); `pacman -Syu`, `apt upgrade` và `zypper up` tự lên bản mới (#598).
 
 ## [1.8.1-1] — 07/11/2026
 

@@ -392,6 +392,7 @@ namespace ngosen {
         if (!key_report_pending_)
             return;
         key_report_pending_ = false;
+        copyWaitRetry_      = false;
         if (!fromTimer) {
             key_report_timer_.reset(); // never reset a timer from inside its own callback
             copyWaitTimedOut_ = false;
@@ -424,6 +425,7 @@ namespace ngosen {
         NGOSEN_INFO("Focus left during the wait, dropping the replacement and " + std::to_string(buffered_keys_.size()) + " held keys");
         logReplaceEnd("focus lost, text dropped");
         key_report_pending_ = false;
+        copyWaitRetry_      = false;
         forgetWaitingReplacement();
         buffered_keys_.clear();
     }

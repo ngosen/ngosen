@@ -22,6 +22,7 @@
 #include "ngosen-key.h"
 #include "ngosen-surrounding-check.h"
 
+#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -416,6 +417,20 @@ namespace ngosen {
         bool                           copyWaitTimedOut_     = false; ///< keeps replayed keys from each waiting out a copy that never fits
         int                            copyWaitsRunOut_      = 0;     ///< copy waits in a row that ran out in this field
         static constexpr int           MaxCopyWaitsRunOut    = 2;
+
+        // HeldBack: the copy would give a wrong deletion, but this field's checks go unanswered.
+        enum class CopyWait {
+            No,
+            Yes,
+            HeldBack
+        };
+        CopyWait                       copyWaitNeed() const;
+        bool                           waitsForCopy();
+        bool                           checksGetAnswered() const;
+        bool                           copyWaitRetry_         = false; ///< this wait is the one tried again in a held-back field
+        static constexpr int           RecentChecks           = 8;
+        static constexpr int           CopyWaitsHeldBackLimit = 4;
+
         std::unique_ptr<ngosen::Timer> split_edit_timer_;
         bool                           split_edit_pending_ = false;
         Surrounding                    split_edit_surrounding_;
@@ -646,6 +661,11 @@ namespace ngosen {
             bool        checkAnswered   = false; ///< a check came out correct
             int         answeredUnasked = 0;     ///< checks answered with no key since the edit
             int         checksMissed    = 0;     ///< checks left unanswered
+
+            // For the copy wait: the last checks, newest in bit 0, set if answered at all.
+            std::bitset<RecentChecks> recentAnswers;
+            int                       recentChecks      = 0; ///< how many bits of recentAnswers hold a check
+            int                       copyWaitsHeldBack = 0; ///< replacements while unanswered checks keep the copy wait off
         };
         FieldHistory sinceFocus_;
 

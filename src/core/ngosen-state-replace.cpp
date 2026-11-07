@@ -1237,6 +1237,26 @@ namespace ngosen {
         performReplacement(deletedPart, addedPart);
     }
 
+    // Text the replay has not sent yet can change in place: nothing to delete, so nothing to wait for.
+    bool TypingState::foldIntoReplay(std::string& out, const std::string& deletedPart, const std::string& addedPart) {
+        if (!engine_->options().foldReplayReplacement || deletedPart.empty() || !isEndsWith(out, deletedPart) || !isEndsWith(oldPreBuffer_, deletedPart))
+            return false;
+        NGOSEN_INFO("Fold replacement into the replay: " + logged(deletedPart) + " -> " + logged(addedPart));
+        out.resize(out.size() - deletedPart.size());
+        out += addedPart;
+        // Counted as a replacement the user typed, so a field held back is tried again after as many words.
+        sinceFocus_.copyWaitsHeldBack = checksGetAnswered() ? 0 : sinceFocus_.copyWaitsHeldBack + 1;
+        // As trackEarlierWords, but the app never sees the form before the fold, so it is not an earlier word.
+        if (!wordAfterReplacement_.empty() && isStartsWith(oldPreBuffer_, wordAfterReplacement_)) {
+            wordAfterReplacement_ = oldPreBuffer_.substr(0, oldPreBuffer_.size() - deletedPart.size()) + addedPart;
+        } else {
+            earlierWords_.clear();
+            wordBeforeReplacement_.clear();
+            wordAfterReplacement_.clear();
+        }
+        return true;
+    }
+
     bool TypingState::replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
         if (keys[i].actsOnField)
             return holdReplayedFieldKey(keys, i, out);
@@ -1281,8 +1301,11 @@ namespace ngosen {
             ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitF.get(), deletedPart, addedPart);
             const bool replacing = !deletedPart.empty();
             // The engine ends the word on Enter without taking it, so the Enter still has to go out.
-            const std::string owed = !processed && !sent && ngosen::key::isEnter(sym) ? keyUtf8 : std::string();
-            if (replacing) {
+            const std::string owed   = !processed && !sent && ngosen::key::isEnter(sym) ? keyUtf8 : std::string();
+            const bool        folded = replacing && !sent && foldIntoReplay(out, deletedPart, addedPart);
+            if (folded) {
+                out += owed;
+            } else if (replacing) {
                 if (sent) {
                     enter_after_replacement_ = true;
                     enter_after_key_         = *sent;
@@ -1299,7 +1322,7 @@ namespace ngosen {
                 return holdReplayedKey(keys, i, out, *sent);
             if (!replacing)
                 out += owed;
-            return replacing;
+            return replacing && !folded;
         }
 
         if (sent)
@@ -1328,6 +1351,10 @@ namespace ngosen {
         }
         if (!canSendBackspaces()) {
             out += keyUtf8;
+            return false;
+        }
+        if (foldIntoReplay(out, deletedPart, addedPart)) {
+            oldPreBuffer_ = preeditStr;
             return false;
         }
         if (is_deleting_.load()) {

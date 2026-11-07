@@ -743,6 +743,7 @@ namespace ngosen {
         // Replays keys[i]; true when it started a replacement, which replays the rest later.
         bool replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         void replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart);
+        bool foldIntoReplay(std::string& out, const std::string& deletedPart, const std::string& addedPart);
 
         /**
          * @brief Checks if the key symbol matches the configured lock-word modifier.

@@ -33,11 +33,8 @@ Replace: method=forwarded backspaces wait=none ended=threshold after 24 ms
 Replace: method=forwarded backspaces wait=copy ended=timeout after 250 ms
 Replace: method=forwarded backspaces wait=copy ended=timeout after 250 ms
 Replace: method=forwarded backspaces wait=copy ended=timeout after 240 ms
-Replace: method=forwarded backspaces wait=none ended=timeout after 40 ms
 Replace: method=forwarded backspaces wait=copy ended=timeout after 240 ms
-Replace: method=forwarded backspaces wait=none ended=timeout after 40 ms
 Replace: method=forwarded backspaces wait=copy ended=timeout after 240 ms
-Replace: method=forwarded backspaces wait=none ended=timeout after 40 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms

@@ -21,7 +21,6 @@ Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=event after 8 ms
-Replace: method=forwarded backspaces wait=none ended=threshold after 48 ms
 Replace: method=forwarded backspaces wait=none ended=event after 24 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms

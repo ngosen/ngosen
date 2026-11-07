@@ -2121,6 +2121,38 @@ namespace {
               "long check: a dropped deletion seen after a key costs one word", text + " " + join(lines));
     }
 
+    // A check open while GNOME Shell names the app late says nothing about either app.
+    void testCheckAcrossLateAppName() {
+        const std::string editor = "org.gnome.TextEditor.desktop", files = "org.gnome.Nautilus.desktop";
+        for (const bool renamed : {false, true}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop      loop;
+            FakeResources resources;
+            auto          owned =
+                std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, editor), ngosen::test::AppQuirks{.reportDelayMs = 300, .ignoresSurroundingDel = true});
+            auto*               app = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            ngosen::test::captureLog(true);
+            // The second word goes through the surrounding text, whose deletion the app drops.
+            for (const char c : std::string("too to")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            app->type('o');
+            loop.pump(10);
+            if (renamed)
+                app->setProgram(files);
+            loop.pump(600);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            const bool marked = resources.surroundingUntrusted("ibus", editor) || resources.surroundingUntrusted("ibus", files);
+            check(marked == !renamed && countHaving(lines, "Surrounding text untrusted") == (renamed ? 0 : 1),
+                  renamed ? "late app name: a dropped deletion marks no app" : "late app name: the same dropped deletion marks the app it stays in", join(lines));
+        }
+    }
+
     // The user's own edits while a long check is open say nothing about the app.
     void testEditsDuringLongCheck() {
         const Field              gnome = makeField("ibus", true);
@@ -3491,6 +3523,7 @@ int main() {
     testBackspacePathDuringLongCheck();
     testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
+    testCheckAcrossLateAppName();
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();
     testUnansweredChecksLeaveNoMark();

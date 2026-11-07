@@ -600,6 +600,7 @@ namespace ngosen {
             std::string retype;     ///< committed again ahead of added
             std::string sentReport; ///< reportKey() when the deletion was sent
             std::string sentAfter;  ///< the text after the cursor then
+            std::string program;    ///< the app's name then
             bool        password      = false;
             bool        waitsForKey   = false; ///< stays open for a report that comes with a later key
             uint64_t    keysAtSend    = 0;

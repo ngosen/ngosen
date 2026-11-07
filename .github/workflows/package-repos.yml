@@ -12,8 +12,14 @@ permissions:
 
 env:
   # Ngó Sen for GNOME ships from the same repositories, so one source line and one key cover both.
-  # Run this workflow by hand after an ibus-ngosen release; see RELEASING.md there.
+  # Run this workflow by hand from the newest ngosen-* tag after an ibus-ngosen release; see
+  # RELEASING.md there.
   IBUS_REPOSITORY: ngosen/ibus-ngosen
+
+# bash runs with pipefail, so a failed release listing stops the job instead of leaving a package out.
+defaults:
+  run:
+    shell: bash
 
 concurrency:
   group: package-repositories
@@ -37,13 +43,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir debs
           for repo in "$GITHUB_REPOSITORY" "$IBUS_REPOSITORY"; do
-              gh release list --repo "$repo" --exclude-drafts --exclude-pre-releases \
-                  --limit 2 --json tagName --jq '.[].tagName' |
-                  while read -r tag; do
-                      gh release download "$tag" --repo "$repo" --pattern '*.deb' --dir debs
-                  done
+              packaging/download-release-files.sh "$repo" 2 '*.deb' debs
           done
 
       - name: Import signing key
@@ -78,9 +79,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           for repo in "$GITHUB_REPOSITORY" "$IBUS_REPOSITORY"; do
-              tag=$(gh release list --repo "$repo" --exclude-drafts --exclude-pre-releases \
-                  --limit 1 --json tagName --jq '.[0].tagName // empty')
-              [ -z "$tag" ] || gh release download "$tag" --repo "$repo" --pattern '*.pkg.tar.zst' --dir pkgs
+              packaging/download-release-files.sh "$repo" 1 '*.pkg.tar.zst' pkgs
           done
 
       - name: Import signing key
@@ -114,15 +113,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir rpms
           for repo in "$GITHUB_REPOSITORY" "$IBUS_REPOSITORY"; do
-              gh release list --repo "$repo" --exclude-drafts --exclude-pre-releases \
-                  --limit 2 --json tagName --jq '.[].tagName' |
-                  while read -r tag; do
-                      gh release download "$tag" --repo "$repo" \
-                          --pattern '*.opensuse-tumbleweed.x86_64.rpm' --dir rpms ||
-                          [ "$repo" = "$IBUS_REPOSITORY" ]
-                  done
+              packaging/download-release-files.sh "$repo" 2 '*.opensuse-tumbleweed.x86_64.rpm' rpms
           done
 
       - name: Import signing key

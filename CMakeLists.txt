@@ -61,6 +61,15 @@ if (Fcitx5ModuleDBus_FOUND)
     add_definitions(-DNGOSEN_HAS_DBUS)
     list(APPEND ngosen_fcitx_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-dbus-object.cpp)
     set(NGOSEN_DBUS_MODULE Fcitx5::Module::DBus)
+    # fcitx5 on sd-bus hands out sd_bus_message pointers, which tell a message's serial on fcitx5
+    # versions that do not.
+    get_target_property(NGOSEN_FCITX_UTILS_LIB Fcitx5::Utils LOCATION)
+    if (NGOSEN_FCITX_UTILS_LIB AND EXISTS "${NGOSEN_FCITX_UTILS_LIB}")
+        file(STRINGS "${NGOSEN_FCITX_UTILS_LIB}" NGOSEN_FCITX_SDBUS LIMIT_COUNT 1 REGEX "^libsystemd\\.so")
+    endif()
+    if (NGOSEN_FCITX_SDBUS)
+        add_definitions(-DNGOSEN_FCITX_SDBUS)
+    endif()
 endif()
 # Missing when fcitx5 is built without notifications; the "What's new" notice is then skipped.
 find_package(Fcitx5ModuleNotifications)

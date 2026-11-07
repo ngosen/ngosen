@@ -411,7 +411,10 @@ namespace fcitx {
                 NGOSEN_WARN(std::string("Could not register ") + NgoSenDBusObject::Path + " on D-Bus; ngosen-save-log will not work");
                 dbusObject_.reset();
             }
-            gnomeShell_ = std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>(), [this](const std::string& app) { shellFocusedAppChanged(app); });
+            // As fcitx5 5.1.22 does it, which needs Wayland to tell windows apart.
+            const bool watchPortal = getEnv("XDG_SESSION_TYPE") == "wayland" && !ngosen::fcitxNamesGnomeApps(Instance::version());
+            gnomeShell_ =
+                std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>(), watchPortal, [this](const std::string& app) { shellFocusedAppChanged(app); });
         }
 #endif
 

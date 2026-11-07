@@ -10,6 +10,20 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.8.2-1] — 07/11/2026
+
+Cứu chữ hết xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt (#605), gõ tắt khi đang tiếng Anh hết thành "vnviệt nam" ở ô không cho đọc chữ (#604), và kho APT, pacman, zypper của Ngó Sen phát lại gói `ibus-ngosen` (#598).
+Tải ở [ngosen-1.8.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.2-1).
+
+### Sửa
+
+- Cứu chữ không còn xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt: bấm Enter hay Esc lúc đó giữ nguyên chữ trong ô, và lời mời gõ lại bị bỏ khi app báo con trỏ đã dời đi (#605).
+- Gõ tắt khi đang tiếng Anh không còn chèn cụm chữ đầy đủ sau chữ tắt (thành "vnviệt nam") ở ô không cho đọc chữ quanh con trỏ; chữ tắt được giữ nguyên (#604).
+
+### Thêm
+
+- Kho APT, pacman và zypper của Ngó Sen phát lại gói `ibus-ngosen` (Ngó Sen cho GNOME); `pacman -Syu`, `apt upgrade` và `zypper up` lấy bản `ibus-ngosen` mới sau khi kho được làm mới; gói tải về được đối chiếu SHA256SUMS của release trước khi ký (#598).
+
 ## [1.8.1-1] — 07/11/2026
 
 Gõ Sen hết nuốt hoặc đảo thứ tự phím điều hướng và phím tắt Ctrl bấm ngay sau một chữ; riêng app Wayland trên GNOME vẫn nhận Ctrl+phím thành chữ (#591).

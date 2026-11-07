@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.8.1
+Version:        1.8.2
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -99,6 +99,9 @@ else
 fi
 
 %changelog
+* Sat Nov 07 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.8.2-1
+- Retype no longer deletes text after a click right after the switch key (#605); a macro typed in English no longer lands after its abbreviation in fields that hide their text (#604); publish ibus-ngosen from the APT, pacman and zypper repositories again (#598).
+
 * Sat Nov 07 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.8.1-1
 - Fix swallowed or reordered navigation keys and Ctrl shortcuts pressed right after a word; Ctrl+key still types a letter in Wayland apps on GNOME (#591).
 

@@ -373,6 +373,37 @@ fn print_shown_words() {
     }
 }
 
+// Prints what the keys on each line of NGOSEN_WORDS commit when a space ends them, with the
+// default settings and dictionary, for misc/check-word-endings.py.
+#[test]
+#[ignore = "measurement input, not a check"]
+fn print_committed_words() {
+    let path = std::env::var("NGOSEN_WORDS").unwrap();
+    let method = std::env::var("NGOSEN_INPUT_METHOD").unwrap_or_else(|_| "Telex".to_string());
+    let dictionary: Vec<&str> = include_str!("../../../data/dictionaries/vietnamese.cm.dict")
+        .lines()
+        .collect();
+    let mut e = new_test_engine(&dictionary, true);
+    // What EngineSetOption builds from the settings' defaults.
+    let config = Config::builder()
+        .free_tone_marking(true)
+        .tone_style(ToneStyle::Traditional)
+        .auto_correct(false)
+        .w2u_mode(W2uMode::NonStart)
+        .bracket_mode(BracketMode::Disabled)
+        .build();
+    e.preeditor = Engine::with_config(input_method_by_name(&method), config);
+    e.macro_enabled = true;
+    for line in std::fs::read_to_string(path).unwrap().lines() {
+        let keys = line.split('\t').next().unwrap_or_default();
+        e.reset();
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        // Debug format, so a lost or doubled space shows.
+        println!("COMMITTED\t{keys}\t{:?}", e.commit_text);
+    }
+}
+
 #[test]
 fn test_to_upper() {
     let mut e = new_test_engine(&[], false);

@@ -397,7 +397,6 @@ namespace ngosen {
         // click on another cell shows only in that report. A frontend that counts the deletion on its copy
         // of the text (mutter) waits until that copy holds what the deletion needs.
         bool                           waitsForKeyReport() const;
-        bool                           copyGivesWrongDeletion() const;
         bool                           reportsItsEdits() const;
         void                           startReportRequestTimer();
         void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);

@@ -840,10 +840,6 @@ namespace ngosen {
 
     // The frontend turns a deletion into bytes on its copy of the text, which can still lack what the
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
-    bool TypingState::copyGivesWrongDeletion() const {
-        return copyWaitNeed() == CopyWait::Yes;
-    }
-
     TypingState::CopyWait TypingState::copyWaitNeed() const {
         const auto surrounding = host_->surrounding();
         if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())

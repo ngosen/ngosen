@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.8.0
+Version:        1.8.1
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -99,6 +99,9 @@ else
 fi
 
 %changelog
+* Sat Nov 07 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.8.1-1
+- Fix swallowed or reordered navigation keys and Ctrl shortcuts pressed right after a word; Ctrl+key still types a letter in Wayland apps on GNOME (#591).
+
 * Sat Nov 07 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.8.0-1
 - Add a Check my machine page with setup steps, one-click fixes, a typing test and bug reporting (#463, #563). On GNOME without the extension, type better in Firefox and Chrome's address bar and keep one failing app from making every app type raw keys (#541, #543, #586); with the extension, stop losing letters when typing fast or pressing Backspace (#581, #584). Keep tones in Firefox on KDE and letters on Hyprland and Sway (#582, #583). Install on Fedora 45 and set up Sway and Hyprland (#556, #557, #566). Clearer settings window (#519, #521, #522).
 

@@ -11,6 +11,7 @@ add_library(ngosen_core STATIC
     ngosen-state-retype.cpp
     ngosen-state-wait.cpp
     ngosen-app-quirks.cpp
+    ngosen-flatpak-names.cpp
     ngosen-globals.cpp
     ngosen-gnome-apps.cpp
     ngosen-pointer.cpp

@@ -13,9 +13,8 @@
 namespace ngosen {
 
     namespace {
-        // Desktop-file parsers differ in what whitespace they trim, so none of it may reach the name.
         std::string lowercaseWithoutSpaces(std::string text) {
-            text.erase(std::remove_if(text.begin(), text.end(), [](unsigned char c) { return std::isspace(c); }), text.end());
+            text.erase(std::remove(text.begin(), text.end(), ' '), text.end());
             std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
             return text;
         }

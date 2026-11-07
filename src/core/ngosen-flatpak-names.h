@@ -14,7 +14,8 @@ namespace ngosen {
 
     // Paths of the desktop files named appId + ".desktop" on the XDG data path, in lookup order.
     using DesktopFileFinder = std::function<std::vector<std::string>(const std::string& appId)>;
-    // The file's StartupWMClass ("" when it has none), or nullopt when the file cannot be read.
+    // The file's StartupWMClass, trimmed as desktop-file parsers do ("" when it has none), or nullopt
+    // when the file cannot be opened.
     using StartupWmClassReader = std::function<std::optional<std::string>(const std::string& path)>;
 
     // A Flatpak app reports its app ID (org.mozilla.firefox) where the distro package reports its

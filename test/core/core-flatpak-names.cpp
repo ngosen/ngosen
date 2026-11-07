@@ -51,7 +51,6 @@ int main() {
     dirs.files[systemExports + "net.mullvad.MullvadBrowser.desktop"] = std::string("Mullvad Browser");
     dirs.files[systemExports + "net.waterfox.waterfox.desktop"]      = std::string();
     dirs.files[systemExports + "net.lutris.Lutris.desktop"]          = std::string("net.lutris.Lutris");
-    dirs.files[systemExports + "com.example.Padded.desktop"]         = std::string("\tpadded\r");
     dirs.files[native + "org.gnome.Ptyxis.desktop"]                  = std::string("ptyxis");
 
     expect("StartupWMClass names the app", dirs.map("org.mozilla.firefox"), "firefox");
@@ -60,7 +59,6 @@ int main() {
     expect("without StartupWMClass the last part names it", dirs.map("net.waterfox.waterfox"), "waterfox");
     expect("the last part of a .desktop id is not \"desktop\"", dirs.map("net.waterfox.waterfox.desktop"), "waterfox");
     expect("a StartupWMClass that is the app ID is skipped", dirs.map("net.lutris.Lutris"), "lutris");
-    expect("whitespace a parser leaves is dropped", dirs.map("com.example.Padded"), "padded");
     expect("a native app with a reverse-DNS name is left as reported", dirs.map("org.gnome.Ptyxis"), "org.gnome.Ptyxis");
     expect("a native desktop file is never read", std::to_string(dirs.read.size()), "0");
     expect("a name with no desktop file is left as reported", dirs.map("com.example.Operator"), "com.example.Operator");
@@ -73,6 +71,11 @@ int main() {
     dirs.files[userExports + "com.example.Viewer.desktop"]   = std::nullopt;
     dirs.files[systemExports + "com.example.Viewer.desktop"] = std::string("imgview");
     expect("an unreadable export falls through to the next", dirs.map("com.example.Viewer"), "imgview");
+
+    // A native file listed first must not hide the export behind it.
+    dirs.order                                        = {native, systemExports};
+    dirs.files[native + "com.example.Viewer.desktop"] = std::string("native-viewer");
+    expect("a native file before the export is passed over", dirs.map("com.example.Viewer"), "imgview");
 
     if (failures == 0)
         std::cout << "core_flatpak_names: all passed\n";

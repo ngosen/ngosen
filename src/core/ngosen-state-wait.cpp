@@ -418,7 +418,8 @@ namespace ngosen {
     // The word stays as typed, since its edit would land in whatever has focus now. is_deleting_ is
     // left alone because it is shared and the new field may be replacing.
     void TypingState::dropReplacementAfterFocusLoss() {
-        NGOSEN_INFO("Focus left during the wait, dropping the replacement");
+        // Only the count: the keys are text the user typed.
+        NGOSEN_INFO("Focus left during the wait, dropping the replacement and " + std::to_string(buffered_keys_.size()) + " held keys");
         key_report_pending_ = false;
         forgetWaitingReplacement();
         buffered_keys_.clear();

@@ -2726,6 +2726,33 @@ namespace {
         check(countHaving(lines, "still short") > inOneField, "a new focus waits for the copy again", std::to_string(countHaving(lines, "still short")));
     }
 
+    // Keys held for a replacement that focus leaves are lost; the log says how many.
+    void testFocusLossLogsDroppedKeys() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(
+            loop, makeField("ibus", true, "antigravity-ide"),
+            ngosen::test::AppQuirks{.reportDelayMs = 8, .lagMs = 15, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+        auto*               app = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        ngosen::test::captureLog(true);
+        const std::string typed = "nguoiwfa";
+        const auto        keys  = keysOf(typed);
+        const auto        gaps  = rolledGaps(typed, {5, 6}, 60);
+        for (size_t i = 0; i < keys.size(); ++i) {
+            app->type(keys[i]);
+            loop.pump(i + 1 < keys.size() ? gaps[i] : 0);
+        }
+        app->leaveFocus(500);
+        loop.pump(600);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(lines, "dropping the replacement and 1 held keys") == 1, "focus loss: the log counts the lost key", join(lines));
+    }
+
     // SDL takes no deletion from us, so a copy that lags would only hold its keys back.
     void testNoCopyWaitWithoutBackspaces() {
         realMode = ngosen::Mode::Sen;
@@ -3310,6 +3337,7 @@ int main() {
     testLateCopyKeepsSurroundingPath();
     testRolledKeysWaitForIbusCopy();
     testCopyWaitsRunOutPerField();
+    testFocusLossLogsDroppedKeys();
     testOneLateCopyKeepsWaiting();
     testBackspaceDuringCopyWait();
     testNoCopyWaitWithoutBackspaces();

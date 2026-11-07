@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Cứu chữ không còn xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt: bấm Enter hay Esc lúc đó giữ nguyên chữ trong ô, và lời mời gõ lại bị bỏ khi app báo con trỏ đã dời đi.
+
 ## [1.8.2-1] — 07/11/2026
 
 Kho APT, pacman và zypper của Ngó Sen phát lại gói `ibus-ngosen` (Ngó Sen cho GNOME); gói `fcitx5-ngosen` không đổi so với 1.8.1-1 (#598).

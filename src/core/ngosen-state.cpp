@@ -999,6 +999,8 @@ namespace ngosen {
         if (is_deleting_.load(std::memory_order_acquire) || edit_hold_) {
             return;
         }
+        // The cursor may have moved, so Enter or Esc must not replace text before it.
+        dropRetype();
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
         if (isFocusOut)

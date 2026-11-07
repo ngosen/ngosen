@@ -233,6 +233,7 @@ namespace ngosen {
             // The user really switched windows: the old field can no longer take the text. Reset
             // only this field's state; is_deleting_ is shared and the new field may be replacing.
             NGOSEN_INFO("Timer: input context lost focus, dropping text");
+            logReplaceEnd("focus lost, text dropped");
             surr_wait_pending_       = false;
             surr_wait_timer_only_    = false;
             expected_backspaces_     = 0;
@@ -421,7 +422,7 @@ namespace ngosen {
     void TypingState::dropReplacementAfterFocusLoss() {
         // Only the count: the keys are text the user typed.
         NGOSEN_INFO("Focus left during the wait, dropping the replacement and " + std::to_string(buffered_keys_.size()) + " held keys");
-        logReplaceEnd("focus lost");
+        logReplaceEnd("focus lost, text dropped");
         key_report_pending_ = false;
         forgetWaitingReplacement();
         buffered_keys_.clear();

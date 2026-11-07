@@ -423,8 +423,7 @@ namespace ngosen {
     // Not the address bar, and a commit would not replace the selection there: delete like any page field.
     void TypingState::deleteOverIgnoredSelection() {
         NGOSEN_INFO("No focus change after selecting, deleting with backspaces");
-        logReplaceEnd("no focus change");
-        startReplaceLog(replace_wait_);
+        replace_wait_                   = "selection";
         field_keeps_focus_on_selection_ = true;
         overtype_pending_               = false;
         overtype_via_xtest_             = false;

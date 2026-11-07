@@ -1,6 +1,6 @@
 #!/bin/bash
-# Builds the signed pacman repository "ngosen" from the newest fcitx5-ngosen package. pacman only offers
-# the newest version of a package anyway.
+# Builds the signed pacman repository "ngosen" from the newest fcitx5-ngosen package and, when there is
+# one, the newest ibus-ngosen package. pacman only offers the newest version of a package anyway.
 # Signs with the default secret key in the caller's GnuPG home. Needs repo-add from pacman.
 set -euo pipefail
 
@@ -19,6 +19,7 @@ find_pkg() {
 }
 
 fcitx5=$(find_pkg fcitx5-ngosen)
+ibus=$(find_pkg ibus-ngosen)
 if [ -z "$fcitx5" ]; then
     echo "expected one fcitx5-ngosen x86_64 package in $src, found none" >&2
     exit 1
@@ -27,10 +28,12 @@ fi
 rm -rf "$out"
 dir=$out/x86_64
 mkdir -p "$dir"
-cp "$fcitx5" "$dir/"
-pkg=$dir/$(basename "$fcitx5")
-gpg --batch --yes --detach-sign -o "$pkg.sig" "$pkg"
-repo-add --sign --verify "$dir/ngosen.db.tar.gz" "$pkg"
+for src_pkg in "$fcitx5" ${ibus:+"$ibus"}; do
+    cp "$src_pkg" "$dir/"
+    pkg=$dir/$(basename "$src_pkg")
+    gpg --batch --yes --detach-sign -o "$pkg.sig" "$pkg"
+    repo-add --sign --verify "$dir/ngosen.db.tar.gz" "$pkg"
+done
 
 # repo-add links ngosen.db to ngosen.db.tar.gz; Pages does not serve symlinks.
 for link in "$dir"/*; do

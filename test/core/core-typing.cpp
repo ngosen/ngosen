@@ -1063,11 +1063,13 @@ namespace {
     }
 
     // Types "tiee" in Sen mode and returns what was committed, with DEL shown as <DEL>.
-    std::string commitsForTiee(const std::string& program, bool& eTaken, const std::string& frontend = "dbus") {
+    std::string commitsForTiee(const std::string& program, bool& eTaken, const std::string& frontend = "dbus", bool surroundingText = false, bool terminal = false) {
         realMode = ngosen::Mode::Sen;
-        FakeLoop            loop;
-        FakeResources       resources;
-        auto                owned = std::make_unique<FakeHost>(loop, makeField(frontend, false, program));
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField(frontend, surroundingText, program);
+        field.terminal            = terminal;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
         FakeHost*           host  = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
 
@@ -1095,6 +1097,14 @@ namespace {
 
         const std::string sdl = commitsForTiee("Medieval2", taken);
         check(!has(sdl, "<DEL>"), "dbus sdl: never gets DEL", sdl);
+
+        // kitty over Wayland claims surrounding text it never sends.
+        const std::string kitty = commitsForTiee("kitty", taken, "wayland_v2", true, true);
+        check(kitty == "['<DEL>ê']", "wayland_v2 terminal claiming surrounding text: one commit erases e and types ê", kitty);
+        const std::string konsole = commitsForTiee("org.kde.konsole", taken, "wayland_v2", true, false);
+        check(!has(konsole, "<DEL>"), "wayland_v2 field not marked as a terminal: never gets DEL", konsole);
+        const std::string alacritty = commitsForTiee("Alacritty", taken, "wayland_v2", true, true);
+        check(!has(alacritty, "<DEL>"), "alacritty pastes commits: never gets DEL", alacritty);
     }
 
     // The log a user saves after a wrong word must show the keys, what was sent and what the app said.

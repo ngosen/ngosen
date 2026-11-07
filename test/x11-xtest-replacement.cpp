@@ -251,6 +251,23 @@ namespace {
         return true;
     }
 
+    bool erasesWithCommittedDel(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+        const std::string where   = frontend + " " + program + ": ";
+        auto              context = h.open(program, frontend, caps);
+        if (!h.typeTieE(*context))
+            return false;
+        pumpEventLoop(h.testInstance.instance, 5);
+        if (!h.sent.empty() || !context->forwarded().empty()) {
+            reportFailure(where + "no key sent", "(none)", joinCounts(h.sent) + ", " + std::to_string(context->forwarded().size()) + " forwarded");
+            return false;
+        }
+        if (context->commits() != std::vector<std::string>{"\x7fê"}) {
+            reportFailure(where + "one commit erases e and types ê", "['<DEL>ê']", joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
 } // namespace
 
 int main() {
@@ -343,8 +360,8 @@ int main() {
         sent.push_back(count);
         return true;
     });
-    // xterm drops sent events, so it keeps forwarding.
-    if (!keepsForwarding(h, "xterm", "xim", fcitx::CapabilityFlags{}))
+    // xterm drops sent events but runs a committed DEL like Backspace.
+    if (!erasesWithCommittedDel(h, "xterm", "xim", fcitx::CapabilityFlags{}))
         return 1;
     if (!keepsForwarding(h, "wordcraft", "xim", fcitx::CapabilityFlags{}))
         return 1;

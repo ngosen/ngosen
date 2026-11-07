@@ -2036,6 +2036,39 @@ namespace {
         check(countHaving(lines, "went unanswered") == 1, "silent: a host with a preedit still gives up on the field", text + " " + join(lines));
     }
 
+    // Through GNOME Shell a Backspace not taken reaches the app at once, ahead of the edit still waiting
+    // for its commit, and removes a letter the edit was about to replace. Typed fast, the keys must give
+    // what they give typed slowly.
+    void testBackspaceDuringSurroundingWait() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        std::vector<std::string> lines;
+        for (const bool perTurn : {false, true}) {
+            for (const int reportDelayMs : {2, 10, 25}) {
+                const ngosen::test::AppQuirks shell{.reportDelayMs                = reportDelayMs,
+                                                    .dropsForwardedKeys           = true,
+                                                    .convertsDeleteOnReportedCopy = true,
+                                                    .reportsTextAtChange          = true,
+                                                    .keepsLastEditPerTurn         = perTurn,
+                                                    .turnMs                       = perTurn ? 3 : 0};
+                // With one edit per turn, Backspaces that empty the word or follow its space still go wrong.
+                const std::vector<std::string> typed = perTurn ? std::vector<std::string>{"nam tieesng<<ng ", "nam tiees<ng "} :
+                                                                 std::vector<std::string>{"nam tieesng<<ng ", "nam tiees<ng ", "nam tees<<ooi ", "nam tieesng <<ng "};
+                for (const auto& keys : typed) {
+                    const auto slow = typedWithBackspaces(field, shell, keys, 400, lines);
+                    if (keys == "nam tieesng<<ng ")
+                        check(slow == "nam tiếng ", "backspace in a surrounding wait: typed slowly", slow + " " + join(lines));
+                    for (const int gapMs : {20, 30, 150}) {
+                        const auto text  = typedWithBackspaces(field, shell, keys, gapMs, lines);
+                        const auto label = "backspace in a surrounding wait: " + keys + (perTurn ? ", one edit per turn" : "") + ", report " + std::to_string(reportDelayMs) +
+                            " ms, keys " + std::to_string(gapMs) + " ms apart";
+                        check(text == slow && countHaving(lines, "untrusted") == 0, label, text + " vs " + slow + " " + join(lines));
+                    }
+                }
+            }
+        }
+    }
+
     void testBothPathsInOneWord() {
         std::vector<std::string> lines;
         ngosen::test::Path       sent;
@@ -3353,6 +3386,7 @@ int main() {
     testAutofillMark();
     testReportWithNextKey();
     testSilentFromFirstDeletion();
+    testBackspaceDuringSurroundingWait();
     testBothPathsInOneWord();
     testBackspacePathDuringLongCheck();
     testLateReportAfterBackspace();

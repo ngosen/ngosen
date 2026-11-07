@@ -451,6 +451,8 @@ namespace ngosen {
         bool                           forwardsEnterAfterCommit() const;
         bool                           holdsBackspace(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
         bool                           holdBackspaceForCopy(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool                           takesNoKeysFromUs() const;
+        bool                           holdBackspaceForReplay(ngosen::KeyPress& keyEvent);
         bool                           dropsForwardedKeys() const;
         void                           sendHeldEnter();
         std::unique_ptr<ngosen::Timer> held_enter_timer_;
@@ -687,6 +689,7 @@ namespace ngosen {
         bool                           holdReplayedFieldKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         // Replays keys[i]; true when it started a replacement, which replays the rest later.
         bool replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
+        bool replayBackspaceAsEdit(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         void replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart);
 
         /**

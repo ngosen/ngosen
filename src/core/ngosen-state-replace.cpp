@@ -1131,6 +1131,43 @@ namespace ngosen {
         performReplacement(deletedPart, addedPart);
     }
 
+    // The field never gets the key, so the Backspace changes the text as a replayed letter does: the
+    // replay drops what it has not sent yet, and anything older goes through a replacement.
+    bool TypingState::replayBackspaceAsEdit(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
+        const std::string word  = oldPreBuffer_;
+        const std::string shown = word.empty() ? lastWord_ : word;
+        dropLetterForBackspace();
+        if (realtextLen.load(std::memory_order_acquire) > 0)
+            realtextLen.fetch_sub(1, std::memory_order_acq_rel);
+        std::string deletedPart;
+        std::string addedPart;
+        if (!word.empty())
+            ngosen::utf8::compareAndSplitStrings(word, oldPreBuffer_, deletedPart, addedPart);
+        else if (!shown.empty()) {
+            std::string rest = shown;
+            ngosen::utf8::eraseLastCodepoint(rest);
+            deletedPart = shown.substr(rest.size());
+        }
+        if (deletedPart.empty() && addedPart.empty()) {
+            if (out.empty())
+                NGOSEN_WARN("Replayed Backspace: nothing known to delete");
+            else
+                ngosen::utf8::eraseLastCodepoint(out);
+            return false;
+        }
+        if (isEndsWith(out, deletedPart)) {
+            out.resize(out.size() - deletedPart.size());
+            out += addedPart;
+            return false;
+        }
+        const std::string after = oldPreBuffer_;
+        oldPreBuffer_           = shown;
+        is_deleting_.store(false, std::memory_order_release);
+        replaceDuringReplay(keys, i, out, deletedPart, addedPart);
+        oldPreBuffer_ = after;
+        return true;
+    }
+
     bool TypingState::replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
         if (keys[i].actsOnField)
             return holdReplayedFieldKey(keys, i, out);
@@ -1142,6 +1179,8 @@ namespace ngosen {
         // As for a typed key: a word that ended in the replay takes no Backspace into the next one.
         if (oldPreBuffer_.empty())
             backspaceInWord_ = false;
+        if (ngosen::key::isBackspace(sym) && !keys[i].heldForCopy && takesNoKeysFromUs())
+            return replayBackspaceAsEdit(keys, i, out);
         if (ngosen::key::isBackspace(sym)) {
             // Like a typed backspace: the engine drops a letter and the app deletes it after the commit.
             dropLetterForBackspace();

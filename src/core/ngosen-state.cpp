@@ -871,6 +871,22 @@ namespace ngosen {
         return true;
     }
 
+    // GNOME Shell edits these fields for the app and drops keys we send, so we never delete with keys there.
+    bool TypingState::takesNoKeysFromUs() const {
+        const Field field = host_->field();
+        return field.surroundingText && (field.sendsNoKeys || dropsForwardedKeys());
+    }
+
+    // Let through, the Backspace would reach the app ahead of the edit's commit, so the replay applies it.
+    bool TypingState::holdBackspaceForReplay(ngosen::KeyPress& keyEvent) {
+        if (!takesNoKeysFromUs() || keyEvent.hasModifier() || engine_->options().backspaceRemovesTone || buffered_keys_.size() >= MAX_BUFFERED_KEYS ||
+            (buffered_keys_.empty() && oldPreBuffer_.empty()))
+            return false;
+        buffered_keys_.push_back({.sym = keyEvent.sym(), .state = keyEvent.states()});
+        keyEvent.accept();
+        return true;
+    }
+
     // The replay drops a whole letter, so a backspace that only removes the tone goes through as before.
     bool TypingState::holdsBackspace(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const {
         return ngosen::key::isBackspace(currentSym) && !keyEvent.hasModifier() && forwardsEnterAfterCommit() && !engine_->options().backspaceRemovesTone;
@@ -924,6 +940,8 @@ namespace ngosen {
         if (!is_deleting_.load(std::memory_order_acquire))
             return false;
         if (ngosen::key::isBackspace(currentSym)) {
+            if (holdBackspaceForReplay(keyEvent))
+                return true;
             if (realtextLen.load(std::memory_order_acquire) > 0)
                 realtextLen.fetch_sub(1, std::memory_order_acq_rel);
             handleReplacementBackspace(keyEvent, currentSym, 4);

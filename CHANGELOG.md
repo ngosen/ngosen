@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Gõ từ không phải tiếng Việt liền chữ số khi bật gõ tắt không còn bị thêm dấu (gõ "Sose2026" thành "Sóe2026"); trả lại đúng phím đã gõ, từ tiếng Việt liền số như "tôi2" vẫn giữ nguyên (#614).
+
 ## [1.8.2-1] — 07/11/2026
 
 Cứu chữ hết xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt (#605), gõ tắt khi đang tiếng Anh hết thành "vnviệt nam" ở ô không cho đọc chữ (#604), và kho APT, pacman, zypper của Ngó Sen phát lại gói `ibus-ngosen` (#598).

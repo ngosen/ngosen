@@ -305,7 +305,19 @@ impl BambooEngine {
         if !self.auto_non_vn_restore {
             return false;
         }
-        let vn_seq = self.get_processed_string(OutputOptions::LOWER_CASE);
+        if self
+            .get_processed_string(OutputOptions::LOWER_CASE)
+            .is_empty()
+        {
+            return self
+                .syllable_before_digits()
+                .is_some_and(|syllable| self.syllable_must_fallback(&syllable));
+        }
+        self.syllable_must_fallback(&self.preeditor)
+    }
+
+    fn syllable_must_fallback(&self, syllable: &Engine) -> bool {
+        let vn_seq = syllable.get_processed_str(OutputOptions::LOWER_CASE);
         if vn_seq.is_empty() {
             return false;
         }
@@ -315,7 +327,25 @@ impl BambooEngine {
         if self.spell_check_with_dicts {
             return !self.dictionary.contains(&vn_seq);
         }
-        !self.preeditor.is_valid_word()
+        !syllable.is_valid_word()
+    }
+
+    /// With macros on, digits stay in the word, but the crate has already committed the syllable
+    /// before them, so it is typed again on its own to be checked.
+    fn syllable_before_digits(&self) -> Option<Engine> {
+        let raw = self.raw_text();
+        let letters = raw.trim_end_matches(|c: char| c.is_ascii_digit());
+        if letters.is_empty() || letters.len() == raw.len() {
+            return None;
+        }
+        let mut syllable = Engine::with_config(
+            self.preeditor.input_method().clone(),
+            self.preeditor.config(),
+        );
+        for key in letters.chars() {
+            syllable.process_key(key, Mode::Vietnamese);
+        }
+        Some(syllable)
     }
 
     fn lost_a_letter_of_english_word(&self, shown: &str) -> bool {

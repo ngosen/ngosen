@@ -5,6 +5,7 @@
  */
 #include "ngosen-app-quirks.h"
 
+#include "ngosen-gnome-apps.h"
 #include "ngosen-strings.h"
 #include "ngosen-xtest.h"
 
@@ -151,7 +152,7 @@ namespace ngosen {
     }
 
     bool isGnomeSearch(const Field& field) {
-        return appName(field) == "gnome-shell-overview";
+        return appName(field) == gnomeOverviewApp;
     }
 
     bool dropsCommitsWithoutFocus(const Field& field) {

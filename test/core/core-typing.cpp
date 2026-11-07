@@ -2655,7 +2655,7 @@ namespace {
 
     // Firefox on Hyprland answers after the next key when typing fast, and a report held up past the check
     // counts as a miss. A field that then catches up must get back to the surrounding text.
-    std::vector<std::string> replacementsAfterLateWords(bool recovery) {
+    std::vector<std::string> replacementsAfterLateWords(bool recovery, int laterDelayMs = 120, int laterGapMs = 60, int laterRounds = 1) {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
         FakeLoop      loop;
@@ -2677,9 +2677,10 @@ namespace {
         typeAt("tieengs ", 150);
         app->setReportDelay(250);
         typeAt("vieetj tieesng ", 150);
-        app->setReportDelay(120);
+        app->setReportDelay(laterDelayMs);
         ngosen::test::captureLog(true);
-        typeAt("nguwx cuar ddeepj nguwowif tieengs vieetj ", 60);
+        for (int i = 0; i < laterRounds; ++i)
+            typeAt("nguwx cuar ddeepj nguwowif tieengs vieetj ", laterGapMs);
         auto lines = ngosen::test::capturedLog();
         ngosen::test::captureLog(false);
         lines.push_back("text=" + app->text());
@@ -2706,12 +2707,18 @@ namespace {
         const bool tailSurrounding = methods.size() >= 6 && std::all_of(methods.end() - 6, methods.end(), [](const std::string& m) { return m == "surrounding"; });
         check(tailSurrounding, "wlroots late copies: the last words go through the surrounding text", join(lines));
 
-        // CopyWaitRecovery off keeps the old rule: the field stays on backspaces.
+        // With CopyWaitRecovery off, the field stays on backspaces.
         const auto oldLines   = replacementsAfterLateWords(false);
         const auto oldMethods = replaceMethods(oldLines);
         check(oldLines.back() == lines.back(), "wlroots late copies, recovery off: the words come out right", oldLines.back());
         check(countHaving(oldLines, "Wait for the copy again") == 0 && oldMethods.back() == "forwarded backspaces", "wlroots late copies, recovery off: no wait again",
               join(oldLines));
+
+        // A field that stays behind is not held up again and again.
+        const auto behind = replacementsAfterLateWords(true, 600, 150, 3);
+        check(behind.back() == "text=tiếng việt tiếng ngữ của đệp người tiếng việt ngữ của đệp người tiếng việt ngữ của đệp người tiếng việt ",
+              "wlroots copies stay late: the words come out right", behind.back());
+        check(countHaving(behind, "Wait for the copy again") <= 2, "wlroots copies stay late: the copy wait comes back at most twice", join(behind));
     }
 
     // A copy that comes a moment late is no reason to leave the surrounding path.

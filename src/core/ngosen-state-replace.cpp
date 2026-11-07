@@ -463,8 +463,7 @@ namespace ngosen {
         recordSendSnapshot(deletedPart);
         trackEarlierWords(addedPart);
         startReplaceLog("none");
-        if (!checksGetAnswered())
-            ++sinceFocus_.copyWaitsHeldBack;
+        sinceFocus_.copyWaitsHeldBack = checksGetAnswered() ? 0 : sinceFocus_.copyWaitsHeldBack + 1;
         if (live_key_) {
             const bool forKey = waitsForKeyReport();
             if (forKey || waitsForCopy()) {
@@ -879,19 +878,17 @@ namespace ngosen {
     }
 
     // Backspaces bring no checks, so a field held back by unanswered ones waits again now and then to
-    // show whether it has caught up. One that never answered has nothing to catch up to.
+    // show whether it has caught up. One that never answered, or stayed behind on the last tries, gains nothing.
     bool TypingState::waitsForCopy() {
         const CopyWait need = copyWaitNeed();
-        if (need != CopyWait::HeldBack) {
-            if (need == CopyWait::Yes)
-                sinceFocus_.copyWaitsHeldBack = 0;
+        if (need != CopyWait::HeldBack)
             return need == CopyWait::Yes;
-        }
-        if (!engine_->options().copyWaitRecovery || !sinceFocus_.checkAnswered || sinceFocus_.copyWaitsHeldBack <= CopyWaitsHeldBackLimit)
+        if (!engine_->options().copyWaitRecovery || !sinceFocus_.checkAnswered || sinceFocus_.retriesRunOut >= MaxCopyWaitsRunOut ||
+            sinceFocus_.copyWaitsHeldBack <= CopyWaitsHeldBackLimit)
             return false;
+        NGOSEN_INFO("Wait for the copy again after " + std::to_string(sinceFocus_.copyWaitsHeldBack - 1) + " replacements without it");
         sinceFocus_.copyWaitsHeldBack = 0;
         copyWaitRetry_                = true;
-        NGOSEN_INFO("Wait for the copy again after " + std::to_string(CopyWaitsHeldBackLimit) + " replacements without it");
         return true;
     }
 

@@ -666,6 +666,7 @@ namespace ngosen {
             std::bitset<RecentChecks> recentAnswers;
             int                       recentChecks      = 0; ///< how many bits of recentAnswers hold a check
             int                       copyWaitsHeldBack = 0; ///< replacements while unanswered checks keep the copy wait off
+            int                       retriesRunOut     = 0; ///< waits tried again in a row that ran out
         };
         FieldHistory sinceFocus_;
 

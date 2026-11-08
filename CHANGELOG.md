@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
-- Trên GNOME (Wayland) với fcitx5 trước 5.1.22, Ngó Sen biết app nào đang gõ mà không cần bật extension, nên nhớ chế độ gõ riêng cho từng app. App không có tệp `.desktop` vẫn cần extension. Ô tìm kiếm của GNOME được nhận ra ở mọi version fcitx5 (#621).
+- Trên GNOME Wayland với fcitx5 version cũ hơn 5.1.22, chế độ gõ và cài đặt riêng theo từng app nay hoạt động khi tắt extension; app không có tệp `.desktop` vẫn cần extension. Ô tìm kiếm trong màn tổng quan GNOME được nhận ra ở mọi version fcitx5, kể cả khi tắt extension (#621).
 
 ### Sửa
 

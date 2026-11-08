@@ -84,6 +84,8 @@ namespace {
         expect("names: the extension still wins", names.name(), "nodesk.py");
         names.setExtensionRunning(false);
         expect("names: back to the portal when the extension stops", names.name(), "org.gnome.Nautilus.desktop");
+        names.setExtensionRunning(true);
+        expect("names: a restarted extension's old name is gone", names.name(), "org.gnome.Nautilus.desktop");
 
         names.setOverviewActive(true);
         expect("names: the overview", names.name(), ngosen::gnomeOverviewApp);

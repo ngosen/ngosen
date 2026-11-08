@@ -25,7 +25,7 @@ LEFT_OUT = {"suss"}
 ALWAYS_IN = {"pass"}
 
 
-def candidates():
+def hunspell_candidates():
     stems = set()
     for line in DICTIONARY.read_text(errors="ignore").split("\n")[1:]:
         word = line.split("/")[0].split("\t")[0]
@@ -37,6 +37,11 @@ def candidates():
             words.add(stem + suffix)
             if stem[-1] in "ey":
                 words.add(stem[:-1] + suffix)
+    return words
+
+
+def candidates():
+    words = hunspell_candidates()
     # The dictionary's stems miss irregular forms and words it builds from parts, like `disaster`.
     for line in WORD_LIST.read_text(errors="ignore").split("\n"):
         if re.fullmatch(r"[a-z]{3,}", line):
@@ -55,21 +60,38 @@ def english(words):
     return set(result.stdout.split())
 
 
-def shown_by_engine(words):
+def printed_by_test(test, tag, words):
+    """The tab-separated rows an ignored test in bamboo-rs prints for `words`."""
     with tempfile.NamedTemporaryFile("w", suffix=".txt") as file:
         file.write("\n".join(words) + "\n")
         file.flush()
         result = subprocess.run(
-            ["cargo", "test", "--lib", "print_shown_words", "--", "--ignored", "--nocapture"],
+            ["cargo", "test", "--release", "--lib", test, "--", "--ignored", "--nocapture"],
             cwd=ROOT / "bamboo-rs",
             env={**os.environ, "NGOSEN_WORDS": file.name},
             text=True,
             capture_output=True,
             check=True,
         )
-    return [
-        line.split("\t")[1:] for line in result.stdout.split("\n") if line.startswith("SHOWN\t")
-    ]
+    # Single-threaded libtest prints its own status in front of the first row.
+    tag += "\t"
+    return [line.partition(tag)[2].split("\t") for line in result.stdout.split("\n") if tag in line]
+
+
+def shown_by_engine(words):
+    return printed_by_test("print_shown_words", "SHOWN", words)
+
+
+def retone_lookalikes():
+    """English words a space would turn into a Vietnamese word with its tone changed, like `parts`
+    into pát. Only hunspell is read, so /usr/share/dict/words can still measure what is missed."""
+    words = sorted(english(w for w in hunspell_candidates() if w[-1] in "sfrxj"))
+    found = printed_by_test("print_retone_lookalikes", "LOOKALIKE", words)
+    path = ROOT / "bamboo-rs/src/engine/english-retone-lookalikes.txt"
+    path.write_text("".join(f"{word}\n" for word, _ in found))
+    for word, retoned in found:
+        print(f"  {word}\t{retoned}")
+    print(f"{len(found)} words typed like a retoned Vietnamese word")
 
 
 def main():
@@ -99,6 +121,7 @@ def main():
     (engine / "english-words.txt").write_text("\n".join(kept) + "\n")
     (engine / "english-words-shorter-capitalized.txt").write_text("\n".join(shorter) + "\n")
     print(f"{len(kept)} words, {len(shorter)} shorter when capitalized")
+    retone_lookalikes()
 
 
 if __name__ == "__main__":

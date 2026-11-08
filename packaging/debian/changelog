@@ -1,3 +1,9 @@
+fcitx5-ngosen (1:1.8.3-1) unstable; urgency=medium
+
+  * Words that are not Vietnamese keep their typed keys when digits follow them (#614); a tone typed after the final consonant no longer turns the word back into its keys (#622).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 08 Nov 2026 18:00:00 +0700
+
 fcitx5-ngosen (1:1.8.2-1) unstable; urgency=medium
 
   * Retype no longer deletes text after a click right after the switch key (#605); a macro typed in English no longer lands after its abbreviation in fields that hide their text (#604); publish ibus-ngosen from the APT, pacman and zypper repositories again (#598).

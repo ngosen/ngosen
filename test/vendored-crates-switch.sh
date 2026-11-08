@@ -52,9 +52,12 @@ case "$off" in
 esac
 # Cargo keeps reading bamboo-rs/.cargo/config.toml, so a packager who leaves vendor/ in place would
 # ship the bundled crates without noticing.
-grep -q "bamboo-rs/vendor" "$work/off.log" || {
-    echo "NGOSEN_VENDORED_CRATES=OFF does not warn about bamboo-rs/vendor" >&2
-    fail=1
-}
+# A tarball repacked without vendor/ has nothing to warn about.
+if [ -d "$source_dir/bamboo-rs/vendor" ]; then
+    grep -q "bamboo-rs/vendor" "$work/off.log" || {
+        echo "NGOSEN_VENDORED_CRATES=OFF does not warn about bamboo-rs/vendor" >&2
+        fail=1
+    }
+fi
 
 exit $fail

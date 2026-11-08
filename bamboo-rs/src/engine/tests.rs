@@ -225,6 +225,22 @@ fn test_auto_non_vn_restore_disabled() {
 }
 
 #[test]
+fn test_restore_word_before_digits_with_macros() {
+    for (keys, want) in [
+        ("Sose2026", "Sose2026 "),
+        ("sose2", "sose2 "),
+        ("tooi2", "tôi2 "),
+        ("2026", "2026 "),
+    ] {
+        let mut e = new_test_engine(&["tôi"], true);
+        e.macro_enabled = true;
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, want, "{keys}");
+    }
+}
+
+#[test]
 fn test_english_word_keeps_a_letter_telex_undid() {
     for word in [
         "issue",
@@ -354,6 +370,200 @@ fn print_shown_words() {
         let mut e = new_test_engine(&[], true);
         type_keys(&mut e, word);
         println!("SHOWN\t{word}\t{}", e.preedit_text);
+    }
+}
+
+/// The engine the settings' defaults and the shipped dictionary give.
+fn engine_with_default_settings(method: &str) -> BambooEngine {
+    let dictionary: Vec<&str> = include_str!("../../../data/dictionaries/vietnamese.cm.dict")
+        .lines()
+        .collect();
+    let mut e = new_test_engine(&dictionary, true);
+    // What EngineSetOption builds from the settings' defaults.
+    let config = Config::builder()
+        .free_tone_marking(true)
+        .tone_style(ToneStyle::Traditional)
+        .auto_correct(false)
+        .w2u_mode(W2uMode::NonStart)
+        .bracket_mode(BracketMode::Disabled)
+        .build();
+    e.preeditor = Engine::with_config(input_method_by_name(method), config);
+    e.macro_enabled = true;
+    e
+}
+
+// Prints the Telex words on each line of NGOSEN_WORDS that a space would retone if they were not
+// in english-retone-lookalikes.txt, for misc/gen-english-words.py.
+#[test]
+#[ignore = "measurement input, not a check"]
+fn print_retone_lookalikes() {
+    let path = std::env::var("NGOSEN_WORDS").unwrap();
+    let mut e = engine_with_default_settings("Telex");
+    for word in std::fs::read_to_string(path).unwrap().lines() {
+        e.reset();
+        type_keys(&mut e, word);
+        if let Some(retoned) = e.retoned_word_of(word) {
+            println!("LOOKALIKE\t{word}\t{retoned}");
+        }
+    }
+}
+
+// Prints what the keys on each line of NGOSEN_WORDS commit when a space ends them, with the
+// default settings and dictionary, for misc/check-word-endings.py.
+#[test]
+#[ignore = "measurement input, not a check"]
+fn print_committed_words() {
+    let path = std::env::var("NGOSEN_WORDS").unwrap();
+    let method = std::env::var("NGOSEN_INPUT_METHOD").unwrap_or_else(|_| "Telex".to_string());
+    let mut e = engine_with_default_settings(&method);
+    for line in std::fs::read_to_string(path).unwrap().lines() {
+        let keys = line.split('\t').next().unwrap_or_default();
+        e.reset();
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        // Debug format, so a lost or doubled space shows.
+        println!("COMMITTED\t{keys}\t{:?}", e.commit_text);
+    }
+}
+
+/// What `keys` commit when `end` ends the word, with the settings' defaults.
+fn committed_with(method: &str, keys: &str, end: u32) -> String {
+    let mut e = engine_with_default_settings(method);
+    type_keys(&mut e, keys);
+    e.process_key_event(end, 0);
+    e.commit_text
+}
+
+#[test]
+fn test_tone_changed_after_final_consonant() {
+    for (keys, word) in [
+        ("dduoxwcj", "được"),
+        ("DDUOXWCJ", "ĐƯỢC"),
+        ("Dduoxwcj", "Được"),
+        ("thwxcs", "thức"),
+        ("dduowcxj", "được"),
+        ("mootxj", "một"),
+        ("hocxj", "học"),
+    ] {
+        assert_eq!(
+            committed_with("Telex", keys, KEY_SPACE),
+            format!("{word} "),
+            "{keys}"
+        );
+        assert_eq!(
+            committed_with("Telex", keys, ',' as u32),
+            format!("{word},"),
+            "{keys}"
+        );
+        assert_eq!(committed_with("Telex", keys, KEY_RETURN), word, "{keys}");
+    }
+    for (keys, word) in [
+        ("d9uo37c5", "được"),
+        ("d9uo7c35", "được"),
+        ("mo6t45", "một"),
+    ] {
+        assert_eq!(
+            committed_with("VNI", keys, KEY_SPACE),
+            format!("{word} "),
+            "{keys}"
+        );
+    }
+}
+
+#[test]
+fn test_tone_change_keeps_other_words() {
+    for keys in [
+        "hists",
+        "carr",
+        "parts",
+        "texts",
+        "nextjs",
+        "expressjs",
+        "sexxts",
+    ] {
+        let shown = committed_with("Telex", keys, KEY_SPACE);
+        assert!(shown.is_ascii(), "{keys} gave {shown}");
+    }
+    assert_eq!(committed_with("Telex", "chuwaxs", KEY_SPACE), "chứa ");
+    assert_eq!(committed_with("Telex", "dduowcj", KEY_SPACE), "được ");
+}
+
+#[test]
+fn test_tone_change_needs_dictionary_word_without_spell_check() {
+    for (keys, want) in [
+        ("ports", "ports "),
+        ("gifts", "gifts "),
+        ("dduoxwcj", "được "),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        e.spell_check_with_dicts = false;
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, want, "{keys}");
+    }
+}
+
+#[test]
+fn test_english_word_list_is_typed_back_with_default_settings() {
+    let mut e = engine_with_default_settings("Telex");
+    for word in ENGLISH_WORDS.lines() {
+        e.reset();
+        type_keys(&mut e, word);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{word} "));
+    }
+}
+
+// Gõ Sen keeps the shown word on these keys, so Preedit must too.
+#[test]
+fn test_tone_change_waits_for_space_or_enter() {
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "dduoxwcj");
+    assert!(e.preedit_text.is_ascii(), "{}", e.preedit_text);
+    e.commit_preedit();
+    assert!(e.commit_text.is_ascii(), "{}", e.commit_text);
+    assert!(committed_with("Telex", "dduoxwcj", KEY_TAB).is_ascii());
+    assert!(
+        committed_with("Telex", "dduoxwcj", 0xff1b).is_ascii(),
+        "Escape"
+    );
+}
+
+#[test]
+fn test_tone_change_needs_free_marking_and_restore() {
+    for off in [
+        |e: &mut BambooEngine| e.auto_non_vn_restore = false,
+        |e: &mut BambooEngine| {
+            let config = Config {
+                free_tone_marking: false,
+                ..e.preeditor.config()
+            };
+            e.preeditor = Engine::with_config(input_method_by_name("Telex"), config);
+        },
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        off(&mut e);
+        type_keys(&mut e, "dduoxwcj");
+        e.process_key_event(KEY_SPACE, 0);
+        assert_ne!(e.commit_text, "được ");
+    }
+}
+
+#[test]
+fn test_retone_lookalikes_are_listed_once_in_order() {
+    let words: Vec<&str> = ENGLISH_RETONE_LOOKALIKES.lines().collect();
+    assert!(words.is_sorted_by(|a, b| a < b), "sorted, no duplicates");
+    for word in words {
+        assert!(
+            committed_with("Telex", word, KEY_SPACE).is_ascii(),
+            "{word}"
+        );
+        let mut e = engine_with_default_settings("Telex");
+        type_keys(&mut e, word);
+        assert!(
+            e.retoned_word_of(word).is_some(),
+            "{word} is not typed like a retone"
+        );
     }
 }
 

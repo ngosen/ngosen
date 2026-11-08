@@ -293,6 +293,8 @@ namespace fcitx {
         HiddenOption<bool> copyWaitRecovery{this, "CopyWaitRecovery",
                                             _("Experiment: in a field whose checks go unanswered, wait for its copy of the text again every few replacements"),
                                             ngosen::defaultOptions.copyWaitRecovery};
+        HiddenOption<bool> foldReplayReplacement{this, "FoldReplayReplacement", _("Experiment: while replaying queued keys, change text not yet sent instead of deleting it"),
+                                                 ngosen::defaultOptions.foldReplayReplacement};
         HiddenOption<int>  waitSurroundingSettleFirstWordMs{this, "WaitSurroundingSettleFirstWordMs",
                                                             _("Experiment: settle wait for the first word of a Messenger message (composer still loading)"),
                                                             ngosen::defaultOptions.waitSurroundingSettleFirstWordMs};

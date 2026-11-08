@@ -6,6 +6,12 @@ target_link_libraries(core_typing PRIVATE ngosen_core)
 add_test(NAME core_typing COMMAND core_typing)
 set_tests_properties(core_typing PROPERTIES LABELS "unit;core" TIMEOUT 240 ENVIRONMENT "DISPLAY=")
 
+add_executable(core_replay_fold core-replay-fold.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
+target_compile_definitions(core_replay_fold PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
+target_link_libraries(core_replay_fold PRIVATE ngosen_core)
+add_test(NAME core_replay_fold COMMAND core_replay_fold)
+set_tests_properties(core_replay_fold PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
+
 add_executable(core_fuzz core-fuzz.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
 target_compile_definitions(core_fuzz PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
 target_link_libraries(core_fuzz PRIVATE ngosen_core)

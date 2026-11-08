@@ -46,6 +46,7 @@ namespace {
         c.setValueByPath("DoubleHyphenToEmDash", "True");
         c.setValueByPath("MessengerSelectOvertype", "False");
         c.setValueByPath("CopyWaitRecovery", "False");
+        c.setValueByPath("FoldReplayReplacement", "False");
         c.setValueByPath("WaitSurroundingEvent", "False");
         c.setValueByPath("WaitSurroundingMinPerKeyMs", "11");
         c.setValueByPath("WaitSurroundingTimeoutMs", "222");
@@ -82,6 +83,7 @@ namespace {
         check(step + ": DoubleHyphenToEmDash", o.doubleHyphenToEmDash == c.doubleHyphenToEmDash.value());
         check(step + ": MessengerSelectOvertype", o.messengerSelectOvertype == c.messengerSelectOvertype.value());
         check(step + ": CopyWaitRecovery", o.copyWaitRecovery == c.copyWaitRecovery.value());
+        check(step + ": FoldReplayReplacement", o.foldReplayReplacement == c.foldReplayReplacement.value());
         check(step + ": WaitSurroundingEvent", o.waitSurroundingEvent == c.waitSurroundingEvent.value());
         check(step + ": WaitSurroundingMinPerKeyMs", o.waitSurroundingMinPerKeyMs == c.waitSurroundingMinPerKeyMs.value());
         check(step + ": WaitSurroundingTimeoutMs", o.waitSurroundingTimeoutMs == c.waitSurroundingTimeoutMs.value());
@@ -126,6 +128,7 @@ namespace {
         check("default RetoneSelection", o.retoneSelection == d.retoneSelection);
         check("default MessengerSelectOvertype", o.messengerSelectOvertype == d.messengerSelectOvertype);
         check("default CopyWaitRecovery", o.copyWaitRecovery == d.copyWaitRecovery);
+        check("default FoldReplayReplacement", o.foldReplayReplacement == d.foldReplayReplacement);
         check("default WaitSurroundingEvent", o.waitSurroundingEvent == d.waitSurroundingEvent);
         check("default WaitSurroundingMinPerKeyMs", o.waitSurroundingMinPerKeyMs == d.waitSurroundingMinPerKeyMs);
         check("default WaitSurroundingTimeoutMs", o.waitSurroundingTimeoutMs == d.waitSurroundingTimeoutMs);

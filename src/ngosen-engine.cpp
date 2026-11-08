@@ -620,6 +620,7 @@ namespace fcitx {
         o.retoneSelection                  = config_.retoneSelection.value();
         o.messengerSelectOvertype          = config_.messengerSelectOvertype.value();
         o.copyWaitRecovery                 = config_.copyWaitRecovery.value();
+        o.foldReplayReplacement            = config_.foldReplayReplacement.value();
         o.waitSurroundingEvent             = config_.waitSurroundingEvent.value();
         o.waitSurroundingMinPerKeyMs       = config_.waitSurroundingMinPerKeyMs.value();
         o.waitSurroundingTimeoutMs         = config_.waitSurroundingTimeoutMs.value();

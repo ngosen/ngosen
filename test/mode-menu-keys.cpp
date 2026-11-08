@@ -134,7 +134,29 @@ int main() {
     const auto shellApp = shellField->inputPanel().auxDown().toString();
     check(shellApp == "App: apps with no name (the Ngó Sen extension tells them apart)", "a field GNOME Shell relays points to the extension", shellApp);
     press(engine, entry, *shellField, FcitxKey_Escape);
+
+    // The menu shows the app it opened for, so a name that comes after it closes it.
+    engine.shellFocusedAppChanged("org.gnome.TextEditor.desktop");
+    press(engine, entry, *shellField, FcitxKey_grave);
+    check(menu(*shellField) != nullptr, "the menu opens for the app GNOME Shell names", "no menu");
+    engine.shellFocusedAppChanged("org.gnome.TextEditor.desktop");
+    check(menu(*shellField) != nullptr, "the same name again keeps the menu", "menu closed");
+    engine.shellFocusedAppChanged("org.gnome.Nautilus.desktop");
+    check(!menu(*shellField), "another app's name closes the menu", "menu still open");
+    press(engine, entry, *shellField, FcitxKey_1);
+    check(!hasRule(engine, "org.gnome.TextEditor.desktop") && !hasRule(engine, "org.gnome.Nautilus.desktop"), "a key after the name changed picks nothing", "a rule was saved");
+    engine.shellFocusedAppChanged("");
     shellField->focusOut();
+
+    // A field with its own name keeps its menu whatever GNOME Shell names.
+    context->focusIn();
+    engine.activate(entry, focus);
+    press(engine, entry, *context, FcitxKey_grave);
+    engine.shellFocusedAppChanged("org.gnome.Nautilus.desktop");
+    check(menu(*context) != nullptr, "a named field keeps its menu when GNOME Shell names an app", "menu closed");
+    press(engine, entry, *context, FcitxKey_Escape);
+    engine.shellFocusedAppChanged("");
+    context->focusOut();
 
     // Leaving the window closes the menu, so later keys are not taken as picks for the app left behind.
     auto writer = std::make_unique<TestInputContext>(&testInstance.instance, "writer");

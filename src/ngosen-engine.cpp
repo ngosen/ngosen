@@ -411,7 +411,10 @@ namespace fcitx {
                 NGOSEN_WARN(std::string("Could not register ") + NgoSenDBusObject::Path + " on D-Bus; ngosen-save-log will not work");
                 dbusObject_.reset();
             }
-            gnomeShell_ = std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>(), [this](const std::string& app) { shellFocusedAppChanged(app); });
+            // As fcitx5 5.1.22 does it, which needs Wayland to tell windows apart.
+            const bool watchPortal = getEnv("XDG_SESSION_TYPE") == "wayland" && !ngosen::fcitxNamesGnomeApps(Instance::version());
+            gnomeShell_ =
+                std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>(), watchPortal, [this](const std::string& app) { shellFocusedAppChanged(app); });
         }
 #endif
 
@@ -1631,6 +1634,9 @@ namespace fcitx {
         instance_->inputContextManager().foreachFocused([this](InputContext* ic) {
             const std::string appName = getProgramName(ic);
             NGOSEN_INFO("App name: " + appName);
+            // The menu's label and items were built for the app it opened in.
+            if (isModeMenuOpen(ic) && appName != currentConfigureApp_)
+                closeModeMenuPanel(ic, false);
             const NgoSenMode mode = modeFor(appName);
             if (ic == activeContext_ && mode != realMode) {
                 // The word belongs to the app being left.

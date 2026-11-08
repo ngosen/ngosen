@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Trên GNOME Wayland với fcitx5 version cũ hơn 5.1.22, chế độ gõ và cài đặt riêng theo từng app nay hoạt động khi tắt extension; app không có tệp `.desktop` vẫn cần extension. Ô tìm kiếm trong màn tổng quan GNOME được nhận ra ở mọi version fcitx5, kể cả khi tắt extension (#621).
+
 ### Sửa
 
 - Bớt những lúc gõ Sen nhanh bị khựng trong Firefox trên Hyprland, Sway và KDE Plasma: quay lại chờ bản chữ của Firefox khi app phản hồi kịp trở lại, thay vì xoá bằng Backspace (#607).

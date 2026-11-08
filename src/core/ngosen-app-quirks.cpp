@@ -216,12 +216,14 @@ namespace ngosen {
     }
 
     bool hidesAddressBarFlag(const Field& field) {
-        // Debian names its Firefox ESR program firefox-esr; the forks share Firefox's address bar.
+        // Debian names its Firefox ESR program firefox-esr; the forks share Firefox's address bar. GNOME names
+        // relayed apps by desktop file, a reverse-DNS ID for Fedora's Firefox and for Flatpaks.
         const std::string program = appName(field);
         if (isStartsWith(program, "firefox"))
             return true;
-        for (const char* fork : {"zen", "librewolf", "waterfox", "floorp", "mullvadbrowser", "icecat"}) {
-            if (program == fork)
+        for (const char* name : {"zen", "librewolf", "waterfox", "floorp", "mullvadbrowser", "mullvad-browser", "icecat", "org.mozilla.firefox", "app.zen_browser.zen",
+                                 "io.gitlab.librewolf-community", "net.waterfox.waterfox", "one.ablaze.floorp", "net.mullvad.MullvadBrowser"}) {
+            if (program == name)
                 return true;
         }
         return false;

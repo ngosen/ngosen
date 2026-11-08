@@ -21,6 +21,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ Sen hiện chữ ngay khi thêm dấu trong kitty, Ptyxis, GNOME Terminal, foot và Ghostty trên Hyprland, cùng xterm; riêng xterm không còn phụ thuộc vào thứ tự nhận phím Backspace (#620).
 - Bớt khựng khi gõ Sen nhanh trong Firefox trên Hyprland và Sway: khi app báo chữ chậm, phím thêm dấu sửa luôn phần chữ chưa gửi, không phải gửi chữ cũ rồi xoá bằng Backspace và chờ gõ lại (#623).
 - Gõ Sen hiện chữ ngay khi thêm dấu trong Ptyxis, GNOME Console và GNOME Terminal trên GNOME, cả khi bật hay tắt extension Ngó Sen (#630).
+- Nhận ra Firefox cài từ gói Fedora, Mullvad Browser cài từ gói và các bản Flatpak của Firefox và trình duyệt dựa trên Firefox trên GNOME, để chữ gõ trong thanh địa chỉ không lẫn với autofill (#634).
 - Bật "Hai gạch nối thành gạch dài" thì gõ -- trong terminal hay ô địa chỉ vẫn giữ nguyên, nên "git push --force" không còn thành "git push —force"; ô địa chỉ của Firefox và terminal không tự báo mình là terminal (như terminal trong VS Code) chưa nhận ra được (#625).
 
 ## [1.8.2-1] — 07/11/2026

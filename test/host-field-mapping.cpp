@@ -34,7 +34,8 @@ namespace {
     }
 
     std::string describe(const ngosen::Field& f) {
-        return std::string(f.surroundingText ? "S" : "-") + (f.preedit ? "P" : "-") + (f.formattedPreedit ? "F" : "-") + (f.url ? "U" : "-") + (f.keyEventOrderFix ? "K" : "-");
+        return std::string(f.surroundingText ? "S" : "-") + (f.preedit ? "P" : "-") + (f.formattedPreedit ? "F" : "-") + (f.url ? "U" : "-") + (f.keyEventOrderFix ? "K" : "-") +
+            (f.terminal ? "T" : "-");
     }
 
     ngosen::Field field(std::string frontend, std::string program) {
@@ -46,9 +47,9 @@ namespace {
 
     void checkFlags(TestInstance& testInstance) {
         const std::vector<std::pair<fcitx::CapabilityFlag, std::string>> cases = {
-            {fcitx::CapabilityFlag::SurroundingText, "S----"},  {fcitx::CapabilityFlag::Preedit, "-P---"},
-            {fcitx::CapabilityFlag::FormattedPreedit, "--F--"}, {fcitx::CapabilityFlag::Url, "---U-"},
-            {fcitx::CapabilityFlag::KeyEventOrderFix, "----K"},
+            {fcitx::CapabilityFlag::SurroundingText, "S-----"},  {fcitx::CapabilityFlag::Preedit, "-P----"},
+            {fcitx::CapabilityFlag::FormattedPreedit, "--F---"}, {fcitx::CapabilityFlag::Url, "---U--"},
+            {fcitx::CapabilityFlag::KeyEventOrderFix, "----K-"}, {fcitx::CapabilityFlag::Terminal, "-----T"},
         };
         for (const auto& [flag, expected] : cases) {
             TestInputContext context(&testInstance.instance, "gedit", "dbus");

@@ -487,7 +487,7 @@ namespace ngosen {
         const auto               f           = host_->field();
         const std::string        program     = f.reportedProgram.empty() ? f.program : f.program + " (" + f.reportedProgram + ")";
         std::string field = "frontend=" + f.frontend + " program=" + program + " surrounding=" + (f.surroundingText ? "1" : "0") + " preedit=" + (f.preedit ? "1" : "0") +
-            (f.sendsNoKeys ? " sendsNoKeys=1" : "") + (f.preeditFallback ? " preeditFallback=1" : "") + (f.password ? " password=1" : "") +
+            (f.sendsNoKeys ? " sendsNoKeys=1" : "") + (f.preeditFallback ? " preeditFallback=1" : "") + (f.password ? " password=1" : "") + (f.terminal ? " terminal=1" : "") +
             " mode=" + modeNames[static_cast<int>(mode())];
         auto& recorder = engine_->recorder();
         recorder.addField(field);

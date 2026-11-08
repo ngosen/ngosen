@@ -135,9 +135,9 @@ class EvaluateTest(unittest.TestCase):
         )
 
     def test_gnome_without_app_names_offers_the_extension(self):
-        def found(version, state, fcitx="5.1.19", **more):
+        def found(version, state, fcitx="5.1.19", session="wayland", **more):
             f = facts(
-                "wayland",
+                session,
                 "ubuntu:GNOME",
                 gnome_shell_version=version,
                 forward_keys_state=state,
@@ -146,9 +146,15 @@ class EvaluateTest(unittest.TestCase):
             )
             return [x for x in system_check.steps(f) if x.level != OK]
 
-        title = "Optional: each app can keep its own typing mode. Typing works without it."
+        title = "GNOME's portal has not told Ngó Sen which app is in use"
         for version in ("46.0", "48.2", "49.1", "50.4"):
             self.assertEqual(titles(found(version, "INACTIVE"), system_check.TIP), [title], version)
+            self.assertEqual(found(version, "INACTIVE", portal_answered=True), [], version)
+        # Without Wayland the portal is not watched, so it says nothing about the portal.
+        self.assertEqual(
+            titles(found("46.0", "INACTIVE", session="x11"), system_check.TIP),
+            ["Optional: each app can keep its own typing mode. Typing works without it."],
+        )
         inactive = found("46.0", "INACTIVE", "5.1.7")[0]
         self.assertEqual(inactive.action, system_check.ENABLE_FORWARD_KEYS)
         self.assertIn("log out", inactive.fix)
@@ -178,6 +184,17 @@ class EvaluateTest(unittest.TestCase):
             )
         )
         self.assertIn("Apps keep their own typing mode", titles(ok, OK))
+        from_portal = system_check.steps(
+            facts(
+                "wayland",
+                "GNOME",
+                gnome_shell_version="46.0",
+                forward_keys_state="INACTIVE",
+                fcitx_version="5.1.7",
+                portal_answered=True,
+            )
+        )
+        self.assertIn("Apps keep their own typing mode", titles(from_portal, OK))
         # fcitx5 names apps itself from 5.1.22, and the extension loads only on these GNOME versions.
         self.assertEqual(found("50.4", "INACTIVE", "5.1.22"), [])
         self.assertEqual(found("50.4", "INACTIVE", "5.10.0"), [])
@@ -214,7 +231,7 @@ class EvaluateTest(unittest.TestCase):
             fcitx_version="5.1.7",
         )
         self.assertNotIn(
-            "Optional: each app can keep its own typing mode. Typing works without it.",
+            "GNOME's portal has not told Ngó Sen which app is in use",
             titles(system_check.evaluate(f)),
         )
 
@@ -625,12 +642,16 @@ class CollectTest(unittest.TestCase):
             f = system_check.collect(FakeDBusHandler(), env=env)
         self.assertEqual((f.gnome_shell_version, f.forward_keys_state), ("50.1", "INACTIVE"))
         self.assertFalse(f.app_names_running)
+        self.assertFalse(f.portal_answered)
         outputs["gdbus"] = "()\n"
         with mock.patch.object(system_check.subprocess, "run", side_effect=run):
             self.assertTrue(system_check.collect(FakeDBusHandler(), env=env).app_names_running)
+        outputs["gdbus"] = "(true,)\n"
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            self.assertTrue(system_check.collect(FakeDBusHandler(), env=env).portal_answered)
         self.assertEqual(f.input_panel_state, "INACTIVE")
         self.assertIn(
-            "GNOME Shell 50.1, forward-keys: INACTIVE, input panel: INACTIVE",
+            "GNOME Shell 50.1, forward-keys: INACTIVE, input panel: INACTIVE, portal: silent",
             system_check.report(f, []),
         )
 

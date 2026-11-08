@@ -51,6 +51,8 @@ class Facts:
     forward_keys_state: str = ""
     # The running GNOME Shell has the extension's code that names apps, not just its files.
     app_names_running: bool = False
+    # Ngó Sen has heard GNOME's portal tell the focused app, which fcitx5 before 5.1.22 needs.
+    portal_answered: bool = False
     input_panel_state: str = ""
     # Whether anything starts fcitx5 at the next login; running now says nothing about that.
     starts_at_login: bool = True
@@ -290,9 +292,12 @@ def _needs_shell_for_app_names(facts):
 
 
 def _app_name_findings(facts):
-    if facts.app_names_running:
+    if facts.app_names_running or facts.portal_answered:
         return [Finding(OK, _("Apps keep their own typing mode"))]
     title = _("Optional: each app can keep its own typing mode. Typing works without it.")
+    # Opening this window changed the focused app, so a working portal has told it by now.
+    if facts.session == "wayland":
+        title = _("GNOME's portal has not told Ngó Sen which app is in use")
     # GNOME reads an extension's files only at login, so turning it on now cannot work yet.
     if facts.forward_keys_state in ("", "OUT OF DATE", "ACTIVE"):
         fix = _("Log out and back in. If this stays, update Ngó Sen.")
@@ -647,8 +652,10 @@ def report(facts, findings, app_test=None):
     if facts.gnome_shell_version:
         state = facts.forward_keys_state or "not installed"
         panel = facts.input_panel_state or "not installed"
+        portal = "answered" if facts.portal_answered else "silent"
         lines.append(
             f"GNOME Shell {facts.gnome_shell_version}, forward-keys: {state}, input panel: {panel}"
+            f", portal: {portal}"
         )
     lines.append("")
     lines += [f"[{marks[f.level]}] {f.title}" for f in findings] or ["[OK] no setup problem found"]
@@ -689,6 +696,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
         facts.gnome_shell_version = _gnome_shell_version()
         facts.forward_keys_state = _extension_state(FORWARD_KEYS)
         facts.app_names_running = _shell_names_apps()
+        facts.portal_answered = _portal_answered()
         facts.input_panel_state = _extension_state(INPUT_PANEL)
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
@@ -740,6 +748,12 @@ def _shell_names_apps():
     call += ["--object-path", "/io/github/ngosen/AppName"]
     call += ["--method", "io.github.ngosen.AppName.Sync"]
     return _output(call).strip() == "()"
+
+
+def _portal_answered():
+    call = ["gdbus", "call", "--session", "--dest", "org.fcitx.Fcitx5", "--object-path", "/ngosen"]
+    call += ["--method", "io.github.ngosen.NgoSen1.GnomePortalAnswered"]
+    return _output(call).strip() == "(true,)"
 
 
 def _pids_named(name, proc="/proc"):

@@ -1288,6 +1288,10 @@ msgid "Optional: each app can keep its own typing mode. Typing works without it.
 msgstr "Không bắt buộc: mỗi app có thể nhớ chế độ gõ riêng. Không bật vẫn gõ bình thường."
 
 #: settings-gui/core/system_check.py
+msgid "GNOME's portal has not told Ngó Sen which app is in use"
+msgstr "Portal của GNOME chưa báo cho Ngó Sen biết đang gõ trong app nào"
+
+#: settings-gui/core/system_check.py
 msgid "Log out and back in. If this stays, update Ngó Sen."
 msgstr "Đăng xuất rồi đăng nhập lại. Nếu vẫn thấy dòng này, cập nhật Ngó Sen."
 

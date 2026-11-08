@@ -41,6 +41,28 @@ pub fn has_any_vietnamese_vowel(word: &str) -> bool {
     word.chars().any(|c| vowel_position(lower(c)).is_some())
 }
 
+pub fn vowel_count(word: &str) -> usize {
+    word.chars()
+        .filter(|&c| vowel_position(lower(c)).is_some())
+        .count()
+}
+
+/// The word in lower case without its tones, and how many tones it had.
+pub fn without_tones(word: &str) -> (String, usize) {
+    let mut tones = 0;
+    let letters = word
+        .chars()
+        .map(|c| match vowel_position(lower(c)) {
+            Some(pos) if pos % 6 != 0 => {
+                tones += 1;
+                VOWELS.chars().nth(pos - pos % 6).unwrap_or(c)
+            }
+            _ => lower(c),
+        })
+        .collect();
+    (letters, tones)
+}
+
 /// The word with its tones moved to the end, so `hoà` and `hòa` compare equal whichever tone
 /// style typed them.
 pub fn without_tone_position(word: &str) -> String {
@@ -77,6 +99,14 @@ mod tests {
         assert!(has_any_vietnamese_vowel("bờ"));
         assert!(has_any_vietnamese_vowel("Y"));
         assert!(!has_any_vietnamese_vowel("đđ"));
+    }
+
+    #[test]
+    fn tones_removed() {
+        assert_eq!(without_tones("Được"), ("đươc".to_string(), 1));
+        assert_eq!(without_tones("hoà"), ("hoa".to_string(), 1));
+        assert_eq!(without_tones("đuo3"), ("đuo3".to_string(), 0));
+        assert_eq!(vowel_count("đươc"), 2);
     }
 
     #[test]

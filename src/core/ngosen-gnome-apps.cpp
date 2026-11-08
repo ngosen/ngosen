@@ -75,6 +75,7 @@ namespace ngosen {
         // picked, before OverviewActive goes false.
         if (overview_ && !app.empty() && (portal_focus_.empty() || portal_focus_.front().id != app))
             overview_ = false;
+        portal_answered_ = true;
         portal_focus_.clear();
         if (!app.empty())
             portal_focus_.push_back({app, true});
@@ -82,6 +83,7 @@ namespace ngosen {
     }
 
     bool GnomeAppNames::dropPortalApp() {
+        portal_answered_ = false;
         portal_focus_.clear();
         return update();
     }

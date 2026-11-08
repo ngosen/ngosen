@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Thêm
 
 - Trên GNOME Wayland với fcitx5 version cũ hơn 5.1.22, chế độ gõ và cài đặt riêng theo từng app nay hoạt động khi tắt extension; app không có tệp `.desktop` vẫn cần extension. Ô tìm kiếm trong màn tổng quan GNOME được nhận ra ở mọi version fcitx5, kể cả khi tắt extension (#621).
+- Trên GNOME 46 đến 49 và từ 50.4 trở đi, với fcitx5 version cũ hơn 5.1.22, lệnh cài không còn tự bật extension Ngó Sen khi máy có gói `xdg-desktop-portal-gnome`. Lệnh cài vẫn tự bật extension trên GNOME 50.0 đến 50.3 hoặc khi máy không có gói này. Máy đã bật thì để nguyên. Trang "Kiểm tra máy" báo khi portal chưa cho Ngó Sen biết tên app và gợi ý bật extension (#629).
 
 ### Sửa
 

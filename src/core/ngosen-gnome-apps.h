@@ -68,6 +68,10 @@ namespace ngosen {
         }
         // Where name() comes from, for the log.
         const char* source() const;
+        // Whether the portal has asked since GNOME Shell or the portal last started, even about a window with no name.
+        bool portalAnswered() const {
+            return portal_answered_;
+        }
 
       private:
         bool        update();
@@ -77,7 +81,8 @@ namespace ngosen {
         std::string extension_app_;
         // Only the focused entry is kept: the whole list tells which other apps run.
         std::vector<RunningApp> portal_focus_;
-        bool                    overview_ = false;
+        bool                    portal_answered_ = false;
+        bool                    overview_        = false;
         std::string             name_;
     };
 

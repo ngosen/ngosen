@@ -471,6 +471,14 @@ namespace fcitx {
         return nullptr;
     }
 
+    bool NgoSenEngine::gnomePortalAnswered() const {
+#ifdef NGOSEN_HAS_DBUS
+        if (gnomeShell_)
+            return gnomeShell_->portalAnswered();
+#endif
+        return false;
+    }
+
     NgoSenEngine::~NgoSenEngine() {
         stop_flag_monitor.store(true, std::memory_order_release);
         if (mouse_thread.joinable()) {
@@ -1446,7 +1454,7 @@ namespace fcitx {
         std::string appLabel = currentConfigureApp_;
         if (isStartsWith(currentConfigureApp_, "ctx_")) {
             // GNOME Shell relays every app through one field, so a rule without a name holds for all of them.
-            appLabel = std::string(ic->frontend()) == "ibus" ? _("apps with no name (the Ngó Sen extension tells them apart)") : _("this window");
+            appLabel = std::string(ic->frontend()) == "ibus" ? _("apps with no name (the Ngó Sen extension can tell them apart)") : _("this window");
         }
         ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);

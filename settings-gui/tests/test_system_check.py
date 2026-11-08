@@ -135,9 +135,9 @@ class EvaluateTest(unittest.TestCase):
         )
 
     def test_gnome_without_app_names_offers_the_extension(self):
-        def found(version, state, fcitx="5.1.19", **more):
+        def found(version, state, fcitx="5.1.19", session="wayland", **more):
             f = facts(
-                "wayland",
+                session,
                 "ubuntu:GNOME",
                 gnome_shell_version=version,
                 forward_keys_state=state,
@@ -147,8 +147,20 @@ class EvaluateTest(unittest.TestCase):
             return [x for x in system_check.steps(f) if x.level != OK]
 
         title = "Optional: each app can keep its own typing mode. Typing works without it."
+        silent = "GNOME's portal has not told Ngó Sen which app is in use"
+        portal = {"has_gnome_portal": True}
         for version in ("46.0", "48.2", "49.1", "50.4"):
             self.assertEqual(titles(found(version, "INACTIVE"), system_check.TIP), [title], version)
+            got = found(version, "INACTIVE", portal_answered=False, **portal)
+            self.assertEqual(titles(got, system_check.TIP), [silent], version)
+            self.assertEqual(got[0].action, system_check.ENABLE_FORWARD_KEYS)
+            self.assertEqual(found(version, "INACTIVE", portal_answered=True), [], version)
+        # Ngó Sen not loaded yet, or too old to say, is not a silent portal.
+        unknown = found("46.0", "INACTIVE", portal_answered=None, **portal)
+        self.assertEqual(titles(unknown, system_check.TIP), [title])
+        # Without the portal installed there is nothing to blame.
+        no_portal = found("46.0", "INACTIVE", portal_answered=False)
+        self.assertEqual(titles(no_portal, system_check.TIP), [title])
         inactive = found("46.0", "INACTIVE", "5.1.7")[0]
         self.assertEqual(inactive.action, system_check.ENABLE_FORWARD_KEYS)
         self.assertIn("log out", inactive.fix)
@@ -178,6 +190,17 @@ class EvaluateTest(unittest.TestCase):
             )
         )
         self.assertIn("Apps keep their own typing mode", titles(ok, OK))
+        from_portal = system_check.steps(
+            facts(
+                "wayland",
+                "GNOME",
+                gnome_shell_version="46.0",
+                forward_keys_state="INACTIVE",
+                fcitx_version="5.1.7",
+                portal_answered=True,
+            )
+        )
+        self.assertIn("Apps keep their own typing mode", titles(from_portal, OK))
         # fcitx5 names apps itself from 5.1.22, and the extension loads only on these GNOME versions.
         self.assertEqual(found("50.4", "INACTIVE", "5.1.22"), [])
         self.assertEqual(found("50.4", "INACTIVE", "5.10.0"), [])
@@ -214,7 +237,7 @@ class EvaluateTest(unittest.TestCase):
             fcitx_version="5.1.7",
         )
         self.assertNotIn(
-            "Optional: each app can keep its own typing mode. Typing works without it.",
+            "GNOME's portal has not told Ngó Sen which app is in use",
             titles(system_check.evaluate(f)),
         )
 
@@ -630,7 +653,7 @@ class CollectTest(unittest.TestCase):
             self.assertTrue(system_check.collect(FakeDBusHandler(), env=env).app_names_running)
         self.assertEqual(f.input_panel_state, "INACTIVE")
         self.assertIn(
-            "GNOME Shell 50.1, forward-keys: INACTIVE, input panel: INACTIVE",
+            "GNOME Shell 50.1, forward-keys: INACTIVE, input panel: INACTIVE\n",
             system_check.report(f, []),
         )
 
@@ -643,6 +666,58 @@ class CollectTest(unittest.TestCase):
             f = system_check.collect(FakeDBusHandler(), env={"XDG_CURRENT_DESKTOP": "KDE"})
         self.assertEqual(f.gnome_shell_version, "")
         self.assertNotIn("gnome-shell", [c.args[0][0] for c in ran.call_args_list])
+
+    def test_asks_for_the_portal_only_where_ngosen_watches_it(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        services = os.path.join(tmp.name, "dbus-1", "services")
+        os.makedirs(services)
+        service = os.path.join(services, "org.freedesktop.impl.portal.desktop.gnome.service")
+        open(service, "w").close()
+        empty = os.path.join(tmp.name, "empty")
+        patcher = mock.patch.object(system_check, "SYSTEM_DATA_DIR", empty)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        outputs = {"gnome-shell": "GNOME Shell 46.0\n", "fcitx5": "5.1.7\n"}
+
+        def run(cmd, **kw):
+            out = outputs.get(cmd[0], "")
+            if cmd[0] == "gdbus" and "/ngosen" in cmd:
+                out = outputs.get("ngosen", "")
+            return subprocess.CompletedProcess(cmd, 0, stdout=out)
+
+        def collect(**env):
+            base = {"XDG_CURRENT_DESKTOP": "ubuntu:GNOME", "XDG_SESSION_TYPE": "wayland"}
+            base["XDG_DATA_DIRS"] = tmp.name
+            base.update(env)
+            with mock.patch.object(system_check.subprocess, "run", side_effect=run) as ran:
+                f = system_check.collect(FakeDBusHandler(), env=base)
+            asked = any("/ngosen" in c.args[0] for c in ran.call_args_list)
+            return f, asked
+
+        for reply, want in (("(true,)\n", True), ("(false,)\n", False), ("", None)):
+            outputs["ngosen"] = reply
+            f, asked = collect()
+            self.assertTrue(asked)
+            self.assertEqual(f.portal_answered, want, reply)
+        self.assertTrue(f.has_gnome_portal)
+        self.assertIn("portal: unknown", system_check.report(f, []))
+        outputs["ngosen"] = "(false,)\n"
+        self.assertIn("portal: silent", system_check.report(collect()[0], []))
+        # The addon starts on demand, so it is not woken where the answer cannot matter.
+        f, asked = collect(XDG_SESSION_TYPE="x11")
+        self.assertFalse(asked)
+        self.assertNotIn("portal:", system_check.report(f, []))
+        os.remove(service)
+        f, asked = collect()
+        self.assertFalse(asked)
+        self.assertFalse(f.has_gnome_portal)
+        self.assertIn("portal: not installed", system_check.report(f, []))
+        open(service, "w").close()
+        outputs["fcitx5"] = "5.1.22\n"
+        f, asked = collect()
+        self.assertFalse(asked)
+        self.assertNotIn("portal:", system_check.report(f, []))
 
     def test_ibus_counts_only_when_it_holds_this_session(self):
         tmp = tempfile.TemporaryDirectory()

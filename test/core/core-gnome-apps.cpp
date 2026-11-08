@@ -76,8 +76,10 @@ namespace {
         const std::vector<ngosen::RunningApp> editor = {{"org.gnome.TextEditor.desktop", true}, {"org.gnome.Nautilus.desktop", false}};
         const std::vector<ngosen::RunningApp> files  = {{"org.gnome.TextEditor.desktop", false}, {"org.gnome.Nautilus.desktop", true}};
         ngosen::GnomeAppNames                 names;
+        expectTrue("names: no portal reply yet", !names.portalAnswered());
         expectTrue("names: the portal's app", names.setPortalApps(editor));
         expect("names: the portal's app", names.name(), "org.gnome.TextEditor.desktop");
+        expectTrue("names: the portal has answered", names.portalAnswered());
         expectTrue("names: the same app is no change", !names.setPortalApps(editor));
 
         names.setExtensionApp("nodesk.py");
@@ -103,6 +105,9 @@ namespace {
 
         expectTrue("names: GNOME Shell or the portal leaving drops the name", names.dropPortalApp());
         expect("names: GNOME Shell or the portal leaving drops the name", names.name(), "");
+        expectTrue("names: a restarted portal has not answered yet", !names.portalAnswered());
+        names.setPortalApps({{"window:617", true}});
+        expectTrue("names: a reply naming no app still counts as an answer", names.portalAnswered());
     }
 } // namespace
 

@@ -74,7 +74,7 @@ namespace ngosen {
         if (field.frontend == "ibus")
             return isWps(appName(field)) && xsendAvailable();
         // Wine applies forwarded keys after a later commit and reports nothing that sets it apart;
-        // xterm and XInput2 clients drop sent events, so the rest keep forwarding.
+        // xterm and XInput2 clients drop sent events, so only Wine gets them.
         return field.frontend == "xim" && isStartsWith(appName(field), "wine") && xsendAvailable();
     }
 

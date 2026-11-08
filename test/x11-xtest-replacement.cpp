@@ -326,6 +326,9 @@ int main() {
         return 1;
     if (!keepsForwarding(h, "xfce4-terminal", "dbus", chromeCaps))
         return 1;
+    // XTEST would work for xterm too, but a DEL in the commit needs no wait.
+    if (!erasesWithCommittedDel(h, "xterm", "xim", fcitx::CapabilityFlags{}))
+        return 1;
     if (!keepsForwarding(h, "gtk3app", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix}))
         return 1;
 

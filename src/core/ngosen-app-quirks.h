@@ -26,9 +26,9 @@ namespace ngosen {
     // True when a key the app sent before our commit reached it can land ahead of that commit.
     bool appliesEarlyKeysFirst(const Field& field);
 
-    // True for fields that report the terminal purpose (except Alacritty), xterm, and VTE terminals under GTK4
-    // (Ptyxis, GNOME Console), which do not pass on their purpose: they pass committed text to the shell as is,
-    // so a DEL in it erases like Backspace.
+    // True for fields that report the terminal purpose (except Alacritty), xterm, and GNOME's VTE terminals
+    // (Ptyxis, GNOME Console, GNOME Terminal) where GTK4 or GNOME Shell drops their purpose: they pass committed
+    // text to the shell as is, so a DEL in it erases like Backspace.
     bool erasesWithCommittedDel(const Field& field);
 
     // True for fields that report the terminal or URL purpose, xterm and GTK4 VTE terminals, where -- is part

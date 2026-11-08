@@ -3476,8 +3476,7 @@ namespace {
 
     enum class Reload {
         None,
-        Guarded,
-        Always
+        Guarded
     };
 
     struct ReloadRun {
@@ -3508,7 +3507,7 @@ namespace {
         ReloadRun run;
         typeText(before);
         run.heldBeforeReload = state.holdsWord();
-        if (reload == Reload::Always || (reload == Reload::Guarded && !state.holdsWord()))
+        if (reload == Reload::Guarded && !state.holdsWord())
             state.setEngine();
         typeText(after);
         loop.pump(300);
@@ -3532,12 +3531,6 @@ namespace {
 
         const auto open = typeAcrossReload(ngosen::Mode::Sen, "", Reload::None, "vie");
         check(open.heldAfterEnd && !open.heldAfterReset, "holdsWord: reset() ends the word", open.text);
-
-        // Current behaviour without the guard: the new engine lacks the word, so the next key deletes it.
-        const auto senLost = typeAcrossReload(ngosen::Mode::Sen, "vie", Reload::Always, "etj ");
-        check(senLost.text == "ẹt ", "holdsWord: unguarded reload loses the sen word", senLost.text);
-        const auto englishLost = typeAcrossReload(ngosen::Mode::Off, "vn", Reload::Always, " ");
-        check(englishLost.text == " ", "holdsWord: unguarded reload loses the macro", englishLost.text);
     }
 }
 

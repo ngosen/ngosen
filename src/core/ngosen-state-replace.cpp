@@ -1239,7 +1239,7 @@ namespace ngosen {
 
     // Text the replay has not sent yet can change in place: nothing to delete, so nothing to wait for.
     bool TypingState::foldIntoReplay(std::string& out, const std::string& deletedPart, const std::string& addedPart) {
-        if (!engine_->options().foldReplayReplacement || deletedPart.empty() || !isEndsWith(out, deletedPart) || !isEndsWith(oldPreBuffer_, deletedPart))
+        if (!engine_->options().foldReplayReplacement || deletedPart.empty() || !isEndsWith(out, deletedPart))
             return false;
         NGOSEN_INFO("Fold replacement into the replay: " + logged(deletedPart) + " -> " + logged(addedPart));
         out.resize(out.size() - deletedPart.size());

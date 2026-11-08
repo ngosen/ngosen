@@ -139,9 +139,16 @@ int main() {
 
     if (!replayBufferedKey(testInstance.instance, engine, entry, *context, listener, false))
         return 1;
+    const int       requestsBeforeSpace = listener.requests();
     fcitx::KeyEvent space(context.get(), fcitx::Key(FcitxKey_space), false);
     engine.keyEvent(entry, space);
     pumpEventLoop(testInstance.instance, 50);
+    // The second run reads deletion requests in order, so the space must not add one.
+    if (listener.requests() != requestsBeforeSpace) {
+        reportFailure("end the word with a space", "no deletion request", "requests=" + std::to_string(listener.requests() - requestsBeforeSpace),
+                      "the space between the runs asked for a deletion");
+        return 1;
+    }
     if (!replayBufferedKey(testInstance.instance, engine, entry, *context, listener, true))
         return 1;
     return 0;

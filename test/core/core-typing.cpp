@@ -1182,6 +1182,21 @@ namespace {
         check(!has(log, "0x0065") && !has(log, "\"ti") && !has(log, "\"ê\"") && !has(log, " e\n"), "recorder: keeps no password text", log);
     }
 
+    void testRecorderMarksTerminal() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField("wayland_v2", true, "kitty");
+        field.terminal            = true;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        typeTie(state, *host, loop, true);
+        const std::string log = resources.recorder().dump();
+        check(has(log, " terminal=1 "), "recorder: marks a terminal field", log);
+    }
+
     // Types `keys`, a word and a macro, keeping every log line; returns them.
     std::string logWhileTyping(ngosen::Mode mode, bool password, const std::string& keys) {
         realMode = mode;
@@ -3442,6 +3457,7 @@ int main() {
     testRecorderKeepsTheReplacement();
     testRecorderNotesFieldSwitch();
     testRecorderHidesPasswords();
+    testRecorderMarksTerminal();
     testRecorderKeepsOneEventPerLine();
     testRecorderLimits();
     testRecorderSkipsRepeatedReports();

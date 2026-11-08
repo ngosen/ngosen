@@ -353,7 +353,7 @@ msgstr ""
 msgid "this window"
 msgstr ""
 
-msgid "apps with no name (apps without a .desktop file need the Ngó Sen extension)"
+msgid "apps with no name (the Ngó Sen extension can tell them apart)"
 msgstr ""
 
 #: src/ngosen-engine.cpp:1099

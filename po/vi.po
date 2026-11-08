@@ -354,8 +354,8 @@ msgstr "App: "
 msgid "this window"
 msgstr "cửa sổ này"
 
-msgid "apps with no name (apps without a .desktop file need the Ngó Sen extension)"
-msgstr "app chưa có tên (app không có tệp .desktop cần extension Ngó Sen)"
+msgid "apps with no name (the Ngó Sen extension can tell them apart)"
+msgstr "app chưa có tên (bật extension Ngó Sen để đặt riêng)"
 
 #: src/ngosen-engine.cpp:1099
 msgid "Unknown Mode"

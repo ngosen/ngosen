@@ -39,6 +39,15 @@ namespace ngosen {
         bool isWps(const std::string& program) {
             return program == "wps" || program == "et" || program == "wpp";
         }
+
+        // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
+        bool isGtk4VteTerminal(const Field& field) {
+            const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
+            if (!gtk4Module)
+                return false;
+            const std::string name = appName(field);
+            return name == "ptyxis" || name == "kgx";
+        }
     } // namespace
 
     bool forwardsBackspaces(const Field& field) {
@@ -93,17 +102,6 @@ namespace ngosen {
         return field.frontend == "dbus" && field.surroundingText;
     }
 
-    namespace {
-        // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
-        bool isGtk4VteTerminal(const Field& field) {
-            const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
-            if (!gtk4Module)
-                return false;
-            const std::string name = appName(field);
-            return name == "ptyxis" || name == "kgx";
-        }
-    } // namespace
-
     bool erasesWithCommittedDel(const Field& field) {
         // kitty and VTE over Wayland claim surrounding text but never send any.
         if (field.terminal) {
@@ -121,6 +119,7 @@ namespace ngosen {
     bool takesDoubleHyphenLiterally(const Field& field) {
         if (field.terminal || field.url || isGtk4VteTerminal(field))
             return true;
+        // XIM has no input purpose, so xterm is known only by name.
         return field.frontend == "xim" && appName(field) == "xterm";
     }
 

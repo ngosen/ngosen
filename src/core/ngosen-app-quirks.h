@@ -31,8 +31,8 @@ namespace ngosen {
     // so a DEL in it erases like Backspace.
     bool erasesWithCommittedDel(const Field& field);
 
-    // True for terminals and address bars, where -- is part of a command or a URL, as in git push --force.
-    // Firefox's address bar reports nothing that sets it apart from a page's text field.
+    // True for fields that report the terminal or URL purpose, xterm and GTK4 VTE terminals, where -- is part
+    // of a command or a URL, as in git push --force. Firefox's address bar reports nothing that sets it apart.
     bool takesDoubleHyphenLiterally(const Field& field);
 
     // True for the address bar of Chromium-based browsers on the D-Bus and fcitx4 frontends: it reports no

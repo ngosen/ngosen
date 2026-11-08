@@ -960,7 +960,7 @@ namespace ngosen {
         }
 
         if (engine_->options().doubleHyphenToEmDash) {
-            bool isHyphenKey = !ngosen::takesDoubleHyphenLiterally(field) && (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract);
+            bool isHyphenKey = (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract) && !ngosen::takesDoubleHyphenLiterally(field);
             if (isHyphenKey && !keyEvent.hasModifier()) {
                 if (isPrevHyphen_) {
                     keyEvent.accept();

@@ -515,6 +515,13 @@ namespace {
         check(text == "a--b ", "double hyphen: xterm keeps --", text);
         text = typedHyphens(makeField("ibus", true, "gtk4-im:ptyxis"));
         check(text == "a--b ", "double hyphen: Ptyxis under GTK4 keeps --", text);
+        Field fcitxGtk4 = makeField("dbus", true, "ptyxis");
+        text            = typedHyphens(fcitxGtk4);
+        check(text == "a--b ", "double hyphen: Ptyxis under fcitx5's GTK4 module keeps --", text);
+        text = typedHyphens(makeField("ibus", true, "gtk4-im:gedit"));
+        check(text == "a—b ", "double hyphen: another GTK4 app still gets the em dash", text);
+        text = typedHyphens(makeField("xim", false, "emacs"));
+        check(text == "a—b ", "double hyphen: another XIM app still gets the em dash", text);
     }
 
     void testHeldSpaceReopensWord() {

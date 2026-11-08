@@ -536,7 +536,7 @@ namespace {
 
     // A macro typed in English in a field that deletes only through its surrounding text. Returns the
     // commits, the deletions and whether the space reached the app.
-    std::string expandInEnglish(bool reportsText) {
+    std::string expandInEnglish(bool reportsText, const std::function<void(ngosen::TypingState&)>& before = {}) {
         realMode = Mode::Off;
         FakeLoop      loop;
         FakeResources resources;
@@ -550,6 +550,8 @@ namespace {
         typeInEnglish(state, "vn");
         if (reportsText)
             host->setSurrounding("vn", 2);
+        if (before)
+            before(state);
         FakeKey space(' ');
         state.keyEvent(space);
         loop.pump(150);
@@ -567,6 +569,15 @@ namespace {
         // Committing the expansion without deleting would leave "vnViệt Nam".
         got = expandInEnglish(false);
         check(got == "commits= deletes=0 space=passed", "no expansion when the abbreviation cannot be deleted", got);
+        // New settings start a new engine, which no longer holds the abbreviation.
+        got = expandInEnglish(true, [](auto& s) { s.setEngine(); });
+        check(got == "commits= deletes=0 space=passed", "new settings between the abbreviation and the space delete nothing", got);
+        got = expandInEnglish(true, [](auto&) {
+            needEngineReset.store(true);
+            g_mouse_clicked.store(true);
+        });
+        g_mouse_clicked.store(false);
+        check(got == "commits= deletes=0 space=passed", "a click between the abbreviation and the space deletes nothing", got);
     }
 
     void testOptionOff() {

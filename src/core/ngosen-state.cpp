@@ -34,6 +34,8 @@ namespace ngosen {
     void TypingState::setEngine() {
         bambooEngine_.reset();
         bambooEngine_.reset(newBambooEngine());
+        // The new engine holds no word, so the copy kept for a macro in English would not match it.
+        oldPreBuffer_.clear();
         setOption();
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;

@@ -19,7 +19,8 @@ use bamboo_core::{
 
 use crate::macro_table::MacroTable;
 use crate::text::{
-    has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol, without_tone_position,
+    has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol, vowel_count,
+    without_tone_position, without_tones,
 };
 use crate::time_format::format_time;
 
@@ -159,6 +160,10 @@ pub fn default_config() -> Config {
 const ENGLISH_WORDS: &str = include_str!("english-words.txt");
 // Those whose shorter form is a name: `Marry` is how people type "Mary", `marry` means marry.
 const WORDS_SHORTER_WHEN_CAPITALIZED: &str = include_str!("english-words-shorter-capitalized.txt");
+// English words typed like a Vietnamese one whose tone was changed after the final consonant
+// (`parts` and pát); they stay English.
+const ENGLISH_RETONE_LOOKALIKES: &str = include_str!("english-retone-lookalikes.txt");
+const FINAL_CONSONANTS: [&str; 4] = ["c", "ch", "p", "t"];
 
 pub struct BambooEngine {
     pub(crate) preeditor: Engine,
@@ -338,14 +343,93 @@ impl BambooEngine {
         if letters.is_empty() || letters.len() == raw.len() {
             return None;
         }
-        let mut syllable = Engine::with_config(
+        Some(self.typed_alone(letters.chars()))
+    }
+
+    /// `keys` typed in Vietnamese on a new engine with the same input method and settings.
+    fn typed_alone(&self, keys: impl IntoIterator<Item = char>) -> Engine {
+        let mut engine = Engine::with_config(
             self.preeditor.input_method().clone(),
             self.preeditor.config(),
         );
-        for key in letters.chars() {
-            syllable.process_key(key, Mode::Vietnamese);
+        for key in keys {
+            engine.process_key(key, Mode::Vietnamese);
         }
-        Some(syllable)
+        engine
+    }
+
+    /// The word asked for by a second tone typed after the final consonant (`dduoxwcj` for
+    /// "được"). The crate can't move a tone onto a word that has its final, so the keys are
+    /// typed again without the first tone.
+    fn retoned_word(&self) -> Option<String> {
+        let raw = self.raw_text();
+        let word = self.retoned_word_of(&raw)?;
+        let listed = ENGLISH_RETONE_LOOKALIKES
+            .lines()
+            .any(|english| english.eq_ignore_ascii_case(&raw));
+        (!listed).then_some(word)
+    }
+
+    fn retoned_word_of(&self, raw: &str) -> Option<String> {
+        if !self.auto_non_vn_restore || !self.preeditor.config().free_tone_marking {
+            return None;
+        }
+        let keys: Vec<char> = raw.chars().collect();
+        let tone_keys = self.preeditor.input_method().tone_keys();
+        let is_tone = |key: &char| tone_keys.contains(&key.to_ascii_lowercase());
+        let (new_tone, rest) = keys.split_last()?;
+        let old = rest.iter().rposition(is_tone)?;
+        // The same tone key twice removes the tone, as in `hists` for "hits".
+        if !is_tone(new_tone) || keys[old].eq_ignore_ascii_case(new_tone) {
+            return None;
+        }
+        // A committed part, such as the syllable before a digit, can't be typed again.
+        if self.get_processed_string(OutputOptions::RAW) != raw
+            || self.is_known_word(&self.preeditor)
+        {
+            return None;
+        }
+        let shown = |keys: &[char]| {
+            without_tones(
+                &self
+                    .typed_alone(keys.iter().copied())
+                    .get_processed_str(OutputOptions::LOWER_CASE),
+            )
+        };
+        let (before, tones) = shown(&keys[..old]);
+        let with_old = shown(&keys[..=old]);
+        // The old tone either went on the vowel or, typed right after the final, stayed a letter.
+        let placed = with_old == (before.clone(), 1);
+        let after_final = old + 2 == keys.len()
+            && with_old == (format!("{before}{}", keys[old].to_lowercase()), 0);
+        if tones != 0 || !has_any_vietnamese_vowel(&before) || !(placed || after_final) {
+            return None;
+        }
+        let mut word_keys = keys.clone();
+        word_keys.remove(old);
+        // Only the final and keys that mark a vowel (`w`, the second `a` of `aa`, `7`) may come
+        // after the vowel, so they add no vowel.
+        let (stem, _) = shown(&word_keys[..word_keys.len() - 1]);
+        if vowel_count(&stem) != vowel_count(&before)
+            || !FINAL_CONSONANTS.iter().any(|f| stem.ends_with(f))
+        {
+            return None;
+        }
+        // The dictionary decides even with spell checking off, where any valid syllable would do
+        // and English words like `ports` would turn into one.
+        let word = self.typed_alone(word_keys);
+        let text = word.get_processed_str(OutputOptions::NONE);
+        (word.is_valid_word() && self.dictionary.contains(&text)).then_some(text)
+    }
+
+    /// Unlike `syllable_must_fallback`, a word with đ is checked too.
+    fn is_known_word(&self, word: &Engine) -> bool {
+        if self.spell_check_with_dicts {
+            self.dictionary
+                .contains(&word.get_processed_str(OutputOptions::LOWER_CASE))
+        } else {
+            word.is_valid_word()
+        }
     }
 
     fn lost_a_letter_of_english_word(&self, shown: &str) -> bool {
@@ -431,6 +515,10 @@ impl BambooEngine {
             let expanded = self.expand_macro(old_text, macro_val);
             self.preeditor.reset();
             return (format!("{expanded}{key}"), true);
+        }
+        if let Some(word) = self.retoned_word() {
+            self.preeditor.reset();
+            return (format!("{word}{key}"), true);
         }
         if (has_any_vietnamese_rune(old_text) && self.must_fallback_to_english())
             || self.lost_a_letter_of_english_word(old_text)
@@ -566,6 +654,10 @@ impl BambooEngine {
                     && Self::is_valid_state(state);
                 let text = match self.get_macro_text() {
                     Some(macro_text) if enter => macro_text,
+                    // Gõ Sen keeps the word as shown on other keys, so Preedit retones on Enter only.
+                    _ if enter => self
+                        .retoned_word()
+                        .unwrap_or_else(|| self.text_of_finished_word()),
                     _ => self.text_of_finished_word(),
                 };
                 self.commit_preedit_and_reset(text);

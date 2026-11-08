@@ -70,8 +70,9 @@ a careful human wrote it, and the person sending it must be able to explain ever
 - **XIM clients on an X11 session delete through XTEST.** A forwarded key that reaches a client
   during one of its own XIM requests can come back after the commit (WordCraft), while XTEST keys
   queue in order like typed ones. Under Xwayland, where XTEST asks the user first, Wine gets key
-  events sent to its window; other XIM clients forward, since xterm, Emacs and XInput2
-  clients drop sent events. Keep the XIM cases in `test/x11-xtest-replacement.cpp` passing.
+  events sent to its window; other XIM clients forward, since Emacs and XInput2 clients drop
+  sent events. xterm erases with a DEL in the commit, on X11 and Xwayland alike. Keep the XIM
+  cases in `test/x11-xtest-replacement.cpp` passing.
 - **Reuse one build directory.** A full Rust or C++ build writes over 1 GB, and a new directory
   per experiment wears out the SSD and fills it. Rebuild in one CMake build directory; make a second
   only when two builds must exist side by side, and delete it when done. Do not share one

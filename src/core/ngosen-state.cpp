@@ -487,7 +487,7 @@ namespace ngosen {
         const auto               f           = host_->field();
         const std::string        program     = f.reportedProgram.empty() ? f.program : f.program + " (" + f.reportedProgram + ")";
         std::string field = "frontend=" + f.frontend + " program=" + program + " surrounding=" + (f.surroundingText ? "1" : "0") + " preedit=" + (f.preedit ? "1" : "0") +
-            (f.sendsNoKeys ? " sendsNoKeys=1" : "") + (f.preeditFallback ? " preeditFallback=1" : "") + (f.password ? " password=1" : "") +
+            (f.sendsNoKeys ? " sendsNoKeys=1" : "") + (f.preeditFallback ? " preeditFallback=1" : "") + (f.password ? " password=1" : "") + (f.terminal ? " terminal=1" : "") +
             " mode=" + modeNames[static_cast<int>(mode())];
         auto& recorder = engine_->recorder();
         recorder.addField(field);
@@ -939,7 +939,10 @@ namespace ngosen {
     }
 
     bool TypingState::handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (mode() == ngosen::Mode::Off || (host_->field().sendsNoKeys && !canSendBackspaces()))
+        if (mode() == ngosen::Mode::Off)
+            return false;
+        const Field field = host_->field();
+        if (field.sendsNoKeys && !canSendBackspaces())
             return false;
         if (engine_->options().doubleSpaceToPeriod) {
             bool isSpaceKey = (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);
@@ -957,7 +960,7 @@ namespace ngosen {
         }
 
         if (engine_->options().doubleHyphenToEmDash) {
-            bool isHyphenKey = (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract);
+            bool isHyphenKey = (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract) && !ngosen::takesDoubleHyphenLiterally(field);
             if (isHyphenKey && !keyEvent.hasModifier()) {
                 if (isPrevHyphen_) {
                     keyEvent.accept();
@@ -999,6 +1002,8 @@ namespace ngosen {
         if (is_deleting_.load(std::memory_order_acquire) || edit_hold_) {
             return;
         }
+        // The cursor may have moved, so Enter or Esc must not replace text before it.
+        dropRetype();
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
         if (isFocusOut)

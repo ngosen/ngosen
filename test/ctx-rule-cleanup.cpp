@@ -163,6 +163,23 @@ namespace {
         engine.shellFocusedAppChanged("kitty.desktop");
         check(!context->commits().empty() && context->commits().back() == "van", "Expected the word in preedit to be committed when the app changes");
 
+        // A name that comes late, after the first keys in the new app, belongs to the word being typed.
+        engine.shellFocusedAppChanged("org.gnome.TextEditor.desktop");
+        const auto commitsBefore = context->commits().size();
+        for (const auto sym : {FcitxKey_v, FcitxKey_i, FcitxKey_e}) {
+            fcitx::KeyEvent key(context.get(), fcitx::Key(sym), false);
+            engine.keyEvent(entry, key);
+        }
+        engine.shellFocusedAppChanged("firefox.desktop");
+        check(realMode.load() == kittyDefault, "Expected both apps to type in the default mode");
+        check(context->commits().size() == commitsBefore, "Expected no commit when the late name keeps the mode");
+        for (const auto sym : {FcitxKey_e, FcitxKey_t, FcitxKey_j, FcitxKey_space}) {
+            fcitx::KeyEvent key(context.get(), fcitx::Key(sym), false);
+            engine.keyEvent(entry, key);
+        }
+        check(!context->commits().empty() && context->commits().back() == "việt ", "Expected the word typed across a late name to stay whole");
+        engine.shellFocusedAppChanged("kitty.desktop");
+
         // Another input method owns the field, so its panel and menu stay untouched.
         fcitx::InputContextEvent left(context.get(), fcitx::EventType::InputContextFocusOut);
         engine.deactivate(entry, left);

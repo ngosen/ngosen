@@ -6,6 +6,12 @@ target_link_libraries(core_typing PRIVATE ngosen_core)
 add_test(NAME core_typing COMMAND core_typing)
 set_tests_properties(core_typing PROPERTIES LABELS "unit;core" TIMEOUT 240 ENVIRONMENT "DISPLAY=")
 
+add_executable(core_replay_fold core-replay-fold.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
+target_compile_definitions(core_replay_fold PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
+target_link_libraries(core_replay_fold PRIVATE ngosen_core)
+add_test(NAME core_replay_fold COMMAND core_replay_fold)
+set_tests_properties(core_replay_fold PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
+
 add_executable(core_fuzz core-fuzz.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
 target_compile_definitions(core_fuzz PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
 target_link_libraries(core_fuzz PRIVATE ngosen_core)
@@ -41,6 +47,16 @@ add_executable(core_surrounding_count core-surrounding-count.cpp)
 target_link_libraries(core_surrounding_count PRIVATE ngosen_core)
 add_test(NAME core_surrounding_count COMMAND core_surrounding_count)
 set_tests_properties(core_surrounding_count PROPERTIES LABELS "unit;core" TIMEOUT 30)
+
+add_executable(core_gnome_apps core-gnome-apps.cpp)
+target_link_libraries(core_gnome_apps PRIVATE ngosen_core)
+add_test(NAME core_gnome_apps COMMAND core_gnome_apps)
+set_tests_properties(core_gnome_apps PROPERTIES LABELS "unit;core" TIMEOUT 30)
+
+add_executable(core_flatpak_names core-flatpak-names.cpp)
+target_link_libraries(core_flatpak_names PRIVATE ngosen_core)
+add_test(NAME core_flatpak_names COMMAND core_flatpak_names)
+set_tests_properties(core_flatpak_names PROPERTIES LABELS "unit;core" TIMEOUT 30)
 
 # How each replacement in these tests deletes and ends, so code that moves them can show it changes none.
 foreach (name core_typing core_fuzz core_retype core_retone)

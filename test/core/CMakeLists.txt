@@ -47,6 +47,11 @@ target_link_libraries(core_gnome_apps PRIVATE ngosen_core)
 add_test(NAME core_gnome_apps COMMAND core_gnome_apps)
 set_tests_properties(core_gnome_apps PROPERTIES LABELS "unit;core" TIMEOUT 30)
 
+add_executable(core_flatpak_names core-flatpak-names.cpp)
+target_link_libraries(core_flatpak_names PRIVATE ngosen_core)
+add_test(NAME core_flatpak_names COMMAND core_flatpak_names)
+set_tests_properties(core_flatpak_names PROPERTIES LABELS "unit;core" TIMEOUT 30)
+
 # How each replacement in these tests deletes and ends, so code that moves them can show it changes none.
 foreach (name core_typing core_fuzz core_retype core_retone)
     add_test(NAME ${name}_record

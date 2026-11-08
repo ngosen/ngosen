@@ -488,6 +488,32 @@ fn test_tone_change_keeps_other_words() {
     assert_eq!(committed_with("Telex", "dduowcj", KEY_SPACE), "được ");
 }
 
+#[test]
+fn test_tone_change_needs_dictionary_word_without_spell_check() {
+    for (keys, want) in [
+        ("ports", "ports "),
+        ("gifts", "gifts "),
+        ("dduoxwcj", "được "),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        e.spell_check_with_dicts = false;
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, want, "{keys}");
+    }
+}
+
+#[test]
+fn test_english_word_list_is_typed_back_with_default_settings() {
+    let mut e = engine_with_default_settings("Telex");
+    for word in ENGLISH_WORDS.lines() {
+        e.reset();
+        type_keys(&mut e, word);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{word} "));
+    }
+}
+
 // Gõ Sen keeps the shown word on these keys, so Preedit must too.
 #[test]
 fn test_tone_change_waits_for_space_or_enter() {

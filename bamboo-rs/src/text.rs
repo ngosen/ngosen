@@ -47,25 +47,8 @@ pub fn vowel_count(word: &str) -> usize {
         .count()
 }
 
-/// The word in lower case without its tones, and how many tones it had.
-pub fn without_tones(word: &str) -> (String, usize) {
-    let mut tones = 0;
-    let letters = word
-        .chars()
-        .map(|c| match vowel_position(lower(c)) {
-            Some(pos) if pos % 6 != 0 => {
-                tones += 1;
-                VOWELS.chars().nth(pos - pos % 6).unwrap_or(c)
-            }
-            _ => lower(c),
-        })
-        .collect();
-    (letters, tones)
-}
-
-/// The word with its tones moved to the end, so `hoà` and `hòa` compare equal whichever tone
-/// style typed them.
-pub fn without_tone_position(word: &str) -> String {
+/// The word in lower case without its tones, and its tones as digits in order.
+fn split_tones(word: &str) -> (String, String) {
     let mut letters = String::with_capacity(word.len());
     let mut tones = String::new();
     for c in word.chars() {
@@ -78,6 +61,19 @@ pub fn without_tone_position(word: &str) -> String {
             _ => letters.push(lower_c),
         }
     }
+    (letters, tones)
+}
+
+/// The word in lower case without its tones, and how many tones it had.
+pub fn without_tones(word: &str) -> (String, usize) {
+    let (letters, tones) = split_tones(word);
+    (letters, tones.len())
+}
+
+/// The word with its tones moved to the end, so `hoà` and `hòa` compare equal whichever tone
+/// style typed them.
+pub fn without_tone_position(word: &str) -> String {
+    let (letters, tones) = split_tones(word);
     letters + &tones
 }
 

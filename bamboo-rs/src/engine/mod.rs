@@ -363,23 +363,15 @@ impl BambooEngine {
     /// typed again without the first tone.
     fn retoned_word(&self) -> Option<String> {
         let raw = self.raw_text();
-        if ENGLISH_RETONE_LOOKALIKES
+        let word = self.retoned_word_of(&raw)?;
+        let listed = ENGLISH_RETONE_LOOKALIKES
             .lines()
-            .any(|word| word.eq_ignore_ascii_case(&raw))
-        {
-            return None;
-        }
-        self.retoned_word_of(&raw)
+            .any(|english| english.eq_ignore_ascii_case(&raw));
+        (!listed).then_some(word)
     }
 
     fn retoned_word_of(&self, raw: &str) -> Option<String> {
         if !self.auto_non_vn_restore || !self.preeditor.config().free_tone_marking {
-            return None;
-        }
-        // A committed part, such as the syllable before a digit, can't be typed again.
-        if self.get_processed_string(OutputOptions::RAW) != raw
-            || self.is_known_word(&self.preeditor)
-        {
             return None;
         }
         let keys: Vec<char> = raw.chars().collect();
@@ -389,6 +381,12 @@ impl BambooEngine {
         let old = rest.iter().rposition(is_tone)?;
         // The same tone key twice removes the tone, as in `hists` for "hits".
         if !is_tone(new_tone) || keys[old].eq_ignore_ascii_case(new_tone) {
+            return None;
+        }
+        // A committed part, such as the syllable before a digit, can't be typed again.
+        if self.get_processed_string(OutputOptions::RAW) != raw
+            || self.is_known_word(&self.preeditor)
+        {
             return None;
         }
         let shown = |keys: &[char]| {
@@ -409,16 +407,19 @@ impl BambooEngine {
         }
         let mut word_keys = keys.clone();
         word_keys.remove(old);
-        // Only the final and keys that mark a vowel (`w`, `7`) may come between the two tones.
+        // Only the final and keys that mark a vowel (`w`, the second `a` of `aa`, `7`) may come
+        // after the vowel, so they add no vowel.
         let (stem, _) = shown(&word_keys[..word_keys.len() - 1]);
         if vowel_count(&stem) != vowel_count(&before)
             || !FINAL_CONSONANTS.iter().any(|f| stem.ends_with(f))
         {
             return None;
         }
+        // The dictionary decides even with spell checking off, where any valid syllable would do
+        // and English words like `ports` would turn into one.
         let word = self.typed_alone(word_keys);
-        (self.is_known_word(&word) && word.is_valid_word())
-            .then(|| word.get_processed_str(OutputOptions::NONE))
+        let text = word.get_processed_str(OutputOptions::NONE);
+        (word.is_valid_word() && self.dictionary.contains(&text)).then_some(text)
     }
 
     /// Unlike `syllable_must_fallback`, a word with đ is checked too.

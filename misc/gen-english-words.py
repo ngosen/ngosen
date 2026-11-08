@@ -60,13 +60,14 @@ def english(words):
     return set(result.stdout.split())
 
 
-def printed_by_test(test, tag, words):
+def printed_by_test(test, tag, words, release=False):
     """The tab-separated rows an ignored test in bamboo-rs prints for `words`."""
     with tempfile.NamedTemporaryFile("w", suffix=".txt") as file:
         file.write("\n".join(words) + "\n")
         file.flush()
         result = subprocess.run(
-            ["cargo", "test", "--release", "--lib", test, "--", "--ignored", "--nocapture"],
+            ["cargo", "test", *(["--release"] if release else []), "--lib", test]
+            + ["--", "--ignored", "--nocapture"],
             cwd=ROOT / "bamboo-rs",
             env={**os.environ, "NGOSEN_WORDS": file.name},
             text=True,
@@ -86,7 +87,8 @@ def retone_lookalikes():
     """English words a space would turn into a Vietnamese word with its tone changed, like `parts`
     into pát. Only hunspell is read, so /usr/share/dict/words can still measure what is missed."""
     words = sorted(english(w for w in hunspell_candidates() if w[-1] in "sfrxj"))
-    found = printed_by_test("print_retone_lookalikes", "LOOKALIKE", words)
+    # Typing each word several times over is slow without optimizations.
+    found = printed_by_test("print_retone_lookalikes", "LOOKALIKE", words, release=True)
     path = ROOT / "bamboo-rs/src/engine/english-retone-lookalikes.txt"
     path.write_text("".join(f"{word}\n" for word, _ in found))
     for word, retoned in found:

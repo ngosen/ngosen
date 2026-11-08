@@ -471,6 +471,14 @@ namespace fcitx {
         return nullptr;
     }
 
+    bool NgoSenEngine::gnomePortalAnswered() const {
+#ifdef NGOSEN_HAS_DBUS
+        if (gnomeShell_)
+            return gnomeShell_->portalAnswered();
+#endif
+        return false;
+    }
+
     NgoSenEngine::~NgoSenEngine() {
         stop_flag_monitor.store(true, std::memory_order_release);
         if (mouse_thread.joinable()) {

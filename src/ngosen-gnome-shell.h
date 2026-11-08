@@ -40,6 +40,10 @@ namespace ngosen {
             return &drops_keys_;
         }
 
+        bool portalAnswered() const {
+            return names_.portalAnswered();
+        }
+
       private:
         void                                              refresh();
         void                                              update();

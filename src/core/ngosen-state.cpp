@@ -939,7 +939,10 @@ namespace ngosen {
     }
 
     bool TypingState::handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (mode() == ngosen::Mode::Off || (host_->field().sendsNoKeys && !canSendBackspaces()))
+        if (mode() == ngosen::Mode::Off)
+            return false;
+        const Field field = host_->field();
+        if (field.sendsNoKeys && !canSendBackspaces())
             return false;
         if (engine_->options().doubleSpaceToPeriod) {
             bool isSpaceKey = (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);
@@ -957,7 +960,7 @@ namespace ngosen {
         }
 
         if (engine_->options().doubleHyphenToEmDash) {
-            bool isHyphenKey = (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract);
+            bool isHyphenKey = !ngosen::takesDoubleHyphenLiterally(field) && (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract);
             if (isHyphenKey && !keyEvent.hasModifier()) {
                 if (isPrevHyphen_) {
                     keyEvent.accept();

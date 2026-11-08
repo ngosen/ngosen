@@ -1138,6 +1138,13 @@ namespace {
         const std::string viaIbus = commitsForTiee("gtk4-im:ptyxis", taken, "ibus");
         check(viaIbus == "['<DEL>ê']", "ibus ptyxis: one commit erases e and types ê", viaIbus);
 
+        for (const char* app : {"org.gnome.Ptyxis.desktop", "org.gnome.Console.desktop", "org.gnome.Terminal.desktop"}) {
+            const std::string relayed = commitsForTiee(app, taken, "ibus");
+            check(relayed == "['<DEL>ê']", std::string("terminal relayed by GNOME Shell, ") + app + ": one commit erases e and types ê", relayed);
+        }
+        const std::string relayedEditor = commitsForTiee("org.gnome.TextEditor.desktop", taken, "ibus");
+        check(!has(relayedEditor, "<DEL>"), "app relayed by GNOME Shell that is not a terminal: never gets DEL", relayedEditor);
+
         const std::string sdl = commitsForTiee("Medieval2", taken);
         check(!has(sdl, "<DEL>"), "dbus sdl: never gets DEL", sdl);
 

@@ -48,6 +48,14 @@ namespace ngosen {
             const std::string name = appName(field);
             return name == "ptyxis" || name == "kgx";
         }
+
+        // GNOME Shell relays apps under their GNOME app id and without their input purpose.
+        bool isShellRelayedTerminal(const Field& field) {
+            if (field.frontend != "ibus")
+                return false;
+            const std::string name = appName(field);
+            return name == "org.gnome.Ptyxis" || name == "org.gnome.Console" || name == "org.gnome.Terminal";
+        }
     } // namespace
 
     bool forwardsBackspaces(const Field& field) {
@@ -113,11 +121,11 @@ namespace ngosen {
         // XIM has no input purpose, so xterm is known only by name.
         if (field.frontend == "xim")
             return appName(field) == "xterm";
-        return !field.surroundingText && isGtk4VteTerminal(field);
+        return !field.surroundingText && (isGtk4VteTerminal(field) || isShellRelayedTerminal(field));
     }
 
     bool takesDoubleHyphenLiterally(const Field& field) {
-        if (field.terminal || field.url || isGtk4VteTerminal(field))
+        if (field.terminal || field.url || isGtk4VteTerminal(field) || isShellRelayedTerminal(field))
             return true;
         // XIM has no input purpose, so xterm is known only by name.
         return field.frontend == "xim" && appName(field) == "xterm";

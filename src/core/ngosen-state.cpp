@@ -32,6 +32,12 @@ namespace ngosen {
     }
 
     void TypingState::setEngine() {
+        // A new engine does not hold the word being typed, so its next key would replace that word.
+        if (!oldPreBuffer_.empty()) {
+            newEnginePending_ = true;
+            return;
+        }
+        newEnginePending_ = false;
         bambooEngine_.reset();
         bambooEngine_.reset(newBambooEngine());
         setOption();
@@ -508,6 +514,8 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        if (newEnginePending_ && oldPreBuffer_.empty())
+            setEngine();
         // Counted first, so a replacement this key starts does not count it as a later key.
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;

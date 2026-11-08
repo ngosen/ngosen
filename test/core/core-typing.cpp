@@ -377,6 +377,22 @@ namespace {
               std::to_string(host->forwarded().size()) + " forwarded, " + std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
     }
 
+    // Settings reloaded mid-word must not leave the word to an engine that never saw it.
+    void testSenSettingsReloadMidWord() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        typeTie(state, *host, loop, true);
+        state.setEngine();
+        press(state, static_cast<uint32_t>('e'));
+        loop.pump(3);
+        check(host->deletes().size() == 1 && join(host->commits()) == "['ê']", "sen: tie, new settings, e -> tiê",
+              std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
+    }
+
     // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
     void testFirefoxDeletesThroughSurrounding() {
         for (const char* frontend : {"wayland", "wayland_v2", "dbus"}) {
@@ -3281,6 +3297,7 @@ int main() {
     for (const char* frontend : {"wayland", "wayland_v2", "dbus"})
         testSenDeletesReportedWord(frontend);
     testFirefoxDeletesThroughSurrounding();
+    testSenSettingsReloadMidWord();
     testForwardedKeysNewerThanTyped();
     testKeyDuringReplacement();
     testCommitAfterTheReport();

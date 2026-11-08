@@ -93,22 +93,23 @@ namespace ngosen {
     }
 
     bool erasesWithCommittedDel(const Field& field) {
-        const std::string name = appName(field);
-        // Alacritty sends a commit as a bracketed paste once the app asks for those, so the DEL is pasted, not run.
-        if (name == "Alacritty" || name == "alacritty")
-            return false;
         // kitty and VTE over Wayland claim surrounding text but never send any.
-        if (field.terminal)
-            return true;
+        if (field.terminal) {
+            // Alacritty pastes a commit longer than one character once the app turns on bracketed paste,
+            // so the DEL would be pasted, not run.
+            const std::string name = appName(field);
+            return name != "Alacritty" && name != "alacritty";
+        }
         // XIM has no input purpose, so xterm is known only by name.
-        if (field.frontend == "xim" && name == "xterm")
-            return true;
+        if (field.frontend == "xim")
+            return appName(field) == "xterm";
         if (field.surroundingText)
             return false;
         const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
         if (!gtk4Module)
             return false;
         // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
+        const std::string name = appName(field);
         return name == "ptyxis" || name == "kgx";
     }
 

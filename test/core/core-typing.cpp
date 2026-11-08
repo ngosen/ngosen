@@ -1717,6 +1717,36 @@ namespace {
         }
     }
 
+    // A tone changed after the final consonant (#615) takes effect when a space, a punctuation mark or
+    // Enter ends the word, in Sen and Preedit alike; every other way out keeps the keys as shown.
+    // ^ is a Ctrl tap, \n Enter, \t Tab and \x1b Escape.
+    void testRetoneAtWordEndInBothModes() {
+        const std::vector<std::pair<std::string, std::string>> cases = {
+            {"dduoxwcj ", "được "},      {"dduoxwcj,", "được,"},     {"mootxj\n", "một"},          {"parts ", "parts "},
+            {"dduoxwcj^ ", "dduoxwcj "}, {"dduoxwcj\t", "dduoxwcj"}, {"dduoxwcj\x1b", "dduoxwcj"},
+        };
+        for (const auto& [typed, want] : cases) {
+            std::vector<uint32_t> keys;
+            for (char c : typed)
+                keys.push_back(c == '^'        ? ngosen::key::Control_L :
+                                   c == '\n'   ? ngosen::key::Return :
+                                   c == '\t'   ? ngosen::key::Tab :
+                                   c == '\x1b' ? ngosen::key::Escape :
+                                                 static_cast<uint32_t>(c));
+            std::string printable = typed;
+            std::replace_if(printable.begin(), printable.end(), [](char c) { return c == '\n' || c == '\t' || c == '\x1b'; }, '~');
+            FakeResources preeditResources;
+            std::string   preedit = ngosen::test::telexOutput(preeditResources, keys);
+            preedit.erase(std::remove_if(preedit.begin(), preedit.end(), [](char c) { return c == '\n' || c == '\r' || c == '\t'; }), preedit.end());
+            check(preedit == want, "retone at word end, Preedit: " + printable, preedit);
+            for (const auto& [frontend, surroundingText] : {std::pair<const char*, bool>{"wayland", true}, {"ibus", false}}) {
+                FakeResources     resources;
+                const std::string sen = ngosen::test::typeInApp(resources, makeField(frontend, surroundingText), {}, keys, std::vector<int>(keys.size(), 30));
+                check(sen == want, std::string("retone at word end, Sen (") + frontend + "): " + printable, sen);
+            }
+        }
+    }
+
     // GLFW (Minecraft) under XIM keeps the time of the last Backspace press and drops older ones.
     void testForwardedKeysNewerThanTyped() {
         ngosen::test::AppQuirks glfw;
@@ -3268,6 +3298,7 @@ int main() {
     testEnterDuringReplacement();
     testLockWord();
     testLockWordPreedit();
+    testRetoneAtWordEndInBothModes();
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();
     testLockWordNotOnChord();

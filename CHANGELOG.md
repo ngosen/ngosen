@@ -10,6 +10,16 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.8.3-1] — 08/11/2026
+
+Gõ từ không phải tiếng Việt liền chữ số khi bật gõ tắt hết bị thêm dấu (#614), và đổi dấu sau phụ âm cuối vẫn ra đúng chữ tiếng Việt khi chốt từ (#622).
+Tải ở [ngosen-1.8.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.3-1).
+
+### Sửa
+
+- Gõ từ không phải tiếng Việt liền chữ số khi bật gõ tắt không còn bị thêm dấu (gõ "Sose2026" thành "Sóe2026"); trả lại đúng phím đã gõ, từ tiếng Việt liền số như "tôi2" vẫn giữ nguyên (#614).
+- Đổi dấu sau phụ âm cuối không còn làm chữ trả về phím đã gõ: Telex "dduoxwcj" hay VNI "d9uo37c5" nay thành "được" khi gõ dấu cách, dấu câu hoặc Enter, ở cả Gõ Sen lẫn Preedit (lúc đang gõ vẫn hiện nguyên phím); từ tiếng Anh như "parts", "texts" vẫn giữ nguyên, muốn giữ phím đã gõ thì nhấp phím chốt chữ (mặc định Ctrl) trước dấu cách (#622).
+
 ## [1.8.2-1] — 07/11/2026
 
 Cứu chữ hết xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt (#605), gõ tắt khi đang tiếng Anh hết thành "vnviệt nam" ở ô không cho đọc chữ (#604), và kho APT, pacman, zypper của Ngó Sen phát lại gói `ibus-ngosen` (#598).

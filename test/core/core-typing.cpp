@@ -3283,6 +3283,19 @@ namespace {
         check(!ok, "snap names are only shortened for IBus clients", said(ok));
     }
 
+    // GNOME Shell relays apps under their desktop file name.
+    void testGnomeBrowserIds() {
+        for (const char* id : {"firefox", "firefox-esr", "firefox_firefox", "org.mozilla.firefox", "zen", "app.zen_browser.zen", "librewolf", "io.gitlab.librewolf-community",
+                               "waterfox", "net.waterfox.waterfox", "floorp", "one.ablaze.floorp", "mullvad-browser", "net.mullvad.MullvadBrowser", "icecat"}) {
+            const bool ok = ngosen::hidesAddressBarFlag(makeField("ibus", true, std::string(id) + ".desktop"));
+            check(ok, std::string("GNOME's ") + id + " is a Firefox", ok ? "true" : "false");
+        }
+        for (const char* id : {"org.gnome.TextEditor", "org.mozilla.Thunderbird", "zenity", "org.gnome.Epiphany"}) {
+            const bool ok = ngosen::hidesAddressBarFlag(makeField("ibus", true, std::string(id) + ".desktop"));
+            check(!ok, std::string("GNOME's ") + id + " is not a Firefox", ok ? "true" : "false");
+        }
+    }
+
     // VS Code reports the cursor at the start of the line and then back at the end of the word,
     // with the text unchanged; the word being typed must survive that.
     void testCursorBounceBack() {
@@ -3653,6 +3666,7 @@ int main() {
     testCursorBounceBack();
     testFirstLetterCursorBounce();
     testIbusClientNames();
+    testGnomeBrowserIds();
     testAutofillMark();
     testReportWithNextKey();
     testSilentFromFirstDeletion();

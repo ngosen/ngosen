@@ -481,6 +481,49 @@ namespace {
         check(text == "chào. ", "ibus: a space held during a timed wait still counts for double space", text);
     }
 
+    std::string typedHyphens(const Field& field) {
+        realMode = ngosen::Mode::Preedit;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().doubleHyphenToEmDash = true;
+        auto                owned                       = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{});
+        auto*               app                         = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        state.activate(ngosen::Mode::Preedit, false);
+        for (const char c : std::string("a--b ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(30);
+        }
+        loop.pump(300);
+        return app->text();
+    }
+
+    void testDoubleHyphen() {
+        std::string text = typedHyphens(makeField("wayland", true));
+        check(text == "a—b ", "double hyphen: two hyphens give an em dash", text);
+        Field terminal    = makeField("wayland", true);
+        terminal.terminal = true;
+        text              = typedHyphens(terminal);
+        check(text == "a--b ", "double hyphen: a terminal keeps --, as in git push --force", text);
+        Field url = makeField("wayland", true);
+        url.url   = true;
+        text      = typedHyphens(url);
+        check(text == "a--b ", "double hyphen: an address bar keeps --", text);
+        text = typedHyphens(makeField("xim", false, "xterm"));
+        check(text == "a--b ", "double hyphen: xterm keeps --", text);
+        text = typedHyphens(makeField("ibus", true, "gtk4-im:ptyxis"));
+        check(text == "a--b ", "double hyphen: Ptyxis under GTK4 keeps --", text);
+        Field fcitxGtk4 = makeField("dbus", true, "ptyxis");
+        text            = typedHyphens(fcitxGtk4);
+        check(text == "a--b ", "double hyphen: Ptyxis under fcitx5's GTK4 module keeps --", text);
+        text = typedHyphens(makeField("ibus", true, "gtk4-im:gedit"));
+        check(text == "a—b ", "double hyphen: another GTK4 app still gets the em dash", text);
+        text = typedHyphens(makeField("xim", false, "emacs"));
+        check(text == "a—b ", "double hyphen: another XIM app still gets the em dash", text);
+    }
+
     void testHeldSpaceReopensWord() {
         FakeResources     resources;
         const std::string text = typeWithHeldKey(resources, "vieetj \bs", 6);
@@ -3449,6 +3492,7 @@ int main() {
     testEnterDuringTimedWaitFollowsCommit();
     testBackspaceDuringTimedWaitFollowsCommit();
     testHeldSpaceCountsForDoubleSpace();
+    testDoubleHyphen();
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();

@@ -233,20 +233,19 @@ Gặp lỗi thì mở issue. Muốn build từ bản clone trên máy, xem mục
 
 ### GNOME: extension sửa lỗi gõ
 
-Gói kèm extension `forward-keys@ngosen.github.io` cho GNOME 46 đến 50. fcitx5 trước 5.1.22 gọi mọi app
-trên GNOME là `gnome-shell`; Ngó Sen lấy tên app từ `xdg-desktop-portal-gnome` để nhớ chế độ gõ riêng cho
-từng app. Extension chỉ cần khi:
+Gói có kèm extension `forward-keys@ngosen.github.io` cho GNOME 46 đến 50. fcitx5 version cũ hơn 5.1.22 gọi mọi
+app trên GNOME là `gnome-shell`. Ngó Sen nay lấy tên app từ gói `xdg-desktop-portal-gnome` để vẫn nhớ chế độ
+gõ riêng cho từng app. Extension chỉ cần trong ba trường hợp:
 
-- GNOME 50.0 đến 50.3: GNOME làm mất phím mà bộ gõ gửi cho app
-  ([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784)); khi Ubuntu vá
+- GNOME 50.0 đến 50.3: GNOME làm mất phím bộ gõ gửi cho app
+  ([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784)). Khi Ubuntu vá
   lỗi này, chỉ cần cập nhật gói.
 - Máy không có gói `xdg-desktop-portal-gnome`.
-- App không có tệp .desktop: portal không có tên cho các app này, nên chúng chỉ nhớ chế độ gõ riêng khi bật
-  extension.
+- Muốn nhớ chế độ gõ riêng cho app không có tệp `.desktop`: portal không có tên cho các app này.
 
-Lệnh cài tự bật extension ở hai trường hợp đầu; máy đã bật thì để nguyên. Trang “Kiểm tra máy” trong cửa sổ
-cài đặt báo khi portal chưa cho Ngó Sen biết tên app. Để bật bằng tay, đăng xuất rồi đăng nhập lại, sau đó
-chạy một lần:
+Lệnh cài tự bật extension ở hai trường hợp đầu. Máy đã bật thì để nguyên. Trang "Kiểm tra máy" trong cửa sổ
+cài đặt báo khi portal chưa cho Ngó Sen biết tên app và gợi ý bật extension. Để bật bằng tay, đăng xuất rồi
+đăng nhập lại, sau đó chạy một lần:
 
 ```
 gnome-extensions enable forward-keys@ngosen.github.io

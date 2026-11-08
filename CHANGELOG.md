@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Bớt những lúc gõ Sen nhanh bị khựng trong Firefox trên Hyprland, Sway và KDE Plasma: quay lại chờ bản chữ của Firefox khi app phản hồi kịp trở lại, thay vì xoá bằng Backspace (#607).
+- Gõ Sen hiện chữ ngay khi thêm dấu trong kitty, Ptyxis, GNOME Terminal, foot và Ghostty trên Hyprland, cùng xterm; riêng xterm không còn phụ thuộc vào thứ tự nhận phím Backspace (#620).
 - Bớt khựng khi gõ Sen nhanh trong Firefox trên Hyprland và Sway: khi app báo chữ chậm, phím thêm dấu sửa luôn phần chữ chưa gửi, không phải gửi chữ cũ rồi xoá bằng Backspace và chờ gõ lại (#623).
 
 ## [1.8.2-1] — 07/11/2026

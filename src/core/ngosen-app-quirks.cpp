@@ -5,6 +5,7 @@
  */
 #include "ngosen-app-quirks.h"
 
+#include "ngosen-gnome-apps.h"
 #include "ngosen-strings.h"
 #include "ngosen-xtest.h"
 
@@ -74,7 +75,7 @@ namespace ngosen {
         if (field.frontend == "ibus")
             return isWps(appName(field)) && xsendAvailable();
         // Wine applies forwarded keys after a later commit and reports nothing that sets it apart;
-        // xterm and XInput2 clients drop sent events, so the rest keep forwarding.
+        // xterm and XInput2 clients drop sent events, so only Wine gets them.
         return field.frontend == "xim" && isStartsWith(appName(field), "wine") && xsendAvailable();
     }
 
@@ -93,16 +94,24 @@ namespace ngosen {
     }
 
     bool erasesWithCommittedDel(const Field& field) {
+        // kitty and VTE over Wayland claim surrounding text but never send any.
+        if (field.terminal) {
+            // Alacritty pastes a commit longer than one character once the app turns on bracketed paste,
+            // so the DEL would be pasted, not run.
+            const std::string name = appName(field);
+            return name != "Alacritty" && name != "alacritty";
+        }
+        // XIM has no input purpose, so xterm is known only by name.
+        if (field.frontend == "xim")
+            return appName(field) == "xterm";
         if (field.surroundingText)
             return false;
-        if (field.terminal)
-            return true;
         const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
         if (!gtk4Module)
             return false;
         // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
-        const std::string program = appName(field);
-        return program == "ptyxis" || program == "kgx";
+        const std::string name = appName(field);
+        return name == "ptyxis" || name == "kgx";
     }
 
     bool selectsOverAutocompletion(const Field& field) {
@@ -151,7 +160,7 @@ namespace ngosen {
     }
 
     bool isGnomeSearch(const Field& field) {
-        return appName(field) == "gnome-shell-overview";
+        return appName(field) == gnomeOverviewApp;
     }
 
     bool dropsCommitsWithoutFocus(const Field& field) {

@@ -5,7 +5,7 @@
  */
 #include "ngosen-program-name.h"
 
-#include "ngosen-strings.h"
+#include "ngosen-flatpak-names.h"
 
 #include <fcitx-config/iniparser.h>
 #include <fcitx-config/rawconfig.h>
@@ -15,25 +15,14 @@
 #include <fcitx-utils/standardpath.h>
 #endif
 
-#include <algorithm>
-#include <cctype>
 #include <cstdio>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
 namespace ngosen {
 
     namespace {
-        std::string lowercaseWithoutSpaces(std::string text) {
-            text.erase(std::remove(text.begin(), text.end(), ' '), text.end());
-            std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-            return text;
-        }
-
-        bool looksLikeAppId(const std::string& name) {
-            return std::count(name.begin(), name.end(), '.') >= 2 && name.find('/') == std::string::npos;
-        }
-
         std::vector<std::string> desktopFiles(const std::string& name) {
             const std::string        file = "applications/" + name + ".desktop";
             std::vector<std::string> found;
@@ -46,31 +35,15 @@ namespace ngosen {
             return found;
         }
 
-        std::string programForAppId(const std::string& appId, const fcitx::RawConfig& desktopEntry) {
-            const std::string* wmClass = desktopEntry.valueByPath("Desktop Entry/StartupWMClass");
-            // Mullvad Browser's class is "Mullvad Browser", Lutris gives its app ID.
-            if (wmClass && !wmClass->empty() && !looksLikeAppId(*wmClass))
-                return lowercaseWithoutSpaces(*wmClass);
-            return lowercaseWithoutSpaces(appId.substr(appId.rfind('.') + 1));
-        }
-
-        std::string resolve(const std::string& program) {
-            const std::string name = stripDesktopSuffix(program);
-            if (!looksLikeAppId(name))
-                return program;
-            for (const auto& path : desktopFiles(name)) {
-                // A native app may use a reverse-DNS name too; only a Flatpak export proves the app ID.
-                if (path.find("/flatpak/exports/share/applications/") == std::string::npos)
-                    continue;
-                FILE* file = std::fopen(path.c_str(), "r");
-                if (!file)
-                    continue;
-                fcitx::RawConfig entry;
-                fcitx::readFromIni(entry, file);
-                std::fclose(file);
-                return programForAppId(name, entry);
-            }
-            return program;
+        std::optional<std::string> readStartupWmClass(const std::string& path) {
+            FILE* file = std::fopen(path.c_str(), "r");
+            if (!file)
+                return std::nullopt;
+            fcitx::RawConfig entry;
+            fcitx::readFromIni(entry, file);
+            std::fclose(file);
+            const std::string* wmClass = entry.valueByPath("Desktop Entry/StartupWMClass");
+            return wmClass ? *wmClass : std::string();
         }
     } // namespace
 
@@ -78,7 +51,7 @@ namespace ngosen {
         static std::unordered_map<std::string, std::string> cache;
         auto                                                it = cache.find(program);
         if (it == cache.end())
-            it = cache.emplace(program, resolve(program)).first;
+            it = cache.emplace(program, flatpakProgramName(program, desktopFiles, readStartupWmClass)).first;
         return it->second;
     }
 

@@ -32,15 +32,17 @@ namespace ngosen {
     }
 
     void TypingState::setEngine() {
-        // A new engine does not hold the word being typed, so its next key would replace that word.
-        if (!oldPreBuffer_.empty()) {
-            newEnginePending_ = true;
-            return;
+        // The field still shows the word being typed, so the new engine must hold it too.
+        std::string word = oldPreBuffer_;
+        if (word.empty() && bambooEngine_) {
+            ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+            word = preedit ? preedit.get() : "";
         }
-        newEnginePending_ = false;
         bambooEngine_.reset();
         bambooEngine_.reset(newBambooEngine());
         setOption();
+        if (!word.empty())
+            EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
     }
@@ -514,8 +516,6 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
-        if (newEnginePending_ && oldPreBuffer_.empty())
-            setEngine();
         // Counted first, so a replacement this key starts does not count it as a later key.
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;

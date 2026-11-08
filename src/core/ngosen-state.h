@@ -64,7 +64,7 @@ namespace ngosen {
         TypingState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host);
 
         /**
-         * @brief Initializes the bamboo engine for this state, once the word being typed ends.
+         * @brief Builds the bamboo engine for this state from the current settings, keeping the word being typed.
          */
         void setEngine();
 
@@ -155,7 +155,6 @@ namespace ngosen {
         std::string              lastWord_; ///< The word and break we last committed, while only backspaces follow
         bool                     hasHistory_              = false;
         bool                     preeditWord_             = false; ///< Sen is on, but this word goes into the preedit
-        bool                     newEnginePending_        = false; ///< setEngine() waits for the word being typed to end
         int                      expected_backspaces_     = 0;     ///< backspaces the key paths still send; XTEST adds one that comes back
         int                      current_backspace_count_ = 0;
         std::string              pending_commit_string_;

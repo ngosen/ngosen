@@ -19,6 +19,7 @@
 #include "ngosen-xtest.h"
 
 #include <algorithm>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -95,6 +96,24 @@ namespace {
 
         press(state, ngosen::key::space);
         check(join(host->commits()) == "['việt ']", "preedit: space commits the word with the space", join(host->commits()));
+    }
+
+    void testPreeditSettingsReloadMidWord() {
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        for (char c : std::string("tie"))
+            press(state, static_cast<uint32_t>(c));
+        resources.mutableOptions().inputMethod = "VNI";
+        state.setEngine();
+        press(state, static_cast<uint32_t>('6'));
+        check(host->preedit() == "tiê", "preedit: tie, VNI loaded, 6 shows tiê", host->preedit());
+        press(state, static_cast<uint32_t>('n'));
+        press(state, ngosen::key::space);
+        check(join(host->commits()) == "['tiên ']", "preedit: space after the reload commits the whole word", join(host->commits()));
     }
 
     // Types `before` and Enter in Preedit, holding Enter down for holdMs, then nextKey if set, or loses focus;
@@ -340,7 +359,7 @@ namespace {
         const std::string what = "sen " + frontend + ": ";
         check(join(host->commits()) == "(none)", what + "plain letters go to the app as keys", join(host->commits()));
 
-        check(press(state, static_cast<uint32_t>('e')), what + "e -> ê takes the key", "not accepted");
+        check(press(state, static_cast<uint32_t>('e')), what + "the key that makes ê is taken", "not accepted");
         // XIM forwards on the next event loop turn, after its sync reply.
         loop.pump(3);
         const auto& forwarded = host->forwarded();
@@ -358,7 +377,7 @@ namespace {
     }
 
     // Once the field has reported the word, KWin, Sway and D-Bus fields delete through the surrounding text.
-    void testSenDeletesReportedWord(const std::string& frontend) {
+    void testSenDeletesReportedWord(const std::string& frontend, uint32_t sym = 'e', const std::function<void(ngosen::TypingState&, FakeResources&)>& beforeKey = {}) {
         realMode = ngosen::Mode::Sen;
         FakeLoop      loop;
         FakeResources resources;
@@ -370,27 +389,13 @@ namespace {
         ngosen::TypingState state(&resources, std::move(owned));
 
         typeTie(state, *host, loop, true);
+        if (beforeKey)
+            beforeKey(state, resources);
         const std::string what = "sen " + frontend + ", reported word: ";
-        check(press(state, static_cast<uint32_t>('e')), what + "e -> ê takes the key", "not accepted");
+        check(press(state, sym), what + "e -> ê takes the key", "not accepted");
         loop.pump(3);
         check(host->forwarded().empty() && host->deletes().size() == 1 && join(host->commits()) == "['ê']", what + "one surrounding deletion, then ê, no backspace",
               std::to_string(host->forwarded().size()) + " forwarded, " + std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
-    }
-
-    // Settings reloaded mid-word must not leave the word to an engine that never saw it.
-    void testSenSettingsReloadMidWord() {
-        realMode = ngosen::Mode::Sen;
-        FakeLoop            loop;
-        FakeResources       resources;
-        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
-        FakeHost*           host  = owned.get();
-        ngosen::TypingState state(&resources, std::move(owned));
-        typeTie(state, *host, loop, true);
-        state.setEngine();
-        press(state, static_cast<uint32_t>('e'));
-        loop.pump(3);
-        check(host->deletes().size() == 1 && join(host->commits()) == "['ê']", "sen: tie, new settings, e -> tiê",
-              std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
     }
 
     // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
@@ -3286,6 +3291,7 @@ int main() {
     testEnglishWordKeepsDoubledLetter();
     testQuirks();
     testPreeditTelex();
+    testPreeditSettingsReloadMidWord();
     testPreeditEnterAfterCommit();
     testAutoCapitalize();
     testResetAfterAppCommit();
@@ -3296,8 +3302,12 @@ int main() {
     testSenForwards("xim", false);
     for (const char* frontend : {"wayland", "wayland_v2", "dbus"})
         testSenDeletesReportedWord(frontend);
+    // Settings reloaded from another process in the middle of a word.
+    testSenDeletesReportedWord("wayland", '6', [](auto& s, auto& r) {
+        r.mutableOptions().inputMethod = "VNI";
+        s.setEngine();
+    });
     testFirefoxDeletesThroughSurrounding();
-    testSenSettingsReloadMidWord();
     testForwardedKeysNewerThanTyped();
     testKeyDuringReplacement();
     testCommitAfterTheReport();

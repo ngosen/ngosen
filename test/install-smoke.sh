@@ -478,6 +478,14 @@ STUB
 extension_on() { grep -qF "'$1'" "$enabled_extensions"; }
 extension_off() { ! extension_on "$1"; }
 
+portal_service=org.freedesktop.impl.portal.desktop.gnome.service
+with_portal() {
+    mkdir -p /usr/local/share/dbus-1/services
+    : >"/usr/local/share/dbus-1/services/$portal_service"
+}
+without_portal() { rm -f "/usr/local/share/dbus-1/services/$portal_service"; }
+gnome_shell_is() { printf '#!/bin/sh\necho "GNOME Shell %s"\n' "$1" >"$work/stubs/gnome-shell"; }
+
 check_extensions_turned_back() {
     use_gnome_stubs
     as_user rm -f "$changes" "$enabled_extensions" "$uninstalled_extensions" "$im_env" "$reloads"
@@ -498,18 +506,39 @@ check_extensions_turned_back() {
     check "the Input Method Panel the user turned on stays on" extension_on kimpanel@kde.org
     check "and stays installed" test ! -e "$uninstalled_extensions"
 
-    # A GNOME that keeps forwarded keys still needs the extension for app names until fcitx5 5.1.22.
-    as_user rm -f "$changes" "$enabled_extensions"
-    printf '#!/bin/sh\necho "GNOME Shell 50.4"\n' >"$work/stubs/gnome-shell"
-    check "install on GNOME 50.4 succeeds" installer --yes
-    check "it turns forward-keys on for app names" extension_on forward-keys@ngosen.github.io
+    # A GNOME that keeps forwarded keys needs the extension for app names only without GNOME's portal,
+    # until fcitx5 5.1.22.
+    check "the container has no GNOME portal of its own" test ! -e "/usr/share/dbus-1/services/$portal_service"
+    for version in 46.0 49.1 50.4; do
+        as_user rm -f "$changes" "$enabled_extensions"
+        gnome_shell_is "$version"
+        check "install on GNOME $version without the portal succeeds" installer --yes
+        check "it turns forward-keys on for app names" extension_on forward-keys@ngosen.github.io
+        check "uninstall after that succeeds" installer --yes --uninstall
+        with_portal
+        check "install on GNOME $version with the portal succeeds" installer --yes
+        check "it leaves forward-keys off" extension_off forward-keys@ngosen.github.io
+        check "uninstall after that succeeds" installer --yes --uninstall
+        without_portal
+    done
+    with_portal
+    echo "['forward-keys@ngosen.github.io']" | as_user tee "$enabled_extensions" >/dev/null
+    check "install with the portal over forward-keys already on succeeds" installer --yes
     check "uninstall after that succeeds" installer --yes --uninstall
+    check "forward-keys already on stays on" extension_on forward-keys@ngosen.github.io
+    as_user rm -f "$changes" "$enabled_extensions"
+    gnome_shell_is 50.1
+    check "install on GNOME 50.1 with the portal succeeds" installer --yes
+    check "it turns forward-keys on for the forwarded keys" extension_on forward-keys@ngosen.github.io
+    check "uninstall after that succeeds" installer --yes --uninstall
+    without_portal
+    gnome_shell_is 50.4
     echo 5.1.22 | as_user tee "$home/.stub-fcitx5-version" >/dev/null
     check "install on GNOME 50.4 with fcitx5 5.1.22 succeeds" installer --yes
     check "it leaves forward-keys off" extension_off forward-keys@ngosen.github.io
     check "uninstall after that succeeds" installer --yes --uninstall
     as_user rm -f "$home/.stub-fcitx5-version"
-    printf '#!/bin/sh\necho "GNOME Shell 50.1"\n' >"$work/stubs/gnome-shell"
+    gnome_shell_is 50.1
 
     as_user rm -f "$changes"
     echo "['ubuntu-appindicators@ubuntu.com']" | as_user tee "$enabled_extensions" >/dev/null

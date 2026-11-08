@@ -231,6 +231,8 @@ namespace fcitx {
         static std::filesystem::path typingLogDir();
         // Writes the recorder to a new file in typingLogDir(); an empty path if that failed.
         std::filesystem::path writeTypingLog();
+        // Whether GNOME's portal has told which app is focused, for apps GNOME Shell relays.
+        bool gnomePortalAnswered() const;
 
         // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
         std::string getProgramName(InputContext* ic) const;

@@ -39,6 +39,23 @@ namespace ngosen {
         bool isWps(const std::string& program) {
             return program == "wps" || program == "et" || program == "wpp";
         }
+
+        // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
+        bool isGtk4VteTerminal(const Field& field) {
+            const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
+            if (!gtk4Module)
+                return false;
+            const std::string name = appName(field);
+            return name == "ptyxis" || name == "kgx";
+        }
+
+        // GNOME Shell relays apps under their GNOME app id and without their input purpose.
+        bool isShellRelayedTerminal(const Field& field) {
+            if (field.frontend != "ibus")
+                return false;
+            const std::string name = appName(field);
+            return name == "org.gnome.Ptyxis" || name == "org.gnome.Console" || name == "org.gnome.Terminal";
+        }
     } // namespace
 
     bool forwardsBackspaces(const Field& field) {
@@ -104,14 +121,14 @@ namespace ngosen {
         // XIM has no input purpose, so xterm is known only by name.
         if (field.frontend == "xim")
             return appName(field) == "xterm";
-        if (field.surroundingText)
-            return false;
-        const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
-        if (!gtk4Module)
-            return false;
-        // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
-        const std::string name = appName(field);
-        return name == "ptyxis" || name == "kgx";
+        return !field.surroundingText && (isGtk4VteTerminal(field) || isShellRelayedTerminal(field));
+    }
+
+    bool takesDoubleHyphenLiterally(const Field& field) {
+        if (field.terminal || field.url || isGtk4VteTerminal(field) || isShellRelayedTerminal(field))
+            return true;
+        // XIM has no input purpose, so xterm is known only by name.
+        return field.frontend == "xim" && appName(field) == "xterm";
     }
 
     bool selectsOverAutocompletion(const Field& field) {

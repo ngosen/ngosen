@@ -139,6 +139,10 @@ namespace ngosen {
          * @return True if no history.
          */
         bool isEmptyHistory() const;
+        // A word is still open, so setEngine() now would lose it.
+        bool holdsWord() const {
+            return !oldPreBuffer_.empty();
+        }
         friend class fcitx::NgoSenEngine;
 
         /**
@@ -600,6 +604,7 @@ namespace ngosen {
             std::string retype;     ///< committed again ahead of added
             std::string sentReport; ///< reportKey() when the deletion was sent
             std::string sentAfter;  ///< the text after the cursor then
+            std::string program;    ///< the app's name then
             bool        password      = false;
             bool        waitsForKey   = false; ///< stays open for a report that comes with a later key
             uint64_t    keysAtSend    = 0;

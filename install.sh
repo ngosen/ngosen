@@ -778,13 +778,22 @@ has_tray() {
     gnome-extensions list --enabled 2>/dev/null | grep -q appindicator
 }
 
-# fcitx5 before 5.1.22 names every app on GNOME after the shell, so it needs the packaged extension to tell
-# apps apart. GNOME 50.0 to 50.3 also drop keys an input method forwards, which the extension delivers.
+# fcitx5 before 5.1.22 names every app on GNOME after the shell; Ngó Sen then learns the app from GNOME's
+# portal, or from the packaged extension where the portal is missing. GNOME 50.0 to 50.3 also drop keys an
+# input method forwards, which the extension delivers.
 fcitx5_names_apps_on_gnome() {
     local version
     version=$(fcitx5 --version 2>/dev/null | head -n 1) || return 1
     [ -n "$version" ] || return 1
     [ "$(printf '%s\n' "$version" 5.1.22 | sort -V | head -n 1)" = 5.1.22 ]
+}
+
+has_gnome_portal() {
+    local dir IFS=:
+    for dir in ${XDG_DATA_DIRS:-/usr/local/share} /usr/share; do
+        [ -e "$dir/dbus-1/services/org.freedesktop.impl.portal.desktop.gnome.service" ] && return 0
+    done
+    return 1
 }
 
 enable_forward_keys_extension() {
@@ -793,7 +802,7 @@ enable_forward_keys_extension() {
     version=$(shell_version)
     case "$version" in
         50.0 | 50.1 | 50.2 | 50.3) ;;
-        4[6-9].* | 50.*) fcitx5_names_apps_on_gnome && return 0 ;;
+        4[6-9].* | 50.*) { fcitx5_names_apps_on_gnome || has_gnome_portal; } && return 0 ;;
         *) return 0 ;;
     esac
     enable_shell_extension "$uuid" || rc=$?

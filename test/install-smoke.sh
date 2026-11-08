@@ -484,6 +484,11 @@ with_portal() {
     : >"/usr/local/share/dbus-1/services/$portal_service"
 }
 without_portal() { rm -f "/usr/local/share/dbus-1/services/$portal_service"; }
+# Asks install.sh's own lookup, in the user's environment, so it searches the same directories.
+# shellcheck disable=SC2016 # expanded by the inner shell
+installer_sees_portal() {
+    as_user bash -c 'eval "$(sed -n "/^has_gnome_portal() {/,/^}/p" "$1")" && has_gnome_portal' _ "$work/install.sh"
+}
 gnome_shell_is() { printf '#!/bin/sh\necho "GNOME Shell %s"\n' "$1" >"$work/stubs/gnome-shell"; }
 
 check_extensions_turned_back() {
@@ -508,7 +513,7 @@ check_extensions_turned_back() {
 
     # A GNOME that keeps forwarded keys needs the extension for app names only without GNOME's portal,
     # until fcitx5 5.1.22.
-    check "the container has no GNOME portal of its own" test ! -e "/usr/share/dbus-1/services/$portal_service"
+    check "the container has no GNOME portal of its own" refuses installer_sees_portal
     for version in 46.0 49.1 50.4; do
         as_user rm -f "$changes" "$enabled_extensions"
         gnome_shell_is "$version"

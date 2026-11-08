@@ -53,6 +53,8 @@ namespace {
         matcher.call(portal, shell, 9);
         expectTrue("match: a reply to an older call", !matcher.answers(shell, portal, 8, sig));
         expectTrue("match: the reply to the newest call", matcher.answers(shell, portal, 9, sig));
+        matcher.call(portal, "org.gnome.Shell", 11);
+        expectTrue("match: a call to GNOME Shell's well-known name", matcher.answers(shell, portal, 11, sig));
 
         matcher.call(portal, shell, 10);
         matcher.setOwners(":1.300", portal);

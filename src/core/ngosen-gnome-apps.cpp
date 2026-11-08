@@ -37,7 +37,8 @@ namespace ngosen {
     }
 
     void IntrospectReplyMatcher::call(const std::string& sender, const std::string& destination, uint64_t serial) {
-        if (portal_.empty() || sender != portal_ || destination != shell_)
+        // The bus hands a monitor calls to the well-known name too, and the header keeps that name.
+        if (portal_.empty() || sender != portal_ || (destination != shell_ && destination != "org.gnome.Shell"))
             return;
         called_  = true;
         pending_ = serial;

@@ -3264,10 +3264,77 @@ namespace {
         const std::string sen  = ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
         check(sen == "test ", "sen: a doubled key still undoes the tone", sen);
     }
+
+    enum class Reload {
+        None,
+        Guarded,
+        Always
+    };
+
+    struct ReloadRun {
+        std::string text;
+        bool        heldBeforeReload = false;
+        bool        heldAfterEnd     = true;
+        bool        heldAfterReset   = true;
+    };
+
+    // Types before, reloads the settings as a shell does between keys, then types after.
+    ReloadRun typeAcrossReload(ngosen::Mode mode, const std::string& before, Reload reload, const std::string& after) {
+        realMode = mode;
+        realtextLen.store(0);
+        FakeResources resources;
+        resources.mutableOptions().enableMacroInOffMode = true;
+        resources.setMacros({{"vn", "việt nam"}});
+        FakeLoop               loop;
+        auto                   owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true), ngosen::test::AppQuirks{});
+        ngosen::test::FakeApp* app   = owned.get();
+        ngosen::TypingState    state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& text) {
+            for (const char c : text) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+        };
+        ReloadRun run;
+        typeText(before);
+        run.heldBeforeReload = state.holdsWord();
+        if (reload == Reload::Always || (reload == Reload::Guarded && !state.holdsWord()))
+            state.setEngine();
+        typeText(after);
+        loop.pump(300);
+        run.text         = app->text();
+        run.heldAfterEnd = state.holdsWord();
+        state.reset();
+        run.heldAfterReset = state.holdsWord();
+        return run;
+    }
+
+    void testHoldsWordAcrossReload() {
+        const auto sen = typeAcrossReload(ngosen::Mode::Sen, "vie", Reload::Guarded, "etj ");
+        check(sen.heldBeforeReload, "holdsWord: sen word in progress", sen.text);
+        check(!sen.heldAfterEnd, "holdsWord: sen word ended by Space", sen.text);
+        check(sen.text == "việt ", "holdsWord: guarded reload keeps the sen word", sen.text);
+
+        const auto english = typeAcrossReload(ngosen::Mode::Off, "vn", Reload::Guarded, " ");
+        check(english.heldBeforeReload, "holdsWord: English macro abbreviation in progress", english.text);
+        check(!english.heldAfterEnd, "holdsWord: English word ended by Space", english.text);
+        check(english.text == "việt nam ", "holdsWord: guarded reload keeps the macro", english.text);
+
+        const auto open = typeAcrossReload(ngosen::Mode::Sen, "", Reload::None, "vie");
+        check(open.heldAfterEnd && !open.heldAfterReset, "holdsWord: reset() ends the word", open.text);
+
+        // Current behaviour without the guard: the new engine lacks the word, so the next key deletes it.
+        const auto senLost = typeAcrossReload(ngosen::Mode::Sen, "vie", Reload::Always, "etj ");
+        check(senLost.text == "ẹt ", "holdsWord: unguarded reload loses the sen word", senLost.text);
+        const auto englishLost = typeAcrossReload(ngosen::Mode::Off, "vn", Reload::Always, " ");
+        check(englishLost.text == " ", "holdsWord: unguarded reload loses the macro", englishLost.text);
+    }
 }
 
 int main() {
     testEnglishWordKeepsDoubledLetter();
+    testHoldsWordAcrossReload();
     testQuirks();
     testPreeditTelex();
     testPreeditEnterAfterCommit();

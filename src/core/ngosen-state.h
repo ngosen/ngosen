@@ -138,6 +138,10 @@ namespace ngosen {
          * @return True if no history.
          */
         bool isEmptyHistory() const;
+        // A word typed in Sen or English mode is still open, so setEngine() now would lose it.
+        bool holdsWord() const {
+            return !oldPreBuffer_.empty();
+        }
         friend class fcitx::NgoSenEngine;
 
         /**

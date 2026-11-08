@@ -481,6 +481,42 @@ namespace {
         check(text == "chào. ", "ibus: a space held during a timed wait still counts for double space", text);
     }
 
+    std::string typedHyphens(const Field& field) {
+        realMode = ngosen::Mode::Preedit;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().doubleHyphenToEmDash = true;
+        auto                owned                       = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{});
+        auto*               app                         = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        state.activate(ngosen::Mode::Preedit, false);
+        for (const char c : std::string("a-")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(30);
+        }
+        for (const char c : std::string("-b ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(30);
+        }
+        loop.pump(300);
+        return app->text();
+    }
+
+    void testDoubleHyphen() {
+        std::string text = typedHyphens(makeField("wayland", true));
+        check(text == "a—b ", "double hyphen: two hyphens give an em dash", text);
+        Field terminal    = makeField("wayland", true);
+        terminal.terminal = true;
+        text              = typedHyphens(terminal);
+        check(text == "a--b ", "double hyphen: a terminal keeps --, as in git push --force", text);
+        Field url = makeField("wayland", true);
+        url.url   = true;
+        text      = typedHyphens(url);
+        check(text == "a--b ", "double hyphen: an address bar keeps --", text);
+    }
+
     void testHeldSpaceReopensWord() {
         FakeResources     resources;
         const std::string text = typeWithHeldKey(resources, "vieetj \bs", 6);
@@ -3290,6 +3326,7 @@ int main() {
     testEnterDuringTimedWaitFollowsCommit();
     testBackspaceDuringTimedWaitFollowsCommit();
     testHeldSpaceCountsForDoubleSpace();
+    testDoubleHyphen();
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();

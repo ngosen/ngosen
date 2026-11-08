@@ -14,6 +14,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Gõ từ không phải tiếng Việt liền chữ số khi bật gõ tắt không còn bị thêm dấu (gõ "Sose2026" thành "Sóe2026"); trả lại đúng phím đã gõ, từ tiếng Việt liền số như "tôi2" vẫn giữ nguyên (#614).
 - Đổi dấu sau phụ âm cuối không còn làm chữ trả về phím đã gõ: Telex "dduoxwcj" hay VNI "d9uo37c5" nay thành "được" khi gõ dấu cách, dấu câu hoặc Enter, ở cả Gõ Sen lẫn Preedit (lúc đang gõ vẫn hiện nguyên phím); từ tiếng Anh như "parts", "texts" vẫn giữ nguyên, muốn giữ phím đã gõ thì nhấp phím chốt chữ (mặc định Ctrl) trước dấu cách (#622).
+- Bật "-- thành —" mà gõ trong terminal hay ô địa chỉ thì "--" vẫn giữ nguyên, nên "git push --force" không còn thành "git push —force" (#624).
 
 ## [1.8.2-1] — 07/11/2026
 

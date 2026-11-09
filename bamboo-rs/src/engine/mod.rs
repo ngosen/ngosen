@@ -510,11 +510,16 @@ impl BambooEngine {
         (self.get_preedit_string(), false)
     }
 
-    fn composing_key_text(&mut self, mut key: char, state: u32, old_text: &str) -> (String, bool) {
+    /// A key that ends the syllable, such as a digit, keeps a non-Vietnamese syllable as typed.
+    fn restore_syllable_before(&mut self, key: char) {
         if !self.preeditor.can_process_key(key) && self.should_fallback_to_english(true) {
             self.preeditor
                 .restore_last_word_as(LastWordForm::RawKeystrokes);
         }
+    }
+
+    fn composing_key_text(&mut self, mut key: char, state: u32, old_text: &str) -> (String, bool) {
+        self.restore_syllable_before(key);
         if state & LOCK_MASK != 0 {
             key = self.to_upper(key);
         }
@@ -631,11 +636,12 @@ impl BambooEngine {
         keys.pop();
         self.preeditor.reset();
         for key in keys.chars() {
-            let mode = if shown_as_typed {
-                Mode::English
-            } else {
-                self.get_bamboo_input_mode()
-            };
+            if shown_as_typed {
+                self.preeditor.process_key(key, Mode::English);
+                continue;
+            }
+            self.restore_syllable_before(key);
+            let mode = self.get_bamboo_input_mode();
             self.preeditor.process_key(key, mode);
         }
     }

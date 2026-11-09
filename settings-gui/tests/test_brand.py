@@ -80,7 +80,8 @@ class SidebarMarksTest(unittest.TestCase):
         # Window managers draw the app icon in the title bar right above the wordmark.
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
         column = window.findChild(QLabel, "Wordmark").parentWidget()
-        logos = [label for label in column.findChildren(QLabel) if not label.pixmap().isNull()]
+        # Qt5 gives None for a label without a picture, Qt6 an empty pixmap.
+        logos = [x for x in column.findChildren(QLabel) if x.pixmap() and not x.pixmap().isNull()]
         self.assertEqual(logos, [])
 
 

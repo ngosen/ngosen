@@ -271,8 +271,24 @@ impl BambooEngine {
         self.get_processed_string(OutputOptions::RAW | OutputOptions::FULL_TEXT)
     }
 
+    /// A digit shows the word before it is not Vietnamese as well as a space does.
+    fn word_before_digits_is_english(&self) -> bool {
+        if !self.auto_non_vn_restore
+            || !self
+                .get_processed_string(OutputOptions::LOWER_CASE)
+                .is_empty()
+            || (self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some())
+        {
+            return false;
+        }
+        self.syllable_before_digits().is_some_and(|syllable| {
+            has_any_vietnamese_rune(&syllable.get_processed_str(OutputOptions::LOWER_CASE))
+                && self.syllable_must_fallback(&syllable)
+        })
+    }
+
     pub(crate) fn get_preedit_string(&self) -> String {
-        if self.should_fallback_to_english(true) {
+        if self.should_fallback_to_english(true) || self.word_before_digits_is_english() {
             return self.raw_text();
         }
         self.get_processed_string(OutputOptions::PUNCTUATION_MODE | OutputOptions::FULL_TEXT)
@@ -607,10 +623,16 @@ impl BambooEngine {
             return;
         }
         let mut keys = self.raw_text();
+        // The app deletes one character of what it shows, so a word shown as typed stays so.
+        let shown_as_typed = self.get_preedit_string() == keys;
         keys.pop();
         self.preeditor.reset();
         for key in keys.chars() {
-            let mode = self.get_bamboo_input_mode();
+            let mode = if shown_as_typed {
+                Mode::English
+            } else {
+                self.get_bamboo_input_mode()
+            };
             self.preeditor.process_key(key, mode);
         }
     }

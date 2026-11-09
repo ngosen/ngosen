@@ -729,3 +729,77 @@ fn test_english_number_w2u_in_macro_mode() {
     type_keys(&mut e, "new1");
     assert_eq!(e.preedit_text, "new1");
 }
+
+#[test]
+fn test_word_before_digits_shown_as_typed() {
+    let mut e = engine_with_default_settings("Telex");
+    let mut shown = Vec::new();
+    for key in "Sose2026".chars() {
+        e.process_key_event(key as u32, 0);
+        shown.push(e.preedit_text.clone());
+    }
+    assert_eq!(
+        shown,
+        [
+            "S", "So", "Só", "Soé", "Sose2", "Sose20", "Sose202", "Sose2026"
+        ]
+        .map(String::from)
+    );
+}
+
+#[test]
+fn test_vietnamese_word_before_digits_keeps_its_marks() {
+    for (keys, want) in [
+        ("tooi2", "tôi2"),
+        ("as2", "á2"),
+        ("off2", "of2"),
+        ("2026", "2026"),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        type_keys(&mut e, keys);
+        assert_eq!(e.preedit_text, want, "{keys}");
+    }
+}
+
+#[test]
+fn test_digit_restore_follows_the_space_rules() {
+    let mut e = engine_with_default_settings("Telex");
+    e.auto_non_vn_restore = false;
+    type_keys(&mut e, "Sose2");
+    assert_eq!(e.preedit_text, "Soé2", "restore off");
+
+    let mut e = engine_with_default_settings("Telex");
+    e.macro_table = macro_table(&[("soé2", "x")]);
+    type_keys(&mut e, "Sose2");
+    assert_eq!(e.preedit_text, "Soé2", "macro key");
+
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "Sose2a");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "Soé2a ", "letters after the digits");
+}
+
+#[test]
+fn test_backspace_keeps_word_shown_as_typed() {
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "Sose2");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "Sose");
+    e.process_key_event('2' as u32, 0);
+    assert_eq!(e.preedit_text, "Sose2");
+
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "ban2");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    type_keys(&mut e, "s");
+    assert_eq!(e.preedit_text, "bán", "a plain word still takes a tone");
+}
+
+#[test]
+fn test_reopened_word_before_digits_backspaces_as_shown() {
+    let mut e = engine_with_default_settings("Telex");
+    e.rebuild_from_text("Sose2026");
+    assert_eq!(e.preedit_text, "Sose2026");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "Sose202");
+}

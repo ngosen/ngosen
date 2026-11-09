@@ -793,6 +793,30 @@ fn test_backspace_keeps_word_shown_as_typed() {
     e.process_key_event(KEY_BACKSPACE, 0);
     type_keys(&mut e, "s");
     assert_eq!(e.preedit_text, "bán", "a plain word still takes a tone");
+
+    // The app keeps the marks it shows, so they stay until the next key.
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "Sose2a");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "Soé2");
+    e.process_key_event('6' as u32, 0);
+    assert_eq!(e.preedit_text, "Sose26");
+}
+
+#[test]
+fn test_word_before_digits_shown_as_space_commits() {
+    for keys in ["tooi2Sose2", "Sose2tooi2", "Sose2a", "dd2"] {
+        let mut shown = engine_with_default_settings("Telex");
+        type_keys(&mut shown, keys);
+        let mut spaced = engine_with_default_settings("Telex");
+        type_keys(&mut spaced, keys);
+        spaced.process_key_event(KEY_SPACE, 0);
+        assert_eq!(
+            format!("{} ", shown.preedit_text),
+            spaced.commit_text,
+            "{keys}"
+        );
+    }
 }
 
 #[test]

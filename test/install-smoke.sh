@@ -37,6 +37,10 @@ user=tester
 home=/home/$user
 installer_lang=
 work=/srv/install-smoke
+repo=$work/repo
+apt_list=/etc/apt/sources.list.d/ngosen.list
+apt_keyring=/usr/share/keyrings/ngosen.gpg
+repo_record=/var/lib/ngosen/installer-repo
 failures=0
 bus=
 stub_path=
@@ -84,7 +88,7 @@ prepare_system() {
         fi
         apt-get update -q
         DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends \
-            sudo curl ca-certificates procps dbus dbus-bin
+            sudo curl ca-certificates procps dbus dbus-bin gnupg apt-utils
         # apt translates what it prints, and most users run a Vietnamese desktop.
         if [ "$no_recommends" -eq 1 ]; then
             DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends locales
@@ -103,7 +107,23 @@ prepare_system() {
     mkdir -p "$work"
     cp -r "$release_dir" "$work/release"
     cp "$(dirname "$0")/../install.sh" "$work/install.sh"
+    command -v apt-get >/dev/null 2>&1 && build_test_repo
     chmod -R a+rX "$work"
+}
+
+# The release's packages as an APT repository signed with a throwaway key, which the copied
+# installer pins in place of the real one.
+build_test_repo() {
+    local key
+    export GNUPGHOME=$work/gnupg
+    mkdir -p "$GNUPGHOME"
+    chmod 700 "$GNUPGHOME"
+    gpg --batch --quiet --passphrase '' --quick-gen-key 'Ngo Sen test' ed25519 sign never
+    "$(dirname "$0")/../packaging/build-apt-repo.sh" "$release_dir" "$repo/apt" >/dev/null
+    unset GNUPGHOME
+    key=$(sha256sum "$repo/apt/ngosen.gpg" | cut -d' ' -f1)
+    sed -i "s/^REPO_KEY_SHA256=.*/REPO_KEY_SHA256=$key/" "$work/install.sh"
+    grep -qx "REPO_KEY_SHA256=$key" "$work/install.sh"
 }
 
 as_user() {
@@ -115,7 +135,7 @@ as_user() {
         hyprland) desktop=Hyprland type=wayland ;;
     esac
     sudo -u "$user" -H env XDG_SESSION_TYPE="$type" XDG_CURRENT_DESKTOP="$desktop" "${compositor_env[@]}" \
-        NGOSEN_RELEASE_URL="file://$work/release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} \
+        NGOSEN_RELEASE_URL="file://$work/release" NGOSEN_REPO_URL="file://$repo" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} \
         ${stub_path:+PATH="$stub_path"} "$@"
 }
 
@@ -171,8 +191,13 @@ check_packages() {
         check "im-config is installed" is_installed im-config
         check "whiptail is installed" is_installed whiptail
         check "fcitx5-frontend-gtk3 is installed" is_installed fcitx5-frontend-gtk3
+        check "the Ngó Sen repository is added" test -f "$apt_list" -a -f "$apt_keyring" -a -f "$repo_record"
+        check "apt takes fcitx5-ngosen from it" apt_uses_test_repo
     fi
 }
+
+apt_uses_test_repo() { LC_ALL=C apt-cache policy fcitx5-ngosen | grep -qF "file:$repo/apt"; }
+no_repo_files() { [ ! -e "$apt_list" ] && [ ! -e "$apt_keyring" ] && [ ! -e "$repo_record" ]; }
 
 check_session_files() {
     if [ "$session" = x11 ]; then
@@ -198,6 +223,9 @@ check_session_files() {
 
 check_uninstalled_state() {
     check "fcitx5-ngosen is removed" is_removed fcitx5-ngosen
+    if command -v apt-get >/dev/null 2>&1; then
+        check "the repository it added is removed" no_repo_files
+    fi
     if [ "$session" = x11 ]; then
         check ".xinputrc no longer runs fcitx5" lacks_line "$home/.xinputrc" 'run_im fcitx5'
         check ".xinputrc is removed" test ! -e "$home/.xinputrc"
@@ -870,6 +898,85 @@ check_restart_through_kwin() {
     bus=
 }
 
+remove_repo_files() {
+    rm -f "$apt_list" "$apt_keyring" "$repo_record" /etc/apt/sources.list.d/user.sources /etc/apt/keyrings/user.gpg
+}
+apt_updates() { apt-get update -qq --error-on=any >/dev/null 2>&1; }
+says() { grep -qF -- "$1" "$install_log"; }
+
+fake_ibus_package() {
+    local dir=$work/ibus-ngosen
+    mkdir -p "$dir/DEBIAN"
+    printf 'Package: ibus-ngosen\nVersion: 0.0.1\nArchitecture: all\nMaintainer: test <test@invalid>\nDescription: test\n' \
+        >"$dir/DEBIAN/control"
+    dpkg-deb --build "$dir" "$work/ibus-ngosen.deb" >/dev/null
+    dpkg -i "$work/ibus-ngosen.deb" >/dev/null
+}
+
+# What the installer does with the APT sources it finds, and how it takes back its own.
+check_repository_cases() {
+    local suite saved=$work/ngosen.list.user
+
+    remove_repo_files
+    check "precondition: an install adds the repository" install_logged
+    suite=$(awk '$1 == "deb" { print $4 }' "$apt_list")
+    remove_repo_files
+
+    mkdir -p /etc/apt/keyrings
+    cp "$repo/apt/ngosen.gpg" /etc/apt/keyrings/user.gpg
+    printf 'Types: deb\nURIs: file://%s/apt\nSuites: %s\nComponents: main\nSigned-By: /etc/apt/keyrings/user.gpg\n' \
+        "$repo" "$suite" >/etc/apt/sources.list.d/user.sources
+    check "an install with the user's own .sources succeeds" install_logged
+    check "it adds no second source for the repository" test ! -e "$apt_list" -a ! -e "$apt_keyring"
+    check "apt update still works" apt_updates
+    remove_repo_files
+
+    printf '# deb [signed-by=%s] file://%s/apt %s main\n' "$apt_keyring" "$repo" "$suite" >"$apt_list"
+    cp "$apt_list" "$saved"
+    check "an install over a disabled ngosen.list succeeds" install_logged
+    check "it leaves that ngosen.list as it was" cmp -s "$apt_list" "$saved"
+    check "it writes no keyring next to it" test ! -e "$apt_keyring"
+    remove_repo_files
+
+    mv "$repo/apt/dists" "$repo/apt/dists.away"
+    check "an install whose repository does not update succeeds" install_logged
+    check "it leaves no repository files" no_repo_files
+    mv "$repo/apt/dists.away" "$repo/apt/dists"
+    remove_repo_files
+
+    cp "$repo/apt/ngosen.gpg" "$work/ngosen.gpg.good"
+    printf 'not the key\n' >"$repo/apt/ngosen.gpg"
+    check "an install with a wrong key succeeds" install_logged
+    check "it says the key is wrong" says "không đúng"
+    check "it leaves no repository files for the wrong key" no_repo_files
+    cp "$work/ngosen.gpg.good" "$repo/apt/ngosen.gpg"
+    remove_repo_files
+
+    check "an install with --no-repo succeeds" installer --yes --no-repo
+    check "--no-repo adds no repository" no_repo_files
+    remove_repo_files
+
+    # A test build's next fixes would be replaced by the release from the repository.
+    mkdir -p "$work/releases/download"
+    ln -sfn "$work/release" "$work/releases/download/next-build"
+    check "an install of a test build succeeds" installs_from "$work/releases/download/next-build"
+    check "a test build adds no repository" no_repo_files
+    remove_repo_files
+
+    check "an install adds the repository again" install_logged
+    echo '# edited' >>"$apt_list"
+    check "uninstall after the user edited ngosen.list succeeds" uninstall_logged
+    check "it keeps the edited ngosen.list" test -e "$apt_list"
+    remove_repo_files
+
+    check "an install adds the repository for ibus-ngosen too" install_logged
+    fake_ibus_package
+    check "uninstall with ibus-ngosen installed succeeds" uninstall_logged
+    check "it keeps the repository for ibus-ngosen" test -e "$apt_list" -a -e "$apt_keyring"
+    dpkg -r ibus-ngosen >/dev/null
+    remove_repo_files
+}
+
 installs_from() {
     as_user env NGOSEN_RELEASE_URL="file://$1" bash "$work/install.sh" --yes >"$install_log" 2>&1
 }
@@ -916,7 +1023,7 @@ main() {
     check_packages
     [ "$failures" -eq 0 ] || finish
     check "it refuses the removed --ibus option" rejects_ibus_option
-    check "the installer no longer names the IBus package" refuses grep -qE -- 'ibus-ngosen|--ibus' "$work/install.sh"
+    check "the installer no longer offers --ibus" refuses grep -qE -- '--ibus' "$work/install.sh"
     check "the package leaves the next steps to install.sh" refuses grep -qF -- "--- Cấu hình Ngó Sen ---" "$install_log"
     check_session_files
     if [ "$session" = gnome ]; then
@@ -977,6 +1084,11 @@ main() {
         check_edited_environment_kept
         echo "== extensions on GNOME 50.1"
         check_extensions_turned_back
+    fi
+
+    if command -v apt-get >/dev/null 2>&1; then
+        echo "== Ngó Sen APT repository"
+        check_repository_cases
     fi
 
     echo "== which releases have packages"

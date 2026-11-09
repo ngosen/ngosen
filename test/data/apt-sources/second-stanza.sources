@@ -1,0 +1,11 @@
+Types: deb
+URIs: http://archive.ubuntu.com/ubuntu
+Suites: noble
+Components: main
+
+# Ngó Sen
+Types: deb deb-src
+URIs:
+ https://ngosen.github.io/ngosen/apt
+Suites: noble
+Components: main

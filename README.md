@@ -96,14 +96,18 @@ Các bước thiết lập chỉ áp dụng cho tài khoản chạy lệnh. Tài
 
 ### Cập nhật bằng trình quản lý gói
 
-Từ version 1.5.3, mỗi release đều có trên repo có chữ ký để nhận version mới qua update của hệ thống:
+Từ version 1.5.3, mỗi release đều có trên repo có chữ ký để nhận version mới khi cập nhật hệ thống:
 `dnf upgrade`, `apt upgrade`, `pacman -Syu` hoặc `zypper up`.
 
-Chỉ cần thêm repo một lần. Nếu đã cài Ngó Sen bằng lệnh một dòng, chỉ cần thêm repo; lệnh cài gói trong
-mỗi khối dưới đây dành cho máy chưa có Ngó Sen, cài xong làm theo mục “Thiết lập sau khi cài package”.
+Trên Debian, Ubuntu và các distro dựa trên chúng, lệnh cài một dòng nay tự thêm repo APT sau khi cài.
+Nếu đã cài bằng lệnh này trước đây, chạy lại để thêm repo. Fedora, Arch và openSUSE vẫn thêm repo theo
+hướng dẫn dưới đây.
 
-Các repo dùng chung một key có fingerprint `6D4A 2075 F985 3BE8 F6B6 FE7E 7550 1858 158B 36CD`.
-Đối chiếu fingerprint này với thông tin trình quản lý gói hiển thị.
+Chỉ cần thêm repo một lần. Nếu đã cài Ngó Sen, chỉ cần thêm repo; lệnh cài gói trong mỗi khối dưới đây
+dành cho máy chưa có Ngó Sen, cài xong làm theo mục “Thiết lập sau khi cài package”.
+
+Repo APT, pacman và zypper dùng chung key có fingerprint `6D4A 2075 F985 3BE8 F6B6 FE7E 7550 1858 158B 36CD`.
+Đối chiếu với fingerprint trình quản lý gói hiển thị. COPR trên Fedora dùng key của COPR.
 
 Fedora dùng COPR (x86_64 và aarch64):
 

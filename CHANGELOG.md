@@ -22,7 +22,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   biến thành chữ, như `dd` thành `đ`. Trong terminal, dù tắt Vim mode, Ngó Sen vẫn nhận ra khi gõ `vim`
   hay `nvim` ở shell rồi nhấn Enter, kể cả khi thêm `sudo`, để từ đầu tiên gõ trong file cũng có dấu.
   Thoát Vim bằng `:q`, `:wq`, `ZZ` thì gõ lại bình thường. Chưa xử lý phím Esc được đổi thành chữ như `jk`.
-  Nếu mở Vim từ lịch sử shell bằng mũi tên lên, qua alias hoặc `git commit`, hãy bật Vim mode cho terminal (#302).
+  Nếu mở Vim từ lịch sử shell bằng mũi tên lên, qua alias hoặc `git commit`, hãy bật Vim mode cho terminal (#302, #587).
 
 ## [1.9.0-1] — 08/11/2026
 

@@ -12,6 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Trang Kiểm tra máy hiện version Ngó Sen đang chạy và trạng thái bật repo: đã bật thì nhận version mới khi cập nhật hệ thống; chưa bật thì báo không nhận version mới, lỗi có thể đã được sửa và có link “Cách nhận version mới”. Văn bản báo lỗi cũng ghi trạng thái repo (#657).
 - Tự ngừng gõ tiếng Việt khi terminal hỏi password ẩn chữ: giữ nguyên phím, không ghi nhật ký gõ; xong tự bật lại, không cần cài đặt. Riêng sudo trên Linux Mint hiện dấu * chưa nhận ra, cần dùng phím chuyển Anh/Việt để chuyển sang tiếng Anh (#106, #645)
 - Thêm Vim mode cho từng app trong menu `, dùng phím tắt `v`, hiện `[v] Vim mode: bật` / `[v] Vim mode: tắt`.
   Ngó Sen nhớ bật/tắt riêng cho từng app; có thể ẩn mục này hoặc đổi phím ở trang Phím tắt, nhóm Đổi chế độ.

@@ -65,6 +65,8 @@ class RpmRepoTest(unittest.TestCase):
     def test_another_repository_is_not_ours(self):
         text = read(FILES, "ngosen.repo")
         self.assertFalse(update_repo.rpm_repo_enables(text, update_repo.COPR_URL))
+        sibling = read(FILES, "copr.repo").replace("nguyenphi/ngosen/", "nguyenphi/ngosen-next/")
+        self.assertFalse(update_repo.rpm_repo_enables(sibling, update_repo.COPR_URL))
 
 
 class PacmanTest(unittest.TestCase):
@@ -72,6 +74,10 @@ class PacmanTest(unittest.TestCase):
         text = read(FILES, "pacman.conf")
         self.assertNotIn("ngosen", update_repo.pacman_sections(text)[0])
         self.assertIn("ngosen", update_repo.pacman_sections(text + PACMAN_README)[0])
+
+    def test_comment_after_the_section_still_counts(self):
+        text = read(FILES, "pacman.conf") + PACMAN_README.replace("[ngosen]", "[ngosen] # by hand")
+        self.assertIn("ngosen", update_repo.pacman_sections(text)[0])
 
     def test_commented_section_does_not_count(self):
         text = read(FILES, "pacman.conf") + PACMAN_README.replace("[ngosen]", "#[ngosen]")

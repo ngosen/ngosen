@@ -13,3 +13,6 @@ source-only.sources no
 second-stanza.sources yes
 commented.sources no
 disabled-false.sources no
+comment-in-uris.sources yes
+no-colon-line.sources no
+double-slash.list no

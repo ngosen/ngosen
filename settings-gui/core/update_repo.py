@@ -27,7 +27,14 @@ _RPM_DISABLED = ("0", "false", "no", "off")
 
 
 def _same_uri(uri, want):
-    return uri.rstrip("/") == want.rstrip("/")
+    # install.sh drops one trailing slash, not all of them.
+    return uri.removesuffix("/") == want.removesuffix("/")
+
+
+def _under(baseurl, url):
+    """baseurl is url or a path below it, not a sibling such as ngosen-next."""
+    start = baseurl.find(url)
+    return start >= 0 and baseurl[start + len(url) : start + len(url) + 1] in ("", "/")
 
 
 def apt_list_enables(text, want=APT_URL):
@@ -57,8 +64,10 @@ def _deb822_stanza_enables(fields, want):
 def apt_sources_enables(text, want=APT_URL):
     """deb822 format (.sources), stanza by stanza."""
     fields, key = {}, ""
-    # A commented-out field reads as a key such as "# uris", which nothing looks up.
     for line in text.splitlines() + [""]:
+        # A comment between a field and its continuation leaves the field open.
+        if line.startswith("#"):
+            continue
         if not line.strip():
             if _deb822_stanza_enables(fields, want):
                 return True
@@ -66,9 +75,10 @@ def apt_sources_enables(text, want=APT_URL):
         elif line[0] in " \t":
             if key:
                 fields[key] += " " + line
-        elif ":" in line:
+        else:
+            # A line without a colon has no key, so its continuation goes nowhere.
             key, _, value = line.partition(":")
-            key = key.lower()
+            key = key.lower() if ":" in line else ""
             fields[key] = value
     return False
 
@@ -83,7 +93,7 @@ def rpm_repo_enables(text, url):
     for section in parser.sections():
         repo = parser[section]
         if (
-            url in repo.get("baseurl", "")
+            _under(repo.get("baseurl", ""), url)
             and repo.get("enabled", "1").strip().lower() not in _RPM_DISABLED
         ):
             return True
@@ -94,10 +104,11 @@ def pacman_sections(text):
     """Section names that are not commented out, and the files included at the top level."""
     sections, includes = [], []
     for line in text.splitlines():
-        line = line.strip()
+        # pacman drops everything from the first #, so "[ngosen] # added by hand" is a section.
+        line = line.partition("#")[0].strip()
         if line.startswith("[") and line.endswith("]"):
             sections.append(line[1:-1].strip())
-        elif "=" in line and not line.startswith("#"):
+        elif "=" in line:
             key, _, value = line.partition("=")
             if key.strip() == "Include":
                 includes.append(value.strip())

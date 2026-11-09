@@ -112,10 +112,6 @@ namespace {
 } // namespace
 
 int main() {
-    // Own a private socket name. Without this the listener below binds the same
-    // abstract name a running fcitx5-lotus-server already holds, so the test
-    // only passes on machines where the product is not running.
-
     configureTestPaths("fcitx5-ngosen-smooth-buffered-key-replay");
     TestInstance        testInstance;
     fcitx::NgoSenEngine engine(&testInstance.instance);

@@ -14,6 +14,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Lệnh cài lần đầu trên GNOME, hoặc Xfce, Cinnamon, MATE dùng X11 trên Debian, Ubuntu, Linux Mint, nay hỏi chọn bản fcitx5 đầy đủ tính năng (bấm Enter để chọn) hay bản IBus dùng IBus có sẵn, đơn giản hơn nhưng ít tính năng hơn một chút; chỉ hỏi khi có gói cho bản IBus. Dùng `--ibus` hoặc `--fcitx5` để chọn mà không cần hỏi; chạy lại để cập nhật thì giữ nguyên bản đang có. Khi đổi bản, gói của bản cũ được gỡ trong cùng lần cài, và mọi thay đổi được liệt kê trước một câu hỏi "Tiếp tục?" duy nhất (#653).
 
+### Thay đổi
+
+- Menu chế độ mở bằng phím ` không còn dòng "Chế độ gõ mặc định"; cửa sổ cài đặt cũng bỏ ô "Hiển thị chế độ gõ mặc định" và phím tắt của nó. Muốn app trở lại theo cài đặt chung và phím chuyển Anh/Việt, chọn lại chế độ vốn có của app (thường là Gõ Sen, vài app như deepin-editor là Gạch chân), kể cả khi dùng phím đổi vòng chế độ; chọn Tắt vẫn được nhớ riêng cho app đó (#659).
+
 ### Sửa
 
 - Trên GNOME tắt extension, đóng một cửa sổ ngay trong màn tổng quan không còn làm ô tìm kiếm mang chế độ gõ và cài đặt riêng của app phía sau (#644).

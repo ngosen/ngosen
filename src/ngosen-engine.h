@@ -480,7 +480,8 @@ namespace fcitx {
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
         // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.
-        void pickMenuMode(InputContext* ic, NgoSenMode mode, bool isDefault);
+        void pickMenuMode(InputContext* ic, NgoSenMode mode);
+        void keepAppMode(const std::string& appName, NgoSenMode mode);
         void openModeMenu(InputContext* ic);
         // Focus changes and timers can clear the panel, so the menu is open only while ic's panel still shows it.
         bool isModeMenuOpen(InputContext* ic) const;

@@ -235,7 +235,8 @@ int main() {
     keys.focus(*news);
     check(realMode.load() == ngosen::Mode::Off, "a new app follows the last switch to English", modeName(realMode.load()));
 
-    // Picking from the menu forgets the app's switch, so the pick holds and Default follows the last switch.
+    // Picking from the menu forgets the app's switch, so the pick holds, and picking kate's usual Sen again
+    // makes it follow the last switch.
     keys.focus(*kate);
     keys.ctrlShift(*kate);
     keys.tap(*kate, "grave");
@@ -246,11 +247,11 @@ int main() {
     keys.ctrlShift(*kate);
     keys.tap(*kate, "grave");
     check(menuOpen(*kate), "` opens the menu in kate again", "no menu");
-    keys.tap(*kate, "r");
+    keys.tap(*kate, "1");
     keys.focus(*chat);
     keys.ctrlShift(*chat);
     keys.focus(*kate);
-    check(realMode.load() == ngosen::Mode::Off, "Default makes kate follow the last switch", modeName(realMode.load()));
+    check(realMode.load() == ngosen::Mode::Off, "Sen picked again makes kate follow the last switch", modeName(realMode.load()));
 
     // "firefox.desktop" falls back to firefox's switch, but one of its own wins.
     auto firefox        = std::make_unique<TestInputContext>(&testInstance.instance, "firefox");

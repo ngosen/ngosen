@@ -1748,6 +1748,25 @@ msgid "Each step says what to do."
 msgstr "Mỗi bước ghi rõ việc cần làm."
 
 #: settings-gui/core/system_check.py
+msgid ""
+"Ngó Sen {}. This machine has the Ngó Sen repository on: new versions come with "
+"system updates."
+msgstr ""
+"Ngó Sen {}. Máy đang bật repo Ngó Sen: version mới tới khi cập nhật hệ thống."
+
+#: settings-gui/core/system_check.py
+msgid ""
+"Ngó Sen {}. This machine does not have the Ngó Sen repository, so it gets no new "
+"versions; the problem you hit may already be fixed."
+msgstr ""
+"Ngó Sen {}. Máy chưa bật repo Ngó Sen nên không nhận version mới; lỗi bạn gặp có "
+"thể đã sửa."
+
+#: settings-gui/ui/pages/check.py settings-gui/ui_gtk/check_page.py
+msgid "How to get new versions"
+msgstr "Cách nhận version mới"
+
+#: settings-gui/core/system_check.py
 msgid "Start fcitx5"
 msgstr "Chạy fcitx5"
 

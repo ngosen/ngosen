@@ -43,6 +43,7 @@ if CAN_RUN:
         session_setup,
         system_check,
         typing_log,
+        update_repo,
         whats_new_content,
     )
 
@@ -1106,6 +1107,31 @@ class GtkCheckPageTest(unittest.TestCase):
         with mock.patch.object(check_page, "open_uri") as open_uri:
             self.check.report_btn.emit("clicked")
         self.assertIn("1.4.2", unquote(open_uri.call_args[0][1]))
+
+    def show_repo(self, state):
+        with mock.patch.object(update_repo, "state", return_value=state):
+            self.check.run()
+        return self.check.version.get_text()
+
+    def test_repository_line_says_new_versions_come_with_updates(self):
+        self.assertIn("repository on", self.show_repo(update_repo.ON))
+        self.assertFalse(self.check.version_link.get_visible())
+
+    def test_missing_repository_links_how_to_get_new_versions(self):
+        from core.brand import UPDATE_GUIDE_URL
+
+        before = self.counts[-1]
+        self.assertIn("does not have the Ngó Sen repository", self.show_repo(update_repo.OFF))
+        self.assertEqual(self.counts[-1], before)
+        self.assertTrue(self.check.version_link.get_visible())
+        with mock.patch.object(check_page, "open_uri") as open_uri:
+            self.check.version_link.emit("activate-link", UPDATE_GUIDE_URL)
+        self.assertEqual(open_uri.call_args[0][1], UPDATE_GUIDE_URL)
+        self.assertIn(UPDATE_GUIDE_URL, self.check.version_link.get_label())
+
+    def test_unknown_repository_shows_only_the_version(self):
+        self.assertEqual(self.show_repo(update_repo.NONE), "Ngó Sen 1.4.2")
+        self.assertFalse(self.check.version_link.get_visible())
 
     def test_user_answers_when_the_app_hides_its_text(self):
         test = typing_log.AppTest(path="log", program="edge", frontend="xim")

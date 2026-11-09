@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlparse
 # support puts the settings window on sys.path, so it has to come first.
 # isort: off
 from support import FakeDBusHandler, app  # noqa: F401
-from core import session_setup, system_check
+from core import session_setup, system_check, update_repo
 from core.system_check import FAIL, OK, WARN, Facts
 
 # isort: on
@@ -944,6 +944,34 @@ class CheckPageTest(unittest.TestCase):
         self.assertEqual(open_url.call_args[0][0].toString(), MESSENGER_URL)
         self.assertIn("Ngó Sen 1.4.2", QGuiApplication.clipboard().text())
         self.assertIn("Paste", self.messages[-1][0])
+
+    def show_repo(self, state):
+        with mock.patch.object(update_repo, "state", return_value=state):
+            self.page.run()
+        return self.page.version.text()
+
+    def test_repository_line_says_new_versions_come_with_updates(self):
+        text = self.show_repo(update_repo.ON)
+        self.assertIn("Ngó Sen 1.4.2. This machine has the Ngó Sen repository on", text)
+        self.assertNotIn("<a ", text)
+        self.assertIn("Updates: ngosen repo on", self.page.report_text())
+
+    def test_missing_repository_links_how_to_get_new_versions(self):
+        from core.brand import UPDATE_GUIDE_URL
+
+        before = self.counts[-1]
+        text = self.show_repo(update_repo.OFF)
+        self.assertIn("does not have the Ngó Sen repository", text)
+        self.assertEqual(self.counts[-1], before)
+        with mock.patch("ui.pages.check.QDesktopServices.openUrl") as open_url:
+            self.page.version.linkActivated.emit(UPDATE_GUIDE_URL)
+        self.assertEqual(open_url.call_args[0][0].toString(), UPDATE_GUIDE_URL)
+        self.assertIn(f'href="{UPDATE_GUIDE_URL}"', text)
+        self.assertIn("Updates: no ngosen repo", self.page.report_text())
+
+    def test_unknown_repository_shows_only_the_version(self):
+        self.assertEqual(self.show_repo(update_repo.NONE), "Ngó Sen 1.4.2")
+        self.assertIn("Updates: unknown", self.page.report_text())
 
 
 class CheckPageWindowTest(unittest.TestCase):

@@ -88,6 +88,13 @@ class CheckPage:
         self.fix_all_btn = _button(" ", self.fix_all, "suggested-action", "pill")
         self.again_btn = _button(_("Check again"), self.run, "pill")
         box.append(_button_row(self.fix_all_btn, self.again_btn, margin_top=6))
+        self.version = _text("dim-label")
+        self.version.set_margin_top(6)
+        box.append(self.version)
+        # Its own label: dim-label fades links too, below readable contrast.
+        self.version_link = _text()
+        self.version_link.connect("activate-link", lambda label, uri: open_uri(label, uri) or True)
+        box.append(self.version_link)
         group.add(box)
         return group
 
@@ -140,7 +147,16 @@ class CheckPage:
         self.found = system_check.steps(self.facts)
         self.findings = [f for f in self.found if f.level != system_check.OK]
         self._show_steps()
+        self._show_version()
         self._show_apps()
+
+    def _show_version(self):
+        text, url = system_check.version_line(self.facts)
+        self.version.set_text(text)
+        self.version_link.set_visible(bool(url))
+        if url:
+            link = GLib.markup_escape_text(_("How to get new versions"))
+            self.version_link.set_markup(f'<a href="{GLib.markup_escape_text(url)}">{link}</a>')
 
     def _show_steps(self):
         for row in self.rows:

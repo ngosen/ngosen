@@ -995,6 +995,28 @@ class CheckPageWindowTest(unittest.TestCase):
         self.assertEqual(window.check_badge.text(), "3")
         self.assertFalse(window.check_badge.isHidden())
 
+    def test_the_badge_leaves_the_entry_name_readable(self):
+        # Desktop fonts are wider than the test platform's; the sidebar must make room either way.
+        font = app.font()
+        self.addCleanup(app.setFont, font)
+        large = app.font()
+        large.setPixelSize(17)
+        app.setFont(large)
+        window = self.window(FakeDBusHandler())
+        window.resize(1000, 700)
+        window.show()
+        app.processEvents()
+        item = window._check_item
+        rect = window.sidebar.visualItemRect(item)
+        from qtpy.QtWidgets import QStyle
+
+        icon = window.sidebar.iconSize().width()
+        icon = icon if icon > 0 else window.style().pixelMetric(QStyle.PM_SmallIconSize)
+        text_end = rect.left() + icon + window.sidebar.fontMetrics().horizontalAdvance(item.text())
+        badge = window.check_badge
+        badge_start = badge.mapTo(window.sidebar.viewport(), badge.rect().topLeft()).x()
+        self.assertGreater(badge_start, text_end)
+
     def test_coming_back_after_a_message_checks_again(self):
         window = self.window(FakeDBusHandler())
         page = window.show_page("check")

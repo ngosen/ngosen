@@ -68,6 +68,25 @@ class RoundTripTest(unittest.TestCase):
         self.assertEqual(target.sub_configs["app_rules"], rules)
         self.assertEqual(target.sub_configs["app_switches"], [])
 
+    def test_a_backup_from_the_ibus_edition_keeps_todays_switches(self):
+        rules = [{"App": "kate", "Mode": "5"}]
+        switches = [{"App": "kate", "Vietnamese": "True"}]
+        target = fake_fcitx.FakeDBusHandler(sub_configs={"app_switches": switches})
+        data = {"rules": rules, "meta": {"version": 1, "edition": "ibus"}}
+        self.assertTrue(backup.apply(target, data))
+        self.assertEqual(target.sub_configs["app_rules"], rules)
+        self.assertEqual(target.sub_configs["app_switches"], switches)
+
+    def test_a_damaged_meta_counts_as_an_older_backup(self):
+        rules = [{"App": "kate", "Mode": "0"}]
+        for meta in ("ibus", ["ibus"], None, {"edition": 5}):
+            with self.subTest(meta):
+                target = fake_fcitx.FakeDBusHandler(
+                    sub_configs={"app_switches": [{"App": "kate", "Vietnamese": "True"}]}
+                )
+                self.assertTrue(backup.apply(target, {"rules": rules, "meta": meta}))
+                self.assertEqual(target.sub_configs["app_switches"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

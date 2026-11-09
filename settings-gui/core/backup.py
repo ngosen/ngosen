@@ -56,13 +56,19 @@ def load(path):
     return backup
 
 
+def _edition(backup):
+    meta = backup.get("meta")
+    return meta.get("edition") if isinstance(meta, dict) else None
+
+
 def apply(dbus, backup):
     """Writes what the backup holds and leaves the rest alone. Returns False if a part failed."""
     ok = True
     if "config" in backup:
         ok = dbus.set_config(backup["config"]) and ok
-    if "rules" in backup and "switches" not in backup:
+    if "rules" in backup and "switches" not in backup and _edition(backup) != "ibus":
         # A backup from before switches existed: today's switches would override its rules.
+        # The IBus edition has no switches of its own, so this machine's stay.
         backup = {**backup, "switches": []}
     for name, (sub_path, root_key) in SUB_CONFIGS.items():
         if name in backup:

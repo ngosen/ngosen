@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.9.1-1] — 10/11/2026
+
+Lệnh cài nay cho chọn bản fcitx5 hay bản IBus (#653), menu chế độ bỏ dòng "Chế độ gõ mặc định" (#659), chữ đầu tin nhắn có dấu trong Messenger trên Chromium không còn sai hoặc mất chữ (#663); gõ từ không phải tiếng Việt liền chữ số và dùng BackSpace lùi vào phần đã gõ nay giữ đúng chữ, không còn làm rối chữ hay mất dấu (#643, #646, #651, #661), Cứu dấu chạy lại trong cửa sổ ẩn danh của Chrome, Chromium (#647), và sửa thêm ô tìm kiếm GNOME, bản IBus và cửa sổ cài đặt (#644, #648, #649, #652, #656).
+Tải ở [ngosen-1.9.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.9.1-1).
+
 ### Thêm
 
 - Lệnh cài lần đầu trên GNOME, hoặc Xfce, Cinnamon, MATE dùng X11 trên Debian, Ubuntu, Linux Mint, nay hỏi chọn bản fcitx5 đầy đủ tính năng (bấm Enter để chọn) hay bản IBus dùng IBus có sẵn, đơn giản hơn nhưng ít tính năng hơn một chút; chỉ hỏi khi có gói cho bản IBus. Dùng `--ibus` hoặc `--fcitx5` để chọn mà không cần hỏi; chạy lại để cập nhật thì giữ nguyên bản đang có. Khi đổi bản, gói của bản cũ được gỡ trong cùng lần cài, và mọi thay đổi được liệt kê trước một câu hỏi "Tiếp tục?" duy nhất (#653).

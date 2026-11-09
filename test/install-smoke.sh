@@ -623,8 +623,25 @@ triggers=$home/.stub-ibus-triggers
 # Read as the gsettings stub reports them, default included.
 switch_keys_are() { [ "$(cat "$triggers" 2>/dev/null || echo "['<Super>space']")" = "$1" ]; }
 fcitx5_masked() { has_line "$fcitx5_mask" 'Hidden=true'; }
+fcitx5_blocked() { has_line "$home/.local/share/dbus-1/services/org.fcitx.Fcitx5.service" 'Exec=/bin/false'; }
 recent_sources=$home/.stub-recent-sources
 ngosen_first() { grep -q "^\[('ibus', 'ngosen')" "$recent_sources"; }
+
+update_logged() { installer --yes >"$install_log" 2>&1; }
+
+# ibus-ngosen 1.1.0 did not declare the conflict, so it can sit next to fcitx5-ngosen.
+install_ibus_without_conflict() {
+    local deb old=$work/old-ibus
+    # shellcheck disable=SC1091
+    deb=$(ls "$work"/ibus-release/ibus-ngosen_*_"$(. /etc/os-release && echo "$VERSION_CODENAME")"_*.deb) || return 1
+    rm -rf "$old"
+    mkdir -p "$old"
+    dpkg-deb -R "$deb" "$old/root" &&
+        sed -i '/^Conflicts:/d' "$old/root/DEBIAN/control" &&
+        rm -rf "$old"/root/usr/share/gnome-shell/extensions/forward-keys@* &&
+        dpkg-deb -b "$old/root" "$old/ibus-ngosen.deb" >/dev/null &&
+        NGOSEN_INSTALLER=1 dpkg -i "$old/ibus-ngosen.deb" >/dev/null
+}
 
 check_ibus_edition() {
     use_gnome_stubs
@@ -645,6 +662,7 @@ check_ibus_edition() {
     check "it removes the fcitx5 environment" test ! -e "$im_env"
     check "the user manager rereads the environment without it" last_reload without-fcitx5
     check "it keeps fcitx5 from starting at login" fcitx5_masked
+    check "it keeps D-Bus from starting fcitx5" fcitx5_blocked
     check "it adds Ngó Sen to the input sources" has_ngosen_source
     check "it logs in on Ngó Sen" ngosen_first
     check "the keyboard is still a recent source" grep -qF "('xkb', 'us')" "$recent_sources"
@@ -652,6 +670,7 @@ check_ibus_edition() {
     check "and keeps it installed" is_installed ibus-ngosen
     check "switching back to the fcitx5 edition succeeds" fcitx5_install_answering y
     check "it lets fcitx5 start at login again" refuses fcitx5_masked
+    check "it lets D-Bus start fcitx5 again" refuses fcitx5_blocked
     check "it removes the IBus edition" is_removed ibus-ngosen
     check "it removes Ngó Sen from the input sources" lacks_ngosen_source
     check "it sets up the fcitx5 edition" test -e "$im_env"
@@ -659,6 +678,14 @@ check_ibus_edition() {
     check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
     check "it removes the IBus edition" is_removed ibus-ngosen
     check "it removes Ngó Sen from the input sources" lacks_ngosen_source
+    if command -v dpkg-deb >/dev/null 2>&1; then
+        check "fcitx5 edition install over that succeeds" installer --yes --fcitx5
+        check "an IBus package without the conflict installs next to it" install_ibus_without_conflict
+        check "an update succeeds" update_logged
+        check "it removes the IBus edition left next to fcitx5" is_removed ibus-ngosen
+        check "it says so" grep -qF "Đã gỡ bản IBus (gói ibus-ngosen)." "$install_log"
+        check "it keeps the fcitx5 edition" is_installed fcitx5-ngosen
+    fi
     rm -f /etc/xdg/autostart/org.fcitx.Fcitx5.desktop
     stub_path=
 }
@@ -680,6 +707,10 @@ check_ibus_x11() {
     check "it takes Ctrl+Space back out" switch_keys_are "['<Super>space']"
     check "im-config picks fcitx5 again" has_line "$xinputrc" 'run_im fcitx5'
     check "IBus install over that succeeds" ibus_install_answering y
+    check "switching to fcitx5 with --no-setup succeeds" installer --yes --fcitx5 --no-setup
+    check "it leaves IBus's engines alone" has_ngosen_engine
+    check "the last edition option wins" installer --yes --fcitx5 --ibus
+    check "and installs the IBus edition" is_installed ibus-ngosen
     check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
     check "it removes the IBus edition" is_removed ibus-ngosen
     check "it removes Ngó Sen from IBus's engines" lacks_ngosen_engine
@@ -701,6 +732,7 @@ check_autostart_mask_removed() {
     printf '[Desktop Entry]\nType=Application\nName=Fcitx 5\nHidden=true\n' | as_user tee "$fcitx5_mask" >/dev/null
     check "install over the hidden autostart succeeds" install_logged
     check "it lets fcitx5 start at login again" refuses fcitx5_masked
+    check "it lets D-Bus start fcitx5 again" refuses fcitx5_blocked
     check "uninstall after that succeeds" uninstall_logged
     stub_path=
 }

@@ -7,7 +7,8 @@
 # cannot run half a script.
 set -euo pipefail
 
-RELEASE_URL=${NGOSEN_RELEASE_URL:-https://github.com/ngosen/ngosen/releases/latest/download}
+FCITX5_RELEASE_URL=${NGOSEN_RELEASE_URL:-https://github.com/ngosen/ngosen/releases/latest/download}
+RELEASE_URL=$FCITX5_RELEASE_URL
 IBUS_RELEASE_URL=${NGOSEN_IBUS_RELEASE_URL:-https://github.com/ngosen/ibus-ngosen/releases/latest/download}
 SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/TU-DUNG.md"
 OSTREE_ISSUE="https://github.com/ngosen/ngosen/issues/492"
@@ -220,6 +221,12 @@ use_ibus_edition() {
     RELEASE_URL=$IBUS_RELEASE_URL
 }
 
+use_fcitx5_edition() {
+    edition=fcitx5
+    package_name=fcitx5-ngosen
+    RELEASE_URL=$FCITX5_RELEASE_URL
+}
+
 # Where install.sh can set up the IBus edition for this account.
 ibus_edition_fits() {
     local edition=ibus
@@ -276,9 +283,11 @@ mention_other_edition() {
 }
 
 replace_other=0
+other_removed=0
 
 # The IBus edition's package conflicts with the fcitx5 one. apt and dnf swap the two in one
 # transaction, so a failed install keeps the old edition; zypper and pacman are not tested for that.
+# ibus-ngosen 1.1.0 does not declare the conflict, so remove_other_package catches what is left.
 check_other_edition() {
     local other=ibus-ngosen name="bản IBus"
     if [ "$edition" = ibus ]; then
@@ -300,6 +309,15 @@ check_other_edition() {
     replace_other=1
     other_package=$other
     other_name=$name
+}
+
+remove_other_package() {
+    [ "$replace_other" -eq 1 ] && is_package_installed "$other_package" || return 0
+    local -a remove
+    set_remove_command "$other_package"
+    as_root "${remove[@]}"
+    say "Đã gỡ $other_name (gói $other_package)."
+    other_removed=1
 }
 
 # Everything the install will change, listed before the one question that lets it go ahead.
@@ -579,11 +597,48 @@ fcitx5_autostart_mask() {
 # Removes the mask the IBus edition's install wrote, if nobody changed it since.
 unmask_fcitx5_autostart() {
     local mask edition=ibus
+    unblock_fcitx5_activation
     mask="$(config_home)/autostart/org.fcitx.Fcitx5.desktop"
     [ -e "$mask" ] && [ "$(cat "$mask")" = "$(fcitx5_autostart_mask)" ] || return 0
     rm -f "$mask"
     forget_change "hidden fcitx5 autostart"
     session_changes+=("fcitx5 tự chạy khi đăng nhập")
+}
+
+fcitx5_activation_block() {
+    printf '[D-BUS Service]\nName=org.fcitx.Fcitx5\nExec=/bin/false\n'
+}
+
+fcitx5_activation_file() {
+    printf '%s' "${XDG_DATA_HOME:-$HOME/.local/share}/dbus-1/services/org.fcitx.Fcitx5.service"
+}
+
+# The bus reads a services directory it did not see at login only when told to.
+reload_session_bus() {
+    command -v gdbus >/dev/null 2>&1 || return 0
+    gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
+        --method org.freedesktop.DBus.ReloadConfig >/dev/null 2>&1 || :
+}
+
+# A message to fcitx5's bus name starts it, from GNOME's extensions among others; it then takes
+# IBus's place and, as it builds a profile without Ngó Sen, writes GNOME's input sources over.
+block_fcitx5_activation() {
+    local file
+    file=$(fcitx5_activation_file)
+    [ -e /usr/share/dbus-1/services/org.fcitx.Fcitx5.service ] && [ ! -e "$file" ] || return 0
+    mkdir -p "$(dirname "$file")"
+    fcitx5_activation_block >"$file"
+    note_change "blocked fcitx5 activation"
+    reload_session_bus
+}
+
+unblock_fcitx5_activation() {
+    local file edition=ibus
+    file=$(fcitx5_activation_file)
+    [ -e "$file" ] && [ "$(cat "$file")" = "$(fcitx5_activation_block)" ] || return 0
+    rm -f "$file"
+    forget_change "blocked fcitx5 activation"
+    reload_session_bus
 }
 
 enable_fcitx5_autostart() {
@@ -1240,7 +1295,9 @@ report_session_changes() {
     local change
     if [ "${#session_changes[@]}" -eq 0 ]; then
         report_dropped_keyboard
-        if [ "$fcitx5_current" -eq 1 ]; then
+        if [ "$fcitx5_current" -eq 1 ] && [ "$other_removed" -eq 1 ]; then
+            say "Xong. Ngó Sen đã là bản này và đã đặt xong."
+        elif [ "$fcitx5_current" -eq 1 ]; then
             say "Xong. Ngó Sen đã là bản này và đã đặt xong, không có gì thay đổi."
         elif [ "$fcitx5_reloaded" -eq 1 ]; then
             say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
@@ -1377,6 +1434,7 @@ switch_from_fcitx5() {
     undo_fcitx5_setup
     say ""
     hide_fcitx5_autostart
+    block_fcitx5_activation
     stop_fcitx5 || :
     switched_from_fcitx5=1
 }
@@ -1554,7 +1612,7 @@ is_package_installed() {
 
 # Without --ibus the fcitx5 edition goes, unless it is not installed or the user picks the other.
 pick_uninstall_edition() {
-    [ "$edition" = fcitx5 ] && is_package_installed ibus-ngosen || return 0
+    [ "$edition_given" -eq 0 ] && is_package_installed ibus-ngosen || return 0
     if ! is_package_installed fcitx5-ngosen ||
         { [ "$assume_yes" -eq 0 ] && confirm "Máy có cả Ngó Sen cho fcitx5 và cho GNOME (IBus). Gỡ bản cho GNOME?"; }; then
         edition=ibus
@@ -1580,12 +1638,15 @@ set_remove_command() {
     fi
 }
 
-# The package went with the install; what this account set up for it goes too. The local edition
-# makes changes_file name the IBus edition's list.
+# The package is gone; what this account set up for it goes too, except with --no-setup, where only
+# the source that no longer types is dropped. The local edition makes changes_file name the IBus
+# edition's list.
 remove_ibus_setup() {
     local edition=ibus
-    undo_ibus_session
-    rm -f "$(changes_file)"
+    if [ "$setup_session" -eq 1 ]; then
+        undo_ibus_session
+        rm -f "$(changes_file)"
+    fi
     remove_ibus_source
 }
 
@@ -1602,8 +1663,7 @@ uninstall() {
         exit 0
     }
     if [ "$edition" = ibus ] && { wants_gnome_setup || wants_ibus_x11_setup; }; then
-        undo_ibus_session
-        rm -f "$(changes_file)"
+        remove_ibus_setup
     elif wants_gnome_setup; then
         undo_gnome_session
     elif wants_x11_setup; then
@@ -1649,7 +1709,10 @@ main() {
                 use_ibus_edition
                 edition_given=1
                 ;;
-            --fcitx5) edition_given=1 ;;
+            --fcitx5)
+                use_fcitx5_edition
+                edition_given=1
+                ;;
             --no-setup) setup_session=0 ;;
             --uninstall) remove_package=1 ;;
             -h | --help)
@@ -1716,6 +1779,7 @@ main() {
         package_changed=0
     fi
     install_package "$workdir/$file"
+    remove_other_package
     [ "$package_changed" -eq 1 ] || say "Bản này đã được cài từ trước, không cài lại."
     if [ "$edition" = ibus ]; then
         if wants_gnome_setup; then
@@ -1756,7 +1820,9 @@ main() {
     say ""
     if [ "$(id -u)" -ne 0 ] && reload_fcitx5; then
         report_dropped_keyboard
-        if [ "$fcitx5_current" -eq 1 ]; then
+        if [ "$fcitx5_current" -eq 1 ] && [ "$other_removed" -eq 1 ]; then
+            say "Xong. Ngó Sen đã là bản này."
+        elif [ "$fcitx5_current" -eq 1 ]; then
             say "Xong. Ngó Sen đã là bản này, không có gì thay đổi."
         else
             say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."

@@ -331,7 +331,7 @@ msgid "What's new in Ngó Sen?"
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.8: the new Check my machine page shows what keeps Vietnamese typing from working, with a button to fix each item. See also the GTK settings window, Cứu chữ, Cứu dấu and typing tips."
+msgid "Version 1.9: on GNOME, typing modes and per-app settings now work with the Ngó Sen extension off. See also Check my machine, Cứu chữ, Cứu dấu and typing tips."
 msgstr ""
 
 #: src/ngosen-engine.cpp
@@ -353,7 +353,7 @@ msgstr ""
 msgid "this window"
 msgstr ""
 
-msgid "apps with no name (the Ngó Sen extension tells them apart)"
+msgid "apps with no name (the Ngó Sen extension can tell them apart)"
 msgstr ""
 
 #: src/ngosen-engine.cpp:1099
@@ -1598,6 +1598,14 @@ msgstr ""
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "GNOME without the extension"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "On GNOME, typing modes and per-app settings now work with the Ngó Sen extension off, for apps that have a .desktop file. Check my machine says when the extension is still needed."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py

@@ -108,6 +108,10 @@ namespace ngosen::test {
         void setReportDelay(int ms) {
             quirks_.reportDelayMs = ms;
         }
+        // Renames the app with no focus change, as GNOME Shell does when it names the app late.
+        void setProgram(const std::string& program) {
+            field_.program = program;
+        }
         // Presses and releases a key; the app inserts it when the input method lets it through.
         void        type(uint32_t sym);
         std::string text() const;

@@ -26,10 +26,14 @@ namespace ngosen {
     // True when a key the app sent before our commit reached it can land ahead of that commit.
     bool appliesEarlyKeysFirst(const Field& field);
 
-    // True for terminals that report no surrounding text, and for VTE terminals under GTK4 (Ptyxis, GNOME Console),
-    // which do not pass on their input purpose: they pass committed text to the shell as is, so a DEL in it erases
-    // like Backspace.
+    // True for fields that report the terminal purpose (except Alacritty), xterm, and GNOME's VTE terminals
+    // (Ptyxis, GNOME Console, GNOME Terminal) where GTK4 or GNOME Shell drops their purpose: they pass committed
+    // text to the shell as is, so a DEL in it erases like Backspace.
     bool erasesWithCommittedDel(const Field& field);
+
+    // True for fields that report the terminal or URL purpose, xterm and GTK4 VTE terminals, where -- is part
+    // of a command or a URL, as in git push --force. Firefox's address bar reports nothing that sets it apart.
+    bool takesDoubleHyphenLiterally(const Field& field);
 
     // True for the address bar of Chromium-based browsers on the D-Bus and fcitx4 frontends: it reports no
     // surrounding text and selects an inline autocompletion after the typed text.

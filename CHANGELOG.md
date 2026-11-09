@@ -10,6 +10,25 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.9.0-1] — 08/11/2026
+
+GNOME tắt extension vẫn giữ chế độ gõ và cài đặt riêng theo từng app, và lệnh cài không còn tự bật extension khi portal báo được tên app (#621, #629). Gõ Sen hiện dấu ngay trong terminal và bớt khựng trong Firefox trên Hyprland, Sway (#607, #620, #623, #630); gõ -- trong terminal và ô địa chỉ giữ nguyên (#625); nhận ra thêm các bản Firefox trên GNOME (#634).
+Tải ở [ngosen-1.9.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.9.0-1).
+
+### Thêm
+
+- Trên GNOME Wayland với fcitx5 version cũ hơn 5.1.22, chế độ gõ và cài đặt riêng theo từng app nay hoạt động khi tắt extension; app không có tệp `.desktop` vẫn cần extension. Ô tìm kiếm trong màn tổng quan GNOME được nhận ra ở mọi version fcitx5, kể cả khi tắt extension (#621).
+- Trên GNOME 46 đến 49 và từ 50.4 trở đi, với fcitx5 version cũ hơn 5.1.22, lệnh cài không còn tự bật extension Ngó Sen khi máy có gói `xdg-desktop-portal-gnome`. Lệnh cài vẫn tự bật extension trên GNOME 50.0 đến 50.3 hoặc khi máy không có gói này. Máy đã bật thì để nguyên. Trang "Kiểm tra máy" báo khi portal chưa cho Ngó Sen biết tên app và gợi ý bật extension (#629).
+
+### Sửa
+
+- Bớt những lúc gõ Sen nhanh bị khựng trong Firefox trên Hyprland, Sway và KDE Plasma: quay lại chờ bản chữ của Firefox khi app phản hồi kịp trở lại, thay vì xoá bằng Backspace (#607).
+- Gõ Sen hiện chữ ngay khi thêm dấu trong kitty, Ptyxis, GNOME Terminal, foot và Ghostty trên Hyprland, cùng xterm; riêng xterm không còn phụ thuộc vào thứ tự nhận phím Backspace (#620).
+- Bớt khựng khi gõ Sen nhanh trong Firefox trên Hyprland và Sway: khi app báo chữ chậm, phím thêm dấu sửa luôn phần chữ chưa gửi, không phải gửi chữ cũ rồi xoá bằng Backspace và chờ gõ lại (#623).
+- Gõ Sen hiện chữ ngay khi thêm dấu trong Ptyxis, GNOME Console và GNOME Terminal trên GNOME, cả khi bật hay tắt extension Ngó Sen (#630).
+- Nhận ra Firefox cài từ gói Fedora, Mullvad Browser cài từ gói và các bản Flatpak của Firefox và trình duyệt dựa trên Firefox trên GNOME, để chữ gõ trong thanh địa chỉ không lẫn với autofill (#634).
+- Bật "Hai gạch nối thành gạch dài" thì gõ -- trong terminal hay ô địa chỉ vẫn giữ nguyên, nên "git push --force" không còn thành "git push —force"; ô địa chỉ của Firefox và terminal không tự báo mình là terminal (như terminal trong VS Code) chưa nhận ra được (#625).
+
 ## [1.8.3-1] — 08/11/2026
 
 Gõ từ không phải tiếng Việt liền chữ số khi bật gõ tắt hết bị thêm dấu (#614), và đổi dấu sau phụ âm cuối vẫn ra đúng chữ tiếng Việt khi chốt từ (#622).

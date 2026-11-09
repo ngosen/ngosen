@@ -411,7 +411,10 @@ namespace fcitx {
                 NGOSEN_WARN(std::string("Could not register ") + NgoSenDBusObject::Path + " on D-Bus; ngosen-save-log will not work");
                 dbusObject_.reset();
             }
-            gnomeShell_ = std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>(), [this](const std::string& app) { shellFocusedAppChanged(app); });
+            // As fcitx5 5.1.22 does it, which needs Wayland to tell windows apart.
+            const bool watchPortal = getEnv("XDG_SESSION_TYPE") == "wayland" && !ngosen::fcitxNamesGnomeApps(Instance::version());
+            gnomeShell_ =
+                std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>(), watchPortal, [this](const std::string& app) { shellFocusedAppChanged(app); });
         }
 #endif
 
@@ -466,6 +469,14 @@ namespace fcitx {
             return gnomeShell_->dropsKeys();
 #endif
         return nullptr;
+    }
+
+    bool NgoSenEngine::gnomePortalAnswered() const {
+#ifdef NGOSEN_HAS_DBUS
+        if (gnomeShell_)
+            return gnomeShell_->portalAnswered();
+#endif
+        return false;
     }
 
     NgoSenEngine::~NgoSenEngine() {
@@ -554,8 +565,8 @@ namespace fcitx {
             constexpr int32_t neverExpire = 0;
             addon->call<INotifications::sendNotification>(
                 "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
-                _("Version 1.8: the new Check my machine page shows what keeps Vietnamese typing from working, with a button to fix each item. See also the GTK settings "
-                  "window, Cứu chữ, Cứu dấu and typing tips."),
+                _("Version 1.9: on GNOME, typing modes and per-app settings now work with the Ngó Sen extension off. See also Check my machine, Cứu chữ, Cứu dấu "
+                  "and typing tips."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;
         });
@@ -608,6 +619,8 @@ namespace fcitx {
         o.retypeAfterSwitch                = config_.retypeAfterSwitch.value();
         o.retoneSelection                  = config_.retoneSelection.value();
         o.messengerSelectOvertype          = config_.messengerSelectOvertype.value();
+        o.copyWaitRecovery                 = config_.copyWaitRecovery.value();
+        o.foldReplayReplacement            = config_.foldReplayReplacement.value();
         o.waitSurroundingEvent             = config_.waitSurroundingEvent.value();
         o.waitSurroundingMinPerKeyMs       = config_.waitSurroundingMinPerKeyMs.value();
         o.waitSurroundingTimeoutMs         = config_.waitSurroundingTimeoutMs.value();
@@ -1442,7 +1455,7 @@ namespace fcitx {
         std::string appLabel = currentConfigureApp_;
         if (isStartsWith(currentConfigureApp_, "ctx_")) {
             // GNOME Shell relays every app through one field, so a rule without a name holds for all of them.
-            appLabel = std::string(ic->frontend()) == "ibus" ? _("apps with no name (the Ngó Sen extension tells them apart)") : _("this window");
+            appLabel = std::string(ic->frontend()) == "ibus" ? _("apps with no name (the Ngó Sen extension can tell them apart)") : _("this window");
         }
         ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
@@ -1630,6 +1643,9 @@ namespace fcitx {
         instance_->inputContextManager().foreachFocused([this](InputContext* ic) {
             const std::string appName = getProgramName(ic);
             NGOSEN_INFO("App name: " + appName);
+            // The menu's label and items were built for the app it opened in.
+            if (isModeMenuOpen(ic) && appName != currentConfigureApp_)
+                closeModeMenuPanel(ic, false);
             const NgoSenMode mode = modeFor(appName);
             if (ic == activeContext_ && mode != realMode) {
                 // The word belongs to the app being left.

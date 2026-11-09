@@ -332,8 +332,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.8: the new Check my machine page shows what keeps Vietnamese typing from working, with a button to fix each item. See also the GTK settings window, Cứu chữ, Cứu dấu and typing tips."
-msgstr "Version 1.8: trang Kiểm tra máy mới cho biết điều gì làm máy chưa gõ được tiếng Việt, kèm nút sửa từng việc. Xem thêm cửa sổ cài đặt bản GTK, Cứu chữ, Cứu dấu và mẹo gõ."
+msgid "Version 1.9: on GNOME, typing modes and per-app settings now work with the Ngó Sen extension off. See also Check my machine, Cứu chữ, Cứu dấu and typing tips."
+msgstr "Version 1.9: trên GNOME, chế độ gõ và cài đặt riêng theo từng app nay chạy được khi tắt extension Ngó Sen. Xem thêm trang Kiểm tra máy, Cứu chữ, Cứu dấu và mẹo gõ."
 
 #: src/ngosen-engine.cpp
 msgid "Show"
@@ -354,7 +354,7 @@ msgstr "App: "
 msgid "this window"
 msgstr "cửa sổ này"
 
-msgid "apps with no name (the Ngó Sen extension tells them apart)"
+msgid "apps with no name (the Ngó Sen extension can tell them apart)"
 msgstr "app chưa có tên (bật extension Ngó Sen để đặt riêng)"
 
 #: src/ngosen-engine.cpp:1099
@@ -1288,6 +1288,10 @@ msgid "Optional: each app can keep its own typing mode. Typing works without it.
 msgstr "Không bắt buộc: mỗi app có thể nhớ chế độ gõ riêng. Không bật vẫn gõ bình thường."
 
 #: settings-gui/core/system_check.py
+msgid "GNOME's portal has not told Ngó Sen which app is in use"
+msgstr "Portal của GNOME chưa báo cho Ngó Sen biết đang gõ trong app nào"
+
+#: settings-gui/core/system_check.py
 msgid "Log out and back in. If this stays, update Ngó Sen."
 msgstr "Đăng xuất rồi đăng nhập lại. Nếu vẫn thấy dòng này, cập nhật Ngó Sen."
 
@@ -1691,6 +1695,14 @@ msgstr "Không đổi được"
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
 msgstr "Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/core/whats_new_content.py
+msgid "GNOME without the extension"
+msgstr "GNOME không cần extension"
+
+#: settings-gui/core/whats_new_content.py
+msgid "On GNOME, typing modes and per-app settings now work with the Ngó Sen extension off, for apps that have a .desktop file. Check my machine says when the extension is still needed."
+msgstr "Trên GNOME, chế độ gõ và cài đặt riêng theo từng app nay chạy được khi tắt extension Ngó Sen, với app có tệp .desktop. Trang Kiểm tra máy báo khi nào vẫn cần bật extension."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Shows what keeps Vietnamese typing from working on this machine, with a button to fix each item. Test typing in an app and send a bug report from the same page."

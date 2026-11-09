@@ -623,7 +623,8 @@ triggers=$home/.stub-ibus-triggers
 # Read as the gsettings stub reports them, default included.
 switch_keys_are() { [ "$(cat "$triggers" 2>/dev/null || echo "['<Super>space']")" = "$1" ]; }
 fcitx5_masked() { has_line "$fcitx5_mask" 'Hidden=true'; }
-fcitx5_blocked() { has_line "$home/.local/share/dbus-1/services/org.fcitx.Fcitx5.service" 'Exec=/bin/false'; }
+fcitx5_block=$home/.local/share/dbus-1/services/org.fcitx.Fcitx5.service
+fcitx5_blocked() { has_line "$fcitx5_block" 'Exec=/bin/false'; }
 recent_sources=$home/.stub-recent-sources
 ngosen_first() { grep -q "^\[('ibus', 'ngosen')" "$recent_sources"; }
 
@@ -675,9 +676,11 @@ check_ibus_edition() {
     check "it removes Ngó Sen from the input sources" lacks_ngosen_source
     check "it sets up the fcitx5 edition" test -e "$im_env"
     check "IBus install over that with --yes succeeds" installer --yes --ibus
+    check "it keeps D-Bus from starting fcitx5 again" fcitx5_blocked
     check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
     check "it removes the IBus edition" is_removed ibus-ngosen
     check "it removes Ngó Sen from the input sources" lacks_ngosen_source
+    check "it lets D-Bus start fcitx5 after the uninstall" refuses fcitx5_blocked
     if command -v dpkg-deb >/dev/null 2>&1; then
         check "fcitx5 edition install over that succeeds" installer --yes --fcitx5
         check "an IBus package without the conflict installs next to it" install_ibus_without_conflict
@@ -730,6 +733,8 @@ check_autostart_mask_removed() {
     as_user rm -f "$changes"
     as_user mkdir -p "$(dirname "$fcitx5_mask")"
     printf '[Desktop Entry]\nType=Application\nName=Fcitx 5\nHidden=true\n' | as_user tee "$fcitx5_mask" >/dev/null
+    as_user mkdir -p "$(dirname "$fcitx5_block")"
+    printf '[D-BUS Service]\nName=org.fcitx.Fcitx5\nExec=/bin/false\n' | as_user tee "$fcitx5_block" >/dev/null
     check "install over the hidden autostart succeeds" install_logged
     check "it lets fcitx5 start at login again" refuses fcitx5_masked
     check "it lets D-Bus start fcitx5 again" refuses fcitx5_blocked

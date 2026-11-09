@@ -1595,6 +1595,7 @@ undo_ibus_session() {
     if made_change im-config && xinputrc_runs_ibus && command -v im-config >/dev/null 2>&1; then
         im_config_unset || :
     fi
+    unblock_fcitx5_activation
     if is_package_installed fcitx5-ngosen; then
         unmask_fcitx5_autostart
     fi

@@ -157,7 +157,7 @@ class ShortcutsPageTest(unittest.TestCase):
         window.sidebar.setCurrentRow(keys[0])
         for _ in range(30):
             app.processEvents()
-        modes = [w for w in window.findChildren(QListWidget) if w.isVisible() and w.count() == 5]
+        modes = [w for w in window.findChildren(QListWidget) if w.isVisible() and w.count() == 4]
         card = modes[0].parentWidget()
         for label in [x for x in card.findChildren(QLabel) if x.parentWidget() is card]:
             self.assertLessEqual(label.height(), label.heightForWidth(label.width()) + 4)

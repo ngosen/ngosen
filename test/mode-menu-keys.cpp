@@ -71,6 +71,10 @@ int main() {
     config.setValueByPath("VietnameseOn", "True");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("CycleModeKey/0", "F12");
+    // Saved before Default Typing left the menu.
+    config.setValueByPath("ModeOrder", "Sen,Preedit,Emoji,Off,Default");
+    config.setValueByPath("ShowModeDefault", "True");
+    config.setValueByPath("ShortcutDefault", "r");
     engine.setConfig(config);
 
     auto context = std::make_unique<TestInputContext>(&testInstance.instance, "gedit");
@@ -80,19 +84,27 @@ int main() {
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 
-    // Sen, Preedit, Emoji, Off, Default typing, and "type `".
+    // Sen, Preedit, Emoji, Off, and "type `".
     press(engine, entry, *context, FcitxKey_grave);
     auto list = menu(*context);
-    check(list && list->totalSize() == 6, "menu opens with six items", list ? std::to_string(list->totalSize()) : "no menu");
-    // gedit has no rule of its own, so it follows the default.
-    check(list && list->globalCursorIndex() == 4, "Default typing is highlighted", list ? std::to_string(list->globalCursorIndex()) : "no menu");
+    check(list && list->totalSize() == 5, "menu opens with five items", list ? std::to_string(list->totalSize()) : "no menu");
+    // gedit has no rule of its own, so it follows the global Preedit.
+    check(list && list->globalCursorIndex() == 1, "the app's mode is highlighted", list ? std::to_string(list->globalCursorIndex()) : "no menu");
     press(engine, entry, *context, FcitxKey_Down);
-    check(list && list->globalCursorIndex() == 5, "Down moves the highlight", list ? std::to_string(list->globalCursorIndex()) : "no menu");
+    check(list && list->globalCursorIndex() == 2, "Down moves the highlight", list ? std::to_string(list->globalCursorIndex()) : "no menu");
 
     press(engine, entry, *context, FcitxKey_1);
     check(!menu(*context), "picking a mode closes the menu", "menu still open");
     list.reset();
     check(realMode.load() == ngosen::Mode::Sen, "shortcut 1 picks Sen", modeName(realMode.load()));
+    check(hasRule(engine, "gedit"), "a mode the app does not use anyway is kept for it", "no rule");
+
+    press(engine, entry, *context, FcitxKey_grave);
+    press(engine, entry, *context, FcitxKey_q);
+    check(realMode.load() == ngosen::Mode::Preedit, "shortcut q picks Preedit", modeName(realMode.load()));
+    check(!hasRule(engine, "gedit"), "picking the app's usual mode drops its rule", "rule kept");
+    press(engine, entry, *context, FcitxKey_grave);
+    press(engine, entry, *context, FcitxKey_1);
 
     press(engine, entry, *context, FcitxKey_grave);
     press(engine, entry, *context, FcitxKey_Escape);
@@ -106,6 +118,7 @@ int main() {
 
     press(engine, entry, *context, FcitxKey_F12);
     check(realMode.load() == ngosen::Mode::Preedit, "the cycle key steps from Sen to Preedit", modeName(realMode.load()));
+    check(!hasRule(engine, "gedit"), "cycling to the app's usual mode drops its rule", "rule kept");
 
     // A field that reports no app of its own, away from GNOME Shell's frontend.
     auto relayed = std::make_unique<TestInputContext>(&testInstance.instance, "gnome-shell");
@@ -210,6 +223,16 @@ int main() {
     closing.reset();
     press(engine, entry, *other, FcitxKey_e);
     check(!hasRule(engine, "closing"), "a key after the window closed picks nothing", "closing got a rule");
+
+    // OFF stays pinned: dropped, it would follow the switch key back to Vietnamese.
+    auto quiet = std::make_unique<TestInputContext>(&testInstance.instance, "quiet");
+    quiet->focusIn();
+    fcitx::InputContextEvent quietFocus(quiet.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, quietFocus);
+    press(engine, entry, *quiet, FcitxKey_grave);
+    press(engine, entry, *quiet, FcitxKey_e);
+    check(realMode.load() == ngosen::Mode::Off, "shortcut e picks OFF", modeName(realMode.load()));
+    check(hasRule(engine, "quiet"), "OFF is kept for the app", "no rule");
 
     check(!fcitx::modeMenuCanDraw("classicui", "ibus", "wayland:", false), "a field relayed on Wayland has no panel", "true");
     check(fcitx::modeMenuCanDraw("classicui", "ibus", "x11::0", false), "a relayed field on X11 can draw", "false");

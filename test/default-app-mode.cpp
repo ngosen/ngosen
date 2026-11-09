@@ -57,6 +57,20 @@ namespace {
         engine.activate(entry, event);
     }
 
+    bool hasRule(const fcitx::NgoSenEngine& engine, const std::string& app) {
+        fcitx::RawConfig raw;
+        engine.getSubConfig("app_rules")->save(raw);
+        bool found = false;
+        if (auto rules = raw.get("Rules")) {
+            rules->visitSubItems([&](fcitx::RawConfig& rule, const std::string&) {
+                auto name = rule.get("App");
+                found     = found || (name && name->value() == app);
+                return true;
+            });
+        }
+        return found;
+    }
+
     void press(fcitx::NgoSenEngine& engine, TestInputContext& context, fcitx::KeySym sym) {
         fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
         fcitx::KeyEvent         down(&context, fcitx::Key(sym), false);
@@ -91,7 +105,7 @@ int main(int argc, char** argv) {
     focus(engine, editor);
     if (override) {
         expectMode("the user's Sen rule for deepin-editor wins", fcitx::NgoSenMode::Sen);
-        // kate.desktop has kate's rule, so the menu marks Sen and not Default typing.
+        // kate.desktop has kate's rule, so the menu marks Sen.
         TestInputContext kate(&testInstance.instance, "kate.desktop");
         focus(engine, kate);
         press(engine, kate, FcitxKey_grave);
@@ -104,16 +118,23 @@ int main(int argc, char** argv) {
     }
     expectMode("deepin-editor types in Preedit", fcitx::NgoSenMode::Preedit);
 
-    // With no rule of its own the app follows its default, so the menu marks "Default typing"
-    // (Sen, Preedit, Emoji, Off, Default typing, "type `"), and picking it keeps Preedit.
+    // With no rule of its own the app follows its default, so the menu marks Preedit
+    // (Sen, Preedit, Emoji, Off, "type `").
     press(engine, editor, FcitxKey_grave);
     auto list = std::dynamic_pointer_cast<fcitx::CommonCandidateList>(editor.inputPanel().candidateList());
-    if (!list || list->globalCursorIndex() != 4) {
-        std::cerr << "FAIL: the menu marks Default typing: cursor " << (list ? std::to_string(list->globalCursorIndex()) : "no menu") << '\n';
+    if (!list || list->globalCursorIndex() != 1) {
+        std::cerr << "FAIL: the menu marks Preedit: cursor " << (list ? std::to_string(list->globalCursorIndex()) : "no menu") << '\n';
         ++failures;
     }
-    press(engine, editor, FcitxKey_r);
-    expectMode("Default typing keeps Preedit in deepin-editor", fcitx::NgoSenMode::Preedit);
+    press(engine, editor, FcitxKey_1);
+    expectMode("Sen picked for deepin-editor", fcitx::NgoSenMode::Sen);
+    press(engine, editor, FcitxKey_grave);
+    press(engine, editor, FcitxKey_q);
+    expectMode("picking Preedit keeps deepin-editor on Preedit", fcitx::NgoSenMode::Preedit);
+    if (hasRule(engine, "deepin-editor")) {
+        std::cerr << "FAIL: Preedit, deepin-editor's usual mode, left a rule\n";
+        ++failures;
+    }
 
     TestInputContext desktopNamed(&testInstance.instance, "deepin-editor.desktop");
     focus(engine, desktopNamed);

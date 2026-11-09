@@ -975,6 +975,28 @@ check_repository_cases() {
     check "it keeps the repository for ibus-ngosen" test -e "$apt_list" -a -e "$apt_keyring"
     dpkg -r ibus-ngosen >/dev/null
     remove_repo_files
+
+    # A release upgrade comments out third-party sources; running the installer again is the fix
+    # the changelog gives.
+    check "an install adds the repository before a release upgrade" install_logged
+    sed -i '/^deb /{s/^/# /;s/$/ # disabled on upgrade/}' "$apt_list"
+    check "an install after the upgrade disabled ngosen.list succeeds" install_logged
+    check "it enables its own ngosen.list again" apt_uses_test_repo
+    check "uninstall after that succeeds" uninstall_logged
+    check "uninstall removes the repaired repository" no_repo_files
+    remove_repo_files
+
+    check "an install adds the repository for an older release" install_logged
+    sed -i "/^deb /s/ $suite main\$/ oldstable main/" "$apt_list"
+    check "an install over a list for an older release succeeds" install_logged
+    check "it moves its list to this release" grep -q " $suite main\$" "$apt_list"
+    remove_repo_files
+
+    check "an install adds the repository before the user removes ngosen.list" install_logged
+    rm "$apt_list"
+    check "uninstall after the user removed ngosen.list succeeds" uninstall_logged
+    check "it removes the rest of the repository" no_repo_files
+    remove_repo_files
 }
 
 installs_from() {

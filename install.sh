@@ -19,6 +19,7 @@ APT_LIST=/etc/apt/sources.list.d/ngosen.list
 APT_KEYRING=/usr/share/keyrings/ngosen.gpg
 # What the install added to the system's package sources, so the uninstall removes only that.
 REPO_RECORD=/var/lib/ngosen/installer-repo
+APT_LIST_MARK="# Added by the Ngó Sen installer; install.sh --uninstall removes it."
 
 package_name=fcitx5-ngosen
 assume_yes=0
@@ -351,7 +352,7 @@ apt_file_lists_repo() {
         function same(uri) { sub(/\/$/, "", uri); return uri == want }
         function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
         function stanza(   uris, n, i) {
-            if (tolower(trim(field["enabled"])) != "no" && (" " trim(field["types"]) " ") ~ /[ \t]deb[ \t]/) {
+            if (tolower(trim(field["enabled"])) !~ /^(no|false|off|without|disable|0)$/ && (" " trim(field["types"]) " ") ~ /[ \t]deb[ \t]/) {
                 n = split(trim(field["uris"]), uris, /[ \t]+/)
                 for (i = 1; i <= n; i++)
                     if (same(uris[i])) found = 1
@@ -392,6 +393,8 @@ apt_repo_file() {
     local file
     for file in "$1/sources.list" "$1"/sources.list.d/*.list "$1"/sources.list.d/*.sources; do
         [ -r "$file" ] || continue
+        # apt skips files with other characters in their names.
+        case "${file##*/}" in *[!A-Za-z0-9_.-]*) continue ;; esac
         if apt_file_lists_repo "$file" "$2"; then
             printf '%s\n' "$file"
             return 0
@@ -413,18 +416,32 @@ apt_repo_missing() {
     ! apt_repo_file /etc/apt "$REPO_URL/apt" >/dev/null && [ ! -e "$APT_LIST" ] && [ ! -e "$APT_KEYRING" ]
 }
 
+# A release upgrade disables third-party lists and leaves them on the old codename; the installer
+# may rewrite ngosen.list only when it wrote that file itself.
+own_apt_list() {
+    [ -r "$REPO_RECORD" ] && [ "$(head -n 1 "$APT_LIST" 2>/dev/null)" = "$APT_LIST_MARK" ]
+}
+
+apt_list_has_suite() {
+    awk -v suite="$repo_suite" '$1 == "deb" && $(NF - 1) == suite { ok = 1 } END { exit !ok }' "$APT_LIST"
+}
+
 add_apt_repo() {
-    local found key="$workdir/ngosen.gpg" list="$workdir/ngosen.list" record="$workdir/installer-repo"
+    local found own=0 key="$workdir/ngosen.gpg" list="$workdir/ngosen.list" record="$workdir/installer-repo"
+    own_apt_list && own=1
     if found=$(apt_repo_file /etc/apt "$REPO_URL/apt"); then
-        say "Repo Ngó Sen đã có trong $found."
-        return 0
-    fi
-    for found in "$APT_LIST" "$APT_KEYRING"; do
-        if [ -e "$found" ]; then
-            say "Chưa thêm repo Ngó Sen: $found đã có sẵn nhưng repo chưa bật. Xem $UPDATE_GUIDE"
-            return 1
+        if [ "$found" != "$APT_LIST" ] || [ "$own" -eq 0 ] || apt_list_has_suite; then
+            say "Repo Ngó Sen đã có trong $found."
+            return 0
         fi
-    done
+    elif [ "$own" -eq 0 ]; then
+        for found in "$APT_LIST" "$APT_KEYRING"; do
+            if [ -e "$found" ]; then
+                say "Chưa thêm repo Ngó Sen: $found đã có sẵn nhưng repo chưa bật. Xem $UPDATE_GUIDE"
+                return 1
+            fi
+        done
+    fi
     if ! fetch -sS -o "$key" "$REPO_URL/apt/ngosen.gpg"; then
         say "Không tải được key của repo Ngó Sen, chưa thêm repo."
         return 1
@@ -433,14 +450,18 @@ add_apt_repo() {
         say "Mã băm của key tải về không đúng, chưa thêm repo Ngó Sen."
         return 1
     fi
-    printf '# Added by the Ngó Sen installer; install.sh --uninstall removes it.\ndeb [signed-by=%s] %s %s main\n' \
-        "$APT_KEYRING" "$REPO_URL/apt" "$repo_suite" >"$list"
-    # The checks above made sure neither file was there, so undoing removes only what this run wrote.
+    printf '%s\ndeb [signed-by=%s] %s %s main\n' "$APT_LIST_MARK" "$APT_KEYRING" "$REPO_URL/apt" "$repo_suite" >"$list"
+    [ "$own" -eq 0 ] || cp "$APT_LIST" "$workdir/ngosen.list.old"
+    # Undoing removes only what this run wrote: either neither file was there, or both are ours.
     if ! as_root install -o root -g root -m 644 "$key" "$APT_KEYRING" ||
         ! as_root install -o root -g root -m 644 "$list" "$APT_LIST" ||
         ! as_root apt-get update -qq --error-on=any -o Dir::Etc::sourcelist="$APT_LIST" \
             -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0; then
-        as_root rm -f "$APT_LIST" "$APT_KEYRING"
+        if [ "$own" -eq 1 ]; then
+            as_root install -o root -g root -m 644 "$workdir/ngosen.list.old" "$APT_LIST"
+        else
+            as_root rm -f "$APT_LIST" "$APT_KEYRING"
+        fi
         say "Không thêm được repo Ngó Sen (xem lỗi ở trên); Ngó Sen vẫn đã cài."
         return 1
     fi
@@ -461,7 +482,9 @@ remove_ngosen_repo() {
         say "Giữ repo Ngó Sen vì ibus-ngosen còn nhận version mới từ đó."
         return 0
     fi
-    if ! sed 1d "$REPO_RECORD" | sha256sum --quiet -c - >/dev/null 2>&1; then
+    # A file the user already deleted is no reason to keep the other one.
+    if ! sed 1d "$REPO_RECORD" | sha256sum --quiet --ignore-missing -c - >/dev/null 2>&1 &&
+        { [ -e "${files[0]}" ] || [ -e "${files[1]}" ]; }; then
         say "Giữ repo Ngó Sen vì tệp repo hoặc key đã bị sửa sau khi cài. Gỡ tay:  sudo rm ${files[*]}"
         return 0
     fi
@@ -1372,6 +1395,7 @@ main() {
         *) die "NGOSEN_RELEASE_URL phải bắt đầu bằng https://" ;;
     esac
     case "$REPO_URL" in
+        *[[:space:]]*) die "NGOSEN_REPO_URL không được có khoảng trắng" ;;
         https://* | file:///*) ;;
         *) die "NGOSEN_REPO_URL phải bắt đầu bằng https://" ;;
     esac

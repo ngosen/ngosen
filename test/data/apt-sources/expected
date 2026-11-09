@@ -12,3 +12,4 @@ disabled.sources no
 source-only.sources no
 second-stanza.sources yes
 commented.sources no
+disabled-false.sources no

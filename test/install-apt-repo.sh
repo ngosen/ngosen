@@ -1,7 +1,6 @@
 #!/bin/bash
-# Checks how install.sh tells whether the Ngó Sen APT repository is enabled, against the sample
-# source files that the settings window's check reads too, and that it offers only the suites the
-# repository is built for.
+# Checks how install.sh tells whether the Ngó Sen APT repository is enabled, against sample source
+# files, and that it offers only the suites the repository is built for.
 #
 #   test/install-apt-repo.sh <source dir>
 set -euo pipefail
@@ -41,13 +40,21 @@ if apt_repo_file "$etc" https://ngosen.github.io/ngosen/apt >/dev/null; then
     echo "FAIL: apt_repo_file found a repository in disabled sources"
     failures=$((failures + 1))
 fi
+cp "$data/readme.list" "$etc/sources.list.d/ngosen (copy).list"
+if apt_repo_file "$etc" https://ngosen.github.io/ngosen/apt >/dev/null; then
+    echo "FAIL: apt_repo_file found a repository in a file apt skips"
+    failures=$((failures + 1))
+fi
 
 # A suite the installer picks but the repository lacks would break apt update on that machine.
-installer_suites=$(grep -m1 -E '^ *bookworm \| ' "$top/install.sh" | tr -d ' )' | tr '|' '\n' | sort)
-repo_suites=$(sed -n 's/^codenames="\(.*\)"$/\1/p' "$top/packaging/build-apt-repo.sh" | tr ' ' '\n' | sort)
-if [ -z "$installer_suites" ] || [ "$installer_suites" != "$repo_suites" ]; then
-    echo "FAIL: install.sh suites differ from the repository's:" "${installer_suites//$'\n'/ }" "/" "${repo_suites//$'\n'/ }"
-    failures=$((failures + 1))
+# RPM source packages leave out the APT scripts, so this part runs only in a full checkout.
+if [ -f "$top/packaging/build-apt-repo.sh" ]; then
+    installer_suites=$(grep -m1 -E '^ *bookworm \| ' "$top/install.sh" | tr -d ' )' | tr '|' '\n' | sort)
+    repo_suites=$(sed -n 's/^codenames="\(.*\)"$/\1/p' "$top/packaging/build-apt-repo.sh" | tr ' ' '\n' | sort)
+    if [ -z "$installer_suites" ] || [ "$installer_suites" != "$repo_suites" ]; then
+        echo "FAIL: install.sh suites differ from the repository's:" "${installer_suites//$'\n'/ }" "/" "${repo_suites//$'\n'/ }"
+        failures=$((failures + 1))
+    fi
 fi
 
 [ "$failures" -eq 0 ] || exit 1

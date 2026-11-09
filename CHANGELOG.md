@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
-- Tự ngừng gõ tiếng Việt khi terminal hỏi password ẩn chữ: giữ nguyên phím, không ghi nhật ký gõ; xong tự bật lại, không cần cài đặt. Riêng sudo trên Linux Mint hiện dấu * chưa nhận ra, cần dùng phím chuyển Anh/Việt để chuyển sang tiếng Anh (#106)
+- Tự ngừng gõ tiếng Việt khi terminal hỏi password ẩn chữ: giữ nguyên phím, không ghi nhật ký gõ; xong tự bật lại, không cần cài đặt. Riêng sudo trên Linux Mint hiện dấu * chưa nhận ra, cần dùng phím chuyển Anh/Việt để chuyển sang tiếng Anh (#106, #645)
 
 ## [1.9.0-1] — 08/11/2026
 

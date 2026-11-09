@@ -804,6 +804,20 @@ fn test_backspace_keeps_word_shown_as_typed() {
 }
 
 #[test]
+fn test_backspace_keeps_typed_part_before_digit() {
+    for (keys, want) in [
+        ("thuwcx2tooi2", "thuwcx2tôi"),
+        ("considered2tooi2", "considered2tôi"),
+        ("tooi2tooi2", "tôi2tôi"),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_BACKSPACE, 0);
+        assert_eq!(e.preedit_text, want, "{keys} + Backspace");
+    }
+}
+
+#[test]
 fn test_word_before_digits_shown_as_space_commits() {
     for keys in ["tooi2Sose2", "Sose2tooi2", "Sose2a", "dd2"] {
         let mut shown = engine_with_default_settings("Telex");

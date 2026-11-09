@@ -1520,6 +1520,17 @@ namespace {
             check(join(host->commits()) == "['việt ']['viết ']", "preedit reopen: space commits the fixed word", join(host->commits()));
         }
         {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            const PreeditReopen r = backspaceAfterPreeditCommit(state, *host, "tooi2 ", "tôi2 ");
+            check(r.preedit == "tôi2", "preedit reopen: a word ending in a digit shows again", r.preedit);
+            press(state, ngosen::key::BackSpace);
+            check(host->preedit() == "tôi", "preedit reopen: deleting the digit keeps the marks", host->preedit());
+        }
+        {
             // Held Backspace: the reopened word is deleted letter by letter, then the app deletes on its own.
             FakeLoop            loop;
             FakeResources       resources;

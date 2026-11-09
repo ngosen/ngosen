@@ -388,7 +388,7 @@ namespace fcitx {
         initToggleAction(capitalizeStartAction_, config_.capitalizeStartOfText, "ngosen-capitalize-start", "", _("Start of text or line"), N_("Start of text or line"), uiManager);
         autoCapitalizeMenu_->addAction(capitalizeSentencesAction_.get());
         autoCapitalizeMenu_->addAction(capitalizeStartAction_.get());
-        initToggleAction(autoNonVnRestoreAction_, config_.autoNonVnRestore, "ngosen-autonvnrestore", "edit-undo", _("Auto Restore Invalid Words"), N_("Auto Non-VN Restore"),
+        initToggleAction(autoNonVnRestoreAction_, config_.autoNonVnRestore, "ngosen-autonvnrestore", "edit-undo", _("Auto Restore Invalid Words"), N_("Auto Restore Invalid Words"),
                          uiManager);
         initToggleAction(enableDictionaryAction_, config_.enableDictionary, "ngosen-dictionary", "accessories-dictionary", _("Custom Dictionary"), N_("Custom Dictionary"),
                          uiManager);
@@ -655,7 +655,7 @@ namespace fcitx {
         updateAction(nullptr, capitalizeMacroAction_, config_.capitalizeMacro, _("Capitalize Macro"));
         updateAction(nullptr, capitalizeSentencesAction_, config_.autoCapitalizeAfterPunctuation, _("After . ! ? and Enter"));
         updateAction(nullptr, capitalizeStartAction_, config_.capitalizeStartOfText, _("Start of text or line"));
-        updateAction(nullptr, autoNonVnRestoreAction_, config_.autoNonVnRestore, _("Auto Non-VN Restore"));
+        updateAction(nullptr, autoNonVnRestoreAction_, config_.autoNonVnRestore, _("Auto Restore Invalid Words"));
         updateAction(nullptr, enableDictionaryAction_, config_.enableDictionary, _("Custom Dictionary"));
         autoCapitalizeAction_->setShortText(_("Auto Capitalize"));
         settingsAction_->setShortText(_("Settings"));

@@ -19,6 +19,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Khôi phục một bản sao lưu của Ngó Sen cho GNOME (bản IBus) không còn xoá các app đã chọn riêng tiếng Việt hay tiếng
   Anh trong máy; bản sao lưu cũ của bản fcitx5 vẫn khôi phục như trước (#648).
 - Máy đang có bản IBus (`ibus-ngosen`) thì lệnh cài nói rõ trước khi hỏi: gỡ gói là gỡ cho mọi tài khoản, cài đặt của bản IBus không tự chép sang. Trên Debian, Ubuntu và Fedora, gói cũ được thay trong cùng lần cài nên cài lỗi thì bản IBus vẫn còn (trước đây Fedora báo lỗi xung đột và không cài); trên openSUSE và Arch, lệnh in lệnh gỡ rồi dừng. Cài xong, nguồn nhập "Tiếng Việt (Ngó Sen)" của bản IBus được bỏ khỏi tài khoản chạy lệnh (#649).
+- Sửa lỗi hiển thị trong cài đặt: Qt và GTK trên KDE Plasma chỉ còn một logo Ngó Sen ở góc trên trái; các nút ở trang "Có gì mới & mẹo" của GTK bớt xuống dòng; Qt hết khoảng trống lớn dưới danh sách chế độ ở trang Phím khi kéo cao hoặc phóng to cửa sổ, các bước và dòng "Test một app" ở trang "Kiểm tra máy" thẳng hàng với tiêu đề, số đỏ ở thanh bên không còn che tên trang khi dùng tiếng Anh; công tắc "Tự khôi phục từ gõ sai" trong menu khay giữ nguyên tên sau khi bấm (#652).
 
 ## [1.9.0-1] — 08/11/2026
 

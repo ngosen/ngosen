@@ -15,6 +15,17 @@ from i18n import N_
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
     {
+        "version": "1.9",
+        "title": N_("GNOME without the extension"),
+        "how": N_(
+            "On GNOME, typing modes and per-app settings now work with the Ngó Sen extension off, "
+            "for apps that have a .desktop file. Check my machine says when the extension is still "
+            "needed."
+        ),
+        "example": "",
+        "target": ("page", "check"),
+    },
+    {
         "version": "1.8",
         "title": N_("Check my machine"),
         "how": N_(

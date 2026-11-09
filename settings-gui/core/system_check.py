@@ -27,6 +27,8 @@ TIP = "tip"
 FORWARD_KEYS = "forward-keys@ngosen.github.io"
 INPUT_PANEL = "kimpanel@kde.org"
 INPUT_PANEL_PAGE = "https://extensions.gnome.org/extension/261/"
+# Searched even when XDG_DATA_DIRS leaves it out, as D-Bus does.
+SYSTEM_DATA_DIR = "/usr/share"
 # Not org.gnome.Shell.Extensions: that name starts the Extensions app, which exits without replying.
 INPUT_PANEL_INSTALLER = "org.gnome.Shell"
 
@@ -51,6 +53,9 @@ class Facts:
     forward_keys_state: str = ""
     # The running GNOME Shell has the extension's code that names apps, not just its files.
     app_names_running: bool = False
+    # Ngó Sen has heard GNOME's portal tell the focused app; None when Ngó Sen could not be asked.
+    portal_answered: bool | None = None
+    has_gnome_portal: bool = False
     input_panel_state: str = ""
     # Whether anything starts fcitx5 at the next login; running now says nothing about that.
     starts_at_login: bool = True
@@ -289,10 +294,18 @@ def _needs_shell_for_app_names(facts):
     return bool(shell) and bool(fcitx) and 46 <= shell[0] <= 50 and fcitx < (5, 1, 22)
 
 
+def _watches_portal(facts):
+    """Ngó Sen listens to GNOME's portal for app names only where fcitx5 cannot name them."""
+    return facts.session == "wayland" and _needs_shell_for_app_names(facts)
+
+
 def _app_name_findings(facts):
-    if facts.app_names_running:
+    if facts.app_names_running or facts.portal_answered is True:
         return [Finding(OK, _("Apps keep their own typing mode"))]
     title = _("Optional: each app can keep its own typing mode. Typing works without it.")
+    # Opening this window changed the focused app, so a working portal has told it by now.
+    if facts.has_gnome_portal and facts.portal_answered is False:
+        title = _("GNOME's portal has not told Ngó Sen which app is in use")
     # GNOME reads an extension's files only at login, so turning it on now cannot work yet.
     if facts.forward_keys_state in ("", "OUT OF DATE", "ACTIVE"):
         fix = _("Log out and back in. If this stays, update Ngó Sen.")
@@ -647,9 +660,13 @@ def report(facts, findings, app_test=None):
     if facts.gnome_shell_version:
         state = facts.forward_keys_state or "not installed"
         panel = facts.input_panel_state or "not installed"
-        lines.append(
+        line = (
             f"GNOME Shell {facts.gnome_shell_version}, forward-keys: {state}, input panel: {panel}"
         )
+        if _watches_portal(facts):
+            portal = {True: "answered", False: "silent", None: "unknown"}[facts.portal_answered]
+            line += f", portal: {portal if facts.has_gnome_portal else 'not installed'}"
+        lines.append(line)
     lines.append("")
     lines += [f"[{marks[f.level]}] {f.title}" for f in findings] or ["[OK] no setup problem found"]
     if facts.apps:
@@ -689,6 +706,10 @@ def collect(dbus_handler, ngosen_version="", env=None):
         facts.gnome_shell_version = _gnome_shell_version()
         facts.forward_keys_state = _extension_state(FORWARD_KEYS)
         facts.app_names_running = _shell_names_apps()
+        facts.has_gnome_portal = _has_gnome_portal(env)
+        # Asking would start fcitx5's on-demand addon for nothing elsewhere.
+        if facts.has_gnome_portal and _watches_portal(facts):
+            facts.portal_answered = _portal_answered()
         facts.input_panel_state = _extension_state(INPUT_PANEL)
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
@@ -740,6 +761,20 @@ def _shell_names_apps():
     call += ["--object-path", "/io/github/ngosen/AppName"]
     call += ["--method", "io.github.ngosen.AppName.Sync"]
     return _output(call).strip() == "()"
+
+
+def _has_gnome_portal(env):
+    """xdg-desktop-portal-gnome is installed, looked up where install.sh looks."""
+    dirs = (env.get("XDG_DATA_DIRS") or "/usr/local/share").split(":") + [SYSTEM_DATA_DIR]
+    name = "dbus-1/services/org.freedesktop.impl.portal.desktop.gnome.service"
+    return any(os.path.exists(os.path.join(d, name)) for d in dirs if d)
+
+
+def _portal_answered():
+    """True or False as Ngó Sen says; None when it is not loaded or too old to tell."""
+    call = ["gdbus", "call", "--session", "--dest", "org.fcitx.Fcitx5", "--object-path", "/ngosen"]
+    call += ["--method", "io.github.ngosen.NgoSen1.GnomePortalAnswered"]
+    return {"(true,)": True, "(false,)": False}.get(_output(call).strip())
 
 
 def _pids_named(name, proc="/proc"):

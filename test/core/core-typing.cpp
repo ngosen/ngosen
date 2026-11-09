@@ -481,6 +481,49 @@ namespace {
         check(text == "chào. ", "ibus: a space held during a timed wait still counts for double space", text);
     }
 
+    std::string typedHyphens(const Field& field) {
+        realMode = ngosen::Mode::Preedit;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().doubleHyphenToEmDash = true;
+        auto                owned                       = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{});
+        auto*               app                         = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        state.activate(ngosen::Mode::Preedit, false);
+        for (const char c : std::string("a--b ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(30);
+        }
+        loop.pump(300);
+        return app->text();
+    }
+
+    void testDoubleHyphen() {
+        std::string text = typedHyphens(makeField("wayland", true));
+        check(text == "a—b ", "double hyphen: two hyphens give an em dash", text);
+        Field terminal    = makeField("wayland", true);
+        terminal.terminal = true;
+        text              = typedHyphens(terminal);
+        check(text == "a--b ", "double hyphen: a terminal keeps --, as in git push --force", text);
+        Field url = makeField("wayland", true);
+        url.url   = true;
+        text      = typedHyphens(url);
+        check(text == "a--b ", "double hyphen: an address bar keeps --", text);
+        text = typedHyphens(makeField("xim", false, "xterm"));
+        check(text == "a--b ", "double hyphen: xterm keeps --", text);
+        text = typedHyphens(makeField("ibus", true, "gtk4-im:ptyxis"));
+        check(text == "a--b ", "double hyphen: Ptyxis under GTK4 keeps --", text);
+        Field fcitxGtk4 = makeField("dbus", true, "ptyxis");
+        text            = typedHyphens(fcitxGtk4);
+        check(text == "a--b ", "double hyphen: Ptyxis under fcitx5's GTK4 module keeps --", text);
+        text = typedHyphens(makeField("ibus", true, "gtk4-im:gedit"));
+        check(text == "a—b ", "double hyphen: another GTK4 app still gets the em dash", text);
+        text = typedHyphens(makeField("xim", false, "emacs"));
+        check(text == "a—b ", "double hyphen: another XIM app still gets the em dash", text);
+    }
+
     void testHeldSpaceReopensWord() {
         FakeResources     resources;
         const std::string text = typeWithHeldKey(resources, "vieetj \bs", 6);
@@ -1063,11 +1106,13 @@ namespace {
     }
 
     // Types "tiee" in Sen mode and returns what was committed, with DEL shown as <DEL>.
-    std::string commitsForTiee(const std::string& program, bool& eTaken, const std::string& frontend = "dbus") {
+    std::string commitsForTiee(const std::string& program, bool& eTaken, const std::string& frontend = "dbus", bool surroundingText = false, bool terminal = false) {
         realMode = ngosen::Mode::Sen;
-        FakeLoop            loop;
-        FakeResources       resources;
-        auto                owned = std::make_unique<FakeHost>(loop, makeField(frontend, false, program));
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField(frontend, surroundingText, program);
+        field.terminal            = terminal;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
         FakeHost*           host  = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
 
@@ -1093,8 +1138,23 @@ namespace {
         const std::string viaIbus = commitsForTiee("gtk4-im:ptyxis", taken, "ibus");
         check(viaIbus == "['<DEL>ê']", "ibus ptyxis: one commit erases e and types ê", viaIbus);
 
+        for (const char* app : {"org.gnome.Ptyxis.desktop", "org.gnome.Console.desktop", "org.gnome.Terminal.desktop"}) {
+            const std::string relayed = commitsForTiee(app, taken, "ibus");
+            check(relayed == "['<DEL>ê']", std::string("terminal relayed by GNOME Shell, ") + app + ": one commit erases e and types ê", relayed);
+        }
+        const std::string relayedEditor = commitsForTiee("org.gnome.TextEditor.desktop", taken, "ibus");
+        check(!has(relayedEditor, "<DEL>"), "app relayed by GNOME Shell that is not a terminal: never gets DEL", relayedEditor);
+
         const std::string sdl = commitsForTiee("Medieval2", taken);
         check(!has(sdl, "<DEL>"), "dbus sdl: never gets DEL", sdl);
+
+        // kitty over Wayland claims surrounding text it never sends.
+        const std::string kitty = commitsForTiee("kitty", taken, "wayland_v2", true, true);
+        check(kitty == "['<DEL>ê']", "wayland_v2 terminal claiming surrounding text: one commit erases e and types ê", kitty);
+        const std::string konsole = commitsForTiee("org.kde.konsole", taken, "wayland_v2", true, false);
+        check(!has(konsole, "<DEL>"), "wayland_v2 field not marked as a terminal: never gets DEL", konsole);
+        const std::string alacritty = commitsForTiee("Alacritty", taken, "wayland_v2", true, true);
+        check(!has(alacritty, "<DEL>"), "alacritty pastes commits: never gets DEL", alacritty);
     }
 
     // The log a user saves after a wrong word must show the keys, what was sent and what the app said.
@@ -1170,6 +1230,21 @@ namespace {
         const std::string log = resources.recorder().dump();
         check(has(log, " password=1 ") && has(log, "\tkey\thidden\n"), "recorder: marks the password field", log);
         check(!has(log, "0x0065") && !has(log, "\"ti") && !has(log, "\"ê\"") && !has(log, " e\n"), "recorder: keeps no password text", log);
+    }
+
+    void testRecorderMarksTerminal() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField("wayland_v2", true, "kitty");
+        field.terminal            = true;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        typeTie(state, *host, loop, true);
+        const std::string log = resources.recorder().dump();
+        check(has(log, " terminal=1 "), "recorder: marks a terminal field", log);
     }
 
     // Types `keys`, a word and a macro, keeping every log line; returns them.
@@ -1623,11 +1698,16 @@ namespace {
     }
 
     // ^ is a Ctrl tap, + a Shift tap and < a backspace.
-    void expectTyped(FakeResources& resources, const Field& field, const std::string& typed, const std::string& want, const std::string& what, ngosen::test::AppQuirks quirks = {},
-                     int gapMs = 30) {
+    std::vector<uint32_t> editKeysOf(const std::string& typed) {
         std::vector<uint32_t> keys;
         for (char c : typed)
             keys.push_back(c == '^' ? ngosen::key::Control_L : c == '+' ? ngosen::key::Shift_L : c == '<' ? ngosen::key::BackSpace : static_cast<uint32_t>(c));
+        return keys;
+    }
+
+    void expectTyped(FakeResources& resources, const Field& field, const std::string& typed, const std::string& want, const std::string& what, ngosen::test::AppQuirks quirks = {},
+                     int gapMs = 30) {
+        const auto        keys = editKeysOf(typed);
         const std::string text = ngosen::test::typeInApp(resources, field, quirks, keys, std::vector<int>(keys.size(), gapMs));
         check(text == want, what, text);
     }
@@ -1877,10 +1957,8 @@ namespace {
     }
 
     // Types keys with every log line kept; returns the lines that contain `start`.
-    std::vector<std::string> logLinesWhileTyping(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::string& start,
-                                                 ngosen::test::Typed* run = nullptr, int gapMs = 100) {
-        FakeResources resources;
-        const auto    keys = keysOf(typed);
+    std::vector<std::string> logLinesWhileTyping(FakeResources& resources, const Field& field, ngosen::test::AppQuirks quirks, const std::vector<uint32_t>& keys,
+                                                 const std::string& start, ngosen::test::Typed* run, int gapMs) {
         ngosen::test::captureLog(true);
         const auto               typedRun = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), gapMs));
         std::vector<std::string> lines;
@@ -1892,6 +1970,12 @@ namespace {
         if (run != nullptr)
             *run = typedRun;
         return lines;
+    }
+
+    std::vector<std::string> logLinesWhileTyping(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, const std::string& start,
+                                                 ngosen::test::Typed* run = nullptr, int gapMs = 100) {
+        FakeResources resources;
+        return logLinesWhileTyping(resources, field, quirks, keysOf(typed), start, run, gapMs);
     }
 
     size_t countHaving(const std::vector<std::string>& lines, const std::string& part) {
@@ -2142,6 +2226,38 @@ namespace {
               "long check: a dropped deletion seen after a key costs one word", text + " " + join(lines));
     }
 
+    // A check open while GNOME Shell names the app late says nothing about either app.
+    void testCheckAcrossLateAppName() {
+        const std::string editor = "org.gnome.TextEditor.desktop", files = "org.gnome.Nautilus.desktop";
+        for (const bool renamed : {false, true}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop      loop;
+            FakeResources resources;
+            auto          owned =
+                std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, editor), ngosen::test::AppQuirks{.reportDelayMs = 300, .ignoresSurroundingDel = true});
+            auto*               app = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            ngosen::test::captureLog(true);
+            // The second word goes through the surrounding text, whose deletion the app drops.
+            for (const char c : std::string("too to")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            app->type('o');
+            loop.pump(10);
+            if (renamed)
+                app->setProgram(files);
+            loop.pump(600);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            const bool marked = resources.surroundingUntrusted("ibus", editor) || resources.surroundingUntrusted("ibus", files);
+            check(marked == !renamed && countHaving(lines, "Surrounding text untrusted") == (renamed ? 0 : 1),
+                  renamed ? "late app name: a dropped deletion marks no app" : "late app name: the same dropped deletion marks the app it stays in", join(lines));
+        }
+    }
+
     // The user's own edits while a long check is open say nothing about the app.
     void testEditsDuringLongCheck() {
         const Field              gnome = makeField("ibus", true);
@@ -2213,6 +2329,61 @@ namespace {
         const auto                    lines = logLinesWhileTyping(field, qt, "nam tieesng ", "", &run, 150);
         check(run.text == "nam tiếng " && countHaving(lines, "Keep the word as typed") == 0 && countHaving(lines, "copy shows the earlier word") > 0,
               "stale copy: a replacement after a replacement deletes on the older copy", run.text + " " + join(lines));
+    }
+
+    // The replacement lines without their timing.
+    std::vector<std::string> replaceLines(FakeResources& resources, const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, ngosen::test::Typed& run) {
+        auto lines = logLinesWhileTyping(resources, field, quirks, editKeysOf(typed), "Replace: ", &run, 150);
+        for (auto& line : lines)
+            line = line.substr(0, line.find(" after "));
+        return lines;
+    }
+
+    std::string escaped(const std::string& text) {
+        std::string out;
+        for (char c : text)
+            out += c == '\n' ? std::string("\\n") : std::string(1, c);
+        return out;
+    }
+
+    // How replacements end when they cannot go as planned, pinned so moving the code keeps them.
+    void testReplacementFailures() {
+        ngosen::test::Typed run;
+        {
+            FakeResources resources;
+            Field         qt   = surroundingOnlyField();
+            qt.preeditFallback = true;
+            const auto lines =
+                replaceLines(resources, qt, {.dropsForwardedKeys = true, .reportsTextOnceFilled = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true},
+                             "nam tieesng<<ng ", run);
+            check(run.text == "nam tiếng " && countHaving(lines, "method=surrounding") == 3, "Qt over GNOME Shell: a word typed again after backspaces",
+                  run.text + " " + join(lines));
+        }
+        {
+            // SDL over IBus with no XTEST. The text is wrong: each key is committed by name and also reaches the app.
+            FakeResources resources;
+            const auto    lines = replaceLines(resources, makeField("ibus", false, "SDL_app"), {}, "vieetj ", run);
+            check(run.text == "vieeettjjệt " && countHaving(lines, "ended=backspaces not sent") == 1, "backspaces that cannot be sent", escaped(run.text) + " " + join(lines));
+        }
+        {
+            // The fake app takes no selection keys, so the selection never shows.
+            FakeResources resources;
+            setXTestSenderForTest([](int) { return true; });
+            const auto lines = replaceLines(resources, makeField("xim", true), {.takesXTest = true, .textAfterCursor = "\n\n"}, "vieetj ", run);
+            setXTestSenderForTest({});
+            check(run.text == "vie\ntj \n" && countHaving(lines, "method=overtype wait=none ended=overtype gave up") == 1, "an overtype that times out",
+                  escaped(run.text) + " " + join(lines));
+        }
+        {
+            // A field that takes no keys and whose surrounding text is untrusted, with a macro.
+            FakeResources resources;
+            resources.setMacros({{"ko", "không"}});
+            resources.markSurroundingUntrusted("ibus", "qtapp");
+            Field field      = surroundingOnlyField();
+            field.program    = "qtapp";
+            const auto lines = replaceLines(resources, field, {.dropsForwardedKeys = true}, "vieetj ko ", run);
+            check(run.text == "vieetj ko " && lines.empty(), "no way to delete: words and a macro", escaped(run.text) + " " + join(lines));
+        }
     }
 
     // Firefox on GNOME turns the deletion's bytes back into characters on a copy it updates only when
@@ -2617,6 +2788,74 @@ namespace {
         gaps.back()    = 1000;
         const auto run = ngosen::test::typeInAppTraced(resources, makeField("wayland_v2", true, "firefox"), firefox, keys, gaps);
         check(run.text == "tiếng ngữ của ", "wlroots: a late backspace is not overtaken by the commit", run.text);
+    }
+
+    // Firefox on Hyprland answers after the next key when typing fast, and a report held up past the check
+    // counts as a miss. A field that then catches up must get back to the surrounding text.
+    std::vector<std::string> replacementsAfterLateWords(bool recovery, int laterDelayMs = 120, int laterGapMs = 60, int laterRounds = 1) {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().copyWaitRecovery = recovery;
+        auto owned                                  = std::make_unique<ngosen::test::FakeApp>(
+            loop, makeField("wayland_v2", true, "firefox"),
+            ngosen::test::AppQuirks{.reportDelayMs = 30, .backspaceLagMs = 60, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+        auto*               app = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        auto typeAt = [&](const std::string& typed, int gapMs) {
+            for (const uint32_t key : keysOf(typed)) {
+                app->type(key);
+                loop.pump(gapMs);
+            }
+            loop.pump(400);
+        };
+        typeAt("tieengs ", 150);
+        app->setReportDelay(250);
+        typeAt("vieetj tieesng ", 150);
+        app->setReportDelay(laterDelayMs);
+        ngosen::test::captureLog(true);
+        for (int i = 0; i < laterRounds; ++i)
+            typeAt("nguwx cuar ddeepj nguwowif tieengs vieetj ", laterGapMs);
+        auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        lines.push_back("text=" + app->text());
+        return lines;
+    }
+
+    std::vector<std::string> replaceMethods(const std::vector<std::string>& lines) {
+        std::vector<std::string> methods;
+        for (const auto& line : lines) {
+            const auto at = line.find("Replace: method=");
+            if (at != std::string::npos)
+                methods.push_back(line.substr(at + 16, line.find(" wait=") - at - 16));
+        }
+        return methods;
+    }
+
+    void testLateCopiesRecoverOnWlroots() {
+        const auto lines   = replacementsAfterLateWords(true);
+        const auto methods = replaceMethods(lines);
+        check(lines.back() == "text=tiếng việt tiếng ngữ của đệp người tiếng việt ", "wlroots late copies: the words come out right", lines.back());
+        const auto backspaces = std::count(methods.begin(), methods.end(), "forwarded backspaces");
+        check(backspaces <= 4, "wlroots late copies: backspaces only until the field is tried again", std::to_string(backspaces) + " of " + std::to_string(methods.size()));
+        check(countHaving(lines, "Wait for the copy again") >= 1, "wlroots late copies: the copy wait comes back", join(lines));
+        const bool tailSurrounding = methods.size() >= 6 && std::all_of(methods.end() - 6, methods.end(), [](const std::string& m) { return m == "surrounding"; });
+        check(tailSurrounding, "wlroots late copies: the last words go through the surrounding text", join(lines));
+
+        // With CopyWaitRecovery off, the field stays on backspaces.
+        const auto oldLines   = replacementsAfterLateWords(false);
+        const auto oldMethods = replaceMethods(oldLines);
+        check(oldLines.back() == lines.back(), "wlroots late copies, recovery off: the words come out right", oldLines.back());
+        check(countHaving(oldLines, "Wait for the copy again") == 0 && oldMethods.back() == "forwarded backspaces", "wlroots late copies, recovery off: no wait again",
+              join(oldLines));
+
+        // A field that stays behind is not held up again and again.
+        const auto behind = replacementsAfterLateWords(true, 600, 150, 3);
+        check(behind.back() == "text=tiếng việt tiếng ngữ của đệp người tiếng việt ngữ của đệp người tiếng việt ngữ của đệp người tiếng việt ",
+              "wlroots copies stay late: the words come out right", behind.back());
+        check(countHaving(behind, "Wait for the copy again") <= 2, "wlroots copies stay late: the copy wait comes back at most twice", join(behind));
     }
 
     // A copy that comes a moment late is no reason to leave the surrounding path.
@@ -3074,6 +3313,19 @@ namespace {
         check(!ok, "snap names are only shortened for IBus clients", said(ok));
     }
 
+    // GNOME Shell relays apps under their desktop file name.
+    void testGnomeBrowserIds() {
+        for (const char* id : {"firefox", "firefox-esr", "firefox_firefox", "org.mozilla.firefox", "zen", "app.zen_browser.zen", "librewolf", "io.gitlab.librewolf-community",
+                               "waterfox", "net.waterfox.waterfox", "floorp", "one.ablaze.floorp", "mullvad-browser", "net.mullvad.MullvadBrowser", "icecat"}) {
+            const bool ok = ngosen::hidesAddressBarFlag(makeField("ibus", true, std::string(id) + ".desktop"));
+            check(ok, std::string("GNOME's ") + id + " is a Firefox", ok ? "true" : "false");
+        }
+        for (const char* id : {"org.gnome.TextEditor", "org.mozilla.Thunderbird", "zenity", "org.gnome.Epiphany"}) {
+            const bool ok = ngosen::hidesAddressBarFlag(makeField("ibus", true, std::string(id) + ".desktop"));
+            check(!ok, std::string("GNOME's ") + id + " is not a Firefox", ok ? "true" : "false");
+        }
+    }
+
     // VS Code reports the cursor at the start of the line and then back at the end of the word,
     // with the text unchanged; the word being typed must survive that.
     void testCursorBounceBack() {
@@ -3264,10 +3516,70 @@ namespace {
         const std::string sen  = ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
         check(sen == "test ", "sen: a doubled key still undoes the tone", sen);
     }
+
+    enum class Reload {
+        None,
+        Guarded
+    };
+
+    struct ReloadRun {
+        std::string text;
+        bool        heldBeforeReload = false;
+        bool        heldAfterEnd     = true;
+        bool        heldAfterReset   = true;
+    };
+
+    // Types before, reloads the settings as a shell does between keys, then types after.
+    ReloadRun typeAcrossReload(ngosen::Mode mode, const std::string& before, Reload reload, const std::string& after) {
+        realMode = mode;
+        realtextLen.store(0);
+        FakeResources resources;
+        resources.mutableOptions().enableMacroInOffMode = true;
+        resources.setMacros({{"vn", "việt nam"}});
+        FakeLoop               loop;
+        auto                   owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true), ngosen::test::AppQuirks{});
+        ngosen::test::FakeApp* app   = owned.get();
+        ngosen::TypingState    state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& text) {
+            for (const char c : text) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+        };
+        ReloadRun run;
+        typeText(before);
+        run.heldBeforeReload = state.holdsWord();
+        if (reload == Reload::Guarded && !state.holdsWord())
+            state.setEngine();
+        typeText(after);
+        loop.pump(300);
+        run.text         = app->text();
+        run.heldAfterEnd = state.holdsWord();
+        state.reset();
+        run.heldAfterReset = state.holdsWord();
+        return run;
+    }
+
+    void testHoldsWordAcrossReload() {
+        const auto sen = typeAcrossReload(ngosen::Mode::Sen, "vie", Reload::Guarded, "etj ");
+        check(sen.heldBeforeReload, "holdsWord: sen word in progress", sen.text);
+        check(!sen.heldAfterEnd, "holdsWord: sen word ended by Space", sen.text);
+        check(sen.text == "việt ", "holdsWord: guarded reload keeps the sen word", sen.text);
+
+        const auto english = typeAcrossReload(ngosen::Mode::Off, "vn", Reload::Guarded, " ");
+        check(english.heldBeforeReload, "holdsWord: English macro abbreviation in progress", english.text);
+        check(!english.heldAfterEnd, "holdsWord: English word ended by Space", english.text);
+        check(english.text == "việt nam ", "holdsWord: guarded reload keeps the macro", english.text);
+
+        const auto open = typeAcrossReload(ngosen::Mode::Sen, "", Reload::None, "vie");
+        check(open.heldAfterEnd && !open.heldAfterReset, "holdsWord: reset() ends the word", open.text);
+    }
 }
 
 int main() {
     testEnglishWordKeepsDoubledLetter();
+    testHoldsWordAcrossReload();
     testQuirks();
     testPreeditTelex();
     testPreeditEnterAfterCommit();
@@ -3290,6 +3602,7 @@ int main() {
     testEnterDuringTimedWaitFollowsCommit();
     testBackspaceDuringTimedWaitFollowsCommit();
     testHeldSpaceCountsForDoubleSpace();
+    testDoubleHyphen();
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();
@@ -3301,6 +3614,7 @@ int main() {
     testRetoneAtWordEndInBothModes();
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();
+    testLateCopiesRecoverOnWlroots();
     testLockWordNotOnChord();
     testMacroCapitalized();
     testMacroKeyCase();
@@ -3330,6 +3644,7 @@ int main() {
     testRecorderKeepsTheReplacement();
     testRecorderNotesFieldSwitch();
     testRecorderHidesPasswords();
+    testRecorderMarksTerminal();
     testRecorderKeepsOneEventPerLine();
     testRecorderLimits();
     testRecorderSkipsRepeatedReports();
@@ -3351,6 +3666,7 @@ int main() {
     testEmptyFieldFirstWord();
     testSlowReport();
     testStaleCopyBeforeReplacement();
+    testReplacementFailures();
     testReplacementsInOneTurn();
     testFirefoxReportsOnlyAfterCommit();
     testReportRequestKeepsNextEdit();
@@ -3381,6 +3697,7 @@ int main() {
     testCursorBounceBack();
     testFirstLetterCursorBounce();
     testIbusClientNames();
+    testGnomeBrowserIds();
     testAutofillMark();
     testReportWithNextKey();
     testSilentFromFirstDeletion();
@@ -3388,6 +3705,7 @@ int main() {
     testBackspacePathDuringLongCheck();
     testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
+    testCheckAcrossLateAppName();
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();
     testUnansweredChecksLeaveNoMark();

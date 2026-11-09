@@ -5,6 +5,7 @@
  */
 #include "ngosen-app-quirks.h"
 
+#include "ngosen-gnome-apps.h"
 #include "ngosen-strings.h"
 #include "ngosen-xtest.h"
 
@@ -37,6 +38,23 @@ namespace ngosen {
         // WPS Writer, Spreadsheets and Presentation.
         bool isWps(const std::string& program) {
             return program == "wps" || program == "et" || program == "wpp";
+        }
+
+        // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
+        bool isGtk4VteTerminal(const Field& field) {
+            const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
+            if (!gtk4Module)
+                return false;
+            const std::string name = appName(field);
+            return name == "ptyxis" || name == "kgx";
+        }
+
+        // GNOME Shell relays apps under their GNOME app id and without their input purpose.
+        bool isShellRelayedTerminal(const Field& field) {
+            if (field.frontend != "ibus")
+                return false;
+            const std::string name = appName(field);
+            return name == "org.gnome.Ptyxis" || name == "org.gnome.Console" || name == "org.gnome.Terminal";
         }
     } // namespace
 
@@ -74,7 +92,7 @@ namespace ngosen {
         if (field.frontend == "ibus")
             return isWps(appName(field)) && xsendAvailable();
         // Wine applies forwarded keys after a later commit and reports nothing that sets it apart;
-        // xterm and XInput2 clients drop sent events, so the rest keep forwarding.
+        // xterm and XInput2 clients drop sent events, so only Wine gets them.
         return field.frontend == "xim" && isStartsWith(appName(field), "wine") && xsendAvailable();
     }
 
@@ -93,16 +111,24 @@ namespace ngosen {
     }
 
     bool erasesWithCommittedDel(const Field& field) {
-        if (field.surroundingText)
-            return false;
-        if (field.terminal)
+        // kitty and VTE over Wayland claim surrounding text but never send any.
+        if (field.terminal) {
+            // Alacritty pastes a commit longer than one character once the app turns on bracketed paste,
+            // so the DEL would be pasted, not run.
+            const std::string name = appName(field);
+            return name != "Alacritty" && name != "alacritty";
+        }
+        // XIM has no input purpose, so xterm is known only by name.
+        if (field.frontend == "xim")
+            return appName(field) == "xterm";
+        return !field.surroundingText && (isGtk4VteTerminal(field) || isShellRelayedTerminal(field));
+    }
+
+    bool takesDoubleHyphenLiterally(const Field& field) {
+        if (field.terminal || field.url || isGtk4VteTerminal(field) || isShellRelayedTerminal(field))
             return true;
-        const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
-        if (!gtk4Module)
-            return false;
-        // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
-        const std::string program = appName(field);
-        return program == "ptyxis" || program == "kgx";
+        // XIM has no input purpose, so xterm is known only by name.
+        return field.frontend == "xim" && appName(field) == "xterm";
     }
 
     bool selectsOverAutocompletion(const Field& field) {
@@ -151,7 +177,7 @@ namespace ngosen {
     }
 
     bool isGnomeSearch(const Field& field) {
-        return appName(field) == "gnome-shell-overview";
+        return appName(field) == gnomeOverviewApp;
     }
 
     bool dropsCommitsWithoutFocus(const Field& field) {
@@ -190,12 +216,14 @@ namespace ngosen {
     }
 
     bool hidesAddressBarFlag(const Field& field) {
-        // Debian names its Firefox ESR program firefox-esr; the forks share Firefox's address bar.
+        // Debian names its Firefox ESR program firefox-esr; the forks share Firefox's address bar. GNOME names
+        // relayed apps by desktop file, a reverse-DNS ID for Fedora's Firefox and for Flatpaks.
         const std::string program = appName(field);
         if (isStartsWith(program, "firefox"))
             return true;
-        for (const char* fork : {"zen", "librewolf", "waterfox", "floorp", "mullvadbrowser", "icecat"}) {
-            if (program == fork)
+        for (const char* name : {"zen", "librewolf", "waterfox", "floorp", "mullvadbrowser", "mullvad-browser", "icecat", "org.mozilla.firefox", "app.zen_browser.zen",
+                                 "io.gitlab.librewolf-community", "net.waterfox.waterfox", "one.ablaze.floorp", "net.mullvad.MullvadBrowser"}) {
+            if (program == name)
                 return true;
         }
         return false;

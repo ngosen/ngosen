@@ -23,4 +23,8 @@ namespace fcitx {
         return path.string();
     }
 
+    bool NgoSenDBusObject::gnomePortalAnswered() {
+        return engine_->gnomePortalAnswered();
+    }
+
 } // namespace fcitx

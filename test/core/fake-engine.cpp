@@ -17,6 +17,20 @@ namespace {
 
     bool capturing = false;
 
+    // NGOSEN_REPLACE_RECORD names a file that gets each replacement's log line, so moving code can be
+    // checked to change none of them.
+    FILE* recordFile() {
+        static FILE* file = [] {
+            const char* path = std::getenv("NGOSEN_REPLACE_RECORD");
+            return path != nullptr ? std::fopen(path, "w") : nullptr;
+        }();
+        return file;
+    }
+
+    bool isReplaceLine(const std::string& message) {
+        return message.rfind("[DEBUG] Replace: ", 0) == 0;
+    }
+
 } // namespace
 
 namespace ngosen {
@@ -24,13 +38,16 @@ namespace ngosen {
     // NGOSEN_TEST_LOG=1 shows the typing logic's log on stderr.
     bool logEnabled(LogLevel /*level*/) {
         static const bool enabled = std::getenv("NGOSEN_TEST_LOG") != nullptr;
-        return enabled || capturing;
+        return enabled || capturing || recordFile() != nullptr;
     }
 
     void writeLog(LogLevel /*level*/, const char* file, int line, const std::string& message) {
+        static const bool shown = std::getenv("NGOSEN_TEST_LOG") != nullptr;
+        if (recordFile() != nullptr && isReplaceLine(message))
+            std::fprintf(recordFile(), "%s\n", message.c_str() + 8);
         if (capturing)
             test::capturedLog().push_back(message);
-        else
+        else if (shown)
             std::fprintf(stderr, "%s:%d %s\n", file, line, message.c_str());
     }
 

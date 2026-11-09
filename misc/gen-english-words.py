@@ -18,6 +18,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DICTIONARY = Path("/usr/share/hunspell/en_US.dic")
 SUFFIXES = ["s", "es", "ed", "d", "ing", "er", "ers", "ly", "y", "ies", "ier", "iest"]
+# hunspell -G drops the forms that are not words, so guessing too many costs only time.
+MORE_SUFFIXES = SUFFIXES + [
+    "est",
+    "ment",
+    "ments",
+    "ness",
+    "ion",
+    "ions",
+    "ation",
+    "ations",
+    "ings",
+    "ive",
+    "al",
+]
 WORD_LIST = Path("/usr/share/dict/words")
 # Typed on purpose: `sus` takes a tone, so `suss` is how people get it.
 LEFT_OUT = {"suss"}
@@ -25,15 +39,15 @@ LEFT_OUT = {"suss"}
 ALWAYS_IN = {"pass"}
 
 
-def hunspell_candidates():
+def hunspell_candidates(pattern=r"[a-z]{3,}", suffixes=SUFFIXES):
     stems = set()
     for line in DICTIONARY.read_text(errors="ignore").split("\n")[1:]:
         word = line.split("/")[0].split("\t")[0]
-        if re.fullmatch(r"[a-z]{3,}", word):
+        if re.fullmatch(pattern, word):
             stems.add(word)
     words = set(stems)
     for stem in stems:
-        for suffix in SUFFIXES:
+        for suffix in suffixes:
             words.add(stem + suffix)
             if stem[-1] in "ey":
                 words.add(stem[:-1] + suffix)
@@ -96,7 +110,22 @@ def retone_lookalikes():
     print(f"{len(found)} words typed like a retoned Vietnamese word")
 
 
+def common_words():
+    """Every English word the dictionary knows, names in lower case, for data/english-common.txt.
+    The engine keeps a Backspace on a word shown as typed when the keys start one of these."""
+    words = english(hunspell_candidates(r"[a-z]{2,}", MORE_SUFFIXES))
+    words |= {w.lower() for w in english(hunspell_candidates(r"[A-Z][a-z]+", MORE_SUFFIXES))}
+    # The word list has the forms the guesses miss, like `admirable`; hunspell still decides.
+    listed = set(WORD_LIST.read_text(errors="ignore").split("\n"))
+    words |= english(w for w in listed if re.fullmatch(r"[a-z]{2,}", w))
+    words |= {w.lower() for w in english(w for w in listed if re.fullmatch(r"[A-Z][a-z]+", w))}
+    path = ROOT / "data/english-common.txt"
+    path.write_text("".join(f"{word}\n" for word in sorted(words)))
+    print(f"{len(words)} common words")
+
+
 def main():
+    common_words()
     words = sorted(english(candidates()))
     changed = [(w, s) for w, s in shown_by_engine(words) if w != s and s.isascii()]
     shown_english = english([s for _, s in changed])

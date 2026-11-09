@@ -36,12 +36,16 @@
 #include <fcitx-utils/event.h>
 
 namespace ngosen {
+    class GnomeShellWatcher;
     class TypingState;
 }
 
 namespace fcitx {
 
     class NgoSenDBusObject;
+
+    // fcitx5 also switches input methods when a field changes, such as leaving a password field.
+    bool switchPickedByUser(InputMethodSwitchedReason reason);
 
     // Hangs one typing state on each fcitx5 input context; the state itself does not depend on fcitx5.
     class TypingStateProperty final : public InputContextProperty {
@@ -56,6 +60,9 @@ namespace fcitx {
       private:
         std::unique_ptr<ngosen::TypingState> state_;
     };
+
+    // Whether the mode menu reaches the screen: keys go to a menu nobody sees otherwise.
+    bool modeMenuCanDraw(const std::string& currentUi, const std::string& frontend, const std::string& display, bool clientDrawsPanel);
 
     /**
      * @brief Main engine class for the Ngó Sen input method.
@@ -114,6 +121,8 @@ namespace fcitx {
          * @brief Reloads configuration from disk.
          */
         void reloadConfig() override;
+        // Shows the one-time "What's new" notification for a feature release.
+        void announceRelease(const std::string& release);
 
         /**
          * @brief Gets the current configuration.
@@ -223,6 +232,15 @@ namespace fcitx {
         static std::filesystem::path typingLogDir();
         // Writes the recorder to a new file in typingLogDir(); an empty path if that failed.
         std::filesystem::path writeTypingLog();
+        // Whether GNOME's portal has told which app is focused, for apps GNOME Shell relays.
+        bool gnomePortalAnswered() const;
+
+        // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
+        std::string getProgramName(InputContext* ic) const;
+        // Takes the app GNOME Shell has focused, empty when unknown, and applies that app's mode.
+        void shellFocusedAppChanged(const std::string& app);
+        // The mode appName types in: its toggle-key switch, else its menu rule, else the last switch.
+        NgoSenMode modeFor(const std::string& appName) const;
 
       private:
         // A tray menu entry and the option that shows it; nullptr means always shown.
@@ -241,6 +259,7 @@ namespace fcitx {
         ngosenMacroTable                            macroTables_;
         ngosen::CGoObject                           macroTableObject_;
         ngosenAppRules                              appRulesTables_;
+        ngosenAppSwitches                           appSwitchesTables_;
 
         FactoryFor<TypingStateProperty>             factory_;
         std::vector<std::string>                    imNames_;
@@ -269,22 +288,28 @@ namespace fcitx {
         std::vector<ScopedConnection>               connections_;
         ngosen::CGoObject                           dictionary_;
         std::unordered_map<std::string, NgoSenMode> appRules_;
+        std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
         std::string                                 vimAppsPath_;
-        bool                                        isSelectingAppMode_ = false;
+        std::weak_ptr<CandidateList>                modeMenuList_;
         // A modifier-only toggle key fires on release, unless another key came in between.
         bool                             toggleTapArmed_  = false;
         uint64_t                         toggleTapTime_   = 0;
         bool                             retypeOnRelease_ = false;
         std::string                      currentConfigureApp_;
         std::unique_ptr<EventSourceTime> cycleModeNotificationTimer_;
+        std::unique_ptr<EventSourceTime> announceTimer_;
         std::string                      iconCacheName_;
         std::string                      iconCachePath_;
         static constexpr uint64_t        CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
         FCITX_ADDON_DEPENDENCY_LOADER(emoji, instance_->addonManager());
 #ifdef NGOSEN_HAS_DBUS
         FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
-        std::unique_ptr<NgoSenDBusObject> dbusObject_;
+        std::unique_ptr<NgoSenDBusObject>          dbusObject_;
+        std::unique_ptr<ngosen::GnomeShellWatcher> gnomeShell_;
+#endif
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        FCITX_ADDON_DEPENDENCY_LOADER(notifications, instance_->addonManager());
 #endif
         std::unique_ptr<EmojiLoader>           emojiLoader_;
         mutable std::mutex                     appRulesMutex_;
@@ -341,7 +366,7 @@ namespace fcitx {
         static void updateAction(InputContext* ic, std::unique_ptr<SimpleAction>& action, Option<bool>& option, const std::string& textOnOff);
 
         /**
-         * @brief Builds a submenu with one checkable action per choice.
+         * @brief Builds a submenu with one action per choice.
          * @param pick Called with the chosen name.
          */
         void initChoiceMenu(std::unique_ptr<SimpleAction>& action, std::vector<std::unique_ptr<SimpleAction>>& choices, std::unique_ptr<Menu>& menu, const std::string& actionId,
@@ -349,9 +374,10 @@ namespace fcitx {
                             const std::function<void(InputContext*, const std::string&)>& pick, UserInterfaceManager& uiManager);
 
         /**
-         * @brief Checks the choice named actionId-current and unchecks the others.
+         * @brief Marks the choice named actionId-current and names it in the parent entry.
          */
-        static void checkChoice(const std::vector<std::unique_ptr<SimpleAction>>& choices, const std::string& actionId, const std::string& current, InputContext* ic);
+        static void checkChoice(SimpleAction& parent, const std::string& title, const std::vector<std::unique_ptr<SimpleAction>>& choices, const std::string& actionId,
+                                const std::string& current, InputContext* ic);
 
         /**
          * @brief Updates the charset action UI.
@@ -388,12 +414,6 @@ namespace fcitx {
          */
         void saveAppRules() const;
 
-        /**
-         * @brief Get application-specific mode rules
-         * @return Current application-specific mode rules
-        */
-
-        NgoSenMode getAppRule(const std::string& appName) const;
         // The rule's own name: appName itself, or appName without ".desktop".
         std::optional<std::string> appRuleName(const std::string& appName) const;
         bool                       vimModeFor(const std::string& appName) const;
@@ -403,8 +423,12 @@ namespace fcitx {
         std::optional<NgoSenMode>  findAppRule(const std::string& appName) const;
         // The mode Vietnamese typing uses: the configured one, unless that is Off.
         NgoSenMode vietnameseMode() const;
+        // The mode Vietnamese typing uses in appName when no rule picks one.
+        NgoSenMode vietnameseModeFor(const std::string& appName) const;
         // The mode of an app without a rule: Off until the toggle key turns Vietnamese on.
         NgoSenMode globalMode() const;
+        // The mode an app gets when the user has picked none for it.
+        NgoSenMode defaultModeFor(const std::string& appName) const;
         bool       isToggleKey(const Key& key) const;
         // Handles the toggle key; returns whether the key was it.
         bool handleToggleKey(KeyEvent& keyEvent);
@@ -416,6 +440,13 @@ namespace fcitx {
          * @param mode The mode to set
          */
         void setAppRule(const std::string& appName, NgoSenMode mode);
+
+        // The switch's own name: appName itself, or appName without ".desktop".
+        std::optional<std::string> appSwitchName(const std::string& appName) const;
+        std::optional<bool>        findAppSwitch(const std::string& appName) const;
+        // Saved unless the app has no name of its own.
+        void setAppSwitch(const std::string& appName, bool vietnamese);
+        void clearAppSwitch(const std::string& appName);
 
         /**
          * @brief Shows the application mode selection menu.
@@ -438,17 +469,25 @@ namespace fcitx {
 
         // Writes the typing log and shows its path.
         void saveTypingLog(InputContext* ic);
-        void clearPanelLater(InputContext* ic, uint64_t delayUs);
+        // Null when nothing tells whether GNOME Shell loses forwarded keys.
+        const bool* shellDropsKeys() const;
+        std::string shellFocusedApp_;
+        // Compared only, never dereferenced: fcitx5 may drop a context without a deactivate.
+        InputContext* activeContext_ = nullptr;
+        void          showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn);
+        void          clearPanelLater(InputContext* ic, uint64_t delayUs);
 
-        void handleModeMenuKey(KeyEvent& keyEvent);
-        void moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
+        void          handleModeMenuKey(KeyEvent& keyEvent);
+        void          moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
         // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.
         void pickMenuMode(InputContext* ic, NgoSenMode mode, bool isDefault);
         void openModeMenu(InputContext* ic);
+        // Focus changes and timers can clear the panel, so the menu is open only while ic's panel still shows it.
+        bool isModeMenuOpen(InputContext* ic) const;
         // The modes the cycle key steps through, in the configured order.
-        std::vector<NgoSenMode> cycleModes();
+        std::vector<NgoSenMode> cycleModes(const std::string& appName);
         void                    cycleMode(InputContext* ic);
 
         /**
@@ -459,23 +498,11 @@ namespace fcitx {
         void showCycleModeNotification(NgoSenMode mode, InputContext* ic);
 
         /**
-         * @brief Closes the application mode selection menu.
-         */
-        void closeAppModeMenu();
-
-        /**
          * @brief Sets the current input mode.
          * @param mode The mode to set.
          * @param ic Current input context.
          */
         void setMode(NgoSenMode mode, InputContext* ic);
-
-        /**
-         * @brief Get name of current program
-         * @param ic Current input context.
-         * @return Name of current program
-         */
-        static std::string getProgramName(InputContext* ic);
 
         /**
          * @brief Detects if the system is in dark mode.

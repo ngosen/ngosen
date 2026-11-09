@@ -224,11 +224,10 @@ namespace {
     }
 
     // Types text in the app while Ngó Sen types English, switches Vietnamese on, then presses keys.
-    std::string retypeInApp(const Field& field, Mode mode, const std::string& typed, const std::vector<uint32_t>& after, AppQuirks quirks = {}) {
+    std::string retypeInApp(FakeResources& resources, const Field& field, Mode mode, const std::string& typed, const std::vector<uint32_t>& after, AppQuirks quirks = {}) {
         realMode = Mode::Off;
         realtextLen.store(0);
-        FakeLoop      loop;
-        FakeResources resources;
+        FakeLoop loop;
         quirks.handsBackKeys      = quirks.handsBackKeys || field.frontend == "xim";
         auto                owned = std::make_unique<FakeApp>(loop, field, quirks);
         FakeApp*            app   = owned.get();
@@ -248,6 +247,22 @@ namespace {
         }
         loop.pump(300);
         return app->text();
+    }
+
+    std::string retypeInApp(const Field& field, Mode mode, const std::string& typed, const std::vector<uint32_t>& after, AppQuirks quirks = {}) {
+        FakeResources resources;
+        return retypeInApp(resources, field, mode, typed, after, quirks);
+    }
+
+    // Pinned so moving the replacement code keeps it.
+    void testRetypeWithNoWayToDelete() {
+        FakeResources resources;
+        resources.markSurroundingUntrusted("ibus", "qtapp");
+        Field field            = makeField("ibus", true);
+        field.sendsNoKeys      = true;
+        field.program          = "qtapp";
+        const std::string text = retypeInApp(resources, field, Mode::Sen, "tieengs vieetj", {}, {.dropsForwardedKeys = true});
+        check(text == "tieengs vieetj", "retype where nothing can delete leaves the text", text);
     }
 
     void testRetypeInApp(const std::string& frontend, bool surroundingText, Mode mode) {
@@ -285,13 +300,15 @@ namespace {
     }
 
     // Types prefix and then typed in English, switches on, clicks after the prefix, then presses keys.
-    std::string retypeAfterClick(const Field& field, const std::string& prefix, const std::string& typed, const std::vector<uint32_t>& after) {
+    // With appResets the app tells of the click only by a reset, as apps over IBus on GNOME do.
+    std::string retypeAfterClick(const Field& field, const std::string& prefix, const std::string& typed, const std::vector<uint32_t>& after, bool appResets = false) {
         realMode = Mode::Off;
         realtextLen.store(0);
         FakeLoop      loop;
         FakeResources resources;
         AppQuirks     quirks;
         quirks.handsBackKeys      = field.frontend == "xim";
+        quirks.hidesCursorMoves   = appResets;
         auto                owned = std::make_unique<FakeApp>(loop, field, quirks);
         FakeApp*            app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
@@ -306,8 +323,10 @@ namespace {
         state.offerRetype();
         loop.pump(150);
         app->moveCursor(prefix.size());
+        if (appResets)
+            state.resetAfterAppCommit(false);
         // Fields that report no text learn of a click only from the X11 monitor.
-        if (!field.surroundingText)
+        else if (!field.surroundingText)
             g_mouse_clicked.store(true);
         loop.pump(150);
         for (const uint32_t sym : after) {
@@ -319,14 +338,53 @@ namespace {
         return app->text();
     }
 
-    void testClickDropsRetype(const std::string& frontend, bool surroundingText) {
+    void testClickDropsRetype(const std::string& frontend, bool surroundingText, bool appResets = false) {
         const Field       field = makeField(frontend, surroundingText);
-        const std::string what  = frontend + ": ";
-        std::string       text  = retypeAfterClick(field, "0123456789 ", "abc tieengs", {ngosen::key::Return});
+        const std::string what  = frontend + (appResets ? " with a reset: " : ": ");
+        std::string       text  = retypeAfterClick(field, "0123456789 ", "abc tieengs", {ngosen::key::Return}, appResets);
         check(text == "0123456789 abc tieengs", what + "Enter after a click elsewhere leaves the text alone", text);
 
-        text = retypeAfterClick(field, "0123456789 ", "tieengs vieetj", {ngosen::key::Escape});
+        text = retypeAfterClick(field, "0123456789 ", "tieengs vieetj", {ngosen::key::Escape}, appResets);
         check(text == "0123456789 tiếng việt", what + "Esc after a click elsewhere leaves the retyped text", text);
+    }
+
+    // A click seen on X11 and the switch key right after it, with no key typed in between.
+    void testClickBeforeSwitchDropsKeys() {
+        const auto offer = offerAfter(
+            [](auto& s) {
+                noteWhileOff(s, "vieetj");
+                g_mouse_clicked.store(true);
+            },
+            makeField("xim", false));
+        g_mouse_clicked.store(false);
+        check(offer == "(no offer)", "a click before the switch key drops the text", offer);
+    }
+
+    // English typed before a password prompt must not come back as an offer once the prompt is over.
+    void testHiddenPromptDropsKeys() {
+        for (const bool prompt : {false, true}) {
+            realMode = Mode::Off;
+            FakeLoop      loop;
+            FakeResources resources;
+            Field         field       = makeField("wayland", true);
+            field.program             = "kitty";
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            noteWhileOff(state, "abc tieengs");
+            resources.terminalHidesInput = prompt;
+            state.passesHiddenInput();
+            resources.terminalHidesInput = false;
+            state.passesHiddenInput();
+            state.activate(Mode::Sen, false);
+            state.offerRetype();
+            loop.pump(150);
+            const std::string offer = !host->candidates() ? "(no offer)" : (host->labels().empty() ? "(empty)" : host->labels()[0]);
+            if (prompt)
+                check(offer == "(no offer)", "a hidden prompt drops the English typed before it", offer);
+            else
+                check(offer == "abc tieengs → abc tiếng", "without a prompt the English is offered", offer);
+        }
     }
 
     void pressInState(ngosen::TypingState& state, uint32_t sym, uint32_t states = 0) {
@@ -412,6 +470,19 @@ namespace {
     }
 
     // Qt reports the text after each backspace, so the deletion is seen half done.
+    // GNOME acts on Tab and Esc in its search box before the input method sees them.
+    void testNoRetypeInGnomeSearch() {
+        Field search     = makeField("ibus", true);
+        search.program   = "gnome-shell-overview";
+        std::string text = retypeInApp(search, Mode::Sen, "tieengs vieetj", {});
+        check(text == "tieengs vieetj", "gnome search: switching on leaves the typed text", text);
+
+        Field firefox   = makeField("ibus", true);
+        firefox.program = "firefox.desktop";
+        text            = retypeInApp(firefox, Mode::Sen, "tieengs vieetj", {});
+        check(text == "tiếng việt", "gnome app: switching on retypes the text", text);
+    }
+
     void testRetypeInSteppingApp() {
         AppQuirks quirks;
         quirks.keyStepMs       = 2;
@@ -440,15 +511,15 @@ namespace {
     }
 
     // The Chromium address bar replaces by selecting with Shift+Left through XTEST, and those keys come back to us.
-    void testRetypeOverSelection() {
+    void testRetypeOverSelection(const std::string& program, int caretWidth, bool bounceFocus) {
         constexpr uint32_t ShiftMask = 1U << 0;
         realMode                     = Mode::Off;
         FakeLoop      loop;
         FakeResources resources;
         Field         field       = makeField("dbus", false);
-        field.program             = "google-chrome";
+        field.program             = program;
         field.keyEventOrderFix    = true;
-        field.caretWidth          = 1;
+        field.caretWidth          = caretWidth;
         field.caretHeight         = 17;
         auto                owned = std::make_unique<FakeHost>(loop, field);
         FakeHost*           host  = owned.get();
@@ -466,9 +537,17 @@ namespace {
             pressInState(state, ngosen::key::Left, ShiftMask);
         FakeKey shiftUp(ngosen::key::Shift_R, true, ShiftMask);
         state.keyEvent(shiftUp);
+        if (bounceFocus) {
+            state.deactivate(true);
+            state.activate(Mode::Sen, true);
+        }
         loop.pump(150);
         const std::string commits = host->commits().empty() ? "(none)" : host->commits().back();
         check(commits == "tiếng việt", "selection: the retyped text goes over the selection", commits);
+        if (bounceFocus) {
+            setXTestSenderForTest(nullptr);
+            return;
+        }
 
         pressInState(state, ngosen::key::Escape);
         loop.pump(20);
@@ -497,6 +576,41 @@ namespace {
         return host->status().empty() && !host->candidates() ? "(no offer)" : "(offered)";
     }
 
+    // A macro typed in English in a field that deletes only through its surrounding text. Returns the
+    // commits, the deletions and whether the space reached the app.
+    std::string expandInEnglish(bool reportsText) {
+        realMode = Mode::Off;
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().enableMacro          = true;
+        resources.mutableOptions().enableMacroInOffMode = true;
+        resources.setMacros({{"vn", "Việt Nam"}});
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("other", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        state.activate(Mode::Off, true);
+        typeInEnglish(state, "vn");
+        if (reportsText)
+            host->setSurrounding("vn", 2);
+        FakeKey space(' ');
+        state.keyEvent(space);
+        loop.pump(150);
+        std::string out = "commits=";
+        for (const auto& c : host->commits())
+            out += "[" + c + "]";
+        out += " deletes=" + std::to_string(host->deletes().size());
+        out += space.accepted() ? " space=taken" : " space=passed";
+        return out;
+    }
+
+    void testMacroInEnglishNeedsDeletion() {
+        auto got = expandInEnglish(true);
+        check(got == "commits=[việt nam ] deletes=1 space=taken", "a macro in English replaces the abbreviation", got);
+        // Committing the expansion without deleting would leave "vnViệt Nam".
+        got = expandInEnglish(false);
+        check(got == "commits= deletes=0 space=passed", "no expansion when the abbreviation cannot be deleted", got);
+    }
+
     void testOptionOff() {
         auto offer = offerWithOption(true, false);
         check(offer == "(no offer)", "turning the option off drops what was typed", offer);
@@ -511,17 +625,25 @@ namespace {
 int main() {
     testOffer();
     testOptionOff();
+    testMacroInEnglishNeedsDeletion();
     testFocusInDoesNotOffer();
     testOwnEnglish();
+    testRetypeWithNoWayToDelete();
     testRetypeInApp("wayland", true, Mode::Sen);
     testRetypeInApp("xim", false, Mode::Sen);
     testRetypeInApp("wayland", true, Mode::Preedit);
     // Deletes through the surrounding text where forwarded keys do not work.
     testRetypeInApp("other", true, Mode::Sen);
-    testRetypeOverSelection();
+    testRetypeOverSelection("vivaldi-bin", 73, false);
+    testRetypeOverSelection("google-chrome", 1, true);
     testClickDropsRetype("wayland", true);
     testClickDropsRetype("xim", false);
+    // IBus reports the text too late to check it, so only the reset tells of the click.
+    testClickDropsRetype("ibus", true, true);
+    testClickBeforeSwitchDropsKeys();
+    testHiddenPromptDropsKeys();
     testRetypeInSteppingApp();
+    testNoRetypeInGnomeSearch();
     testRetypeRightAfterSwitchKey();
     testHintGoesAway(ngosen::key::Return, "Enter");
     testHintGoesAway(ngosen::key::Tab, "Tab");

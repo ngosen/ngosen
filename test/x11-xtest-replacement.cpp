@@ -100,9 +100,9 @@ namespace {
 
     // The Chromium address bar selects an inline autocompletion after the typed text, so a BackSpace
     // would only remove that. Widening the selection with Shift+Left and typing over it replaces both.
-    bool chromiumSelectsAndOvertypes(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, bool bounceFocus = false) {
-        const std::string where   = frontend + " " + program + (bounceFocus ? " with focus bounce" : "") + ": ";
-        auto              context = h.open(program, frontend, caps, 1);
+    bool chromiumSelectsAndOvertypes(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, int bounceAfterMs = -1, int caretWidth = 1) {
+        const std::string where   = frontend + " " + program + " with focus bounce after " + std::to_string(bounceAfterMs) + " ms: ";
+        auto              context = h.open(program, frontend, caps, caretWidth);
         if (!h.typeTieE(*context))
             return false;
         if (h.sent != std::vector<int>{-1}) {
@@ -125,17 +125,67 @@ namespace {
         if (!h.key(*context, fcitx::Key(FcitxKey_Shift_R, fcitx::KeyStates(fcitx::KeyState::Shift)), true, false))
             return false;
         const uint64_t releasedAt = nowUs();
-        if (bounceFocus)
+        if (bounceAfterMs >= 0) {
+            h.pumpUntil([] { return false; }, releasedAt + bounceAfterMs * 1000ULL);
             h.bounceFocus(*context);
+        }
         const uint64_t committedAt = h.pumpUntil([&] { return !context->commits().empty(); }, releasedAt + 500000);
         if (context->commits() != std::vector<std::string>{"ê"}) {
             reportFailure(where + "type ê over the selection", "['ê']", joinCommits(*context));
+            return false;
+        }
+        if (!context->forwarded().empty()) {
+            reportFailure(where + "no backspace in the address bar", "(none)", std::to_string(context->forwarded().size()) + " keys");
             return false;
         }
         // Chromium asks the input method about each key before it handles the key, so the Left presses
         // may still be pending when the Shift release comes back.
         if (committedAt - releasedAt + ClockSlackUs < SettleUs) {
             reportFailure(where + "commit at least 50 ms after Shift is released", ">= 50000 us", std::to_string(committedAt - releasedAt) + " us");
+            return false;
+        }
+        return true;
+    }
+
+    bool isTap(const std::vector<fcitx::ForwardKeyEvent>& keys, size_t at, fcitx::KeySym sym) {
+        return keys.size() >= at + 2 && keys[at].key().sym() == sym && keys[at + 1].key().sym() == sym;
+    }
+
+    // Google Docs and Slides report a thin caret like the address bar, but keep focus when Shift+Left
+    // selects, and a commit then does not replace the selection (#516).
+    bool fieldKeepingFocusDeletesWithBackSpace(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+        const std::string where   = frontend + " " + program + " keeping focus: ";
+        auto              context = h.open(program, frontend, caps, 2);
+        if (!h.typeTieE(*context))
+            return false;
+        const auto shiftLeft = fcitx::Key(FcitxKey_Left, fcitx::KeyStates(fcitx::KeyState::Shift));
+        if (!h.key(*context, fcitx::Key(FcitxKey_Shift_R), false, false) || !h.key(*context, shiftLeft, false, false) || !h.key(*context, shiftLeft, true, false) ||
+            !h.key(*context, fcitx::Key(FcitxKey_Shift_R, fcitx::KeyStates(fcitx::KeyState::Shift)), true, false))
+            return false;
+        h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 800000);
+        if (context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure(where + "commit ê", "['ê']", joinCommits(*context));
+            return false;
+        }
+        if (context->forwarded().size() != 4 || !isTap(context->forwarded(), 0, FcitxKey_Right) || !isTap(context->forwarded(), 2, FcitxKey_BackSpace)) {
+            reportFailure(where + "drop the selection, then delete with a backspace", "[Right][BackSpace]", std::to_string(context->forwarded().size()) + " keys");
+            return false;
+        }
+        // The field has answered: the next replacement goes straight to backspaces.
+        h.sent.clear();
+        if (!h.key(*context, fcitx::Key(FcitxKey_s), false, true))
+            return false;
+        h.pumpUntil([&] { return context->commits().size() >= 2; }, nowUs() + 800000);
+        if (!h.sent.empty() || context->commits().size() != 2 || context->commits()[1] != "íê" || context->forwarded().size() != 8) {
+            reportFailure(where + "no second selection", "no XTEST, íê after two more backspaces", joinCounts(h.sent) + ", " + joinCommits(*context));
+            return false;
+        }
+        // Focus may now be in another field, so ask again.
+        h.bounceFocus(*context);
+        if (!h.key(*context, fcitx::Key(FcitxKey_space), false, false) || !h.typeTieE(*context))
+            return false;
+        if (h.sent != std::vector<int>{-1}) {
+            reportFailure(where + "select again after focus moved", "[-1]", joinCounts(h.sent));
             return false;
         }
         return true;
@@ -170,6 +220,18 @@ namespace {
         return true;
     }
 
+    bool commitsWhenBackspacesFail(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+        auto context = h.open(program, frontend, caps);
+        if (!h.typeTieE(*context))
+            return false;
+        h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 500000);
+        if (context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure(frontend + " " + program + ": commit when the backspaces cannot be sent", "['ê']", joinCommits(*context));
+            return false;
+        }
+        return true;
+    }
+
     // Clients whose forwarded keys already work keep forwarding.
     bool keepsForwarding(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps, int caretWidth = 0) {
         const std::string where   = frontend + " " + program + ": ";
@@ -184,6 +246,23 @@ namespace {
         const auto& forwarded = context->forwarded();
         if (forwarded.size() != 2 || forwarded[0].key().sym() != FcitxKey_BackSpace) {
             reportFailure(where + "forward the backspace", "[BackSpace down][BackSpace up]", std::to_string(forwarded.size()) + " keys");
+            return false;
+        }
+        return true;
+    }
+
+    bool erasesWithCommittedDel(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
+        const std::string where   = frontend + " " + program + ": ";
+        auto              context = h.open(program, frontend, caps);
+        if (!h.typeTieE(*context))
+            return false;
+        pumpEventLoop(h.testInstance.instance, 5);
+        if (!h.sent.empty() || !context->forwarded().empty()) {
+            reportFailure(where + "no key sent", "(none)", joinCounts(h.sent) + ", " + std::to_string(context->forwarded().size()) + " forwarded");
+            return false;
+        }
+        if (context->commits() != std::vector<std::string>{"\x7fê"}) {
+            reportFailure(where + "one commit erases e and types ê", "['<DEL>ê']", joinCommits(*context));
             return false;
         }
         return true;
@@ -216,11 +295,20 @@ int main() {
     Harness                 h{testInstance, engine, entry, sent};
 
     const auto              chromeCaps = fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit, fcitx::CapabilityFlag::KeyEventOrderFix};
-    if (!chromiumSelectsAndOvertypes(h, "microsoft-edge", "dbus", chromeCaps))
+    if (!chromiumSelectsAndOvertypes(h, "microsoft-edge", "dbus", chromeCaps, 0))
         return 1;
-    if (!chromiumSelectsAndOvertypes(h, "microsoft-edge", "dbus", chromeCaps, true))
+    // A busy machine delays the focus change past the usual settling time.
+    if (!chromiumSelectsAndOvertypes(h, "microsoft-edge", "dbus", chromeCaps, 100))
         return 1;
     if (!chromiumSelectsAndOvertypes(h, "chromium", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}))
+        return 1;
+    // Vivaldi's address bar is a web page field, which keeps focus while Shift+Left selects.
+    if (!chromiumSelectsAndOvertypes(h, "vivaldi-bin", "dbus", chromeCaps, -1, 73))
+        return 1;
+    // Google Docs in Vivaldi reports a thin caret, and a commit there does not replace a selection.
+    if (!keepsForwarding(h, "vivaldi-bin", "dbus", chromeCaps, 2))
+        return 1;
+    if (!fieldKeepingFocusDeletesWithBackSpace(h, "microsoft-edge", "dbus", chromeCaps))
         return 1;
     if (!pressesBackSpaceThroughXTest(h, "Medieval2", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}))
         return 1;
@@ -238,7 +326,15 @@ int main() {
         return 1;
     if (!keepsForwarding(h, "xfce4-terminal", "dbus", chromeCaps))
         return 1;
+    // XTEST would work for xterm too, but a DEL in the commit needs no wait.
+    if (!erasesWithCommittedDel(h, "xterm", "xim", fcitx::CapabilityFlags{}))
+        return 1;
     if (!keepsForwarding(h, "gtk3app", "dbus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText, fcitx::CapabilityFlag::KeyEventOrderFix}))
+        return 1;
+
+    // WPS over IBus is only known to ignore forwarded keys under Xwayland.
+    const auto wpsCaps = fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText};
+    if (!keepsForwarding(h, "wps", "ibus", wpsCaps))
         return 1;
 
     // Under Xwayland XTEST asks the user first, so Wine gets key events sent to its window.
@@ -250,8 +346,25 @@ int main() {
     });
     if (!pressesBackSpaceThroughXTest(h, "wine-preloader", "xim", fcitx::CapabilityFlags{}, fcitx::KeyStates(fcitx::KeyState::Repeat)))
         return 1;
-    // xterm drops sent events, so it keeps forwarding.
-    if (!keepsForwarding(h, "xterm", "xim", fcitx::CapabilityFlags{}))
+    // WPS over IBus ignores forwarded keys and deletions through the surrounding text it claims to support.
+    if (!pressesBackSpaceThroughXTest(h, "wps", "ibus", wpsCaps))
+        return 1;
+    if (!pressesBackSpaceThroughXTest(h, "et", "ibus", wpsCaps))
+        return 1;
+    if (!pressesBackSpaceThroughXTest(h, "wpp", "ibus", wpsCaps))
+        return 1;
+    if (!keepsForwarding(h, "qt5app", "ibus", wpsCaps))
+        return 1;
+    // With no sentinel coming, the word must not wait for one.
+    setXSendSenderForTest([](int) { return false; });
+    if (!commitsWhenBackspacesFail(h, "wps", "ibus", wpsCaps))
+        return 1;
+    setXSendSenderForTest([&sent](int count) {
+        sent.push_back(count);
+        return true;
+    });
+    // xterm drops sent events but runs a committed DEL like Backspace.
+    if (!erasesWithCommittedDel(h, "xterm", "xim", fcitx::CapabilityFlags{}))
         return 1;
     if (!keepsForwarding(h, "wordcraft", "xim", fcitx::CapabilityFlags{}))
         return 1;

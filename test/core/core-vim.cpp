@@ -123,7 +123,7 @@ namespace {
             loop_.pump(target != &text_ ? 5 : sym == ngosen::key::Return ? 60 : 20);
             if (target == nullptr) {
                 // A key the app gets changed, such as j turned into J, is a different command.
-                if (down.accepted() || down.name() != std::to_string(sym) || host_->commits().size() > commits || host_->forwarded().size() > forwarded)
+                if (down.accepted() || down.name() != FakeKey(sym, false, states).name() || host_->commits().size() > commits || host_->forwarded().size() > forwarded)
                     edited_ += static_cast<char>(sym & 0x7f);
                 return;
             }

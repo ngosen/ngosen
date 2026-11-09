@@ -119,6 +119,10 @@ namespace ngosen {
         // Some apps (kitty, Konsole) declare surrounding text but always send it empty.
         if (!reportsTextInTime() || !s.isValid() || s.text().empty())
             return true;
+        return endsBeforeCursor(s, typed, mayDropStart);
+    }
+
+    bool TypingState::endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart) {
         const std::string& t  = s.text();
         auto               it = t.begin();
         for (unsigned int i = 0; i < s.cursor() && it != t.end(); ++i)
@@ -136,14 +140,16 @@ namespace ngosen {
     void TypingState::offerRetype() {
         retype_.reset();
         // Still English: keep the text for the toggle key.
-        if (realMode != ngosen::Mode::Sen && realMode != ngosen::Mode::Preedit)
+        if (mode() != ngosen::Mode::Sen && mode() != ngosen::Mode::Preedit)
             return;
         const std::string typed = std::move(typedWhileOff_);
         typedWhileOff_.clear();
-        if (!bambooEngine_ || !engine_->options().retypeAfterSwitch || typed.empty())
+        // A click since the last key moved the cursor away from the typed text.
+        if (g_mouse_clicked.load(std::memory_order_acquire))
             return;
-        // Without either, Tab could not remove what was typed.
-        if (!canSendBackspaces() && !host_->field().surroundingText)
+        if (!bambooEngine_ || !engine_->options().retypeAfterSwitch || typed.empty() || ngosen::isGnomeSearch(host_->field()))
+            return;
+        if (!canReplaceInApp())
             return;
         if (!typedBeforeCursor(typed, true))
             return;
@@ -152,12 +158,12 @@ namespace ngosen {
             return;
         // A word Telex leaves alone is likely English typed on purpose, so then only offer.
         if (everyWordTakesMarks(typed)) {
-            NGOSEN_INFO("Retype: " + typed + " -> " + marked);
+            NGOSEN_INFO("Retype: " + logged(typed) + " -> " + logged(marked));
             retype_ = Retype{.typed = typed, .marked = marked, .atOnce = true};
             applyRetypeSoon(host_->translate("Tab or Esc: put back what was typed"));
             return;
         }
-        NGOSEN_INFO("Offer retype: " + typed + " -> " + marked);
+        NGOSEN_INFO("Offer retype: " + logged(typed) + " -> " + logged(marked));
         retype_ = Retype{.typed = typed, .marked = marked};
         host_->showCandidates({typed + " → " + marked}, 1, [this](size_t) {
             if (retype_ && !retype_->applied)
@@ -171,8 +177,9 @@ namespace ngosen {
         if (!retype_)
             return;
         hideOffer();
-        const bool undo = retype_->applied;
-        replaceRetyped(undo ? retype_->marked : retype_->typed, undo ? retype_->typed : retype_->marked);
+        const bool        undo   = retype_->applied;
+        const std::string marked = retype_->marked + retype_->after;
+        replaceRetyped(undo ? marked : retype_->typed, undo ? retype_->typed : marked);
         if (undo)
             retype_.reset();
         else
@@ -208,8 +215,9 @@ namespace ngosen {
 
     void TypingState::reopenTypedKey() {
         // The field still shows the retoned word, so the next key replaces it with the key and itself.
-        EngineRebuildFromText(bambooEngine_.handle(), retype_->typed.c_str());
-        oldPreBuffer_ = retype_->marked;
+        // A key inside the word has no place at its end, where the cursor now is.
+        EngineRebuildFromText(bambooEngine_.handle(), (retype_->inWord ? retype_->marked : retype_->typed).c_str());
+        oldPreBuffer_ = retype_->marked + retype_->after;
         dropRetype();
     }
 
@@ -259,7 +267,7 @@ namespace ngosen {
         if (is_deleting_.load(std::memory_order_acquire))
             return false;
         const bool plain = !keyEvent.hasModifier();
-        if ((sym == ngosen::key::Return || sym == ngosen::key::KP_Enter) && plain) {
+        if (ngosen::key::isEnter(sym) && plain) {
             keyEvent.accept();
             acceptRetype(host_->translate("Tab or Esc: put back what was typed"));
             return true;

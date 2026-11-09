@@ -19,8 +19,11 @@ namespace {
 
     class FakeCalc {
       public:
-        FakeCalc(TestInstance& testInstance, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry) :
-            testInstance_(testInstance), engine_(engine), entry_(entry), context_(std::make_unique<TestInputContext>(&testInstance.instance, "soffice.bin", "dbus")) {
+        // keepsFlagOnKey: the field keeps the surrounding text capability during a key, as Writer
+        // under the program name LibreOffice reports over the GTK module does.
+        FakeCalc(TestInstance& testInstance, fcitx::NgoSenEngine& engine, const fcitx::InputMethodEntry& entry, bool keepsFlagOnKey = false) :
+            testInstance_(testInstance), engine_(engine), entry_(entry),
+            context_(std::make_unique<TestInputContext>(&testInstance.instance, keepsFlagOnKey ? "soffice" : "soffice.bin", "dbus")), keepsFlagOnKey_(keepsFlagOnKey) {
             context_->setCapabilityFlags(withSurrounding);
             context_->focusIn();
             fcitx::InputContextEvent focus(context_.get(), fcitx::EventType::InputContextFocusIn);
@@ -31,7 +34,8 @@ namespace {
             for (char c : keys) {
                 const size_t forwarded = context_->forwarded().size();
                 const size_t commits   = context_->commits().size();
-                context_->setCapabilityFlags(keyOrderFix);
+                const size_t deletes   = context_->deletes().size();
+                context_->setCapabilityFlags(keepsFlagOnKey_ ? withSurrounding : keyOrderFix);
                 fcitx::KeyEvent event(context_.get(), fcitx::Key(static_cast<fcitx::KeySym>(c)), false);
                 engine_.keyEvent(entry_, event);
                 context_->setCapabilityFlags(withSurrounding);
@@ -47,6 +51,14 @@ namespace {
                         dialogOpened_ = true;
                     else if (!text_.empty())
                         eraseLastChar();
+                    ++backspaces_;
+                }
+                for (size_t i = deletes; i < context_->deletes().size(); ++i) {
+                    // Applies only deletions that end at the cursor, at the end of the cell.
+                    const auto [offset, size] = context_->deletes()[i];
+                    for (unsigned int n = 0; offset == -static_cast<int>(size) && n < size && !text_.empty(); ++n)
+                        eraseLastChar();
+                    ++surroundingDeletes_;
                 }
                 for (size_t i = commits; i < context_->commits().size(); ++i)
                     insert(context_->commits()[i]);
@@ -67,6 +79,12 @@ namespace {
         }
         bool dialogOpened() const {
             return dialogOpened_;
+        }
+        int backspaces() const {
+            return backspaces_;
+        }
+        int surroundingDeletes() const {
+            return surroundingDeletes_;
         }
 
       private:
@@ -95,8 +113,11 @@ namespace {
         std::unique_ptr<TestInputContext> context_;
         std::string                       text_;
         std::string                       cells_;
-        bool                              editing_      = false;
-        bool                              dialogOpened_ = false;
+        bool                              keepsFlagOnKey_     = false;
+        bool                              editing_            = false;
+        bool                              dialogOpened_       = false;
+        int                               backspaces_         = 0;
+        int                               surroundingDeletes_ = 0;
     };
 } // namespace
 
@@ -111,16 +132,27 @@ int main() {
     engine.setConfig(config);
     fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
 
-    FakeCalc                calc(testInstance, engine, entry);
-    calc.type("dduwowcj");
-    calc.clickCell();
-    calc.type("tieengs");
-    calc.clickCell();
-    calc.type("chaof");
-    const std::string expected = "được|tiếng|chào";
-    if (calc.dialogOpened() || calc.cells() != expected) {
-        std::cerr << "Expected: " << expected << "\nActual: " << calc.cells() << (calc.dialogOpened() ? " (Delete Contents opened)" : "") << '\n';
-        return 1;
+    int                     failures = 0;
+    for (const bool keepsFlagOnKey : {false, true}) {
+        FakeCalc calc(testInstance, engine, entry, keepsFlagOnKey);
+        // Writer has no cells to click; its words go into one paragraph.
+        if (keepsFlagOnKey) {
+            calc.type("dduwowcj tieengs chaof");
+        } else {
+            calc.type("dduwowcj");
+            calc.clickCell();
+            calc.type("tieengs");
+            calc.clickCell();
+            calc.type("chaof");
+        }
+        const std::string expected = keepsFlagOnKey ? "được tiếng chào" : "được|tiếng|chào";
+        // A field that keeps the flag deletes through its surrounding text, never with a backspace.
+        const bool pathOk = !keepsFlagOnKey || (calc.surroundingDeletes() > 0 && calc.backspaces() == 0);
+        if (calc.dialogOpened() || calc.cells() != expected || !pathOk) {
+            std::cerr << (keepsFlagOnKey ? "Writer-like: " : "Calc: ") << "Expected: " << expected << "\nActual: " << calc.cells()
+                      << (calc.dialogOpened() ? " (Delete Contents opened)" : "") << " deletions=" << calc.surroundingDeletes() << " backspaces=" << calc.backspaces() << '\n';
+            ++failures;
+        }
     }
-    return 0;
+    return failures == 0 ? 0 : 1;
 }

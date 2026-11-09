@@ -38,6 +38,20 @@ namespace {
         return list && list->totalSize() > 1 ? list : nullptr;
     }
 
+    bool hasRule(const fcitx::NgoSenEngine& engine, const std::string& app) {
+        fcitx::RawConfig raw;
+        engine.getSubConfig("app_rules")->save(raw);
+        bool found = false;
+        if (auto rules = raw.get("Rules")) {
+            rules->visitSubItems([&](fcitx::RawConfig& rule, const std::string&) {
+                auto name = rule.get("App");
+                found     = found || (name && name->value() == app);
+                return true;
+            });
+        }
+        return found;
+    }
+
     std::string label(const fcitx::CommonCandidateList& list, int index) {
         return list.candidateFromAll(index).text().toString();
     }
@@ -84,6 +98,7 @@ int main() {
 
     press(engine, entry, *context, FcitxKey_1);
     check(!menu(*context), "picking a mode closes the menu", "menu still open");
+    list.reset();
     check(realMode.load() == ngosen::Mode::Sen, "shortcut 1 picks Sen", modeName(realMode.load()));
 
     press(engine, entry, *context, FcitxKey_grave);
@@ -121,6 +136,116 @@ int main() {
     check(list && label(*list, 5) == "   [v] Vim mode: on", "the menu shows Vim mode on", list ? label(*list, 5) : "no menu");
     press(engine, entry, *context, FcitxKey_v);
     check(vimApps().empty(), "v again turns Vim mode off", vimApps());
+
+    // A field that reports no app of its own, away from GNOME Shell's frontend.
+    auto relayed = std::make_unique<TestInputContext>(&testInstance.instance, "gnome-shell");
+    relayed->focusIn();
+    fcitx::InputContextEvent relayedFocus(relayed.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, relayedFocus);
+    press(engine, entry, *relayed, FcitxKey_grave);
+    const auto relayedApp = relayed->inputPanel().auxDown().toString();
+    check(relayedApp == "App: this window", "a window with its own field is shown as this window", relayedApp);
+    press(engine, entry, *relayed, FcitxKey_Escape);
+    relayed->focusOut();
+    context->focusIn();
+    engine.activate(entry, focus);
+    press(engine, entry, *context, FcitxKey_grave);
+    const auto namedApp = context->inputPanel().auxDown().toString();
+    check(namedApp == "App: gedit", "a named app is shown by name", namedApp);
+    press(engine, entry, *context, FcitxKey_Escape);
+
+    // GNOME Shell relays every app through one field, so a pick holds for all of them.
+    context->focusOut();
+    auto shellField = std::make_unique<TestInputContext>(&testInstance.instance, "", "ibus");
+    shellField->focusIn();
+    fcitx::InputContextEvent shellFocus(shellField.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, shellFocus);
+    press(engine, entry, *shellField, FcitxKey_grave);
+    const auto shellApp = shellField->inputPanel().auxDown().toString();
+    check(shellApp == "App: apps with no name (the Ngó Sen extension can tell them apart)", "a field GNOME Shell relays points to the extension", shellApp);
+    press(engine, entry, *shellField, FcitxKey_Escape);
+
+    // The menu shows the app it opened for, so a name that comes after it closes it.
+    engine.shellFocusedAppChanged("org.gnome.TextEditor.desktop");
+    press(engine, entry, *shellField, FcitxKey_grave);
+    check(menu(*shellField) != nullptr, "the menu opens for the app GNOME Shell names", "no menu");
+    engine.shellFocusedAppChanged("org.gnome.TextEditor.desktop");
+    check(menu(*shellField) != nullptr, "the same name again keeps the menu", "menu closed");
+    engine.shellFocusedAppChanged("org.gnome.Nautilus.desktop");
+    check(!menu(*shellField), "another app's name closes the menu", "menu still open");
+    press(engine, entry, *shellField, FcitxKey_1);
+    check(!hasRule(engine, "org.gnome.TextEditor.desktop") && !hasRule(engine, "org.gnome.Nautilus.desktop"), "a key after the name changed picks nothing", "a rule was saved");
+    engine.shellFocusedAppChanged("");
+    shellField->focusOut();
+
+    // A field with its own name keeps its menu whatever GNOME Shell names.
+    context->focusIn();
+    engine.activate(entry, focus);
+    press(engine, entry, *context, FcitxKey_grave);
+    engine.shellFocusedAppChanged("org.gnome.Nautilus.desktop");
+    check(menu(*context) != nullptr, "a named field keeps its menu when GNOME Shell names an app", "menu closed");
+    press(engine, entry, *context, FcitxKey_Escape);
+    engine.shellFocusedAppChanged("");
+    context->focusOut();
+
+    // Leaving the window closes the menu, so later keys are not taken as picks for the app left behind.
+    auto writer = std::make_unique<TestInputContext>(&testInstance.instance, "writer");
+    writer->focusIn();
+    fcitx::InputContextEvent writerFocus(writer.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, writerFocus);
+    press(engine, entry, *writer, FcitxKey_grave);
+    fcitx::InputContextEvent writerLeft(writer.get(), fcitx::EventType::InputContextFocusOut);
+    engine.deactivate(entry, writerLeft);
+    check(!menu(*writer), "leaving the window closes the menu", "menu still open");
+    engine.activate(entry, writerFocus);
+    press(engine, entry, *writer, FcitxKey_e);
+    check(!hasRule(engine, "writer"), "a key after leaving picks nothing", "writer got a rule");
+
+    // Keys that reach another field never pick for the app that opened the menu.
+    auto reader = std::make_unique<TestInputContext>(&testInstance.instance, "reader");
+    reader->focusIn();
+    fcitx::InputContextEvent readerFocus(reader.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, readerFocus);
+    press(engine, entry, *reader, FcitxKey_grave);
+    auto other = std::make_unique<TestInputContext>(&testInstance.instance, "kate");
+    other->focusIn();
+    press(engine, entry, *other, FcitxKey_e);
+    check(!hasRule(engine, "reader"), "a key in another app picks nothing for the first", "reader got a rule");
+    check(realMode.load() != ngosen::Mode::Off, "a key in another app keeps the mode", modeName(realMode.load()));
+
+    // Anything clearing the panel closes the menu, so no key picks from a menu nobody sees.
+    auto cleared = std::make_unique<TestInputContext>(&testInstance.instance, "cleared");
+    cleared->focusIn();
+    fcitx::InputContextEvent clearedFocus(cleared.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, clearedFocus);
+    press(engine, entry, *cleared, FcitxKey_grave);
+    cleared->inputPanel().reset();
+    press(engine, entry, *cleared, FcitxKey_e);
+    check(!hasRule(engine, "cleared"), "a key after the panel was cleared picks nothing", "cleared got a rule");
+
+    // A click reported by X11 closes the menu.
+    engine.activate(entry, clearedFocus);
+    press(engine, entry, *cleared, FcitxKey_grave);
+    g_mouse_clicked.store(true, std::memory_order_release);
+    press(engine, entry, *cleared, FcitxKey_a);
+    check(!menu(*cleared), "a click closes the menu", "menu still open");
+
+    // A window closed with its menu open leaves nothing for later keys to pick for.
+    auto closing = std::make_unique<TestInputContext>(&testInstance.instance, "closing");
+    closing->focusIn();
+    fcitx::InputContextEvent closingFocus(closing.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, closingFocus);
+    press(engine, entry, *closing, FcitxKey_grave);
+    check(menu(*closing) != nullptr, "the menu opens in the window about to close", "no menu");
+    closing.reset();
+    press(engine, entry, *other, FcitxKey_e);
+    check(!hasRule(engine, "closing"), "a key after the window closed picks nothing", "closing got a rule");
+
+    check(!fcitx::modeMenuCanDraw("classicui", "ibus", "wayland:", false), "a field relayed on Wayland has no panel", "true");
+    check(fcitx::modeMenuCanDraw("classicui", "ibus", "x11::0", false), "a relayed field on X11 can draw", "false");
+    check(fcitx::modeMenuCanDraw("classicui", "dbus", "wayland:", false), "another frontend can draw", "false");
+    check(fcitx::modeMenuCanDraw("kimpanel", "ibus", "wayland:", false), "the panel extension draws for any field", "false");
+    check(fcitx::modeMenuCanDraw("classicui", "ibus", "wayland:", true), "a client that draws its own panel can draw", "false");
 
     // With a label, GNOME's kimpanel shows text in the top bar instead of the Ngó Sen icon.
     for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Off, ngosen::Mode::Emoji}) {

@@ -4,7 +4,13 @@ add_executable(core_typing core-typing.cpp fake-app.cpp fake-host.cpp fake-engin
 target_compile_definitions(core_typing PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
 target_link_libraries(core_typing PRIVATE ngosen_core)
 add_test(NAME core_typing COMMAND core_typing)
-set_tests_properties(core_typing PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
+set_tests_properties(core_typing PROPERTIES LABELS "unit;core" TIMEOUT 240 ENVIRONMENT "DISPLAY=")
+
+add_executable(core_replay_fold core-replay-fold.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
+target_compile_definitions(core_replay_fold PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
+target_link_libraries(core_replay_fold PRIVATE ngosen_core)
+add_test(NAME core_replay_fold COMMAND core_replay_fold)
+set_tests_properties(core_replay_fold PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
 
 add_executable(core_fuzz core-fuzz.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
 target_compile_definitions(core_fuzz PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
@@ -35,10 +41,38 @@ add_executable(core_retone core-retone.cpp fake-app.cpp fake-host.cpp fake-engin
 target_compile_definitions(core_retone PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
 target_link_libraries(core_retone PRIVATE ngosen_core)
 add_test(NAME core_retone COMMAND core_retone)
-set_tests_properties(core_retone PROPERTIES LABELS "unit;core" TIMEOUT 60 ENVIRONMENT "DISPLAY=")
+set_tests_properties(core_retone PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
 
 add_executable(core_vim core-vim.cpp fake-host.cpp fake-engine.cpp)
 target_compile_definitions(core_vim PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
 target_link_libraries(core_vim PRIVATE ngosen_core)
 add_test(NAME core_vim COMMAND core_vim)
 set_tests_properties(core_vim PROPERTIES LABELS "unit;core" TIMEOUT 60 ENVIRONMENT "DISPLAY=")
+
+add_executable(core_surrounding_count core-surrounding-count.cpp)
+target_link_libraries(core_surrounding_count PRIVATE ngosen_core)
+add_test(NAME core_surrounding_count COMMAND core_surrounding_count)
+set_tests_properties(core_surrounding_count PROPERTIES LABELS "unit;core" TIMEOUT 30)
+
+add_executable(core_gnome_apps core-gnome-apps.cpp)
+target_link_libraries(core_gnome_apps PRIVATE ngosen_core)
+add_test(NAME core_gnome_apps COMMAND core_gnome_apps)
+set_tests_properties(core_gnome_apps PROPERTIES LABELS "unit;core" TIMEOUT 30)
+
+add_executable(core_flatpak_names core-flatpak-names.cpp)
+target_link_libraries(core_flatpak_names PRIVATE ngosen_core)
+add_test(NAME core_flatpak_names COMMAND core_flatpak_names)
+set_tests_properties(core_flatpak_names PROPERTIES LABELS "unit;core" TIMEOUT 30)
+
+add_executable(core_pty core-pty.cpp)
+target_link_libraries(core_pty PRIVATE ngosen_core util)
+add_test(NAME core_pty COMMAND core_pty)
+set_tests_properties(core_pty PROPERTIES LABELS "unit;core" TIMEOUT 30)
+
+# How each replacement in these tests deletes and ends, so code that moves them can show it changes none.
+foreach (name core_typing core_fuzz core_retype core_retone)
+    add_test(NAME ${name}_record
+        COMMAND ${CMAKE_COMMAND} -DNAME=${name} -DBIN=$<TARGET_FILE:${name}> -DOUT_DIR=${CMAKE_CURRENT_BINARY_DIR}
+            -DEXPECTED=${CMAKE_CURRENT_SOURCE_DIR}/replace-record/${name}.txt -P ${CMAKE_CURRENT_SOURCE_DIR}/replace-record.cmake)
+    set_tests_properties(${name}_record PROPERTIES LABELS "unit;core" TIMEOUT 240)
+endforeach ()

@@ -60,6 +60,7 @@ int main() {
     check("the engine addon is valid", engine.isValid());
     check("the engine requires a minimum fcitx5", hasCore(engine));
     check("the engine can serve its D-Bus object", lists(engine.optionalDependencies(), "dbus"));
+    check("the engine can show the What's new notification", lists(engine.optionalDependencies(), "notifications"));
 
     fcitx::AddonInfo migration("ngosenmigrate");
     load(migration, NGOSEN_MIGRATE_CONF);

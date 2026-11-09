@@ -18,6 +18,7 @@ target_link_libraries(ngosen_test_core PRIVATE
     Fcitx5::Config
     Fcitx5::Module::Emoji
     ${NGOSEN_DBUS_MODULE}
+    ${NGOSEN_NOTIFICATIONS_MODULE}
     Bamboo::Core
     Pthread::Pthread
 )
@@ -58,6 +59,7 @@ function(ngosen_headless_test_settings target)
         Fcitx5::Config
         Fcitx5::Module::Emoji
         ${NGOSEN_DBUS_MODULE}
+        ${NGOSEN_NOTIFICATIONS_MODULE}
         Bamboo::Core
         Pthread::Pthread
     )
@@ -98,10 +100,19 @@ function(add_bamboo_test target source labels)
 endfunction()
 
 add_ngosen_headless_test(preedit_lifecycle preedit-lifecycle.cpp "integration;preedit")
+add_ngosen_headless_test(click_keeps_preedit click-keeps-preedit.cpp "integration;preedit")
 add_ngosen_headless_test(app_rule_reset app-rule-reset.cpp "integration;apprule")
+add_ngosen_headless_test(default_app_mode default-app-mode.cpp "integration;apprule")
+add_test(NAME default_app_mode_override COMMAND default_app_mode override)
+set_tests_properties(default_app_mode_override PROPERTIES LABELS "integration;apprule" TIMEOUT 20 ENVIRONMENT "DISPLAY=")
 add_ngosen_headless_test(ctx_rule_cleanup ctx-rule-cleanup.cpp "integration;apprule")
 add_ngosen_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule")
 add_ngosen_headless_test(toggle_key toggle-key.cpp "integration;apprule")
+add_ngosen_headless_test(hidden_input hidden-input.cpp "integration;terminal")
+target_link_libraries(hidden_input PRIVATE util)
+# Its prompt is seen by every test that types into a terminal, since the engine scans all of the user's ptys.
+set_tests_properties(hidden_input PROPERTIES SKIP_RETURN_CODE 77 RUN_SERIAL TRUE)
+add_ngosen_headless_test(app_switch_memory app-switch-memory.cpp "integration;apprule")
 add_ngosen_headless_test(retype_after_switch retype-after-switch.cpp "integration;retype")
 add_ngosen_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp "integration;apprule;gnome")
 add_ngosen_headless_test(mode_name_migration mode-name-migration.cpp "integration;mode")
@@ -225,12 +236,23 @@ set_tests_properties(gnome_panel_theme PROPERTIES
     TIMEOUT 20
 )
 
+add_executable(menu_icon menu-icon.cpp ${PROJECT_SOURCE_DIR}/src/ngosen-menu-icon.cpp)
+target_include_directories(menu_icon PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(menu_icon PRIVATE Fcitx5::Core Fcitx5::Utils)
+add_test(NAME menu_icon COMMAND menu_icon)
+set_tests_properties(menu_icon PROPERTIES LABELS "unit;icon" TIMEOUT 20)
+
 # Compares the typing logic's own UTF-8 helpers with the fcitx5 ones they replace.
 add_executable(utf8_matches_fcitx utf8-matches-fcitx.cpp ${PROJECT_SOURCE_DIR}/src/core/ngosen-utf8.cpp)
 target_include_directories(utf8_matches_fcitx PRIVATE ${PROJECT_SOURCE_DIR}/src/core)
 target_link_libraries(utf8_matches_fcitx PRIVATE Fcitx5::Utils)
 add_test(NAME utf8_matches_fcitx COMMAND utf8_matches_fcitx)
-set_tests_properties(utf8_matches_fcitx PROPERTIES LABELS "unit" TIMEOUT 60)
+set(utf8_matches_fcitx_timeout 60)
+# The exhaustive check is slow in the sanitizer build.
+if (CMAKE_CXX_FLAGS MATCHES "-fsanitize=")
+    set(utf8_matches_fcitx_timeout 240)
+endif()
+set_tests_properties(utf8_matches_fcitx PROPERTIES LABELS "unit" TIMEOUT ${utf8_matches_fcitx_timeout})
 
 # Settings saved under the lotus names carry over to the ngosen names.
 add_executable(ngosen_migration_test ngosen-migration.cpp)
@@ -260,9 +282,13 @@ set_tests_properties(settings_gui_install PROPERTIES LABELS "unit;packaging" TIM
 # The typing core's own tests.
 add_test(NAME bamboo_rs_cargo_test
     COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${NGOSEN_CARGO_TARGET_DIR}
-            ${CARGO_EXECUTABLE} test --offline --locked
+            ${CARGO_EXECUTABLE} test --offline ${NGOSEN_CARGO_LOCKED}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/bamboo-rs)
 set_tests_properties(bamboo_rs_cargo_test PROPERTIES LABELS "unit;core" TIMEOUT 600)
+
+add_test(NAME vendored_crates_switch
+         COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/vendored-crates-switch.sh ${CMAKE_COMMAND} ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
+set_tests_properties(vendored_crates_switch PROPERTIES LABELS "unit;packaging" TIMEOUT 60)
 
 # Tests of the typing logic alone; NGOSEN_CORE_ONLY builds just these.
 add_subdirectory(core)

@@ -7,8 +7,15 @@ Base class for Table-based editors (Macros, Keymap).
 
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (
+    QFrame,
+    QScrollArea,
+    QVBoxLayout,
     QWidget,
 )
+
+from core import page_status
+from ui.pages.dynamic_settings import HintLabel
+from ui.typography import mute
 
 
 class BaseEditorPage(QWidget):
@@ -17,6 +24,42 @@ class BaseEditorPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.table = None
+
+    def _scrolling_layout(self):
+        """The layout for the page's content; the page scrolls when the window is too small."""
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        outer.addWidget(scroll)
+        content = QWidget()
+        scroll.setWidget(content)
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(30, 20, 30, 20)
+        layout.setSpacing(15)
+        return layout
+
+    def _add_status_line(self, layout):
+        self.status_line = HintLabel("")
+        self.status_line.setObjectName("StatusLine")
+        self.status_line.searchable = False
+        mute(self.status_line)
+        self.status_line.hide()
+        layout.addWidget(self.status_line)
+
+    def refresh_status(self):
+        """Shows why this page is not in use now, without rebuilding it."""
+        model = page_status.read(self.dbus)
+        if model is None:
+            self.status_line.hide()
+            return
+        if not self.is_modified():
+            self._follow(model.value_of)
+        model.current.update(self._shown_switches())
+        text = self._status_text(model)
+        self.status_line.setText(text)
+        self.status_line.setVisible(bool(text))
 
     def apply_table_style(self):
         """Applies modern styling to the table and connects signals."""

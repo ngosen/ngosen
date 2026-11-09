@@ -7,10 +7,13 @@
 
 #include "emoji-entry.h"
 #include "ngosen-options.h"
+#include "ngosen-pty.h"
 #include "ngosen-recorder.h"
 
 #include <cstdint>
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ngosen {
@@ -39,6 +42,29 @@ namespace ngosen {
 
         // Shared by every field, so a saved log follows the user across windows.
         virtual Recorder& recorder() = 0;
+
+        // Whether a terminal of the user hides input, as at a password prompt; tests play one without a pty.
+        virtual bool anyTerminalHidesInput() const {
+            return anyPtyHidesInput();
+        }
+
+        // Apps whose fields mishandled a deletion through their surrounding text. Kept for this session
+        // only, and shared by every field, as an app opens a new one for each window.
+        bool surroundingUntrusted(const std::string& frontend, const std::string& program) const {
+            const auto app = apps_.find({frontend, program});
+            return app != apps_.end() && app->second.surroundingUntrusted;
+        }
+        void markSurroundingUntrusted(const std::string& frontend, const std::string& program) {
+            apps_[{frontend, program}].surroundingUntrusted = true;
+        }
+
+      private:
+        // What an app showed in this session. The same app can delete differently over IBus and over
+        // Wayland, so the frontend is part of the key.
+        struct AppHistory {
+            bool surroundingUntrusted = false;
+        };
+        std::map<std::pair<std::string, std::string>, AppHistory> apps_;
     };
 
 } // namespace ngosen

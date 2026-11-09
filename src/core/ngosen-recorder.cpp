@@ -19,12 +19,37 @@ namespace ngosen {
         constexpr size_t CharsBeforeCursor = 40;
         constexpr size_t CharsAfterCursor  = 10;
 
-        const char*      editKeyName(EditKey key) {
+        // Enter's key text and multi-line reports would otherwise break the one-event-per-line format.
+        std::string escapeControls(const std::string& text) {
+            std::string out;
+            for (const char c : text) {
+                switch (c) {
+                    case '\\': out += "\\\\"; break;
+                    case '\n': out += "\\n"; break;
+                    case '\r': out += "\\r"; break;
+                    case '\t': out += "\\t"; break;
+                    default:
+                        if (static_cast<unsigned char>(c) < 0x20 || c == 0x7f) {
+                            char hex[8];
+                            std::snprintf(hex, sizeof(hex), "\\x%02x", static_cast<unsigned char>(c));
+                            out += hex;
+                        } else {
+                            out += c;
+                        }
+                }
+            }
+            return out;
+        }
+
+        const char* editKeyName(EditKey key) {
             switch (key) {
                 case EditKey::BackSpace: return "BackSpace";
                 case EditKey::Right: return "Right";
                 case EditKey::Shift: return "Shift";
                 case EditKey::Return: return "Return";
+                case EditKey::ShiftReturn: return "Shift+Return";
+                case EditKey::Tab: return "Tab";
+                case EditKey::ShiftTab: return "Shift+Tab";
             }
             return "?";
         }
@@ -40,6 +65,10 @@ namespace ngosen {
             void forwardKey(EditKey key, bool release, uint32_t time) override {
                 recorder_.add("forward", std::string(editKeyName(key)) + (release ? " up" : " down"));
                 host_->forwardKey(key, release, time);
+            }
+            void forwardKeyPress(uint32_t sym, uint32_t states, uint32_t code, bool release, uint32_t time) override {
+                recorder_.add("forward", "key=" + std::to_string(sym) + " states=" + std::to_string(states) + (release ? " up" : " down"));
+                host_->forwardKeyPress(sym, states, code, release, time);
             }
             void deleteSurrounding(int offset, unsigned int size) override {
                 recorder_.add("delete", "offset=" + std::to_string(offset) + " size=" + std::to_string(size));
@@ -59,6 +88,9 @@ namespace ngosen {
             }
             bool hasFocus() const override {
                 return host_->hasFocus();
+            }
+            std::optional<std::string> takeSelection() override {
+                return host_->takeSelection();
             }
 
             void showPreedit(const std::string& text, bool underline) override {
@@ -157,10 +189,10 @@ namespace ngosen {
         const uint64_t start = events_.front().timeUs;
         char           ms[32];
         if (droppedField_)
-            out += "0.0\tfield\t" + droppedField_->detail + "\n";
+            out += "0.0\tfield\t" + escapeControls(droppedField_->detail) + "\n";
         for (const auto& event : events_) {
             std::snprintf(ms, sizeof(ms), "%.1f", static_cast<double>(event.timeUs - start) / 1000.0);
-            out += std::string(ms) + "\t" + event.kind + "\t" + event.detail + "\n";
+            out += std::string(ms) + "\t" + event.kind + "\t" + escapeControls(event.detail) + "\n";
         }
         return out;
     }

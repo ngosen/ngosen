@@ -2,18 +2,17 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
 from urllib.parse import parse_qs, urlparse
 
-from qtpy.QtWidgets import QWidget
-
 # support puts the settings window on sys.path, so it has to come first.
 # isort: off
 from support import FakeDBusHandler, app  # noqa: F401
-from core import system_check
-from core.system_check import FAIL, WARN, Facts
+from core import session_setup, system_check
+from core.system_check import FAIL, OK, WARN, Facts
 
 # isort: on
 
@@ -25,11 +24,61 @@ def facts(session, desktop, env=None, **kw):
     base.update(FCITX if env is None else env)
     kw.setdefault("fcitx_running", True)
     kw.setdefault("ngosen_in_group", True)
+    kw.setdefault("input_panel_state", "ACTIVE")
     return Facts(env=base, **kw)
+
+
+def quiet_session_setup(test):
+    """The login setup of the machine running the tests must not add a row."""
+    answers = {"starts_at_login": True, "saved_environment": {}, "has_im_config": False}
+    for name, value in answers.items():
+        patcher = mock.patch.object(session_setup, name, return_value=value)
+        patcher.start()
+        test.addCleanup(patcher.stop)
 
 
 def titles(found, level=None):
     return [f.title for f in found if level is None or f.level == level]
+
+
+class InputPanelTest(unittest.TestCase):
+    TITLE = "Menu and hints do not show in GNOME's search box"
+
+    def found(self, state, desktop="ubuntu:GNOME"):
+        return system_check.evaluate(facts("wayland", desktop, input_panel_state=state))
+
+    def test_gnome_without_the_panel_offers_to_install_it(self):
+        finding = self.found("")[0]
+        self.assertEqual((finding.level, finding.title), (WARN, self.TITLE))
+        self.assertEqual(finding.action, system_check.INSTALL_INPUT_PANEL)
+        self.assertIn(system_check.INPUT_PANEL_PAGE, finding.command)
+        self.assertNotIn("install.sh", finding.fix)
+        self.assertIn(system_check.INPUT_PANEL_PAGE, finding.fix)
+
+    def test_installed_panel_has_no_install_button(self):
+        self.assertIn("gnome-extensions enable", self.found("INACTIVE")[0].fix)
+        for state in ("INACTIVE", "ERROR", "OUT OF DATE"):
+            self.assertEqual(self.found(state)[0].action, "")
+        for state in ("ERROR", "OUT OF DATE"):
+            self.assertIn(system_check.INPUT_PANEL_PAGE, self.found(state)[0].fix)
+            self.assertNotIn("gnome-extensions enable", self.found(state)[0].fix)
+
+    def test_running_panel_and_other_desktops_are_clean(self):
+        self.assertEqual(self.found("ACTIVE"), [])
+        self.assertNotIn(self.TITLE, titles(self.found("", desktop="sway")))
+
+    def test_install_counts_only_when_the_user_accepts(self):
+        def fix(stdout, returncode=0):
+            done = subprocess.CompletedProcess([], returncode, stdout=stdout)
+            with mock.patch.object(system_check.subprocess, "run", return_value=done) as ran:
+                result = system_check.run_fix(system_check.INSTALL_INPUT_PANEL, FakeDBusHandler())
+            cmd = ran.call_args.args[0]
+            self.assertEqual(cmd[cmd.index("--dest") + 1], "org.gnome.Shell")
+            return result
+
+        self.assertEqual(fix("('successful',)\n"), (True, None))
+        self.assertEqual(fix("('cancelled',)\n"), (False, None))
+        self.assertEqual(fix("", returncode=1), (False, None))
 
 
 class EvaluateTest(unittest.TestCase):
@@ -79,11 +128,466 @@ class EvaluateTest(unittest.TestCase):
 
     def test_missing_xmodifiers_and_running_ibus_warn(self):
         env = dict(FCITX, XMODIFIERS="@im=ibus")
-        found = system_check.evaluate(facts("wayland", "GNOME", env=env, ibus_running=True))
+        found = system_check.evaluate(facts("wayland", "GNOME", env=env, ibus_owns_session=True))
         self.assertEqual(
             titles(found, WARN),
             ["Older X11 apps have no input method", "IBus is running next to fcitx5"],
         )
+
+    def test_gnome_without_app_names_offers_the_extension(self):
+        def found(version, state, fcitx="5.1.19", session="wayland", **more):
+            f = facts(
+                session,
+                "ubuntu:GNOME",
+                gnome_shell_version=version,
+                forward_keys_state=state,
+                fcitx_version=fcitx,
+                **more,
+            )
+            return [x for x in system_check.steps(f) if x.level != OK]
+
+        title = "Optional: each app can keep its own typing mode. Typing works without it."
+        silent = "GNOME's portal has not told Ngó Sen which app is in use"
+        portal = {"has_gnome_portal": True}
+        for version in ("46.0", "48.2", "49.1", "50.4"):
+            self.assertEqual(titles(found(version, "INACTIVE"), system_check.TIP), [title], version)
+            got = found(version, "INACTIVE", portal_answered=False, **portal)
+            self.assertEqual(titles(got, system_check.TIP), [silent], version)
+            self.assertEqual(got[0].action, system_check.ENABLE_FORWARD_KEYS)
+            self.assertEqual(found(version, "INACTIVE", portal_answered=True), [], version)
+        # Ngó Sen not loaded yet, or too old to say, is not a silent portal.
+        unknown = found("46.0", "INACTIVE", portal_answered=None, **portal)
+        self.assertEqual(titles(unknown, system_check.TIP), [title])
+        # Without the portal installed there is nothing to blame.
+        no_portal = found("46.0", "INACTIVE", portal_answered=False)
+        self.assertEqual(titles(no_portal, system_check.TIP), [title])
+        inactive = found("46.0", "INACTIVE", "5.1.7")[0]
+        self.assertEqual(inactive.action, system_check.ENABLE_FORWARD_KEYS)
+        self.assertIn("log out", inactive.fix)
+        # GNOME reads an extension's files only at login, so turning it on now cannot work yet.
+        for state in ("", "OUT OF DATE"):
+            stale = found("46.0", state)[0]
+            self.assertEqual((stale.action, stale.command), ("", ""))
+            self.assertIn("Log out", stale.fix)
+            self.assertNotIn("install.sh", stale.fix)
+            self.assertIn("update Ngó Sen", stale.fix)
+        running = {"app_names_running": True}
+        self.assertEqual(found("46.0", "ACTIVE", **running), [])
+        # A package upgrade replaces the files, but the old extension runs until the next login.
+        for version in ("46.0", "50.1"):
+            old = found(version, "ACTIVE")
+            self.assertEqual(titles(old, system_check.TIP), [title], version)
+            self.assertIn("Log out", old[0].fix)
+        self.assertEqual(found("50.1", "ACTIVE", **running), [])
+        ok = system_check.steps(
+            facts(
+                "wayland",
+                "GNOME",
+                gnome_shell_version="46.0",
+                forward_keys_state="ACTIVE",
+                fcitx_version="5.1.7",
+                app_names_running=True,
+            )
+        )
+        self.assertIn("Apps keep their own typing mode", titles(ok, OK))
+        from_portal = system_check.steps(
+            facts(
+                "wayland",
+                "GNOME",
+                gnome_shell_version="46.0",
+                forward_keys_state="INACTIVE",
+                fcitx_version="5.1.7",
+                portal_answered=True,
+            )
+        )
+        self.assertIn("Apps keep their own typing mode", titles(from_portal, OK))
+        # fcitx5 names apps itself from 5.1.22, and the extension loads only on these GNOME versions.
+        self.assertEqual(found("50.4", "INACTIVE", "5.1.22"), [])
+        self.assertEqual(found("50.4", "INACTIVE", "5.10.0"), [])
+        self.assertEqual(found("45.0", "INACTIVE"), [])
+        self.assertEqual(found("51.0", "INACTIVE"), [])
+        self.assertEqual(found("50.4", "INACTIVE", ""), [])
+        # GNOME 50.0 to 50.3 say the bigger problem, once.
+        self.assertEqual(
+            titles(found("50.1", "INACTIVE"), WARN),
+            ["GNOME 50.1 drops the keys Ngó Sen sends to apps"],
+        )
+
+    def test_optional_step_is_not_a_problem(self):
+        tip = system_check.Finding(
+            system_check.TIP, "tip", "", system_check.ENABLE_FORWARD_KEYS, "cmd"
+        )
+        warn = system_check.Finding(WARN, "warn", "", system_check.ADD_NGOSEN, "cmd")
+        self.assertEqual(system_check.problems([tip]), [])
+        self.assertEqual(system_check.summary([tip])[0], "This machine is ready")
+        self.assertEqual(system_check.summary([tip, warn])[0], "Steps left to fix: 1")
+        fixes = system_check.Fixes(FakeDBusHandler())
+        self.assertEqual(fixes.fixable([tip, warn]), [system_check.ADD_NGOSEN])
+        # Its own button still reports a fix that did nothing.
+        fixes.finish([system_check.ENABLE_FORWARD_KEYS], {}, [tip])
+        self.assertIn(system_check.ENABLE_FORWARD_KEYS, fixes.failed)
+        text = system_check.report(facts("wayland", "GNOME"), [tip])
+        self.assertIn("[i] tip", text)
+        # A setup with only a tip left needs no fixing.
+        f = facts(
+            "wayland",
+            "ubuntu:GNOME",
+            gnome_shell_version="46.0",
+            forward_keys_state="INACTIVE",
+            fcitx_version="5.1.7",
+        )
+        self.assertNotIn(
+            "GNOME's portal has not told Ngó Sen which app is in use",
+            titles(system_check.evaluate(f)),
+        )
+
+    def test_gnome_50_without_the_forward_key_fix_warns(self):
+        def found(version, state):
+            f = facts(
+                "wayland", "ubuntu:GNOME", gnome_shell_version=version, forward_keys_state=state
+            )
+            return system_check.evaluate(f)
+
+        title = "GNOME 50.1 drops the keys Ngó Sen sends to apps"
+        self.assertEqual(titles(found("50.1", "INACTIVE"), WARN), [title])
+        self.assertIn("gnome-extensions enable", found("50.1", "INACTIVE")[0].fix)
+        self.assertNotIn("install.sh", found("50.1", "")[0].fix)
+        # Just installed looks the same as never installed until the next login.
+        for advice in ("Log out", "update Ngó Sen", "GNOME 50.4"):
+            self.assertIn(advice, found("50.1", "")[0].fix)
+        self.assertEqual(found("50.1", "ACTIVE"), [])
+        ok = system_check.steps(
+            facts("wayland", "GNOME", gnome_shell_version="50.1", forward_keys_state="ACTIVE")
+        )
+        self.assertIn("The fix for GNOME 50.1 is on", titles(ok, OK))
+        self.assertEqual(len(found("50.0", "INACTIVE")), 1)
+        self.assertEqual(len(found("50.3", "INACTIVE")), 1)
+        self.assertEqual(found("50.4", "INACTIVE"), [])
+        self.assertEqual(found("49.2", ""), [])
+        self.assertEqual(found("", ""), [])
+
+
+class StepsTest(unittest.TestCase):
+    def test_passed_checks_are_listed_too(self):
+        found = system_check.steps(facts("wayland", "GNOME"))
+        self.assertEqual(
+            titles(found, OK),
+            [
+                "fcitx5 is running",
+                "Ngó Sen is in the fcitx5 input method list",
+                "fcitx5 starts at login",
+                "Older X11 apps use fcitx5",
+                "Qt apps use fcitx5",
+                "Chrome and older GTK apps use fcitx5",
+                "Menu and hints show in GNOME's search box",
+            ],
+        )
+        self.assertEqual(titles(found, FAIL) + titles(found, WARN), [])
+
+    def test_steps_the_window_can_fix(self):
+        def action(**kw):
+            found = system_check.evaluate(facts("wayland", "GNOME", **kw))
+            return [(f.action, f.command) for f in found]
+
+        self.assertEqual(action(fcitx_running=False), [("start-fcitx", "fcitx5 -d")])
+        self.assertEqual(action(ngosen_in_group=False), [("add-ngosen", "fcitx5-configtool")])
+        self.assertEqual(action(addon_replaced=True), [("restart-fcitx", "fcitx5 -rd")])
+        self.assertEqual(
+            action(gnome_shell_version="50.1", forward_keys_state="INACTIVE"),
+            [("enable-forward-keys", f"gnome-extensions enable {system_check.FORWARD_KEYS}")],
+        )
+        # Not installed: the window has nothing to turn on.
+        self.assertEqual(action(gnome_shell_version="50.1", forward_keys_state=""), [("", "")])
+
+
+class LoginSetupStepsTest(unittest.TestCase):
+    LOGIN = "fcitx5 will not start at the next login"
+    NOTICE = "Log out and back in to finish the setup"
+
+    def test_running_fcitx5_that_will_not_start_next_time_is_a_step(self):
+        found = system_check.steps(facts("wayland", "GNOME", starts_at_login=False))
+        row = next(f for f in found if f.title == self.LOGIN)
+        self.assertEqual((row.level, row.action), (WARN, system_check.ENABLE_AUTOSTART))
+        self.assertIn("~/.config/autostart", row.command)
+        self.assertIn(session_setup.AUTOSTART_SOURCE, row.fix)
+
+    def test_login_start_is_not_checked_where_the_compositor_starts_fcitx5(self):
+        for session, desktop in (("wayland", "KDE"), ("wayland", "sway")):
+            found = system_check.steps(facts(session, desktop, starts_at_login=False))
+            self.assertNotIn(self.LOGIN, titles(found), desktop)
+            self.assertNotIn("fcitx5 starts at login", titles(found), desktop)
+
+    def test_x11_with_im_config_uses_it_for_login_and_variables(self):
+        found = system_check.evaluate(
+            facts("x11", "XFCE", env={}, starts_at_login=False, has_im_config=True)
+        )
+        self.assertEqual({f.action for f in found}, {system_check.USE_IM_CONFIG})
+
+    def test_x11_without_im_config_only_explains_the_variables(self):
+        found = system_check.evaluate(facts("x11", "XFCE", env={}))
+        self.assertEqual({f.action for f in found}, {""})
+        self.assertIn("XMODIFIERS=@im=fcitx", found[0].fix)
+
+    def test_gnome_variables_share_one_fix(self):
+        found = system_check.evaluate(facts("wayland", "GNOME", env={}))
+        self.assertEqual(len(found), 3)
+        self.assertEqual({f.action for f in found}, {system_check.SET_ENVIRONMENT})
+        self.assertIn("QT_IM_MODULE=fcitx", session_setup.GNOME_ENV)
+        self.assertIn(session_setup.ENV_FILE, found[0].command)
+        fixes = system_check.Fixes(FakeDBusHandler())
+        self.assertEqual(fixes.fixable(found), [system_check.SET_ENVIRONMENT])
+        self.assertIn("Use the button on the step", system_check.summary(found)[1])
+
+    def test_saved_variables_wait_for_login_under_one_notice(self):
+        saved = dict(line.split("=", 1) for line in session_setup.GNOME_ENV.splitlines())
+        found = system_check.evaluate(
+            facts("wayland", "GNOME", env={}, saved_env=saved, ibus_owns_session=True)
+        )
+        self.assertEqual(titles(found), [self.NOTICE])
+        self.assertEqual(found[0].action, "")
+
+    def test_a_variable_set_to_something_else_is_not_waiting_for_login(self):
+        found = system_check.evaluate(
+            facts("wayland", "GNOME", env={}, saved_env={"QT_IM_MODULE": "ibus"})
+        )
+        self.assertNotIn(self.NOTICE, titles(found))
+
+    def test_ibus_stays_a_step_when_nothing_waits_for_login(self):
+        found = system_check.evaluate(facts("wayland", "GNOME", ibus_owns_session=True))
+        self.assertEqual(titles(found), ["IBus is running next to fcitx5"])
+
+    def test_im_config_fix_waits_for_login(self):
+        found = system_check.evaluate(
+            facts("x11", "XFCE", env={}, has_im_config=True, im_config_chosen=True)
+        )
+        self.assertEqual(titles(found), [self.NOTICE])
+        fixes = system_check.Fixes(FakeDBusHandler())
+        text, _undo = fixes.finish([system_check.USE_IM_CONFIG], {}, found)
+        self.assertIn("Log out", text)
+        self.assertEqual(fixes.failed, set())
+
+    def test_saved_variable_where_it_is_not_read_keeps_its_fix(self):
+        saved = {"XMODIFIERS": "@im=fcitx"}
+        found = system_check.evaluate(
+            facts("x11", "XFCE", env={}, saved_env=saved, has_im_config=True)
+        )
+        self.assertNotIn(self.NOTICE, titles(found))
+        self.assertIn("Older X11 apps have no input method", titles(found))
+
+    def test_conflicting_value_offers_no_button(self):
+        found = system_check.evaluate(
+            facts("wayland", "GNOME", env={}, saved_env={"QT_IM_MODULE": "ibus"})
+        )
+        self.assertEqual({f.action for f in found}, {""})
+        self.assertEqual({f.command for f in found}, {""})
+        self.assertIn("QT_IM_MODULE", found[0].fix)
+
+    def test_kde_x11_does_not_use_im_config(self):
+        found = system_check.evaluate(
+            facts("x11", "KDE", env={}, starts_at_login=False, has_im_config=True)
+        )
+        self.assertNotIn(system_check.USE_IM_CONFIG, {f.action for f in found})
+        self.assertIn(system_check.ENABLE_AUTOSTART, {f.action for f in found})
+
+    def test_kde_without_kwriteconfig6_only_explains(self):
+        found = system_check.evaluate(facts("wayland", "KDE", {"XMODIFIERS": "@im=fcitx"}))
+        self.assertEqual(found[0].action, "")
+        self.assertIn("Virtual Keyboard", found[0].fix)
+
+    def test_kde_offers_its_setting_and_only_xmodifiers(self):
+        found = system_check.evaluate(facts("wayland", "KDE", env={}, has_kwriteconfig=True))
+        by_action = {f.action: f for f in found}
+        self.assertIn(system_check.SET_KWIN_INPUT_METHOD, by_action)
+        self.assertIn(session_setup.AUTOSTART_SOURCE, by_action["set-kwin-input-method"].command)
+        self.assertIn("XMODIFIERS=@im=fcitx", by_action["set-environment"].command)
+        self.assertNotIn("QT_IM_MODULE", by_action["set-environment"].command)
+
+    def test_kde_setting_chosen_waits_until_kwin_starts_fcitx5(self):
+        method = session_setup.AUTOSTART_SOURCE
+        xim = {"XMODIFIERS": "@im=fcitx"}
+        waiting = facts("wayland", "KDE", xim, kwin_input_method=method, started_by_kwin=False)
+        self.assertEqual(titles(system_check.evaluate(waiting)), [self.NOTICE])
+        ready = facts("wayland", "KDE", xim, kwin_input_method=method, started_by_kwin=True)
+        self.assertEqual(system_check.evaluate(ready), [])
+
+    def test_report_shows_what_waits_for_login(self):
+        f = facts("wayland", "GNOME", env={}, saved_env={"QT_IM_MODULE": "fcitx"})
+        self.assertIn("environment.d: QT_IM_MODULE=fcitx", system_check.report(f, []))
+
+    def test_copied_message_leaves_out_a_long_command(self):
+        self.assertEqual(system_check.copied_text("fcitx5 -d"), "Copied: fcitx5 -d")
+        command = session_setup.set_environment_command(session_setup.GNOME_ENV)
+        self.assertEqual(system_check.copied_text(command), "Copied the command.")
+
+
+class KwinParentTest(unittest.TestCase):
+    def proc(self, parent):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        for pid, comm, stat in (
+            ("10", parent, "10 (x) S 1 0"),
+            ("20", "fcitx5", "20 (fcitx5) S 10 20"),
+        ):
+            os.makedirs(os.path.join(tmp.name, pid))
+            with open(os.path.join(tmp.name, pid, "comm"), "w", encoding="utf-8") as f:
+                f.write(comm + "\n")
+            with open(os.path.join(tmp.name, pid, "stat"), "w", encoding="utf-8") as f:
+                f.write(stat + "\n")
+        return tmp.name
+
+    def test_only_kwin_as_the_parent_counts(self):
+        self.assertTrue(system_check._fcitx5_started_by_kwin(self.proc("kwin_wayland")))
+        self.assertFalse(system_check._fcitx5_started_by_kwin(self.proc("gnome-session")))
+
+
+class FixTest(unittest.TestCase):
+    def test_ngosen_takes_the_place_of_the_only_keyboard(self):
+        self.assertEqual(
+            system_check.with_ngosen("us", [("keyboard-fr", "")]), ("fr", [("ngosen", "")])
+        )
+
+    def test_ngosen_goes_after_other_input_methods(self):
+        items = [("keyboard-us", ""), ("pinyin", "")]
+        self.assertEqual(system_check.with_ngosen("us", items), ("us", items + [("ngosen", "")]))
+
+    def test_ngosen_is_added_once(self):
+        items = [("keyboard-us", ""), ("ngosen", "")]
+        self.assertEqual(system_check.with_ngosen("us", items), ("us", items))
+
+    def test_adding_ngosen_can_be_undone(self):
+        dbus = FakeDBusHandler()
+        dbus.group = ("Default", "us", [("keyboard-us", "")])
+        done, undo = system_check.run_fix(system_check.ADD_NGOSEN, dbus)
+        self.assertTrue(done)
+        self.assertEqual(dbus.input_method_names(), ["ngosen"])
+        undo()
+        self.assertEqual(dbus.group, ("Default", "us", [("keyboard-us", "")]))
+
+    def test_failed_fix_offers_no_undo(self):
+        dbus = FakeDBusHandler()
+        dbus.set_input_method_group = lambda *args: False
+        self.assertEqual(system_check.run_fix(system_check.ADD_NGOSEN, dbus), (False, None))
+        with mock.patch.object(subprocess, "run", side_effect=OSError):
+            self.assertEqual(system_check.run_fix(system_check.START_FCITX, dbus), (False, None))
+
+    def test_restart_goes_through_fcitx5(self):
+        dbus = FakeDBusHandler()
+        self.assertEqual(system_check.run_fix(system_check.RESTART_FCITX, dbus), (True, None))
+        self.assertEqual(dbus.restarts, 1)
+
+
+class FixReviewTest(unittest.TestCase):
+    def test_ngosen_dropped_by_fcitx5_is_not_reported_added(self):
+        class Drops(FakeDBusHandler):
+            def set_input_method_group(self, name, layout, items):
+                kept = [item for item in items if item[0] != "ngosen"]
+                return super().set_input_method_group(name, layout, kept)
+
+        dbus = Drops()
+        dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.assertEqual(system_check.run_fix(system_check.ADD_NGOSEN, dbus), (False, None))
+        self.assertEqual(dbus.group, ("Default", "us", [("keyboard-us", "")]))
+
+    def test_started_fcitx5_does_not_hold_the_output_pipes(self):
+        with mock.patch.object(subprocess, "run") as run:
+            run.return_value.returncode = 0
+            system_check.run_fix(system_check.START_FCITX, FakeDBusHandler())
+        self.assertEqual(run.call_args.kwargs["stdout"], subprocess.DEVNULL)
+        self.assertEqual(run.call_args.kwargs["stderr"], subprocess.DEVNULL)
+
+    def test_kwin_fcitx5_is_not_offered_a_restart(self):
+        found = system_check.evaluate(
+            facts("wayland", "KDE", env={}, kwin_input_method="fcitx5", addon_replaced=True)
+        )
+        replaced = next(f for f in found if "before the update" in f.title)
+        self.assertEqual(replaced.action, "")
+        self.assertIn("Log out", replaced.fix)
+
+    def test_ngosen_is_added_before_fcitx5_restarts(self):
+        fixes = system_check.Fixes(FakeDBusHandler())
+        ran = []
+        with mock.patch.object(
+            system_check, "run_fix", side_effect=lambda a, d: ran.append(a) or (True, None)
+        ):
+            fixes.run([system_check.RESTART_FCITX, system_check.ADD_NGOSEN])
+        self.assertEqual(ran, [system_check.ADD_NGOSEN, system_check.RESTART_FCITX])
+
+    def test_a_fix_that_left_its_step_counts_as_failed(self):
+        fixes = system_check.Fixes(FakeDBusHandler())
+        fixes.busy = {system_check.RESTART_FCITX}
+        still = facts("wayland", "GNOME", addon_replaced=True)
+        message, undo = fixes.finish([system_check.RESTART_FCITX], [], system_check.evaluate(still))
+        self.assertEqual((message, undo), ("", None))
+        self.assertEqual(fixes.failed, {system_check.RESTART_FCITX})
+        self.assertEqual(fixes.busy, set())
+
+    def test_one_fixable_step_does_not_mention_fixing_all(self):
+        found = [
+            system_check.Finding(FAIL, "Ngó Sen is missing", action=system_check.ADD_NGOSEN),
+            system_check.Finding(WARN, "X11 apps have no input method"),
+        ]
+        self.assertNotIn("all at once", system_check.summary(found)[1])
+        found.append(system_check.Finding(FAIL, "fcitx5 is off", action=system_check.START_FCITX))
+        self.assertIn("all at once", system_check.summary(found)[1])
+
+    def test_failed_fixes_do_not_count_as_buttons(self):
+        found = [
+            system_check.Finding(FAIL, "Ngó Sen is missing", action=system_check.ADD_NGOSEN),
+            system_check.Finding(FAIL, "fcitx5 is off", action=system_check.START_FCITX),
+        ]
+        one_failed = system_check.summary(found, {system_check.ADD_NGOSEN})[1]
+        self.assertNotIn("all at once", one_failed)
+        all_failed = system_check.summary(
+            found, {system_check.ADD_NGOSEN, system_check.START_FCITX}
+        )
+        self.assertEqual(all_failed[1], "Each step says what to do.")
+
+    def test_a_failed_fix_keeps_the_instructions(self):
+        found = system_check.steps(facts("wayland", "KDE", ngosen_in_group=False))
+        add = next(f for f in found if f.action == system_check.ADD_NGOSEN)
+        self.assertIn(add.fix, system_check.failed_text(add))
+
+    def test_undo_skips_fixes_that_did_not_take(self):
+        fixes = system_check.Fixes(FakeDBusHandler())
+        undone = []
+
+        def run_fix(action, _dbus):
+            return True, lambda: undone.append(action) or True
+
+        with mock.patch.object(system_check, "run_fix", side_effect=run_fix):
+            done, undos, _settle = fixes.run(
+                [system_check.ADD_NGOSEN, system_check.ENABLE_FORWARD_KEYS]
+            )
+        left = [system_check.Finding(FAIL, "off", action=system_check.ENABLE_FORWARD_KEYS)]
+        _message, undo = fixes.finish(done, undos, left)
+        undo()
+        self.assertEqual(undone, [system_check.ADD_NGOSEN])
+
+    def test_a_slow_fix_is_checked_again_before_it_fails(self):
+        fixes = system_check.Fixes(FakeDBusHandler())
+        not_running = system_check.steps(facts("wayland", "GNOME", fcitx_running=False))
+        restart = [system_check.RESTART_FCITX]
+        self.assertGreater(fixes.settle_again(restart, not_running), 0)
+        self.assertEqual(fixes.settle_again([system_check.ADD_NGOSEN], not_running), 0)
+        extension = [system_check.ENABLE_FORWARD_KEYS]
+        still_off = [system_check.Finding(FAIL, "off", action=system_check.ENABLE_FORWARD_KEYS)]
+        self.assertGreater(fixes.settle_again(extension, still_off), 0)
+        while fixes.settle_again(extension, still_off):
+            pass
+        self.assertEqual(fixes.settle_again(extension, []), 0)
+
+    def test_ngosen_installed_after_fcitx5_asks_for_a_restart(self):
+        found = system_check.steps(
+            facts("wayland", "GNOME", ngosen_in_group=False, ngosen_loaded=False)
+        )
+        actions = [f.action for f in found]
+        self.assertNotIn(system_check.ADD_NGOSEN, actions)
+        self.assertIn(system_check.RESTART_FCITX, actions)
+        kde = system_check.steps(
+            facts("wayland", "KDE", ngosen_in_group=False, ngosen_loaded=False)
+        )
+        self.assertNotIn(system_check.RESTART_FCITX, [f.action for f in kde])
+        self.assertTrue(any("Log out" in f.fix for f in kde))
 
 
 class ReportTest(unittest.TestCase):
@@ -127,6 +631,135 @@ class CollectTest(unittest.TestCase):
         self.assertIn("Fcitx5", f.kwin_input_method)
         self.assertEqual(f.apps, [("kate", "wayland")])
         self.assertNotIn("HOME", f.env)
+
+    def test_reads_gnome_shell_and_forward_key_fix_on_gnome(self):
+        info = "forward-keys@ngosen.github.io\n  Enabled: No\n  State: INACTIVE\n"
+        outputs = {"gnome-shell": "GNOME Shell 50.1\n", "gnome-extensions": info}
+
+        def run(cmd, env=None, **kw):
+            out = outputs.get(cmd[0], "")
+            # gnome-extensions translates its labels, but not the state itself.
+            if (env or {}).get("LC_ALL") != "C":
+                out = out.replace("State:", "Trạng thái:")
+            return subprocess.CompletedProcess(cmd, 0, stdout=out)
+
+        env = {"XDG_CURRENT_DESKTOP": "ubuntu:GNOME"}
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            f = system_check.collect(FakeDBusHandler(), env=env)
+        self.assertEqual((f.gnome_shell_version, f.forward_keys_state), ("50.1", "INACTIVE"))
+        self.assertFalse(f.app_names_running)
+        outputs["gdbus"] = "()\n"
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            self.assertTrue(system_check.collect(FakeDBusHandler(), env=env).app_names_running)
+        self.assertEqual(f.input_panel_state, "INACTIVE")
+        self.assertIn(
+            "GNOME Shell 50.1, forward-keys: INACTIVE, input panel: INACTIVE\n",
+            system_check.report(f, []),
+        )
+
+        outputs["gnome-extensions"] = ""
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            self.assertEqual(
+                system_check.collect(FakeDBusHandler(), env=env).forward_keys_state, ""
+            )
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run) as ran:
+            f = system_check.collect(FakeDBusHandler(), env={"XDG_CURRENT_DESKTOP": "KDE"})
+        self.assertEqual(f.gnome_shell_version, "")
+        self.assertNotIn("gnome-shell", [c.args[0][0] for c in ran.call_args_list])
+
+    def test_asks_for_the_portal_only_where_ngosen_watches_it(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        services = os.path.join(tmp.name, "dbus-1", "services")
+        os.makedirs(services)
+        service = os.path.join(services, "org.freedesktop.impl.portal.desktop.gnome.service")
+        open(service, "w").close()
+        empty = os.path.join(tmp.name, "empty")
+        patcher = mock.patch.object(system_check, "SYSTEM_DATA_DIR", empty)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        outputs = {"gnome-shell": "GNOME Shell 46.0\n", "fcitx5": "5.1.7\n"}
+
+        def run(cmd, **kw):
+            out = outputs.get(cmd[0], "")
+            if cmd[0] == "gdbus" and "/ngosen" in cmd:
+                out = outputs.get("ngosen", "")
+            return subprocess.CompletedProcess(cmd, 0, stdout=out)
+
+        def collect(**env):
+            base = {"XDG_CURRENT_DESKTOP": "ubuntu:GNOME", "XDG_SESSION_TYPE": "wayland"}
+            base["XDG_DATA_DIRS"] = tmp.name
+            base.update(env)
+            with mock.patch.object(system_check.subprocess, "run", side_effect=run) as ran:
+                f = system_check.collect(FakeDBusHandler(), env=base)
+            asked = any("/ngosen" in c.args[0] for c in ran.call_args_list)
+            return f, asked
+
+        for reply, want in (("(true,)\n", True), ("(false,)\n", False), ("", None)):
+            outputs["ngosen"] = reply
+            f, asked = collect()
+            self.assertTrue(asked)
+            self.assertEqual(f.portal_answered, want, reply)
+        self.assertTrue(f.has_gnome_portal)
+        self.assertIn("portal: unknown", system_check.report(f, []))
+        outputs["ngosen"] = "(false,)\n"
+        self.assertIn("portal: silent", system_check.report(collect()[0], []))
+        # The addon starts on demand, so it is not woken where the answer cannot matter.
+        f, asked = collect(XDG_SESSION_TYPE="x11")
+        self.assertFalse(asked)
+        self.assertNotIn("portal:", system_check.report(f, []))
+        os.remove(service)
+        f, asked = collect()
+        self.assertFalse(asked)
+        self.assertFalse(f.has_gnome_portal)
+        self.assertIn("portal: not installed", system_check.report(f, []))
+        open(service, "w").close()
+        outputs["fcitx5"] = "5.1.22\n"
+        f, asked = collect()
+        self.assertFalse(asked)
+        self.assertNotIn("portal:", system_check.report(f, []))
+
+    def test_ibus_counts_only_when_it_holds_this_session(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        proc = os.path.join(tmp.name, "proc")
+        for pid, comm in (("100", "ibus-daemon"), ("200", "fcitx5")):
+            os.makedirs(os.path.join(proc, pid))
+            with open(os.path.join(proc, pid, "comm"), "w", encoding="utf-8") as f:
+                f.write(comm + "\n")
+        bus = os.path.join(tmp.name, "ibus", "bus")
+        os.makedirs(bus)
+
+        def address(name, pid):
+            with open(os.path.join(bus, "m1-" + name), "w", encoding="utf-8") as f:
+                f.write(f"# IBus address file\nIBUS_ADDRESS=unix:path=/x\nIBUS_DAEMON_PID={pid}\n")
+
+        def owns(**env):
+            env["XDG_CONFIG_HOME"] = tmp.name
+            return system_check.ibus_owns_session(env, proc=proc, machine_id="m1")
+
+        address("unix-wayland-0", 200)
+        address("unix-100", 100)
+        # Another program's IBus on its own display, as xpra starts one.
+        self.assertFalse(owns(WAYLAND_DISPLAY="wayland-0"))
+        address("unix-wayland-0", 100)
+        self.assertTrue(owns(WAYLAND_DISPLAY="wayland-0"))
+        address("unix-0", 100)
+        self.assertTrue(owns(DISPLAY=":0.0"))
+        address("unix-0", 999)
+        self.assertFalse(owns(DISPLAY=":0"))
+        self.assertFalse(owns(DISPLAY=":5"))
+        # IBus reads IBUS_ADDRESS_FILE instead of the usual name when it is set.
+        self.assertTrue(
+            owns(DISPLAY=":5", IBUS_ADDRESS_FILE=os.path.join(bus, "m1-unix-wayland-0"))
+        )
+        with open(os.path.join(bus, "m1-unix-1"), "w", encoding="utf-8") as f:
+            f.write("IBUS_ADDRESS=unix:path=/x\n")
+        self.assertFalse(owns(DISPLAY=":1"))
+        home = {"HOME": os.path.join(tmp.name, "home"), "WAYLAND_DISPLAY": "wayland-0"}
+        os.makedirs(os.path.join(home["HOME"], ".config"))
+        os.symlink(os.path.join(tmp.name, "ibus"), os.path.join(home["HOME"], ".config", "ibus"))
+        self.assertTrue(system_check.ibus_owns_session(home, proc=proc, machine_id="m1"))
 
     def test_fcitx5_not_answering(self):
         handler = FakeDBusHandler()
@@ -195,60 +828,188 @@ class ReplacedAddonTest(unittest.TestCase):
         self.assertEqual(titles(found, WARN), ["fcitx5 still runs Ngó Sen from before the update"])
 
 
-class DialogTest(unittest.TestCase):
+class CheckPageTest(unittest.TestCase):
+    NO_IM = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
+    TITLE = "Ngó Sen is not in the fcitx5 input method list"
+
     def setUp(self):
-        # The fcitx5 of the machine running the tests must not add a row.
-        patcher = mock.patch.object(system_check, "runs_replaced_addon", return_value=False)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        from ui.pages.check import CheckPage
 
-    def test_dialog_lists_findings_and_copies_the_report(self):
+        # The fcitx5 and IBus of the machine running the tests must not add a row.
+        for name in ("runs_replaced_addon", "ibus_owns_session"):
+            patcher = mock.patch.object(system_check, name, return_value=False)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        quiet_session_setup(self)
+        env = mock.patch.dict(os.environ, self.NO_IM, clear=True)
+        env.start()
+        self.addCleanup(env.stop)
+        self.dbus = FakeDBusHandler()
+        self.messages = []
+        self.counts = []
+        self.page = CheckPage(
+            self.dbus,
+            "1.4.2",
+            lambda text, undo: self.messages.append((text, undo)),
+            self.counts.append,
+        )
+
+    def row(self, title):
+        return next(row for row in self.page.rows if row.title == title)
+
+    def settle(self):
+        from qtpy.QtWidgets import QApplication
+
+        while self.page.fixes.busy:
+            QApplication.processEvents()
+
+    def test_a_tip_keeps_the_machine_ready_and_has_its_own_button(self):
+        tip = system_check.Finding(
+            system_check.TIP, "tip", "", system_check.ENABLE_FORWARD_KEYS, "cmd"
+        )
+        with mock.patch.object(system_check, "steps", return_value=[tip]):
+            self.page.run()
+        self.assertEqual(self.counts[-1], 0)
+        self.assertEqual(self.page.heading.text(), "This machine is ready")
+        self.assertIsNotNone(self.page.rows[0].button)
+        self.assertEqual(self.page.fixes.fixable(self.page.findings), [])
+
+    def test_lists_every_step_and_copies_the_report(self):
         from qtpy.QtGui import QGuiApplication
-        from ui.system_check_dialog import SystemCheckDialog
 
-        env = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
-        with mock.patch.dict(os.environ, env, clear=True):
-            dialog = SystemCheckDialog(FakeDBusHandler(), "1.4.2")
-        rows = [
-            w.objectName()
-            for w in dialog.findChildren(object)
-            if w.objectName().startswith("CheckRow-")
-        ]
-        self.assertIn("CheckRow-fail", rows)
-        self.assertIn("kate (wayland)", dialog.apps.text())
-
-        fixed = dict(env, GTK_IM_MODULE="fcitx", QT_IM_MODULE="fcitx", XMODIFIERS="@im=fcitx")
-        with mock.patch.dict(os.environ, fixed, clear=True):
-            dialog.run()
-        rows = [
-            w.objectName()
-            for w in dialog.findChildren(QWidget)
-            if w.objectName().startswith("CheckRow-")
-        ]
-        self.assertEqual(rows, ["CheckRow-ok"])
-
-        with mock.patch.dict(os.environ, env, clear=True):
-            dialog.run()
-        dialog.copy_report()
+        levels = [row.level for row in self.page.rows]
+        self.assertEqual(levels[:2], [OK, OK])
+        self.assertIn(FAIL, levels)
+        self.assertEqual(self.counts[-1], 3)
+        self.assertIn("kate (wayland)", self.page.apps.text())
+        fixed = dict(self.NO_IM, GTK_IM_MODULE="fcitx", QT_IM_MODULE="fcitx")
+        with mock.patch.dict(os.environ, dict(fixed, XMODIFIERS="@im=fcitx"), clear=True):
+            self.page.run()
+        self.assertEqual({row.level for row in self.page.rows}, {OK})
+        self.assertEqual(self.counts[-1], 0)
+        self.assertEqual(self.page.heading.text(), "This machine is ready")
+        self.page.run()
+        self.page.copy_btn.click()
         self.assertIn("[X] GTK apps have no input method", QGuiApplication.clipboard().text())
+        self.assertEqual(self.messages[-1][0], "Copied the result.")
 
-    def test_dialog_grows_to_fit_more_rows(self):
-        from qtpy.QtWidgets import QApplication, QLabel
-        from ui.system_check_dialog import SystemCheckDialog
+    def test_adding_ngosen_fixes_the_step_and_can_be_undone(self):
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.page.run()
+        self.row(self.TITLE).button.click()
+        self.assertEqual(self.page.heading.text(), "Fixing…")
+        self.settle()
+        self.assertEqual(self.dbus.input_method_names(), ["ngosen"])
+        self.assertNotIn(self.TITLE, [row.title for row in self.page.rows])
+        text, undo = self.messages[-1]
+        self.assertEqual(text, "Added Ngó Sen to the input method list.")
+        undo()
+        self.assertEqual(self.dbus.input_method_names(), ["keyboard-us"])
+        self.assertIn(self.TITLE, [row.title for row in self.page.rows])
 
-        env = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
-        fixed = dict(env, GTK_IM_MODULE="fcitx", QT_IM_MODULE="fcitx", XMODIFIERS="@im=fcitx")
-        with mock.patch.dict(os.environ, fixed, clear=True):
-            dialog = SystemCheckDialog(FakeDBusHandler(), "1.4.2")
-        dialog.show()
-        QApplication.processEvents()
-        with mock.patch.dict(os.environ, env, clear=True):
-            dialog.run()
-        QApplication.processEvents()
-        for label in dialog.findChildren(QLabel):
-            if label.parent().objectName().startswith("CheckRow-") and label.text():
-                self.assertGreaterEqual(label.height(), label.sizeHint().height(), label.text())
-        dialog.close()
+    def test_a_step_with_a_button_also_says_how_to_do_it_by_hand(self):
+        from qtpy.QtGui import QGuiApplication
+        from qtpy.QtWidgets import QLabel
+
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.page.run()
+        row = self.row(self.TITLE)
+        shown = [label.text() for label in row.findChildren(QLabel)]
+        self.assertIn("Open Fcitx 5 Configuration and add Ngó Sen under Input Method.", shown)
+        self.assertEqual(row.button.text(), "Add Ngó Sen")
+        row.copy_button.click()
+        self.assertEqual(QGuiApplication.clipboard().text(), "fcitx5-configtool")
+
+    def test_a_failed_fix_offers_its_command(self):
+        from qtpy.QtGui import QGuiApplication
+
+        self.dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.dbus.set_input_method_group = lambda *args: False
+        self.page.run()
+        self.row(self.TITLE).button.click()
+        self.settle()
+        button = self.row(self.TITLE).button
+        self.assertEqual(button.text(), "Copy command")
+        self.assertEqual(self.messages, [])
+        button.click()
+        self.assertEqual(QGuiApplication.clipboard().text(), "fcitx5-configtool")
+
+    def test_messaging_copies_the_report_and_opens_the_chat(self):
+        from core.brand import MESSENGER_URL
+        from qtpy.QtGui import QGuiApplication
+
+        QGuiApplication.clipboard().setText("")
+        with mock.patch("ui.pages.check.QDesktopServices.openUrl") as open_url:
+            self.page.message_btn.click()
+        self.assertEqual(open_url.call_args[0][0].toString(), MESSENGER_URL)
+        self.assertIn("Ngó Sen 1.4.2", QGuiApplication.clipboard().text())
+        self.assertIn("Paste", self.messages[-1][0])
+
+
+class CheckPageWindowTest(unittest.TestCase):
+    def setUp(self):
+        for name in ("runs_replaced_addon", "ibus_owns_session"):
+            patcher = mock.patch.object(system_check, name, return_value=False)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        quiet_session_setup(self)
+        env = mock.patch.dict(os.environ, CheckPageTest.NO_IM, clear=True)
+        env.start()
+        self.addCleanup(env.stop)
+
+    def window(self, dbus):
+        from ui.main_window import NgoSenSettingsWindow
+
+        window = NgoSenSettingsWindow(dbus_handler=dbus)
+        self.addCleanup(window.close)
+        return window
+
+    def test_sits_above_about_with_the_steps_left(self):
+        window = self.window(FakeDBusHandler())
+        titles = [window.sidebar.item(r).text() for r in range(window.sidebar.count())]
+        self.assertEqual(titles[-2:], ["Check my machine", "About"])
+        page = window.show_page("check")
+        self.assertEqual(window.check_badge.text(), "3")
+        self.assertFalse(window.check_badge.isHidden())
+        with mock.patch.object(page, "run") as run:
+            window.show_page("about")
+            window.show_page("check")
+        run.assert_called_once()
+
+    def test_badge_shows_before_the_page_is_opened(self):
+        window = self.window(FakeDBusHandler())
+        app.processEvents()
+        self.assertEqual(window.check_badge.text(), "3")
+        self.assertFalse(window.check_badge.isHidden())
+
+    def test_coming_back_after_a_message_checks_again(self):
+        window = self.window(FakeDBusHandler())
+        page = window.show_page("check")
+        window.show_page("about")
+        window._show_message("Saved.")
+        with mock.patch.object(page, "run") as run:
+            window.show_page("check")
+        run.assert_called_once()
+
+    def test_a_failed_undo_says_so(self):
+        window = self.window(FakeDBusHandler())
+        window.show_check_message("Added.", lambda: False)
+        window.btn_undo.click()
+        self.assertIn("Could not undo", window.message_label.text())
+
+    def test_undo_takes_back_the_fix(self):
+        dbus = FakeDBusHandler()
+        dbus.group = ("Default", "us", [("keyboard-us", "")])
+        window = self.window(dbus)
+        page = window.show_page("check")
+        page.fix([system_check.ADD_NGOSEN])
+        while page.fixes.busy:
+            app.processEvents()
+        self.assertFalse(window.btn_undo.isHidden())
+        window.btn_undo.click()
+        self.assertEqual(dbus.input_method_names(), ["keyboard-us"])
+        self.assertEqual(window.message_label.text(), "Change undone.")
+        self.assertTrue(window.btn_undo.isHidden())
 
 
 if __name__ == "__main__":

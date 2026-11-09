@@ -9,14 +9,21 @@ set -euo pipefail
 
 RELEASE_URL=${NGOSEN_RELEASE_URL:-https://github.com/ngosen/ngosen/releases/latest/download}
 SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/TU-DUNG.md"
+OSTREE_ISSUE="https://github.com/ngosen/ngosen/issues/492"
 
+package_name=fcitx5-ngosen
 assume_yes=0
 setup_session=1
 session_changes=()
 keyboard_dropped=0
 fcitx5_reloaded=0
+package_changed=1
+fcitx5_current=0
 manager=
 pattern=
+distribution="máy này"
+# Packages apt upgrades along with the install on a distribution that needs it.
+apt_upgrades=()
 workdir=
 
 say() { printf '%s\n' "$*"; }
@@ -47,15 +54,28 @@ fetch() {
 usage() {
     say "Cách dùng: install.sh [--yes] [--no-setup | --uninstall]"
     say "  --yes        không hỏi lại trước khi cài hay gỡ"
-    say "  --no-setup   chỉ cài gói, không tự đặt fcitx5 làm bộ gõ trên GNOME"
+    say "  --no-setup   chỉ cài gói, không tự đặt bộ gõ cho tài khoản này"
     say "  --uninstall  gỡ Ngó Sen và trả lại những gì lệnh cài đã đổi"
+}
+
+# Image-based Fedora (Silverblue, Kinoite, Bazzite) layers packages with rpm-ostree; dnf cannot install.
+is_ostree() { [ -e /run/ostree-booted ]; }
+
+ostree_unsupported() {
+    say "Máy này là Fedora dạng ảnh hệ thống (Silverblue, Kinoite, Bazzite...), không cài bằng dnf được."
+    say "install.sh chưa hỗ trợ loại máy này. Chạy tay các lệnh sau:"
+    say "  $1"
+    say "  systemctl reboot"
+    say "$2"
+    say "Muốn install.sh hỗ trợ chính thức? Bấm 👍 hoặc kể máy bạn đang dùng ở: $OSTREE_ISSUE"
+    exit 1
 }
 
 x86_64_only() {
     [ "$2" = x86_64 ] || unsupported "$1 trên máy $2"
 }
 
-# Sets manager and pattern; pattern is a regular expression for the package's file name.
+# Sets manager, pattern and, on Fedora, distribution; pattern is a regular expression for the package's file name.
 detect_distribution() {
     local machine deb_arch
     machine=$(uname -m)
@@ -76,35 +96,30 @@ detect_distribution() {
     # shellcheck disable=SC1091
     version=$(. /etc/os-release && printf '%s' "${VERSION_ID:-}")
 
+    # Fedora remixes (Ultramarine, Nobara) have an ID of their own but keep Fedora's release number.
+    if [ "$id" = fedora ] || [[ " $like " == *" fedora "* ]]; then
+        # The published packages decide which releases are supported; see find_package.
+        case "$version" in
+            '' | *[!0-9]*) unsupported "${id} ${version:-không rõ phiên bản}" ;;
+        esac
+        distribution="${id} ${version} trên máy ${machine}"
+        manager=dnf
+        is_ostree && manager=rpm-ostree
+        pattern="${package_name}-[0-9][^ /]*\\.fc${version}\\.${machine}\\.rpm"
+        return
+    fi
+
     case "$id" in
-        fedora)
-            case "$version" in
-                43 | 44) ;;
-                *) unsupported "Fedora ${version:-không rõ phiên bản}" ;;
-            esac
-            manager=dnf
-            pattern="fcitx5-ngosen-[0-9][^ /]*\\.fc${version}\\.${machine}\\.rpm"
-            return
-            ;;
         opensuse-tumbleweed)
             x86_64_only "openSUSE" "$machine"
             manager=zypper
-            pattern='fcitx5-ngosen-[0-9][^ /]*\.opensuse-tumbleweed\.x86_64\.rpm'
+            pattern="${package_name}-[0-9][^ /]*\\.opensuse-tumbleweed\\.x86_64\\.rpm"
             return
             ;;
         arch | cachyos | endeavouros)
             x86_64_only "$id" "$machine"
             manager=pacman
-            pattern='fcitx5-ngosen-[0-9][^ /]*-x86_64\.pkg\.tar\.zst'
-            return
-            ;;
-    esac
-
-    case " $like " in
-        *" arch "*)
-            x86_64_only "$id" "$machine"
-            manager=pacman
-            pattern='fcitx5-ngosen-[0-9][^ /]*-x86_64\.pkg\.tar\.zst'
+            pattern="${package_name}-[0-9][^ /]*-x86_64\\.pkg\\.tar\\.zst"
             return
             ;;
     esac
@@ -112,16 +127,62 @@ detect_distribution() {
     if command -v apt-get >/dev/null 2>&1; then
         # Kali Rolling is built from Debian testing.
         [ "$id" = kali ] && codename=forky
+        # deepin 23 (beige) and 25 (crimson) ship glibc 2.38 and fcitx5 5.1, above what the bookworm build needs.
+        case "$id:$codename" in
+            deepin:beige | deepin:crimson)
+                codename=bookworm
+                # deepin's fcitx5 GTK modules declare GLib 2.76 but need the GLib in its repository;
+                # on an image that has not been updated GTK apps then get no input method.
+                apt_upgrades=(libglib2.0-0)
+                ;;
+            *:bookworm | *:trixie | *:forky | *:jammy | *:noble | *:resolute | *:stonking) ;;
+            *) codename=$(debian_base "$codename") ;;
+        esac
         case "$codename" in
-            bookworm | trixie | forky | jammy | noble | resolute | stonking)
+            bookworm | trixie | forky | noble | resolute | stonking)
                 manager=apt
-                pattern="fcitx5-ngosen_[0-9][^ /]*_${codename}_${deb_arch}\\.deb"
+                pattern="${package_name}_[0-9][^ /]*_${codename}_${deb_arch}\\.deb"
                 return
                 ;;
         esac
     fi
 
+    # Some Arch derivatives (Artix, Garuda) leave ID_LIKE out; pacman is what the package needs.
+    if [[ " $like " == *" arch "* ]] || { command -v pacman >/dev/null 2>&1 && ! command -v apt-get >/dev/null 2>&1; }; then
+        x86_64_only "$id" "$machine"
+        manager=pacman
+        pattern="${package_name}-[0-9][^ /]*-x86_64\\.pkg\\.tar\\.zst"
+        return
+    fi
+
+    # Ubuntu 22.04 (and Linux Mint 21) had packages up to 1.6.4.
+    [ "$codename" = jammy ] && die "Ngó Sen từ 1.7.0 cần Ubuntu 24.04 trở lên (Linux Mint 22 trở lên). Bản cuối cho Ubuntu 22.04 là 1.6.4: https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.4-1"
     unsupported "${id:-bản phân phối này} ${codename:-$version}"
+}
+
+# Debian derivatives with a codename of their own (LMDE, Devuan, Parrot) still name the Debian
+# release they are built on, in DEBIAN_CODENAME or /etc/debian_version.
+debian_base() {
+    local base
+    # shellcheck disable=SC1091
+    base=$(. /etc/os-release && printf '%s' "${DEBIAN_CODENAME:-}")
+    if [ -n "$base" ]; then
+        printf '%s' "$base"
+        return
+    fi
+    case "$(cat /etc/debian_version 2>/dev/null)" in
+        12.*) printf bookworm ;;
+        13.*) printf trixie ;;
+        *) printf '%s' "$1" ;;
+    esac
+}
+
+explain_gnome_setup() {
+    say ""
+    say "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus của GNOME cho tài khoản này: fcitx5 tự chạy khi"
+    say "đăng nhập, app gõ qua fcitx5, thêm biểu tượng và menu bộ gõ lên thanh trên cùng (tải"
+    say "extension Input Method Panel từ extensions.gnome.org). Đăng xuất một lần là dùng được."
+    say "Gỡ bằng --uninstall thì trả lại hết."
 }
 
 confirm() {
@@ -131,11 +192,11 @@ confirm() {
         die "không có cửa sổ dòng lệnh để hỏi lại. Chạy lại với --yes nếu đồng ý cài."
     fi
     local answer
-    printf '%s [c/K] ' "$1"
+    printf '%s [y/N] ' "$1"
     read -r answer <&3 || answer=
     exec 3<&-
     case "$answer" in
-        c | C | y | Y) return 0 ;;
+        [yY] | [yY][eE][sS] | [cC]) return 0 ;;
         *) return 1 ;;
     esac
 }
@@ -147,6 +208,7 @@ find_package() {
         die "không tải được danh sách gói từ $RELEASE_URL"
     line=$(printf '%s\n' "$sums" | grep -E "^[0-9a-f]{64}  ${pattern}\$" || true)
     count=$(printf '%s\n' "$line" | grep -c . || true)
+    [ "$count" -ne 0 ] || unsupported "$distribution"
     [ "$count" -eq 1 ] || die "bản phát hành mới nhất không có đúng một gói cho máy này (tìm thấy $count)"
     printf '%s %s\n' "${line%% *}" "${line##* }"
 }
@@ -175,33 +237,87 @@ install_with_pacman() {
         done
     fi
 
-    as_root pacman -U --noconfirm "${overwrite[@]}" "$package"
+    as_root env NGOSEN_INSTALLER=1 pacman -U --needed --noconfirm "${overwrite[@]}" "$package"
 }
 
+# The settings window opens in GTK on these desktops when it can (settings-gui/main.py), so its Qt
+# libraries are left out there.
+wants_gtk_settings() {
+    case ":${XDG_CURRENT_DESKTOP:-}:" in
+        *:GNOME:* | *:X-Cinnamon:*) return 0 ;;
+    esac
+    return 1
+}
+
+# Debian 12 has libadwaita 1.2, older than the GTK window needs.
+apt_has_libadwaita() {
+    local version
+    version=$(LC_ALL=C apt-cache policy gir1.2-adw-1 2>/dev/null | sed -n 's/^ *Candidate: //p')
+    [ -n "$version" ] && [ "$version" != '(none)' ] && dpkg --compare-versions "$version" ge 1.5
+}
+
+# Packages named with the package itself, so the package manager settles its choice of Qt or GTK.
+# The Arch package keeps Qt, having no alternative dependencies.
+settings_window_packages() {
+    settings_packages=()
+    if wants_gtk_settings; then
+        case "$manager" in
+            dnf) settings_packages=(python3-gobject gobject-introspection libadwaita) ;;
+            zypper) settings_packages=(python3-gobject typelib-1_0-Adw-1) ;;
+            apt) ! apt_has_libadwaita || settings_packages=(gir1.2-adw-1 python3-gi) ;;
+        esac
+    else
+        case "$manager" in
+            dnf) settings_packages=(python3-QtPy python3-pyqt6 qt6-qtsvg) ;;
+            zypper) settings_packages=(python3-QtPy python3-PyQt6 libQt6Svg6) ;;
+        esac
+    fi
+}
+
+# The package scripts see NGOSEN_INSTALLER and leave the next steps to this script.
 install_package() {
     local package=$1
+    local -a settings_packages=()
+    case "$manager" in
+        dnf | zypper) settings_window_packages ;;
+    esac
     case "$manager" in
         dnf)
-            as_root dnf install -y "$package"
+            as_root env NGOSEN_INSTALLER=1 dnf install -y "$package" "${settings_packages[@]}"
             ;;
         zypper)
-            as_root zypper --non-interactive install --allow-unsigned-rpm "$package"
+            as_root env NGOSEN_INSTALLER=1 zypper --non-interactive install --allow-unsigned-rpm "$package" "${settings_packages[@]}"
             ;;
         apt)
             # fcitx5 only recommends its GTK and Qt modules and im-config, and MX turns recommends
             # off. Naming them also covers a reinstall, which apt skips along with its recommends.
+            # im-config 1.1 (Kali, deepin) fails without a dialog program but only recommends whiptail.
+            # Only missing ones are named: naming an installed module upgrades it, which on a rolling
+            # release pulls in part of a toolkit upgrade.
             local extra candidate
-            local -a extras=()
+            local -a extras=() candidates=()
+            for candidate in im-config whiptail fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6; do
+                is_package_installed "$candidate" || candidates+=("$candidate")
+            done
+            candidates+=("${apt_upgrades[@]}")
             # Kali's images ship without package lists, and old lists name versions the mirror dropped.
-            as_root apt-get update
-            for candidate in im-config fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt5 fcitx5-frontend-qt6; do
-                extra=$(apt-cache policy "$candidate" 2>/dev/null | grep -m1 'Candidate:' || true)
+            # A broken third-party source fails the update while the distribution's lists still refresh;
+            # the install below stops on its own if a package is really missing.
+            if ! as_root apt-get update; then
+                say "Một nguồn apt trên máy đang lỗi (xem dòng E: ở trên); vẫn thử cài tiếp."
+            fi
+            for candidate in "${candidates[@]}"; do
+                # apt translates the label, "Ứng cử:" on a Vietnamese desktop.
+                extra=$(LC_ALL=C apt-cache policy "$candidate" 2>/dev/null | grep -m1 'Candidate:' || true)
                 case "$extra" in
                     *'(none)'* | '') ;;
                     *) extras+=("$candidate") ;;
                 esac
             done
-            as_root apt-get install -y "$package" "${extras[@]}"
+            # Modules new to the machine reach apps only after fcitx5 restarts.
+            [ "${#extras[@]}" -eq 0 ] || package_changed=1
+            settings_window_packages
+            as_root env NGOSEN_INSTALLER=1 apt-get install -y "$package" "${extras[@]}" "${settings_packages[@]}"
             ;;
         pacman)
             install_with_pacman "$package"
@@ -243,8 +359,29 @@ wants_kde_setup() {
     command -v kwriteconfig6 >/dev/null 2>&1 && command -v kreadconfig6 >/dev/null 2>&1
 }
 
+# Each compositor sets its own variable. XDG_CURRENT_DESKTOP comes from the display manager, so it
+# is missing when Sway starts from a text console.
+wants_sway_hyprland_setup() {
+    [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ] || return 1
+    [ -n "${WAYLAND_DISPLAY:-}" ] || return 1
+    [ -n "${SWAYSOCK:-}" ] || [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]
+}
+
 config_home() {
     printf '%s' "${XDG_CONFIG_HOME:-$HOME/.config}"
+}
+
+fcitx5_autostart_mask() {
+    printf '[Desktop Entry]\nType=Application\nName=Fcitx 5\nHidden=true\n'
+}
+
+# This user entry keeps fcitx5 from starting at login. One the user changed stays.
+unmask_fcitx5_autostart() {
+    local mask
+    mask="$(config_home)/autostart/org.fcitx.Fcitx5.desktop"
+    [ -e "$mask" ] && [ "$(cat "$mask")" = "$(fcitx5_autostart_mask)" ] || return 0
+    rm -f "$mask"
+    session_changes+=("fcitx5 tự chạy khi đăng nhập")
 }
 
 enable_fcitx5_autostart() {
@@ -257,15 +394,73 @@ enable_fcitx5_autostart() {
     session_changes+=("fcitx5 tự chạy khi đăng nhập")
 }
 
+# Lists what the install turned on outside its own files, so the uninstall turns off only that.
+changes_file() {
+    local dir="${XDG_STATE_HOME:-$HOME/.local/state}/ngosen"
+    printf '%s' "$dir/install-changes"
+}
+
+note_change() {
+    local file
+    file=$(changes_file)
+    grep -qsxF -- "$1" "$file" && return 0
+    if ! { mkdir -p "$(dirname "$file")" && printf '%s\n' "$1" >>"$file"; } 2>/dev/null; then
+        say "Không ghi được $file; lệnh gỡ sẽ không trả lại: $1"
+    fi
+}
+
+made_change() {
+    grep -qsxF -- "$1" "$(changes_file)"
+}
+
+xinputrc_runs_fcitx5() {
+    grep -qs '^run_im fcitx5$' "$HOME/.xinputrc"
+}
+
 # im-config 1.1 replaced -n with -w and -m with -r.
 im_config_set() {
     im-config -n "$1" >/dev/null 2>&1 || im-config -w "$1" >/dev/null 2>&1
+}
+
+# im-config 1.1 drops the choice with "auto"; given "REMOVE" it writes "run_im REMOVE".
+im_config_is_1_1() {
+    case "$(im-config -h 2>&1)" in
+        *"-w <name>"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+im_config_unset() {
+    if im_config_is_1_1; then
+        im-config -w auto >/dev/null 2>&1
+    else
+        im-config -n REMOVE >/dev/null 2>&1
+    fi
+}
+
+im_config_unset_command() {
+    if im_config_is_1_1; then
+        echo "im-config -w auto"
+    else
+        echo "im-config -n REMOVE"
+    fi
 }
 
 # Prints the input method im-config starts when the user has picked none.
 im_config_auto() {
     im-config -m 2>/dev/null | sed -n 3p | grep . ||
         im-config -r 2>/dev/null | sed -n 's/^IM framework (auto): //p'
+}
+
+im_environment_entry() {
+    printf 'GTK_IM_MODULE=fcitx\nQT_IM_MODULE=fcitx\nXMODIFIERS=@im=fcitx\nSDL_IM_MODULE=fcitx\n'
+}
+
+# The systemd user manager reads environment.d only when it starts, and it can outlive a logout;
+# without a reload the next login keeps the variables from before the change.
+reload_user_environment() {
+    command -v systemctl >/dev/null 2>&1 || return 0
+    systemctl --user daemon-reload >/dev/null 2>&1 || :
 }
 
 # GNOME offers fcitx5 no Wayland input-method protocol, so apps have to load fcitx5's own modules.
@@ -279,17 +474,40 @@ set_im_environment() {
         return 0
     fi
     mkdir -p "$dir"
-    cat >"$file" <<'EOF'
-GTK_IM_MODULE=fcitx
-QT_IM_MODULE=fcitx
-XMODIFIERS=@im=fcitx
-SDL_IM_MODULE=fcitx
-EOF
+    im_environment_entry >"$file"
+    reload_user_environment
     # Debian's im-config otherwise picks IBus for X11 sessions and overrides the variables above.
-    if command -v im-config >/dev/null 2>&1; then
-        im_config_set fcitx5 || :
+    if command -v im-config >/dev/null 2>&1 && ! xinputrc_runs_fcitx5 && im_config_set fcitx5; then
+        note_change im-config
     fi
     session_changes+=("app dùng fcitx5 thay IBus")
+}
+
+compositor_environment_entry() {
+    printf 'QT_IM_MODULE=fcitx\nQT_IM_MODULES=fcitx;wayland\nXMODIFIERS=@im=fcitx\n'
+}
+
+# Qt 5 has no text-input protocol for these compositors and X11 apps need XIM. Qt 6 prefers fcitx5's
+# module too: when a Qt 6 app on the Wayland protocol closes, Hyprland keeps sending keys through the
+# input method, and the next app without that protocol loses letters. The list falls back to Wayland
+# for a Qt 6 app that has no such module.
+set_compositor_environment() {
+    local dir file
+    dir="$(config_home)/environment.d"
+    file="$dir/90-ngosen-sway-hyprland.conf"
+    [ -e "$file" ] && return 0
+    grep -qs -E '^(QT_IM_MODULES?|XMODIFIERS)=' "$dir"/*.conf && return 0
+    mkdir -p "$dir"
+    compositor_environment_entry >"$file"
+    reload_user_environment
+}
+
+undo_compositor_environment() {
+    local file
+    file="$(config_home)/environment.d/90-ngosen-sway-hyprland.conf"
+    [ -e "$file" ] && [ "$(cat "$file")" = "$(compositor_environment_entry)" ] || return 0
+    rm -f "$file"
+    reload_user_environment
 }
 
 # KWin serves Wayland apps itself; X11 apps under XWayland reach fcitx5 only through XIM.
@@ -304,6 +522,7 @@ set_xim_environment() {
     fi
     mkdir -p "$dir"
     echo 'XMODIFIERS=@im=fcitx' >"$file"
+    reload_user_environment
     session_changes+=("app X11 chạy qua XWayland (như Minecraft bản cũ) dùng fcitx5")
 }
 
@@ -329,14 +548,8 @@ has_ngosen_in_profile() {
     grep -qs '^Name=ngosen$' "$(config_home)/fcitx5/profile"
 }
 
-# The running fcitx5 starts a new copy of itself, which keeps the session's environment and stays
-# in the session; started from here it would get the terminal's. Fails when none runs or when
-# fcitx5 declines, as it does when KWin started it.
-restart_fcitx5() {
-    local old new tries=10
-    old=$(pgrep -u "$(id -u)" -x fcitx5 | head -n 1) || return 1
-    dbus-send --session --print-reply --dest=org.fcitx.Fcitx5 /controller \
-        org.fcitx.Fcitx.Controller1.Restart >/dev/null 2>&1 || return 1
+wait_for_new_fcitx5() {
+    local old=$1 new tries=10
     while [ "$tries" -gt 0 ]; do
         sleep 0.5
         new=$(pgrep -u "$(id -u)" -x fcitx5 | head -n 1 || true)
@@ -346,10 +559,87 @@ restart_fcitx5() {
     return 1
 }
 
+started_by_kwin() {
+    [ "$(ps -o comm= -p "$(ps -o ppid= -p "$1" 2>/dev/null | tr -d ' ')" 2>/dev/null)" = kwin_wayland ]
+}
+
+kwin_input_method_available() {
+    dbus-send --session --print-reply --dest=org.kde.KWin /VirtualKeyboard \
+        org.freedesktop.DBus.Properties.Get string:org.kde.kwin.VirtualKeyboard string:available \
+        2>/dev/null | grep -q 'boolean true'
+}
+
+# Only an fcitx5 that KWin starts gets the Wayland input-method protocol, and KWin starts it again
+# only when the setting changes. KWin reads the setting when the change signal arrives, so it stays
+# cleared until KWin has let go of the old one.
+restart_fcitx5_in_kwin() {
+    local launcher old tries=20 failed=0
+    launcher=$(kreadconfig6 --file kwinrc --group Wayland --key InputMethod 2>/dev/null) || return 1
+    [ -n "$launcher" ] || return 1
+    old=$(pgrep -u "$(id -u)" -x fcitx5 | head -n 1 || true)
+    kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod "" || return 1
+    # Without the setting KDE would start no input method at the next login either.
+    trap 'kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod "$launcher"; exit 130' INT TERM HUP
+    while [ "$tries" -gt 0 ] && kwin_input_method_available; do
+        sleep 0.1
+        tries=$((tries - 1))
+    done
+    kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod "$launcher" ||
+        kwriteconfig6 --notify --file kwinrc --group Wayland --key InputMethod "$launcher" || failed=1
+    trap - INT TERM HUP
+    [ "$failed" -eq 0 ] || return 1
+    wait_for_new_fcitx5 "$old"
+}
+
+# The running fcitx5 starts a new copy of itself, which keeps the session's environment and stays
+# in the session; started from here it would get the terminal's. KWin's fcitx5 declines, so KWin
+# starts that one again.
+restart_fcitx5() {
+    local old
+    old=$(pgrep -u "$(id -u)" -x fcitx5 | head -n 1) || return 1
+    if started_by_kwin "$old"; then
+        restart_fcitx5_in_kwin
+        return
+    fi
+    dbus-send --session --print-reply --dest=org.fcitx.Fcitx5 /controller \
+        org.fcitx.Fcitx.Controller1.Restart >/dev/null 2>&1 || return 1
+    wait_for_new_fcitx5 "$old"
+}
+
+installed_package_version() {
+    case "$manager" in
+        apt) dpkg-query -W -f='${Version}' "$package_name" ;;
+        pacman) pacman -Q "$package_name" | cut -d' ' -f2 ;;
+        *) rpm -q --qf '%{EPOCHNUM}:%{VERSION}-%{RELEASE}' "$package_name" ;;
+    esac 2>/dev/null
+}
+
+package_file_version() {
+    case "$manager" in
+        apt) dpkg-deb -f "$1" Version ;;
+        pacman) pacman -Qp "$1" | cut -d' ' -f2 ;;
+        *) rpm -qp --qf '%{EPOCHNUM}:%{VERSION}-%{RELEASE}' "$1" ;;
+    esac 2>/dev/null
+}
+
+# True when the running fcitx5 started after the installed addon was written, so it runs that one.
+fcitx5_runs_installed_addon() {
+    local pid addon elapsed
+    pid=$(pgrep -u "$(id -u)" -x fcitx5 | head -n 1) || return 1
+    addon=$(find /usr/lib /usr/lib64 -maxdepth 3 -name libngosen.so 2>/dev/null | head -n 1)
+    [ -n "$addon" ] || return 1
+    elapsed=$(ps -o etimes= -p "$pid") || return 1
+    [ "$(($(date +%s) - elapsed))" -gt "$(stat -c %Z "$addon")" ]
+}
+
 # An fcitx5 that ran without the addon drops ngosen from the profile as it exits, hence the second
 # check.
 reload_fcitx5() {
     local had_keyboard=0 tries=20
+    if [ "$package_changed" -eq 0 ] && has_ngosen_in_profile && fcitx5_runs_installed_addon; then
+        fcitx5_current=1
+        return 0
+    fi
     has_keyboard_in_profile && had_keyboard=1
     has_ngosen_in_profile && restart_fcitx5 && has_ngosen_in_profile || return 1
     fcitx5_reloaded=1
@@ -380,6 +670,20 @@ has_lone_keyboard_in_profile() {
 
 # The key the engine picks: settings from before its toggle key, including lotus.conf that is
 # copied over on the next start, keep Ctrl+Space; defaults are left out of the file.
+fcitx5_trigger_key() {
+    local key
+    key=$(awk '/^\[/ { section = $0 } section == "[Hotkey/TriggerKeys]" && /^0=/ { sub(/^0=/, ""); print; exit }' "$(config_home)/fcitx5/config" 2>/dev/null)
+    printf '%s' "${key:-Control+space}"
+}
+
+key_display_name() {
+    case "$1" in
+        "" | Control+Shift_L | Control+Shift_R | Shift+Control_L | Shift+Control_R) printf 'Ctrl+Shift' ;;
+        Control+space) printf 'Ctrl+Space' ;;
+        *) printf '%s' "$1" ;;
+    esac
+}
+
 toggle_key_name() {
     local dir key
     dir="$(config_home)/fcitx5/conf"
@@ -387,14 +691,9 @@ toggle_key_name() {
     if [ -z "$key" ] && { [ -f "$dir/lotus.conf" ] || [ -f "$dir/ngosen.conf" ] || has_lone_keyboard_in_profile; } &&
         ! grep -qs '^SettingsVersion=' "$dir/ngosen.conf"; then
         # Not upgraded yet: Ngó Sen takes over fcitx5's switch key, Ctrl+Space by default.
-        key=$(awk '/^\[/ { section = $0 } section == "[Hotkey/TriggerKeys]" && /^0=/ { sub(/^0=/, ""); print; exit }' "$(config_home)/fcitx5/config" 2>/dev/null)
-        key=${key:-Control+space}
+        key=$(fcitx5_trigger_key)
     fi
-    case "${key:-}" in
-        "" | Control+Shift_L | Control+Shift_R | Shift+Control_L | Shift+Control_R) printf 'Ctrl+Shift' ;;
-        Control+space) printf 'Ctrl+Space' ;;
-        *) printf '%s' "$key" ;;
-    esac
+    key_display_name "${key:-}"
 }
 
 report_dropped_keyboard() {
@@ -445,14 +744,17 @@ add_ngosen_to_profile() {
 
 # fcitx5 writes its profile back when it exits, so it is stopped before the profile is edited.
 configure_fcitx5() {
-    local was_running=0
+    local was_running=0 in_kwin=0 pid
     reload_fcitx5 && return 0
+    pid=$(pgrep -u "$(id -u)" -x fcitx5 | head -n 1 || true)
+    [ -n "$pid" ] && started_by_kwin "$pid" && in_kwin=1
     # Stopped before the check too: one running without the addon has already dropped ngosen.
     stop_fcitx5 && was_running=1
     add_ngosen_to_profile
-    if [ "$was_running" -eq 1 ]; then
-        fcitx5 -d >/dev/null 2>&1 || :
-    fi
+    [ "$was_running" -eq 1 ] || return 0
+    [ "$in_kwin" -eq 1 ] && restart_fcitx5_in_kwin && return 0
+    # A late fcitx5 from KWin would quit if this one already held the bus name.
+    pgrep -u "$(id -u)" -x fcitx5 >/dev/null || fcitx5 -d >/dev/null 2>&1 || :
 }
 
 # Adds an extension to GNOME's list; it starts at the next login. Returns 1 when it is already
@@ -476,27 +778,48 @@ has_tray() {
     gnome-extensions list --enabled 2>/dev/null | grep -q appindicator
 }
 
-# GNOME 50.0 to 50.3 drop keys an input method forwards; the packaged extension delivers them.
+# fcitx5 before 5.1.22 names every app on GNOME after the shell; Ngó Sen then learns the app from GNOME's
+# portal, or from the packaged extension where the portal is missing. GNOME 50.0 to 50.3 also drop keys an
+# input method forwards, which the extension delivers.
+fcitx5_names_apps_on_gnome() {
+    local version
+    version=$(fcitx5 --version 2>/dev/null | head -n 1) || return 1
+    [ -n "$version" ] || return 1
+    [ "$(printf '%s\n' "$version" 5.1.22 | sort -V | head -n 1)" = 5.1.22 ]
+}
+
+has_gnome_portal() {
+    local dir IFS=:
+    for dir in ${XDG_DATA_DIRS:-/usr/local/share} /usr/share; do
+        [ -e "$dir/dbus-1/services/org.freedesktop.impl.portal.desktop.gnome.service" ] && return 0
+    done
+    return 1
+}
+
 enable_forward_keys_extension() {
     local uuid=forward-keys@ngosen.github.io version rc=0
     [ -d "/usr/share/gnome-shell/extensions/$uuid" ] || return 0
     version=$(shell_version)
     case "$version" in
         50.0 | 50.1 | 50.2 | 50.3) ;;
+        4[6-9].* | 50.*) { fcitx5_names_apps_on_gnome || has_gnome_portal; } && return 0 ;;
         *) return 0 ;;
     esac
     enable_shell_extension "$uuid" || rc=$?
     case "$rc" in
-        0) session_changes+=("bật extension sửa lỗi gõ của GNOME $version") ;;
+        0)
+            note_change "extension $uuid"
+            session_changes+=("bật extension sửa lỗi gõ trên GNOME $version")
+            ;;
         2) say "Chưa bật được extension sửa lỗi gõ; sau khi đăng nhập lại chạy: gnome-extensions enable $uuid" ;;
     esac
 }
 
-# Stock GNOME has no tray, so fcitx5's status icon and menu need the Input Method Panel extension,
-# which is published only on extensions.gnome.org.
+# Only the Input Method Panel draws fcitx5's popups inside GNOME Shell, such as the mode menu in the
+# overview search, and stock GNOME has no tray for the menu either. It is published only on
+# extensions.gnome.org.
 install_kimpanel() {
     local uuid=kimpanel@kde.org major info url rc=0
-    has_tray && return 0
     if ! gnome-extensions list 2>/dev/null | grep -qx "$uuid"; then
         major=$(shell_version)
         major=${major%%.*}
@@ -508,9 +831,11 @@ install_kimpanel() {
             say "Chưa cài được extension Input Method Panel; cài tay ở https://extensions.gnome.org/extension/261/"
             return 0
         fi
+        note_change "installed $uuid"
     fi
     enable_shell_extension "$uuid" || rc=$?
     if [ "$rc" -eq 0 ]; then
+        note_change "extension $uuid"
         session_changes+=("cài extension Input Method Panel: biểu tượng bộ gõ trên thanh trên cùng")
     fi
 }
@@ -564,8 +889,9 @@ setup_gnome_session() {
 
 setup_x11_session() {
     say ""
-    if ! grep -qs '^run_im fcitx5$' "$HOME/.xinputrc"; then
+    if ! xinputrc_runs_fcitx5; then
         im_config_set fcitx5 || die "im-config không đặt được fcitx5"
+        note_change im-config
         session_changes+=("app dùng fcitx5, fcitx5 tự chạy khi đăng nhập")
     fi
     configure_fcitx5
@@ -581,18 +907,120 @@ setup_kde_session() {
     fi
     set_xim_environment
     configure_fcitx5
-    if [ "${#session_changes[@]}" -eq 0 ] && [ "$fcitx5_reloaded" -eq 0 ]; then
+    if [ "${#session_changes[@]}" -eq 0 ] && [ "$fcitx5_reloaded" -eq 0 ] && [ "$fcitx5_current" -eq 0 ]; then
         say "Xong. Đăng xuất rồi đăng nhập lại để dùng bản mới."
         return
     fi
     report_session_changes
 }
 
+fcitx5_is_running() {
+    pgrep -u "$(id -u)" -x fcitx5 >/dev/null
+}
+
+setup_sway_hyprland_session() {
+    say ""
+    configure_fcitx5
+    set_compositor_environment
+    fcitx5_is_running || fcitx5 -d >/dev/null 2>&1 || :
+    # fcitx5 -d returns before the daemon has had a chance to fail.
+    sleep 1
+    report_sway_hyprland_session
+}
+
+# fcitx5 starts on the first entry of its list, a keyboard, so the switch key of an input method
+# does nothing until fcitx5's own key turns input on.
+has_other_input_methods() {
+    [ "$(grep -c '^\[Groups/0/Items/' "$(config_home)/fcitx5/profile" 2>/dev/null)" -gt 1 ] && ! has_lone_keyboard_in_profile
+}
+
+report_other_input_methods() {
+    local default trigger
+    default=$(sed -n 's/^DefaultIM=//p' "$(config_home)/fcitx5/profile" | head -n 1)
+    trigger=$(key_display_name "$(fcitx5_trigger_key)")
+    say "Xong. fcitx5 đang chạy."
+    if [ "$default" = ngosen ]; then
+        say "Máy còn bộ gõ khác, nên bấm $trigger để bật Ngó Sen. Sau đó bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
+    else
+        say "Bộ gõ mặc định vẫn là $default, bấm $trigger để bật. Muốn chuyển sang Ngó Sen:  fcitx5-remote -s ngosen"
+    fi
+}
+
+report_sway_hyprland_session() {
+    if ! fcitx5_is_running; then
+        say "Đã cài xong nhưng fcitx5 chưa chạy được. Thử bật trong terminal của phiên này:  fcitx5 -d"
+    elif [ "$keyboard_dropped" -eq 1 ]; then
+        say "Xong. fcitx5 đang chạy, gõ được ngay."
+        report_dropped_keyboard
+    elif has_other_input_methods; then
+        report_other_input_methods
+    else
+        say "Xong. fcitx5 đang chạy, gõ được ngay."
+        say "Bấm $(toggle_key_name) để chuyển qua lại tiếng Việt và tiếng Anh."
+    fi
+    if [ -e "$(config_home)/environment.d/90-ngosen-sway-hyprland.conf" ]; then
+        say "App Qt 5 và app X11 qua XWayland gõ được từ lần đăng nhập sau, nếu vào desktop từ màn hình đăng nhập."
+    fi
+    say ""
+    if [ -n "${SWAYSOCK:-}" ]; then
+        report_sway_autostart
+    else
+        report_hyprland_autostart
+    fi
+}
+
+# In the order Sway looks for its config.
+report_sway_autostart() {
+    local dir config source
+    dir=$(config_home)
+    for config in "$HOME/.sway/config" "$dir/sway/config" "$HOME/.i3/config" "$dir/i3/config"; do
+        if [ -e "$config" ]; then
+            say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $config:"
+            say "  exec fcitx5 -d"
+            return
+        fi
+    done
+    for source in /etc/sway/config /etc/i3/config; do
+        if [ -e "$source" ]; then
+            # A new file with only this line would hide the system config and its key bindings.
+            say "Để fcitx5 tự chạy ở lần đăng nhập sau, chép cấu hình của máy trước:"
+            say "  mkdir -p \"$dir/sway\" && cp -n $source \"$dir/sway/config\""
+            say "rồi dán dòng này vào $dir/sway/config:"
+            say "  exec fcitx5 -d"
+            return
+        fi
+    done
+    say "Để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng này vào file cấu hình Sway đang dùng:"
+    say "  exec fcitx5 -d"
+}
+
+# hl.exec_cmd at the top level would run while the config loads, before the Wayland socket exists,
+# and again on every reload.
+report_hyprland_autostart() {
+    local dir lua_line='hl.on("hyprland.start", function() hl.exec_cmd("fcitx5 -d") end)' conf_line='exec-once = fcitx5 -d'
+    dir="$(config_home)/hypr"
+    if [ -e "$dir/hyprland.lua" ]; then
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $dir/hyprland.lua:"
+        say "  $lua_line"
+    elif [ -e "$dir/hyprland.conf" ]; then
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $dir/hyprland.conf:"
+        say "  $conf_line"
+    else
+        # Hyprland writes its own config when it finds none, so this one lives elsewhere and a new
+        # file here could hide it.
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, dán vào file cấu hình Hyprland đang dùng:"
+        say "  file .lua:   $lua_line"
+        say "  file .conf:  $conf_line"
+    fi
+}
+
 report_session_changes() {
     local change
     if [ "${#session_changes[@]}" -eq 0 ]; then
         report_dropped_keyboard
-        if [ "$fcitx5_reloaded" -eq 1 ]; then
+        if [ "$fcitx5_current" -eq 1 ]; then
+            say "Xong. Ngó Sen đã là bản này và đã đặt xong, không có gì thay đổi."
+        elif [ "$fcitx5_reloaded" -eq 1 ]; then
             say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
         else
             say "Xong. Khởi động lại fcitx5 để dùng bản mới:  fcitx5 -rd"
@@ -623,23 +1051,53 @@ disable_shell_extension() {
     gsettings set org.gnome.shell enabled-extensions "$updated"
 }
 
+# Turns im-config back to the system default if the install picked fcitx5 there.
+undo_im_config() {
+    if made_change im-config && xinputrc_runs_fcitx5 && command -v im-config >/dev/null 2>&1; then
+        im_config_unset || :
+    fi
+}
+
+# Installs from before the list of changes are left alone, as nothing tells whether the install or
+# the user picked fcitx5.
+report_unknown_changes() {
+    local uuid line
+    local -a left=()
+    [ -e "$(changes_file)" ] && return 0
+    if command -v gnome-extensions >/dev/null 2>&1; then
+        for uuid in forward-keys@ngosen.github.io kimpanel@kde.org; do
+            if gnome-extensions list --enabled 2>/dev/null | grep -qx "$uuid"; then
+                left+=("extension $uuid vẫn bật (có thể do bản cài cũ bật); muốn tắt thì chạy: gnome-extensions disable $uuid")
+            fi
+        done
+    fi
+    [ "${#left[@]}" -eq 0 ] || say "Chưa trả lại được:"
+    for line in "${left[@]}"; do
+        say "  - $line"
+    done
+}
+
 # Undoes setup_gnome_session. Files are removed only when they still hold what the setup wrote,
 # so anything the user changed stays. fcitx5's own profile and keys stay too: without autostart
 # fcitx5 no longer runs, and GNOME starts IBus again at the next login.
 undo_gnome_session() {
-    local config data id autostart
+    local config data id autostart im_env
     local -a undone=()
     config=$(config_home)
     data=$(applications_dir)
-    if [ -e "$config/environment.d/90-ngosen.conf" ]; then
-        rm -f "$config/environment.d/90-ngosen.conf"
+    im_env="$config/environment.d/90-ngosen.conf"
+    if [ -e "$im_env" ] && [ "$(cat "$im_env")" = "$(im_environment_entry)" ]; then
+        rm -f "$im_env"
+        reload_user_environment
         undone+=("app dùng lại IBus")
+    elif [ -e "$im_env" ]; then
+        say "Giữ nguyên $im_env vì đã được sửa sau khi cài."
     fi
-    if grep -qs '^run_im fcitx5$' "$HOME/.xinputrc" && command -v im-config >/dev/null 2>&1; then
-        im_config_set REMOVE || :
-    fi
+    undo_im_config
     autostart="$config/autostart/org.fcitx.Fcitx5.desktop"
-    if cmp -s /usr/share/applications/org.fcitx.Fcitx5.desktop "$autostart"; then
+    # Not cmp: diffutils is missing on minimal systems.
+    if [ -e "$autostart" ] &&
+        [ "$(cat "$autostart")" = "$(cat /usr/share/applications/org.fcitx.Fcitx5.desktop 2>/dev/null)" ]; then
         rm -f "$autostart"
         undone+=("fcitx5 thôi tự chạy khi đăng nhập")
     fi
@@ -648,29 +1106,53 @@ undo_gnome_session() {
             rm -f "$data/$id"
         fi
     done
-    disable_shell_extension forward-keys@ngosen.github.io || :
-    if disable_shell_extension kimpanel@kde.org; then
+    if made_change "extension forward-keys@ngosen.github.io"; then
+        disable_shell_extension forward-keys@ngosen.github.io || :
+    fi
+    if made_change "extension kimpanel@kde.org"; then
+        disable_shell_extension kimpanel@kde.org || :
+    fi
+    if made_change "installed kimpanel@kde.org"; then
         gnome-extensions uninstall kimpanel@kde.org >/dev/null 2>&1 || :
         undone+=("gỡ extension Input Method Panel")
     fi
+    [ "${#undone[@]}" -eq 0 ] || say "Đã trả lại những gì lệnh cài đã đặt:"
     for id in "${undone[@]}"; do
         say "  - $id"
     done
 }
 
-uninstall() {
-    local -a remove
-    if command -v apt-get >/dev/null 2>&1; then
-        remove=(apt-get remove -y fcitx5-ngosen)
-    elif command -v dnf >/dev/null 2>&1; then
-        remove=(dnf remove -y fcitx5-ngosen)
-    elif command -v zypper >/dev/null 2>&1; then
-        remove=(zypper --non-interactive remove fcitx5-ngosen)
+is_package_installed() {
+    if command -v dpkg-query >/dev/null 2>&1; then
+        [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null)" = "install ok installed" ]
     elif command -v pacman >/dev/null 2>&1; then
-        remove=(pacman -R --noconfirm fcitx5-ngosen)
+        pacman -Q "$1" >/dev/null 2>&1
+    else
+        rpm -q "$1" >/dev/null 2>&1
+    fi
+}
+
+# Sets the caller's remove array to the command that removes package $1.
+set_remove_command() {
+    if is_ostree; then
+        ostree_unsupported "sudo rpm-ostree uninstall $1" "Cấu hình trong ~/.config/fcitx5 được giữ."
+    fi
+    if command -v apt-get >/dev/null 2>&1; then
+        remove=(apt-get remove -y "$1")
+    elif command -v dnf >/dev/null 2>&1; then
+        remove=(dnf remove -y "$1")
+    elif command -v zypper >/dev/null 2>&1; then
+        remove=(zypper --non-interactive remove "$1")
+    elif command -v pacman >/dev/null 2>&1; then
+        remove=(pacman -R --noconfirm "$1")
     else
         die "không biết trình quản lý gói của máy này"
     fi
+}
+
+uninstall() {
+    local -a remove
+    set_remove_command "$package_name"
     say "Ngó Sen sẽ được gỡ bằng: ${remove[*]}"
     if wants_gnome_setup || wants_x11_setup; then
         say "Các thay đổi lệnh cài đã làm cho tài khoản này cũng được trả lại."
@@ -681,23 +1163,33 @@ uninstall() {
     }
     if wants_gnome_setup; then
         undo_gnome_session
-    elif wants_x11_setup && grep -qs '^run_im fcitx5$' "$HOME/.xinputrc"; then
-        im_config_set REMOVE || :
+    elif wants_x11_setup; then
+        undo_im_config
+    fi
+    if wants_gnome_setup || wants_x11_setup; then
+        report_unknown_changes
+        rm -f "$(changes_file)"
     fi
     as_root "${remove[@]}"
     say ""
-    if wants_gnome_setup; then
-        say "Xong. Đăng xuất rồi đăng nhập lại để GNOME dùng lại IBus."
-    elif wants_x11_setup && [ "$(im_config_auto)" = fcitx5 ]; then
+    if wants_x11_setup && [ "$(im_config_auto)" = fcitx5 ]; then
         # The system default picks any installed input method, and fcitx5 itself stays installed.
         say "Xong. fcitx5 vẫn còn trên máy nên vẫn tự chạy khi đăng nhập, gõ tiếng Anh như bàn phím."
         say "Gỡ hẳn fcitx5:  sudo apt remove fcitx5"
+    elif { wants_gnome_setup || wants_x11_setup; } && command -v im-config >/dev/null 2>&1 && xinputrc_runs_fcitx5; then
+        say "Xong. im-config vẫn chọn fcitx5 nên fcitx5 vẫn chạy khi đăng nhập. Muốn bỏ thì chạy lệnh dưới"
+        say "rồi đăng xuất và đăng nhập lại:  $(im_config_unset_command)"
+    elif wants_gnome_setup; then
+        say "Xong. Đăng xuất rồi đăng nhập lại để GNOME dùng lại IBus."
     elif wants_x11_setup; then
         say "Xong. Đăng xuất rồi đăng nhập lại để bỏ hẳn fcitx5."
     elif wants_kde_setup; then
         # fcitx5 may serve other input methods, so KDE keeps it.
         say "Xong. Đăng xuất rồi đăng nhập lại. fcitx5 vẫn là bộ gõ của KDE, gõ tiếng Anh như bàn phím."
         say "Bỏ fcitx5: System Settings → Virtual Keyboard (Bàn phím ảo) → None."
+    elif wants_sway_hyprland_setup; then
+        undo_compositor_environment
+        say "Xong. Bỏ dòng fcitx5 -d đã dán vào file cấu hình (nếu có), rồi đăng xuất và đăng nhập lại."
     else
         say "Xong. Khởi động lại fcitx5:  fcitx5 -rd"
     fi
@@ -745,15 +1237,23 @@ main() {
         *[!A-Za-z0-9._+~-]* | '') die "tên tệp lạ trong SHA256SUMS: $file" ;;
     esac
 
+    if [ "$manager" = rpm-ostree ]; then
+        ostree_unsupported "sudo rpm-ostree install $RELEASE_URL/$file" "Sau khi khởi động lại, mở 'Fcitx5 Configuration' và thêm Ngó Sen."
+    fi
+
     say "Ngó Sen sẽ được cài bằng $manager từ gói:"
     say "  $RELEASE_URL/$file"
     say "Cấu hình trong ~/.config/fcitx5 được giữ."
     if wants_gnome_setup; then
-        say "Sau đó fcitx5 được đặt làm bộ gõ cho tài khoản này, thay IBus của GNOME."
+        # Only an earlier setup leaves this file; without it the account is about to get the changes.
+        [ -e "$(config_home)/environment.d/90-ngosen.conf" ] || explain_gnome_setup
     elif wants_kde_setup; then
         say "Sau đó fcitx5 được đặt làm bộ gõ của KDE cho tài khoản này."
     elif wants_x11_setup; then
         say "Sau đó fcitx5 được đặt làm bộ gõ cho tài khoản này."
+    elif wants_sway_hyprland_setup; then
+        say "Sau đó Ngó Sen được thêm vào danh sách bộ gõ của fcitx5 và fcitx5 được bật. Nếu danh sách chỉ có"
+        say "một bàn phím thì Ngó Sen thay bàn phím đó. File cấu hình của desktop được giữ nguyên."
     fi
     confirm "Tiếp tục?" || {
         say "Đã dừng, chưa cài gì."
@@ -766,7 +1266,15 @@ main() {
     chmod 755 "$workdir"
 
     download_package "$hash" "$file"
+    if is_package_installed "$package_name" &&
+        [ "$(installed_package_version)" = "$(package_file_version "$workdir/$file")" ]; then
+        package_changed=0
+    fi
     install_package "$workdir/$file"
+    [ "$package_changed" -eq 1 ] || say "Bản này đã được cài từ trước, không cài lại."
+    if [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ]; then
+        unmask_fcitx5_autostart
+    fi
     if wants_gnome_setup; then
         setup_gnome_session
         return
@@ -779,11 +1287,19 @@ main() {
         setup_x11_session
         return
     fi
+    if wants_sway_hyprland_setup; then
+        setup_sway_hyprland_session
+        return
+    fi
 
     say ""
     if [ "$(id -u)" -ne 0 ] && reload_fcitx5; then
         report_dropped_keyboard
-        say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
+        if [ "$fcitx5_current" -eq 1 ]; then
+            say "Xong. Ngó Sen đã là bản này, không có gì thay đổi."
+        else
+            say "Xong. fcitx5 đã nạp bản mới, gõ được ngay."
+        fi
         return
     fi
     say "Xong. Việc còn lại:"

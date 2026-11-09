@@ -13,50 +13,61 @@
 #include <fcntl.h>
 #include <cstdlib>
 
+namespace {
+
+    bool capturing = false;
+
+    // NGOSEN_REPLACE_RECORD names a file that gets each replacement's log line, so moving code can be
+    // checked to change none of them.
+    FILE* recordFile() {
+        static FILE* file = [] {
+            const char* path = std::getenv("NGOSEN_REPLACE_RECORD");
+            return path != nullptr ? std::fopen(path, "w") : nullptr;
+        }();
+        return file;
+    }
+
+    bool isReplaceLine(const std::string& message) {
+        return message.rfind("[DEBUG] Replace: ", 0) == 0;
+    }
+
+} // namespace
+
 namespace ngosen {
 
     // NGOSEN_TEST_LOG=1 shows the typing logic's log on stderr.
     bool logEnabled(LogLevel /*level*/) {
         static const bool enabled = std::getenv("NGOSEN_TEST_LOG") != nullptr;
-        return enabled;
+        return enabled || capturing || recordFile() != nullptr;
     }
 
     void writeLog(LogLevel /*level*/, const char* file, int line, const std::string& message) {
-        std::fprintf(stderr, "%s:%d %s\n", file, line, message.c_str());
+        static const bool shown = std::getenv("NGOSEN_TEST_LOG") != nullptr;
+        if (recordFile() != nullptr && isReplaceLine(message))
+            std::fprintf(recordFile(), "%s\n", message.c_str() + 8);
+        if (capturing)
+            test::capturedLog().push_back(message);
+        else if (shown)
+            std::fprintf(stderr, "%s:%d %s\n", file, line, message.c_str());
     }
 
 } // namespace ngosen
 
 namespace ngosen::test {
 
+    void captureLog(bool on) {
+        capturing = on;
+        capturedLog().clear();
+    }
+
+    std::vector<std::string>& capturedLog() {
+        static std::vector<std::string> lines;
+        return lines;
+    }
+
     FakeResources::FakeResources() {
         static const bool initialized = (Init(), true);
         (void)initialized;
-
-        // Defaults of ngosen-config.h.
-        options_.inputMethod                      = "Telex";
-        options_.outputCharset                    = "Unicode";
-        options_.spellCheck                       = true;
-        options_.modernStyle                      = true;
-        options_.freeMarking                      = true;
-        options_.w2u                              = 1;
-        options_.timeFormat                       = "%H:%M";
-        options_.dateFormat                       = "%d/%m/%Y";
-        options_.autoNonVnRestore                 = true;
-        options_.ddFreeStyle                      = true;
-        options_.enableMacro                      = true;
-        options_.capitalizeMacro                  = true;
-        options_.lockWordKey                      = LockWordKey::Ctrl;
-        options_.messengerSelectOvertype          = true;
-        options_.waitSurroundingEvent             = true;
-        options_.waitSurroundingMinPerKeyMs       = 8;
-        options_.waitSurroundingTimeoutMs         = 50;
-        options_.waitSurroundingShortMs           = 40;
-        options_.waitSurroundingSettleMs          = 40;
-        options_.waitSurroundingSettleFirstWordMs = 60;
-        options_.waitSurroundingProbeEvery        = 4;
-        options_.surrDeleteSleepMs                = 4;
-        options_.surrCommitSleepMs                = 3;
 
         char* empty[] = {nullptr};
         macroTable_   = NewMacroTable(empty);

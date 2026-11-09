@@ -30,6 +30,24 @@ namespace ngosen {
         const bool        bounce = targetMode == ngosen::Mode::Sen && lastDeactivateTime_ > 0 && now - lastDeactivateTime_ < FocusBounceMs;
         const bool        resume = bounce && deletionInterruptedAt_ > 0 && is_deleting_.load();
         deletionInterruptedAt_   = 0;
+        if (key_report_pending_ && !resume) {
+            key_report_timer_.reset();
+            dropReplacementAfterFocusLoss();
+        }
+        if (split_edit_pending_ && !resume) {
+            split_edit_pending_ = false;
+            split_edit_timer_.reset();
+            dropReplacementAfterFocusLoss();
+        }
+        if (tail_clear_pending_ && !resume) {
+            tail_clear_pending_ = false;
+            tail_clear_timer_.reset();
+            dropReplacementAfterFocusLoss();
+        }
+        // A page may move focus into its text field after the user selected text elsewhere on it.
+        // A bounce keeps it: WPS opens a window on a double click and takes focus straight back.
+        if (isFocusIn && !bounce)
+            forgetSelection();
         if (!resume)
             is_deleting_.store(false);
 
@@ -50,6 +68,19 @@ namespace ngosen {
             clearAllBuffers();
             fieldBounces_         = 0;
             checkWordAfterBounce_ = false;
+            if (isFocusIn) {
+                // A GNOME app's new context gets a copy of the previous window's text before focus-in, so
+                // that copy is not text this field showed.
+                sinceFocus_ = FieldHistory{};
+                // GTK sends its text again only when it changes, so the copy at focus-in counts as a report.
+                sinceFocus_.reported    = s.isValid();
+                sinceFocus_.keysAtFocus = keyCount_;
+                // These also start over at other times, so they stay out of FieldHistory.
+                surrCheck_.reset();
+                surr_check_timer_.reset();
+                surrUnanswered_  = 0;
+                copyWaitsRunOut_ = 0;
+            }
         }
 
         if (isFocusIn && host_->field().frontend == "dbus" && !s.isValid()) {
@@ -60,6 +91,7 @@ namespace ngosen {
         if (!resume)
             is_deleting_.store(false);
         needEngineReset.store(false);
+        jumpedFrom_.reset();
         retype_.reset();
         if (isFocusIn)
             forgetKeysWhileOff();
@@ -67,28 +99,37 @@ namespace ngosen {
     }
 
     void TypingState::deactivate(bool isFocusOut) {
-        flushPendingReplacement(); // commit pending text into the field we are leaving
-        if (isFocusOut)
+        enter_after_replacement_ = false; // an Enter would land in the next field
+        flushPendingReplacement();        // commit pending text into the field we are leaving
+        if (isFocusOut) {
             commitNotSeen_.clear();
+            overtype_focus_bounced_         = overtype_pending_;
+            field_keeps_focus_on_selection_ = false;
+        }
         lastDeactivateTime_ = nowMs();
-        if (realMode == ngosen::Mode::Preedit && !isFocusOut) {
+        if (mode() == ngosen::Mode::Preedit && !isFocusOut) {
             commitBuffer();
             return;
         }
         // The word stays until activate() knows whether focus only bounced.
         // A selection waiting to be typed over has no backspaces left, but is just as unfinished.
-        if (realMode == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_pending_)) {
+        if (mode() == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_pending_)) {
             deletionInterruptedAt_ = nowMs();
             NGOSEN_INFO("Replacement interrupted by focus out");
         } else {
             is_deleting_.store(false);
         }
         needEngineReset.store(false);
+        jumpedFrom_.reset();
         retype_.reset();
         dropRetoneKey();
+        // Keys typed while another input method is active never reach us to take the selection.
+        // On focus out, activate() decides once it knows whether focus only bounced.
+        if (!isFocusOut)
+            forgetSelection();
         host_->resetPanel();
         host_->refreshPanel();
-        if (realMode == ngosen::Mode::Preedit || realMode == ngosen::Mode::Emoji)
+        if (mode() == ngosen::Mode::Preedit || mode() == ngosen::Mode::Emoji)
             host_->refreshPreedit();
     }
 

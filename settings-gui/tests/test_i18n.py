@@ -2,6 +2,7 @@
 """Tests for picking the settings window's language."""
 
 import os
+import re
 import struct
 import sys
 import tempfile
@@ -57,6 +58,12 @@ class LanguageTest(unittest.TestCase):
         env = self.write_config("IconTheme=Dark\nUiLanguage=English\n")
         self.assertEqual(i18n.configured_language(env), "English")
 
+    def test_reads_a_config_that_is_not_utf8(self):
+        env = self.write_config("UiLanguage=English\n")
+        with open(os.path.join(self.dir.name, "fcitx5", "conf", "ngosen.conf"), "ab") as f:
+            f.write(b"CustomKeymap=\xff\xfe\n")
+        self.assertEqual(i18n.configured_language(env), "English")
+
     def test_vietnamese_on_any_desktop(self):
         i18n.use_language("Vietnamese", localedir=self.localedir)
         self.assertEqual(i18n._("Charset"), "Bảng mã")
@@ -65,6 +72,20 @@ class LanguageTest(unittest.TestCase):
         i18n.use_language("English", localedir=self.localedir)
         self.assertEqual(i18n._("Charset"), "Charset")
         self.assertEqual(i18n._("Bảng mã"), "Charset")
+
+
+class ShortLabelTest(unittest.TestCase):
+    """Labels that share a row with a long hint or a key button, where longer text gets cut."""
+
+    LIMITS = {"Non-Start": 10, "Shortcut for Default Typing": 22}
+
+    def test_vietnamese_labels_fit_their_rows(self):
+        po = os.path.join(os.path.dirname(__file__), "..", "..", "po", "vi.po")
+        with open(po, encoding="utf-8") as f:
+            text = f.read()
+        for msgid, limit in self.LIMITS.items():
+            shown = re.search(rf'^msgid "{msgid}"\nmsgstr "(.*)"$', text, re.MULTILINE).group(1)
+            self.assertLessEqual(len(shown), limit, shown)
 
 
 if __name__ == "__main__":

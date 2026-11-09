@@ -40,7 +40,7 @@ msgstr "Tắt"
 
 #: src/ngosen-config.h:58 src/ngosen-config.h:69
 msgid "Non-Start"
-msgstr "Không phải đầu từ"
+msgstr "Trong từ"
 
 #: src/ngosen-config.h:58 src/ngosen-config.h:69
 msgid "Everywhere"
@@ -98,6 +98,14 @@ msgstr "Chế độ gõ"
 #: src/ngosen-config.h:212
 msgid "Rules"
 msgstr "Quy tắc"
+
+#: src/ngosen-config.h:226
+msgid "Vietnamese"
+msgstr "Tiếng Việt"
+
+#: src/ngosen-config.h:229
+msgid "Switches"
+msgstr "Phím chuyển theo app"
 
 #: src/ngosen-config.h:222
 msgid "Input Method"
@@ -177,7 +185,7 @@ msgstr "Gõ tự do"
 
 #: src/ngosen-config.h
 msgid "Backspace Removes the Tone Mark"
-msgstr "Backspace xóa dấu thanh"
+msgstr "Backspace xoá dấu thanh"
 
 #: src/ngosen-config.h:242
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
@@ -261,7 +269,7 @@ msgstr "Hiển thị chế độ gõ mặc định"
 
 #: src/ngosen-config.h:264
 msgid "Shortcut for Default Typing"
-msgstr "Phím tắt cho Chế độ gõ mặc định"
+msgstr "Phím tắt cho Mặc định"
 
 msgid "Show Vim mode"
 msgstr "Hiển thị Vim mode"
@@ -302,6 +310,10 @@ msgstr "Màu biểu tượng"
 msgid "Interface Language"
 msgstr "Ngôn ngữ giao diện"
 
+#: src/ngosen-config.h
+msgid "Settings Window"
+msgstr "Cửa sổ cài đặt"
+
 #: src/ngosen-engine.cpp:215
 msgid "Charset"
 msgstr "Bảng mã"
@@ -330,6 +342,18 @@ msgstr "Tự viết hoa chữ đầu văn bản và đầu dòng (thử nghiệm
 msgid "Settings"
 msgstr "Cài đặt"
 
+#: src/ngosen-engine.cpp
+msgid "What's new in Ngó Sen?"
+msgstr "Ngó Sen có gì mới?"
+
+#: src/ngosen-engine.cpp
+msgid "Version 1.9: on GNOME, typing modes and per-app settings now work with the Ngó Sen extension off. See also Check my machine, Cứu chữ, Cứu dấu and typing tips."
+msgstr "Version 1.9: trên GNOME, chế độ gõ và cài đặt riêng theo từng app nay chạy được khi tắt extension Ngó Sen. Xem thêm trang Kiểm tra máy, Cứu chữ, Cứu dấu và mẹo gõ."
+
+#: src/ngosen-engine.cpp
+msgid "Show"
+msgstr "Xem"
+
 #: src/ngosen-engine.cpp:991 src/ngosen-engine.cpp:1030
 msgid "Default Typing"
 msgstr "Chế độ gõ mặc định"
@@ -341,6 +365,12 @@ msgstr "Gõ"
 #: src/ngosen-engine.cpp:1074
 msgid "App: "
 msgstr "App: "
+
+msgid "this window"
+msgstr "cửa sổ này"
+
+msgid "apps with no name (the Ngó Sen extension can tell them apart)"
+msgstr "app chưa có tên (bật extension Ngó Sen để đặt riêng)"
 
 #: src/ngosen-engine.cpp:1099
 msgid "Unknown Mode"
@@ -392,10 +422,6 @@ msgstr "Phiên bản {}"
 msgid "Vietnamese input method for fcitx5 on Linux that types like UniKey on Windows."
 msgstr "Bộ gõ tiếng Việt cho fcitx5 trên Linux, gõ như UniKey trên Windows."
 
-#: settings-gui/ui/pages/about.py:103
-msgid "Report Bug"
-msgstr "Báo cáo lỗi"
-
 #: settings-gui/ui/pages/about.py:112
 msgid "Request Feature"
 msgstr "Đề xuất tính năng"
@@ -404,11 +430,6 @@ msgstr "Đề xuất tính năng"
 #: settings-gui/ui/pages/about.py:148
 msgid "Developed by Nguyen Phi"
 msgstr "Phát triển bởi Nguyễn Phi"
-
-#: settings-gui/ui/pages/about.py
-#, python-brace-format
-msgid "Based on the code of {lotus} and {vmk}."
-msgstr "Dựa trên mã của {lotus} và {vmk}."
 
 #: settings-gui/ui/pages/about.py:184
 msgid "Licensed under the GNU General Public License v3.0"
@@ -745,6 +766,10 @@ msgstr ""
 msgid "None"
 msgstr "Rỗng"
 
+#: settings-gui/ui/components.py settings-gui/ui_gtk/hotkey_button.py
+msgid "Not set"
+msgstr "Chưa đặt"
+
 #: settings-gui/ui/pages/macro_editor.py:143
 msgid "Time Format:"
 msgstr "Định dạng giờ:"
@@ -760,14 +785,6 @@ msgstr "Từ viết tắt (ví dụ: kg)"
 #: settings-gui/ui/pages/macro_editor.py:184
 msgid "Full text (e.g. khô gà)"
 msgstr "Từ đầy đủ (ví dụ: khô gà)"
-
-#: settings-gui/ui/pages/macro_editor.py:193
-msgid "Key:"
-msgstr "Khoá:"
-
-#: settings-gui/ui/pages/macro_editor.py:195
-msgid "Value:"
-msgstr "Giá trị:"
 
 #: settings-gui/ui/pages/macro_editor.py:202
 msgid "Abbreviation"
@@ -872,49 +889,6 @@ msgstr "[ Đang ghi lại... ]"
 msgid "[ Press Key... ]"
 msgstr "[ Nhấn phím... ]"
 
-#: settings-gui/ui/helpers.py:14
-msgid "Text goes straight into the field, without an underline."
-msgstr "Chữ hiện thẳng vào ô, không gạch chân."
-
-#: settings-gui/ui/helpers.py:14
-msgid "You can type tone marks at the end of the word or anywhere inside."
-msgstr "Bạn có thể gõ dấu câu ở cuối từ hoặc bất cứ đâu."
-
-#: settings-gui/ui/helpers.py:19
-msgid ""
-"Automatically match expansion case to trigger key case.\n"
-"\n"
-"Example if 'kg' is 'Khô gà':\n"
-"- kg -> khô gà\n"
-"- Kg -> Khô gà\n"
-"- KG -> KHÔ GÀ"
-msgstr ""
-"Tự động khớp chữ hoa/thường của từ được kích hoạt.\n"
-"\n"
-"Ví dụ nếu 'kg' là 'khô gà':\n"
-"- kg -> khô gà\n"
-"- Kg -> Khô gà\n"
-"- KG -> KHÔ GÀ"
-
-#: settings-gui/ui/helpers.py:26
-msgid ""
-"Automatically revert the typed sequence if the resulting word is not in the "
-"dictionary.\n"
-"This helps prevent accidental Vietnamese transformations on English words or "
-"mixed text."
-msgstr ""
-"Tự động khôi phục chuỗi vừa gõ nếu từ đó không có trong từ điển.\n"
-"Nó giúp tránh các trường hợp gõ các từ tiếng Anh mà bị chuyển đổi qua Tiếng "
-"việt hoặc gõ song ngữ."
-
-#: settings-gui/ui/helpers.py:30
-msgid ""
-"Allow macros to work when the input mode is OFF.\n"
-"When disabled, macros are only available in active typing modes."
-msgstr ""
-"Cho phép gõ tắt hoạt động khi chế độ gõ đang là \"Tắt\"\n"
-"Khi vô hiệu hoá, gõ tắt chỉ khả dụng trong các chế độ gõ được kích hoạt."
-
 #: settings-gui/ui/main_window.py:33
 #: settings-gui/io.github.ngosen.NgoSen.Settings.desktop.in:2
 msgid "Ngó Sen Settings"
@@ -967,6 +941,14 @@ msgstr "Xác nhận cài đặt lại"
 #: settings-gui/ui/main_window.py:239
 msgid "Restore all settings to defaults?"
 msgstr "Bạn có chắc chắn muốn khôi phục tất cả cài đặt về giá trị mặc định?"
+
+#: settings-gui/ui/main_window.py
+msgid "&Restore defaults"
+msgstr "&Khôi phục mặc định"
+
+#: settings-gui/ui/pages/keymap_editor.py
+msgid "&Replace"
+msgstr "&Thay thế"
 
 #: settings-gui/ui/main_window.py:287
 msgid "Cannot Save"
@@ -1058,7 +1040,15 @@ msgstr "Không hoàn tác được. Hãy xem fcitx5 có đang chạy không."
 msgid "Change undone."
 msgstr "Đã hoàn tác."
 
-#: settings-gui/ui/pages/dynamic_settings.py
+#: settings-gui/core/catalog.py
+msgid "Fixing words"
+msgstr "Sửa chữ"
+
+#: settings-gui/core/catalog.py
+msgid "Typing keys"
+msgstr "Phím gõ"
+
+#: settings-gui/core/catalog.py
 msgid "Tone marks"
 msgstr "Cách bỏ dấu"
 
@@ -1096,7 +1086,7 @@ msgstr "Đổi chế độ"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Try it:"
-msgstr "Gõ thử:"
+msgstr "Test:"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Type here to test"
@@ -1132,18 +1122,18 @@ msgstr "Menu khay đổi ngay, cửa sổ này đổi ở lần mở sau."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
-msgstr "Kể cả khi tắt mục này, phím z (Telex) hay 0 (VNI) vẫn xóa dấu thanh. Chữ không có dấu thanh thì Backspace xóa chữ như thường."
+msgstr "Kể cả khi tắt mục này, phím z (Telex) hay 0 (VNI) vẫn xoá dấu thanh. Chữ không có dấu thanh thì Backspace xoá chữ như thường."
 
-#: settings-gui/ui/pages/dynamic_settings.py
+#: settings-gui/core/page_status.py
 msgid "Custom has no keys yet: turn on Custom Keymap and add keys in Keys › Keymap."
 msgstr "Custom chưa có phím nào: bật Keymap tuỳ chỉnh rồi thêm phím ở Phím › Keymap."
 
-#: settings-gui/ui/main_window.py
+#: settings-gui/ui_gtk/window.py
 msgid "&Defaults"
 msgstr "&Mặc định"
 
 #: settings-gui/ui/main_window.py
-msgid "Back &Up…"
+msgid "Back U&p…"
 msgstr "Sao &lưu…"
 
 #: settings-gui/ui/main_window.py
@@ -1182,17 +1172,9 @@ msgstr "Tìm cài đặt"
 msgid "No settings found"
 msgstr "Không thấy cài đặt nào"
 
-#: settings-gui/ui/pages/about.py
-msgid "Check my machine…"
-msgstr "Kiểm tra máy tôi…"
-
 #: settings-gui/ui/system_check_dialog.py
 msgid "Check my machine"
-msgstr "Kiểm tra máy tôi"
-
-#: settings-gui/ui/system_check_dialog.py
-msgid "How fcitx5 is set up on this machine. Nothing is sent until you send a bug report, and it lists the apps below, so read it before sending."
-msgstr "Cách fcitx5 đang được cài trên máy này. Không có gì được gửi đi cho tới khi bạn gửi báo lỗi, và báo lỗi có kèm danh sách app bên dưới, nên hãy đọc trước khi gửi."
+msgstr "Kiểm tra máy"
 
 #: settings-gui/ui/system_check_dialog.py
 msgid "Check again"
@@ -1203,17 +1185,20 @@ msgid "Copy result"
 msgstr "Chép kết quả"
 
 #: settings-gui/ui/system_check_dialog.py
-msgid "Report bug…"
-msgstr "Báo cáo lỗi…"
+msgid "Message on Facebook…"
+msgstr "Nhắn qua Facebook…"
 
 #: settings-gui/ui/system_check_dialog.py
-#, python-brace-format
-msgid "Apps connected to fcitx5: {}"
-msgstr "App đang nối với fcitx5: {}"
+msgid "Report on GitHub…"
+msgstr "Báo lỗi trên GitHub…"
 
 #: settings-gui/ui/system_check_dialog.py
-msgid "No setup problem found"
-msgstr "Không thấy lỗi cài đặt nào"
+msgid "Copied the result."
+msgstr "Đã chép kết quả."
+
+#: settings-gui/ui/system_check_dialog.py
+msgid "Copied the result. Paste it into the message and say what went wrong."
+msgstr "Đã chép kết quả. Dán vào tin nhắn rồi kể lỗi gặp phải."
 
 #: settings-gui/core/system_check.py
 #, python-brace-format
@@ -1249,16 +1234,106 @@ msgid "Two input methods compete for keys; stop IBus from starting at login."
 msgstr "Hai bộ gõ tranh nhau phím; hãy tắt IBus tự chạy khi đăng nhập."
 
 #: settings-gui/core/system_check.py
+msgid "GNOME {} drops the keys Ngó Sen sends to apps"
+msgstr "GNOME {} làm rơi phím Ngó Sen gửi cho app"
+
+#: settings-gui/core/system_check.py
+msgid "Menu and hints do not show in GNOME's search box"
+msgstr "Menu và gợi ý không hiện trong ô tìm kiếm của GNOME"
+
+#: settings-gui/core/system_check.py
+msgid "Menu and hints show in GNOME's search box"
+msgstr "Menu và gợi ý hiện được trong ô tìm kiếm của GNOME"
+
+#: settings-gui/core/system_check.py
+msgid "Install Input Method Panel from {}, then log out and back in."
+msgstr "Cài extension Input Method Panel từ {}, rồi đăng xuất và đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "The installed Input Method Panel does not run; update it from {}."
+msgstr "Input Method Panel đã cài không chạy được; cập nhật ở {}."
+
+#: settings-gui/core/system_check.py
+msgid "Turn on Input Method Panel: gnome-extensions enable {}. If it still does not show, log out and back in."
+msgstr "Bật Input Method Panel: gnome-extensions enable {}. Nếu vẫn không hiện, đăng xuất rồi đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "Installed Input Method Panel."
+msgstr "Đã cài Input Method Panel."
+
+#: settings-gui/core/system_check.py
+msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
+msgstr "Bật bản sửa: gnome-extensions enable {}. Nếu vẫn mất phím thì đăng xuất rồi đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in. If this stays, update Ngó Sen or update to GNOME 50.4."
+msgstr "Đăng xuất rồi đăng nhập lại. Nếu vẫn thấy dòng này, cập nhật Ngó Sen hoặc cập nhật lên GNOME 50.4."
+
+#: settings-gui/core/system_check.py
 msgid "fcitx5 still runs Ngó Sen from before the update"
 msgstr "fcitx5 vẫn chạy Ngó Sen version cũ, trước khi cập nhật"
 
 #: settings-gui/core/system_check.py
-msgid "Log out and back in to start the installed version."
-msgstr "Đăng xuất rồi đăng nhập lại để chạy version vừa cài."
+msgid "Restart fcitx5, or log out and back in, to start the installed version."
+msgstr "Khởi động lại fcitx5, hoặc đăng xuất rồi đăng nhập lại, để chạy version vừa cài."
 
-#: settings-gui/ui/pages/about.py
-msgid "Typing still uses the Ngó Sen that ran before the update. Log out and back in to start version {}."
-msgstr "Bạn vẫn đang gõ bằng Ngó Sen version cũ, trước khi cập nhật. Đăng xuất rồi đăng nhập lại để dùng version {}."
+#: settings-gui/core/system_check.py
+msgid "fcitx5 is running"
+msgstr "fcitx5 đang chạy"
+
+#: settings-gui/core/system_check.py
+msgid "Ngó Sen is in the fcitx5 input method list"
+msgstr "Ngó Sen đã có trong danh sách bộ gõ của fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Older X11 apps use fcitx5"
+msgstr "App X11 cũ gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "The fix for GNOME {} is on"
+msgstr "Bản sửa cho GNOME {} đang bật"
+
+#: settings-gui/core/system_check.py
+msgid "Apps keep their own typing mode"
+msgstr "Mỗi app nhớ được chế độ gõ riêng"
+
+#: settings-gui/core/system_check.py
+msgid "Optional: each app can keep its own typing mode. Typing works without it."
+msgstr "Không bắt buộc: mỗi app có thể nhớ chế độ gõ riêng. Không bật vẫn gõ bình thường."
+
+#: settings-gui/core/system_check.py
+msgid "GNOME's portal has not told Ngó Sen which app is in use"
+msgstr "Portal của GNOME chưa báo cho Ngó Sen biết đang gõ trong app nào"
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in. If this stays, update Ngó Sen."
+msgstr "Đăng xuất rồi đăng nhập lại. Nếu vẫn thấy dòng này, cập nhật Ngó Sen."
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "Turn on the extension: gnome-extensions enable {}, then log out and back in."
+msgstr "Bật extension: gnome-extensions enable {}, rồi đăng xuất và đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "Qt apps use fcitx5"
+msgstr "App Qt gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Chrome and older GTK apps use fcitx5"
+msgstr "Chrome và app GTK cũ gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "GTK apps use fcitx5"
+msgstr "App GTK gõ qua fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "KDE starts fcitx5 as its virtual keyboard"
+msgstr "KDE chạy fcitx5 làm bàn phím ảo"
+
+#: settings-gui/core/system_check.py
+msgid "Qt 5 apps use fcitx5"
+msgstr "App Qt 5 gõ qua fcitx5"
 
 #: settings-gui/core/system_check.py
 msgid "Qt apps have no input method"
@@ -1378,10 +1453,6 @@ msgid "fcitx5 has other input methods too; its own key still switches to them."
 msgstr "fcitx5 còn bộ gõ khác; phím chuyển của fcitx5 vẫn đưa sang các bộ gõ đó."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Sen types straight into the app. Preedit underlines the word until it is done; use it in an app that Sen does not work with."
-msgstr "Gõ Sen đưa chữ thẳng vào app. Gạch chân giữ chữ đang gõ có gạch dưới cho tới khi gõ xong; dùng khi app không tương thích với Gõ Sen."
-
-#: settings-gui/ui/pages/dynamic_settings.py
 msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
 msgstr "Cứ để Unicode, trừ khi văn bản hay app cũ cần bảng mã khác như TCVN3 (ABC). Cứu dấu chỉ chạy với Unicode."
 
@@ -1395,7 +1466,7 @@ msgstr "hoà, khoẻ, thuý, tuỳ. Tắt: hòa, khỏe, thúy, tùy."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Non-Start: nhw → như, but w alone stays w. Everywhere: w alone gives ư too. uw always gives ư."
-msgstr "Không phải đầu từ: nhw → như, còn w đứng riêng vẫn là w. Mọi nơi: w đứng riêng cũng ra ư. uw thì luôn ra ư."
+msgstr "Trong từ: nhw → như, còn w đứng riêng vẫn là w. Mọi nơi: w đứng riêng cũng ra ư. uw thì luôn ra ư."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "ch]a → chưa, m[f → mờ. Type a bracket twice to get it back: [[ → [."
@@ -1422,8 +1493,10 @@ msgid "Typed tieengs vieetj before switching on? Switch on and it becomes tiến
 msgstr "Lỡ gõ tieengs vieetj khi chưa bật? Bật tiếng Việt là thành tiếng việt. Tab hoặc Esc để trả lại chữ đã gõ."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s."
-msgstr "Bôi đen nhanh rồi gõ s: nhánh. Tab, Esc hoặc gõ s lần nữa để trả lại s."
+msgid ""
+"Select nhanh and type s: nhánh. Tab, Esc or s again gives back s. Only the tone mark changes: nguoi does not become người."
+msgstr ""
+"Bôi đen nhanh rồi gõ s: nhánh. Tab, Esc hoặc gõ s lần nữa để trả lại s. Chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng): nguoi không thành người được."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."
@@ -1444,3 +1517,463 @@ msgstr "Tắt: dùng biểu tượng một màu, theo màu chọn bên dưới."
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
 msgstr "Chỉ dùng cho biểu tượng một màu. Sáng hợp panel sáng, Tối hợp panel tối, Tự động theo chế độ sáng/tối của máy."
+
+#: settings-gui/ui/main_window.py
+msgid "What's new & tips"
+msgstr "Có gì mới & mẹo"
+
+#: settings-gui/ui/pages/whats_new.py
+#, python-brace-format
+msgid "New in {}"
+msgstr "Version {} có gì mới"
+
+#: settings-gui/ui/pages/whats_new.py
+msgid "Tips"
+msgstr "Mẹo hay"
+
+#: settings-gui/ui/pages/whats_new.py
+msgid "Open setting"
+msgstr "Mở cài đặt"
+
+#: settings-gui/ui/pages/whats_new.py
+#, python-brace-format
+msgid "Open the {} page"
+msgstr "Mở trang {}"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+#, python-brace-format
+msgid "Tip: {}"
+msgstr "Mẹo: {}"
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Cứu chữ"
+msgstr "Cứu chữ"
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Forgot to switch Vietnamese on? Press the English/Vietnamese key and the word is fixed; Tab or Esc gives back what you typed."
+msgstr "Quên bật tiếng Việt, bấm phím chuyển Anh/Việt để cứu chữ; Tab hoặc Esc trả lại chữ cũ."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Cứu dấu"
+msgstr "Cứu dấu"
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Select a word, or click right after it, and type a tone key to change its tone mark; Tab or Esc gives it back."
+msgstr "Bôi đen hoặc bấm ngay sau chữ rồi gõ dấu thanh để đổi dấu; Tab hoặc Esc trả lại."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "English/Vietnamese key"
+msgstr "Phím chuyển Anh/Việt"
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A new install switches with Ctrl+Shift, an older one keeps Ctrl+Space; Ngó Sen remembers the mode across logouts."
+msgstr "Cài mới dùng Ctrl+Shift, cài từ trước giữ Ctrl+Space; Ngó Sen nhớ chế độ qua lần đăng xuất."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Press ` to pick Sen, Preedit, Emoji Picker or OFF for the app in use."
+msgstr "Bấm ` để chọn Gõ Sen, Gạch chân, Chọn Emoji hoặc Tắt cho app đang dùng."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Tap Ctrl alone to keep the word as typed: tunx, Ctrl, Space keeps tũn."
+msgstr "Nhấp thả Ctrl để chốt chữ như đã gõ: tunx, Ctrl, Space giữ tũn."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A macro ko → không also types Không when you type Ko."
+msgstr "Gõ tắt ko → không thì gõ Ko ra Không."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "] types ư and [ types ơ, so ch]a gives chưa. Off by default."
+msgstr "] ra ư, [ ra ơ, nên ch]a ra chưa. Mặc định tắt."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Space twice types a period. Off by default."
+msgstr "Bấm Space hai lần ra dấu chấm. Mặc định tắt."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "-- types an em dash (—). Off by default."
+msgstr "-- ra gạch dài (—). Mặc định tắt."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "A capital letter after . ! ? and Enter. Off by default; the tray menu's Auto Capitalize pauses it."
+msgstr "Tự viết hoa sau . ! ? và Enter. Mặc định tắt; mục Tự viết hoa trong menu khay tắt tạm."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "hoà or hòa? Pick with “Use oà, uý (Instead Of òa, úy)”."
+msgstr "hoà hay hòa? Chọn ở ô “Bỏ dấu kiểu mới (oà, uý)”."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "$DATE and $TIME in a macro type today's date and time: hn → Hôm nay $DATE."
+msgstr "$DATE và $TIME trong gõ tắt ra ngày giờ hôm nay: hn → Hôm nay $DATE."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "Typing wrong in some app? The Check my machine page says why."
+msgstr "Gõ lỗi trong app nào đó? Trang Kiểm tra máy cho biết vì sao."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "“Save typing log” in the tray menu records what you type, to attach to a bug report."
+msgstr "“Lưu nhật ký gõ” trong menu khay ghi lại chữ gõ, để gửi kèm báo lỗi."
+
+#: settings-gui/ui/whats_new_content.py
+msgid ""
+"“Back Up…” and “Restore…” at the bottom of the settings pages keep your "
+"settings, macros and dictionary."
+msgstr "“Sao lưu…” và “Khôi phục…” ở đáy các trang cài đặt giữ cài đặt, gõ tắt và từ điển."
+
+#: settings-gui/ui/whats_new_content.py
+msgid "“Back Up…” and “Restore…” in the window menu keep your settings, macros and dictionary."
+msgstr "“Sao lưu…” và “Khôi phục…” trong menu của cửa sổ giữ cài đặt, gõ tắt và từ điển."
+
+#: settings-gui/ui_gtk/window.py
+msgid "Restore defaults…"
+msgstr "Đưa về mặc định…"
+
+#: settings-gui/ui_gtk/window.py
+msgid "Menu"
+msgstr "Menu"
+
+#: settings-gui/core/defaults.py
+msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
+msgstr "Gõ tắt, từ đã thêm vào từ điển, phím tự đặt và kiểu gõ đã nhớ cho từng app cũng bị xoá. Có thể hoàn tác ngay sau đó."
+
+#: settings-gui/core/defaults.py
+msgid "The key that switches between Vietnamese and English goes back to Ctrl+Shift."
+msgstr "Phím chuyển Anh/Việt trở về Ctrl+Shift."
+
+#: settings-gui/ui_gtk/window.py
+msgid "Could not restore every default. Check that fcitx5 is running."
+msgstr "Chưa đưa được mọi thứ về mặc định. Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/ui_gtk/check_dialog.py
+msgid "Send the result"
+msgstr "Gửi kết quả"
+
+#: settings-gui/ui_gtk/window.py
+msgid "Ngó Sen backup"
+msgstr "Bản sao lưu Ngó Sen"
+
+#: settings-gui/core/catalog.py
+msgid "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
+msgstr "GTK hợp với GNOME và Cinnamon, Qt hợp với KDE và phần lớn desktop khác."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "This window uses {}"
+msgstr "Cửa sổ này dùng bản {}"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Switch to {}…"
+msgstr "Đổi sang bản {}…"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Switch to {}"
+msgstr "Đổi sang bản {}"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Install the {} window with your package manager."
+msgstr "Hãy cài bản {} bằng trình quản lý gói của máy."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "The {} window needs these packages: {}."
+msgstr "Bản {} cần cài các gói: {}."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Checking the download size…"
+msgstr "Đang xem dung lượng tải về…"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Download: about {}."
+msgstr "Tải về khoảng {}."
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Copy Command"
+msgstr "Chép lệnh"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Install"
+msgstr "Cài ngay"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Installing…"
+msgstr "Đang cài…"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Could not install"
+msgstr "Không cài được"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Run this command in a terminal:"
+msgstr "Hãy chạy lệnh này trong terminal:"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Could not switch"
+msgstr "Không đổi được"
+
+#: settings-gui/ui/toolkit_switch.py
+msgid "Check that fcitx5 is running."
+msgstr "Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/core/whats_new_content.py
+msgid "GNOME without the extension"
+msgstr "GNOME không cần extension"
+
+#: settings-gui/core/whats_new_content.py
+msgid "On GNOME, typing modes and per-app settings now work with the Ngó Sen extension off, for apps that have a .desktop file. Check my machine says when the extension is still needed."
+msgstr "Trên GNOME, chế độ gõ và cài đặt riêng theo từng app nay chạy được khi tắt extension Ngó Sen, với app có tệp .desktop. Trang Kiểm tra máy báo khi nào vẫn cần bật extension."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Shows what keeps Vietnamese typing from working on this machine, with a button to fix each item. Test typing in an app and send a bug report from the same page."
+msgstr "Cho biết điều gì làm máy chưa gõ được tiếng Việt, kèm nút sửa từng việc. Test gõ trong app và gửi báo lỗi ngay trên cùng trang."
+
+#: settings-gui/core/whats_new_content.py
+msgid "GTK look for GNOME"
+msgstr "Giao diện GTK cho GNOME"
+
+#: settings-gui/core/whats_new_content.py
+msgid "See the GTK look"
+msgstr "Xem giao diện GTK"
+
+#: settings-gui/core/whats_new_content.py
+msgid "A new GTK look that fits GNOME. Prefer the Qt look? Switch on the Appearance page."
+msgstr "Thêm giao diện GTK, hợp với GNOME. Thích giao diện Qt hơn thì đổi ở trang Giao diện."
+
+#: settings-gui/core/system_check.py
+msgid "Use the button on a step, or fix them all at once. Ngó Sen only changes this account's settings."
+msgstr "Bấm nút ở từng bước, hoặc sửa hết một lần. Ngó Sen chỉ đổi cài đặt của tài khoản này."
+
+#: settings-gui/core/system_check.py
+msgid "Use the button on the step. Ngó Sen only changes this account's settings."
+msgstr "Bấm nút ở bước đó. Ngó Sen chỉ đổi cài đặt của tài khoản này."
+
+#: settings-gui/core/system_check.py
+msgid "Each step says what to do."
+msgstr "Mỗi bước ghi rõ việc cần làm."
+
+#: settings-gui/core/system_check.py
+msgid "Start fcitx5"
+msgstr "Chạy fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Restart fcitx5"
+msgstr "Khởi động lại fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Add Ngó Sen"
+msgstr "Thêm Ngó Sen"
+
+#: settings-gui/core/system_check.py
+msgid "Turn on"
+msgstr "Bật"
+
+#: settings-gui/core/system_check.py
+msgid "Started fcitx5."
+msgstr "Đã chạy fcitx5."
+
+#: settings-gui/core/system_check.py
+msgid "Restarted fcitx5."
+msgstr "Đã khởi động lại fcitx5."
+
+#: settings-gui/core/system_check.py
+msgid "Added Ngó Sen to the input method list."
+msgstr "Đã thêm Ngó Sen vào danh sách bộ gõ."
+
+#: settings-gui/core/system_check.py
+msgid "Turned on the GNOME extension."
+msgstr "Đã bật extension GNOME."
+
+#: settings-gui/core/system_check.py
+msgid "This machine is ready"
+msgstr "Máy đã sẵn sàng"
+
+#: settings-gui/core/system_check.py
+msgid "Try typing in any app."
+msgstr "Gõ để test trong app bất kỳ."
+
+#: settings-gui/core/system_check.py
+#, python-brace-format
+msgid "Steps left to fix: {}"
+msgstr "Còn {} việc cần sửa"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Fixing…"
+msgstr "Đang sửa…"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Steps to type Vietnamese"
+msgstr "Các bước để gõ tiếng Việt"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Apps connected to fcitx5"
+msgstr "App đang kết nối với fcitx5"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "An app missing here has not connected to the input method: open it again, or send the result to Ngó Sen."
+msgstr "App không có trong danh sách chưa kết nối với bộ gõ: mở lại app đó hoặc gửi kết quả cho Ngó Sen."
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Try typing here"
+msgstr "Test gõ ngay tại đây"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "In Telex, vieetj becomes việt."
+msgstr "Kiểu Telex: gõ vieetj sẽ ra việt."
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Send the result to Ngó Sen"
+msgstr "Gửi kết quả cho Ngó Sen"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "The result lists the steps above, the apps connected and the typing log you read. Nothing is sent until you press a button below."
+msgstr "Kết quả gồm các bước ở trên, các app đang kết nối và nhật ký gõ bạn vừa đọc. Chỉ gửi khi bạn bấm một nút bên dưới."
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Fix all ({})"
+msgstr "Sửa cả {} việc"
+
+#: settings-gui/core/system_check.py
+msgid "Could not fix this."
+msgstr "Không sửa được."
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 started before Ngó Sen was installed"
+msgstr "fcitx5 đã chạy từ trước khi cài Ngó Sen"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "Copy command"
+msgstr "Chép lệnh"
+
+#: settings-gui/ui_gtk/check_page.py
+#, python-brace-format
+msgid "Copied: {}"
+msgstr "Đã chép: {}"
+
+#: settings-gui/ui_gtk/check_page.py
+msgid "No app is connected yet"
+msgstr "Chưa có app nào kết nối với fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in to start the installed version."
+msgstr "Đăng xuất rồi đăng nhập lại để chạy version vừa cài."
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: turn on {}."
+msgstr "Chưa có tác dụng: hãy bật {}."
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: turn on {} and choose Custom in {}."
+msgstr "Chưa có tác dụng: hãy bật {} và chọn Custom ở {}."
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: choose Custom in {}."
+msgstr "Chưa có tác dụng: hãy chọn Custom ở {}."
+
+#: settings-gui/core/page_status.py
+msgid "Not in use now: Cứu dấu works only with Unicode."
+msgstr "Chưa có tác dụng: Cứu dấu chỉ chạy với Unicode."
+
+#: settings-gui/core/catalog.py
+msgid "kg gives khô gà, Kg gives Khô gà, KG gives KHÔ GÀ."
+msgstr "kg ra khô gà, Kg ra Khô gà, KG ra KHÔ GÀ."
+
+#: settings-gui/core/catalog.py
+msgid "Abbreviations also expand while the mode is Off."
+msgstr "Từ viết tắt vẫn được bung ra khi chế độ gõ là Tắt."
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Abbreviation:"
+msgstr "Từ viết tắt:"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expanded Text:"
+msgstr "Từ đầy đủ:"
+
+#: settings-gui/ui/message_bar.py
+msgid "Close"
+msgstr "Đóng"
+
+#: settings-gui/ui/main_window.py
+msgid "Restore &defaults…"
+msgstr "Đưa về &mặc định…"
+
+#: settings-gui/core/catalog.py
+msgid "Text goes straight into the app as you type."
+msgstr "Chữ đi thẳng vào app ngay khi gõ."
+
+#: settings-gui/core/catalog.py
+msgid "The word is underlined until it is done. Use it in an app that Sen does not work with."
+msgstr "Chữ đang gõ có gạch dưới cho tới khi gõ xong. Dùng khi app không tương thích với Gõ Sen."
+
+#: settings-gui/core/catalog.py
+msgid "Type an emoji name, then pick from the list."
+msgstr "Gõ tên emoji rồi chọn trong danh sách."
+
+#: settings-gui/core/system_check.py
+msgid "Add {} to ~/.config/environment.d/{}, then log out and back in."
+msgstr "Thêm {} vào ~/.config/environment.d/{}, rồi đăng xuất và đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "Run {}, then log out and back in."
+msgstr "Chạy {}, rồi đăng xuất và đăng nhập lại."
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 starts at login"
+msgstr "fcitx5 tự chạy khi đăng nhập"
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 will not start at the next login"
+msgstr "Lần đăng nhập sau fcitx5 sẽ không tự chạy"
+
+#: settings-gui/core/system_check.py
+msgid "Copy {} to ~/.config/autostart/."
+msgstr "Chép {} vào ~/.config/autostart/."
+
+#: settings-gui/core/system_check.py
+msgid "Log out and back in to finish the setup"
+msgstr "Đăng xuất rồi đăng nhập lại để thiết lập xong"
+
+#: settings-gui/core/system_check.py
+msgid ""
+"The settings are saved, but apps read them at login. If this stays after "
+"that, something else overrides them: send the result to Ngó Sen."
+msgstr ""
+"Đã lưu thiết lập, nhưng app chỉ đọc khi đăng nhập. Nếu đăng nhập lại mà dòng "
+"này vẫn còn thì có thứ khác đang ghi đè: gửi kết quả cho Ngó Sen."
+
+#: settings-gui/core/system_check.py
+msgid "Start at login"
+msgstr "Tự chạy khi đăng nhập"
+
+#: settings-gui/core/system_check.py
+msgid "Set for this account"
+msgstr "Đặt cho tài khoản này"
+
+#: settings-gui/core/system_check.py
+msgid "Choose fcitx5"
+msgstr "Chọn fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "Choose Fcitx 5"
+msgstr "Chọn Fcitx 5"
+
+#: settings-gui/core/system_check.py
+msgid "fcitx5 will start at login."
+msgstr "fcitx5 sẽ tự chạy khi đăng nhập."
+
+#: settings-gui/core/system_check.py
+msgid "Saved the settings. Log out and back in to use them."
+msgstr "Đã lưu thiết lập. Đăng xuất rồi đăng nhập lại để dùng."
+
+#: settings-gui/core/system_check.py
+msgid "Chose fcitx5. Log out and back in to use it."
+msgstr "Đã chọn fcitx5. Đăng xuất rồi đăng nhập lại để dùng."
+
+#: settings-gui/core/system_check.py
+msgid "Chose Fcitx 5. Log out and back in to use it."
+msgstr "Đã chọn Fcitx 5. Đăng xuất rồi đăng nhập lại để dùng."
+
+#: settings-gui/core/system_check.py
+msgid "Copied the command."
+msgstr "Đã chép lệnh."
+
+#: settings-gui/core/system_check.py
+msgid "~/.config/environment.d sets {} to another value; change it to use fcitx5."
+msgstr "~/.config/environment.d đang đặt {} thành giá trị khác; đổi lại để dùng fcitx5."

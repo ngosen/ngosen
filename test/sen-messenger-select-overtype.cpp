@@ -66,6 +66,10 @@ int main() {
         return 1;
     }
 
+    // libuv reads its clock once per loop turn; without a turn here, a slow engine start leaves it
+    // behind and the 150 ms selection wait below fires at once.
+    pumpEventLoop(testInstance.instance, 1);
+
     KeySenderProbe listener;
     auto           context = std::make_unique<TestInputContext>(&testInstance.instance);
     context->setCapabilityFlags(fcitx::CapabilityFlag::SurroundingText);

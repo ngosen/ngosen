@@ -9,11 +9,12 @@ from datetime import datetime
 
 from core.settings_snapshot import local_dict_path
 
-COMPONENTS = ("config", "macros", "keymaps", "rules", "dictionary")
+COMPONENTS = ("config", "macros", "keymaps", "rules", "switches", "dictionary")
 SUB_CONFIGS = {
     "macros": ("ngosen-macro", "Macro"),
     "keymaps": ("custom_keymap", "CustomKeymap"),
     "rules": ("app_rules", "Rules"),
+    "switches": ("app_switches", "Switches"),
 }
 
 
@@ -43,6 +44,15 @@ def load(path):
         backup = json.load(f)
     if not isinstance(backup, dict) or not any(k in backup for k in COMPONENTS):
         raise ValueError("no settings found in the file")
+    # Checked before anything is written, so a damaged file changes nothing.
+    if not isinstance(backup.get("config", {}), dict):
+        raise ValueError("the settings in the file are damaged")
+    for name in SUB_CONFIGS:
+        items = backup.get(name, [])
+        if not isinstance(items, list) or not all(isinstance(item, dict) for item in items):
+            raise ValueError(f"the {name} in the file are damaged")
+    if not isinstance(backup.get("dictionary", ""), str):
+        raise ValueError("the dictionary in the file is damaged")
     return backup
 
 
@@ -51,6 +61,9 @@ def apply(dbus, backup):
     ok = True
     if "config" in backup:
         ok = dbus.set_config(backup["config"]) and ok
+    if "rules" in backup and "switches" not in backup:
+        # A backup from before switches existed: today's switches would override its rules.
+        backup = {**backup, "switches": []}
     for name, (sub_path, root_key) in SUB_CONFIGS.items():
         if name in backup:
             ok = dbus.set_sub_config_list(sub_path, root_key, backup[name]) and ok

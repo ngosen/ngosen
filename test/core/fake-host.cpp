@@ -8,10 +8,10 @@
 #include "ngosen-clock.h"
 
 #include <algorithm>
-#include <chrono>
-#include <thread>
 
 namespace ngosen::test {
+
+    int timersDestroyedInCallback = 0;
 
     struct FakeLoop::Entry final : Timer {
         FakeLoop*                   loop;
@@ -21,6 +21,11 @@ namespace ngosen::test {
 
         Entry(FakeLoop* l, uint64_t d, std::function<bool(Timer&)> f) : loop(l), deadlineUs(d), onTime(std::move(f)) {}
         ~Entry() override {
+            // The real hosts free a timer's source and callback here, which a running callback still uses.
+            if (loop->running_ == this) {
+                ++timersDestroyedInCallback;
+                loop->running_ = nullptr;
+            }
             loop->remove(this);
         }
         void rearm(uint64_t newDeadlineUs) override {
@@ -28,6 +33,11 @@ namespace ngosen::test {
             armed      = true;
         }
     };
+
+    FakeLoop::FakeLoop() {
+        if (fakeClockUs == 0)
+            fakeClockUs = monotonicUs();
+    }
 
     std::unique_ptr<Timer> FakeLoop::add(uint64_t deadlineUs, std::function<bool(Timer&)> onTime) {
         auto entry = std::make_unique<Entry>(this, deadlineUs, std::move(onTime));
@@ -39,25 +49,36 @@ namespace ngosen::test {
         entries_.erase(std::remove(entries_.begin(), entries_.end(), entry), entries_.end());
     }
 
+    void FakeLoop::fireDue() {
+        // A callback may add or destroy timers, so pick one due timer at a time. After a stall
+        // several are due at once; the earliest deadline goes first, as on a real event loop.
+        for (bool fired = true; fired;) {
+            fired       = false;
+            Entry* next = nullptr;
+            for (Entry* entry : entries_) {
+                if (entry->armed && entry->deadlineUs <= monotonicUs() && (!next || entry->deadlineUs < next->deadlineUs))
+                    next = entry;
+            }
+            if (next) {
+                // As on GLib, a callback that rearms its timer keeps it only by returning true.
+                next->armed     = false;
+                running_        = next;
+                const bool keep = next->onTime(*next);
+                if (running_ == next && !keep)
+                    next->armed = false;
+                running_ = nullptr;
+                fired    = true;
+            }
+        }
+    }
+
     void FakeLoop::pump(int ms) {
         for (int i = 0; i < ms; ++i) {
-            // A callback may add or destroy timers, so pick one due timer at a time. After a stall
-            // several are due at once; the earliest deadline goes first, as on a real event loop.
-            for (bool fired = true; fired;) {
-                fired       = false;
-                Entry* next = nullptr;
-                for (Entry* entry : entries_) {
-                    if (entry->armed && entry->deadlineUs <= monotonicUs() && (!next || entry->deadlineUs < next->deadlineUs))
-                        next = entry;
-                }
-                if (next) {
-                    next->armed = false;
-                    next->onTime(*next);
-                    fired = true;
-                }
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            fireDue();
+            fakeClockUs += 1000;
         }
+        // A timer due when the pump ends runs before the next key, as one would after a real sleep.
+        fireDue();
     }
 
     void FakeHost::showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick) {

@@ -5,11 +5,14 @@
  */
 #pragma once
 
+#include "ngosen-utf8.h"
 #include "fake-host.h"
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ngosen {
@@ -37,24 +40,96 @@ namespace ngosen::test {
         bool dropsOldKeyPresses     = false; // drops a Backspace press not newer than the last one, as GLFW does under XIM
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
+        int  backspaceLagMs         = 0;     // applies forwarded backspaces this late but commits at once, as Antigravity's editor on GNOME sometimes does
+        bool backspacesSkipLag      = false; // applies forwarded backspaces ahead of what lagMs holds back, as GNOME Shell's IBus bridge with forward-keys@ngosen.github.io does
+        bool hidesCursorMoves       = false; // reports no click and shows the cursor where the last edit left it, as GTK 3 on Plasma does
+        bool dropsForwardedKeys     = false; // never gets keys the input method sends, as under GNOME Shell's IBus bridge
+        bool erasesOnDel            = false; // erases the character before the cursor for each DEL committed, as a terminal does
+        bool reportsTextOnceFilled  = false; // reports surrounding text only once the field has text, as Qt over IBus does
+        bool announcesSelection     = false; // makes a selection the X11 primary selection, as Chromium on X11 does
+        bool ignoresSurroundingDel  = false; // takes no deletion through its surrounding text, as WPS over D-Bus does
+        bool reportsEmptyText       = false; // declares surrounding text but reports none and drops deletions through it, as Konsole does
+        bool neverSendsText         = false; // declares surrounding text but never sends any, as WPS's own fcitx4 module does
+        // Turns a deletion of characters into bytes on the text it reported last, as mutter does for
+        // text-input-v3 and fcitx5 does on Wayland.
+        bool             convertsDeleteOnReportedCopy = false;
+        bool             reportsNothingAfterDelete    = false; // reports nothing after a deletion until a typed key, as Qt 6 over text-input-v3 does
+        bool             repeatsOldTextAfterDelete    = false; // reports its text from before a deletion until a typed key, as Firefox on GNOME does
+        int              keysBeforeNewReport          = 1;     // typed keys it takes to end repeatsOldTextAfterDelete
+        bool             silentFromFirstDeletion      = false; // stops reporting at its first deletion through the surrounding text, for good
+        bool             deletesOneTooMany            = false; // takes one more character than a deletion through the surrounding text asks for
+        bool             reportsTextAtChange          = false; // a late report shows the text as it was at that change, not as it is on arrival
+        int              emptyCommitsBeforeReport     = 0;     // empty commits it takes to end repeatsOldTextAfterDelete, as Firefox on GNOME
+        std::vector<int> ignoresRequestsOnEdits;               // these deletions get no report for empty commits, as Firefox on GNOME now and then
+        bool             reportsOnlyWhenAsked      = false;    // after a deletion, reports typed keys only for an empty commit, as Firefox on Plasma now and then
+        bool             keepsLineBreakAfterCommit = false;    // keeps a line break after a commit with the cursor past it until a typed key, as Ace in Firefox does
+        bool             reportsOnFocus            = false;    // reports its field, empty or not, when it gets focus, as Firefox over GTK does
+        bool             deletesAtReportedCursor   = false;    // deletes at the cursor of its last report and leaves the cursor there, as Firefox over GTK does
+        int              reportsOnEdit             = 0;        // the nth deletion is reported anyway, as Qt now and then
+        bool             showsEnter                = false;    // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
+        bool             showsTab                  = false;    // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
+        // Applies deletions and commits once per main-loop turn, keeping only the last of each, as a
+        // client behind mutter's text-input-v3 does; a key let through ends the turn first.
+        bool keepsLastEditPerTurn = false;
+        int  turnMs               = 0; // how long such a turn stays open
+        // Its cursor stays past the real one after a deletion and a commit in one turn, as Firefox's does,
+        // until a typed key corrects it.
+        bool cursorStaysPastEdit  = false;
+        int  oldTextAfterDeleteMs = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
+        // Reports the cursor moving over a deletion and its commit on the old text before the new text, as
+        // Slate in Firefox on Plasma does.
+        bool movesCursorBeforeText = false;
+        // With movesCursorBeforeText, shows the deletion first with the cursor still past the commit, as
+        // CKEditor in Firefox on Plasma does.
+        bool        showsDeletionWithCursorPast = false;
+        std::string textAfterCursor; // text the field starts with, after the cursor
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
     // was typed.
+    // How the typing logic changes the app's text; -1 means not checked.
+    struct Path {
+        int surroundingDeletes  = -1;
+        int forwardedBackSpaces = -1; // presses only
+        int systemKeyPresses    = -1; // keys pressed, not calls
+        int preedits            = -1;
+    };
+
     class FakeApp final : public Host {
       public:
-        FakeApp(FakeLoop& loop, Field field, AppQuirks quirks) : loop_(loop), field_(std::move(field)), quirks_(quirks) {}
+        FakeApp(FakeLoop& loop, Field field, AppQuirks quirks) : loop_(loop), field_(std::move(field)), quirks_(quirks) {
+            text_ = utf8::decode(quirks_.textAfterCursor);
+        }
 
         void attach(TypingState* state) {
             state_ = state;
+        }
+        // Lets a test hold up one stretch of reports, as an app busy for a moment does.
+        void setReportDelay(int ms) {
+            quirks_.reportDelayMs = ms;
+        }
+        // Renames the app with no focus change, as GNOME Shell does when it names the app late.
+        void setProgram(const std::string& program) {
+            field_.program = program;
         }
         // Presses and releases a key; the app inserts it when the input method lets it through.
         void        type(uint32_t sym);
         std::string text() const;
         // Moves the cursor without an edit, as a click does.
         void moveCursor(size_t to);
+        // Adds a copy of the text after the cursor and shows the cursor at its start, as VS Code's editor
+        // on GNOME does for the first letter of a line.
+        void copyTextAfterStartCursor();
         // Selects from anchor to cursor, as Shift+arrows or a double click do; typing replaces it.
-        void                            select(size_t anchor, size_t cursor);
+        void select(size_t anchor, size_t cursor);
+        // Leaves focus for ms and takes it back, as WPS does when it opens a window on a double click.
+        void leaveFocus(int ms);
+        // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
+        void suggest(const std::string& tail, bool selected);
+        // How the typing logic asked the app to change its text so far.
+        const Path& sent() const {
+            return sent_;
+        }
         const std::vector<std::string>& labels() const {
             return labels_;
         }
@@ -65,21 +140,34 @@ namespace ngosen::test {
         int slowestCommitMs() const {
             return slowestCommitMs_;
         }
+        int shortcuts() const {
+            return shortcuts_;
+        }
 
         void        commitText(const std::string& text) override;
         void        forwardKey(EditKey key, bool release, uint32_t time) override;
+        void        forwardKeyPress(uint32_t sym, uint32_t states, uint32_t code, bool release, uint32_t time) override;
         void        deleteSurrounding(int offset, unsigned int size) override;
         bool        pressSystemKeys(int count) override;
 
         Surrounding surrounding() const override;
         Field       field() const override {
-            return field_;
+            Field field = field_;
+            if (quirks_.reportsTextOnceFilled && text_.empty())
+                field.surroundingText = false;
+            return field;
         }
         bool hasFocus() const override {
             return focused_;
         }
+        std::optional<std::string> takeSelection() override {
+            return std::exchange(announced_, std::nullopt);
+        }
 
-        void showPreedit(const std::string& /*text*/, bool /*underline*/) override {}
+        void showPreedit(const std::string& text, bool /*underline*/) override {
+            if (!text.empty())
+                ++sent_.preedits;
+        }
         void clearPreedit() override {}
         void resetPanel() override {}
         void refreshPreedit() override {}
@@ -114,13 +202,23 @@ namespace ngosen::test {
         std::string keyText(uint32_t sym) const override;
 
       private:
-        void                                insert(const std::u32string& text);
+        void                                insert(const std::u32string& text, bool typed = false);
+        void                                noteTypedKey();
+        void                                goSilentAfterDelete();
         bool                                eraseSelection();
         void                                eraseBefore(size_t count);
         void                                eraseAround(int offset, unsigned int size);
+        bool                                leaveIfEmptied();
+        size_t                              reportedBytesBefore(unsigned int size) const;
+        unsigned int                        charsForBytesBefore(size_t bytes) const;
         void                                changed();
         void                                redrawAfterEdit();
         void                                later(int ms, std::function<void()> action);
+        void                                startTurn();
+        void                                endTurn();
+        void                                reportMovedCursor(const std::u32string& text, size_t cursor);
+        void                                applyHeldEdit(const std::string& text);
+        bool                                applyFieldKey(uint32_t sym, uint32_t state);
 
         FakeLoop&                           loop_;
         Field                               field_;
@@ -133,13 +231,34 @@ namespace ngosen::test {
         uint64_t                            forwardedAt_     = 0;
         uint32_t                            lastBackSpaceAt_ = 0;
         int                                 slowestCommitMs_ = 0;
+        int                                 shortcuts_       = 0;
         std::u32string                      text_;
-        size_t                              cursor_ = 0;
-        size_t                              anchor_ = 0;
+        std::optional<std::string>          announced_;
+        size_t                              cursor_      = 0;
+        size_t                              anchor_      = 0;
+        size_t                              shownCursor_ = 0;
+        size_t                              shownAnchor_ = 0;
         std::vector<std::string>            labels_;
         std::string                         status_;
         std::u32string                      previousText_;
         size_t                              previousCursor_ = 0;
+        std::u32string                      reportedText_;
+        size_t                              reportedCursor_ = 0;
+        std::u32string                      oldText_;
+        size_t                              oldCursor_         = 0;
+        uint64_t                            oldTextUntilUs_    = 0;
+        size_t                              reportedAnchor_    = 0;
+        bool                                silentAfterDelete_ = false;
+        int                                 keysSinceDelete_   = 0;
+        bool                                turnPending_       = false;
+        std::optional<size_t>               turnDeleteBytes_;
+        std::optional<std::string>          turnCommit_;
+        size_t                              cursorPastBy_ = 0;
+        std::optional<unsigned int>         heldDelete_;
+        bool                                showsMovedCursor_ = false;
+        int                                 emptyCommits_     = 0;
+        int                                 deletions_        = 0;
+        Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};
         std::vector<std::unique_ptr<Timer>> timers_;
     };
 
@@ -147,6 +266,23 @@ namespace ngosen::test {
     std::string telexOutput(const std::vector<uint32_t>& keys);
     // The same with the given settings and macro table.
     std::string telexOutput(FakeResources& resources, const std::vector<uint32_t>& keys);
+
+    // What the app shows after typing, and what the typing logic sent it to get there.
+    struct Typed {
+        std::string text;
+        Path        sent;
+        int         shortcuts = 0; // Ctrl or Alt keys that reached the app
+    };
+
+    // The ways what was sent departs from the expected path, empty when they match.
+    std::vector<std::string> pathMismatches(const Path& sent, const Path& expected);
+
+    Typed                    typeInAppTraced(FakeResources& resources, const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs);
+
+    // Or this into a key for typeInApp to press it with Shift held.
+    inline constexpr uint32_t WithShift = 1U << 30;
+    // Or this in to press it with Ctrl held.
+    inline constexpr uint32_t WithCtrl = 1U << 29;
 
     // The app's text after typing the keys in Gõ Sen mode, waiting gapsMs[i] after key i.
     std::string typeInApp(const Field& field, AppQuirks quirks, const std::vector<uint32_t>& keys, const std::vector<int>& gapsMs, int* slowestCommitMs = nullptr);

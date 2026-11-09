@@ -5,12 +5,62 @@
  */
 #include "ngosen-app-quirks.h"
 
+#include "ngosen-gnome-apps.h"
 #include "ngosen-strings.h"
 #include "ngosen-xtest.h"
 
 namespace ngosen {
 
+    namespace {
+        bool isChromiumBrowser(const std::string& program) {
+            for (const char* browser : {"chromium", "chrome", "google-chrome", "microsoft-edge", "msedge", "brave", "opera"}) {
+                if (isStartsWith(program, browser))
+                    return true;
+            }
+            return false;
+        }
+
+        // The app's own program name. IBus names a client "<toolkit>-im:<program>" (gtk3-im:firefox), and a
+        // snap's program repeats the snap name (firefox_firefox).
+        std::string appName(const Field& field) {
+            std::string program = stripDesktopSuffix(field.program);
+            if (field.frontend == "ibus") {
+                const size_t colon = program.find(':');
+                if (colon != std::string::npos && isEndsWith(program.substr(0, colon), "-im"))
+                    program.erase(0, colon + 1);
+                const size_t underscore = program.find('_');
+                if (underscore != std::string::npos && program.compare(0, underscore, program, underscore + 1) == 0)
+                    program.erase(underscore);
+            }
+            return program;
+        }
+
+        // WPS Writer, Spreadsheets and Presentation.
+        bool isWps(const std::string& program) {
+            return program == "wps" || program == "et" || program == "wpp";
+        }
+
+        // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
+        bool isGtk4VteTerminal(const Field& field) {
+            const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
+            if (!gtk4Module)
+                return false;
+            const std::string name = appName(field);
+            return name == "ptyxis" || name == "kgx";
+        }
+
+        // GNOME Shell relays apps under their GNOME app id and without their input purpose.
+        bool isShellRelayedTerminal(const Field& field) {
+            if (field.frontend != "ibus")
+                return false;
+            const std::string name = appName(field);
+            return name == "org.gnome.Ptyxis" || name == "org.gnome.Console" || name == "org.gnome.Terminal";
+        }
+    } // namespace
+
     bool forwardsBackspaces(const Field& field) {
+        if (field.sendsNoKeys)
+            return false;
         // On wayland_v2 (input-method-v2: Sway, Hyprland) fcitx5 sends forwarded keys through a virtual keyboard.
         if (field.frontend == "wayland" || field.frontend == "wayland_v2") {
             return true;
@@ -22,7 +72,7 @@ namespace ngosen {
         }
         if (field.frontend == "ibus") {
             // SDL takes only commits and preedit from the IM.
-            return !isStartsWith(field.program, "SDL");
+            return !isStartsWith(field.program, "SDL") && !takesSentKeyEvents(field);
         }
         if (field.frontend == "dbus") {
             // fcitx5-gtk and fcitx5-qt set one of these; SDL sets neither and handles only commits and preedit.
@@ -37,11 +87,13 @@ namespace ngosen {
     }
 
     bool takesSentKeyEvents(const Field& field) {
-        if (field.frontend != "xim" || !xsendAvailable())
-            return false;
+        // WPS over IBus ignores forwarded keys and surrounding deletions, and reports the same flags as
+        // Qt clients that honour them.
+        if (field.frontend == "ibus")
+            return isWps(appName(field)) && xsendAvailable();
         // Wine applies forwarded keys after a later commit and reports nothing that sets it apart;
-        // xterm and XInput2 clients drop sent events, so the rest keep forwarding.
-        return isStartsWith(stripDesktopSuffix(field.program), "wine");
+        // xterm and XInput2 clients drop sent events, so only Wine gets them.
+        return field.frontend == "xim" && isStartsWith(appName(field), "wine") && xsendAvailable();
     }
 
     bool ignoresForwardedKeys(const Field& field) {
@@ -59,42 +111,88 @@ namespace ngosen {
     }
 
     bool erasesWithCommittedDel(const Field& field) {
-        if (field.surroundingText)
-            return false;
-        std::string program;
-        if (field.frontend == "dbus" && !field.keyEventOrderFix)
-            program = field.program;
-        else if (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"))
-            program = field.program.substr(std::string("gtk4-im:").size());
-        else
-            return false;
-        // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
-        program = stripDesktopSuffix(program);
-        return program == "ptyxis" || program == "kgx";
+        // kitty and VTE over Wayland claim surrounding text but never send any.
+        if (field.terminal) {
+            // Alacritty pastes a commit longer than one character once the app turns on bracketed paste,
+            // so the DEL would be pasted, not run.
+            const std::string name = appName(field);
+            return name != "Alacritty" && name != "alacritty";
+        }
+        // XIM has no input purpose, so xterm is known only by name.
+        if (field.frontend == "xim")
+            return appName(field) == "xterm";
+        return !field.surroundingText && (isGtk4VteTerminal(field) || isShellRelayedTerminal(field));
     }
 
-    bool selectsOverAutocompletion(const Field& field) {
-        if ((field.frontend != "dbus" && field.frontend != "fcitx4") || !forwardsBackspaces(field) || field.surroundingText || field.caretWidth <= 0)
-            return false;
-        const std::string program = stripDesktopSuffix(field.program);
-        // Vivaldi draws its address bar as a web page field, so only the selected autocompletion sets it
-        // apart from a zero-width page caret.
-        if (isStartsWith(program, "vivaldi"))
+    bool takesDoubleHyphenLiterally(const Field& field) {
+        if (field.terminal || field.url || isGtk4VteTerminal(field) || isShellRelayedTerminal(field))
             return true;
-        // Chromium reports a thin caret for its own text fields. A web page field with a selection reports
-        // the selection instead (Google Sheets autocompletion), and Shift+Left there loses text.
-        if (field.caretWidth * 8 > field.caretHeight)
-            return false;
-        // Terminals match the checks above too, and print Shift+Left instead of selecting.
-        for (const char* browser : {"chromium", "chrome", "google-chrome", "microsoft-edge", "msedge", "brave", "opera"}) {
-            if (isStartsWith(program, browser))
+        // XIM has no input purpose, so xterm is known only by name.
+        return field.frontend == "xim" && appName(field) == "xterm";
+    }
+
+    bool runsShellOnPty(const Field& field) {
+        if (isGtk4VteTerminal(field) || isShellRelayedTerminal(field))
+            return true;
+        // Konsole sets no terminal flag, GNOME Terminal over D-Bus and XIM clients no input purpose; the
+        // names are the terminals whose app id was read on a real desktop.
+        const std::string name = appName(field);
+        if (field.frontend == "xim" && name == "xterm")
+            return true;
+        for (const char* terminal : {"org.kde.konsole", "kitty", "Alacritty", "alacritty", "com.mitchellh.ghostty", "gnome-terminal-server", "kgx", "ptyxis"}) {
+            if (name == terminal)
                 return true;
         }
         return false;
     }
 
+    bool selectsOverAutocompletion(const Field& field) {
+        if ((field.frontend != "dbus" && field.frontend != "fcitx4") || !forwardsBackspaces(field) || field.surroundingText || field.caretWidth <= 0)
+            return false;
+        const std::string program = appName(field);
+        // Vivaldi draws its address bar as a web page field, so only the selected autocompletion sets it
+        // apart from the caret of a page field. Google Docs and Slides report that caret 2 wide at any
+        // text size, so comparing with the height would take small text for a selection.
+        if (isStartsWith(program, "vivaldi"))
+            return field.caretWidth > 2;
+        // Chromium reports a thin caret for its own text fields. A web page field with a selection reports
+        // the selection instead (Google Sheets autocompletion), and Shift+Left there loses text.
+        if (field.caretWidth * 8 > field.caretHeight)
+            return false;
+        // Terminals match the checks above too, and print Shift+Left instead of selecting.
+        return isChromiumBrowser(program);
+    }
+
+    bool focusChangeShowsBrowserField(const Field& field) {
+        return field.frontend == "dbus" && !isStartsWith(appName(field), "vivaldi");
+    }
+
+    bool typesOverPrimarySelection(const Field& field) {
+        // Terminals, Emacs and Vim also own the primary selection and report the same, but type elsewhere.
+        const std::string program = appName(field);
+        return isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || isWps(program);
+    }
+
     bool surroundingTextLags(const Field& field) {
         return field.frontend == "ibus";
+    }
+
+    bool keyOvertakesCommit(const Field& field) {
+        return field.frontend == "dbus" || field.frontend == "ibus";
+    }
+
+    // Only GNOME Shell sends edits through mutter; nothing else the field reports tells it apart.
+    bool keepsLastEditPerTurn(const Field& field) {
+        return field.frontend == "ibus" && (appName(field) == "gnome-shell" || field.reportedProgram == "gnome-shell");
+    }
+
+    // With its extension off, GNOME Shell relays every app under its own name.
+    bool namesNoApp(const Field& field) {
+        return field.frontend == "ibus" && appName(field) == "gnome-shell";
+    }
+
+    bool isGnomeSearch(const Field& field) {
+        return appName(field) == gnomeOverviewApp;
     }
 
     bool dropsCommitsWithoutFocus(const Field& field) {
@@ -102,21 +200,45 @@ namespace ngosen {
     }
 
     bool appliesBackspacesLate(const Field& field) {
-        return stripDesktopSuffix(field.program) == "soffice";
+        return appName(field) == "soffice";
+    }
+
+    bool deletesThroughSurroundingFirst(const Field& field) {
+        // XIM has no surrounding text; fcitx4 is the GTK module in old snaps, which nobody has measured.
+        return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2" || field.frontend == "dbus";
+    }
+
+    bool reportsTrailKeys(const Field& field) {
+        return field.frontend != "ibus" && hidesAddressBarFlag(field);
+    }
+
+    bool keepsOldCopyAfterEdit(const Field& field) {
+        // Firefox over GTK 3 asks for a new copy only when a commit arrives, and nothing it reports shows this.
+        return (field.frontend == "wayland" || field.frontend == "wayland_v2") && hidesAddressBarFlag(field);
+    }
+
+    bool reportsReplacementsWithLaterKey(const Field& field) {
+        return field.frontend == "ibus";
+    }
+
+    bool countsDeletionOnCopy(const Field& field) {
+        return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2";
     }
 
     bool reportsFieldOnlyOnKey(const Field& field) {
         // Nothing Calc reports sets it apart from a text field that keeps its text.
-        return field.frontend == "wayland" && stripDesktopSuffix(field.program) == "libreoffice-calc";
+        return field.frontend == "wayland" && appName(field) == "libreoffice-calc";
     }
 
     bool hidesAddressBarFlag(const Field& field) {
-        // Debian names its Firefox ESR program firefox-esr; the forks share Firefox's address bar.
-        const std::string program = stripDesktopSuffix(field.program);
+        // Debian names its Firefox ESR program firefox-esr; the forks share Firefox's address bar. GNOME names
+        // relayed apps by desktop file, a reverse-DNS ID for Fedora's Firefox and for Flatpaks.
+        const std::string program = appName(field);
         if (isStartsWith(program, "firefox"))
             return true;
-        for (const char* fork : {"zen", "librewolf", "waterfox", "floorp", "mullvadbrowser", "icecat"}) {
-            if (program == fork)
+        for (const char* name : {"zen", "librewolf", "waterfox", "floorp", "mullvadbrowser", "mullvad-browser", "icecat", "org.mozilla.firefox", "app.zen_browser.zen",
+                                 "io.gitlab.librewolf-community", "net.waterfox.waterfox", "one.ablaze.floorp", "net.mullvad.MullvadBrowser"}) {
+            if (program == name)
                 return true;
         }
         return false;

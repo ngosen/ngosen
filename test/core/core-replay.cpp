@@ -59,6 +59,8 @@ namespace {
                 s.field.program         = value(detail, "program");
                 s.field.surroundingText = value(detail, "surrounding") == "1";
                 s.field.preedit         = value(detail, "preedit") == "1";
+                s.field.sendsNoKeys     = value(detail, "sendsNoKeys") == "1";
+                s.field.preeditFallback = value(detail, "preeditFallback") == "1";
                 s.sen                   = value(detail, "mode") == "Sen";
                 segments.push_back(s);
             } else if (kind == "key" && !segments.empty() && detail.compare(0, 5, "down ") == 0) {

@@ -3,20 +3,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Finds settings by the words shown on screen."""
 
-import unicodedata
-
+from core.text import fold
 from qtpy.QtWidgets import QCheckBox, QLabel, QRadioButton
 
 
-def fold(text):
-    """Lower case without tone marks, so "chinh ta" finds "Chính tả"."""
-    text = text.replace("đ", "d").replace("Đ", "D")
-    decomposed = unicodedata.normalize("NFD", text)
-    return "".join(c for c in decomposed if not unicodedata.combining(c)).casefold()
-
-
 def find(pages, query):
-    """Returns (text, widget to focus, page) for each label holding every word of query."""
+    """Returns (text, widget to focus, page, setting key or None) for each matching label."""
     words = fold(query).split()
     if not words:
         return []
@@ -26,11 +18,30 @@ def find(pages, query):
         for kind in (QCheckBox, QRadioButton, QLabel):
             widgets += page.findChildren(kind)
         for widget in widgets:
+            # A line about a state, not a setting to find.
+            if not getattr(widget, "searchable", True):
+                continue
             text = widget.text().replace("&", "").strip().rstrip(":")
             if not text or len(text) > 80 or not all(w in fold(text) for w in words):
                 continue
             buddy = widget.buddy() if isinstance(widget, QLabel) else None
             # A page rebuilt in place still holds its old widgets until the event loop
             # deletes them; the newer one comes later and wins.
-            found[(text, page)] = (text, buddy or widget, page)
+            target = buddy or widget
+            found[(text, page)] = (text, target, page, _setting_of(target, page))
     return list(found.values())
+
+
+def _setting_of(widget, page):
+    """The only setting inside the closest parent holding any; a label can target a wrapper."""
+    controls = getattr(page, "controls", {})
+    while widget is not None:
+        inside = [
+            key
+            for key, control in controls.items()
+            if control is widget or widget.isAncestorOf(control)
+        ]
+        if inside:
+            return inside[0] if len(inside) == 1 else None
+        widget = widget.parentWidget()
+    return None

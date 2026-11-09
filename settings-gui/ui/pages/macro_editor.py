@@ -6,14 +6,15 @@ Macro Editor Page. Edits ngosen-macro-table.conf.
 Implements UI with row reordering and TSV import/export.
 """
 
+from core.catalog import HINTS, locked_by
 from core.dbus_handler import NgoSenDBusHandler
 from i18n import _
-from qtpy.QtCore import Qt
+from qtpy.QtCore import QSignalBlocker, Qt
 from qtpy.QtGui import QColor, QIcon
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
-    QComboBox,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -25,9 +26,10 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from ui.helpers import add_help_icon
+from core import macros, page_status
+from ui.components import NoWheelComboBox
 from ui.pages.base_editor import BaseEditorPage
-from ui.pages.dynamic_settings import CardWidget
+from ui.pages.dynamic_settings import CardWidget, with_hint_below
 from ui.typography import mute, page_title
 
 
@@ -41,48 +43,41 @@ class MacroEditorPage(BaseEditorPage):
     ):
         super().__init__(parent)
         self.dbus = dbus_handler
-        self.initial_state = {}
+        self.macros = macros.MacroTable(dbus_handler)
         self._setup_ui()
         self.load_data()
 
     def _setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(30, 20, 30, 20)
-        main_layout.setSpacing(15)
+        main_layout = self._scrolling_layout()
 
         title = page_title(_("Macros"))
         main_layout.addWidget(title)
+        self._add_status_line(main_layout)
 
         # Macro behavior toggles
         toggles_card = CardWidget()
-        toggles_layout = QHBoxLayout()
+        toggles_layout = QVBoxLayout()
+        self._hinted = {}
         self.cb_enable = QCheckBox(_("Enable Macro"))
         self.cb_capitalize = QCheckBox(_("Capitalize Macro"))
         self.cb_enable_off_mode = QCheckBox(_("Macro in Off Mode"))
         self.cb_enable.toggled.connect(self._on_item_changed)
+        self.cb_enable.toggled.connect(lambda _checked: self._apply_locks())
+        self.cb_enable.toggled.connect(lambda _checked: self.refresh_status())
         self.cb_capitalize.toggled.connect(self._on_item_changed)
         self.cb_enable_off_mode.toggled.connect(self._on_item_changed)
         toggles_layout.addWidget(self.cb_enable)
-
-        cap_layout = QHBoxLayout()
-        cap_layout.setSpacing(5)
-        cap_layout.addWidget(self.cb_capitalize)
-        add_help_icon(cap_layout, "CapitalizeMacro")
-
-        toggles_layout.addLayout(cap_layout)
-
-        off_mode_layout = QHBoxLayout()
-        off_mode_layout.setSpacing(5)
-        off_mode_layout.addWidget(self.cb_enable_off_mode)
-        add_help_icon(off_mode_layout, "EnableMacroInOffMode")
-        toggles_layout.addLayout(off_mode_layout)
-
-        toggles_layout.addStretch()
+        for box, key in (
+            (self.cb_capitalize, "CapitalizeMacro"),
+            (self.cb_enable_off_mode, "EnableMacroInOffMode"),
+        ):
+            self._hinted[key] = with_hint_below(box, _(HINTS[key]))[0]
+            toggles_layout.addWidget(self._hinted[key])
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText(_("Search macros..."))
         self.search_input.setClearButtonEnabled(True)
-        self.search_input.setFixedWidth(200)
+        self.search_input.setMaximumWidth(200)
         self.search_input.textChanged.connect(self.on_search_changed)
 
         toggles_card.content_layout.addLayout(toggles_layout)
@@ -92,76 +87,55 @@ class MacroEditorPage(BaseEditorPage):
         editor_card = CardWidget()
         content_layout = QVBoxLayout()
         editor_card.content_layout.addLayout(content_layout)
-        main_layout.addWidget(editor_card)
 
-        # Dynamic Macro Settings (Moved below the macro table)
+        # Next to the switch that locks it; the macro table would push it far away.
         dynamic_card = CardWidget()
         dynamic_layout = QVBoxLayout()
 
         # Hint text
-        hint_label = QLabel(_("Macros support dynamic placeholders: $TIME and $DATE."))
-        hint_label.setWordWrap(True)
-        mute(hint_label)
-        dynamic_layout.addWidget(hint_label)
+        self.placeholder_hint = QLabel(_("Macros support dynamic placeholders: $TIME and $DATE."))
+        self.placeholder_hint.setWordWrap(True)
+        mute(self.placeholder_hint)
+        dynamic_layout.addWidget(self.placeholder_hint)
 
         # Format Inputs
         fmt_container = QWidget()
-        fmt_hbox = QHBoxLayout(fmt_container)
-        fmt_hbox.setContentsMargins(0, 5, 0, 0)
-        fmt_hbox.setSpacing(20)
+        # One row each: side by side they overflow the smallest window on Breeze.
+        fmt_grid = QGridLayout(fmt_container)
+        fmt_grid.setContentsMargins(0, 5, 0, 0)
+        fmt_grid.setColumnStretch(2, 1)
 
         # Time Format
-        time_layout = QHBoxLayout()
-        self.input_time_format = QComboBox()
+        self.input_time_format = NoWheelComboBox()
         self.input_time_format.setEditable(False)
         self.input_time_format.currentIndexChanged.connect(self._on_item_changed)
 
-        time_presets = [
-            ("%H:%M", "15:04 (24h)"),
-            ("%H:%M:%S", "15:04:05 (24h)"),
-            ("%I:%M %p", "03:04 PM"),
-            ("%I:%M:%S %p", "03:04:05 PM"),
-            ("", _("None")),
-        ]
-        for fmt, desc in time_presets:
-            self.input_time_format.addItem(fmt, fmt)
-            self.input_time_format.setItemData(
-                self.input_time_format.count() - 1, desc, Qt.ToolTipRole
-            )
+        for fmt in macros.FORMATS["TimeFormat"]:
+            self.input_time_format.addItem(_(macros.EXAMPLES[fmt]), fmt)
 
-        time_layout.addWidget(QLabel(_("Time Format:")))
-        time_layout.addWidget(self.input_time_format, 1)
+        self.time_label = QLabel(_("Time Format:"))
+        self.time_label.setBuddy(self.input_time_format)
+        fmt_grid.addWidget(self.time_label, 0, 0)
+        fmt_grid.addWidget(self.input_time_format, 0, 1)
 
         # Date Format
-        date_layout = QHBoxLayout()
-        self.input_date_format = QComboBox()
+        self.input_date_format = NoWheelComboBox()
         self.input_date_format.setEditable(False)
         self.input_date_format.currentIndexChanged.connect(self._on_item_changed)
 
-        date_presets = [
-            ("%d/%m/%Y", "dd/MM/yyyy"),
-            ("%d/%m/%y", "dd/MM/yy"),
-            ("%m/%d/%Y", "MM/dd/yyyy"),
-            ("%Y-%m-%d", "yyyy-MM-dd"),
-            ("%y-%m-%d", "yy-MM-dd"),
-            ("", _("None")),
-        ]
-        for fmt, desc in date_presets:
-            self.input_date_format.addItem(fmt, fmt)
-            self.input_date_format.setItemData(
-                self.input_date_format.count() - 1, desc, Qt.ToolTipRole
-            )
+        for fmt in macros.FORMATS["DateFormat"]:
+            self.input_date_format.addItem(_(macros.EXAMPLES[fmt]), fmt)
 
-        date_layout.addWidget(QLabel(_("Date Format:")))
-        date_layout.addWidget(self.input_date_format, 1)
-
-        fmt_hbox.addLayout(time_layout)
-        fmt_hbox.addLayout(date_layout)
+        self.date_label = QLabel(_("Date Format:"))
+        self.date_label.setBuddy(self.input_date_format)
+        fmt_grid.addWidget(self.date_label, 1, 0)
+        fmt_grid.addWidget(self.input_date_format, 1, 1)
 
         dynamic_layout.addWidget(fmt_container)
 
         dynamic_card.content_layout.addLayout(dynamic_layout)
         main_layout.addWidget(dynamic_card)
+        main_layout.addWidget(editor_card)
 
         # 1. Input Row (Top)
         input_layout = QHBoxLayout()
@@ -179,15 +153,21 @@ class MacroEditorPage(BaseEditorPage):
         self.input_key.textChanged.connect(self._update_add_button_icon)
         self.input_val.textChanged.connect(self._update_add_button_icon)
 
-        input_layout.addWidget(QLabel(_("Key:")))
+        key_label = QLabel(_("Abbreviation:"))
+        key_label.setBuddy(self.input_key)
+        input_layout.addWidget(key_label)
         input_layout.addWidget(self.input_key, 1)
-        input_layout.addWidget(QLabel(_("Value:")))
+        value_label = QLabel(_("Expanded Text:"))
+        value_label.setBuddy(self.input_val)
+        input_layout.addWidget(value_label)
         input_layout.addWidget(self.input_val, 2)
         input_layout.addWidget(self.btn_add)
         content_layout.addLayout(input_layout)
 
         # 2. Table Area
         self.table = QTableWidget(0, 2)
+        # The page scrolls before the table gets too short to use.
+        self.table.setMinimumHeight(180)
         self.table.setHorizontalHeaderLabels([_("Abbreviation"), _("Expanded Text")])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -221,132 +201,113 @@ class MacroEditorPage(BaseEditorPage):
 
         content_layout.addLayout(toolbar_layout)
         self.update_button_states()
+        self.controls = {
+            "EnableMacro": self.cb_enable,
+            "CapitalizeMacro": self.cb_capitalize,
+            "EnableMacroInOffMode": self.cb_enable_off_mode,
+            "TimeFormat": self.input_time_format,
+            "DateFormat": self.input_date_format,
+        }
+
+    def control_for(self, key):
+        """The widget that edits a setting, for the window to scroll to and focus."""
+        return self.controls.get(key)
+
+    def value_of(self, key):
+        return self._shown_options().get(key)
+
+    def _follow(self, value_of):
+        self.macros.follow(value_of)
+        for key, box in (
+            ("EnableMacro", self.cb_enable),
+            ("CapitalizeMacro", self.cb_capitalize),
+            ("EnableMacroInOffMode", self.cb_enable_off_mode),
+        ):
+            with QSignalBlocker(box):
+                box.setChecked(self.macros.options[key])
+        self._apply_locks()
+
+    def _shown_switches(self):
+        return {"EnableMacro": self.cb_enable.isChecked()}
+
+    def _status_text(self, model):
+        return page_status.macro_line(model)
+
+    def _apply_locks(self):
+        for key, control in self.controls.items():
+            self._hinted.get(key, control).setEnabled(locked_by(key, self.value_of) is None)
+        self.placeholder_hint.setEnabled(self.input_time_format.isEnabled())
+        self.time_label.setEnabled(self.input_time_format.isEnabled())
+        self.date_label.setEnabled(self.input_date_format.isEnabled())
 
     def load_data(self):
         self.blockSignals(True)
         try:
-            # Load global macro settings via DBus
-            config_data = self.dbus.get_config()
-            if config_data:
-                values = config_data.get("values", {})
-                self.cb_enable.setChecked(str(values.get("EnableMacro", "True")).lower() == "true")
-                self.cb_capitalize.setChecked(
-                    str(values.get("CapitalizeMacro", "True")).lower() == "true"
-                )
-                self.cb_enable_off_mode.setChecked(
-                    str(values.get("EnableMacroInOffMode", "False")).lower() == "true"
-                )
-
-                # Set time format (default %H:%M)
-                time_fmt = values.get("TimeFormat", "%H:%M")
-                index = self.input_time_format.findData(time_fmt)
-                if index >= 0:
-                    self.input_time_format.setCurrentIndex(index)
-                else:
-                    # Fallback to default if not in list (since it's not editable anymore)
-                    self.input_time_format.setCurrentIndex(self.input_time_format.findData("%H:%M"))
-
-                # Set date format
-                date_fmt = values.get("DateFormat", "%d/%m/%Y")
-                index = self.input_date_format.findData(date_fmt)
-                if index >= 0:
-                    self.input_date_format.setCurrentIndex(index)
-                else:
-                    self.input_date_format.setCurrentIndex(
-                        self.input_date_format.findData("%d/%m/%Y")
-                    )
-
+            self.macros.load()
+            self._show_options()
             self.table.setRowCount(0)
-            data = self.dbus.get_sub_config_list("ngosen-macro", "Macro")
-            for item in data:
-                self.upsert_row(item.get("Key", ""), item.get("Value", ""), sort=False)
+            for item in self.macros.entries:
+                self.upsert_row(item["Key"], item["Value"], sort=False)
             self.on_search_changed()
-            self.initial_state = self._get_current_state()
         finally:
             self.blockSignals(False)
+        self.refresh_status()
+
+    def _show_options(self):
+        options = self.macros.options
+        self.cb_enable.setChecked(options["EnableMacro"])
+        self.cb_capitalize.setChecked(options["CapitalizeMacro"])
+        self.cb_enable_off_mode.setChecked(options["EnableMacroInOffMode"])
+        for combo, key in (
+            (self.input_time_format, "TimeFormat"),
+            (self.input_date_format, "DateFormat"),
+        ):
+            combo.setCurrentIndex(combo.findData(options[key]))
+        self._apply_locks()
+
+    def _shown_options(self):
+        return {
+            "EnableMacro": self.cb_enable.isChecked(),
+            "CapitalizeMacro": self.cb_capitalize.isChecked(),
+            "EnableMacroInOffMode": self.cb_enable_off_mode.isChecked(),
+            "TimeFormat": self.input_time_format.currentData(),
+            "DateFormat": self.input_date_format.currentData(),
+        }
+
+    def _shown_values(self):
+        # Read without storing: the main window asks is_modified() while load_data
+        # is still filling the widgets from the model.
+        options = self._shown_options()
+        entries = []
+        for row in range(self.table.rowCount()):
+            key_item = self.table.item(row, 0)
+            val_item = self.table.item(row, 1)
+            if key_item and key_item.text():
+                entries.append(
+                    {"Key": key_item.text(), "Value": val_item.text() if val_item else ""}
+                )
+        return options, entries
 
     def restore_defaults(self):
         """Resets macros to default (empty table, enabled checkboxes)."""
         self.blockSignals(True)
         try:
-            self.cb_enable.setChecked(True)
-            self.cb_capitalize.setChecked(True)
-            self.cb_enable_off_mode.setChecked(False)
-            self.input_time_format.setCurrentIndex(self.input_time_format.findData("%H:%M"))
-            self.input_date_format.setCurrentIndex(self.input_date_format.findData("%d/%m/%Y"))
+            self.macros.reset()
+            self._show_options()
             self.table.setRowCount(0)
             self._on_item_changed()
         finally:
             self.blockSignals(False)
 
     def is_modified_from_default(self):
-        """Returns True if the macro table has entries or checkboxes are changed from default."""
-        # Default state: table is empty, both checkboxes are True.
-        return (
-            self.table.rowCount() > 0
-            or not self.cb_enable.isChecked()
-            or not self.cb_capitalize.isChecked()
-            or self.cb_enable_off_mode.isChecked()
-            or self.input_time_format.currentData() != "%H:%M"
-            or self.input_date_format.currentData() != "%d/%m/%Y"
-        )
+        return not macros.is_default(*self._shown_values())
 
     def is_modified(self):
-        """Returns True if the current state differs from the initial loaded state."""
-        return self._get_current_state() != self.initial_state
-
-    def _get_current_state(self):
-        """Captures the current UI state for comparison."""
-        data = []
-        for row in range(self.table.rowCount()):
-            key_item = self.table.item(row, 0)
-            val_item = self.table.item(row, 1)
-            if key_item and key_item.text():
-                data.append(
-                    {
-                        "Key": key_item.text(),
-                        "Value": val_item.text() if val_item else "",
-                    }
-                )
-        return {
-            "data": data,
-            "EnableMacro": self.cb_enable.isChecked(),
-            "CapitalizeMacro": self.cb_capitalize.isChecked(),
-            "EnableMacroInOffMode": self.cb_enable_off_mode.isChecked(),
-            "TimeFormat": self.input_time_format.currentText(),
-            "DateFormat": self.input_date_format.currentText(),
-        }
+        return macros.state(*self._shown_values()) != self.macros.saved_state
 
     def save_data(self) -> bool:
-        # Save global macro settings via DBus
-        config_data = self.dbus.get_config()
-        if config_data:
-            values = config_data.get("values", {})
-            values["EnableMacro"] = "True" if self.cb_enable.isChecked() else "False"
-            values["CapitalizeMacro"] = "True" if self.cb_capitalize.isChecked() else "False"
-            values["EnableMacroInOffMode"] = (
-                "True" if self.cb_enable_off_mode.isChecked() else "False"
-            )
-            values["TimeFormat"] = self.input_time_format.currentText()
-            values["DateFormat"] = self.input_date_format.currentText()
-            if not self.dbus.set_config(values):
-                return False
-        elif not self.dbus.iface:
-            return False
-
-        data = []
-        for row in range(self.table.rowCount()):
-            key_item = self.table.item(row, 0)
-            val_item = self.table.item(row, 1)
-            if not key_item or not key_item.text():
-                continue
-            data.append({"Key": key_item.text(), "Value": val_item.text() if val_item else ""})
-
-        if not self.dbus.set_sub_config_list("ngosen-macro", "Macro", data):
-            return False
-
-        self.initial_state = self._get_current_state()
-        return True
+        self.macros.options, self.macros.entries = self._shown_values()
+        return self.macros.save()
 
     def _find_row_by_key(self, key: str) -> int | None:
         """Finds row index for a given key. Returns None if not found."""
@@ -382,16 +343,9 @@ class MacroEditorPage(BaseEditorPage):
         self.update_button_states()
         self._on_item_changed()
 
-    def _is_invalid_macro(self, key: str) -> bool:
-        """Checks if macro key contains spaces or non-letter characters."""
-        if not key:
-            return False
-        # Allow alphanumeric characters (including Unicode letters)
-        return not key.isalnum()
-
     def _apply_row_highlight(self, row: int, key: str):
         """Applies red background and warning icon to rows with invalid keys."""
-        is_invalid = self._is_invalid_macro(key)
+        is_invalid = macros.is_invalid_key(key)
         bg_color = Qt.transparent
         tooltip = ""
         icon = QIcon()
@@ -440,7 +394,7 @@ class MacroEditorPage(BaseEditorPage):
         """Changes the Add button icon to Update if key exists and handles validation."""
         key = self.input_key.text().strip()
         val = self.input_val.text().strip()
-        is_invalid = self._is_invalid_macro(key)
+        is_invalid = macros.is_invalid_key(key)
 
         # Validation feedback for input field
         if is_invalid:

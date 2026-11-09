@@ -15,8 +15,10 @@
 #include "ngosen-utils.h"
 #include "ngosen-gnome-theme.h"
 #include "ngosen-icon-resolver.h"
+#include "ngosen-menu-icon.h"
 #include "ngosen-plasma-theme.h"
 #include "ngosen-fcitx-host.h"
+#include "ngosen-gnome-shell.h"
 #include "ngosen-migration.h"
 #include "ngosen-ui-text.h"
 #ifdef NGOSEN_HAS_DBUS
@@ -39,6 +41,9 @@
 #include <fcitx-utils/unixfd.h>
 #ifdef NGOSEN_HAS_DBUS
 #include <dbus_public.h>
+#endif
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+#include <notifications_public.h>
 #endif
 
 #include <algorithm>
@@ -63,6 +68,7 @@ namespace fcitx {
     constexpr const char* InputMethodActionId = "ngosen-input-method";
     const std::string     CustomKeymapFile    = "conf/ngosen-custom-keymap.conf";
     const std::string     MacroTableFile      = "conf/ngosen-macro-table.conf";
+    const std::string     AppSwitchFile       = "conf/ngosen-app-switch.conf";
 
     int                   modeToInt(NgoSenMode mode) {
         switch (mode) {
@@ -90,6 +96,12 @@ namespace fcitx {
     }
 
     namespace {
+        // deepin-editor stalls between edits, and fcitx5-qt applies a commit before the keys let
+        // through ahead of it, so fast typing in Sen scrambles words there. Preedit sends no keys.
+        bool typesInPreeditByDefault(const std::string& appName) {
+            return stripDesktopSuffix(appName) == "deepin-editor";
+        }
+
         bool otherModifierHeld(const Key& key) {
             return (key.states() & ~Key::keySymToStates(key.sym()) & KeyStates{KeyState::Ctrl_Alt_Shift, KeyState::Super}) != 0;
         }
@@ -263,13 +275,27 @@ namespace fcitx {
 
     TypingStateProperty::~TypingStateProperty() = default;
 
+    namespace {
+        // Without a name that tells windows apart, a rule is kept per context and never saved.
+        // GNOME Shell relays every app under its own name until fcitx5 5.1.22.
+        bool namesNoWindow(const std::string& program) {
+            return program.empty() || program == "wayland" || program == "x11" || program == "gnome-shell";
+        }
+
+        std::string contextRuleName(InputContext* ic) {
+            std::ostringstream oss;
+            oss << "ctx_" << static_cast<const void*>(ic);
+            return oss.str();
+        }
+    } // namespace
+
     ngosen::TypingState* NgoSenEngine::stateFor(InputContext* ic) {
         return &ic->propertyFor(&factory_)->state();
     }
 
     NgoSenEngine::NgoSenEngine(Instance* instance) :
         instance_(instance), factory_([this](InputContext& ic) {
-            return new TypingStateProperty(std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_)));
+            return new TypingStateProperty(std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_, shellDropsKeys(), &shellFocusedApp_)));
         }) { //NOLINT
         Init();
         {
@@ -303,9 +329,12 @@ namespace fcitx {
                                                            [this](Event& event) { stateFor(static_cast<InputContextEvent&>(event).inputContext())->fieldResetWhileOff(); }));
         // A ctx_ rule names a context address, which a later window may reuse.
         contextDestroyedWatcher_ = instance_->watchEvent(EventType::InputContextDestroyed, EventWatcherPhase::Default, [this](Event& event) {
-            auto appName = getProgramName(static_cast<InputContextEvent&>(event).inputContext());
-            if (isStartsWith(appName, "ctx_"))
+            auto* ic = static_cast<InputContextEvent&>(event).inputContext();
+            if (namesNoWindow(ic->program())) {
+                const std::string appName = contextRuleName(ic);
                 clearAppRule(appName);
+                clearAppSwitch(appName);
+            }
         });
 
         auto& uiManager = instance_->userInterfaceManager();
@@ -326,9 +355,10 @@ namespace fcitx {
             },
             uiManager);
 
+        // Only Breeze has three of these icons; other themes get the copies Ngó Sen installs in hicolor.
         auto charsets = convertToStringList(GetCharsetNames());
         initChoiceMenu(
-            charsetAction_, charsetSubAction_, charsetMenu_, CharsetActionId, _("Charset"), "character-set", charsets,
+            charsetAction_, charsetSubAction_, charsetMenu_, CharsetActionId, _("Charset"), menuIconName("character-set", "ngosen-charset"), charsets,
             [this](InputContext* ic, const std::string& charset) {
                 if (config_.outputCharset.value() == charset)
                     return;
@@ -345,11 +375,11 @@ namespace fcitx {
 
         initToggleAction(spellCheckAction_, config_.spellCheck, "ngosen-spellcheck", "tools-check-spelling", _("Spell Check"), N_("Spell Check"), uiManager);
         initToggleAction(macroAction_, config_.enableMacro, "ngosen-macro", "document-edit", _("Macro"), N_("Macro"), uiManager);
-        initToggleAction(capitalizeMacroAction_, config_.capitalizeMacro, "ngosen-capitalizemacro", "format-text-uppercase", _("Capitalize Macro"), N_("Capitalize Macro"),
-                         uiManager);
+        initToggleAction(capitalizeMacroAction_, config_.capitalizeMacro, "ngosen-capitalizemacro", menuIconName("format-text-uppercase", "ngosen-capitalize-macro"),
+                         _("Capitalize Macro"), N_("Capitalize Macro"), uiManager);
         autoCapitalizeAction_ = std::make_unique<SimpleAction>();
         autoCapitalizeAction_->setShortText(_("Auto Capitalize"));
-        autoCapitalizeAction_->setIcon("format-text-capitalize");
+        autoCapitalizeAction_->setIcon(menuIconName("format-text-capitalize", "ngosen-auto-capitalize"));
         uiManager.registerAction("ngosen-autocapitalize", autoCapitalizeAction_.get());
         autoCapitalizeMenu_ = std::make_unique<Menu>();
         autoCapitalizeAction_->setMenu(autoCapitalizeMenu_.get());
@@ -378,9 +408,13 @@ namespace fcitx {
         if (auto* dbusAddon = dbus()) {
             dbusObject_ = std::make_unique<NgoSenDBusObject>(this);
             if (!dbusAddon->call<IDBusModule::bus>()->addObjectVTable(NgoSenDBusObject::Path, NgoSenDBusObject::Interface, *dbusObject_)) {
-                NGOSEN_WARN("Could not register " << NgoSenDBusObject::Path << " on D-Bus; ngosen-save-log will not work");
+                NGOSEN_WARN(std::string("Could not register ") + NgoSenDBusObject::Path + " on D-Bus; ngosen-save-log will not work");
                 dbusObject_.reset();
             }
+            // As fcitx5 5.1.22 does it, which needs Wayland to tell windows apart.
+            const bool watchPortal = getEnv("XDG_SESSION_TYPE") == "wayland" && !ngosen::fcitxNamesGnomeApps(Instance::version());
+            gnomeShell_ =
+                std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>(), watchPortal, [this](const std::string& app) { shellFocusedAppChanged(app); });
         }
 #endif
 
@@ -431,6 +465,22 @@ namespace fcitx {
         }
     }
 
+    const bool* NgoSenEngine::shellDropsKeys() const {
+#ifdef NGOSEN_HAS_DBUS
+        if (gnomeShell_)
+            return gnomeShell_->dropsKeys();
+#endif
+        return nullptr;
+    }
+
+    bool NgoSenEngine::gnomePortalAnswered() const {
+#ifdef NGOSEN_HAS_DBUS
+        if (gnomeShell_)
+            return gnomeShell_->portalAnswered();
+#endif
+        return false;
+    }
+
     NgoSenEngine::~NgoSenEngine() {
         stop_flag_monitor.store(true, std::memory_order_release);
         if (mouse_thread.joinable()) {
@@ -453,13 +503,18 @@ namespace fcitx {
         RawConfig raw;
         readAsIni(raw, "conf/ngosen.conf");
         migrateLegacyMode(raw);
-        const bool upgraded = ngosen::upgradeSettings(raw, std::filesystem::exists(userConfigDir() + "/ngosen.conf"));
+        const bool        saved    = std::filesystem::exists(userConfigDir() + "/ngosen.conf");
+        const bool        upgraded = ngosen::upgradeSettings(raw, saved);
+        const std::string release  = ngosen::releaseToAnnounce(raw, saved, NGOSEN_VERSION);
         config_.load(raw);
-        if (upgraded)
+        if (upgraded || !release.empty())
             saveConfig();
+        if (!release.empty())
+            announceRelease(release);
         readAsIni(customKeymap_, CustomKeymapFile);
         readAsIni(macroTables_, MacroTableFile);
         macroTableObject_.reset(newMacroTable(macroTables_));
+        readAsIni(appSwitchesTables_, AppSwitchFile);
         if (config_.enableDictionary.value()) {
 #if NGOSEN_USE_MODERN_FCITX_API
             auto fd = StandardPaths::global().open(StandardPathsType::PkgData, "ngosen/vietnamese.cm.dict");
@@ -497,6 +552,30 @@ namespace fcitx {
         populateConfig();
     }
 
+    void NgoSenEngine::announceRelease(const std::string& release) {
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        NGOSEN_INFO("Announcing release " + release);
+        // fcitx5 starts with the session; a notification sent before the desktop is up is lost.
+        constexpr uint64_t delayUs = 5000000;
+        announceTimer_             = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [this, release](EventSourceTime*, uint64_t) {
+            auto* addon = notifications();
+            if (addon == nullptr) {
+                NGOSEN_WARN("No notifications addon; release " + release + " is not announced");
+                return false;
+            }
+            // It is shown only once, and Plasma keeps no history of an expired one, so it waits for the user.
+            // The text names the release, so it changes with each feature release.
+            constexpr int32_t neverExpire = 0;
+            addon->call<INotifications::sendNotification>(
+                "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
+                _("Version 1.9: on GNOME, typing modes and per-app settings now work with the Ngó Sen extension off. See also Check my machine, Cứu chữ, Cứu dấu "
+                  "and typing tips."),
+                std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
+            return false;
+        });
+#endif
+    }
+
     const Configuration* NgoSenEngine::getSubConfig(const std::string& path) const {
         if (path == "custom_keymap")
             return &customKeymap_;
@@ -506,6 +585,8 @@ namespace fcitx {
         if (path == "app_rules") {
             return &appRulesTables_;
         }
+        if (path == "app_switches")
+            return &appSwitchesTables_;
         return nullptr;
     }
 
@@ -541,6 +622,8 @@ namespace fcitx {
         o.retypeAfterSwitch                = config_.retypeAfterSwitch.value();
         o.retoneSelection                  = config_.retoneSelection.value();
         o.messengerSelectOvertype          = config_.messengerSelectOvertype.value();
+        o.copyWaitRecovery                 = config_.copyWaitRecovery.value();
+        o.foldReplayReplacement            = config_.foldReplayReplacement.value();
         o.waitSurroundingEvent             = config_.waitSurroundingEvent.value();
         o.waitSurroundingMinPerKeyMs       = config_.waitSurroundingMinPerKeyMs.value();
         o.waitSurroundingTimeoutMs         = config_.waitSurroundingTimeoutMs.value();
@@ -573,8 +656,6 @@ namespace fcitx {
         updateAction(nullptr, capitalizeStartAction_, config_.capitalizeStartOfText, _("Start of text or line"));
         updateAction(nullptr, autoNonVnRestoreAction_, config_.autoNonVnRestore, _("Auto Non-VN Restore"));
         updateAction(nullptr, enableDictionaryAction_, config_.enableDictionary, _("Custom Dictionary"));
-        inputMethodAction_->setShortText(_("Input Method"));
-        charsetAction_->setShortText(_("Charset"));
         autoCapitalizeAction_->setShortText(_("Auto Capitalize"));
         settingsAction_->setShortText(_("Settings"));
         saveLogAction_->setShortText(_("Save typing log"));
@@ -616,6 +697,13 @@ namespace fcitx {
             }
             saveAppRules();
             refreshEngine();
+        } else if (path == "app_switches") {
+            appSwitchesTables_.load(config, true);
+            // An empty list is Defaults, which forgets open windows without a name too.
+            if (appSwitchesTables_.switches->empty())
+                ctxSwitches_.clear();
+            safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
+            refreshEngine();
         }
     }
 
@@ -642,22 +730,35 @@ namespace fcitx {
         NGOSEN_INFO("App name: " + appName);
 
         // Next to other input methods fcitx5 owns the switch, so picking Ngó Sen there means Vietnamese.
-        if (event.type() == EventType::InputContextSwitchInputMethod && !*config_.vietnameseOn && instance_->inputMethodManager().currentGroup().inputMethodList().size() > 1) {
-            config_.vietnameseOn.setValue(true);
-            saveConfig();
+        // The group is checked first: a lone input method can be activated with a plain InputContextEvent.
+        if (event.type() == EventType::InputContextSwitchInputMethod && instance_->inputMethodManager().currentGroup().inputMethodList().size() > 1 &&
+            switchPickedByUser(static_cast<InputContextSwitchInputMethodEvent&>(event).reason())) {
+            // An Off picked from the menu stays, as it did before apps had switches.
+            if (findAppRule(appName) != NgoSenMode::Off)
+                setAppSwitch(appName, true);
+            if (!*config_.vietnameseOn) {
+                config_.vietnameseOn.setValue(true);
+                saveConfig();
+            }
         }
 
-        const NgoSenMode targetMode = getAppRule(appName);
+        const NgoSenMode targetMode = modeFor(appName);
         NGOSEN_INFO("Target mode: " + ngosen::ModeI18NAnnotation::toString(targetMode));
 
         updateInputMethodAction(event.inputContext());
         updateCharsetAction(event.inputContext());
 
+        activeContext_ = ic;
+        stateFor(ic)->setVimKeys(vimModeFor(appName));
+        showMode(ic, targetMode, event.type() == EventType::InputContextFocusIn);
+        stateFor(ic)->offerRetype();
+    }
+
+    void NgoSenEngine::showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn) {
         auto* state = stateFor(ic);
-        state->setVimKeys(vimModeFor(appName));
-        state->activate(targetMode, event.type() == EventType::InputContextFocusIn);
+        state->activate(mode, isFocusIn);
         ic->updateUserInterface(UserInterfaceComponent::StatusArea);
-        if (targetMode == NgoSenMode::Emoji) {
+        if (mode == NgoSenMode::Emoji) {
             state->updateEmojiPreedit();
         } else {
             ic->inputPanel().reset();
@@ -666,22 +767,27 @@ namespace fcitx {
                 ic->updatePreedit();
         }
         fillStatusArea(ic);
-        state->offerRetype();
     }
 
     void NgoSenEngine::keyEvent(const InputMethodEntry& /*entry*/, KeyEvent& keyEvent) {
         auto* ic = keyEvent.inputContext();
         dropStaleSurroundingText(ic);
 
-        if (isSelectingAppMode_ && g_mouse_clicked.load(std::memory_order_acquire)) {
-            closeAppModeMenu();
+        if (isModeMenuOpen(ic) && g_mouse_clicked.load(std::memory_order_acquire)) {
             closeModeMenuPanel(ic, true);
         }
 
         if (handleToggleKey(keyEvent))
             return;
 
-        if (isSelectingAppMode_) {
+        // A terminal password prompt gets the keys as typed, and they stay out of the typing log.
+        if (stateFor(ic)->passesHiddenInput()) {
+            if (isModeMenuOpen(ic))
+                closeModeMenuPanel(ic, false);
+            return;
+        }
+
+        if (isModeMenuOpen(ic)) {
             handleModeMenuKey(keyEvent);
             return;
         }
@@ -693,7 +799,8 @@ namespace fcitx {
         }
 
         // In English the menu key types its character; ` is common in code and Markdown.
-        if (realMode != NgoSenMode::Off && !keyEvent.isRelease() && !config_.modeMenuKey->empty() && keyEvent.key().checkKeyList(*config_.modeMenuKey)) {
+        if (realMode != NgoSenMode::Off && !keyEvent.isRelease() && !config_.modeMenuKey->empty() && keyEvent.key().checkKeyList(*config_.modeMenuKey) &&
+            modeMenuCanDraw(instance_->currentUI(), ic->frontend(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel))) {
             openModeMenu(ic);
             keyEvent.filterAndAccept();
             return;
@@ -701,6 +808,11 @@ namespace fcitx {
         auto*                 state = stateFor(keyEvent.inputContext());
         ngosen::FcitxKeyPress press(keyEvent);
         state->keyEvent(press);
+    }
+
+    bool modeMenuCanDraw(const std::string& currentUi, const std::string& frontend, const std::string& display, bool clientDrawsPanel) {
+        // fcitx5's own panel has no surface to draw on for a field GNOME Shell relays on Wayland.
+        return clientDrawsPanel || currentUi != "classicui" || frontend != "ibus" || !isStartsWith(display, "wayland:");
     }
 
     void NgoSenEngine::handleModeMenuKey(KeyEvent& keyEvent) {
@@ -776,8 +888,12 @@ namespace fcitx {
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
     }
 
+    bool NgoSenEngine::isModeMenuOpen(InputContext* ic) const {
+        const auto list = modeMenuList_.lock();
+        return list && ic->inputPanel().candidateList() == list;
+    }
+
     void NgoSenEngine::closeModeMenuPanel(InputContext* ic, bool resetState) {
-        isSelectingAppMode_ = false;
         ic->inputPanel().reset();
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
         if (resetState) {
@@ -797,6 +913,8 @@ namespace fcitx {
                     saveAppRules();
                 }
             }
+            // A mode picked for the app wins over where the toggle key last left it.
+            clearAppSwitch(currentConfigureApp_);
         }
 
         closeModeMenuPanel(ic, true);
@@ -808,7 +926,7 @@ namespace fcitx {
         }
     }
 
-    std::vector<NgoSenMode> NgoSenEngine::cycleModes() {
+    std::vector<NgoSenMode> NgoSenEngine::cycleModes(const std::string& appName) {
         auto                                      order      = stringutils::split(*config_.modeOrder, ",");
         std::vector<std::pair<std::string, bool>> visibility = {{"Sen", *config_.showModeSen},
                                                                 {"Preedit", *config_.showModePreedit},
@@ -837,7 +955,7 @@ namespace fcitx {
             else if (name == "Off")
                 mode = NgoSenMode::Off;
             else if (name == "Default")
-                mode = globalMode();
+                mode = defaultModeFor(appName);
             else
                 continue;
 
@@ -851,8 +969,8 @@ namespace fcitx {
     void NgoSenEngine::cycleMode(InputContext* ic) {
         NGOSEN_INFO("Cycle mode key pressed");
         const std::string appName      = getProgramName(ic);
-        const NgoSenMode  current      = getAppRule(appName);
-        const auto        enabledModes = cycleModes();
+        const NgoSenMode  current      = modeFor(appName);
+        const auto        enabledModes = cycleModes(appName);
         if (enabledModes.empty())
             return;
 
@@ -860,6 +978,7 @@ namespace fcitx {
         NgoSenMode nextMode = it == enabledModes.end() ? enabledModes[0] : enabledModes[(static_cast<size_t>(it - enabledModes.begin()) + 1) % enabledModes.size()];
         setMode(nextMode, ic);
         setAppRule(appName, nextMode);
+        clearAppSwitch(appName);
         showCycleModeNotification(nextMode, ic);
     }
 
@@ -872,7 +991,7 @@ namespace fcitx {
         }
         currentConfigureApp_ = getProgramName(ic);
         g_mouse_clicked.store(false, std::memory_order_release);
-        setMode(getAppRule(currentConfigureApp_), ic);
+        setMode(modeFor(currentConfigureApp_), ic);
         showAppModeMenu(ic);
     }
 
@@ -889,6 +1008,8 @@ namespace fcitx {
     }
 
     void NgoSenEngine::deactivate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
+        if (activeContext_ == event.inputContext())
+            activeContext_ = nullptr;
         stateFor(event.inputContext())->deactivate(event.type() == EventType::InputContextFocusOut);
     }
 
@@ -901,7 +1022,7 @@ namespace fcitx {
             if (ic->hasFocus()) {
                 // Re-resolve the focused window's rule; setEngine() must not
                 // reset it to the global mode.
-                setMode(getAppRule(getProgramName(ic)), ic);
+                setMode(modeFor(getProgramName(ic)), ic);
                 state->reset();
             }
             return true;
@@ -933,28 +1054,37 @@ namespace fcitx {
             choices.emplace_back(std::make_unique<SimpleAction>());
             auto* choice = choices.back().get();
             choice->setShortText(name);
-            choice->setCheckable(true);
             uiManager.registerAction(stringutils::concat(actionId, "-", name), choice);
             connections_.emplace_back(choice->connect<SimpleAction::Activated>([pick, name](InputContext* ic) { pick(ic, name); }));
             menu->addAction(choice);
         }
     }
 
-    void NgoSenEngine::checkChoice(const std::vector<std::unique_ptr<SimpleAction>>& choices, const std::string& actionId, const std::string& current, InputContext* ic) {
-        const auto name = stringutils::concat(actionId, "-", current);
+    // Kimpanel shows neither check marks nor submenu arrows, so the current choice is spelled out,
+    // without a colon: kimpanel splits an entry's fields on it.
+    void NgoSenEngine::checkChoice(SimpleAction& parent, const std::string& title, const std::vector<std::unique_ptr<SimpleAction>>& choices, const std::string& actionId,
+                                   const std::string& current, InputContext* ic) {
+        parent.setShortText(stringutils::concat(title, " (", current, ")"));
+        if (ic != nullptr)
+            parent.update(ic);
+        const auto prefix = stringutils::concat(actionId, "-");
         for (const auto& action : choices) {
-            action->setChecked(action->name() == name);
+            // An action whose id was taken elsewhere is left unregistered, with no name.
+            if (!isStartsWith(action->name(), prefix))
+                continue;
+            const auto name = action->name().substr(prefix.size());
+            action->setShortText(name == current ? stringutils::concat("✔ ", name) : name);
             if (ic != nullptr)
                 action->update(ic);
         }
     }
 
     void NgoSenEngine::updateCharsetAction(InputContext* ic) {
-        checkChoice(charsetSubAction_, CharsetActionId, *config_.outputCharset, ic);
+        checkChoice(*charsetAction_, _("Charset"), charsetSubAction_, CharsetActionId, *config_.outputCharset, ic);
     }
 
     void NgoSenEngine::updateInputMethodAction(InputContext* ic) {
-        checkChoice(inputMethodSubAction_, InputMethodActionId, *config_.inputMethod, ic);
+        checkChoice(*inputMethodAction_, _("Input Method"), inputMethodSubAction_, InputMethodActionId, *config_.inputMethod, ic);
     }
 
     void NgoSenEngine::fillStatusArea(InputContext* ic) {
@@ -996,6 +1126,9 @@ namespace fcitx {
                 if (delimiterPos != std::string::npos) {
                     std::string app  = line.substr(0, delimiterPos);
                     std::string mode = line.substr(delimiterPos + 1);
+                    // Older versions saved this for every app on GNOME; see getProgramName.
+                    if (app == "gnome-shell")
+                        continue;
                     try {
                         tempRules[app] = intToMode(std::stoi(mode));
                     } catch (const std::exception&) { NGOSEN_WARN("Invalid mode value for app: " + app); }
@@ -1041,8 +1174,29 @@ namespace fcitx {
         file.close();
     }
 
-    NgoSenMode NgoSenEngine::getAppRule(const std::string& appName) const {
-        return findAppRule(appName).value_or(globalMode());
+    NgoSenMode NgoSenEngine::modeFor(const std::string& appName) const {
+        const auto rule = findAppRule(appName);
+        // Until the toggle key is pressed in the app, its rule says whether it types Vietnamese.
+        const bool on = findAppSwitch(appName).value_or(rule ? *rule != NgoSenMode::Off : *config_.vietnameseOn);
+        if (!on)
+            return NgoSenMode::Off;
+        if (rule && *rule != NgoSenMode::Off)
+            return *rule;
+        return vietnameseModeFor(appName);
+    }
+
+    bool switchPickedByUser(InputMethodSwitchedReason reason) {
+        using Reason = InputMethodSwitchedReason;
+        return reason == Reason::Trigger || reason == Reason::AltTrigger || reason == Reason::Enumerate || reason == Reason::Activate || reason == Reason::Other;
+    }
+
+    NgoSenMode NgoSenEngine::defaultModeFor(const std::string& appName) const {
+        return *config_.vietnameseOn ? vietnameseModeFor(appName) : NgoSenMode::Off;
+    }
+
+    NgoSenMode NgoSenEngine::vietnameseModeFor(const std::string& appName) const {
+        const NgoSenMode mode = vietnameseMode();
+        return mode == NgoSenMode::Sen && typesInPreeditByDefault(appName) ? NgoSenMode::Preedit : mode;
     }
 
     std::optional<std::string> NgoSenEngine::appRuleName(const std::string& appName) const {
@@ -1163,8 +1317,7 @@ namespace fcitx {
     }
 
     void NgoSenEngine::toggleVietnamese(InputContext* ic, bool offerRetype) {
-        if (isSelectingAppMode_) {
-            closeAppModeMenu();
+        if (isModeMenuOpen(ic)) {
             closeModeMenuPanel(ic, true);
         } else if (auto* state = stateFor(ic)) {
             // Finish the word being typed in the mode it was typed in.
@@ -1172,17 +1325,12 @@ namespace fcitx {
             state->reset();
         }
         const bool        turnOn = realMode == NgoSenMode::Off;
-        const NgoSenMode  mode   = turnOn ? vietnameseMode() : NgoSenMode::Off;
         const std::string app    = getProgramName(ic);
-        // An app the user gave its own mode keeps its own switch.
-        if (const auto ruleApp = appRuleName(app)) {
-            setAppRule(*ruleApp, mode);
-            if (!isStartsWith(*ruleApp, "ctx_"))
-                saveAppRules();
-        } else {
-            config_.vietnameseOn.setValue(turnOn);
-            saveConfig();
-        }
+        setAppSwitch(app, turnOn);
+        // Apps never switched in follow the last switch.
+        config_.vietnameseOn.setValue(turnOn);
+        saveConfig();
+        const NgoSenMode mode = modeFor(app);
         NGOSEN_INFO(std::string("Toggle key: ") + (turnOn ? "Vietnamese" : "English") + " in " + app);
         setMode(mode, ic);
 #if NGOSEN_USE_MODERN_FCITX_API
@@ -1221,23 +1369,81 @@ namespace fcitx {
         appRulesTables_.rules.setValue(std::move(rules));
     }
 
-    void NgoSenEngine::closeAppModeMenu() {
-        isSelectingAppMode_ = false;
-        g_mouse_clicked.store(false, std::memory_order_release);
+    std::optional<std::string> NgoSenEngine::appSwitchName(const std::string& appName) const {
+        if (isStartsWith(appName, "ctx_"))
+            return ctxSwitches_.count(appName) > 0 ? std::optional<std::string>(appName) : std::nullopt;
+        // Exact match wins so a "foo.desktop" switch can differ from "foo".
+        for (const auto& name : {appName, stripDesktopSuffix(appName)}) {
+            for (const auto& entry : *appSwitchesTables_.switches) {
+                if (*entry.app == name)
+                    return name;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<bool> NgoSenEngine::findAppSwitch(const std::string& appName) const {
+        const auto name = appSwitchName(appName);
+        if (!name)
+            return std::nullopt;
+        if (isStartsWith(*name, "ctx_"))
+            return ctxSwitches_.at(*name);
+        for (const auto& entry : *appSwitchesTables_.switches) {
+            if (*entry.app == *name)
+                return *entry.vietnamese;
+        }
+        return std::nullopt;
+    }
+
+    void NgoSenEngine::setAppSwitch(const std::string& appName, bool vietnamese) {
+        if (isStartsWith(appName, "ctx_")) {
+            ctxSwitches_[appName] = vietnamese;
+            return;
+        }
+        auto switches = *appSwitchesTables_.switches;
+        auto it       = std::find_if(switches.begin(), switches.end(), [&appName](const auto& entry) { return *entry.app == appName; });
+        if (it == switches.end()) {
+            ngosenAppSwitch entry;
+            entry.app.setValue(appName);
+            entry.vietnamese.setValue(vietnamese);
+            switches.push_back(std::move(entry));
+        } else if (*it->vietnamese == vietnamese) {
+            return;
+        } else {
+            it->vietnamese.setValue(vietnamese);
+        }
+        appSwitchesTables_.switches.setValue(std::move(switches));
+        safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
+    }
+
+    void NgoSenEngine::clearAppSwitch(const std::string& appName) {
+        if (isStartsWith(appName, "ctx_")) {
+            ctxSwitches_.erase(appName);
+            return;
+        }
+        if (!appSwitchName(appName))
+            return;
+        // Both spellings, or the one left over would still apply to appName.
+        const std::string bareName = stripDesktopSuffix(appName);
+        auto              switches = *appSwitchesTables_.switches;
+        switches.erase(std::remove_if(switches.begin(), switches.end(), [&](const auto& entry) { return *entry.app == appName || *entry.app == bareName; }), switches.end());
+        appSwitchesTables_.switches.setValue(std::move(switches));
+        safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
     }
 
     std::vector<NgoSenEngine::ModeMenuItem> NgoSenEngine::modeMenuItems() {
         auto                                          getShortcut = [](const std::string& shortcut) { return Key(shortcut).sym(); };
 
-        std::unordered_map<std::string, ModeMenuItem> modeMap = {{"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
-                                                                 {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
-                                                                 {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
-                                                                 {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
-                                                                 {"Default", {globalMode(), _("Default Typing"), getShortcut(*config_.shortcutDefault), *config_.showModeDefault}},
-                                                                 {"Vim", {NgoSenMode::Sen, _("Vim mode"), getShortcut(*config_.shortcutVim), *config_.showModeVim, true}}};
+        std::unordered_map<std::string, ModeMenuItem> modeMap = {
+            {"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
+            {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
+            {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
+            {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
+            {"Default", {defaultModeFor(currentConfigureApp_), _("Default Typing"), getShortcut(*config_.shortcutDefault), *config_.showModeDefault}},
+            {"Vim", {NgoSenMode::Sen, _("Vim mode"), getShortcut(*config_.shortcutVim), *config_.showModeVim, true}}};
 
-        std::vector<ModeMenuItem>                     allModes;
-        auto                                          order = stringutils::split(*config_.modeOrder, ",");
+        std::vector<ModeMenuItem> allModes;
+        auto                      order = stringutils::split(*config_.modeOrder, ",");
         for (const auto& name : order) {
             auto it = modeMap.find(name);
             if (it != modeMap.end()) {
@@ -1255,8 +1461,6 @@ namespace fcitx {
     }
 
     void NgoSenEngine::showAppModeMenu(InputContext* ic) {
-        isSelectingAppMode_ = true;
-
         auto candidateList = std::make_unique<CommonCandidateList>();
 
         candidateList->setLayoutHint(CandidateLayoutHint::Vertical);
@@ -1274,8 +1478,7 @@ namespace fcitx {
         std::unordered_set<KeySym> usedModeKeys;
 
         modeMenuMapping_.clear();
-        vimMenuKey_                  = FcitxKey_None;
-        const NgoSenMode defaultMode = globalMode();
+        vimMenuKey_ = FcitxKey_None;
 
         for (const auto& info : modeMenuItems()) {
             if (!info.visible)
@@ -1303,7 +1506,7 @@ namespace fcitx {
 
             if (info.mode == realMode && !isDefaultItem) {
                 activeSelectionIdx = currentCandidateIdx;
-            } else if (isDefaultItem && getAppRule(currentConfigureApp_) == defaultMode && appRules_.find(currentConfigureApp_) == appRules_.end()) {
+            } else if (isDefaultItem && !findAppRule(currentConfigureApp_) && !findAppSwitch(currentConfigureApp_)) {
                 activeSelectionIdx = currentCandidateIdx;
             }
             currentCandidateIdx++;
@@ -1318,7 +1521,13 @@ namespace fcitx {
 
         ic->inputPanel().reset();
         ic->inputPanel().setCandidateList(std::move(candidateList));
-        ic->inputPanel().setAuxDown(Text(_("App: ") + currentConfigureApp_));
+        modeMenuList_        = ic->inputPanel().candidateList();
+        std::string appLabel = currentConfigureApp_;
+        if (isStartsWith(currentConfigureApp_, "ctx_")) {
+            // GNOME Shell relays every app through one field, so a rule without a name holds for all of them.
+            appLabel = std::string(ic->frontend()) == "ibus" ? _("apps with no name (the Ngó Sen extension can tell them apart)") : _("this window");
+        }
+        ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
     }
 
@@ -1488,19 +1697,36 @@ namespace fcitx {
         return {};
     }
 
-    std::string NgoSenEngine::getProgramName(InputContext* ic) {
+    std::string NgoSenEngine::getProgramName(InputContext* ic) const {
         if (ic == nullptr) {
             return "unknown-app";
         }
-        std::string programName = ic->program();
-        if (programName.empty() || programName == "wayland" || programName == "x11") {
-            // Fallback: InputContext address-based resolution
-            // This ensures at least per-window separation.
-            std::ostringstream oss;
-            oss << "ctx_" << static_cast<const void*>(ic);
-            programName = oss.str();
-        }
-        return programName;
+        const std::string& programName = ngosen::relayedAppName(ic->program(), ic->frontend(), &shellFocusedApp_);
+        return namesNoWindow(programName) ? contextRuleName(ic) : programName;
+    }
+
+    void NgoSenEngine::shellFocusedAppChanged(const std::string& app) {
+        shellFocusedApp_ = app;
+        if (!factory_.registered())
+            return;
+        // The app's focus can reach us after the field's, which then got the previous app's mode.
+        instance_->inputContextManager().foreachFocused([this](InputContext* ic) {
+            const std::string appName = getProgramName(ic);
+            NGOSEN_INFO("App name: " + appName);
+            // The menu's label and items were built for the app it opened in.
+            if (isModeMenuOpen(ic) && appName != currentConfigureApp_)
+                closeModeMenuPanel(ic, false);
+            const NgoSenMode mode = modeFor(appName);
+            if (ic == activeContext_ && mode != realMode) {
+                // The word belongs to the app being left.
+                auto* state = stateFor(ic);
+                state->commitBuffer();
+                state->reset();
+                state->forgetKeysWhileOff();
+                showMode(ic, mode, false);
+            }
+            return true;
+        });
     }
 
     void NgoSenEngine::clearAppRule(const std::string& appName) {

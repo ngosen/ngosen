@@ -1,7 +1,8 @@
 #!/bin/sh
 set -e
 
-if [ "$1" = "configure" ]; then
+# install.sh says what to do next itself.
+if [ "$1" = "configure" ] && [ -z "${NGOSEN_INSTALLER:-}" ]; then
     echo "--- Cấu hình Ngó Sen ---"
     # KWin starts fcitx5 itself there, and one started with fcitx5 -rd cannot serve Qt apps.
     kde_wayland=0

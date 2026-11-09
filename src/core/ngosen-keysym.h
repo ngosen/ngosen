@@ -34,12 +34,14 @@ namespace ngosen::key {
     inline constexpr uint32_t Tab          = 0xff09;
     inline constexpr uint32_t Return       = 0xff0d;
     inline constexpr uint32_t Escape       = 0xff1b;
+    inline constexpr uint32_t Home         = 0xff50;
     inline constexpr uint32_t Left         = 0xff51;
     inline constexpr uint32_t Up           = 0xff52;
     inline constexpr uint32_t Right        = 0xff53;
     inline constexpr uint32_t Down         = 0xff54;
     inline constexpr uint32_t Page_Up      = 0xff55;
     inline constexpr uint32_t Page_Down    = 0xff56;
+    inline constexpr uint32_t End          = 0xff57;
     inline constexpr uint32_t KP_Space     = 0xff80;
     inline constexpr uint32_t KP_Tab       = 0xff89;
     inline constexpr uint32_t KP_Enter     = 0xff8d;
@@ -62,6 +64,10 @@ namespace ngosen::key {
     // Some apps report BackSpace as the ASCII control code instead of the keysym.
     inline bool isBackspace(uint32_t sym) {
         return sym == BackSpace || sym == 8;
+    }
+
+    inline bool isEnter(uint32_t sym) {
+        return sym == Return || sym == KP_Enter;
     }
 
 } // namespace ngosen::key

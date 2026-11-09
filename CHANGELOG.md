@@ -16,7 +16,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ từ không phải tiếng Việt liền chữ số khi bật gõ tắt (mặc định) nay trả lại đúng phím đã gõ ngay khi tới chữ số, không còn hiện "Soé2" rồi chờ dấu cách mới thành "Sose2026"; kết thúc chữ bằng Tab, Esc hay các phím giữ chữ như đang hiện cũng giữ "Sose2026" thay vì "Soé2026". Ở Gõ Sen, gõ "Sose2026", dấu cách rồi BackSpace hai lần không còn làm rối chữ thành "Sosse202"; từ tiếng Việt liền số như "tôi2" vẫn giữ nguyên (#613, #643).
 - Trong cửa sổ ẩn danh của Chrome, Chromium và các trình duyệt cùng nhân trên KDE và các desktop Wayland khác (GNOME không bị), Cứu dấu, Cứu chữ và viết hoa đầu dòng chạy lại như ở cửa sổ thường; chữ gõ trong đó vẫn không ghi vào nhật ký gõ (#647).
 - Ở Gõ Sen, gõ phần đầu không phải tiếng Việt liền chữ số rồi phần tiếng Việt như "thuwcx2tooi2", sau đó BackSpace lùi vào phần đầu nay giữ đúng chữ đang hiện, không còn làm rối chữ (#646).
-- Ở Gõ Sen, BackSpace khi từ đang hiện nguyên phím gõ vì chưa thành tiếng Việt nay chuyển phần còn lại thành tiếng Việt, không còn làm rối chữ gõ tiếp: "dduoxwc" lùi thành "đưỡ"; "thuwcx", BackSpace rồi "j" thành "thực". Ngó Sen kèm danh sách khoảng 88.000 từ tiếng Anh để giữ nguyên phím gõ nếu đó là đầu một từ tiếng Anh, như "perl", "are" (BackSpace ở "are" còn "ar", không thành "ả") (#PR).
+- Ở Gõ Sen, BackSpace khi từ đang hiện nguyên phím gõ vì chưa thành tiếng Việt nay chuyển phần còn lại thành tiếng Việt, không còn làm rối chữ gõ tiếp: "dduoxwc" lùi thành "đưỡ"; "thuwcx", BackSpace rồi "j" thành "thực". Ngó Sen kèm danh sách khoảng 88.000 từ tiếng Anh để giữ nguyên phím gõ nếu đó là đầu một từ tiếng Anh, như "perl", "are" (BackSpace ở "are" còn "ar", không thành "ả") (#651).
 
 ## [1.9.0-1] — 08/11/2026
 

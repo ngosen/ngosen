@@ -82,6 +82,9 @@ namespace {
         void ctrlC() {
             press(ngosen::key::c, ngosen::modifier::Ctrl, nullptr);
         }
+        void ctrlZ() {
+            press(ngosen::key::z, ngosen::modifier::Ctrl, nullptr);
+        }
         void left() {
             press(ngosen::key::Left, 0, nullptr);
         }
@@ -152,24 +155,29 @@ namespace {
         std::string                          edited_;
     };
 
+    // The last step, or Unknown if any key on the way was one the reader did not know.
     VimStep lastStep(const std::string& keys) {
         VimKeyReader reader;
         VimStep      step = VimStep::Pending;
-        for (const char c : keys)
+        for (const char c : keys) {
             step = reader.feed(c);
+            if (step == VimStep::Unknown)
+                return step;
+        }
         return step;
     }
 
     void testReader() {
-        for (const char* keys : {"i",    "a",   "A",   "o",     "O",   "s",  "S",      "C",   "cc",  "cw",    "c2w",
-                                 "ciw",  "ci(", "caw", "c$",    "ctx", "gi", "3wcw",   "dwi", "ddO", "ggdGi", "\"ayyp\"bP0i",
-                                 "viwc", "Vjs", "fxa", "yiwPa", "xi",  "ea", "jjkciw", "mai", "u.A", "gUiwA"}) {
+        for (const char* keys : {"i",   "a",     "A",  "o",   "O",      "s",    "S",   "C",     "cc",    "cw",           "c2w",  "ciw",
+                                 "ci(", "caw",   "c$", "ctx", "gi",     "3wcw", "dwi", "ddO",   "ggdGi", "\"ayyp\"bP0i", "viwc", "Vjs",
+                                 "fxa", "yiwPa", "xi", "ea",  "jjkciw", "mai",  "u.A", "gUiwA", "qaqi",  "gtA",          "gqipo"}) {
             check(lastStep(keys) == VimStep::Insert, std::string("reader: ") + keys + " goes into insert mode", std::to_string(static_cast<int>(lastStep(keys))));
         }
-        for (const char* keys : {"c", "ci", "d", "dd", "jj", "3w", "viw", "gg", "fx", "dap", "yy", "\"a", "\"ay", "gU", "x"}) {
+        for (const char* keys : {"c", "ci", "d",  "dd", "jj", "3w", "viw",  "gg",   "fx", "dap", "yy",   "\"a", "\"ay", "gU",
+                                 "x", "gt", "gT", "gd", "gf", "g;", "gqip", "gwap", "qa", "qaq", "vjrx", "vgU", "vrx"}) {
             check(lastStep(keys) == VimStep::Pending, std::string("reader: ") + keys + " stays in normal mode", std::to_string(static_cast<int>(lastStep(keys))));
         }
-        for (const char* keys : {":", "/", "?", "3:"})
+        for (const char* keys : {":", "/", "?", "3:", "v/", "V?"})
             check(lastStep(keys) == VimStep::CommandLine, std::string("reader: ") + keys + " opens the command line", std::to_string(static_cast<int>(lastStep(keys))));
         for (const char* keys : {"!", "gs", "c!", "K"})
             check(lastStep(keys) == VimStep::Unknown, std::string("reader: ") + keys + " is not a command it knows", std::to_string(static_cast<int>(lastStep(keys))));
@@ -240,6 +248,27 @@ namespace {
             vim.command("i");
             vim.insert("vieetj");
             expect("Escape, dd, Enter, i, vieetj", vim, "việt");
+        }
+    }
+
+    // Commands the reader must follow without taking them for text.
+    void testMoreCommands() {
+        {
+            FakeVim vim(true);
+            vim.escape();
+            vim.command("gtciw");
+            vim.insert("tieengs");
+            expect("Escape, gt, ciw, tieengs", vim, "tiếng");
+        }
+        // Two spaces are a motion, or a leader mapping, in normal mode; they must not become ". ".
+        {
+            FakeVim vim(true);
+            vim.options().doubleSpaceToPeriod = true;
+            vim.escape();
+            vim.command("  ");
+            vim.command("i");
+            vim.insert("tieengs");
+            expect("double space to period, Escape, Space Space, i, tieengs", vim, "tiếng");
         }
     }
 
@@ -451,6 +480,48 @@ namespace {
             vim.insert("an ");
             expect("nvim, :w, a, an", vim, "nvim\nan ");
         }
+        // Vim refuses :q with unsaved changes; a command line or Escape right after shows it still runs.
+        {
+            FakeVim vim(false);
+            vim.insert("nvim");
+            vim.enter(true);
+            vim.commandLine(":q");
+            vim.runCommandLine();
+            vim.commandLine(":s/aa/b");
+            vim.runCommandLine();
+            check(vim.lastCommandLine() == ":s/aa/b\n", "nvim, :q refused, :s/aa/b reaches Vim as typed", vim.lastCommandLine());
+        }
+        {
+            FakeVim vim(false);
+            vim.insert("nvim");
+            vim.enter(true);
+            vim.commandLine(":q");
+            vim.runCommandLine();
+            vim.escape();
+            vim.command("ciw");
+            vim.insert("tieengs");
+            expect("nvim, :q refused, Escape, ciw, tieengs", vim, "nvim\ntiếng");
+        }
+        // Ctrl+Z hands the terminal back to the shell, and fg brings Vim back.
+        {
+            FakeVim vim(false);
+            vim.insert("nvim");
+            vim.enter(true);
+            vim.ctrlZ();
+            vim.insert("anhs ");
+            expect("nvim, Ctrl+Z, anhs", vim, "nvim\nánh ");
+        }
+        {
+            FakeVim vim(false);
+            vim.insert("nvim");
+            vim.enter(true);
+            vim.ctrlZ();
+            vim.insert("fg");
+            vim.enter(true);
+            vim.command("ciw");
+            vim.insert("tieengs");
+            expect("nvim, Ctrl+Z, fg, Enter, ciw, tieengs", vim, "nvim\nfg\ntiếng");
+        }
     }
 
 } // namespace
@@ -460,6 +531,7 @@ int main() {
     testInsertCommands();
     testCommandLetterStartsTheWord();
     testOtherWaysOut();
+    testMoreCommands();
     testNotVim();
     testVimKeysOff();
     testCommandLine();

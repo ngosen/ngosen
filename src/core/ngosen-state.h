@@ -207,9 +207,11 @@ namespace ngosen {
         bool                 vimAuto_  = false; ///< Vim was started from the shell in this field
         VimState             vimState_ = VimState::Insert;
         ngosen::VimKeyReader vimReader_;
-        std::string          vimTyped_;           ///< Keys let through since Escape, given to the engine if they turn out to be text
-        std::string          vimLine_;            ///< The shell line, or Vim's command line, typed so far
-        bool                 vimTookKey_ = false; ///< readVimKey let the key through as a Vim command
+        std::string          vimTyped_;             ///< Keys let through since Escape, given to the engine if they turn out to be text
+        std::string          vimLine_;              ///< The shell line, or Vim's command line, typed so far
+        bool                 vimTookKey_   = false; ///< readVimKey let the key through as a Vim command
+        bool                 vimMayStay_   = false; ///< a quit command just ran, and Vim may have refused it
+        bool                 vimSuspended_ = false; ///< Ctrl+Z stopped Vim; fg at the shell brings it back
 
         struct Retype {
             std::string typed;
@@ -735,6 +737,8 @@ namespace ngosen {
         void noteShellKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
         // Lets a key typed in Vim's normal mode or command line through; false when it is text for the engine.
         bool readVimKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool readVimCommandLineKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool resumesVimAfterQuit(uint32_t currentSym);
         void startWordAfterVimCommand();
         void takeUpVimTyped();
 

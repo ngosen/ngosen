@@ -29,7 +29,8 @@ namespace ngosen {
 
       private:
         std::string pending_;
-        bool        visual_ = false;
+        bool        visual_    = false;
+        bool        recording_ = false; ///< q and a register started a macro; reset() keeps it, as Escape does in Vim
     };
 
     // A shell command line that starts Vim, such as "nvim notes.md" or "sudo vim /etc/hosts".

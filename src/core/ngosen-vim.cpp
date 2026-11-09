@@ -73,17 +73,19 @@ namespace ngosen {
             return done == Token::Normal && op == "c" ? Token::Insert : done;
         }
 
-        // keys starts with g: "gi" goes into insert mode, "gU" is an operator, "gg" a motion.
+        // keys starts with g: "gi" goes into insert mode, "gU" and "gq" are operators, "gg" and "gt" stay in normal mode.
         Token gCommand(std::string_view keys) {
             if (keys.size() < 2)
                 return Token::Incomplete;
-            if (has("uU~?", keys[1]))
+            if (has("uU~?qw", keys[1]))
                 return operatorCommand(keys.substr(0, 2), keys.substr(2));
             if (keys.size() > 2)
                 return Token::Unknown;
             if (keys[1] == 'i' || keys[1] == 'I')
                 return Token::Insert;
-            return has("gejkE_JpPv", keys[1]) ? Token::Normal : Token::Unknown;
+            if (has("vnN", keys[1]))
+                return Token::VisualStart;
+            return has("gejkE_JpPtTdDfFx;,*#&8m0$^", keys[1]) ? Token::Normal : Token::Unknown;
         }
 
         Token normalCommand(std::string_view keys) {
@@ -112,10 +114,15 @@ namespace ngosen {
             const char c = keys[0];
             if (has("csSCRIA", c))
                 return Token::Insert;
-            if (c == ':')
+            if (has(":/?", c))
                 return Token::CommandLine;
             if (has("vdxXyYDJuU~<>=pP", c))
                 return Token::VisualEnd;
+            // r takes the character to fill the selection with; gU, gq and the like act on the selection.
+            if (c == 'r' || (c == 'g' && keys.size() > 1 && has("uU~?Jqw", keys[1])))
+                return keys.size() < 2 ? Token::Incomplete : Token::VisualEnd;
+            if (c == 'g' && keys.size() < 2)
+                return Token::Incomplete;
             if (c == 'V' || c == 'o')
                 return Token::Normal;
             return motion(keys, true);
@@ -138,9 +145,19 @@ namespace ngosen {
 
     VimStep VimKeyReader::feed(char key) {
         pending_ += key;
+        // While a macro records, a bare q stops it instead of waiting for a register name.
+        if (recording_ && !visual_ && pending_ == "q") {
+            recording_ = false;
+            pending_.clear();
+            return VimStep::Pending;
+        }
         switch (command(pending_, visual_)) {
             case Token::Incomplete: return VimStep::Pending;
-            case Token::Normal: break;
+            case Token::Normal:
+                // q: and q/ open a command-line window instead of recording.
+                if (const std::string_view done = withoutCount(pending_); !visual_ && done.size() == 2 && done[0] == 'q' && !has(":/?", done[1]))
+                    recording_ = true;
+                break;
             case Token::VisualStart: visual_ = true; break;
             case Token::VisualEnd: visual_ = false; break;
             case Token::Insert: reset(); return VimStep::Insert;

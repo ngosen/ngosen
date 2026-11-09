@@ -33,9 +33,9 @@ namespace ngosen {
 
     // Vim exits and the shell takes text again.
     void TypingState::leaveVim() {
-        vimAuto_  = false;
-        vimState_ = VimState::Insert;
-        vimReader_.reset();
+        vimAuto_   = false;
+        vimState_  = VimState::Insert;
+        vimReader_ = ngosen::VimKeyReader();
         vimTyped_.clear();
         vimLine_.clear();
     }
@@ -46,6 +46,12 @@ namespace ngosen {
         const bool ctrl = (keyEvent.states() & ngosen::modifier::Ctrl) != 0U;
         // Ctrl+C at a shell is common, so it counts only once we know Vim runs, or to cancel the command line.
         const bool ctrlC = ctrl && (currentSym == ngosen::key::c || currentSym == ngosen::key::C) && (vimAuto_ || vimState_ == VimState::CommandLine);
+        // Ctrl+Z suspends Vim and hands the terminal back to the shell until fg.
+        if (ctrl && vimAuto_ && (currentSym == ngosen::key::z || currentSym == ngosen::key::Z)) {
+            leaveVim();
+            vimSuspended_ = true;
+            return;
+        }
         if (currentSym == ngosen::key::Escape || (ctrl && currentSym == ngosen::key::bracketleft) || ctrlC) {
             enterVimNormalMode();
         } else if (vimState_ == VimState::Normal && !keyEvent.isModifier()) {
@@ -55,10 +61,29 @@ namespace ngosen {
         }
     }
 
+    // Vim refuses :q while a buffer has unsaved changes and stays open. A shell prompt rarely gets
+    // ":" or Escape as its first key, so either one right after the quit means Vim still runs.
+    bool TypingState::resumesVimAfterQuit(uint32_t currentSym) {
+        const bool colon = host_->keyText(currentSym) == ":";
+        if (!colon && currentSym != ngosen::key::Escape)
+            return false;
+        vimAuto_ = !vimKeys_;
+        enterVimNormalMode();
+        if (colon) {
+            vimState_ = VimState::CommandLine;
+            vimLine_  = ":";
+        }
+        return true;
+    }
+
     void TypingState::noteShellKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         const bool tookKey = vimTookKey_;
         vimTookKey_        = false;
-        if (tookKey || vimAuto_ || vimState_ != VimState::Insert || keyEvent.isModifier())
+        if (tookKey || keyEvent.isModifier() || keyEvent.isRelease())
+            return;
+        const bool mayStay = vimMayStay_;
+        vimMayStay_        = false;
+        if (vimAuto_ || vimState_ != VimState::Insert || (mayStay && resumesVimAfterQuit(currentSym)))
             return;
         // A field that holds its text is no shell. kitty and Konsole declare surrounding text but send it empty.
         const Surrounding s = host_->surrounding();
@@ -67,10 +92,11 @@ namespace ngosen {
             return;
         }
         if (currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) {
-            const bool starts = startsVim(vimLine_);
+            const bool starts = startsVim(vimLine_) || (vimSuspended_ && vimLine_ == "fg");
             vimLine_.clear();
             if (starts) {
-                vimAuto_ = true;
+                vimAuto_      = true;
+                vimSuspended_ = false;
                 enterVimNormalMode();
                 NGOSEN_DEBUG("Vim starts from the shell");
             }
@@ -108,29 +134,35 @@ namespace ngosen {
         hasHistory_   = !word.empty();
     }
 
-    bool TypingState::readVimKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (vimState_ == VimState::CommandLine) {
-            // The line takes text until Enter runs it; Backspace on the bare ":" closes it.
-            if (currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) {
-                if (quitsVim(vimLine_))
-                    leaveVim();
-                else
-                    enterVimNormalMode();
-            } else if (ngosen::key::isBackspace(currentSym)) {
-                if (vimLine_.size() <= 1)
-                    enterVimNormalMode();
-                else
-                    ngosen::utf8::eraseLastCodepoint(vimLine_);
-            } else if (typesText(keyEvent, currentSym)) {
-                vimLine_ += host_->keyText(currentSym);
-                // An ex command is no word: Telex would turn ":w" into ":ư". A search may be Vietnamese.
-                if (vimLine_[0] == ':') {
-                    keyEvent.passToApp();
-                    return true;
-                }
+    // The line takes text until Enter runs it; Backspace on the bare ":" closes it.
+    bool TypingState::readVimCommandLineKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (currentSym == ngosen::key::Return || currentSym == ngosen::key::KP_Enter) {
+            if (quitsVim(vimLine_)) {
+                leaveVim();
+                vimMayStay_ = true;
+                vimTookKey_ = true;
+            } else {
+                enterVimNormalMode();
             }
-            return false;
+        } else if (ngosen::key::isBackspace(currentSym)) {
+            if (vimLine_.size() <= 1)
+                enterVimNormalMode();
+            else
+                ngosen::utf8::eraseLastCodepoint(vimLine_);
+        } else if (typesText(keyEvent, currentSym)) {
+            vimLine_ += host_->keyText(currentSym);
+            // An ex command is no word: Telex would turn ":w" into ":ư". A search may be Vietnamese.
+            if (vimLine_[0] == ':') {
+                keyEvent.passToApp();
+                return true;
+            }
         }
+        return false;
+    }
+
+    bool TypingState::readVimKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (vimState_ == VimState::CommandLine)
+            return readVimCommandLineKey(keyEvent, currentSym);
         // These move the cursor in normal mode; Backspace must not take up the last word again.
         if (ngosen::key::isBackspace(currentSym) || currentSym == ngosen::key::Return) {
             lastWord_.clear();

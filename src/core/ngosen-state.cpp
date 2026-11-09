@@ -952,7 +952,8 @@ namespace ngosen {
     }
 
     bool TypingState::handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (mode() == ngosen::Mode::Off)
+        // Two spaces or two hyphens are motions, or a leader mapping, in Vim's normal mode.
+        if (mode() == ngosen::Mode::Off || (vimOn() && vimState_ != VimState::Insert))
             return false;
         const Field field = host_->field();
         if (field.sendsNoKeys && !canSendBackspaces())

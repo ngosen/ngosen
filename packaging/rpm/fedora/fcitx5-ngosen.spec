@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.8.3
+Version:        1.9.0
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -100,6 +100,9 @@ else
 fi
 
 %changelog
+* Sun Nov 08 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.9.0-1
+- Per-app modes and settings work on GNOME with the extension off, and the installer leaves the extension off where the desktop portal names apps (#621, #629); Sen shows tone marks at once in terminals and stalls less in Firefox on Hyprland and Sway (#607, #620, #623, #630); -- stays as typed in terminals and address bars (#625); Firefox builds are recognised on GNOME (#634).
+
 * Sun Nov 08 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.8.3-1
 - Words that are not Vietnamese keep their typed keys when digits follow them (#614); a tone typed after the final consonant no longer turns the word back into its keys (#622).
 

@@ -18,6 +18,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Ở Gõ Sen, gõ phần đầu không phải tiếng Việt liền chữ số rồi phần tiếng Việt như "thuwcx2tooi2", sau đó BackSpace lùi vào phần đầu nay giữ đúng chữ đang hiện, không còn làm rối chữ (#646).
 - Khôi phục một bản sao lưu của Ngó Sen cho GNOME (bản IBus) không còn xoá các app đã chọn riêng tiếng Việt hay tiếng
   Anh trong máy; bản sao lưu cũ của bản fcitx5 vẫn khôi phục như trước (#648).
+- Máy đang có bản IBus (`ibus-ngosen`) thì lệnh cài nói rõ trước khi hỏi: gỡ gói là gỡ cho mọi tài khoản, cài đặt của bản IBus không tự chép sang. Trên Debian, Ubuntu và Fedora, gói cũ được thay trong cùng lần cài nên cài lỗi thì bản IBus vẫn còn (trước đây Fedora báo lỗi xung đột và không cài); trên openSUSE và Arch, lệnh in lệnh gỡ rồi dừng. Cài xong, nguồn nhập "Tiếng Việt (Ngó Sen)" của bản IBus được bỏ khỏi tài khoản chạy lệnh (#649).
 
 ## [1.9.0-1] — 08/11/2026
 

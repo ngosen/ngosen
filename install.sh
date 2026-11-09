@@ -185,6 +185,47 @@ explain_gnome_setup() {
     say "Gỡ bằng --uninstall thì trả lại hết."
 }
 
+ibus_package=ibus-ngosen
+replace_ibus=0
+
+# The IBus edition conflicts with this package. apt and dnf swap the two in one transaction, so a
+# failed install keeps the IBus edition; zypper and pacman are not tested for that yet.
+check_ibus_edition() {
+    is_package_installed "$ibus_package" || return 0
+    say ""
+    say "Máy đang có bản IBus của Ngó Sen (gói $ibus_package)."
+    case "$manager" in
+        apt | dnf) ;;
+        *)
+            local -a remove
+            set_remove_command "$ibus_package"
+            say "Gỡ gói đó trước rồi chạy lại lệnh này:  sudo ${remove[*]}"
+            exit 1
+            ;;
+    esac
+    replace_ibus=1
+    say "Lệnh sẽ gỡ gói đó trong cùng lần cài, nên mọi tài khoản trên máy đều mất bản IBus. Cài lỗi"
+    say "thì bản IBus vẫn giữ nguyên. Cài đặt của bản IBus không tự chép sang: muốn mang theo thì sao lưu"
+    say "trong cửa sổ cài đặt của bản IBus trước, rồi khôi phục ở bản này."
+    say "Tài khoản khác trên máy tự bỏ nguồn nhập \"Tiếng Việt (Ngó Sen)\" trong Cài đặt GNOME."
+}
+
+# GNOME keeps the IBus source in its list after the package is gone, and the source no longer types.
+remove_ibus_source() {
+    [ "$(id -u)" -ne 0 ] && command -v gsettings >/dev/null 2>&1 || return 0
+    local sources kept
+    sources=$(gsettings get org.gnome.desktop.input-sources sources 2>/dev/null) || return 0
+    case "$sources" in
+        *"('ibus', 'ngosen')"*) ;;
+        *) return 0 ;;
+    esac
+    kept=$(printf '%s' "$sources" | grep -o "('[^']*', '[^']*')" | grep -vxF "('ibus', 'ngosen')" |
+        awk 'NR > 1 { printf ", " } { printf "%s", $0 }' || true)
+    kept=${kept:+[$kept]}
+    gsettings set org.gnome.desktop.input-sources sources "${kept:-@a(ss) []}" &&
+        say "Đã bỏ nguồn nhập \"Tiếng Việt (Ngó Sen)\" của bản IBus khỏi tài khoản này."
+}
+
 confirm() {
     [ "$assume_yes" -eq 1 ] && return 0
     # The script itself arrives on stdin when piped from curl, so the answer is read from the terminal.
@@ -283,7 +324,9 @@ install_package() {
     esac
     case "$manager" in
         dnf)
-            as_root env NGOSEN_INSTALLER=1 dnf install -y "$package" "${settings_packages[@]}"
+            local -a erase=()
+            [ "$replace_ibus" -eq 0 ] || erase=(--allowerasing)
+            as_root env NGOSEN_INSTALLER=1 dnf install -y "${erase[@]}" "$package" "${settings_packages[@]}"
             ;;
         zypper)
             as_root env NGOSEN_INSTALLER=1 zypper --non-interactive install --allow-unsigned-rpm "$package" "${settings_packages[@]}"
@@ -1241,6 +1284,7 @@ main() {
         ostree_unsupported "sudo rpm-ostree install $RELEASE_URL/$file" "Sau khi khởi động lại, mở 'Fcitx5 Configuration' và thêm Ngó Sen."
     fi
 
+    check_ibus_edition
     say "Ngó Sen sẽ được cài bằng $manager từ gói:"
     say "  $RELEASE_URL/$file"
     say "Cấu hình trong ~/.config/fcitx5 được giữ."
@@ -1272,6 +1316,7 @@ main() {
     fi
     install_package "$workdir/$file"
     [ "$package_changed" -eq 1 ] || say "Bản này đã được cài từ trước, không cài lại."
+    [ "$replace_ibus" -eq 0 ] || remove_ibus_source
     if [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ]; then
         unmask_fcitx5_autostart
     fi

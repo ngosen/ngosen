@@ -21,7 +21,7 @@ const INTERFACE_XML = `<node>
     <signal name="FocusedApp"><arg type="s"/></signal>
   </interface>
 </node>`;
-// The name fcitx5 5.1.22 and later give the overview's search box.
+// Ngó Sen's name for the overview's search box; fcitx5 itself calls it gnome-shell.
 const OVERVIEW_APP = 'gnome-shell-overview';
 
 // mutter 50.0-50.3 drop the key events the stock forward_key builds (mutter#4853).

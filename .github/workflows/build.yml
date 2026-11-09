@@ -162,6 +162,33 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure --no-tests=error -j"$(nproc)"
 
+  # A memory error in the addon takes down fcitx5 and typing in every app with it.
+  sanitizers:
+    name: Tests with ASan and UBSan
+    runs-on: ubuntu-latest
+    container: fedora:44
+    env:
+      UBSAN_OPTIONS: print_stacktrace=1
+    steps:
+      - name: Install dependencies
+        run: >-
+          dnf -y install gcc-c++ cmake ninja-build extra-cmake-modules fcitx5-devel gettext rust cargo
+          libasan libubsan python3 librsvg2-tools fmt-devel systemd-devel git
+      - uses: actions/checkout@v7
+      - name: Build
+        run: |
+          san="-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+          cmake -S . -B build -G Ninja -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_C_FLAGS="$san" -DCMAKE_CXX_FLAGS="$san" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build -j"$(nproc)"
+      # The excluded tests run no C++ of ours; the other jobs cover them.
+      - name: Test
+        run: >-
+          ctest --test-dir build --output-on-failure --no-tests=error -j"$(nproc)"
+          -E '^(bamboo_rs_cargo_test|copr_makefile|settings_gui_install|vendored_crates_switch)$'
+
   # Builds this checkout, so a change that breaks the NixOS package fails here.
   nix:
     name: Nix flake

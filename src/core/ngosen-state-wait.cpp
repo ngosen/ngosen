@@ -233,6 +233,7 @@ namespace ngosen {
             // The user really switched windows: the old field can no longer take the text. Reset
             // only this field's state; is_deleting_ is shared and the new field may be replacing.
             NGOSEN_INFO("Timer: input context lost focus, dropping text");
+            logReplaceEnd("focus lost, text dropped");
             surr_wait_pending_       = false;
             surr_wait_timer_only_    = false;
             expected_backspaces_     = 0;
@@ -290,7 +291,7 @@ namespace ngosen {
         const bool        waiting    = surr_wait_watching_;
         const bool        overtyping = overtype_watching_;
         const std::string report     = host_->field().password ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
-        fieldReported_               = fieldReported_ || host_->surrounding().isValid();
+        sinceFocus_.reported         = sinceFocus_.reported || host_->surrounding().isValid();
         reportSinceEdit_             = true;
         // A repeat that a wait acts on stays in the log for its timing.
         if (waiting || overtyping || key_report_pending_)
@@ -303,9 +304,9 @@ namespace ngosen {
         }
         if (host_->hasFocus() && host_->surrounding().isValid()) {
             if (showsText(host_->surrounding()))
-                surrSeenTextSinceFocus_ = true;
-            else if (keyCount_ == keysAtFocus_)
-                surrSeenEmptySinceFocus_ = true;
+                sinceFocus_.seenText = true;
+            else if (keyCount_ == sinceFocus_.keysAtFocus)
+                sinceFocus_.seenEmpty = true;
         }
         noteAutofill(host_->surrounding());
         checkSurroundingReport();
@@ -318,7 +319,7 @@ namespace ngosen {
         if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !host_->surrounding().isValid()) {
             // A field that stops reporting is not the one the word was typed in.
             finishKeyReportWait(false, false);
-        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !copyGivesWrongDeletion()) {
+        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && copyWaitNeed() == CopyWait::No) {
             key_report_copy_fits_ = true;
             key_report_timer_->rearm(ngosen::monotonicUs());
         } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {
@@ -379,6 +380,8 @@ namespace ngosen {
                     NGOSEN_INFO("Copy of the text still short, deleting anyway");
                 copyWaitTimedOut_ = !key_report_copy_fits_;
                 copyWaitsRunOut_  = copyWaitTimedOut_ ? copyWaitsRunOut_ + 1 : 0;
+                if (copyWaitRetry_)
+                    sinceFocus_.retriesRunOut = copyWaitTimedOut_ ? sinceFocus_.retriesRunOut + 1 : 0;
             }
             finishKeyReportWait(true, true);
             return key_report_pending_;
@@ -391,6 +394,7 @@ namespace ngosen {
         if (!key_report_pending_)
             return;
         key_report_pending_ = false;
+        copyWaitRetry_      = false;
         if (!fromTimer) {
             key_report_timer_.reset(); // never reset a timer from inside its own callback
             copyWaitTimedOut_ = false;
@@ -400,6 +404,7 @@ namespace ngosen {
             return;
         }
         NGOSEN_INFO("Key went to another field, starting a new word");
+        logReplaceEnd("key went to another field");
         forgetWaitingReplacement();
         is_deleting_.store(false, std::memory_order_release);
         buffered_keys_.insert(buffered_keys_.begin(), key_report_key_);
@@ -420,7 +425,9 @@ namespace ngosen {
     void TypingState::dropReplacementAfterFocusLoss() {
         // Only the count: the keys are text the user typed.
         NGOSEN_INFO("Focus left during the wait, dropping the replacement and " + std::to_string(buffered_keys_.size()) + " held keys");
+        logReplaceEnd("focus lost, text dropped");
         key_report_pending_ = false;
+        copyWaitRetry_      = false;
         forgetWaitingReplacement();
         buffered_keys_.clear();
     }

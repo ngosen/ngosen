@@ -1,7 +1,7 @@
 {
   "uuid": "forward-keys@ngosen.github.io",
   "name": "Ngó Sen GNOME fixes",
-  "description": "Tells Ngó Sen which app has focus, since fcitx5 before 5.1.22 names every app on GNOME after GNOME Shell. On GNOME 50.0 to 50.3 also delivers keys that an input method forwards to the app, which mutter drops (mutter#4853).",
+  "description": "On GNOME 50.0 to 50.3 delivers keys that an input method forwards to the app, which mutter drops (mutter#4853). Also tells Ngó Sen which app has focus: fcitx5 before 5.1.22 names every app on GNOME after GNOME Shell, and Ngó Sen otherwise learns the app from xdg-desktop-portal-gnome, which does not name apps without a .desktop file.",
   "shell-version": ["46", "47", "48", "49", "50"],
   "url": "https://github.com/ngosen/ngosen"
 }

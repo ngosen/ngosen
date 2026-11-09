@@ -120,7 +120,7 @@ namespace ngosen {
     // WPS over D-Bus sets the same flags as fcitx5-gtk4 but never reports its text, takes forwarded
     // keys and ignores deletions through the surrounding text.
     bool TypingState::dropsForwardedKeys() const {
-        return ngosen::ignoresForwardedKeys(host_->field()) && fieldReported_;
+        return ngosen::ignoresForwardedKeys(host_->field()) && sinceFocus_.reported;
     }
 
     bool TypingState::forwardsEnterAfterCommit() const {
@@ -487,7 +487,7 @@ namespace ngosen {
         const auto               f           = host_->field();
         const std::string        program     = f.reportedProgram.empty() ? f.program : f.program + " (" + f.reportedProgram + ")";
         std::string field = "frontend=" + f.frontend + " program=" + program + " surrounding=" + (f.surroundingText ? "1" : "0") + " preedit=" + (f.preedit ? "1" : "0") +
-            (f.sendsNoKeys ? " sendsNoKeys=1" : "") + (f.preeditFallback ? " preeditFallback=1" : "") + (f.password ? " password=1" : "") +
+            (f.sendsNoKeys ? " sendsNoKeys=1" : "") + (f.preeditFallback ? " preeditFallback=1" : "") + (f.password ? " password=1" : "") + (f.terminal ? " terminal=1" : "") +
             " mode=" + modeNames[static_cast<int>(mode())];
         auto& recorder = engine_->recorder();
         recorder.addField(field);
@@ -939,7 +939,10 @@ namespace ngosen {
     }
 
     bool TypingState::handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (mode() == ngosen::Mode::Off || (host_->field().sendsNoKeys && !canSendBackspaces()))
+        if (mode() == ngosen::Mode::Off)
+            return false;
+        const Field field = host_->field();
+        if (field.sendsNoKeys && !canSendBackspaces())
             return false;
         if (engine_->options().doubleSpaceToPeriod) {
             bool isSpaceKey = (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);
@@ -957,7 +960,7 @@ namespace ngosen {
         }
 
         if (engine_->options().doubleHyphenToEmDash) {
-            bool isHyphenKey = (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract);
+            bool isHyphenKey = (currentSym == ngosen::key::minus || currentSym == ngosen::key::KP_Subtract) && !ngosen::takesDoubleHyphenLiterally(field);
             if (isHyphenKey && !keyEvent.hasModifier()) {
                 if (isPrevHyphen_) {
                     keyEvent.accept();

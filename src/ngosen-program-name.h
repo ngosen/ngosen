@@ -9,9 +9,8 @@
 
 namespace ngosen {
 
-    // A Flatpak app reports its app ID (org.mozilla.firefox) where the distro package reports its
-    // program name (firefox), which is what the app checks match. Returns the StartupWMClass (else the
-    // ID's last part) when a Flatpak export has a desktop file of that name, otherwise the name as is.
+    // The name app checks match: for a Flatpak app ID with an exported desktop file, the name the core
+    // rule (ngosen-flatpak-names.h) gives it; otherwise the name as reported.
     const std::string& normalizeProgramName(const std::string& program);
 
 } // namespace ngosen

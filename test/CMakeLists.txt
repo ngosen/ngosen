@@ -243,7 +243,12 @@ add_executable(utf8_matches_fcitx utf8-matches-fcitx.cpp ${PROJECT_SOURCE_DIR}/s
 target_include_directories(utf8_matches_fcitx PRIVATE ${PROJECT_SOURCE_DIR}/src/core)
 target_link_libraries(utf8_matches_fcitx PRIVATE Fcitx5::Utils)
 add_test(NAME utf8_matches_fcitx COMMAND utf8_matches_fcitx)
-set_tests_properties(utf8_matches_fcitx PROPERTIES LABELS "unit" TIMEOUT 60)
+set(utf8_matches_fcitx_timeout 60)
+# The exhaustive check is slow in the sanitizer build.
+if (CMAKE_CXX_FLAGS MATCHES "-fsanitize=")
+    set(utf8_matches_fcitx_timeout 240)
+endif()
+set_tests_properties(utf8_matches_fcitx PROPERTIES LABELS "unit" TIMEOUT ${utf8_matches_fcitx_timeout})
 
 # Settings saved under the lotus names carry over to the ngosen names.
 add_executable(ngosen_migration_test ngosen-migration.cpp)

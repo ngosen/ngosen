@@ -22,6 +22,7 @@
 #include "ngosen-key.h"
 #include "ngosen-surrounding-check.h"
 
+#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -138,6 +139,10 @@ namespace ngosen {
          * @return True if no history.
          */
         bool isEmptyHistory() const;
+        // A word is still open, so setEngine() now would lose it.
+        bool holdsWord() const {
+            return !oldPreBuffer_.empty();
+        }
         friend class fcitx::NgoSenEngine;
 
         /**
@@ -180,7 +185,6 @@ namespace ngosen {
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
         bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key
-        bool                     fieldReported_         = false; ///< the field reported its text since it got focus
         Surrounding              reportAtKey_;
 
         struct Retype {
@@ -397,7 +401,6 @@ namespace ngosen {
         // click on another cell shows only in that report. A frontend that counts the deletion on its copy
         // of the text (mutter) waits until that copy holds what the deletion needs.
         bool                           waitsForKeyReport() const;
-        bool                           copyGivesWrongDeletion() const;
         bool                           reportsItsEdits() const;
         void                           startReportRequestTimer();
         void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);
@@ -417,6 +420,20 @@ namespace ngosen {
         bool                           copyWaitTimedOut_     = false; ///< keeps replayed keys from each waiting out a copy that never fits
         int                            copyWaitsRunOut_      = 0;     ///< copy waits in a row that ran out in this field
         static constexpr int           MaxCopyWaitsRunOut    = 2;
+
+        // HeldBack: the copy would give a wrong deletion, but this field's checks go unanswered.
+        enum class CopyWait {
+            No,
+            Yes,
+            HeldBack
+        };
+        CopyWait                       copyWaitNeed() const;
+        bool                           waitsForCopy();
+        bool                           checksGetAnswered() const;
+        bool                           copyWaitRetry_         = false; ///< this wait is the one tried again in a held-back field
+        static constexpr int           RecentChecks           = 8;
+        static constexpr int           CopyWaitsHeldBackLimit = 4;
+
         std::unique_ptr<ngosen::Timer> split_edit_timer_;
         bool                           split_edit_pending_ = false;
         Surrounding                    split_edit_surrounding_;
@@ -531,8 +548,29 @@ namespace ngosen {
         void performReplacement(const std::string& deletedPart, const std::string& addedPart);
         // Remembers what the app showed when the replacement started, to tell when it is done.
         void recordSendSnapshot(const std::string& deletedPart);
-        // True to delete through the surrounding text; otherwise counts the backspaces to send.
-        bool                     deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
+        bool deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
+        // What one replacement deletes and adds, and the app's text as read after any wait for it. The
+        // strings are copies: callers pass members that a way may overwrite while it runs.
+        struct ReplaceRequest {
+            std::string deleted;
+            std::string added;
+            Surrounding copy;
+        };
+        // Each way to replace the word: whether this field can use it, and how it runs.
+        bool overtypeXTestUsable(const ReplaceRequest& request);
+        void runOvertypeXTest(const ReplaceRequest& request);
+        bool overtypeUsable(const ReplaceRequest& request);
+        void runOvertype(const ReplaceRequest& request);
+        bool delUsable(const ReplaceRequest& request);
+        void runDel(const ReplaceRequest& request);
+        bool surroundingUsable(const ReplaceRequest& request);
+        void runSurrounding(const ReplaceRequest& request);
+        bool forwardedBackspacesUsable(const ReplaceRequest& request);
+        void runForwardedBackspaces(const ReplaceRequest& request);
+        void runSystemBackspaces(const ReplaceRequest& request);
+        void startBackspaces(const ReplaceRequest& request);
+        // The word's characters plus the autofill a Backspace removes first.
+        void                     countBackspaces(const ngosen::Surrounding& surrounding);
         void                     replaceThroughSurrounding(const Surrounding& surrounding, int extraBeforeCursor = 0);
         void                     clearSelectedTailThenReplace(const Surrounding& surrounding);
         void                     finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype);
@@ -566,6 +604,7 @@ namespace ngosen {
             std::string retype;     ///< committed again ahead of added
             std::string sentReport; ///< reportKey() when the deletion was sent
             std::string sentAfter;  ///< the text after the cursor then
+            std::string program;    ///< the app's name then
             bool        password      = false;
             bool        waitsForKey   = false; ///< stays open for a report that comes with a later key
             uint64_t    keysAtSend    = 0;
@@ -602,25 +641,46 @@ namespace ngosen {
         void                            notePath(const char* path, const std::string& why);
         bool                            surroundingUntrusted() const;
         bool                            appMarkedUntrusted() const;
-        std::string                     lastPath_;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
-        uint64_t                        keyCount_                = 0;     ///< key presses other than modifiers
-        int                             surrUnanswered_          = 0;     ///< checks in a row left unanswered in this field
-        bool                            surrAnswered_            = false; ///< a check in this field came out correct
-        int                             surrAnsweredUnasked_     = 0;     ///< checks in this field answered with no key since the edit
-        int                             surrMissed_              = 0;     ///< checks in this field left unanswered
-        static constexpr int            MinAnswersForPlainCount  = 2;
-        bool                            surrSeenTextSinceFocus_  = false; ///< the field reported text since it got focus
-        bool                            surrSeenEmptySinceFocus_ = false; ///< the field reported itself empty before any key since it got focus
-        uint64_t                        keysAtFocus_             = 0;     ///< keyCount_ at the last focus-in, kept over a bounce
-        uint64_t                        commitCount_             = 0;
+        uint64_t                        keyCount_               = 0; ///< key presses other than modifiers
+        int                             surrUnanswered_         = 0; ///< checks in a row left unanswered in this field
+        static constexpr int            MinAnswersForPlainCount = 2;
+        uint64_t                        commitCount_            = 0;
         Surrounding                     lastReport_;
         bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
         std::unique_ptr<ngosen::Timer>  replay_timer_;
-        bool                            autofillMarked_ = false; ///< this field filled in text after the cursor without a key
-        bool                            fieldUntrusted_ = false; ///< the untrusted mark of an app GNOME Shell does not name
-        bool                            rawWord_        = false; ///< the rest of this word goes to the app as typed
+        bool                            rawWord_ = false; ///< the rest of this word goes to the app as typed
+
+        // What the field showed since it got focus. A focus-in that is not a bounce starts it over, and
+        // nothing else does.
+        struct FieldHistory {
+            bool        reported       = false;  ///< any valid report, the copy at focus-in included
+            bool        seenText       = false;  ///< a report with text while it had focus
+            bool        seenEmpty      = false;  ///< reported itself empty before any key
+            uint64_t    keysAtFocus    = 0;      ///< keyCount_ when it got focus
+            bool        autofillMarked = false;  ///< filled in text after the cursor without a key
+            bool        untrusted      = false;  ///< the untrusted mark of an app GNOME Shell does not name
+            std::string lastPath;                ///< how its last replacement deleted
+            bool        checkAnswered   = false; ///< a check came out correct
+            int         answeredUnasked = 0;     ///< checks answered with no key since the edit
+            int         checksMissed    = 0;     ///< checks left unanswered
+
+            // For the copy wait: the last checks, newest in bit 0, set if answered at all.
+            std::bitset<RecentChecks> recentAnswers;
+            int                       recentChecks      = 0; ///< how many bits of recentAnswers hold a check
+            int                       copyWaitsHeldBack = 0; ///< replacements while unanswered checks keep the copy wait off
+            int                       retriesRunOut     = 0; ///< waits tried again in a row that ran out
+        };
+        FieldHistory sinceFocus_;
+
+        // One debug line per replacement: how it deleted, what it waited for first, how it ended.
+        void        startReplaceLog(const char* wait);
+        void        logReplaceEnd(const char* ended);
+        bool        replace_logging_    = false;
+        const char* replace_method_     = "none";
+        const char* replace_wait_       = "none";
+        uint64_t    replace_started_us_ = 0;
 
         /**
          * @brief Handles the double space to period replacement.
@@ -688,6 +748,7 @@ namespace ngosen {
         // Replays keys[i]; true when it started a replacement, which replays the rest later.
         bool replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out);
         void replaceDuringReplay(const std::vector<KeyEntry>& keys, size_t i, std::string& out, const std::string& deletedPart, const std::string& addedPart);
+        bool foldIntoReplay(std::string& out, const std::string& deletedPart, const std::string& addedPart);
 
         /**
          * @brief Checks if the key symbol matches the configured lock-word modifier.

@@ -51,6 +51,7 @@ function(ngosen_headless_test_settings target)
         NGOSEN_SETTINGS_PATH="${CMAKE_INSTALL_FULL_BINDIR}/fcitx5-ngosen-settings"
         NGOSEN_ICON_DIR="${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps"
         NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+        NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt"
     )
     target_link_libraries(${target} PRIVATE
         ngosen_core

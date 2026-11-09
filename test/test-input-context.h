@@ -176,6 +176,7 @@ inline void configureTestPaths(const char* name) {
     // Copy the source tree's dictionary so every run spell-checks against the code under test.
     std::filesystem::create_directories(root / "data/fcitx5/ngosen");
     std::filesystem::copy_file(NGOSEN_TEST_DICTIONARY, root / "data/fcitx5/ngosen/vietnamese.cm.dict");
+    std::filesystem::copy_file(NGOSEN_TEST_ENGLISH_WORDS, root / "data/fcitx5/ngosen/english-common.txt");
 }
 
 /**

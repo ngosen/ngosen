@@ -331,26 +331,33 @@ namespace ngosen {
 
     // Keys shown as typed can compose once one goes (`dduoxwc` gives đưỡ), but the app deletes one character.
     bool TypingState::replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent) {
-        if (oldPreBuffer_.empty() || !canSendBackspaces() || EngineShownAsTyped(bambooEngine_.handle()) == 0U)
+        const uintptr_t engine = bambooEngine_.handle();
+        if (oldPreBuffer_.empty() || EngineShownAsTyped(engine) == 0U)
+            return false;
+        ngosen::UniqueCPtr<char> shown(EnginePullPreedit(engine));
+        if (!shown || oldPreBuffer_ != shown.get())
             return false;
         std::string appText = oldPreBuffer_;
         ngosen::utf8::eraseLastCodepoint(appText);
-        EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::BackSpace, 0);
-        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
+        EngineProcessKeyEvent(engine, ngosen::key::BackSpace, 0);
+        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(engine));
         const std::string        preedit = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
         hasHistory_                      = true;
-        if (preedit == appText) {
-            oldPreBuffer_ = preedit;
-            keyEvent.passToApp();
-            return true;
-        }
         std::string deletedPart;
         std::string addedPart;
         ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, preedit, deletedPart, addedPart);
-        is_deleting_.store(false, std::memory_order_release);
-        keyEvent.accept();
-        performReplacement(deletedPart, addedPart);
-        oldPreBuffer_ = preedit;
+        if (preedit != appText && canSendBackspaces() && !keepsWordRaw(deletedPart)) {
+            is_deleting_.store(false, std::memory_order_release);
+            keyEvent.accept();
+            performReplacement(deletedPart, addedPart);
+            oldPreBuffer_ = preedit;
+            return true;
+        }
+        // The field cannot take the edit, so the engine follows what the app shows.
+        if (preedit != appText)
+            EngineRebuildFromText(engine, appText.c_str());
+        oldPreBuffer_ = appText;
+        keyEvent.passToApp();
         return true;
     }
 

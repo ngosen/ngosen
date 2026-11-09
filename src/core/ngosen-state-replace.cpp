@@ -932,12 +932,20 @@ namespace ngosen {
         // arrive together, and the next deletion then takes what follows the word. It shows only the
         // current line, so a line below cannot be told from the end of the text. An address bar keeps its
         // autocompletion unless the commit comes in the deletion's turn.
-        if (ngosen::keepsLastEditPerTurn(host_->field()) && !cursorIsBeforeAutofill(surrounding) && !(retype + pending_commit_string_).empty()) {
+        uint64_t holdUs = 0;
+        if (!(retype + pending_commit_string_).empty()) {
+            if (ngosen::keepsLastEditPerTurn(host_->field()) && !cursorIsBeforeAutofill(surrounding))
+                holdUs = SplitEditWaitUs;
+            // A just-emptied Messenger composer reloads its placeholder and drops a commit sent with the deletion.
+            else if (looksLikeMessengerComposer(surrounding) && isFirstWordOfMessage(surrounding))
+                holdUs = static_cast<uint64_t>(std::max(engine_->options().waitSurroundingSettleFirstWordMs, 0)) * 1000ULL;
+        }
+        if (holdUs > 0) {
             split_edit_pending_      = true;
             surr_wait_focus_retries_ = 0;
             split_edit_surrounding_  = surrounding;
             split_edit_retype_       = retype;
-            const uint64_t until     = monotonicUs() + SplitEditWaitUs;
+            const uint64_t until     = monotonicUs() + holdUs;
             // A replay from the timer can start the next split, so the timer is rearmed rather than replaced.
             if (split_edit_timer_) {
                 split_edit_timer_->rearm(until);

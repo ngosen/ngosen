@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Lệnh cài lần đầu trên GNOME, hoặc Xfce, Cinnamon, MATE dùng X11 trên Debian, Ubuntu, Linux Mint, nay hỏi chọn bản fcitx5 đầy đủ tính năng (bấm Enter để chọn) hay bản IBus dùng IBus có sẵn, đơn giản hơn nhưng ít tính năng hơn một chút; chỉ hỏi khi có gói cho bản IBus. Dùng `--ibus` hoặc `--fcitx5` để chọn mà không cần hỏi; chạy lại để cập nhật thì giữ nguyên bản đang có. Khi đổi bản, gói của bản cũ được gỡ trong cùng lần cài, và mọi thay đổi được liệt kê trước một câu hỏi "Tiếp tục?" duy nhất (#653).
+
 ### Sửa
 
 - Trên GNOME tắt extension, đóng một cửa sổ ngay trong màn tổng quan không còn làm ô tìm kiếm mang chế độ gõ và cài đặt riêng của app phía sau (#644).

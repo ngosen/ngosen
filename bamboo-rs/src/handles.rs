@@ -9,13 +9,14 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use crate::engine::{BambooEngine, Dictionary};
+use crate::engine::{BambooEngine, Dictionary, WordList};
 use crate::macro_table::MacroTable;
 
 pub enum Object {
     Engine(Box<BambooEngine>),
     MacroTable(Arc<MacroTable>),
     Dictionary(Arc<Dictionary>),
+    WordList(Arc<WordList>),
 }
 
 struct Registry {
@@ -61,6 +62,13 @@ pub fn dictionary(handle: usize) -> Option<Arc<Dictionary>> {
     }
 }
 
+pub fn word_list(handle: usize) -> Option<Arc<WordList>> {
+    match registry().objects.get(&handle) {
+        Some(Object::WordList(list)) => Some(Arc::clone(list)),
+        _ => None,
+    }
+}
+
 pub fn delete_handle(handle: usize) {
     registry().objects.remove(&handle);
 }
@@ -75,6 +83,7 @@ mod tests {
         assert!(with_engine(0, |_| ()).is_none());
         assert!(macro_table(0).is_none());
         assert!(dictionary(0).is_none());
+        assert!(word_list(0).is_none());
         delete_handle(0);
     }
 

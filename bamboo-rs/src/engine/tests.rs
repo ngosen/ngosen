@@ -841,3 +841,44 @@ fn test_reopened_word_before_digits_backspaces_as_shown() {
     e.process_key_event(KEY_BACKSPACE, 0);
     assert_eq!(e.preedit_text, "Sose202");
 }
+
+fn engine_with_english(words: &[&str]) -> BambooEngine {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = Arc::new(words.iter().map(|w| w.to_string()).collect());
+    e
+}
+
+#[test]
+fn test_backspace_keeps_english_keys_as_typed() {
+    // `ar` alone composes ả; the app still shows the keys of `are` minus one.
+    let mut e = engine_with_english(&["are", "perl"]);
+    type_keys(&mut e, "are");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "ar");
+
+    let mut e = engine_with_english(&["are", "perl"]);
+    type_keys(&mut e, "Perl");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "Pe");
+}
+
+#[test]
+fn test_backspace_composes_keys_that_are_not_english() {
+    let mut e = engine_with_english(&["are", "perl"]);
+    type_keys(&mut e, "dduoxwc");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "đưỡ");
+    assert!(!e.shown_as_typed());
+}
+
+#[test]
+fn test_key_after_kept_english_keys_composes_again() {
+    let mut e = engine_with_english(&["are"]);
+    type_keys(&mut e, "are");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    type_keys(&mut e, "s");
+    let mut typed = engine_with_english(&["are"]);
+    type_keys(&mut typed, "ars");
+    assert_eq!(e.preedit_text, typed.preedit_text);
+}

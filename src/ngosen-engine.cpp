@@ -549,8 +549,24 @@ namespace fcitx {
                 }
             }
         }
+        loadEnglishWords();
         loadAppRules();
         populateConfig();
+    }
+
+    // The list changes only with the package, so a settings reload keeps it.
+    void NgoSenEngine::loadEnglishWords() {
+        if (englishWords_)
+            return;
+#if NGOSEN_USE_MODERN_FCITX_API
+        auto fd = StandardPaths::global().open(StandardPathsType::PkgData, "ngosen/english-common.txt");
+#else
+        auto fd = StandardPath::global().open(StandardPath::Type::PkgData, "ngosen/english-common.txt", O_RDONLY);
+#endif
+        if (fd.isValid())
+            englishWords_.reset(NewWordList(fd.release()));
+        else
+            NGOSEN_WARN("English word list not found");
     }
 
     void NgoSenEngine::announceRelease(const std::string& release) {

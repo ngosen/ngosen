@@ -204,6 +204,10 @@ namespace fcitx {
          */
         uintptr_t macroTable() const override;
 
+        uintptr_t englishWords() const override {
+            return englishWords_.handle();
+        }
+
         /**
          * @brief Gets the emoji loader.
          * @return Reference to emoji loader instance.
@@ -286,6 +290,7 @@ namespace fcitx {
         std::vector<MenuEntry>                      menuEntries_;
         std::vector<ScopedConnection>               connections_;
         ngosen::CGoObject                           dictionary_;
+        ngosen::CGoObject                           englishWords_;
         std::unordered_map<std::string, NgoSenMode> appRules_;
         std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
@@ -404,6 +409,8 @@ namespace fcitx {
          * @brief Loads application-specific mode rules.
          */
         void loadAppRules();
+
+        void loadEnglishWords();
 
         /**
          * @brief Saves application-specific mode rules.

@@ -3521,6 +3521,24 @@ namespace {
 } // namespace
 
 namespace {
+    // The app deletes one character of keys shown as typed, while the engine may compose what is left.
+    void testBackspaceIntoKeysShownAsTyped() {
+        ngosen::test::FakeResources resources;
+        const Field                 field = makeField("wayland", true);
+        const auto                  type  = [&](const std::string& typed) {
+            std::vector<uint32_t> keys;
+            for (const char c : typed)
+                keys.push_back(c == '<' ? uint32_t{ngosen::key::BackSpace} : static_cast<uint32_t>(c));
+            return ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
+        };
+        std::string text = type("dduoxwcj<<");
+        check(text == "đưỡ", "sen: backspace into dduoxwc shows what the engine composes", text);
+        text = type("thuwcx<j ");
+        check(text == "thực ", "sen: a stray tone key deleted, the next one gives the word", text);
+        text = type("perl<<a ");
+        check(text == "pea ", "sen: backspaces into an English word keep its keys", text);
+    }
+
     void testEnglishWordKeepsDoubledLetter() {
         const auto typed = [](const std::string& word, uint32_t end) {
             std::vector<uint32_t> keys(word.begin(), word.end());
@@ -3609,6 +3627,7 @@ namespace {
 }
 
 int main() {
+    testBackspaceIntoKeysShownAsTyped();
     testEnglishWordKeepsDoubledLetter();
     testHoldsWordAcrossReload();
     testQuirks();

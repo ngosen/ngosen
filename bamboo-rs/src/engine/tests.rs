@@ -842,6 +842,15 @@ fn test_reopened_word_before_digits_backspaces_as_shown() {
     assert_eq!(e.preedit_text, "Sose202");
 }
 
+#[test]
+fn test_reopened_word_keeps_its_marks_when_a_digit_is_deleted() {
+    let mut e = engine_with_default_settings("Telex");
+    e.rebuild_from_text("tôi2");
+    assert_eq!(e.preedit_text, "tôi2");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "tôi");
+}
+
 fn engine_with_english(words: &[&str]) -> BambooEngine {
     let mut e = engine_with_default_settings("Telex");
     e.english_words = Arc::new(words.iter().map(|w| w.to_string()).collect());

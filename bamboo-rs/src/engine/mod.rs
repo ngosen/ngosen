@@ -664,7 +664,13 @@ impl BambooEngine {
         }
         // The app deletes one character of what it shows, so a word shown as typed stays so.
         let shown_as_typed = self.shown_as_typed();
+        let mut left = self.get_preedit_string();
+        left.pop();
         self.drop_last_key(shown_as_typed);
+        // A word rebuilt from text has its plain letters for keys, so replaying them drops its marks.
+        if self.get_preedit_string() != left {
+            self.preeditor.rebuild_from_text(&left);
+        }
     }
 
     /// Types the word's keys again without the last one, as English keys if `as_typed`.

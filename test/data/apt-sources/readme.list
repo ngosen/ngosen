@@ -1,0 +1,1 @@
+deb [signed-by=/usr/share/keyrings/ngosen.gpg] https://ngosen.github.io/ngosen/apt noble main

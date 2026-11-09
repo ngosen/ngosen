@@ -55,6 +55,11 @@ jobs:
       - name: Build repository
         run: packaging/build-apt-repo.sh debs apt
 
+      # install.sh adds the repository only with the key it pins; another key would leave new
+      # installs without updates.
+      - name: Check the key install.sh pins
+        run: test "$(sha256sum apt/ngosen.gpg | cut -d' ' -f1)" = "$(sed -n 's/^REPO_KEY_SHA256=//p' install.sh)"
+
       - uses: actions/upload-artifact@v7
         with:
           name: repo-apt

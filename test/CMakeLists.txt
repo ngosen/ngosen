@@ -275,6 +275,9 @@ set_tests_properties(addon_conf PROPERTIES LABELS "unit;config" TIMEOUT 20)
 add_test(NAME copr_makefile COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/copr-makefile.sh ${PROJECT_SOURCE_DIR})
 set_tests_properties(copr_makefile PROPERTIES LABELS "unit;packaging" TIMEOUT 20 SKIP_RETURN_CODE 77)
 
+add_test(NAME install_apt_repo COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/install-apt-repo.sh ${PROJECT_SOURCE_DIR})
+set_tests_properties(install_apt_repo PROPERTIES LABELS "unit;packaging" TIMEOUT 20)
+
 add_test(NAME settings_gui_install
          COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/settings-gui-install.sh ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR})
 set_tests_properties(settings_gui_install PROPERTIES LABELS "unit;packaging" TIMEOUT 120)

@@ -279,6 +279,12 @@ namespace {
         run.field.password = true;
         r                  = retone(run);
         check(r.hint.empty() && r.text == "abc s xyz", "a password field is left as typed", r.text);
+
+        // Chromium marks every field of a private window this way.
+        run.field           = makeField();
+        run.field.sensitive = true;
+        r                   = retone(run);
+        check(r.text == "abc nhánh xyz" && !r.hint.empty(), "a private field still changes the tone", r.text);
     }
 
     // Chromium on X11 reports no text, but makes the selection the X11 primary selection (#360).

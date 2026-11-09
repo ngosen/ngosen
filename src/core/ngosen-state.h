@@ -713,6 +713,7 @@ namespace ngosen {
         bool typesText(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
         // Backspace on a word with a tone mark: take off only the mark. False leaves the key as is.
         bool removeToneMark(ngosen::KeyPress& keyEvent);
+        bool replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent);
         // Backspace from after lastWord_ into it: the engine takes up what is left of that word.
         void reopenLastWord();
         // Backspace right after a commit in Preedit: take the word back from the app as preedit.

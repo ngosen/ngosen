@@ -49,9 +49,13 @@ namespace ngosen {
                 charArray.push_back(const_cast<char*>(keymap.value.data())); //NOLINT
             }
             charArray.push_back(nullptr);
-            return NewCustomEngine(charArray.data(), engine_->dictionary(), engine_->macroTable());
+            const uintptr_t engine = NewCustomEngine(charArray.data(), engine_->dictionary(), engine_->macroTable());
+            EngineSetEnglishWords(engine, engine_->englishWords());
+            return engine;
         }
-        return NewEngine(engine_->options().inputMethod.data(), engine_->dictionary(), engine_->macroTable());
+        const uintptr_t engine = NewEngine(engine_->options().inputMethod.data(), engine_->dictionary(), engine_->macroTable());
+        EngineSetEnglishWords(engine, engine_->englishWords());
+        return engine;
     }
 
     void TypingState::setOption() {
@@ -280,6 +284,8 @@ namespace ngosen {
 
         if (ngosen::key::isBackspace(currentSym) || currentSym == ngosen::key::Return) {
             if (ngosen::key::isBackspace(currentSym)) {
+                if (replaceKeysShownAsTyped(keyEvent))
+                    return;
                 dropLetterForBackspace();
             } else {
                 if (finishWordBeforeEnter(keyEvent))
@@ -321,6 +327,31 @@ namespace ngosen {
         }
 
         replaceFromPreedit(keyEvent, currentSym, keyUtf8);
+    }
+
+    // Keys shown as typed can compose once one goes (`dduoxwc` gives đưỡ), but the app deletes one character.
+    bool TypingState::replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent) {
+        if (oldPreBuffer_.empty() || !canSendBackspaces() || EngineShownAsTyped(bambooEngine_.handle()) == 0U)
+            return false;
+        std::string appText = oldPreBuffer_;
+        ngosen::utf8::eraseLastCodepoint(appText);
+        EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::BackSpace, 0);
+        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
+        const std::string        preedit = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+        hasHistory_                      = true;
+        if (preedit == appText) {
+            oldPreBuffer_ = preedit;
+            keyEvent.passToApp();
+            return true;
+        }
+        std::string deletedPart;
+        std::string addedPart;
+        ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, preedit, deletedPart, addedPart);
+        is_deleting_.store(false, std::memory_order_release);
+        keyEvent.accept();
+        performReplacement(deletedPart, addedPart);
+        oldPreBuffer_ = preedit;
+        return true;
     }
 
     bool TypingState::removeToneMark(ngosen::KeyPress& keyEvent) {

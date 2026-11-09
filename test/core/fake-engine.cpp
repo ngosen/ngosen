@@ -75,6 +75,9 @@ namespace ngosen::test {
         const int fd = ::open(NGOSEN_TEST_DICTIONARY, O_RDONLY | O_CLOEXEC);
         if (fd != -1)
             dictionary_ = NewDictionary(static_cast<uintptr_t>(fd));
+        const int englishFd = ::open(NGOSEN_TEST_ENGLISH_WORDS, O_RDONLY | O_CLOEXEC);
+        if (englishFd != -1)
+            englishWords_ = NewWordList(static_cast<uintptr_t>(englishFd));
     }
 
     void FakeResources::setMacros(const std::vector<std::pair<std::string, std::string>>& macros) {
@@ -91,6 +94,7 @@ namespace ngosen::test {
     FakeResources::~FakeResources() {
         DeleteObject(macroTable_);
         DeleteObject(dictionary_);
+        DeleteObject(englishWords_);
     }
 
     bool FakeKey::isModifier() const {

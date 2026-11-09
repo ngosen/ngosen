@@ -131,6 +131,22 @@ namespace ngosen {
         return field.frontend == "xim" && appName(field) == "xterm";
     }
 
+    bool runsShellOnPty(const Field& field) {
+        if (isGtk4VteTerminal(field) || isShellRelayedTerminal(field))
+            return true;
+        // XIM has no input purpose, so xterm is known only by name.
+        if (field.frontend == "xim")
+            return appName(field) == "xterm";
+        // Konsole sets no terminal flag, and GNOME Terminal over D-Bus no input purpose; the names are the
+        // terminals whose app id was read on a real desktop.
+        const std::string name = appName(field);
+        for (const char* terminal : {"org.kde.konsole", "kitty", "Alacritty", "alacritty", "com.mitchellh.ghostty", "gnome-terminal-server", "kgx", "ptyxis"}) {
+            if (name == terminal)
+                return true;
+        }
+        return false;
+    }
+
     bool selectsOverAutocompletion(const Field& field) {
         if ((field.frontend != "dbus" && field.frontend != "fcitx4") || !forwardsBackspaces(field) || field.surroundingText || field.caretWidth <= 0)
             return false;

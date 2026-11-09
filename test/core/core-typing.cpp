@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -3313,6 +3314,35 @@ namespace {
         check(!ok, "snap names are only shortened for IBus clients", said(ok));
     }
 
+    // Terminals as each desktop names them; anything else must keep Vietnamese typing at a password prompt elsewhere.
+    void testTerminalNames() {
+        const std::vector<std::tuple<std::string, std::string, bool>> cases{
+            {"wayland", "org.kde.konsole", true},
+            {"wayland_v2", "org.kde.konsole", true},
+            {"wayland", "kitty", true},
+            {"wayland_v2", "Alacritty", true},
+            {"wayland_v2", "com.mitchellh.ghostty", true},
+            {"dbus", "gnome-terminal-server", true},
+            {"dbus", "kgx", true},
+            {"dbus", "ptyxis", true},
+            {"ibus", "gtk4-im:ptyxis", true},
+            {"ibus", "org.gnome.Ptyxis.desktop", true},
+            {"ibus", "org.gnome.Terminal", true},
+            {"xim", "xterm", true},
+            {"dbus", "org.gnome.Ptyxis", false},
+            {"wayland", "xterm", false},
+            {"ibus", "gnome-shell", false},
+            {"wayland", "microsoft-edge", false},
+            {"dbus", "firefox", false},
+            {"wayland", "org.kde.kate", false},
+            {"wayland", "", false},
+        };
+        for (const auto& [frontend, program, expected] : cases) {
+            const bool ok = ngosen::runsShellOnPty(makeField(frontend, false, program));
+            check(ok == expected, frontend + " " + program + (expected ? " runs a shell on a pty" : " is not a terminal"), ok ? "true" : "false");
+        }
+    }
+
     // GNOME Shell relays apps under their desktop file name.
     void testGnomeBrowserIds() {
         for (const char* id : {"firefox", "firefox-esr", "firefox_firefox", "org.mozilla.firefox", "zen", "app.zen_browser.zen", "librewolf", "io.gitlab.librewolf-community",
@@ -3698,6 +3728,7 @@ int main() {
     testFirstLetterCursorBounce();
     testIbusClientNames();
     testGnomeBrowserIds();
+    testTerminalNames();
     testAutofillMark();
     testReportWithNextKey();
     testSilentFromFirstDeletion();

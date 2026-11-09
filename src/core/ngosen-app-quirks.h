@@ -35,6 +35,9 @@ namespace ngosen {
     // of a command or a URL, as in git push --force. Firefox's address bar reports nothing that sets it apart.
     bool takesDoubleHyphenLiterally(const Field& field);
 
+    // A terminal window whose shell runs on one of the user's ptys, where a password prompt can hide input.
+    bool runsShellOnPty(const Field& field);
+
     // True for the address bar of Chromium-based browsers on the D-Bus and fcitx4 frontends: it reports no
     // surrounding text and selects an inline autocompletion after the typed text.
     bool selectsOverAutocompletion(const Field& field);

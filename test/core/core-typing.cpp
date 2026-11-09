@@ -377,6 +377,47 @@ namespace {
               std::to_string(host->forwarded().size()) + " forwarded, " + std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
     }
 
+    // Types `word` at the end of a Messenger composer holding `before`, then e.
+    void typeInMessengerComposer(ngosen::TypingState& state, FakeHost& host, FakeLoop& loop, const std::string& before, const std::string& word) {
+        std::string shown = before;
+        host.setSurrounding(shown.empty() ? "\n" : shown + "\n\n", static_cast<unsigned int>(ngosen::utf8::length(shown)));
+        for (const char c : word) {
+            press(state, static_cast<uint32_t>(c));
+            shown += c;
+            host.setSurrounding(shown + "\n\n", static_cast<unsigned int>(ngosen::utf8::length(shown)));
+            state.surroundingUpdated();
+            loop.pump(10);
+        }
+        press(state, static_cast<uint32_t>('e'));
+    }
+
+    void testMessengerFirstWordWaitsAfterSurroundingDelete() {
+        realMode = ngosen::Mode::Sen;
+        {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "chromium"));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            typeInMessengerComposer(state, *host, loop, "", "tie");
+            loop.pump(30);
+            check(host->deletes().size() == 1 && host->commits().empty(), "messenger: the first word's commit waits after the deletion",
+                  std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
+            loop.pump(60);
+            check(join(host->commits()) == "['ê']", "messenger: the first word's commit comes after the wait", join(host->commits()));
+        }
+        {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "chromium"));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            typeInMessengerComposer(state, *host, loop, "chào ", "tie");
+            loop.pump(3);
+            check(host->deletes().size() == 1 && join(host->commits()) == "['ê']", "messenger: a later word is committed at once", join(host->commits()));
+        }
+    }
+
     // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
     void testFirefoxDeletesThroughSurrounding() {
         for (const char* frontend : {"wayland", "wayland_v2", "dbus"}) {
@@ -3654,6 +3695,7 @@ int main() {
     for (const char* frontend : {"wayland", "wayland_v2", "dbus"})
         testSenDeletesReportedWord(frontend);
     testFirefoxDeletesThroughSurrounding();
+    testMessengerFirstWordWaitsAfterSurroundingDelete();
     testForwardedKeysNewerThanTyped();
     testKeyDuringReplacement();
     testCommitAfterTheReport();

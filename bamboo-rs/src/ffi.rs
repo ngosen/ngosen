@@ -134,6 +134,12 @@ pub extern "C" fn EnginePullPreedit(engine: usize) -> *mut c_char {
     handles::with_engine(engine, |e| c_string(&e.preedit_text)).unwrap_or(std::ptr::null_mut())
 }
 
+/// The keys typed for the word in progress, before any marks are applied.
+#[unsafe(no_mangle)]
+pub extern "C" fn EnginePullRawText(engine: usize) -> *mut c_char {
+    handles::with_engine(engine, |e| c_string(&e.raw_text())).unwrap_or(std::ptr::null_mut())
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn EngineCommitPreedit(engine: usize) {
     handles::with_engine(engine, BambooEngine::commit_preedit);

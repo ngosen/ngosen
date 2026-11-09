@@ -132,13 +132,8 @@ class NgoSenSettingsWindow(QMainWindow):
         layout.setContentsMargins(10, 12, 0, 0)
         layout.setSpacing(4)
 
+        # No logo here: the window manager already draws the app icon in the title bar above.
         header = QHBoxLayout()
-        header.setSpacing(8)
-        icon = brand.logo_icon()
-        if not icon.isNull():
-            logo = QLabel()
-            logo.setPixmap(icon.pixmap(28, 28))
-            header.addWidget(logo)
         wordmark = QLabel("Ngó Sen")
         wordmark.setObjectName("Wordmark")
         wordmark.setFont(brand.sized_font(22))

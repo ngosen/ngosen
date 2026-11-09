@@ -76,6 +76,13 @@ class SidebarMarksTest(unittest.TestCase):
         self.assertEqual(wordmark.font().pixelSize(), 22)
         self.assertFalse(wordmark.font().bold())
 
+    def test_the_title_bar_carries_the_only_logo(self):
+        # Window managers draw the app icon in the title bar right above the wordmark.
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        column = window.findChild(QLabel, "Wordmark").parentWidget()
+        logos = [label for label in column.findChildren(QLabel) if not label.pixmap().isNull()]
+        self.assertEqual(logos, [])
+
 
 if __name__ == "__main__":
     unittest.main()

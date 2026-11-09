@@ -187,6 +187,17 @@ class GtkWindowTest(unittest.TestCase):
         self.assertIn("@define-color accent_bg_color #1c6b5f", brand.css(False, 5))
         self.assertIn("--accent-bg-color: #247b6c", brand.css(True, 6))
 
+    def test_the_sidebar_shows_one_logo_where_the_desktop_adds_its_icon(self):
+        # Plasma asks GTK apps for the app icon left of the title buttons.
+        settings = Gtk.Settings.get_default()
+        before = settings.props.gtk_decoration_layout
+        self.addCleanup(setattr, settings.props, "gtk_decoration_layout", before)
+        settings.props.gtk_decoration_layout = "icon:minimize,maximize,close"
+        header = window.Window(None, self.dbus).sidebar_header
+        self.assertEqual(header.get_decoration_layout(), ":minimize,maximize,close")
+        settings.props.gtk_decoration_layout = "close,icon:"
+        self.assertEqual(header.get_decoration_layout(), "close:")
+
     def test_the_marks_keep_the_system_font(self):
         self.assertNotIn("font-family", brand.css(False, 6))
 

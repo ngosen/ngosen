@@ -2,7 +2,8 @@
 # SPDX-FileCopyrightText: 2026 Ngó Sen contributors
 #
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Regenerates bamboo-rs/src/engine/english-words.txt from the hunspell en_US dictionary.
+"""Regenerates bamboo-rs/src/engine/english-words.txt from the hunspell en_US dictionary, or with
+--common data/english-common.txt.
 
 A word goes in when Telex keys turn it into plain letters that differ from the keys. People also
 double a key on purpose to undo a tone (`off` for "of"), so a word is left out when it has a doubled
@@ -12,6 +13,7 @@ letter and what Telex shows is English too.
 import os
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -125,7 +127,10 @@ def common_words():
 
 
 def main():
-    common_words()
+    # The common list follows the host's dictionaries, so it changes only when asked for.
+    if "--common" in sys.argv:
+        common_words()
+        return
     words = sorted(english(candidates()))
     changed = [(w, s) for w, s in shown_by_engine(words) if w != s and s.isascii()]
     shown_english = english([s for _, s in changed])

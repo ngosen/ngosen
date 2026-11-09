@@ -79,21 +79,24 @@ impl FromIterator<String> for Dictionary {
 
 /// English words, sorted, to tell whether keys shown as typed start one.
 #[derive(Debug, Default)]
-pub struct WordList(Vec<String>);
+pub struct WordList(Box<[Box<str>]>);
 
 impl WordList {
     pub fn starts_word(&self, keys: &str) -> bool {
-        let i = self.0.partition_point(|w| w.as_str() < keys);
+        let i = self.0.partition_point(|w| &**w < keys);
         self.0.get(i).is_some_and(|w| w.starts_with(keys))
     }
 }
 
 impl FromIterator<String> for WordList {
     fn from_iter<I: IntoIterator<Item = String>>(words: I) -> Self {
-        let mut words: Vec<String> = words.into_iter().map(|w| w.to_lowercase()).collect();
+        let mut words: Vec<Box<str>> = words
+            .into_iter()
+            .map(|w| w.to_lowercase().into_boxed_str())
+            .collect();
         words.sort();
         words.dedup();
-        Self(words)
+        Self(words.into_boxed_slice())
     }
 }
 

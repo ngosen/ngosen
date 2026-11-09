@@ -1835,8 +1835,14 @@ namespace {
     // and the engine on the same text. \b is Backspace, \t Tab and \x1b Escape.
     void testRestoreBeforeDigitWhileTyping() {
         const std::vector<std::pair<std::string, std::string>> cases = {
-            {"Sose2", "Sose2"},      {"Sose2026\t", "Sose2026"}, {"Sose2026\x1b", "Sose2026"}, {"Sose2\b2 ", "Sose2 "}, {"Sose2026 \b\b ", "Sose202 "},
-            {"Sose2a\b ", "Sose2 "}, {"tooi2 ", "tôi2 "},
+            {"Sose2", "Sose2"},
+            {"Sose2026\t", "Sose2026"},
+            {"Sose2026\x1b", "Sose2026"},
+            {"Sose2\b2 ", "Sose2 "},
+            {"Sose2026 \b\b ", "Sose202 "},
+            {"Sose2a\b ", "Sose2 "},
+            {"tooi2 ", "tôi2 "},
+            {"thuwcx2tooi2\b\b\b\b\b\bj ", "thuwcj "},
         };
         for (const auto& [typed, want] : cases) {
             std::vector<uint32_t> keys;

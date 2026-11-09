@@ -412,7 +412,11 @@ namespace fcitx {
                 dbusObject_.reset();
             }
             // As fcitx5 5.1.22 does it, which needs Wayland to tell windows apart.
-            const bool watchPortal = getEnv("XDG_SESSION_TYPE") == "wayland" && !ngosen::fcitxNamesGnomeApps(Instance::version());
+            const std::string sessionType = getEnv("XDG_SESSION_TYPE");
+            const bool        watchPortal = sessionType == "wayland" && !ngosen::fcitxNamesGnomeApps(Instance::version());
+            // fcitx5 started outside the session, for example by hand, lacks it.
+            if (sessionType.empty())
+                NGOSEN_INFO("XDG_SESSION_TYPE is not set; not watching GNOME's portal for the focused app");
             gnomeShell_ =
                 std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>(), watchPortal, [this](const std::string& app) { shellFocusedAppChanged(app); });
         }

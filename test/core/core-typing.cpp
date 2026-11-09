@@ -1212,24 +1212,28 @@ namespace {
     }
 
     void testRecorderHidesPasswords() {
-        realMode = ngosen::Mode::Sen;
-        FakeLoop      loop;
-        FakeResources resources;
-        Field         field       = makeField("wayland", true, "firefox");
-        field.password            = true;
-        auto                owned = std::make_unique<FakeHost>(loop, field);
-        FakeHost*           host  = owned.get();
-        ngosen::TypingState state(&resources, std::move(owned));
+        for (const bool sensitive : {false, true}) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop      loop;
+            FakeResources resources;
+            Field         field       = makeField("wayland", true, "firefox");
+            field.password            = !sensitive;
+            field.sensitive           = sensitive;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
 
-        typeTie(state, *host, loop, true);
-        press(state, static_cast<uint32_t>('e'));
-        host->setSurrounding("ti", 2);
-        state.surroundingUpdated();
-        loop.pump(150);
+            typeTie(state, *host, loop, true);
+            press(state, static_cast<uint32_t>('e'));
+            host->setSurrounding("ti", 2);
+            state.surroundingUpdated();
+            loop.pump(150);
 
-        const std::string log = resources.recorder().dump();
-        check(has(log, " password=1 ") && has(log, "\tkey\thidden\n"), "recorder: marks the password field", log);
-        check(!has(log, "0x0065") && !has(log, "\"ti") && !has(log, "\"ê\"") && !has(log, " e\n"), "recorder: keeps no password text", log);
+            const std::string log  = resources.recorder().dump();
+            const std::string kind = sensitive ? "private" : "password";
+            check(has(log, sensitive ? " sensitive=1 " : " password=1 ") && has(log, "\tkey\thidden\n"), "recorder: marks the " + kind + " field", log);
+            check(!has(log, "0x0065") && !has(log, "\"ti") && !has(log, "\"ê\"") && !has(log, " e\n"), "recorder: keeps no " + kind + " text", log);
+        }
     }
 
     void testRecorderMarksTerminal() {

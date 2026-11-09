@@ -110,7 +110,8 @@ add_ngosen_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule"
 add_ngosen_headless_test(toggle_key toggle-key.cpp "integration;apprule")
 add_ngosen_headless_test(hidden_input hidden-input.cpp "integration;terminal")
 target_link_libraries(hidden_input PRIVATE util)
-set_tests_properties(hidden_input PROPERTIES SKIP_RETURN_CODE 77)
+# Its prompt is seen by every test that types into a terminal, since the engine scans all of the user's ptys.
+set_tests_properties(hidden_input PROPERTIES SKIP_RETURN_CODE 77 RUN_SERIAL TRUE)
 add_ngosen_headless_test(app_switch_memory app-switch-memory.cpp "integration;apprule")
 add_ngosen_headless_test(retype_after_switch retype-after-switch.cpp "integration;retype")
 add_ngosen_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp "integration;apprule;gnome")

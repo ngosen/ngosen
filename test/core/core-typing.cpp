@@ -3329,6 +3329,7 @@ namespace {
             {"ibus", "org.gnome.Ptyxis.desktop", true},
             {"ibus", "org.gnome.Terminal", true},
             {"xim", "xterm", true},
+            {"xim", "Alacritty", true},
             {"dbus", "org.gnome.Ptyxis", false},
             {"wayland", "xterm", false},
             {"ibus", "gnome-shell", false},

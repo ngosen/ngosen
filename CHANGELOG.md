@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Trên GNOME tắt extension, đóng một cửa sổ ngay trong màn tổng quan không còn làm ô tìm kiếm mang chế độ gõ và cài đặt riêng của app phía sau (#644).
+- Gõ từ không phải tiếng Việt liền chữ số khi bật gõ tắt (mặc định) nay trả lại đúng phím đã gõ ngay khi tới chữ số, không còn hiện "Soé2" rồi chờ dấu cách mới thành "Sose2026"; kết thúc chữ bằng Tab, Esc hay các phím giữ chữ như đang hiện cũng giữ "Sose2026" thay vì "Soé2026". Ở Gõ Sen, gõ "Sose2026", dấu cách rồi BackSpace hai lần không còn làm rối chữ thành "Sosse202"; từ tiếng Việt liền số như "tôi2" vẫn giữ nguyên (#613, #643).
 
 ## [1.9.0-1] — 08/11/2026
 

@@ -1827,6 +1827,27 @@ namespace {
         }
     }
 
+    // A digit restores the word before it as soon as it is typed (#613), and Backspace keeps the app
+    // and the engine on the same text. \b is Backspace, \t Tab and \x1b Escape.
+    void testRestoreBeforeDigitWhileTyping() {
+        const std::vector<std::pair<std::string, std::string>> cases = {
+            {"Sose2", "Sose2"},      {"Sose2026\t", "Sose2026"}, {"Sose2026\x1b", "Sose2026"}, {"Sose2\b2 ", "Sose2 "}, {"Sose2026 \b\b ", "Sose202 "},
+            {"Sose2a\b ", "Sose2 "}, {"tooi2 ", "tôi2 "},
+        };
+        for (const auto& [typed, want] : cases) {
+            std::vector<uint32_t> keys;
+            for (char c : typed)
+                keys.push_back(c == '\b' ? ngosen::key::BackSpace : c == '\t' ? ngosen::key::Tab : c == '\x1b' ? ngosen::key::Escape : static_cast<uint32_t>(c));
+            std::string printable = typed;
+            std::replace_if(printable.begin(), printable.end(), [](char c) { return c == '\b' || c == '\t' || c == '\x1b'; }, '~');
+            for (const auto& [frontend, surroundingText] : {std::pair<const char*, bool>{"wayland", true}, {"ibus", false}}) {
+                FakeResources     resources;
+                const std::string sen = ngosen::test::typeInApp(resources, makeField(frontend, surroundingText), {}, keys, std::vector<int>(keys.size(), 30));
+                check(sen == want, std::string("restore before digit, Sen (") + frontend + "): " + printable, sen);
+            }
+        }
+    }
+
     // GLFW (Minecraft) under XIM keeps the time of the last Backspace press and drops older ones.
     void testForwardedKeysNewerThanTyped() {
         ngosen::test::AppQuirks glfw;
@@ -3612,6 +3633,7 @@ int main() {
     testLockWord();
     testLockWordPreedit();
     testRetoneAtWordEndInBothModes();
+    testRestoreBeforeDigitWhileTyping();
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();
     testLateCopiesRecoverOnWlroots();

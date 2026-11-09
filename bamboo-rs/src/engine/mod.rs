@@ -179,6 +179,8 @@ pub struct BambooEngine {
     pub(crate) output_charset: String,
     pub(crate) time_format: String,
     pub(crate) date_format: String,
+    /// Set by Backspace on a word shown with its marks, which the app still shows.
+    pub(crate) keep_marks_until_next_key: bool,
 }
 
 impl BambooEngine {
@@ -201,6 +203,7 @@ impl BambooEngine {
             output_charset: "Unicode".to_string(),
             time_format: "%H:%M".to_string(),
             date_format: "%d/%m/%Y".to_string(),
+            keep_marks_until_next_key: false,
         }
     }
 
@@ -271,11 +274,26 @@ impl BambooEngine {
         self.get_processed_string(OutputOptions::RAW | OutputOptions::FULL_TEXT)
     }
 
+    /// A digit shows the word before it is not Vietnamese as well as a space does.
+    fn word_before_digits_is_english(&self) -> bool {
+        !self.keep_marks_until_next_key
+            && self
+                .get_processed_string(OutputOptions::LOWER_CASE)
+                .is_empty()
+            && !(self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some())
+            && has_any_vietnamese_rune(&self.shown_as_composed())
+            && self.must_fallback_to_english()
+    }
+
+    fn shown_as_composed(&self) -> String {
+        self.get_processed_string(OutputOptions::PUNCTUATION_MODE | OutputOptions::FULL_TEXT)
+    }
+
     pub(crate) fn get_preedit_string(&self) -> String {
-        if self.should_fallback_to_english(true) {
+        if self.should_fallback_to_english(true) || self.word_before_digits_is_english() {
             return self.raw_text();
         }
-        self.get_processed_string(OutputOptions::PUNCTUATION_MODE | OutputOptions::FULL_TEXT)
+        self.shown_as_composed()
     }
 
     fn rune_count(&self) -> usize {
@@ -554,6 +572,7 @@ impl BambooEngine {
         self.commit_text = s;
         self.preedit_text.clear();
         self.preeditor.reset();
+        self.keep_marks_until_next_key = false;
     }
 
     pub(crate) fn update_preedit(&mut self, processed: &str) {
@@ -607,10 +626,16 @@ impl BambooEngine {
             return;
         }
         let mut keys = self.raw_text();
+        // The app deletes one character of what it shows, so a word shown as typed stays so.
+        let shown_as_typed = self.get_preedit_string() == keys;
         keys.pop();
         self.preeditor.reset();
         for key in keys.chars() {
-            let mode = self.get_bamboo_input_mode();
+            let mode = if shown_as_typed {
+                Mode::English
+            } else {
+                self.get_bamboo_input_mode()
+            };
             self.preeditor.process_key(key, mode);
         }
     }
@@ -623,7 +648,9 @@ impl BambooEngine {
             self.commit_preedit_and_reset(String::new());
             return true;
         }
+        let shown_as_typed = self.get_preedit_string() == self.raw_text();
         self.remove_last_char();
+        self.keep_marks_until_next_key = !shown_as_typed;
         let preedit = self.get_preedit_string();
         self.update_preedit(&preedit);
         true
@@ -668,6 +695,7 @@ impl BambooEngine {
             return self.backspace();
         }
         let old_text = self.get_preedit_string();
+        self.keep_marks_until_next_key = false;
         if key_val == KEY_TAB {
             return self.tab(old_text);
         }
@@ -696,6 +724,7 @@ impl BambooEngine {
 
     pub fn rebuild_from_text(&mut self, text: &str) {
         self.preeditor.rebuild_from_text(text);
+        self.keep_marks_until_next_key = false;
         self.preedit_text = self.get_preedit_string();
         self.commit_text.clear();
     }

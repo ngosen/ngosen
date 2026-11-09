@@ -49,7 +49,11 @@ namespace ngosen::test {
         std::vector<EmojiEntry> searchEmoji(const std::string& /*prefix*/) override {
             return {};
         }
-        void      recordEmoji(const EmojiEntry& /*entry*/) override {}
+        void recordEmoji(const EmojiEntry& /*entry*/) override {}
+        bool anyTerminalHidesInput() const override {
+            return terminalHidesInput;
+        }
+        bool      terminalHidesInput = false;
         Recorder& recorder() override {
             return recorder_;
         }

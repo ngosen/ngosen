@@ -776,6 +776,13 @@ namespace fcitx {
         if (handleToggleKey(keyEvent))
             return;
 
+        // A terminal password prompt gets the keys as typed, and they stay out of the typing log.
+        if (stateFor(ic)->passesHiddenInput()) {
+            if (isModeMenuOpen(ic))
+                closeModeMenuPanel(ic, false);
+            return;
+        }
+
         if (isModeMenuOpen(ic)) {
             handleModeMenuKey(keyEvent);
             return;

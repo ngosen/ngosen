@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Tự ngừng gõ tiếng Việt khi terminal hỏi password ẩn chữ: giữ nguyên phím, không ghi nhật ký gõ; xong tự bật lại, không cần cài đặt. Riêng sudo trên Linux Mint hiện dấu * chưa nhận ra, cần dùng phím chuyển Anh/Việt để chuyển sang tiếng Anh (#106)
+
 ## [1.9.0-1] — 08/11/2026
 
 GNOME tắt extension vẫn giữ chế độ gõ và cài đặt riêng theo từng app, và lệnh cài không còn tự bật extension khi portal báo được tên app (#621, #629). Gõ Sen hiện dấu ngay trong terminal và bớt khựng trong Firefox trên Hyprland, Sway (#607, #620, #623, #630); gõ -- trong terminal và ô địa chỉ giữ nguyên (#625); nhận ra thêm các bản Firefox trên GNOME (#634).

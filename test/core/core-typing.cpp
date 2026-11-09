@@ -3343,6 +3343,71 @@ namespace {
         }
     }
 
+    // A terminal at a password prompt gets every key as typed; typing goes on as before once it shows input again.
+    void testHiddenInput() {
+        Field kitty    = makeField("wayland", false, "kitty");
+        kitty.terminal = true;
+        const ngosen::test::AppQuirks terminalQuirks{.erasesOnDel = true};
+        for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Preedit}) {
+            realMode = mode;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, kitty, terminalQuirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            const auto typeText = [&](const std::string& text) {
+                for (char c : text) {
+                    app->type(static_cast<uint32_t>(c));
+                    loop.pump(30);
+                }
+            };
+            const std::string name = mode == ngosen::Mode::Sen ? "Sen: " : "Preedit: ";
+            ngosen::test::captureLog(true);
+            typeText("tieeng");
+            resources.terminalHidesInput = true;
+            typeText("s");
+            loop.pump(100);
+            // A word already in the field stays; one in the preedit goes out as the keys typed.
+            const std::string hidden = mode == ngosen::Mode::Sen ? "tiêngs" : "tieengs";
+            check(app->text() == hidden, name + "keys at a hidden prompt reach the terminal as typed", app->text());
+            resources.terminalHidesInput = false;
+            typeText(" vieetj ");
+            loop.pump(100);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            check(app->text() == hidden + " việt ", name + "Vietnamese typing comes back after the prompt", app->text());
+            check(countHaving(lines, "Terminal hides input") == 1 && countHaving(lines, "Terminal shows input again") == 1, name + "each change is logged once", join(lines));
+        }
+
+        // A Backspace after the prompt must not reopen the word typed before it.
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         gnomeTerminal    = makeField("dbus", false, "gnome-terminal-server");
+        gnomeTerminal.keyEventOrderFix = true;
+        auto                owned      = std::make_unique<ngosen::test::FakeApp>(loop, gnomeTerminal, ngosen::test::AppQuirks{});
+        auto*               app        = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeKey = [&](uint32_t sym) {
+            app->type(sym);
+            loop.pump(30);
+        };
+        for (char c : std::string("tieeng "))
+            typeKey(static_cast<uint32_t>(c));
+        resources.terminalHidesInput = true;
+        typeKey('a');
+        typeKey(ngosen::key::BackSpace);
+        resources.terminalHidesInput = false;
+        typeKey(ngosen::key::BackSpace);
+        typeKey('s');
+        loop.pump(100);
+        check(app->text() == "tiêngs", "Backspace after a hidden prompt leaves the earlier word closed", app->text());
+    }
+
     // GNOME Shell relays apps under their desktop file name.
     void testGnomeBrowserIds() {
         for (const char* id : {"firefox", "firefox-esr", "firefox_firefox", "org.mozilla.firefox", "zen", "app.zen_browser.zen", "librewolf", "io.gitlab.librewolf-community",
@@ -3729,6 +3794,7 @@ int main() {
     testIbusClientNames();
     testGnomeBrowserIds();
     testTerminalNames();
+    testHiddenInput();
     testAutofillMark();
     testReportWithNextKey();
     testSilentFromFirstDeletion();

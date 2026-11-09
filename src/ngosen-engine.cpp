@@ -1668,8 +1668,12 @@ namespace fcitx {
     // The Vietnamese mode an app gets anyway is not kept as a rule, so the app follows the global setting again.
     // OFF stays pinned: dropped, it would follow the switch key back to Vietnamese.
     void NgoSenEngine::keepAppMode(const std::string& appName, NgoSenMode mode) {
-        if (mode == vietnameseModeFor(appName)) {
+        if (*config_.vietnameseOn && mode == vietnameseModeFor(appName)) {
+            // Both spellings, or a rule saved under the bare name would still apply to appName.
             clearAppRule(appName);
+            const std::string bareName = stripDesktopSuffix(appName);
+            if (bareName != appName)
+                clearAppRule(bareName);
             return;
         }
         setAppRule(appName, mode);

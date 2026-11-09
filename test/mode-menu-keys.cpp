@@ -234,6 +234,39 @@ int main() {
     check(realMode.load() == ngosen::Mode::Off, "shortcut e picks OFF", modeName(realMode.load()));
     check(hasRule(engine, "quiet"), "OFF is kept for the app", "no rule");
 
+    // A rule saved under the bare name also holds for the .desktop name, so going back clears that one.
+    auto bare = std::make_unique<TestInputContext>(&testInstance.instance, "mousepad");
+    bare->focusIn();
+    fcitx::InputContextEvent bareFocus(bare.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, bareFocus);
+    press(engine, entry, *bare, FcitxKey_grave);
+    press(engine, entry, *bare, FcitxKey_1);
+    auto desktop = std::make_unique<TestInputContext>(&testInstance.instance, "mousepad.desktop");
+    desktop->focusIn();
+    fcitx::InputContextEvent desktopFocus(desktop.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, desktopFocus);
+    press(engine, entry, *desktop, FcitxKey_grave);
+    press(engine, entry, *desktop, FcitxKey_q);
+    check(!hasRule(engine, "mousepad"), "the usual mode picked under the .desktop name drops the bare-name rule", "rule kept");
+    engine.activate(entry, quietFocus);
+    engine.activate(entry, desktopFocus);
+    check(realMode.load() == ngosen::Mode::Preedit, "the .desktop name stays on its usual mode", modeName(realMode.load()));
+
+    // With English as the global setting the app is in OFF, so Preedit is not its usual mode.
+    fcitx::RawConfig english = config;
+    english.setValueByPath("VietnameseOn", "False");
+    engine.setConfig(english);
+    auto notes = std::make_unique<TestInputContext>(&testInstance.instance, "notes");
+    notes->focusIn();
+    fcitx::InputContextEvent notesFocus(notes.get(), fcitx::EventType::InputContextFocusIn);
+    engine.activate(entry, notesFocus);
+    press(engine, entry, *notes, FcitxKey_F12);
+    press(engine, entry, *notes, FcitxKey_F12);
+    engine.activate(entry, quietFocus);
+    engine.activate(entry, notesFocus);
+    check(realMode.load() == ngosen::Mode::Preedit, "with English everywhere, the cycle key's Preedit holds for the app", modeName(realMode.load()));
+    check(hasRule(engine, "notes"), "with English everywhere, Preedit is kept for the app", "no rule");
+
     check(!fcitx::modeMenuCanDraw("classicui", "ibus", "wayland:", false), "a field relayed on Wayland has no panel", "true");
     check(fcitx::modeMenuCanDraw("classicui", "ibus", "x11::0", false), "a relayed field on X11 can draw", "false");
     check(fcitx::modeMenuCanDraw("classicui", "dbus", "wayland:", false), "another frontend can draw", "false");

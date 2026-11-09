@@ -70,12 +70,10 @@ namespace ngosen {
     }
 
     bool GnomeAppNames::setPortalApps(const std::vector<RunningApp>& apps) {
+        // In the overview the app changes both when a window is picked and when one is closed, and
+        // the search box keeps the focus after a close, so the overview lasts until OverviewActive ends.
         const std::string app = focusedGnomeApp(apps, false);
-        // The portal asks only when the focused app changes, which in the overview means a window was
-        // picked, before OverviewActive goes false.
-        if (overview_ && !app.empty() && (portal_focus_.empty() || portal_focus_.front().id != app))
-            overview_ = false;
-        portal_answered_ = true;
+        portal_answered_      = true;
         portal_focus_.clear();
         if (!app.empty())
             portal_focus_.push_back({app, true});

@@ -97,6 +97,8 @@ prepare_system() {
         dnf install -y -q sudo curl procps-ng dbus-daemon dbus-tools shadow-utils
         # The installer recognises KDE by kreadconfig6 and kwriteconfig6.
         [ "$session" = kde ] && dnf install -y -q kf6-kconfig
+        # A stand-in IBus edition is built on GNOME, and script answers the installer's question.
+        [ "$session" = gnome ] && dnf install -y -q rpm-build util-linux-script
     fi
     useradd -m "$user"
     echo "$user ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/"$user"
@@ -421,7 +423,8 @@ state=$HOME/.stub-enabled-extensions
 case "$1 $2 $3" in
     "get org.gnome.shell enabled-extensions") cat "$state" 2>/dev/null || echo "@as []" ;;
     "set org.gnome.shell enabled-extensions") printf '%s\n' "$4" >"$state" ;;
-    "get org.gnome.desktop.input-sources sources") echo "[('xkb', 'us')]" ;;
+    "get org.gnome.desktop.input-sources sources") cat "$HOME/.stub-input-sources" 2>/dev/null || echo "[('xkb', 'us')]" ;;
+    "set org.gnome.desktop.input-sources sources") printf '%s\n' "$4" >"$HOME/.stub-input-sources" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -870,6 +873,99 @@ check_restart_through_kwin() {
     bus=
 }
 
+ibus_stand_in=
+input_sources=$home/.stub-input-sources
+
+# Same name as the IBus edition and the same conflict its packages declare.
+build_ibus_stand_in() {
+    local dir=$work/ibus-stand-in
+    if command -v dpkg-deb >/dev/null 2>&1; then
+        mkdir -p "$dir/pkg/DEBIAN"
+        printf 'Package: ibus-ngosen\nVersion: 1.0-1\nArchitecture: all\nMaintainer: Test <test@example.org>\nConflicts: fcitx5-ngosen\nDescription: stand-in for the IBus edition\n' \
+            >"$dir/pkg/DEBIAN/control"
+        dpkg-deb --build "$dir/pkg" "$dir/ibus-ngosen.deb" >/dev/null
+        ibus_stand_in=$dir/ibus-ngosen.deb
+    else
+        mkdir -p "$dir/SPECS"
+        printf 'Name: ibus-ngosen\nVersion: 1.0\nRelease: 1\nSummary: Stand-in\nLicense: GPL-3.0-or-later\nBuildArch: noarch\nConflicts: fcitx5-ngosen\n%%description\nStand-in for the IBus edition.\n%%files\n' \
+            >"$dir/SPECS/ibus-ngosen.spec"
+        rpmbuild --quiet -bb --define "_topdir $dir" "$dir/SPECS/ibus-ngosen.spec"
+        ibus_stand_in=$(find "$dir/RPMS" -name '*.rpm' | head -n 1)
+    fi
+    chmod -R a+rX "$dir"
+}
+
+install_ibus_stand_in() {
+    if command -v apt-get >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -q "$ibus_stand_in" >/dev/null
+    else
+        dnf install -y -q "$ibus_stand_in" >/dev/null
+    fi
+}
+
+package_tool() { if command -v apt-get >/dev/null 2>&1; then echo apt-get; else echo dnf; fi; }
+
+# A missing package in the same transaction makes the whole install fail before it changes anything.
+break_package_installs() {
+    local tool
+    tool=$(package_tool)
+    mv "/usr/bin/$tool" "/usr/bin/$tool.smoke"
+    # shellcheck disable=SC2016
+    printf '#!/bin/sh\n[ "$1" = install ] && set -- "$@" ngosen-no-such-package\nexec /usr/bin/%s.smoke "$@"\n' "$tool" \
+        >"/usr/bin/$tool"
+    chmod +x "/usr/bin/$tool"
+}
+
+restore_package_installs() {
+    local tool
+    tool=$(package_tool)
+    mv "/usr/bin/$tool.smoke" "/usr/bin/$tool"
+}
+
+# The installer reads its answer from the terminal, so script gives it one.
+installer_answers() {
+    printf '%s\n' "$1" | as_user script -qec "bash $work/install.sh" /dev/null >"$install_log" 2>&1
+}
+
+warns_about_ibus_edition() { grep -qF "mọi tài khoản trên máy" "$install_log"; }
+sources_are() { [ "$(cat "$input_sources")" = "$1" ]; }
+
+check_replaces_ibus_edition() {
+    local before="[('xkb', 'us'), ('ibus', 'ngosen'), ('xkb', 'fr')]"
+    use_gnome_stubs
+    check "uninstall before the IBus edition succeeds" uninstall_logged
+    build_ibus_stand_in
+    install_ibus_stand_in
+    check "precondition: the IBus edition is installed" is_installed ibus-ngosen
+    printf '%s\n' "$before" | as_user tee "$input_sources" >/dev/null
+
+    check "declining the replacement exits cleanly" installer_answers n
+    check "it says every account loses the IBus edition" warns_about_ibus_edition
+    check "it stops before installing" grep -qF "Đã dừng, chưa cài gì." "$install_log"
+    check "the IBus edition stays after declining" is_installed ibus-ngosen
+
+    break_package_installs
+    check "a failed replacement fails" refuses install_logged
+    restore_package_installs
+    check "the IBus edition stays after a failed install" is_installed ibus-ngosen
+    check "fcitx5-ngosen is not installed after it" is_removed fcitx5-ngosen
+    check "the input sources stay after it" sources_are "$before"
+
+    check "replacing the IBus edition succeeds" install_logged
+    check "it warned before replacing" warns_about_ibus_edition
+    check "the IBus edition is removed" is_removed ibus-ngosen
+    check "fcitx5-ngosen replaces it" is_installed fcitx5-ngosen
+    check "only the IBus source leaves the input sources" sources_are "[('xkb', 'us'), ('xkb', 'fr')]"
+
+    check "a second run succeeds" install_logged
+    check "it no longer mentions the IBus edition" refuses warns_about_ibus_edition
+    stub_path=
+    # A stand-in left behind would conflict with every later install.
+    if is_installed ibus-ngosen; then
+        if command -v apt-get >/dev/null 2>&1; then apt-get remove -y -q ibus-ngosen >/dev/null; else dnf remove -y -q ibus-ngosen >/dev/null; fi
+    fi
+}
+
 installs_from() {
     as_user env NGOSEN_RELEASE_URL="file://$1" bash "$work/install.sh" --yes >"$install_log" 2>&1
 }
@@ -916,7 +1012,7 @@ main() {
     check_packages
     [ "$failures" -eq 0 ] || finish
     check "it refuses the removed --ibus option" rejects_ibus_option
-    check "the installer no longer names the IBus package" refuses grep -qE -- 'ibus-ngosen|--ibus' "$work/install.sh"
+    check "the installer no longer offers --ibus" refuses grep -qF -- '--ibus' "$work/install.sh"
     check "the package leaves the next steps to install.sh" refuses grep -qF -- "--- Cấu hình Ngó Sen ---" "$install_log"
     check_session_files
     if [ "$session" = gnome ]; then
@@ -977,6 +1073,8 @@ main() {
         check_edited_environment_kept
         echo "== extensions on GNOME 50.1"
         check_extensions_turned_back
+        echo "== replacing the IBus edition"
+        check_replaces_ibus_edition
     fi
 
     echo "== which releases have packages"

@@ -130,12 +130,15 @@ namespace ngosen::test {
         const uint32_t state = ((sym & WithShift) != 0U ? modifier::Shift : 0U) | ((sym & WithCtrl) != 0U ? modifier::Ctrl : 0U);
         sym &= ~(WithShift | WithCtrl);
         FakeKey down(sym, false, state, time);
-        state_->keyEvent(down);
+        // As the fcitx5 shell does, a terminal hiding input gets the key without the typing logic.
+        const bool hidden = state_->passesHiddenInput();
+        if (!hidden)
+            state_->keyEvent(down);
         if (!down.accepted() && quirks_.keepsLastEditPerTurn)
             endTurn();
         if (!down.accepted())
             cursorPastBy_ = 0;
-        if (!down.accepted() && quirks_.resendsKeysWithoutText && keyText(sym).empty()) {
+        if (!hidden && !down.accepted() && quirks_.resendsKeysWithoutText && keyText(sym).empty()) {
             FakeKey again(sym, false, modifier::Repeat, time);
             state_->keyEvent(again);
         }

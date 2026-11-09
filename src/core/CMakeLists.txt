@@ -15,6 +15,7 @@ add_library(ngosen_core STATIC
     ngosen-globals.cpp
     ngosen-gnome-apps.cpp
     ngosen-pointer.cpp
+    ngosen-pty.cpp
     ngosen-recorder.cpp
     ngosen-strings.cpp
     ngosen-surrounding-check.cpp

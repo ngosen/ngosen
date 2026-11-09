@@ -151,6 +151,10 @@ namespace ngosen {
          */
         void flushPendingReplacement();
 
+        // True while this field is a terminal whose shell reads input it does not show, as at a password
+        // prompt; the caller then passes the key to the app untouched. Called for every key.
+        bool passesHiddenInput();
+
       private:
         static constexpr size_t  MAX_BUFFERED_KEYS = 50;
 
@@ -183,6 +187,8 @@ namespace ngosen {
         bool                     checkWordAfterBounce_  = false; ///< focus came back too fast to tell whether it is the same field
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
+        bool                     hiddenInput_           = false; ///< the terminal hid input at the last key
+        bool                     hiddenInputSettled_    = true;  ///< what was open before the last change has been put down
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
         bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key
         Surrounding              reportAtKey_;
@@ -249,6 +255,7 @@ namespace ngosen {
         void                           forgetSelection();
         void        offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key, std::string after = {});
         void        dropRetoneKey();
+        void        settleForHiddenInput();
         void        checkRetoneReport();
         bool        handleKeyAfterRetone(ngosen::KeyPress& keyEvent);
         std::string retoned(const std::string& word, uint32_t sym, uint32_t states) const;

@@ -7,6 +7,7 @@
 
 #include "emoji-entry.h"
 #include "ngosen-options.h"
+#include "ngosen-pty.h"
 #include "ngosen-recorder.h"
 
 #include <cstdint>
@@ -41,6 +42,11 @@ namespace ngosen {
 
         // Shared by every field, so a saved log follows the user across windows.
         virtual Recorder& recorder() = 0;
+
+        // Whether a terminal of the user hides input, as at a password prompt; tests play one without a pty.
+        virtual bool anyTerminalHidesInput() const {
+            return anyPtyHidesInput();
+        }
 
         // Apps whose fields mishandled a deletion through their surrounding text. Kept for this session
         // only, and shared by every field, as an app opens a new one for each window.

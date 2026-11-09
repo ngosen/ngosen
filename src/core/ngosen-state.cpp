@@ -1115,6 +1115,43 @@ namespace ngosen {
             ResetEngine(bambooEngine_.handle());
     }
 
+    bool TypingState::passesHiddenInput() {
+        const bool hidden = runsShellOnPty(host_->field()) && engine_->anyTerminalHidesInput();
+        if (hidden != hiddenInput_) {
+            hiddenInput_        = hidden;
+            hiddenInputSettled_ = false;
+            NGOSEN_INFO(hidden ? "Terminal hides input: keys go to the app as typed" : "Terminal shows input again");
+        }
+        // A replacement in flight finishes on its own; what it leaves is cleared at a later key.
+        if (hiddenInputSettled_ || is_deleting_.load(std::memory_order_acquire) || edit_hold_)
+            return hidden;
+        hiddenInputSettled_ = true;
+        if (hidden)
+            settleForHiddenInput();
+        else
+            clearAllBuffers();
+        return hidden;
+    }
+
+    void TypingState::settleForHiddenInput() {
+        // A word still in the preedit goes out as the keys typed, since they may already be the password.
+        // One already in the field stays, as deleting it would race the keys passed straight to the app.
+        if (bambooEngine_ && mode() == ngosen::Mode::Preedit) {
+            ngosen::UniqueCPtr<char> raw(EnginePullRawText(bambooEngine_.handle()));
+            if (raw && *raw.get() != 0)
+                commit(raw.get());
+        }
+        dropRetype();
+        dropRetoneKey();
+        forgetKeysWhileOff();
+        clearAllBuffers();
+        if (mode() == ngosen::Mode::Preedit || mode() == ngosen::Mode::Emoji) {
+            host_->resetPanel();
+            host_->refreshPanel();
+            host_->refreshPreedit();
+        }
+    }
+
     bool TypingState::isEmptyHistory() const {
         return !hasHistory_;
     }

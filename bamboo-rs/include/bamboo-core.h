@@ -39,6 +39,7 @@ typedef struct {
 extern void      Init(void);
 extern uint8_t   EngineProcessKeyEvent(uintptr_t engine, uint32_t keyVal, uint32_t state);
 extern char*     EnginePullPreedit(uintptr_t engine);
+extern char*     EnginePullRawText(uintptr_t engine);
 extern void      EngineCommitPreedit(uintptr_t engine);
 extern char*     EnginePullCommit(uintptr_t engine);
 extern void      EngineSetOption(uintptr_t engine, FcitxBambooEngineOption* option);

@@ -267,7 +267,7 @@ impl BambooEngine {
         full.rsplit(' ').next().unwrap_or_default().to_string()
     }
 
-    fn raw_text(&self) -> String {
+    pub(crate) fn raw_text(&self) -> String {
         self.get_processed_string(OutputOptions::RAW | OutputOptions::FULL_TEXT)
     }
 

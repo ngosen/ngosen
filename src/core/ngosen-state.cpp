@@ -79,6 +79,8 @@ namespace ngosen {
     }
 
     void TypingState::handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (vimOn() && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
+            return;
         if (ngosen::key::isBackspace(currentSym) && reopenWordInPreedit(keyEvent))
             return;
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone) {
@@ -115,6 +117,9 @@ namespace ngosen {
         }
         host_->refreshPreedit();
         host_->refreshPanel();
+        // Escape has committed the word; the letters typed next are Vim commands.
+        if (!typesText(keyEvent, currentSym))
+            noteVimSpecialKey(keyEvent, currentSym);
     }
 
     // WPS over D-Bus sets the same flags as fcitx5-gtk4 but never reports its text, takes forwarded
@@ -191,6 +196,7 @@ namespace ngosen {
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
+            noteVimSpecialKey(keyEvent, currentSym);
             return true;
         }
 
@@ -274,6 +280,8 @@ namespace ngosen {
             keyEvent.passToApp();
             return;
         }
+        if (vimOn() && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
+            return;
 
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone && removeToneMark(keyEvent))
             return;
@@ -641,6 +649,8 @@ namespace ngosen {
                 break;
             }
         }
+        if (mode() == ngosen::Mode::Sen || mode() == ngosen::Mode::Preedit)
+            noteShellKey(keyEvent, currentSym);
     }
 
     bool TypingState::skipsKey(ngosen::KeyPress& keyEvent) {
@@ -793,6 +803,9 @@ namespace ngosen {
         const Options& options    = engine_->options();
         if ((!options.autoCapitalizeAfterPunctuation && !options.capitalizeStartOfText) || mode() == ngosen::Mode::Off)
             return currentSym;
+        // A capital is another Vim command: j moves down, J joins lines.
+        if (vimOn() && vimState_ != VimState::Insert)
+            return currentSym;
         // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
         if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym))
             return currentSym;
@@ -939,7 +952,8 @@ namespace ngosen {
     }
 
     bool TypingState::handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (mode() == ngosen::Mode::Off)
+        // Two spaces or two hyphens are motions, or a leader mapping, in Vim's normal mode.
+        if (mode() == ngosen::Mode::Off || (vimOn() && vimState_ != VimState::Insert))
             return false;
         const Field field = host_->field();
         if (field.sendsNoKeys && !canSendBackspaces())

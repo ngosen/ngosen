@@ -10,6 +10,8 @@ add_library(ngosen_core STATIC
     ngosen-state-retone.cpp
     ngosen-state-retype.cpp
     ngosen-state-wait.cpp
+    ngosen-state-vim.cpp
+    ngosen-vim.cpp
     ngosen-app-quirks.cpp
     ngosen-flatpak-names.cpp
     ngosen-globals.cpp

@@ -21,6 +21,7 @@
 #include "ngosen-host.h"
 #include "ngosen-key.h"
 #include "ngosen-surrounding-check.h"
+#include "ngosen-vim.h"
 
 #include <bitset>
 #include <cstddef>
@@ -91,6 +92,10 @@ namespace ngosen {
         // reset() for an app that commits the preedit by itself on a reset or focus out, as IBus clients
         // do with IBUS_ENGINE_PREEDIT_COMMIT: the word is dropped instead of committed a second time.
         void resetAfterAppCommit(bool isFocusOut);
+
+        // The app runs Vim or Vim keys (#302): after Escape, letters are commands until Vim goes into
+        // insert mode, and they reach the app untouched.
+        void setVimKeys(bool on);
 
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.
@@ -192,6 +197,21 @@ namespace ngosen {
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
         bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key
         Surrounding              reportAtKey_;
+
+        enum class VimState : std::uint8_t {
+            Insert,
+            Normal,
+            CommandLine
+        };
+        bool                 vimKeys_  = false; ///< The app rule says the field uses Vim keys
+        bool                 vimAuto_  = false; ///< Vim was started from the shell in this field
+        VimState             vimState_ = VimState::Insert;
+        ngosen::VimKeyReader vimReader_;
+        std::string          vimTyped_;             ///< Keys let through since Escape, given to the engine if they turn out to be text
+        std::string          vimLine_;              ///< The shell line, or Vim's command line, typed so far
+        bool                 vimTookKey_   = false; ///< readVimKey let the key through as a Vim command
+        bool                 vimMayStay_   = false; ///< a quit command just ran, and Vim may have refused it
+        bool                 vimSuspended_ = false; ///< Ctrl+Z stopped Vim; fg at the shell brings it back
 
         struct Retype {
             std::string typed;
@@ -706,6 +726,21 @@ namespace ngosen {
          * @return True if key was forwarded.
          */
         bool checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym);
+        bool vimOn() const {
+            return vimKeys_ || vimAuto_;
+        }
+        void enterVimNormalMode();
+        void leaveVim();
+        // Escape and the like that take Vim out of insert mode, or keys Vim reads that we cannot follow.
+        void noteVimSpecialKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        // Follows the shell line in a field without surrounding text, to see Vim start.
+        void noteShellKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        // Lets a key typed in Vim's normal mode or command line through; false when it is text for the engine.
+        bool readVimKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool readVimCommandLineKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool resumesVimAfterQuit(uint32_t currentSym);
+        void startWordAfterVimCommand();
+        void takeUpVimTyped();
 
         /**
          * @brief Handles Sen mode processing.

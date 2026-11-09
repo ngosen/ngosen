@@ -70,6 +70,7 @@ SETTINGS_MAP = {
             "ShortcutEmoji",
             "ShortcutOff",
             "ShortcutDefault",
+            "ShortcutVim",
         ],
     },
     SettingsCategory.APPEARANCE: {
@@ -171,6 +172,7 @@ MODE_SHORTCUT_TO_VISIBILITY = {
     "ShortcutEmoji": "ShowModeEmoji",
     "ShortcutOff": "ShowModeOff",
     "ShortcutDefault": "ShowModeDefault",
+    "ShortcutVim": "ShowModeVim",
 }
 
 MODE_KEY_TO_INTERNAL_NAME = {
@@ -179,6 +181,7 @@ MODE_KEY_TO_INTERNAL_NAME = {
     "ShortcutEmoji": "Emoji",
     "ShortcutOff": "Off",
     "ShortcutDefault": "Default",
+    "ShortcutVim": "Vim",
 }
 
 MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())

@@ -495,6 +495,20 @@
     {}
    ],
    [
+    "ShowModeVim",
+    "Boolean",
+    "Show Vim mode",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutVim",
+    "String",
+    "Shortcut for Vim mode",
+    "v",
+    {}
+   ],
+   [
     "EnableMacroInOffMode",
     "Boolean",
     "Allow Macro in Off Mode",
@@ -512,7 +526,7 @@
     "ModeOrder",
     "String",
     "Mode Order",
-    "Sen,Preedit,Emoji,Off,Default",
+    "Sen,Preedit,Emoji,Off,Default,Vim",
     {}
    ],
    [

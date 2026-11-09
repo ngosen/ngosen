@@ -2,8 +2,8 @@
 
 Ngó Sen là bộ gõ tiếng Việt được **vibecode** cho fcitx5 trên Linux, cho trải nghiệm gõ như UniKey trên Windows.
 fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM. Có thêm
-[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, đơn giản hơn và ít
-tính năng hơn bản fcitx5.
+[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, dùng chung lõi gõ
+với bản fcitx5 nên tính năng gần như giống hệt. Tính năng mới có thể đến bản IBus muộn hơn bản fcitx5.
 
 Cửa sổ cài đặt có hai bản: Qt và GTK (giống app GNOME). GNOME và Linux Mint (Cinnamon) mở bản GTK,
 các desktop khác mở bản Qt. Cửa sổ dùng giao diện sáng, tối của máy trên KDE và GNOME; đổi gì lưu
@@ -102,16 +102,17 @@ Khi cài lần đầu trên GNOME, hoặc trên Xfce, Cinnamon, MATE dùng X11 �
 lệnh cài hỏi chọn bản nào nếu distro đó có package cho bản IBus:
 
 1. Bản fcitx5 (khuyên dùng): đủ tính năng, nhấn Enter để chọn.
-2. Bản IBus: dùng IBus có sẵn, đơn giản hơn nhưng ít tính năng hơn một chút; tính năng mới có thể ra chậm
-   hơn bản fcitx5.
+2. Bản IBus: dùng IBus có sẵn, tính năng gần như giống hệt bản fcitx5 nhờ dùng chung lõi gõ.
+   Tính năng mới có thể đến muộn hơn bản fcitx5.
 
 Dùng `--yes` thì lệnh không hỏi và cài bản fcitx5. Cả hai bản đều dùng Ctrl+Shift để chuyển giữa tiếng Anh
 và tiếng Việt.
 
-[Bản IBus](https://github.com/ngosen/ibus-ngosen) (package `ibus-ngosen`) chưa có emoji, Vim mode và chế độ
-riêng cho từng app. Cứu dấu dùng được ở ô gõ bằng Gõ Sen (bấm ngay sau một chữ rồi gõ phím dấu); đổi dấu chữ
-đang bôi đen chỉ được ở app X11. Cứu chữ chỉ có trên X11. Trong một số app, từ đang gõ có gạch chân. Tính năng
-mới có thể đến bản IBus muộn hơn bản fcitx5.
+[Bản IBus](https://github.com/ngosen/ibus-ngosen) (package `ibus-ngosen`) dùng chung lõi gõ với bản fcitx5:
+Gõ Sen, kiểu gõ, gõ tắt, từ điển riêng và bảng phím tùy chỉnh. Bản IBus cũng có chọn Gõ Sen hay Gạch chân
+riêng cho từng app (bấm phím `` ` `` để chọn). Các điểm còn khác: chưa có emoji và Vim mode. Cứu dấu dùng được
+ở ô gõ bằng Gõ Sen (bấm ngay sau một chữ rồi gõ phím dấu); đổi dấu chữ đang bôi đen chỉ được ở app X11.
+Cứu chữ hiện chỉ có trên X11. Trong một số app, từ đang gõ có gạch chân.
 
 Muốn chọn thẳng bản IBus:
 
@@ -410,8 +411,9 @@ The core's English word list comes from [SCOWL](https://wordlist.aspell.net) by 
 Ngó Sen includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to
 change the tone mark of a selected word.
 
-[Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in IBus. It is simpler and has
-fewer features than the fcitx5 version.
+[Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in IBus and shares the same
+typing core as the fcitx5 version, so their features are almost identical. New features may reach the IBus
+version later than the fcitx5 version.
 If you reuse Ngó Sen's code, keep the GPL and its notices, including when an AI tool rewrites it.
 If you port its approaches to another input method, credit this repository with a link.
 The rest of this page is in Vietnamese.

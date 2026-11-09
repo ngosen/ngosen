@@ -74,6 +74,16 @@ int main() {
     auto* charset = entryNamed(context, "ngosen-charset");
     check("the entry names the charset", charset && charset->shortText(&context) == "Charset (Unicode)");
 
+    // A switch entry keeps the name the settings window gives it, before and after a click.
+    auto*      restore = entryNamed(context, "ngosen-autonvnrestore");
+    const auto mark    = ngosen::defaultOptions.autoNonVnRestore ? "✔ " : "✖ ";
+    check("the restore entry uses the settings name", restore && restore->shortText(&context) == std::string(mark) + "Auto Restore Invalid Words");
+    if (restore) {
+        restore->activate(&context);
+        restore->activate(&context);
+        check("the restore entry keeps that name after a click", restore->shortText(&context) == std::string(mark) + "Auto Restore Invalid Words");
+    }
+
     // Kimpanel sends an entry as "key:text:icon:..." and splits it on every colon.
     bool colonFree = true;
     for (auto* action : context.statusArea().actions(fcitx::StatusGroup::InputMethod)) {

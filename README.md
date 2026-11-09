@@ -94,6 +94,17 @@ dùng phím chuyển cũ (thường là Ctrl+Space); muốn đổi phím, mở c
 Các bước thiết lập chỉ áp dụng cho tài khoản chạy lệnh. Tài khoản khác trên cùng máy cần đăng nhập vào
 đó rồi chạy lại lệnh cài.
 
+### Chuyển từ bản IBus
+
+Máy đang có [bản IBus](https://github.com/ngosen/ibus-ngosen) (gói `ibus-ngosen`) thì lệnh cài hỏi trước khi
+thay. Gỡ gói là gỡ cho mọi tài khoản trên máy. Trên Debian, Ubuntu và Fedora, gói cũ được gỡ trong cùng lần
+cài, nên cài lỗi thì bản IBus vẫn còn nguyên. Trên openSUSE và Arch, lệnh dừng và in lệnh gỡ `ibus-ngosen`;
+gỡ xong thì chạy lại lệnh cài.
+
+Cài xong, lệnh bỏ nguồn nhập "Tiếng Việt (Ngó Sen)" của bản IBus khỏi tài khoản chạy lệnh. Tài khoản khác tự bỏ
+nguồn đó trong Cài đặt GNOME → Bàn phím. Cài đặt của bản IBus không tự chép sang: sao lưu trong cửa sổ cài
+đặt của bản IBus trước khi chuyển, rồi khôi phục trong bản này.
+
 ### Cập nhật bằng trình quản lý gói
 
 Từ version 1.5.3, mỗi release đều có trên repo có chữ ký để nhận version mới qua update của hệ thống:

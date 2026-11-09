@@ -808,6 +808,8 @@ class DynamicSettingsPage(QWidget):
         keys_hint = HintLabel(_(HINTS["ModeOrder"]))
         mute(keys_hint)
         card.content_layout.addWidget(keys_hint)
+        # Room a tall window gives this row goes below the hints, not into them.
+        card.content_layout.addStretch()
         self.form.addRow(label, card)
 
     @staticmethod

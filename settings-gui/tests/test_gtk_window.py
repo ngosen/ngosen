@@ -1234,6 +1234,25 @@ class GtkWhatsNewPageTest(unittest.TestCase):
             self.assertIn(feature["example"], [label.get_text() for label in labels])
         self.assertEqual([r for r in rows if r.has_css_class("typed")], [])
 
+    def test_a_button_keeps_its_label_on_few_lines(self):
+        w = self.window
+        w.set_default_size(900, 680)
+        w.present()
+        w.show_page("whats-new")
+        buttons = [b for b in _children(w.whats_new.page) if hasattr(b, "target")]
+        context = GLib.MainContext.default()
+        for _ in range(300):
+            if all(b.get_width() > 0 for b in buttons):
+                break
+            context.iteration(False)
+            time.sleep(0.01)
+        if w.get_frame_clock().get_frame_counter() == 0 and not REQUIRED:
+            self.skipTest("the window was never drawn, as on a locked desktop")
+        for button in buttons:
+            lines = button.get_child().get_layout().get_line_count()
+            most = 1 if button.target[0] == "setting" else 2
+            self.assertLessEqual(lines, most, button.get_label())
+
     def test_the_about_button_fits_its_label(self):
         w = window.Window(None, FakeDBusHandler())
         self.addCleanup(w.destroy)

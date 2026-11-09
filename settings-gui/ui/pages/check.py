@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The Check my machine page: each setup step, with a fix where the window can do it."""
 
+import html
+
 from core.brand import MESSENGER_URL
 from i18n import _
 from qtpy.QtCore import Qt, QTimer, QUrl
@@ -88,6 +90,10 @@ class CheckPage(QWidget):
         buttons.addWidget(self.again_btn)
         buttons.addStretch()
         layout.addLayout(buttons)
+        self.version = mute(_wrapped("", layout))
+        self.version.setObjectName("CheckVersion")
+        self.version.setTextFormat(Qt.RichText)
+        self.version.linkActivated.connect(lambda url: QDesktopServices.openUrl(QUrl(url)))
 
         layout.addWidget(self._heading(_("Steps to type Vietnamese")))
         self.steps = CardWidget()
@@ -174,8 +180,17 @@ class CheckPage(QWidget):
         self.found = system_check.steps(self.facts)
         self.findings = [f for f in self.found if f.level != system_check.OK]
         self._show_steps()
+        self._show_version()
         names = [f"{program} ({frontend})" for program, frontend in self.facts.apps]
         self.apps.setText(", ".join(names) or _("No app is connected yet"))
+
+    def _show_version(self):
+        text, url = system_check.version_line(self.facts)
+        text = html.escape(text)
+        if url:
+            link = html.escape(_("How to get new versions"))
+            text += f'<br><a href="{html.escape(url)}">{link}</a>'
+        self.version.setText(text)
 
     def _show_steps(self):
         for row in self.rows:

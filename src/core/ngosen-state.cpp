@@ -723,7 +723,16 @@ namespace ngosen {
             keyEvent.passToApp();
             return true;
         }
+        lastKeyLeftText_ = movesWithoutEdit(keyEvent);
         return false;
+    }
+
+    bool TypingState::movesWithoutEdit(const ngosen::KeyPress& keyEvent) const {
+        const uint32_t sym = keyEvent.sym();
+        if (typesText(keyEvent, sym) || ngosen::key::isBackspace(sym) || ngosen::key::isEnter(sym) || sym == ngosen::key::Delete || sym == ngosen::key::KP_Delete)
+            return false;
+        // Shortcuts such as Ctrl+V edit the text too.
+        return (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
     }
 
     bool TypingState::heldKeyIs(uint32_t sym) const {

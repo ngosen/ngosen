@@ -839,6 +839,41 @@ namespace {
         }
     }
 
+    // Lark Sheets bounces focus when an arrow key moves to the next cell. That is not a redraw, so commits
+    // need not wait for one; it still sends deletions as backspaces, which the sheet needs over IBus.
+    void testCellMovesNoRedrawWait() {
+        Field chromiumX11            = makeField("dbus", false);
+        chromiumX11.keyEventOrderFix = true;
+        for (const Field& field : {chromiumX11, makeField("ibus", true)}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            const auto typeWord = [&](const std::string& word) {
+                for (const char c : word) {
+                    app->type(static_cast<uint32_t>(c));
+                    loop.pump(30);
+                }
+            };
+            for (int cell = 0; cell < 3; ++cell) {
+                typeWord("lam");
+                app->type(ngosen::key::Down);
+                loop.pump(5);
+                app->leaveFocus(1);
+                loop.pump(300);
+            }
+            typeWord("laf");
+            loop.pump(300);
+            const std::string label = "cell moves (" + field.frontend + "): ";
+            check(app->slowestCommitMs() < 60, label + "no wait for a redraw", std::to_string(app->slowestCommitMs()) + " ms");
+            check(app->sent().surroundingDeletes == 0, label + "deletes with backspaces", std::to_string(app->sent().surroundingDeletes) + " surrounding deletions");
+        }
+    }
+
     // Backspacing from after a word into it and typing on continues that word; kitty reports no
     // surrounding text, so the word comes from what we committed.
     void testBackspaceIntoLastWord(const std::string& frontend, bool surroundingText, ngosen::test::AppQuirks quirks = {}) {
@@ -3709,6 +3744,7 @@ int main() {
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();
+    testCellMovesNoRedrawWait();
     testMacroKeepsSpace();
     testMacroBeforeEnter();
     testEnterDuringReplacement();

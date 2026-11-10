@@ -174,6 +174,7 @@ namespace ngosen {
         int64_t                  deletionInterruptedAt_ = 0;     ///< when deactivate() cut an in-flight replacement (0 = none)
         int64_t                  lastBounceAt_          = 0;     ///< ms on CLOCK_MONOTONIC
         int                      fieldBounces_          = 0;     ///< bounces since focus came in
+        int                      redrawBounces_         = 0;     ///< those not after a key that edits no text
         int                      waitBounces_           = 0;     ///< bounces during the wait that started at bouncedInWait_
         uint64_t                 bouncedInWait_         = 0;     ///< surr_wait_started_at_ of the wait those bounces came in
         int                      deletedChars_          = 0;     ///< characters the app holds to delete
@@ -362,6 +363,8 @@ namespace ngosen {
         uint64_t     unreportedDeleteKey_    = 0; ///< keyCount_ when that deletion was sent
         bool         committing_             = false;
         uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
+        // A bounce after such a key is the app moving on, as a sheet does to the next cell, not a redraw.
+        bool lastKeyLeftText_ = false;
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.
         std::string commitNotSeen_;
 
@@ -711,6 +714,8 @@ namespace ngosen {
         bool typedBeforeCommitArrived(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
         // The key types text and is not part of a shortcut.
         bool typesText(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
+        // An arrow, Tab or the like: moves the cursor or focus without editing.
+        bool movesWithoutEdit(const ngosen::KeyPress& keyEvent) const;
         // Backspace on a word with a tone mark: take off only the mark. False leaves the key as is.
         bool removeToneMark(ngosen::KeyPress& keyEvent);
         bool replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent);

@@ -624,7 +624,8 @@ namespace ngosen {
         if (committing_)
             return;
         unreportedCommitLength_ += ngosen::utf8::length(text);
-        lastInputAtUs_ = ngosen::monotonicUs();
+        lastInputAtUs_   = ngosen::monotonicUs();
+        lastKeyLeftText_ = false;
     }
 
     void TypingState::commit(const std::string& text) {

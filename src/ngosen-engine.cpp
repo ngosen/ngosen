@@ -233,6 +233,14 @@ namespace fcitx {
             }
         }
 
+        // deepin: the dock follows the global theme, not the app colour scheme.
+        if (isDeepinSession(getEnv("XDG_CURRENT_DESKTOP"))) {
+            if (const auto dark = isDeepinPanelDark(deepinGlobalThemeFromSession())) {
+                cachedValue = *dark;
+                return cachedValue;
+            }
+        }
+
         // Elsewhere the app colour scheme says nothing about the panel, and
         // Xfce, MATE, LXQt, Budgie and tiling-WM bars mostly ship dark ones.
         cachedValue = true;

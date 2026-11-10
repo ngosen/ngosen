@@ -839,35 +839,40 @@ namespace {
         }
     }
 
-    // Lark Sheets in Chromium on X11 bounces focus when an arrow key moves to the next cell. That is not a
-    // redraw: waiting for one held each later commit 100 ms, and an arrow typed meanwhile lost the word.
+    // Lark Sheets bounces focus when an arrow key moves to the next cell. That is not a redraw: waiting for
+    // one held each later commit 100 ms on X11, and an arrow typed meanwhile lost the word. The bounce
+    // still sends deletions as backspaces, which the sheet needs over IBus on GNOME.
     void testCellMovesNoRedrawWait() {
-        realMode = ngosen::Mode::Sen;
-        realtextLen.store(0);
-        FakeLoop      loop;
-        FakeResources resources;
-        Field         chromium    = makeField("dbus", false);
-        chromium.keyEventOrderFix = true;
-        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, chromium, ngosen::test::AppQuirks{});
-        auto*               app   = owned.get();
-        ngosen::TypingState state(&resources, std::move(owned));
-        app->attach(&state);
-        const auto typeWord = [&](const std::string& word) {
-            for (const char c : word) {
-                app->type(static_cast<uint32_t>(c));
-                loop.pump(30);
+        Field chromiumX11            = makeField("dbus", false);
+        chromiumX11.keyEventOrderFix = true;
+        for (const Field& field : {chromiumX11, makeField("ibus", true)}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            const auto typeWord = [&](const std::string& word) {
+                for (const char c : word) {
+                    app->type(static_cast<uint32_t>(c));
+                    loop.pump(30);
+                }
+            };
+            for (int cell = 0; cell < 3; ++cell) {
+                typeWord("lam");
+                app->type(ngosen::key::Down);
+                loop.pump(5);
+                app->leaveFocus(1);
+                loop.pump(300);
             }
-        };
-        for (int cell = 0; cell < 3; ++cell) {
-            typeWord("lam");
-            app->type(ngosen::key::Down);
-            loop.pump(5);
-            app->leaveFocus(1);
+            typeWord("laf");
             loop.pump(300);
+            const std::string label = "cell moves (" + field.frontend + "): ";
+            check(app->slowestCommitMs() < 60, label + "no wait for a redraw", std::to_string(app->slowestCommitMs()) + " ms");
+            check(app->sent().surroundingDeletes == 0, label + "deletes with backspaces", std::to_string(app->sent().surroundingDeletes) + " surrounding deletions");
         }
-        typeWord("laf");
-        loop.pump(300);
-        check(app->slowestCommitMs() < 60, "cell moves: no wait for a redraw", std::to_string(app->slowestCommitMs()) + " ms");
     }
 
     // Backspacing from after a word into it and typing on continues that word; kitty reports no

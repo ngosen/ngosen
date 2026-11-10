@@ -85,6 +85,7 @@ Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=event after 0 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 8 ms

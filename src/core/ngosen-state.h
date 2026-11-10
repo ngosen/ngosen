@@ -174,6 +174,7 @@ namespace ngosen {
         int64_t                  deletionInterruptedAt_ = 0;     ///< when deactivate() cut an in-flight replacement (0 = none)
         int64_t                  lastBounceAt_          = 0;     ///< ms on CLOCK_MONOTONIC
         int                      fieldBounces_          = 0;     ///< bounces since focus came in
+        int                      redrawBounces_         = 0;     ///< those not after a key that edits no text
         int                      waitBounces_           = 0;     ///< bounces during the wait that started at bouncedInWait_
         uint64_t                 bouncedInWait_         = 0;     ///< surr_wait_started_at_ of the wait those bounces came in
         int                      deletedChars_          = 0;     ///< characters the app holds to delete
@@ -363,7 +364,7 @@ namespace ngosen {
         bool         committing_             = false;
         uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
         // The last key pressed edits no text (an arrow, Tab, Enter): a bounce after it is the app moving
-        // on, as a sheet does to the next cell, not a redraw.
+        // on, as a sheet does to the next cell, not a redraw of the editor.
         bool lastKeyLeftText_ = false;
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.
         std::string commitNotSeen_;

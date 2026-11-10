@@ -32,8 +32,8 @@ def read_alpha(png):
         body = data[pos + 8 : pos + 8 + length]
         if kind == b"IHDR":
             width, height, depth, colour = struct.unpack(">IIBB", body[:10])
-            if depth != 8 or colour != 6:
-                sys.exit(f"{png}: expected 8-bit RGBA")
+            if depth != 8 or colour != 6 or body[12] != 0:
+                sys.exit(f"{png}: expected 8-bit RGBA, not interlaced")
         elif kind == b"IDAT":
             idat += body
         pos += 12 + length
@@ -72,6 +72,11 @@ def height(rows):
     return filled[-1] - filled[0] + 1 if filled else 0
 
 
+def middle(rows):
+    filled = [y for y, row in enumerate(rows) if any(row)]
+    return (filled[0] + filled[-1]) / 2 if filled else 0
+
+
 def touches_edge(rows):
     return any(rows[0]) or any(rows[-1]) or any(row[0] or row[-1] for row in rows)
 
@@ -86,7 +91,8 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         for path, suffix in sets:
             for size in SIZES:
-                tile = height(glyph_rows(rsvg, path("fcitx-ngosen"), size, tmp))
+                tile_rows = glyph_rows(rsvg, path("fcitx-ngosen"), size, tmp)
+                tile = height(tile_rows)
                 for name in TILES + PLAIN:
                     rows = glyph_rows(rsvg, path(name), size, tmp)
                     if touches_edge(rows):
@@ -95,6 +101,8 @@ def main():
                         failures.append(
                             f"{name}{suffix} at {size} px: glyph {height(rows)} px, tile {tile} px"
                         )
+                    if name in PLAIN and abs(middle(rows) - middle(tile_rows)) > 1:
+                        failures.append(f"{name}{suffix} at {size} px is not centred like the tile")
     for line in failures:
         print(line)
     return 1 if failures else 0

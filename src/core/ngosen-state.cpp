@@ -702,7 +702,6 @@ namespace ngosen {
             return true;
         const uint64_t lastPressAtUs = lastInputAtUs_;
         lastInputAtUs_               = ngosen::monotonicUs();
-        lastKeyLeftText_             = !typesText(keyEvent, keyEvent.sym()) && !ngosen::key::isBackspace(keyEvent.sym()) && keyEvent.sym() != ngosen::key::Delete;
         // An app may send a key we let through back to us: XIM clients as is, gnome-text-editor at once
         // and marked as repeated; let it through rather than count it twice. Some frontends stamp a held
         // key's repeats with its first second. Our XTEST backspaces share one time, and XIM marks them repeats.
@@ -724,7 +723,16 @@ namespace ngosen {
             keyEvent.passToApp();
             return true;
         }
+        lastKeyLeftText_ = movesWithoutEdit(keyEvent);
         return false;
+    }
+
+    bool TypingState::movesWithoutEdit(const ngosen::KeyPress& keyEvent) const {
+        const uint32_t sym = keyEvent.sym();
+        if (typesText(keyEvent, sym) || ngosen::key::isBackspace(sym) || ngosen::key::isEnter(sym) || sym == ngosen::key::Delete || sym == ngosen::key::KP_Delete)
+            return false;
+        // Shortcuts such as Ctrl+V edit the text too.
+        return (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
     }
 
     bool TypingState::heldKeyIs(uint32_t sym) const {

@@ -71,6 +71,7 @@ namespace ngosen {
             clearAllBuffers();
             fieldBounces_         = 0;
             redrawBounces_        = 0;
+            lastKeyLeftText_      = false;
             checkWordAfterBounce_ = false;
             if (isFocusIn) {
                 // A GNOME app's new context gets a copy of the previous window's text before focus-in, so

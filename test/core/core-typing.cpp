@@ -839,9 +839,8 @@ namespace {
         }
     }
 
-    // Lark Sheets bounces focus when an arrow key moves to the next cell. That is not a redraw: waiting for
-    // one held each later commit 100 ms on X11, and an arrow typed meanwhile lost the word. The bounce
-    // still sends deletions as backspaces, which the sheet needs over IBus on GNOME.
+    // Lark Sheets bounces focus when an arrow key moves to the next cell. That is not a redraw, so commits
+    // need not wait for one; it still sends deletions as backspaces, which the sheet needs over IBus.
     void testCellMovesNoRedrawWait() {
         Field chromiumX11            = makeField("dbus", false);
         chromiumX11.keyEventOrderFix = true;

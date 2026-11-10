@@ -309,6 +309,40 @@ namespace {
         }
     }
 
+    // Vim reads a search itself and lets it be Vietnamese, so a '/' in normal mode must not start a
+    // raw word (#312), even right after an Enter; a path typed in insert mode stays as typed.
+    void testSlashWithRawWord() {
+        for (const bool afterEnter : {false, true}) {
+            std::string searched[2];
+            for (const bool on : {false, true}) {
+                FakeVim vim(true);
+                vim.options().rawWordAfterSlash = on;
+                vim.escape();
+                if (afterEnter)
+                    vim.enter(false);
+                vim.commandLine("/tieengs");
+                vim.runCommandLine();
+                searched[on ? 1 : 0] = vim.lastCommandLine() + vim.result();
+            }
+            check(searched[1] == searched[0], std::string("Escape, ") + (afterEnter ? "Enter, " : "") + "/tieengs searches as with the option off",
+                  searched[1] + " vs " + searched[0]);
+        }
+        {
+            FakeVim vim(true);
+            vim.escape();
+            vim.commandLine("/foo");
+            vim.runCommandLine();
+            vim.command("i");
+            vim.insert("tieengs");
+            expect("Escape, /foo, Enter, i, tieengs", vim, "tiếng");
+        }
+        {
+            FakeVim vim(true);
+            vim.insert("cd /usr/share ");
+            expect("insert mode, cd /usr/share", vim, "cd /usr/share ");
+        }
+    }
+
     // An ex command reaches Vim as typed, so Telex does not turn ":s/aa/b" into ":s/â/b".
     void testExCommandAsTyped() {
         FakeVim vim(true);
@@ -362,7 +396,7 @@ namespace {
 
     // Vim started from the shell opens in normal mode, without the Vim mode switch.
     void testStartedFromShell() {
-        for (const char* line : {"nvim", "vim", "sudo vim"}) {
+        for (const char* line : {"nvim", "vim", "sudo vim", "/usr/bin/nvim", "sudo /usr/bin/vim x"}) {
             FakeVim vim(false);
             vim.insert(line);
             vim.enter(true);
@@ -536,6 +570,7 @@ int main() {
     testVimKeysOff();
     testCommandLine();
     testExCommandAsTyped();
+    testSlashWithRawWord();
     testNoCapitalInNormalMode();
     testArrowEndsPendingCommand();
     testPreedit();

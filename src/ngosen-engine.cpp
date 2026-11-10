@@ -621,6 +621,7 @@ namespace fcitx {
         o.doubleHyphenToEmDash             = config_.doubleHyphenToEmDash.value();
         o.retypeAfterSwitch                = config_.retypeAfterSwitch.value();
         o.retoneSelection                  = config_.retoneSelection.value();
+        o.rawWordAfterSlash                = config_.rawWordAfterSlash.value();
         o.messengerSelectOvertype          = config_.messengerSelectOvertype.value();
         o.copyWaitRecovery                 = config_.copyWaitRecovery.value();
         o.foldReplayReplacement            = config_.foldReplayReplacement.value();

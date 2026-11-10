@@ -60,6 +60,7 @@ SETTINGS_MAP = {
             "DoubleHyphenToEmDash",
             "AutoCapitalizeAfterPunctuation",
             "CapitalizeStartOfText",
+            "RawWordAfterSlash",
         ],
     },
     SettingsCategory.SHORTCUTS: {
@@ -122,6 +123,9 @@ HINTS = {
     ),
     "RetoneSelection": N_(
         "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s. Only the tone mark changes: nguoi does not become người."
+    ),
+    "RawWordAfterSlash": N_(
+        "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
     ),
     "ModeMenuKey": N_(
         "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."

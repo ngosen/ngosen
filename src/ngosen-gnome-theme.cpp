@@ -148,7 +148,23 @@ namespace fcitx {
             if (name.size() >= 2 && name.front() == '\'' && name.back() == '\'')
                 info.userThemeName = name.substr(1, name.size() - 2);
         }
+
+        if (info.sessionMode.empty() || info.sessionMode == "user") {
+            const std::string scheme = gsettingsGet("gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null");
+            if (scheme.size() >= 2 && scheme.front() == '\'' && scheme.back() == '\'')
+                info.colorScheme = scheme.substr(1, scheme.size() - 2);
+            info.shellMajorVersion = gnomeShellMajorVersion(gsettingsGet("gnome-shell --version 2>/dev/null"));
+        }
         return info;
+    }
+
+    int gnomeShellMajorVersion(const std::string& versionLine) {
+        const auto digit = versionLine.find_first_of("0123456789");
+        if (digit == std::string::npos)
+            return 0;
+        try {
+            return std::stoi(versionLine.substr(digit));
+        } catch (...) { return 0; }
     }
 
     bool isGnomeShellSession(const std::string& xdgCurrentDesktop) {
@@ -258,8 +274,13 @@ namespace fcitx {
 
     std::optional<bool> isGnomePanelDark(const GnomeShellThemeInfo& info) {
         const auto path = gnomeShellStylesheet(info);
-        if (!path)
+        if (!path) {
+            // GNOME 43 keeps the bar dark under every scheme, so older shells stay unknown.
+            const bool builtinTheme = info.sessionMode.empty() || info.sessionMode == "user";
+            if (builtinTheme && info.shellMajorVersion >= 51)
+                return info.colorScheme != "prefer-light";
             return std::nullopt;
+        }
         const auto css = readFile(*path);
         if (!css)
             return std::nullopt;

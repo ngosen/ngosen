@@ -118,6 +118,31 @@ int main() {
     info.sessionMode   = "user";
     check("S4 plain_gnome_unknown", !fcitx::gnomeShellStylesheet(info).has_value(), "plain GNOME returned a stylesheet");
 
+    // ── Built-in Adwaita bar: GNOME 51 follows color-scheme ──────────────
+    info.shellMajorVersion = 51;
+    info.colorScheme       = "prefer-light";
+    check("G1 gnome51_prefer_light", fcitx::isGnomePanelDark(info) == std::optional<bool>(false), "GNOME 51 prefer-light bar not light");
+    info.colorScheme = "default";
+    check("G2 gnome51_default_dark", fcitx::isGnomePanelDark(info) == std::optional<bool>(true), "GNOME 51 default bar not dark");
+    info.colorScheme = "prefer-dark";
+    check("G3 gnome51_prefer_dark", fcitx::isGnomePanelDark(info) == std::optional<bool>(true), "GNOME 51 prefer-dark bar not dark");
+    info.colorScheme = "";
+    check("G4 gnome51_unknown_scheme", fcitx::isGnomePanelDark(info) == std::optional<bool>(true), "GNOME 51 without a scheme not dark");
+    info.colorScheme       = "prefer-light";
+    info.shellMajorVersion = 50;
+    check("G5 gnome50_unmeasured", !fcitx::isGnomePanelDark(info).has_value(), "GNOME 50 answered from color-scheme");
+    info.shellMajorVersion = 0;
+    check("G6 version_unknown", !fcitx::isGnomePanelDark(info).has_value(), "unknown version answered from color-scheme");
+    info.shellMajorVersion = 52;
+    info.sessionMode       = "";
+    check("G7 empty_mode_is_user", fcitx::isGnomePanelDark(info) == std::optional<bool>(false), "empty session mode not treated as user");
+    info.sessionMode = "ubuntu";
+    check("G8 ubuntu_mode_uses_yaru", fcitx::isGnomePanelDark(info) == std::optional<bool>(true), "Ubuntu Yaru bar decided by color-scheme");
+    info.sessionMode = "user";
+    check("V1 version_line", fcitx::gnomeShellMajorVersion("GNOME Shell 51.1") == 51, "GNOME Shell 51.1 not read as 51");
+    check("V2 version_alpha", fcitx::gnomeShellMajorVersion("GNOME Shell 52.alpha") == 52, "52.alpha not read as 52");
+    check("V3 version_missing", fcitx::gnomeShellMajorVersion("") == 0, "empty line not 0");
+
     // ── Cinnamon: the panel follows the Cinnamon theme, not the GTK one ──
     // Linux Mint 22.1 pairs Mint-Y-Dark-Aqua for the panel with Mint-Y-Aqua for
     // apps, so the portal says light while the panel is dark.  Rules copied from it.

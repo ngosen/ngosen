@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.9.1
+Version:        1.9.2
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -99,6 +99,9 @@ else
 fi
 
 %changelog
+* Wed Nov 11 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.9.2-1
+- The word list's license file links archived copies of its offline source pages (#680); the plain tray icon turns black on light panels in deepin and GNOME 51 (#672, #673) and shows in swaybar (#674); Xfce opens the GTK settings window by default (#670).
+
 * Tue Nov 10 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.9.1-1
 - The installer lets GNOME and X11 desktops on Debian, Ubuntu and Mint pick the fcitx5 or the IBus edition (#653); Default Typing leaves the mode menu (#659); Sen gets the first word of a Messenger message right on Chromium (#663); words that are not Vietnamese get their typed keys back as soon as a digit follows, and Backspace into them or into keys shown as typed keeps the word as shown (#643, #646, #651, #661); Cứu dấu, Cứu chữ and capitals work in private browser windows outside GNOME (#647); the GNOME overview search box keeps its own mode (#644); the extension no longer starts fcitx5 on the IBus edition (#656); restoring an IBus edition backup keeps the per-app switches (#648); the installer asks before replacing the IBus edition (#649); the settings window shows one logo and the tray keeps its restore switch's name (#652).
 

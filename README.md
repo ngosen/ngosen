@@ -1,6 +1,6 @@
 # Ngó Sen
 
-Ngó Sen là bộ gõ tiếng Việt được **vibecode** cho fcitx5 trên Linux, cho trải nghiệm gõ như UniKey trên Windows.
+Ngó Sen là bộ gõ tiếng Việt cho fcitx5 trên Linux, cho trải nghiệm gõ như UniKey trên Windows.
 fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM. Có thêm
 [Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, dùng chung lõi gõ
 với bản fcitx5 nên tính năng gần như giống hệt. Tính năng mới có thể đến bản IBus muộn hơn bản fcitx5.
@@ -404,8 +404,7 @@ kể cả khi chỉ lấy ý tưởng, thì ghi nguồn kèm link tới repo nà
 
 ## English
 
-Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: an AI coding
-agent writes the code, then the maintainer measures and uses it daily. It is licensed under GPL-3.0-or-later.
+Ngó Sen is a Vietnamese input method for fcitx5, licensed under GPL-3.0-or-later.
 
 Since 1.0, Ngó Sen has two typing modes, Gõ Sen (for fast typing, browsers and Electron apps) and Preedit,
 and uses the Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) by

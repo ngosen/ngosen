@@ -1610,7 +1610,7 @@ namespace fcitx {
             }
         }
 
-        static const bool kTrayWantsIconName = trayWantsIconName(getEnv("XDG_CURRENT_DESKTOP"), getEnv("DESKTOP_SESSION"));
+        static const bool kTrayWantsIconName = trayWantsIconName(getEnv("XDG_CURRENT_DESKTOP"), getEnv("DESKTOP_SESSION"), getEnv("SWAYSOCK"));
         if (kTrayWantsIconName) {
             return iconName;
         }

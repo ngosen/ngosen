@@ -125,9 +125,14 @@ int main() {
     check("N2 x_cinnamon", fcitx::isCinnamonSession("X-Cinnamon", ""), "X-Cinnamon rejected");
     check("N3 gnome", !fcitx::isCinnamonSession("ubuntu:GNOME", "ubuntu"), "GNOME taken for Cinnamon");
 
-    check("T1 cinnamon_tray_by_name", fcitx::trayWantsIconName("", "cinnamon"), "Cinnamon tray given a path");
-    check("T2 cosmic_tray_by_name", fcitx::trayWantsIconName("COSMIC", ""), "COSMIC tray given a path");
-    check("T3 kde_tray_by_path", !fcitx::trayWantsIconName("KDE", "plasma"), "KDE tray given a name");
+    check("T1 cinnamon_tray_by_name", fcitx::trayWantsIconName("", "cinnamon", ""), "Cinnamon tray given a path");
+    check("T2 cosmic_tray_by_name", fcitx::trayWantsIconName("COSMIC", "", ""), "COSMIC tray given a path");
+    check("T3 kde_tray_by_path", !fcitx::trayWantsIconName("KDE", "plasma", ""), "KDE tray given a name");
+    check("T6 sway_tray_by_name", fcitx::trayWantsIconName("sway:wlroots", "sway", ""), "Sway tray given a path");
+    check("T7 console_sway_by_name", fcitx::trayWantsIconName("", "", "/run/user/1000/sway-ipc.1000.1.sock"), "Sway without XDG_CURRENT_DESKTOP given a path");
+    check("T8 hyprland_tray_by_path", !fcitx::trayWantsIconName("Hyprland", "hyprland", ""), "Hyprland tray given a name");
+    check("T9 unknown_tray_by_path", !fcitx::trayWantsIconName("", "", ""), "unknown desktop given a name");
+    check("T10 stale_swaysock_on_kde", !fcitx::trayWantsIconName("KDE", "plasma", "/run/user/1000/sway-ipc.1000.1.sock"), "KDE with a stale SWAYSOCK given a name");
     check("T4 gnome_tray_tighter_icon", fcitx::trayIconNames("fcitx-ngosen", "fcitx-ngosen", "ubuntu:GNOME").front() == "fcitx-ngosen-gnome",
           "GNOME Shell not given the GNOME icon first");
     check("T5 kde_tray_usual_icon", fcitx::trayIconNames("fcitx-ngosen-off", "fcitx-ngosen-off", "KDE").front() == "fcitx-ngosen-off", "KDE given the GNOME icon");

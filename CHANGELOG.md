@@ -17,6 +17,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - deepin: khi dùng giao diện sáng, icon khay kiểu trơn nay màu đen cho hợp thanh dock sáng, không còn trắng khó thấy. Giao diện tự động vẫn dùng icon trắng (#673).
+- Sway: icon Ngó Sen nay hiện trong swaybar, trước đây swaybar vẽ hình "không tìm thấy icon" (#674).
 
 ## [1.9.1-1] — 10/11/2026
 

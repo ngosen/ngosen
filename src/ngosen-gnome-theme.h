@@ -96,10 +96,12 @@ namespace fcitx {
     /**
      * @brief Tells whether the tray must get an icon name instead of a file path.
      *
-     * Cinnamon's tray cannot load a path; COSMIC's loads it but paints it in one
-     * colour, which turns the coloured tile into a blank square.
+     * Cinnamon's tray and swaybar cannot load a path; COSMIC's loads it but paints
+     * it in one colour, which turns the coloured tile into a blank square.  Other
+     * bars under Sway get the name too; waybar loads either.  Sway started from a
+     * console has no XDG_CURRENT_DESKTOP, so SWAYSOCK counts when that is empty.
      */
-    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession);
+    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession, const std::string& swaySock);
 
     /**
      * @brief Icon names to try for the tray, best first.

@@ -108,10 +108,12 @@ namespace fcitx {
     /**
      * @brief Tells whether the tray must get an icon name instead of a file path.
      *
-     * Cinnamon's tray cannot load a path; COSMIC's loads it but paints it in one
-     * colour, which turns the coloured tile into a blank square.
+     * Cinnamon's tray and swaybar cannot load a path; COSMIC's loads it but paints
+     * it in one colour, which turns the coloured tile into a blank square.  Other
+     * bars under Sway get the name too; waybar loads either.  Sway started from a
+     * console has no XDG_CURRENT_DESKTOP, so SWAYSOCK counts when that is empty.
      */
-    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession);
+    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession, const std::string& swaySock);
 
     /**
      * @brief Icon names to try for the tray, best first.
@@ -131,6 +133,29 @@ namespace fcitx {
      * Linux Mint pairs a dark panel theme with a light app theme by default.
      */
     std::optional<bool> isCinnamonPanelDark(const CinnamonThemeInfo& info);
+
+    /**
+     * @brief Tells whether the session is deepin's DDE.
+     */
+    bool isDeepinSession(const std::string& xdgCurrentDesktop);
+
+    /**
+     * @brief Reports whether the deepin dock is dark, from the appearance GlobalTheme.
+     *
+     * @return std::nullopt when the theme is unknown or automatic; the automatic
+     *         one changes with the time of day.
+     */
+    std::optional<bool> isDeepinPanelDark(const std::string& globalTheme);
+
+    /**
+     * @brief Reads GlobalTheme (e.g. "nirvana.light") from deepin's appearance service.
+     */
+    std::string deepinGlobalThemeFromSession();
+
+    /**
+     * @brief The string in a busctl get-property reply such as `s "nirvana.light"`, or "".
+     */
+    std::string busctlStringValue(const std::string& reply);
 
 } // namespace fcitx
 

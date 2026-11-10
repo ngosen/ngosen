@@ -166,7 +166,8 @@ has_no_qt() {
 
 check_packages() {
     check "fcitx5-ngosen is installed" is_installed fcitx5-ngosen
-    if [ "$session" = gnome ]; then
+    # The x11 session is Xfce, which opens the GTK window like GNOME.
+    if [ "$session" = gnome ] || [ "$session" = x11 ]; then
         check "the settings window opens in GTK" opens_settings_in gtk
         check "no Qt is installed for it" has_no_qt
     else

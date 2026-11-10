@@ -314,9 +314,10 @@ namespace fcitx {
         return xdgCurrentDesktop.empty() && desktopSession.rfind("cinnamon", 0) == 0;
     }
 
-    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession) {
+    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession, const std::string& swaySock) {
         const auto desktops = splitList(xdgCurrentDesktop, ':');
-        return isCinnamonSession(xdgCurrentDesktop, desktopSession) || std::find(desktops.begin(), desktops.end(), "COSMIC") != desktops.end();
+        const auto named    = [&desktops](const char* name) { return std::find(desktops.begin(), desktops.end(), name) != desktops.end(); };
+        return isCinnamonSession(xdgCurrentDesktop, desktopSession) || named("COSMIC") || named("sway") || (xdgCurrentDesktop.empty() && !swaySock.empty());
     }
 
     std::vector<std::string> trayIconNames(const std::string& iconName, const std::string& baseIconName, const std::string& xdgCurrentDesktop) {
@@ -354,6 +355,34 @@ namespace fcitx {
         if (!css)
             return std::nullopt;
         return isShellCssPanelDark(*css);
+    }
+
+    bool isDeepinSession(const std::string& xdgCurrentDesktop) {
+        const auto desktops = splitList(xdgCurrentDesktop, ':');
+        return std::find(desktops.begin(), desktops.end(), "DDE") != desktops.end();
+    }
+
+    std::optional<bool> isDeepinPanelDark(const std::string& globalTheme) {
+        const auto dot = globalTheme.rfind('.');
+        if (dot == std::string::npos)
+            return std::nullopt;
+        const std::string variant = globalTheme.substr(dot + 1);
+        if (variant == "dark")
+            return true;
+        if (variant == "light")
+            return false;
+        return std::nullopt;
+    }
+
+    std::string deepinGlobalThemeFromSession() {
+        return busctlStringValue(gsettingsGet("busctl --user --timeout=1 get-property org.deepin.dde.Appearance1 /org/deepin/dde/Appearance1 "
+                                              "org.deepin.dde.Appearance1 GlobalTheme 2>/dev/null"));
+    }
+
+    std::string busctlStringValue(const std::string& reply) {
+        if (reply.rfind("s \"", 0) != 0 || reply.size() < 4 || reply.back() != '"')
+            return {};
+        return reply.substr(3, reply.size() - 4);
     }
 
 } // namespace fcitx

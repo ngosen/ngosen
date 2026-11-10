@@ -153,9 +153,14 @@ int main() {
     check("N2 x_cinnamon", fcitx::isCinnamonSession("X-Cinnamon", ""), "X-Cinnamon rejected");
     check("N3 gnome", !fcitx::isCinnamonSession("ubuntu:GNOME", "ubuntu"), "GNOME taken for Cinnamon");
 
-    check("T1 cinnamon_tray_by_name", fcitx::trayWantsIconName("", "cinnamon"), "Cinnamon tray given a path");
-    check("T2 cosmic_tray_by_name", fcitx::trayWantsIconName("COSMIC", ""), "COSMIC tray given a path");
-    check("T3 kde_tray_by_path", !fcitx::trayWantsIconName("KDE", "plasma"), "KDE tray given a name");
+    check("T1 cinnamon_tray_by_name", fcitx::trayWantsIconName("", "cinnamon", ""), "Cinnamon tray given a path");
+    check("T2 cosmic_tray_by_name", fcitx::trayWantsIconName("COSMIC", "", ""), "COSMIC tray given a path");
+    check("T3 kde_tray_by_path", !fcitx::trayWantsIconName("KDE", "plasma", ""), "KDE tray given a name");
+    check("T6 sway_tray_by_name", fcitx::trayWantsIconName("sway:wlroots", "sway", ""), "Sway tray given a path");
+    check("T7 console_sway_by_name", fcitx::trayWantsIconName("", "", "/run/user/1000/sway-ipc.1000.1.sock"), "Sway without XDG_CURRENT_DESKTOP given a path");
+    check("T8 hyprland_tray_by_path", !fcitx::trayWantsIconName("Hyprland", "hyprland", ""), "Hyprland tray given a name");
+    check("T9 unknown_tray_by_path", !fcitx::trayWantsIconName("", "", ""), "unknown desktop given a name");
+    check("T10 stale_swaysock_on_kde", !fcitx::trayWantsIconName("KDE", "plasma", "/run/user/1000/sway-ipc.1000.1.sock"), "KDE with a stale SWAYSOCK given a name");
     check("T4 gnome_tray_tighter_icon", fcitx::trayIconNames("fcitx-ngosen", "fcitx-ngosen", "ubuntu:GNOME").front() == "fcitx-ngosen-gnome",
           "GNOME Shell not given the GNOME icon first");
     check("T5 kde_tray_usual_icon", fcitx::trayIconNames("fcitx-ngosen-off", "fcitx-ngosen-off", "KDE").front() == "fcitx-ngosen-off", "KDE given the GNOME icon");
@@ -180,6 +185,18 @@ int main() {
     check("N7 builtin_says_nothing", !fcitx::isCinnamonPanelDark(mint).has_value(), "built-in theme without a panel colour gave an answer");
     mint.themeName = "Not-Installed";
     check("N8 missing_theme", !fcitx::isCinnamonPanelDark(mint).has_value(), "missing Cinnamon theme gave an answer");
+
+    // ── deepin: the dock follows the global theme ────────────────────────
+    check("P1 dde_session", fcitx::isDeepinSession("DDE"), "DDE rejected");
+    check("P2 gnome_not_deepin", !fcitx::isDeepinSession("ubuntu:GNOME"), "GNOME taken for deepin");
+    check("P3 light_theme", fcitx::isDeepinPanelDark("nirvana.light") == std::optional<bool>(false), "nirvana.light dock not light");
+    check("P4 dark_theme", fcitx::isDeepinPanelDark("nirvana.dark") == std::optional<bool>(true), "nirvana.dark dock not dark");
+    check("P5 automatic_theme", !fcitx::isDeepinPanelDark("nirvana").has_value(), "automatic theme gave an answer");
+    check("P6 no_reply", !fcitx::isDeepinPanelDark("").has_value(), "empty theme gave an answer");
+    check("P8 busctl_reply", fcitx::busctlStringValue("s \"nirvana.light\"") == "nirvana.light", "busctl reply not parsed");
+    check("P9 busctl_error", fcitx::busctlStringValue("Failed to get property GlobalTheme").empty(), "busctl error taken for a theme");
+    check("P10 busctl_other_type", fcitx::busctlStringValue("b true").empty(), "non-string reply taken for a theme");
+    check("P7 other_suffix", !fcitx::isDeepinPanelDark("custom.blue").has_value(), "unknown variant gave an answer");
 
     fs::remove_all(root);
 

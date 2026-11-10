@@ -613,8 +613,11 @@ namespace ngosen {
         if (handleKeyDuringReplacement(keyEvent, currentSym))
             return;
         // Before the doubled keys, so -- stays as typed in a path.
-        if ((realMode == ngosen::Mode::Sen || realMode == ngosen::Mode::Preedit) && handleRawWordKey(keyEvent, currentSym))
+        // The shell line still sees the key, so /usr/bin/vim starts Vim mode.
+        if ((realMode == ngosen::Mode::Sen || realMode == ngosen::Mode::Preedit) && handleRawWordKey(keyEvent, currentSym)) {
+            noteShellKey(keyEvent, currentSym);
             return;
+        }
         if (handleDoubledKey(keyEvent, currentSym))
             return;
 

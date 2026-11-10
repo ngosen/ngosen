@@ -396,7 +396,7 @@ namespace {
 
     // Vim started from the shell opens in normal mode, without the Vim mode switch.
     void testStartedFromShell() {
-        for (const char* line : {"nvim", "vim", "sudo vim"}) {
+        for (const char* line : {"nvim", "vim", "sudo vim", "/usr/bin/nvim", "sudo /usr/bin/vim x"}) {
             FakeVim vim(false);
             vim.insert(line);
             vim.enter(true);

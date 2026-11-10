@@ -16,7 +16,7 @@ from i18n import _
 
 from ui_gtk.hotkey_button import HotkeyButton
 
-DEFAULT_ORDER = "Sen,Preedit,Emoji,Off,Default"
+DEFAULT_ORDER = "Sen,Preedit,Emoji,Off"
 
 
 class ShortcutsPage:
@@ -139,8 +139,10 @@ class ShortcutsPage:
     def order(self):
         saved = str(self.model.current.get("ModeOrder", DEFAULT_ORDER))
         # The addon renames old mode names before it hands the config out.
-        order = list(dict.fromkeys(saved.split(",")))
-        return order + [n for n in MODE_KEY_TO_INTERNAL_NAME.values() if n not in order]
+        known = list(MODE_KEY_TO_INTERNAL_NAME.values())
+        # An order saved before a mode was dropped still names it.
+        order = [n for n in dict.fromkeys(saved.split(",")) if n in known]
+        return order + [n for n in known if n not in order]
 
     def _fill_modes(self):
         self.modes.remove_all()

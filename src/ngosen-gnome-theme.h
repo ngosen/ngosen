@@ -35,12 +35,21 @@ namespace fcitx {
         std::string              home;
         std::string              dataHome;
         std::vector<std::string> dataDirs;
+        // org.gnome.desktop.interface color-scheme without quotes, e.g. "prefer-light".
+        std::string colorScheme;
+        // Major version of gnome-shell, 0 when unknown.
+        int shellMajorVersion = 0;
     };
 
     /**
      * @brief Builds the lookup inputs from the environment and gsettings.
      */
     GnomeShellThemeInfo gnomeShellThemeInfoFromEnv();
+
+    /**
+     * @brief Major version from a "GNOME Shell 51.1" line, 0 when there is none.
+     */
+    int gnomeShellMajorVersion(const std::string& versionLine);
 
     /**
      * @brief Tells whether XDG_CURRENT_DESKTOP names a GNOME Shell session.
@@ -70,8 +79,11 @@ namespace fcitx {
     /**
      * @brief Reports whether the GNOME Shell top bar is dark.
      *
-     * @return std::nullopt when no stylesheet is readable, e.g. the built-in
-     *         Adwaita theme compiled into a GResource.
+     * Without a stylesheet on disk the bar is the built-in Adwaita one, which
+     * GNOME 51 paints light only under color-scheme 'prefer-light'.
+     *
+     * @return std::nullopt when no stylesheet is readable and the shell is
+     *         older than 51 or its version is unknown.
      */
     std::optional<bool> isGnomePanelDark(const GnomeShellThemeInfo& info);
 
@@ -96,10 +108,12 @@ namespace fcitx {
     /**
      * @brief Tells whether the tray must get an icon name instead of a file path.
      *
-     * Cinnamon's tray cannot load a path; COSMIC's loads it but paints it in one
-     * colour, which turns the coloured tile into a blank square.
+     * Cinnamon's tray and swaybar cannot load a path; COSMIC's loads it but paints
+     * it in one colour, which turns the coloured tile into a blank square.  Other
+     * bars under Sway get the name too; waybar loads either.  Sway started from a
+     * console has no XDG_CURRENT_DESKTOP, so SWAYSOCK counts when that is empty.
      */
-    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession);
+    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession, const std::string& swaySock);
 
     enum class TrayIconStyle {
         Tile,
@@ -133,6 +147,29 @@ namespace fcitx {
      * Linux Mint pairs a dark panel theme with a light app theme by default.
      */
     std::optional<bool> isCinnamonPanelDark(const CinnamonThemeInfo& info);
+
+    /**
+     * @brief Tells whether the session is deepin's DDE.
+     */
+    bool isDeepinSession(const std::string& xdgCurrentDesktop);
+
+    /**
+     * @brief Reports whether the deepin dock is dark, from the appearance GlobalTheme.
+     *
+     * @return std::nullopt when the theme is unknown or automatic; the automatic
+     *         one changes with the time of day.
+     */
+    std::optional<bool> isDeepinPanelDark(const std::string& globalTheme);
+
+    /**
+     * @brief Reads GlobalTheme (e.g. "nirvana.light") from deepin's appearance service.
+     */
+    std::string deepinGlobalThemeFromSession();
+
+    /**
+     * @brief The string in a busctl get-property reply such as `s "nirvana.light"`, or "".
+     */
+    std::string busctlStringValue(const std::string& reply);
 
 } // namespace fcitx
 

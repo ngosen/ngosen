@@ -148,6 +148,20 @@ class ShortcutsPageTest(unittest.TestCase):
         for button in page.findChildren(SingleKeyCaptureWidget):
             self.assertLessEqual(button.mapTo(view, button.rect().bottomRight()).x(), view.width())
 
+    def test_a_tall_window_keeps_the_hints_at_their_height(self):
+        # A maximized window has room to spare, which went into the hints under the mode list.
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        window.resize(1000, 1700)
+        window.show()
+        keys = [r for r in range(window.sidebar.count()) if window.sidebar.item(r).text() == "Keys"]
+        window.sidebar.setCurrentRow(keys[0])
+        for _ in range(30):
+            app.processEvents()
+        modes = [w for w in window.findChildren(QListWidget) if w.isVisible() and w.count() == 5]
+        card = modes[0].parentWidget()
+        for label in [x for x in card.findChildren(QLabel) if x.parentWidget() is card]:
+            self.assertLessEqual(label.height(), label.heightForWidth(label.width()) + 4)
+
 
 def wait_until(condition, seconds=5):
     """Runs the event loop until condition() holds, for work handed back from a thread."""

@@ -52,7 +52,7 @@ class WhatsNewPage:
                     css_classes=["typed"],
                     valign=Gtk.Align.CENTER,
                     wrap=True,
-                    width_chars=14,
+                    width_chars=12,
                 )
             )
         self._add_button(row, feature["target"])
@@ -69,7 +69,10 @@ class WhatsNewPage:
             label = _("Open the {} page").format(PAGE_TITLES[name])
             button = Gtk.Button(label=label, valign=Gtk.Align.CENTER)
             button.connect("clicked", lambda _b: self.show_page(name))
-        button.get_child().set_wrap(True)
+        # A row hands its buttons their narrowest width, so a wrapping label needs a floor.
+        label = button.get_child()
+        label.set_wrap(True)
+        label.set_width_chars(min(len(label.get_text()), 15))
         button.target = target
         row.add_suffix(button)
 

@@ -16,8 +16,9 @@ from core.toolkit_install import has_gtk, has_qt, reopen_if_switched
 from i18n import saved_setting, setup_i18n
 
 # The desktops whose own apps are GTK and libadwaita, and their session names.
-GTK_DESKTOPS = {"GNOME", "X-Cinnamon"}
-GTK_SESSIONS = ("gnome", "ubuntu", "cinnamon")
+# Xfce is GTK too, and libadwaita suits it better than Qt does.
+GTK_DESKTOPS = {"GNOME", "X-Cinnamon", "XFCE"}
+GTK_SESSIONS = ("gnome", "ubuntu", "cinnamon", "xfce")
 
 
 def desktop_wants_gtk(env):

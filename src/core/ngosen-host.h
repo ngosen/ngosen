@@ -65,12 +65,17 @@ namespace ngosen {
         bool        formattedPreedit = false;
         bool        url              = false; // the field is an address bar
         bool        keyEventOrderFix = false;
-        bool        password         = false; // what is typed here must not be logged
+        bool        password         = false; // a password field: not logged, and nothing rewrites its text
+        bool        sensitive        = false; // the app asks for what is typed not to be kept, as in a private window
         bool        terminal         = false; // the field is a terminal, which erases a character for each DEL committed
         bool        sendsNoKeys      = false; // keys the input method sends never reach the app; it deletes only through text
         bool        preeditFallback  = false; // the host may type a word in the preedit when deleting in the field fails
         int         caretWidth       = 0;     // size of the cursor rectangle the app last reported, in pixels
         int         caretHeight      = 0;
+
+        bool        hidesText() const {
+            return password || sensitive;
+        }
     };
 
     // Where the user is in the candidate list shown in the panel. Indexes count from the first

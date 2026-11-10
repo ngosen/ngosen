@@ -82,7 +82,7 @@ namespace ngosen {
                                                    .sentReport    = reportKey(sent),
                                                    .sentAfter     = sent.isValid() ? text.substr(textBeforeCursor(sent).size()) : std::string(),
                                                    .program       = host_->field().program,
-                                                   .password      = host_->field().password,
+                                                   .hidden        = host_->field().hidesText(),
                                                    .waitsForKey   = checkWaitsForLaterKey(),
                                                    .keysAtSend    = keyCount_,
                                                    .commitsAtSend = commitCount_,
@@ -134,7 +134,7 @@ namespace ngosen {
         surrCheck_.reset();
         std::string line = std::string("Surrounding check: ") + verdictName(verdict) + (beforeNext ? " before the next replacement" : "") + " after " +
             std::to_string((monotonicUs() - check.sentAtUs) / 1000) + " ms, " + std::to_string(keyCount_ - check.keysAtSend) + " keys later" + loggedField(host_->field());
-        if (!check.password)
+        if (!check.hidden)
             line += ", replaced " + check.deleted + " -> " + check.added;
         NGOSEN_INFO(line);
         if (verdict == SurroundingVerdict::Correct)

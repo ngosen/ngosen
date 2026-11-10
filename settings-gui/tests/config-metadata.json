@@ -481,20 +481,6 @@
     {}
    ],
    [
-    "ShowModeDefault",
-    "Boolean",
-    "Show Default Typing",
-    "True",
-    {}
-   ],
-   [
-    "ShortcutDefault",
-    "String",
-    "Shortcut for Default Typing",
-    "r",
-    {}
-   ],
-   [
     "EnableMacroInOffMode",
     "Boolean",
     "Allow Macro in Off Mode",
@@ -512,7 +498,7 @@
     "ModeOrder",
     "String",
     "Mode Order",
-    "Sen,Preedit,Emoji,Off,Default",
+    "Sen,Preedit,Emoji,Off",
     {}
    ],
    [

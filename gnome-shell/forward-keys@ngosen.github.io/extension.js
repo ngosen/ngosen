@@ -125,6 +125,15 @@ export default class ForwardKeys extends Extension {
         this._overviewSignals = ['showing', 'hiding'].map(name => Main.overview.connect(name, () => this._updateApp()));
         this._dbus = Gio.DBusExportedObject.wrapJSObject(INTERFACE_XML, this);
         this._dbus.export(Gio.DBus.session, OBJECT_PATH);
+        this._fcitxRuns = false;
+        // A message to a stopped fcitx5's name makes D-Bus start it, and fcitx5 then takes over from IBus.
+        this._fcitxWatch = Gio.bus_watch_name(Gio.BusType.SESSION, FCITX_SERVICE, Gio.BusNameWatcherFlags.NONE,
+            () => {
+                this._fcitxRuns = true;
+            },
+            () => {
+                this._fcitxRuns = false;
+            });
         this._updateApp();
     }
 
@@ -138,6 +147,8 @@ export default class ForwardKeys extends Extension {
         this._tracker = null;
         this._sendApp('');
         this._sentApp = null;
+        Gio.bus_unwatch_name(this._fcitxWatch);
+        this._fcitxWatch = 0;
     }
 
     // Called when fcitx5 starts after the shell, which is what happens at every login.
@@ -164,6 +175,8 @@ export default class ForwardKeys extends Extension {
     // Sent only to fcitx5: GNOME keeps the focused app from other clients on the session bus.
     _sendApp(app) {
         this._sentApp = app;
+        if (!this._fcitxRuns)
+            return;
         Gio.DBus.session.emit_signal(FCITX_SERVICE, OBJECT_PATH, INTERFACE, 'FocusedApp', new GLib.Variant('(s)', [app]));
     }
 }

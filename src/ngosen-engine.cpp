@@ -173,7 +173,7 @@ namespace fcitx {
     // to FcitxKey_f.
     static bool isAppModeMenuReservedKey(KeySym sym, const ngosenConfig& config) {
         if (sym == Key(*config.shortcutSen).sym() || sym == Key(*config.shortcutPreedit).sym() || sym == Key(*config.shortcutEmoji).sym() ||
-            sym == Key(*config.shortcutOff).sym() || sym == Key(*config.shortcutDefault).sym()) {
+            sym == Key(*config.shortcutOff).sym()) {
             return true;
         }
 
@@ -388,7 +388,7 @@ namespace fcitx {
         initToggleAction(capitalizeStartAction_, config_.capitalizeStartOfText, "ngosen-capitalize-start", "", _("Start of text or line"), N_("Start of text or line"), uiManager);
         autoCapitalizeMenu_->addAction(capitalizeSentencesAction_.get());
         autoCapitalizeMenu_->addAction(capitalizeStartAction_.get());
-        initToggleAction(autoNonVnRestoreAction_, config_.autoNonVnRestore, "ngosen-autonvnrestore", "edit-undo", _("Auto Restore Invalid Words"), N_("Auto Non-VN Restore"),
+        initToggleAction(autoNonVnRestoreAction_, config_.autoNonVnRestore, "ngosen-autonvnrestore", "edit-undo", _("Auto Restore Invalid Words"), N_("Auto Restore Invalid Words"),
                          uiManager);
         initToggleAction(enableDictionaryAction_, config_.enableDictionary, "ngosen-dictionary", "accessories-dictionary", _("Custom Dictionary"), N_("Custom Dictionary"),
                          uiManager);
@@ -412,7 +412,11 @@ namespace fcitx {
                 dbusObject_.reset();
             }
             // As fcitx5 5.1.22 does it, which needs Wayland to tell windows apart.
-            const bool watchPortal = getEnv("XDG_SESSION_TYPE") == "wayland" && !ngosen::fcitxNamesGnomeApps(Instance::version());
+            const std::string sessionType = getEnv("XDG_SESSION_TYPE");
+            const bool        watchPortal = sessionType == "wayland" && !ngosen::fcitxNamesGnomeApps(Instance::version());
+            // fcitx5 started outside the session, for example by hand, lacks it.
+            if (sessionType.empty())
+                NGOSEN_INFO("XDG_SESSION_TYPE is not set; not watching GNOME's portal for the focused app");
             gnomeShell_ =
                 std::make_unique<ngosen::GnomeShellWatcher>(dbusAddon->call<IDBusModule::bus>(), watchPortal, [this](const std::string& app) { shellFocusedAppChanged(app); });
         }
@@ -545,8 +549,24 @@ namespace fcitx {
                 }
             }
         }
+        loadEnglishWords();
         loadAppRules();
         populateConfig();
+    }
+
+    // The list changes only with the package, so a settings reload keeps it.
+    void NgoSenEngine::loadEnglishWords() {
+        if (englishWords_)
+            return;
+#if NGOSEN_USE_MODERN_FCITX_API
+        auto fd = StandardPaths::global().open(StandardPathsType::PkgData, "ngosen/english-common.txt");
+#else
+        auto fd = StandardPath::global().open(StandardPath::Type::PkgData, "ngosen/english-common.txt", O_RDONLY);
+#endif
+        if (fd.isValid())
+            englishWords_.reset(NewWordList(fd.release()));
+        else
+            NGOSEN_WARN("English word list not found");
     }
 
     void NgoSenEngine::announceRelease(const std::string& release) {
@@ -651,7 +671,7 @@ namespace fcitx {
         updateAction(nullptr, capitalizeMacroAction_, config_.capitalizeMacro, _("Capitalize Macro"));
         updateAction(nullptr, capitalizeSentencesAction_, config_.autoCapitalizeAfterPunctuation, _("After . ! ? and Enter"));
         updateAction(nullptr, capitalizeStartAction_, config_.capitalizeStartOfText, _("Start of text or line"));
-        updateAction(nullptr, autoNonVnRestoreAction_, config_.autoNonVnRestore, _("Auto Non-VN Restore"));
+        updateAction(nullptr, autoNonVnRestoreAction_, config_.autoNonVnRestore, _("Auto Restore Invalid Words"));
         updateAction(nullptr, enableDictionaryAction_, config_.enableDictionary, _("Custom Dictionary"));
         autoCapitalizeAction_->setShortText(_("Auto Capitalize"));
         settingsAction_->setShortText(_("Settings"));
@@ -834,7 +854,7 @@ namespace fcitx {
 
         if (auto it = modeMenuMapping_.find(keySym); it != modeMenuMapping_.end()) {
             NGOSEN_INFO("Selected mode: " + ngosen::ModeI18NAnnotation::toString(it->second));
-            pickMenuMode(ic, it->second, keySym == Key(*config_.shortcutDefault).sym());
+            pickMenuMode(ic, it->second);
             return;
         }
         const auto& kl = *config_.modeMenuKey;
@@ -888,15 +908,11 @@ namespace fcitx {
         }
     }
 
-    void NgoSenEngine::pickMenuMode(InputContext* ic, NgoSenMode mode, bool isDefault) {
+    void NgoSenEngine::pickMenuMode(InputContext* ic, NgoSenMode mode) {
         if (mode != NgoSenMode::Emoji) {
-            if (isDefault) {
-                clearAppRule(currentConfigureApp_);
-            } else {
-                setAppRule(currentConfigureApp_, mode);
-                if (!isStartsWith(currentConfigureApp_, "ctx_")) {
-                    saveAppRules();
-                }
+            keepAppMode(currentConfigureApp_, mode);
+            if (!isStartsWith(currentConfigureApp_, "ctx_")) {
+                saveAppRules();
             }
             // A mode picked for the app wins over where the toggle key last left it.
             clearAppSwitch(currentConfigureApp_);
@@ -913,13 +929,10 @@ namespace fcitx {
 
     std::vector<NgoSenMode> NgoSenEngine::cycleModes(const std::string& appName) {
         auto                                      order      = stringutils::split(*config_.modeOrder, ",");
-        std::vector<std::pair<std::string, bool>> visibility = {{"Sen", *config_.showModeSen},
-                                                                {"Preedit", *config_.showModePreedit},
-                                                                {"Emoji", *config_.showModeEmoji},
-                                                                {"Off", *config_.showModeOff},
-                                                                {"Default", *config_.showModeDefault}};
+        std::vector<std::pair<std::string, bool>> visibility = {
+            {"Sen", *config_.showModeSen}, {"Preedit", *config_.showModePreedit}, {"Emoji", *config_.showModeEmoji}, {"Off", *config_.showModeOff}};
 
-        std::vector<NgoSenMode>                   enabledModes;
+        std::vector<NgoSenMode> enabledModes;
         for (const auto& name : order) {
             bool visible = false;
             for (const auto& v : visibility) {
@@ -939,8 +952,6 @@ namespace fcitx {
                 mode = NgoSenMode::Emoji;
             else if (name == "Off")
                 mode = NgoSenMode::Off;
-            else if (name == "Default")
-                mode = defaultModeFor(appName);
             else
                 continue;
 
@@ -962,7 +973,7 @@ namespace fcitx {
         auto       it       = std::find(enabledModes.begin(), enabledModes.end(), current);
         NgoSenMode nextMode = it == enabledModes.end() ? enabledModes[0] : enabledModes[(static_cast<size_t>(it - enabledModes.begin()) + 1) % enabledModes.size()];
         setMode(nextMode, ic);
-        setAppRule(appName, nextMode);
+        keepAppMode(appName, nextMode);
         clearAppSwitch(appName);
         showCycleModeNotification(nextMode, ic);
     }
@@ -1376,15 +1387,13 @@ namespace fcitx {
     std::vector<NgoSenEngine::ModeMenuItem> NgoSenEngine::modeMenuItems() {
         auto                                          getShortcut = [](const std::string& shortcut) { return Key(shortcut).sym(); };
 
-        std::unordered_map<std::string, ModeMenuItem> modeMap = {
-            {"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
-            {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
-            {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
-            {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
-            {"Default", {defaultModeFor(currentConfigureApp_), _("Default Typing"), getShortcut(*config_.shortcutDefault), *config_.showModeDefault}}};
+        std::unordered_map<std::string, ModeMenuItem> modeMap = {{"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
+                                                                 {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
+                                                                 {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
+                                                                 {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}}};
 
-        std::vector<ModeMenuItem> allModes;
-        auto                      order = stringutils::split(*config_.modeOrder, ",");
+        std::vector<ModeMenuItem>                     allModes;
+        auto                                          order = stringutils::split(*config_.modeOrder, ",");
         for (const auto& name : order) {
             auto it = modeMap.find(name);
             if (it != modeMap.end()) {
@@ -1428,15 +1437,12 @@ namespace fcitx {
                 modeMenuMapping_[info.key] = info.mode;
             }
 
-            const bool        isDefaultItem = (info.label == _("Default Typing"));
-            const std::string keyUtf8       = Key::keySymToUTF8(info.key);
-            std::string       keyLabel      = keyUtf8.empty() ? "" : "[" + keyUtf8 + "] ";
-            candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(info.mode, keyLabel + info.label),
-                                                                         [this, mode = info.mode, isDefaultItem](InputContext* ic) { pickMenuMode(ic, mode, isDefaultItem); }));
+            const std::string keyUtf8  = Key::keySymToUTF8(info.key);
+            std::string       keyLabel = keyUtf8.empty() ? "" : "[" + keyUtf8 + "] ";
+            candidateList->append(
+                std::make_unique<AppModeCandidateWord>(getLabel(info.mode, keyLabel + info.label), [this, mode = info.mode](InputContext* ic) { pickMenuMode(ic, mode); }));
 
-            if (info.mode == realMode && !isDefaultItem) {
-                activeSelectionIdx = currentCandidateIdx;
-            } else if (isDefaultItem && !findAppRule(currentConfigureApp_) && !findAppSwitch(currentConfigureApp_)) {
+            if (info.mode == realMode) {
                 activeSelectionIdx = currentCandidateIdx;
             }
             currentCandidateIdx++;
@@ -1657,6 +1663,20 @@ namespace fcitx {
             }
             return true;
         });
+    }
+
+    // The Vietnamese mode an app gets anyway is not kept as a rule, so the app follows the global setting again.
+    // OFF stays pinned: dropped, it would follow the switch key back to Vietnamese.
+    void NgoSenEngine::keepAppMode(const std::string& appName, NgoSenMode mode) {
+        if (*config_.vietnameseOn && mode == vietnameseModeFor(appName)) {
+            // Both spellings, or a rule saved under the bare name would still apply to appName.
+            clearAppRule(appName);
+            const std::string bareName = stripDesktopSuffix(appName);
+            if (bareName != appName)
+                clearAppRule(bareName);
+            return;
+        }
+        setAppRule(appName, mode);
     }
 
     void NgoSenEngine::clearAppRule(const std::string& appName) {

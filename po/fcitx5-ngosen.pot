@@ -262,13 +262,7 @@ msgstr ""
 msgid "Shortcut for OFF"
 msgstr ""
 
-#: src/ngosen-config.h:263
-msgid "Show Default Typing"
-msgstr ""
 
-#: src/ngosen-config.h:264
-msgid "Shortcut for Default Typing"
-msgstr ""
 
 #: src/ngosen-config.h:265
 msgid "Allow Macro in Off Mode"
@@ -338,9 +332,6 @@ msgstr ""
 msgid "Show"
 msgstr ""
 
-#: src/ngosen-engine.cpp:991 src/ngosen-engine.cpp:1030
-msgid "Default Typing"
-msgstr ""
 
 #: src/ngosen-engine.cpp:1057
 msgid "Type"
@@ -1396,7 +1387,7 @@ msgid "Moves the app in use to the next mode in the list below, and remembers it
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "With the mode menu open, press a mode's key to pick it for the app in use. Pick Default Typing to make the app follow the switch key again."
+msgid "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) to follow the global setting and switch key again; OFF stays set for the app."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py

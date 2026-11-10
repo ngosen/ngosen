@@ -1,7 +1,9 @@
 # Ngó Sen
 
 Ngó Sen là bộ gõ tiếng Việt được **vibecode** cho fcitx5 trên Linux, cho trải nghiệm gõ như UniKey trên Windows.
-fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM.
+fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM. Có thêm
+[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, dùng chung lõi gõ
+với bản fcitx5 nên tính năng gần như giống hệt. Tính năng mới có thể đến bản IBus muộn hơn bản fcitx5.
 
 Cửa sổ cài đặt có hai bản: Qt và GTK (giống app GNOME). GNOME và Linux Mint (Cinnamon) mở bản GTK,
 các desktop khác mở bản Qt. Cửa sổ dùng giao diện sáng, tối của máy trên KDE và GNOME; đổi gì lưu
@@ -94,6 +96,54 @@ dùng phím chuyển cũ (thường là Ctrl+Space); muốn đổi phím, mở c
 Các bước thiết lập chỉ áp dụng cho tài khoản chạy lệnh. Tài khoản khác trên cùng máy cần đăng nhập vào
 đó rồi chạy lại lệnh cài.
 
+### Chọn bản fcitx5 hoặc bản IBus
+
+Khi cài lần đầu trên GNOME, hoặc trên Xfce, Cinnamon, MATE dùng X11 ở Debian, Ubuntu và Linux Mint,
+lệnh cài hỏi chọn bản nào nếu distro đó có package cho bản IBus:
+
+1. Bản fcitx5 (khuyên dùng): đủ tính năng, nhấn Enter để chọn.
+2. Bản IBus: dùng IBus có sẵn, tính năng gần như giống hệt bản fcitx5 nhờ dùng chung lõi gõ.
+   Tính năng mới có thể đến muộn hơn bản fcitx5.
+
+Dùng `--yes` thì lệnh không hỏi và cài bản fcitx5. Cả hai bản đều dùng Ctrl+Shift để chuyển giữa tiếng Anh
+và tiếng Việt.
+
+[Bản IBus](https://github.com/ngosen/ibus-ngosen) (package `ibus-ngosen`) dùng chung lõi gõ với bản fcitx5:
+Gõ Sen, kiểu gõ, gõ tắt, từ điển riêng và bảng phím tùy chỉnh. Bản IBus cũng có chọn Gõ Sen hay Gạch chân
+riêng cho từng app (bấm phím `` ` `` để chọn). Các điểm còn khác: chưa có emoji và Vim mode. Cứu dấu dùng được
+ở ô gõ bằng Gõ Sen (bấm ngay sau một chữ rồi gõ phím dấu); đổi dấu chữ đang bôi đen chỉ được ở app X11.
+Cứu chữ hiện chỉ có trên X11. Trong một số app, từ đang gõ có gạch chân.
+
+Muốn chọn thẳng bản IBus:
+
+```
+curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus
+```
+
+Hoặc chọn thẳng bản fcitx5:
+
+```
+curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --fcitx5
+```
+
+Chạy lại lệnh cài để cập nhật version mới thì giữ bản đang có trên máy, không hỏi chọn lại. Muốn chuyển
+sang bản kia, chạy lệnh với `--ibus` hoặc `--fcitx5`.
+
+Hai package không cài cùng nhau được. Chuyển bản sẽ gỡ package của bản kia cho mọi tài khoản trên máy.
+Trên Debian, Ubuntu và Fedora, package cũ được gỡ trong cùng lần cài, nên cài lỗi thì bản cũ vẫn còn.
+Trên openSUSE và Arch, lệnh dừng và in lệnh gỡ package kia; gỡ xong thì chạy lại lệnh cài.
+
+Khi chuyển từ bản fcitx5 sang bản IBus, bản IBus chép kiểu gõ, gõ tắt, bảng phím tùy chỉnh và từ điển
+tùy chỉnh từ bản fcitx5 ở lần chạy đầu. Lệnh cài bỏ các thiết lập fcitx5 mà nó đã tạo cho tài khoản này
+và thêm “Tiếng Việt (Ngó Sen)” vào nguồn nhập của GNOME. Trên Xfce, Cinnamon, MATE, lệnh dùng im-config
+đặt IBus làm bộ gõ và thêm Ngó Sen vào IBus. Sau đó đăng xuất rồi đăng nhập lại.
+
+Khi chuyển từ bản IBus sang bản fcitx5, cài đặt không tự chép sang. Trước khi chuyển, sao lưu trong
+cửa sổ cài đặt của bản IBus, rồi khôi phục trong bản fcitx5. Lệnh cài bỏ nguồn nhập “Tiếng Việt (Ngó Sen)”
+của bản IBus khỏi tài khoản chạy lệnh; tài khoản khác tự bỏ nguồn đó trong Cài đặt GNOME → Bàn phím.
+
+Xem chi tiết và các giới hạn trong [README của bản IBus](https://github.com/ngosen/ibus-ngosen#readme).
+
 ### Cập nhật bằng trình quản lý gói
 
 Từ version 1.5.3, mỗi release đều có trên repo có chữ ký để nhận version mới qua update của hệ thống:
@@ -143,6 +193,9 @@ sudo zypper install fcitx5-ngosen
 ```
 
 zypper hỏi một lần có tin cậy key không; đối chiếu fingerprint rồi chọn tin cậy.
+
+[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) cũng có trong repo APT, pacman và zypper ở trên: thay
+`fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
 
 Sau khi update, khởi động lại fcitx5 theo mục “Khởi động lại sau khi cài hoặc cập nhật”.
 
@@ -358,6 +411,9 @@ The core's English word list comes from [SCOWL](https://wordlist.aspell.net) by 
 Ngó Sen includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to
 change the tone mark of a selected word.
 
+[Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in IBus and shares the same
+typing core as the fcitx5 version, so their features are almost identical. New features may reach the IBus
+version later than the fcitx5 version.
 If you reuse Ngó Sen's code, keep the GPL and its notices, including when an AI tool rewrites it.
 If you port its approaches to another input method, credit this repository with a link.
 The rest of this page is in Vietnamese.

@@ -17,7 +17,7 @@ use std::sync::Arc;
 use bamboo_core::advanced::get_charset_names;
 use bamboo_core::{BracketMode, Config, InputMethod, ToneStyle, W2uMode};
 
-use crate::engine::{BambooEngine, Dictionary, INPUT_METHOD_NAMES, input_method_by_name};
+use crate::engine::{BambooEngine, Dictionary, INPUT_METHOD_NAMES, WordList, input_method_by_name};
 use crate::handles::{self, Object};
 use crate::macro_table::MacroTable;
 
@@ -271,15 +271,12 @@ pub extern "C" fn GetInputMethodNames() -> *mut *mut c_char {
     c_string_array(&INPUT_METHOD_NAMES)
 }
 
-/// Takes ownership of `fd` and closes it. One word per line; words are matched lowercased.
-#[unsafe(no_mangle)]
-pub extern "C" fn NewDictionary(fd: usize) -> usize {
-    let Ok(fd) = i32::try_from(fd) else {
-        return 0;
-    };
+/// Takes ownership of `fd` and closes it; `None` for a value that is not a descriptor.
+fn read_words(fd: usize) -> Option<Vec<String>> {
+    let fd = i32::try_from(fd).ok()?;
     // SAFETY: the caller hands over an open file descriptor it no longer uses.
     let file = unsafe { File::from_raw_fd(fd) };
-    let words: Dictionary = BufReader::new(file)
+    let words = BufReader::new(file)
         .split(b'\n')
         .map_while(Result::ok)
         .map(|mut line| {
@@ -291,7 +288,39 @@ pub extern "C" fn NewDictionary(fd: usize) -> usize {
         .filter(|line| !line.is_empty())
         .map(|line| String::from_utf8_lossy(&line).to_lowercase())
         .collect();
+    Some(words)
+}
+
+/// Takes ownership of `fd` and closes it. One word per line; words are matched lowercased.
+#[unsafe(no_mangle)]
+pub extern "C" fn NewDictionary(fd: usize) -> usize {
+    let Some(words) = read_words(fd) else {
+        return 0;
+    };
+    let words: Dictionary = words.into_iter().collect();
     handles::new_handle(Object::Dictionary(Arc::new(words)))
+}
+
+/// Takes ownership of `fd` and closes it. One English word per line.
+#[unsafe(no_mangle)]
+pub extern "C" fn NewWordList(fd: usize) -> usize {
+    let Some(words) = read_words(fd) else {
+        return 0;
+    };
+    let words: WordList = words.into_iter().collect();
+    handles::new_handle(Object::WordList(Arc::new(words)))
+}
+
+/// A Backspace keeps English keys as typed; 0 for `list` means no English words.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetEnglishWords(engine: usize, list: usize) {
+    let words = handles::word_list(list).unwrap_or_default();
+    handles::with_engine(engine, |e| e.english_words = words);
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineShownAsTyped(engine: usize) -> u8 {
+    handles::with_engine(engine, |e| e.shown_as_typed()).unwrap_or(false) as u8
 }
 
 #[cfg(test)]

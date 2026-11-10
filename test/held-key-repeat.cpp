@@ -47,9 +47,6 @@ int main(int argc, char** argv) {
     // replacement is still in flight, so nothing lands in buffered_keys_.
     const bool paced = argc > 1 && std::string(argv[1]) == "paced";
 
-    // Own a private socket name so a running fcitx5-lotus-server does not
-    // already hold the one the listener binds.
-
     configureTestPaths("fcitx5-ngosen-held-key-repeat");
     TestInstance        testInstance;
     fcitx::NgoSenEngine engine(&testInstance.instance);

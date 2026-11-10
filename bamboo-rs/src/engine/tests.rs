@@ -729,3 +729,165 @@ fn test_english_number_w2u_in_macro_mode() {
     type_keys(&mut e, "new1");
     assert_eq!(e.preedit_text, "new1");
 }
+
+#[test]
+fn test_word_before_digits_shown_as_typed() {
+    let mut e = engine_with_default_settings("Telex");
+    let mut shown = Vec::new();
+    for key in "Sose2026".chars() {
+        e.process_key_event(key as u32, 0);
+        shown.push(e.preedit_text.clone());
+    }
+    assert_eq!(
+        shown,
+        [
+            "S", "So", "Só", "Soé", "Sose2", "Sose20", "Sose202", "Sose2026"
+        ]
+        .map(String::from)
+    );
+}
+
+#[test]
+fn test_vietnamese_word_before_digits_keeps_its_marks() {
+    for (keys, want) in [
+        ("tooi2", "tôi2"),
+        ("as2", "á2"),
+        ("off2", "of2"),
+        ("2026", "2026"),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        type_keys(&mut e, keys);
+        assert_eq!(e.preedit_text, want, "{keys}");
+    }
+}
+
+#[test]
+fn test_digit_restore_follows_the_space_rules() {
+    let mut e = engine_with_default_settings("Telex");
+    e.auto_non_vn_restore = false;
+    type_keys(&mut e, "Sose2");
+    assert_eq!(e.preedit_text, "Soé2", "restore off");
+
+    let mut e = engine_with_default_settings("Telex");
+    e.macro_table = macro_table(&[("soé2", "x")]);
+    type_keys(&mut e, "Sose2");
+    assert_eq!(e.preedit_text, "Soé2", "macro key");
+
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "Sose2a");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "Soé2a ", "letters after the digits");
+}
+
+#[test]
+fn test_backspace_keeps_word_shown_as_typed() {
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "Sose2");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "Sose");
+    e.process_key_event('2' as u32, 0);
+    assert_eq!(e.preedit_text, "Sose2");
+
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "ban2");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    type_keys(&mut e, "s");
+    assert_eq!(e.preedit_text, "bán", "a plain word still takes a tone");
+
+    // The app keeps the marks it shows, so they stay until the next key.
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "Sose2a");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "Soé2");
+    e.process_key_event('6' as u32, 0);
+    assert_eq!(e.preedit_text, "Sose26");
+}
+
+#[test]
+fn test_backspace_keeps_typed_part_before_digit() {
+    for (keys, want) in [
+        ("thuwcx2tooi2", "thuwcx2tôi"),
+        ("considered2tooi2", "considered2tôi"),
+        ("tooi2tooi2", "tôi2tôi"),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_BACKSPACE, 0);
+        assert_eq!(e.preedit_text, want, "{keys} + Backspace");
+    }
+}
+
+#[test]
+fn test_word_before_digits_shown_as_space_commits() {
+    for keys in ["tooi2Sose2", "Sose2tooi2", "Sose2a", "dd2"] {
+        let mut shown = engine_with_default_settings("Telex");
+        type_keys(&mut shown, keys);
+        let mut spaced = engine_with_default_settings("Telex");
+        type_keys(&mut spaced, keys);
+        spaced.process_key_event(KEY_SPACE, 0);
+        assert_eq!(
+            format!("{} ", shown.preedit_text),
+            spaced.commit_text,
+            "{keys}"
+        );
+    }
+}
+
+#[test]
+fn test_reopened_word_before_digits_backspaces_as_shown() {
+    let mut e = engine_with_default_settings("Telex");
+    e.rebuild_from_text("Sose2026");
+    assert_eq!(e.preedit_text, "Sose2026");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "Sose202");
+}
+
+#[test]
+fn test_reopened_word_keeps_its_marks_when_a_digit_is_deleted() {
+    let mut e = engine_with_default_settings("Telex");
+    e.rebuild_from_text("tôi2");
+    assert_eq!(e.preedit_text, "tôi2");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "tôi");
+}
+
+fn engine_with_english(words: &[&str]) -> BambooEngine {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = Arc::new(words.iter().map(|w| w.to_string()).collect());
+    e
+}
+
+#[test]
+fn test_backspace_keeps_english_keys_as_typed() {
+    // `ar` alone composes ả; the app still shows the keys of `are` minus one.
+    let mut e = engine_with_english(&["are", "perl"]);
+    type_keys(&mut e, "are");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "ar");
+
+    let mut e = engine_with_english(&["are", "perl"]);
+    type_keys(&mut e, "Perl");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "Pe");
+}
+
+#[test]
+fn test_backspace_composes_keys_that_are_not_english() {
+    let mut e = engine_with_english(&["are", "perl"]);
+    type_keys(&mut e, "dduoxwc");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "đưỡ");
+    assert!(!e.shown_as_typed());
+}
+
+#[test]
+fn test_key_after_kept_english_keys_composes_again() {
+    let mut e = engine_with_english(&["are"]);
+    type_keys(&mut e, "are");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    type_keys(&mut e, "s");
+    let mut typed = engine_with_english(&["are"]);
+    type_keys(&mut typed, "ars");
+    assert_eq!(e.preedit_text, typed.preedit_text);
+}

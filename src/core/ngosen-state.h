@@ -271,7 +271,7 @@ namespace ngosen {
 
         void handleKey(ngosen::KeyPress& keyEvent);
         void resetField(bool isFocusOut, bool commitPreedit);
-        // Typed text as a log line may show it: hidden in a password field.
+        // Typed text as a log line may show it: hidden in a password or private field.
         std::string logged(const std::string& text) const;
         // The steps of keyEvent, in order. A true result means the key needs nothing more.
         bool     skipsKey(ngosen::KeyPress& keyEvent);
@@ -605,7 +605,7 @@ namespace ngosen {
             std::string sentReport; ///< reportKey() when the deletion was sent
             std::string sentAfter;  ///< the text after the cursor then
             std::string program;    ///< the app's name then
-            bool        password      = false;
+            bool        hidden        = false;
             bool        waitsForKey   = false; ///< stays open for a report that comes with a later key
             uint64_t    keysAtSend    = 0;
             uint64_t    commitsAtSend = 0;
@@ -713,6 +713,7 @@ namespace ngosen {
         bool typesText(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
         // Backspace on a word with a tone mark: take off only the mark. False leaves the key as is.
         bool removeToneMark(ngosen::KeyPress& keyEvent);
+        bool replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent);
         // Backspace from after lastWord_ into it: the engine takes up what is left of that word.
         void reopenLastWord();
         // Backspace right after a commit in Preedit: take the word back from the app as preedit.

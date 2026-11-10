@@ -304,6 +304,8 @@ class Window(Adw.ApplicationWindow):
 
     def _sidebar(self):
         header = Adw.HeaderBar(show_title=False)
+        self.sidebar_header = header
+        _follow_layout_without_icon(header)
         mark = Gtk.Box(spacing=8)
         mark.append(Gtk.Image(icon_name=brand.LOGO, pixel_size=28))
         mark.append(Gtk.Label(label="Ngó Sen", css_classes=["wordmark"]))
@@ -493,6 +495,22 @@ class Window(Adw.ApplicationWindow):
         self.toast = toast
         toast.set_use_markup(False)
         self.toasts.add_toast(toast)
+
+
+def without_icon(layout):
+    """The title bar layout with the app icon left out; the sidebar shows the logo already."""
+    sides = layout.split(":")
+    return ":".join(",".join(i for i in side.split(",") if i and i != "icon") for side in sides)
+
+
+def _follow_layout_without_icon(header):
+    settings = Gtk.Settings.get_default()
+
+    def apply(*_args):
+        header.set_decoration_layout(without_icon(settings.props.gtk_decoration_layout or ""))
+
+    apply()
+    settings.connect("notify::gtk-decoration-layout", apply)
 
 
 def _undo_button(toast, undo):

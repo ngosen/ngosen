@@ -77,7 +77,7 @@ class LanguageTest(unittest.TestCase):
 class ShortLabelTest(unittest.TestCase):
     """Labels that share a row with a long hint or a key button, where longer text gets cut."""
 
-    LIMITS = {"Non-Start": 10, "Shortcut for Default Typing": 22}
+    LIMITS = {"Non-Start": 10}
 
     def test_vietnamese_labels_fit_their_rows(self):
         po = os.path.join(os.path.dirname(__file__), "..", "..", "po", "vi.po")

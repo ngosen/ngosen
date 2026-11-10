@@ -49,9 +49,13 @@ namespace ngosen {
                 charArray.push_back(const_cast<char*>(keymap.value.data())); //NOLINT
             }
             charArray.push_back(nullptr);
-            return NewCustomEngine(charArray.data(), engine_->dictionary(), engine_->macroTable());
+            const uintptr_t engine = NewCustomEngine(charArray.data(), engine_->dictionary(), engine_->macroTable());
+            EngineSetEnglishWords(engine, engine_->englishWords());
+            return engine;
         }
-        return NewEngine(engine_->options().inputMethod.data(), engine_->dictionary(), engine_->macroTable());
+        const uintptr_t engine = NewEngine(engine_->options().inputMethod.data(), engine_->dictionary(), engine_->macroTable());
+        EngineSetEnglishWords(engine, engine_->englishWords());
+        return engine;
     }
 
     void TypingState::setOption() {
@@ -280,6 +284,8 @@ namespace ngosen {
 
         if (ngosen::key::isBackspace(currentSym) || currentSym == ngosen::key::Return) {
             if (ngosen::key::isBackspace(currentSym)) {
+                if (replaceKeysShownAsTyped(keyEvent))
+                    return;
                 dropLetterForBackspace();
             } else {
                 if (finishWordBeforeEnter(keyEvent))
@@ -321,6 +327,38 @@ namespace ngosen {
         }
 
         replaceFromPreedit(keyEvent, currentSym, keyUtf8);
+    }
+
+    // Keys shown as typed can compose once one goes (`dduoxwc` gives đưỡ), but the app deletes one character.
+    bool TypingState::replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent) {
+        const uintptr_t engine = bambooEngine_.handle();
+        if (oldPreBuffer_.empty() || EngineShownAsTyped(engine) == 0U)
+            return false;
+        ngosen::UniqueCPtr<char> shown(EnginePullPreedit(engine));
+        if (!shown || oldPreBuffer_ != shown.get())
+            return false;
+        std::string appText = oldPreBuffer_;
+        ngosen::utf8::eraseLastCodepoint(appText);
+        EngineProcessKeyEvent(engine, ngosen::key::BackSpace, 0);
+        ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(engine));
+        const std::string        preedit = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+        hasHistory_                      = true;
+        std::string deletedPart;
+        std::string addedPart;
+        ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, preedit, deletedPart, addedPart);
+        if (preedit != appText && canSendBackspaces() && !keepsWordRaw(deletedPart)) {
+            is_deleting_.store(false, std::memory_order_release);
+            keyEvent.accept();
+            performReplacement(deletedPart, addedPart);
+            oldPreBuffer_ = preedit;
+            return true;
+        }
+        // The field cannot take the edit, so the engine follows what the app shows.
+        if (preedit != appText)
+            EngineRebuildFromText(engine, appText.c_str());
+        oldPreBuffer_ = appText;
+        keyEvent.passToApp();
+        return true;
     }
 
     bool TypingState::removeToneMark(ngosen::KeyPress& keyEvent) {
@@ -487,11 +525,11 @@ namespace ngosen {
         const auto               f           = host_->field();
         const std::string        program     = f.reportedProgram.empty() ? f.program : f.program + " (" + f.reportedProgram + ")";
         std::string field = "frontend=" + f.frontend + " program=" + program + " surrounding=" + (f.surroundingText ? "1" : "0") + " preedit=" + (f.preedit ? "1" : "0") +
-            (f.sendsNoKeys ? " sendsNoKeys=1" : "") + (f.preeditFallback ? " preeditFallback=1" : "") + (f.password ? " password=1" : "") + (f.terminal ? " terminal=1" : "") +
-            " mode=" + modeNames[static_cast<int>(mode())];
+            (f.sendsNoKeys ? " sendsNoKeys=1" : "") + (f.preeditFallback ? " preeditFallback=1" : "") + (f.password ? " password=1" : "") + (f.sensitive ? " sensitive=1" : "") +
+            (f.terminal ? " terminal=1" : "") + " mode=" + modeNames[static_cast<int>(mode())];
         auto& recorder = engine_->recorder();
         recorder.addField(field);
-        if (f.password) {
+        if (f.hidesText()) {
             recorder.add("key", "hidden");
             return;
         }
@@ -981,7 +1019,7 @@ namespace ngosen {
     }
 
     std::string TypingState::logged(const std::string& text) const {
-        return host_->field().password ? std::string("(hidden)") : text;
+        return host_->field().hidesText() ? std::string("(hidden)") : text;
     }
 
     void TypingState::resetAfterAppCommit(bool isFocusOut) {

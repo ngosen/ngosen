@@ -290,7 +290,7 @@ namespace ngosen {
         // A wait that starts while this report is handled sees only the next report.
         const bool        waiting    = surr_wait_watching_;
         const bool        overtyping = overtype_watching_;
-        const std::string report     = host_->field().password ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
+        const std::string report     = host_->field().hidesText() ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
         sinceFocus_.reported         = sinceFocus_.reported || host_->surrounding().isValid();
         reportSinceEdit_             = true;
         // A repeat that a wait acts on stays in the log for its timing.

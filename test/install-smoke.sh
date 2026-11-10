@@ -2,17 +2,18 @@
 # Runs install.sh in a throwaway container: install, uninstall, then a reinstall over an fcitx5
 # that is running without the addon. Checks packages and the user's files, not typing.
 #
-#   test/install-smoke.sh [--no-recommends] x11|gnome|kde|sway|hyprland <release-dir>
+#   test/install-smoke.sh [--no-recommends] x11|gnome|kde|sway|hyprland <release-dir> [<ibus-release-dir>]
 #
 # Run as root in a fresh Debian, Ubuntu or Fedora container; <release-dir> holds the packages and
 # SHA256SUMS laid out as in a release. It changes the system, so never run it on a real machine.
+# With <ibus-release-dir> on GNOME it also switches to the IBus edition and back.
 
 # check runs the helpers below by name.
 # shellcheck disable=SC2329
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 [--no-recommends] x11|gnome|kde|sway|hyprland <release-dir>" >&2
+    echo "usage: $0 [--no-recommends] x11|gnome|kde|sway|hyprland <release-dir> [<ibus-release-dir>]" >&2
     exit 2
 }
 
@@ -21,9 +22,10 @@ if [ "${1:-}" = --no-recommends ]; then
     no_recommends=1
     shift
 fi
-[ $# -eq 2 ] || usage
+[ $# -eq 2 ] || [ $# -eq 3 ] || usage
 session=$1
 release_dir=$(realpath "$2")
+ibus_release_dir=${3:+$(realpath "$3")}
 case "$session" in
     x11 | gnome | kde | sway | hyprland) ;;
     *) usage ;;
@@ -97,11 +99,14 @@ prepare_system() {
         dnf install -y -q sudo curl procps-ng dbus-daemon dbus-tools shadow-utils
         # The installer recognises KDE by kreadconfig6 and kwriteconfig6.
         [ "$session" = kde ] && dnf install -y -q kf6-kconfig
+        # A stand-in IBus edition is built on GNOME, and script answers the installer's question.
+        [ "$session" = gnome ] && dnf install -y -q rpm-build util-linux-script
     fi
     useradd -m "$user"
     echo "$user ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/"$user"
     mkdir -p "$work"
     cp -r "$release_dir" "$work/release"
+    [ -z "$ibus_release_dir" ] || cp -r "$ibus_release_dir" "$work/ibus-release"
     cp "$(dirname "$0")/../install.sh" "$work/install.sh"
     chmod -R a+rX "$work"
 }
@@ -115,7 +120,7 @@ as_user() {
         hyprland) desktop=Hyprland type=wayland ;;
     esac
     sudo -u "$user" -H env XDG_SESSION_TYPE="$type" XDG_CURRENT_DESKTOP="$desktop" "${compositor_env[@]}" \
-        NGOSEN_RELEASE_URL="file://$work/release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} \
+        NGOSEN_RELEASE_URL="file://$work/release" NGOSEN_IBUS_RELEASE_URL="file://$work/ibus-release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} \
         ${stub_path:+PATH="$stub_path"} "$@"
 }
 
@@ -368,15 +373,42 @@ install_shown() {
     return "${PIPESTATUS[0]}"
 }
 install_names() { grep -q "Bấm $1 " "$install_log"; }
-explains_gnome_setup() { grep -qF "Lệnh sẽ đặt fcitx5 thay bộ gõ IBus" "$install_log"; }
+asks_edition() { grep -qF "Chọn 1 hay 2?" "$install_log"; }
+explains_gnome_setup() { grep -qF "đặt fcitx5 thay bộ gõ IBus của GNOME" "$install_log"; }
 lacks_gnome_explanation() { ! explains_gnome_setup; }
 has_autostart_line() { grep -qF -- "$autostart_line" "$install_log"; }
 lacks_autostart_line() { ! has_autostart_line; }
 says_typing_works() { grep -qF "gõ được ngay" "$install_log"; }
 leaves_steps_to_the_user() { grep -qF "Việc còn lại" "$install_log"; }
 desktop_config_untouched() { [ "$(sha256sum "$desktop_config")" = "$desktop_config_hash" ]; }
-lists_undone_under_a_heading() { grep -A1 -F "Đã trả lại những gì lệnh cài đã đặt:" "$install_log" | grep -q '^  - '; }
+lists_undone_under_a_heading() { grep -A1 -F "Đã trả lại những gì bản fcitx5 đặt:" "$install_log" | grep -q '^  - '; }
 fcitx5_stopped() { ! fcitx5_running; }
+
+# The installer reads its answers from the terminal, so script gives it them, one per line.
+plain_install_answering() {
+    printf '%b' "$1" | as_user script -qec "bash $work/install.sh" /dev/null >"$install_log" 2>&1
+}
+
+# A release listing an IBus package under this machine's name is enough for the question.
+check_edition_question() {
+    mkdir -p "$work/ibus-release"
+    sed 's/fcitx5-ngosen/ibus-ngosen/' "$work/release/SHA256SUMS" >"$work/ibus-release/SHA256SUMS"
+    chmod -R a+rX "$work/ibus-release"
+    check "a first install with --yes succeeds" install_logged
+    check "it asks nothing with --yes" refuses asks_edition
+    check "it installs the fcitx5 edition" is_installed fcitx5-ngosen
+    check "uninstall after that succeeds" installer --yes --uninstall
+    check "a first install answering Enter, then y, succeeds" plain_install_answering '\ny\n'
+    check "it asks which edition" asks_edition
+    check "Enter picks the fcitx5 edition" is_installed fcitx5-ngosen
+    check "an update answering y succeeds" plain_install_answering 'y\n'
+    check "an update does not ask again" refuses asks_edition
+    check "it names --ibus for a switch" grep -qF -- "--ibus." "$install_log"
+    check "uninstall after the update succeeds" installer --yes --uninstall
+    check "an unknown answer stops the install" refuses plain_install_answering '3\n'
+    check "and installs nothing" is_removed fcitx5-ngosen
+    rm -rf "$work/ibus-release"
+}
 
 # Without a running fcitx5 the installer names the key before the addon has run, so it must
 # predict whether the keyboard goes.
@@ -421,7 +453,14 @@ state=$HOME/.stub-enabled-extensions
 case "$1 $2 $3" in
     "get org.gnome.shell enabled-extensions") cat "$state" 2>/dev/null || echo "@as []" ;;
     "set org.gnome.shell enabled-extensions") printf '%s\n' "$4" >"$state" ;;
-    "get org.gnome.desktop.input-sources sources") echo "[('xkb', 'us')]" ;;
+    "get org.gnome.desktop.input-sources sources") cat "$HOME/.stub-input-sources" 2>/dev/null || echo "[('xkb', 'us')]" ;;
+    "set org.gnome.desktop.input-sources sources") printf '%s\n' "$4" >"$HOME/.stub-input-sources" ;;
+    "get org.freedesktop.ibus.general preload-engines") cat "$HOME/.stub-ibus-engines" 2>/dev/null || echo "@as []" ;;
+    "set org.freedesktop.ibus.general preload-engines") printf '%s\n' "$4" >"$HOME/.stub-ibus-engines" ;;
+    "get org.freedesktop.ibus.general.hotkey triggers") cat "$HOME/.stub-ibus-triggers" 2>/dev/null || echo "['<Super>space']" ;;
+    "set org.freedesktop.ibus.general.hotkey triggers") printf '%s\n' "$4" >"$HOME/.stub-ibus-triggers" ;;
+    "get org.gnome.desktop.input-sources mru-sources") cat "$HOME/.stub-recent-sources" 2>/dev/null || echo "@a(ss) []" ;;
+    "set org.gnome.desktop.input-sources mru-sources") printf '%s\n' "$4" >"$HOME/.stub-recent-sources" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -565,11 +604,128 @@ check_extensions_turned_back() {
 
 uninstall_logged() { installer --yes --uninstall >"$install_log" 2>&1; }
 
+sources=$home/.stub-input-sources
 fcitx5_mask=$home/.config/autostart/org.fcitx.Fcitx5.desktop
+
+ibus_install_answering() {
+    printf '%s\n' "$1" | as_user script -qec "bash $work/install.sh --ibus" /dev/null >"$install_log" 2>&1
+}
+fcitx5_install_answering() {
+    printf '%s\n' "$1" | as_user script -qec "bash $work/install.sh --fcitx5" /dev/null >"$install_log" 2>&1
+}
 refuses() { ! "$@"; }
+has_ngosen_source() { grep -qF "('ibus', 'ngosen')" "$sources"; }
+lacks_ngosen_source() { ! has_ngosen_source; }
+engines=$home/.stub-ibus-engines
+has_ngosen_engine() { grep -qF "'ngosen'" "$engines"; }
+lacks_ngosen_engine() { ! has_ngosen_engine; }
+triggers=$home/.stub-ibus-triggers
+# Read as the gsettings stub reports them, default included.
+switch_keys_are() { [ "$(cat "$triggers" 2>/dev/null || echo "['<Super>space']")" = "$1" ]; }
 fcitx5_masked() { has_line "$fcitx5_mask" 'Hidden=true'; }
-rejects_ibus_option() {
-    ! installer --yes --ibus >"$install_log.ibus" 2>&1 && grep -qF 'không hiểu tuỳ chọn --ibus' "$install_log.ibus"
+fcitx5_block=$home/.local/share/dbus-1/services/org.fcitx.Fcitx5.service
+fcitx5_blocked() { has_line "$fcitx5_block" 'Exec=/bin/false'; }
+recent_sources=$home/.stub-recent-sources
+ngosen_first() { grep -q "^\[('ibus', 'ngosen')" "$recent_sources"; }
+
+update_logged() { installer --yes >"$install_log" 2>&1; }
+
+# ibus-ngosen 1.1.0 did not declare the conflict, so it can sit next to fcitx5-ngosen.
+install_ibus_without_conflict() {
+    local deb old=$work/old-ibus
+    # shellcheck disable=SC1091
+    deb=$(ls "$work"/ibus-release/ibus-ngosen_*_"$(. /etc/os-release && echo "$VERSION_CODENAME")"_*.deb) || return 1
+    rm -rf "$old"
+    mkdir -p "$old"
+    dpkg-deb -R "$deb" "$old/root" &&
+        sed -i '/^Conflicts:/d' "$old/root/DEBIAN/control" &&
+        rm -rf "$old"/root/usr/share/gnome-shell/extensions/forward-keys@* &&
+        dpkg-deb -b "$old/root" "$old/ibus-ngosen.deb" >/dev/null &&
+        NGOSEN_INSTALLER=1 dpkg -i "$old/ibus-ngosen.deb" >/dev/null
+}
+
+check_ibus_edition() {
+    use_gnome_stubs
+    as_user rm -f "$changes" "$enabled_extensions" "$sources" "$im_env" "$reloads"
+    echo "[('xkb', 'us')]" | as_user tee "$recent_sources" >/dev/null
+    check "fcitx5 edition install succeeds" installer --yes
+    check "the user manager rereads the fcitx5 environment" last_reload with-fcitx5
+    # Debian starts fcitx5 through im-config; Fedora and Arch ship this entry.
+    mkdir -p /etc/xdg/autostart
+    cp /usr/share/applications/org.fcitx.Fcitx5.desktop /etc/xdg/autostart/
+    check "answering no to the switch succeeds" ibus_install_answering n
+    check "and installs nothing" is_removed ibus-ngosen
+    check "and keeps the fcitx5 edition set up" test -e "$im_env"
+    check "the list names the switch away from fcitx5" grep -qF "bỏ fcitx5 khỏi tài khoản này" "$install_log"
+    check "answering yes to the switch succeeds" ibus_install_answering y
+    check "it installs the IBus edition" is_installed ibus-ngosen
+    check "it removes the fcitx5 edition" is_removed fcitx5-ngosen
+    check "it removes the fcitx5 environment" test ! -e "$im_env"
+    check "the user manager rereads the environment without it" last_reload without-fcitx5
+    check "it keeps fcitx5 from starting at login" fcitx5_masked
+    check "it keeps D-Bus from starting fcitx5" fcitx5_blocked
+    check "it adds Ngó Sen to the input sources" has_ngosen_source
+    check "it logs in on Ngó Sen" ngosen_first
+    check "the keyboard is still a recent source" grep -qF "('xkb', 'us')" "$recent_sources"
+    check "an update keeps the IBus edition" installer --yes
+    check "and keeps it installed" is_installed ibus-ngosen
+    check "switching back to the fcitx5 edition succeeds" fcitx5_install_answering y
+    check "it lets fcitx5 start at login again" refuses fcitx5_masked
+    check "it lets D-Bus start fcitx5 again" refuses fcitx5_blocked
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from the input sources" lacks_ngosen_source
+    check "it sets up the fcitx5 edition" test -e "$im_env"
+    check "IBus install over that with --yes succeeds" installer --yes --ibus
+    check "it keeps D-Bus from starting fcitx5 again" fcitx5_blocked
+    check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from the input sources" lacks_ngosen_source
+    check "it lets D-Bus start fcitx5 after the uninstall" refuses fcitx5_blocked
+    if command -v dpkg-deb >/dev/null 2>&1; then
+        check "fcitx5 edition install over that succeeds" installer --yes --fcitx5
+        check "an IBus package without the conflict installs next to it" install_ibus_without_conflict
+        check "an update succeeds" update_logged
+        check "it removes the IBus edition left next to fcitx5" is_removed ibus-ngosen
+        check "it says so" grep -qF "Đã gỡ bản IBus (gói ibus-ngosen)." "$install_log"
+        check "it keeps the fcitx5 edition" is_installed fcitx5-ngosen
+    fi
+    rm -f /etc/xdg/autostart/org.fcitx.Fcitx5.desktop
+    stub_path=
+}
+
+check_ibus_x11() {
+    local xinputrc=$home/.xinputrc
+    use_gnome_stubs
+    as_user rm -f "$changes" "$engines" "$xinputrc" "$triggers"
+    check "fcitx5 edition install succeeds" installer --yes
+    check "switching to the IBus edition succeeds" ibus_install_answering y
+    check "it installs the IBus edition" is_installed ibus-ngosen
+    check "it removes the fcitx5 edition" is_removed fcitx5-ngosen
+    check "im-config picks IBus" has_line "$xinputrc" 'run_im ibus'
+    check "it adds Ngó Sen to IBus's engines" has_ngosen_engine
+    check "it adds Ctrl+Space to IBus's switch keys" switch_keys_are "['<Super>space', '<Control>space']"
+    check "switching back to the fcitx5 edition succeeds" fcitx5_install_answering y
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from IBus's engines" lacks_ngosen_engine
+    check "it takes Ctrl+Space back out" switch_keys_are "['<Super>space']"
+    check "im-config picks fcitx5 again" has_line "$xinputrc" 'run_im fcitx5'
+    check "IBus install over that succeeds" ibus_install_answering y
+    check "switching to fcitx5 with --no-setup succeeds" installer --yes --fcitx5 --no-setup
+    check "it leaves IBus's engines alone" has_ngosen_engine
+    check "the last edition option wins" installer --yes --fcitx5 --ibus
+    check "and installs the IBus edition" is_installed ibus-ngosen
+    check "uninstalling the IBus edition succeeds" installer --yes --uninstall --ibus
+    check "it removes the IBus edition" is_removed ibus-ngosen
+    check "it removes Ngó Sen from IBus's engines" lacks_ngosen_engine
+    check "im-config no longer picks IBus" lacks_line "$xinputrc" 'run_im ibus'
+
+    echo 'run_im fcitx5' | as_user tee "$xinputrc" >/dev/null
+    check "IBus install over a hand-written .xinputrc succeeds" ibus_install_answering y
+    check "it keeps the hand-written .xinputrc" has_line "$xinputrc" 'run_im fcitx5'
+    check "it says which line to change" grep -qF 'run_im ibus' "$install_log"
+    check "uninstalling after that succeeds" installer --yes --uninstall --ibus
+    check "the hand-written .xinputrc stays" has_line "$xinputrc" 'run_im fcitx5'
+    stub_path=
 }
 
 check_autostart_mask_removed() {
@@ -577,8 +733,11 @@ check_autostart_mask_removed() {
     as_user rm -f "$changes"
     as_user mkdir -p "$(dirname "$fcitx5_mask")"
     printf '[Desktop Entry]\nType=Application\nName=Fcitx 5\nHidden=true\n' | as_user tee "$fcitx5_mask" >/dev/null
+    as_user mkdir -p "$(dirname "$fcitx5_block")"
+    printf '[D-BUS Service]\nName=org.fcitx.Fcitx5\nExec=/bin/false\n' | as_user tee "$fcitx5_block" >/dev/null
     check "install over the hidden autostart succeeds" install_logged
     check "it lets fcitx5 start at login again" refuses fcitx5_masked
+    check "it lets D-Bus start fcitx5 again" refuses fcitx5_blocked
     check "uninstall after that succeeds" uninstall_logged
     stub_path=
 }
@@ -870,6 +1029,104 @@ check_restart_through_kwin() {
     bus=
 }
 
+ibus_stand_in=
+input_sources=$home/.stub-input-sources
+
+# Same name as the IBus edition and the same conflict its packages declare.
+build_ibus_stand_in() {
+    local dir=$work/ibus-stand-in
+    if command -v dpkg-deb >/dev/null 2>&1; then
+        mkdir -p "$dir/pkg/DEBIAN"
+        printf 'Package: ibus-ngosen\nVersion: 1.0-1\nArchitecture: all\nMaintainer: Test <test@example.org>\nConflicts: fcitx5-ngosen\nDescription: stand-in for the IBus edition\n' \
+            >"$dir/pkg/DEBIAN/control"
+        dpkg-deb --build "$dir/pkg" "$dir/ibus-ngosen.deb" >/dev/null
+        ibus_stand_in=$dir/ibus-ngosen.deb
+    else
+        mkdir -p "$dir/SPECS"
+        printf 'Name: ibus-ngosen\nVersion: 1.0\nRelease: 1\nSummary: Stand-in\nLicense: GPL-3.0-or-later\nBuildArch: noarch\nConflicts: fcitx5-ngosen\n%%description\nStand-in for the IBus edition.\n%%files\n' \
+            >"$dir/SPECS/ibus-ngosen.spec"
+        rpmbuild --quiet -bb --define "_topdir $dir" "$dir/SPECS/ibus-ngosen.spec"
+        ibus_stand_in=$(find "$dir/RPMS" -name '*.rpm' | head -n 1)
+    fi
+    chmod -R a+rX "$dir"
+}
+
+install_ibus_stand_in() {
+    if command -v apt-get >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -q "$ibus_stand_in" >/dev/null
+    else
+        dnf install -y -q "$ibus_stand_in" >/dev/null
+    fi
+}
+
+package_tool() { if command -v apt-get >/dev/null 2>&1; then echo apt-get; else echo dnf; fi; }
+
+# A missing package in the same transaction makes the whole install fail before it changes anything.
+break_package_installs() {
+    local tool
+    tool=$(package_tool)
+    mv "/usr/bin/$tool" "/usr/bin/$tool.smoke"
+    # shellcheck disable=SC2016
+    printf '#!/bin/sh\n[ "$1" = install ] && set -- "$@" ngosen-no-such-package\nexec /usr/bin/%s.smoke "$@"\n' "$tool" \
+        >"/usr/bin/$tool"
+    chmod +x "/usr/bin/$tool"
+}
+
+restore_package_installs() {
+    local tool
+    tool=$(package_tool)
+    mv "/usr/bin/$tool.smoke" "/usr/bin/$tool"
+}
+
+# The installer reads its answer from the terminal, so script gives it one. Without --fcitx5 an
+# update keeps the IBus edition.
+installer_answers() {
+    printf '%s\n' "$1" | as_user script -qec "bash $work/install.sh --fcitx5" /dev/null >"$install_log" 2>&1
+}
+fcitx5_install_logged() {
+    installer --yes --fcitx5 2>&1 | tee "$install_log"
+    return "${PIPESTATUS[0]}"
+}
+
+warns_about_ibus_edition() { grep -qF "mọi tài khoản trên máy" "$install_log"; }
+sources_are() { [ "$(cat "$input_sources")" = "$1" ]; }
+
+check_replaces_ibus_edition() {
+    local before="[('xkb', 'us'), ('ibus', 'ngosen'), ('xkb', 'fr')]"
+    use_gnome_stubs
+    check "uninstall before the IBus edition succeeds" uninstall_logged
+    build_ibus_stand_in
+    install_ibus_stand_in
+    check "precondition: the IBus edition is installed" is_installed ibus-ngosen
+    printf '%s\n' "$before" | as_user tee "$input_sources" >/dev/null
+
+    check "declining the replacement exits cleanly" installer_answers n
+    check "it says every account loses the IBus edition" warns_about_ibus_edition
+    check "it stops before installing" grep -qF "Đã dừng, chưa cài gì." "$install_log"
+    check "the IBus edition stays after declining" is_installed ibus-ngosen
+
+    break_package_installs
+    check "a failed replacement fails" refuses fcitx5_install_logged
+    restore_package_installs
+    check "the IBus edition stays after a failed install" is_installed ibus-ngosen
+    check "fcitx5-ngosen is not installed after it" is_removed fcitx5-ngosen
+    check "the input sources stay after it" sources_are "$before"
+
+    check "replacing the IBus edition succeeds" fcitx5_install_logged
+    check "it warned before replacing" warns_about_ibus_edition
+    check "the IBus edition is removed" is_removed ibus-ngosen
+    check "fcitx5-ngosen replaces it" is_installed fcitx5-ngosen
+    check "only the IBus source leaves the input sources" sources_are "[('xkb', 'us'), ('xkb', 'fr')]"
+
+    check "a second run succeeds" install_logged
+    check "it no longer mentions the IBus edition" refuses warns_about_ibus_edition
+    stub_path=
+    # A stand-in left behind would conflict with every later install.
+    if is_installed ibus-ngosen; then
+        if command -v apt-get >/dev/null 2>&1; then apt-get remove -y -q ibus-ngosen >/dev/null; else dnf remove -y -q ibus-ngosen >/dev/null; fi
+    fi
+}
+
 installs_from() {
     as_user env NGOSEN_RELEASE_URL="file://$1" bash "$work/install.sh" --yes >"$install_log" 2>&1
 }
@@ -915,8 +1172,6 @@ main() {
     check "install succeeds" install_shown
     check_packages
     [ "$failures" -eq 0 ] || finish
-    check "it refuses the removed --ibus option" rejects_ibus_option
-    check "the installer no longer names the IBus package" refuses grep -qE -- 'ibus-ngosen|--ibus' "$work/install.sh"
     check "the package leaves the next steps to install.sh" refuses grep -qF -- "--- Cấu hình Ngó Sen ---" "$install_log"
     check_session_files
     if [ "$session" = gnome ]; then
@@ -934,6 +1189,11 @@ main() {
     fi
     check_uninstalled_state
 
+    if [ "$session" = gnome ] && [ -z "$ibus_release_dir" ]; then
+        echo "== which edition, asked on a first install"
+        check_edition_question
+    fi
+
     echo "== reinstall over a running fcitx5"
     check_reinstall_over_running_fcitx5
 
@@ -948,6 +1208,10 @@ main() {
         check_toggle_key_message
         echo "== im-config the user set"
         check_user_im_config_kept
+        if [ -n "$ibus_release_dir" ]; then
+            echo "== IBus edition on X11"
+            check_ibus_x11
+        fi
         echo "== GTK and Qt modules already installed"
         check_installed_frontends_left_alone
     fi
@@ -977,6 +1241,12 @@ main() {
         check_edited_environment_kept
         echo "== extensions on GNOME 50.1"
         check_extensions_turned_back
+        echo "== replacing the IBus edition"
+        check_replaces_ibus_edition
+        if [ -n "$ibus_release_dir" ]; then
+            echo "== GNOME edition (IBus)"
+            check_ibus_edition
+        fi
     fi
 
     echo "== which releases have packages"

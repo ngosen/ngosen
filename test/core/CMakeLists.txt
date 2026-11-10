@@ -1,25 +1,29 @@
 # Tests of the typing logic alone, run against a fake app field. They build without fcitx5.
 # An empty DISPLAY keeps the X server of the session running the tests out of them.
 add_executable(core_typing core-typing.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
-target_compile_definitions(core_typing PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
+target_compile_definitions(core_typing PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+    NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt")
 target_link_libraries(core_typing PRIVATE ngosen_core)
 add_test(NAME core_typing COMMAND core_typing)
 set_tests_properties(core_typing PROPERTIES LABELS "unit;core" TIMEOUT 240 ENVIRONMENT "DISPLAY=")
 
 add_executable(core_replay_fold core-replay-fold.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
-target_compile_definitions(core_replay_fold PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
+target_compile_definitions(core_replay_fold PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+    NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt")
 target_link_libraries(core_replay_fold PRIVATE ngosen_core)
 add_test(NAME core_replay_fold COMMAND core_replay_fold)
 set_tests_properties(core_replay_fold PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
 
 add_executable(core_fuzz core-fuzz.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
-target_compile_definitions(core_fuzz PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
+target_compile_definitions(core_fuzz PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+    NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt")
 target_link_libraries(core_fuzz PRIVATE ngosen_core)
 add_test(NAME core_fuzz COMMAND core_fuzz)
 set_tests_properties(core_fuzz PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
 
 add_executable(core_replay core-replay.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
-target_compile_definitions(core_replay PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
+target_compile_definitions(core_replay PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+    NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt")
 target_link_libraries(core_replay PRIVATE ngosen_core)
 add_test(NAME core_replay COMMAND core_replay ${CMAKE_CURRENT_SOURCE_DIR}/replay-sample.txt)
 set_tests_properties(core_replay PROPERTIES LABELS "unit;core" TIMEOUT 60 ENVIRONMENT "DISPLAY=")
@@ -32,13 +36,15 @@ add_test(NAME core_symbol_names
 set_tests_properties(core_symbol_names PROPERTIES LABELS "unit;core" TIMEOUT 60)
 
 add_executable(core_retype core-retype.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
-target_compile_definitions(core_retype PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
+target_compile_definitions(core_retype PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+    NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt")
 target_link_libraries(core_retype PRIVATE ngosen_core)
 add_test(NAME core_retype COMMAND core_retype)
 set_tests_properties(core_retype PROPERTIES LABELS "unit;core" TIMEOUT 60 ENVIRONMENT "DISPLAY=")
 
 add_executable(core_retone core-retone.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
-target_compile_definitions(core_retone PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict")
+target_compile_definitions(core_retone PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+    NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt")
 target_link_libraries(core_retone PRIVATE ngosen_core)
 add_test(NAME core_retone COMMAND core_retone)
 set_tests_properties(core_retone PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")

@@ -285,9 +285,10 @@ namespace fcitx {
         return xdgCurrentDesktop.empty() && desktopSession.rfind("cinnamon", 0) == 0;
     }
 
-    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession) {
+    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession, const std::string& swaySock) {
         const auto desktops = splitList(xdgCurrentDesktop, ':');
-        return isCinnamonSession(xdgCurrentDesktop, desktopSession) || std::find(desktops.begin(), desktops.end(), "COSMIC") != desktops.end();
+        const auto named    = [&desktops](const char* name) { return std::find(desktops.begin(), desktops.end(), name) != desktops.end(); };
+        return isCinnamonSession(xdgCurrentDesktop, desktopSession) || named("COSMIC") || named("sway") || !swaySock.empty();
     }
 
     std::vector<std::string> trayIconNames(const std::string& iconName, const std::string& baseIconName, const std::string& xdgCurrentDesktop) {

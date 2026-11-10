@@ -233,6 +233,14 @@ namespace fcitx {
             }
         }
 
+        // deepin: the dock follows the global theme, not the app colour scheme.
+        if (isDeepinSession(getEnv("XDG_CURRENT_DESKTOP"))) {
+            if (const auto dark = isDeepinPanelDark(deepinGlobalThemeFromSession())) {
+                cachedValue = *dark;
+                return cachedValue;
+            }
+        }
+
         // Elsewhere the app colour scheme says nothing about the panel, and
         // Xfce, MATE, LXQt, Budgie and tiling-WM bars mostly ship dark ones.
         cachedValue = true;
@@ -1659,21 +1667,16 @@ namespace fcitx {
             default: baseIconName = "fcitx-ngosen"; break;
         }
 
-        std::string iconName;
-        if (*config_.useNgoSenIcons) {
-            iconName = baseIconName;
-        } else {
+        auto style = TrayIconStyle::Tile;
+        if (!*config_.useNgoSenIcons) {
             const auto& iconTheme = config_.iconTheme.value();
-            if (iconTheme == IconTheme::Light) {
-                iconName = baseIconName + "-default-black";
-            } else if (iconTheme == IconTheme::Dark) {
-                iconName = baseIconName + "-default";
-            } else {
-                iconName = baseIconName + (isDarkMode() ? "-default" : "-default-black");
-            }
+            const bool  darkPanel = iconTheme == IconTheme::Dark || (iconTheme == IconTheme::Auto && isDarkMode());
+            style                 = darkPanel ? TrayIconStyle::PlainWhite : TrayIconStyle::PlainBlack;
         }
+        static const bool gnomeShell = isGnomeShellSession(getEnv("XDG_CURRENT_DESKTOP"));
+        const std::string iconName   = trayIconName(baseIconName, style, *config_.trayIconSize == TrayIconSize::Large, gnomeShell);
 
-        static const bool kTrayWantsIconName = trayWantsIconName(getEnv("XDG_CURRENT_DESKTOP"), getEnv("DESKTOP_SESSION"));
+        static const bool kTrayWantsIconName = trayWantsIconName(getEnv("XDG_CURRENT_DESKTOP"), getEnv("DESKTOP_SESSION"), getEnv("SWAYSOCK"));
         if (kTrayWantsIconName) {
             return iconName;
         }

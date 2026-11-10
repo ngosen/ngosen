@@ -9,7 +9,7 @@ from unittest import mock
 from urllib.parse import unquote
 
 # isort: off
-from fake_fcitx import DEFAULTS, FakeDBusHandler
+from fake_fcitx import DEFAULTS, FakeDBusHandler, lock_groups
 import ui_gtk
 
 # isort: on
@@ -543,6 +543,13 @@ class GtkAppearancePageTest(unittest.TestCase):
         row.set_active(not row.get_active())
         self.assertEqual(self.dbus.values["ShowMenuCharset"], str(row.get_active()))
 
+    def test_tray_preview_follows_the_icon_size(self):
+        size = self.page.rows["TrayIconSize"]
+        size.set_selected(size.values.index("Large"))
+        self.assertEqual(self.dbus.values["TrayIconSize"], "Large")
+        names, _dark = self.page.model.tray_icons(False)
+        self.assertEqual(names, ("fcitx-ngosen-large", "fcitx-ngosen-off-large"))
+
     def test_tray_preview_follows_the_icon_settings(self):
         self.page.rows["UseLotusIcons"].set_active(False)
         theme = self.page.rows["IconTheme"]
@@ -589,39 +596,42 @@ class GtkLocksTest(unittest.TestCase):
         pages = (w.typing, w.shortcuts, w.appearance, w.macros)
         return next(p for p in pages if p.control_for(key) is not None)
 
-    @staticmethod
-    def locked_values():
-        return {c: "False" if v == "True" else "True" for c, v in DEPENDS.values()}
-
     def test_every_locked_setting_is_insensitive_and_opens_what_unlocks_it(self):
-        w = self.window(self.locked_values())
-        for key, (controller, _needed) in DEPENDS.items():
-            page = self.page_with(w, key)
-            locked = w.shortcuts.mode_keys[key] if page is w.shortcuts else page.control_for(key)
-            self.assertFalse(locked.get_sensitive(), key)
-            self.assertTrue(w.open_setting(key), key)
-            self.assertIs(w.get_focus(), page.control_for(controller), key)
+        for values, _unlocked, keys in lock_groups():
+            w = self.window(values)
+            for key in keys:
+                page = self.page_with(w, key)
+                locked = (
+                    w.shortcuts.mode_keys[key] if page is w.shortcuts else page.control_for(key)
+                )
+                self.assertFalse(locked.get_sensitive(), key)
+                self.assertTrue(w.open_setting(key), key)
+                self.assertIs(w.get_focus(), page.control_for(DEPENDS[key][0]), key)
 
     def test_every_setting_is_sensitive_and_opens_itself_when_unlocked(self):
-        w = self.window({c: v for c, v in DEPENDS.values()})
-        for key in DEPENDS:
-            page = self.page_with(w, key)
-            locked = w.shortcuts.mode_keys[key] if page is w.shortcuts else page.control_for(key)
-            self.assertTrue(locked.get_sensitive(), key)
-            self.assertTrue(w.open_setting(key), key)
-            self.assertIs(w.get_focus(), page.control_for(key), key)
+        for _locked, values, keys in lock_groups():
+            w = self.window(values)
+            for key in keys:
+                page = self.page_with(w, key)
+                locked = (
+                    w.shortcuts.mode_keys[key] if page is w.shortcuts else page.control_for(key)
+                )
+                self.assertTrue(locked.get_sensitive(), key)
+                self.assertTrue(w.open_setting(key), key)
+                self.assertIs(w.get_focus(), page.control_for(key), key)
 
     def test_a_search_result_for_a_locked_setting_opens_what_unlocks_it(self):
-        w = self.window(self.locked_values())
-        for key, (controller, _needed) in DEPENDS.items():
-            page = self.page_with(w, key)
-            w.search_entry.set_text(page.control_for(key).get_title())
-            w._on_search(w.search_entry)
-            index = 0
-            while w.results.get_row_at_index(index).found[2] != key:
-                index += 1
-            w.open_result(w.results.get_row_at_index(index))
-            self.assertIs(w.get_focus(), page.control_for(controller), key)
+        for values, _unlocked, keys in lock_groups():
+            w = self.window(values)
+            for key in keys:
+                page = self.page_with(w, key)
+                w.search_entry.set_text(page.control_for(key).get_title())
+                w._on_search(w.search_entry)
+                index = 0
+                while w.results.get_row_at_index(index).found[2] != key:
+                    index += 1
+                w.open_result(w.results.get_row_at_index(index))
+                self.assertIs(w.get_focus(), page.control_for(DEPENDS[key][0]), key)
 
     def test_a_controller_locks_and_unlocks_at_once(self):
         w = self.window(

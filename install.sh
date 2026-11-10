@@ -467,7 +467,7 @@ install_with_pacman() {
 wants_gtk_settings() {
     [ "$edition" = fcitx5 ] || return 1
     case ":${XDG_CURRENT_DESKTOP:-}:" in
-        *:GNOME:* | *:X-Cinnamon:*) return 0 ;;
+        *:GNOME:* | *:X-Cinnamon:* | *:XFCE:*) return 0 ;;
     esac
     return 1
 }

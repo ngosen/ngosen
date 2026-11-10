@@ -12,6 +12,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Tuỳ chọn "Cỡ biểu tượng khay" ở trang Giao diện: chọn Lớn thì biểu tượng ngó sen to hơn trong ô của
+  nó trên khay, ví dụ trên KDE cao 20 px thay vì 16 px. Trên GNOME không đổi, vì biểu tượng đã đầy ô.
+  Chỉ áp dụng khi bật "Sử dụng biểu tượng trạng thái Ngó Sen" (#675).
 - Gõ nguyên từng phím cho từ bắt đầu bằng `/` ở đầu dòng hoặc ngay sau dấu cách trong cả Gõ Sen và
   Preedit, để gõ lệnh chat (Claude Code, Slack, Discord) và đường dẫn trong terminal: `/cost` không còn
   thành `/cót`, `cd /usr/share` không còn thành `cd /ủ/share`. Tuỳ chọn "Gõ thô sau dấu / đầu từ (lệnh,
@@ -29,6 +32,17 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Thoát Vim bằng `:q`, `:wq`, `ZZ` thì gõ lại bình thường. Chưa xử lý phím Esc được đổi thành chữ như `jk`.
   Nếu mở Vim từ lịch sử shell bằng mũi tên lên, qua alias hoặc `git commit`, hãy bật Vim mode cho terminal (#302, #587).
 - Lệnh cài một dòng nay tự thêm repo APT trên Debian, Ubuntu và các distro dựa trên chúng để nhận version mới khi cập nhật hệ thống. Máy đã cài bằng lệnh này trước đây có thể chạy lại để thêm repo. (#654)
+
+### Thay đổi
+
+- Icon khay kiểu trơn (V, E, mặt cười, khi tắt "Sử dụng biểu tượng trạng thái Ngó Sen") nay cao bằng ô ngó sen, trước chỉ khoảng hai phần ba. Trên GNOME cần đăng xuất rồi đăng nhập lại mới thấy (#671).
+- Xfce nay mặc định mở cửa sổ cài đặt GTK và cài thư viện GTK như GNOME và Cinnamon; lựa chọn Qt hoặc GTK đã lưu vẫn được giữ nguyên (#670).
+
+### Sửa
+
+- deepin: khi dùng giao diện sáng, icon khay kiểu trơn nay màu đen cho hợp thanh dock sáng, không còn trắng khó thấy. Giao diện tự động vẫn dùng icon trắng (#673).
+- Sway: icon Ngó Sen nay hiện trong swaybar, trước đây swaybar vẽ hình "không tìm thấy icon" (#674).
+- GNOME 51 không dùng theme riêng: khi chọn giao diện sáng, thanh trên cùng sáng nên icon khay kiểu trơn nay đổi sang màu đen, không còn trắng gần như không thấy (#672).
 
 ## [1.9.1-1] — 10/11/2026
 

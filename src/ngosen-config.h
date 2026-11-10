@@ -86,6 +86,13 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(IconTheme, N_("Auto"), N_("Light"), N_("Dark"));
 
+    enum class TrayIconSize : std::uint8_t {
+        Normal,
+        Large,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(TrayIconSize, N_("Normal"), N_("Large"));
+
     enum class UiLanguage : std::uint8_t {
         Vietnamese,
         English,
@@ -307,7 +314,8 @@ namespace fcitx {
         HiddenOption<int>  surrCommitSleepMs{this, "SurrCommitSleepMs", _("Experiment: ms per committed char to sleep after commitString on the surrounding-text path"),
                                              ngosen::defaultOptions.surrCommitSleepMs};
         // The key keeps its old name so saved settings still load.
-        Option<bool> useNgoSenIcons{this, "UseLotusIcons", _("Use Ngó Sen Status Icons"), true};
+        Option<bool>                                                   useNgoSenIcons{this, "UseLotusIcons", _("Use Ngó Sen Status Icons"), true};
+        OptionWithAnnotation<TrayIconSize, TrayIconSizeI18NAnnotation> trayIconSize{this, "TrayIconSize", _("Tray Icon Size"), TrayIconSize::Normal};
 
         // Settings and Save typing log have no option: without them the menu could not lead back.
         Option<bool> showMenuInputMethod{this, "ShowMenuInputMethod", _("Show Input Method in the tray menu"), true};

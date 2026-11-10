@@ -47,8 +47,8 @@ class LauncherTest(unittest.TestCase):
         env["NGOSEN_SETTINGS_TOOLKIT"] = "qt"
         self.assertEqual(main.toolkit(env, qt=yes, gtk=yes), "qt")
 
-    def test_with_no_choice_gnome_and_cinnamon_open_gtk(self):
-        for desktop in ("ubuntu:GNOME", "X-Cinnamon"):
+    def test_with_no_choice_gnome_cinnamon_and_xfce_open_gtk(self):
+        for desktop in ("ubuntu:GNOME", "X-Cinnamon", "XFCE"):
             env = {"XDG_CURRENT_DESKTOP": desktop}
             self.assertEqual(main.toolkit(env, qt=yes, gtk=yes), "gtk", desktop)
         self.assertEqual(main.toolkit({"XDG_CURRENT_DESKTOP": "KDE"}, qt=yes, gtk=yes), "qt")
@@ -56,6 +56,7 @@ class LauncherTest(unittest.TestCase):
     def test_a_session_started_before_its_desktop_still_opens_gtk(self):
         for key, session in (
             ("DESKTOP_SESSION", "cinnamon"),
+            ("DESKTOP_SESSION", "xfce"),
             ("XDG_SESSION_DESKTOP", "ubuntu-xorg"),
         ):
             self.assertEqual(main.toolkit({key: session}, qt=yes, gtk=yes), "gtk", session)

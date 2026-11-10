@@ -75,7 +75,7 @@ SETTINGS_MAP = {
     },
     SettingsCategory.APPEARANCE: {
         N_("Language"): ["UiLanguage"],
-        TRAY_ICON: ["UseLotusIcons", "IconTheme"],
+        TRAY_ICON: ["UseLotusIcons", "TrayIconSize", "IconTheme"],
         N_("Show in the tray menu"): list(MENU_ENTRIES),
         N_("Settings Window"): ["SettingsToolkit"],
     },
@@ -97,7 +97,7 @@ HINTS = {
     "FreeMarking": N_("Tone marks can also go at the end of the word."),
     "UiLanguage": N_("The tray menu changes at once, this window the next time it opens."),
     "SettingsToolkit": N_(
-        "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
+        "GTK matches GNOME, Cinnamon and Xfce, Qt matches KDE and most other desktops."
     ),
     "BackspaceRemovesTone": N_(
         "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
@@ -137,6 +137,9 @@ HINTS = {
         "to follow the global setting and switch key again; OFF stays set for the app."
     ),
     "UseLotusIcons": N_("Off: plain one-colour icons, in the colour picked below."),
+    "TrayIconSize": N_(
+        "Large draws the Ngó Sen icon bigger in its tray slot. No change on GNOME, where it already fills the slot."
+    ),
     "IconTheme": N_(
         "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
     ),
@@ -193,6 +196,7 @@ DEPENDS = {
     "SpellCheck": ("AutoNonVnRestore", "True"),
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
     "IconTheme": ("UseLotusIcons", "False"),
+    "TrayIconSize": ("UseLotusIcons", "True"),
     "CapitalizeMacro": ("EnableMacro", "True"),
     "EnableMacroInOffMode": ("EnableMacro", "True"),
     "TimeFormat": ("EnableMacro", "True"),

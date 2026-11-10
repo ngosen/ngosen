@@ -263,6 +263,12 @@ class AppearancePageTest(unittest.TestCase):
         self.assertEqual(self.page._tray_icon_names()[0], ("fcitx-ngosen", "fcitx-ngosen-off"))
         self.assertFalse(preview.pixmap().isNull())
         drawn = preview.pixmap().cacheKey()
+        self.page.update_config("TrayIconSize", "Large")
+        self.assertEqual(
+            self.page._tray_icon_names()[0], ("fcitx-ngosen-large", "fcitx-ngosen-off-large")
+        )
+        self.assertNotEqual(preview.pixmap().cacheKey(), drawn)
+        drawn = preview.pixmap().cacheKey()
         self.page.update_config("UseLotusIcons", "False")
         self.assertNotEqual(preview.pixmap().cacheKey(), drawn)
         self.page.update_config("IconTheme", "Light")

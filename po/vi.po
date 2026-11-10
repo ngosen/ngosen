@@ -305,6 +305,18 @@ msgid "Icon Color"
 msgstr "Màu biểu tượng"
 
 #: src/ngosen-config.h
+msgid "Tray Icon Size"
+msgstr "Cỡ biểu tượng khay"
+
+#: src/ngosen-config.h
+msgid "Normal"
+msgstr "Bình thường"
+
+#: src/ngosen-config.h
+msgid "Large"
+msgstr "Lớn"
+
+#: src/ngosen-config.h
 msgid "Interface Language"
 msgstr "Ngôn ngữ giao diện"
 
@@ -1514,6 +1526,10 @@ msgid "Off: plain one-colour icons, in the colour picked below."
 msgstr "Tắt: dùng biểu tượng một màu, theo màu chọn bên dưới."
 
 #: settings-gui/ui/pages/dynamic_settings.py
+msgid "Large draws the Ngó Sen icon bigger in its tray slot. No change on GNOME, where it already fills the slot."
+msgstr "Lớn: biểu tượng Ngó Sen to hơn trong ô của nó trên khay. Trên GNOME không đổi, vì biểu tượng đã đầy ô."
+
+#: settings-gui/ui/pages/dynamic_settings.py
 msgid "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
 msgstr "Chỉ dùng cho biểu tượng một màu. Sáng hợp panel sáng, Tối hợp panel tối, Tự động theo chế độ sáng/tối của máy."
 
@@ -1651,8 +1667,8 @@ msgid "Ngó Sen backup"
 msgstr "Bản sao lưu Ngó Sen"
 
 #: settings-gui/core/catalog.py
-msgid "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
-msgstr "GTK hợp với GNOME và Cinnamon, Qt hợp với KDE và phần lớn desktop khác."
+msgid "GTK matches GNOME, Cinnamon and Xfce, Qt matches KDE and most other desktops."
+msgstr "GTK hợp với GNOME, Cinnamon và Xfce, Qt hợp với KDE và phần lớn desktop khác."
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "This window uses {}"

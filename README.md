@@ -5,8 +5,8 @@ fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều t�
 [Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, dùng chung lõi gõ
 với bản fcitx5 nên tính năng gần như giống hệt. Tính năng mới có thể đến bản IBus muộn hơn bản fcitx5.
 
-Cửa sổ cài đặt có hai bản: Qt và GTK (giống app GNOME). GNOME và Linux Mint (Cinnamon) mở bản GTK,
-các desktop khác mở bản Qt. Cửa sổ dùng giao diện sáng, tối của máy trên KDE và GNOME; đổi gì lưu
+Cửa sổ cài đặt có hai bản: Qt và GTK (giống app GNOME). GNOME, Linux Mint (Cinnamon) và Xfce mở bản
+GTK, các desktop khác mở bản Qt. Cửa sổ dùng giao diện sáng, tối của máy trên KDE và GNOME; đổi gì lưu
 ngay, có nút Hoàn tác.
 
 Bản GTK trên GNOME:

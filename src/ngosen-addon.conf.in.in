@@ -11,3 +11,4 @@ Configurable=True
 0=core:@REQUIRED_FCITX_VERSION@
 [Addon/OptionalDependencies]
 0=dbus
+1=notifications

@@ -32,6 +32,48 @@ class ResetTest(unittest.TestCase):
         self.assertTrue(page.save_data())
         self.assertEqual(fake.values["SpellCheck"], "True")
 
+    def test_reset_covers_a_switch_changed_outside_the_window(self):
+        fake = FakeDBusHandler({"EnableMacro": "True", "EnableDictionary": "False"})
+        window = NgoSenSettingsWindow(dbus_handler=fake)
+        window._build_all_pages()
+        window.reload_pages()
+        fake.values["EnableMacro"] = "False"
+        fake.values["EnableDictionary"] = "True"
+        with (
+            tempfile.TemporaryDirectory() as home,
+            mock.patch.dict(os.environ, {"XDG_DATA_HOME": home}),
+            mock.patch("ui.main_window.confirm", return_value=True),
+        ):
+            window.on_restore_defaults()
+            window.save_pending()
+        self.assertEqual(fake.values["EnableMacro"], "True")
+        self.assertEqual(fake.values["EnableDictionary"], "False")
+
+    def asked(self, window):
+        with mock.patch("ui.main_window.confirm", return_value=False) as question:
+            window.on_restore_defaults()
+        return question.call_args.args[2]
+
+    def test_reset_says_the_toggle_key_goes_back_to_ctrl_shift(self):
+        window = NgoSenSettingsWindow(
+            dbus_handler=FakeDBusHandler({"ToggleKey": {"0": "Control+space"}})
+        )
+        self.assertIn("goes back to Ctrl+Shift", self.asked(window))
+        self.assertNotIn(
+            "Ctrl+Shift", self.asked(NgoSenSettingsWindow(dbus_handler=FakeDBusHandler()))
+        )
+
+    def test_reset_sees_a_toggle_key_not_saved_yet(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        window._build_all_pages()
+        page = next(
+            p
+            for p in window._pages
+            if isinstance(p, DynamicSettingsPage) and p.findChildren(HotkeyEditorWidget)
+        )
+        page.findChildren(HotkeyEditorWidget)[0].hotkey_capture.textChanged.emit("F12")
+        self.assertIn("goes back to Ctrl+Shift", self.asked(window))
+
     def test_reset_covers_pages_not_opened(self):
         fake = FakeDBusHandler(
             {"SpellCheck": "False"},
@@ -41,7 +83,7 @@ class ResetTest(unittest.TestCase):
             },
         )
         window = NgoSenSettingsWindow(dbus_handler=fake)
-        with mock.patch.object(QMessageBox, "question", return_value=QMessageBox.Yes):
+        with mock.patch("ui.main_window.confirm", return_value=True):
             window.on_restore_defaults()
         window.save_pending()
         self.assertEqual(fake.values["SpellCheck"], "True")
@@ -88,6 +130,47 @@ class ResetTest(unittest.TestCase):
         self.assertEqual(fake.values["DateFormat"], "%d/%m/%Y")
 
 
+class ConfirmButtonsTest(unittest.TestCase):
+    """Qt names Yes/No in the desktop's language, which can differ from the window's."""
+
+    def buttons_shown(self, ask):
+        shown = []
+
+        def record(box):
+            shown.extend(b.text() for b in box.buttons())
+            return 0
+
+        refuse = mock.Mock(side_effect=AssertionError("Qt's own Yes/No buttons"))
+        with (
+            mock.patch.object(QMessageBox, "exec", record),
+            mock.patch.object(QMessageBox, "question", refuse),
+        ):
+            ask()
+        return sorted(shown)
+
+    def test_reset_names_its_buttons(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        shown = self.buttons_shown(window.on_restore_defaults)
+        self.assertEqual(shown, ["&Cancel", "&Restore defaults"])
+
+    def test_reset_says_what_else_it_clears(self):
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
+        texts = []
+
+        def record(box):
+            texts.append(box.text())
+            return 0
+
+        with mock.patch.object(QMessageBox, "exec", record):
+            window.on_restore_defaults()
+        self.assertIn("Macros, words added to the dictionary", texts[0])
+
+    def test_keymap_preset_names_its_buttons(self):
+        page = KeymapEditorPage(FakeDBusHandler())
+        shown = self.buttons_shown(page.on_load_preset)
+        self.assertEqual(shown, ["&Cancel", "&Replace"])
+
+
 class MacroTest(unittest.TestCase):
     def test_same_key_in_other_case_updates_the_row(self):
         # The typing core matches macro keys in any case, so "VN" would never be used.
@@ -99,6 +182,45 @@ class MacroTest(unittest.TestCase):
         page.upsert_row("VN", "Vietnam")
         self.assertTrue(page.save_data())
         self.assertEqual(fake.sub_configs["ngosen-macro"], [{"Key": "vn", "Value": "Vietnam"}])
+
+    def test_a_freshly_opened_table_is_not_modified(self):
+        fake = FakeDBusHandler(
+            {"TimeFormat": "%k:%M"},
+            {"ngosen-macro": [{"Key": "vn", "Value": "Việt Nam"}, {"Key": "VN", "Value": "VN"}]},
+        )
+        page = MacroEditorPage(fake)
+        self.assertFalse(page.is_modified())
+
+    def test_reload_shows_what_fcitx5_has(self):
+        fake = FakeDBusHandler({}, {"ngosen-macro": [{"Key": "kg", "Value": "khô gà"}]})
+        page = MacroEditorPage(fake)
+        # The main window asks every page whether it changed on each edit.
+        window = mock.Mock(on_changed=page.is_modified_from_default)
+        page.window = lambda: window
+        page.upsert_row("unsaved", "never saved")
+        fake.values["EnableMacro"] = "False"
+        page.load_data()
+        self.assertEqual(page.macros.entries, [{"Key": "kg", "Value": "khô gà"}])
+        self.assertEqual(page.table.rowCount(), 1)
+
+
+class KeymapTest(unittest.TestCase):
+    def test_a_freshly_opened_table_is_not_modified(self):
+        fake = FakeDBusHandler({}, {"custom_keymap": [{"Key": "s", "Value": "Missing"}]})
+        page = KeymapEditorPage(fake)
+        self.assertFalse(page.is_modified())
+
+    def test_reload_shows_what_fcitx5_has(self):
+        fake = FakeDBusHandler({}, {"custom_keymap": [{"Key": "s", "Value": "DauSac"}]})
+        page = KeymapEditorPage(fake)
+        # The main window asks every page whether it changed on each edit.
+        window = mock.Mock(on_changed=lambda: (page.is_modified(), page.is_modified_from_default()))
+        page.window = lambda: window
+        page.upsert_row("f", "DauHuyen")
+        fake.values["EnableCustomKeymap"] = "True"
+        page.load_data()
+        self.assertEqual(page.keymap.entries, [{"Key": "s", "Value": "DauSac"}])
+        self.assertEqual(page.table.rowCount(), 1)
 
 
 class HotkeyTest(unittest.TestCase):

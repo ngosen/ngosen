@@ -6,11 +6,13 @@
 #include "ngosen-fcitx-host.h"
 #include "ngosen-app-quirks.h"
 
+#include "ngosen-gnome-shell.h"
 #include "ngosen-keysym.h"
+#include "ngosen-monitor.h"
 #include "ngosen-program-name.h"
+#include "ngosen-ui-text.h"
 #include "ngosen-xtest.h"
 
-#include <fcitx-utils/i18n.h>
 #include <fcitx-utils/key.h>
 #include <fcitx/candidatelist.h>
 #include <fcitx/event.h>
@@ -77,6 +79,8 @@ namespace ngosen {
         constexpr int ShiftKeycode = 50;
         // XKB keycode of Return: evdev KEY_ENTER (28) + 8.
         constexpr int ReturnKeycode = 36;
+        // XKB keycode of Tab: evdev KEY_TAB (15) + 8.
+        constexpr int TabKeycode = 23;
 
         fcitx::Key    toFcitxKey(EditKey key) {
             switch (key) {
@@ -84,6 +88,9 @@ namespace ngosen {
                 case EditKey::Right: return fcitx::Key(FcitxKey_Right);
                 case EditKey::Shift: return fcitx::Key(FcitxKey_Shift_L, fcitx::KeyStates(), ShiftKeycode);
                 case EditKey::Return: return fcitx::Key(FcitxKey_Return, fcitx::KeyStates(), ReturnKeycode);
+                case EditKey::ShiftReturn: return fcitx::Key(FcitxKey_Return, fcitx::KeyState::Shift, ReturnKeycode);
+                case EditKey::Tab: return fcitx::Key(FcitxKey_Tab, fcitx::KeyStates(), TabKeycode);
+                case EditKey::ShiftTab: return fcitx::Key(FcitxKey_ISO_Left_Tab, fcitx::KeyState::Shift, TabKeycode);
             }
             return fcitx::Key();
         }
@@ -121,6 +128,10 @@ namespace ngosen {
         ic_->forwardKey(toFcitxKey(key), release, static_cast<int>(time));
     }
 
+    void FcitxHost::forwardKeyPress(uint32_t sym, uint32_t states, uint32_t code, bool release, uint32_t time) {
+        ic_->forwardKey(fcitx::Key(static_cast<fcitx::KeySym>(sym), fcitx::KeyStates(states), static_cast<int>(code)), release, static_cast<int>(time));
+    }
+
     void FcitxHost::deleteSurrounding(int offset, unsigned int size) {
         ic_->deleteSurroundingText(offset, size);
     }
@@ -144,22 +155,29 @@ namespace ngosen {
         const auto& caps = ic_->capabilityFlags();
         Field       f;
         f.frontend         = ic_->frontend();
-        f.program          = normalizeProgramName(ic_->program());
+        f.program          = normalizeProgramName(relayedAppName(ic_->program(), ic_->frontend(), shell_focused_app_));
         f.surroundingText  = caps.test(fcitx::CapabilityFlag::SurroundingText);
         f.preedit          = caps.test(fcitx::CapabilityFlag::Preedit);
         f.formattedPreedit = caps.test(fcitx::CapabilityFlag::FormattedPreedit);
         f.url              = caps.test(fcitx::CapabilityFlag::Url);
         f.keyEventOrderFix = caps.test(fcitx::CapabilityFlag::KeyEventOrderFix);
         f.password         = caps.test(fcitx::CapabilityFlag::Password) || caps.test(fcitx::CapabilityFlag::Sensitive);
+        f.terminal         = caps.test(fcitx::CapabilityFlag::Terminal);
         f.caretWidth       = ic_->cursorRect().width();
         f.caretHeight      = ic_->cursorRect().height();
         if (f.program != ic_->program())
             f.reportedProgram = ic_->program();
+        // fcitx5 before 5.1.22 names every app GNOME Shell relays after the shell; fixed GNOME versions come with newer fcitx5.
+        f.sendsNoKeys = shell_drops_keys_ != nullptr && *shell_drops_keys_ && f.frontend == "ibus" && ic_->program() == "gnome-shell";
         return f;
     }
 
     bool FcitxHost::hasFocus() const {
         return ic_->hasFocus();
+    }
+
+    std::optional<std::string> FcitxHost::takeSelection() {
+        return x11_selection.take();
     }
 
     void FcitxHost::showPreedit(const std::string& text, bool underline) {
@@ -250,8 +268,9 @@ namespace ngosen {
         ic_->inputPanel().setAuxDown(fcitx::Text(text));
     }
 
+    // Hints follow Ngó Sen's interface language, like the tray menu, not the desktop's.
     std::string FcitxHost::translate(const char* text) const {
-        return _(text);
+        return uiText(text);
     }
 
     std::unique_ptr<Timer> FcitxHost::startTimer(uint64_t deadlineUs, uint64_t accuracyUs, std::function<bool(Timer&)> onTime) {

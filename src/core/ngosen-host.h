@@ -21,6 +21,9 @@ namespace ngosen {
         Right,
         Shift,
         Return,
+        ShiftReturn,
+        Tab,
+        ShiftTab,
     };
 
     // The text around the cursor as the app last reported it. Positions count characters.
@@ -56,13 +59,16 @@ namespace ngosen {
     struct Field {
         std::string frontend; // how the app talks to the input method: wayland, xim, ibus, dbus, fcitx4
         std::string program;
-        std::string reportedProgram;          // the name as reported, when program differs from it (a Flatpak app ID)
+        std::string reportedProgram;          // the name as reported, when program differs from it (a Flatpak app ID, gnome-shell for the app it relays)
         bool        surroundingText  = false; // the app reports the text around the cursor
         bool        preedit          = false; // the app can show uncommitted text
         bool        formattedPreedit = false;
         bool        url              = false; // the field is an address bar
         bool        keyEventOrderFix = false;
         bool        password         = false; // what is typed here must not be logged
+        bool        terminal         = false; // the field is a terminal, which erases a character for each DEL committed
+        bool        sendsNoKeys      = false; // keys the input method sends never reach the app; it deletes only through text
+        bool        preeditFallback  = false; // the host may type a word in the preedit when deleting in the field fails
         int         caretWidth       = 0;     // size of the cursor rectangle the app last reported, in pixels
         int         caretHeight      = 0;
     };
@@ -95,6 +101,8 @@ namespace ngosen {
         virtual void commitText(const std::string& text) = 0;
         // time is the X server time XIM stamps on the key; other frontends ignore it.
         virtual void forwardKey(EditKey key, bool release, uint32_t time) = 0;
+        // Any key as the user pressed it, with its modifier states and hardware keycode.
+        virtual void forwardKeyPress(uint32_t sym, uint32_t states, uint32_t code, bool release, uint32_t time) = 0;
         // Deletes size characters starting offset characters from the cursor.
         virtual void deleteSurrounding(int offset, unsigned int size) = 0;
         // Presses keys at the X server: count > 0 presses BackSpace count times, count < 0 selects
@@ -105,6 +113,9 @@ namespace ngosen {
         virtual Surrounding surrounding() const = 0;
         virtual Field       field() const       = 0;
         virtual bool        hasFocus() const    = 0;
+        // The text last selected in the focused X11 window, if nothing was clicked or typed since. Some
+        // apps announce a selection this way only. Taking it forgets it.
+        virtual std::optional<std::string> takeSelection() = 0;
 
         // Shows text not committed yet: in the app when it can draw it, otherwise in the panel.
         virtual void showPreedit(const std::string& text, bool underline) = 0;

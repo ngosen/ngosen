@@ -3,7 +3,9 @@ _kde_wayland() {
     pgrep -x kwin_wayland >/dev/null 2>&1
 }
 
+# install.sh says what to do next itself.
 post_install() {
+    [ -n "${NGOSEN_INSTALLER:-}" ] && return 0
     echo "--- Cấu hình Ngó Sen ---"
     echo "Mở 'Fcitx5 Configuration' và thêm bộ gõ Ngó Sen."
     if _kde_wayland; then
@@ -12,6 +14,7 @@ post_install() {
 }
 
 post_upgrade() {
+    [ -n "${NGOSEN_INSTALLER:-}" ] && return 0
     echo "--- Cấu hình Ngó Sen ---"
     if _kde_wayland; then
         echo "Đăng xuất rồi đăng nhập lại để dùng bản mới."

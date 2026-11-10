@@ -344,14 +344,14 @@
     "SurrDeleteSleepMs",
     "Integer",
     "Experiment: ms per deleted char to sleep after deleteSurroundingText",
-    "4",
+    "0",
     {}
    ],
    [
     "SurrCommitSleepMs",
     "Integer",
     "Experiment: ms per committed char to sleep after commitString on the surrounding-text path",
-    "3",
+    "0",
     {}
    ],
    [
@@ -502,6 +502,20 @@
     {}
    ],
    [
+    "ShowModeVim",
+    "Boolean",
+    "Show Vim mode",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutVim",
+    "String",
+    "Shortcut for Vim mode",
+    "v",
+    {}
+   ],
+   [
     "EnableMacroInOffMode",
     "Boolean",
     "Allow Macro in Off Mode",
@@ -519,7 +533,7 @@
     "ModeOrder",
     "String",
     "Mode Order",
-    "Sen,Preedit,Emoji,Off,Default",
+    "Sen,Preedit,Emoji,Off,Default,Vim",
     {}
    ],
    [
@@ -602,6 +616,19 @@
      "Enum": {
       "0": "Vietnamese",
       "1": "English"
+     }
+    }
+   ],
+   [
+    "SettingsToolkit",
+    "Enum",
+    "Settings Window",
+    "Auto",
+    {
+     "Enum": {
+      "0": "Auto",
+      "1": "Qt",
+      "2": "GTK"
      }
     }
    ]

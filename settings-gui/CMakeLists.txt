@@ -11,12 +11,9 @@ configure_file(
     @ONLY
 )
 
-install(DIRECTORY core ui
+install(DIRECTORY core ui ui_gtk
         DESTINATION "${SETTINGS_GUI_INSTALL_DIR}"
         FILES_MATCHING PATTERN "*.py" PATTERN "*.qss" PATTERN "*.svg")
-
-install(FILES fonts/XanhMono-Regular.ttf
-        DESTINATION "${SETTINGS_GUI_INSTALL_DIR}/fonts")
 
 install(FILES i18n.py qt_api.py "${CMAKE_CURRENT_BINARY_DIR}/version.py"
         DESTINATION "${SETTINGS_GUI_INSTALL_DIR}")

@@ -9,11 +9,16 @@
 #include "ngosen-key.h"
 #include "ngosen-keysym.h"
 
+#include <cctype>
 #include <cstdint>
 #include <string>
 #include <vector>
 
 namespace ngosen::test {
+
+    // While on, every log line, whatever its level, is kept here instead of printed.
+    void                      captureLog(bool on);
+    std::vector<std::string>& capturedLog();
 
     // Settings as a fresh install has them, with the system dictionary and an empty macro table.
     class FakeResources final : public EngineResources {
@@ -44,7 +49,11 @@ namespace ngosen::test {
         std::vector<EmojiEntry> searchEmoji(const std::string& /*prefix*/) override {
             return {};
         }
-        void      recordEmoji(const EmojiEntry& /*entry*/) override {}
+        void recordEmoji(const EmojiEntry& /*entry*/) override {}
+        bool anyTerminalHidesInput() const override {
+            return terminalHidesInput;
+        }
+        bool      terminalHidesInput = false;
         Recorder& recorder() override {
             return recorder_;
         }
@@ -80,9 +89,10 @@ namespace ngosen::test {
         bool hasModifier() const override {
             return (states_ & ~modifier::Repeat) != 0;
         }
-        bool        isCursorMove() const override;
+        bool isCursorMove() const override;
+        // As fcitx::Key::toString names a letter or digit; it spells out punctuation, which tests do not reach.
         std::string name() const override {
-            return std::to_string(appSym_);
+            return std::isalnum(static_cast<int>(appSym_)) != 0 && appSym_ < 0x80 ? std::string(1, static_cast<char>(appSym_)) : std::to_string(appSym_);
         }
         void replaceSym(uint32_t sym) override {
             appSym_ = sym;

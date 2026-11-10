@@ -17,18 +17,25 @@
 
 namespace ngosen::test {
 
+    // Timers destroyed from their own callback, which frees a running callback on the real hosts.
+    extern int timersDestroyedInCallback;
+
     // Timers of every FakeHost, fired by pump() on the real monotonic clock.
     class FakeLoop {
       public:
         struct Entry;
 
+        // Switches the process to the fake clock, so pumping takes no real time.
+        FakeLoop();
         std::unique_ptr<Timer> add(uint64_t deadlineUs, std::function<bool(Timer&)> onTime);
-        // Fires due timers for about ms milliseconds, sleeping 1 ms between rounds.
+        // Fires due timers for ms milliseconds of the fake clock, advancing it 1 ms between rounds.
         void pump(int ms);
         void remove(Entry* entry);
 
       private:
+        void                fireDue();
         std::vector<Entry*> entries_;
+        Entry*              running_ = nullptr;
     };
 
     struct ForwardedKey {
@@ -45,9 +52,14 @@ namespace ngosen::test {
 
         void commitText(const std::string& text) override {
             commits_.push_back(text);
+            if (commitWatcher_)
+                commitWatcher_(text);
         }
         void forwardKey(EditKey key, bool release, uint32_t time) override {
             forwarded_.push_back({key, release, time});
+        }
+        void forwardKeyPress(uint32_t sym, uint32_t /*states*/, uint32_t /*code*/, bool release, uint32_t /*time*/) override {
+            forwardedPresses_.push_back({sym, release});
         }
         void deleteSurrounding(int offset, unsigned int size) override {
             deletes_.emplace_back(offset, size);
@@ -64,7 +76,10 @@ namespace ngosen::test {
             return field_;
         }
         bool hasFocus() const override {
-            return true;
+            return hasFocus_;
+        }
+        std::optional<std::string> takeSelection() override {
+            return std::nullopt;
         }
 
         void showPreedit(const std::string& text, bool /*underline*/) override {
@@ -111,6 +126,19 @@ namespace ngosen::test {
         void setSurrounding(const std::string& text, unsigned int cursor, unsigned int anchor) {
             surrounding_ = Surrounding(text, cursor, anchor);
         }
+        void setField(Field field) {
+            field_ = std::move(field);
+        }
+        void forgetSurrounding() {
+            surrounding_ = Surrounding();
+        }
+        // What fcitx5's commit watcher does on the real host.
+        void setCommitWatcher(std::function<void(const std::string&)> watcher) {
+            commitWatcher_ = std::move(watcher);
+        }
+        void setHasFocus(bool hasFocus) {
+            hasFocus_ = hasFocus;
+        }
         void setSystemKeysWork(bool works) {
             systemKeysWork_ = works;
         }
@@ -137,12 +165,15 @@ namespace ngosen::test {
         }
 
       private:
+        bool                                      hasFocus_ = true;
+        std::function<void(const std::string&)>   commitWatcher_;
         FakeLoop&                                 loop_;
         Field                                     field_;
         Surrounding                               surrounding_;
         bool                                      systemKeysWork_ = false;
         std::vector<std::string>                  commits_;
         std::vector<ForwardedKey>                 forwarded_;
+        std::vector<std::pair<uint32_t, bool>>    forwardedPresses_;
         std::vector<std::pair<int, unsigned int>> deletes_;
         std::vector<int>                          systemKeys_;
         std::string                               preedit_;

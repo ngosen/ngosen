@@ -3,10 +3,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import unittest
 
-from qtpy.QtWidgets import QTabWidget
+# isort: off
 from support import FakeDBusHandler, app
+from core.text import fold
+from qtpy.QtWidgets import QCheckBox, QComboBox, QTabWidget
+from ui.components import SingleKeyCaptureWidget
 from ui.main_window import NgoSenSettingsWindow
-from ui.search import fold
+
+# isort: on
 
 
 class FoldTest(unittest.TestCase):
@@ -47,6 +51,27 @@ class SearchTest(unittest.TestCase):
         self.assertEqual(tabs.tabText(tabs.currentIndex()), "Keymap")
         self.assertEqual(self.window.search_field.text(), "")
         self.assertTrue(self.window.sidebar.isVisible())
+
+    def test_a_group_name_opens_its_first_setting(self):
+        self.window.search_field.setText("typing keys")
+        self.open_result("Typing keys")
+        self.assertEqual(self.window.sidebar.currentItem().text(), "Typing")
+        self.assertIsInstance(self.window.focusWidget(), QComboBox)
+
+    def test_open_setting_reaches_the_macro_and_mode_settings(self):
+        for key, widget_type in (
+            ("EnableMacro", QCheckBox),
+            ("TimeFormat", QComboBox),
+            ("ShowModeSen", QCheckBox),
+            ("ShortcutSen", SingleKeyCaptureWidget),
+        ):
+            self.assertTrue(self.window.open_setting(key), key)
+            self.assertIsInstance(self.window.focusWidget(), widget_type, key)
+
+    def test_a_mode_key_found_by_name_gets_the_focus(self):
+        self.window.search_field.setText("shortcut for sen")
+        self.open_result("Shortcut for Sen")
+        self.assertIsInstance(self.window.focusWidget(), SingleKeyCaptureWidget)
 
     def test_no_match_says_so(self):
         self.window.search_field.setText("zzzz")

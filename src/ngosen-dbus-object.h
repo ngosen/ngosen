@@ -14,7 +14,7 @@ namespace fcitx {
 
     class NgoSenEngine;
 
-    // For a terminal command, when the tray menu is missing or frozen.
+    // For a terminal command, when the tray menu is missing or frozen, and for the settings window.
     class NgoSenDBusObject : public dbus::ObjectVTable<NgoSenDBusObject> {
       public:
         static constexpr const char* Path      = "/ngosen";
@@ -23,10 +23,12 @@ namespace fcitx {
         explicit NgoSenDBusObject(NgoSenEngine* engine) : engine_(engine) {}
 
         std::string saveTypingLog();
+        bool        gnomePortalAnswered();
 
       private:
         NgoSenEngine* engine_;
         FCITX_OBJECT_VTABLE_METHOD(saveTypingLog, "SaveTypingLog", "", "s");
+        FCITX_OBJECT_VTABLE_METHOD(gnomePortalAnswered, "GnomePortalAnswered", "", "b");
     };
 
 } // namespace fcitx

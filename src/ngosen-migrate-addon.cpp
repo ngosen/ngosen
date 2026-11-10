@@ -42,6 +42,16 @@ namespace {
 #endif
         }
 
+#if NGOSEN_USE_MODERN_FCITX_API
+        static constexpr auto profileType() {
+            return fcitx::StandardPathsType::PkgConfig;
+        }
+#else
+        static constexpr auto profileType() {
+            return fcitx::StandardPath::Type::PkgConfig;
+        }
+#endif
+
         static void copyUserFiles() {
 #if NGOSEN_USE_MODERN_FCITX_API
             const auto dataDir = fcitx::StandardPaths::global().userDirectory(fcitx::StandardPathsType::PkgData);
@@ -72,6 +82,24 @@ namespace {
             return waited;
         }
 
+        // The engine loads only once switched to, so a new user who adds Ngó Sen in the configtool
+        // has no settings yet on the next start. Users who upgrade already list it.
+        static bool markNewAccount(bool replacing) {
+            if (std::filesystem::exists(confDir() / "ngosen.conf")) {
+                return false;
+            }
+            if (replacing) {
+                waitForPreviousInstance();
+            }
+            fcitx::RawConfig profile;
+            fcitx::readAsIni(profile, profileType(), "profile");
+            if (ngosen::listsInputMethod(profile, ngosen::InputMethod) || ngosen::listsInputMethod(profile, ngosen::LegacyInputMethod)) {
+                return false;
+            }
+            fcitx::safeSaveAsIni(ngosen::newAccountSettings(NGOSEN_VERSION), profileType(), "conf/ngosen.conf");
+            return true;
+        }
+
         struct ProfileChanges {
             bool renamed = false;
             bool dropped = false;
@@ -100,6 +128,9 @@ namespace {
                 changes.dropped = dropKeyboard && ngosen::dropLoneKeyboard(profile, ngosen::InputMethod);
                 return changes;
             };
+            if (dropKeyboard && markNewAccount(replacing)) {
+                return;
+            }
             fcitx::RawConfig profile;
             auto             changes = readChanged(profile);
             if (!changes.renamed && !changes.dropped) {

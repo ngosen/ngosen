@@ -63,7 +63,19 @@ class MenuEntryIconTest(FakeThemeTest):
         page = DynamicSettingsPage(FakeDBusHandler(), category=SettingsCategory.APPEARANCE)
         self.addCleanup(page.close)
         charset = next(c for c in page.findChildren(QCheckBox) if c.text() == "Charset")
-        self.assertFalse(charset.icon().isNull())
+        # A missing icon leaves a blank placeholder, so check the name rather than isNull().
+        self.assertEqual(charset.icon().name(), "character-set-symbolic")
+
+
+class MissingMenuIconTest(FakeThemeTest):
+    # Adwaita and Yaru have no character-set icon; hicolor holds the one Ngó Sen installs.
+    icons = ("ngosen-charset",)
+
+    def test_menu_entry_falls_back_to_own_icon(self):
+        page = DynamicSettingsPage(FakeDBusHandler(), category=SettingsCategory.APPEARANCE)
+        self.addCleanup(page.close)
+        charset = next(c for c in page.findChildren(QCheckBox) if c.text() == "Charset")
+        self.assertEqual(charset.icon().name(), "ngosen-charset")
 
 
 class LogoTest(FakeThemeTest):

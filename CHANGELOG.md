@@ -12,6 +12,469 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Trang Kiểm tra máy hiện version Ngó Sen đang chạy và trạng thái bật repo: đã bật thì nhận version mới khi cập nhật hệ thống; chưa bật thì báo không nhận version mới, lỗi có thể đã được sửa và có link “Cách nhận version mới”. Văn bản báo lỗi cũng ghi trạng thái repo (#657).
+- Tự ngừng gõ tiếng Việt khi terminal hỏi password ẩn chữ: giữ nguyên phím, không ghi nhật ký gõ; xong tự bật lại, không cần cài đặt. Riêng sudo trên Linux Mint hiện dấu * chưa nhận ra, cần dùng phím chuyển Anh/Việt để chuyển sang tiếng Anh (#106, #645)
+- Thêm Vim mode cho từng app trong menu `, dùng phím tắt `v`, hiện `[v] Vim mode: bật` / `[v] Vim mode: tắt`.
+  Ngó Sen nhớ bật/tắt riêng cho từng app; có thể ẩn mục này hoặc đổi phím ở trang Phím tắt, nhóm Đổi chế độ.
+  Dùng được với cả Gõ Sen và Preedit, cho các app dùng phím Vim: nvim/vim trong terminal, Claude Code,
+  Antigravity, plugin Vim của Obsidian và plugin Vim của JetBrains IDE. Khi bật, sau Esc hoặc Ctrl+[,
+  Ngó Sen cho các lệnh Vim đi qua nguyên vẹn; từ đầu tiên gõ sau lệnh vào insert mode (`i`, `a`, `o`, `ciw`…)
+  có dấu ngay. Trước đây, từ này còn nguyên như `tieengs`; trong Preedit, phím lệnh còn bị giữ lại hoặc
+  biến thành chữ, như `dd` thành `đ`. Trong terminal, dù tắt Vim mode, Ngó Sen vẫn nhận ra khi gõ `vim`
+  hay `nvim` ở shell rồi nhấn Enter, kể cả khi thêm `sudo`, để từ đầu tiên gõ trong file cũng có dấu.
+  Thoát Vim bằng `:q`, `:wq`, `ZZ` thì gõ lại bình thường. Chưa xử lý phím Esc được đổi thành chữ như `jk`.
+  Nếu mở Vim từ lịch sử shell bằng mũi tên lên, qua alias hoặc `git commit`, hãy bật Vim mode cho terminal (#302, #587).
+- Lệnh cài một dòng nay tự thêm repo APT trên Debian, Ubuntu và các distro dựa trên chúng để nhận version mới khi cập nhật hệ thống. Máy đã cài bằng lệnh này trước đây có thể chạy lại để thêm repo. (#654)
+
+## [1.9.0-1] — 08/11/2026
+
+GNOME tắt extension vẫn giữ chế độ gõ và cài đặt riêng theo từng app, và lệnh cài không còn tự bật extension khi portal báo được tên app (#621, #629). Gõ Sen hiện dấu ngay trong terminal và bớt khựng trong Firefox trên Hyprland, Sway (#607, #620, #623, #630); gõ -- trong terminal và ô địa chỉ giữ nguyên (#625); nhận ra thêm các bản Firefox trên GNOME (#634).
+Tải ở [ngosen-1.9.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.9.0-1).
+
+### Thêm
+
+- Trên GNOME Wayland với fcitx5 version cũ hơn 5.1.22, chế độ gõ và cài đặt riêng theo từng app nay hoạt động khi tắt extension; app không có tệp `.desktop` vẫn cần extension. Ô tìm kiếm trong màn tổng quan GNOME được nhận ra ở mọi version fcitx5, kể cả khi tắt extension (#621).
+- Trên GNOME 46 đến 49 và từ 50.4 trở đi, với fcitx5 version cũ hơn 5.1.22, lệnh cài không còn tự bật extension Ngó Sen khi máy có gói `xdg-desktop-portal-gnome`. Lệnh cài vẫn tự bật extension trên GNOME 50.0 đến 50.3 hoặc khi máy không có gói này. Máy đã bật thì để nguyên. Trang "Kiểm tra máy" báo khi portal chưa cho Ngó Sen biết tên app và gợi ý bật extension (#629).
+
+### Sửa
+
+- Bớt những lúc gõ Sen nhanh bị khựng trong Firefox trên Hyprland, Sway và KDE Plasma: quay lại chờ bản chữ của Firefox khi app phản hồi kịp trở lại, thay vì xoá bằng Backspace (#607).
+- Gõ Sen hiện chữ ngay khi thêm dấu trong kitty, Ptyxis, GNOME Terminal, foot và Ghostty trên Hyprland, cùng xterm; riêng xterm không còn phụ thuộc vào thứ tự nhận phím Backspace (#620).
+- Bớt khựng khi gõ Sen nhanh trong Firefox trên Hyprland và Sway: khi app báo chữ chậm, phím thêm dấu sửa luôn phần chữ chưa gửi, không phải gửi chữ cũ rồi xoá bằng Backspace và chờ gõ lại (#623).
+- Gõ Sen hiện chữ ngay khi thêm dấu trong Ptyxis, GNOME Console và GNOME Terminal trên GNOME, cả khi bật hay tắt extension Ngó Sen (#630).
+- Nhận ra Firefox cài từ gói Fedora, Mullvad Browser cài từ gói và các bản Flatpak của Firefox và trình duyệt dựa trên Firefox trên GNOME, để chữ gõ trong thanh địa chỉ không lẫn với autofill (#634).
+- Bật "Hai gạch nối thành gạch dài" thì gõ -- trong terminal hay ô địa chỉ vẫn giữ nguyên, nên "git push --force" không còn thành "git push —force"; ô địa chỉ của Firefox và terminal không tự báo mình là terminal (như terminal trong VS Code) chưa nhận ra được (#625).
+
+## [1.8.3-1] — 08/11/2026
+
+Gõ từ không phải tiếng Việt liền chữ số khi bật gõ tắt hết bị thêm dấu (#614), và đổi dấu sau phụ âm cuối vẫn ra đúng chữ tiếng Việt khi chốt từ (#622).
+Tải ở [ngosen-1.8.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.3-1).
+
+### Sửa
+
+- Gõ từ không phải tiếng Việt liền chữ số khi bật gõ tắt không còn bị thêm dấu (gõ "Sose2026" thành "Sóe2026"); trả lại đúng phím đã gõ, từ tiếng Việt liền số như "tôi2" vẫn giữ nguyên (#614).
+- Đổi dấu sau phụ âm cuối không còn làm chữ trả về phím đã gõ: Telex "dduoxwcj" hay VNI "d9uo37c5" nay thành "được" khi gõ dấu cách, dấu câu hoặc Enter, ở cả Gõ Sen lẫn Preedit (lúc đang gõ vẫn hiện nguyên phím); từ tiếng Anh như "parts", "texts" vẫn giữ nguyên, muốn giữ phím đã gõ thì nhấp phím chốt chữ (mặc định Ctrl) trước dấu cách (#622).
+
+## [1.8.2-1] — 07/11/2026
+
+Cứu chữ hết xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt (#605), gõ tắt khi đang tiếng Anh hết thành "vnviệt nam" ở ô không cho đọc chữ (#604), và kho APT, pacman, zypper của Ngó Sen phát lại gói `ibus-ngosen` (#598).
+Tải ở [ngosen-1.8.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.2-1).
+
+### Sửa
+
+- Cứu chữ không còn xoá nhầm chữ khi bấm chuột sang chỗ khác ngay sau phím chuyển Anh/Việt: bấm Enter hay Esc lúc đó giữ nguyên chữ trong ô, và lời mời gõ lại bị bỏ khi app báo con trỏ đã dời đi (#605).
+- Gõ tắt khi đang tiếng Anh không còn chèn cụm chữ đầy đủ sau chữ tắt (thành "vnviệt nam") ở ô không cho đọc chữ quanh con trỏ; chữ tắt được giữ nguyên (#604).
+
+### Thêm
+
+- Kho APT, pacman và zypper của Ngó Sen phát lại gói `ibus-ngosen` (Ngó Sen cho GNOME); `pacman -Syu`, `apt upgrade` và `zypper up` lấy bản `ibus-ngosen` mới sau khi kho được làm mới; gói tải về được đối chiếu SHA256SUMS của release trước khi ký (#598).
+
+## [1.8.1-1] — 07/11/2026
+
+Gõ Sen hết nuốt hoặc đảo thứ tự phím điều hướng và phím tắt Ctrl bấm ngay sau một chữ; riêng app Wayland trên GNOME vẫn nhận Ctrl+phím thành chữ (#591).
+Tải ở [ngosen-1.8.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.1-1).
+
+### Sửa
+
+- Gõ Sen hết nuốt hoặc đảo thứ tự phím mũi tên, Home, End, Delete, Esc và phím tắt Ctrl bấm ngay sau một chữ; riêng app Wayland trên GNOME vẫn nhận Ctrl+phím thành chữ (#591).
+
+### Tài liệu
+
+- README hướng dẫn báo lỗi qua trang “Kiểm tra máy” thay cho hộp “Kiểm tra máy tôi…” đã bỏ ở version 1.8.0 (#590).
+
+## [1.8.0-1] — 07/11/2026
+
+Trang Kiểm tra máy hướng dẫn thiết lập, có nút sửa từng việc, ô gõ thử và gửi kết quả (#463, #563). GNOME tắt extension: Firefox ít sai chữ khi gõ nhanh, thanh địa chỉ Chrome gõ đúng, một app lỗi không còn làm mọi app ra chữ thô (#541, #543, #586). GNOME bật extension hết mất chữ khi gõ nhanh và xoá nhầm khi Backspace (#581, #584). Firefox trên KDE hết mất dấu khi chèn chữ giữa câu; trên Hyprland, Sway hết mất chữ khi gõ nhanh (#582, #583). install.sh hỗ trợ Fedora 45, bật fcitx5 ngay và thiết lập app Qt 5 trên Sway, Hyprland (#556, #557, #566). Cửa sổ cài đặt chia nhóm rõ hơn, giải thích ô bị khoá và không đổi giá trị khi lăn chuột (#519, #521, #522).
+Tải ở [ngosen-1.8.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.8.0-1).
+
+### Thêm
+
+- Trang "Kiểm tra máy" nay kiểm tra fcitx5 có tự chạy khi đăng nhập hay không, kèm các nút đặt tự chạy, đặt biến môi trường, chọn Fcitx 5 làm Virtual Keyboard trên KDE và chạy im-config trên X11. Người cài từ repo hoặc package tải về có thể bấm nút, hoặc làm theo hướng dẫn từng bước và nút chép lệnh để tự thiết lập (#563).
+- Lệnh cài trên Sway và Hyprland nay bật fcitx5 để gõ ngay và in dòng config cho lần đăng nhập sau (#557).
+- Người đóng gói distro có thể dùng thư viện Rust của distro, còn package hiện có vẫn mặc định dùng bản kèm trong source (#550).
+- Trang "Kiểm tra máy" trên GNOME: báo khi thiếu extension Input Method Panel và có nút Cài, vì thiếu nó thì menu chế độ `` ` `` không hiện trong ô tìm kiếm của GNOME (#507, #508)
+- Cửa sổ cài đặt Qt và GTK có trang "Kiểm tra máy": hiện các bước cài đặt, số việc còn cần sửa và nút sửa
+  từng việc hoặc "Sửa cả N việc". Ô gõ thử, test app kèm nhật ký gõ, danh sách app kết nối với fcitx5 và gửi
+  kết quả qua Facebook, GitHub hoặc chép kết quả nằm cùng trang, thay hộp "Kiểm tra máy tôi…" và nút
+  "Báo lỗi" ở trang Giới thiệu (#463)
+- GNOME 46–50 với fcitx5 cũ hơn 5.1.22 (Ubuntu 24.04, 26.04): extension `forward-keys@ngosen.github.io` đi kèm gói nay báo tên app qua GNOME Shell cho Ngó Sen, để mỗi app nhớ riêng chế độ gõ và Anh/Việt; app dùng module fcitx vốn đã có tên. `install.sh` tự bật extension; nâng gói bằng apt, dnf thì chưa tự bật, trang Kiểm tra máy nay gợi ý và có nút bật, sau đó cần đăng xuất, đăng nhập lại; không bật vẫn gõ bình thường. Ai đã bật extension chỉ cần đăng nhập lại sau khi nâng gói (#510)
+
+### Thay đổi
+
+- Trang Kiểm tra máy không còn yêu cầu chạy install.sh, vì lệnh đó tải package GitHub đè lên package từ kho distro, và giờ nói thẳng việc cần làm (#551).
+- Chữ “Ngó Sen” cạnh logo và chữ gõ mẫu trong cài đặt Qt/GTK dùng font hệ thống thay cho Xanh Mono trên mọi distro (#548).
+- Cửa sổ cài đặt: trang Gõ chữ chia lại nhóm theo công dụng, giữ nguyên cài đặt đã lưu (#519).
+- Cửa sổ cài đặt: bản Qt và GTK làm mờ nhưng giữ giá trị các ô vô tác dụng, tìm kiếm chuyển tới ô bật chúng, còn bảng gõ tắt vẫn sửa được khi tắt Bật gõ tắt (#520).
+- Cửa sổ cài đặt: Qt và GTK nay giải thích tuỳ chọn đang chặn Từ điển, Keymap, Gõ tắt và Cứu dấu; GTK gợi ý khi Custom chưa có phím; thông báo và công tắc cập nhật sau khi đổi ở menu khay (#521).
+- Cửa sổ cài đặt: trang Gõ tắt bản Qt hiển thị định dạng giờ/ngày dễ đọc mà không đổi giá trị đã lưu, dùng nhãn Từ viết tắt/Từ đầy đủ, giải thích các công tắc và cuộn được khi cửa sổ nhỏ (#522).
+- Cửa sổ cài đặt: lăn chuột trên ô chọn không còn đổi và tự lưu giá trị (#522).
+- Cửa sổ cài đặt: thông báo đã lưu nổi ở đáy trang, không còn đẩy nội dung, tự tắt sau 5 giây và có nút đóng; thông báo sau Mặc định, Khôi phục và nút sửa ở Kiểm tra máy giữ tới khi đóng; trang Keymap, Từ điển cuộn được khi cửa sổ nhỏ (#524).
+- Cửa sổ cài đặt: bản Qt đổi nút “Mặc định” thành “Đưa về mặc định…” và ẩn thanh nút dưới cùng ở Có gì mới, Kiểm tra máy và Giới thiệu (#525).
+- Cửa sổ cài đặt: bản Qt và GTK giải thích chế độ đang chọn (#526).
+- Cửa sổ cài đặt: bản GTK đặt ví dụ gõ cạnh Kiểu gõ và ghi chú fcitx5 trong mô tả Phím chuyển Anh/Việt, tránh trông như tuỳ chọn bấm được (#529).
+- Cửa sổ cài đặt: ở bản GTK, trang Có gì mới & mẹo hiển thị ví dụ gõ cùng dòng với tính năng, còn nút Đề xuất tính năng ở trang Giới thiệu chỉ rộng vừa chữ (#530).
+- Cửa sổ cài đặt: bản Qt và GTK hiển thị “Chưa đặt” cho phím tắt chưa gán, dùng “Test”, thống nhất “xoá” và không còn gọi bản Qt là “cũ” (#532).
+- Ô tìm kiếm của GNOME: không còn Cứu chữ và Cứu dấu, vì GNOME nhận Tab và Esc trước Ngó Sen nên không trả lại được chữ đã đổi. Trình duyệt và app soạn thảo vẫn có cả hai. Cần fcitx5 5.1.22 trở lên hoặc extension của Ngó Sen báo tên app (#513).
+
+### Bỏ
+
+- Cửa sổ cài đặt: bỏ nút “Tắt” khỏi Chế độ gõ trên Qt và GTK; máy từng chọn “Tắt” nay hiện Gõ Sen, dùng phím chuyển Anh/Việt để gõ tiếng Anh (#528).
+
+### Sửa
+
+- Gõ Sen trên GNOME khi tắt extension: một app làm rơi lệnh xoá một lần, như gợi ý tự điền của thanh địa chỉ Chrome, không còn khiến mọi app gõ ra chữ thô như "vieetj" tới khi fcitx5 khởi động lại; nay chỉ ô đó bị ảnh hưởng, tới khi đổi focus (#586).
+- Gõ Sen trên GNOME khi bật extension: gõ nhanh tới mức hai phím đè nhau không còn mất chữ trong Antigravity và các app khác đi qua IBus, như "người" ra "ời" (#362, #581).
+- Gõ Sen trên GNOME khi bật extension: bấm Backspace ngay sau khi gõ dấu không còn xoá nhầm chữ trong các app đi qua IBus (#362, #584).
+- Gõ Sen trong Firefox trên KDE không còn mất dấu khi chèn chữ vào giữa câu trong web editor như Slate, CKEditor (#580, #582).
+- Gõ Sen trong Firefox trên Hyprland và Sway không còn mất chữ vừa gõ khi gõ nhanh lúc Firefox phản hồi chậm (#583).
+- Gõ Sen trên thanh địa chỉ Chrome ở GNOME nay ra đúng tiếng Việt khi tắt extension và có gợi ý tự điền (#543).
+- Gõ Sen trong Firefox trên KDE ít sai chữ hơn hẳn khi gõ nhanh (#543).
+- Gõ Sen trong Firefox trên GNOME khi tắt extension ít sai chữ hơn hẳn khi gõ nhanh; VS Code hết sai chữ đầu (#541).
+- Gõ Sen trên GNOME: trong app không báo lại chữ cho bộ gõ, như terminal của Zed, bấm Enter hay Backspace ngay sau phím dấu không còn vượt chữ: `loox` rồi Enter không còn ra `l`, xuống dòng, `ỗb`, Backspace xoá đúng chữ vừa gõ (#578).
+- Gõ Sen trên GNOME: gõ nhanh trong app không báo lại chữ cho bộ gõ, như terminal của Zed, không còn đảo chữ: `looxi` ra `liỗ`, `ddi` ra `iđ`. Phím gõ trong lúc chờ thêm dấu nay đi cùng chữ có dấu (#571).
+- Gõ Sen trong WPS Office trên GNOME Wayland gõ đúng dấu khi cài package thiếu biến môi trường install.sh (#570).
+- Sửa lỗi chữ đầu tiên có thể thành “tieengs” ngay sau khi Firefox mở trang trên Hyprland (#564).
+- Đóng hẳn menu `` ` `` khi cửa sổ mất focus hoặc bị đóng, tránh nuốt chữ và để phím e tắt tiếng Việt của app cũ; gõ ra `` ` `` khi app đi qua GNOME Shell mà thiếu extension kimpanel; sửa nhãn menu để nói rõ cài đặt dùng chung cho mọi app chưa có tên (#565).
+- Cài được Ngó Sen bằng lệnh một dòng trên Fedora 45; release có thêm gói cho x86_64 và aarch64 (#556).
+- Lệnh cài một dòng trên Fedora hỗ trợ bản mới ngay khi release có gói; nếu chưa có gói dựng sẵn, báo rõ và hướng dẫn cài từ mã nguồn (#558).
+- Khi bật tự khôi phục (mặc định), gõ issue, sorry, coffee không còn mất chữ thành isue, sory, cofee; tests không còn ra tets. Gõ đúp để bỏ dấu vẫn như cũ: tesst ra test, iss ra is, off ra of (#534).
+- Gõ Sen trên GNOME: gõ chậm trong Firefox không còn khiến Ngó Sen chuyển hẳn sang xoá bằng BackSpace sau vài từ đầu, làm mỗi từ gõ lâu hơn dù chữ vẫn đúng. Ngó Sen nay chờ app báo lại lần xoá tới 1 giây, không bỏ surrounding text chỉ vì app im lặng; app bỏ lệnh xoá hoặc xoá sai thì vẫn chuyển sang BackSpace (#515).
+- Lệnh cài nay đặt biến để app Qt 5 gõ được tiếng Việt trên Sway và Hyprland từ lần đăng nhập sau, nếu vào desktop từ màn hình đăng nhập; trên Hyprland cũng hết cảnh app Qt 5 mất chữ khi mở ngay sau khi đóng Konsole (#566).
+- Lệnh cài trên Sway và Hyprland nay chỉ đúng phím Ctrl+Space để bật bộ gõ khi máy có bộ gõ khác như Unikey, và in lệnh chuyển sang Ngó Sen nếu bộ gõ mặc định là bộ khác (#566).
+- Sửa thông tin giấy phép của từ điển trong package Debian thành GPLv3, với phần dữ liệu từ Wiktionary theo CC-BY-SA (#552).
+- Cửa sổ cài đặt: bản GTK tiếng Anh không còn bị cắt bên phải khi thu hẹp cửa sổ hết cỡ (#537).
+- Cửa sổ cài đặt: bản GTK không còn cắt phần bên phải khi thu hẹp cửa sổ ở tiếng Việt (#531).
+
+### Tài liệu
+
+- README sửa phím chuyển Anh/Việt khi cài từ repo hoặc package từ Ctrl+Space thành Ctrl+Shift, đúng với bản cài mới (#562).
+- README hướng dẫn thiết lập KDE Wayland khi cài từ repo hoặc package (#560).
+- README hướng dẫn thiết lập GNOME khi cài từ repo hoặc package: tự chạy fcitx5 khi đăng nhập, biến môi trường và extension (#559).
+- Sửa README để nói rõ từ version 0.5.0, Ngó Sen không còn dùng uinput (#554).
+- README ghi rõ app hỗ trợ Cứu dấu trên X11 và giới hạn trong OnlyOffice (#553).
+- README bỏ ghi chú và mục lỗi về Firefox snap, ghi chú chưa test NixOS và câu không cam kết hỗ trợ ở phần tiếng Anh (#549).
+
+## [1.7.6-1] — 02/11/2026
+
+Google Docs, Slides trên Chrome, Edge, Brave, Opera, Vivaldi ở X11 hết lặp chữ khi thêm dấu (#523, #527). GNOME hết mất dấu khi gõ nhanh ở ô chỉ xoá qua surrounding text (#501). Cứu dấu đổi được dấu chữ bôi đen trong WPS Office ở X11 (#505). Trên GNOME, lệnh cài luôn thêm extension Input Method Panel để menu `` ` `` hiện trong ô tìm kiếm, Kiểm tra máy báo khi thiếu (#506, #507). Cửa sổ cài đặt hết vỡ icon, cắt chữ (#514), lưu đúng từ điển, gõ tắt đổi từ khay (#517). Không còn gửi phần xoá và chữ mới sang app khác khi focus đổi lúc đang chờ trên GNOME (#535). Bỏ --ibus và gói ibus-ngosen (#509, #511).
+Tải ở [ngosen-1.7.6-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.6-1).
+
+### Bỏ
+
+- Lệnh cài không còn tuỳ chọn `--ibus` và không còn giới thiệu bản IBus khi cài trên GNOME. Máy đã bị ẩn tự chạy fcitx5 thì lệnh cài vẫn bật lại (#509).
+- Kho APT, pacman và zypper của Ngó Sen không còn phát gói `ibus-ngosen`. Máy đã cài vẫn giữ gói đó (#511).
+
+### Sửa
+
+- Gõ Sen trên GNOME: không còn gửi phần xoá và chữ mới sang app khác khi focus đổi trong lúc chờ surrounding text tối đa 100 ms (#535).
+- Gõ Sen trong Google Docs và Google Slides trên Chrome, Edge, Brave, Opera, Vivaldi trên X11: thêm dấu không còn ra chữ lặp như "trenên" thay vì "trên", "dauâuấu" thay vì "dấu" (#523, #527).
+- Cửa sổ cài đặt: giữ lựa chọn từ điển, gõ tắt đổi ở menu khay khi lưu trang đó (#517).
+- Cửa sổ cài đặt: bản Qt nói rõ nút Mặc định xoá dữ liệu đã lưu và có thể hoàn tác ngay (#517).
+- Cửa sổ cài đặt: bản GTK trên GNOME không còn hiện icon ảnh vỡ ở các bước Kiểm tra máy đã đạt; bản Qt không còn cắt cụt dòng Mẹo khi vẫn còn chỗ; "Không phải đầu từ" đổi thành "Trong từ" và "Phím tắt cho Chế độ gõ mặc định" thành "Phím tắt cho Mặc định" để không bị cắt chữ (#514).
+- Kiểm tra máy trên GNOME: nay báo khi thiếu hoặc chưa bật extension Input Method Panel, vì thiếu nó thì menu chế độ `` ` `` và gợi ý Cứu chữ, Cứu dấu không hiện trong ô tìm kiếm của GNOME (#507).
+- GNOME: lệnh cài nay luôn thêm extension Input Method Panel, kể cả khi đã có khay như Ubuntu, để menu chế độ `` ` `` hiện được trong ô tìm kiếm của GNOME và fcitx5 không còn nhắc cài extension mỗi lần đăng nhập. Menu khay ghi rõ "Kiểu gõ (Telex)", "Bảng mã (Unicode)" và đánh dấu ✔ lựa chọn đang dùng; menu chế độ ghi "App: cửa sổ này" thay cho mã nội bộ khi GNOME không cho biết tên app (#506).
+- Gõ Sen trên GNOME: trong ô chỉ cho Ngó Sen xoá qua surrounding text, gõ nhanh hơn app phản hồi (như khi máy bận) không còn làm mất lần thêm dấu, như "vieetj" ra "vieêệt" thay vì "việt". Ngó Sen nay chờ app theo kịp, tối đa 100 ms, rồi mới xoá (#501).
+- Cứu dấu trong WPS Office trên X11: bôi đen "chuyển" rồi gõ j nay ra "chuyện" thay vì bị thay bằng "j"; giữ lại dấu cách sau chữ nếu bấm đúp chọn kèm. Cách bấm chuột ngay sau chữ rồi gõ phím dấu vẫn chưa dùng được trong WPS (#505).
+
+## [1.7.5-1] — 01/11/2026
+
+Phím chuyển Anh/Việt nay chỉ đổi app đang gõ, mỗi app nhớ riêng lựa chọn (#469). Enter nay bung gõ tắt trong Preedit và Gõ Sen (#476); Gõ Sen không còn mất Enter, Shift+Enter, Tab bấm ngay lúc đang thêm dấu (#487, #488, #489). Gõ Sen xoá qua surrounding text ở thêm nhiều app trên KDE, Sway và X11 (#477), và ít mất dấu hơn trên GNOME (#481, #490).
+Tải ở [ngosen-1.7.5-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.5-1).
+
+### Thay đổi
+
+- Phím chuyển Anh/Việt (Ctrl+Shift) nay chỉ đổi app đang gõ, và mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất. App chưa bấm lần nào theo lần bấm gần nhất. Nút "Mặc định", sao lưu và hoàn tác trong cửa sổ cài đặt bao luôn phần nhớ này (#469).
+- Chế độ Gõ Sen trên KDE (Wayland), Sway, Hyprland và app X11 dùng mô-đun fcitx5 (GTK3, Qt) nay nhờ app xoá thẳng chữ cũ trong ô khi thêm dấu, như trên GNOME, để xoá rồi thêm chữ đúng thứ tự, tránh BackSpace tới muộn xoá mất chữ mới khi app chậm. Ô chưa cho biết chữ bên trong, thanh địa chỉ và khi lệnh xoá làm ô trống trên Wayland vẫn dùng BackSpace như trước (#477).
+
+### Sửa
+
+- `install.sh` trên Fedora Silverblue, Kinoite, Bazzite: thay vì hỏng giữa chừng ở bước dnf, nay in sẵn lệnh `rpm-ostree` để cài tay, kèm link issue #492 cho ai muốn được hỗ trợ chính thức (#494).
+- `install.sh` nay cài được trên Ultramarine Linux và các bản dựng từ Fedora 43, 44 khác, thay vì báo "chưa có gói dựng sẵn" (#491).
+- Cửa sổ cài đặt, trang Giao diện: ba mục menu Bảng mã, Gõ tắt chữ hoa và Tự viết hoa nay có icon trên GNOME, Ubuntu và các theme không có sẵn icon đó, cả trong cửa sổ cài đặt lẫn menu ở khay hệ thống (#484, #486).
+- Preedit và Gõ Sen: bấm Enter ngay sau từ gõ tắt nay bung từ trước khi Enter tới app, ví dụ gõ "dc" rồi Enter trong ô chat sẽ gửi "được" (#476).
+- App đã chọn Preedit qua menu `` ` `` không còn chuyển sang Gõ Sen sau khi bấm phím chuyển Anh/Việt hai lần (#469).
+- Ngó Sen cho GNOME, khi bật Gõ Sen: chữ đầu tiên trong ô còn trống của app GTK, Firefox và LibreOffice không còn bị gạch chân mà gõ thẳng vào ô như các chữ sau (#473).
+- Gõ Sen trên GNOME: khi Ngó Sen phải xoá bằng BackSpace, như ở Google Docs và Firefox, dấu vừa gõ không còn lâu lâu bị mất hay chen vào giữa chữ ("chư", "dâuấ"). Ngó Sen nay chờ ít nhất 40 ms thay vì 15 ms sau BackSpace rồi mới gửi chữ mới (#481).
+- Gõ Sen trong Google Docs trên Firefox, GNOME: bấm Enter ngay sau từ vừa thêm dấu (như "nhes" → "nhé") không còn bị mất xuống dòng; Enter nay tới app bằng phím bấm thật sau từ vừa gõ (#487).
+- Gõ Sen: bấm Shift+Enter ngay sau từ đang được thêm dấu nay không còn mất xuống dòng. Trong app GTK, Qt kết nối trực tiếp với fcitx5, Enter bấm nhanh lúc đó nay tới sau cả từ, không còn chen giữa chữ và dấu như "nhes" + Enter ra "nh", xuống dòng rồi mới tới "é" (#488).
+- Gõ Sen: bấm phím ngay sau từ đang được thêm dấu, Shift+Enter nay xuống dòng được cả trong Google Docs; Tab và Shift+Tab không còn bị mất mà chuyển sang ô kế tiếp hoặc ô trước như thường. Sau Shift+Tab, gõ chữ tiếp theo không còn làm mất dấu của từ trước (như "nhes", Shift+Tab, "a" ra "nhesa") (#489).
+- Gõ Sen trên GNOME: gõ hai phím dấu sát nhau (như w và f trong "nguowfi") không còn làm mất lần thêm dấu đầu và ra "ngời". Ngó Sen nay chờ app hiện xong lần sửa trước, tối đa 20 ms, rồi mới gửi lần sau (#490).
+- Gõ Sen trên Debian 12 và các bản dựa trên nó (fcitx5 cũ hơn 5.1.7): gõ nhanh trong app mà Ngó Sen xoá chữ bằng BackSpace, như Google Docs và Firefox, không còn có thể làm fcitx5 crash khi phím gõ trong lúc chờ app được gửi lại và bắt đầu lần thêm dấu kế tiếp (#493).
+
+## [1.7.4-1] — 31/10/2026
+
+Sửa Preedit trên GNOME mất Enter khi giữ phím (#465), mất chữ đang gõ khi click trong Alacritty và app XIM khác trên X11 (#466). Trên GNOME 50.0–50.3 không có extension chuyển phím, sửa Gõ Sen ra chữ lặp trong kitty và Preedit mất Enter (#467).
+Tải ở [ngosen-1.7.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.4-1).
+
+### Sửa
+
+- Preedit trên GNOME: bấm Enter sau chữ đang gạch chân không còn bị mất Enter khi giữ phím lâu một chút như gõ bình thường; Enter nay đi lúc nhả phím (#465).
+- Ở chế độ gạch chân (Preedit), click trong Alacritty và app XIM khác không còn làm mất chữ đang gõ dở (#466).
+- GNOME 50.0–50.3 khi không có extension chuyển phím: Gõ Sen trong kitty không còn ra chữ lặp kiểu "tieêngếng" mà chuyển sang gạch chân; Enter sau chữ gạch chân ở Preedit không còn bị mất (#467).
+
+## [1.7.3-1] — 30/10/2026
+
+Sửa lõi gõ dùng chung để Ngó Sen cho GNOME (bản IBus) chuẩn bị gõ thẳng trong app X11 (#458). Trên X11,
+Ngó Sen nhận ra Firefox (kể cả bản snap), Chrome và LibreOffice khi chúng nối qua mô-đun IBus GTK, và phần nhận cú
+bấm chuột trên X11 nay nằm trong lõi dùng chung.
+Tải ở [ngosen-1.7.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.3-1).
+
+### Sửa
+
+- Trên X11, Firefox (kể cả bản snap), Chrome và LibreOffice khi kết nối qua mô-đun IBus GTK được Ngó Sen nhận
+  đúng tên app và xử lý như khi kết nối trực tiếp với fcitx5 (#458).
+
+## [1.7.2-1] — 30/10/2026
+
+Sửa Gõ Sen quên chữ đang gõ trong VS Code trên GNOME (#453). Sửa Gõ Sen ra “tiêsng” khi gõ “tieesng” trong app Qt
+trên GNOME, chỉ áp dụng cho bản IBus (#452).
+Tải ở [ngosen-1.7.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.2-1).
+
+### Sửa
+
+- Ngó Sen cho GNOME (bản IBus, lõi gõ dùng chung): Gõ Sen trong app Qt không còn ra "tiêsng" khi gõ "tieesng"
+  (#452).
+- Gõ Sen trong VS Code trên GNOME không còn quên chữ đang gõ ("xin vieetj" thay vì "xin việt") khi VS Code báo con
+  trỏ nhảy về đầu dòng rồi quay lại cuối chữ mà chữ không đổi (#453).
+
+## [1.7.1-1] — 30/10/2026
+
+Trên GNOME, Gõ Sen xoá chữ qua surrounding text khi app báo đúng chữ đang gõ, để Backspace tới muộn không còn
+làm hỏng chữ; app bỏ qua lệnh xoá thì Ngó Sen tự quay về Backspace tới hết phiên (#443, #446). Sửa hỏng chữ khi
+app báo chữ chậm hơn phím gõ (#441) và bỏ khoảng dừng sau mỗi lần xoá (#438). Kiểm tra máy cảnh báo GNOME
+50.0–50.3 thiếu bản sửa `forward-keys` (#440) và thôi báo nhầm IBus chạy song song (#442). Chế độ chọn ở menu `,`
+trên fcitx5 cũ không còn bị lưu mãi (#444); nhật ký gõ giữ mỗi sự kiện trên một dòng (#445).
+Tải ở [ngosen-1.7.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.1-1).
+
+### Thêm
+
+- Kiểm tra máy cảnh báo khi GNOME 50.0–50.3 chạy mà không bật bản sửa `forward-keys` (Enter sau chữ Preedit và
+  BackSpace của Gõ Sen bị mất), kèm lệnh bật lại; báo lỗi có thêm version GNOME Shell và trạng thái bản sửa (#440).
+
+### Thay đổi
+
+- Gõ Sen không còn dừng vài mili giây sau mỗi lần xoá và commit trong app xoá chữ qua surrounding text như
+  LibreOffice và ô GTK4 (#438).
+- Trên GNOME, Gõ Sen dùng surrounding text khi app báo đúng chữ đang gõ, tránh Backspace tới muộn làm hỏng chữ.
+  Nếu app bỏ qua lệnh xoá, Ngó Sen sửa chữ thừa bằng Backspace và dùng Backspace tới hết phiên; nếu không có
+  cách xoá khác thì gõ thô để lỗi không chồng lên nhau. KDE và các desktop Wayland khác chưa đổi (#443, #446).
+
+### Sửa
+
+- Kiểm tra máy không còn báo "IBus đang chạy song song" khi IBus đó chỉ phục vụ chương trình khác (như IBus
+  xpra tự bật); chỉ báo khi IBus thật sự giành bộ gõ của phiên đang dùng (#442).
+- Nhật ký gõ lưu ra file không còn bị gãy dòng ở phím Enter hay khi app báo chữ có xuống dòng: mỗi sự kiện
+  nằm trên đúng một dòng (#445).
+- Trên GNOME với fcitx5 cũ (Ubuntu 26.04, Debian), chọn chế độ gõ ở menu `,` hay bằng phím đổi chế độ không còn
+  được lưu lại: nó áp cho mọi app tới khi đăng xuất, đăng nhập lại thì về chế độ mặc định trong cửa sổ cài đặt.
+  Trước đây lựa chọn đó bị lưu mãi và đè lên chế độ mặc định; luật cũ còn trong máy được bỏ qua (#444).
+- Sửa Gõ Sen làm hỏng chữ như "tiíiếng" khi app dùng surrounding text báo chữ chậm hơn phím gõ
+  (LibreOffice, ô GTK4) (#441).
+
+### Tài liệu
+
+- README có thêm ảnh cửa sổ cài đặt bản GTK trên GNOME, ở giao diện sáng và tối, bên cạnh ảnh bản Qt (#435).
+
+### Test
+
+- App giả trong test xoá qua surrounding text giữ chữ sau con trỏ; thêm app báo sai hoặc không báo chữ,
+  kiểm cả đường xoá qua surrounding text hay Backspace (#437).
+
+## [1.7.0-1] — 29/10/2026
+
+Cửa sổ cài đặt có thêm bản GTK giống app GNOME, mở mặc định trên GNOME và Cinnamon, đổi qua lại với bản Qt
+bằng một nút (#386, #393, #396, #407); trang "Có gì mới & mẹo" và thông báo một lần sau khi cập nhật lên version
+có tính năng mới (#331, #409). Ngó Sen cho GNOME (IBus) có gói openSUSE và tự cài trên Xfce, Cinnamon, MATE
+(#389, #341). Sửa WPS Office trên deepin (#430), KDE Wayland nhớ chế độ từng app sau khi cập nhật (#428) và
+nhiều lỗi của install.sh và cửa sổ cài đặt. Không còn gói cho Ubuntu 22.04 (#332).
+Tải ở [ngosen-1.7.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.7.0-1).
+
+### Thêm
+
+- openSUSE Tumbleweed có Ngó Sen cho GNOME (bản IBus): `install.sh --ibus` cài được, và repo zypper có thêm gói
+  `ibus-ngosen` từ version đầu tiên có package openSUSE (#389).
+- Sau khi cập nhật lên version có tính năng mới (1.7.0 trở đi), một thông báo ở góc màn hình hiện một lần,
+  bấm "Xem" thì mở cửa sổ cài đặt ở trang "Có gì mới & mẹo". Version chỉ sửa lỗi và cài mới không báo (#331).
+  Thông báo của 1.7.0 giới thiệu cửa sổ cài đặt bản GTK, Cứu chữ, Cứu dấu và phím chuyển Anh/Việt (#433).
+- Cửa sổ cài đặt có trang "Có gì mới & mẹo": Cứu chữ, Cứu dấu, phím chuyển Anh/Việt với nút "Mở cài đặt"
+  dẫn tới đúng ô, và 12 mẹo gõ. Trang Gõ chữ hiện một mẹo ngẫu nhiên mỗi lần mở cửa sổ (#331, #409).
+- `install.sh --ibus` trên Xfce, Cinnamon, MATE (X11, có im-config như Ubuntu, Debian, Linux Mint) tự đặt
+  IBus làm bộ gõ, thêm Ngó Sen và phím chuyển Ctrl+Space, không còn phải làm tay. Cài bản fcitx5 khi tài
+  khoản đang dùng bản IBus thì lệnh hỏi lại rồi gỡ bản IBus (#341).
+- Ở chế độ gạch chân, Backspace ngay sau khi gõ xong một chữ sẽ mở lại chữ đó để sửa dấu (`việt ` + Backspace +
+  `s` → `viết`), như Gõ Sen. Cần app báo surrounding text; terminal thì Backspace như cũ (#344).
+- Lõi gõ được Gõ Sen ở app không nhận phím do bộ gõ gửi tới (bản IBus trên GNOME): xoá chữ bằng surrounding
+  text, terminal thì bằng DEL, field không có cả hai thì chữ đó gõ bằng gạch chân. Bản fcitx5 không đổi (#353).
+- Cửa sổ cài đặt, hộp "Kiểm tra máy tôi…": nút mới "Nhắn qua Facebook…" chép sẵn thông tin máy và mở khung chat
+  với trang Facebook Ngó Sen. Dán thông tin vào tin nhắn để báo lỗi, không cần tài khoản GitHub (#374).
+- Cửa sổ cài đặt có thêm bản GTK giống app GNOME, dùng libadwaita 1.5 trở lên, bên cạnh bản Qt như cũ.
+  GNOME và Cinnamon (Linux Mint) mở GTK nếu đủ libadwaita; desktop khác mở Qt. Chỉ có thư viện bản nào thì mở bản đó.
+  Muốn chọn hẳn một bản, đặt "Cửa sổ cài đặt" thành Qt hoặc GTK trong công cụ cài đặt của fcitx5 (#386, #396).
+- Cửa sổ cài đặt bản Qt: trang "Có gì mới & mẹo" thêm nút "Xem giao diện GTK", mở trang web Ngó Sen có ảnh
+  giao diện GTK để xem trước khi đổi (#422).
+- Cửa sổ cài đặt, trang Giao diện: bản Qt có nút "Đổi sang bản GTK…", bản GTK có nút "Đổi sang bản Qt…".
+  Có sẵn bản kia thì cửa sổ mở lại ngay bằng bản đó. Chưa có thì báo cần cài gói nào, tải về khoảng bao nhiêu,
+  rồi cho chọn cài ngay (hỏi mật khẩu) hoặc chép lệnh để tự chạy (#393, #407).
+
+### Thay đổi
+
+- Cài bản fcitx5 trên GNOME, install.sh nay nói rõ trước câu "Tiếp tục?" sẽ đổi gì cho tài khoản và cách
+  trả lại bằng `--uninstall`, rồi giới thiệu bản Ngó Sen cho GNOME chạy trên IBus kèm lệnh cài. Máy chưa có
+  gói bản IBus (như Debian 12) hoặc đang dùng sẵn bản IBus thì không giới thiệu (#400, #410).
+- install.sh đổi "Tiếp tục? [c/K]" (c = có, K = không) thành "Tiếp tục? [y/N]" như đa số lệnh Linux.
+  Gõ y, yes hoặc c để đồng ý; bấm Enter không gõ gì vẫn là không (#398).
+- Cửa sổ cài đặt dùng xanh men của Ngó Sen cho ô đã đánh dấu, trang đang chọn ở thanh bên, focus và
+  vùng chọn, thay cho màu nhấn desktop (KDE/GNOME); trước đây chỉ nút chế độ gõ đang chọn và thông báo “Đã lưu”
+  dùng xanh men. Màu này dùng cho cả giao diện sáng và tối; sắc xanh ở giao diện tối đậm hơn trước một chút để
+  chữ dễ đọc hơn (#352).
+- `install.sh` trên GNOME và Cinnamon (Linux Mint) ở Debian, Ubuntu, Linux Mint, Fedora và openSUSE cài thư viện cửa sổ cài đặt GTK,
+  không tải Qt (khoảng 20 MB trên Ubuntu 24.04 GNOME và Mint 22.1). Debian 12 (libadwaita quá cũ), KDE và desktop khác vẫn dùng Qt.
+  Arch/CachyOS vẫn cài Qt vì gói Arch không cho chọn GTK hay Qt. Máy đã cài Ngó Sen vẫn giữ bộ Qt, không bị gỡ (#387).
+
+### Sửa
+
+- deepin-editor: mặc định dùng chế độ gạch chân để gõ nhanh không còn đảo chữ, mất hoặc lặp dấu như khi
+  dùng Gõ Sen; vẫn giữ chế độ đã chọn cho app qua menu `, không đổi các app khác (#421).
+- Cửa sổ cài đặt: bấm "Mặc định" nay báo trước phím chuyển Anh/Việt sẽ về Ctrl+Shift nếu đang dùng phím khác,
+  kể cả phím vừa đổi, trong cả cửa sổ Qt và GTK (#414).
+- Cửa sổ cài đặt: lưu từ điển riêng không còn xoá chữ bắt đầu bằng dấu # khỏi file; bộ gõ vẫn luôn dùng được
+  những chữ này. Khi lưu từ điển hoặc bảng phím (Keymap) bị lỗi giữa chừng, công tắc bật/tắt không còn
+  bị lưu lệch với những gì cửa sổ hiện (#367).
+- Cửa sổ cài đặt: bấm "Khôi phục…" với file sao lưu bị hỏng nay báo lỗi và không thay đổi gì; trước đây có thể
+  làm trống file từ điển riêng và ghi một phần cài đặt (#382).
+- Cửa sổ cài đặt mở được khi file `ngosen.conf` có byte không phải UTF-8; trước đây cửa sổ không hiện, mở từ khay
+  thì không báo gì (#415).
+- Chuyển từ bản fcitx5 sang bản GNOME (IBus) bằng `install.sh --ibus`: Firefox không còn gõ ra chữ thô sau khi
+  đăng nhập lại. Trước đây máy có thể vẫn giữ biến bộ gõ của fcitx5 tới lần khởi động lại (#425).
+- Trang Giới thiệu và kết quả "Kiểm tra máy tôi" không còn ghi "(Stable)" sau số version, kể cả trên bản thử (#416).
+- Hộp thoại hỏi "Khôi phục mặc định" và "Thay thế" bảng phím giờ có nút cùng ngôn ngữ với cửa sổ cài đặt, không còn Yes/No theo ngôn ngữ desktop (#417).
+- Người cài gói rồi tự thêm Ngó Sen trong Fcitx5 Configuration không còn bị mất bàn phím tiếng Anh và đổi sang Ctrl+Space sau lần khởi động fcitx5 kế tiếp; máy mới giữ Ctrl+Shift (#419).
+- Chuyển từ bản fcitx5 sang bản GNOME (IBus) bằng `install.sh --ibus`: đăng nhập lại là đang ở Ngó Sen, chữ đầu tiên không còn ra không dấu (#420).
+- install.sh trên Kali và các bản cập nhật liên tục không còn kéo theo nâng cấp dở các gói Qt: chỉ cài module GTK/Qt của fcitx5 còn thiếu, gói đã có để nguyên (#418).
+- Cài bằng `install.sh` không còn in hướng dẫn của gói ("khởi động lại fcitx5", "thêm bộ gõ trong Fcitx5
+  Configuration") ngay trước dòng báo đã xong. Chạy lại khi đã đúng bản thì không cài lại gói (Arch, CachyOS không
+  còn tạo ảnh snapper) và không khởi động lại fcitx5 (#426).
+- Gỡ bằng `install.sh --uninstall` trên máy có im-config 1.1 (Debian testing, Kali, Ubuntu 26.10) bỏ được
+  lựa chọn fcitx5 của im-config, không còn ghi `run_im REMOVE` vào `~/.xinputrc`. Khi im-config vẫn chọn fcitx5,
+  dòng cuối báo fcitx5 còn chạy và đưa lệnh bỏ đúng với version im-config, không còn hứa "GNOME dùng lại IBus" (#424).
+- KDE Wayland: cài hoặc nâng cấp xong thì fcitx5 được KDE bật lại như lúc đăng nhập, nên Ngó Sen vẫn biết đang gõ trong app nào (nhớ chế độ riêng từng app) mà không cần đăng nhập lại (#428).
+- WPS Office trên deepin: Gõ Sen không còn để lại chữ cũ khi WPS kết nối với fcitx5 theo đường D-Bus ("thucws" ra "thucưcức" thay vì "thức") (#430).
+
+### Bỏ
+
+- Trang Giới thiệu trong cửa sổ cài đặt không còn dòng "Dựa trên mã của fcitx5-lotus và VMK"; phần ghi công
+  hai dự án này vẫn có trong README (#373).
+- Không còn gói cho Ubuntu 22.04 (và Linux Mint 21 dựa trên nó); cần Ubuntu 24.04 hoặc Linux Mint 22 trở lên.
+  Bản cuối cho Ubuntu 22.04 là 1.6.4. Lệnh cài một dòng báo rõ điều này; máy đã thêm repo APT của Ngó Sen
+  thì nên gỡ dòng repo đó, vì `apt update` sẽ báo lỗi thiếu `jammy` (#332).
+
+### Tài liệu
+
+- README ghi rõ Cứu dấu không chạy trong Firefox bản snap cài sẵn trên Ubuntu, và cách cài Firefox từ kho của
+  Mozilla (#423).
+
+## [1.6.4-1] — 28/10/2026
+
+Sửa lỗi mất dấu hoặc chữ trong chat và editor của Antigravity trên GNOME (#362, #395); sửa Cứu dấu trong Gõ Sen trên Chrome, Chromium và Brave ở X11 (#360, #390); sửa phím tắt Super khi dùng Gạch chân (#391, #392); sửa lỗi mở cửa sổ cài đặt và Hoàn tác (#376, #383); sửa install.sh khi desktop dùng tiếng Việt hoặc có nguồn apt lỗi, cài được trên deepin, LMDE, Devuan, Parrot, Artix và bỏ phụ thuộc python3-qtpy của .deb (#388, #399, #397, #403, #408).
+Tải ở [ngosen-1.6.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.4-1).
+
+### Sửa
+
+- Cửa sổ cài đặt không còn lỗi không mở được khi file từ điển riêng có chữ không phải UTF-8.
+  Trang Từ điển báo không đọc trọn được file (#376).
+- Cửa sổ cài đặt: "Hoàn tác" chỉ trả lại đúng thay đổi vừa lưu, không còn làm mất kiểu gõ đã nhớ cho app
+  khi chọn từ menu Ngó Sen trong lúc cửa sổ đang mở (#383).
+- Sửa lỗi Cứu dấu trên Chrome, Chromium và Brave ở phiên X11: bôi đen `nhanh` (bấm đúp hoặc
+  Shift+mũi tên) rồi gõ `s` ra `nhánh`. Chỉ ở Gõ Sen; Tab hoặc Esc vẫn trả lại phím đã gõ
+  (#360, #390).
+- `install.sh` trên máy để tiếng Việt từng bỏ sót im-config và module gõ fcitx5 cho app GTK, Qt trên Debian, Ubuntu, Mint, MX.
+  Nay cài đủ ở mọi ngôn ngữ, tránh thiếu gói khi cài lại hoặc trên MX không cài gói đề xuất (#388).
+- Antigravity trên GNOME: Gõ Sen không còn mất dấu khi gõ nhanh trong vùng soạn thảo, nhờ chờ app
+  xoá xong chữ cũ lâu hơn khi app chậm (#362, #395).
+- Gạch chân: phím tắt Super + chữ (như Super+Q chuyển workspace) không còn bị gõ thành `q`, `ư`; nay đi
+  thẳng tới desktop và app như Ctrl, Alt, giữ lại chữ đang gõ dở (#391, #392).
+- `install.sh` không còn dừng giữa chừng khi máy có một nguồn apt khác đang lỗi (như Zorin OS có nguồn
+  `github.io` hỏng); nay báo nguồn lỗi rồi vẫn cài tiếp (#399).
+- `install.sh` cài được trên deepin 23 và 25 (trước đây báo không hỗ trợ). Gói `.deb` không còn đòi
+  `python3-qtpy`, gói deepin không có; cửa sổ cài đặt chạy thẳng với PyQt6 (#397).
+- `install.sh` cài được trên LMDE, Devuan, Parrot và Artix (trước đây báo không hỗ trợ dù gói Debian, Arch
+  dùng được) (#403).
+- `install.sh` không còn dừng với lỗi "im-config không đặt được fcitx5" trên deepin và Kali mới cài: nay cài
+  kèm `whiptail`, thứ im-config 1.1 cần mà không tự kéo về (#408).
+
+### Test
+
+- Test cài trên LMDE không còn báo lỗi nhầm ở bước máy để tiếng Việt: ảnh LMDE đặt sẵn `LC_ALL` tiếng Anh, đè
+  lên ngôn ngữ test đặt (#405).
+
+## [1.6.3-1] — 27/10/2026
+
+Sửa lỗi gõ chữ trong editor và ô chat của Antigravity trên GNOME (#362, #365); sửa lỗi Cứu dấu ở Gõ Sen khi backspace về cuối chữ trước hoặc bấm chuột vào giữa chữ (#358, #370).
+Tải ở [ngosen-1.6.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.3-1).
+
+### Sửa
+
+- Antigravity trên GNOME: gõ trong vùng soạn thảo không còn để nguyên chữ thô (`vieetj`), và ô chat
+  không còn mất hay rối chữ khi gõ nhanh (#362, #365).
+- Sửa lỗi Cứu dấu khi backspace về chữ trước (`sưa oke|` → backspace 4 lần → `sưa|` + `s` → `sứa`) hoặc
+  bấm chuột vào giữa chữ (`nh|anh` + `s` → `nhánh`). Chỉ ở Gõ Sen; Tab hoặc Esc vẫn trả lại phím đã gõ
+  (#358, #370).
+
+## [1.6.2-1] — 27/10/2026
+
+Cứu dấu sau khi bấm chuột ngay sau chữ, chỉ ở Gõ Sen (#327); `install.sh --ibus` cài
+[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) (#330); repo APT và pacman có thêm gói
+`ibus-ngosen` (#333); lệnh gỡ chỉ tắt những gì lệnh cài đã bật (#328).
+Tải ở [ngosen-1.6.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.2-1).
+
+### Thêm
+
+- Cứu dấu không cần bôi đen: bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu là chữ đổi dấu (`nhanh|` + `s` →
+  `nhánh`); Tab hoặc Esc trả lại chữ đã gõ. Bấm vào giữa chữ thì phím gõ như thường. Chỉ ở Gõ Sen (#118, #327).
+- `install.sh --ibus` cài Ngó Sen cho GNOME (bản IBus) và thêm vào nguồn nhập của GNOME. Tài khoản đang
+  dùng bản fcitx5 thì lệnh hỏi lại trước khi chuyển; `--ibus --uninstall` gỡ bản IBus mà không đụng bản
+  fcitx5 (#330, #334).
+- Repo APT và pacman của Ngó Sen có thêm gói `ibus-ngosen` (Ngó Sen cho GNOME), cùng key và cùng dòng
+  repo (#333).
+
+### Sửa
+
+- `install.sh --uninstall` chỉ tắt những gì lệnh cài đã bật: extension Input Method Panel, extension sửa lỗi
+  gõ của GNOME 50 và im-config mà người dùng tự bật từ trước được giữ nguyên (#328).
+- Ghi chú dưới ô Cứu dấu trong cửa sổ cài đặt nói rõ chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng):
+  bôi đen `nguoi` rồi gõ phím dấu không ra `người` được (#329).
+
+## [1.6.1-1] — 26/10/2026
+
+Sửa gợi ý Cứu chữ / Cứu dấu để theo ngôn ngữ giao diện của Ngó Sen, mặc định tiếng Việt (#322);
+Ngó Sen tự có trong danh sách bộ gõ khi fcitx5 chạy lần đầu sau khi cài bằng package trên desktop
+tiếng Việt (#300, #316); chữ trong ô mật khẩu không còn bị ghi vào log gỡ lỗi (#321).
+Tải ở [ngosen-1.6.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.1-1).
+
+### Sửa
+
+- Khi bật log để gỡ lỗi, chữ gõ trong ô mật khẩu không còn bị ghi vào log; log chỉ ghi "(hidden)" (#321).
+- Cài Ngó Sen bằng package (apt, package tải về) trên máy để ngôn ngữ tiếng Việt: lần đầu fcitx5 chạy, Ngó Sen
+  tự có trong danh sách bộ gõ, không phải thêm tay. Máy để tiếng Anh vẫn cần thêm tay hoặc dùng lệnh cài một dòng (#300, #316).
+- Dòng gợi ý cạnh con trỏ của Cứu chữ và Cứu dấu theo "Ngôn ngữ giao diện" của Ngó Sen như menu tray: mặc định
+  tiếng Việt, kể cả khi desktop dùng tiếng Anh (#322).
+
+### Tài liệu
+
+- README thêm mục "Tính năng chính": Cứu chữ, Cứu dấu, phím chuyển Anh/Việt, phím chốt chữ, gõ tắt,
+  menu tray và cửa sổ cài đặt, mỗi tính năng kèm ví dụ (#319).
+
+## [1.6.0-1] — 26/10/2026
+
+Cứu chữ đổi chữ gõ khi quên bật tiếng Việt thành chữ có dấu khi bật lại (#82, #232, #239, #243, #290);
+Cứu dấu cho bôi đen chữ rồi gõ phím dấu để đổi dấu (#272, #290).
+Có phím riêng chuyển Anh/Việt: cài mới dùng Ctrl+Shift như UniKey, đã cài giữ phím cũ (#234).
+Cửa sổ cài đặt thêm giải thích (#281), menu tray thêm mục chuyển Telex/VNI (#274); cập nhật bằng
+install.sh tự nạp lại fcitx5, không cần đăng xuất, trừ KDE Wayland (#230).
+Tải ở [ngosen-1.6.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.6.0-1).
+
+### Thêm
+
 - Phím riêng chuyển tiếng Anh/Việt; ở tiếng Anh, gõ như không có bộ gõ. Nhớ chế độ qua lần đăng xuất.
   Cài mới bắt đầu ở tiếng Anh, dùng Ctrl+Shift như UniKey; đã cài từ trước giữ Ctrl+Space.
   App có chế độ riêng thì phím chuyển đổi riêng app đó. Menu ` chỉ mở ở tiếng Việt; tiếng Anh gõ dấu ` (#234)
@@ -34,8 +497,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   vẫn ra `sách`); gõ phím dấu khác thì đổi dấu tiếp (`nhánh` + `f` → `nhành`). Tab, Esc hoặc gõ lại
   đúng phím dấu đó thì trả lại phím đã gõ, như gõ `2` hai lần ở VNI để được số `2`. Thêm, đổi, bỏ dấu
   thanh ở app hỗ trợ surrounding text; bật sẵn trong Gõ chữ → Gõ nhanh (#272, #290).
-- Ô "Cứu chữ: gõ lại có dấu khi quên bật tiếng Việt" ở trang Gõ chữ, nhóm Gõ nhanh, bật sẵn. Tắt ô thì Ngó Sen
-  không ghi nhớ phím gõ lúc chưa bật tiếng Việt (#122).
+- Ô "Cứu chữ: gõ lại có dấu khi quên bật tiếng Việt" ở trang Gõ chữ, nhóm Gõ nhanh, bật sẵn, kể cả khi
+  nâng cấp từ version cũ đã lưu cài đặt. Tắt ô thì Ngó Sen không ghi nhớ phím gõ lúc chưa bật tiếng Việt
+  (#122, #315).
 - Khi icon hoặc menu tray bị mất hay treo, chạy `ngosen-save-log` trong terminal để lưu nhật ký gõ của Ngó Sen.
   Lệnh in đường dẫn file đã lưu, ví dụ `~/.local/state/ngosen/typing-<ngày giờ>.log`; chỉ tài khoản của bạn
   đọc được file này (#197).
@@ -99,6 +563,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Gỡ bằng `install.sh --uninstall` trên GNOME không còn xoá file `~/.config/environment.d/90-ngosen.conf`
+  khi người dùng đã sửa nó sau khi cài; chỉ xoá khi file còn đúng như lúc cài (#317).
 - Sửa biểu tượng Ngó Sen trên thanh trên cùng GNOME nhỏ hơn biểu tượng mạng, loa. (#245, #246)
 - Cứu chữ không hiện khi phím chuyển là Ctrl+Space (phím mặc định của fcitx5) hay một phím tắt khác đặt trong
   fcitx5, và không chạy trong kitty (#83).
@@ -108,7 +574,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Tài liệu
 
-- Lộ trình thêm thông báo "Có gì mới" cho 1.6.0 và mẹo dùng Ngó Sen trong cửa sổ cài đặt (#148).
+- Lộ trình thêm thông báo "Có gì mới" và mẹo dùng Ngó Sen trong cửa sổ cài đặt (#148). "Có gì mới" chưa
+  có trong 1.6.0, đã dời sang 1.7.0.
 
 ### Test
 
@@ -117,6 +584,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Thêm `misc/editor-test`: trang test cho 15 web editor (Lexical, TinyMCE, CKEditor, Monaco, xterm.js…)
   và script gõ Telex rồi kiểm tra kết quả trong Firefox hoặc Chromium trên X11. Dùng để tìm lỗi gõ nhanh
   đã sửa ở #289; người dùng không thấy khác gì (#291).
+- Test cài đặt trên CI không còn đỏ ngẫu nhiên ở Kali: container dọn tiến trình fcitx5 đã thoát như máy
+  thật; người dùng không thấy khác gì (#313).
+- Thêm nhãn `test-build` để tự động build version thử riêng cho pull request, có gói cho mọi bản phân phối
+  (.deb, .rpm, Arch), phát hành dưới dạng pre-release `pr-<số PR>-build` và đặt link trong pull request.
+  Cài bằng cùng lệnh cài một dòng như version thử `next-build`, chỉ khác link. Mỗi push mới vào pull request
+  thay thế các gói; đóng pull request hoặc gỡ nhãn sẽ xóa version thử. Người báo lỗi có thể test phần sửa lỗi
+  trước khi merge (#311).
 
 ## [1.5.8-1] — 26/10/2026
 

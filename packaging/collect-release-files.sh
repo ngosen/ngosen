@@ -20,7 +20,7 @@ only() {
     printf '%s\n' "$found"
 }
 
-for codename in bookworm trixie forky jammy noble resolute stonking; do
+for codename in bookworm trixie forky noble resolute stonking; do
     for arch in amd64 arm64; do
         dir=$src/deb-$codename
         [ "$arch" = amd64 ] || dir=$dir-$arch
@@ -29,9 +29,13 @@ for codename in bookworm trixie forky jammy noble resolute stonking; do
     done
 done
 
-for release in 43 44; do
-    cp "$(only "$src/rpm-fedora-$release" 'fcitx5-ngosen-[0-9]*.x86_64.rpm')" "$out/"
-    cp "$(only "$src/rpm-fedora-$release-arm64" 'fcitx5-ngosen-[0-9]*.aarch64.rpm')" "$out/"
+# .github/package-matrix.json decides which Fedora releases are built; a numbered one is published.
+for dir in "$src"/rpm-fedora-[0-9]*; do
+    case "$dir" in
+        *-arm64) arch=aarch64 ;;
+        *) arch=x86_64 ;;
+    esac
+    cp "$(only "$dir" "fcitx5-ngosen-[0-9]*.$arch.rpm")" "$out/"
 done
 
 rpm=$(only "$src/rpm-opensuse-tumbleweed" 'fcitx5-ngosen-[0-9]*.x86_64.rpm')

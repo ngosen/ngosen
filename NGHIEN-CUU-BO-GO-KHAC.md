@@ -115,7 +115,7 @@ Không có mã hoặc không mở được: UniLume (không có mã, chuyển th
 
 Chỉ đi tiếp hướng **gõ thẳng chữ Việt bằng bàn phím ảo** (học từ vi-ime). Bài học của vi-ime đã ghi
 vào kế hoạch ở workbench, `probes/phim-truc-tiep/KE-HOACH.md`, mục "Bài học từ vi-ime". Các ý khác
-(giữ phím kế tiếp, nhớ ô hay mất chữ, chữ tạm không gạch chân) chủ fork quyết định không làm.
+(giữ phím kế tiếp, nhớ ô hay mất chữ, chữ tạm không gạch chân) Ngó Sen quyết định không làm.
 
 ## Các commit đã đọc
 

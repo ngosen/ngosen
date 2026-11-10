@@ -6,13 +6,9 @@ Dictionary Editor Page. Edits the user dictionary.
 Implements UI with row reordering and TSV import/export.
 """
 
-import os
-import tempfile
-
 from core.dbus_handler import NgoSenDBusHandler
-from core.settings_snapshot import local_dict_path
 from i18n import _
-from qtpy.QtCore import QItemSelectionModel, QSize, QStringListModel, Qt
+from qtpy.QtCore import QItemSelectionModel, QSignalBlocker, QSize, QStringListModel, Qt
 from qtpy.QtGui import QColor, QIcon
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -26,6 +22,7 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
 )
 
+from core import dictionary, page_status
 from ui.pages.base_editor import BaseEditorPage
 from ui.pages.dynamic_settings import CardWidget
 from ui.typography import mute, page_title
@@ -62,27 +59,27 @@ class DictEditorPage(BaseEditorPage):
     ):
         super().__init__(parent)
         self.dbus = dbus_handler
-        self.words = []  # List of all words
-        self.initial_state = {}
+        # Through a method, so tests can point the page at their own bundled words.
+        self.dictionary = dictionary.Dictionary(dbus_handler, lambda: self._get_global_dict_path())
         self._is_loaded = False
-        self._load_failed = False
         self._setup_ui()
 
+    @property
+    def words(self):
+        return self.dictionary.words
+
+    @words.setter
+    def words(self, words):
+        self.dictionary.words = words
+
+    def _on_enable_toggled(self, checked):
+        self.dictionary.enabled = checked
+
     def _get_global_dict_path(self) -> str:
-        # Common locations for fcitx5 pkgdata
-        paths = [
-            "/usr/share/fcitx5/ngosen/vietnamese.cm.dict",
-            "/usr/local/share/fcitx5/ngosen/vietnamese.cm.dict",
-        ]
-        for p in paths:
-            if os.path.exists(p):
-                return p
-        return paths[0]
+        return dictionary.bundled_path()
 
     def _setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(30, 20, 30, 20)
-        main_layout.setSpacing(15)
+        main_layout = self._scrolling_layout()
 
         title = page_title(_("Custom Dictionary"))
         main_layout.addWidget(title)
@@ -95,12 +92,15 @@ class DictEditorPage(BaseEditorPage):
         explanation.setWordWrap(True)
         mute(explanation)
         main_layout.addWidget(explanation)
+        self._add_status_line(main_layout)
 
         # Dictionary behavior toggles
         toggles_card = CardWidget()
         toggles_layout = QHBoxLayout()
         self.cb_enable = QCheckBox(_("Custom Dictionary"))
+        self.cb_enable.toggled.connect(self._on_enable_toggled)
         self.cb_enable.toggled.connect(self._on_item_changed)
+        self.cb_enable.toggled.connect(lambda _checked: self.refresh_status())
         toggles_layout.addWidget(self.cb_enable)
         toggles_layout.addStretch()
 
@@ -141,6 +141,8 @@ class DictEditorPage(BaseEditorPage):
         # data() of every word on each key press.
         self.model = WordListModel(self)
         self.list_view = QListView()
+        # The page scrolls before the list gets too short to use.
+        self.list_view.setMinimumHeight(180)
         self.list_view.setModel(self.model)
         self.list_view.setFlow(QListView.LeftToRight)
         self.list_view.setWrapping(True)
@@ -179,54 +181,25 @@ class DictEditorPage(BaseEditorPage):
 
     def load_data(self):
         self.blockSignals(True)
-        self._load_failed = False
         try:
-            # Load global dictionary settings via DBus
-            config_data = self.dbus.get_config()
-            if config_data:
-                values = config_data.get("values", {})
-                self.cb_enable.setChecked(
-                    str(values.get("EnableDictionary", "False")).lower() == "true"
+            error = self.dictionary.load()
+            self.cb_enable.setChecked(self.dictionary.enabled)
+            if error:
+                print(f"Failed to read dictionary {self.dictionary.path}: {error}")
+                QMessageBox.warning(
+                    self,
+                    _("Warning"),
+                    _(
+                        "Failed to load dictionary completely: {}\nSaving is disabled to prevent data loss."
+                    ).format(error),
                 )
-
-            self.words = []
-            local_path = local_dict_path()
-            path_to_read = (
-                local_path if os.path.exists(local_path) else self._get_global_dict_path()
-            )
-
-            if os.path.exists(path_to_read):
-                try:
-                    self.words = self._read_words(path_to_read)
-                except Exception as e:
-                    self._load_failed = True
-                    print(f"Failed to read dictionary {path_to_read}: {e}")
-                    QMessageBox.warning(
-                        self,
-                        _("Warning"),
-                        _(
-                            "Failed to load dictionary completely: {}\nSaving is disabled to prevent data loss."
-                        ).format(e),
-                    )
-
             self._show_words()
-            self.initial_state = self._get_current_state()
             self._is_loaded = True
         finally:
             self.blockSignals(False)
             self.on_search_changed()
             self.update_button_states()
-
-    @staticmethod
-    def _read_words(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return [w for w in (line.strip() for line in f) if w and not w.startswith("#")]
-
-    def _bundled_words(self):
-        try:
-            return self._read_words(self._get_global_dict_path())
-        except OSError:
-            return []
+            self.refresh_status()
 
     def _show_words(self):
         needle = self.search_input.text().strip().casefold()
@@ -256,8 +229,8 @@ class DictEditorPage(BaseEditorPage):
         self._ensure_loaded()
         self.blockSignals(True)
         try:
+            self.dictionary.reset()
             self.cb_enable.setChecked(False)
-            self.words = self._bundled_words()
             self._show_words()
             self._on_item_changed()
         finally:
@@ -266,23 +239,28 @@ class DictEditorPage(BaseEditorPage):
     def is_modified_from_default(self):
         """Returns True if the dictionary is on or its words differ from the bundled ones."""
         self._ensure_loaded()
-        return self.cb_enable.isChecked() or sorted(self.words) != sorted(self._bundled_words())
+        return self.dictionary.is_modified_from_default()
+
+    def _follow(self, value_of):
+        self.dictionary.follow(value_of)
+        with QSignalBlocker(self.cb_enable):
+            self.cb_enable.setChecked(self.dictionary.enabled)
+
+    def _shown_switches(self):
+        return {"EnableDictionary": self.cb_enable.isChecked()}
+
+    def _status_text(self, model):
+        return page_status.dictionary_line(model)
 
     def is_modified(self):
-        """Returns True if the current state differs from the initial loaded state."""
         if not self._is_loaded:
             return False
-        return self._get_current_state() != self.initial_state
-
-    def _get_current_state(self):
-        """Captures the current UI state for comparison."""
-        return {
-            "words": sorted(self.words),
-            "EnableDictionary": self.cb_enable.isChecked(),
-        }
+        return self.dictionary.is_modified()
 
     def save_data(self) -> bool:
-        if self._load_failed:
+        try:
+            return self.dictionary.save()
+        except dictionary.LoadFailedError:
             QMessageBox.warning(
                 self,
                 _("Error"),
@@ -290,48 +268,9 @@ class DictEditorPage(BaseEditorPage):
                     "Cannot save dictionary because loading failed earlier. Please fix the file format first."
                 ),
             )
-            return False
-
-        # Save global dictionary settings via DBus
-        config_data = self.dbus.get_config()
-        if config_data:
-            values = config_data.get("values", {})
-            values["EnableDictionary"] = "True" if self.cb_enable.isChecked() else "False"
-            if not self.dbus.set_config(values):
-                return False
-        elif not self.dbus.iface:
-            return False
-
-        local_path = local_dict_path()
-        try:
-            if sorted(self.words) == sorted(self._bundled_words()):
-                # A copy of the bundled words would hide later updates to them.
-                if os.path.exists(local_path):
-                    os.remove(local_path)
-            else:
-                target_dir = os.path.dirname(local_path)
-                os.makedirs(target_dir, exist_ok=True)
-
-                with tempfile.NamedTemporaryFile(
-                    "w", dir=target_dir, encoding="utf-8", delete=False
-                ) as tf:
-                    for word in self.words:
-                        tf.write(f"{word}\n")
-                    temp_name = tf.name
-
-                os.replace(temp_name, local_path)
-
-            self.dbus.reload_addon_config()
-            self.initial_state = self._get_current_state()
-            return True
         except Exception as e:
-            if "temp_name" in locals() and os.path.exists(temp_name):
-                try:
-                    os.remove(temp_name)
-                except OSError:
-                    pass
             QMessageBox.warning(self, _("Error"), _("Failed to save dictionary: {}").format(e))
-            return False
+        return False
 
     def upsert_row(self, word: str, sort: bool = True):
         if word in self.words:

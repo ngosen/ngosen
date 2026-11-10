@@ -7,6 +7,7 @@
 
 #include <fcitx-utils/stringutils.h>
 
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <system_error>
@@ -134,6 +135,25 @@ namespace ngosen {
         return changed;
     }
 
+    bool listsInputMethod(const fcitx::RawConfig& profile, const std::string& inputMethod) {
+        auto groups = profile.get("Groups");
+        if (!groups) {
+            return false;
+        }
+        for (const auto& key : groups->subItems()) {
+            auto items = groups->get(key + "/Items");
+            if (!items) {
+                continue;
+            }
+            for (const auto& item : readItems(*items)) {
+                if (item.name == inputMethod) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     bool dropLoneKeyboard(fcitx::RawConfig& profile, const std::string& inputMethod) {
         auto groups = profile.get("Groups");
         if (!groups) {
@@ -149,19 +169,55 @@ namespace ngosen {
     }
 
     bool upgradeSettings(fcitx::RawConfig& settings, bool saved) {
-        constexpr int Version = 1;
-        if (const auto* version = settings.valueByPath("SettingsVersion"); version != nullptr && std::atoi(version->c_str()) >= Version)
+        constexpr int Version = 2;
+        const auto*   version = settings.valueByPath("SettingsVersion");
+        const int     from    = version != nullptr ? std::atoi(version->c_str()) : 0;
+        if (from >= Version)
             return false;
-        if (saved) {
+        if (saved && from < 1) {
             if (settings.get("ToggleKey") == nullptr)
                 settings.setValueByPath("ToggleKey/0", "Control+space");
             if (settings.valueByPath("VietnameseOn") == nullptr) {
                 const auto* mode = settings.valueByPath("Mode");
                 settings.setValueByPath("VietnameseOn", mode != nullptr && *mode == "OFF" ? "False" : "True");
             }
+            // Retyping was a hidden option, so a saved False is fcitx5's default, not the user's choice.
+            settings.setValueByPath("RetypeAfterSwitch", "True");
+        }
+        if (saved && from < 2) {
+            // The old hidden defaults, saved by fcitx5 versions that write every option.
+            if (const auto* sleep = settings.valueByPath("SurrDeleteSleepMs"); sleep != nullptr && *sleep == "4")
+                settings.remove("SurrDeleteSleepMs");
+            if (const auto* sleep = settings.valueByPath("SurrCommitSleepMs"); sleep != nullptr && *sleep == "3")
+                settings.remove("SurrCommitSleepMs");
         }
         settings.setValueByPath("SettingsVersion", std::to_string(Version));
         return true;
+    }
+
+    // "1.6.1" reads as {1, 6}: a bug-fix release shares its feature release's number.
+    static std::pair<int, int> featureRelease(const std::string& version) {
+        int major = 0;
+        int minor = 0;
+        std::sscanf(version.c_str(), "%d.%d", &major, &minor);
+        return {major, minor};
+    }
+
+    std::string releaseToAnnounce(fcitx::RawConfig& settings, bool saved, const std::string& version) {
+        const auto        release = featureRelease(version);
+        const std::string current = std::to_string(release.first) + "." + std::to_string(release.second);
+        if (const auto* announced = settings.valueByPath("AnnouncedVersion"); announced != nullptr && featureRelease(*announced) >= release)
+            return {};
+        settings.setValueByPath("AnnouncedVersion", current);
+        // A fresh install has nothing to catch up on.
+        return saved ? current : std::string();
+    }
+
+    fcitx::RawConfig newAccountSettings(const std::string& version) {
+        fcitx::RawConfig settings;
+        upgradeSettings(settings, false);
+        releaseToAnnounce(settings, false, version);
+        return settings;
     }
 
     bool copySwitchKeys(const fcitx::RawConfig& fcitxConfig, fcitx::RawConfig& settings) {

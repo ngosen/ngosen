@@ -1,13 +1,14 @@
 #!/bin/bash
 # Builds the signed APT repository from release .deb files named by collect-release-files.sh
-# (fcitx5-ngosen_<version>_<codename>_<arch>.deb). Each codename is its own suite with its own
-# pool, because every distribution gets a build with the same version but different contents.
+# (fcitx5-ngosen_<version>_<codename>_<arch>.deb), plus ibus-ngosen's, which are named the same way
+# but cover fewer codenames. Each codename is its own suite with its own pool, because every
+# distribution gets a build with the same version but different contents.
 # Signs with the default secret key in the caller's GnuPG home.
 set -euo pipefail
 
 src=${1:?usage: build-apt-repo.sh <debs-dir> <output-dir>}
 out=${2:?usage: build-apt-repo.sh <debs-dir> <output-dir>}
-codenames="bookworm trixie forky jammy noble resolute stonking"
+codenames="bookworm trixie forky noble resolute stonking"
 archs="amd64 arm64"
 
 rm -rf "$out"
@@ -16,7 +17,7 @@ mkdir -p "$out"
 for codename in $codenames; do
     pool=$out/pool/$codename
     mkdir -p "$pool"
-    for deb in "$src"/fcitx5-ngosen_*_"${codename}"_*.deb; do
+    for deb in "$src"/fcitx5-ngosen_*_"${codename}"_*.deb "$src"/ibus-ngosen_*_"${codename}"_*.deb; do
         [ -e "$deb" ] || continue
         cp "$deb" "$pool/"
     done

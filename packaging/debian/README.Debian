@@ -1,0 +1,16 @@
+fcitx5-ngosen for Debian
+------------------------
+
+Installing this package does not change the session of any user. Two steps
+may still be needed before Vietnamese typing works:
+
+1. Make fcitx5 the input method framework. im-config prefers IBus when both
+   are installed, so run this as the user and log in again:
+
+     im-config -n fcitx5
+
+2. Add Ngó Sen to the fcitx5 input method list. fcitx5 adds it by itself the
+   first time it runs on a Vietnamese desktop (LANG=vi_VN.UTF-8). Otherwise
+   open "Fcitx 5 Configuration" (fcitx5-configtool), add "Ngó Sen", and apply.
+
+The one-line installer from https://github.com/ngosen/ngosen does both steps.

@@ -45,6 +45,8 @@ namespace {
         c.setValueByPath("DoubleSpaceToPeriod", "True");
         c.setValueByPath("DoubleHyphenToEmDash", "True");
         c.setValueByPath("MessengerSelectOvertype", "False");
+        c.setValueByPath("CopyWaitRecovery", "False");
+        c.setValueByPath("FoldReplayReplacement", "False");
         c.setValueByPath("WaitSurroundingEvent", "False");
         c.setValueByPath("WaitSurroundingMinPerKeyMs", "11");
         c.setValueByPath("WaitSurroundingTimeoutMs", "222");
@@ -80,6 +82,8 @@ namespace {
         check(step + ": DoubleSpaceToPeriod", o.doubleSpaceToPeriod == c.doubleSpaceToPeriod.value());
         check(step + ": DoubleHyphenToEmDash", o.doubleHyphenToEmDash == c.doubleHyphenToEmDash.value());
         check(step + ": MessengerSelectOvertype", o.messengerSelectOvertype == c.messengerSelectOvertype.value());
+        check(step + ": CopyWaitRecovery", o.copyWaitRecovery == c.copyWaitRecovery.value());
+        check(step + ": FoldReplayReplacement", o.foldReplayReplacement == c.foldReplayReplacement.value());
         check(step + ": WaitSurroundingEvent", o.waitSurroundingEvent == c.waitSurroundingEvent.value());
         check(step + ": WaitSurroundingMinPerKeyMs", o.waitSurroundingMinPerKeyMs == c.waitSurroundingMinPerKeyMs.value());
         check(step + ": WaitSurroundingTimeoutMs", o.waitSurroundingTimeoutMs == c.waitSurroundingTimeoutMs.value());
@@ -97,6 +101,45 @@ namespace {
         check(step + ": LockWordModifier", o.lockWordKey == want);
     }
 
+    // A fresh engine must start from the core's defaults, which other frontends use as they are.
+    void checkCoreDefaults(const ngosen::Options& o) {
+        const ngosen::Options d;
+        check("default InputMethod", o.inputMethod == d.inputMethod);
+        check("default OutputCharset", o.outputCharset == d.outputCharset);
+        check("default SpellCheck", o.spellCheck == d.spellCheck);
+        check("default ModernStyle", o.modernStyle == d.modernStyle);
+        check("default FreeMarking", o.freeMarking == d.freeMarking);
+        check("default W2U", o.w2u == d.w2u);
+        check("default BracketTransform", o.bracketTransform == d.bracketTransform);
+        check("default TimeFormat", o.timeFormat == d.timeFormat);
+        check("default DateFormat", o.dateFormat == d.dateFormat);
+        check("default AutoNonVnRestore", o.autoNonVnRestore == d.autoNonVnRestore);
+        check("default DdFreeStyle", o.ddFreeStyle == d.ddFreeStyle);
+        check("default BackspaceRemovesTone", o.backspaceRemovesTone == d.backspaceRemovesTone);
+        check("default EnableMacro", o.enableMacro == d.enableMacro);
+        check("default EnableMacroInOffMode", o.enableMacroInOffMode == d.enableMacroInOffMode);
+        check("default CapitalizeMacro", o.capitalizeMacro == d.capitalizeMacro);
+        check("default LockWordModifier", o.lockWordKey == d.lockWordKey);
+        check("default AutoCapitalizeAfterPunctuation", o.autoCapitalizeAfterPunctuation == d.autoCapitalizeAfterPunctuation);
+        check("default CapitalizeStartOfText", o.capitalizeStartOfText == d.capitalizeStartOfText);
+        check("default DoubleSpaceToPeriod", o.doubleSpaceToPeriod == d.doubleSpaceToPeriod);
+        check("default DoubleHyphenToEmDash", o.doubleHyphenToEmDash == d.doubleHyphenToEmDash);
+        check("default RetypeAfterSwitch", o.retypeAfterSwitch == d.retypeAfterSwitch);
+        check("default RetoneSelection", o.retoneSelection == d.retoneSelection);
+        check("default MessengerSelectOvertype", o.messengerSelectOvertype == d.messengerSelectOvertype);
+        check("default CopyWaitRecovery", o.copyWaitRecovery == d.copyWaitRecovery);
+        check("default FoldReplayReplacement", o.foldReplayReplacement == d.foldReplayReplacement);
+        check("default WaitSurroundingEvent", o.waitSurroundingEvent == d.waitSurroundingEvent);
+        check("default WaitSurroundingMinPerKeyMs", o.waitSurroundingMinPerKeyMs == d.waitSurroundingMinPerKeyMs);
+        check("default WaitSurroundingTimeoutMs", o.waitSurroundingTimeoutMs == d.waitSurroundingTimeoutMs);
+        check("default WaitSurroundingShortMs", o.waitSurroundingShortMs == d.waitSurroundingShortMs);
+        check("default WaitSurroundingSettleMs", o.waitSurroundingSettleMs == d.waitSurroundingSettleMs);
+        check("default WaitSurroundingSettleFirstWordMs", o.waitSurroundingSettleFirstWordMs == d.waitSurroundingSettleFirstWordMs);
+        check("default WaitSurroundingProbeEvery", o.waitSurroundingProbeEvery == d.waitSurroundingProbeEvery);
+        check("default SurrDeleteSleepMs", o.surrDeleteSleepMs == d.surrDeleteSleepMs);
+        check("default SurrCommitSleepMs", o.surrCommitSleepMs == d.surrCommitSleepMs);
+    }
+
 } // namespace
 
 int main() {
@@ -104,6 +147,7 @@ int main() {
     TestInstance        testInstance;
     fcitx::NgoSenEngine engine(&testInstance.instance);
     checkMatches("defaults", engine);
+    checkCoreDefaults(engine.options());
 
     engine.setConfig(changedConfig());
     check("the changed values took effect",
@@ -142,10 +186,10 @@ int main() {
     auto* vni   = dynamic_cast<fcitx::SimpleAction*>(ui.lookupAction("ngosen-input-method-VNI"));
     check("input method menu lists Telex and VNI", telex != nullptr && vni != nullptr);
     if (telex != nullptr && vni != nullptr) {
-        check("the current method is checked", vni->isChecked(&context) && !telex->isChecked(&context));
+        check("the current method is marked", vni->shortText(&context) == "✔ VNI" && telex->shortText(&context) == "Telex");
         telex->activate(&context);
         check("input method menu changes the copy", engine.options().inputMethod == "Telex");
-        check("the picked method is checked", telex->isChecked(&context) && !vni->isChecked(&context));
+        check("the picked method is marked", telex->shortText(&context) == "✔ Telex" && vni->shortText(&context) == "VNI");
         checkMatches("input method menu", engine);
     }
 

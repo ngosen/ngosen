@@ -6,6 +6,7 @@
 // key event the way the typing logic used to.
 #include "ngosen-app-quirks.h"
 #include "ngosen-fcitx-host.h"
+#include "ngosen-gnome-shell.h"
 #include "ngosen-program-name.h"
 #include "test-input-context.h"
 
@@ -33,7 +34,8 @@ namespace {
     }
 
     std::string describe(const ngosen::Field& f) {
-        return std::string(f.surroundingText ? "S" : "-") + (f.preedit ? "P" : "-") + (f.formattedPreedit ? "F" : "-") + (f.url ? "U" : "-") + (f.keyEventOrderFix ? "K" : "-");
+        return std::string(f.surroundingText ? "S" : "-") + (f.preedit ? "P" : "-") + (f.formattedPreedit ? "F" : "-") + (f.url ? "U" : "-") + (f.keyEventOrderFix ? "K" : "-") +
+            (f.terminal ? "T" : "-");
     }
 
     ngosen::Field field(std::string frontend, std::string program) {
@@ -45,9 +47,9 @@ namespace {
 
     void checkFlags(TestInstance& testInstance) {
         const std::vector<std::pair<fcitx::CapabilityFlag, std::string>> cases = {
-            {fcitx::CapabilityFlag::SurroundingText, "S----"},  {fcitx::CapabilityFlag::Preedit, "-P---"},
-            {fcitx::CapabilityFlag::FormattedPreedit, "--F--"}, {fcitx::CapabilityFlag::Url, "---U-"},
-            {fcitx::CapabilityFlag::KeyEventOrderFix, "----K"},
+            {fcitx::CapabilityFlag::SurroundingText, "S-----"},  {fcitx::CapabilityFlag::Preedit, "-P----"},
+            {fcitx::CapabilityFlag::FormattedPreedit, "--F---"}, {fcitx::CapabilityFlag::Url, "---U--"},
+            {fcitx::CapabilityFlag::KeyEventOrderFix, "----K-"}, {fcitx::CapabilityFlag::Terminal, "-----T"},
         };
         for (const auto& [flag, expected] : cases) {
             TestInputContext context(&testInstance.instance, "gedit", "dbus");
@@ -60,6 +62,47 @@ namespace {
         context.setCursorRect(fcitx::Rect(168, 86, 169, 103));
         const auto caret = ngosen::FcitxHost(&context, &testInstance.instance).field();
         check("the caret size is copied", caret.caretWidth == 1 && caret.caretHeight == 17);
+    }
+
+    void checkShellDropsKeys(TestInstance& testInstance) {
+        for (const char* version : {"50.0", "50.1", "50.3"})
+            check(std::string("GNOME ") + version + " drops forwarded keys", ngosen::gnomeShellDropsForwardedKeys(version));
+        for (const char* version : {"50.4", "50.10", "49.5", "51.1", "50", "50.rc", ""})
+            check(std::string("GNOME '") + version + "' keeps forwarded keys", !ngosen::gnomeShellDropsForwardedKeys(version));
+
+        bool drops     = true;
+        auto sendsKeys = [&](const char* program, const char* frontend, const bool* shellDropsKeys) {
+            TestInputContext context(&testInstance.instance, program, frontend);
+            return !ngosen::FcitxHost(&context, &testInstance.instance, shellDropsKeys).field().sendsNoKeys;
+        };
+        check("apps relayed by a dropping GNOME Shell are sent no keys", !sendsKeys("gnome-shell", "ibus", &drops));
+        check("an app on its own IBus connection still gets keys", sendsKeys("chromium", "ibus", &drops));
+        check("fcitx5's own GTK module still gets keys", sendsKeys("gnome-shell", "dbus", &drops));
+        check("without a host flag apps get keys", sendsKeys("gnome-shell", "ibus", nullptr));
+        drops = false;
+        check("a GNOME Shell that keeps keys gets them", sendsKeys("gnome-shell", "ibus", &drops));
+    }
+
+    void checkShellFocusedApp(TestInstance& testInstance) {
+        std::string focused = "firefox_firefox.desktop";
+        auto        field   = [&](const char* program, const char* frontend, const std::string* shellFocusedApp) {
+            TestInputContext context(&testInstance.instance, program, frontend);
+            return ngosen::FcitxHost(&context, &testInstance.instance, nullptr, shellFocusedApp).field();
+        };
+        const auto relayed = field("gnome-shell", "ibus", &focused);
+        check("an app GNOME Shell relays takes the focused app's name", relayed.program == "firefox_firefox.desktop");
+        check("the name GNOME Shell reported is kept", relayed.reportedProgram == "gnome-shell");
+        check("the focused app still gets GNOME Shell's edit limits", ngosen::keepsLastEditPerTurn(relayed));
+        check("an app with its own name keeps it", field("kitty", "ibus", &focused).program == "kitty");
+        check("an app with its own name has no edit limits", !ngosen::keepsLastEditPerTurn(field("kitty", "ibus", &focused)));
+        check("without the extension the name stays", field("gnome-shell", "ibus", nullptr).program == "gnome-shell");
+        focused.clear();
+        const auto unknown = field("gnome-shell", "ibus", &focused);
+        check("with no focused app the name stays", unknown.program == "gnome-shell" && unknown.reportedProgram.empty());
+        check("with no focused app the edit limits stay", ngosen::keepsLastEditPerTurn(unknown));
+        focused = "firefox.desktop";
+        check("older fcitx5 reports no name for what GNOME Shell relays", field("", "ibus", &focused).program == "firefox.desktop");
+        check("fcitx5's own GTK module keeps its name", field("gnome-shell", "dbus", &focused).program == "gnome-shell");
     }
 
     void checkSurrounding(TestInstance& testInstance) {
@@ -182,6 +225,11 @@ namespace {
         check("a Vivaldi field without a selection does not select over autocompletion", !ngosen::selectsOverAutocompletion(vivaldi));
         vivaldi.caretWidth = 73;
         check("the Vivaldi address bar autocompletion is selected over", ngosen::selectsOverAutocompletion(vivaldi));
+        vivaldi.caretWidth  = 2;
+        vivaldi.caretHeight = 17;
+        check("the thin caret of Google Docs in Vivaldi is not selected over", !ngosen::selectsOverAutocompletion(vivaldi));
+        vivaldi.caretHeight = 9;
+        check("the caret of small text in Vivaldi is not selected over", !ngosen::selectsOverAutocompletion(vivaldi));
         auto terminal             = field("dbus", "gnome-terminal-server");
         terminal.keyEventOrderFix = true;
         check("a terminal does not select over autocompletion", !ngosen::selectsOverAutocompletion(terminal));
@@ -234,6 +282,8 @@ int main() {
     writeDesktopFiles(std::filesystem::temp_directory_path() / "fcitx5-ngosen-host-field-mapping" / "system");
     TestInstance testInstance;
     checkFlags(testInstance);
+    checkShellDropsKeys(testInstance);
+    checkShellFocusedApp(testInstance);
     checkSurrounding(testInstance);
     checkFocus(testInstance);
     checkPreedit(testInstance);

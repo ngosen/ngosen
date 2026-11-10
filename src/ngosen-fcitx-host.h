@@ -21,16 +21,21 @@ namespace ngosen {
 
     class FcitxHost final : public Host {
       public:
-        FcitxHost(fcitx::InputContext* ic, fcitx::Instance* instance) : ic_(ic), instance_(instance) {}
+        // shellDropsKeys, when set, says whether GNOME Shell currently loses the keys we forward;
+        // shellFocusedApp, when set, names the app GNOME Shell has focused.
+        FcitxHost(fcitx::InputContext* ic, fcitx::Instance* instance, const bool* shellDropsKeys = nullptr, const std::string* shellFocusedApp = nullptr) :
+            ic_(ic), instance_(instance), shell_drops_keys_(shellDropsKeys), shell_focused_app_(shellFocusedApp) {}
 
         void                         commitText(const std::string& text) override;
         void                         forwardKey(EditKey key, bool release, uint32_t time) override;
+        void                         forwardKeyPress(uint32_t sym, uint32_t states, uint32_t code, bool release, uint32_t time) override;
         void                         deleteSurrounding(int offset, unsigned int size) override;
         bool                         pressSystemKeys(int count) override;
 
         Surrounding                  surrounding() const override;
         Field                        field() const override;
         bool                         hasFocus() const override;
+        std::optional<std::string>   takeSelection() override;
 
         void                         showPreedit(const std::string& text, bool underline) override;
         void                         clearPreedit() override;
@@ -57,6 +62,8 @@ namespace ngosen {
 
         fcitx::InputContext*                        ic_;
         fcitx::Instance*                            instance_;
+        const bool*                                 shell_drops_keys_;
+        const std::string*                          shell_focused_app_;
     };
 
     class FcitxKeyPress final : public KeyPress {

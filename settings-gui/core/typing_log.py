@@ -7,6 +7,8 @@ import os
 import re
 from dataclasses import dataclass, field
 
+from i18n import _
+
 SAMPLE = "Tiếng Việt có dấu"
 SAMPLE_TELEX = "Tieengs Vieetj cos daaus"
 
@@ -94,3 +96,20 @@ def read_latest(env=None):
             return parse(path, f.read())
     except OSError:
         return None
+
+
+def describe(test):
+    """What the check dialog says about a read log, or about finding none."""
+    if test is None:
+        return _("No typing log found. Save one from the Ngó Sen menu first.")
+    if not test.program and not test.frontend:
+        return _("The log has no typing in it. Type the sample, then save the log again.")
+    app = f"{test.program or '?'} ({test.frontend})"
+    text = {
+        RIGHT: _("{app} got the sample right."),
+        WRONG: _("{app} got the sample wrong."),
+        UNKNOWN: _("{app} does not tell Ngó Sen its text. Did the sample come out right?"),
+    }[test.verdict].format(app=app)
+    if test.verdict == WRONG and test.app_text:
+        text += " " + _("The app shows: {}").format(test.app_text.replace("|", ""))
+    return text

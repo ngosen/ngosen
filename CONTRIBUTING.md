@@ -181,7 +181,9 @@ feature/*, fix/*  ← Nhánh cá nhân cho mỗi PR
 ### Quy trình merge
 
 1. Developer tạo PR vào `next` (tính năng) hoặc `patch` (sửa lỗi)
-2. Code review bởi maintainer
+2. Code review bởi maintainer. Muốn người báo lỗi test bản sửa trước khi merge, maintainer gắn nhãn
+   `test-build`: CI đăng các gói thành version thử `pr-<số PR>-build` và để link trong PR. Đóng PR là
+   version thử bị xoá
 3. Merge, rồi test trên version thử `next-build`
 4. Version sửa lỗi: `patch` → `main`, rồi `patch` → `next`. Version tính năng: `next` → `main`, rồi đưa `patch`
    về bằng `main`

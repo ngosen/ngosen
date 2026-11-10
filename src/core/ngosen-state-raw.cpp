@@ -52,26 +52,27 @@ namespace ngosen {
     bool TypingState::handleRawWordKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (keyEvent.isRelease() || keyEvent.isModifier())
             return false;
-        if (!engine_->options().rawWordAfterSlash || keyEvent.hasModifier()) {
-            rawWord_ = false;
+        // Outside insert mode Vim reads the keys itself; its search may be Vietnamese.
+        if (!engine_->options().rawWordAfterSlash || keyEvent.hasModifier() || (vimOn() && vimState_ != VimState::Insert)) {
+            slashWord_ = false;
             return false;
         }
-        if (rawWord_) {
+        if (slashWord_) {
             if (key::isBackspace(currentSym)) {
-                if (rawWordLen_ == 0)
-                    rawWord_ = false;
+                if (slashWordLen_ == 0)
+                    slashWord_ = false;
                 else
-                    --rawWordLen_;
+                    --slashWordLen_;
             } else if (continuesRawWord(currentSym)) {
-                ++rawWordLen_;
+                ++slashWordLen_;
             } else {
-                rawWord_      = false;
+                slashWord_    = false;
                 afterWordEnd_ = endsWord(currentSym);
                 return false;
             }
         } else if (currentSym == '/' && atRawWordStart()) {
-            rawWord_    = true;
-            rawWordLen_ = 0;
+            slashWord_    = true;
+            slashWordLen_ = 0;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             hasHistory_ = false;

@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from core.brand import FEATURE_REQUEST_URL, REPO_URL
 from i18n import _
 from qtpy.QtCore import Qt, QUrl
-from qtpy.QtGui import QColor, QDesktopServices, QPalette
+from qtpy.QtGui import QDesktopServices
 from qtpy.QtWidgets import (
     QFrame,
-    QHBoxLayout,
     QLabel,
     QPushButton,
     QScrollArea,
@@ -15,7 +15,6 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import system_check
 from ui import brand
 from ui.typography import mute
 
@@ -25,28 +24,11 @@ except ImportError:
     __version__ = "dev version"  # Fallback for local development
 
 
-def _color_warning(label):
-    palette = label.palette()
-    palette.setColor(QPalette.WindowText, QColor(brand.pick(label, brand.ERROR_BORDER)))
-    label.setPalette(palette)
-
-
 class AboutPage(QWidget):
     def __init__(self, dbus_handler=None, parent=None):
         super().__init__(parent)
         self.dbus_handler = dbus_handler
-        self.check_dialog = None
         self._setup_ui()
-
-    def open_system_check(self):
-        from ui.system_check_dialog import SystemCheckDialog
-
-        if self.check_dialog is None:
-            self.check_dialog = SystemCheckDialog(self.dbus_handler, __version__, self)
-        else:
-            self.check_dialog.run()
-        self.check_dialog.show()
-        self.check_dialog.raise_()
 
     def _setup_ui(self):
         # Root layout for this widget
@@ -77,7 +59,7 @@ class AboutPage(QWidget):
 
         title = QLabel("Ngó Sen")
         title.setObjectName("Wordmark")
-        title.setFont(brand.wordmark_font(30))
+        title.setFont(brand.sized_font(30))
         layout.addWidget(title, alignment=Qt.AlignCenter)
 
         version = QLabel(_("Version {}").format(__version__))
@@ -85,19 +67,6 @@ class AboutPage(QWidget):
         version.setAlignment(Qt.AlignCenter)
         mute(version)
         layout.addWidget(version, alignment=Qt.AlignCenter)
-
-        if system_check.runs_replaced_addon():
-            replaced = QLabel(
-                _(
-                    "Typing still uses the Ngó Sen that ran before the update. "
-                    "Log out and back in to start version {}."
-                ).format(__version__)
-            )
-            replaced.setObjectName("AddonReplaced")
-            replaced.setWordWrap(True)
-            replaced.setAlignment(Qt.AlignCenter)
-            layout.addWidget(replaced)
-            brand.follow_theme(replaced, _color_warning)
 
         desc = QLabel(
             _("Vietnamese input method for fcitx5 on Linux that types like UniKey on Windows.")
@@ -108,46 +77,15 @@ class AboutPage(QWidget):
         layout.addWidget(desc)
 
         # GitHub Project Link
-        github_link = QLabel(
-            '<a href="https://github.com/ngosen/ngosen" style="text-decoration: none;">https://github.com/ngosen/ngosen</a>'
-        )
+        github_link = QLabel(f'<a href="{REPO_URL}" style="text-decoration: none;">{REPO_URL}</a>')
         github_link.setOpenExternalLinks(True)
         layout.addWidget(github_link, alignment=Qt.AlignCenter)
-
-        # Support Buttons Row
-        support_layout = QHBoxLayout()
-        support_layout.setSpacing(15)
-        support_layout.setAlignment(Qt.AlignCenter)
-
-        btn_bug = QPushButton(_("Report Bug"))
-        btn_bug.setObjectName("BugReport")
-        btn_bug.setFixedWidth(200)
-        btn_bug.clicked.connect(
-            lambda: QDesktopServices.openUrl(
-                QUrl("https://github.com/ngosen/ngosen/issues/new?template=bug_report.yml")
-            )
-        )
 
         btn_feature = QPushButton(_("Request Feature"))
         btn_feature.setObjectName("FeatureRequest")
         btn_feature.setFixedWidth(200)
-        btn_feature.clicked.connect(
-            lambda: QDesktopServices.openUrl(
-                QUrl("https://github.com/ngosen/ngosen/issues/new?template=feature_request.yml")
-            )
-        )
-
-        # Its own row: three buttons do not fit the narrowest window, and checking comes before reporting.
-        btn_check = QPushButton(_("Check my machine…"))
-        btn_check.setObjectName("SystemCheck")
-        btn_check.setFixedWidth(200)
-        btn_check.setEnabled(self.dbus_handler is not None)
-        btn_check.clicked.connect(self.open_system_check)
-        layout.addWidget(btn_check, alignment=Qt.AlignCenter)
-
-        support_layout.addWidget(btn_bug)
-        support_layout.addWidget(btn_feature)
-        layout.addLayout(support_layout)
+        btn_feature.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(FEATURE_REQUEST_URL)))
+        layout.addWidget(btn_feature, alignment=Qt.AlignCenter)
 
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
@@ -158,17 +96,6 @@ class AboutPage(QWidget):
         developer.setObjectName("DeveloperLine")
         layout.addWidget(developer, alignment=Qt.AlignCenter)
 
-        # One credit line; the authors are named in the copyright notices.
-        credits = QLabel(
-            _("Based on the code of {lotus} and {vmk}.").format(
-                lotus='<a href="https://github.com/LotusInputMethod/fcitx5-lotus" style="text-decoration: none;">fcitx5-lotus</a>',
-                vmk='<a href="https://github.com/thanhpy2009/VMK" style="text-decoration: none;">VMK</a>',
-            )
-        )
-        credits.setOpenExternalLinks(True)
-        credits.setObjectName("CreditsLine")
-        mute(credits)
-        layout.addWidget(credits, alignment=Qt.AlignCenter)
         layout.addStretch()
 
         # Footer

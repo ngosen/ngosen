@@ -2,6 +2,7 @@
 # library gets no fcitx5 include path, so an fcitx5 include here fails the build.
 add_library(ngosen_core STATIC
     ngosen-state.cpp
+    ngosen-state-check.cpp
     ngosen-state-emoji.cpp
     ngosen-state-focus.cpp
     ngosen-state-macro.cpp
@@ -10,10 +11,18 @@ add_library(ngosen_core STATIC
     ngosen-state-retone.cpp
     ngosen-state-retype.cpp
     ngosen-state-wait.cpp
+    ngosen-state-vim.cpp
+    ngosen-vim.cpp
     ngosen-app-quirks.cpp
+    ngosen-flatpak-names.cpp
     ngosen-globals.cpp
+    ngosen-gnome-apps.cpp
+    ngosen-pointer.cpp
+    ngosen-pty.cpp
     ngosen-recorder.cpp
     ngosen-strings.cpp
+    ngosen-surrounding-check.cpp
+    ngosen-surrounding-count.cpp
     ngosen-utf8.cpp
     ngosen-xtest.cpp
 )

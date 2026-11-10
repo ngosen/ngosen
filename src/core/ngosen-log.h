@@ -28,7 +28,7 @@ namespace ngosen {
     do {                                                                                                                                                                           \
         if (::ngosen::logEnabled(level)) {                                                                                                                                         \
             std::ostringstream ngosenLogStream_;                                                                                                                                   \
-            ngosenLogStream_ << prefix << msg;                                                                                                                                     \
+            ngosenLogStream_ << prefix << (msg);                                                                                                                                   \
             ::ngosen::writeLog(level, __FILE__, __LINE__, ngosenLogStream_.str());                                                                                                 \
         }                                                                                                                                                                          \
     } while (false)

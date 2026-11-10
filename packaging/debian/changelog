@@ -1,3 +1,184 @@
+fcitx5-ngosen (1:1.9.0-1) unstable; urgency=medium
+
+  * Per-app modes and settings work on GNOME with the extension off, and the installer leaves the extension off where the desktop portal names apps (#621, #629); Sen shows tone marks at once in terminals and stalls less in Firefox on Hyprland and Sway (#607, #620, #623, #630); -- stays as typed in terminals and address bars (#625); Firefox builds are recognised on GNOME (#634).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 08 Nov 2026 22:00:00 +0700
+
+fcitx5-ngosen (1:1.8.3-1) unstable; urgency=medium
+
+  * Words that are not Vietnamese keep their typed keys when digits follow them (#614); a tone typed after the final consonant no longer turns the word back into its keys (#622).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 08 Nov 2026 18:00:00 +0700
+
+fcitx5-ngosen (1:1.8.2-1) unstable; urgency=medium
+
+  * Retype no longer deletes text after a click right after the switch key (#605); a macro typed in English no longer lands after its abbreviation in fields that hide their text (#604); publish ibus-ngosen from the APT, pacman and zypper repositories again (#598).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sat, 07 Nov 2026 18:00:00 +0700
+
+fcitx5-ngosen (1:1.8.1-1) unstable; urgency=medium
+
+  * Fix swallowed or reordered navigation keys and Ctrl shortcuts pressed right after a word; Ctrl+key still types a letter in Wayland apps on GNOME (#591).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sat, 07 Nov 2026 18:00:00 +0700
+
+fcitx5-ngosen (1:1.8.0-1) unstable; urgency=medium
+
+  * Add a Check my machine page with setup steps, one-click fixes, a typing test and bug reporting (#463, #563). On GNOME without the extension, type better in Firefox and Chrome's address bar and keep one failing app from making every app type raw keys (#541, #543, #586); with the extension, stop losing letters when typing fast or pressing Backspace (#581, #584). Keep tones in Firefox on KDE and letters on Hyprland and Sway (#582, #583). Install on Fedora 45 and set up Sway and Hyprland (#556, #557, #566). Clearer settings window (#519, #521, #522).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sat, 07 Nov 2026 12:00:00 +0700
+
+fcitx5-ngosen (1:1.7.6-1) unstable; urgency=medium
+
+  * Stop repeating letters in Google Docs and Slides on Chromium browsers on X11 (#523, #527). Keep tones when typing faster than a surrounding-text-only field on GNOME answers (#501). Retone a selected word in WPS Office on X11 (#505). Always add the Input Method Panel extension on GNOME and report when it is missing (#506, #507). Fix settings window icons, clipped text and saving of the dictionary and macro choices (#514, #517). Drop --ibus and the ibus-ngosen packages from the installer and repositories (#509, #511).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Mon, 02 Nov 2026 12:00:00 +0700
+
+fcitx5-ngosen (1:1.7.5-1) unstable; urgency=medium
+
+  * Remember English/Vietnamese per app (#469) and delete through the text on KDE, Sway, Hyprland
+    and X11 (#477). Expand a macro before Enter (#476), keep Enter, Shift+Enter and Tab pressed
+    right after a word in Sen mode (#487, #488, #489), wait for GNOME to show one edit before the
+    next (#490) and after BackSpace (#481), and fix a crash with fcitx5 older than 5.1.7 (#493).
+    Show menu icons on themes without them (#484, #486), install on Fedora remixes (#491) and print
+    rpm-ostree commands on image-based Fedora (#494).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 01 Nov 2026 12:00:00 +0700
+
+fcitx5-ngosen (1:1.7.4-1) unstable; urgency=medium
+
+  * Send a held Enter in Preedit on GNOME when the key is released (#465), commit the underlined
+    word when a click in an XIM app comes without a reset (#466), and delete through the text in
+    apps GNOME Shell 50.0-50.3 relays when the forward-keys extension is not running (#467).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sat, 31 Oct 2026 12:00:00 +0700
+
+fcitx5-ngosen (1:1.7.3-1) unstable; urgency=medium
+
+  * Recognise Firefox (including the snap), Chrome and LibreOffice by name when they connect
+    through the IBus GTK module on X11, and share the X11 click watcher with the IBus edition
+    (#458).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Fri, 30 Oct 2026 22:00:00 +0700
+
+fcitx5-ngosen (1:1.7.2-1) unstable; urgency=medium
+
+  * Fix Sen forgetting the word being typed in VS Code on GNOME when VS Code reports the cursor
+    at the start of the line and then back at the end of the unchanged word (#453).
+  * Fix Sen producing "tiêsng" for "tieesng" in Qt apps on GNOME in the IBus edition, which shares
+    the typing core with the fcitx5 edition. This fix only changes IBus behaviour (#452).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Fri, 30 Oct 2026 21:00:00 +0700
+
+fcitx5-ngosen (1:1.7.1-1) unstable; urgency=medium
+
+  * On GNOME, Sen uses surrounding text when the app reports the current word correctly,
+    avoiding delayed Backspace keys that corrupt text. If the app ignores deletion, it repairs
+    leftover text with Backspace and uses Backspace for the rest of the session; if no deletion
+    method remains, it passes keystrokes through without conversion. KDE and other Wayland
+    desktops are unchanged (#443, #446).
+  * Remove pauses after each deletion and commit in apps that delete through surrounding text,
+    including LibreOffice and GTK4 text fields (#438).
+  * Fix Sen corrupting words when apps report surrounding text later than keystrokes,
+    including LibreOffice and GTK4 text fields (#441).
+  * System checks warn when GNOME 50.0–50.3 runs without the forward-keys fix, which prevents
+    lost Enter keys after Preedit text and lost Sen Backspace keys, and provide a command
+    to enable it. Error reports include the GNOME Shell version and fix status (#440).
+  * System checks no longer warn about IBus running alongside fcitx5 when it only serves other
+    programs, such as IBus started by xpra; warn only when IBus competes for the current
+    session's input method (#442).
+  * Keep each event in saved typing logs on one line, including Enter keys and app-reported
+    text containing line breaks (#445).
+  * On GNOME with older fcitx5 versions (Ubuntu 26.04, Debian), typing modes selected from the
+    comma menu or mode-switch key apply to all apps until logout and are no longer saved
+    permanently. The next login restores the default from settings, and old saved rules
+    that overrode it are ignored (#444).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Fri, 30 Oct 2026 18:00:00 +0700
+
+fcitx5-ngosen (1:1.7.0-1) unstable; urgency=medium
+
+  * Settings window: a GTK edition that looks like a GNOME app, opened by default on GNOME and
+    Cinnamon (#386, #396), with buttons to switch between Qt and GTK (#393, #407, #422).
+  * Settings window: a "What's new & tips" page, announced once after updating to a release with new
+    features (#331, #409, #433).
+  * Ngó Sen for GNOME (IBus): packages for openSUSE Tumbleweed (#389); install.sh --ibus sets it up
+    on Xfce, Cinnamon and MATE (#341).
+  * Typing core: the underline mode reopens a word on Backspace (#344); Sen works in apps that take
+    no forwarded keys (#353).
+  * WPS Office on deepin over D-Bus no longer leaves old letters behind (#430); deepin-editor
+    defaults to the underline mode (#421).
+  * KDE Wayland: per-app modes keep working after an update without logging in again (#428).
+  * install.sh: explains what changes on GNOME before asking (#400, #410), asks [y/N] (#398),
+    installs the GTK settings libraries on GNOME and Cinnamon (#387), leaves installed Qt packages
+    alone (#418), skips reinstalling when up to date (#426), switches to the IBus edition cleanly
+    (#420, #425) and uninstalls with im-config 1.1 (#424).
+  * No packages for Ubuntu 22.04 any more; 1.6.4 is the last one (#332).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Thu, 29 Oct 2026 18:00:00 +0700
+
+fcitx5-ngosen (1:1.6.4-1) unstable; urgency=medium
+
+  * Antigravity on GNOME: tone marks and letters are no longer lost when typing fast; behind
+    GNOME's IBus bridge Sen waits up to 100 ms for a deletion (#362, #395).
+  * Cứu dấu changes the tone of a selected word in Chrome, Chromium and Brave on X11 (#360, #390).
+  * Preedit: Super + letter shortcuts reach the desktop instead of being typed (#391, #392).
+  * Settings window: opens with a user dictionary that is not UTF-8 (#376); undo gives back only
+    the change just saved (#383).
+  * install.sh: installs the GTK and Qt modules on a Vietnamese desktop (#388), goes on past a
+    broken apt source (#399), and installs on deepin 23 and 25 (#397), LMDE, Devuan, Parrot and
+    Artix (#403).
+  * install.sh: pulls whiptail with im-config, which im-config 1.1 on deepin and Kali needs
+    (#408).
+  * The .deb accepts python3-pyqt6 without python3-qtpy (#397).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Wed, 28 Oct 2026 18:00:00 +0700
+
+fcitx5-ngosen (1:1.6.3-1) unstable; urgency=medium
+
+  * Antigravity on GNOME: words in the editor no longer stay as typed (vieetj), and the chat box
+    no longer loses or garbles letters when typing fast (#362, #365).
+  * Cứu dấu also works after backspacing to the end of an earlier word and after a click
+    inside a word (#358, #370).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Tue, 27 Oct 2026 23:00:00 +0700
+
+fcitx5-ngosen (1:1.6.2-1) unstable; urgency=medium
+
+  * Cứu dấu after a click: click right after a typed word and type a tone key to change its
+    tone, Sen typing only (#118, #327).
+  * install.sh --ibus installs Ngó Sen for GNOME, the IBus edition (#330, #334).
+  * The APT and pacman repositories also carry ibus-ngosen (#333).
+  * install.sh --uninstall turns off only what the installer turned on (#328).
+  * The Cứu dấu hint in the settings window says it changes only the tone mark (#329).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Tue, 27 Oct 2026 20:00:00 +0700
+
+fcitx5-ngosen (1:1.6.1-1) unstable; urgency=medium
+
+  * Cứu chữ and Cứu dấu hints follow the interface language, Vietnamese by default
+    (#322).
+  * On a Vietnamese desktop, fcitx5's first profile lists Ngó Sen (#300, #316).
+  * Debug logging no longer records text typed in password fields (#321).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Mon, 26 Oct 2026 20:00:00 +0700
+
+fcitx5-ngosen (1:1.6.0-1) unstable; urgency=medium
+
+  * Cứu chữ: words typed before switching to Vietnamese are retyped with tones (#71,
+    #80, #82, #83).
+  * Cứu dấu: select a word and type a tone key to change its tone (#272, #290).
+  * A toggle key of its own for English and Vietnamese; new installs use Ctrl+Shift
+    (#234, #242, #244).
+  * Lock-word key, tray menu items for input method and capitalization, menu item
+    settings (#219, #240, #274, #275).
+  * Settings window: Vietnamese by default, separate Appearance and About pages, hints
+    under options (#276, #277, #281).
+  * install.sh reloads fcitx5 after an update; the Go core is gone and bamboo-core is
+    0.5.2 (#223, #230, #298).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Mon, 26 Oct 2026 12:00:00 +0700
+
 fcitx5-ngosen (1:1.5.8-1) unstable; urgency=medium
 
   * Settings window: changes are saved again; 1.5.7 could not save any setting (#303,

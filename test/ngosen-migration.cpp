@@ -124,6 +124,17 @@ namespace {
         check("a keyboard on another layout than the group's stays", !ngosen::dropLoneKeyboard(profile, "ngosen"));
     }
 
+    void testListsInputMethod() {
+        auto profile = parse("[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n"
+                             "[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n"
+                             "[Groups/1]\nName=Other\nDefault Layout=us\nDefaultIM=ngosen\n\n"
+                             "[Groups/1/Items/0]\nName=ngosen\nLayout=\n");
+        check("Ngó Sen in a second group is found", ngosen::listsInputMethod(profile, "ngosen"));
+        check("an input method not listed is not found", !ngosen::listsInputMethod(profile, "lotus"));
+        fcitx::RawConfig empty;
+        check("no profile lists nothing", !ngosen::listsInputMethod(empty, "ngosen"));
+    }
+
     void testCopySwitchKeys() {
         auto             fcitxConfig = parse("[Hotkey/TriggerKeys]\n0=Super+space\n1=Zenkaku_Hankaku\n");
         fcitx::RawConfig settings;
@@ -135,6 +146,63 @@ namespace {
         check("a toggle key already set stays", !ngosen::copySwitchKeys(fcitxConfig, chosen) && value(chosen, "ToggleKey/0") == "Alt+z");
         fcitx::RawConfig defaults;
         check("no switch key in fcitx5's config copies nothing", !ngosen::copySwitchKeys(defaults, settings));
+    }
+
+    void testUpgradeTurnsRetypeOn() {
+        // fcitx5 saves every option, so a file saved before the upgrade holds the hidden default.
+        auto saved = parse("Mode=Sen\nRetypeAfterSwitch=False\n");
+        check("settings from before SettingsVersion are upgraded", ngosen::upgradeSettings(saved, true));
+        check("retyping is turned on for an upgraded user", value(saved, "RetypeAfterSwitch") == "True");
+
+        auto chosen = parse("SettingsVersion=1\nRetypeAfterSwitch=False\n");
+        ngosen::upgradeSettings(chosen, true);
+        check("retyping turned off in the settings window stays off", value(chosen, "RetypeAfterSwitch") == "False");
+
+        fcitx::RawConfig fresh;
+        ngosen::upgradeSettings(fresh, false);
+        check("a fresh install keeps the built-in default", value(fresh, "RetypeAfterSwitch") == "<missing>");
+    }
+
+    void testUpgradeDropsSurroundingSleeps() {
+        auto saved = parse("SettingsVersion=1\nSurrDeleteSleepMs=4\nSurrCommitSleepMs=3\n");
+        check("settings from SettingsVersion 1 are upgraded", ngosen::upgradeSettings(saved, true));
+        check("a saved surrounding delete sleep goes back to the default", value(saved, "SurrDeleteSleepMs") == "<missing>");
+        check("a saved surrounding commit sleep goes back to the default", value(saved, "SurrCommitSleepMs") == "<missing>");
+
+        auto oldest = parse("Mode=Sen\nSurrDeleteSleepMs=4\nSurrCommitSleepMs=3\n");
+        ngosen::upgradeSettings(oldest, true);
+        check("settings from before SettingsVersion lose the saved sleeps too",
+              value(oldest, "SurrDeleteSleepMs") == "<missing>" && value(oldest, "SurrCommitSleepMs") == "<missing>");
+
+        auto plain = parse("SettingsVersion=1\n");
+        check("settings from SettingsVersion 1 without sleeps are upgraded", ngosen::upgradeSettings(plain, true) && value(plain, "SettingsVersion") == "2");
+
+        auto tuned = parse("SettingsVersion=1\nSurrDeleteSleepMs=9\n");
+        ngosen::upgradeSettings(tuned, true);
+        check("a sleep set to another value stays", value(tuned, "SurrDeleteSleepMs") == "9");
+
+        auto current = parse("SettingsVersion=2\nSurrDeleteSleepMs=4\n");
+        check("current settings are left alone", !ngosen::upgradeSettings(current, true));
+        check("a sleep set after the upgrade stays", value(current, "SurrDeleteSleepMs") == "4");
+    }
+
+    void testReleaseAnnouncedOnce() {
+        auto upgraded = parse("SettingsVersion=1\n");
+        check("an upgrade to a feature release is announced", ngosen::releaseToAnnounce(upgraded, true, "1.7.0") == "1.7");
+        check("the announced release is remembered", value(upgraded, "AnnouncedVersion") == "1.7");
+        check("a bug-fix release is not announced", ngosen::releaseToAnnounce(upgraded, true, "1.7.2").empty());
+        check("the next feature release is announced again", ngosen::releaseToAnnounce(upgraded, true, "1.8.0") == "1.8");
+        check("going back to an older version stays quiet", ngosen::releaseToAnnounce(upgraded, true, "1.7.3").empty());
+
+        fcitx::RawConfig fresh;
+        check("a fresh install is not announced", ngosen::releaseToAnnounce(fresh, false, "1.7.0").empty());
+        check("a fresh install remembers its release", value(fresh, "AnnouncedVersion") == "1.7");
+        check("the first bug-fix release after a fresh install is quiet", ngosen::releaseToAnnounce(fresh, true, "1.7.1").empty());
+
+        // The engine then finds a settings file and takes the account for an upgrade.
+        auto added = ngosen::newAccountSettings("1.7.0");
+        check("a new account needs no upgrade", !ngosen::upgradeSettings(added, true));
+        check("a new account added in the configtool is not announced", ngosen::releaseToAnnounce(added, true, "1.7.0").empty());
     }
 
     void testKeepOtherInputMethods() {
@@ -208,7 +276,11 @@ int main() {
     testOtherGroups();
     testDropKeyboard();
     testKeepOtherInputMethods();
+    testListsInputMethod();
     testCopySwitchKeys();
+    testUpgradeTurnsRetypeOn();
+    testUpgradeDropsSurroundingSleeps();
+    testReleaseAnnouncedOnce();
     testCopyFiles();
     testProcessesNamed();
     if (failures == 0) {

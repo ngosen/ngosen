@@ -57,6 +57,7 @@ namespace {
         int                                      settleMs = 150; // wait after the tone key
         int                                      gapMs    = 150; // wait after each key in after
         std::function<void(FakeResources&)>      configure;
+        std::function<void(FakeApp&, FakeLoop&)> beforeTone;
         std::function<void(FakeApp&, FakeLoop&)> beforeAfter;
     };
 
@@ -84,7 +85,12 @@ namespace {
         }
         loop.pump(150);
         app->select(run.anchor, run.cursor);
+        // The double click that selected the word, which the click watcher sees.
+        if (run.quirks.announcesSelection)
+            g_mouse_clicked.store(true);
         loop.pump(150);
+        if (run.beforeTone)
+            run.beforeTone(*app, loop);
         app->type(run.tone);
         if (run.repeatsReport)
             state.surroundingUpdated();
@@ -112,6 +118,21 @@ namespace {
         return run;
     }
 
+    // GNOME acts on Tab and Esc in its search box before the input method sees them.
+    void testNoRetoneInGnomeSearch() {
+        Run run           = nhanh();
+        run.field         = makeField("ibus", true);
+        run.field.program = "gnome-shell-overview";
+        Result r          = retone(run);
+        check(r.hint.empty() && r.text == "abc s xyz", "gnome search: a tone key over a selection is left as typed", r.text);
+
+        run               = nhanh();
+        run.field         = makeField("ibus", true);
+        run.field.program = "firefox.desktop";
+        r                 = retone(run);
+        check(r.text == "abc nhánh xyz", "gnome app: a tone key over a selection changes the word", r.text);
+    }
+
     void testRetone() {
         auto r = retone(nhanh());
         check(r.text == "abc nhánh xyz" && !r.hint.empty(), "a tone key over a selected word changes it at once", r.text);
@@ -133,6 +154,14 @@ namespace {
         gnome.after = {'a', 'c', 'h', 's'};
         r           = retone(gnome);
         check(r.text == "abc sách xyz", "behind the IBus bridge a letter after the key puts it back", r.text);
+
+        // Only a deletion through the surrounding text can change the word here.
+        Run surrounding                       = nhanh();
+        surrounding.field                     = makeField("ibus");
+        surrounding.field.sendsNoKeys         = true;
+        surrounding.quirks.dropsForwardedKeys = true;
+        r                                     = retone(surrounding);
+        check(r.text == "abc nhánh xyz", "ibus sen: a deletion through the surrounding text keeps the text after the cursor", r.text);
 
         Run run   = nhanh();
         run.after = {ngosen::key::Escape};
@@ -222,8 +251,6 @@ namespace {
         check(r.hint.empty() && r.text == "s xyz", "two words", r.text);
         r = retoneOf("abc nhanh xyz", 6, 9, 's');
         check(r.hint.empty() && r.text == "abc nhs xyz", "part of a word", r.text);
-        r = retoneOf("abc nhanh xyz", 9, 9, 's');
-        check(r.hint.empty(), "a key typed with nothing selected", r.text);
     }
 
     void testWhereNotOffered() {
@@ -254,6 +281,125 @@ namespace {
         check(r.hint.empty() && r.text == "abc s xyz", "a password field is left as typed", r.text);
     }
 
+    // Chromium on X11 reports no text, but makes the selection the X11 primary selection (#360).
+    Run announced() {
+        Run run                       = nhanh();
+        run.field                     = makeField("dbus", false);
+        run.field.keyEventOrderFix    = true;
+        run.field.program             = "chromium";
+        run.quirks.announcesSelection = true;
+        return run;
+    }
+
+    void testAnnouncedSelection() {
+        Run  run = announced();
+        auto r   = retone(run);
+        check(r.text == "abc nhánh xyz" && !r.hint.empty(), "a field that only announces its selection", r.text);
+        run.after = {ngosen::key::Escape};
+        r         = retone(run);
+        check(r.text == "abc s xyz", "announced selection: Esc puts back the key", r.text);
+        run.after = {'a', 'c', 'h', 's'};
+        r         = retone(run);
+        check(r.text == "abc sách xyz", "announced selection: a letter after the key puts it back", r.text);
+        run.after = {'f'};
+        r         = retone(run);
+        check(r.text == "abc nhành xyz", "announced selection: another tone key changes the tone again", r.text);
+
+        run            = announced();
+        run.beforeTone = [](FakeApp& app, FakeLoop& loop) {
+            app.type(ngosen::key::Left);
+            loop.pump(150);
+        };
+        r = retone(run);
+        check(r.hint.empty(), "a key between the selection and the tone key", r.text);
+
+        run            = announced();
+        run.beforeTone = [](FakeApp& app, FakeLoop& loop) {
+            app.moveCursor(9);
+            g_mouse_clicked.store(true);
+            loop.pump(150);
+        };
+        r = retone(run);
+        check(r.hint.empty() && r.text == "abc nhanhs xyz", "a click after the selection", r.text);
+
+        run                = announced();
+        run.field.password = true;
+        r                  = retone(run);
+        check(r.hint.empty() && r.text == "abc s xyz", "an announced selection in a password field", r.text);
+
+        run        = announced();
+        run.anchor = 0;
+        r          = retone(run);
+        check(r.hint.empty() && r.text == "s xyz", "an announced selection of two words", r.text);
+
+        run               = announced();
+        run.field.program = "xterm";
+        r                 = retone(run);
+        check(r.hint.empty() && r.text == "abc s xyz", "a terminal's announced selection", r.text);
+    }
+
+    // WPS Office declares surrounding text through its fcitx4 module but never sends any, and a double
+    // click selects the word with the space after it (#504).
+    Run wps() {
+        Run run                       = nhanh(4, 10);
+        run.field                     = makeField("fcitx4", true);
+        run.quirks.neverSendsText     = true;
+        run.field.program             = "wps";
+        run.field.formattedPreedit    = true;
+        run.quirks.announcesSelection = true;
+        return run;
+    }
+
+    void testAnnouncedSelectionWithSpace() {
+        Run  run = wps();
+        auto r   = retone(run);
+        check(r.text == "abc nhánh xyz" && !r.hint.empty(), "WPS: the space typed over comes back", r.text);
+        run.after = {ngosen::key::Escape};
+        r         = retone(run);
+        check(r.text == "abc sxyz", "WPS: Esc puts back what the key left", r.text);
+        run.after = {'f'};
+        r         = retone(run);
+        check(r.text == "abc nhành xyz", "WPS: another tone key keeps the space", r.text);
+        run.after = {'a', 'c', 'h', 's'};
+        r         = retone(run);
+        check(r.text == "abc sáchxyz", "WPS: a letter after the key types over as the app did", r.text);
+
+        run        = wps();
+        run.anchor = 0;
+        r          = retone(run);
+        check(r.hint.empty() && r.text == "sxyz", "WPS: two selected words are typed over", r.text);
+
+        run               = wps();
+        run.field.program = "wpp";
+        r                 = retone(run);
+        check(r.text == "abc nhánh xyz", "WPS Presentation", r.text);
+
+        run        = wps();
+        run.typed  = "abc trowif";
+        run.anchor = 4;
+        run.cursor = 8;
+        run.tone   = 's';
+        r          = retone(run);
+        check(r.text == "abc trới", "WPS: the last word of a line, selected without a space", r.text);
+
+        for (const int awayMs : {10, 300}) {
+            run            = wps();
+            run.beforeTone = [awayMs](FakeApp& app, FakeLoop& loop) {
+                app.leaveFocus(awayMs);
+                loop.pump(awayMs + 50);
+            };
+            r                    = retone(run);
+            const bool  bounced  = awayMs < 100;
+            const char* expected = bounced ? "abc nhánh xyz" : "abc sxyz";
+            check(r.text == expected, bounced ? "WPS: focus bounces after the double click" : "WPS: focus leaves after the double click", r.text);
+        }
+
+        run        = announced();
+        run.cursor = 10;
+        r          = retone(run);
+        check(r.text == "abc nhánh xyz", "Chromium: a space selected after the word comes back", r.text);
+    }
+
     void testClickKeepsTone() {
         Run run         = nhanh();
         run.beforeAfter = [](FakeApp& app, FakeLoop& loop) {
@@ -265,13 +411,149 @@ namespace {
         check(r.text == "abc nhánh xyz", "Esc after a click elsewhere keeps the new tone", r.text);
     }
 
+    // A click right after a word, then a tone key: no selection, so the word is read from the field.
+    void testToneAtCursor() {
+        auto r = retone(nhanh(9, 9));
+        check(r.text == "abc nhánh xyz", "a tone key right after a word changes its tone", r.text);
+        Run run   = nhanh(9, 9);
+        run.after = {'f'};
+        r         = retone(run);
+        check(r.text == "abc nhành xyz", "another tone key at the cursor changes it again", r.text);
+        run      = nhanh(9, 9);
+        run.tone = 'a';
+        r        = retone(run);
+        check(r.text == "abc nhanha xyz", "a letter that is no tone starts a word", r.text);
+        r = retone(nhanh(4, 4));
+        check(r.text == "abc snhanh xyz", "a tone key before a word starts a word", r.text);
+        run       = nhanh(9, 9);
+        run.field = makeField("xim", false);
+        r         = retone(run);
+        check(r.text == "abc nhanhs xyz", "a field that reports no text is left as typed", r.text);
+        run                = nhanh(9, 9);
+        run.quirks.reports = false;
+        r                  = retone(run);
+        check(r.text == "abc nhanhs xyz", "a field that declares its text but never sends it is left as typed", r.text);
+        run       = nhanh(9, 9);
+        run.field = makeField("ibus");
+        r         = retone(run);
+        check(r.text == "abc nhánh xyz", "behind GNOME Shell's IBus bridge", r.text);
+        run       = nhanh(9, 9);
+        run.after = {ngosen::key::Escape};
+        r         = retone(run);
+        check(!r.hint.empty() && r.text == "abc nhanhs xyz", "Esc puts back the word and the key", r.text);
+        run.after = {'s'};
+        r         = retone(run);
+        check(r.text == "abc nhanhs xyz", "the tone key again puts them back", r.text);
+        run.after = {'a'};
+        r         = retone(run);
+        check(r.text == "abc nhanhsa xyz", "a letter after the key goes on the word as typed", r.text);
+        r = retone(nhanh(6, 6));
+        check(r.text == "abc nhánh xyz", "a tone key after a click inside a word changes its tone", r.text);
+        run       = nhanh(6, 6);
+        run.after = {ngosen::key::Escape};
+        r         = retone(run);
+        check(r.text == "abc nhsanh xyz", "Esc after a click inside a word puts back the key", r.text);
+        run.after = {'s'};
+        r         = retone(run);
+        check(r.text == "abc nhsanh xyz", "the tone key again after a click inside a word puts back the key", r.text);
+        run       = nhanh(5, 5);
+        run.typed = "abc cho xyz";
+        run.tone  = 'j';
+        run.after = {'n'};
+        r         = retone(run);
+        check(r.text == "abc chọn xyz", "a letter after a retone inside a word keeps the tone", r.text);
+        run       = nhanh(6, 6);
+        run.field = makeField("ibus");
+        r         = retone(run);
+        check(r.text == "abc nhánh xyz", "inside a word behind GNOME Shell's IBus bridge", r.text);
+        run      = nhanh(6, 6);
+        run.tone = 'a';
+        r        = retone(run);
+        check(r.text == "abc nhaanh xyz", "a letter that is no tone is typed inside the word", r.text);
+        run       = nhanh(6, 6);
+        run.typed = "abc hello xyz";
+        r         = retone(run);
+        check(r.text == "abc hesllo xyz", "inside an English word the key is typed", r.text);
+        r = retone(nhanh(4, 4));
+        check(r.text == "abc snhanh xyz", "a tone key at the start of a word is typed", r.text);
+        run           = nhanh(9, 9);
+        run.configure = [](FakeResources& resources) { resources.mutableOptions().retoneSelection = false; };
+        r             = retone(run);
+        check(r.text == "abc nhanhs xyz", "the option off leaves the key as typed", r.text);
+        // Firefox reports a selection as a bare cursor at its end, which looks like a click there.
+        run                          = nhanh();
+        run.quirks.hidesSelectionEnd = true;
+        r                            = retone(run);
+        check(r.text == "abc nhánh xyz", "a selection reported as a bare cursor is typed over, not deleted past", r.text);
+        // The app starts the typed key as a new word only after a space, since it never reports the click.
+        run                         = nhanh(9, 9);
+        run.typed                   = "abc nhanh xyz ";
+        run.quirks.hidesCursorMoves = true;
+        r                           = retone(run);
+        check(r.text == "abc nhánh xyz ", "a click the app does not report shows in where the key lands", r.text);
+        run.anchor = run.cursor = 6;
+        r                       = retone(run);
+        check(r.text == "abc nhsanh xyz ", "an unreported click inside a word leaves the key as typed", r.text);
+    }
+
+    // Backspacing over the space after a word, then a tone key, as fcitx5-unikey allows (#358).
+    std::string backspaceThenTone(const std::string& typed, int backspaces, uint32_t tone, std::vector<uint32_t> after = {}) {
+        realMode = Mode::Sen;
+        realtextLen.store(0);
+        g_mouse_clicked.store(false);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeApp>(loop, makeField(), AppQuirks{});
+        FakeApp*            app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        state.activate(Mode::Sen, false);
+        for (const char c : typed) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(5);
+        }
+        loop.pump(150);
+        for (int i = 0; i < backspaces; ++i) {
+            app->type(ngosen::key::BackSpace);
+            loop.pump(60);
+        }
+        app->type(tone);
+        loop.pump(150);
+        for (const uint32_t sym : after) {
+            app->type(sym);
+            loop.pump(150);
+        }
+        loop.pump(300);
+        g_mouse_clicked.store(false);
+        return app->text();
+    }
+
+    void testToneAfterBackspace() {
+        auto text = backspaceThenTone("muoons suwar oke ", 5, 's');
+        check(text == "muốn sứa", "a tone key after backspacing into a word changes its tone", text);
+        text = backspaceThenTone("khacs oke ", 5, 'j', {ngosen::key::Escape});
+        check(text == "khácj", "Esc puts back the key", text);
+        text = backspaceThenTone("khacs ", 1, 'j');
+        check(text == "khạc", "the word just typed goes on as typed", text);
+        text = backspaceThenTone("hello ", 1, 's');
+        check(text == "hellos", "an English word takes the key as typed", text);
+        text = backspaceThenTone("khacs ", 2, 'j');
+        check(text == "khạ", "backspacing over the end of a word changes what is left", text);
+    }
+
 } // namespace
 
 int main() {
     testRetone();
+    testNoRetoneInGnomeSearch();
     testWords();
     testWhereNotOffered();
+    testAnnouncedSelection();
+    testAnnouncedSelectionWithSpace();
     testClickKeepsTone();
+    testToneAtCursor();
+    testToneAfterBackspace();
+    check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all retone checks passed\n";
     return failures == 0 ? 0 : 1;

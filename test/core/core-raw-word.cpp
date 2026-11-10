@@ -194,6 +194,39 @@ namespace {
 
 } // namespace
 
+// The fcitx5 shell hands keys at a hidden prompt straight to the terminal, so the Enter that ends
+// a raw word there never reaches the typing logic; Vietnamese must still come back after it.
+void testHiddenPromptEndsRawWord() {
+    for (const auto mode : {Mode::Sen, Mode::Preedit}) {
+        realMode = mode;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField(false);
+        field.terminal            = true;
+        auto                owned = std::make_unique<FakeApp>(loop, field, AppQuirks{.erasesOnDel = true, .showsEnter = true});
+        FakeApp*            app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& text) {
+            for (const char c : text) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+        };
+        typeText("/x");
+        resources.terminalHidesInput = true;
+        typeText("ab");
+        app->type(ngosen::key::Return);
+        loop.pump(30);
+        resources.terminalHidesInput = false;
+        typeText("tieengs ");
+        loop.pump(100);
+        const std::string name = mode == Mode::Sen ? "Sen: " : "Preedit: ";
+        check(app->text() == "/xab\ntiếng ", name + "/x, hidden ab Enter, tieengs", app->text());
+    }
+}
+
 int main() {
     testCommands();
     testPathsAfterSpace();
@@ -203,6 +236,7 @@ int main() {
     testClickEndsRawWord();
     testDoubledKeysStayRaw();
     testOptionOff();
+    testHiddenPromptEndsRawWord();
     if (failures != 0) {
         std::cerr << failures << " failure(s)\n";
         return 1;

@@ -22,6 +22,7 @@
 #include <fcitx-utils/stringutils.h>
 
 #include "ngosen-mode.h"
+#include "ngosen-options.h"
 
 namespace ngosen {
 
@@ -91,6 +92,16 @@ namespace fcitx {
     };
 
     FCITX_CONFIG_ENUM_NAME(UiLanguage, "Vietnamese", "English");
+
+    // Read by the settings window's launcher only. fcitx5 leaves a default value out of the file,
+    // so Auto stands for no choice and a picked Qt is still written down.
+    enum class SettingsToolkit : std::uint8_t {
+        Auto,
+        Qt,
+        GTK,
+    };
+
+    FCITX_CONFIG_ENUM_NAME(SettingsToolkit, "Auto", "Qt", "GTK");
 
     struct InputMethodConstrain;
     struct InputMethodAnnotation;
@@ -212,6 +223,12 @@ namespace fcitx {
                         OptionWithAnnotation<std::vector<ngosenAppRule>, ListDisplayOptionAnnotation> rules{
                             this, "Rules", _("Rules"), {}, {}, {}, ListDisplayOptionAnnotation("App")};);
 
+    // Where the toggle key last left each app; apart from the rules so a toggle never overwrites a picked mode.
+    FCITX_CONFIGURATION(ngosenAppSwitch, Option<std::string> app{this, "App", _("App"), ""}; Option<bool> vietnamese{this, "Vietnamese", _("Vietnamese"), false};);
+    FCITX_CONFIGURATION(ngosenAppSwitches,
+                        OptionWithAnnotation<std::vector<ngosenAppSwitch>, ListDisplayOptionAnnotation> switches{
+                            this, "Switches", _("Switches"), {}, {}, {}, ListDisplayOptionAnnotation("App")};);
+
     /**
      * @brief Main configuration structure for the Ngó Sen input method.
      */
@@ -220,8 +237,9 @@ namespace fcitx {
 
         OptionWithAnnotation<NgoSenMode, ngosen::ModeI18NAnnotation>                                     mode{this, "Mode", _("Mode"), NgoSenMode::Sen};
         Option<std::string, InputMethodConstrain, DefaultMarshaller<std::string>, InputMethodAnnotation> inputMethod{
-            this, "InputMethod", _("Input Method"), "Telex", InputMethodConstrain(&inputMethod), {}, InputMethodAnnotation()};
-        OptionWithAnnotation<std::string, StringListAnnotation> outputCharset{this, "OutputCharset", _("Output Charset"), "Unicode", {}, {}, StringListAnnotation()};
+            this, "InputMethod", _("Input Method"), ngosen::defaultOptions.inputMethod, InputMethodConstrain(&inputMethod), {}, InputMethodAnnotation()};
+        OptionWithAnnotation<std::string, StringListAnnotation> outputCharset{
+            this, "OutputCharset", _("Output Charset"), ngosen::defaultOptions.outputCharset, {}, {}, StringListAnnotation()};
         // Ctrl+Shift as in UniKey, pressed in either order; ngosen-engine.cpp keeps Ctrl+Space for older installs.
         KeyListOption toggleKey{this,
                                 "ToggleKey",
@@ -231,45 +249,63 @@ namespace fcitx {
         // What the toggle key last chose, for apps without a rule of their own.
         HiddenOption<bool> vietnameseOn{this, "VietnameseOn", _("Vietnamese On"), false};
         // Set once the settings were upgraded; fcitx5 leaves defaults out of the file, so nothing else tells.
-        HiddenOption<int> settingsVersion{this, "SettingsVersion", _("Settings Version"), 0}; KeyListOption modeMenuKey{
+        HiddenOption<int> settingsVersion{this, "SettingsVersion", _("Settings Version"), 0};
+        // The last feature release (X.Y) whose "What's new" notification was shown.
+        HiddenOption<std::string> announcedVersion{this, "AnnouncedVersion", _("Announced Version"), ""}; KeyListOption modeMenuKey{
             this, "ModeMenuKey", _("Mode Menu Hotkey"), {Key("grave")}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
         KeyListOption cycleModeKey{this, "CycleModeKey", _("Cycle Mode Hotkey"), {}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
         SubConfigOption                                                                appRules{this, "AppRules", _("App Rules"), "fcitx://config/addon/ngosen/app_rules"};
-        OptionWithAnnotation<W2UMode, W2UModeI18NAnnotation>                           w2u{this, "W2U", _("Type w to Produce ư"), W2UMode::NonStart};
+        OptionWithAnnotation<W2UMode, W2UModeI18NAnnotation>                           w2u{this, "W2U", _("Type w to Produce ư"), static_cast<W2UMode>(ngosen::defaultOptions.w2u)};
         OptionWithAnnotation<BracketTransformMode, BracketTransformModeI18NAnnotation> bracketTransform{this, "BracketTransform", _("Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"),
-                                                                                                        BracketTransformMode::Disabled};
+                                                                                                        static_cast<BracketTransformMode>(ngosen::defaultOptions.bracketTransform)};
 
-        Option<bool> spellCheck{this, "SpellCheck", _("Enable Spell Check Using Dictionary"), true}; Option<bool> enableMacro{this, "EnableMacro", _("Enable Macro"), true};
-        Option<bool> capitalizeMacro{this, "CapitalizeMacro", _("Capitalize Macro"), true}; OptionWithAnnotation<LockWordModifier, LockWordModifierI18NAnnotation> lockWordModifier{
-            this, "LockWordModifier", _("Key to Keep the Word as Typed"), LockWordModifier::Ctrl};
-        Option<bool> autoCapitalizeAfterPunctuation{this, "AutoCapitalizeAfterPunctuation", _("Auto capitalize after sentence-ending punctuation (. ! ? Enter)"), false};
-        Option<bool> capitalizeStartOfText{this, "CapitalizeStartOfText", _("Capitalize the first letter of the text or of a line"), false};
-        Option<bool> doubleSpaceToPeriod{this, "DoubleSpaceToPeriod", _("Double Space to Period"), false};
-        Option<bool> doubleHyphenToEmDash{this, "DoubleHyphenToEmDash", _("Double Hyphen to Em-Dash (--)"), false};
-        Option<bool> retypeAfterSwitch{this, "RetypeAfterSwitch", _("Retype text typed before switching on"), true};
-        Option<bool> retoneSelection{this, "RetoneSelection", _("Change the tone of a selected word"), true};
-        Option<bool> rawWordAfterSlash{this, "RawWordAfterSlash", _("Type a word that starts with / as is"), true};
-        Option<bool> autoNonVnRestore{this, "AutoNonVnRestore", _("Auto Restore Invalid Words"), true};
-        Option<bool> modernStyle{this, "ModernStyle", _("Use oà, uý (Instead Of òa, úy)"), true};
-        Option<bool> freeMarking{this, "FreeMarking", _("Allow Type With More Freedom"), true};
-        Option<bool> ddFreeStyle{this, "DdFreeStyle", _("Allow dd To Produce đ When Auto Restore Invalid Words Is On"), true};
-        Option<bool> backspaceRemovesTone{this, "BackspaceRemovesTone", _("Backspace Removes the Tone Mark"), false};
+        Option<bool> spellCheck{this, "SpellCheck", _("Enable Spell Check Using Dictionary"), ngosen::defaultOptions.spellCheck};
+        Option<bool> enableMacro{this, "EnableMacro", _("Enable Macro"), ngosen::defaultOptions.enableMacro};
+        Option<bool> capitalizeMacro{this, "CapitalizeMacro", _("Capitalize Macro"), ngosen::defaultOptions.capitalizeMacro};
+        OptionWithAnnotation<LockWordModifier, LockWordModifierI18NAnnotation> lockWordModifier{this, "LockWordModifier", _("Key to Keep the Word as Typed"),
+                                                                                                static_cast<LockWordModifier>(ngosen::defaultOptions.lockWordKey)};
+        Option<bool> autoCapitalizeAfterPunctuation{this, "AutoCapitalizeAfterPunctuation", _("Auto capitalize after sentence-ending punctuation (. ! ? Enter)"),
+                                                    ngosen::defaultOptions.autoCapitalizeAfterPunctuation};
+        Option<bool> capitalizeStartOfText{this, "CapitalizeStartOfText", _("Capitalize the first letter of the text or of a line"), ngosen::defaultOptions.capitalizeStartOfText};
+        Option<bool> doubleSpaceToPeriod{this, "DoubleSpaceToPeriod", _("Double Space to Period"), ngosen::defaultOptions.doubleSpaceToPeriod};
+        Option<bool> doubleHyphenToEmDash{this, "DoubleHyphenToEmDash", _("Double Hyphen to Em-Dash (--)"), ngosen::defaultOptions.doubleHyphenToEmDash};
+        Option<bool> retypeAfterSwitch{this, "RetypeAfterSwitch", _("Retype text typed before switching on"), ngosen::defaultOptions.retypeAfterSwitch};
+        Option<bool> retoneSelection{this, "RetoneSelection", _("Change the tone of a selected word"), ngosen::defaultOptions.retoneSelection};
+        Option<bool> rawWordAfterSlash{this, "RawWordAfterSlash", _("Type a word that starts with / as is"), ngosen::defaultOptions.rawWordAfterSlash};
+        Option<bool> autoNonVnRestore{this, "AutoNonVnRestore", _("Auto Restore Invalid Words"), ngosen::defaultOptions.autoNonVnRestore};
+        Option<bool> modernStyle{this, "ModernStyle", _("Use oà, uý (Instead Of òa, úy)"), ngosen::defaultOptions.modernStyle};
+        Option<bool> freeMarking{this, "FreeMarking", _("Allow Type With More Freedom"), ngosen::defaultOptions.freeMarking};
+        Option<bool> ddFreeStyle{this, "DdFreeStyle", _("Allow dd To Produce đ When Auto Restore Invalid Words Is On"), ngosen::defaultOptions.ddFreeStyle};
+        Option<bool> backspaceRemovesTone{this, "BackspaceRemovesTone", _("Backspace Removes the Tone Mark"), ngosen::defaultOptions.backspaceRemovesTone};
         // Timing for deleting through the app. Hidden from the config window; tests and bug reports
         // still set them in ngosen.conf.
         HiddenOption<bool> waitSurroundingEvent{this, "WaitSurroundingEvent", _("Experiment: after forwarded backspaces, wait for the surrounding-text event instead of sleeping"),
-                                                true};
-        HiddenOption<int> waitSurroundingTimeoutMs{this, "WaitSurroundingTimeoutMs", _("Experiment: timeout (ms) for that wait"), 50}; HiddenOption<int> waitSurroundingShortMs{
-            this, "WaitSurroundingShortMs", _("Experiment: shorter timeout (ms) used after two consecutive timeouts without a matching event"), 40};
-        HiddenOption<int>  waitSurroundingProbeEvery{this, "WaitSurroundingProbeEvery",
-                                                     _("Experiment: when the app's snapshot is frozen during deletion, stop waiting and re-probe once every N replacements"), 4};
-        HiddenOption<int>  waitSurroundingSettleMs{this, "WaitSurroundingSettleMs", _("Experiment: extra ms to wait after the deletion shows done, Messenger composer only"), 40};
-        HiddenOption<bool> messengerSelectOvertype{this, "MessengerSelectOvertype", _("Experiment: select with Shift+Left and type over it in the Messenger composer"), true};
+                                                ngosen::defaultOptions.waitSurroundingEvent};
+        HiddenOption<int>  waitSurroundingTimeoutMs{this, "WaitSurroundingTimeoutMs", _("Experiment: timeout (ms) for that wait"), ngosen::defaultOptions.waitSurroundingTimeoutMs};
+        HiddenOption<int> waitSurroundingShortMs{this, "WaitSurroundingShortMs", _("Experiment: shorter timeout (ms) used after two consecutive timeouts without a matching event"),
+                                                 ngosen::defaultOptions.waitSurroundingShortMs};
+        HiddenOption<int> waitSurroundingProbeEvery{this, "WaitSurroundingProbeEvery",
+                                                    _("Experiment: when the app's snapshot is frozen during deletion, stop waiting and re-probe once every N replacements"),
+                                                    ngosen::defaultOptions.waitSurroundingProbeEvery};
+        HiddenOption<int> waitSurroundingSettleMs{this, "WaitSurroundingSettleMs", _("Experiment: extra ms to wait after the deletion shows done, Messenger composer only"),
+                                                  ngosen::defaultOptions.waitSurroundingSettleMs};
+        HiddenOption<bool> messengerSelectOvertype{this, "MessengerSelectOvertype", _("Experiment: select with Shift+Left and type over it in the Messenger composer"),
+                                                   ngosen::defaultOptions.messengerSelectOvertype};
+        HiddenOption<bool> copyWaitRecovery{this, "CopyWaitRecovery",
+                                            _("Experiment: in a field whose checks go unanswered, wait for its copy of the text again every few replacements"),
+                                            ngosen::defaultOptions.copyWaitRecovery};
+        HiddenOption<bool> foldReplayReplacement{this, "FoldReplayReplacement", _("Experiment: while replaying queued keys, change text not yet sent instead of deleting it"),
+                                                 ngosen::defaultOptions.foldReplayReplacement};
         HiddenOption<int>  waitSurroundingSettleFirstWordMs{this, "WaitSurroundingSettleFirstWordMs",
-                                                            _("Experiment: settle wait for the first word of a Messenger message (composer still loading)"), 60};
+                                                            _("Experiment: settle wait for the first word of a Messenger message (composer still loading)"),
+                                                            ngosen::defaultOptions.waitSurroundingSettleFirstWordMs};
         HiddenOption<int>  waitSurroundingMinPerKeyMs{this, "WaitSurroundingMinPerKeyMs",
-                                                      _("Experiment: a snapshot identical to the one at send time counts as done only after this many ms per backspace"), 8};
-        HiddenOption<int>  surrDeleteSleepMs{this, "SurrDeleteSleepMs", _("Experiment: ms per deleted char to sleep after deleteSurroundingText"), 4};
-        HiddenOption<int>  surrCommitSleepMs{this, "SurrCommitSleepMs", _("Experiment: ms per committed char to sleep after commitString on the surrounding-text path"), 3};
+                                                      _("Experiment: a snapshot identical to the one at send time counts as done only after this many ms per backspace"),
+                                                      ngosen::defaultOptions.waitSurroundingMinPerKeyMs};
+        HiddenOption<int>  surrDeleteSleepMs{this, "SurrDeleteSleepMs", _("Experiment: ms per deleted char to sleep after deleteSurroundingText"),
+                                             ngosen::defaultOptions.surrDeleteSleepMs};
+        HiddenOption<int>  surrCommitSleepMs{this, "SurrCommitSleepMs", _("Experiment: ms per committed char to sleep after commitString on the surrounding-text path"),
+                                             ngosen::defaultOptions.surrCommitSleepMs};
         // The key keeps its old name so saved settings still load.
         Option<bool> useNgoSenIcons{this, "UseLotusIcons", _("Use Ngó Sen Status Icons"), true};
 
@@ -292,18 +328,22 @@ namespace fcitx {
         Option<bool>                                                                            showModeEmoji{this, "ShowModeEmoji", _("Show Emoji Picker"), true};
         Option<std::string> shortcutEmoji{this, "ShortcutEmoji", _("Shortcut for Emoji Picker"), "w"}; Option<bool> showModeOff{this, "ShowModeOff", _("Show OFF"), true};
         Option<std::string> shortcutOff{this, "ShortcutOff", _("Shortcut for OFF"), "e"}; Option<bool> showModeDefault{this, "ShowModeDefault", _("Show Default Typing"), true};
-        Option<std::string>                                      shortcutDefault{this, "ShortcutDefault", _("Shortcut for Default Typing"), "r"};
-        Option<bool>                                             enableMacroInOffMode{this, "EnableMacroInOffMode", _("Allow Macro in Off Mode"), false};
+        Option<std::string> shortcutDefault{this, "ShortcutDefault", _("Shortcut for Default Typing"), "r"};
+        Option<bool> showModeVim{this, "ShowModeVim", _("Show Vim mode"), true}; Option<std::string> shortcutVim{this, "ShortcutVim", _("Shortcut for Vim mode"), "v"};
+        Option<bool>        enableMacroInOffMode{this, "EnableMacroInOffMode", _("Allow Macro in Off Mode"), ngosen::defaultOptions.enableMacroInOffMode};
 
-        Option<std::string>                                      modeOrder{this, "ModeOrder", _("Mode Order"), "Sen,Preedit,Emoji,Off,Default"};
+        Option<std::string> modeOrder{this, "ModeOrder", _("Mode Order"), "Sen,Preedit,Emoji,Off,Default,Vim"};
 
-        OptionWithAnnotation<std::string, TimeFormatAnnotation>  timeFormat{this, "TimeFormat", _("Time Format ($TIME in macro)"), "%H:%M", {}, {}, TimeFormatAnnotation()};
-        OptionWithAnnotation<std::string, DateFormatAnnotation>  dateFormat{this, "DateFormat", _("Date Format ($DATE in macro)"), "%d/%m/%Y", {}, {}, DateFormatAnnotation()};
+        OptionWithAnnotation<std::string, TimeFormatAnnotation> timeFormat{
+            this, "TimeFormat", _("Time Format ($TIME in macro)"), ngosen::defaultOptions.timeFormat, {}, {}, TimeFormatAnnotation()};
+        OptionWithAnnotation<std::string, DateFormatAnnotation> dateFormat{
+            this, "DateFormat", _("Date Format ($DATE in macro)"), ngosen::defaultOptions.dateFormat, {}, {}, DateFormatAnnotation()};
 
         SubConfigOption                                          macroEditor{this, "MacroEditor", _("Macro"), "fcitx://config/addon/ngosen/ngosen-macro"};
         SubConfigOption                                          customKeymap{this, "CustomKeymap", _("Custom Keymap"), "fcitx://config/addon/ngosen/custom_keymap"};
         OptionWithAnnotation<IconTheme, IconThemeI18NAnnotation> iconTheme{this, "IconTheme", _("Icon Color"), IconTheme::Auto};
-        Option<UiLanguage>                                       uiLanguage{this, "UiLanguage", _("Interface Language"), UiLanguage::Vietnamese};);
+        Option<UiLanguage>                                       uiLanguage{this, "UiLanguage", _("Interface Language"), UiLanguage::Vietnamese};
+        Option<SettingsToolkit>                                  settingsToolkit{this, "SettingsToolkit", _("Settings Window"), SettingsToolkit::Auto};);
 
 } // namespace fcitx
 

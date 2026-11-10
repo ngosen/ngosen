@@ -127,6 +127,11 @@ namespace fcitx {
             return color;
         }
 
+        // Modes that paint the bar with the shell's own compiled-in stylesheet.
+        bool isBuiltinShellMode(const std::string& mode) {
+            return mode.empty() || mode == "user";
+        }
+
         int gray(const Rgba& c) {
             return ((c.r * 11) + (c.g * 16) + (c.b * 5)) / 32;
         }
@@ -149,11 +154,15 @@ namespace fcitx {
                 info.userThemeName = name.substr(1, name.size() - 2);
         }
 
-        if (info.sessionMode.empty() || info.sessionMode == "user") {
+        if (isBuiltinShellMode(info.sessionMode) && info.userThemeName.empty()) {
             const std::string scheme = gsettingsGet("gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null");
             if (scheme.size() >= 2 && scheme.front() == '\'' && scheme.back() == '\'')
                 info.colorScheme = scheme.substr(1, scheme.size() - 2);
-            info.shellMajorVersion = gnomeShellMajorVersion(gsettingsGet("gnome-shell --version 2>/dev/null"));
+            // The running shell's version; it only changes with a new login.
+            static int version = 0;
+            if (version == 0)
+                version = gnomeShellMajorVersion(gsettingsGet("busctl --user --timeout=1 get-property org.gnome.Shell /org/gnome/Shell org.gnome.Shell ShellVersion 2>/dev/null"));
+            info.shellMajorVersion = version;
         }
         return info;
     }
@@ -246,7 +255,7 @@ namespace fcitx {
         }
 
         // Session mode stylesheet, e.g. Ubuntu's "Yaru/gnome-shell.css".
-        if (info.sessionMode.empty() || info.sessionMode == "user")
+        if (isBuiltinShellMode(info.sessionMode))
             return std::nullopt;
         std::vector<std::string> modeDirs{info.dataHome};
         modeDirs.insert(modeDirs.end(), info.dataDirs.begin(), info.dataDirs.end());
@@ -275,9 +284,8 @@ namespace fcitx {
     std::optional<bool> isGnomePanelDark(const GnomeShellThemeInfo& info) {
         const auto path = gnomeShellStylesheet(info);
         if (!path) {
-            // GNOME 43 keeps the bar dark under every scheme, so older shells stay unknown.
-            const bool builtinTheme = info.sessionMode.empty() || info.sessionMode == "user";
-            if (builtinTheme && info.shellMajorVersion >= 51)
+            // Only GNOME 51 and later are known to follow color-scheme here.
+            if (isBuiltinShellMode(info.sessionMode) && info.shellMajorVersion >= 51)
                 return info.colorScheme != "prefer-light";
             return std::nullopt;
         }

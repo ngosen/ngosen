@@ -138,9 +138,12 @@ int main() {
     check("G7 empty_mode_is_user", fcitx::isGnomePanelDark(info) == std::optional<bool>(false), "empty session mode not treated as user");
     info.sessionMode = "ubuntu";
     check("G8 ubuntu_mode_uses_yaru", fcitx::isGnomePanelDark(info) == std::optional<bool>(true), "Ubuntu Yaru bar decided by color-scheme");
+    info.sessionMode = "classic";
+    check("G9 other_mode_without_css", !fcitx::isGnomePanelDark(info).has_value(), "mode without a stylesheet answered from color-scheme");
     info.sessionMode = "user";
     check("V1 version_line", fcitx::gnomeShellMajorVersion("GNOME Shell 51.1") == 51, "GNOME Shell 51.1 not read as 51");
     check("V2 version_alpha", fcitx::gnomeShellMajorVersion("GNOME Shell 52.alpha") == 52, "52.alpha not read as 52");
+    check("V4 busctl_reply", fcitx::gnomeShellMajorVersion("s \"51.1\"") == 51, "busctl reply not read as 51");
     check("V3 version_missing", fcitx::gnomeShellMajorVersion("") == 0, "empty line not 0");
 
     // ── Cinnamon: the panel follows the Cinnamon theme, not the GTK one ──

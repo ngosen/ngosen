@@ -132,6 +132,7 @@ int main() {
     check("T7 console_sway_by_name", fcitx::trayWantsIconName("", "", "/run/user/1000/sway-ipc.1000.1.sock"), "Sway without XDG_CURRENT_DESKTOP given a path");
     check("T8 hyprland_tray_by_path", !fcitx::trayWantsIconName("Hyprland", "hyprland", ""), "Hyprland tray given a name");
     check("T9 unknown_tray_by_path", !fcitx::trayWantsIconName("", "", ""), "unknown desktop given a name");
+    check("T10 stale_swaysock_on_kde", !fcitx::trayWantsIconName("KDE", "plasma", "/run/user/1000/sway-ipc.1000.1.sock"), "KDE with a stale SWAYSOCK given a name");
     check("T4 gnome_tray_tighter_icon", fcitx::trayIconNames("fcitx-ngosen", "fcitx-ngosen", "ubuntu:GNOME").front() == "fcitx-ngosen-gnome",
           "GNOME Shell not given the GNOME icon first");
     check("T5 kde_tray_usual_icon", fcitx::trayIconNames("fcitx-ngosen-off", "fcitx-ngosen-off", "KDE").front() == "fcitx-ngosen-off", "KDE given the GNOME icon");

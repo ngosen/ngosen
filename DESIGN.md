@@ -39,8 +39,9 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
    Fusion, each scroll bar gets a stylesheet for GNOME's thin rounded bar, drawn in the text colour
    seen through (`settings-gui/ui/scroll_bars.py`).
 2. **Four brand marks, nothing more.**
-   - The tray icon (`fcitx-ngosen`, a lotus-root slice on enamel green) at the top of the sidebar.
-   - The wordmark "Ngó Sen" next to it, at a fixed large size, with diacritics, never in bold.
+   - The app icon (`fcitx-ngosen`, a lotus-root slice on enamel green), shown once: the window
+     manager draws it in the title bar, so the sidebar does not repeat it.
+   - The wordmark "Ngó Sen" at the top of the sidebar, at a fixed large size, with diacritics, never in bold.
    - The current typing mode (Gõ Sen, Gạch chân, Chọn Emoji) as a segmented row of buttons; the checked
      one is filled enamel with `on-enamel` text.
    - Typed text at a fixed size: the keys-to-result example under the input method
@@ -59,7 +60,7 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 
 - Window: sidebar list on the left, page on the right. Below about 620px wide the form labels go
   above their fields.
-- Sidebar: icon and wordmark, a search field, then seven pages with a small line icon each:
+- Sidebar: the wordmark, a search field, then seven pages with a small line icon each:
   Gõ chữ, Gõ tắt & Từ điển, Phím, Giao diện, Có gì mới & mẹo, Kiểm tra máy, Giới thiệu. The current page uses
   the platform's selection look.
 - Có gì mới & mẹo: one card per recent feature (name, how to use it, a typed example, an "Mở cài đặt" button that jumps to the setting), then the tips as plain lines. Nothing
@@ -110,7 +111,8 @@ settings only through `settings-gui/core/`, so both windows save the same values
   Settings; below about 600sp only one side shows. Each page is an `AdwPreferencesPage` of
   `AdwPreferencesGroup`s with `AdwSwitchRow`, `AdwComboRow`, `AdwEntryRow` and `AdwSpinRow`. A
   hint is the row's subtitle. No CSS beyond the brand marks and the accent colour.
-- **The same four brand marks.** The icon and wordmark at the top of the sidebar; typed text in
+- **The same four brand marks.** The icon and wordmark at the top of the sidebar, with the
+  desktop's own app icon left out of that title bar (Plasma asks GTK apps for one); typed text in
   a larger size through a `.typed` class; the typing mode as linked toggle buttons, the checked one
   filled enamel with `on-enamel` text (`enamel-dark` in dark mode). libadwaita 1.5 has no
   `AdwToggleGroup`.

@@ -24,6 +24,7 @@ Copyright: 2018 Luong Thanh Lam <ltlam93@gmail.com>
 License: LGPL-2.1-or-later
 
 Files: bamboo-rs/src/engine/english-words*
+       data/english-common.txt
 Copyright: 2000-2026 Kevin Atkinson
 License: SCOWL
  Permission to use, copy, modify, distribute, and sell any part of SCOWLv2, or

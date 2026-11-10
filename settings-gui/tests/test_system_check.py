@@ -863,6 +863,19 @@ class CheckPageTest(unittest.TestCase):
         while self.page.fixes.busy:
             QApplication.processEvents()
 
+    def test_every_section_starts_at_the_heading_edge(self):
+        from qtpy.QtWidgets import QApplication, QLabel
+
+        self.page.resize(800, 1400)
+        self.page.show()
+        QApplication.processEvents()
+        content = self.page.heading.parentWidget()
+        edge = self.page.heading.x()
+        step = self.page.rows[0]
+        how_to = self.page.read_log_btn.parentWidget().findChild(QLabel)
+        for widget in (step, how_to, self.page.read_log_btn):
+            self.assertEqual(widget.mapTo(content, widget.rect().topLeft()).x(), edge)
+
     def test_a_tip_keeps_the_machine_ready_and_has_its_own_button(self):
         tip = system_check.Finding(
             system_check.TIP, "tip", "", system_check.ENABLE_FORWARD_KEYS, "cmd"
@@ -1009,6 +1022,28 @@ class CheckPageWindowTest(unittest.TestCase):
         app.processEvents()
         self.assertEqual(window.check_badge.text(), "3")
         self.assertFalse(window.check_badge.isHidden())
+
+    def test_the_badge_leaves_the_entry_name_readable(self):
+        # Desktop fonts are wider than the test platform's; the sidebar must make room either way.
+        font = app.font()
+        self.addCleanup(app.setFont, font)
+        large = app.font()
+        large.setPixelSize(17)
+        app.setFont(large)
+        window = self.window(FakeDBusHandler())
+        window.resize(1000, 700)
+        window.show()
+        app.processEvents()
+        item = window._check_item
+        rect = window.sidebar.visualItemRect(item)
+        from qtpy.QtWidgets import QStyle
+
+        icon = window.sidebar.iconSize().width()
+        icon = icon if icon > 0 else window.style().pixelMetric(QStyle.PM_SmallIconSize)
+        text_end = rect.left() + icon + window.sidebar.fontMetrics().horizontalAdvance(item.text())
+        badge = window.check_badge
+        badge_start = badge.mapTo(window.sidebar.viewport(), badge.rect().topLeft()).x()
+        self.assertGreater(badge_start, text_end)
 
     def test_coming_back_after_a_message_checks_again(self):
         window = self.window(FakeDBusHandler())

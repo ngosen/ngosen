@@ -30,6 +30,34 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Nếu mở Vim từ lịch sử shell bằng mũi tên lên, qua alias hoặc `git commit`, hãy bật Vim mode cho terminal (#302, #587).
 - Lệnh cài một dòng nay tự thêm repo APT trên Debian, Ubuntu và các distro dựa trên chúng để nhận version mới khi cập nhật hệ thống. Máy đã cài bằng lệnh này trước đây có thể chạy lại để thêm repo. (#654)
 
+## [1.9.1-1] — 10/11/2026
+
+Lệnh cài nay cho chọn bản fcitx5 hay bản IBus (#653), menu chế độ bỏ dòng "Chế độ gõ mặc định" (#659), chữ đầu tin nhắn có dấu trong Messenger trên Chromium không còn sai hoặc mất chữ (#663); gõ từ không phải tiếng Việt liền chữ số và dùng BackSpace lùi vào phần đã gõ nay giữ đúng chữ, không còn làm rối chữ hay mất dấu (#643, #646, #651, #661), Cứu dấu chạy lại trong cửa sổ ẩn danh của Chrome, Chromium (#647), và sửa thêm ô tìm kiếm GNOME, bản IBus và cửa sổ cài đặt (#644, #648, #649, #652, #656).
+Tải ở [ngosen-1.9.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.9.1-1).
+
+### Thêm
+
+- Lệnh cài lần đầu trên GNOME, hoặc Xfce, Cinnamon, MATE dùng X11 trên Debian, Ubuntu, Linux Mint, nay hỏi chọn bản fcitx5 đầy đủ tính năng (bấm Enter để chọn) hay bản IBus dùng IBus có sẵn, đơn giản hơn nhưng ít tính năng hơn một chút; chỉ hỏi khi có gói cho bản IBus. Dùng `--ibus` hoặc `--fcitx5` để chọn mà không cần hỏi; chạy lại để cập nhật thì giữ nguyên bản đang có. Khi đổi bản, gói của bản cũ được gỡ trong cùng lần cài, và mọi thay đổi được liệt kê trước một câu hỏi "Tiếp tục?" duy nhất (#653).
+
+### Thay đổi
+
+- Menu chế độ mở bằng phím ` không còn dòng "Chế độ gõ mặc định"; cửa sổ cài đặt cũng bỏ ô "Hiển thị chế độ gõ mặc định" và phím tắt của nó. Muốn app trở lại theo cài đặt chung và phím chuyển Anh/Việt, chọn lại chế độ vốn có của app (thường là Gõ Sen, vài app như deepin-editor là Gạch chân), kể cả khi dùng phím đổi vòng chế độ; chọn Tắt vẫn được nhớ riêng cho app đó (#659).
+
+### Sửa
+
+- Ở Gõ Sen, gõ chữ đầu tin nhắn có dấu trong Messenger trên Chromium không còn bị sai hoặc mất chữ (#663).
+- Trên GNOME tắt extension, đóng một cửa sổ ngay trong màn tổng quan không còn làm ô tìm kiếm mang chế độ gõ và cài đặt riêng của app phía sau (#644).
+- Gõ từ không phải tiếng Việt liền chữ số khi bật gõ tắt (mặc định) nay trả lại đúng phím đã gõ ngay khi tới chữ số, không còn hiện "Soé2" rồi chờ dấu cách mới thành "Sose2026"; kết thúc chữ bằng Tab, Esc hay các phím giữ chữ như đang hiện cũng giữ "Sose2026" thay vì "Soé2026". Ở Gõ Sen, gõ "Sose2026", dấu cách rồi BackSpace hai lần không còn làm rối chữ thành "Sosse202"; từ tiếng Việt liền số như "tôi2" vẫn giữ nguyên (#613, #643).
+- Trong cửa sổ ẩn danh của Chrome, Chromium và các trình duyệt cùng nhân trên KDE và các desktop Wayland khác (GNOME không bị), Cứu dấu, Cứu chữ và viết hoa đầu dòng chạy lại như ở cửa sổ thường; chữ gõ trong đó vẫn không ghi vào nhật ký gõ (#647).
+- Ở Gõ Sen, gõ phần đầu không phải tiếng Việt liền chữ số rồi phần tiếng Việt như "thuwcx2tooi2", sau đó BackSpace lùi vào phần đầu nay giữ đúng chữ đang hiện, không còn làm rối chữ (#646).
+- Ở Preedit, gõ chữ tiếng Việt liền chữ số như "tôi2", nhấn dấu cách rồi BackSpace hai lần nay giữ đúng "tôi", không còn mất dấu thành "toi" (#661).
+- Khôi phục một bản sao lưu của Ngó Sen cho GNOME (bản IBus) không còn xoá các app đã chọn riêng tiếng Việt hay tiếng
+  Anh trong máy; bản sao lưu cũ của bản fcitx5 vẫn khôi phục như trước (#648).
+- Máy đang có bản IBus (`ibus-ngosen`) thì lệnh cài nói rõ trước khi hỏi: gỡ gói là gỡ cho mọi tài khoản, cài đặt của bản IBus không tự chép sang. Trên Debian, Ubuntu và Fedora, gói cũ được thay trong cùng lần cài nên cài lỗi thì bản IBus vẫn còn (trước đây Fedora báo lỗi xung đột và không cài); trên openSUSE và Arch, lệnh in lệnh gỡ rồi dừng. Cài xong, nguồn nhập "Tiếng Việt (Ngó Sen)" của bản IBus được bỏ khỏi tài khoản chạy lệnh (#649).
+- Sửa lỗi hiển thị trong cài đặt: Qt và GTK trên KDE Plasma chỉ còn một logo Ngó Sen ở góc trên trái; các nút ở trang "Có gì mới & mẹo" của GTK bớt xuống dòng; Qt hết khoảng trống lớn dưới danh sách chế độ ở trang Phím khi kéo cao hoặc phóng to cửa sổ, các bước và dòng "Test một app" ở trang "Kiểm tra máy" thẳng hàng với tiêu đề, số đỏ ở thanh bên không còn che tên trang khi dùng tiếng Anh; công tắc "Tự khôi phục từ gõ sai" trong menu khay giữ nguyên tên sau khi bấm (#652).
+- Ở Gõ Sen, BackSpace khi từ đang hiện nguyên phím gõ vì chưa thành tiếng Việt nay chuyển phần còn lại thành tiếng Việt, không còn làm rối chữ gõ tiếp: "dduoxwc" lùi thành "đưỡ"; "thuwcx", BackSpace rồi "j" thành "thực". Ngó Sen kèm danh sách khoảng 88.000 từ tiếng Anh để giữ nguyên phím gõ nếu đó là đầu một từ tiếng Anh, như "perl", "are" (BackSpace ở "are" còn "ar", không thành "ả"); BackSpace ở Preedit cũng giữ nguyên phím của những từ đó (#651).
+- Trên GNOME dùng bản IBus mà vẫn cài fcitx5, extension Ngó Sen không còn tự bật fcitx5 lúc đăng nhập, làm mất nguồn nhập "Tiếng Việt (Ngó Sen)" và gõ ra chữ không dấu. Bản fcitx5 vẫn nhận tên app như trước, kể cả cửa sổ không có file .desktop và sau khi mở khoá màn hình (#656).
+
 ## [1.9.0-1] — 08/11/2026
 
 GNOME tắt extension vẫn giữ chế độ gõ và cài đặt riêng theo từng app, và lệnh cài không còn tự bật extension khi portal báo được tên app (#621, #629). Gõ Sen hiện dấu ngay trong terminal và bớt khựng trong Firefox trên Hyprland, Sway (#607, #620, #623, #630); gõ -- trong terminal và ô địa chỉ giữ nguyên (#625); nhận ra thêm các bản Firefox trên GNOME (#634).

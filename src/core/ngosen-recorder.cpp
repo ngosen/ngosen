@@ -148,7 +148,7 @@ namespace ngosen {
 
           private:
             std::string quoted(const std::string& text) const {
-                return host_->field().password ? "hidden" : "\"" + text + "\"";
+                return host_->field().hidesText() ? "hidden" : "\"" + text + "\"";
             }
 
             std::unique_ptr<Host> host_;

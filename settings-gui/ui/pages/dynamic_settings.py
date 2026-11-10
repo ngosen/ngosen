@@ -735,7 +735,7 @@ class DynamicSettingsPage(QWidget):
         # Get current order from config
         order_str = self.current_values.get(
             "ModeOrder",
-            "Sen,Preedit,Emoji,Off,Default,Vim",
+            "Sen,Preedit,Emoji,Off,Vim",
         )
         # The addon renames old mode names before it hands the config out.
         order = list(dict.fromkeys(order_str.split(",")))
@@ -808,6 +808,8 @@ class DynamicSettingsPage(QWidget):
         keys_hint = HintLabel(_(HINTS["ModeOrder"]))
         mute(keys_hint)
         card.content_layout.addWidget(keys_hint)
+        # Room a tall window gives this row goes below the hints, not into them.
+        card.content_layout.addStretch()
         self.form.addRow(label, card)
 
     @staticmethod

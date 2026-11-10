@@ -188,6 +188,17 @@ class GtkWindowTest(unittest.TestCase):
         self.assertIn("@define-color accent_bg_color #1c6b5f", brand.css(False, 5))
         self.assertIn("--accent-bg-color: #247b6c", brand.css(True, 6))
 
+    def test_the_sidebar_shows_one_logo_where_the_desktop_adds_its_icon(self):
+        # Plasma asks GTK apps for the app icon left of the title buttons.
+        settings = Gtk.Settings.get_default()
+        before = settings.props.gtk_decoration_layout
+        self.addCleanup(setattr, settings.props, "gtk_decoration_layout", before)
+        settings.props.gtk_decoration_layout = "icon:minimize,maximize,close"
+        header = window.Window(None, self.dbus).sidebar_header
+        self.assertEqual(header.get_decoration_layout(), ":minimize,maximize,close")
+        settings.props.gtk_decoration_layout = "close,icon:"
+        self.assertEqual(header.get_decoration_layout(), "close:")
+
     def test_the_marks_keep_the_system_font(self):
         self.assertNotIn("font-family", brand.css(False, 6))
 
@@ -477,9 +488,9 @@ class GtkShortcutsPageTest(unittest.TestCase):
 
     def test_dropping_a_mode_saves_the_order(self):
         self.assertTrue(self.page.move("Off", "Sen"))
-        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Sen,Preedit,Emoji,Default,Vim")
+        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Sen,Preedit,Emoji,Vim")
         self.page.move("Sen", "Emoji")
-        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Preedit,Emoji,Sen,Default,Vim")
+        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Preedit,Emoji,Sen,Vim")
 
     def test_show_page_opens_the_shortcuts_tab(self):
         self.window.show_page("keymap")
@@ -1248,6 +1259,25 @@ class GtkWhatsNewPageTest(unittest.TestCase):
             labels = [c for c in _children(titled[feature["title"]]) if isinstance(c, Gtk.Label)]
             self.assertIn(feature["example"], [label.get_text() for label in labels])
         self.assertEqual([r for r in rows if r.has_css_class("typed")], [])
+
+    def test_a_button_keeps_its_label_on_few_lines(self):
+        w = self.window
+        w.set_default_size(900, 680)
+        w.present()
+        w.show_page("whats-new")
+        buttons = [b for b in _children(w.whats_new.page) if hasattr(b, "target")]
+        context = GLib.MainContext.default()
+        for _ in range(300):
+            if all(b.get_width() > 0 for b in buttons):
+                break
+            context.iteration(False)
+            time.sleep(0.01)
+        if w.get_frame_clock().get_frame_counter() == 0 and not REQUIRED:
+            self.skipTest("the window was never drawn, as on a locked desktop")
+        for button in buttons:
+            lines = button.get_child().get_layout().get_line_count()
+            most = 1 if button.target[0] == "setting" else 2
+            self.assertLessEqual(lines, most, button.get_label())
 
     def test_the_about_button_fits_its_label(self):
         w = window.Window(None, FakeDBusHandler())

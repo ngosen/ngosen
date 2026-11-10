@@ -98,10 +98,13 @@ namespace {
         names.setOverviewActive(false);
         expect("names: the app after the overview", names.name(), "org.gnome.Nautilus.desktop");
 
+        // Closing a window inside the overview makes the portal name the next app, while the
+        // search box keeps the focus.
         names.setOverviewActive(true);
-        names.setPortalApps(editor);
-        expect("names: picking another app ends the overview", names.name(), "org.gnome.TextEditor.desktop");
-        expectTrue("names: OverviewActive going false then is no change", !names.setOverviewActive(false));
+        expectTrue("names: closing a window in the overview is no change", !names.setPortalApps(editor));
+        expect("names: closing a window in the overview keeps the search box", names.name(), ngosen::gnomeOverviewApp);
+        expectTrue("names: the overview ending names the app", names.setOverviewActive(false));
+        expect("names: the app picked in the overview", names.name(), "org.gnome.TextEditor.desktop");
 
         expectTrue("names: GNOME Shell or the portal leaving drops the name", names.dropPortalApp());
         expect("names: GNOME Shell or the portal leaving drops the name", names.name(), "");

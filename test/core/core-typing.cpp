@@ -378,6 +378,47 @@ namespace {
               std::to_string(host->forwarded().size()) + " forwarded, " + std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
     }
 
+    // Types `word` at the end of a Messenger composer holding `before`, then e.
+    void typeInMessengerComposer(ngosen::TypingState& state, FakeHost& host, FakeLoop& loop, const std::string& before, const std::string& word) {
+        std::string shown = before;
+        host.setSurrounding(shown.empty() ? "\n" : shown + "\n\n", static_cast<unsigned int>(ngosen::utf8::length(shown)));
+        for (const char c : word) {
+            press(state, static_cast<uint32_t>(c));
+            shown += c;
+            host.setSurrounding(shown + "\n\n", static_cast<unsigned int>(ngosen::utf8::length(shown)));
+            state.surroundingUpdated();
+            loop.pump(10);
+        }
+        press(state, static_cast<uint32_t>('e'));
+    }
+
+    void testMessengerFirstWordWaitsAfterSurroundingDelete() {
+        realMode = ngosen::Mode::Sen;
+        {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "chromium"));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            typeInMessengerComposer(state, *host, loop, "", "tie");
+            loop.pump(30);
+            check(host->deletes().size() == 1 && host->commits().empty(), "messenger: the first word's commit waits after the deletion",
+                  std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
+            loop.pump(60);
+            check(join(host->commits()) == "['ê']", "messenger: the first word's commit comes after the wait", join(host->commits()));
+        }
+        {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "chromium"));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            typeInMessengerComposer(state, *host, loop, "chào ", "tie");
+            loop.pump(3);
+            check(host->deletes().size() == 1 && join(host->commits()) == "['ê']", "messenger: a later word is committed at once", join(host->commits()));
+        }
+    }
+
     // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
     void testFirefoxDeletesThroughSurrounding() {
         for (const char* frontend : {"wayland", "wayland_v2", "dbus"}) {
@@ -1213,24 +1254,28 @@ namespace {
     }
 
     void testRecorderHidesPasswords() {
-        realMode = ngosen::Mode::Sen;
-        FakeLoop      loop;
-        FakeResources resources;
-        Field         field       = makeField("wayland", true, "firefox");
-        field.password            = true;
-        auto                owned = std::make_unique<FakeHost>(loop, field);
-        FakeHost*           host  = owned.get();
-        ngosen::TypingState state(&resources, std::move(owned));
+        for (const bool sensitive : {false, true}) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop      loop;
+            FakeResources resources;
+            Field         field       = makeField("wayland", true, "firefox");
+            field.password            = !sensitive;
+            field.sensitive           = sensitive;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
 
-        typeTie(state, *host, loop, true);
-        press(state, static_cast<uint32_t>('e'));
-        host->setSurrounding("ti", 2);
-        state.surroundingUpdated();
-        loop.pump(150);
+            typeTie(state, *host, loop, true);
+            press(state, static_cast<uint32_t>('e'));
+            host->setSurrounding("ti", 2);
+            state.surroundingUpdated();
+            loop.pump(150);
 
-        const std::string log = resources.recorder().dump();
-        check(has(log, " password=1 ") && has(log, "\tkey\thidden\n"), "recorder: marks the password field", log);
-        check(!has(log, "0x0065") && !has(log, "\"ti") && !has(log, "\"ê\"") && !has(log, " e\n"), "recorder: keeps no password text", log);
+            const std::string log  = resources.recorder().dump();
+            const std::string kind = sensitive ? "private" : "password";
+            check(has(log, sensitive ? " sensitive=1 " : " password=1 ") && has(log, "\tkey\thidden\n"), "recorder: marks the " + kind + " field", log);
+            check(!has(log, "0x0065") && !has(log, "\"ti") && !has(log, "\"ê\"") && !has(log, " e\n"), "recorder: keeps no " + kind + " text", log);
+        }
     }
 
     void testRecorderMarksTerminal() {
@@ -1515,6 +1560,17 @@ namespace {
             check(host->preedit() == "viết", "preedit reopen: s puts a new tone on the word", host->preedit());
             press(state, ngosen::key::space);
             check(join(host->commits()) == "['việt ']['viết ']", "preedit reopen: space commits the fixed word", join(host->commits()));
+        }
+        {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            const PreeditReopen r = backspaceAfterPreeditCommit(state, *host, "tooi2 ", "tôi2 ");
+            check(r.preedit == "tôi2", "preedit reopen: a word ending in a digit shows again", r.preedit);
+            press(state, ngosen::key::BackSpace);
+            check(host->preedit() == "tôi", "preedit reopen: deleting the digit keeps the marks", host->preedit());
         }
         {
             // Held Backspace: the reopened word is deleted letter by letter, then the app deletes on its own.
@@ -1824,6 +1880,33 @@ namespace {
                 FakeResources     resources;
                 const std::string sen = ngosen::test::typeInApp(resources, makeField(frontend, surroundingText), {}, keys, std::vector<int>(keys.size(), 30));
                 check(sen == want, std::string("retone at word end, Sen (") + frontend + "): " + printable, sen);
+            }
+        }
+    }
+
+    // A digit restores the word before it as soon as it is typed (#613), and Backspace keeps the app
+    // and the engine on the same text. \b is Backspace, \t Tab and \x1b Escape.
+    void testRestoreBeforeDigitWhileTyping() {
+        const std::vector<std::pair<std::string, std::string>> cases = {
+            {"Sose2", "Sose2"},
+            {"Sose2026\t", "Sose2026"},
+            {"Sose2026\x1b", "Sose2026"},
+            {"Sose2\b2 ", "Sose2 "},
+            {"Sose2026 \b\b ", "Sose202 "},
+            {"Sose2a\b ", "Sose2 "},
+            {"tooi2 ", "tôi2 "},
+            {"thuwcx2tooi2\b\b\b\b\b\bj ", "thuwcj "},
+        };
+        for (const auto& [typed, want] : cases) {
+            std::vector<uint32_t> keys;
+            for (char c : typed)
+                keys.push_back(c == '\b' ? ngosen::key::BackSpace : c == '\t' ? ngosen::key::Tab : c == '\x1b' ? ngosen::key::Escape : static_cast<uint32_t>(c));
+            std::string printable = typed;
+            std::replace_if(printable.begin(), printable.end(), [](char c) { return c == '\b' || c == '\t' || c == '\x1b'; }, '~');
+            for (const auto& [frontend, surroundingText] : {std::pair<const char*, bool>{"wayland", true}, {"ibus", false}}) {
+                FakeResources     resources;
+                const std::string sen = ngosen::test::typeInApp(resources, makeField(frontend, surroundingText), {}, keys, std::vector<int>(keys.size(), 30));
+                check(sen == want, std::string("restore before digit, Sen (") + frontend + "): " + printable, sen);
             }
         }
     }
@@ -3586,6 +3669,24 @@ namespace {
 } // namespace
 
 namespace {
+    // The app deletes one character of keys shown as typed, while the engine may compose what is left.
+    void testBackspaceIntoKeysShownAsTyped() {
+        ngosen::test::FakeResources resources;
+        const Field                 field = makeField("wayland", true);
+        const auto                  type  = [&](const std::string& typed) {
+            std::vector<uint32_t> keys;
+            for (const char c : typed)
+                keys.push_back(c == '<' ? uint32_t{ngosen::key::BackSpace} : static_cast<uint32_t>(c));
+            return ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
+        };
+        std::string text = type("dduoxwcj<<");
+        check(text == "đưỡ", "sen: backspace into dduoxwc shows what the engine composes", text);
+        text = type("thuwcx<j ");
+        check(text == "thực ", "sen: a stray tone key deleted, the next one gives the word", text);
+        text = type("perl<<a ");
+        check(text == "pea ", "sen: backspaces into an English word keep its keys", text);
+    }
+
     void testEnglishWordKeepsDoubledLetter() {
         const auto typed = [](const std::string& word, uint32_t end) {
             std::vector<uint32_t> keys(word.begin(), word.end());
@@ -3674,6 +3775,7 @@ namespace {
 }
 
 int main() {
+    testBackspaceIntoKeysShownAsTyped();
     testEnglishWordKeepsDoubledLetter();
     testHoldsWordAcrossReload();
     testQuirks();
@@ -3689,6 +3791,7 @@ int main() {
     for (const char* frontend : {"wayland", "wayland_v2", "dbus"})
         testSenDeletesReportedWord(frontend);
     testFirefoxDeletesThroughSurrounding();
+    testMessengerFirstWordWaitsAfterSurroundingDelete();
     testForwardedKeysNewerThanTyped();
     testKeyDuringReplacement();
     testCommitAfterTheReport();
@@ -3708,6 +3811,7 @@ int main() {
     testLockWord();
     testLockWordPreedit();
     testRetoneAtWordEndInBothModes();
+    testRestoreBeforeDigitWhileTyping();
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();
     testLateCopiesRecoverOnWlroots();

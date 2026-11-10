@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Xfce nay mặc định mở cửa sổ cài đặt GTK và cài thư viện GTK như GNOME và Cinnamon; lựa chọn Qt hoặc GTK đã lưu vẫn được giữ nguyên (#670).
+
 ### Sửa
 
 - deepin: khi dùng giao diện sáng, icon khay kiểu trơn nay màu đen cho hợp thanh dock sáng, không còn trắng khó thấy. Giao diện tự động vẫn dùng icon trắng (#673).

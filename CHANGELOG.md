@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Xfce nay mặc định mở cửa sổ cài đặt GTK và cài thư viện GTK như GNOME và Cinnamon; lựa chọn Qt hoặc GTK đã lưu vẫn được giữ nguyên (#670).
+
 ## [1.9.1-1] — 10/11/2026
 
 Lệnh cài nay cho chọn bản fcitx5 hay bản IBus (#653), menu chế độ bỏ dòng "Chế độ gõ mặc định" (#659), chữ đầu tin nhắn có dấu trong Messenger trên Chromium không còn sai hoặc mất chữ (#663); gõ từ không phải tiếng Việt liền chữ số và dùng BackSpace lùi vào phần đã gõ nay giữ đúng chữ, không còn làm rối chữ hay mất dấu (#643, #646, #651, #661), Cứu dấu chạy lại trong cửa sổ ẩn danh của Chrome, Chromium (#647), và sửa thêm ô tìm kiếm GNOME, bản IBus và cửa sổ cài đặt (#644, #648, #649, #652, #656).

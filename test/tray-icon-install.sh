@@ -7,7 +7,7 @@ set -u
 build=${1:?usage: tray-icon-install.sh <build dir>}
 dest=$(mktemp -d)
 trap 'rm -rf "$dest"' EXIT
-DESTDIR=$dest cmake --install "$build" >/dev/null || exit 1
+DESTDIR=$dest cmake --install "$build/data" >/dev/null || exit 1
 icons=$(find "$dest" -type d -path '*/share/icons' | head -1)
 [ -n "$icons" ] || {
     echo "no icons installed" >&2

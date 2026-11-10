@@ -30,6 +30,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Nếu mở Vim từ lịch sử shell bằng mũi tên lên, qua alias hoặc `git commit`, hãy bật Vim mode cho terminal (#302, #587).
 - Lệnh cài một dòng nay tự thêm repo APT trên Debian, Ubuntu và các distro dựa trên chúng để nhận version mới khi cập nhật hệ thống. Máy đã cài bằng lệnh này trước đây có thể chạy lại để thêm repo. (#654)
 
+### Thay đổi
+
+- Icon khay kiểu trơn (V, E, mặt cười, khi tắt "Sử dụng biểu tượng trạng thái Ngó Sen") nay cao bằng ô ngó sen, trước chỉ khoảng hai phần ba. Trên GNOME cần đăng xuất rồi đăng nhập lại mới thấy.
+
 ## [1.9.0-1] — 08/11/2026
 
 GNOME tắt extension vẫn giữ chế độ gõ và cài đặt riêng theo từng app, và lệnh cài không còn tự bật extension khi portal báo được tên app (#621, #629). Gõ Sen hiện dấu ngay trong terminal và bớt khựng trong Firefox trên Hyprland, Sway (#607, #620, #623, #630); gõ -- trong terminal và ô địa chỉ giữ nguyên (#625); nhận ra thêm các bản Firefox trên GNOME (#634).

@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Bảng tính Lark trên Brave/Chrome (X11): gõ Gõ Sen rồi chuyển ô nhanh bằng mũi tên hoặc Tab không còn mất chữ, kiểu gõ `laf` chỉ còn `l` và các ô sau trống (#681).
+
 ## [1.9.2-1] — 11/11/2026
 
 Xfce nay mặc định mở cửa sổ cài đặt GTK (#670), icon khay kiểu trơn chuyển sang màu đen khi panel sáng trên GNOME 51 và deepin (#672, #673), icon Ngó Sen hiện trong swaybar (#674); tệp giấy phép từ điển thêm link bản lưu của hai trang nguồn để phục vụ việc đưa Ngó Sen vào kho Debian, nội dung từ điển giữ nguyên (#680).
@@ -25,7 +29,6 @@ Tải ở [ngosen-1.9.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 - deepin: khi dùng giao diện sáng, icon khay kiểu trơn nay màu đen cho hợp thanh dock sáng, không còn trắng khó thấy. Giao diện tự động vẫn dùng icon trắng (#673).
 - Sway: icon Ngó Sen nay hiện trong swaybar, trước đây swaybar vẽ hình "không tìm thấy icon" (#674).
 - GNOME 51 không dùng theme riêng: khi chọn giao diện sáng, thanh trên cùng sáng nên icon khay kiểu trơn nay đổi sang màu đen, không còn trắng gần như không thấy (#672).
-- Bảng tính Lark trên Brave/Chrome (X11): gõ Gõ Sen rồi chuyển ô nhanh bằng mũi tên hoặc Tab không còn mất chữ, kiểu gõ `laf` chỉ còn `l` và các ô sau trống (#681).
 
 ## [1.9.1-1] — 10/11/2026
 

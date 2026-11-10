@@ -1,8 +1,10 @@
+[English](README.en.md)
+
 # Ngó Sen
 
-Ngó Sen là bộ gõ tiếng Việt được **vibecode** cho fcitx5 trên Linux, cho trải nghiệm gõ như UniKey trên Windows.
-fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM. Có thêm
-[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, dùng chung lõi gõ
+Ngó Sen là bộ gõ tiếng Việt cho fcitx5 trên Linux, cho trải nghiệm gõ như UniKey trên Windows.
+fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM.
+Có thêm [Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, dùng chung lõi gõ
 với bản fcitx5 nên tính năng gần như giống hệt. Tính năng mới có thể đến bản IBus muộn hơn bản fcitx5.
 
 Cửa sổ cài đặt có hai bản: Qt và GTK (giống app GNOME). GNOME và Linux Mint (Cinnamon) mở bản GTK,
@@ -29,26 +31,43 @@ Bản Qt trên KDE Plasma:
   thành `tiếng việt`. Tab hoặc Esc trả lại chữ đã gõ. Nếu đoạn có chữ không đổi được như `abc`, Ngó Sen
   chỉ hiện gợi ý; bấm Enter để nhận. Cứu chữ không ghi nhớ gì trong ô mật khẩu.
 - Cứu dấu: bôi đen chữ rồi gõ phím dấu để thêm, đổi hoặc bỏ dấu thanh, như `nhanh` + `s` → `nhánh`.
+  Ở Gõ Sen, có thể bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu, không cần bôi đen:
+  `nhanh|` + `s` → `nhánh`.
   Dùng được ở app cho bộ gõ đọc surrounding text. Chromium, Vivaldi, Cốc Cốc và WPS trên X11
   cũng dùng được qua chữ đang bôi đen. Tab hoặc Esc trả lại phím đã gõ. OnlyOffice chưa dùng
   được vì app không báo surrounding text hay chữ đang bôi đen cho bộ gõ. Đã test OnlyOffice
   10.0.0 Document Editor trên X11. Gõ phím dấu sẽ đè lên chữ đang bôi đen như gõ thường.
   Ctrl+Z lấy lại chữ.
+- Menu chế độ theo từng app: bấm phím `` ` `` để mở menu cạnh con trỏ.
+  Chọn Gõ Sen (phím 1), Gạch chân (q), Chọn Emoji (w) hoặc Tắt (e); Ngó Sen nhớ cho app đó.
+  Chọn lại chế độ vốn có của app (thường là Gõ Sen) để app theo cài đặt chung; chọn Tắt vẫn được nhớ riêng.
+  Menu chỉ mở khi đang bật tiếng Việt.
+- Chọn Emoji: gõ từ khoá tiếng Anh như `smile`, `heart`, danh sách emoji hiện cạnh con trỏ; bấm số để chọn.
 - Phím chuyển Anh/Việt riêng: cài mới dùng Ctrl+Shift như UniKey; đã cài từ trước giữ Ctrl+Space.
   Khi ở tiếng Anh, gõ như không có bộ gõ. Mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất; app chưa
   bấm lần nào theo lần bấm gần nhất.
+- Gõ tiếng Anh khi đang bật tiếng Việt: chữ nào không thể thành tiếng Việt thì hiện lại đúng phím đã gõ,
+  thường ngay lúc gõ, muộn nhất khi bấm Space. Đo bằng Telex, cài đặt mặc định, trên 9.884 từ tiếng Anh
+  thông dụng: 92,9% hiện đúng khi chưa bấm Space, 96,9% đúng sau khi bấm Space. 3,1% còn lại phần lớn
+  trùng cách gõ một chữ Việt: `this` → `thí`, `is` → `í`, `has` → `há`, `too` → `tô`, `been` → `bên`,
+  `car` → `cả`, `test` → `tét`, `box` → `bõ`; số ít là tên riêng có chữ cái đôi (`russia` → `rusia`).
+  Muốn giữ tiếng Anh thì gõ đúp phím dấu: `thiss` → `this`, `russsia` → `russia`.
 - Phím chốt chữ: bấm rồi thả riêng Ctrl (mặc định) để giữ nguyên từ, không thêm dấu hay bung macro.
   Phím tiếp theo bắt đầu từ mới. Ví dụ gõ `tunx`, bấm rồi thả Ctrl, sau đó Space sẽ giữ `tũn`.
 - Gõ tắt (macro): khi bật “Gõ tắt chữ hoa”, `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
   Nội dung đã có chữ hoa vẫn giữ nguyên: `ip` → `iPhone` thì gõ `Ip` vẫn ra `iPhone`.
 - Menu tray: chuyển nhanh Telex/VNI, bật hoặc tắt từng kiểu tự viết hoa, tiện khi gõ lệnh trong terminal.
   Có thể ẩn các mục ít dùng ở trang Giao diện; “Cài đặt” và “Lưu nhật ký gõ” luôn hiện.
-- Cửa sổ cài đặt: có giải thích ngắn dưới từng tuỳ chọn ở trang Gõ chữ, Phím tắt và Giao diện,
-  thường kèm ví dụ. Trang Giao diện có phần xem trước biểu tượng tray và chọn ngôn ngữ giao diện.
+- Cửa sổ cài đặt: có các trang Gõ chữ, Gõ tắt, Phím (có tab Phím tắt), Giao diện, "Có gì mới & mẹo",
+  "Kiểm tra máy" và Giới thiệu. Trang Gõ chữ và Giao diện có giải thích ngắn dưới từng tuỳ chọn, thường
+  kèm ví dụ; trang Phím, tab Phím tắt cũng vậy. Trang Giao diện có phần xem trước biểu tượng tray và chọn
+  ngôn ngữ giao diện.
   Trang "Có gì mới & mẹo" ghi cách dùng các tính năng mới và mẹo gõ; sau khi cập nhật lên version có tính
   năng mới, một thông báo hiện một lần để mở trang này.
   Trang Giao diện có nút đổi sang bản kia (Qt hoặc GTK), máy chưa có thì cài ngay tại đó; bản GTK cần
   libadwaita 1.5 trở lên (Ubuntu 24.04, Linux Mint 22, Debian 13), còn Debian 12 chỉ có bản Qt.
+- Trang "Kiểm tra máy": hiện các bước thiết lập, số việc còn cần sửa, nút sửa từng việc hoặc "Sửa cả N việc".
+  Có ô gõ thử, test một app kèm nhật ký gõ, và gửi kết quả qua Facebook, GitHub hoặc chép kết quả.
 
 Chi tiết từng version ở [CHANGELOG.md](CHANGELOG.md).
 
@@ -59,7 +78,7 @@ Gõ chữ, chọn Gõ Sen ở hàng Chế độ gõ.
 
 Gõ Sen đưa chữ thẳng vào app, không gạch chân. Gợi ý ở thanh địa chỉ hay ô tìm kiếm hiện theo từng phím.
 Trình duyệt, terminal, Zalo, LibreOffice đều dùng Gõ Sen; Ngó Sen tự nhận ra cách app nhận chữ, không cần
-đổi chế độ. Từ version 0.5.0, Ngó Sen không còn dùng uinput.
+đổi chế độ.
 
 Telex được dùng và test hằng ngày. VNI và các kiểu khác dùng được nhưng chưa test kỹ.
 
@@ -90,9 +109,9 @@ Lệnh cài thêm Ngó Sen vào danh sách bộ gõ và thiết lập theo deskt
   lệnh được in ra. Nếu Sway chưa có config riêng, hãy chạy thêm lệnh chép config của máy được in
   trước đó.
 
-Với các desktop khác, sau khi cài xong, đăng xuất rồi đăng nhập lại; nhấn rồi thả Ctrl+Shift như UniKey để chuyển giữa tiếng Anh
-và tiếng Việt, biểu tượng khay hiện chữ V khi đang gõ tiếng Việt. Nếu đã cài Ngó Sen từ trước, bạn vẫn
-dùng phím chuyển cũ (thường là Ctrl+Space); muốn đổi phím, mở cửa sổ cài đặt, mục Phím tắt.
+Với các desktop khác, cài xong thì đăng xuất rồi đăng nhập lại. Nhấn rồi thả Ctrl+Shift như UniKey để chuyển giữa tiếng Anh
+và tiếng Việt; biểu tượng khay hiện chữ V khi đang gõ tiếng Việt. Nếu đã cài Ngó Sen từ trước, bạn vẫn
+dùng phím chuyển cũ (thường là Ctrl+Space). Muốn đổi phím, mở cửa sổ cài đặt, trang Phím, tab Phím tắt.
 Các bước thiết lập chỉ áp dụng cho tài khoản chạy lệnh. Tài khoản khác trên cùng máy cần đăng nhập vào
 đó rồi chạy lại lệnh cài.
 
@@ -110,7 +129,7 @@ và tiếng Việt.
 
 [Bản IBus](https://github.com/ngosen/ibus-ngosen) (package `ibus-ngosen`) dùng chung lõi gõ với bản fcitx5:
 Gõ Sen, kiểu gõ, gõ tắt, từ điển riêng và bảng phím tùy chỉnh. Bản IBus cũng có chọn Gõ Sen hay Gạch chân
-riêng cho từng app (bấm phím `` ` `` để chọn). Các điểm còn khác: chưa có emoji và Vim mode. Cứu dấu dùng được
+riêng cho từng app (bấm phím `` ` `` để chọn). Các điểm còn khác: chưa có Chọn Emoji. Cứu dấu dùng được
 ở ô gõ bằng Gõ Sen (bấm ngay sau một chữ rồi gõ phím dấu); đổi dấu chữ đang bôi đen chỉ được ở app X11.
 Cứu chữ hiện chỉ có trên X11. Trong một số app, từ đang gõ có gạch chân.
 
@@ -395,25 +414,3 @@ rồi viết lại cũng vậy, vì đó vẫn là mã sửa từ mã của Ngó
 
 Đưa cách làm của Ngó Sen sang bộ gõ khác (cách xoá chữ trong từng loại app, cách nhận ra ô địa chỉ trình duyệt…),
 kể cả khi chỉ lấy ý tưởng, thì ghi nguồn kèm link tới repo này, trong README hay ghi chú phát hành.
-
-## English
-
-Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: an AI coding
-agent writes the code, then the maintainer measures and uses it daily. It is licensed under GPL-3.0-or-later.
-
-Since 1.0, Ngó Sen has two typing modes, Gõ Sen (for fast typing, browsers and Electron apps) and Preedit,
-and uses the Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) by
-[@nguyen10t2](https://github.com/nguyen10t2), ported from the original Go
-[bamboo-core](https://github.com/BambooEngine/bamboo-core) by [@t1ld3x](https://github.com/t1ld3x).
-Both projects are MIT licensed. All Ngó Sen packages, including Debian 12, use the Rust core.
-The core's English word list comes from [SCOWL](https://wordlist.aspell.net) by Kevin Atkinson.
-
-Ngó Sen includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to
-change the tone mark of a selected word.
-
-[Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in IBus and shares the same
-typing core as the fcitx5 version, so their features are almost identical. New features may reach the IBus
-version later than the fcitx5 version.
-If you reuse Ngó Sen's code, keep the GPL and its notices, including when an AI tool rewrites it.
-If you port its approaches to another input method, credit this repository with a link.
-The rest of this page is in Vietnamese.

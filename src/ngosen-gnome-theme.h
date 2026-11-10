@@ -122,6 +122,29 @@ namespace fcitx {
      */
     std::optional<bool> isCinnamonPanelDark(const CinnamonThemeInfo& info);
 
+    /**
+     * @brief Tells whether the session is deepin's DDE.
+     */
+    bool isDeepinSession(const std::string& xdgCurrentDesktop);
+
+    /**
+     * @brief Reports whether the deepin dock is dark, from the appearance GlobalTheme.
+     *
+     * @return std::nullopt when the theme is unknown or automatic; the automatic
+     *         one changes with the time of day.
+     */
+    std::optional<bool> isDeepinPanelDark(const std::string& globalTheme);
+
+    /**
+     * @brief Reads GlobalTheme (e.g. "nirvana.light") from deepin's appearance service.
+     */
+    std::string deepinGlobalThemeFromSession();
+
+    /**
+     * @brief The string in a busctl get-property reply such as `s "nirvana.light"`, or "".
+     */
+    std::string busctlStringValue(const std::string& reply);
+
 } // namespace fcitx
 
 #endif // _FCITX5_NGOSEN_GNOME_THEME_H_

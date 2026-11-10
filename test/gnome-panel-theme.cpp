@@ -158,6 +158,18 @@ int main() {
     mint.themeName = "Not-Installed";
     check("N8 missing_theme", !fcitx::isCinnamonPanelDark(mint).has_value(), "missing Cinnamon theme gave an answer");
 
+    // ── deepin: the dock follows the global theme ────────────────────────
+    check("P1 dde_session", fcitx::isDeepinSession("DDE"), "DDE rejected");
+    check("P2 gnome_not_deepin", !fcitx::isDeepinSession("ubuntu:GNOME"), "GNOME taken for deepin");
+    check("P3 light_theme", fcitx::isDeepinPanelDark("nirvana.light") == std::optional<bool>(false), "nirvana.light dock not light");
+    check("P4 dark_theme", fcitx::isDeepinPanelDark("nirvana.dark") == std::optional<bool>(true), "nirvana.dark dock not dark");
+    check("P5 automatic_theme", !fcitx::isDeepinPanelDark("nirvana").has_value(), "automatic theme gave an answer");
+    check("P6 no_reply", !fcitx::isDeepinPanelDark("").has_value(), "empty theme gave an answer");
+    check("P8 busctl_reply", fcitx::busctlStringValue("s \"nirvana.light\"") == "nirvana.light", "busctl reply not parsed");
+    check("P9 busctl_error", fcitx::busctlStringValue("Failed to get property GlobalTheme").empty(), "busctl error taken for a theme");
+    check("P10 busctl_other_type", fcitx::busctlStringValue("b true").empty(), "non-string reply taken for a theme");
+    check("P7 other_suffix", !fcitx::isDeepinPanelDark("custom.blue").has_value(), "unknown variant gave an answer");
+
     fs::remove_all(root);
 
     if (failures == 0)

@@ -328,4 +328,32 @@ namespace fcitx {
         return isShellCssPanelDark(*css);
     }
 
+    bool isDeepinSession(const std::string& xdgCurrentDesktop) {
+        const auto desktops = splitList(xdgCurrentDesktop, ':');
+        return std::find(desktops.begin(), desktops.end(), "DDE") != desktops.end();
+    }
+
+    std::optional<bool> isDeepinPanelDark(const std::string& globalTheme) {
+        const auto dot = globalTheme.rfind('.');
+        if (dot == std::string::npos)
+            return std::nullopt;
+        const std::string variant = globalTheme.substr(dot + 1);
+        if (variant == "dark")
+            return true;
+        if (variant == "light")
+            return false;
+        return std::nullopt;
+    }
+
+    std::string deepinGlobalThemeFromSession() {
+        return busctlStringValue(gsettingsGet("busctl --user --timeout=1 get-property org.deepin.dde.Appearance1 /org/deepin/dde/Appearance1 "
+                                              "org.deepin.dde.Appearance1 GlobalTheme 2>/dev/null"));
+    }
+
+    std::string busctlStringValue(const std::string& reply) {
+        if (reply.rfind("s \"", 0) != 0 || reply.size() < 4 || reply.back() != '"')
+            return {};
+        return reply.substr(3, reply.size() - 4);
+    }
+
 } // namespace fcitx

@@ -12,6 +12,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Tuỳ chọn "Cỡ biểu tượng khay" ở trang Giao diện: chọn Lớn thì biểu tượng ngó sen to hơn trong ô của
+  nó trên khay, ví dụ trên KDE cao 20 px thay vì 16 px. Trên GNOME không đổi, vì biểu tượng đã đầy ô.
+  Chỉ áp dụng khi bật "Sử dụng biểu tượng trạng thái Ngó Sen" (#675).
 - Gõ nguyên từng phím cho từ bắt đầu bằng `/` ở đầu dòng hoặc ngay sau dấu cách trong cả Gõ Sen và
   Preedit, để gõ lệnh chat (Claude Code, Slack, Discord) và đường dẫn trong terminal: `/cost` không còn
   thành `/cót`, `cd /usr/share` không còn thành `cd /ủ/share`. Tuỳ chọn "Gõ thô sau dấu / đầu từ (lệnh,

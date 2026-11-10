@@ -362,6 +362,22 @@
     {}
    ],
    [
+    "TrayIconSize",
+    "Enum",
+    "Tray Icon Size",
+    "Normal",
+    {
+     "EnumI18n": {
+      "0": "Normal",
+      "1": "Large"
+     },
+     "Enum": {
+      "0": "Normal",
+      "1": "Large"
+     }
+    }
+   ],
+   [
     "ShowMenuInputMethod",
     "Boolean",
     "Show Input Method in the tray menu",

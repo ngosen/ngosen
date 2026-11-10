@@ -3,9 +3,19 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The values a settings page edits, kept apart from the widgets that show them."""
 
+import os
+
 from i18n import _
 
 from core.catalog import MODE_SHORTCUT_TO_VISIBILITY, locked_by
+
+# Desktops that list GNOME but draw their own panel; keep in step with isGnomeShellSession.
+OWN_PANEL_DESKTOPS = {"Budgie", "Pantheon", "GNOME-Flashback", "Unity", "X-Cinnamon", "MATE"}
+
+
+def is_gnome_shell(xdg_current_desktop):
+    desktops = xdg_current_desktop.split(":")
+    return "GNOME" in desktops and not OWN_PANEL_DESKTOPS.intersection(desktops)
 
 
 class SettingsModel:
@@ -146,10 +156,15 @@ class SettingsModel:
         else:
             self.set_first_hotkey(key, text)
 
-    def tray_icons(self, desktop_dark):
+    def tray_icons(self, desktop_dark, xdg_current_desktop=None):
         """The tray icons for Vietnamese and English, and whether they suit a dark panel."""
+        if xdg_current_desktop is None:
+            xdg_current_desktop = os.environ.get("XDG_CURRENT_DESKTOP", "")
         if str(self.current.get("UseLotusIcons", "True")).lower() == "true":
-            return ("fcitx-ngosen", "fcitx-ngosen-off"), desktop_dark
+            large = self.current.get("TrayIconSize") == "Large"
+            # The engine keeps the normal tile on GNOME, which already draws it bigger.
+            suffix = "-large" if large and not is_gnome_shell(xdg_current_desktop) else ""
+            return (f"fcitx-ngosen{suffix}", f"fcitx-ngosen-off{suffix}"), desktop_dark
         color = str(self.current.get("IconTheme", "Auto"))
         dark = {"Light": False, "Dark": True}.get(color, desktop_dark)
         suffix = "-default" if dark else "-default-black"

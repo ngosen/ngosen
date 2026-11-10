@@ -896,7 +896,7 @@ class DynamicSettingsPage(QWidget):
             self._show_mode()
         if key in ("InputMethod", "OutputCharset", "RetoneSelection"):
             self.refresh_status()
-        if key in ("UseLotusIcons", "IconTheme"):
+        if key in ("UseLotusIcons", "TrayIconSize", "IconTheme"):
             self._update_tray_preview()
 
         # Real-time validation if it's a shortcut

@@ -70,7 +70,6 @@ SETTINGS_MAP = {
             "ShortcutPreedit",
             "ShortcutEmoji",
             "ShortcutOff",
-            "ShortcutDefault",
             "ShortcutVim",
         ],
     },
@@ -98,7 +97,7 @@ HINTS = {
     "FreeMarking": N_("Tone marks can also go at the end of the word."),
     "UiLanguage": N_("The tray menu changes at once, this window the next time it opens."),
     "SettingsToolkit": N_(
-        "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
+        "GTK matches GNOME, Cinnamon and Xfce, Qt matches KDE and most other desktops."
     ),
     "BackspaceRemovesTone": N_(
         "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
@@ -134,7 +133,8 @@ HINTS = {
         "Moves the app in use to the next mode in the list below, and remembers it for that app."
     ),
     "ModeOrder": N_(
-        "With the mode menu open, press a mode's key to pick it for the app in use. Pick Default Typing to make the app follow the switch key again."
+        "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) "
+        "to follow the global setting and switch key again; OFF stays set for the app."
     ),
     "UseLotusIcons": N_("Off: plain one-colour icons, in the colour picked below."),
     "TrayIconSize": N_(
@@ -178,7 +178,6 @@ MODE_SHORTCUT_TO_VISIBILITY = {
     "ShortcutPreedit": "ShowModePreedit",
     "ShortcutEmoji": "ShowModeEmoji",
     "ShortcutOff": "ShowModeOff",
-    "ShortcutDefault": "ShowModeDefault",
     "ShortcutVim": "ShowModeVim",
 }
 
@@ -187,7 +186,6 @@ MODE_KEY_TO_INTERNAL_NAME = {
     "ShortcutPreedit": "Preedit",
     "ShortcutEmoji": "Emoji",
     "ShortcutOff": "Off",
-    "ShortcutDefault": "Default",
     "ShortcutVim": "Vim",
 }
 

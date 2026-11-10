@@ -82,6 +82,6 @@ endforeach()
 
 add_custom_target(ngosen_icons ALL DEPENDS ${NGOSEN_PNG_OUTPUTS})
 
-install(FILES dictionaries/vietnamese.cm.dict DESTINATION "${FCITX_INSTALL_PKGDATADIR}/ngosen")
+install(FILES dictionaries/vietnamese.cm.dict english-common.txt DESTINATION "${FCITX_INSTALL_PKGDATADIR}/ngosen")
 # fcitx5 adds this input method to the first profile it builds on a Vietnamese desktop.
 install(FILES default/vi_VN DESTINATION "${FCITX_INSTALL_PKGDATADIR}/default")

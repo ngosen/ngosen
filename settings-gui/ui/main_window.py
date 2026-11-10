@@ -28,6 +28,7 @@ from qtpy.QtWidgets import (
     QScrollArea,
     QShortcut,
     QStackedWidget,
+    QStyle,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -121,6 +122,7 @@ class NgoSenSettingsWindow(QMainWindow):
         # Pages Mapping
         self._setup_pages()
         self._pages.append(RememberedAppModes(self.dbus_handler))
+        self._fit_navigation()
 
         self.sidebar.currentRowChanged.connect(self._on_sidebar_changed)
         self.sidebar.setCurrentRow(0)
@@ -128,17 +130,13 @@ class NgoSenSettingsWindow(QMainWindow):
     def _setup_navigation(self):
         column = QWidget()
         column.setFixedWidth(200)
+        self._navigation = column
         layout = QVBoxLayout(column)
         layout.setContentsMargins(10, 12, 0, 0)
         layout.setSpacing(4)
 
+        # No logo here: the window manager already draws the app icon in the title bar above.
         header = QHBoxLayout()
-        header.setSpacing(8)
-        icon = brand.logo_icon()
-        if not icon.isNull():
-            logo = QLabel()
-            logo.setPixmap(icon.pixmap(28, 28))
-            header.addWidget(logo)
         wordmark = QLabel("Ngó Sen")
         wordmark.setObjectName("Wordmark")
         wordmark.setFont(brand.sized_font(22))
@@ -662,6 +660,18 @@ class NgoSenSettingsWindow(QMainWindow):
         self.setMinimumSize(750, 500)
         self.resize(w, h)
         self.move((screen.width() - w) // 2, (screen.height() - h) // 2)
+
+    def _fit_navigation(self):
+        # Long names, as in English, would otherwise run under the check badge.
+        metrics = self.sidebar.fontMetrics()
+        widest = max(
+            metrics.horizontalAdvance(self.sidebar.item(row).text())
+            for row in range(self.sidebar.count())
+        )
+        icon = self.style().pixelMetric(QStyle.PM_SmallIconSize)
+        badge = metrics.horizontalAdvance("99") + 2 * 6 + 8
+        padding = 40
+        self._navigation.setFixedWidth(max(200, widest + icon + badge + padding))
 
     def _badge_overlay(self):
         """Lies over the check entry, so the list still draws and selects the entry itself."""

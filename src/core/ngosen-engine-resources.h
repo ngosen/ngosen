@@ -33,8 +33,12 @@ namespace ngosen {
         // Empty unless the custom keymap is turned on.
         virtual std::vector<KeymapEntry> customKeymap() const = 0;
         // Handles passed to the Vietnamese engine.
-        virtual uintptr_t               dictionary() const = 0;
-        virtual uintptr_t               macroTable() const = 0;
+        virtual uintptr_t dictionary() const = 0;
+        virtual uintptr_t macroTable() const = 0;
+        // English words a Backspace leaves as typed; 0 for none.
+        virtual uintptr_t englishWords() const {
+            return 0;
+        }
 
         virtual std::vector<EmojiEntry> emojiHistory()                         = 0;
         virtual std::vector<EmojiEntry> searchEmoji(const std::string& prefix) = 0;

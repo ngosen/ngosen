@@ -267,13 +267,7 @@ msgstr "Hiển thị chế độ Tắt"
 msgid "Shortcut for OFF"
 msgstr "Phím tắt cho Tắt"
 
-#: src/ngosen-config.h:263
-msgid "Show Default Typing"
-msgstr "Hiển thị chế độ gõ mặc định"
 
-#: src/ngosen-config.h:264
-msgid "Shortcut for Default Typing"
-msgstr "Phím tắt cho Mặc định"
 
 msgid "Show Vim mode"
 msgstr "Hiển thị Vim mode"
@@ -370,9 +364,6 @@ msgstr "Version 1.9: trên GNOME, chế độ gõ và cài đặt riêng theo t�
 msgid "Show"
 msgstr "Xem"
 
-#: src/ngosen-engine.cpp:991 src/ngosen-engine.cpp:1030
-msgid "Default Typing"
-msgstr "Chế độ gõ mặc định"
 
 #: src/ngosen-engine.cpp:1057
 msgid "Type"
@@ -1527,8 +1518,8 @@ msgid "Moves the app in use to the next mode in the list below, and remembers it
 msgstr "Chuyển app đang dùng sang chế độ kế tiếp trong danh sách bên dưới và nhớ cho app đó."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "With the mode menu open, press a mode's key to pick it for the app in use. Pick Default Typing to make the app follow the switch key again."
-msgstr "Khi menu chế độ đang mở, bấm phím của một chế độ để chọn cho app đang dùng. Chọn Chế độ gõ mặc định để app đó lại theo phím chuyển như thường."
+msgid "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) to follow the global setting and switch key again; OFF stays set for the app."
+msgstr "Khi menu chế độ đang mở, bấm phím của một chế độ để chọn cho app đang dùng. Chọn chế độ mặc định của app (thường là Gõ Sen, đôi khi là Gạch chân) để app lại theo thiết lập chung và phím chuyển; Tắt vẫn được nhớ riêng cho app."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Off: plain one-colour icons, in the colour picked below."
@@ -1676,8 +1667,8 @@ msgid "Ngó Sen backup"
 msgstr "Bản sao lưu Ngó Sen"
 
 #: settings-gui/core/catalog.py
-msgid "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
-msgstr "GTK hợp với GNOME và Cinnamon, Qt hợp với KDE và phần lớn desktop khác."
+msgid "GTK matches GNOME, Cinnamon and Xfce, Qt matches KDE and most other desktops."
+msgstr "GTK hợp với GNOME, Cinnamon và Xfce, Qt hợp với KDE và phần lớn desktop khác."
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "This window uses {}"

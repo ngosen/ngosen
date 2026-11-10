@@ -43,6 +43,13 @@ def _wrapped(text="", parent_layout=None):
     return label
 
 
+def _flush_card():
+    # The card draws no frame, so its margin would only indent it from the headings.
+    card = CardWidget()
+    card.main_layout.setContentsMargins(0, 0, 0, 0)
+    return card
+
+
 def _button(text, on_click):
     button = QPushButton(text)
     button.clicked.connect(on_click)
@@ -96,7 +103,7 @@ class CheckPage(QWidget):
         self.version.linkActivated.connect(lambda url: QDesktopServices.openUrl(QUrl(url)))
 
         layout.addWidget(self._heading(_("Steps to type Vietnamese")))
-        self.steps = CardWidget()
+        self.steps = _flush_card()
         layout.addWidget(self.steps)
 
         layout.addWidget(self._heading(_("Try typing here")))
@@ -152,7 +159,7 @@ class CheckPage(QWidget):
         return emphasize(QLabel(text), 1.15)
 
     def _app_test_card(self):
-        card = CardWidget()
+        card = _flush_card()
         _wrapped(
             _(
                 "Open the app, switch to Ngó Sen and type “{sample}” ({telex} in Telex). Then "

@@ -504,20 +504,6 @@
     {}
    ],
    [
-    "ShowModeDefault",
-    "Boolean",
-    "Show Default Typing",
-    "True",
-    {}
-   ],
-   [
-    "ShortcutDefault",
-    "String",
-    "Shortcut for Default Typing",
-    "r",
-    {}
-   ],
-   [
     "ShowModeVim",
     "Boolean",
     "Show Vim mode",
@@ -549,7 +535,7 @@
     "ModeOrder",
     "String",
     "Mode Order",
-    "Sen,Preedit,Emoji,Off,Default,Vim",
+    "Sen,Preedit,Emoji,Off,Vim",
     {}
    ],
    [

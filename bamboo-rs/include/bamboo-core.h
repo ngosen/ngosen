@@ -52,6 +52,9 @@ extern void      EngineRebuildFromText(uintptr_t engine, cchar* text);
 extern char**    GetCharsetNames(void);
 extern char**    GetInputMethodNames(void);
 extern uintptr_t NewDictionary(uintptr_t fd);
+extern uintptr_t NewWordList(uintptr_t fd);
+extern void      EngineSetEnglishWords(uintptr_t engine, uintptr_t list);
+extern uint8_t   EngineShownAsTyped(uintptr_t engine);
 
 #ifdef __cplusplus
 }

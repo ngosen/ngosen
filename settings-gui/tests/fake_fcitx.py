@@ -3,13 +3,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """A fake fcitx5 for tests that need no toolkit."""
 
+import atexit
 import copy
 import json
 import os
+import shutil
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
+
+# A reset or save in a test must never read or delete the dictionary of whoever runs the tests.
+os.environ["XDG_DATA_HOME"] = tempfile.mkdtemp(prefix="ngosen-test-data-")
+atexit.register(shutil.rmtree, os.environ["XDG_DATA_HOME"], ignore_errors=True)
 
 with open(os.path.join(HERE, "config-metadata.json"), encoding="utf-8") as f:
     METADATA = json.load(f)

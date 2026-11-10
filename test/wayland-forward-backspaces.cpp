@@ -75,6 +75,8 @@ namespace {
         auto context = typeTie(engine, entry, testInstance, frontend, true);
         if (!context || !type(engine, entry, *context, FcitxKey_e, true))
             return false;
+        // The field looks like a Messenger composer, whose first word is committed after a wait.
+        pumpEventLoop(testInstance.instance, 100);
         const bool deleted = context->deletes() == std::vector<std::pair<int, unsigned int>>{{-1, 1}};
         if (!deleted || !context->forwarded().empty() || context->commits() != std::vector<std::string>{"ê"}) {
             reportFailure(frontend + ": e -> ê through the surrounding text", "deletes=1 forwarded=(none) commits=['ê']",

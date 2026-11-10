@@ -335,12 +335,11 @@ namespace fcitx {
         Option<std::string>                                                                     shortcutPreedit{this, "ShortcutPreedit", _("Shortcut for Preedit"), "q"};
         Option<bool>                                                                            showModeEmoji{this, "ShowModeEmoji", _("Show Emoji Picker"), true};
         Option<std::string> shortcutEmoji{this, "ShortcutEmoji", _("Shortcut for Emoji Picker"), "w"}; Option<bool> showModeOff{this, "ShowModeOff", _("Show OFF"), true};
-        Option<std::string> shortcutOff{this, "ShortcutOff", _("Shortcut for OFF"), "e"}; Option<bool> showModeDefault{this, "ShowModeDefault", _("Show Default Typing"), true};
-        Option<std::string> shortcutDefault{this, "ShortcutDefault", _("Shortcut for Default Typing"), "r"};
-        Option<bool> showModeVim{this, "ShowModeVim", _("Show Vim mode"), true}; Option<std::string> shortcutVim{this, "ShortcutVim", _("Shortcut for Vim mode"), "v"};
+        Option<std::string> shortcutOff{this, "ShortcutOff", _("Shortcut for OFF"), "e"}; Option<bool> showModeVim{this, "ShowModeVim", _("Show Vim mode"), true};
+        Option<std::string>                                                                            shortcutVim{this, "ShortcutVim", _("Shortcut for Vim mode"), "v"};
         Option<bool>        enableMacroInOffMode{this, "EnableMacroInOffMode", _("Allow Macro in Off Mode"), ngosen::defaultOptions.enableMacroInOffMode};
 
-        Option<std::string> modeOrder{this, "ModeOrder", _("Mode Order"), "Sen,Preedit,Emoji,Off,Default,Vim"};
+        Option<std::string> modeOrder{this, "ModeOrder", _("Mode Order"), "Sen,Preedit,Emoji,Off,Vim"};
 
         OptionWithAnnotation<std::string, TimeFormatAnnotation> timeFormat{
             this, "TimeFormat", _("Time Format ($TIME in macro)"), ngosen::defaultOptions.timeFormat, {}, {}, TimeFormatAnnotation()};

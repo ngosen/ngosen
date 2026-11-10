@@ -37,6 +37,12 @@ Bản Qt trên KDE Plasma:
 - Phím chuyển Anh/Việt riêng: cài mới dùng Ctrl+Shift như UniKey; đã cài từ trước giữ Ctrl+Space.
   Khi ở tiếng Anh, gõ như không có bộ gõ. Mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất; app chưa
   bấm lần nào theo lần bấm gần nhất.
+- Gõ tiếng Anh khi đang bật tiếng Việt: chữ nào không thể thành tiếng Việt thì hiện lại đúng phím đã gõ,
+  thường ngay lúc gõ, muộn nhất khi bấm Space. Đo bằng Telex, cài đặt mặc định, trên 9.884 từ tiếng Anh
+  thông dụng: 92,9% hiện đúng khi chưa bấm Space, 96,9% đúng sau khi bấm Space. 3,1% còn lại phần lớn
+  trùng cách gõ một chữ Việt: `this` → `thí`, `is` → `í`, `has` → `há`, `too` → `tô`, `been` → `bên`,
+  `car` → `cả`, `test` → `tét`, `box` → `bõ`; số ít là tên riêng có chữ cái đôi (`russia` → `rusia`).
+  Muốn giữ tiếng Anh thì gõ đúp phím dấu: `thiss` → `this`, `russsia` → `russia`.
 - Phím chốt chữ: bấm rồi thả riêng Ctrl (mặc định) để giữ nguyên từ, không thêm dấu hay bung macro.
   Phím tiếp theo bắt đầu từ mới. Ví dụ gõ `tunx`, bấm rồi thả Ctrl, sau đó Space sẽ giữ `tũn`.
 - Gõ tắt (macro): khi bật “Gõ tắt chữ hoa”, `ko` → `không` thì gõ `Ko` sẽ ra `Không`.

@@ -19,6 +19,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - deepin: khi dùng giao diện sáng, icon khay kiểu trơn nay màu đen cho hợp thanh dock sáng, không còn trắng khó thấy. Giao diện tự động vẫn dùng icon trắng (#673).
 - Sway: icon Ngó Sen nay hiện trong swaybar, trước đây swaybar vẽ hình "không tìm thấy icon" (#674).
 - GNOME 51 không dùng theme riêng: khi chọn giao diện sáng, thanh trên cùng sáng nên icon khay kiểu trơn nay đổi sang màu đen, không còn trắng gần như không thấy (#672).
+- Bảng tính Lark trên Brave/Chrome (X11): gõ Gõ Sen rồi chuyển ô nhanh bằng mũi tên hoặc Tab không còn mất chữ, kiểu gõ `laf` chỉ còn `l` và các ô sau trống (#681).
 
 ## [1.9.1-1] — 10/11/2026
 

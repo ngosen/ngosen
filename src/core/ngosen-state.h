@@ -362,6 +362,9 @@ namespace ngosen {
         uint64_t     unreportedDeleteKey_    = 0; ///< keyCount_ when that deletion was sent
         bool         committing_             = false;
         uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
+        // The last key pressed edits no text (an arrow, Tab, Enter): a bounce after it is the app moving
+        // on, as a sheet does to the next cell, not a redraw.
+        bool lastKeyLeftText_ = false;
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.
         std::string commitNotSeen_;
 

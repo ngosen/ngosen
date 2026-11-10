@@ -290,6 +290,15 @@ namespace fcitx {
         return isCinnamonSession(xdgCurrentDesktop, desktopSession) || std::find(desktops.begin(), desktops.end(), "COSMIC") != desktops.end();
     }
 
+    std::string trayIconName(const std::string& baseIconName, TrayIconStyle style, bool large, bool gnomeShell) {
+        switch (style) {
+            case TrayIconStyle::PlainWhite: return baseIconName + "-default";
+            case TrayIconStyle::PlainBlack: return baseIconName + "-default-black";
+            case TrayIconStyle::Tile: break;
+        }
+        return large && !gnomeShell ? baseIconName + "-large" : baseIconName;
+    }
+
     std::vector<std::string> trayIconNames(const std::string& iconName, const std::string& baseIconName, const std::string& xdgCurrentDesktop) {
         if (isGnomeShellSession(xdgCurrentDesktop))
             return {iconName + "-gnome", iconName, baseIconName};

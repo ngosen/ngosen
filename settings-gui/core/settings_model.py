@@ -149,7 +149,8 @@ class SettingsModel:
     def tray_icons(self, desktop_dark):
         """The tray icons for Vietnamese and English, and whether they suit a dark panel."""
         if str(self.current.get("UseLotusIcons", "True")).lower() == "true":
-            return ("fcitx-ngosen", "fcitx-ngosen-off"), desktop_dark
+            suffix = "-large" if self.current.get("TrayIconSize") == "Large" else ""
+            return (f"fcitx-ngosen{suffix}", f"fcitx-ngosen-off{suffix}"), desktop_dark
         color = str(self.current.get("IconTheme", "Auto"))
         dark = {"Light": False, "Dark": True}.get(color, desktop_dark)
         suffix = "-default" if dark else "-default-black"

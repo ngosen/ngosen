@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Check that the plain tray glyphs are as tall as the tile and that no icon is clipped.
+"""Check the tray icon sizes: plain glyphs as tall as the tile, large tiles 1.25 times the
+normal one, and no icon clipped.
 
-usage: tray-icon-heights.py RSVG_CONVERT SOURCE_ICON_DIR GNOME_ICON_DIR
+usage: tray-icon-heights.py RSVG_CONVERT SOURCE_ICON_DIR GNOME_ICON_DIR LARGE_ICON_DIR
 """
 
 import os
@@ -82,7 +83,7 @@ def touches_edge(rows):
 
 
 def main():
-    rsvg, source_dir, gnome_dir = sys.argv[1:4]
+    rsvg, source_dir, gnome_dir, large_dir = sys.argv[1:5]
     sets = (
         (lambda n: os.path.join(source_dir, n + ".svg"), ""),
         (lambda n: os.path.join(gnome_dir, n + "-gnome.svg"), "-gnome"),
@@ -103,6 +104,16 @@ def main():
                         )
                     if name in PLAIN and abs(middle(rows) - middle(tile_rows)) > 1:
                         failures.append(f"{name}{suffix} at {size} px is not centred like the tile")
+        for size in SIZES:
+            tile = height(glyph_rows(rsvg, os.path.join(source_dir, "fcitx-ngosen.svg"), size, tmp))
+            for name in TILES:
+                rows = glyph_rows(rsvg, os.path.join(large_dir, name + "-large.svg"), size, tmp)
+                if touches_edge(rows):
+                    failures.append(f"{name}-large at {size} px is clipped at the edge")
+                if abs(height(rows) - tile * 1.25) > 1:
+                    failures.append(
+                        f"{name}-large at {size} px: tile {height(rows)} px, normal {tile} px"
+                    )
     for line in failures:
         print(line)
     return 1 if failures else 0

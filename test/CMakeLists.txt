@@ -275,8 +275,12 @@ set_tests_properties(addon_conf PROPERTIES LABELS "unit;config" TIMEOUT 20)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 add_test(NAME tray_icon_heights
          COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tray-icon-heights.py ${RSVG_CONVERT}
-                 ${PROJECT_SOURCE_DIR}/data/icons/hicolor/scalable/apps ${PROJECT_BINARY_DIR}/data/icons/gnome)
+                 ${PROJECT_SOURCE_DIR}/data/icons/hicolor/scalable/apps ${PROJECT_BINARY_DIR}/data/icons/gnome
+                 ${PROJECT_BINARY_DIR}/data/icons/large)
 set_tests_properties(tray_icon_heights PROPERTIES LABELS "unit;icons" TIMEOUT 60)
+
+add_test(NAME tray_icon_install COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tray-icon-install.sh ${PROJECT_BINARY_DIR})
+set_tests_properties(tray_icon_install PROPERTIES LABELS "unit;icons;packaging" TIMEOUT 120)
 
 add_test(NAME copr_makefile COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/copr-makefile.sh ${PROJECT_SOURCE_DIR})
 set_tests_properties(copr_makefile PROPERTIES LABELS "unit;packaging" TIMEOUT 20 SKIP_RETURN_CODE 77)

@@ -1653,19 +1653,14 @@ namespace fcitx {
             default: baseIconName = "fcitx-ngosen"; break;
         }
 
-        std::string iconName;
-        if (*config_.useNgoSenIcons) {
-            iconName = baseIconName;
-        } else {
+        auto style = TrayIconStyle::Tile;
+        if (!*config_.useNgoSenIcons) {
             const auto& iconTheme = config_.iconTheme.value();
-            if (iconTheme == IconTheme::Light) {
-                iconName = baseIconName + "-default-black";
-            } else if (iconTheme == IconTheme::Dark) {
-                iconName = baseIconName + "-default";
-            } else {
-                iconName = baseIconName + (isDarkMode() ? "-default" : "-default-black");
-            }
+            const bool  darkPanel = iconTheme == IconTheme::Dark || (iconTheme == IconTheme::Auto && isDarkMode());
+            style                 = darkPanel ? TrayIconStyle::PlainWhite : TrayIconStyle::PlainBlack;
         }
+        static const bool gnomeShell = isGnomeShellSession(getEnv("XDG_CURRENT_DESKTOP"));
+        const std::string iconName   = trayIconName(baseIconName, style, *config_.trayIconSize == TrayIconSize::Large, gnomeShell);
 
         static const bool kTrayWantsIconName = trayWantsIconName(getEnv("XDG_CURRENT_DESKTOP"), getEnv("DESKTOP_SESSION"));
         if (kTrayWantsIconName) {

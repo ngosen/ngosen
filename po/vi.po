@@ -311,6 +311,18 @@ msgid "Icon Color"
 msgstr "Màu biểu tượng"
 
 #: src/ngosen-config.h
+msgid "Tray Icon Size"
+msgstr "Cỡ biểu tượng khay"
+
+#: src/ngosen-config.h
+msgid "Normal"
+msgstr "Bình thường"
+
+#: src/ngosen-config.h
+msgid "Large"
+msgstr "Lớn"
+
+#: src/ngosen-config.h
 msgid "Interface Language"
 msgstr "Ngôn ngữ giao diện"
 
@@ -1521,6 +1533,10 @@ msgstr "Khi menu chế độ đang mở, bấm phím của một chế độ đ�
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Off: plain one-colour icons, in the colour picked below."
 msgstr "Tắt: dùng biểu tượng một màu, theo màu chọn bên dưới."
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Large draws the Ngó Sen icon bigger in its tray slot. No change on GNOME, where it already fills the slot."
+msgstr "Lớn: biểu tượng Ngó Sen to hơn trong ô của nó trên khay. Trên GNOME không đổi, vì biểu tượng đã đầy ô."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."

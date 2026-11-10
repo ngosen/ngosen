@@ -76,7 +76,7 @@ SETTINGS_MAP = {
     },
     SettingsCategory.APPEARANCE: {
         N_("Language"): ["UiLanguage"],
-        TRAY_ICON: ["UseLotusIcons", "IconTheme"],
+        TRAY_ICON: ["UseLotusIcons", "TrayIconSize", "IconTheme"],
         N_("Show in the tray menu"): list(MENU_ENTRIES),
         N_("Settings Window"): ["SettingsToolkit"],
     },
@@ -137,6 +137,9 @@ HINTS = {
         "With the mode menu open, press a mode's key to pick it for the app in use. Pick Default Typing to make the app follow the switch key again."
     ),
     "UseLotusIcons": N_("Off: plain one-colour icons, in the colour picked below."),
+    "TrayIconSize": N_(
+        "Large draws the Ngó Sen icon bigger in its tray slot. No change on GNOME, where it already fills the slot."
+    ),
     "IconTheme": N_(
         "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
     ),
@@ -195,6 +198,7 @@ DEPENDS = {
     "SpellCheck": ("AutoNonVnRestore", "True"),
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
     "IconTheme": ("UseLotusIcons", "False"),
+    "TrayIconSize": ("UseLotusIcons", "True"),
     "CapitalizeMacro": ("EnableMacro", "True"),
     "EnableMacroInOffMode": ("EnableMacro", "True"),
     "TimeFormat": ("EnableMacro", "True"),

@@ -327,4 +327,30 @@ namespace fcitx {
         return isShellCssPanelDark(*css);
     }
 
+    bool isDeepinSession(const std::string& xdgCurrentDesktop) {
+        const auto desktops = splitList(xdgCurrentDesktop, ':');
+        return std::any_of(desktops.begin(), desktops.end(), [](const std::string& d) { return d == "DDE" || d == "Deepin"; });
+    }
+
+    std::optional<bool> isDeepinPanelDark(const std::string& globalTheme) {
+        const auto dot = globalTheme.rfind('.');
+        if (dot == std::string::npos)
+            return std::nullopt;
+        const std::string variant = globalTheme.substr(dot + 1);
+        if (variant == "dark")
+            return true;
+        if (variant == "light")
+            return false;
+        return std::nullopt;
+    }
+
+    std::string deepinGlobalThemeFromSession() {
+        // busctl prints: s "nirvana.light"
+        const std::string reply = gsettingsGet("busctl --user get-property org.deepin.dde.Appearance1 /org/deepin/dde/Appearance1 "
+                                               "org.deepin.dde.Appearance1 GlobalTheme 2>/dev/null");
+        const auto        open  = reply.find('"');
+        const auto        close = open == std::string::npos ? std::string::npos : reply.find('"', open + 1);
+        return close == std::string::npos ? std::string() : reply.substr(open + 1, close - open - 1);
+    }
+
 } // namespace fcitx

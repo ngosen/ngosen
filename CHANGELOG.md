@@ -16,6 +16,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Tệp giấy phép của từ điển nay kèm bản lưu trên web.archive.org cho hai trang nguồn đã ngừng truy cập được, để người đóng gói kiểm được nguồn (#680).
 - deepin: khi dùng giao diện sáng, icon khay kiểu trơn nay màu đen cho hợp thanh dock sáng, không còn trắng khó thấy. Giao diện tự động vẫn dùng icon trắng (#673).
 - Sway: icon Ngó Sen nay hiện trong swaybar, trước đây swaybar vẽ hình "không tìm thấy icon" (#674).
 - GNOME 51 không dùng theme riêng: khi chọn giao diện sáng, thanh trên cùng sáng nên icon khay kiểu trơn nay đổi sang màu đen, không còn trắng gần như không thấy (#672).

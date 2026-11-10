@@ -160,6 +160,9 @@ int main() {
     check("P4 dark_theme", fcitx::isDeepinPanelDark("nirvana.dark") == std::optional<bool>(true), "nirvana.dark dock not dark");
     check("P5 automatic_theme", !fcitx::isDeepinPanelDark("nirvana").has_value(), "automatic theme gave an answer");
     check("P6 no_reply", !fcitx::isDeepinPanelDark("").has_value(), "empty theme gave an answer");
+    check("P8 busctl_reply", fcitx::busctlStringValue("s \"nirvana.light\"") == "nirvana.light", "busctl reply not parsed");
+    check("P9 busctl_error", fcitx::busctlStringValue("Failed to get property GlobalTheme").empty(), "busctl error taken for a theme");
+    check("P10 busctl_other_type", fcitx::busctlStringValue("b true").empty(), "non-string reply taken for a theme");
     check("P7 other_suffix", !fcitx::isDeepinPanelDark("custom.blue").has_value(), "unknown variant gave an answer");
 
     fs::remove_all(root);

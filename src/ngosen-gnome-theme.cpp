@@ -329,7 +329,7 @@ namespace fcitx {
 
     bool isDeepinSession(const std::string& xdgCurrentDesktop) {
         const auto desktops = splitList(xdgCurrentDesktop, ':');
-        return std::any_of(desktops.begin(), desktops.end(), [](const std::string& d) { return d == "DDE" || d == "Deepin"; });
+        return std::find(desktops.begin(), desktops.end(), "DDE") != desktops.end();
     }
 
     std::optional<bool> isDeepinPanelDark(const std::string& globalTheme) {
@@ -345,12 +345,14 @@ namespace fcitx {
     }
 
     std::string deepinGlobalThemeFromSession() {
-        // busctl prints: s "nirvana.light"
-        const std::string reply = gsettingsGet("busctl --user get-property org.deepin.dde.Appearance1 /org/deepin/dde/Appearance1 "
-                                               "org.deepin.dde.Appearance1 GlobalTheme 2>/dev/null");
-        const auto        open  = reply.find('"');
-        const auto        close = open == std::string::npos ? std::string::npos : reply.find('"', open + 1);
-        return close == std::string::npos ? std::string() : reply.substr(open + 1, close - open - 1);
+        return busctlStringValue(gsettingsGet("busctl --user --timeout=1 get-property org.deepin.dde.Appearance1 /org/deepin/dde/Appearance1 "
+                                              "org.deepin.dde.Appearance1 GlobalTheme 2>/dev/null"));
+    }
+
+    std::string busctlStringValue(const std::string& reply) {
+        if (reply.rfind("s \"", 0) != 0 || reply.size() < 4 || reply.back() != '"')
+            return {};
+        return reply.substr(3, reply.size() - 4);
     }
 
 } // namespace fcitx

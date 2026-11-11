@@ -461,6 +461,7 @@ fn test_marks_added_to_rimes_that_always_have_them() {
         ("NGUYENX", "NGUYỄN"),
         ("ddieuf", "điều"),
         ("dieuf", "diều"),
+        ("ruouj", "rượu"),
     ] {
         assert_eq!(
             committed_with("Telex", keys, KEY_SPACE),
@@ -474,6 +475,7 @@ fn test_marks_added_to_rimes_that_always_have_them() {
         ("Telex + VNI", "tien2"),
         ("Telex", "user"),
         ("Telex", "techs"),
+        ("Telex", "Hersch"),
     ] {
         assert_eq!(
             committed_with(method, keys, KEY_SPACE),
@@ -481,6 +483,21 @@ fn test_marks_added_to_rimes_that_always_have_them() {
             "{method} {keys}"
         );
     }
+    // Sentence punctuation ends a word; a digit, @ or _ may go on with a name or a handle.
+    assert_eq!(committed_with("Telex", "tienf", '.' as u32), "tiền.");
+    for end in ['@', '_'] {
+        assert_eq!(
+            committed_with("Telex", "tuans", end as u32),
+            format!("tuans{end}"),
+            "tuans{end}"
+        );
+    }
+    // With macros on, a digit stays in the word instead.
+    let mut e = engine_with_default_settings("Telex");
+    e.macro_enabled = false;
+    type_keys(&mut e, "tuans");
+    e.process_key_event('2' as u32, 0);
+    assert_eq!(e.commit_text, "tuans2");
 }
 
 #[test]

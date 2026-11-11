@@ -521,12 +521,14 @@ impl BambooEngine {
     /// (`tienf` for "tiền").
     fn auto_marked_word(&self) -> Option<String> {
         let raw = self.raw_text();
-        let word = self.auto_marked_word_of(&raw)?;
         let lower = raw.to_lowercase();
-        let listed = ENGLISH_MARK_LOOKALIKES
+        if ENGLISH_MARK_LOOKALIKES
             .lines()
-            .any(|english| english == lower);
-        (!listed).then_some(word)
+            .any(|english| english == lower)
+        {
+            return None;
+        }
+        self.auto_marked_word_of(&raw)
     }
 
     fn auto_marked_word_of(&self, raw: &str) -> Option<String> {
@@ -535,10 +537,8 @@ impl BambooEngine {
         }
         // Digits and symbols are tone keys in VNI and VIQR, where they also end sentences.
         let tone_keys = self.preeditor.input_method().tone_keys();
-        let tone_key = raw
-            .chars()
-            .rev()
-            .find(|k| tone_keys.contains(&k.to_ascii_lowercase()))?;
+        let is_tone = |k: &char| tone_keys.contains(&k.to_ascii_lowercase());
+        let tone_key = raw.chars().rev().find(is_tone)?;
         if !"sfrxj".contains(tone_key.to_ascii_lowercase())
             || !raw.is_ascii()
             || self.get_processed_string(OutputOptions::RAW) != raw
@@ -559,7 +559,9 @@ impl BambooEngine {
         let onset_keys = onset.replace('đ', "dd");
         let nucleus: String = bare.chars().take_while(|c| "aeiouy".contains(*c)).collect();
         let lower = raw.to_lowercase();
-        if !lower.starts_with(&onset_keys) || !lower[onset_keys.len()..].starts_with(&nucleus) {
+        let rest = lower.strip_prefix(&onset_keys)?;
+        // A second tone key after the onset, as in `Hersch`, is more likely English.
+        if !rest.starts_with(&nucleus) || rest.chars().filter(is_tone).count() != 1 {
             return None;
         }
         // Telex marks the last vowel that changes: `uow` gives ươ, `ee` gives ê.
@@ -674,7 +676,14 @@ impl BambooEngine {
             self.preeditor.reset();
             return (format!("{expanded}{key}"), true);
         }
-        if let Some(word) = self.retoned_word().or_else(|| self.auto_marked_word()) {
+        // A digit or a symbol like @ or _ may continue a name or a handle (`tuans@`).
+        let marked = || {
+            " .,;:!?)"
+                .contains(key)
+                .then(|| self.auto_marked_word())
+                .flatten()
+        };
+        if let Some(word) = self.retoned_word().or_else(marked) {
             self.preeditor.reset();
             return (format!("{word}{key}"), true);
         }
@@ -845,7 +854,7 @@ impl BambooEngine {
                     && Self::is_valid_state(state);
                 let text = match self.get_macro_text() {
                     Some(macro_text) if enter => macro_text,
-                    // Gõ Sen keeps the word as shown on other keys, so Preedit retones on Enter only.
+                    // Gõ Sen keeps the word as shown on other keys, so Preedit fixes it on Enter only.
                     _ if enter => self
                         .retoned_word()
                         .or_else(|| self.auto_marked_word())

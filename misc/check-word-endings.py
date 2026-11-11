@@ -94,7 +94,7 @@ def marks_left_out(word, letters, tone):
     plain = unicodedata.normalize("NFC", plain)
     for onset in ONSETS:
         rime = plain[len(onset) :] if plain.startswith(onset) else None
-        if rime in MARKED_RIMES and not (onset == "qu" and rime[0] == "u"):
+        if rime in MARKED_RIMES:
             break
     else:
         return []

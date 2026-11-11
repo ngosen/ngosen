@@ -1744,11 +1744,11 @@ namespace {
     void testTypingIntoSuggestion() {
         for (const bool selected : {true, false}) {
             realMode = ngosen::Mode::Sen;
-            FakeLoop            loop;
-            FakeResources       resources;
+            FakeLoop      loop;
+            FakeResources resources;
             // Chromium flags its address bar as a URL field; Firefox does not.
-            Field field = makeField("wayland", true, selected ? "microsoft-edge" : "firefox");
-            field.url   = selected;
+            Field field               = makeField("wayland", true, selected ? "microsoft-edge" : "firefox");
+            field.url                 = selected;
             auto                owned = std::make_unique<FakeHost>(loop, field);
             FakeHost*           host  = owned.get();
             ngosen::TypingState state(&resources, std::move(owned));

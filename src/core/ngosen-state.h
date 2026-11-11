@@ -131,6 +131,13 @@ namespace ngosen {
         void commitBuffer();
 
         /**
+         * @brief Like commitBuffer(), but in Preedit the word is committed the way Enter leaves it.
+         *
+         * For a shell that lets Enter reach the app itself: the word is retoned or its macro expanded.
+         */
+        void commitBufferForEnter();
+
+        /**
          * @brief Clears all internal buffers.
          */
         void clearAllBuffers();
@@ -482,6 +489,8 @@ namespace ngosen {
         ngosen::EditKey                held_key_           = ngosen::EditKey::Return;
         std::optional<KeyEntry>        held_field_key_; ///< held in place of held_key_
         bool                           heldKeyIs(uint32_t sym) const;
+
+        void                           commitPulledText();
 
         // Enter after a word the engine changes at its end, such as a macro, reaches the app once the new text is in the field.
         bool            finishWordBeforeEnter(ngosen::KeyPress& keyEvent);

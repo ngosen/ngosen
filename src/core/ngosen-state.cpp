@@ -1116,10 +1116,7 @@ namespace ngosen {
                 host_->resetPanel();
                 if (bambooEngine_) {
                     EngineCommitPreedit(bambooEngine_.handle());
-                    ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
-                    if (pulled && (*pulled.get() != 0))
-                        commit(pulled.get());
-                    ResetEngine(bambooEngine_.handle());
+                    commitPulledText();
                 }
                 host_->refreshPanel();
                 host_->refreshPreedit();
@@ -1135,6 +1132,27 @@ namespace ngosen {
                 break;
             }
         }
+    }
+
+    void TypingState::commitBufferForEnter() {
+        if (mode() != ngosen::Mode::Preedit) {
+            commitBuffer();
+            return;
+        }
+        host_->resetPanel();
+        if (bambooEngine_) {
+            EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, 0);
+            commitPulledText();
+        }
+        host_->refreshPanel();
+        host_->refreshPreedit();
+    }
+
+    void TypingState::commitPulledText() {
+        ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
+        if (pulled && (*pulled.get() != 0))
+            commit(pulled.get());
+        ResetEngine(bambooEngine_.handle());
     }
 
     void TypingState::clearAllBuffers() {

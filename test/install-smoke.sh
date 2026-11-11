@@ -1103,13 +1103,14 @@ remove_repo_files() {
 apt_updates() { apt-get update -qq --error-on=any >/dev/null 2>&1; }
 says() { grep -qF -- "$1" "$install_log"; }
 
-fake_ibus_package() {
-    local dir=$work/ibus-ngosen
+# An empty package under the name of another edition that uses the repository.
+fake_edition_package() {
+    local dir=$work/$1
     mkdir -p "$dir/DEBIAN"
-    printf 'Package: ibus-ngosen\nVersion: 0.0.1\nArchitecture: all\nMaintainer: test <test@invalid>\nDescription: test\n' \
-        >"$dir/DEBIAN/control"
-    dpkg-deb --build "$dir" "$work/ibus-ngosen.deb" >/dev/null
-    dpkg -i "$work/ibus-ngosen.deb" >/dev/null
+    printf 'Package: %s\nVersion: 0.0.1\nArchitecture: all\nMaintainer: test <test@invalid>\nDescription: test\n' \
+        "$1" >"$dir/DEBIAN/control"
+    dpkg-deb --build "$dir" "$work/$1.deb" >/dev/null
+    dpkg -i "$work/$1.deb" >/dev/null
 }
 
 # What the installer does with the APT sources it finds, and how it takes back its own.
@@ -1169,10 +1170,17 @@ check_repository_cases() {
     remove_repo_files
 
     check "an install adds the repository for ibus-ngosen too" install_logged
-    fake_ibus_package
+    fake_edition_package ibus-ngosen
     check "uninstall with ibus-ngosen installed succeeds" uninstall_logged
     check "it keeps the repository for ibus-ngosen" test -e "$apt_list" -a -e "$apt_keyring"
     dpkg -r ibus-ngosen >/dev/null
+    remove_repo_files
+
+    check "an install adds the repository for wl-ngosen too" install_logged
+    fake_edition_package wl-ngosen
+    check "uninstall with wl-ngosen installed succeeds" uninstall_logged
+    check "it keeps the repository for wl-ngosen" test -e "$apt_list" -a -e "$apt_keyring"
+    dpkg -r wl-ngosen >/dev/null
     remove_repo_files
 
     # A release upgrade comments out third-party sources; running the installer again is the fix

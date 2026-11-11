@@ -38,6 +38,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   s/f/r/x/j, các nguyên âm gõ liền nhau và chữ có trong từ điển. Tám từ tiếng Anh gõ giống chữ thiếu mũ vẫn
   giữ nguyên, như `hues`, `yens`, `techs`, nên huế và yến vẫn phải gõ đủ (`huees`, `yeens`). VNI và VIQR
   chưa có, vì ở đó dấu thanh là chữ số và dấu câu (#696).
+- Repo APT, pacman, zypper chung của Ngó Sen có thêm gói `wl-ngosen`, bản chạy thẳng trên Wayland cho niri, Sway,
+  Hyprland; cài bằng cùng lệnh, chỉ đổi tên gói (#702).
 
 ### Thay đổi
 
@@ -46,7 +48,14 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   đã gõ còn là đầu một từ tiếng Anh thì vẫn hiện nguyên như gõ, nên `draw` vẫn là draw, gõ tiếp `drawng`
   mới thành drăng, và `broom` vẫn ra broom chứ không ra brôm. Cần bật kiểm tra chính tả bằng từ điển (mặc
   định bật) (#706).
+- Từ điển có thêm 44 âm tiết trong tên xã, phường và dân tộc, như Đakrông, Mnông, kmăl, knốp, khươl, nên
+  các tên này nay gõ ra đúng chữ thay vì bị trả về phím đã gõ (#708).
 - Icon khay kiểu trơn (V, E, mặt cười, khi tắt "Sử dụng biểu tượng trạng thái Ngó Sen") nay cao bằng ô ngó sen, trước chỉ khoảng hai phần ba. Trên GNOME cần đăng xuất rồi đăng nhập lại mới thấy (#671).
+
+### Sửa
+
+- Gỡ bằng lệnh cài mà máy còn gói `wl-ngosen` thì giữ repo Ngó Sen, để `wl-ngosen` tiếp tục nhận version mới, như
+  với `ibus-ngosen` (#703).
 
 ## [1.9.3-1] — 11/11/2026
 

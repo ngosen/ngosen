@@ -237,7 +237,8 @@ sudo zypper install fcitx5-ngosen
 
 zypper hỏi một lần có tin cậy key không; đối chiếu fingerprint rồi chọn tin cậy.
 
-Bản IBus cũng có trong repo APT, pacman và zypper: thay `fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
+Bản IBus và bản Wayland (cho niri, Sway, Hyprland) cũng có trong repo APT, pacman và zypper: thay `fcitx5-ngosen` bằng
+`ibus-ngosen` hoặc [`wl-ngosen`](https://github.com/ngosen/wl-ngosen) trong lệnh cài.
 
 <a id="nixos"></a>
 

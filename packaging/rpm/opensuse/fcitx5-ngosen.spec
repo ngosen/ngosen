@@ -20,10 +20,11 @@ BuildRequires:  rsvg-convert
 
 Requires:       fcitx5
 # The settings window runs on Qt or on libadwaita.
-Requires:       ((python3-QtPy and (python3-PyQt6 or python3-pyside6)) or (python3-gobject and typelib-1_0-Adw-1 >= 1.5))
+Requires:       ((python3-QtPy and (python3-PyQt6 or python3-pyside6) and libQt6Svg6) or (python3-gobject and typelib-1_0-Adw-1 >= 1.5))
 Requires:       python3-dbus-python
 # Loaded with dlopen at runtime, so the automatic soname requires miss them.
 Requires:       libxcb1
+Requires:       libxcb-xfixes0
 Requires:       libxcb-xtest0
 Requires:       libxcb-xinput0
 Requires(posttrans): shadow

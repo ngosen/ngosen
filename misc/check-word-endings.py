@@ -215,22 +215,27 @@ def compare(base_dir, new_dir, limit=20):
             print(f"{path.stem}: missing from {new_dir}")
 
 
+def typeable(letters):
+    """Whether Telex types these letters as written: a written w, j, f or z, a doubled a/e/o
+    (Khoong) or a final s/r/x (Tôr) composes instead."""
+    # A marked letter (ô as `oo`) stands as its base in upper case, so `ôo` is caught too.
+    written = "".join(p if len(p) == 1 else p[0].upper() for p in letters)
+    return not re.search(r"[wjfz]|(?i:aa|ee|oo)|[srx]$", written)
+
+
 def places(units_json):
-    """Writes the syllables of province and commune names, from vn_only_simplified_json_generated_
-    data_vn_units.json of github.com/ThangLeQuoc/vietnamese-provinces-database."""
+    """Writes the syllables of province and commune names; the source is in places.tsv.license."""
     units = json.loads(units_json.read_text(encoding="utf-8"))
     names = [u["FullName"] for u in units] + [w["FullName"] for u in units for w in u["Wards"]]
     syllables = set()
     for name in names:
-        name = re.sub(r"^(Thành phố|Tỉnh|Phường|Xã|Đặc khu) ", "", name)
-        for word in name.lower().split():
-            # Names like M'Drắk need the apostrophe typed in English mode. Telex cannot type a
-            # written aa/ee/oo (Khoong) or a final tone letter (Tôr) without composing them.
-            toneless = "".join(c for c in unicodedata.normalize("NFD", word) if c not in TONES)
-            plain = unicodedata.normalize("NFC", toneless)
-            typeable = not re.search(r"([aâ][aâ]|[eê][eê]|[oô][oô]|[sfrxj]$)", plain)
-            if re.fullmatch(r"[^\W\d_]+", word) and typeable and telex(word):
-                letters, tone = telex(word)
+        name = unicodedata.normalize("NFC", name.lower())
+        name = re.sub(r"^(thành phố|tỉnh|phường|xã|đặc khu) ", "", name)
+        for word in name.split():
+            # Names like M'Drắk need the apostrophe typed in English mode.
+            typed = telex(word) if re.fullmatch(r"[^\W\d_]+", word) else None
+            if typed and typeable(typed[0]):
+                letters, tone = typed
                 syllables.add(f"{''.join(letters)}{tone}\t{word}")
     lines = unambiguous(sorted(syllables))
     (CASES / "places.tsv").write_text("\n".join(lines) + "\n", encoding="utf-8")

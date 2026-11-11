@@ -671,9 +671,10 @@ namespace ngosen {
 
             // For the copy wait: the last checks, newest in bit 0, set if answered at all.
             std::bitset<RecentChecks> recentAnswers;
-            int                       recentChecks      = 0; ///< how many bits of recentAnswers hold a check
-            int                       copyWaitsHeldBack = 0; ///< replacements while unanswered checks keep the copy wait off
-            int                       retriesRunOut     = 0; ///< waits tried again in a row that ran out
+            int                       recentChecks      = 0;     ///< how many bits of recentAnswers hold a check
+            int                       copyWaitsHeldBack = 0;     ///< replacements while unanswered checks keep the copy wait off
+            int                       retriesRunOut     = 0;     ///< waits tried again in a row that ran out
+            bool                      showedBackspace   = false; ///< a report showed the deletion our backspaces made
         };
         FieldHistory sinceFocus_;
 

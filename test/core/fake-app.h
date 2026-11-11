@@ -50,6 +50,9 @@ namespace ngosen::test {
         bool ignoresSurroundingDel  = false; // takes no deletion through its surrounding text, as WPS over D-Bus does
         bool reportsEmptyText       = false; // declares surrounding text but reports none and drops deletions through it, as Konsole does
         bool neverSendsText         = false; // declares surrounding text but never sends any, as WPS's own fcitx4 module does
+        // Shows its own copy of the text, which takes typed text and Backspace but no deletion through the
+        // surrounding text, while it reports the browser's copy, which a Backspace leaves alone: Lark Sheets.
+        bool keepsOwnText = false;
         // Turns a deletion of characters into bytes on the text it reported last, as mutter does for
         // text-input-v3 and fcitx5 does on Wayland.
         bool             convertsDeleteOnReportedCopy = false;
@@ -223,9 +226,10 @@ namespace ngosen::test {
         FakeLoop&                           loop_;
         Field                               field_;
         AppQuirks                           quirks_;
-        TypingState*                        state_           = nullptr;
-        int                                 queuedKeys_      = 0;
-        int                                 redraws_         = 0;
+        TypingState*                        state_      = nullptr;
+        int                                 queuedKeys_ = 0;
+        int                                 redraws_    = 0;
+        std::u32string                      ownText_;
         bool                                inReport_        = false;
         bool                                focused_         = true;
         uint64_t                            forwardedAt_     = 0;

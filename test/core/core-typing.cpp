@@ -840,6 +840,24 @@ namespace {
     }
 
     // Lark Sheets bounces focus when an arrow key moves to the next cell. That is not a redraw, so commits
+    // Lark Sheets in a browser keeps its own text and takes only key presses: a deletion through the
+    // surrounding text changes the copy the browser reports but not what the user sees.
+    void testPageKeepsOwnText() {
+        const Field                 brave = makeField("ibus", true, "brave-browser.desktop");
+        const std::string           typed = "tieengs vieetj ";
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        ngosen::test::AppQuirks     quirks;
+        quirks.keepsOwnText = true;
+        FakeResources resources;
+        const auto    sheet = ngosen::test::typeInAppTraced(resources, brave, quirks, keys, std::vector<int>(keys.size(), 100));
+        check(sheet.text == "tiếng việt ", "page with its own text: delete with backspaces", sheet.text);
+
+        // A page that shows our backspaces in its report keeps the faster deletion through the text.
+        const auto plain = ngosen::test::typeInAppTraced(resources, brave, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 100));
+        check(plain.text == "tiếng việt " && plain.sent.surroundingDeletes > 0, "plain page: back to the surrounding text",
+              plain.text + ", " + std::to_string(plain.sent.surroundingDeletes) + " surrounding deletions");
+    }
+
     // need not wait for one; it still sends deletions as backspaces, which the sheet needs over IBus.
     void testCellMovesNoRedrawWait() {
         Field chromiumX11            = makeField("dbus", false);
@@ -3745,6 +3763,7 @@ int main() {
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
+    testPageKeepsOwnText();
     testMacroKeepsSpace();
     testMacroBeforeEnter();
     testEnterDuringReplacement();

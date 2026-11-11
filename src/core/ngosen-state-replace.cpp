@@ -228,8 +228,9 @@ namespace ngosen {
     } // namespace
 
     void TypingState::deliverAfterSettle(const char* reason, bool fromTimer) {
-        const auto snapshot = host_->surrounding();
-        int        settleMs = engine_->options().waitSurroundingSettleMs;
+        sinceFocus_.showedBackspace = true;
+        const auto snapshot         = host_->surrounding();
+        int        settleMs         = engine_->options().waitSurroundingSettleMs;
         if (settleMs <= 0 || !looksLikeMessengerComposer(snapshot)) {
             settleMs = 0;
         } else if (isFirstWordOfMessage(snapshot)) {
@@ -657,6 +658,8 @@ namespace ngosen {
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");
+        if (ngosen::pageMayKeepOwnText(field) && !sinceFocus_.showedBackspace)
+            fails.emplace_back("page has not shown a backspace");
         return fails;
     }
 

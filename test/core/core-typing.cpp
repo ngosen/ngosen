@@ -851,6 +851,22 @@ namespace {
         FakeResources resources;
         const auto    sheet = ngosen::test::typeInAppTraced(resources, brave, quirks, keys, std::vector<int>(keys.size(), 100));
         check(sheet.text == "tiếng việt ", "page with its own text: delete with backspaces", sheet.text);
+        {
+            // Its copy never shows the deletion, so waiting for the copy would only hold the word back.
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, brave, quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("tieengs")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(50);
+            check(app->text() == "tiếng", "page with its own text: no wait for its copy", app->text());
+        }
 
         // A page that shows our backspaces in its report keeps the faster deletion through the text.
         const auto plain = ngosen::test::typeInAppTraced(resources, brave, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 100));

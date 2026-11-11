@@ -641,8 +641,10 @@ namespace ngosen {
         std::vector<std::string> surroundingPathFails(const Surrounding& surrounding, unsigned int& chars) const;
         static std::string       joined(const std::vector<std::string>& parts); ///< "none" when empty
         // Logs a line when the path differs from the last replacement's in this field.
-        void                            notePath(const char* path, const std::string& why);
-        bool                            surroundingUntrusted() const;
+        void notePath(const char* path, const std::string& why);
+        bool surroundingUntrusted() const;
+        // A page that may keep its own text, before any report showed our backspaces taking effect.
+        bool                            pageHidesBackspaces() const;
         bool                            appMarkedUntrusted() const;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;

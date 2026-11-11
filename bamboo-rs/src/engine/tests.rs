@@ -928,3 +928,26 @@ fn test_key_after_kept_english_keys_composes_again() {
     type_keys(&mut typed, "ars");
     assert_eq!(e.preedit_text, typed.preedit_text);
 }
+
+#[test]
+fn test_dictionary_has_no_unmarked_rimes() {
+    // These rimes are only ever written with ê, ơ or ư, so a line without them is a typo.
+    const UNMARKED: [&str; 25] = [
+        "ien", "ieu", "iem", "ieng", "iet", "iep", "iec", "yen", "yeu", "yem", "yet", "uyen",
+        "uyet", "enh", "eu", "ech", "ue", "uech", "uenh", "uan", "uat", "uay", "uu", "uou", "uop",
+    ];
+    let dictionary = include_str!("../../../data/dictionaries/vietnamese.cm.dict");
+    let typos: Vec<&str> = dictionary
+        .lines()
+        .filter(|word| {
+            let (plain, _) = without_tones(&word.to_lowercase());
+            // gi and qu read as one consonant: giếng is gi + ếng, quan is qu + an.
+            let rime = match plain.strip_prefix("gi").or(plain.strip_prefix("qu")) {
+                Some(rest) if !rest.is_empty() => rest,
+                _ => plain.trim_start_matches(|c: char| "bcdđghklmnpqrstvx".contains(c)),
+            };
+            UNMARKED.contains(&rime)
+        })
+        .collect();
+    assert!(typos.is_empty(), "{typos:?}");
+}

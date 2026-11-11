@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>xspreadsheet</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.9/dist/xspreadsheet.css">
+<script src="https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.9/dist/xspreadsheet.js"></script>
+</head>
+<body style="margin:0">
+<div id="s"></div>
+<script src="report.js"></script>
+<script>
+  // Canvas grid: cells are drawn, so positions come from the sheet's own layout.
+  const xs = x_spreadsheet('#s', { showToolbar: false, showBottomBar: false });
+  function cells() {
+    const rows = xs.getData()[0].rows || {};
+    const out = [];
+    for (let r = 0; r < 12; r++) {
+      const cs = (rows[r] && rows[r].cells) || {};
+      out.push([0, 1, 2, 3, 4].map((c) => (cs[c] ? cs[c].text : '')));
+    }
+    return out;
+  }
+  function center(r, c) {
+    const rect = xs.sheet.data.cellRect(r, c);
+    const area = document.querySelector('.x-spreadsheet-overlayer').getBoundingClientRect();
+    return { x: area.left + xs.sheet.data.cols.indexWidth + rect.left + rect.width / 2, y: area.top + xs.sheet.data.rows.height + rect.top + rect.height / 2 };
+  }
+  report('xspreadsheet', cells, center);
+</script>
+</body></html>

@@ -38,8 +38,12 @@ with a fresh profile for each run, clicks cell A1, then types. The cases are:
 | `fast` | same as `enter`, 30 ms between keys | the same |
 | `click` | `tieengs`, click on A3, `vieetj`, Return | `tiếng` in A1, `việt` in A3 |
 | `edit` | `toan`, Return, Up, F2, `s`, Return | `toán` in A1 |
+| `plainclick` | `abc`, click on A3, `xyz`, Return | `abc` in A1, `xyz` in A3 |
 
-`down` is skipped on sheets where arrows only move the caret inside the cell.
+`down` is skipped on sheets where arrows only move the caret inside the cell. `edit` can only pass where
+the field reports its text to the input method; Firefox and Chromium on X11 do not, so there it gives
+`toans`. `plainclick` is not in the default set: it types no Vietnamese, so a failure there is the
+sheet's own behaviour (Univer keeps editing A1 when A3 is clicked).
 
 `xdotool` does not work on Wayland; see `misc/editor-test/README.md` for driving keys into a VM instead.
 

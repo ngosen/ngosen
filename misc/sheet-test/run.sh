@@ -31,6 +31,8 @@ keys_for() {
     enter | fast) echo "tieengs^vieetj^nhaanj^ddaay^laf^caau^|tiếng|việt|nhận|đây|là|câu" ;;
     tab) echo "tieengs~vieetj~nhaanj~ddaay~laf^|tiếng|việt|nhận|đây|là" ;;
     click) echo "tieengs*vieetj^|tiếng|việt" ;;
+    # Same moves without Vietnamese, to tell a sheet's own behaviour from the input method's.
+    plainclick) echo "abc*xyz^|abc|xyz" ;;
     edit) echo "toan^@#s^|toán" ;;
     esac
 }

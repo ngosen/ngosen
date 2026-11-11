@@ -368,7 +368,7 @@ show_session_plan() {
         step "đặt fcitx5 làm bộ gõ cho tài khoản này"
     elif wants_sway_hyprland_setup; then
         step "thêm Ngó Sen vào danh sách bộ gõ của fcitx5 và bật fcitx5. Nếu danh sách chỉ có một bàn" \
-            "phím thì Ngó Sen thay bàn phím đó. App GTK gõ qua fcitx5 (khoá gtk-im-module của GNOME," \
+            "phím thì Ngó Sen thay bàn phím đó. App GTK 4 gõ qua fcitx5 (khoá gtk-im-module của GNOME," \
             "nếu đang để trống). File cấu hình của desktop được giữ nguyên."
     fi
 }
@@ -788,9 +788,9 @@ undo_compositor_environment() {
     reload_user_environment
 }
 
-# On these compositors GTK's text-input path sometimes never turns input on or deletes the wrong
-# letters (GTK #5638); its fcitx module talks to fcitx5 directly. GTK takes the key from the settings
-# portal, which wins over ~/.config/gtk-4.0/settings.ini. A value the user chose stays.
+# GTK 4's text-input path sometimes never turns input on or deletes the wrong letters on niri (GTK
+# #5638); its fcitx module talks to fcitx5 directly. GTK 4 takes the key from the settings portal,
+# which wins over ~/.config/gtk-4.0/settings.ini; GTK 3 ignores it. A value the user chose stays.
 set_gtk_im_module() {
     local current
     current=$(gsettings get org.gnome.desktop.interface gtk-im-module 2>/dev/null) || return 0
@@ -1262,7 +1262,7 @@ report_sway_hyprland_session() {
         say "App Qt 5 và app X11 qua XWayland gõ được từ lần đăng nhập sau, nếu vào desktop từ màn hình đăng nhập."
     fi
     if made_change "gtk-im-module fcitx"; then
-        say "App GTK (GNOME Text Editor, Nautilus…) đang mở: đóng rồi mở lại để gõ qua fcitx5."
+        say "App GTK 4 (GNOME Text Editor, Nautilus…) đang mở: đóng rồi mở lại để gõ qua fcitx5."
     fi
     say ""
     if [ -n "${SWAYSOCK:-}" ]; then

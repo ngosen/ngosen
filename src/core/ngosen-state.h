@@ -131,6 +131,13 @@ namespace ngosen {
         void commitBuffer();
 
         /**
+         * @brief Commits the current buffer the way Enter would, without taking the Enter.
+         *
+         * For a shell that lets Enter reach the app itself: the word is retoned or its macro expanded.
+         */
+        void commitBufferForEnter();
+
+        /**
          * @brief Clears all internal buffers.
          */
         void clearAllBuffers();

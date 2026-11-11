@@ -1137,6 +1137,21 @@ namespace ngosen {
         }
     }
 
+    void TypingState::commitBufferForEnter() {
+        if (mode() != ngosen::Mode::Preedit || !bambooEngine_) {
+            commitBuffer();
+            return;
+        }
+        host_->resetPanel();
+        EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, 0);
+        ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
+        if (pulled && (*pulled.get() != 0))
+            commit(pulled.get());
+        ResetEngine(bambooEngine_.handle());
+        host_->refreshPanel();
+        host_->refreshPreedit();
+    }
+
     void TypingState::clearAllBuffers() {
         NGOSEN_DEBUG("Clear all buffers");
         if (is_deleting_.load(std::memory_order_acquire)) {

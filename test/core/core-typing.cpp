@@ -668,6 +668,32 @@ namespace {
         check(forwarded == "Return down;Return up;", "macro before Enter: preedit sends the Enter after it", forwarded);
     }
 
+    // A shell that sends Enter to the app itself commits the word first, and it must come out as Enter
+    // would leave it: retoned, with its macro expanded or as English typed.
+    void testCommitBufferForEnter() {
+        const std::vector<std::pair<std::string, std::string>> cases = {
+            {"mootxj", "một"},
+            {"dc", "được"},
+            {"tieengs", "tiếng"},
+            {"parts", "parts"},
+        };
+        for (const auto& [typed, want] : cases) {
+            realMode = ngosen::Mode::Preedit;
+            FakeLoop      loop;
+            FakeResources resources;
+            resources.setMacros({{"dc", "được"}});
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", false));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            for (char c : typed)
+                press(state, static_cast<uint32_t>(c));
+            state.commitBufferForEnter();
+            loop.pump(100);
+            check(join(host->commits()) == "['" + want + "']", "commit for Enter: " + typed, join(host->commits()));
+            check(host->forwarded().empty(), "commit for Enter leaves the Enter to the shell: " + typed, std::to_string(host->forwarded().size()));
+        }
+    }
+
     // An Enter typed while a replacement waits for the app's report reaches the app as a key, not as
     // a carriage return inside the commit, which Google Docs ignores.
     void testEnterDuringReplacement() {
@@ -3829,6 +3855,7 @@ int main() {
     testLockWord();
     testLockWordPreedit();
     testRetoneAtWordEndInBothModes();
+    testCommitBufferForEnter();
     testRestoreBeforeDigitWhileTyping();
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();

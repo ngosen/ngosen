@@ -10,6 +10,22 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.9.2-1] — 11/11/2026
+
+Xfce nay mặc định mở cửa sổ cài đặt GTK (#670), icon khay kiểu trơn chuyển sang màu đen khi panel sáng trên GNOME 51 và deepin (#672, #673), icon Ngó Sen hiện trong swaybar (#674); tệp giấy phép từ điển thêm link bản lưu của hai trang nguồn để phục vụ việc đưa Ngó Sen vào kho Debian, nội dung từ điển giữ nguyên (#680).
+Tải ở [ngosen-1.9.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.9.2-1).
+
+### Thay đổi
+
+- Xfce nay mặc định mở cửa sổ cài đặt GTK và cài thư viện GTK như GNOME và Cinnamon; lựa chọn Qt hoặc GTK đã lưu vẫn được giữ nguyên (#670).
+
+### Sửa
+
+- Tệp giấy phép từ điển thêm link bản lưu trên web.archive.org cho hai trang nguồn không còn truy cập được: từ điển Hồ Ngọc Đức và danh sách viết tắt của Ngô Quốc Hưng. Nội dung từ điển giữ nguyên; các link này cần cho việc đưa Ngó Sen vào kho Debian (#680).
+- deepin: khi dùng giao diện sáng, icon khay kiểu trơn nay màu đen cho hợp thanh dock sáng, không còn trắng khó thấy. Giao diện tự động vẫn dùng icon trắng (#673).
+- Sway: icon Ngó Sen nay hiện trong swaybar, trước đây swaybar vẽ hình "không tìm thấy icon" (#674).
+- GNOME 51 không dùng theme riêng: khi chọn giao diện sáng, thanh trên cùng sáng nên icon khay kiểu trơn nay đổi sang màu đen, không còn trắng gần như không thấy (#672).
+
 ## [1.9.1-1] — 10/11/2026
 
 Lệnh cài nay cho chọn bản fcitx5 hay bản IBus (#653), menu chế độ bỏ dòng "Chế độ gõ mặc định" (#659), chữ đầu tin nhắn có dấu trong Messenger trên Chromium không còn sai hoặc mất chữ (#663); gõ từ không phải tiếng Việt liền chữ số và dùng BackSpace lùi vào phần đã gõ nay giữ đúng chữ, không còn làm rối chữ hay mất dấu (#643, #646, #651, #661), Cứu dấu chạy lại trong cửa sổ ẩn danh của Chrome, Chromium (#647), và sửa thêm ô tìm kiếm GNOME, bản IBus và cửa sổ cài đặt (#644, #648, #649, #652, #656).

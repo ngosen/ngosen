@@ -118,6 +118,34 @@ int main() {
     info.sessionMode   = "user";
     check("S4 plain_gnome_unknown", !fcitx::gnomeShellStylesheet(info).has_value(), "plain GNOME returned a stylesheet");
 
+    // ── Built-in Adwaita bar: GNOME 51 follows color-scheme ──────────────
+    info.shellMajorVersion = 51;
+    info.colorScheme       = "prefer-light";
+    check("G1 gnome51_prefer_light", fcitx::isGnomePanelDark(info) == std::optional<bool>(false), "GNOME 51 prefer-light bar not light");
+    info.colorScheme = "default";
+    check("G2 gnome51_default_dark", fcitx::isGnomePanelDark(info) == std::optional<bool>(true), "GNOME 51 default bar not dark");
+    info.colorScheme = "prefer-dark";
+    check("G3 gnome51_prefer_dark", fcitx::isGnomePanelDark(info) == std::optional<bool>(true), "GNOME 51 prefer-dark bar not dark");
+    info.colorScheme = "";
+    check("G4 gnome51_unknown_scheme", fcitx::isGnomePanelDark(info) == std::optional<bool>(true), "GNOME 51 without a scheme not dark");
+    info.colorScheme       = "prefer-light";
+    info.shellMajorVersion = 50;
+    check("G5 gnome50_unmeasured", !fcitx::isGnomePanelDark(info).has_value(), "GNOME 50 answered from color-scheme");
+    info.shellMajorVersion = 0;
+    check("G6 version_unknown", !fcitx::isGnomePanelDark(info).has_value(), "unknown version answered from color-scheme");
+    info.shellMajorVersion = 52;
+    info.sessionMode       = "";
+    check("G7 empty_mode_is_user", fcitx::isGnomePanelDark(info) == std::optional<bool>(false), "empty session mode not treated as user");
+    info.sessionMode = "ubuntu";
+    check("G8 ubuntu_mode_uses_yaru", fcitx::isGnomePanelDark(info) == std::optional<bool>(true), "Ubuntu Yaru bar decided by color-scheme");
+    info.sessionMode = "classic";
+    check("G9 other_mode_without_css", !fcitx::isGnomePanelDark(info).has_value(), "mode without a stylesheet answered from color-scheme");
+    info.sessionMode = "user";
+    check("V1 version_line", fcitx::gnomeShellMajorVersion("GNOME Shell 51.1") == 51, "GNOME Shell 51.1 not read as 51");
+    check("V2 version_alpha", fcitx::gnomeShellMajorVersion("GNOME Shell 52.alpha") == 52, "52.alpha not read as 52");
+    check("V4 busctl_reply", fcitx::gnomeShellMajorVersion("s \"51.1\"") == 51, "busctl reply not read as 51");
+    check("V3 version_missing", fcitx::gnomeShellMajorVersion("") == 0, "empty line not 0");
+
     // ── Cinnamon: the panel follows the Cinnamon theme, not the GTK one ──
     // Linux Mint 22.1 pairs Mint-Y-Dark-Aqua for the panel with Mint-Y-Aqua for
     // apps, so the portal says light while the panel is dark.  Rules copied from it.
@@ -125,9 +153,14 @@ int main() {
     check("N2 x_cinnamon", fcitx::isCinnamonSession("X-Cinnamon", ""), "X-Cinnamon rejected");
     check("N3 gnome", !fcitx::isCinnamonSession("ubuntu:GNOME", "ubuntu"), "GNOME taken for Cinnamon");
 
-    check("T1 cinnamon_tray_by_name", fcitx::trayWantsIconName("", "cinnamon"), "Cinnamon tray given a path");
-    check("T2 cosmic_tray_by_name", fcitx::trayWantsIconName("COSMIC", ""), "COSMIC tray given a path");
-    check("T3 kde_tray_by_path", !fcitx::trayWantsIconName("KDE", "plasma"), "KDE tray given a name");
+    check("T1 cinnamon_tray_by_name", fcitx::trayWantsIconName("", "cinnamon", ""), "Cinnamon tray given a path");
+    check("T2 cosmic_tray_by_name", fcitx::trayWantsIconName("COSMIC", "", ""), "COSMIC tray given a path");
+    check("T3 kde_tray_by_path", !fcitx::trayWantsIconName("KDE", "plasma", ""), "KDE tray given a name");
+    check("T6 sway_tray_by_name", fcitx::trayWantsIconName("sway:wlroots", "sway", ""), "Sway tray given a path");
+    check("T7 console_sway_by_name", fcitx::trayWantsIconName("", "", "/run/user/1000/sway-ipc.1000.1.sock"), "Sway without XDG_CURRENT_DESKTOP given a path");
+    check("T8 hyprland_tray_by_path", !fcitx::trayWantsIconName("Hyprland", "hyprland", ""), "Hyprland tray given a name");
+    check("T9 unknown_tray_by_path", !fcitx::trayWantsIconName("", "", ""), "unknown desktop given a name");
+    check("T10 stale_swaysock_on_kde", !fcitx::trayWantsIconName("KDE", "plasma", "/run/user/1000/sway-ipc.1000.1.sock"), "KDE with a stale SWAYSOCK given a name");
     check("T4 gnome_tray_tighter_icon", fcitx::trayIconNames("fcitx-ngosen", "fcitx-ngosen", "ubuntu:GNOME").front() == "fcitx-ngosen-gnome",
           "GNOME Shell not given the GNOME icon first");
     check("T5 kde_tray_usual_icon", fcitx::trayIconNames("fcitx-ngosen-off", "fcitx-ngosen-off", "KDE").front() == "fcitx-ngosen-off", "KDE given the GNOME icon");
@@ -152,6 +185,18 @@ int main() {
     check("N7 builtin_says_nothing", !fcitx::isCinnamonPanelDark(mint).has_value(), "built-in theme without a panel colour gave an answer");
     mint.themeName = "Not-Installed";
     check("N8 missing_theme", !fcitx::isCinnamonPanelDark(mint).has_value(), "missing Cinnamon theme gave an answer");
+
+    // ── deepin: the dock follows the global theme ────────────────────────
+    check("P1 dde_session", fcitx::isDeepinSession("DDE"), "DDE rejected");
+    check("P2 gnome_not_deepin", !fcitx::isDeepinSession("ubuntu:GNOME"), "GNOME taken for deepin");
+    check("P3 light_theme", fcitx::isDeepinPanelDark("nirvana.light") == std::optional<bool>(false), "nirvana.light dock not light");
+    check("P4 dark_theme", fcitx::isDeepinPanelDark("nirvana.dark") == std::optional<bool>(true), "nirvana.dark dock not dark");
+    check("P5 automatic_theme", !fcitx::isDeepinPanelDark("nirvana").has_value(), "automatic theme gave an answer");
+    check("P6 no_reply", !fcitx::isDeepinPanelDark("").has_value(), "empty theme gave an answer");
+    check("P8 busctl_reply", fcitx::busctlStringValue("s \"nirvana.light\"") == "nirvana.light", "busctl reply not parsed");
+    check("P9 busctl_error", fcitx::busctlStringValue("Failed to get property GlobalTheme").empty(), "busctl error taken for a theme");
+    check("P10 busctl_other_type", fcitx::busctlStringValue("b true").empty(), "non-string reply taken for a theme");
+    check("P7 other_suffix", !fcitx::isDeepinPanelDark("custom.blue").has_value(), "unknown variant gave an answer");
 
     fs::remove_all(root);
 

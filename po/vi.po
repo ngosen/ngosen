@@ -1628,8 +1628,8 @@ msgid "Ngó Sen backup"
 msgstr "Bản sao lưu Ngó Sen"
 
 #: settings-gui/core/catalog.py
-msgid "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
-msgstr "GTK hợp với GNOME và Cinnamon, Qt hợp với KDE và phần lớn desktop khác."
+msgid "GTK matches GNOME, Cinnamon and Xfce, Qt matches KDE and most other desktops."
+msgstr "GTK hợp với GNOME, Cinnamon và Xfce, Qt hợp với KDE và phần lớn desktop khác."
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "This window uses {}"

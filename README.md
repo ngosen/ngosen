@@ -1,211 +1,232 @@
-[English](README.en.md)
+<div align="center">
+
+<img src="data/icons/hicolor/scalable/apps/io.github.ngosen.NgoSen.Settings.svg" alt="Logo Ngó Sen" width="128">
 
 # Ngó Sen
 
-Ngó Sen là bộ gõ tiếng Việt cho fcitx5 trên Linux, cho trải nghiệm gõ như UniKey trên Windows.
-fcitx5 chạy được trên GNOME, KDE, Xfce, Sway và Hyprland, có nhiều tính năng và nhẹ RAM.
-Có thêm [Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) chạy trên IBus có sẵn của GNOME, dùng chung lõi gõ
-với bản fcitx5 nên tính năng gần như giống hệt. Tính năng mới có thể đến bản IBus muộn hơn bản fcitx5.
+**Bộ gõ tiếng Việt cho Linux, gõ tự nhiên và mượt mà như UniKey trên Windows.**
 
-Cửa sổ cài đặt có hai bản: Qt và GTK (giống app GNOME). GNOME và Linux Mint (Cinnamon) mở bản GTK,
-các desktop khác mở bản Qt. Cửa sổ dùng giao diện sáng, tối của máy trên KDE và GNOME; đổi gì lưu
-ngay, có nút Hoàn tác.
+[![Release](https://img.shields.io/github/v/release/ngosen/ngosen?label=version&color=1f6e5c)](https://github.com/ngosen/ngosen/releases/latest)
+[![License](https://img.shields.io/badge/license-GPL--3.0--or--later-1f6e5c)](LICENSE)
+[![fcitx5](https://img.shields.io/badge/fcitx5-GNOME%20%C2%B7%20KDE%20%C2%B7%20Xfce%20%C2%B7%20Sway%20%C2%B7%20Hyprland-c9a96e)](#cai-dat)
 
-Bản GTK trên GNOME:
+[Cài đặt](#cai-dat) · [Tính năng](#tinh-nang) · [Khắc phục sự cố](#khac-phuc-su-co) · [CHANGELOG](CHANGELOG.md) · [Báo lỗi](https://github.com/ngosen/ngosen/issues)
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-gtk-dark.png">
-  <img alt="Cửa sổ cài đặt Ngó Sen bản GTK, trang Gõ chữ, trên GNOME" src="docs/screenshots/settings-gtk-light.png" width="750">
-</picture>
+</div>
 
-Bản Qt trên KDE Plasma:
+---
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
-  <img alt="Cửa sổ cài đặt Ngó Sen bản Qt, trang Gõ chữ, trên KDE Plasma" src="docs/screenshots/settings-light.png" width="750">
-</picture>
+Ngó Sen hỗ trợ đầy đủ hai nền tảng:
 
-## Tính năng chính
+- **fcitx5** (khuyên dùng): chạy mượt mà trên GNOME, KDE Plasma, Xfce, Sway và Hyprland; giàu tính năng
+  và nhẹ RAM.
+- **IBus** ([ibus-ngosen](https://github.com/ngosen/ibus-ngosen)): tích hợp trực tiếp vào IBus mặc định
+  của GNOME, dùng chung lõi gõ với bản fcitx5 nên có hầu hết tính năng tương đương. Tính năng mới có thể
+  đến bản IBus muộn hơn.
 
-- Cứu chữ: quên bật tiếng Việt, gõ `tieengs vieetj` rồi bấm phím chuyển sang tiếng Việt thì chữ đổi
-  thành `tiếng việt`. Tab hoặc Esc trả lại chữ đã gõ. Nếu đoạn có chữ không đổi được như `abc`, Ngó Sen
-  chỉ hiện gợi ý; bấm Enter để nhận. Cứu chữ không ghi nhớ gì trong ô mật khẩu.
-- Cứu dấu: bôi đen chữ rồi gõ phím dấu để thêm, đổi hoặc bỏ dấu thanh, như `nhanh` + `s` → `nhánh`.
-  Ở Gõ Sen, có thể bấm chuột ngay sau chữ đã gõ rồi gõ phím dấu, không cần bôi đen:
-  `nhanh|` + `s` → `nhánh`.
-  Dùng được ở app cho bộ gõ đọc surrounding text. Chromium, Vivaldi, Cốc Cốc và WPS trên X11
-  cũng dùng được qua chữ đang bôi đen. Tab hoặc Esc trả lại phím đã gõ. OnlyOffice chưa dùng
-  được vì app không báo surrounding text hay chữ đang bôi đen cho bộ gõ. Đã test OnlyOffice
-  10.0.0 Document Editor trên X11. Gõ phím dấu sẽ đè lên chữ đang bôi đen như gõ thường.
-  Ctrl+Z lấy lại chữ.
-- Menu chế độ theo từng app: bấm phím `` ` `` để mở menu cạnh con trỏ.
-  Chọn Gõ Sen (phím 1), Gạch chân (q), Chọn Emoji (w) hoặc Tắt (e); Ngó Sen nhớ cho app đó.
-  Chọn lại chế độ vốn có của app (thường là Gõ Sen) để app theo cài đặt chung; chọn Tắt vẫn được nhớ riêng.
-  Menu chỉ mở khi đang bật tiếng Việt.
-- Chọn Emoji: gõ từ khoá tiếng Anh như `smile`, `heart`, danh sách emoji hiện cạnh con trỏ; bấm số để chọn.
-- Phím chuyển Anh/Việt riêng: cài mới dùng Ctrl+Shift như UniKey; đã cài từ trước giữ Ctrl+Space.
-  Khi ở tiếng Anh, gõ như không có bộ gõ. Mỗi app nhớ riêng Anh hay Việt qua lần đăng xuất; app chưa
-  bấm lần nào theo lần bấm gần nhất.
-- Gõ tiếng Anh khi đang bật tiếng Việt: chữ nào không thể thành tiếng Việt thì hiện lại đúng phím đã gõ,
-  thường ngay lúc gõ, muộn nhất khi bấm Space. Đo bằng Telex, cài đặt mặc định, trên 9.884 từ tiếng Anh
-  thông dụng: 92,9% hiện đúng khi chưa bấm Space, 96,9% đúng sau khi bấm Space. 3,1% còn lại phần lớn
-  trùng cách gõ một chữ Việt: `this` → `thí`, `is` → `í`, `has` → `há`, `too` → `tô`, `been` → `bên`,
-  `car` → `cả`, `test` → `tét`, `box` → `bõ`; số ít là tên riêng có chữ cái đôi (`russia` → `rusia`).
-  Muốn giữ tiếng Anh thì gõ đúp phím dấu: `thiss` → `this`, `russsia` → `russia`.
-- Phím chốt chữ: bấm rồi thả riêng Ctrl (mặc định) để giữ nguyên từ, không thêm dấu hay bung macro.
-  Phím tiếp theo bắt đầu từ mới. Ví dụ gõ `tunx`, bấm rồi thả Ctrl, sau đó Space sẽ giữ `tũn`.
-- Gõ tắt (macro): khi bật “Gõ tắt chữ hoa”, `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
-  Nội dung đã có chữ hoa vẫn giữ nguyên: `ip` → `iPhone` thì gõ `Ip` vẫn ra `iPhone`.
-- Menu tray: chuyển nhanh Telex/VNI, bật hoặc tắt từng kiểu tự viết hoa, tiện khi gõ lệnh trong terminal.
-  Có thể ẩn các mục ít dùng ở trang Giao diện; “Cài đặt” và “Lưu nhật ký gõ” luôn hiện.
-- Cửa sổ cài đặt: có các trang Gõ chữ, Gõ tắt, Phím (có tab Phím tắt), Giao diện, "Có gì mới & mẹo",
-  "Kiểm tra máy" và Giới thiệu. Trang Gõ chữ và Giao diện có giải thích ngắn dưới từng tuỳ chọn, thường
-  kèm ví dụ; trang Phím, tab Phím tắt cũng vậy. Trang Giao diện có phần xem trước biểu tượng tray và chọn
-  ngôn ngữ giao diện.
-  Trang "Có gì mới & mẹo" ghi cách dùng các tính năng mới và mẹo gõ; sau khi cập nhật lên version có tính
-  năng mới, một thông báo hiện một lần để mở trang này.
-  Trang Giao diện có nút đổi sang bản kia (Qt hoặc GTK), máy chưa có thì cài ngay tại đó; bản GTK cần
-  libadwaita 1.5 trở lên (Ubuntu 24.04, Linux Mint 22, Debian 13), còn Debian 12 chỉ có bản Qt.
-- Trang "Kiểm tra máy": hiện các bước thiết lập, số việc còn cần sửa, nút sửa từng việc hoặc "Sửa cả N việc".
-  Có ô gõ thử, test một app kèm nhật ký gõ, và gửi kết quả qua Facebook, GitHub hoặc chép kết quả.
+Cửa sổ cài đặt có hai giao diện: **GTK** (tự mở trên GNOME, Linux Mint Cinnamon và Xfce) và **Qt** (mở
+trên KDE Plasma và các desktop khác). Cửa sổ theo giao diện sáng/tối của máy, lưu thay đổi ngay và có nút
+Hoàn tác.
 
-Chi tiết từng version ở [CHANGELOG.md](CHANGELOG.md).
+<table>
+  <tr>
+    <th>Bản GTK trên GNOME</th>
+    <th>Bản Qt trên KDE Plasma</th>
+  </tr>
+  <tr>
+    <td>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-gtk-dark.png">
+        <img alt="Cửa sổ cài đặt Ngó Sen bản GTK, trang Gõ chữ, trên GNOME" src="docs/screenshots/settings-gtk-light.png">
+      </picture>
+    </td>
+    <td>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
+        <img alt="Cửa sổ cài đặt Ngó Sen bản Qt, trang Gõ chữ, trên KDE Plasma" src="docs/screenshots/settings-light.png">
+      </picture>
+    </td>
+  </tr>
+</table>
 
-## Nên dùng chế độ nào
+## Mục lục
 
-Ngó Sen có hai chế độ: Gõ Sen và Preedit. Nên dùng Gõ Sen làm chế độ chính: mở cài đặt Ngó Sen, trang
-Gõ chữ, chọn Gõ Sen ở hàng Chế độ gõ.
+- [✨ Tính năng nổi bật](#tinh-nang)
+- [💡 Lựa chọn chế độ gõ](#che-do-go)
+- [📦 Cài đặt](#cai-dat)
+  - [Cài đặt tự động](#cai-tu-dong)
+  - [Chọn bản fcitx5 hoặc IBus](#chon-ban)
+  - [Cài qua trình quản lý gói](#trinh-quan-ly-goi)
+  - [Cài trên NixOS](#nixos)
+  - [Cài bằng tay, tự build, bản thử](#cai-bang-tay)
+- [🛠️ Thiết lập sau khi cài đặt](#thiet-lap)
+- [🔍 Khắc phục sự cố thường gặp](#khac-phuc-su-co)
+- [🗑️ Gỡ cài đặt](#go-cai-dat)
+- [🏛️ Nguồn gốc & ghi công](#nguon-goc)
+- [English](#english)
 
-Gõ Sen đưa chữ thẳng vào app, không gạch chân. Gợi ý ở thanh địa chỉ hay ô tìm kiếm hiện theo từng phím.
-Trình duyệt, terminal, Zalo, LibreOffice đều dùng Gõ Sen; Ngó Sen tự nhận ra cách app nhận chữ, không cần
-đổi chế độ.
+<a id="tinh-nang"></a>
 
-Telex được dùng và test hằng ngày. VNI và các kiểu khác dùng được nhưng chưa test kỹ.
+## ✨ Tính năng nổi bật
 
-## Cài
+- **Cứu chữ:** quên bật tiếng Việt và gõ nhầm `tieengs vieetj`? Chỉ cần bấm phím chuyển sang tiếng Việt,
+  chữ sẽ đổi thành `tiếng việt`. Nhấn `Tab` hoặc `Esc` để lấy lại chữ đã gõ. Cứu chữ không ghi nhớ gì
+  trong ô mật khẩu.
+- **Cứu dấu:** bôi đen chữ rồi bấm phím dấu thanh để thêm, đổi hoặc bỏ dấu (`nhanh` + `s` → `nhánh`). Ở
+  chế độ Gõ Sen, chỉ cần bấm chuột ngay sau từ (`nhanh|` + `s`) là sửa được dấu mà không cần bôi đen.
+- **Menu chế độ riêng cho từng app:** nhấn phím `` ` `` để mở menu cạnh con trỏ, chọn **Gõ Sen (1)**,
+  **Gạch chân (q)**, **Chọn Emoji (w)** hoặc **Tắt (e)**. Ngó Sen nhớ lựa chọn riêng cho từng app.
+- **Gõ thẳng không gạch chân (Gõ Sen):** chữ vào app ngay khi gõ; gợi ý ở thanh địa chỉ hay ô tìm kiếm
+  hiện theo từng phím.
+- **Nhận ra tiếng Anh:** chữ không thể thành tiếng Việt thì hiện lại đúng phím đã gõ. Đo bằng Telex, cài
+  đặt mặc định, trên 9.884 từ tiếng Anh thông dụng: 92,9% đúng ngay khi gõ, 96,9% đúng sau khi bấm Space.
+  Muốn giữ từ tiếng Anh trùng cách gõ tiếng Việt thì gõ đúp phím dấu (`thiss` → `this`).
+- **Chèn emoji:** gõ từ khoá tiếng Anh (`smile`, `heart`), danh sách emoji hiện cạnh con trỏ để chọn nhanh
+  bằng số.
+- **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey, người dùng cũ giữ
+  `Ctrl + Space`. Mỗi app nhớ riêng đang gõ Anh hay Việt.
+- **Phím chốt chữ (Ctrl):** bấm rồi thả `Ctrl` để giữ nguyên từ đang gõ, không thêm dấu hay bung gõ tắt.
+- **Gõ tắt (macro):** tự theo chữ hoa: `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
+- **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
+  bằng một nút bấm.
 
-Lệnh dưới đây cài cho Fedora, Ubuntu (từ 24.04), Debian (từ 12), Kali, deepin, LMDE, Devuan, Parrot, Arch, Artix,
-CachyOS và openSUSE Tumbleweed trên x86_64. Ubuntu 22.04 và Linux Mint 21 dùng được tới version 1.6.4.
-Fedora, Ubuntu, Debian và Kali còn có gói cho ARM 64-bit (aarch64):
+Chi tiết từng version ở [CHANGELOG.md](CHANGELOG.md), những gì sắp làm ở [ROADMAP.md](ROADMAP.md).
 
-```
+<a id="che-do-go"></a>
+
+## 💡 Lựa chọn chế độ gõ
+
+1. **Gõ Sen (khuyên dùng):** đưa chữ thẳng vào app, không gạch chân. Ngó Sen tự nhận ra cách trình duyệt,
+   terminal, Zalo, LibreOffice nhận chữ để xử lý cho đúng, không cần đổi chế độ.
+2. **Preedit (Gạch chân):** giữ từ đang gõ trong vùng gạch chân rồi mới đưa vào app.
+
+> [!TIP]
+> Mở cài đặt Ngó Sen → trang **Gõ chữ** → chọn **Gõ Sen** ở hàng Chế độ gõ. Kiểu gõ **Telex** được dùng và
+> test hằng ngày; VNI và các kiểu khác dùng được nhưng chưa test kỹ.
+
+<a id="cai-dat"></a>
+<a id="cài"></a>
+
+## 📦 Cài đặt
+
+<a id="cai-tu-dong"></a>
+
+### 1. Cài đặt tự động (khuyên dùng)
+
+Hỗ trợ Fedora, Ubuntu (từ 24.04), Debian (từ 12), Kali, deepin, LMDE, Devuan, Parrot, Arch, Artix, CachyOS
+và openSUSE Tumbleweed trên `x86_64`. Fedora, Ubuntu, Debian và Kali có thêm gói `aarch64`.
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash
 ```
 
-Lệnh tải gói đúng distro từ [release mới nhất](https://github.com/ngosen/ngosen/releases/latest),
-so hash SHA-256 và hỏi lại trước khi cài. Chạy lại lệnh để cập nhật version mới; cấu hình cũ giữ nguyên.
+Lệnh tải gói đúng distro từ [release mới nhất](https://github.com/ngosen/ngosen/releases/latest), kiểm tra
+SHA-256, hỏi lại trước khi cài và tự thiết lập theo desktop đang dùng. Chạy lại lệnh này để cập nhật version
+mới; cấu hình cũ giữ nguyên. Thiết lập chỉ áp dụng cho tài khoản chạy lệnh.
 
-Lệnh cài thêm Ngó Sen vào danh sách bộ gõ và thiết lập theo desktop:
+Sau khi cài, nhấn rồi thả `Ctrl + Shift` để chuyển giữa tiếng Anh và tiếng Việt; biểu tượng khay hiện chữ V
+khi đang gõ tiếng Việt.
 
-- GNOME (desktop mặc định của Ubuntu): đặt fcitx5 thay IBus, bật extension sửa lỗi gõ khi cần. Nếu không
-  có khay hệ thống (như Fedora), thêm extension [Input Method Panel](https://extensions.gnome.org/extension/261/)
-  để icon và menu bộ gõ hiện trên thanh trên cùng.
-- KDE Plasma (Wayland): chọn fcitx5 ở System Settings → Virtual Keyboard để app Qt như Kate, Dolphin
+<details>
+<summary>Lệnh cài làm gì trên từng desktop</summary>
+
+- **GNOME:** đặt fcitx5 thay IBus, bật extension sửa lỗi gõ khi cần. Nếu không có khay hệ thống (như
+  Fedora), thêm extension [Input Method Panel](https://extensions.gnome.org/extension/261/) để icon và
+  menu bộ gõ hiện trên thanh trên cùng.
+- **KDE Plasma (Wayland):** chọn fcitx5 ở System Settings → Virtual Keyboard để app Qt như Kate, Dolphin
   cũng gõ được.
-- Xfce, Cinnamon, MATE (X11, Debian và Ubuntu): dùng im-config đặt fcitx5 làm bộ gõ.
-- Sway, Hyprland: chạy lệnh cài một dòng từ terminal trong phiên desktop để thêm Ngó Sen vào
-  danh sách bộ gõ và bật fcitx5. Không cần đăng xuất, chỉ cần bấm phím chuyển là gõ được ngay.
-  Lệnh cài không sửa file config của desktop. Để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng
-  lệnh được in ra. Nếu Sway chưa có config riêng, hãy chạy thêm lệnh chép config của máy được in
-  trước đó.
+- **Xfce, Cinnamon, MATE** (X11, Debian và Ubuntu): dùng im-config đặt fcitx5 làm bộ gõ.
+- **Sway, Hyprland:** chạy lệnh từ terminal trong phiên desktop để thêm Ngó Sen và bật fcitx5, không cần
+  đăng xuất. Lệnh không sửa file config của desktop; để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng
+  lệnh được in ra.
 
-Với các desktop khác, cài xong thì đăng xuất rồi đăng nhập lại. Nhấn rồi thả Ctrl+Shift như UniKey để chuyển giữa tiếng Anh
-và tiếng Việt; biểu tượng khay hiện chữ V khi đang gõ tiếng Việt. Nếu đã cài Ngó Sen từ trước, bạn vẫn
-dùng phím chuyển cũ (thường là Ctrl+Space). Muốn đổi phím, mở cửa sổ cài đặt, trang Phím, tab Phím tắt.
-Các bước thiết lập chỉ áp dụng cho tài khoản chạy lệnh. Tài khoản khác trên cùng máy cần đăng nhập vào
-đó rồi chạy lại lệnh cài.
+Desktop khác: cài xong thì đăng xuất rồi đăng nhập lại.
 
-### Chọn bản fcitx5 hoặc bản IBus
+</details>
 
-Khi cài lần đầu trên GNOME, hoặc trên Xfce, Cinnamon, MATE dùng X11 ở Debian, Ubuntu và Linux Mint,
-lệnh cài hỏi chọn bản nào nếu distro đó có package cho bản IBus:
+<a id="chon-ban"></a>
 
-1. Bản fcitx5 (khuyên dùng): đủ tính năng, nhấn Enter để chọn.
-2. Bản IBus: dùng IBus có sẵn, tính năng gần như giống hệt bản fcitx5 nhờ dùng chung lõi gõ.
-   Tính năng mới có thể đến muộn hơn bản fcitx5.
+### 2. Chọn bản fcitx5 hoặc IBus
 
-Dùng `--yes` thì lệnh không hỏi và cài bản fcitx5. Cả hai bản đều dùng Ctrl+Shift để chuyển giữa tiếng Anh
-và tiếng Việt.
+Khi cài lần đầu trên GNOME, hoặc Xfce, Cinnamon, MATE dùng X11 ở Debian, Ubuntu, Linux Mint, lệnh cài hỏi
+chọn bản nào. Nhấn Enter là chọn bản fcitx5. Muốn chọn thẳng:
 
-[Bản IBus](https://github.com/ngosen/ibus-ngosen) (package `ibus-ngosen`) dùng chung lõi gõ với bản fcitx5:
-Gõ Sen, kiểu gõ, gõ tắt, từ điển riêng và bảng phím tùy chỉnh. Bản IBus cũng có chọn Gõ Sen hay Gạch chân
-riêng cho từng app (bấm phím `` ` `` để chọn). Các điểm còn khác: chưa có Chọn Emoji. Cứu dấu dùng được
-ở ô gõ bằng Gõ Sen (bấm ngay sau một chữ rồi gõ phím dấu); đổi dấu chữ đang bôi đen chỉ được ở app X11.
-Cứu chữ hiện chỉ có trên X11. Trong một số app, từ đang gõ có gạch chân.
+```bash
+# Bản fcitx5
+curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --fcitx5
 
-Muốn chọn thẳng bản IBus:
-
-```
+# Bản IBus
 curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --ibus
 ```
 
-Hoặc chọn thẳng bản fcitx5:
+<details>
+<summary>Bản IBus khác gì, và khi chuyển bản thì sao</summary>
 
-```
-curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --fcitx5
-```
+Bản IBus có Gõ Sen, kiểu gõ, gõ tắt, từ điển riêng, bảng phím tùy chỉnh và chọn Gõ Sen hay Gạch chân riêng
+cho từng app (phím `` ` ``). Các điểm còn khác: chưa có emoji và Vim mode. Cứu dấu dùng được ở ô gõ bằng Gõ
+Sen (bấm ngay sau một chữ rồi gõ phím dấu); đổi dấu chữ đang bôi đen chỉ được ở app X11. Cứu chữ hiện chỉ có
+trên X11. Trong một số app, từ đang gõ có gạch chân.
 
-Chạy lại lệnh cài để cập nhật version mới thì giữ bản đang có trên máy, không hỏi chọn lại. Muốn chuyển
-sang bản kia, chạy lệnh với `--ibus` hoặc `--fcitx5`.
+Chạy lại lệnh cài để cập nhật thì giữ bản đang có, không hỏi lại. Muốn chuyển sang bản kia, chạy lệnh với
+`--ibus` hoặc `--fcitx5`. Dùng `--yes` thì lệnh không hỏi và cài bản fcitx5.
 
-Hai package không cài cùng nhau được. Chuyển bản sẽ gỡ package của bản kia cho mọi tài khoản trên máy.
-Trên Debian, Ubuntu và Fedora, package cũ được gỡ trong cùng lần cài, nên cài lỗi thì bản cũ vẫn còn.
-Trên openSUSE và Arch, lệnh dừng và in lệnh gỡ package kia; gỡ xong thì chạy lại lệnh cài.
+Hai package không cài cùng nhau được; chuyển bản sẽ gỡ package của bản kia cho mọi tài khoản trên máy. Trên
+Debian, Ubuntu và Fedora, package cũ được gỡ trong cùng lần cài, nên cài lỗi thì bản cũ vẫn còn. Trên openSUSE
+và Arch, lệnh dừng và in lệnh gỡ package kia; gỡ xong thì chạy lại lệnh cài.
 
-Khi chuyển từ bản fcitx5 sang bản IBus, bản IBus chép kiểu gõ, gõ tắt, bảng phím tùy chỉnh và từ điển
-tùy chỉnh từ bản fcitx5 ở lần chạy đầu. Lệnh cài bỏ các thiết lập fcitx5 mà nó đã tạo cho tài khoản này
-và thêm “Tiếng Việt (Ngó Sen)” vào nguồn nhập của GNOME. Trên Xfce, Cinnamon, MATE, lệnh dùng im-config
-đặt IBus làm bộ gõ và thêm Ngó Sen vào IBus. Sau đó đăng xuất rồi đăng nhập lại.
+Từ fcitx5 sang IBus: bản IBus chép kiểu gõ, gõ tắt, bảng phím và từ điển tùy chỉnh ở lần chạy đầu, lệnh cài
+thêm “Tiếng Việt (Ngó Sen)” vào nguồn nhập của GNOME. Từ IBus sang fcitx5: cài đặt không tự chép sang, hãy sao
+lưu trong cửa sổ cài đặt của bản IBus rồi khôi phục trong bản fcitx5. Sau khi chuyển, đăng xuất rồi đăng nhập
+lại.
 
-Khi chuyển từ bản IBus sang bản fcitx5, cài đặt không tự chép sang. Trước khi chuyển, sao lưu trong
-cửa sổ cài đặt của bản IBus, rồi khôi phục trong bản fcitx5. Lệnh cài bỏ nguồn nhập “Tiếng Việt (Ngó Sen)”
-của bản IBus khỏi tài khoản chạy lệnh; tài khoản khác tự bỏ nguồn đó trong Cài đặt GNOME → Bàn phím.
+Xem thêm ở [README của bản IBus](https://github.com/ngosen/ibus-ngosen#readme).
 
-Xem chi tiết và các giới hạn trong [README của bản IBus](https://github.com/ngosen/ibus-ngosen#readme).
+</details>
 
-### Cập nhật bằng trình quản lý gói
+<a id="trinh-quan-ly-goi"></a>
 
-Từ version 1.5.3, mỗi release đều có trên repo có chữ ký để nhận version mới qua update của hệ thống:
-`dnf upgrade`, `apt upgrade`, `pacman -Syu` hoặc `zypper up`.
+### 3. Cài qua trình quản lý gói
 
-Chỉ cần thêm repo một lần. Nếu đã cài Ngó Sen bằng lệnh một dòng, chỉ cần thêm repo; lệnh cài gói trong
-mỗi khối dưới đây dành cho máy chưa có Ngó Sen, cài xong làm theo mục “Thiết lập sau khi cài package”.
+Mỗi release đều có trên repo có chữ ký, nên version mới đến qua update của hệ thống (`dnf upgrade`,
+`apt upgrade`, `pacman -Syu`, `zypper up`). Các repo dùng chung key có fingerprint
+`6D4A 2075 F985 3BE8 F6B6 FE7E 7550 1858 158B 36CD`.
 
-Các repo dùng chung một key có fingerprint `6D4A 2075 F985 3BE8 F6B6 FE7E 7550 1858 158B 36CD`.
-Đối chiếu fingerprint này với thông tin trình quản lý gói hiển thị.
+Đã cài bằng lệnh một dòng thì chỉ cần thêm repo. Máy chưa có Ngó Sen thì cài gói xong làm theo mục
+[Thiết lập sau khi cài đặt](#thiet-lap).
 
-Fedora dùng COPR (x86_64 và aarch64):
+**Fedora (COPR, x86_64 và aarch64):**
 
-```
+```bash
 sudo dnf copr enable nguyenphi/ngosen
 sudo dnf install fcitx5-ngosen
 ```
 
-Debian, Ubuntu và các distro dựa trên chúng (Linux Mint, MX…) dùng repo APT (x86_64 và arm64):
+**Debian, Ubuntu, Linux Mint, MX (APT, x86_64 và arm64):**
 
-```
+```bash
 sudo curl -fsSL -o /usr/share/keyrings/ngosen.gpg https://ngosen.github.io/ngosen/apt/ngosen.gpg
 echo "deb [signed-by=/usr/share/keyrings/ngosen.gpg] https://ngosen.github.io/ngosen/apt $(. /etc/os-release && echo ${UBUNTU_CODENAME:-$VERSION_CODENAME}) main" | sudo tee /etc/apt/sources.list.d/ngosen.list
 sudo apt update
 sudo apt install fcitx5-ngosen
 ```
 
-Kali: thay phần `$(. /etc/os-release && echo ${UBUNTU_CODENAME:-$VERSION_CODENAME})` bằng `forky`.
-deepin 23 và 25: thay phần đó bằng `bookworm`. LMDE, Devuan và Parrot: thay bằng bản Debian gốc, `bookworm` hoặc
-`trixie` (xem `/etc/debian_version`: 12 là `bookworm`, 13 là `trixie`).
+> [!NOTE]
+> Kali: thay phần `$(. /etc/os-release && echo ${UBUNTU_CODENAME:-$VERSION_CODENAME})` bằng `forky`. deepin 23
+> và 25: thay bằng `bookworm`. LMDE, Devuan, Parrot: thay bằng bản Debian gốc, `bookworm` hoặc `trixie` (xem
+> `/etc/debian_version`: 12 là `bookworm`, 13 là `trixie`).
 
-Arch, CachyOS và EndeavourOS dùng repo pacman (x86_64):
+**Arch, CachyOS, EndeavourOS (pacman, x86_64):**
 
-```
+```bash
 curl -fsSL https://ngosen.github.io/ngosen/arch/ngosen.asc | sudo pacman-key --add -
 sudo pacman-key --lsign-key 6D4A2075F9853BE8F6B6FE7E75501858158B36CD
 printf '\n[ngosen]\nServer = https://ngosen.github.io/ngosen/arch/$arch\n' | sudo tee -a /etc/pacman.conf
 sudo pacman -Syu fcitx5-ngosen
 ```
 
-openSUSE Tumbleweed dùng repo zypper (x86_64):
+**openSUSE Tumbleweed (zypper, x86_64):**
 
-```
+```bash
 sudo zypper addrepo https://ngosen.github.io/ngosen/opensuse/ngosen.repo
 sudo zypper refresh
 sudo zypper install fcitx5-ngosen
@@ -213,78 +234,13 @@ sudo zypper install fcitx5-ngosen
 
 zypper hỏi một lần có tin cậy key không; đối chiếu fingerprint rồi chọn tin cậy.
 
-[Ngó Sen cho GNOME](https://github.com/ngosen/ibus-ngosen) cũng có trong repo APT, pacman và zypper ở trên: thay
-`fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
+Bản IBus cũng có trong repo APT, pacman và zypper: thay `fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
 
-Sau khi update, khởi động lại fcitx5 theo mục “Khởi động lại sau khi cài hoặc cập nhật”.
+<a id="nixos"></a>
 
-### Thiết lập sau khi cài package
+### 4. Cài trên NixOS
 
-Nếu máy chưa từng thiết lập Ngó Sen, cài từ repo, package tải về hoặc dùng `--no-setup` chưa thêm Ngó Sen
-vào danh sách bộ gõ. Ctrl+Shift sẽ chưa gõ được tiếng Việt.
-
-- Mở “Cấu hình Fcitx 5” bằng `fcitx5-configtool`, vào tab bộ gõ và thêm “Ngó Sen” vào danh sách. Máy để
-  ngôn ngữ hiển thị tiếng Việt thì fcitx5 tự thêm Ngó Sen ở lần chạy đầu, không cần bước này.
-- Với GNOME, cài từ repo hoặc package chưa đặt fcitx5 thay IBus. Chạy khối lệnh sau để bật fcitx5
-  tự chạy khi đăng nhập và đặt biến môi trường để app gõ qua fcitx5, rồi đăng xuất và đăng nhập lại:
-
-  ```sh
-  mkdir -p ~/.config/autostart ~/.config/environment.d
-  [ -e /etc/xdg/autostart/org.fcitx.Fcitx5.desktop ] || cp /usr/share/applications/org.fcitx.Fcitx5.desktop ~/.config/autostart/
-  printf 'GTK_IM_MODULE=fcitx\nQT_IM_MODULE=fcitx\nXMODIFIERS=@im=fcitx\nSDL_IM_MODULE=fcitx\n' > ~/.config/environment.d/90-ngosen.conf
-  ```
-
-  Nếu thanh trên cùng không có icon bộ gõ, cài extension
-  [Input Method Panel](https://extensions.gnome.org/extension/261/).
-  Với GNOME version 50.0 đến 50.3, máy không có gói `xdg-desktop-portal-gnome`, hoặc khi cần app không có
-  tệp .desktop nhớ chế độ gõ riêng, chạy thêm `gnome-extensions enable forward-keys@ngosen.github.io`
-  (xem mục “GNOME: extension sửa lỗi gõ”).
-- Với KDE Plasma (Wayland), chọn Fcitx 5 ở System Settings → Virtual Keyboard, rồi đăng xuất và đăng nhập lại
-  để KDE tự chạy fcitx5 và app Qt như Kate, Dolphin gõ được. App X11 chạy qua XWayland (như Minecraft bản cũ)
-  cần thêm biến môi trường: chạy khối lệnh sau trước khi đăng xuất.
-
-  ```sh
-  mkdir -p ~/.config/environment.d
-  echo 'XMODIFIERS=@im=fcitx' > ~/.config/environment.d/90-ngosen.conf
-  ```
-
-- Với Xfce, Cinnamon, MATE trên Debian/Ubuntu/Mint, chạy `im-config -n fcitx5`, rồi đăng xuất và đăng nhập
-  lại. Nếu có IBus, bước này giúp fcitx5 khởi động khi đăng nhập và gõ được trong app dùng XIM như PlanMaker.
-
-Có thể chạy lệnh cài một dòng ở trên để làm các bước này.
-Nếu đã dùng lệnh cài một dòng và chỉ thêm repo để update, không cần làm thêm.
-
-### Cài bằng tay hoặc tự build
-
-Muốn tự thiết lập desktop thì cài bằng
-`curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --no-setup`.
-
-Không muốn chạy lệnh tải từ mạng thì tải gói ở [Releases](https://github.com/ngosen/ngosen/releases) và cài
-bằng tay. Muốn tự build từ source thì xem [TU-DUNG.md](TU-DUNG.md).
-
-### Khởi động lại sau khi cài hoặc cập nhật
-
-Mỗi lần cập nhật, hoặc khi cài bằng `--no-setup` hay cài gói bằng tay, khởi động lại fcitx5:
-
-```
-fcitx5 -rd
-```
-
-KDE Wayland: đăng xuất rồi đăng nhập lại thay cho lệnh trên. fcitx5 bật bằng `fcitx5 -rd` không gõ được
-trong app Qt như Kate, Dolphin.
-
-### Test tính năng chưa có trong release
-
-Cài [version thử](https://github.com/ngosen/ngosen/releases/tag/next-build), build tự động khi nhánh `next`
-thay đổi:
-
-```
-curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/next/install.sh | NGOSEN_RELEASE_URL=https://github.com/ngosen/ngosen/releases/download/next-build bash
-```
-
-### NixOS
-
-Thêm flake của repo vào cấu hình rồi đưa gói vào danh sách addon của fcitx5. Nix build từ source trong repo:
+Thêm flake vào cấu hình; Nix build từ source trong repo:
 
 ```nix
 # flake.nix
@@ -298,119 +254,173 @@ i18n.inputMethod = {
 };
 ```
 
-CI build gói, chạy test và nạp vào fcitx5 trên màn hình X ảo.
-Gặp lỗi thì mở issue. Muốn build từ bản clone trên máy, xem mục NixOS trong [TU-DUNG.md](TU-DUNG.md#nixos).
+Muốn build từ bản clone trên máy, xem mục NixOS trong [TU-DUNG.md](TU-DUNG.md#nixos).
 
-## Lỗi thường gặp
+<a id="cai-bang-tay"></a>
 
-### GNOME: extension sửa lỗi gõ
+### 5. Cài bằng tay, tự build, bản thử
 
-Gói có kèm extension `forward-keys@ngosen.github.io` cho GNOME 46 đến 50. fcitx5 version cũ hơn 5.1.22 gọi mọi
-app trên GNOME là `gnome-shell`. Ngó Sen nay lấy tên app từ gói `xdg-desktop-portal-gnome` để vẫn nhớ chế độ
-gõ riêng cho từng app. Extension chỉ cần trong ba trường hợp:
+- Tự thiết lập desktop: thêm `--no-setup` vào lệnh cài
+  (`... | bash -s -- --no-setup`).
+- Không muốn chạy lệnh tải từ mạng: tải gói ở [Releases](https://github.com/ngosen/ngosen/releases) và cài
+  bằng tay.
+- Tự build từ source: xem [TU-DUNG.md](TU-DUNG.md).
+- Test tính năng chưa có trong release: cài [version thử](https://github.com/ngosen/ngosen/releases/tag/next-build),
+  build tự động khi nhánh `next` thay đổi:
 
-- GNOME 50.0 đến 50.3: GNOME làm mất phím bộ gõ gửi cho app
-  ([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784)). Khi Ubuntu vá
-  lỗi này, chỉ cần cập nhật gói.
-- Máy không có gói `xdg-desktop-portal-gnome`.
-- Muốn nhớ chế độ gõ riêng cho app không có tệp `.desktop`: portal không có tên cho các app này.
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/next/install.sh | NGOSEN_RELEASE_URL=https://github.com/ngosen/ngosen/releases/download/next-build bash
+  ```
 
-Lệnh cài tự bật extension ở hai trường hợp đầu. Máy đã bật thì để nguyên. Trang "Kiểm tra máy" trong cửa sổ
-cài đặt báo khi portal chưa cho Ngó Sen biết tên app và gợi ý bật extension. Để bật bằng tay, đăng xuất rồi
-đăng nhập lại, sau đó chạy một lần:
+<a id="thiet-lap"></a>
+<a id="thiết-lập-sau-khi-cài-package"></a>
 
-```
+## 🛠️ Thiết lập sau khi cài đặt
+
+Cài từ repo, từ package tải về hoặc dùng `--no-setup` thì chưa thêm Ngó Sen vào danh sách bộ gõ. Làm các
+bước sau (hoặc chạy lệnh cài một dòng ở trên để nó làm giúp):
+
+- **Thêm Ngó Sen vào danh sách bộ gõ:** mở “Cấu hình Fcitx 5” (`fcitx5-configtool`), tab bộ gõ, thêm
+  “Ngó Sen”. Máy để ngôn ngữ tiếng Việt thì fcitx5 tự thêm ở lần chạy đầu.
+- **Khởi động lại bộ gõ** sau mỗi lần cài hoặc cập nhật: chạy `fcitx5 -rd`. Trên KDE Wayland, đăng xuất rồi
+  đăng nhập lại thay cho lệnh này.
+- **GNOME:** đặt fcitx5 tự chạy khi đăng nhập và nạp biến môi trường, rồi đăng xuất và đăng nhập lại:
+
+  ```sh
+  mkdir -p ~/.config/autostart ~/.config/environment.d
+  [ -e /etc/xdg/autostart/org.fcitx.Fcitx5.desktop ] || cp /usr/share/applications/org.fcitx.Fcitx5.desktop ~/.config/autostart/
+  printf 'GTK_IM_MODULE=fcitx\nQT_IM_MODULE=fcitx\nXMODIFIERS=@im=fcitx\nSDL_IM_MODULE=fcitx\n' > ~/.config/environment.d/90-ngosen.conf
+  ```
+
+  Thanh trên cùng không có icon bộ gõ thì cài extension
+  [Input Method Panel](https://extensions.gnome.org/extension/261/). Xem thêm
+  [extension sửa lỗi gõ](#gnome-extension).
+- **KDE Plasma (Wayland):** chọn **Fcitx 5** ở *System Settings → Virtual Keyboard*, rồi đăng xuất và đăng
+  nhập lại. App X11 chạy qua XWayland (như Minecraft bản cũ) cần thêm
+  `echo 'XMODIFIERS=@im=fcitx' > ~/.config/environment.d/90-ngosen.conf` trước khi đăng xuất.
+- **Xfce, Cinnamon, MATE** (Debian, Ubuntu, Mint): chạy `im-config -n fcitx5`, rồi đăng xuất và đăng nhập lại.
+- **Sway, Hyprland:** chạy lệnh cài một dòng từ terminal trong phiên desktop để được thiết lập sẵn.
+
+<a id="khac-phuc-su-co"></a>
+<a id="lỗi-thường-gặp"></a>
+
+## 🔍 Khắc phục sự cố thường gặp
+
+<a id="gnome-extension"></a>
+<a id="gnome-extension-sửa-lỗi-gõ"></a>
+<a id="ubuntu-2604-extension-sửa-lỗi-gõ"></a>
+
+### GNOME mất phím hoặc không nhớ chế độ gõ theo app
+
+Gói có kèm extension `forward-keys@ngosen.github.io` cho GNOME 46 đến 50. Chỉ cần bật nó trong ba trường hợp:
+GNOME 50.0–50.3 (GNOME làm mất phím bộ gõ gửi cho app,
+[báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2169784)), máy không có gói
+`xdg-desktop-portal-gnome`, hoặc muốn nhớ chế độ gõ cho app không có tệp `.desktop`. Lệnh cài tự bật ở hai
+trường hợp đầu. Bật bằng tay: đăng xuất, đăng nhập lại rồi chạy một lần
+
+```bash
 gnome-extensions enable forward-keys@ngosen.github.io
 ```
 
-### GNOME Wayland: bấm chuột mất chữ đang gõ
+### Chromium trên Wayland mất chữ khi bấm chuột
 
-Ở chế độ Preedit, Chrome, Chromium và các app dựa trên Chromium (Edge, Brave, app Electron) chạy thẳng trên
-Wayland mất chữ đang gõ dở khi bấm chuột, dù cùng ô hay ô khác. App GTK và mọi app trên X11 không bị.
+Ở chế độ Preedit trên GNOME Wayland, Chrome, Chromium và app Electron mất chữ đang gõ dở khi bấm chuột. Lỗi
+ở fcitx5 5.1.19 trở về trước, đã sửa ở 5.1.20
+([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/fcitx5/+bug/2172006)). Trong lúc distro
+chưa có bản mới, dùng chế độ **Gõ Sen**, hoặc gõ xong chữ bằng phím cách rồi mới bấm chuột.
 
-Lỗi ở fcitx5 5.1.19 trở về trước: khi app reset, fcitx5 bảo GNOME Shell bỏ chữ đang gõ dở. Version 5.1.20 đã
-sửa. Ubuntu 24.04, Ubuntu 26.04, Debian 13 và openSUSE Tumbleweed còn fcitx5 cũ; Arch, Fedora 44, Fedora 45 và Debian sid
-đã có bản mới. Đã nhờ Ubuntu đưa bản sửa vào ([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/fcitx5/+bug/2172006)).
+### VS Code trên Ubuntu
 
-Trong lúc chờ, nên dùng chế độ Gõ Sen, hoặc gõ xong chữ bằng phím cách rồi mới bấm chuột.
+Nên dùng gói `.deb` từ [trang của Microsoft](https://code.visualstudio.com/download) hoặc
+[Flatpak](https://flathub.org/apps/com.visualstudio.code), gõ được ngay. Bản snap gõ ra Telex thô (`tieengs`);
+nếu buộc phải dùng snap, cho nó đi qua XIM:
 
-### Ubuntu: VS Code
-
-Nên dùng gói `.deb` từ [trang của Microsoft](https://code.visualstudio.com/download) hoặc Flatpak từ
-[Flathub](https://flathub.org/apps/com.visualstudio.code). Cả hai gõ được tiếng Việt ngay, không cần chỉnh.
-
-Bản snap từ App Center thiếu phần nối với fcitx5 nên gõ ra Telex thô (`tieengs`). Nếu buộc phải dùng snap,
-cho nó đi qua XIM (đường nối kiểu cũ của X11): chép file `.desktop` vào thư mục nhà rồi sửa dòng mở app:
-
-```
+```bash
 cp /var/lib/snapd/desktop/applications/code_code.desktop ~/.local/share/applications/
 sed -i 's|^Exec=/snap/bin/code|Exec=env GTK_IM_MODULE=xim XMODIFIERS=@im=fcitx /snap/bin/code|' \
   ~/.local/share/applications/code_code.desktop
 ```
 
-Tắt hẳn VS Code rồi mở lại từ menu. Qua XIM, khoảng một câu trong mười có một chữ sai dấu.
-Muốn bỏ cách này thì xoá file `~/.local/share/applications/code_code.desktop`.
+Tắt hẳn VS Code rồi mở lại từ menu. Qua XIM, khoảng một câu trong mười có một chữ sai dấu. Muốn bỏ cách này
+thì xoá file `~/.local/share/applications/code_code.desktop`.
 
-Gặp lỗi khác thì báo ở [Issues](https://github.com/ngosen/ngosen/issues) trên GitHub. Không có tài khoản
-GitHub thì nhắn trang [Facebook](https://www.facebook.com/profile.php?id=61595753582618). Trong cửa sổ cài đặt,
-vào trang “Kiểm tra máy”, bấm “Nhắn qua Facebook…” để chép sẵn thông tin máy, dán vào tin nhắn.
-Trang Facebook cũng đăng tin version mới và bài blog.
+### Gặp lỗi khác
 
-## Gỡ
+Báo ở [Issues](https://github.com/ngosen/ngosen/issues). Không có tài khoản GitHub thì nhắn trang
+[Facebook](https://www.facebook.com/profile.php?id=61595753582618): trong cửa sổ cài đặt, vào trang
+“Kiểm tra máy”, bấm “Nhắn qua Facebook…” để chép sẵn thông tin máy rồi dán vào tin nhắn.
 
-Lệnh hỏi lại rồi mới gỡ:
+<a id="go-cai-dat"></a>
 
-```
+## 🗑️ Gỡ cài đặt
+
+Lệnh hỏi lại rồi mới gỡ, và trả lại thiết lập desktop mà lệnh cài đã đổi:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bash -s -- --uninstall
 ```
 
-- GNOME: trả lại thiết lập cho tài khoản chạy lệnh. fcitx5 thôi tự chạy khi đăng nhập, app dùng lại IBus,
-  tắt extension sửa lỗi gõ và gỡ Input Method Panel nếu lệnh cài đã thêm. Đăng xuất rồi đăng nhập lại để
-  GNOME dùng IBus như cũ. File đã sửa tay sau khi cài được giữ nguyên. fcitx5 vẫn còn; muốn gỡ luôn thì
-  chạy `sudo apt autoremove` (Ubuntu, Debian) sau đó.
-- Xfce, Cinnamon, MATE: trả bộ gõ về mặc định của máy. fcitx5 còn cài thì có thể vẫn tự chạy;
-  gỡ hẳn bằng `sudo apt remove fcitx5`.
-- KDE: giữ fcitx5 làm bàn phím ảo vì có thể đang dùng cho bộ gõ khác. Muốn bỏ thì chọn None ở
-  System Settings → Virtual Keyboard.
-- Sway, Hyprland: khi gỡ bằng `--uninstall`, bỏ dòng đã dán, rồi đăng xuất và đăng nhập
-  lại.
+Hoặc gỡ bằng trình quản lý gói rồi chạy `fcitx5 -rd`:
 
-Gỡ bằng tay:
+```bash
+sudo dnf remove fcitx5-ngosen       # Fedora
+sudo apt remove fcitx5-ngosen       # Ubuntu, Debian
+sudo pacman -R fcitx5-ngosen        # Arch, CachyOS
+sudo zypper remove fcitx5-ngosen    # openSUSE
+```
 
-1. Bỏ Ngó Sen khỏi danh sách bộ gõ trong "Fcitx5 Configuration".
-2. Gỡ gói rồi khởi động lại fcitx5:
+Cấu hình được giữ lại để lần cài sau dùng tiếp: các file `ngosen*.conf` trong `~/.config/fcitx5/conf/` (và
+`lotus*.conf` nếu từng dùng version trước 1.1.0). Muốn dọn sạch thì xoá các file đó.
 
-   ```
-   sudo dnf remove fcitx5-ngosen       # Fedora
-   sudo apt remove fcitx5-ngosen       # Ubuntu, Debian
-   sudo pacman -R fcitx5-ngosen        # Arch, CachyOS
-   sudo zypper remove fcitx5-ngosen    # openSUSE
-   fcitx5 -rd
-   ```
+<details>
+<summary>Gỡ trên từng desktop</summary>
 
-Cấu hình vẫn ở lại để lần cài sau dùng tiếp: các file `ngosen*.conf` trong `~/.config/fcitx5/conf/`,
-và `lotus*.conf` nếu từng dùng version trước 1.1.0. Muốn xoá sạch thì xoá các file đó.
+- **GNOME:** fcitx5 thôi tự chạy khi đăng nhập, app dùng lại IBus, tắt extension sửa lỗi gõ và gỡ Input Method
+  Panel nếu lệnh cài đã thêm. Đăng xuất rồi đăng nhập lại. fcitx5 vẫn còn; muốn gỡ luôn thì chạy
+  `sudo apt autoremove` (Ubuntu, Debian).
+- **Xfce, Cinnamon, MATE:** trả bộ gõ về mặc định của máy; gỡ hẳn fcitx5 bằng `sudo apt remove fcitx5`.
+- **KDE:** giữ fcitx5 làm bàn phím ảo vì có thể đang dùng cho bộ gõ khác; muốn bỏ thì chọn None ở System
+  Settings → Virtual Keyboard.
+- **Sway, Hyprland:** bỏ dòng đã dán vào config, rồi đăng xuất và đăng nhập lại.
 
-## Nguồn gốc
+</details>
 
-Dựa trên mã của [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus) và
-[VMK](https://github.com/thanhpy2009/VMK). Giấy phép GPL-3.0-or-later.
+<a id="nguon-goc"></a>
 
-Lõi biến `tieengs` thành `tiếng` là bản Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) của
-[@nguyen10t2](https://github.com/nguyen10t2), port từ bản Go
-[bamboo-core](https://github.com/BambooEngine/bamboo-core) của
-[@t1ld3x](https://github.com/t1ld3x). Cả hai dự án dùng giấy phép MIT.
-Danh sách từ tiếng Anh trong lõi lấy từ [SCOWL](https://wordlist.aspell.net) của Kevin Atkinson.
-Mọi gói Ngó Sen, kể cả Debian 12, đều dùng bản Rust.
+## 🏛️ Nguồn gốc & ghi công
 
-Issue và pull request trước ngày 10/10/2026 nằm ở repo lưu trữ
-[ngosen/ngosen-fork-archive](https://github.com/ngosen/ngosen-fork-archive).
-Những gì sắp làm nằm ở [ROADMAP.md](ROADMAP.md).
+- Dựa trên mã của [fcitx5-lotus](https://github.com/LotusInputMethod/fcitx5-lotus) và
+  [VMK](https://github.com/thanhpy2009/VMK), giấy phép **GPL-3.0-or-later**.
+- Lõi biến `tieengs` thành `tiếng` là bản Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) của
+  [@nguyen10t2](https://github.com/nguyen10t2), port từ bản Go
+  [bamboo-core](https://github.com/BambooEngine/bamboo-core) của [@t1ld3x](https://github.com/t1ld3x)
+  (giấy phép **MIT**). Mọi gói Ngó Sen, kể cả Debian 12, đều dùng bản Rust.
+- Danh sách từ tiếng Anh trong lõi lấy từ [SCOWL](https://wordlist.aspell.net) của Kevin Atkinson.
+- Issue và pull request trước ngày 10/10/2026 nằm ở repo lưu trữ
+  [ngosen/ngosen-fork-archive](https://github.com/ngosen/ngosen-fork-archive).
 
 ### Lấy mã hay ý tưởng từ Ngó Sen
 
-Chép hay sửa mã của Ngó Sen thì giữ giấy phép GPL-3.0-or-later và ghi nguồn, như GPL yêu cầu. Nhờ AI đọc mã
-rồi viết lại cũng vậy, vì đó vẫn là mã sửa từ mã của Ngó Sen.
+- Chép hay sửa mã của Ngó Sen thì giữ giấy phép **GPL-3.0-or-later** và ghi nguồn, kể cả khi nhờ AI đọc mã
+  rồi viết lại.
+- Đưa cách làm của Ngó Sen sang bộ gõ khác (cách xoá chữ trong từng loại app, cách nhận ra ô địa chỉ trình
+  duyệt…), kể cả khi chỉ lấy ý tưởng, thì ghi nguồn kèm link tới repo này trong README hoặc ghi chú phát hành.
 
-Đưa cách làm của Ngó Sen sang bộ gõ khác (cách xoá chữ trong từng loại app, cách nhận ra ô địa chỉ trình duyệt…),
-kể cả khi chỉ lấy ý tưởng, thì ghi nguồn kèm link tới repo này, trong README hay ghi chú phát hành.
+<a id="english"></a>
+
+## English
+
+Ngó Sen is a Vietnamese input method for fcitx5. The maintainer only **vibecodes** this project: an AI coding
+agent writes the code, then the maintainer measures and uses it daily. It is licensed under GPL-3.0-or-later.
+
+Ngó Sen has two typing modes, Gõ Sen (for fast typing, browsers and Electron apps) and Preedit, and uses the
+Rust [bamboo-core](https://github.com/bamboo-vi/bamboo-core) by [@nguyen10t2](https://github.com/nguyen10t2),
+ported from the original Go [bamboo-core](https://github.com/BambooEngine/bamboo-core) by
+[@t1ld3x](https://github.com/t1ld3x). Both projects are MIT licensed. The core's English word list comes from
+[SCOWL](https://wordlist.aspell.net) by Kevin Atkinson.
+
+It includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to change the tone
+mark of a selected word. [Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in
+IBus and shares the same typing core. If you reuse Ngó Sen's code, keep the GPL and its notices, including when
+an AI tool rewrites it. If you port its approaches to another input method, credit this repository with a link.
+The rest of this page is in Vietnamese.

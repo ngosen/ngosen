@@ -127,6 +127,11 @@ namespace fcitx {
             return color;
         }
 
+        // Modes that paint the bar with the shell's own compiled-in stylesheet.
+        bool isBuiltinShellMode(const std::string& mode) {
+            return mode.empty() || mode == "user";
+        }
+
         int gray(const Rgba& c) {
             return ((c.r * 11) + (c.g * 16) + (c.b * 5)) / 32;
         }
@@ -148,7 +153,27 @@ namespace fcitx {
             if (name.size() >= 2 && name.front() == '\'' && name.back() == '\'')
                 info.userThemeName = name.substr(1, name.size() - 2);
         }
+
+        if (isBuiltinShellMode(info.sessionMode) && info.userThemeName.empty()) {
+            const std::string scheme = gsettingsGet("gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null");
+            if (scheme.size() >= 2 && scheme.front() == '\'' && scheme.back() == '\'')
+                info.colorScheme = scheme.substr(1, scheme.size() - 2);
+            // The running shell's version; it only changes with a new login.
+            static int version = 0;
+            if (version == 0)
+                version = gnomeShellMajorVersion(gsettingsGet("busctl --user --timeout=1 get-property org.gnome.Shell /org/gnome/Shell org.gnome.Shell ShellVersion 2>/dev/null"));
+            info.shellMajorVersion = version;
+        }
         return info;
+    }
+
+    int gnomeShellMajorVersion(const std::string& versionLine) {
+        const auto digit = versionLine.find_first_of("0123456789");
+        if (digit == std::string::npos)
+            return 0;
+        try {
+            return std::stoi(versionLine.substr(digit));
+        } catch (...) { return 0; }
     }
 
     bool isGnomeShellSession(const std::string& xdgCurrentDesktop) {
@@ -230,7 +255,7 @@ namespace fcitx {
         }
 
         // Session mode stylesheet, e.g. Ubuntu's "Yaru/gnome-shell.css".
-        if (info.sessionMode.empty() || info.sessionMode == "user")
+        if (isBuiltinShellMode(info.sessionMode))
             return std::nullopt;
         std::vector<std::string> modeDirs{info.dataHome};
         modeDirs.insert(modeDirs.end(), info.dataDirs.begin(), info.dataDirs.end());
@@ -258,8 +283,12 @@ namespace fcitx {
 
     std::optional<bool> isGnomePanelDark(const GnomeShellThemeInfo& info) {
         const auto path = gnomeShellStylesheet(info);
-        if (!path)
+        if (!path) {
+            // Only GNOME 51 and later are known to follow color-scheme here.
+            if (isBuiltinShellMode(info.sessionMode) && info.shellMajorVersion >= 51)
+                return info.colorScheme != "prefer-light";
             return std::nullopt;
+        }
         const auto css = readFile(*path);
         if (!css)
             return std::nullopt;
@@ -285,9 +314,10 @@ namespace fcitx {
         return xdgCurrentDesktop.empty() && desktopSession.rfind("cinnamon", 0) == 0;
     }
 
-    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession) {
+    bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession, const std::string& swaySock) {
         const auto desktops = splitList(xdgCurrentDesktop, ':');
-        return isCinnamonSession(xdgCurrentDesktop, desktopSession) || std::find(desktops.begin(), desktops.end(), "COSMIC") != desktops.end();
+        const auto named    = [&desktops](const char* name) { return std::find(desktops.begin(), desktops.end(), name) != desktops.end(); };
+        return isCinnamonSession(xdgCurrentDesktop, desktopSession) || named("COSMIC") || named("sway") || (xdgCurrentDesktop.empty() && !swaySock.empty());
     }
 
     std::vector<std::string> trayIconNames(const std::string& iconName, const std::string& baseIconName, const std::string& xdgCurrentDesktop) {
@@ -325,6 +355,34 @@ namespace fcitx {
         if (!css)
             return std::nullopt;
         return isShellCssPanelDark(*css);
+    }
+
+    bool isDeepinSession(const std::string& xdgCurrentDesktop) {
+        const auto desktops = splitList(xdgCurrentDesktop, ':');
+        return std::find(desktops.begin(), desktops.end(), "DDE") != desktops.end();
+    }
+
+    std::optional<bool> isDeepinPanelDark(const std::string& globalTheme) {
+        const auto dot = globalTheme.rfind('.');
+        if (dot == std::string::npos)
+            return std::nullopt;
+        const std::string variant = globalTheme.substr(dot + 1);
+        if (variant == "dark")
+            return true;
+        if (variant == "light")
+            return false;
+        return std::nullopt;
+    }
+
+    std::string deepinGlobalThemeFromSession() {
+        return busctlStringValue(gsettingsGet("busctl --user --timeout=1 get-property org.deepin.dde.Appearance1 /org/deepin/dde/Appearance1 "
+                                              "org.deepin.dde.Appearance1 GlobalTheme 2>/dev/null"));
+    }
+
+    std::string busctlStringValue(const std::string& reply) {
+        if (reply.rfind("s \"", 0) != 0 || reply.size() < 4 || reply.back() != '"')
+            return {};
+        return reply.substr(3, reply.size() - 4);
     }
 
 } // namespace fcitx

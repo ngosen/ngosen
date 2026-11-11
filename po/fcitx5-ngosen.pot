@@ -1532,7 +1532,7 @@ msgid "Ngó Sen backup"
 msgstr ""
 
 #: settings-gui/core/catalog.py
-msgid "GTK matches GNOME and Cinnamon, Qt matches KDE and most other desktops."
+msgid "GTK matches GNOME, Cinnamon and Xfce, Qt matches KDE and most other desktops."
 msgstr ""
 
 #: settings-gui/ui/toolkit_switch.py

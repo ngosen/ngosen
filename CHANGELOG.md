@@ -43,6 +43,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Icon khay kiểu trơn (V, E, mặt cười, khi tắt "Sử dụng biểu tượng trạng thái Ngó Sen") nay cao bằng ô ngó sen, trước chỉ khoảng hai phần ba. Trên GNOME cần đăng xuất rồi đăng nhập lại mới thấy (#671).
 
+### Sửa
+
+- Gỡ bằng lệnh cài mà máy còn gói `wl-ngosen` thì giữ repo Ngó Sen, để `wl-ngosen` tiếp tục nhận version mới, như
+  với `ibus-ngosen` (#703).
+
 ## [1.9.2-1] — 11/11/2026
 
 Xfce nay mặc định mở cửa sổ cài đặt GTK (#670), icon khay kiểu trơn chuyển sang màu đen khi panel sáng trên GNOME 51 và deepin (#672, #673), icon Ngó Sen hiện trong swaybar (#674); tệp giấy phép từ điển thêm link bản lưu của hai trang nguồn để phục vụ việc đưa Ngó Sen vào kho Debian, nội dung từ điển giữ nguyên (#680).

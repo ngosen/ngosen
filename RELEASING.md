@@ -77,7 +77,9 @@ The release is `X.Y.Z-N` (`N` is the packaging revision) with epoch 1, tagged `n
    - `Package repositories` (`package-repos.yml`) rebuilds the APT repository
      (`https://ngosen.github.io/ngosen/apt`, two newest releases), the pacman repository
      (`https://ngosen.github.io/ngosen/arch`, newest release) and the openSUSE repository
-     (`https://ngosen.github.io/ngosen/opensuse`, two newest releases) on GitHub Pages.
+     (`https://ngosen.github.io/ngosen/opensuse`, two newest releases) on GitHub Pages, with the
+     packages of ibus-ngosen and wl-ngosen next to these. A wl-ngosen without a release yet is
+     skipped; a wl-ngosen release missing one kind of package stops the run.
 7. Website, after the release is public: add the release entry, update the version and download links,
    and mirror any README changes to the intro, highlights and roadmap. Publishing the site needs the
    maintainer's approval.

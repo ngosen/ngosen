@@ -989,6 +989,58 @@ namespace {
         }
     }
 
+    // Long after the letter, an empty field is a click into another one: the next d starts a new word.
+    void testLateEmptyFieldStillClick() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true, "google-chrome"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("là", 2);
+        state.surroundingUpdated();
+        press(state, ngosen::key::Down);
+        loop.pump(60);
+        press(state, static_cast<uint32_t>('d'));
+        host->setSurrounding("d", 1);
+        state.surroundingUpdated();
+        loop.pump(200);
+        host->setSurrounding("", 0);
+        state.surroundingUpdated();
+        loop.pump(50);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(200);
+        check(host->commits().empty(), "empty field long after the first letter: still a click", join(host->commits()));
+    }
+
+    // After a cell move a sheet can report the new cell empty only after the first letter typed there,
+    // before that letter shows: not a click, the letter still starts the word.
+    void testLateEmptyCellAfterFirstLetter() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true, "google-chrome"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("là", 2);
+        state.surroundingUpdated();
+        press(state, ngosen::key::Down);
+        loop.pump(60);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(40);
+        host->setSurrounding("", 0);
+        state.surroundingUpdated();
+        loop.pump(20);
+        host->setSurrounding("d", 1);
+        state.surroundingUpdated();
+        loop.pump(50);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(200);
+        check(join(host->commits()) == "['đ']", "late empty cell after its first letter: dd makes đ", join(host->commits()));
+    }
+
     // Backspacing from after a word into it and typing on continues that word; kitty reports no
     // surrounding text, so the word comes from what we committed.
     void testBackspaceIntoLastWord(const std::string& frontend, bool surroundingText, ngosen::test::AppQuirks quirks = {}) {
@@ -3863,6 +3915,8 @@ int main() {
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
+    testLateEmptyCellAfterFirstLetter();
+    testLateEmptyFieldStillClick();
     testPageKeepsOwnText();
     testMacroKeepsSpace();
     testMacroBeforeEnter();

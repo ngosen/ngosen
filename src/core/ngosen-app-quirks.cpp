@@ -215,6 +215,12 @@ namespace ngosen {
         return field.frontend == "wayland" && appName(field) == "libreoffice-calc";
     }
 
+    bool pageMayKeepOwnText(const Field& field) {
+        const std::string program = appName(field);
+        return (field.frontend == "ibus" || field.frontend == "wayland") && !field.url &&
+            (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc"));
+    }
+
     bool hidesAddressBarFlag(const Field& field) {
         // Debian names its Firefox ESR program firefox-esr; the forks share Firefox's address bar. GNOME names
         // relayed apps by desktop file, a reverse-DNS ID for Fedora's Firefox and for Flatpaks.

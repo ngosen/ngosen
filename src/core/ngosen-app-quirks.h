@@ -50,6 +50,10 @@ namespace ngosen {
     // primary selection.
     bool typesOverPrimarySelection(const Field& field);
 
+    // True for web pages in Chromium-based browsers over IBus or Wayland text-input. A page can keep its own text and take only key
+    // presses (Lark Sheets): a deletion through the surrounding text then changes only the copy reported.
+    bool pageMayKeepOwnText(const Field& field);
+
     // Under GNOME, apps reach fcitx5 through GNOME Shell's IBus bridge, which can relay the client's
     // surrounding text tens of milliseconds late, one edit at a time.
     bool surroundingTextLags(const Field& field);

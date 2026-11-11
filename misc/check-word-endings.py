@@ -6,11 +6,13 @@
 
     check-word-endings.py run OUT_DIR       type every corpus, write OUT_DIR/<corpus>.tsv
     check-word-endings.py compare BASE NEW  list what changed between two runs
+    check-word-endings.py places JSON       rewrite places.tsv from the administrative units list
 
 A corpus line is the keys, then optionally a tab and the word they should give. Corpora with an
 expected word report how many give it; the others report only what changed against BASE.
 """
 
+import json
 import os
 import re
 import subprocess
@@ -104,11 +106,17 @@ def english():
         "names": sorted(names),
         "english-words": listed,
         "technical": technical,
+        # The same on every machine, unlike the host's word list and dictionary above.
+        "english-common": (ROOT / "data/english-common.txt").read_text().splitlines(),
     }
 
 
 def corpora():
-    result = {"telex": (CASES / "telex.tsv").read_text(encoding="utf-8").splitlines()}
+    result = {
+        path.stem: path.read_text(encoding="utf-8").splitlines()
+        for path in sorted(CASES.glob("*.tsv"))
+        if path.stem != "vni"
+    }
     result.update(vietnamese())
     result.update(english())
     return result
@@ -207,9 +215,38 @@ def compare(base_dir, new_dir, limit=20):
             print(f"{path.stem}: missing from {new_dir}")
 
 
+def typeable(letters):
+    """Whether Telex types these letters as written: a written w, j, f or z, a doubled a/e/o
+    (Khoong) or a final s/r/x (Tôr) composes instead."""
+    # A marked letter (ô as `oo`) stands as its base in upper case, so `ôo` is caught too.
+    written = "".join(p if len(p) == 1 else p[0].upper() for p in letters)
+    return not re.search(r"[wjfz]|(?i:aa|ee|oo)|[srx]$", written)
+
+
+def places(units_json):
+    """Writes the syllables of province and commune names; the source is in places.tsv.license."""
+    units = json.loads(units_json.read_text(encoding="utf-8"))
+    names = [u["FullName"] for u in units] + [w["FullName"] for u in units for w in u["Wards"]]
+    syllables = set()
+    for name in names:
+        name = unicodedata.normalize("NFC", name.lower())
+        name = re.sub(r"^(thành phố|tỉnh|phường|xã|đặc khu) ", "", name)
+        for word in name.split():
+            # Names like M'Drắk need the apostrophe typed in English mode.
+            typed = telex(word) if re.fullmatch(r"[^\W\d_]+", word) else None
+            if typed and typeable(typed[0]):
+                letters, tone = typed
+                syllables.add(f"{''.join(letters)}{tone}\t{word}")
+    lines = unambiguous(sorted(syllables))
+    (CASES / "places.tsv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"places: {len(lines)} syllables from {len(names)} names")
+
+
 def main():
     if len(sys.argv) == 3 and sys.argv[1] == "run":
         run(Path(sys.argv[2]))
+    elif len(sys.argv) == 3 and sys.argv[1] == "places":
+        places(Path(sys.argv[2]))
     elif len(sys.argv) == 4 and sys.argv[1] == "compare":
         compare(Path(sys.argv[2]), Path(sys.argv[3]))
     else:

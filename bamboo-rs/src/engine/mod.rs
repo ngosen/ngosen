@@ -152,6 +152,27 @@ pub fn in_key_list(list: &[char], key: char) -> bool {
     list.contains(&key)
 }
 
+/// `raw` with the key that marks the rime typed after its vowel; Telex marks the last vowel that
+/// changes, so `uow` gives ươ and `ee` gives ê.
+fn keys_with_mark(raw: &str, onset_len: usize, bare: &str, marked: &str) -> Option<Vec<char>> {
+    let (at, mark) = bare
+        .chars()
+        .zip(marked.chars())
+        .enumerate()
+        .filter(|(_, (b, m))| b != m)
+        .last()
+        .map(|(i, (b, m))| (i, if "ơư".contains(m) { 'w' } else { b }))?;
+    let mut keys: Vec<char> = raw.chars().collect();
+    let after = onset_len + at;
+    let mark = if keys.get(after)?.is_uppercase() {
+        mark.to_ascii_uppercase()
+    } else {
+        mark
+    };
+    keys.insert(after + 1, mark);
+    Some(keys)
+}
+
 /// Key values outside Unicode (fcitx keysyms) match no character class.
 fn key_char(key_val: u32) -> char {
     char::from_u32(key_val).unwrap_or(char::REPLACEMENT_CHARACTER)
@@ -187,6 +208,42 @@ const WORDS_SHORTER_WHEN_CAPITALIZED: &str = include_str!("english-words-shorter
 // (`parts` and pát); they stay English.
 const ENGLISH_RETONE_LOOKALIKES: &str = include_str!("english-retone-lookalikes.txt");
 const FINAL_CONSONANTS: [&str; 4] = ["c", "ch", "p", "t"];
+// English words typed like a Vietnamese one with its ê, â, ơ or ư left out (`hues` and huế); they
+// stay English.
+const ENGLISH_MARK_LOOKALIKES: &str = include_str!("english-mark-lookalikes.txt");
+// Onsets in the order they are tried, longest first; the empty one takes a rime on its own.
+const ONSETS: [&str; 28] = [
+    "ngh", "ng", "nh", "gh", "kh", "ph", "th", "tr", "ch", "qu", "gi", "b", "c", "d", "đ", "g",
+    "h", "k", "l", "m", "n", "p", "r", "s", "t", "v", "x", "",
+];
+// Rimes only ever written with their marks, so the marks can be added when they are left out.
+const MARKED_RIMES: [(&str, &str); 25] = [
+    ("ien", "iên"),
+    ("ieu", "iêu"),
+    ("iem", "iêm"),
+    ("ieng", "iêng"),
+    ("iet", "iêt"),
+    ("iep", "iêp"),
+    ("iec", "iêc"),
+    ("yen", "yên"),
+    ("yeu", "yêu"),
+    ("yem", "yêm"),
+    ("yet", "yêt"),
+    ("uyen", "uyên"),
+    ("uyet", "uyêt"),
+    ("enh", "ênh"),
+    ("eu", "êu"),
+    ("ech", "êch"),
+    ("ue", "uê"),
+    ("uech", "uêch"),
+    ("uenh", "uênh"),
+    ("uan", "uân"),
+    ("uat", "uât"),
+    ("uay", "uây"),
+    ("uu", "ưu"),
+    ("uou", "ươu"),
+    ("uop", "ươp"),
+];
 
 pub struct BambooEngine {
     pub(crate) preeditor: Engine,
@@ -481,6 +538,62 @@ impl BambooEngine {
         }
     }
 
+    /// The word asked for by a syllable typed without the ê, â, ơ or ư its rime always has
+    /// (`tienf` for "tiền").
+    fn auto_marked_word(&self) -> Option<String> {
+        let raw = self.raw_text();
+        let lower = raw.to_lowercase();
+        if ENGLISH_MARK_LOOKALIKES
+            .lines()
+            .any(|english| english == lower)
+        {
+            return None;
+        }
+        self.auto_marked_word_of(&raw)
+    }
+
+    fn auto_marked_word_of(&self, raw: &str) -> Option<String> {
+        if !self.auto_non_vn_restore || !self.preeditor.config().free_tone_marking {
+            return None;
+        }
+        // Digits and symbols are tone keys in VNI and VIQR, where they also end sentences.
+        let tone_keys = self.preeditor.input_method().tone_keys();
+        let is_tone = |k: &char| tone_keys.contains(&k.to_ascii_lowercase());
+        let tone_key = raw.chars().rev().find(is_tone)?;
+        let composed = self.get_processed_string(OutputOptions::LOWER_CASE);
+        // The dictionary decides even with spell checking off, where luạn is a valid syllable.
+        if !"sfrxj".contains(tone_key.to_ascii_lowercase())
+            || !raw.is_ascii()
+            || self.get_processed_string(OutputOptions::RAW) != raw
+            || self.dictionary.contains(&composed)
+        {
+            return None;
+        }
+        let (plain, tones) = without_tones(&composed);
+        if tones != 1 {
+            return None;
+        }
+        let (onset, bare, marked) = ONSETS.iter().find_map(|onset| {
+            let rime = plain.strip_prefix(onset)?;
+            let (bare, marked) = MARKED_RIMES.iter().find(|(bare, _)| *bare == rime)?;
+            Some((*onset, *bare, *marked))
+        })?;
+        // The rime's vowels typed in one run keep `use` and `user` from turning into uế and uể.
+        let onset_keys = onset.replace('đ', "dd");
+        let nucleus: String = bare.chars().take_while(|c| "aeiouy".contains(*c)).collect();
+        let lower = raw.to_lowercase();
+        let rest = lower.strip_prefix(&onset_keys)?;
+        // A second tone key after the onset, as in `Hersch`, is more likely English.
+        if !rest.starts_with(&nucleus) || rest.chars().filter(is_tone).count() != 1 {
+            return None;
+        }
+        let word = self.typed_alone(keys_with_mark(raw, onset_keys.len(), bare, marked)?);
+        let text = word.get_processed_str(OutputOptions::NONE);
+        let lower = text.to_lowercase();
+        (without_tones(&lower).0 == format!("{onset}{marked}") && self.dictionary.contains(&lower))
+            .then_some(text)
+    }
+
     fn lost_a_letter_of_english_word(&self, shown: &str) -> bool {
         if !self.auto_non_vn_restore || !shown.is_ascii() {
             return false;
@@ -570,7 +683,14 @@ impl BambooEngine {
             self.preeditor.reset();
             return (format!("{expanded}{key}"), true);
         }
-        if let Some(word) = self.retoned_word() {
+        // A digit or a symbol like @ or _ may continue a name or a handle (`tuans@`).
+        let marked = || {
+            " .,;:!?)]}\"'"
+                .contains(key)
+                .then(|| self.auto_marked_word())
+                .flatten()
+        };
+        if let Some(word) = self.retoned_word().or_else(marked) {
             self.preeditor.reset();
             return (format!("{word}{key}"), true);
         }
@@ -741,9 +861,10 @@ impl BambooEngine {
                     && Self::is_valid_state(state);
                 let text = match self.get_macro_text() {
                     Some(macro_text) if enter => macro_text,
-                    // Gõ Sen keeps the word as shown on other keys, so Preedit retones on Enter only.
+                    // Gõ Sen keeps the word as shown on other keys, so Preedit fixes it on Enter only.
                     _ if enter => self
                         .retoned_word()
+                        .or_else(|| self.auto_marked_word())
                         .unwrap_or_else(|| self.text_of_finished_word()),
                     _ => self.text_of_finished_word(),
                 };

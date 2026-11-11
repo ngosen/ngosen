@@ -30,6 +30,13 @@ WORD_LIST = Path("/usr/share/dict/words")
 MARKS = {"â": "aa", "ă": "aw", "ê": "ee", "ô": "oo", "ơ": "ow", "ư": "uw", "đ": "dd"}
 TONES = {"́": "s", "̀": "f", "̉": "r", "̃": "x", "̣": "j"}
 FINALS = ("ch", "c", "p", "t")
+# The engine's tables in bamboo-rs/src/engine/mod.rs, for the words it adds marks to.
+ONSETS = "ngh ng nh gh kh ph th tr ch qu gi b c d đ g h k l m n p r s t v x".split() + [""]
+MARKED_RIMES = set(
+    "iên iêu iêm iêng iêt iêp iêc yên yêu yêm yêt uyên uyêt ênh êu êch uê uêch uênh uân uât uây"
+    " ưu ươu ươp".split()
+)
+UNMARKED = {"aa": "a", "ee": "e", "ow": "o", "uw": "u"}
 
 
 def telex(word):
@@ -47,7 +54,7 @@ def telex(word):
 
 def vietnamese():
     """Dictionary words typed with the tone last, and right after the last vowel."""
-    last, after_vowel, retone = [], [], []
+    last, after_vowel, retone, left_out = [], [], [], []
     for line in DICTIONARY.read_text(encoding="utf-8").splitlines():
         word = line.strip().lower()
         typed = telex(word) if word and " " not in word else None
@@ -70,11 +77,34 @@ def vietnamese():
                     retone.append(f"{stem}{rest}{wrong}{tone}\t{word}")
         else:
             after_vowel.append(f"{keys}{tone}\t{word}")
+        if tone:
+            left_out.extend(f"{keys}\t{word}" for keys in marks_left_out(word, letters, tone))
     return {
         "vietnamese-tone-last": unambiguous(last),
         "vietnamese-tone-after-vowel": unambiguous(after_vowel),
         "retone-generated": unambiguous(retone),
+        "vietnamese-marks-left-out": unambiguous(left_out),
     }
+
+
+def marks_left_out(word, letters, tone):
+    """Keys for a word whose rime always has ê, â, ơ or ư, typed without them: tone last, and
+    right after the vowels when a final follows."""
+    plain = "".join(c for c in unicodedata.normalize("NFD", word) if c not in TONES)
+    plain = unicodedata.normalize("NFC", plain)
+    for onset in ONSETS:
+        rime = plain[len(onset) :] if plain.startswith(onset) else None
+        if rime in MARKED_RIMES:
+            break
+    else:
+        return []
+    bare = letters[: len(onset)] + [UNMARKED.get(p, p) for p in letters[len(onset) :]]
+    rows = [f"{''.join(bare)}{tone}"]
+    vowels = [i for i, p in enumerate(bare) if p[0] in "aeiouy"]
+    if vowels[-1] + 1 < len(bare):
+        i = vowels[-1] + 1
+        rows.append(f"{''.join(bare[:i])}{tone}{''.join(bare[i:])}")
+    return rows
 
 
 def unambiguous(lines):

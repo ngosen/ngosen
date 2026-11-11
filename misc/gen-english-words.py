@@ -112,6 +112,18 @@ def retone_lookalikes():
     print(f"{len(found)} words typed like a retoned Vietnamese word")
 
 
+def mark_lookalikes():
+    """English words a space would give the ê, â, ơ or ư of their rime, like `hues` into huế.
+    Read from data/english-common.txt so the list is the same on every machine."""
+    words = (ROOT / "data/english-common.txt").read_text().split()
+    found = printed_by_test("print_mark_lookalikes", "LOOKALIKE", words, release=True)
+    path = ROOT / "bamboo-rs/src/engine/english-mark-lookalikes.txt"
+    path.write_text("".join(f"{word}\n" for word, _ in found))
+    for word, marked in found:
+        print(f"  {word}\t{marked}")
+    print(f"{len(found)} words typed like a Vietnamese word without its marks")
+
+
 def common_words():
     """Every English word the dictionary knows, names in lower case, for data/english-common.txt.
     The engine keeps a Backspace on a word shown as typed when the keys start one of these."""
@@ -158,6 +170,7 @@ def main():
     (engine / "english-words-shorter-capitalized.txt").write_text("\n".join(shorter) + "\n")
     print(f"{len(kept)} words, {len(shorter)} shorter when capitalized")
     retone_lookalikes()
+    mark_lookalikes()
 
 
 if __name__ == "__main__":

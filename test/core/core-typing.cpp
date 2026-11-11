@@ -1854,14 +1854,8 @@ namespace {
         }
     }
 
-    // A tone changed after the final consonant (#615) takes effect when a space, a punctuation mark or
-    // Enter ends the word, in Sen and Preedit alike; every other way out keeps the keys as shown.
-    // ^ is a Ctrl tap, \n Enter, \t Tab and \x1b Escape.
-    void testRetoneAtWordEndInBothModes() {
-        const std::vector<std::pair<std::string, std::string>> cases = {
-            {"dduoxwcj ", "được "},      {"dduoxwcj,", "được,"},     {"mootxj\n", "một"},          {"parts ", "parts "},
-            {"dduoxwcj^ ", "dduoxwcj "}, {"dduoxwcj\t", "dduoxwcj"}, {"dduoxwcj\x1b", "dduoxwcj"},
-        };
+    // ^ in typed keys is a Ctrl tap, \n Enter, \t Tab and \x1b Escape.
+    void checkWordEndsInBothModes(const std::string& label, const std::vector<std::pair<std::string, std::string>>& cases) {
         for (const auto& [typed, want] : cases) {
             std::vector<uint32_t> keys;
             for (char c : typed)
@@ -1875,13 +1869,46 @@ namespace {
             FakeResources preeditResources;
             std::string   preedit = ngosen::test::telexOutput(preeditResources, keys);
             preedit.erase(std::remove_if(preedit.begin(), preedit.end(), [](char c) { return c == '\n' || c == '\r' || c == '\t'; }), preedit.end());
-            check(preedit == want, "retone at word end, Preedit: " + printable, preedit);
+            check(preedit == want, label + ", Preedit: " + printable, preedit);
             for (const auto& [frontend, surroundingText] : {std::pair<const char*, bool>{"wayland", true}, {"ibus", false}}) {
                 FakeResources     resources;
                 const std::string sen = ngosen::test::typeInApp(resources, makeField(frontend, surroundingText), {}, keys, std::vector<int>(keys.size(), 30));
-                check(sen == want, std::string("retone at word end, Sen (") + frontend + "): " + printable, sen);
+                check(sen == want, label + ", Sen (" + frontend + "): " + printable, sen);
             }
         }
+    }
+
+    // A tone changed after the final consonant (#615) takes effect when a space, a punctuation mark or
+    // Enter ends the word, in Sen and Preedit alike; every other way out keeps the keys as shown.
+    void testRetoneAtWordEndInBothModes() {
+        checkWordEndsInBothModes("retone at word end",
+                                 {
+                                     {"dduoxwcj ", "được "},
+                                     {"dduoxwcj,", "được,"},
+                                     {"mootxj\n", "một"},
+                                     {"parts ", "parts "},
+                                     {"dduoxwcj^ ", "dduoxwcj "},
+                                     {"dduoxwcj\t", "dduoxwcj"},
+                                     {"dduoxwcj\x1b", "dduoxwcj"},
+                                 });
+    }
+
+    // A rime only ever written with ê, â, ơ or ư gets them when a space, a punctuation mark or Enter
+    // ends the word, unless the keys are an English word; other ways out keep the word as shown.
+    void testAutoMarkAtWordEndInBothModes() {
+        checkWordEndsInBothModes("auto mark at word end",
+                                 {
+                                     {"tienf ", "tiền "},
+                                     {"viecj,", "việc,"},
+                                     {"Nguyenx\n", "Nguyễn"},
+                                     {"ruouj ", "rượu "},
+                                     {"tiesng ", "tiếng "},
+                                     {"hues ", "hues "},
+                                     {"use ", "use "},
+                                     {"tienf^ ", "tièn "},
+                                     {"tienf\t", "tièn"},
+                                     {"tienf\x1b", "tièn"},
+                                 });
     }
 
     // A digit restores the word before it as soon as it is typed (#613), and Backspace keeps the app
@@ -3811,6 +3838,7 @@ int main() {
     testLockWord();
     testLockWordPreedit();
     testRetoneAtWordEndInBothModes();
+    testAutoMarkAtWordEndInBothModes();
     testRestoreBeforeDigitWhileTyping();
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();

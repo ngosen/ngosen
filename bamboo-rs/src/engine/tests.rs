@@ -408,6 +408,22 @@ fn print_retone_lookalikes() {
     }
 }
 
+// Prints the words on each line of NGOSEN_WORDS that a space would give marks if they were not
+// in english-mark-lookalikes.txt, for misc/gen-english-words.py.
+#[test]
+#[ignore = "measurement input, not a check"]
+fn print_mark_lookalikes() {
+    let path = std::env::var("NGOSEN_WORDS").unwrap();
+    let mut e = engine_with_default_settings("Telex");
+    for word in std::fs::read_to_string(path).unwrap().lines() {
+        e.reset();
+        type_keys(&mut e, word);
+        if let Some(marked) = e.auto_marked_word_of(word) {
+            println!("LOOKALIKE\t{word}\t{marked}");
+        }
+    }
+}
+
 // Prints what the keys on each line of NGOSEN_WORDS commit when a space ends them, with the
 // default settings and dictionary, for misc/check-word-endings.py.
 #[test]
@@ -432,6 +448,68 @@ fn committed_with(method: &str, keys: &str, end: u32) -> String {
     type_keys(&mut e, keys);
     e.process_key_event(end, 0);
     e.commit_text
+}
+
+#[test]
+fn test_marks_added_to_rimes_that_always_have_them() {
+    for (keys, word) in [
+        ("benhj", "bệnh"),
+        ("luanj", "luận"),
+        ("cuops", "cướp"),
+        ("khuays", "khuấy"),
+        ("quyets", "quyết"),
+        ("NGUYENX", "NGUYỄN"),
+        ("ddieuf", "điều"),
+        ("dieuf", "diều"),
+        ("ruouj", "rượu"),
+    ] {
+        assert_eq!(
+            committed_with("Telex", keys, KEY_SPACE),
+            format!("{word} "),
+            "{keys}"
+        );
+    }
+    // A digit tone in VNI could be a number, and `user` has its tone key between the vowels.
+    for (method, keys) in [
+        ("VNI", "tien2"),
+        ("Telex + VNI", "tien2"),
+        ("Telex", "user"),
+        ("Telex", "techs"),
+        ("Telex", "Hersch"),
+    ] {
+        assert_eq!(
+            committed_with(method, keys, KEY_SPACE),
+            format!("{keys} "),
+            "{method} {keys}"
+        );
+    }
+    // Sentence punctuation ends a word; a digit, @ or _ may go on with a name or a handle.
+    for end in ['.', '"', ')'] {
+        assert_eq!(
+            committed_with("Telex", "tienf", end as u32),
+            format!("tiền{end}"),
+            "tienf{end}"
+        );
+    }
+    for end in ['@', '_'] {
+        assert_eq!(
+            committed_with("Telex", "tuans", end as u32),
+            format!("tuans{end}"),
+            "tuans{end}"
+        );
+    }
+    // Without spell checking luạn is a valid syllable, but the dictionary still has luận.
+    let mut e = engine_with_default_settings("Telex");
+    e.spell_check_with_dicts = false;
+    type_keys(&mut e, "luanj");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "luận ");
+    // Macros keep a digit in the word, so they are off for the digit to end it.
+    let mut e = engine_with_default_settings("Telex");
+    e.macro_enabled = false;
+    type_keys(&mut e, "tuans");
+    e.process_key_event('2' as u32, 0);
+    assert_eq!(e.commit_text, "tuans2");
 }
 
 #[test]
@@ -563,6 +641,21 @@ fn test_retone_lookalikes_are_listed_once_in_order() {
         assert!(
             e.retoned_word_of(word).is_some(),
             "{word} is not typed like a retone"
+        );
+    }
+}
+
+#[test]
+fn test_mark_lookalikes_are_listed_once_in_order() {
+    let words: Vec<&str> = ENGLISH_MARK_LOOKALIKES.lines().collect();
+    assert!(words.is_sorted_by(|a, b| a < b), "sorted, no duplicates");
+    for word in words {
+        assert_eq!(committed_with("Telex", word, KEY_SPACE), format!("{word} "));
+        let mut e = engine_with_default_settings("Telex");
+        type_keys(&mut e, word);
+        assert!(
+            e.auto_marked_word_of(word).is_some(),
+            "{word} would not get marks anyway"
         );
     }
 }

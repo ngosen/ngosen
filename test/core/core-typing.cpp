@@ -839,7 +839,6 @@ namespace {
         }
     }
 
-    // Lark Sheets bounces focus when an arrow key moves to the next cell. That is not a redraw, so commits
     // Lark Sheets in a browser keeps its own text and takes only key presses: a deletion through the
     // surrounding text changes the copy the browser reports but not what the user sees.
     void testPageKeepsOwnText() {
@@ -873,6 +872,26 @@ namespace {
         check(plain.text == "tiếng việt " && plain.sent.surroundingDeletes > 0, "plain page: back to the surrounding text",
               plain.text + ", " + std::to_string(plain.sent.surroundingDeletes) + " surrounding deletions");
 
+        {
+            // The Enter was released while the replacement waited, so it goes out with no wait for a release.
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            ngosen::test::AppQuirks enterQuirks = quirks;
+            enterQuirks.showsEnter              = true;
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, brave, enterQuirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("laf")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(c == 'f' ? 50 : 100);
+            }
+            app->type(ngosen::key::Return);
+            loop.pump(120);
+            check(app->text() == "là\n", "page with its own text: Enter released in the wait goes out", app->text());
+        }
+
         // A click into the sheet from a plain field of the same page looks like a focus bounce, so what the
         // plain field showed must not carry over.
         realMode = ngosen::Mode::Sen;
@@ -897,6 +916,7 @@ namespace {
         check(app->text() == "tiếng việt ", "click from a plain field into the sheet: delete with backspaces", app->text());
     }
 
+    // Lark Sheets bounces focus when an arrow key moves to the next cell. That is not a redraw, so commits
     // need not wait for one; it still sends deletions as backspaces, which the sheet needs over IBus.
     void testCellMovesNoRedrawWait() {
         Field chromiumX11            = makeField("dbus", false);

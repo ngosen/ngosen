@@ -42,6 +42,7 @@ struct KeyEntry {
     bool     heldForCopy = false; ///< a Backspace that waited for the copy so it reaches the app after the edit
     uint32_t code        = 0;     ///< hardware keycode, for a key forwarded as pressed
     bool     actsOnField = false; ///< moves the cursor or runs a shortcut, so it follows the commit unchanged
+    bool     released    = false; ///< released while it waited, so its replay need not wait for the release
 };
 
 namespace fcitx {
@@ -467,6 +468,7 @@ namespace ngosen {
         static constexpr uint64_t      HeldEnterReleaseWaitUs = 450000;
         void                           holdEnterAfterCommit(ngosen::KeyPress& keyEvent);
         void                           holdEnter(bool untilRelease, ngosen::EditKey key = ngosen::EditKey::Return);
+        void                           noteBufferedRelease(uint32_t sym);
         void                           forwardHeldEnter();
         bool                           forwardsEnterAfterCommit() const;
         bool                           holdsBackspace(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;

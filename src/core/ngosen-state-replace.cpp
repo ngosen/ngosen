@@ -1210,7 +1210,7 @@ namespace ngosen {
             buffered_keys_.push_back(keys[j]);
         commitReplayed(out);
         // A Backspace held for the copy is never one GNOME Shell drops while it is down: its fields drop all forwarded keys.
-        holdEnter(ngosen::surroundingTextLags(host_->field()) && !keys[i].heldForCopy, key);
+        holdEnter(ngosen::surroundingTextLags(host_->field()) && !keys[i].heldForCopy && !keys[i].released, key);
         return true;
     }
 

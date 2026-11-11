@@ -906,14 +906,14 @@ STUB
     as_user rm -f "$home/.stub-gtk-im-module"
     check "install with GTK's default module succeeds" install_fresh
     check "it points GTK at fcitx5's module" gtk_im_module_is "'fcitx'"
-    check "it says open GTK apps need a restart" grep -qF "App GTK" "$install_log"
+    check "it says open GTK apps need a restart" grep -qF "đóng rồi mở lại để gõ qua fcitx5" "$install_log"
     check "fcitx5 stops before that uninstall" stop_fcitx5
     check "uninstall succeeds" uninstall_logged
     check "uninstall gives GTK its default module back" gtk_im_module_is "''"
     printf "'ibus'\n" | as_user tee "$home/.stub-gtk-im-module" >/dev/null
     check "install with the user's own GTK module succeeds" install_fresh
     check "it keeps the user's GTK module" gtk_im_module_is "'ibus'"
-    check "it does not mention GTK apps" refuses grep -qF "App GTK" "$install_log"
+    check "it does not mention GTK apps" refuses grep -qF "đóng rồi mở lại để gõ qua fcitx5" "$install_log"
     check "fcitx5 stops before the next uninstall" stop_fcitx5
     check "uninstall with the user's own GTK module succeeds" uninstall_logged
     check "uninstall keeps it" gtk_im_module_is "'ibus'"

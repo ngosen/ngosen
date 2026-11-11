@@ -56,6 +56,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Gỡ bằng lệnh cài mà máy còn gói `wl-ngosen` thì giữ repo Ngó Sen, để `wl-ngosen` tiếp tục nhận version mới, như
   với `ibus-ngosen` (#703).
+- Bảng tính Lark trên Chrome: chữ đầu tiên gõ ngay sau khi chuyển ô không còn bị quên: gõ `caau` ra `câu`, không còn giữ nguyên `caau` (#704).
+- Gõ thừa chữ `d` sau một chữ có `đ` (kiểu `dduowjcd`) rồi bấm BackSpace không còn mất nét của `đ`: ra `được`, không còn ra `dược` (#712).
 
 ## [1.9.3-1] — 11/11/2026
 

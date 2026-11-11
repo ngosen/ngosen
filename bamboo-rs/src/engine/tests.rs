@@ -1182,6 +1182,40 @@ fn test_backspace_composes_keys_that_are_not_english() {
 }
 
 #[test]
+fn test_backspace_after_a_d_keeps_the_stroke() {
+    // The last d takes the stroke off đ while the keys are shown as typed (#202).
+    for (keys, left) in [
+        ("dduowjcd", "được"),
+        ("Dduowjcd", "Được"),
+        ("ddeerd", "để"),
+        ("ddiajd", "địa"),
+    ] {
+        let mut e = engine_with_english(&["are", "perl"]);
+        type_keys(&mut e, keys);
+        assert!(e.shown_as_typed(), "keys {keys}");
+        e.process_key_event(KEY_BACKSPACE, 0);
+        assert_eq!(e.preedit_text, left, "keys {keys}");
+    }
+}
+
+#[test]
+fn test_backspace_after_restored_keys_keeps_reopened_text() {
+    for (im, text, keys, left) in [
+        ("Telex", "tooi2", "asq", "tooi2á"),
+        ("Telex", "tôi", "q", "tôi"),
+        ("VNI", "tôi", "q", "tôi"),
+        ("VNI", "1", "a6q", "1â"),
+        ("VIQR", "'", "a^q", "'â"),
+    ] {
+        let mut e = engine_with_default_settings(im);
+        e.rebuild_from_text(text);
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_BACKSPACE, 0);
+        assert_eq!(e.preedit_text, left, "{im} {text} {keys}");
+    }
+}
+
+#[test]
 fn test_key_after_kept_english_keys_composes_again() {
     let mut e = engine_with_english(&["are"]);
     type_keys(&mut e, "are");

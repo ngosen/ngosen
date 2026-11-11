@@ -228,8 +228,9 @@ namespace ngosen {
     } // namespace
 
     void TypingState::deliverAfterSettle(const char* reason, bool fromTimer) {
-        const auto snapshot = host_->surrounding();
-        int        settleMs = engine_->options().waitSurroundingSettleMs;
+        sinceFocus_.showedBackspace = true;
+        const auto snapshot         = host_->surrounding();
+        int        settleMs         = engine_->options().waitSurroundingSettleMs;
         if (settleMs <= 0 || !looksLikeMessengerComposer(snapshot)) {
             settleMs = 0;
         } else if (isFirstWordOfMessage(snapshot)) {
@@ -657,6 +658,8 @@ namespace ngosen {
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");
+        if (pageHidesBackspaces())
+            fails.emplace_back("page has not shown a backspace");
         return fails;
     }
 
@@ -851,7 +854,7 @@ namespace ngosen {
             return deletion.wrongBytes || deletion.behind || (deletion.match == SurroundingDeletion::Match::OldTail && reportsItsEdits()) ? CopyWait::Yes : CopyWait::No;
         // These go to backspaces whatever the copy shows, so waiting for it gains nothing.
         const Field field = host_->field();
-        if (surroundingUntrusted() || fieldBounces_ > 0 || field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))
+        if (surroundingUntrusted() || fieldBounces_ > 0 || pageHidesBackspaces() || field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))
             return CopyWait::No;
         // Backspaces are there to fall back on, and a field that leaves checks unanswered would only
         // make every replacement late. Over IBus a backspace can reach the app ahead of the commit before
@@ -864,6 +867,10 @@ namespace ngosen {
         if (overIbus)
             return copyWaitsRunOut_ < MaxCopyWaitsRunOut ? CopyWait::Yes : CopyWait::No;
         return checksGetAnswered() || copyWaitRetry_ ? CopyWait::Yes : CopyWait::HeldBack;
+    }
+
+    bool TypingState::pageHidesBackspaces() const {
+        return ngosen::pageMayKeepOwnText(host_->field()) && !sinceFocus_.showedBackspace;
     }
 
     bool TypingState::checksGetAnswered() const {
@@ -1203,7 +1210,7 @@ namespace ngosen {
             buffered_keys_.push_back(keys[j]);
         commitReplayed(out);
         // A Backspace held for the copy is never one GNOME Shell drops while it is down: its fields drop all forwarded keys.
-        holdEnter(ngosen::surroundingTextLags(host_->field()) && !keys[i].heldForCopy, key);
+        holdEnter(ngosen::surroundingTextLags(host_->field()) && !keys[i].heldForCopy && !keys[i].released, key);
         return true;
     }
 

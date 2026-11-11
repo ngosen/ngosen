@@ -8,7 +8,7 @@
 
 [![Release](https://img.shields.io/github/v/release/ngosen/ngosen?label=version&color=1f6e5c)](https://github.com/ngosen/ngosen/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-1f6e5c)](LICENSE)
-[![fcitx5](https://img.shields.io/badge/fcitx5-GNOME%20%C2%B7%20KDE%20%C2%B7%20Xfce%20%C2%B7%20Sway%20%C2%B7%20Hyprland-c9a96e)](#cai-dat)
+[![fcitx5](https://img.shields.io/badge/fcitx5-GNOME%20%C2%B7%20KDE%20%C2%B7%20Xfce%20%C2%B7%20Sway%20%C2%B7%20Hyprland%20%C2%B7%20niri-c9a96e)](#cai-dat)
 
 [Cài đặt](#cai-dat) · [Tính năng](#tinh-nang) · [Khắc phục sự cố](#khac-phuc-su-co) · [CHANGELOG](CHANGELOG.md) · [Báo lỗi](https://github.com/ngosen/ngosen/issues)
 
@@ -18,7 +18,7 @@
 
 Ngó Sen hỗ trợ đầy đủ hai nền tảng:
 
-- **fcitx5** (khuyên dùng): chạy mượt mà trên GNOME, KDE Plasma, Xfce, Sway và Hyprland; giàu tính năng
+- **fcitx5** (khuyên dùng): chạy mượt mà trên GNOME, KDE Plasma, Xfce, Sway, Hyprland và niri; giàu tính năng
   và nhẹ RAM.
 - **IBus** ([ibus-ngosen](https://github.com/ngosen/ibus-ngosen)): tích hợp trực tiếp vào IBus mặc định
   của GNOME, dùng chung lõi gõ với bản fcitx5 nên có hầu hết tính năng tương đương. Tính năng mới có thể
@@ -136,9 +136,8 @@ khi đang gõ tiếng Việt.
 - **KDE Plasma (Wayland):** chọn fcitx5 ở System Settings → Virtual Keyboard để app Qt như Kate, Dolphin
   cũng gõ được.
 - **Xfce, Cinnamon, MATE** (X11, Debian và Ubuntu): dùng im-config đặt fcitx5 làm bộ gõ.
-- **Sway, Hyprland:** chạy lệnh từ terminal trong phiên desktop để thêm Ngó Sen và bật fcitx5, không cần
-  đăng xuất. Lệnh không sửa file config của desktop; để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng
-  lệnh được in ra.
+- **Sway, Hyprland, niri:** chạy lệnh từ terminal trong phiên desktop để thêm Ngó Sen và bật fcitx5, không
+  cần đăng xuất. Lệnh không sửa file config của desktop; để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng lệnh được in ra.
 
 Desktop khác: cài xong thì đăng xuất rồi đăng nhập lại.
 
@@ -304,7 +303,7 @@ bước sau (hoặc chạy lệnh cài một dòng ở trên để nó làm giú
   nhập lại. App X11 chạy qua XWayland (như Minecraft bản cũ) cần thêm
   `echo 'XMODIFIERS=@im=fcitx' > ~/.config/environment.d/90-ngosen.conf` trước khi đăng xuất.
 - **Xfce, Cinnamon, MATE** (Debian, Ubuntu, Mint): chạy `im-config -n fcitx5`, rồi đăng xuất và đăng nhập lại.
-- **Sway, Hyprland:** chạy lệnh cài một dòng từ terminal trong phiên desktop để được thiết lập sẵn.
+- **Sway, Hyprland, niri:** chạy lệnh cài một dòng từ terminal trong phiên desktop để được thiết lập sẵn.
 
 <a id="khac-phuc-su-co"></a>
 <a id="lỗi-thường-gặp"></a>
@@ -386,7 +385,7 @@ Cấu hình được giữ lại để lần cài sau dùng tiếp: các file `n
 - **Xfce, Cinnamon, MATE:** trả bộ gõ về mặc định của máy; gỡ hẳn fcitx5 bằng `sudo apt remove fcitx5`.
 - **KDE:** giữ fcitx5 làm bàn phím ảo vì có thể đang dùng cho bộ gõ khác; muốn bỏ thì chọn None ở System
   Settings → Virtual Keyboard.
-- **Sway, Hyprland:** bỏ dòng đã dán vào config, rồi đăng xuất và đăng nhập lại.
+- **Sway, Hyprland, niri:** bỏ dòng đã dán vào config, rồi đăng xuất và đăng nhập lại.
 
 </details>
 

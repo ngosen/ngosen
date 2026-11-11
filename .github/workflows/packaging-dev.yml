@@ -286,6 +286,9 @@ jobs:
           - name: fedora-44, Hyprland
             image: fedora:44
             args: hyprland
+          - name: fedora-44, niri
+            image: fedora:44
+            args: niri
 
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     # Without an init, fcitx5 daemons that exit stay as zombies, and the installer takes them for a

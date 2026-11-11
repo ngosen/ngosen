@@ -57,8 +57,11 @@ namespace ngosen {
             checkWordAfterBounce_ = true;
             // Only a bounce right after a key or our own edit tells that the field redraws.
             const bool inWait = now - static_cast<int64_t>(surr_wait_started_at_ / 1000) < RedrawWaitMs;
-            if (inWait || now - static_cast<int64_t>(lastInputAtUs_ / 1000) < RedrawWaitMs)
+            if (inWait || now - static_cast<int64_t>(lastInputAtUs_ / 1000) < RedrawWaitMs) {
                 ++fieldBounces_;
+                if (!lastKeyLeftText_)
+                    ++redrawBounces_;
+            }
             if (inWait) {
                 waitBounces_   = bouncedInWait_ == surr_wait_started_at_ ? waitBounces_ + 1 : 1;
                 bouncedInWait_ = surr_wait_started_at_;
@@ -67,6 +70,8 @@ namespace ngosen {
         } else {
             clearAllBuffers();
             fieldBounces_         = 0;
+            redrawBounces_        = 0;
+            lastKeyLeftText_      = false;
             checkWordAfterBounce_ = false;
             if (isFocusIn) {
                 // A GNOME app's new context gets a copy of the previous window's text before focus-in, so
@@ -82,6 +87,10 @@ namespace ngosen {
                 copyWaitsRunOut_ = 0;
             }
         }
+
+        // A click into another field of the same page looks like a bounce, and that field may keep its own text.
+        if (isFocusIn)
+            sinceFocus_.showedBackspace = false;
 
         if (isFocusIn && host_->field().frontend == "dbus" && !s.isValid()) {
             NGOSEN_INFO("Skip clearAllBuffers");
@@ -136,7 +145,7 @@ namespace ngosen {
     bool TypingState::waitsForRedraw() const {
         const int64_t now     = nowMs();
         const auto    started = static_cast<int64_t>(surr_wait_started_at_ / 1000);
-        if (fieldBounces_ < 2 || now - started >= RedrawWaitMs)
+        if (redrawBounces_ < 2 || now - started >= RedrawWaitMs)
             return false;
         // Each deleted character brings its own redraw.
         const int bounces = bouncedInWait_ == surr_wait_started_at_ ? waitBounces_ : 0;

@@ -741,12 +741,12 @@ wants_kde_setup() {
     command -v kwriteconfig6 >/dev/null 2>&1 && command -v kreadconfig6 >/dev/null 2>&1
 }
 
-# Each compositor sets its own variable. XDG_CURRENT_DESKTOP comes from the display manager, so it
-# is missing when Sway starts from a text console.
+# Sway, Hyprland and niri. Each compositor sets its own variable. XDG_CURRENT_DESKTOP comes from the
+# display manager, so it is missing when Sway starts from a text console.
 wants_sway_hyprland_setup() {
     [ "$edition" = fcitx5 ] && [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ] || return 1
     [ -n "${WAYLAND_DISPLAY:-}" ] || return 1
-    [ -n "${SWAYSOCK:-}" ] || [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]
+    [ -n "${SWAYSOCK:-}" ] || [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || [ -n "${NIRI_SOCKET:-}" ]
 }
 
 # Outside GNOME nothing starts IBus by default; im-config does it on Debian and Ubuntu. Elsewhere
@@ -1415,9 +1415,22 @@ report_sway_hyprland_session() {
     say ""
     if [ -n "${SWAYSOCK:-}" ]; then
         report_sway_autostart
+    elif [ -n "${NIRI_SOCKET:-}" ]; then
+        report_niri_autostart
     else
         report_hyprland_autostart
     fi
+}
+
+report_niri_autostart() {
+    local config line='spawn-at-startup "fcitx5" "-d"'
+    config="$(config_home)/niri/config.kdl"
+    if [ -e "$config" ]; then
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $config:"
+    else
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng này vào file cấu hình niri đang dùng:"
+    fi
+    say "  $line"
 }
 
 # In the order Sway looks for its config.

@@ -153,6 +153,28 @@ pub fn in_key_list(list: &[char], key: char) -> bool {
 }
 
 /// Key values outside Unicode (fcitx keysyms) match no character class.
+/// `raw` with the key that marks the rime typed after its vowel; Telex marks the last vowel that
+/// changes, so `uow` gives ươ and `ee` gives ê.
+fn keys_with_mark(raw: &str, onset_len: usize, bare: &str, marked: &str) -> Vec<char> {
+    let (at, mark) = bare
+        .chars()
+        .zip(marked.chars())
+        .enumerate()
+        .filter(|(_, (b, m))| b != m)
+        .last()
+        .map(|(i, (b, m))| (i, if "ơư".contains(m) { 'w' } else { b }))
+        .expect("a marked rime differs from its bare form");
+    let mut keys: Vec<char> = raw.chars().collect();
+    let after = onset_len + at;
+    let mark = if keys[after].is_uppercase() {
+        mark.to_ascii_uppercase()
+    } else {
+        mark
+    };
+    keys.insert(after + 1, mark);
+    keys
+}
+
 fn key_char(key_val: u32) -> char {
     char::from_u32(key_val).unwrap_or(char::REPLACEMENT_CHARACTER)
 }
@@ -539,14 +561,16 @@ impl BambooEngine {
         let tone_keys = self.preeditor.input_method().tone_keys();
         let is_tone = |k: &char| tone_keys.contains(&k.to_ascii_lowercase());
         let tone_key = raw.chars().rev().find(is_tone)?;
+        let composed = self.get_processed_string(OutputOptions::LOWER_CASE);
+        // The dictionary decides even with spell checking off, where luạn is a valid syllable.
         if !"sfrxj".contains(tone_key.to_ascii_lowercase())
             || !raw.is_ascii()
             || self.get_processed_string(OutputOptions::RAW) != raw
-            || self.is_known_word(&self.preeditor)
+            || self.dictionary.contains(&composed)
         {
             return None;
         }
-        let (plain, tones) = without_tones(&self.get_processed_string(OutputOptions::LOWER_CASE));
+        let (plain, tones) = without_tones(&composed);
         if tones != 1 {
             return None;
         }
@@ -564,26 +588,10 @@ impl BambooEngine {
         if !rest.starts_with(&nucleus) || rest.chars().filter(is_tone).count() != 1 {
             return None;
         }
-        // Telex marks the last vowel that changes: `uow` gives ươ, `ee` gives ê.
-        let (at, mark) = bare
-            .chars()
-            .zip(marked.chars())
-            .enumerate()
-            .filter(|(_, (b, m))| b != m)
-            .last()
-            .map(|(i, (b, m))| (i, if "ơư".contains(m) { 'w' } else { b }))?;
-        let mut keys: Vec<char> = raw.chars().collect();
-        let after = onset_keys.len() + at;
-        let mark = if keys[after].is_uppercase() {
-            mark.to_ascii_uppercase()
-        } else {
-            mark
-        };
-        keys.insert(after + 1, mark);
-        let word = self.typed_alone(keys);
+        let word = self.typed_alone(keys_with_mark(raw, onset_keys.len(), bare, marked));
         let text = word.get_processed_str(OutputOptions::NONE);
-        let (letters, _) = without_tones(&text.to_lowercase());
-        (letters == format!("{onset}{marked}") && self.dictionary.contains(&text.to_lowercase()))
+        let lower = text.to_lowercase();
+        (without_tones(&lower).0 == format!("{onset}{marked}") && self.dictionary.contains(&lower))
             .then_some(text)
     }
 
@@ -678,7 +686,7 @@ impl BambooEngine {
         }
         // A digit or a symbol like @ or _ may continue a name or a handle (`tuans@`).
         let marked = || {
-            " .,;:!?)"
+            " .,;:!?)]}\"'"
                 .contains(key)
                 .then(|| self.auto_marked_word())
                 .flatten()

@@ -484,7 +484,13 @@ fn test_marks_added_to_rimes_that_always_have_them() {
         );
     }
     // Sentence punctuation ends a word; a digit, @ or _ may go on with a name or a handle.
-    assert_eq!(committed_with("Telex", "tienf", '.' as u32), "tiền.");
+    for end in ['.', '"', ')'] {
+        assert_eq!(
+            committed_with("Telex", "tienf", end as u32),
+            format!("tiền{end}"),
+            "tienf{end}"
+        );
+    }
     for end in ['@', '_'] {
         assert_eq!(
             committed_with("Telex", "tuans", end as u32),
@@ -492,7 +498,13 @@ fn test_marks_added_to_rimes_that_always_have_them() {
             "tuans{end}"
         );
     }
-    // With macros on, a digit stays in the word instead.
+    // Without spell checking luạn is a valid syllable, but the dictionary still has luận.
+    let mut e = engine_with_default_settings("Telex");
+    e.spell_check_with_dicts = false;
+    type_keys(&mut e, "luanj");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "luận ");
+    // Macros keep a digit in the word, so they are off for the digit to end it.
     let mut e = engine_with_default_settings("Telex");
     e.macro_enabled = false;
     type_keys(&mut e, "tuans");

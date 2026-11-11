@@ -167,7 +167,7 @@ send_keys() {
     fi
     for k in "$@"; do
         "${virsh[@]}" send-key "$vm" "$k" >/dev/null
-        sleep "$(printf '0.%03d' "$delay")"
+        sleep "$(printf '%d.%03d' $((delay / 1000)) $((delay % 1000)))"
     done
 }
 

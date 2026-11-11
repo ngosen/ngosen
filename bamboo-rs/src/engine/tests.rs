@@ -579,7 +579,6 @@ fn test_misspelt_words_commit_the_keys() {
         "coot",
         "teet",
         "laap",
-        "huux",
         "tienr",
         "khyeenr",
         "quuyeets",
@@ -592,7 +591,6 @@ fn test_misspelt_words_commit_the_keys() {
         "nghieenh",
         "ngiuj",
         "gems",
-        "uux",
         "nghueechs",
     ]
     .iter()

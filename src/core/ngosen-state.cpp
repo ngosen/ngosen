@@ -1113,7 +1113,13 @@ namespace ngosen {
     void TypingState::commitBuffer() {
         switch (mode()) {
             case ngosen::Mode::Preedit: {
-                commitPreedit(false);
+                host_->resetPanel();
+                if (bambooEngine_) {
+                    EngineCommitPreedit(bambooEngine_.handle());
+                    commitPulledText();
+                }
+                host_->refreshPanel();
+                host_->refreshPreedit();
                 break;
             }
             case ngosen::Mode::Sen: {
@@ -1129,29 +1135,24 @@ namespace ngosen {
     }
 
     void TypingState::commitBufferForEnter() {
-        if (mode() == ngosen::Mode::Preedit)
-            commitPreedit(true);
-        else
-            commitBuffer();
-    }
-
-    void TypingState::commitPreedit(bool asEnter) {
+        if (mode() != ngosen::Mode::Preedit)
+            return;
         host_->resetPanel();
         if (bambooEngine_) {
-            if (asEnter)
-                EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, 0);
-            else
-                EngineCommitPreedit(bambooEngine_.handle());
-            ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
-            if (pulled && (*pulled.get() != 0)) {
-                if (asEnter)
-                    NGOSEN_INFO("Commit: " + logged(pulled.get()));
-                commit(pulled.get());
-            }
-            ResetEngine(bambooEngine_.handle());
+            EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, 0);
+            commitPulledText();
         }
         host_->refreshPanel();
         host_->refreshPreedit();
+    }
+
+    void TypingState::commitPulledText() {
+        ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
+        if (pulled && (*pulled.get() != 0)) {
+            NGOSEN_INFO("Commit: " + logged(pulled.get()));
+            commit(pulled.get());
+        }
+        ResetEngine(bambooEngine_.handle());
     }
 
     void TypingState::clearAllBuffers() {

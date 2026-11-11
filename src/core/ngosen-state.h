@@ -131,7 +131,7 @@ namespace ngosen {
         void commitBuffer();
 
         /**
-         * @brief Like commitBuffer(), but an underlined word is committed the way Enter leaves it.
+         * @brief Commits an underlined word the way Enter leaves it, and does nothing outside Preedit.
          *
          * For a shell that lets Enter reach the app itself: the word is retoned or its macro expanded.
          */
@@ -490,9 +490,11 @@ namespace ngosen {
         std::optional<KeyEntry>        held_field_key_; ///< held in place of held_key_
         bool                           heldKeyIs(uint32_t sym) const;
 
+        // Commits what the engine gave back for the word and empties the engine.
+        void commitPulledText();
+
         // Enter after a word the engine changes at its end, such as a macro, reaches the app once the new text is in the field.
         bool            finishWordBeforeEnter(ngosen::KeyPress& keyEvent);
-        void            commitPreedit(bool asEnter);
         void            sendEnterAfterReplacement();
         bool            enter_after_replacement_ = false;
         ngosen::EditKey enter_after_key_         = ngosen::EditKey::Return;

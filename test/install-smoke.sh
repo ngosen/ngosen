@@ -468,9 +468,6 @@ case "$1 $2 $3" in
     "set org.freedesktop.ibus.general.hotkey triggers") printf '%s\n' "$4" >"$HOME/.stub-ibus-triggers" ;;
     "get org.gnome.desktop.input-sources mru-sources") cat "$HOME/.stub-recent-sources" 2>/dev/null || echo "@a(ss) []" ;;
     "set org.gnome.desktop.input-sources mru-sources") printf '%s\n' "$4" >"$HOME/.stub-recent-sources" ;;
-    "get org.gnome.desktop.interface gtk-im-module") cat "$HOME/.stub-gtk-im-module" 2>/dev/null || echo "''" ;;
-    "set org.gnome.desktop.interface gtk-im-module") printf "'%s'\n" "$4" >"$HOME/.stub-gtk-im-module" ;;
-    "reset org.gnome.desktop.interface gtk-im-module") rm -f "$HOME/.stub-gtk-im-module" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -667,12 +664,8 @@ check_ibus_edition() {
     check "and installs nothing" is_removed ibus-ngosen
     check "and keeps the fcitx5 edition set up" test -e "$im_env"
     check "the list names the switch away from fcitx5" grep -qF "bỏ fcitx5 khỏi tài khoản này" "$install_log"
-    # As a Sway, Hyprland or niri install on the same account leaves it.
-    printf "'fcitx'\n" | as_user tee "$home/.stub-gtk-im-module" >/dev/null
-    printf 'gtk-im-module fcitx\n' | as_user tee -a "$changes" >/dev/null
     check "answering yes to the switch succeeds" ibus_install_answering y
     check "it installs the IBus edition" is_installed ibus-ngosen
-    check "it gives GTK its default module back" test ! -e "$home/.stub-gtk-im-module"
     check "it removes the fcitx5 edition" is_removed fcitx5-ngosen
     check "it removes the fcitx5 environment" test ! -e "$im_env"
     check "the user manager rereads the environment without it" last_reload without-fcitx5
@@ -886,38 +879,26 @@ check_niri_config_messages() {
     check "it names no file to create" refuses grep -qF "$desktop_config" "$install_log"
 }
 
-gtk_im_module_is() { [ "$(as_user gsettings get org.gnome.desktop.interface gtk-im-module)" = "$1" ]; }
-
-# GNOME shares the key on the same account, so it is set only when empty and reset only if still ours.
-check_gtk_im_module() {
+# GTK 4 types right through text-input-v3 here, and the key is shared with GNOME and wl-ngosen.
+check_gtk_im_module_untouched() {
     local saved_path=$stub_path dir=$work/compositor-stubs
     mkdir -p "$dir"
     cat >"$dir/gsettings" <<'STUB'
 #!/bin/bash
+printf '%s\n' "$*" >>"$HOME/.stub-gsettings-calls"
 case "$1 $2 $3" in
-    "get org.gnome.desktop.interface gtk-im-module") cat "$HOME/.stub-gtk-im-module" 2>/dev/null || echo "''" ;;
-    "set org.gnome.desktop.interface gtk-im-module") printf "'%s'\n" "$4" >"$HOME/.stub-gtk-im-module" ;;
-    "reset org.gnome.desktop.interface gtk-im-module") rm -f "$HOME/.stub-gtk-im-module" ;;
+    "get org.gnome.desktop.interface gtk-im-module") echo "''" ;;
     *) exit 1 ;;
 esac
 STUB
     chmod a+rx "$dir" "$dir/gsettings"
     stub_path=$dir:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-    as_user rm -f "$home/.stub-gtk-im-module"
-    check "install with GTK's default module succeeds" install_fresh
-    check "it points GTK at fcitx5's module" gtk_im_module_is "'fcitx'"
-    check "it says open GTK apps need a restart" grep -qF "đóng rồi mở lại để gõ qua fcitx5" "$install_log"
+    as_user rm -f "$home/.stub-gsettings-calls"
+    check "install with gsettings present succeeds" install_fresh
     check "fcitx5 stops before that uninstall" stop_fcitx5
     check "uninstall succeeds" uninstall_logged
-    check "uninstall gives GTK its default module back" gtk_im_module_is "''"
-    printf "'ibus'\n" | as_user tee "$home/.stub-gtk-im-module" >/dev/null
-    check "install with the user's own GTK module succeeds" install_fresh
-    check "it keeps the user's GTK module" gtk_im_module_is "'ibus'"
-    check "it does not mention GTK apps" refuses grep -qF "đóng rồi mở lại để gõ qua fcitx5" "$install_log"
-    check "fcitx5 stops before the next uninstall" stop_fcitx5
-    check "uninstall with the user's own GTK module succeeds" uninstall_logged
-    check "uninstall keeps it" gtk_im_module_is "'ibus'"
-    as_user rm -f "$home/.stub-gtk-im-module"
+    check "neither sets nor resets GTK's module" refuses grep -qE '^(set|reset) org.gnome.desktop.interface gtk-im-module' "$home/.stub-gsettings-calls"
+    as_user rm -f "$home/.stub-gsettings-calls"
     stub_path=$saved_path
 }
 
@@ -958,7 +939,7 @@ check_sway_hyprland_setup() {
     check_no_compositor_setup
     check_next_to_other_input_methods
     check_fcitx5_that_dies
-    check_gtk_im_module
+    check_gtk_im_module_untouched
 
     as_user rm -f "$desktop_config"
     pkill -u "$user" dbus-daemon || :

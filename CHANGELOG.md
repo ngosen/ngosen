@@ -20,9 +20,10 @@ Tải ở [ngosen-1.9.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 - Bảng tính Lark trên Brave/Chrome (X11): gõ Gõ Sen rồi chuyển ô nhanh bằng mũi tên hoặc Tab không còn mất chữ, kiểu gõ `laf` chỉ còn `l` và các ô sau trống (#681).
 - Bảng tính Lark trên Brave/Chrome (GNOME Wayland): chữ đầu tiên gõ bằng Gõ Sen trong bảng không còn bị lặp, kiểu `tieengs` ra `tieêngếng` (#686).
 - Bảng tính Lark trên Chromium/Chrome (KDE Plasma Wayland): chữ đầu tiên gõ bằng Gõ Sen trong bảng không còn bị lặp như trên GNOME (#697).
-- App GTK 4 trên niri không còn mất chữ đầu mỗi từ sau khi chạy lại lệnh cài; niri cũng được tự thiết lập fcitx5 (#689).
+- Lệnh cài nhận ra niri như Sway và Hyprland: thêm Ngó Sen, bật fcitx5 và in dòng để fcitx5 tự chạy khi đăng nhập (#689, #700).
 - Gõ Telex các chữ sai chính tả như `moot`, `tienr` rồi bấm cách giữ nguyên phím đã gõ, không còn ra `môt`, `tiẻn` (#693).
 - Bản IBus (ibus-ngosen): bấm Enter ngay sau chữ đang gạch chân nay ra đúng chữ như bấm dấu cách, có đổi dấu sau phụ âm cuối (`mootxj` ra "một") và bung gõ tắt; bản fcitx5 không đổi (#692).
+- Gói cài (.deb, .rpm, Arch) tự kéo theo thư viện SVG của Qt, nên cửa sổ cài đặt bản Qt hiện đủ logo và biểu tượng; gói .deb và openSUSE còn kéo theo libxcb-xfixes, nên Cứu dấu trên chữ bôi đen trong app X11 không còn tự tắt (#695).
 
 ## [1.9.2-1] — 11/11/2026
 

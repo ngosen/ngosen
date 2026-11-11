@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.9.2
+Version:        1.9.3
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -100,6 +100,9 @@ else
 fi
 
 %changelog
+* Wed Nov 11 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.9.3-1
+- Lark sheets in Brave/Chrome keep typed words when moving between cells fast (#681) and no longer double the first word on GNOME and KDE Plasma Wayland (#686, #697); the installer recognizes niri (#689, #700); packages pull in the Qt SVG plugin and libxcb-xfixes (#695); misspelt Telex keys such as moot stay as typed (#693); the IBus edition retones and expands macros on Enter (#692).
+
 * Wed Nov 11 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.9.2-1
 - The word list's license file links archived copies of its offline source pages (#680); the plain tray icon turns black on light panels in deepin and GNOME 51 (#672, #673) and shows in swaybar (#674); Xfce opens the GTK settings window by default (#670).
 

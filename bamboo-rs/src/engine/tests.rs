@@ -488,6 +488,43 @@ fn test_tone_change_keeps_other_words() {
     assert_eq!(committed_with("Telex", "dduowcj", KEY_SPACE), "được ");
 }
 
+// Misspelt dictionary entries made these keys commit the misspelling instead of the keys typed.
+#[test]
+fn test_misspelt_words_commit_the_keys() {
+    let wrong: Vec<String> = [
+        "moot",
+        "nhieet",
+        "bieet",
+        "vieec",
+        "luwc",
+        "coot",
+        "teet",
+        "laap",
+        "huux",
+        "tienr",
+        "khyeenr",
+        "quuyeets",
+        "tryeenf",
+        "nghoeof",
+        "ngeof",
+        "ngeechj",
+        "ngetj",
+        "geenhf",
+        "nghieenh",
+        "ngiuj",
+        "gems",
+        "uux",
+        "nghueechs",
+    ]
+    .iter()
+    .filter_map(|keys| {
+        let shown = committed_with("Telex", keys, KEY_SPACE);
+        (shown != format!("{keys} ")).then(|| format!("{keys} gave {shown:?}"))
+    })
+    .collect();
+    assert!(wrong.is_empty(), "{} wrong: {wrong:?}", wrong.len());
+}
+
 #[test]
 fn test_tone_change_needs_dictionary_word_without_spell_check() {
     for (keys, want) in [

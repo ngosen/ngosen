@@ -3712,6 +3712,8 @@ namespace {
         check(text == "thực ", "sen: a stray tone key deleted, the next one gives the word", text);
         text = type("perl<<a ");
         check(text == "pea ", "sen: backspaces into an English word keep its keys", text);
+        text = type("grats<t ");
+        check(text == "grát ", "sen: a backspace into a name whose keys start an English word keeps the name", text);
     }
 
     void testEnglishWordKeepsDoubledLetter() {

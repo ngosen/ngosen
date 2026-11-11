@@ -19,8 +19,8 @@ use bamboo_core::{
 
 use crate::macro_table::MacroTable;
 use crate::text::{
-    has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol, vowel_count,
-    without_tone_position, without_tones,
+    grows_into, has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol,
+    vowel_count, without_marks, without_tone_position, without_tones,
 };
 use crate::time_format::format_time;
 
@@ -58,22 +58,46 @@ pub const INPUT_METHOD_NAMES: [&str; 7] = [
 
 /// Words for spell checking, matched whatever tone style the user picked.
 #[derive(Debug, Default)]
-pub struct Dictionary(HashSet<String>);
+pub struct Dictionary {
+    words: HashSet<String>,
+    // Each word in lower case, sorted by its letters without marks or tones.
+    prefixes: Box<[(Box<str>, Box<str>)]>,
+}
 
 impl Dictionary {
     pub fn contains(&self, word: &str) -> bool {
-        self.0.contains(&without_tone_position(word))
+        self.words.contains(&without_tone_position(word))
+    }
+
+    /// Whether more keys can make `typed` the start of a word, since `plô` shows as `plo` until its
+    /// second o and grát as `grat` until its tone key. A typed tone must match, or `cró` would
+    /// start crông and the second s of cross would undo its tone.
+    pub fn starts_word(&self, typed: &str) -> bool {
+        let key = without_marks(&without_tones(typed).0);
+        let first = self.prefixes.partition_point(|(w, _)| **w < *key);
+        self.prefixes[first..]
+            .iter()
+            .take_while(|(w, _)| w.starts_with(&*key))
+            .any(|(_, word)| grows_into(typed, word))
     }
 }
 
 impl FromIterator<String> for Dictionary {
     fn from_iter<I: IntoIterator<Item = String>>(words: I) -> Self {
-        Self(
-            words
-                .into_iter()
-                .map(|w| without_tone_position(&w))
-                .collect(),
-        )
+        let words: Vec<String> = words.into_iter().collect();
+        let mut prefixes: Vec<_> = words
+            .iter()
+            .map(|w| {
+                let bare = without_marks(&without_tones(w).0).into_boxed_str();
+                (bare, w.to_lowercase().into_boxed_str())
+            })
+            .collect();
+        prefixes.sort();
+        prefixes.dedup();
+        Self {
+            prefixes: prefixes.into_boxed_slice(),
+            words: words.iter().map(|w| without_tone_position(w)).collect(),
+        }
     }
 }
 
@@ -85,6 +109,14 @@ impl WordList {
     pub fn starts_word(&self, keys: &str) -> bool {
         let i = self.0.partition_point(|w| &**w < keys);
         self.0.get(i).is_some_and(|w| w.starts_with(keys))
+    }
+
+    pub fn contains(&self, keys: &str) -> bool {
+        self.0.binary_search_by(|w| (**w).cmp(keys)).is_ok()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
 
@@ -341,7 +373,33 @@ impl BambooEngine {
         if check_vn_rune && !has_any_vietnamese_rune(&vn_seq) {
             return false;
         }
-        !self.preeditor.is_valid_prefix()
+        !self.preeditor.is_valid_prefix() && !self.starts_dictionary_name(&vn_seq)
+    }
+
+    /// Names such as plông and xtiêng start with letters no Vietnamese rule allows, so only the
+    /// dictionary, which checks them when the word ends, can keep them Vietnamese. Without an
+    /// English list to keep draw and broom English, the rules decide alone.
+    fn starts_dictionary_name(&self, vn_seq: &str) -> bool {
+        self.spell_check_with_dicts
+            && !self.english_words.is_empty()
+            && self.dictionary.starts_word(vn_seq)
+    }
+
+    /// Keys that start both an English word and such a name show as typed, so draw stays draw
+    /// until drawng makes drăng; the keys are still composed to get there.
+    /// Abbreviations such as đs have no vowel and keep their đ, as dd_free_style does.
+    fn keys_start_english_over_name(&self) -> bool {
+        let vn_seq = self.get_processed_string(OutputOptions::LOWER_CASE);
+        // After a Backspace the app still shows the name, so the keys show as typed again only
+        // from the next key.
+        self.auto_non_vn_restore
+            && !self.keep_marks_until_next_key
+            && !self.preeditor.is_valid_prefix()
+            && has_any_vietnamese_vowel(&vn_seq)
+            && self.starts_dictionary_name(&vn_seq)
+            && self
+                .english_words
+                .starts_word(&self.raw_text().to_lowercase())
     }
 
     fn get_processed_string(&self, options: OutputOptions) -> String {
@@ -377,6 +435,7 @@ impl BambooEngine {
     pub(crate) fn get_preedit_string(&self) -> String {
         if self.keep_keys_until_next_key
             || self.should_fallback_to_english(true)
+            || self.keys_start_english_over_name()
             || self.word_before_digits_is_english()
         {
             return self.raw_text();
@@ -611,6 +670,21 @@ impl BambooEngine {
                 && listed(WORDS_SHORTER_WHEN_CAPITALIZED))
     }
 
+    fn tone_count(&self) -> usize {
+        without_tones(&self.get_processed_string(OutputOptions::LOWER_CASE)).1
+    }
+
+    /// Keys shown as typed only because they start an English word end as the name they spell.
+    fn finished_name(&self) -> Option<String> {
+        if !self.keys_start_english_over_name()
+            || self.english_words.contains(&self.raw_text().to_lowercase())
+        {
+            return None;
+        }
+        let composed = self.shown_as_composed();
+        self.dictionary.contains(&composed).then_some(composed)
+    }
+
     fn text_of_finished_word(&self) -> String {
         let shown = self.get_preedit_string();
         if self.lost_a_letter_of_english_word(&shown) {
@@ -628,11 +702,12 @@ impl BambooEngine {
 
     fn appending_key_text(&mut self, key: char, old_text: &str) -> (String, bool) {
         let full_seq = self.get_processed_string(OutputOptions::NONE);
-        let new_text = if self.should_fallback_to_english(true) {
-            self.raw_text()
-        } else {
-            full_seq.clone()
-        };
+        let new_text =
+            if self.should_fallback_to_english(true) || self.keys_start_english_over_name() {
+                self.raw_text()
+            } else {
+                full_seq.clone()
+            };
         if !full_seq.is_empty() && get_last_rune(&full_seq) == key {
             // [[ => [
             let ret = self.get_preedit_string();
@@ -668,7 +743,19 @@ impl BambooEngine {
             key = self.to_upper(key);
         }
         let mode = self.get_bamboo_input_mode();
+        // A second s after grá would undo its tone and drop a letter of grass, while z typed to
+        // remove the tone has not been typed before.
+        let repeated = self.keys_start_english_over_name()
+            && self
+                .raw_text()
+                .chars()
+                .any(|c| c.eq_ignore_ascii_case(&key));
+        let tones = if repeated { self.tone_count() } else { 0 };
         self.preeditor.process_key(key, mode);
+        if repeated && self.tone_count() < tones {
+            self.drop_last_key(false);
+            self.preeditor.process_key(key, Mode::English);
+        }
         if in_key_list(self.preeditor.input_method().appending_keys(), key) {
             return self.appending_key_text(key, old_text);
         }
@@ -684,12 +771,10 @@ impl BambooEngine {
             return (format!("{expanded}{key}"), true);
         }
         // A digit or a symbol like @ or _ may continue a name or a handle (`tuans@`).
-        let marked = || {
-            " .,;:!?)]}\"'"
-                .contains(key)
-                .then(|| self.auto_marked_word())
-                .flatten()
-        };
+        let ends_sentence = " .,;:!?)]}\"'".contains(key);
+        let name = ends_sentence.then(|| self.finished_name()).flatten();
+        let old_text = name.as_deref().unwrap_or(old_text);
+        let marked = || ends_sentence.then(|| self.auto_marked_word()).flatten();
         if let Some(word) = self.retoned_word().or_else(marked) {
             self.preeditor.reset();
             return (format!("{word}{key}"), true);
@@ -865,6 +950,7 @@ impl BambooEngine {
                     _ if enter => self
                         .retoned_word()
                         .or_else(|| self.auto_marked_word())
+                        .or_else(|| self.finished_name())
                         .unwrap_or_else(|| self.text_of_finished_word()),
                     _ => self.text_of_finished_word(),
                 };

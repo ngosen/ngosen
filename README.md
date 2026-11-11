@@ -137,8 +137,7 @@ khi đang gõ tiếng Việt.
   cũng gõ được.
 - **Xfce, Cinnamon, MATE** (X11, Debian và Ubuntu): dùng im-config đặt fcitx5 làm bộ gõ.
 - **Sway, Hyprland, niri:** chạy lệnh từ terminal trong phiên desktop để thêm Ngó Sen và bật fcitx5, không
-  cần đăng xuất. App GTK 4 được đặt gõ qua fcitx5 (khoá `gtk-im-module` của GNOME, nếu khoá đang để trống).
-  Lệnh không sửa file config của desktop; để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng lệnh được in ra.
+  cần đăng xuất. Lệnh không sửa file config của desktop; để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng lệnh được in ra.
 
 Desktop khác: cài xong thì đăng xuất rồi đăng nhập lại.
 
@@ -381,8 +380,7 @@ Cấu hình được giữ lại để lần cài sau dùng tiếp: các file `n
 - **Xfce, Cinnamon, MATE:** trả bộ gõ về mặc định của máy; gỡ hẳn fcitx5 bằng `sudo apt remove fcitx5`.
 - **KDE:** giữ fcitx5 làm bàn phím ảo vì có thể đang dùng cho bộ gõ khác; muốn bỏ thì chọn None ở System
   Settings → Virtual Keyboard.
-- **Sway, Hyprland, niri:** bỏ dòng đã dán vào config, rồi đăng xuất và đăng nhập lại. Lệnh gỡ trả khoá
-  `gtk-im-module` về mặc định nếu lệnh cài đã đặt nó.
+- **Sway, Hyprland, niri:** bỏ dòng đã dán vào config, rồi đăng xuất và đăng nhập lại.
 
 </details>
 

@@ -15,7 +15,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Bảng tính Lark trên Brave/Chrome (X11): gõ Gõ Sen rồi chuyển ô nhanh bằng mũi tên hoặc Tab không còn mất chữ, kiểu gõ `laf` chỉ còn `l` và các ô sau trống (#681).
 - Bảng tính Lark trên Brave/Chrome (GNOME Wayland): chữ đầu tiên gõ bằng Gõ Sen trong bảng không còn bị lặp, kiểu `tieengs` ra `tieêngếng` (#686).
 - Bảng tính Lark trên Chromium/Chrome (KDE Plasma Wayland): chữ đầu tiên gõ bằng Gõ Sen trong bảng không còn bị lặp như trên GNOME (#697).
-- Lệnh cài nhận ra niri như Sway và Hyprland: thêm Ngó Sen, bật fcitx5 và in dòng để fcitx5 tự chạy khi đăng nhập (#689, #PR).
+- Lệnh cài nhận ra niri như Sway và Hyprland: thêm Ngó Sen, bật fcitx5 và in dòng để fcitx5 tự chạy khi đăng nhập (#689, #700).
 - Gõ Telex các chữ sai chính tả như `moot`, `tienr` rồi bấm cách giữ nguyên phím đã gõ, không còn ra `môt`, `tiẻn` (#693).
 - Bản IBus (ibus-ngosen): bấm Enter ngay sau chữ đang gạch chân nay ra đúng chữ như bấm dấu cách, có đổi dấu sau phụ âm cuối (`mootxj` ra "một") và bung gõ tắt; bản fcitx5 không đổi (#692).
 

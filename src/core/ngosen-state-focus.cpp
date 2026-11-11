@@ -88,6 +88,10 @@ namespace ngosen {
             }
         }
 
+        // A click into another field of the same page looks like a bounce, and that field may keep its own text.
+        if (isFocusIn)
+            sinceFocus_.showedBackspace = false;
+
         if (isFocusIn && host_->field().frontend == "dbus" && !s.isValid()) {
             NGOSEN_INFO("Skip clearAllBuffers");
         } else if (s.isValid() && !oldPreBuffer_.empty() && now - lastDeactivateTime_ >= FocusBounceMs) {

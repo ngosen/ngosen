@@ -127,6 +127,9 @@ namespace ngosen::test {
         void select(size_t anchor, size_t cursor);
         // Leaves focus for ms and takes it back, as WPS does when it opens a window on a double click.
         void leaveFocus(int ms);
+        // Moves within ms to an empty field of the same page that keeps its own text, as a click from a
+        // page's search box into a Lark sheet does.
+        void switchToOwnTextField(int ms);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.

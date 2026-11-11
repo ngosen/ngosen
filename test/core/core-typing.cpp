@@ -856,6 +856,29 @@ namespace {
         const auto plain = ngosen::test::typeInAppTraced(resources, brave, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 100));
         check(plain.text == "tiếng việt " && plain.sent.surroundingDeletes > 0, "plain page: back to the surrounding text",
               plain.text + ", " + std::to_string(plain.sent.surroundingDeletes) + " surrounding deletions");
+
+        // A click into the sheet from a plain field of the same page looks like a focus bounce, so what the
+        // plain field showed must not carry over.
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, brave, ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&] {
+            for (const uint32_t key : keys) {
+                app->type(key);
+                loop.pump(100);
+            }
+        };
+        typeText();
+        loop.pump(1000);
+        app->switchToOwnTextField(5);
+        loop.pump(1000);
+        typeText();
+        loop.pump(500);
+        check(app->text() == "tiếng việt ", "click from a plain field into the sheet: delete with backspaces", app->text());
     }
 
     // need not wait for one; it still sends deletions as backspaces, which the sheet needs over IBus.

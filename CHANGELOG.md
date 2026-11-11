@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [1.9.3-1] — 11/11/2026
 
-Bảng tính Lark trên Brave/Chrome không còn mất chữ khi chuyển ô nhanh (#681) và không còn lặp chữ đầu trên GNOME Wayland và KDE Plasma Wayland (#686, #697), app GTK 4 trên niri không còn mất chữ đầu từ sau khi chạy lại lệnh cài (#689), chữ Telex sai chính tả như `moot` giữ nguyên phím đã gõ (#693), và bản IBus đổi dấu, bung gõ tắt khi bấm Enter sau chữ đang gạch chân (#692).
+Bảng tính Lark trên Brave/Chrome không còn mất chữ khi chuyển ô nhanh (#681) và không còn lặp chữ đầu trên GNOME Wayland và KDE Plasma Wayland (#686, #697), lệnh cài nhận ra niri (#689, #700), gói cài kéo theo thư viện SVG của Qt và libxcb-xfixes (#695), chữ Telex sai chính tả như `moot` giữ nguyên phím đã gõ (#693), và bản IBus đổi dấu, bung gõ tắt khi bấm Enter sau chữ đang gạch chân (#692).
 Tải ở [ngosen-1.9.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.9.3-1).
 
 ### Sửa

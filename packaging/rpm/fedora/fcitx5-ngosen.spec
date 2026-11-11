@@ -101,7 +101,7 @@ fi
 
 %changelog
 * Wed Nov 11 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.9.3-1
-- Lark sheets in Brave/Chrome keep typed words when moving between cells fast (#681) and no longer double the first word on GNOME and KDE Plasma Wayland (#686, #697); GTK 4 apps on niri keep the first letter after a reinstall (#689); misspelt Telex keys such as moot stay as typed (#693); the IBus edition retones and expands macros on Enter (#692).
+- Lark sheets in Brave/Chrome keep typed words when moving between cells fast (#681) and no longer double the first word on GNOME and KDE Plasma Wayland (#686, #697); the installer recognizes niri (#689, #700); packages pull in the Qt SVG plugin and libxcb-xfixes (#695); misspelt Telex keys such as moot stay as typed (#693); the IBus edition retones and expands macros on Enter (#692).
 
 * Wed Nov 11 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.9.2-1
 - The word list's license file links archived copies of its offline source pages (#680); the plain tray icon turns black on light panels in deepin and GNOME 51 (#672, #673) and shows in swaybar (#674); Xfce opens the GTK settings window by default (#670).

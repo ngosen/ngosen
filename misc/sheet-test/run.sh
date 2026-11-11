@@ -27,9 +27,9 @@ trap 'kill $server 2>/dev/null; pkill -f "$profile" 2>/dev/null; rm -rf "$work"'
 # "_" is Down, "@" is Up, "^" is Return, "~" is Tab, "#" is F2, "<" is BackSpace, "*" clicks cell A3.
 keys_for() {
     case $1 in
-    down) echo "tieengs_vieetj_nhaanf_ddaay_laf_caau_|tiếng|việt|nhận|đây|là|câu" ;;
-    enter | fast) echo "tieengs^vieetj^nhaanf^ddaay^laf^caau^|tiếng|việt|nhận|đây|là|câu" ;;
-    tab) echo "tieengs~vieetj~nhaanf~ddaay~laf^|tiếng|việt|nhận|đây|là" ;;
+    down) echo "tieengs_vieetj_nhaanj_ddaay_laf_caau_|tiếng|việt|nhận|đây|là|câu" ;;
+    enter | fast) echo "tieengs^vieetj^nhaanj^ddaay^laf^caau^|tiếng|việt|nhận|đây|là|câu" ;;
+    tab) echo "tieengs~vieetj~nhaanj~ddaay~laf^|tiếng|việt|nhận|đây|là" ;;
     click) echo "tieengs*vieetj^|tiếng|việt" ;;
     edit) echo "toan^@#s^|toán" ;;
     esac

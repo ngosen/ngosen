@@ -143,6 +143,12 @@ namespace ngosen {
         holdEnter(true);
     }
 
+    void TypingState::noteBufferedRelease(uint32_t sym) {
+        const auto pressed = std::find_if(buffered_keys_.rbegin(), buffered_keys_.rend(), [sym](const KeyEntry& k) { return k.sym == sym && !k.released; });
+        if (pressed != buffered_keys_.rend())
+            pressed->released = true;
+    }
+
     void TypingState::holdEnter(bool untilRelease, ngosen::EditKey key) {
         held_key_ = key;
         held_field_key_.reset();
@@ -631,7 +637,9 @@ namespace ngosen {
                 return;
             }
         }
-        if (!keyEvent.isRelease())
+        if (keyEvent.isRelease())
+            noteBufferedRelease(keyEvent.sym());
+        else
             sendHeldEnter();
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             dropRetoneKey();
@@ -741,7 +749,16 @@ namespace ngosen {
             keyEvent.passToApp();
             return true;
         }
+        lastKeyLeftText_ = movesWithoutEdit(keyEvent);
         return false;
+    }
+
+    bool TypingState::movesWithoutEdit(const ngosen::KeyPress& keyEvent) const {
+        const uint32_t sym = keyEvent.sym();
+        if (typesText(keyEvent, sym) || ngosen::key::isBackspace(sym) || ngosen::key::isEnter(sym) || sym == ngosen::key::Delete || sym == ngosen::key::KP_Delete)
+            return false;
+        // Shortcuts such as Ctrl+V edit the text too.
+        return (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U;
     }
 
     bool TypingState::heldKeyIs(uint32_t sym) const {
@@ -1127,10 +1144,7 @@ namespace ngosen {
                 host_->resetPanel();
                 if (bambooEngine_) {
                     EngineCommitPreedit(bambooEngine_.handle());
-                    ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
-                    if (pulled && (*pulled.get() != 0))
-                        commit(pulled.get());
-                    ResetEngine(bambooEngine_.handle());
+                    commitPulledText();
                 }
                 host_->refreshPanel();
                 host_->refreshPreedit();
@@ -1146,6 +1160,27 @@ namespace ngosen {
                 break;
             }
         }
+    }
+
+    void TypingState::commitBufferForEnter() {
+        if (mode() != ngosen::Mode::Preedit) {
+            commitBuffer();
+            return;
+        }
+        host_->resetPanel();
+        if (bambooEngine_) {
+            EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, 0);
+            commitPulledText();
+        }
+        host_->refreshPanel();
+        host_->refreshPreedit();
+    }
+
+    void TypingState::commitPulledText() {
+        ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
+        if (pulled && (*pulled.get() != 0))
+            commit(pulled.get());
+        ResetEngine(bambooEngine_.handle());
     }
 
     void TypingState::clearAllBuffers() {

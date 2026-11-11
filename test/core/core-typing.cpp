@@ -392,12 +392,13 @@ namespace {
         press(state, static_cast<uint32_t>('e'));
     }
 
+    // On wlroots: Chromium on KDE starts each focus with backspaces, which already wait in the first word.
     void testMessengerFirstWordWaitsAfterSurroundingDelete() {
         realMode = ngosen::Mode::Sen;
         {
             FakeLoop            loop;
             FakeResources       resources;
-            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "chromium"));
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland_v2", true, "chromium"));
             FakeHost*           host  = owned.get();
             ngosen::TypingState state(&resources, std::move(owned));
             typeInMessengerComposer(state, *host, loop, "", "tie");
@@ -410,7 +411,7 @@ namespace {
         {
             FakeLoop            loop;
             FakeResources       resources;
-            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "chromium"));
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland_v2", true, "chromium"));
             FakeHost*           host  = owned.get();
             ngosen::TypingState state(&resources, std::move(owned));
             typeInMessengerComposer(state, *host, loop, "chào ", "tie");
@@ -669,6 +670,35 @@ namespace {
         check(forwarded == "Return down;Return up;", "macro before Enter: preedit sends the Enter after it", forwarded);
     }
 
+    // A shell that sends Enter to the app itself commits the word first, and it must come out as Enter
+    // would leave it: retoned, with its macro expanded or as English typed.
+    void testCommitBufferForEnter() {
+        const std::vector<std::pair<std::string, std::string>> cases = {
+            {"mootxj", "một"},
+            {"dc", "được"},
+            {"tieengs", "tiếng"},
+            {"parts", "parts"},
+        };
+        for (const auto& [typed, want] : cases) {
+            realMode = ngosen::Mode::Preedit;
+            FakeLoop      loop;
+            FakeResources resources;
+            resources.setMacros({{"dc", "được"}});
+            // A field the core would otherwise hold Enter back for and forward it after the commit.
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            for (char c : typed)
+                press(state, static_cast<uint32_t>(c));
+            state.commitBufferForEnter();
+            const bool taken = press(state, ngosen::key::Return);
+            loop.pump(100);
+            check(join(host->commits()) == "['" + want + "']", "commit for Enter: " + typed, join(host->commits()));
+            check(!taken && host->forwarded().empty(), "commit for Enter leaves the Enter to the shell: " + typed,
+                  std::to_string(taken) + " " + std::to_string(host->forwarded().size()));
+        }
+    }
+
     // An Enter typed while a replacement waits for the app's report reaches the app as a key, not as
     // a carriage return inside the commit, which Google Docs ignores.
     void testEnterDuringReplacement() {
@@ -837,6 +867,126 @@ namespace {
                 loop.pump(1);
             const auto ms = static_cast<int>((ngosen::monotonicUs() - start) / 1000);
             check(app->text() == "tiê" && ms < 90, "quick field switches: no wait for a redraw (" + frontend + ")", app->text() + ", " + std::to_string(ms) + " ms");
+        }
+    }
+
+    // Lark Sheets in a browser keeps its own text and takes only key presses: a deletion through the
+    // surrounding text changes the copy the browser reports but not what the user sees.
+    void testPageKeepsOwnText() {
+        const Field                 brave = makeField("ibus", true, "brave-browser.desktop");
+        const std::string           typed = "tieengs vieetj ";
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        ngosen::test::AppQuirks     quirks;
+        quirks.keepsOwnText = true;
+        FakeResources resources;
+        const auto    sheet = ngosen::test::typeInAppTraced(resources, brave, quirks, keys, std::vector<int>(keys.size(), 100));
+        check(sheet.text == "tiếng việt ", "page with its own text: delete with backspaces", sheet.text);
+        {
+            // Its copy never shows the deletion, so waiting for the copy would only hold the word back.
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, brave, quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("tieengs")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(50);
+            check(app->text() == "tiếng", "page with its own text: no wait for its copy", app->text());
+        }
+
+        // A page that shows our backspaces in its report keeps the faster deletion through the text.
+        const auto plain = ngosen::test::typeInAppTraced(resources, brave, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 100));
+        check(plain.text == "tiếng việt " && plain.sent.surroundingDeletes > 0, "plain page: back to the surrounding text",
+              plain.text + ", " + std::to_string(plain.sent.surroundingDeletes) + " surrounding deletions");
+
+        // KDE relays Chromium through text-input, with the app name KWin gives fcitx5.
+        const Field kdeChromium = makeField("wayland", true, "chromium");
+        const auto  kdeSheet    = ngosen::test::typeInAppTraced(resources, kdeChromium, quirks, keys, std::vector<int>(keys.size(), 100));
+        check(kdeSheet.text == "tiếng việt ", "page with its own text on KDE: delete with backspaces", kdeSheet.text);
+        const auto kdePlain = ngosen::test::typeInAppTraced(resources, kdeChromium, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 100));
+        check(kdePlain.text == "tiếng việt " && kdePlain.sent.surroundingDeletes > 0, "plain page on KDE: back to the surrounding text",
+              kdePlain.text + ", " + std::to_string(kdePlain.sent.surroundingDeletes) + " surrounding deletions");
+
+        {
+            // The Enter was released while the replacement waited, so it goes out with no wait for a release.
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            ngosen::test::AppQuirks enterQuirks = quirks;
+            enterQuirks.showsEnter              = true;
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, brave, enterQuirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("laf")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(c == 'f' ? 50 : 100);
+            }
+            app->type(ngosen::key::Return);
+            loop.pump(120);
+            check(app->text() == "là\n", "page with its own text: Enter released in the wait goes out", app->text());
+        }
+
+        // A click into the sheet from a plain field of the same page looks like a focus bounce, so what the
+        // plain field showed must not carry over.
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, brave, ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&] {
+            for (const uint32_t key : keys) {
+                app->type(key);
+                loop.pump(100);
+            }
+        };
+        typeText();
+        loop.pump(1000);
+        app->switchToOwnTextField(5);
+        loop.pump(1000);
+        typeText();
+        loop.pump(500);
+        check(app->text() == "tiếng việt ", "click from a plain field into the sheet: delete with backspaces", app->text());
+    }
+
+    // Lark Sheets bounces focus when an arrow key moves to the next cell. That is not a redraw, so commits
+    // need not wait for one; it still sends deletions as backspaces, which the sheet needs over IBus.
+    void testCellMovesNoRedrawWait() {
+        Field chromiumX11            = makeField("dbus", false);
+        chromiumX11.keyEventOrderFix = true;
+        for (const Field& field : {chromiumX11, makeField("ibus", true)}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            const auto typeWord = [&](const std::string& word) {
+                for (const char c : word) {
+                    app->type(static_cast<uint32_t>(c));
+                    loop.pump(30);
+                }
+            };
+            for (int cell = 0; cell < 3; ++cell) {
+                typeWord("lam");
+                app->type(ngosen::key::Down);
+                loop.pump(5);
+                app->leaveFocus(1);
+                loop.pump(300);
+            }
+            typeWord("laf");
+            loop.pump(300);
+            const std::string label = "cell moves (" + field.frontend + "): ";
+            check(app->slowestCommitMs() < 60, label + "no wait for a redraw", std::to_string(app->slowestCommitMs()) + " ms");
+            check(app->sent().surroundingDeletes == 0, label + "deletes with backspaces", std::to_string(app->sent().surroundingDeletes) + " surrounding deletions");
         }
     }
 
@@ -1624,9 +1774,12 @@ namespace {
     void testTypingIntoSuggestion() {
         for (const bool selected : {true, false}) {
             realMode = ngosen::Mode::Sen;
-            FakeLoop            loop;
-            FakeResources       resources;
-            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, selected ? "microsoft-edge" : "firefox"));
+            FakeLoop      loop;
+            FakeResources resources;
+            // Chromium flags its address bar as a URL field; Firefox does not.
+            Field field               = makeField("wayland", true, selected ? "microsoft-edge" : "firefox");
+            field.url                 = selected;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
             FakeHost*           host  = owned.get();
             ngosen::TypingState state(&resources, std::move(owned));
 
@@ -3834,6 +3987,8 @@ int main() {
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();
+    testCellMovesNoRedrawWait();
+    testPageKeepsOwnText();
     testMacroKeepsSpace();
     testMacroBeforeEnter();
     testEnterDuringReplacement();
@@ -3841,6 +3996,7 @@ int main() {
     testLockWordPreedit();
     testRetoneAtWordEndInBothModes();
     testAutoMarkAtWordEndInBothModes();
+    testCommitBufferForEnter();
     testRestoreBeforeDigitWhileTyping();
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();

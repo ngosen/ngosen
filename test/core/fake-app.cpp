@@ -215,7 +215,7 @@ namespace ngosen::test {
     }
 
     std::string FakeApp::text() const {
-        return encode(text_);
+        return encode(quirks_.keepsOwnText ? ownText_ : text_);
     }
 
     void FakeApp::commitText(const std::string& text) {
@@ -445,6 +445,20 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::switchToOwnTextField(int ms) {
+        focused_ = false;
+        state_->deactivate(true);
+        later(ms, [this] {
+            text_.clear();
+            ownText_.clear();
+            cursor_ = anchor_ = shownCursor_ = shownAnchor_ = 0;
+            quirks_.keepsOwnText                            = true;
+            focused_                                        = true;
+            state_->activate(Mode::Sen, true);
+            changed();
+        });
+    }
+
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};
@@ -497,6 +511,7 @@ namespace ngosen::test {
         }
         text_.insert(cursor_, text);
         cursor_ += text.size();
+        ownText_ += text;
         if (quirks_.keepsLineBreakAfterCommit && !typed && text_.back() != U'\n') {
             text_.push_back(U'\n');
             ++cursor_;
@@ -531,6 +546,10 @@ namespace ngosen::test {
     }
 
     void FakeApp::eraseBefore(size_t count) {
+        if (quirks_.keepsOwnText) {
+            ownText_.erase(ownText_.size() - std::min(count, ownText_.size()));
+            return;
+        }
         if (anchor_ != cursor_) {
             previousText_   = text_;
             previousCursor_ = cursor_;

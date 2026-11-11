@@ -48,6 +48,21 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   định bật) (#706).
 - Icon khay kiểu trơn (V, E, mặt cười, khi tắt "Sử dụng biểu tượng trạng thái Ngó Sen") nay cao bằng ô ngó sen, trước chỉ khoảng hai phần ba. Trên GNOME cần đăng xuất rồi đăng nhập lại mới thấy (#671).
 
+## [1.9.3-1] — 11/11/2026
+
+Bảng tính Lark trên Brave/Chrome không còn mất chữ khi chuyển ô nhanh (#681) và không còn lặp chữ đầu trên GNOME Wayland và KDE Plasma Wayland (#686, #697), lệnh cài nhận ra niri (#689, #700), gói cài kéo theo thư viện SVG của Qt và libxcb-xfixes (#695), chữ Telex sai chính tả như `moot` giữ nguyên phím đã gõ (#693), và bản IBus đổi dấu, bung gõ tắt khi bấm Enter sau chữ đang gạch chân (#692).
+Tải ở [ngosen-1.9.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.9.3-1).
+
+### Sửa
+
+- Bảng tính Lark trên Brave/Chrome (X11): gõ Gõ Sen rồi chuyển ô nhanh bằng mũi tên hoặc Tab không còn mất chữ, kiểu gõ `laf` chỉ còn `l` và các ô sau trống (#681).
+- Bảng tính Lark trên Brave/Chrome (GNOME Wayland): chữ đầu tiên gõ bằng Gõ Sen trong bảng không còn bị lặp, kiểu `tieengs` ra `tieêngếng` (#686).
+- Bảng tính Lark trên Chromium/Chrome (KDE Plasma Wayland): chữ đầu tiên gõ bằng Gõ Sen trong bảng không còn bị lặp như trên GNOME (#697).
+- Lệnh cài nhận ra niri như Sway và Hyprland: thêm Ngó Sen, bật fcitx5 và in dòng để fcitx5 tự chạy khi đăng nhập (#689, #700).
+- Gõ Telex các chữ sai chính tả như `moot`, `tienr` rồi bấm cách giữ nguyên phím đã gõ, không còn ra `môt`, `tiẻn` (#693).
+- Bản IBus (ibus-ngosen): bấm Enter ngay sau chữ đang gạch chân nay ra đúng chữ như bấm dấu cách, có đổi dấu sau phụ âm cuối (`mootxj` ra "một") và bung gõ tắt; bản fcitx5 không đổi (#692).
+- Gói cài (.deb, .rpm, Arch) tự kéo theo thư viện SVG của Qt, nên cửa sổ cài đặt bản Qt hiện đủ logo và biểu tượng; gói .deb và openSUSE còn kéo theo libxcb-xfixes, nên Cứu dấu trên chữ bôi đen trong app X11 không còn tự tắt (#695).
+
 ## [1.9.2-1] — 11/11/2026
 
 Xfce nay mặc định mở cửa sổ cài đặt GTK (#670), icon khay kiểu trơn chuyển sang màu đen khi panel sáng trên GNOME 51 và deepin (#672, #673), icon Ngó Sen hiện trong swaybar (#674); tệp giấy phép từ điển thêm link bản lưu của hai trang nguồn để phục vụ việc đưa Ngó Sen vào kho Debian, nội dung từ điển giữ nguyên (#680).

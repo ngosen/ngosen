@@ -1135,8 +1135,10 @@ namespace ngosen {
     }
 
     void TypingState::commitBufferForEnter() {
-        if (mode() != ngosen::Mode::Preedit)
+        if (mode() != ngosen::Mode::Preedit) {
+            commitBuffer();
             return;
+        }
         host_->resetPanel();
         if (bambooEngine_) {
             EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, 0);

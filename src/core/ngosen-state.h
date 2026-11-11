@@ -131,7 +131,7 @@ namespace ngosen {
         void commitBuffer();
 
         /**
-         * @brief Commits an underlined word the way Enter leaves it, and does nothing outside Preedit.
+         * @brief Like commitBuffer(), but in Preedit the word is committed the way Enter leaves it.
          *
          * For a shell that lets Enter reach the app itself: the word is retoned or its macro expanded.
          */

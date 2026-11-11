@@ -1,3 +1,9 @@
+fcitx5-ngosen (1:1.9.3-1) unstable; urgency=medium
+
+  * Lark sheets in Brave/Chrome keep typed words when moving between cells fast (#681) and no longer double the first word on GNOME and KDE Plasma Wayland (#686, #697); GTK 4 apps on niri keep the first letter after a reinstall (#689); misspelt Telex keys such as moot stay as typed (#693); the IBus edition retones and expands macros on Enter (#692).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Wed, 11 Nov 2026 18:00:00 +0700
+
 fcitx5-ngosen (1:1.9.2-1) unstable; urgency=medium
 
   * The word list's license file links archived copies of its offline source pages (#680); the plain tray icon turns black on light panels in deepin and GNOME 51 (#672, #673) and shows in swaybar (#674); Xfce opens the GTK settings window by default (#670).

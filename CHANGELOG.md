@@ -14,7 +14,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Bảng tính Lark trên Brave/Chrome (X11): gõ Gõ Sen rồi chuyển ô nhanh bằng mũi tên hoặc Tab không còn mất chữ, kiểu gõ `laf` chỉ còn `l` và các ô sau trống (#681).
 - Bảng tính Lark trên Brave/Chrome (GNOME Wayland): chữ đầu tiên gõ bằng Gõ Sen trong bảng không còn bị lặp, kiểu `tieengs` ra `tieêngếng` (#686).
-- App GTK trên Sway, Hyprland và niri không còn gõ mất chữ đầu từ hoặc ra chữ không dấu sau khi chạy lại lệnh cài; niri cũng được tự thiết lập fcitx5 (#689).
+- App GTK 4 trên niri không còn mất chữ đầu mỗi từ sau khi chạy lại lệnh cài; niri cũng được tự thiết lập fcitx5 (#689).
+- Gõ Telex các chữ sai chính tả như `moot`, `tienr` rồi bấm cách giữ nguyên phím đã gõ, không còn ra `môt`, `tiẻn` (#693).
 - Bản IBus (ibus-ngosen): bấm Enter ngay sau chữ đang gạch chân nay ra đúng chữ như bấm dấu cách, có đổi dấu sau phụ âm cuối (`mootxj` ra "một") và bung gõ tắt; bản fcitx5 không đổi (#692).
 
 ## [1.9.2-1] — 11/11/2026

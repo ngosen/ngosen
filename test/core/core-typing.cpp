@@ -698,6 +698,30 @@ namespace {
         }
     }
 
+    // Ctrl+Enter sends a chat message, so the underlined word goes out as a plain Enter leaves it.
+    void testModifiedEnterInPreedit() {
+        const std::vector<std::pair<std::string, std::string>> cases = {{"mootxj", "một"}, {"dc", "được"}, {"parts", "parts"}};
+        for (const auto& [modifier, name] : {std::pair{ngosen::modifier::Ctrl, "Ctrl"}, std::pair{ngosen::modifier::Alt, "Alt"}}) {
+            for (const auto& [typed, want] : cases) {
+                realMode = ngosen::Mode::Preedit;
+                FakeLoop      loop;
+                FakeResources resources;
+                resources.setMacros({{"dc", "được"}});
+                auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+                FakeHost*           host  = owned.get();
+                ngosen::TypingState state(&resources, std::move(owned));
+                for (char c : typed)
+                    press(state, static_cast<uint32_t>(c));
+                FakeKey enter(ngosen::key::Return, false, modifier);
+                state.keyEvent(enter);
+                loop.pump(100);
+                const std::string label = std::string("Enter with ") + name + ": " + typed;
+                check(join(host->commits()) == "['" + want + "']", label, join(host->commits()));
+                check(!enter.accepted() && host->forwarded().empty(), label + " still reaches the app", std::to_string(enter.accepted()));
+            }
+        }
+    }
+
     // An Enter typed while a replacement waits for the app's report reaches the app as a key, not as
     // a carriage return inside the commit, which Google Docs ignores.
     void testEnterDuringReplacement() {
@@ -3925,6 +3949,7 @@ int main() {
     testLockWordPreedit();
     testRetoneAtWordEndInBothModes();
     testCommitBufferForEnter();
+    testModifiedEnterInPreedit();
     testRestoreBeforeDigitWhileTyping();
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();

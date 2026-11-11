@@ -97,7 +97,9 @@ namespace ngosen {
                 return;
             }
         }
-        const bool engineTook = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
+        // The engine takes Ctrl+Enter for a shortcut and keeps the keys as typed; it still ends the word here.
+        const uint32_t states     = ngosen::key::isEnter(currentSym) ? 0U : keyEvent.states();
+        const bool     engineTook = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, states) != 0U;
         if (engineTook)
             keyEvent.accept();
         if (auto pulled = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()))) {

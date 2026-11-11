@@ -217,7 +217,7 @@ namespace ngosen {
 
     bool pageMayKeepOwnText(const Field& field) {
         const std::string program = appName(field);
-        return field.frontend == "ibus" && !field.url && (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc"));
+        return (field.frontend == "ibus" || field.frontend == "wayland") && !field.url && (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc"));
     }
 
     bool hidesAddressBarFlag(const Field& field) {

@@ -2,7 +2,7 @@
 # Runs install.sh in a throwaway container: install, uninstall, then a reinstall over an fcitx5
 # that is running without the addon. Checks packages and the user's files, not typing.
 #
-#   test/install-smoke.sh [--no-recommends] x11|gnome|kde|sway|hyprland <release-dir> [<ibus-release-dir>]
+#   test/install-smoke.sh [--no-recommends] x11|gnome|kde|sway|hyprland|niri <release-dir> [<ibus-release-dir>]
 #
 # Run as root in a fresh Debian, Ubuntu or Fedora container; <release-dir> holds the packages and
 # SHA256SUMS laid out as in a release. It changes the system, so never run it on a real machine.
@@ -13,7 +13,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 [--no-recommends] x11|gnome|kde|sway|hyprland <release-dir> [<ibus-release-dir>]" >&2
+    echo "usage: $0 [--no-recommends] x11|gnome|kde|sway|hyprland|niri <release-dir> [<ibus-release-dir>]" >&2
     exit 2
 }
 
@@ -27,7 +27,7 @@ session=$1
 release_dir=$(realpath "$2")
 ibus_release_dir=${3:+$(realpath "$3")}
 case "$session" in
-    x11 | gnome | kde | sway | hyprland) ;;
+    x11 | gnome | kde | sway | hyprland | niri) ;;
     *) usage ;;
 esac
 [ "$(id -u)" -eq 0 ] || {
@@ -55,6 +55,11 @@ case "$session" in
         compositor_env=(WAYLAND_DISPLAY=wayland-1 HYPRLAND_INSTANCE_SIGNATURE=test)
         desktop_config=$home/.config/hypr/hyprland.lua
         autostart_line='hl.on("hyprland.start", function() hl.exec_cmd("fcitx5 -d") end)'
+        ;;
+    niri)
+        compositor_env=(WAYLAND_DISPLAY=wayland-1 NIRI_SOCKET=/tmp/niri.sock)
+        desktop_config=$home/.config/niri/config.kdl
+        autostart_line='spawn-at-startup "fcitx5" "-d"'
         ;;
 esac
 
@@ -118,6 +123,7 @@ as_user() {
         kde) desktop=KDE type=wayland ;;
         sway) desktop=sway:wlroots type=wayland ;;
         hyprland) desktop=Hyprland type=wayland ;;
+        niri) desktop=niri type=wayland ;;
     esac
     sudo -u "$user" -H env XDG_SESSION_TYPE="$type" XDG_CURRENT_DESKTOP="$desktop" "${compositor_env[@]}" \
         NGOSEN_RELEASE_URL="file://$work/release" NGOSEN_IBUS_RELEASE_URL="file://$work/ibus-release" ${bus:+DBUS_SESSION_BUS_ADDRESS="$bus"} \
@@ -462,6 +468,9 @@ case "$1 $2 $3" in
     "set org.freedesktop.ibus.general.hotkey triggers") printf '%s\n' "$4" >"$HOME/.stub-ibus-triggers" ;;
     "get org.gnome.desktop.input-sources mru-sources") cat "$HOME/.stub-recent-sources" 2>/dev/null || echo "@a(ss) []" ;;
     "set org.gnome.desktop.input-sources mru-sources") printf '%s\n' "$4" >"$HOME/.stub-recent-sources" ;;
+    "get org.gnome.desktop.interface gtk-im-module") cat "$HOME/.stub-gtk-im-module" 2>/dev/null || echo "''" ;;
+    "set org.gnome.desktop.interface gtk-im-module") printf "'%s'\n" "$4" >"$HOME/.stub-gtk-im-module" ;;
+    "reset org.gnome.desktop.interface gtk-im-module") rm -f "$HOME/.stub-gtk-im-module" ;;
     *) exit 1 ;;
 esac
 STUB
@@ -658,8 +667,12 @@ check_ibus_edition() {
     check "and installs nothing" is_removed ibus-ngosen
     check "and keeps the fcitx5 edition set up" test -e "$im_env"
     check "the list names the switch away from fcitx5" grep -qF "bỏ fcitx5 khỏi tài khoản này" "$install_log"
+    # As a Sway, Hyprland or niri install on the same account leaves it.
+    printf "'fcitx'\n" | as_user tee "$home/.stub-gtk-im-module" >/dev/null
+    printf 'gtk-im-module fcitx\n' | as_user tee -a "$changes" >/dev/null
     check "answering yes to the switch succeeds" ibus_install_answering y
     check "it installs the IBus edition" is_installed ibus-ngosen
+    check "it gives GTK its default module back" test ! -e "$home/.stub-gtk-im-module"
     check "it removes the fcitx5 edition" is_removed fcitx5-ngosen
     check "it removes the fcitx5 environment" test ! -e "$im_env"
     check "the user manager rereads the environment without it" last_reload without-fcitx5
@@ -866,7 +879,49 @@ check_hyprland_config_messages() {
     check "it names no file to create" refuses grep -qF "$conf" "$install_log"
 }
 
-# Sway and Hyprland: what the final message says for each config, and when to stay out of the way.
+check_niri_config_messages() {
+    as_user rm -f "$desktop_config"
+    check "install with no niri config succeeds" install_fresh
+    check "it still has the autostart line" has_autostart_line
+    check "it names no file to create" refuses grep -qF "$desktop_config" "$install_log"
+}
+
+gtk_im_module_is() { [ "$(as_user gsettings get org.gnome.desktop.interface gtk-im-module)" = "$1" ]; }
+
+# GNOME shares the key on the same account, so it is set only when empty and reset only if still ours.
+check_gtk_im_module() {
+    local saved_path=$stub_path dir=$work/compositor-stubs
+    mkdir -p "$dir"
+    cat >"$dir/gsettings" <<'STUB'
+#!/bin/bash
+case "$1 $2 $3" in
+    "get org.gnome.desktop.interface gtk-im-module") cat "$HOME/.stub-gtk-im-module" 2>/dev/null || echo "''" ;;
+    "set org.gnome.desktop.interface gtk-im-module") printf "'%s'\n" "$4" >"$HOME/.stub-gtk-im-module" ;;
+    "reset org.gnome.desktop.interface gtk-im-module") rm -f "$HOME/.stub-gtk-im-module" ;;
+    *) exit 1 ;;
+esac
+STUB
+    chmod a+rx "$dir" "$dir/gsettings"
+    stub_path=$dir:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+    as_user rm -f "$home/.stub-gtk-im-module"
+    check "install with GTK's default module succeeds" install_fresh
+    check "it points GTK at fcitx5's module" gtk_im_module_is "'fcitx'"
+    check "it says open GTK apps need a restart" grep -qF "đóng rồi mở lại để gõ qua fcitx5" "$install_log"
+    check "fcitx5 stops before that uninstall" stop_fcitx5
+    check "uninstall succeeds" uninstall_logged
+    check "uninstall gives GTK its default module back" gtk_im_module_is "''"
+    printf "'ibus'\n" | as_user tee "$home/.stub-gtk-im-module" >/dev/null
+    check "install with the user's own GTK module succeeds" install_fresh
+    check "it keeps the user's GTK module" gtk_im_module_is "'ibus'"
+    check "it does not mention GTK apps" refuses grep -qF "đóng rồi mở lại để gõ qua fcitx5" "$install_log"
+    check "fcitx5 stops before the next uninstall" stop_fcitx5
+    check "uninstall with the user's own GTK module succeeds" uninstall_logged
+    check "uninstall keeps it" gtk_im_module_is "'ibus'"
+    as_user rm -f "$home/.stub-gtk-im-module"
+    stub_path=$saved_path
+}
+
+# Sway, Hyprland and niri: what the final message says for each config, and when to stay out of the way.
 check_sway_hyprland_setup() {
     prepare_compositor_session
 
@@ -889,18 +944,21 @@ check_sway_hyprland_setup() {
     check "fcitx5 stops after that directory" stop_fcitx5
     as_user rm -rf "$home/other"
 
-    if [ "$session" = sway ]; then
-        check_sway_config_messages
-        check "install from a text console login succeeds" install_fresh XDG_SESSION_TYPE=tty XDG_CURRENT_DESKTOP=
-        check "it adds ngosen from a text console login" has_line "$profile" 'Name=ngosen'
-        check "it starts fcitx5 from a text console login" fcitx5_running
-    else
-        check_hyprland_config_messages
-    fi
+    case "$session" in
+        sway)
+            check_sway_config_messages
+            check "install from a text console login succeeds" install_fresh XDG_SESSION_TYPE=tty XDG_CURRENT_DESKTOP=
+            check "it adds ngosen from a text console login" has_line "$profile" 'Name=ngosen'
+            check "it starts fcitx5 from a text console login" fcitx5_running
+            ;;
+        hyprland) check_hyprland_config_messages ;;
+        niri) check_niri_config_messages ;;
+    esac
 
     check_no_compositor_setup
     check_next_to_other_input_methods
     check_fcitx5_that_dies
+    check_gtk_im_module
 
     as_user rm -f "$desktop_config"
     pkill -u "$user" dbus-daemon || :
@@ -928,7 +986,7 @@ check_no_compositor_setup() {
     check "install without WAYLAND_DISPLAY succeeds" install_fresh -u WAYLAND_DISPLAY
     check "it writes no variables without WAYLAND_DISPLAY" test ! -e "$compositor_env_file"
     expect_no_setup "without WAYLAND_DISPLAY"
-    check "install on labwc succeeds" install_fresh -u SWAYSOCK -u HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP=labwc:wlroots
+    check "install on labwc succeeds" install_fresh -u SWAYSOCK -u HYPRLAND_INSTANCE_SIGNATURE -u NIRI_SOCKET XDG_CURRENT_DESKTOP=labwc:wlroots
     expect_no_setup "on labwc"
     check "fcitx5 stops after labwc" stop_fcitx5
     as_user rm -f "$profile"
@@ -1223,7 +1281,7 @@ main() {
     fi
 
     if [ -n "$desktop_config" ]; then
-        echo "== Sway and Hyprland setup"
+        echo "== Sway, Hyprland and niri setup"
         check_sway_hyprland_setup
     fi
 

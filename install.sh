@@ -368,7 +368,8 @@ show_session_plan() {
         step "đặt fcitx5 làm bộ gõ cho tài khoản này"
     elif wants_sway_hyprland_setup; then
         step "thêm Ngó Sen vào danh sách bộ gõ của fcitx5 và bật fcitx5. Nếu danh sách chỉ có một bàn" \
-            "phím thì Ngó Sen thay bàn phím đó. File cấu hình của desktop được giữ nguyên."
+            "phím thì Ngó Sen thay bàn phím đó. App GTK gõ qua fcitx5 (khoá gtk-im-module của GNOME," \
+            "nếu đang để trống). File cấu hình của desktop được giữ nguyên."
     fi
 }
 
@@ -567,12 +568,12 @@ wants_kde_setup() {
     command -v kwriteconfig6 >/dev/null 2>&1 && command -v kreadconfig6 >/dev/null 2>&1
 }
 
-# Each compositor sets its own variable. XDG_CURRENT_DESKTOP comes from the display manager, so it
-# is missing when Sway starts from a text console.
+# Sway, Hyprland and niri. Each compositor sets its own variable. XDG_CURRENT_DESKTOP comes from the
+# display manager, so it is missing when Sway starts from a text console.
 wants_sway_hyprland_setup() {
     [ "$edition" = fcitx5 ] && [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ] || return 1
     [ -n "${WAYLAND_DISPLAY:-}" ] || return 1
-    [ -n "${SWAYSOCK:-}" ] || [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]
+    [ -n "${SWAYSOCK:-}" ] || [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || [ -n "${NIRI_SOCKET:-}" ]
 }
 
 # Outside GNOME nothing starts IBus by default; im-config does it on Debian and Ubuntu. Elsewhere
@@ -785,6 +786,27 @@ undo_compositor_environment() {
     [ -e "$file" ] && [ "$(cat "$file")" = "$(compositor_environment_entry)" ] || return 0
     rm -f "$file"
     reload_user_environment
+}
+
+# On these compositors GTK's text-input path sometimes never turns input on or deletes the wrong
+# letters (GTK #5638); its fcitx module talks to fcitx5 directly. GTK takes the key from the settings
+# portal, which wins over ~/.config/gtk-4.0/settings.ini. A value the user chose stays.
+set_gtk_im_module() {
+    local current
+    current=$(gsettings get org.gnome.desktop.interface gtk-im-module 2>/dev/null) || return 0
+    [ "$current" = "''" ] || return 0
+    gsettings set org.gnome.desktop.interface gtk-im-module fcitx 2>/dev/null || return 0
+    note_change "gtk-im-module fcitx"
+}
+
+# The key is shared with GNOME on the same account, where the IBus edition needs GTK's default.
+undo_gtk_im_module() {
+    local edition=fcitx5
+    made_change "gtk-im-module fcitx" || return 0
+    if [ "$(gsettings get org.gnome.desktop.interface gtk-im-module 2>/dev/null)" = "'fcitx'" ]; then
+        gsettings reset org.gnome.desktop.interface gtk-im-module 2>/dev/null || :
+    fi
+    forget_change "gtk-im-module fcitx"
 }
 
 # KWin serves Wayland apps itself; X11 apps under XWayland reach fcitx5 only through XIM.
@@ -1199,6 +1221,7 @@ setup_sway_hyprland_session() {
     say ""
     configure_fcitx5
     set_compositor_environment
+    set_gtk_im_module
     fcitx5_is_running || fcitx5 -d >/dev/null 2>&1 || :
     # fcitx5 -d returns before the daemon has had a chance to fail.
     sleep 1
@@ -1238,12 +1261,28 @@ report_sway_hyprland_session() {
     if [ -e "$(config_home)/environment.d/90-ngosen-sway-hyprland.conf" ]; then
         say "App Qt 5 và app X11 qua XWayland gõ được từ lần đăng nhập sau, nếu vào desktop từ màn hình đăng nhập."
     fi
+    if made_change "gtk-im-module fcitx"; then
+        say "App GTK (GNOME Text Editor, Nautilus…) đang mở: đóng rồi mở lại để gõ qua fcitx5."
+    fi
     say ""
     if [ -n "${SWAYSOCK:-}" ]; then
         report_sway_autostart
+    elif [ -n "${NIRI_SOCKET:-}" ]; then
+        report_niri_autostart
     else
         report_hyprland_autostart
     fi
+}
+
+report_niri_autostart() {
+    local config line='spawn-at-startup "fcitx5" "-d"'
+    config="$(config_home)/niri/config.kdl"
+    if [ -e "$config" ]; then
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, nếu chưa có thì dán dòng này vào $config:"
+    else
+        say "Để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng này vào file cấu hình niri đang dùng:"
+    fi
+    say "  $line"
 }
 
 # In the order Sway looks for its config.
@@ -1427,6 +1466,7 @@ hide_fcitx5_autostart() {
 undo_fcitx5_setup() {
     local edition=fcitx5
     undo_gnome_session
+    undo_gtk_im_module
     rm -f "$(changes_file)"
 }
 
@@ -1526,6 +1566,7 @@ setup_ibus_session() {
     local change
     say ""
     [ "$switch_fcitx5" -eq 1 ] && switch_from_fcitx5
+    undo_gtk_im_module
     use_ibus_im_config
     add_ibus_source
     [ "$switched_from_fcitx5" -eq 1 ] && make_ngosen_current
@@ -1546,6 +1587,7 @@ setup_ibus_x11_session() {
     local change
     say ""
     [ "$switch_fcitx5" -eq 1 ] && switch_from_fcitx5
+    undo_gtk_im_module
     if ! xinputrc_runs_ibus; then
         # im-config leaves alone a ~/.xinputrc it did not write, yet the -w fallback still succeeds.
         im_config_set ibus || :
@@ -1695,6 +1737,7 @@ uninstall() {
         say "Bỏ fcitx5: System Settings → Virtual Keyboard (Bàn phím ảo) → None."
     elif wants_sway_hyprland_setup; then
         undo_compositor_environment
+        undo_gtk_im_module
         say "Xong. Bỏ dòng fcitx5 -d đã dán vào file cấu hình (nếu có), rồi đăng xuất và đăng nhập lại."
     else
         say "Xong. Khởi động lại fcitx5:  fcitx5 -rd"

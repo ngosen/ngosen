@@ -41,6 +41,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thay đổi
 
+- Tên riêng có trong từ điển nhưng mở đầu bằng phụ âm ghép tiếng Việt không có, như plông, drăng, xtiêng,
+  Hrê, Brâu, nay gõ được thay vì bị trả về phím đã gõ. Từ tiếng Anh thông dụng vẫn được ưu tiên: khi phím
+  đã gõ còn là đầu một từ tiếng Anh thì vẫn hiện nguyên như gõ, nên `draw` vẫn là draw, gõ tiếp `drawng`
+  mới thành drăng, và `broom` vẫn ra broom chứ không ra brôm. Cần bật kiểm tra chính tả bằng từ điển (mặc
+  định bật) (#706).
 - Icon khay kiểu trơn (V, E, mặt cười, khi tắt "Sử dụng biểu tượng trạng thái Ngó Sen") nay cao bằng ô ngó sen, trước chỉ khoảng hai phần ba. Trên GNOME cần đăng xuất rồi đăng nhập lại mới thấy (#671).
 
 ## [1.9.2-1] — 11/11/2026

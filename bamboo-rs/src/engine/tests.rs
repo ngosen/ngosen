@@ -432,6 +432,7 @@ fn print_committed_words() {
     let path = std::env::var("NGOSEN_WORDS").unwrap();
     let method = std::env::var("NGOSEN_INPUT_METHOD").unwrap_or_else(|_| "Telex".to_string());
     let mut e = engine_with_default_settings(&method);
+    e.english_words = shipped_english_words();
     for line in std::fs::read_to_string(path).unwrap().lines() {
         let keys = line.split('\t').next().unwrap_or_default();
         e.reset();
@@ -942,6 +943,161 @@ fn test_reopened_word_keeps_its_marks_when_a_digit_is_deleted() {
     assert_eq!(e.preedit_text, "tôi2");
     e.process_key_event(KEY_BACKSPACE, 0);
     assert_eq!(e.preedit_text, "tôi");
+}
+
+/// The English list the apps load next to the dictionary.
+fn shipped_english_words() -> Arc<WordList> {
+    let words = include_str!("../../../data/english-common.txt");
+    Arc::new(words.lines().map(str::to_string).collect())
+}
+
+#[test]
+fn test_shipped_lists_keep_doubled_keys_and_names() {
+    for (keys, shown) in [
+        ("tesst", "test"),
+        ("iss", "is"),
+        ("off", "of"),
+        ("ass", "as"),
+        ("suss", "sus"),
+        ("Marry", "Mary"),
+        ("Loss", "Los"),
+        ("cross", "cross"),
+        ("dds", "đs"),
+        ("draw", "draw"),
+        ("drawng", "drăng"),
+        ("ploong", "plông"),
+        ("grats", "grát"),
+        ("slinf", "slìn"),
+        ("sreepoocs", "srêpốc"),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        e.english_words = shipped_english_words();
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{shown} "), "keys {keys}");
+    }
+}
+
+#[test]
+fn test_english_keys_keep_a_doubled_tone_key_after_a_name() {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, "grass");
+    assert_eq!(e.preedit_text, "grass");
+    for word in ["jussive", "justs"] {
+        let mut e = engine_with_english(&[word]);
+        type_keys(&mut e, word);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{word} "));
+    }
+}
+
+#[test]
+fn test_backspace_into_a_name_keeps_what_the_app_shows() {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, "grats");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "grá");
+    type_keys(&mut e, "t");
+    assert_eq!(e.preedit_text, "grát");
+}
+
+#[test]
+fn test_handle_keys_do_not_end_a_name() {
+    for (keys, end) in [("croo", '@'), ("croo", '_')] {
+        let mut e = engine_with_default_settings("Telex");
+        e.english_words = shipped_english_words();
+        type_keys(&mut e, keys);
+        e.process_key_event(end as u32, 0);
+        assert_eq!(e.commit_text, format!("{keys}{end}"));
+    }
+}
+
+#[test]
+fn test_dictionary_names_need_an_english_list() {
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "draw");
+    assert_eq!(e.preedit_text, "draw");
+    e.reset();
+    type_keys(&mut e, "broom");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "broom ");
+}
+
+#[test]
+fn test_enter_keeps_english_keys_that_spell_no_name() {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, "gras");
+    e.process_key_event(KEY_RETURN, 0);
+    assert_eq!(e.commit_text, "gras");
+}
+
+#[test]
+fn test_z_still_removes_the_tone_of_a_name() {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, "grasz");
+    assert_eq!(e.preedit_text, "gra");
+}
+
+#[test]
+fn test_dictionary_names_need_spell_checking() {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    e.spell_check_with_dicts = false;
+    type_keys(&mut e, "ploo");
+    assert_eq!(e.preedit_text, "ploo");
+    type_keys(&mut e, "ng");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "ploong ");
+}
+
+#[test]
+fn test_dictionary_prefix_keeps_typed_marks() {
+    let dictionary: Dictionary = ["plông", "nêu"].into_iter().map(String::from).collect();
+    assert!(dictionary.starts_word("plo"));
+    assert!(dictionary.starts_word("plô"));
+    assert!(!dictionary.starts_word("plơ"));
+    assert!(dictionary.starts_word("ne"));
+    assert!(!dictionary.starts_word("neư"));
+    let dictionary: Dictionary = ["grát", "crông"].into_iter().map(String::from).collect();
+    assert!(dictionary.starts_word("grat"));
+    assert!(dictionary.starts_word("grá"));
+    assert!(!dictionary.starts_word("grà"));
+    assert!(!dictionary.starts_word("cró"));
+}
+
+#[test]
+fn test_dictionary_prefix_waits_for_english_keys_to_end() {
+    let mut e = engine_with_english(&["draw", "drawn"]);
+    type_keys(&mut e, "draw");
+    assert_eq!(e.preedit_text, "draw");
+    type_keys(&mut e, "n");
+    assert_eq!(e.preedit_text, "drawn");
+    type_keys(&mut e, "g");
+    assert_eq!(e.preedit_text, "drăng");
+    e.reset();
+    type_keys(&mut e, "ploo");
+    assert_eq!(e.preedit_text, "plô");
+}
+
+#[test]
+fn test_name_ends_as_composed_when_keys_only_start_english() {
+    let mut e = engine_with_english(&["canoodle", "draw"]);
+    type_keys(&mut e, "canoo");
+    assert_eq!(e.preedit_text, "canoo");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "canô ");
+    e.reset();
+    type_keys(&mut e, "canoo");
+    e.process_key_event(KEY_RETURN, 0);
+    assert_eq!(e.commit_text, "canô");
+    e.reset();
+    type_keys(&mut e, "draw");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "draw ");
 }
 
 fn engine_with_english(words: &[&str]) -> BambooEngine {

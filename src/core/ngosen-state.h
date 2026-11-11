@@ -131,7 +131,7 @@ namespace ngosen {
         void commitBuffer();
 
         /**
-         * @brief Commits the current buffer the way Enter would, without taking the Enter.
+         * @brief Like commitBuffer(), but an underlined word is committed the way Enter leaves it.
          *
          * For a shell that lets Enter reach the app itself: the word is retoned or its macro expanded.
          */
@@ -492,6 +492,7 @@ namespace ngosen {
 
         // Enter after a word the engine changes at its end, such as a macro, reaches the app once the new text is in the field.
         bool            finishWordBeforeEnter(ngosen::KeyPress& keyEvent);
+        void            commitPreedit(bool asEnter);
         void            sendEnterAfterReplacement();
         bool            enter_after_replacement_ = false;
         ngosen::EditKey enter_after_key_         = ngosen::EditKey::Return;

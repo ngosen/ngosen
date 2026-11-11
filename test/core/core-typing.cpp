@@ -682,15 +682,18 @@ namespace {
             FakeLoop      loop;
             FakeResources resources;
             resources.setMacros({{"dc", "được"}});
-            auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", false));
+            // A field the core would otherwise hold Enter back for and forward it after the commit.
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
             FakeHost*           host  = owned.get();
             ngosen::TypingState state(&resources, std::move(owned));
             for (char c : typed)
                 press(state, static_cast<uint32_t>(c));
             state.commitBufferForEnter();
+            const bool taken = press(state, ngosen::key::Return);
             loop.pump(100);
             check(join(host->commits()) == "['" + want + "']", "commit for Enter: " + typed, join(host->commits()));
-            check(host->forwarded().empty(), "commit for Enter leaves the Enter to the shell: " + typed, std::to_string(host->forwarded().size()));
+            check(!taken && host->forwarded().empty(), "commit for Enter leaves the Enter to the shell: " + typed,
+                  std::to_string(taken) + " " + std::to_string(host->forwarded().size()));
         }
     }
 

@@ -1113,16 +1113,7 @@ namespace ngosen {
     void TypingState::commitBuffer() {
         switch (mode()) {
             case ngosen::Mode::Preedit: {
-                host_->resetPanel();
-                if (bambooEngine_) {
-                    EngineCommitPreedit(bambooEngine_.handle());
-                    ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
-                    if (pulled && (*pulled.get() != 0))
-                        commit(pulled.get());
-                    ResetEngine(bambooEngine_.handle());
-                }
-                host_->refreshPanel();
-                host_->refreshPreedit();
+                commitPreedit(false);
                 break;
             }
             case ngosen::Mode::Sen: {
@@ -1138,16 +1129,27 @@ namespace ngosen {
     }
 
     void TypingState::commitBufferForEnter() {
-        if (mode() != ngosen::Mode::Preedit || !bambooEngine_) {
+        if (mode() == ngosen::Mode::Preedit)
+            commitPreedit(true);
+        else
             commitBuffer();
-            return;
-        }
+    }
+
+    void TypingState::commitPreedit(bool asEnter) {
         host_->resetPanel();
-        EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, 0);
-        ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
-        if (pulled && (*pulled.get() != 0))
-            commit(pulled.get());
-        ResetEngine(bambooEngine_.handle());
+        if (bambooEngine_) {
+            if (asEnter)
+                EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, 0);
+            else
+                EngineCommitPreedit(bambooEngine_.handle());
+            ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
+            if (pulled && (*pulled.get() != 0)) {
+                if (asEnter)
+                    NGOSEN_INFO("Commit: " + logged(pulled.get()));
+                commit(pulled.get());
+            }
+            ResetEngine(bambooEngine_.handle());
+        }
         host_->refreshPanel();
         host_->refreshPreedit();
     }

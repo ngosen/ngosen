@@ -152,29 +152,28 @@ pub fn in_key_list(list: &[char], key: char) -> bool {
     list.contains(&key)
 }
 
-/// Key values outside Unicode (fcitx keysyms) match no character class.
 /// `raw` with the key that marks the rime typed after its vowel; Telex marks the last vowel that
 /// changes, so `uow` gives ươ and `ee` gives ê.
-fn keys_with_mark(raw: &str, onset_len: usize, bare: &str, marked: &str) -> Vec<char> {
+fn keys_with_mark(raw: &str, onset_len: usize, bare: &str, marked: &str) -> Option<Vec<char>> {
     let (at, mark) = bare
         .chars()
         .zip(marked.chars())
         .enumerate()
         .filter(|(_, (b, m))| b != m)
         .last()
-        .map(|(i, (b, m))| (i, if "ơư".contains(m) { 'w' } else { b }))
-        .expect("a marked rime differs from its bare form");
+        .map(|(i, (b, m))| (i, if "ơư".contains(m) { 'w' } else { b }))?;
     let mut keys: Vec<char> = raw.chars().collect();
     let after = onset_len + at;
-    let mark = if keys[after].is_uppercase() {
+    let mark = if keys.get(after)?.is_uppercase() {
         mark.to_ascii_uppercase()
     } else {
         mark
     };
     keys.insert(after + 1, mark);
-    keys
+    Some(keys)
 }
 
+/// Key values outside Unicode (fcitx keysyms) match no character class.
 fn key_char(key_val: u32) -> char {
     char::from_u32(key_val).unwrap_or(char::REPLACEMENT_CHARACTER)
 }
@@ -588,7 +587,7 @@ impl BambooEngine {
         if !rest.starts_with(&nucleus) || rest.chars().filter(is_tone).count() != 1 {
             return None;
         }
-        let word = self.typed_alone(keys_with_mark(raw, onset_keys.len(), bare, marked));
+        let word = self.typed_alone(keys_with_mark(raw, onset_keys.len(), bare, marked)?);
         let text = word.get_processed_str(OutputOptions::NONE);
         let lower = text.to_lowercase();
         (without_tones(&lower).0 == format!("{onset}{marked}") && self.dictionary.contains(&lower))

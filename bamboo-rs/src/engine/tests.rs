@@ -646,6 +646,21 @@ fn test_retone_lookalikes_are_listed_once_in_order() {
 }
 
 #[test]
+fn test_mark_lookalikes_are_listed_once_in_order() {
+    let words: Vec<&str> = ENGLISH_MARK_LOOKALIKES.lines().collect();
+    assert!(words.is_sorted_by(|a, b| a < b), "sorted, no duplicates");
+    for word in words {
+        assert_eq!(committed_with("Telex", word, KEY_SPACE), format!("{word} "));
+        let mut e = engine_with_default_settings("Telex");
+        type_keys(&mut e, word);
+        assert!(
+            e.auto_marked_word_of(word).is_some(),
+            "{word} would not get marks anyway"
+        );
+    }
+}
+
+#[test]
 fn test_to_upper() {
     let mut e = new_test_engine(&[], false);
     assert_eq!(e.to_upper('b'), 'b');

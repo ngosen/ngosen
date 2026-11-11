@@ -357,8 +357,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.9: on GNOME, typing modes and per-app settings now work with the Ngó Sen extension off. See also Check my machine, Cứu chữ, Cứu dấu and typing tips."
-msgstr "Version 1.9: trên GNOME, chế độ gõ và cài đặt riêng theo từng app nay chạy được khi tắt extension Ngó Sen. Xem thêm trang Kiểm tra máy, Cứu chữ, Cứu dấu và mẹo gõ."
+msgid "Version 1.10: Vim mode for each app, words starting with / typed as is, and Telex words with a forgotten circumflex or horn fixed. See What's new for more."
+msgstr "Version 1.10: Vim mode cho từng app, từ bắt đầu bằng / giữ nguyên, và chữ Telex quên mũ hoặc móc vẫn ra đúng. Xem thêm ở trang Có gì mới."
 
 #: src/ngosen-engine.cpp
 msgid "Show"
@@ -1725,6 +1725,34 @@ msgstr "Không đổi được"
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
 msgstr "Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Commands and paths"
+msgstr "Lệnh và đường dẫn"
+
+#: settings-gui/core/whats_new_content.py
+msgid "A word that starts with / at the start of a line or after a space stays as typed, for chat commands and paths in a terminal."
+msgstr "Từ bắt đầu bằng / ở đầu dòng hoặc ngay sau dấu cách được giữ nguyên như gõ, để gõ lệnh chat và đường dẫn trong terminal."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Forgotten circumflex or horn"
+msgstr "Quên mũ hoặc móc"
+
+#: settings-gui/core/whats_new_content.py
+msgid "In Telex, a word typed without its circumflex or horn still comes out right where the vowel always takes one."
+msgstr "Gõ Telex quên mũ hoặc móc ở những vần luôn có chúng vẫn ra chữ đúng."
+
+#: settings-gui/core/whats_new_content.py
+msgid "More place and people names"
+msgstr "Thêm tên địa danh và dân tộc"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Names such as plông, Mnông and Đakrông now type instead of turning back into the keys you typed."
+msgstr "Các tên như plông, Mnông, Đakrông nay gõ ra đúng chữ, không còn bị trả về phím đã gõ."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Turn on Vim mode for an app from the ` menu: Vim commands after Esc go through as typed, and the first word after entering insert mode gets its marks. For nvim, Claude Code and the Vim plugins of Obsidian and JetBrains IDEs."
+msgstr "Bật Vim mode cho từng app trong menu `: sau Esc, lệnh Vim đi qua nguyên vẹn, và từ đầu tiên gõ sau khi vào insert mode có dấu ngay. Dùng cho nvim, Claude Code và plugin Vim của Obsidian, JetBrains IDE."
 
 #: settings-gui/core/whats_new_content.py
 msgid "GNOME without the extension"

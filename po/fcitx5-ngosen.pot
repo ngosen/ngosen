@@ -344,7 +344,7 @@ msgid "What's new in Ngó Sen?"
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.9: on GNOME, typing modes and per-app settings now work with the Ngó Sen extension off. See also Check my machine, Cứu chữ, Cứu dấu and typing tips."
+msgid "Version 1.10: Vim mode for each app, words starting with / typed as is, and Telex words with a forgotten circumflex or horn fixed. See What's new for more."
 msgstr ""
 
 #: src/ngosen-engine.cpp
@@ -1612,6 +1612,34 @@ msgstr ""
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Commands and paths"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "A word that starts with / at the start of a line or after a space stays as typed, for chat commands and paths in a terminal."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Forgotten circumflex or horn"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "In Telex, a word typed without its circumflex or horn still comes out right where the vowel always takes one."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "More place and people names"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Names such as plông, Mnông and Đakrông now type instead of turning back into the keys you typed."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Turn on Vim mode for an app from the ` menu: Vim commands after Esc go through as typed, and the first word after entering insert mode gets its marks. For nvim, Claude Code and the Vim plugins of Obsidian and JetBrains IDEs."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py

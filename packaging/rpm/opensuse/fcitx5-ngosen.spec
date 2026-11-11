@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.9.3
+Version:        1.10.0
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -100,6 +100,9 @@ else
 fi
 
 %changelog
+* Thu Nov 12 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.10.0-1
+- Vim mode for each app in the mode menu (#302, #587); words starting with / stay as typed (#312); Telex words with a forgotten circumflex or horn come out right (#696); names such as plông and Đakrông type (#706, #708); typing pauses at hidden terminal password prompts (#106, #645); the tray icon can be larger (#675, #671); Check my machine shows the version and whether the repo is on (#657); the installer adds the APT repo (#654) and the repo carries wl-ngosen (#702, #703); Lark sheets in Chrome keep the first word after moving to a cell (#704); BackSpace after an extra d keeps the stroke of đ (#712).
+
 * Wed Nov 11 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.9.3-1
 - Lark sheets in Brave/Chrome keep typed words when moving between cells fast (#681) and no longer double the first word on GNOME and KDE Plasma Wayland (#686, #697); the installer recognizes niri (#689, #700); packages pull in the Qt SVG plugin and libxcb-xfixes (#695); misspelt Telex keys such as moot stay as typed (#693); the IBus edition retones and expands macros on Enter (#692).
 

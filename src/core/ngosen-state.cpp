@@ -1150,10 +1150,8 @@ namespace ngosen {
 
     void TypingState::commitPulledText() {
         ngosen::UniqueCPtr<char> pulled(EnginePullCommit(bambooEngine_.handle()));
-        if (pulled && (*pulled.get() != 0)) {
-            NGOSEN_INFO("Commit: " + logged(pulled.get()));
+        if (pulled && (*pulled.get() != 0))
             commit(pulled.get());
-        }
         ResetEngine(bambooEngine_.handle());
     }
 

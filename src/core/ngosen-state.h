@@ -490,8 +490,7 @@ namespace ngosen {
         std::optional<KeyEntry>        held_field_key_; ///< held in place of held_key_
         bool                           heldKeyIs(uint32_t sym) const;
 
-        // Commits what the engine gave back for the word and empties the engine.
-        void commitPulledText();
+        void                           commitPulledText();
 
         // Enter after a word the engine changes at its end, such as a macro, reaches the app once the new text is in the field.
         bool            finishWordBeforeEnter(ngosen::KeyPress& keyEvent);

@@ -677,6 +677,10 @@ impl BambooEngine {
     fn drop_last_key(&mut self, as_typed: bool) {
         let mut keys = self.raw_text();
         keys.pop();
+        self.retype_keys(&keys, as_typed);
+    }
+
+    fn retype_keys(&mut self, keys: &str, as_typed: bool) {
         self.preeditor.reset();
         for key in keys.chars() {
             if as_typed {
@@ -687,6 +691,18 @@ impl BambooEngine {
             let mode = self.get_bamboo_input_mode();
             self.preeditor.process_key(key, mode);
         }
+    }
+
+    /// Reopened text has its plain letters for keys, so replaying them drops the marks of `tôi`
+    /// and composes the `tooi` of `tooi2`.
+    fn keys_compose_word(&self) -> bool {
+        let keys = self.raw_text();
+        let active = self.get_processed_string(OutputOptions::NONE);
+        self.get_processed_string(OutputOptions::RAW) == keys
+            && self
+                .typed_alone(keys.chars())
+                .get_processed_str(OutputOptions::NONE)
+                == active
     }
 
     fn backspace(&mut self) -> bool {
@@ -707,7 +723,19 @@ impl BambooEngine {
         if english {
             self.drop_last_key(false);
         } else {
+            let mut keys = self.raw_text();
+            keys.pop();
+            let composed = (shown_as_typed && self.keys_compose_word()).then(|| {
+                self.typed_alone(keys.chars())
+                    .get_processed_str(OutputOptions::NONE)
+            });
             self.remove_last_char();
+            // Keys shown as typed may have undone a mark the app never showed: the last d of
+            // `dduowjcd` takes the stroke off đ, which removing the d alone leaves undone.
+            let active = self.get_processed_string(OutputOptions::NONE);
+            if composed.is_some_and(|c| c != active) && self.get_preedit_string() != keys {
+                self.retype_keys(&keys, false);
+            }
         }
         self.keep_marks_until_next_key = !shown_as_typed;
         self.keep_keys_until_next_key = english;

@@ -28,8 +28,9 @@ fi
 # A package under a name this script does not know would be signed away silently.
 for pkg in "$src"/*.pkg.tar.zst; do
     [ -e "$pkg" ] || continue
-    case "$pkg" in
-        "$fcitx5" | "$ibus" | "$wl") ;;
+    # By name, so a trailing slash on $src cannot make the paths differ.
+    case "$(basename "$pkg")" in
+        "$(basename "$fcitx5")" | "$(basename "${ibus:-/}")" | "$(basename "${wl:-/}")") ;;
         *)
             echo "$(basename "$pkg") is not in the repository" >&2
             exit 1

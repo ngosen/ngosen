@@ -25,7 +25,7 @@ fi
 
 createrepo_c --quiet "$out"
 # A package under a name this script does not know would be signed away silently.
-primary=$(find "$out/repodata" -name '*primary.xml*')
+primary=$(find "$out/repodata" -name '*primary.xml.*' ! -name '*.zck' | head -n1)
 case "$primary" in
     *.gz) read_primary="zcat" ;;
     *.zst) read_primary="zstdcat" ;;

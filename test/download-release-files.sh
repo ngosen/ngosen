@@ -61,7 +61,7 @@ release() {
     (cd "$FAKE_RELEASES/$repo/$tag" && sha256sum -- * >SHA256SUMS)
 }
 
-# expect <name> <pass|fail> <files wanted in the output, or -> <args>...
+# expect <name> <pass|fail> <files wanted, or the message a failure must print> <args>...
 expect() {
     local name=$1 want=$2 files=$3 out got=pass
     shift 3
@@ -73,9 +73,16 @@ expect() {
         failures=$((failures + 1))
         return
     fi
-    [ "$want" = pass ] || return 0
+    if [ "$want" = fail ]; then
+        if ! grep -qF -- "$files" "$work/log-$name"; then
+            echo "FAIL: $name: failed without saying '$files':"
+            sed 's/^/    /' "$work/log-$name"
+            failures=$((failures + 1))
+        fi
+        return 0
+    fi
     local listed
-    listed=$(find "$out" -mindepth 1 -printf '%f ' | sort)
+    listed=$(find "$out" -mindepth 1 -printf '%f\n' | sort | tr '\n' ' ')
     if [ "$listed" != "$files" ]; then
         echo "FAIL: $name: downloaded '$listed', expected '$files'"
         failures=$((failures + 1))
@@ -83,21 +90,21 @@ expect() {
 }
 
 mkdir -p "$FAKE_RELEASES/ngosen/none"
-expect fcitx5-without-release fail - ngosen/none 2 '*.deb'
+expect fcitx5-without-release fail 'no published release' ngosen/none 2 '*.deb'
 expect wl-without-release pass "" --new-edition ngosen/none 2 '*.deb'
 
 release ngosen/ibus ibus-ngosen-1.0.0-1 ibus-ngosen_1.0.0-1_noble_amd64.deb
 expect ibus-without-opensuse pass "" ngosen/ibus 2 '*.opensuse-tumbleweed.x86_64.rpm'
 
 release ngosen/wl-bad wl-ngosen-0.1.0-1 wl-ngosen-0.1.0.tar.gz
-expect wl-without-deb fail - --new-edition ngosen/wl-bad 2 '*.deb'
+expect wl-without-deb fail 'has no file matching' --new-edition ngosen/wl-bad 2 '*.deb'
 
 release ngosen/wl wl-ngosen-0.1.0-1 wl-ngosen_0.1.0-1_noble_amd64.deb wl-ngosen-0.1.0.tar.gz
 expect wl-with-deb pass "wl-ngosen_0.1.0-1_noble_amd64.deb " --new-edition ngosen/wl 2 '*.deb'
 
 release ngosen/tampered fcitx5-ngosen-1.0.0 fcitx5-ngosen_1.0.0-1_noble_amd64.deb
 echo replaced >"$FAKE_RELEASES/ngosen/tampered/fcitx5-ngosen-1.0.0/fcitx5-ngosen_1.0.0-1_noble_amd64.deb"
-expect tampered-file fail - ngosen/tampered 2 '*.deb'
+expect tampered-file fail 'FAILED' ngosen/tampered 2 '*.deb'
 
 [ "$failures" -eq 0 ] || exit 1
 echo "all checks passed"

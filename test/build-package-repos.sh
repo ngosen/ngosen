@@ -79,7 +79,7 @@ offered() {
         arch) bsdtar -tf "$1/x86_64/ngosen.db.tar.gz" | sed -n 's|^\(.*\)-[^-]*-[^-]*/$|\1|p' | sort -u ;;
         zypper)
             local primary
-            primary=$(find "$1/repodata" -name '*primary.xml*')
+            primary=$(find "$1/repodata" -name '*primary.xml.*' ! -name '*.zck' | head -n1)
             case "$primary" in
                 *.gz) zcat "$primary" ;;
                 *.zst) zstdcat "$primary" ;;
@@ -113,8 +113,10 @@ check three-editions fcitx5-ngosen ibus-ngosen wl-ngosen
 
 # A package the script has no name for must stop the build rather than go missing.
 packages "$work/unknown-src" fcitx5-ngosen ibus-ngosen other-ngosen
-if build "$work/unknown-src" "$work/unknown-out" >"$work/unknown.log" 2>&1; then
-    echo "FAIL: unknown-package: the build left other-ngosen out without failing"
+if build "$work/unknown-src" "$work/unknown-out" >"$work/unknown.log" 2>&1 ||
+    ! grep -q 'other-ngosen.* is not in the repository' "$work/unknown.log"; then
+    echo "FAIL: unknown-package: the build did not stop at other-ngosen:"
+    sed 's/^/    /' "$work/unknown.log"
     failures=$((failures + 1))
 fi
 

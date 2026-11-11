@@ -137,7 +137,7 @@ khi đang gõ tiếng Việt.
   cũng gõ được.
 - **Xfce, Cinnamon, MATE** (X11, Debian và Ubuntu): dùng im-config đặt fcitx5 làm bộ gõ.
 - **Sway, Hyprland, niri:** chạy lệnh từ terminal trong phiên desktop để thêm Ngó Sen và bật fcitx5, không
-  cần đăng xuất. App GTK được đặt gõ qua fcitx5 (khoá `gtk-im-module` của GNOME, nếu khoá đang để trống).
+  cần đăng xuất. App GTK 4 được đặt gõ qua fcitx5 (khoá `gtk-im-module` của GNOME, nếu khoá đang để trống).
   Lệnh không sửa file config của desktop; để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng lệnh được in ra.
 
 Desktop khác: cài xong thì đăng xuất rồi đăng nhập lại.

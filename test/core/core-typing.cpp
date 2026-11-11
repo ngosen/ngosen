@@ -989,6 +989,31 @@ namespace {
         }
     }
 
+    // Long after the letter, an empty field is a click into another one: the next d starts a new word.
+    void testLateEmptyFieldStillClick() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true, "google-chrome"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("là", 2);
+        state.surroundingUpdated();
+        press(state, ngosen::key::Down);
+        loop.pump(60);
+        press(state, static_cast<uint32_t>('d'));
+        host->setSurrounding("d", 1);
+        state.surroundingUpdated();
+        loop.pump(200);
+        host->setSurrounding("", 0);
+        state.surroundingUpdated();
+        loop.pump(50);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(200);
+        check(host->commits().empty(), "empty field long after the first letter: still a click", join(host->commits()));
+    }
+
     // After a cell move a sheet can report the new cell empty only after the first letter typed there,
     // before that letter shows: not a click, the letter still starts the word.
     void testLateEmptyCellAfterFirstLetter() {
@@ -3891,6 +3916,7 @@ int main() {
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();
+    testLateEmptyFieldStillClick();
     testPageKeepsOwnText();
     testMacroKeepsSpace();
     testMacroBeforeEnter();

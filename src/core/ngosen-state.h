@@ -42,6 +42,7 @@ struct KeyEntry {
     bool     heldForCopy = false; ///< a Backspace that waited for the copy so it reaches the app after the edit
     uint32_t code        = 0;     ///< hardware keycode, for a key forwarded as pressed
     bool     actsOnField = false; ///< moves the cursor or runs a shortcut, so it follows the commit unchanged
+    bool     released    = false; ///< released while it waited, so its replay need not wait for the release
 };
 
 namespace fcitx {
@@ -467,6 +468,7 @@ namespace ngosen {
         static constexpr uint64_t      HeldEnterReleaseWaitUs = 450000;
         void                           holdEnterAfterCommit(ngosen::KeyPress& keyEvent);
         void                           holdEnter(bool untilRelease, ngosen::EditKey key = ngosen::EditKey::Return);
+        void                           noteBufferedRelease(uint32_t sym);
         void                           forwardHeldEnter();
         bool                           forwardsEnterAfterCommit() const;
         bool                           holdsBackspace(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
@@ -641,8 +643,10 @@ namespace ngosen {
         std::vector<std::string> surroundingPathFails(const Surrounding& surrounding, unsigned int& chars) const;
         static std::string       joined(const std::vector<std::string>& parts); ///< "none" when empty
         // Logs a line when the path differs from the last replacement's in this field.
-        void                            notePath(const char* path, const std::string& why);
-        bool                            surroundingUntrusted() const;
+        void notePath(const char* path, const std::string& why);
+        bool surroundingUntrusted() const;
+        // A page that may keep its own text, before any report showed our backspaces taking effect.
+        bool                            pageHidesBackspaces() const;
         bool                            appMarkedUntrusted() const;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
@@ -671,9 +675,10 @@ namespace ngosen {
 
             // For the copy wait: the last checks, newest in bit 0, set if answered at all.
             std::bitset<RecentChecks> recentAnswers;
-            int                       recentChecks      = 0; ///< how many bits of recentAnswers hold a check
-            int                       copyWaitsHeldBack = 0; ///< replacements while unanswered checks keep the copy wait off
-            int                       retriesRunOut     = 0; ///< waits tried again in a row that ran out
+            int                       recentChecks      = 0;     ///< how many bits of recentAnswers hold a check
+            int                       copyWaitsHeldBack = 0;     ///< replacements while unanswered checks keep the copy wait off
+            int                       retriesRunOut     = 0;     ///< waits tried again in a row that ran out
+            bool                      showedBackspace   = false; ///< a report showed the deletion our backspaces made
         };
         FieldHistory sinceFocus_;
 

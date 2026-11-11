@@ -37,15 +37,30 @@ with a fresh profile for each run, clicks cell A1, then types. The cases are:
 | `tab` | `tieengs`, Tab, `vieetj`, Tab, … `laf`, Return | `tiếng` `việt` `nhận` `đây` `là` along row 1 |
 | `fast` | same as `enter`, 30 ms between keys | the same |
 | `click` | `tieengs`, click on A3, `vieetj`, Return | `tiếng` in A1, `việt` in A3 |
-| `edit` | `toan`, Return, Up, F2, `s`, Return | `toán` in A1 |
+| `back` | `toan`, space, BackSpace, `s`, Return | `toán` in A1 |
 | `plainclick` | `abc`, click on A3, `xyz`, Return | `abc` in A1, `xyz` in A3 |
 
-`down` is skipped on sheets where arrows only move the caret inside the cell. `edit` can only pass where
-the field reports its text to the input method; Firefox and Chromium on X11 do not, so there it gives
-`toans`. `plainclick` is not in the default set: it types no Vietnamese, so a failure there is the
-sheet's own behaviour (Univer keeps editing A1 when A3 is clicked).
+`down` is skipped on sheets where arrows only move the caret inside the cell. `plainclick` is not in
+the default set: it types no Vietnamese, so a failure there is the sheet's own behaviour (Univer keeps
+editing A1 when A3 is clicked).
 
-`xdotool` does not work on Wayland; see `misc/editor-test/README.md` for driving keys into a VM instead.
+## Running in a VM (Wayland too)
+
+`xdotool` does not work on Wayland. With `VM` set, `run.sh` runs on a libvirt host instead and sends
+the keys with `virsh send-key` and the clicks with QMP `input-send-event`, which reach the guest like a
+real keyboard and mouse. Copy `misc/sheet-test` and `misc/editor-test/server.py` into the guest (by
+default under `/tmp/ngosen-kit/misc`), then:
+
+```sh
+VM=ubuntu2404 GUEST="ssh root@192.168.122.50" BROWSER=chromium CHROMIUM=google-chrome \
+    OPEN="bash /tmp/ngosen-kit/misc/sheet-test/in-session.sh ubuntu gnome-shell" misc/sheet-test/run.sh
+```
+
+`GUEST` runs a shell command in the guest as root; the test server and the report stay in the guest.
+`OPEN` starts the browser in the desktop session: `in-session.sh` copies the environment of a session
+process (`gnome-shell`, `plasmashell`, `cinnamon`) and starts the program as a transient systemd unit.
+Each `virsh send-key` call takes a few tens of milliseconds, so the `fast` case is slower than 30 ms
+per key there.
 
 ## Writing a page
 

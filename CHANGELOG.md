@@ -32,6 +32,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Thoát Vim bằng `:q`, `:wq`, `ZZ` thì gõ lại bình thường. Chưa xử lý phím Esc được đổi thành chữ như `jk`.
   Nếu mở Vim từ lịch sử shell bằng mũi tên lên, qua alias hoặc `git commit`, hãy bật Vim mode cho terminal (#302, #587).
 - Lệnh cài một dòng nay tự thêm repo APT trên Debian, Ubuntu và các distro dựa trên chúng để nhận version mới khi cập nhật hệ thống. Máy đã cài bằng lệnh này trước đây có thể chạy lại để thêm repo. (#654)
+- Gõ Telex quên mũ hoặc móc ở những vần luôn có chúng nay vẫn ra chữ đúng khi chốt bằng dấu cách, dấu câu
+  hoặc Enter: `tienf` ra tiền, `viecj` ra việc, `Nguyenx` ra Nguyễn, `luanj` ra luận, `ruouj` ra rượu, thay vì
+  trả về phím đã gõ. Áp dụng cho 25 vần như iên, uyên, ênh, uân, ưu, ươp, chỉ khi chữ có dấu thanh gõ bằng
+  s/f/r/x/j, các nguyên âm gõ liền nhau và chữ có trong từ điển. Tám từ tiếng Anh gõ giống chữ thiếu mũ vẫn
+  giữ nguyên, như `hues`, `yens`, `techs`, nên huế và yến vẫn phải gõ đủ (`huees`, `yeens`). VNI và VIQR
+  chưa có, vì ở đó dấu thanh là chữ số và dấu câu.
 
 ### Thay đổi
 

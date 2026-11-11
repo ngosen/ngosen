@@ -408,6 +408,22 @@ fn print_retone_lookalikes() {
     }
 }
 
+// Prints the words on each line of NGOSEN_WORDS that a space would give marks if they were not
+// in english-mark-lookalikes.txt, for misc/gen-english-words.py.
+#[test]
+#[ignore = "measurement input, not a check"]
+fn print_mark_lookalikes() {
+    let path = std::env::var("NGOSEN_WORDS").unwrap();
+    let mut e = engine_with_default_settings("Telex");
+    for word in std::fs::read_to_string(path).unwrap().lines() {
+        e.reset();
+        type_keys(&mut e, word);
+        if let Some(marked) = e.auto_marked_word_of(word) {
+            println!("LOOKALIKE\t{word}\t{marked}");
+        }
+    }
+}
+
 // Prints what the keys on each line of NGOSEN_WORDS commit when a space ends them, with the
 // default settings and dictionary, for misc/check-word-endings.py.
 #[test]
@@ -432,6 +448,39 @@ fn committed_with(method: &str, keys: &str, end: u32) -> String {
     type_keys(&mut e, keys);
     e.process_key_event(end, 0);
     e.commit_text
+}
+
+#[test]
+fn test_marks_added_to_rimes_that_always_have_them() {
+    for (keys, word) in [
+        ("benhj", "bệnh"),
+        ("luanj", "luận"),
+        ("cuops", "cướp"),
+        ("khuays", "khuấy"),
+        ("quyets", "quyết"),
+        ("NGUYENX", "NGUYỄN"),
+        ("ddieuf", "điều"),
+        ("dieuf", "diều"),
+    ] {
+        assert_eq!(
+            committed_with("Telex", keys, KEY_SPACE),
+            format!("{word} "),
+            "{keys}"
+        );
+    }
+    // A digit tone in VNI could be a number, and `user` has its tone key between the vowels.
+    for (method, keys) in [
+        ("VNI", "tien2"),
+        ("Telex + VNI", "tien2"),
+        ("Telex", "user"),
+        ("Telex", "techs"),
+    ] {
+        assert_eq!(
+            committed_with(method, keys, KEY_SPACE),
+            format!("{keys} "),
+            "{method} {keys}"
+        );
+    }
 }
 
 #[test]

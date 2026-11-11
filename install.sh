@@ -368,7 +368,8 @@ show_session_plan() {
         step "đặt fcitx5 làm bộ gõ cho tài khoản này"
     elif wants_sway_hyprland_setup; then
         step "thêm Ngó Sen vào danh sách bộ gõ của fcitx5 và bật fcitx5. Nếu danh sách chỉ có một bàn" \
-            "phím thì Ngó Sen thay bàn phím đó. File cấu hình của desktop được giữ nguyên."
+            "phím thì Ngó Sen thay bàn phím đó. App GTK gõ qua fcitx5 (khoá gtk-im-module của GNOME," \
+            "nếu đang để trống). File cấu hình của desktop được giữ nguyên."
     fi
 }
 
@@ -1465,6 +1466,7 @@ hide_fcitx5_autostart() {
 undo_fcitx5_setup() {
     local edition=fcitx5
     undo_gnome_session
+    undo_gtk_im_module
     rm -f "$(changes_file)"
 }
 

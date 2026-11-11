@@ -15,7 +15,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Bảng tính Lark trên Brave/Chrome (X11): gõ Gõ Sen rồi chuyển ô nhanh bằng mũi tên hoặc Tab không còn mất chữ, kiểu gõ `laf` chỉ còn `l` và các ô sau trống (#681).
 - Bảng tính Lark trên Brave/Chrome (GNOME Wayland): chữ đầu tiên gõ bằng Gõ Sen trong bảng không còn bị lặp, kiểu `tieengs` ra `tieêngếng` (#686).
 - App GTK 4 trên niri không còn mất chữ đầu mỗi từ sau khi chạy lại lệnh cài; niri cũng được tự thiết lập fcitx5 (#689).
-- Gói cài (.deb, .rpm, Arch) tự kéo theo thư viện SVG của Qt, nên cửa sổ cài đặt bản Qt hiện đủ logo và biểu tượng; gói .deb và openSUSE còn kéo theo libxcb-xfixes, nên Cứu dấu trên chữ bôi đen trong app X11 không còn tự tắt (#PR).
+- Gói cài (.deb, .rpm, Arch) tự kéo theo thư viện SVG của Qt, nên cửa sổ cài đặt bản Qt hiện đủ logo và biểu tượng; gói .deb và openSUSE còn kéo theo libxcb-xfixes, nên Cứu dấu trên chữ bôi đen trong app X11 không còn tự tắt (#695).
 
 ## [1.9.2-1] — 11/11/2026
 

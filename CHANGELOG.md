@@ -47,7 +47,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   mới thành drăng, và `broom` vẫn ra broom chứ không ra brôm. Cần bật kiểm tra chính tả bằng từ điển (mặc
   định bật) (#706).
 - Từ điển có thêm 44 âm tiết trong tên xã, phường và dân tộc, như Đakrông, Mnông, kmăl, knốp, khươl, nên
-  các tên này nay gõ ra đúng chữ thay vì bị trả về phím đã gõ (#PR).
+  các tên này nay gõ ra đúng chữ thay vì bị trả về phím đã gõ (#708).
 - Icon khay kiểu trơn (V, E, mặt cười, khi tắt "Sử dụng biểu tượng trạng thái Ngó Sen") nay cao bằng ô ngó sen, trước chỉ khoảng hai phần ba. Trên GNOME cần đăng xuất rồi đăng nhập lại mới thấy (#671).
 
 ## [1.9.2-1] — 11/11/2026

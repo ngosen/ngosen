@@ -839,6 +839,83 @@ namespace {
         }
     }
 
+    // Lark Sheets in a browser keeps its own text and takes only key presses: a deletion through the
+    // surrounding text changes the copy the browser reports but not what the user sees.
+    void testPageKeepsOwnText() {
+        const Field                 brave = makeField("ibus", true, "brave-browser.desktop");
+        const std::string           typed = "tieengs vieetj ";
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        ngosen::test::AppQuirks     quirks;
+        quirks.keepsOwnText = true;
+        FakeResources resources;
+        const auto    sheet = ngosen::test::typeInAppTraced(resources, brave, quirks, keys, std::vector<int>(keys.size(), 100));
+        check(sheet.text == "tiếng việt ", "page with its own text: delete with backspaces", sheet.text);
+        {
+            // Its copy never shows the deletion, so waiting for the copy would only hold the word back.
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, brave, quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("tieengs")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(50);
+            check(app->text() == "tiếng", "page with its own text: no wait for its copy", app->text());
+        }
+
+        // A page that shows our backspaces in its report keeps the faster deletion through the text.
+        const auto plain = ngosen::test::typeInAppTraced(resources, brave, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 100));
+        check(plain.text == "tiếng việt " && plain.sent.surroundingDeletes > 0, "plain page: back to the surrounding text",
+              plain.text + ", " + std::to_string(plain.sent.surroundingDeletes) + " surrounding deletions");
+
+        {
+            // The Enter was released while the replacement waited, so it goes out with no wait for a release.
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            ngosen::test::AppQuirks enterQuirks = quirks;
+            enterQuirks.showsEnter              = true;
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, brave, enterQuirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("laf")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(c == 'f' ? 50 : 100);
+            }
+            app->type(ngosen::key::Return);
+            loop.pump(120);
+            check(app->text() == "là\n", "page with its own text: Enter released in the wait goes out", app->text());
+        }
+
+        // A click into the sheet from a plain field of the same page looks like a focus bounce, so what the
+        // plain field showed must not carry over.
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, brave, ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&] {
+            for (const uint32_t key : keys) {
+                app->type(key);
+                loop.pump(100);
+            }
+        };
+        typeText();
+        loop.pump(1000);
+        app->switchToOwnTextField(5);
+        loop.pump(1000);
+        typeText();
+        loop.pump(500);
+        check(app->text() == "tiếng việt ", "click from a plain field into the sheet: delete with backspaces", app->text());
+    }
+
     // Lark Sheets bounces focus when an arrow key moves to the next cell. That is not a redraw, so commits
     // need not wait for one; it still sends deletions as backspaces, which the sheet needs over IBus.
     void testCellMovesNoRedrawWait() {
@@ -3745,6 +3822,7 @@ int main() {
     testCommitAfterEditorRedraw();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
+    testPageKeepsOwnText();
     testMacroKeepsSpace();
     testMacroBeforeEnter();
     testEnterDuringReplacement();

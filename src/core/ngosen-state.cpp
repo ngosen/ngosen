@@ -138,6 +138,12 @@ namespace ngosen {
         holdEnter(true);
     }
 
+    void TypingState::noteBufferedRelease(uint32_t sym) {
+        const auto pressed = std::find_if(buffered_keys_.rbegin(), buffered_keys_.rend(), [sym](const KeyEntry& k) { return k.sym == sym && !k.released; });
+        if (pressed != buffered_keys_.rend())
+            pressed->released = true;
+    }
+
     void TypingState::holdEnter(bool untilRelease, ngosen::EditKey key) {
         held_key_ = key;
         held_field_key_.reset();
@@ -623,7 +629,9 @@ namespace ngosen {
                 return;
             }
         }
-        if (!keyEvent.isRelease())
+        if (keyEvent.isRelease())
+            noteBufferedRelease(keyEvent.sym());
+        else
             sendHeldEnter();
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             dropRetoneKey();

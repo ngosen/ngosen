@@ -979,6 +979,22 @@ fn test_shipped_lists_keep_doubled_keys_and_names() {
 }
 
 #[test]
+fn test_shipped_dictionary_has_place_and_ethnic_names() {
+    for (keys, shown) in [
+        ("ddakroong", "đakrông"),
+        ("mnoong", "mnông"),
+        ("kmawl", "kmăl"),
+        ("knoops", "knốp"),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        e.english_words = shipped_english_words();
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{shown} "), "keys {keys}");
+    }
+}
+
+#[test]
 fn test_english_keys_keep_a_doubled_tone_key_after_a_name() {
     let mut e = engine_with_default_settings("Telex");
     e.english_words = shipped_english_words();

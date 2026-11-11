@@ -689,10 +689,13 @@ remove_ngosen_repo() {
     local -a files
     [ -r "$REPO_RECORD" ] || return 0
     mapfile -t files < <(sed 1d "$REPO_RECORD" | cut -d' ' -f3-)
-    if is_package_installed ibus-ngosen; then
-        say "Giữ repo Ngó Sen vì ibus-ngosen còn nhận version mới từ đó."
-        return 0
-    fi
+    local edition
+    for edition in ibus-ngosen wl-ngosen; do
+        if is_package_installed "$edition"; then
+            say "Giữ repo Ngó Sen vì $edition còn nhận version mới từ đó."
+            return 0
+        fi
+    done
     # A file the user already deleted is no reason to keep the other one.
     if ! sed 1d "$REPO_RECORD" | sha256sum --quiet --ignore-missing -c - >/dev/null 2>&1 &&
         { [ -e "${files[0]}" ] || [ -e "${files[1]}" ]; }; then
@@ -1830,7 +1833,7 @@ uninstall() {
     if wants_gnome_setup || wants_x11_setup || wants_ibus_x11_setup; then
         say "Các thay đổi lệnh cài đã làm cho tài khoản này cũng được trả lại."
     fi
-    [ ! -r "$REPO_RECORD" ] || say "Repo Ngó Sen do lệnh cài thêm cũng được gỡ, trừ khi máy còn ibus-ngosen hoặc tệp đã bị sửa."
+    [ ! -r "$REPO_RECORD" ] || say "Repo Ngó Sen do lệnh cài thêm cũng được gỡ, trừ khi máy còn ibus-ngosen, wl-ngosen hoặc tệp đã bị sửa."
     confirm "Tiếp tục?" || {
         say "Đã dừng, chưa gỡ gì."
         exit 0

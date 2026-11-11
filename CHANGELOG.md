@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Gõ thừa chữ `d` sau một chữ có `đ` (kiểu `dduowjcd`) rồi bấm BackSpace không còn mất nét của `đ`: ra `được`, không còn ra `dược` (#712).
+
 ## [1.9.3-1] — 11/11/2026
 
 Bảng tính Lark trên Brave/Chrome không còn mất chữ khi chuyển ô nhanh (#681) và không còn lặp chữ đầu trên GNOME Wayland và KDE Plasma Wayland (#686, #697), lệnh cài nhận ra niri (#689, #700), gói cài kéo theo thư viện SVG của Qt và libxcb-xfixes (#695), chữ Telex sai chính tả như `moot` giữ nguyên phím đã gõ (#693), và bản IBus đổi dấu, bung gõ tắt khi bấm Enter sau chữ đang gạch chân (#692).

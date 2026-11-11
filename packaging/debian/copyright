@@ -55,7 +55,8 @@ License: GPL-3
 Comment: data/dictionaries/LICENSE.vietnamese.cm.dict lists the sources. The word
  list is part of ibus-bamboo under GPLv3. It draws on Ho Ngoc Duc's GPL dictionary,
  the Vietnamese Wiktionary (CC-BY-SA) and an abbreviation list used with the
- permission of its author, Ngo Quoc Hung.
+ permission of its author, Ngo Quoc Hung. The original source pages are offline;
+ the license file links archived copies on web.archive.org.
 
 Files: io.github.ngosen.NgoSen.metainfo.xml.in.in
 Copyright: 2026 Nguyen Hoang Ky <nhktmdzhg@gmail.com>

@@ -50,8 +50,10 @@ namespace {
 
     constexpr uint32_t Click    = 0;
     constexpr uint32_t NewFocus = 1;
+    constexpr uint32_t AppReset = 2;
 
-    // The app's text after each key, typed 20 ms apart. Click and NewFocus stand for those events.
+    // The app's text after each key, typed 20 ms apart. Click, NewFocus and AppReset stand for those
+    // events; the shells pass an app's reset on only when no word is in progress.
     std::vector<std::string> textAfterEachKey(Mode mode, const std::vector<uint32_t>& keys, bool surroundingText = true,
                                               const std::function<void(FakeResources&)>& configure = {}) {
         FakeResources resources;
@@ -72,6 +74,11 @@ namespace {
             }
             if (key == NewFocus) {
                 state.reset(true);
+                continue;
+            }
+            if (key == AppReset) {
+                if (state.isEmptyHistory())
+                    state.reset(false);
                 continue;
             }
             app->type(key);
@@ -187,6 +194,20 @@ namespace {
         check(got == "a /x b", "the space before the '/' and the one after the word are not a double space", got);
     }
 
+    // Firefox through the fcitx4 frontend resets the context after each key that reaches it unchanged.
+    void testAppResetAfterEachKey() {
+        const std::vector<std::pair<Mode, std::string>> cases = {{Mode::Sen, "/cost "}, {Mode::Preedit, "/cost "}, {Mode::Sen, "cd /usr/share "}};
+        for (const auto& [mode, typed] : cases) {
+            std::vector<uint32_t> keys;
+            for (const uint32_t k : keysOf(typed)) {
+                keys.push_back(k);
+                keys.push_back(AppReset);
+            }
+            const std::string got = textAfterEachKey(mode, keys).back();
+            check(got == typed, std::string(modeName(mode)) + ": " + typed + "with a reset after each key", got);
+        }
+    }
+
     void testOptionOff() {
         const std::string got = finalText(Mode::Sen, "/cost", true, [](FakeResources& r) { r.mutableOptions().rawWordAfterSlash = false; });
         check(got == "/cót", "with the option off, /cost gets a tone as before", got);
@@ -235,6 +256,7 @@ int main() {
     testFieldWithoutReports();
     testClickEndsRawWord();
     testDoubledKeysStayRaw();
+    testAppResetAfterEachKey();
     testOptionOff();
     testHiddenPromptEndsRawWord();
     if (failures != 0) {

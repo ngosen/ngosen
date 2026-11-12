@@ -715,7 +715,7 @@ namespace ngosen {
         std::vector<uint32_t>                           pressedKeys_;
         std::optional<std::pair<uint32_t, uint64_t>>    unseenPress_;    ///< the letter and keyCount_ at its release
         std::optional<std::pair<uint32_t, uint32_t>>    keyAfterUnseen_; ///< sym and states of the next key
-        std::optional<std::pair<uint64_t, std::string>> cellMove_;       ///< keyCount_ after a key that may move to another cell, and the text then
+        std::optional<std::pair<uint64_t, std::string>> cellMove_;       ///< keyCount_ after Enter, and the text then
 
         // What the field showed since it got focus. A focus-in that is not a bounce starts it over, and
         // nothing else does.
@@ -801,10 +801,9 @@ namespace ngosen {
         void reopenLastWord();
         // A sheet opens a cell editor on a key whose press reaches the page before the input method has a
         // field: we get only its release, the editor holds that letter, and the word starts from it.
-        void        takeLetterFieldOpenedWith();
-        void        takeLetterCellShows();
-        static bool movesCell(uint32_t sym);
-        void        notePressOrRelease(const ngosen::KeyPress& keyEvent);
+        void takeLetterFieldOpenedWith();
+        void takeLetterCellShows();
+        void notePressOrRelease(const ngosen::KeyPress& keyEvent);
         // Backspace right after a commit in Preedit: take the word back from the app as preedit.
         bool reopenWordInPreedit(ngosen::KeyPress& keyEvent);
         bool rebuildable(const std::string& committed) const;

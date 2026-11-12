@@ -967,27 +967,38 @@ namespace {
             return app->text();
         };
         typeText("nhaanj");
-        for (const uint32_t move : {ngosen::key::Return, ngosen::key::Tab, ngosen::key::Down}) {
-            app->type(move);
+        for (const uint32_t enter : {ngosen::key::Return, ngosen::key::KP_Enter}) {
+            app->type(enter);
             loop.pump(150);
             app->pageShowsCell("d");
             loop.pump(150);
             const std::string cell = typeText("daay");
-            check(cell == "đây", "cell showing a letter with no key after a move: dd gives đ", cell);
+            check(cell == "đây", "cell showing a letter with no key after Enter: dd gives đ", cell);
         }
-        // Moving the cursor in a field that already held one letter shows no new text.
+        // Up and Down through a field's history, or Tab completing, can bring back a one-letter entry.
+        for (const uint32_t recall : {ngosen::key::Up, ngosen::key::Down, ngosen::key::Tab}) {
+            app->pageShowsCell("");
+            loop.pump(150);
+            app->type(recall);
+            loop.pump(150);
+            app->pageShowsCell("a");
+            loop.pump(150);
+            const std::string recalled = typeText("s ");
+            check(recalled == "as ", "one-letter entry recalled by Up, Down or Tab: no word taken from it", recalled);
+        }
+        // Enter in a one-line field that already held one letter shows no new text.
         app->focusNewFieldWith("a", 300);
         loop.pump(450);
-        app->type(ngosen::key::Down);
+        app->type(ngosen::key::Return);
         loop.pump(150);
         const std::string held = typeText("s ");
-        check(held == "as ", "letter already there before a cursor move: no word taken from it", held);
-        // Tab into another field of a form brings focus with it.
-        app->type(ngosen::key::Tab);
+        check(held == "as ", "letter already there before Enter: no word taken from it", held);
+        // Enter into another field of a form brings focus with it.
+        app->type(ngosen::key::Return);
         app->focusNewFieldWith("a", 5);
         loop.pump(150);
         const std::string form = typeText("s ");
-        check(form == "as ", "field reached by Tab holding one letter: no word taken from it", form);
+        check(form == "as ", "field reached by Enter holding one letter: no word taken from it", form);
         // A letter that shows up later than the first key after the move is not from the move.
         app->type(ngosen::key::Return);
         loop.pump(150);

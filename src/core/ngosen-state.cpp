@@ -438,7 +438,7 @@ namespace ngosen {
                 pressedKeys_.push_back(sym);
             if (unseenPress_ && keyCount_ == unseenPress_->second)
                 keyAfterUnseen_ = std::make_pair(keyEvent.sym(), keyEvent.states());
-            if (movesCell(keyEvent.sym()))
+            if (keyEvent.sym() == ngosen::key::Return || keyEvent.sym() == ngosen::key::KP_Enter)
                 cellMove_ = std::make_pair(keyCount_ + 1, host_->surrounding().text());
         } else if (at != pressedKeys_.end()) {
             pressedKeys_.erase(at);
@@ -474,13 +474,9 @@ namespace ngosen {
         unseenPress_.reset();
     }
 
-    bool TypingState::movesCell(uint32_t sym) {
-        using namespace ngosen::key;
-        return sym == Return || sym == KP_Enter || sym == Tab || sym == ISO_Left_Tab || sym == Up || sym == Down || sym == Left || sym == Right;
-    }
-
     // Firefox on KDE can hide both the press and the release of the key that opens the next cell: that cell
-    // then holds just the letter, in place of what the last one showed.
+    // then holds just the letter, in place of what the last one showed. Only after Enter, since arrows and
+    // Tab also recall history or complete words in place.
     void TypingState::takeLetterCellShows() {
         const auto move = std::move(cellMove_);
         cellMove_.reset();

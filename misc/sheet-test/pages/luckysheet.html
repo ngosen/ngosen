@@ -1,0 +1,36 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>luckysheet</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/css/pluginsCss.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/plugins.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/css/luckysheet.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/assets/iconfont/iconfont.css">
+<script src="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/js/plugin.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/luckysheet.umd.js"></script>
+</head>
+<body style="margin:0">
+<div id="s" style="position:absolute;inset:0"></div>
+<script src="report.js"></script>
+<script>window.arrowsCommit = true;</script>
+<script>
+  // Luckysheet is the base of several Chinese and Vietnamese online sheets; it edits cells in a contenteditable.
+  let ready = false;
+  luckysheet.create({ container: 's', lang: 'en', showinfobar: false, hook: { workbookCreateAfter: () => (ready = true) } });
+  function cells() {
+    if (!ready) return null;
+    const out = [];
+    for (let r = 0; r < 12; r++) out.push([0, 1, 2, 3, 4].map((c) => luckysheet.getCellValue(r, c, { type: 'm' })));
+    return out;
+  }
+  function center(r, c) {
+    const area = document.getElementById('luckysheet-cell-main').getBoundingClientRect();
+    return { x: area.left + middle(luckysheet.getColumnWidth([...Array(c + 1).keys()]), c), y: area.top + middle(luckysheet.getRowHeight([...Array(r + 1).keys()]), r) };
+  }
+  // Sizes come back keyed by index; each line between cells is 1 px.
+  function middle(sizes, i) {
+    let at = 0;
+    for (let k = 0; k < i; k++) at += sizes[k] + 1;
+    return at + sizes[i] / 2;
+  }
+  report('luckysheet', cells, center);
+</script>
+</body></html>

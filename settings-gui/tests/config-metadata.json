@@ -243,6 +243,13 @@
     {}
    ],
    [
+    "RawWordAfterSlash",
+    "Boolean",
+    "Type a word that starts with / as is",
+    "True",
+    {}
+   ],
+   [
     "AutoNonVnRestore",
     "Boolean",
     "Auto Restore Invalid Words",
@@ -353,6 +360,22 @@
     "Use Ngó Sen Status Icons",
     "True",
     {}
+   ],
+   [
+    "TrayIconSize",
+    "Enum",
+    "Tray Icon Size",
+    "Normal",
+    {
+     "EnumI18n": {
+      "0": "Normal",
+      "1": "Large"
+     },
+     "Enum": {
+      "0": "Normal",
+      "1": "Large"
+     }
+    }
    ],
    [
     "ShowMenuInputMethod",
@@ -481,6 +504,20 @@
     {}
    ],
    [
+    "ShowModeVim",
+    "Boolean",
+    "Show Vim mode",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutVim",
+    "String",
+    "Shortcut for Vim mode",
+    "v",
+    {}
+   ],
+   [
     "EnableMacroInOffMode",
     "Boolean",
     "Allow Macro in Off Mode",
@@ -498,7 +535,7 @@
     "ModeOrder",
     "String",
     "Mode Order",
-    "Sen,Preedit,Emoji,Off",
+    "Sen,Preedit,Emoji,Off,Vim",
     {}
    ],
    [

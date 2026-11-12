@@ -10,8 +10,18 @@ set -euo pipefail
 FCITX5_RELEASE_URL=${NGOSEN_RELEASE_URL:-https://github.com/ngosen/ngosen/releases/latest/download}
 RELEASE_URL=$FCITX5_RELEASE_URL
 IBUS_RELEASE_URL=${NGOSEN_IBUS_RELEASE_URL:-https://github.com/ngosen/ibus-ngosen/releases/latest/download}
+REPO_URL=${NGOSEN_REPO_URL:-https://ngosen.github.io/ngosen}
 SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/TU-DUNG.md"
 OSTREE_ISSUE="https://github.com/ngosen/ngosen/issues/492"
+UPDATE_GUIDE="https://github.com/ngosen/ngosen#cập-nhật-bằng-trình-quản-lý-gói"
+# The repository key is pinned here because this script is what users already trust; the
+# release workflow refuses to publish a key with another checksum.
+REPO_KEY_SHA256=c21e303174f29e12540e993893f20d0b76488bbaa6a8c2f5bea6f6a64ab03fb7
+APT_LIST=/etc/apt/sources.list.d/ngosen.list
+APT_KEYRING=/usr/share/keyrings/ngosen.gpg
+# What the install added to the system's package sources, so the uninstall removes only that.
+REPO_RECORD=/var/lib/ngosen/installer-repo
+APT_LIST_MARK="# Added by the Ngó Sen installer; install.sh --uninstall removes it."
 
 # fcitx5 or ibus; the IBus edition is for GNOME and has its own releases.
 edition=fcitx5
@@ -31,6 +41,10 @@ package_changed=1
 fcitx5_current=0
 manager=
 pattern=
+add_repo=1
+repo_added=0
+# The APT suite for this machine, set by detect_distribution.
+repo_suite=
 distribution="máy này"
 # Packages apt upgrades along with the install on a distribution that needs it.
 apt_upgrades=()
@@ -62,10 +76,11 @@ fetch() {
 }
 
 usage() {
-    say "Cách dùng: install.sh [--yes] [--fcitx5 | --ibus] [--no-setup | --uninstall]"
+    say "Cách dùng: install.sh [--yes] [--fcitx5 | --ibus] [--no-repo] [--no-setup | --uninstall]"
     say "  --yes        không hỏi lại trước khi cài hay gỡ; máy chưa có bản nào thì cài bản fcitx5"
     say "  --fcitx5     cài bản fcitx5, không hỏi chọn bản"
     say "  --ibus       Ngó Sen cho GNOME: gõ qua IBus có sẵn của GNOME, không cần fcitx5"
+    say "  --no-repo    không thêm repo Ngó Sen (cần có repo để nhận version mới khi cập nhật hệ thống)"
     say "  --no-setup   chỉ cài gói, không tự đặt bộ gõ cho tài khoản này"
     say "  --uninstall  gỡ Ngó Sen và trả lại những gì lệnh cài đã đổi"
 }
@@ -162,6 +177,7 @@ detect_distribution() {
         case "$codename" in
             bookworm | trixie | forky | noble | resolute | stonking)
                 manager=apt
+                repo_suite=$codename
                 pattern="${package_name}_[0-9][^ /]*_${codename}_${deb_arch}\\.deb"
                 return
                 ;;
@@ -348,6 +364,9 @@ show_plan() {
             "khi đăng nhập"
     fi
     show_session_plan
+    if wants_repo && apt_repo_missing; then
+        step "thêm repo Ngó Sen để nhận version mới khi cập nhật hệ thống (bỏ qua bằng --no-repo)"
+    fi
     say "Gỡ bằng --uninstall thì trả lại những gì lệnh đã đổi."
 }
 
@@ -531,6 +550,161 @@ install_package() {
             install_with_pacman "$package"
             ;;
     esac
+}
+
+# Succeeds when the APT source file $1 has an enabled deb entry for the repository at $2, in the
+# one-line format or in deb822 (.sources).
+apt_file_lists_repo() {
+    local format=list
+    case "$1" in
+        *.sources) format=deb822 ;;
+    esac
+    awk -v format="$format" -v want="${2%/}" '
+        function same(uri) { sub(/\/$/, "", uri); return uri == want }
+        function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+        function stanza(   uris, n, i) {
+            if (tolower(trim(field["enabled"])) !~ /^(no|false|off|without|disable|0)$/ && (" " trim(field["types"]) " ") ~ /[ \t]deb[ \t]/) {
+                n = split(trim(field["uris"]), uris, /[ \t]+/)
+                for (i = 1; i <= n; i++)
+                    if (same(uris[i])) found = 1
+            }
+            split("", field)
+            key = ""
+        }
+        format == "list" {
+            if ($1 != "deb")
+                next
+            i = 2
+            if ($i ~ /^\[/) {
+                while (i < NF && $i !~ /\]$/)
+                    i++
+                i++
+            }
+            if (same($i))
+                found = 1
+            next
+        }
+        /^#/ { next }
+        /^[ \t]*$/ { stanza(); next }
+        /^[ \t]/ { if (key != "") field[key] = field[key] " " $0; next }
+        {
+            key = tolower(substr($0, 1, index($0, ":") - 1))
+            field[key] = substr($0, index($0, ":") + 1)
+        }
+        END {
+            if (format == "deb822")
+                stanza()
+            exit !found
+        }
+    ' "$1"
+}
+
+# Prints the first file under the APT directory $1 that enables the repository at $2.
+apt_repo_file() {
+    local file
+    for file in "$1/sources.list" "$1"/sources.list.d/*.list "$1"/sources.list.d/*.sources; do
+        [ -r "$file" ] || continue
+        # apt skips files with other characters in their names.
+        case "${file##*/}" in *[!A-Za-z0-9_.-]*) continue ;; esac
+        if apt_file_lists_repo "$file" "$2"; then
+            printf '%s\n' "$file"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# A test build would lose its next fixes to the published release, so it gets no repository.
+wants_repo() {
+    [ "$add_repo" -eq 1 ] && [ "$manager" = apt ] || return 1
+    case "$RELEASE_URL" in
+        */releases/download/next-build | */releases/download/pr-*-build) return 1 ;;
+    esac
+}
+
+# Files of the user's own, even a disabled source, are never written over.
+apt_repo_missing() {
+    ! apt_repo_file /etc/apt "$REPO_URL/apt" >/dev/null && [ ! -e "$APT_LIST" ] && [ ! -e "$APT_KEYRING" ]
+}
+
+# A release upgrade disables third-party lists and leaves them on the old codename; the installer
+# may rewrite ngosen.list only when it wrote that file itself.
+own_apt_list() {
+    [ -r "$REPO_RECORD" ] && [ "$(head -n 1 "$APT_LIST" 2>/dev/null)" = "$APT_LIST_MARK" ]
+}
+
+apt_list_has_suite() {
+    awk -v suite="$repo_suite" '$1 == "deb" && $(NF - 1) == suite { ok = 1 } END { exit !ok }' "$APT_LIST"
+}
+
+add_apt_repo() {
+    local found own=0 key="$workdir/ngosen.gpg" list="$workdir/ngosen.list" record="$workdir/installer-repo"
+    own_apt_list && own=1
+    if found=$(apt_repo_file /etc/apt "$REPO_URL/apt"); then
+        if [ "$found" != "$APT_LIST" ] || [ "$own" -eq 0 ] || apt_list_has_suite; then
+            say "Repo Ngó Sen đã có trong $found."
+            return 0
+        fi
+    elif [ "$own" -eq 0 ]; then
+        for found in "$APT_LIST" "$APT_KEYRING"; do
+            if [ -e "$found" ]; then
+                say "Chưa thêm repo Ngó Sen: $found đã có sẵn nhưng repo chưa bật. Xem $UPDATE_GUIDE"
+                return 1
+            fi
+        done
+    fi
+    if ! fetch -sS -o "$key" "$REPO_URL/apt/ngosen.gpg"; then
+        say "Không tải được key của repo Ngó Sen, chưa thêm repo."
+        return 1
+    fi
+    if [ "$(sha256sum "$key" | cut -d' ' -f1)" != "$REPO_KEY_SHA256" ]; then
+        say "Mã băm của key tải về không đúng, chưa thêm repo Ngó Sen."
+        return 1
+    fi
+    printf '%s\ndeb [signed-by=%s] %s %s main\n' "$APT_LIST_MARK" "$APT_KEYRING" "$REPO_URL/apt" "$repo_suite" >"$list"
+    [ "$own" -eq 0 ] || cp "$APT_LIST" "$workdir/ngosen.list.old"
+    # Undoing removes only what this run wrote: either neither file was there, or both are ours.
+    if ! as_root install -o root -g root -m 644 "$key" "$APT_KEYRING" ||
+        ! as_root install -o root -g root -m 644 "$list" "$APT_LIST" ||
+        ! as_root apt-get update -qq --error-on=any -o Dir::Etc::sourcelist="$APT_LIST" \
+            -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0; then
+        if [ "$own" -eq 1 ]; then
+            as_root install -o root -g root -m 644 "$workdir/ngosen.list.old" "$APT_LIST"
+        else
+            as_root rm -f "$APT_LIST" "$APT_KEYRING"
+        fi
+        say "Không thêm được repo Ngó Sen (xem lỗi ở trên); Ngó Sen vẫn đã cài."
+        return 1
+    fi
+    repo_added=1
+    say "Đã thêm repo Ngó Sen: version mới sẽ tới khi cập nhật hệ thống."
+    if ! { printf 'apt\n' && sha256sum "$APT_LIST" "$APT_KEYRING"; } >"$record" ||
+        ! as_root install -D -o root -g root -m 644 "$record" "$REPO_RECORD"; then
+        say "Không ghi được $REPO_RECORD; lệnh gỡ sẽ để lại repo."
+    fi
+}
+
+# Removes what add_apt_repo wrote, unless something still needs it or the user changed it.
+remove_ngosen_repo() {
+    local -a files
+    [ -r "$REPO_RECORD" ] || return 0
+    mapfile -t files < <(sed 1d "$REPO_RECORD" | cut -d' ' -f3-)
+    local edition
+    for edition in ibus-ngosen wl-ngosen; do
+        if is_package_installed "$edition"; then
+            say "Giữ repo Ngó Sen vì $edition còn nhận version mới từ đó."
+            return 0
+        fi
+    done
+    # A file the user already deleted is no reason to keep the other one.
+    if ! sed 1d "$REPO_RECORD" | sha256sum --quiet --ignore-missing -c - >/dev/null 2>&1 &&
+        { [ -e "${files[0]}" ] || [ -e "${files[1]}" ]; }; then
+        say "Giữ repo Ngó Sen vì tệp repo hoặc key đã bị sửa sau khi cài. Gỡ tay:  sudo rm ${files[*]}"
+        return 0
+    fi
+    as_root rm -f "${files[@]}" "$REPO_RECORD"
+    as_root rmdir --ignore-fail-on-non-empty "$(dirname "$REPO_RECORD")"
+    say "Đã gỡ repo Ngó Sen."
 }
 
 # The session setup below changes only the invoking user's files, so it runs without sudo and
@@ -1308,7 +1482,7 @@ report_session_changes() {
     local change
     if [ "${#session_changes[@]}" -eq 0 ]; then
         report_dropped_keyboard
-        if [ "$fcitx5_current" -eq 1 ] && [ "$other_removed" -eq 1 ]; then
+        if [ "$fcitx5_current" -eq 1 ] && { [ "$repo_added" -eq 1 ] || [ "$other_removed" -eq 1 ]; }; then
             say "Xong. Ngó Sen đã là bản này và đã đặt xong."
         elif [ "$fcitx5_current" -eq 1 ]; then
             say "Xong. Ngó Sen đã là bản này và đã đặt xong, không có gì thay đổi."
@@ -1672,6 +1846,7 @@ uninstall() {
     if wants_gnome_setup || wants_x11_setup || wants_ibus_x11_setup; then
         say "Các thay đổi lệnh cài đã làm cho tài khoản này cũng được trả lại."
     fi
+    [ ! -r "$REPO_RECORD" ] || say "Repo Ngó Sen do lệnh cài thêm cũng được gỡ, trừ khi máy còn ibus-ngosen, wl-ngosen hoặc tệp đã bị sửa."
     confirm "Tiếp tục?" || {
         say "Đã dừng, chưa gỡ gì."
         exit 0
@@ -1688,6 +1863,8 @@ uninstall() {
         rm -f "$(changes_file)"
     fi
     as_root "${remove[@]}"
+    # Only after the package is gone, so a failed removal keeps its updates.
+    remove_ngosen_repo
     say ""
     if [ "$edition" = ibus ]; then
         say "Xong. Đăng xuất rồi đăng nhập lại để gỡ hẳn Ngó Sen."
@@ -1719,6 +1896,7 @@ main() {
     while [ $# -gt 0 ]; do
         case "$1" in
             -y | --yes) assume_yes=1 ;;
+            --no-repo) add_repo=0 ;;
             --ibus)
                 use_ibus_edition
                 edition_given=1
@@ -1746,6 +1924,11 @@ main() {
     case "$RELEASE_URL" in
         https://* | file:///*) ;;
         *) die "NGOSEN_RELEASE_URL phải bắt đầu bằng https://" ;;
+    esac
+    case "$REPO_URL" in
+        *[[:space:]]*) die "NGOSEN_REPO_URL không được có khoảng trắng" ;;
+        https://* | file:///*) ;;
+        *) die "NGOSEN_REPO_URL phải bắt đầu bằng https://" ;;
     esac
 
     command -v curl >/dev/null 2>&1 || die "cần có curl"
@@ -1795,6 +1978,10 @@ main() {
     install_package "$workdir/$file"
     remove_other_package
     [ "$package_changed" -eq 1 ] || say "Bản này đã được cài từ trước, không cài lại."
+    # Before the session setup, whose branches return early; a repository that fails stays a note.
+    if wants_repo; then
+        add_apt_repo || :
+    fi
     if [ "$edition" = ibus ]; then
         if wants_gnome_setup; then
             setup_ibus_session
@@ -1834,7 +2021,7 @@ main() {
     say ""
     if [ "$(id -u)" -ne 0 ] && reload_fcitx5; then
         report_dropped_keyboard
-        if [ "$fcitx5_current" -eq 1 ] && [ "$other_removed" -eq 1 ]; then
+        if [ "$fcitx5_current" -eq 1 ] && { [ "$repo_added" -eq 1 ] || [ "$other_removed" -eq 1 ]; }; then
             say "Xong. Ngó Sen đã là bản này."
         elif [ "$fcitx5_current" -eq 1 ]; then
             say "Xong. Ngó Sen đã là bản này, không có gì thay đổi."

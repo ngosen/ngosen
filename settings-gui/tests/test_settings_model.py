@@ -47,6 +47,15 @@ class SettingsModelTest(unittest.TestCase):
         self.model.set("ShowModeEmoji", "False")
         self.assertEqual(self.model.shortcut_conflicts(), [])
 
+    def test_the_large_tray_preview_matches_what_the_engine_shows(self):
+        self.model.set("TrayIconSize", "Large")
+        large = ("fcitx-ngosen-large", "fcitx-ngosen-off-large")
+        self.assertEqual(self.model.tray_icons(False, "KDE")[0], large)
+        self.assertEqual(self.model.tray_icons(False, "X-Cinnamon:GNOME")[0], large)
+        self.assertEqual(
+            self.model.tray_icons(False, "ubuntu:GNOME")[0], ("fcitx-ngosen", "fcitx-ngosen-off")
+        )
+
     def test_without_fcitx5(self):
         self.fake.get_config = lambda: {}
         self.assertFalse(self.model.load())

@@ -13,6 +13,9 @@ const PUNCTUATION_MARKS: &[char] = &[
 
 const MARKED_LETTERS: &str = "âăêôơưđ";
 
+// A vowel typed before its mark key, such as the a of ă or â, must still match the marked letter.
+const UNMARKED_ROW: [usize; 12] = [0, 0, 0, 3, 3, 5, 6, 6, 6, 9, 9, 11];
+
 pub fn is_word_break_symbol(c: char) -> bool {
     PUNCTUATION_MARKS.contains(&c) || c.is_ascii_digit()
 }
@@ -75,6 +78,42 @@ pub fn without_tones(word: &str) -> (String, usize) {
 pub fn without_tone_position(word: &str) -> String {
     let (letters, tones) = split_tones(word);
     letters + &tones
+}
+
+/// The word in lower case without the marks of ă, â, ê, ô, ơ, ư and đ, keeping its tones.
+pub fn without_marks(word: &str) -> String {
+    word.chars()
+        .map(|c| match lower(c) {
+            'đ' => 'd',
+            c => vowel_position(c)
+                .and_then(|pos| VOWELS.chars().nth(UNMARKED_ROW[pos / 6] * 6 + pos % 6))
+                .unwrap_or(c),
+        })
+        .collect()
+}
+
+/// Whether more keys can turn `typed` into the start of `word`: each letter is the same, or lacks
+/// a mark or tone the word's letter has, so `grat` may become grát but `cró` never crông.
+pub fn grows_into(typed: &str, word: &str) -> bool {
+    let covers = |t: char, w: char| {
+        if t == w {
+            return true;
+        }
+        if t == 'd' {
+            return w == 'đ';
+        }
+        let (Some(t), Some(w)) = (vowel_position(t), vowel_position(w)) else {
+            return false;
+        };
+        let (t_row, w_row) = (t / 6, w / 6);
+        (t % 6 == 0 || t % 6 == w % 6) && (t_row == w_row || t_row == UNMARKED_ROW[w_row])
+    };
+    typed.chars().count() <= word.chars().count()
+        && typed
+            .chars()
+            .map(lower)
+            .zip(word.chars().map(lower))
+            .all(|(t, w)| covers(t, w))
 }
 
 #[cfg(test)]

@@ -110,6 +110,10 @@ set_tests_properties(default_app_mode_override PROPERTIES LABELS "integration;ap
 add_ngosen_headless_test(ctx_rule_cleanup ctx-rule-cleanup.cpp "integration;apprule")
 add_ngosen_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule")
 add_ngosen_headless_test(toggle_key toggle-key.cpp "integration;apprule")
+add_ngosen_headless_test(hidden_input hidden-input.cpp "integration;terminal")
+target_link_libraries(hidden_input PRIVATE util)
+# Its prompt is seen by every test that types into a terminal, since the engine scans all of the user's ptys.
+set_tests_properties(hidden_input PROPERTIES SKIP_RETURN_CODE 77 RUN_SERIAL TRUE)
 add_ngosen_headless_test(app_switch_memory app-switch-memory.cpp "integration;apprule")
 add_ngosen_headless_test(retype_after_switch retype-after-switch.cpp "integration;retype")
 add_ngosen_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp "integration;apprule;gnome")
@@ -270,8 +274,21 @@ add_dependencies(addon_conf_test ngosen-addon.conf.in-fmt ngosenmigrate)
 add_test(NAME addon_conf COMMAND addon_conf_test)
 set_tests_properties(addon_conf PROPERTIES LABELS "unit;config" TIMEOUT 20)
 
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(NAME tray_icon_heights
+         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tray-icon-heights.py ${RSVG_CONVERT}
+                 ${PROJECT_SOURCE_DIR}/data/icons/hicolor/scalable/apps ${PROJECT_BINARY_DIR}/data/icons/gnome
+                 ${PROJECT_BINARY_DIR}/data/icons/large)
+set_tests_properties(tray_icon_heights PROPERTIES LABELS "unit;icons" TIMEOUT 60)
+
+add_test(NAME tray_icon_install COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tray-icon-install.sh ${PROJECT_BINARY_DIR})
+set_tests_properties(tray_icon_install PROPERTIES LABELS "unit;icons;packaging" TIMEOUT 120)
+
 add_test(NAME copr_makefile COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/copr-makefile.sh ${PROJECT_SOURCE_DIR})
 set_tests_properties(copr_makefile PROPERTIES LABELS "unit;packaging" TIMEOUT 20 SKIP_RETURN_CODE 77)
+
+add_test(NAME install_apt_repo COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/install-apt-repo.sh ${PROJECT_SOURCE_DIR})
+set_tests_properties(install_apt_repo PROPERTIES LABELS "unit;packaging" TIMEOUT 20)
 
 add_test(NAME settings_gui_install
          COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/settings-gui-install.sh ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR})

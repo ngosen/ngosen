@@ -1,0 +1,6 @@
+Types: deb
+URIs: https://example.org/debian
+# note: mirrors
+ https://ngosen.github.io/ngosen/apt
+Suites: noble
+Components: main

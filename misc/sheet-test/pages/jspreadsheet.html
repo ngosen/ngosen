@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>jspreadsheet</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsuites@5.4.6/dist/jsuites.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@4.13.4/dist/jspreadsheet.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jsuites@5.4.6/dist/jsuites.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@4.13.4/dist/index.min.js"></script>
+</head>
+<body style="font-size:18px">
+<div id="s"></div>
+<script src="report.js"></script>
+<script>
+  const sheet = jspreadsheet(document.getElementById('s'), { minDimensions: [5, 12], defaultColWidth: 140 });
+  sheet.updateSelectionFromCoords(0, 0, 0, 0);
+  report('jspreadsheet', () => sheet.getData(), (r, c) => centerOf(sheet.getCellFromCoords(c, r)));
+</script>
+</body></html>

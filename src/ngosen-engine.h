@@ -26,6 +26,7 @@
 #include <mutex>
 #include <memory>
 #include <optional>
+#include <unordered_set>
 #include <fcitx-config/iniparser.h>
 #include <fcitx/action.h>
 #include <fcitx/addonfactory.h>
@@ -295,6 +296,7 @@ namespace fcitx {
         std::unordered_map<std::string, NgoSenMode> appRules_;
         std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
+        std::string                                 vimAppsPath_;
         std::weak_ptr<CandidateList>                modeMenuList_;
         // A modifier-only toggle key fires on release, unless another key came in between.
         bool                             toggleTapArmed_  = false;
@@ -318,6 +320,8 @@ namespace fcitx {
         std::unique_ptr<EmojiLoader>           emojiLoader_;
         mutable std::mutex                     appRulesMutex_;
         std::unordered_map<KeySym, NgoSenMode> modeMenuMapping_;
+        std::unordered_set<std::string>        vimApps_; ///< Apps whose fields follow Vim's normal-mode keys
+        KeySym                                 vimMenuKey_ = FcitxKey_None;
         // A Wayland click reaches the IM only as a surrounding text update.
         std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> commitWatcher_;
@@ -420,6 +424,10 @@ namespace fcitx {
 
         // The rule's own name: appName itself, or appName without ".desktop".
         std::optional<std::string> appRuleName(const std::string& appName) const;
+        bool                       vimModeFor(const std::string& appName) const;
+        void                       loadVimApps();
+        void                       saveVimApps() const;
+        void                       toggleVimMode(InputContext* ic);
         std::optional<NgoSenMode>  findAppRule(const std::string& appName) const;
         // The mode Vietnamese typing uses: the configured one, unless that is Off.
         NgoSenMode vietnameseMode() const;
@@ -460,6 +468,7 @@ namespace fcitx {
             std::string label;
             KeySym      key;
             bool        visible;
+            bool        vim = false; // the Vim mode switch rather than a typing mode
         };
         // Every mode in the configured order, then the ones the order leaves out.
         std::vector<ModeMenuItem> modeMenuItems();

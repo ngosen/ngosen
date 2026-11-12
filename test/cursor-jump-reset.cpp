@@ -36,8 +36,14 @@ namespace {
                 const size_t    commits   = context_->commits().size();
                 fcitx::KeyEvent event(context_.get(), fcitx::Key(static_cast<fcitx::KeySym>(c)), false);
                 engine_.keyEvent(entry_, event);
-                if (!event.accepted())
+                if (!event.accepted()) {
                     insert(std::string(1, c));
+                    if (resetAfterPassedKeys_) {
+                        report();
+                        fcitx::InputContextEvent reset(context_.get(), fcitx::EventType::InputContextReset);
+                        engine_.reset(entry_, reset);
+                    }
+                }
                 for (size_t i = forwarded; i < context_->forwarded().size(); ++i) {
                     const auto& key = context_->forwarded()[i];
                     if (key.key().sym() == FcitxKey_BackSpace && !key.isRelease()) {
@@ -93,6 +99,11 @@ namespace {
 
         void repeatReport() {
             report();
+        }
+
+        // Firefox resets the input context after each key that reaches it unchanged.
+        void resetAfterPassedKeys() {
+            resetAfterPassedKeys_ = true;
         }
 
         // VS Code's EditContext on Wayland reports the typed char twice with the caret one step back,
@@ -175,13 +186,14 @@ namespace {
         const fcitx::InputMethodEntry&    entry_;
         std::unique_ptr<TestInputContext> context_;
         std::string                       text_;
-        size_t                            cursor_           = 0;
-        bool                              cursorBeforeText_ = false;
-        bool                              caretBounce_      = false;
-        bool                              lateStepBack_     = false;
-        bool                              holdCommitReport_ = false;
-        size_t                            deletes_          = 0;
-        int                               backspaces_       = 0;
+        size_t                            cursor_               = 0;
+        bool                              cursorBeforeText_     = false;
+        bool                              caretBounce_          = false;
+        bool                              lateStepBack_         = false;
+        bool                              holdCommitReport_     = false;
+        bool                              resetAfterPassedKeys_ = false;
+        size_t                            deletes_              = 0;
+        int                               backspaces_           = 0;
     };
 
     bool expectText(const std::string& step, const FakeApp& app, const std::string& expected) {
@@ -278,6 +290,14 @@ int main() {
         app.stepBackLateAfterKeys();
         app.type("vieetj nhieeuf");
         if (!expectText("type \"vieetj nhieeuf\" with a late caret step back after each key", app, "việt nhiều"))
+            return 1;
+    }
+    // Those resets must not end a word typed as is after a '/'.
+    {
+        FakeApp app(testInstance, engine, entry);
+        app.resetAfterPassedKeys();
+        app.type("/cost cd /usr/share ");
+        if (!expectText("type \"/cost cd /usr/share \" with a reset after each key the app gets", app, "/cost cd /usr/share "))
             return 1;
     }
     return 0;

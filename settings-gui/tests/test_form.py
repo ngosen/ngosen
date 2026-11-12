@@ -157,7 +157,7 @@ class ShortcutsPageTest(unittest.TestCase):
         window.sidebar.setCurrentRow(keys[0])
         for _ in range(30):
             app.processEvents()
-        modes = [w for w in window.findChildren(QListWidget) if w.isVisible() and w.count() == 4]
+        modes = [w for w in window.findChildren(QListWidget) if w.isVisible() and w.count() == 5]
         card = modes[0].parentWidget()
         for label in [x for x in card.findChildren(QLabel) if x.parentWidget() is card]:
             self.assertLessEqual(label.height(), label.heightForWidth(label.width()) + 4)
@@ -262,6 +262,12 @@ class AppearancePageTest(unittest.TestCase):
         self.assertIsNotNone(preview)
         self.assertEqual(self.page._tray_icon_names()[0], ("fcitx-ngosen", "fcitx-ngosen-off"))
         self.assertFalse(preview.pixmap().isNull())
+        drawn = preview.pixmap().cacheKey()
+        self.page.update_config("TrayIconSize", "Large")
+        self.assertEqual(
+            self.page._tray_icon_names()[0], ("fcitx-ngosen-large", "fcitx-ngosen-off-large")
+        )
+        self.assertNotEqual(preview.pixmap().cacheKey(), drawn)
         drawn = preview.pixmap().cacheKey()
         self.page.update_config("UseLotusIcons", "False")
         self.assertNotEqual(preview.pixmap().cacheKey(), drawn)

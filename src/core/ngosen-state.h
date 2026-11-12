@@ -21,6 +21,7 @@
 #include "ngosen-host.h"
 #include "ngosen-key.h"
 #include "ngosen-surrounding-check.h"
+#include "ngosen-vim.h"
 
 #include <bitset>
 #include <cstddef>
@@ -95,6 +96,10 @@ namespace ngosen {
         // The app reset the field it keeps focused, as Dolphin's search field does while the user types.
         void appReset();
 
+        // The app runs Vim or Vim keys (#302): after Escape, letters are commands until Vim goes into
+        // insert mode, and they reach the app untouched.
+        void setVimKeys(bool on);
+
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.
         bool activate(ngosen::Mode targetMode, bool isFocusIn);
@@ -161,6 +166,10 @@ namespace ngosen {
          */
         void flushPendingReplacement();
 
+        // True while this field is a terminal whose shell reads input it does not show, as at a password
+        // prompt; the caller then passes the key to the app untouched. Called for every key.
+        bool passesHiddenInput();
+
       private:
         static constexpr size_t  MAX_BUFFERED_KEYS = 50;
 
@@ -194,9 +203,26 @@ namespace ngosen {
         bool                     checkWordAfterBounce_  = false; ///< focus came back too fast to tell whether it is the same field
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
+        bool                     hiddenInput_           = false; ///< the terminal hid input at the last key
+        bool                     hiddenInputSettled_    = true;  ///< what was open before the last change has been put down
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
         bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key
         Surrounding              reportAtKey_;
+
+        enum class VimState : std::uint8_t {
+            Insert,
+            Normal,
+            CommandLine
+        };
+        bool                 vimKeys_  = false; ///< The app rule says the field uses Vim keys
+        bool                 vimAuto_  = false; ///< Vim was started from the shell in this field
+        VimState             vimState_ = VimState::Insert;
+        ngosen::VimKeyReader vimReader_;
+        std::string          vimTyped_;             ///< Keys let through since Escape, given to the engine if they turn out to be text
+        std::string          vimLine_;              ///< The shell line, or Vim's command line, typed so far
+        bool                 vimTookKey_   = false; ///< readVimKey let the key through as a Vim command
+        bool                 vimMayStay_   = false; ///< a quit command just ran, and Vim may have refused it
+        bool                 vimSuspended_ = false; ///< Ctrl+Z stopped Vim; fg at the shell brings it back
 
         struct Retype {
             std::string typed;
@@ -260,9 +286,18 @@ namespace ngosen {
         void                           forgetSelection();
         void        offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key, std::string after = {});
         void        dropRetoneKey();
+        void        settleForHiddenInput();
         void        checkRetoneReport();
         bool        handleKeyAfterRetone(ngosen::KeyPress& keyEvent);
         std::string retoned(const std::string& word, uint32_t sym, uint32_t states) const;
+
+        // A word that starts with '/', such as a chat command or a file path, goes to the app as typed.
+        bool slashWord_       = false;
+        int  slashWordLen_    = 0;    ///< characters typed after the '/'
+        bool afterWordEnd_    = true; ///< the last key ended a word, for fields that do not report their text
+        bool typedSinceFocus_ = false;
+        bool handleRawWordKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool atRawWordStart() const;
 
         // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
         // surrounding text report the commit waits this long for them.
@@ -723,6 +758,21 @@ namespace ngosen {
          * @return True if key was forwarded.
          */
         bool checkForwardSpecialKey(ngosen::KeyPress& keyEvent, uint32_t& currentSym);
+        bool vimOn() const {
+            return vimKeys_ || vimAuto_;
+        }
+        void enterVimNormalMode();
+        void leaveVim();
+        // Escape and the like that take Vim out of insert mode, or keys Vim reads that we cannot follow.
+        void noteVimSpecialKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        // Follows the shell line in a field without surrounding text, to see Vim start.
+        void noteShellKey(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        // Lets a key typed in Vim's normal mode or command line through; false when it is text for the engine.
+        bool readVimKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool readVimCommandLineKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool resumesVimAfterQuit(uint32_t currentSym);
+        void startWordAfterVimCommand();
+        void takeUpVimTyped();
 
         /**
          * @brief Handles Sen mode processing.

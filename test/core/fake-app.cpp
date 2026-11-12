@@ -130,12 +130,15 @@ namespace ngosen::test {
         const uint32_t state = ((sym & WithShift) != 0U ? modifier::Shift : 0U) | ((sym & WithCtrl) != 0U ? modifier::Ctrl : 0U);
         sym &= ~(WithShift | WithCtrl);
         FakeKey down(sym, false, state, time);
-        state_->keyEvent(down);
+        // As the fcitx5 shell does, a terminal hiding input gets the key without the typing logic.
+        const bool hidden = state_->passesHiddenInput();
+        if (!hidden)
+            state_->keyEvent(down);
         if (!down.accepted() && quirks_.keepsLastEditPerTurn)
             endTurn();
         if (!down.accepted())
             cursorPastBy_ = 0;
-        if (!down.accepted() && quirks_.resendsKeysWithoutText && keyText(sym).empty()) {
+        if (!hidden && !down.accepted() && quirks_.resendsKeysWithoutText && keyText(sym).empty()) {
             FakeKey again(sym, false, modifier::Repeat, time);
             state_->keyEvent(again);
         }
@@ -456,6 +459,18 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::focusNewEmptyField(Mode mode, int ms) {
+        focused_ = false;
+        state_->deactivate(true);
+        later(ms, [this, mode] {
+            text_.clear();
+            cursor_ = anchor_ = shownCursor_ = shownAnchor_ = 0;
+            focused_                                        = true;
+            state_->activate(mode, true);
+            changed();
+        });
+    }
+
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};
@@ -470,6 +485,11 @@ namespace ngosen::test {
         if (quirks_.hidesSelectionEnd) {
             const auto start = static_cast<unsigned int>(std::min(anchor_, cursor_));
             return Surrounding(encode(text_), start, start);
+        }
+        if (quirks_.reportsTrailingNbsp && cursor_ > 0 && cursor_ <= text_.size() && text_[cursor_ - 1] == U' ') {
+            std::u32string shown = text_;
+            shown[cursor_ - 1]   = U'\u00a0';
+            return Surrounding(encode(shown), static_cast<unsigned int>(cursor_), static_cast<unsigned int>(anchor_));
         }
         return Surrounding(encode(text_), static_cast<unsigned int>(cursor_ + cursorPastBy_), static_cast<unsigned int>(anchor_ + cursorPastBy_));
     }

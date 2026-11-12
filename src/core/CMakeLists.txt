@@ -7,14 +7,18 @@ add_library(ngosen_core STATIC
     ngosen-state-focus.cpp
     ngosen-state-macro.cpp
     ngosen-state-replace.cpp
+    ngosen-state-raw.cpp
     ngosen-state-retone.cpp
     ngosen-state-retype.cpp
     ngosen-state-wait.cpp
+    ngosen-state-vim.cpp
+    ngosen-vim.cpp
     ngosen-app-quirks.cpp
     ngosen-flatpak-names.cpp
     ngosen-globals.cpp
     ngosen-gnome-apps.cpp
     ngosen-pointer.cpp
+    ngosen-pty.cpp
     ngosen-recorder.cpp
     ngosen-strings.cpp
     ngosen-surrounding-check.cpp

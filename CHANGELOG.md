@@ -12,9 +12,62 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
-- Gõ thừa chữ `d` sau một chữ có `đ` (kiểu `dduowjcd`) rồi bấm BackSpace không còn mất nét của `đ`: ra `được`, không còn ra `dược` (#712).
 - Trên GNOME, Gõ Sen không còn làm từ đang gõ chớp ở dạng chưa đổi dấu hoặc chữ khoảng 30 ms mỗi lần sửa từ (từ version 1.8): thay đổi hiện ngay trong Chromium, Chrome, VS Code, Thunderbird, GNOME Text Editor, LibreOffice Writer và các app khác. Firefox và các trình duyệt dựa trên Firefox (Zen, LibreWolf…) vẫn giữ khoảng chờ ngắn để tránh lệch con trỏ, làm hỏng từ (#720).
 - Ở chế độ Preedit trên KDE Plasma Wayland, chữ đang gạch chân trong ô tìm kiếm của Dolphin (Ctrl+F) không còn bị mất khi app làm mới ô tìm kiếm: gõ chậm `tôi là ai` ra đủ `tôi là ai`, không còn ra `tôi à i` (#722, sửa #717).
+
+## [1.10.0-1] — 12/11/2026
+
+Vim mode cho từng app trong menu chế độ, để lệnh Vim đi qua nguyên vẹn và từ đầu tiên sau khi vào insert mode có dấu ngay (#302, #587). Từ bắt đầu bằng `/` giữ nguyên như gõ, cho lệnh chat và đường dẫn trong terminal, kể cả trong Firefox (#312, #716, #718, #719, #721). Gõ Telex quên mũ hoặc móc như `tienf`, `Nguyenx` vẫn ra tiền, Nguyễn (#696); các tên như plông, Mnông, Đakrông gõ ra đúng chữ (#706, #708). Terminal hỏi password ẩn chữ thì tự ngừng gõ tiếng Việt (#106, #645). Icon khay có cỡ Lớn và icon kiểu trơn cao bằng ô (#675, #671). Lệnh cài tự thêm repo APT (#654), repo có thêm gói `wl-ngosen` (#702, #703), trang Kiểm tra máy hiện version và trạng thái repo (#657). Bảng tính Lark trên Chrome không còn quên chữ đầu sau khi chuyển ô (#704); BackSpace sau chữ `d` thừa không còn mất nét của `đ` (#712).
+Tải ở [ngosen-1.10.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.10.0-1).
+
+### Thêm
+
+- Tuỳ chọn "Cỡ biểu tượng khay" ở trang Giao diện: chọn Lớn thì biểu tượng ngó sen to hơn trong ô của
+  nó trên khay, ví dụ trên KDE cao 20 px thay vì 16 px. Trên GNOME không đổi, vì biểu tượng đã đầy ô.
+  Chỉ áp dụng khi bật "Sử dụng biểu tượng trạng thái Ngó Sen" (#675).
+- Gõ nguyên từng phím cho từ bắt đầu bằng `/` ở đầu dòng hoặc ngay sau dấu cách trong cả Gõ Sen và
+  Preedit, để gõ lệnh chat (Claude Code, Slack, Discord) và đường dẫn trong terminal: `/cost` không còn
+  thành `/cót`, `cd /usr/share` không còn thành `cd /ủ/share`, kể cả trong Firefox. Tuỳ chọn "Gõ thô sau
+  dấu / đầu từ (lệnh, đường dẫn)" nằm trong nhóm Gõ nhanh ở trang Gõ chữ, mặc định bật (#312, #716, #718, #719, #721).
+- Trang Kiểm tra máy hiện version Ngó Sen đang chạy và trạng thái bật repo: đã bật thì nhận version mới khi cập nhật hệ thống; chưa bật thì báo không nhận version mới, lỗi có thể đã được sửa và có link “Cách nhận version mới”. Văn bản báo lỗi cũng ghi trạng thái repo (#657).
+- Tự ngừng gõ tiếng Việt khi terminal hỏi password ẩn chữ: giữ nguyên phím, không ghi nhật ký gõ; xong tự bật lại, không cần cài đặt. Riêng sudo trên Linux Mint hiện dấu * chưa nhận ra, cần dùng phím chuyển Anh/Việt để chuyển sang tiếng Anh (#106, #645)
+- Thêm Vim mode cho từng app trong menu `, dùng phím tắt `v`, hiện `[v] Vim mode: bật` / `[v] Vim mode: tắt`.
+  Ngó Sen nhớ bật/tắt riêng cho từng app; có thể ẩn mục này hoặc đổi phím ở trang Phím tắt, nhóm Đổi chế độ.
+  Dùng được với cả Gõ Sen và Preedit, cho các app dùng phím Vim: nvim/vim trong terminal, Claude Code,
+  Antigravity, plugin Vim của Obsidian và plugin Vim của JetBrains IDE. Khi bật, sau Esc hoặc Ctrl+[,
+  Ngó Sen cho các lệnh Vim đi qua nguyên vẹn; từ đầu tiên gõ sau lệnh vào insert mode (`i`, `a`, `o`, `ciw`…)
+  có dấu ngay. Trước đây, từ này còn nguyên như `tieengs`; trong Preedit, phím lệnh còn bị giữ lại hoặc
+  biến thành chữ, như `dd` thành `đ`. Trong terminal, dù tắt Vim mode, Ngó Sen vẫn nhận ra khi gõ `vim`
+  hay `nvim` ở shell rồi nhấn Enter, kể cả khi thêm `sudo`, để từ đầu tiên gõ trong file cũng có dấu.
+  Thoát Vim bằng `:q`, `:wq`, `ZZ` thì gõ lại bình thường. Chưa xử lý phím Esc được đổi thành chữ như `jk`.
+  Nếu mở Vim từ lịch sử shell bằng mũi tên lên, qua alias hoặc `git commit`, hãy bật Vim mode cho terminal (#302, #587).
+- Lệnh cài một dòng nay tự thêm repo APT trên Debian, Ubuntu và các distro dựa trên chúng để nhận version mới khi cập nhật hệ thống. Máy đã cài bằng lệnh này trước đây có thể chạy lại để thêm repo. (#654)
+- Gõ Telex quên mũ hoặc móc ở những vần luôn có chúng nay vẫn ra chữ đúng khi chốt bằng dấu cách, dấu câu
+  hoặc Enter: `tienf` ra tiền, `viecj` ra việc, `Nguyenx` ra Nguyễn, `luanj` ra luận, `ruouj` ra rượu, thay vì
+  trả về phím đã gõ. Áp dụng cho 25 vần như iên, uyên, ênh, uân, ưu, ươp, chỉ khi chữ có dấu thanh gõ bằng
+  s/f/r/x/j, các nguyên âm gõ liền nhau và chữ có trong từ điển. Tám từ tiếng Anh gõ giống chữ thiếu mũ vẫn
+  giữ nguyên, như `hues`, `yens`, `techs`, nên huế và yến vẫn phải gõ đủ (`huees`, `yeens`). VNI và VIQR
+  chưa có, vì ở đó dấu thanh là chữ số và dấu câu (#696).
+- Repo APT, pacman, zypper chung của Ngó Sen có thêm gói `wl-ngosen`, bản chạy thẳng trên Wayland cho niri, Sway,
+  Hyprland; cài bằng cùng lệnh, chỉ đổi tên gói (#702).
+
+### Thay đổi
+
+- Tên riêng có trong từ điển nhưng mở đầu bằng phụ âm ghép tiếng Việt không có, như plông, drăng, xtiêng,
+  Hrê, Brâu, nay gõ được thay vì bị trả về phím đã gõ. Từ tiếng Anh thông dụng vẫn được ưu tiên: khi phím
+  đã gõ còn là đầu một từ tiếng Anh thì vẫn hiện nguyên như gõ, nên `draw` vẫn là draw, gõ tiếp `drawng`
+  mới thành drăng, và `broom` vẫn ra broom chứ không ra brôm. Cần bật kiểm tra chính tả bằng từ điển (mặc
+  định bật) (#706).
+- Từ điển có thêm 44 âm tiết trong tên xã, phường và dân tộc, như Đakrông, Mnông, kmăl, knốp, khươl, nên
+  các tên này nay gõ ra đúng chữ thay vì bị trả về phím đã gõ (#708).
+- Icon khay kiểu trơn (V, E, mặt cười, khi tắt "Sử dụng biểu tượng trạng thái Ngó Sen") nay cao bằng ô ngó sen, trước chỉ khoảng hai phần ba. Trên GNOME cần đăng xuất rồi đăng nhập lại mới thấy (#671).
+
+### Sửa
+
+- Gỡ bằng lệnh cài mà máy còn gói `wl-ngosen` thì giữ repo Ngó Sen, để `wl-ngosen` tiếp tục nhận version mới, như
+  với `ibus-ngosen` (#703).
+- Bảng tính Lark trên Chrome: chữ đầu tiên gõ ngay sau khi chuyển ô không còn bị quên: gõ `caau` ra `câu`, không còn giữ nguyên `caau` (#704).
+- Gõ thừa chữ `d` sau một chữ có `đ` (kiểu `dduowjcd`) rồi bấm BackSpace không còn mất nét của `đ`: ra `được`, không còn ra `dược` (#712).
 
 ## [1.9.3-1] — 11/11/2026
 
@@ -26,7 +79,6 @@ Tải ở [ngosen-1.9.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-
 - Bảng tính Lark trên Brave/Chrome (X11): gõ Gõ Sen rồi chuyển ô nhanh bằng mũi tên hoặc Tab không còn mất chữ, kiểu gõ `laf` chỉ còn `l` và các ô sau trống (#681).
 - Bảng tính Lark trên Brave/Chrome (GNOME Wayland): chữ đầu tiên gõ bằng Gõ Sen trong bảng không còn bị lặp, kiểu `tieengs` ra `tieêngếng` (#686).
 - Bảng tính Lark trên Chromium/Chrome (KDE Plasma Wayland): chữ đầu tiên gõ bằng Gõ Sen trong bảng không còn bị lặp như trên GNOME (#697).
-- Bảng tính Lark trên Chrome: chữ đầu tiên gõ ngay sau khi chuyển ô không còn bị quên: gõ `caau` ra `câu`, không còn giữ nguyên `caau` (#704).
 - Lệnh cài nhận ra niri như Sway và Hyprland: thêm Ngó Sen, bật fcitx5 và in dòng để fcitx5 tự chạy khi đăng nhập (#689, #700).
 - Gõ Telex các chữ sai chính tả như `moot`, `tienr` rồi bấm cách giữ nguyên phím đã gõ, không còn ra `môt`, `tiẻn` (#693).
 - Bản IBus (ibus-ngosen): bấm Enter ngay sau chữ đang gạch chân nay ra đúng chữ như bấm dấu cách, có đổi dấu sau phụ âm cuối (`mootxj` ra "một") và bung gõ tắt; bản fcitx5 không đổi (#692).

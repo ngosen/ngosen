@@ -83,6 +83,8 @@ namespace ngosen {
     }
 
     void TypingState::handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (vimOn() && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
+            return;
         if (ngosen::key::isBackspace(currentSym) && reopenWordInPreedit(keyEvent))
             return;
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone) {
@@ -119,6 +121,9 @@ namespace ngosen {
         }
         host_->refreshPreedit();
         host_->refreshPanel();
+        // Escape has committed the word; the letters typed next are Vim commands.
+        if (!typesText(keyEvent, currentSym))
+            noteVimSpecialKey(keyEvent, currentSym);
     }
 
     // WPS over D-Bus sets the same flags as fcitx5-gtk4 but never reports its text, takes forwarded
@@ -201,6 +206,7 @@ namespace ngosen {
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
+            noteVimSpecialKey(keyEvent, currentSym);
             return true;
         }
 
@@ -284,6 +290,8 @@ namespace ngosen {
             keyEvent.passToApp();
             return;
         }
+        if (vimOn() && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
+            return;
 
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone && removeToneMark(keyEvent))
             return;
@@ -649,7 +657,15 @@ namespace ngosen {
         const bool ownBackspace = deleting && ngosen::key::isBackspace(currentSym) && !ngosen::forwardsBackspaces(host_->field());
         if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
             lastWord_.clear();
-        if (handleKeyDuringReplacement(keyEvent, currentSym) || handleDoubledKey(keyEvent, currentSym))
+        if (handleKeyDuringReplacement(keyEvent, currentSym))
+            return;
+        // Before the doubled keys, so -- stays as typed in a path.
+        // The shell line still sees the key, so /usr/bin/vim starts Vim mode.
+        if ((realMode == ngosen::Mode::Sen || realMode == ngosen::Mode::Preedit) && handleRawWordKey(keyEvent, currentSym)) {
+            noteShellKey(keyEvent, currentSym);
+            return;
+        }
+        if (handleDoubledKey(keyEvent, currentSym))
             return;
 
         // Vietnamese typed since then, so the English noted is no longer right before the cursor.
@@ -688,6 +704,8 @@ namespace ngosen {
                 break;
             }
         }
+        if (mode() == ngosen::Mode::Sen || mode() == ngosen::Mode::Preedit)
+            noteShellKey(keyEvent, currentSym);
     }
 
     bool TypingState::skipsKey(ngosen::KeyPress& keyEvent) {
@@ -815,6 +833,8 @@ namespace ngosen {
             clearAllBuffers();
             forgetKeysWhileOff();
             clickBeforeKey_ = true;
+            slashWord_      = false;
+            afterWordEnd_   = false;
         }
     }
 
@@ -848,6 +868,9 @@ namespace ngosen {
         uint32_t       currentSym = keyEvent.sym();
         const Options& options    = engine_->options();
         if ((!options.autoCapitalizeAfterPunctuation && !options.capitalizeStartOfText) || mode() == ngosen::Mode::Off)
+            return currentSym;
+        // A capital is another Vim command: j moves down, J joins lines.
+        if (vimOn() && vimState_ != VimState::Insert)
             return currentSym;
         // Ignore auto-capitalize side-effects if we're processing automated replacement backspaces
         if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym))
@@ -995,7 +1018,8 @@ namespace ngosen {
     }
 
     bool TypingState::handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (mode() == ngosen::Mode::Off)
+        // Two spaces or two hyphens are motions, or a leader mapping, in Vim's normal mode.
+        if (mode() == ngosen::Mode::Off || (vimOn() && vimState_ != VimState::Insert))
             return false;
         const Field field = host_->field();
         if (field.sendsNoKeys && !canSendBackspaces())
@@ -1104,8 +1128,13 @@ namespace ngosen {
         dropRetype();
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
-        if (isFocusOut)
+        slashWord_             = false;
+        if (isFocusOut) {
             keySinceReport_ = false;
+            // A chat box is usually empty when it gets focus.
+            afterWordEnd_    = true;
+            typedSinceFocus_ = false;
+        }
         // GTK resets the context when Enter inserts a new line; the sentence started there still capitalizes.
         const bool keepCapitalize = shouldCapitalize_ && !isFocusOut;
 
@@ -1240,8 +1269,46 @@ namespace ngosen {
             ResetEngine(bambooEngine_.handle());
     }
 
+    bool TypingState::passesHiddenInput() {
+        const bool hidden = runsShellOnPty(host_->field()) && engine_->anyTerminalHidesInput();
+        if (hidden != hiddenInput_) {
+            hiddenInput_        = hidden;
+            hiddenInputSettled_ = false;
+            NGOSEN_INFO(hidden ? "Terminal hides input: keys go to the app as typed" : "Terminal shows input again");
+        }
+        // A replacement in flight finishes on its own; what it leaves is cleared at a later key.
+        if (hiddenInputSettled_ || is_deleting_.load(std::memory_order_acquire) || edit_hold_)
+            return hidden;
+        hiddenInputSettled_ = true;
+        if (hidden)
+            settleForHiddenInput();
+        else
+            clearAllBuffers();
+        return hidden;
+    }
+
+    void TypingState::settleForHiddenInput() {
+        // A word still in the preedit goes out as the keys typed, since they may already be the password.
+        // One already in the field stays, as deleting it would race the keys passed straight to the app.
+        if (bambooEngine_ && mode() == ngosen::Mode::Preedit) {
+            ngosen::UniqueCPtr<char> raw(EnginePullRawText(bambooEngine_.handle()));
+            if (raw && *raw.get() != 0)
+                commit(raw.get());
+        }
+        dropRetype();
+        dropRetoneKey();
+        forgetKeysWhileOff();
+        clearAllBuffers();
+        if (mode() == ngosen::Mode::Preedit || mode() == ngosen::Mode::Emoji) {
+            host_->resetPanel();
+            host_->refreshPanel();
+            host_->refreshPreedit();
+        }
+    }
+
     bool TypingState::isEmptyHistory() const {
-        return !hasHistory_;
+        // A raw word keeps no history, yet an app reset after each of its keys must not end it.
+        return !hasHistory_ && !slashWord_;
     }
 
 } // namespace ngosen

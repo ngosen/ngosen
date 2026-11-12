@@ -1,0 +1,7 @@
+# apt reads any of its false words here, not only "no".
+Types: deb
+URIs: https://ngosen.github.io/ngosen/apt
+Suites: noble
+Components: main
+Signed-By: /usr/share/keyrings/ngosen.gpg
+Enabled: False

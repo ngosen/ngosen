@@ -928,6 +928,18 @@ namespace {
         base.textAfterCursor         = "\u200b";
         const auto baseCell          = ngosen::test::typeInAppTraced(resources, brave, base, keys, std::vector<int>(keys.size(), 100));
         check(baseCell.text == "tiếng việt ", "page with its own text that shows backspaces: keep backspaces", baseCell.text);
+        // Such a page still reports its edits, so the backspaces wait for the last commit to land.
+        ngosen::test::AppQuirks lagging;
+        lagging.textAfterCursor              = "\u200b";
+        lagging.lagMs                        = 30;
+        lagging.reportDelayMs                = 8;
+        lagging.backspacesSkipLag            = true;
+        lagging.convertsDeleteOnReportedCopy = true;
+        lagging.reportsTextAtChange          = true;
+        const std::string           chu      = "chuwx ";
+        const std::vector<uint32_t> chuKeys(chu.begin(), chu.end());
+        const auto                  lagged = ngosen::test::typeInAppTraced(resources, makeField("ibus", true, "chromium"), lagging, chuKeys, std::vector<int>(chuKeys.size(), 60));
+        check(lagged.text == "chữ \u200b", "page with U+200B that lags: wait for the commit before backspaces", lagged.text);
 
         // KDE relays Chromium through text-input, with the app name KWin gives fcitx5.
         const Field kdeChromium = makeField("wayland", true, "chromium");

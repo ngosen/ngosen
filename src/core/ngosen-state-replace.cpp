@@ -658,7 +658,7 @@ namespace ngosen {
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");
-        if (pageHidesBackspaces())
+        if (pageHidesBackspaces() || cellKeepsOwnText())
             fails.emplace_back("page may keep its own text");
         return fails;
     }
@@ -870,11 +870,13 @@ namespace ngosen {
     }
 
     bool TypingState::pageHidesBackspaces() const {
-        if (!ngosen::pageMayKeepOwnText(host_->field()))
-            return false;
-        // Lark Base's cells keep a U+200B in the text and their own copy, which takes backspaces but no
-        // deletion through the text, even though the browser's report shows the backspaces.
-        return !sinceFocus_.showedBackspace || host_->surrounding().text().find("\u200b") != std::string::npos;
+        return ngosen::pageMayKeepOwnText(host_->field()) && !sinceFocus_.showedBackspace;
+    }
+
+    // Lark Base's cells keep a U+200B in the text and their own copy, which takes backspaces but no
+    // deletion through the text, even though the browser's report shows the backspaces.
+    bool TypingState::cellKeepsOwnText() const {
+        return ngosen::pageMayKeepOwnText(host_->field()) && host_->surrounding().text().find("\u200b") != std::string::npos;
     }
 
     bool TypingState::checksGetAnswered() const {

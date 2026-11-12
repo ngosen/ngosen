@@ -23,7 +23,7 @@ Tải ở [ngosen-1.10.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
 - Gõ nguyên từng phím cho từ bắt đầu bằng `/` ở đầu dòng hoặc ngay sau dấu cách trong cả Gõ Sen và
   Preedit, để gõ lệnh chat (Claude Code, Slack, Discord) và đường dẫn trong terminal: `/cost` không còn
   thành `/cót`, `cd /usr/share` không còn thành `cd /ủ/share`, kể cả trong Firefox. Tuỳ chọn "Gõ thô sau
-  dấu / đầu từ (lệnh, đường dẫn)" nằm trong nhóm Gõ nhanh ở trang Gõ chữ, mặc định bật (#312, #716).
+  dấu / đầu từ (lệnh, đường dẫn)" nằm trong nhóm Gõ nhanh ở trang Gõ chữ, mặc định bật (#312, #716, #718, #719).
 - Trang Kiểm tra máy hiện version Ngó Sen đang chạy và trạng thái bật repo: đã bật thì nhận version mới khi cập nhật hệ thống; chưa bật thì báo không nhận version mới, lỗi có thể đã được sửa và có link “Cách nhận version mới”. Văn bản báo lỗi cũng ghi trạng thái repo (#657).
 - Tự ngừng gõ tiếng Việt khi terminal hỏi password ẩn chữ: giữ nguyên phím, không ghi nhật ký gõ; xong tự bật lại, không cần cài đặt. Riêng sudo trên Linux Mint hiện dấu * chưa nhận ra, cần dùng phím chuyển Anh/Việt để chuyển sang tiếng Anh (#106, #645)
 - Thêm Vim mode cho từng app trong menu `, dùng phím tắt `v`, hiện `[v] Vim mode: bật` / `[v] Vim mode: tắt`.

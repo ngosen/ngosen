@@ -474,6 +474,11 @@ namespace ngosen::test {
             const auto start = static_cast<unsigned int>(std::min(anchor_, cursor_));
             return Surrounding(encode(text_), start, start);
         }
+        if (quirks_.reportsTrailingNbsp && cursor_ > 0 && cursor_ <= text_.size() && text_[cursor_ - 1] == U' ') {
+            std::u32string shown = text_;
+            shown[cursor_ - 1]   = U'\u00a0';
+            return Surrounding(encode(shown), static_cast<unsigned int>(cursor_), static_cast<unsigned int>(anchor_));
+        }
         return Surrounding(encode(text_), static_cast<unsigned int>(cursor_ + cursorPastBy_), static_cast<unsigned int>(anchor_ + cursorPastBy_));
     }
 

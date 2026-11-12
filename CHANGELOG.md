@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.10.0-1] — 12/11/2026
+
+Vim mode cho từng app trong menu chế độ, để lệnh Vim đi qua nguyên vẹn và từ đầu tiên sau khi vào insert mode có dấu ngay (#302, #587). Từ bắt đầu bằng `/` giữ nguyên như gõ, cho lệnh chat và đường dẫn trong terminal, kể cả trong Firefox (#312, #716, #718, #719, #721). Gõ Telex quên mũ hoặc móc như `tienf`, `Nguyenx` vẫn ra tiền, Nguyễn (#696); các tên như plông, Mnông, Đakrông gõ ra đúng chữ (#706, #708). Terminal hỏi password ẩn chữ thì tự ngừng gõ tiếng Việt (#106, #645). Icon khay có cỡ Lớn và icon kiểu trơn cao bằng ô (#675, #671). Lệnh cài tự thêm repo APT (#654), repo có thêm gói `wl-ngosen` (#702, #703), trang Kiểm tra máy hiện version và trạng thái repo (#657). Bảng tính Lark trên Chrome không còn quên chữ đầu sau khi chuyển ô (#704); BackSpace sau chữ `d` thừa không còn mất nét của `đ` (#712).
+Tải ở [ngosen-1.10.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.10.0-1).
+
 ### Thêm
 
 - Tuỳ chọn "Cỡ biểu tượng khay" ở trang Giao diện: chọn Lớn thì biểu tượng ngó sen to hơn trong ô của

@@ -14,6 +14,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Gõ thừa chữ `d` sau một chữ có `đ` (kiểu `dduowjcd`) rồi bấm BackSpace không còn mất nét của `đ`: ra `được`, không còn ra `dược` (#712).
 - Trên GNOME, Gõ Sen không còn làm từ đang gõ chớp ở dạng chưa đổi dấu hoặc chữ khoảng 30 ms mỗi lần sửa từ (từ version 1.8): thay đổi hiện ngay trong Chromium, Chrome, VS Code, Thunderbird, GNOME Text Editor, LibreOffice Writer và các app khác. Firefox và các trình duyệt dựa trên Firefox (Zen, LibreWolf…) vẫn giữ khoảng chờ ngắn để tránh lệch con trỏ, làm hỏng từ (#720).
+- Ở chế độ Preedit trên KDE Plasma Wayland, chữ đang gạch chân trong ô tìm kiếm của Dolphin (Ctrl+F) không còn bị mất khi app làm mới ô tìm kiếm: gõ chậm `tôi là ai` ra đủ `tôi là ai`, không còn ra `tôi à i` (#722, sửa #717).
 
 ## [1.9.3-1] — 11/11/2026
 

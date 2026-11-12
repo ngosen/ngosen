@@ -590,7 +590,8 @@ namespace ngosen::test {
     void FakeApp::eraseBefore(size_t count) {
         if (quirks_.keepsOwnText) {
             ownText_.erase(ownText_.size() - std::min(count, ownText_.size()));
-            return;
+            if (!quirks_.backspacesShowInReport)
+                return;
         }
         if (anchor_ != cursor_) {
             previousText_   = text_;

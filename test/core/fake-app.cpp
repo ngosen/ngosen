@@ -571,6 +571,12 @@ namespace ngosen::test {
         changed();
         if (!quirks_.redrawsOnlyOnDeletion)
             redrawAfterEdit();
+        if (quirks_.emptiesAfterEditMs > 0)
+            later(quirks_.emptiesAfterEditMs, [this] {
+                text_.clear();
+                cursor_ = anchor_ = 0;
+                changed();
+            });
     }
 
     void FakeApp::noteTypedKey() {

@@ -585,6 +585,7 @@ namespace ngosen {
         bool deferLaggingCommit(const char* reason, uint64_t settleUs = 0);
         void noteWaitOutcome(const char* reason);
         bool lostWordAfterBounce(const Surrounding& s, bool settling);
+        bool fieldEmptiedItself(const Surrounding& s);
         bool reportTrailsFirstWord(const Surrounding& s) const;
         void forwardBackspaces(int count);
         // True when a replacement can delete text: through backspaces the frontend forwards or XTEST presses, or, where
@@ -703,6 +704,7 @@ namespace ngosen {
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
         uint64_t                        keyCount_               = 0; ///< key presses other than modifiers
+        uint64_t                        keysAtLastSurrounding_  = 0; ///< keyCount_ at the last report checkCursorJump saw
         int                             surrUnanswered_         = 0; ///< checks in a row left unanswered in this field
         static constexpr int            MinAnswersForPlainCount = 2;
         uint64_t                        commitCount_            = 0;
@@ -722,6 +724,7 @@ namespace ngosen {
             bool        reported       = false;  ///< any valid report, the copy at focus-in included
             bool        seenText       = false;  ///< a report with text while it had focus
             bool        seenEmpty      = false;  ///< reported itself empty before any key
+            int         emptiedItself  = 0;      ///< went from one character to empty with no key between
             uint64_t    keysAtFocus    = 0;      ///< keyCount_ when it got focus
             bool        autofillMarked = false;  ///< filled in text after the cursor without a key
             bool        untrusted      = false;  ///< the untrusted mark of an app GNOME Shell does not name

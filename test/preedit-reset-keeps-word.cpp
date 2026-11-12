@@ -34,13 +34,15 @@ namespace {
             press(FcitxKey_BackSpace, "");
         }
 
-        // Qt drops the preedit on a reset; fcitx5's own Qt and GTK modules commit it first. GTK, Firefox and
-        // Chromium over Wayland commit it after the reset, Chromium reporting the old text once more first.
+        // Qt drops the preedit on a reset and reports the same text again; fcitx5's own Qt and GTK modules commit
+        // it first. GTK, Firefox and Chromium over Wayland commit it after the reset, Chromium reporting the old
+        // text once more first.
         enum class OnReset {
             Drop,
             CommitFirst,
             CommitAfter,
-            CommitAfterOldReport
+            CommitAfterOldReport,
+            CommitAndMoveToStart
         };
 
         void reset(OnReset how = OnReset::Drop) {
@@ -53,11 +55,18 @@ namespace {
             fcitx::InputContextEvent event(context_.get(), fcitx::EventType::InputContextReset);
             engine_.reset(entry_, event);
             readPreedit();
-            if (how == OnReset::CommitAfterOldReport)
+            if (how == OnReset::Drop || how == OnReset::CommitAfterOldReport) {
                 report();
+                readPreedit();
+            }
             if (how == OnReset::CommitAfter || how == OnReset::CommitAfterOldReport) {
                 insert(preedit);
                 report();
+                readPreedit();
+            }
+            if (how == OnReset::CommitAndMoveToStart) {
+                insert(preedit);
+                moveToStart();
                 readPreedit();
             }
         }
@@ -79,7 +88,9 @@ namespace {
             pumpEventLoop(testInstance_.instance, 5);
         }
 
+        // From now on the app has no text to report.
         void invalidateReport() {
+            invalid_ = true;
             context_->surroundingText().invalidate();
             context_->updateSurroundingText();
             pumpEventLoop(testInstance_.instance, 5);
@@ -134,13 +145,18 @@ namespace {
         }
 
         void report() {
+            if (invalid_)
+                return;
             std::string text   = text_;
             auto        cursor = fcitx::utf8::length(text_.substr(0, cursor_));
-            // Long fields report only a window around the cursor; here, the last characters before it.
-            if (window_ > 0 && cursor > window_) {
-                const auto cut = fcitx::utf8::ncharByteLength(text.begin(), cursor - window_);
-                text.erase(0, cut);
-                cursor = window_;
+            // Long fields report only a window around the cursor.
+            if (window_ > 0) {
+                if (cursor > window_) {
+                    text.erase(0, fcitx::utf8::ncharByteLength(text.begin(), cursor - window_));
+                    cursor = window_;
+                }
+                if (fcitx::utf8::length(text) > cursor + window_)
+                    text.erase(fcitx::utf8::ncharByteLength(text.begin(), cursor + window_));
             }
             context_->surroundingText().setText(text, cursor, cursor);
             context_->updateSurroundingText();
@@ -153,7 +169,8 @@ namespace {
         std::unique_ptr<TestInputContext> context_;
         std::string                       text_;
         std::string                       preedit_;
-        size_t                            cursor_ = 0;
+        size_t                            cursor_  = 0;
+        bool                              invalid_ = false;
 
       public:
         size_t window_ = 0;
@@ -236,6 +253,16 @@ int main() {
         app.reset(PreeditApp::OnReset::CommitAfter);
         app.type(" ");
         ok &= expect("a commit that moves the report window is still seen", app, "tôi băn ");
+    }
+
+    // A click far away in a long field: the report around the click no longer shows the word.
+    {
+        PreeditApp app(testInstance, engine, entry, "wayland");
+        app.window_ = 4;
+        app.type("tooi bawn");
+        app.reset(PreeditApp::OnReset::CommitAndMoveToStart);
+        app.type("k ");
+        ok &= expect("a click away from the word in a long field does not type it again", app, "k tôi băn");
     }
 
     // Without a usable report the field may have changed under the word.

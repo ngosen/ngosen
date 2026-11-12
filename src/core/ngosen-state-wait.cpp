@@ -299,7 +299,7 @@ namespace ngosen {
         else
             engine_->recorder().addSurrounding(report);
         if (host_->hasFocus()) {
-            checkKeptWordCommitted();
+            checkFieldAfterKeptReset();
             checkCursorJump();
             checkRetoneReport();
         }

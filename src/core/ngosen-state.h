@@ -382,14 +382,9 @@ namespace ngosen {
         // Text and cursor a move without an edit left, until the next key or focus change.
         std::optional<std::pair<std::string, unsigned int>> jumpedFrom_;
 
-        // The field and the word a reset kept, until the app's next change or the next key.
-        struct KeptWord {
-            std::string  text;
-            unsigned int cursor = 0;
-            std::string  word;
-        };
-        std::optional<KeptWord> keptWord_;
-        void                    checkKeptWordCommitted();
+        // Text and cursor when a reset kept the open word, until the app changes either or the next key.
+        std::optional<std::pair<std::string, unsigned int>> fieldAtKeptReset_;
+        void                                                checkFieldAfterKeptReset();
 
         // Last key press seen, to spot one the app sends twice.
         uint32_t lastPressCode_      = 0;

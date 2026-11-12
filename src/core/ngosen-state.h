@@ -792,6 +792,9 @@ namespace ngosen {
         bool replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent);
         // Backspace from after lastWord_ into it: the engine takes up what is left of that word.
         void reopenLastWord();
+        // A sheet opens a cell editor on a key that reaches the page before the input method has a field,
+        // and the editor holds that letter: the word starts from it.
+        void takeLetterFieldOpenedWith();
         // Backspace right after a commit in Preedit: take the word back from the app as preedit.
         bool reopenWordInPreedit(ngosen::KeyPress& keyEvent);
         bool rebuildable(const std::string& committed) const;

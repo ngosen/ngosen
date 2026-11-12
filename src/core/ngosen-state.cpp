@@ -318,6 +318,8 @@ namespace ngosen {
             return;
         }
 
+        if (oldPreBuffer_.empty())
+            takeLetterFieldOpenedWith();
         const bool startsWord = oldPreBuffer_.empty();
         bool       processed  = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
@@ -424,6 +426,21 @@ namespace ngosen {
             return;
         lastWord_.clear();
         EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
+    }
+
+    void TypingState::takeLetterFieldOpenedWith() {
+        const Field field = host_->field();
+        if (keyCount_ != sinceFocus_.keysAtFocus + 1 || !field.surroundingText || field.url || field.password)
+            return;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || s.cursor() != 1 || s.anchor() != 1)
+            return;
+        const std::string letter = textBeforeCursor(s);
+        if (letter.size() != 1 || !std::isalpha(static_cast<unsigned char>(letter[0])) || s.text().find_first_not_of('\n', letter.size()) != std::string::npos)
+            return;
+        NGOSEN_INFO("Word starts with the letter the field opened with: " + letter);
+        EngineRebuildFromText(bambooEngine_.handle(), letter.c_str());
+        oldPreBuffer_ = letter;
     }
 
     bool TypingState::reopenWordInPreedit(ngosen::KeyPress& keyEvent) {

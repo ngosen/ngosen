@@ -471,6 +471,18 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::focusNewFieldWith(const std::string& text, int ms) {
+        focused_ = false;
+        state_->deactivate(true);
+        later(ms, [this, text] {
+            text_   = utf8::decode(text);
+            cursor_ = anchor_ = shownCursor_ = shownAnchor_ = text_.size();
+            focused_                                        = true;
+            state_->activate(Mode::Sen, true);
+            changed();
+        });
+    }
+
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};

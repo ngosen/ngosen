@@ -135,6 +135,9 @@ namespace ngosen::test {
         // Loses focus and gets it back within ms in a new empty field, with no reset in between, as a
         // browser closed and opened again does under GNOME Shell.
         void focusNewEmptyField(ngosen::Mode mode, int ms);
+        // Leaves the field, then within ms focuses a new one that already holds text, as a sheet does when
+        // the key that opens a cell editor reaches the page before the input method has a field.
+        void focusNewFieldWith(const std::string& text, int ms);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.

@@ -459,6 +459,18 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::focusNewEmptyField(Mode mode, int ms) {
+        focused_ = false;
+        state_->deactivate(true);
+        later(ms, [this, mode] {
+            text_.clear();
+            cursor_ = anchor_ = shownCursor_ = shownAnchor_ = 0;
+            focused_                                        = true;
+            state_->activate(mode, true);
+            changed();
+        });
+    }
+
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};

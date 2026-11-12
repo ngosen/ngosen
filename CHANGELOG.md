@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Trên GNOME, Gõ Sen không còn làm từ đang gõ chớp ở dạng chưa đổi dấu hoặc chữ khoảng 30 ms mỗi lần sửa từ (từ version 1.8): thay đổi hiện ngay trong Chromium, Chrome, VS Code, Thunderbird, GNOME Text Editor, LibreOffice Writer và các app khác. Firefox và các trình duyệt dựa trên Firefox (Zen, LibreWolf…) vẫn giữ khoảng chờ ngắn để tránh lệch con trỏ, làm hỏng từ (#720).
+
 ## [1.10.0-1] — 12/11/2026
 
 Vim mode cho từng app trong menu chế độ, để lệnh Vim đi qua nguyên vẹn và từ đầu tiên sau khi vào insert mode có dấu ngay (#302, #587). Từ bắt đầu bằng `/` giữ nguyên như gõ, cho lệnh chat và đường dẫn trong terminal, kể cả trong Firefox (#312, #716, #718, #719, #721). Gõ Telex quên mũ hoặc móc như `tienf`, `Nguyenx` vẫn ra tiền, Nguyễn (#696); các tên như plông, Mnông, Đakrông gõ ra đúng chữ (#706, #708). Terminal hỏi password ẩn chữ thì tự ngừng gõ tiếng Việt (#106, #645). Icon khay có cỡ Lớn và icon kiểu trơn cao bằng ô (#675, #671). Lệnh cài tự thêm repo APT (#654), repo có thêm gói `wl-ngosen` (#702, #703), trang Kiểm tra máy hiện version và trạng thái repo (#657). Bảng tính Lark trên Chrome không còn quên chữ đầu sau khi chuyển ô (#704); BackSpace sau chữ `d` thừa không còn mất nét của `đ` (#712).
@@ -63,7 +67,6 @@ Tải ở [ngosen-1.10.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
   với `ibus-ngosen` (#703).
 - Bảng tính Lark trên Chrome: chữ đầu tiên gõ ngay sau khi chuyển ô không còn bị quên: gõ `caau` ra `câu`, không còn giữ nguyên `caau` (#704).
 - Gõ thừa chữ `d` sau một chữ có `đ` (kiểu `dduowjcd`) rồi bấm BackSpace không còn mất nét của `đ`: ra `được`, không còn ra `dược` (#712).
-- Trên GNOME, Gõ Sen không còn làm từ đang gõ chớp ở dạng chưa đổi dấu hoặc chữ khoảng 30 ms mỗi lần sửa từ (từ version 1.8): thay đổi hiện ngay trong Chromium, Chrome, VS Code, Thunderbird, GNOME Text Editor, LibreOffice Writer và các app khác. Firefox và các trình duyệt dựa trên Firefox (Zen, LibreWolf…) vẫn giữ khoảng chờ ngắn để tránh lệch con trỏ, làm hỏng từ (#720).
 
 ## [1.9.3-1] — 11/11/2026
 

@@ -534,8 +534,10 @@ namespace ngosen {
     // Univer's input box hands each key to its sheet and empties itself, so an empty report from such a
     // field is neither a cursor move nor a new cell.
     bool TypingState::fieldEmptiedItself(const Surrounding& s) {
-        const bool emptied = hasLastSurrounding_ && s.text().empty() && keyCount_ == keysAtLastSurrounding_ && ngosen::utf8::length(lastSurroundingText_) == 1 &&
-            !is_deleting_.load(std::memory_order_acquire);
+        // It empties within tens of ms of the key or our commit; a click to an empty cell comes later.
+        constexpr uint64_t SelfEmptyUs = 100000;
+        const bool         emptied     = hasLastSurrounding_ && s.text().empty() && keyCount_ == keysAtLastSurrounding_ && ngosen::utf8::length(lastSurroundingText_) == 1 &&
+            !is_deleting_.load(std::memory_order_acquire) && ngosen::monotonicUs() - lastInputAtUs_ < SelfEmptyUs;
         keysAtLastSurrounding_ = keyCount_;
         if (emptied)
             ++sinceFocus_.emptiedItself;

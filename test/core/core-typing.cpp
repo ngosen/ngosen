@@ -1065,6 +1065,18 @@ namespace {
         press(state, static_cast<uint32_t>('d'));
         loop.pump(200);
         check(host->commits().empty(), "empty field long after the first letter: still a click", join(host->commits()));
+        // Clicks from one-letter cells to empty ones, again and again, are not a field emptying itself.
+        for (int cell = 0; cell < 3; ++cell) {
+            host->setSurrounding("d", 1);
+            state.surroundingUpdated();
+            loop.pump(200);
+            host->setSurrounding("", 0);
+            state.surroundingUpdated();
+            loop.pump(50);
+            press(state, static_cast<uint32_t>('d'));
+            loop.pump(200);
+        }
+        check(host->commits().empty(), "repeated clicks from one-letter cells: still clicks", join(host->commits()));
     }
 
     // After a cell move a sheet can report the new cell empty only after the first letter typed there,

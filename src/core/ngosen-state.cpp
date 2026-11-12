@@ -26,6 +26,22 @@ namespace ngosen {
     // coming back does not mean the Left presses before it have moved the selection yet.
     constexpr uint64_t XTestSelectSettleUs = 50000;
 
+    namespace {
+        // The report is a window around the cursor (text-input-v3 caps it at 4000 bytes), so after the commit
+        // it may hold less of the text before or after the word than the earlier one did.
+        bool insertedAt(const std::u32string& now, const std::u32string& before, const std::u32string& after, const std::u32string& word) {
+            for (size_t at = now.find(word); at != std::u32string::npos; at = now.find(word, at + 1)) {
+                const std::u32string head = now.substr(0, at);
+                const std::u32string tail = now.substr(at + word.size());
+                const size_t         h    = std::min(head.size(), before.size());
+                const size_t         t    = std::min(tail.size(), after.size());
+                if (head.compare(head.size() - h, h, before, before.size() - h, h) == 0 && tail.compare(0, t, after, 0, t) == 0)
+                    return true;
+            }
+            return false;
+        }
+    } // namespace
+
     TypingState::TypingState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host) :
         engine_(engine), host_(ngosen::recordingHost(std::move(host), engine->recorder())) {
         setEngine();
@@ -1062,9 +1078,9 @@ namespace ngosen {
         const Surrounding s = host_->surrounding();
         if (!s.isValid() || s.text() == keptWord_->text)
             return;
-        std::u32string withWord = ngosen::utf8::decode(keptWord_->text);
-        withWord.insert(std::min<size_t>(keptWord_->cursor, withWord.size()), ngosen::utf8::decode(keptWord_->word));
-        const bool committed = ngosen::utf8::decode(s.text()) == withWord;
+        const std::u32string old       = ngosen::utf8::decode(keptWord_->text);
+        const size_t         cursor    = std::min<size_t>(keptWord_->cursor, old.size());
+        const bool           committed = insertedAt(ngosen::utf8::decode(s.text()), old.substr(0, cursor), old.substr(cursor), ngosen::utf8::decode(keptWord_->word));
         keptWord_.reset();
         if (!committed || !bambooEngine_)
             return;

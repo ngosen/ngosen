@@ -134,8 +134,15 @@ namespace {
         }
 
         void report() {
-            const auto cursor = fcitx::utf8::length(text_.substr(0, cursor_));
-            context_->surroundingText().setText(text_, cursor, cursor);
+            std::string text   = text_;
+            auto        cursor = fcitx::utf8::length(text_.substr(0, cursor_));
+            // Long fields report only a window around the cursor; here, the last characters before it.
+            if (window_ > 0 && cursor > window_) {
+                const auto cut = fcitx::utf8::ncharByteLength(text.begin(), cursor - window_);
+                text.erase(0, cut);
+                cursor = window_;
+            }
+            context_->surroundingText().setText(text, cursor, cursor);
             context_->updateSurroundingText();
             pumpEventLoop(testInstance_.instance, 5);
         }
@@ -147,6 +154,9 @@ namespace {
         std::string                       text_;
         std::string                       preedit_;
         size_t                            cursor_ = 0;
+
+      public:
+        size_t window_ = 0;
     };
 
     bool expect(const std::string& name, const PreeditApp& app, const std::string& expected) {
@@ -216,6 +226,16 @@ int main() {
         app.moveToStart();
         app.type("k ");
         ok &= expect("a click that commits the word does not move it to the click", app, "k tôi băn");
+    }
+
+    // In a long field the report window moves on when the app commits the word.
+    {
+        PreeditApp app(testInstance, engine, entry, "wayland");
+        app.window_ = 4;
+        app.type("tooi bawn");
+        app.reset(PreeditApp::OnReset::CommitAfter);
+        app.type(" ");
+        ok &= expect("a commit that moves the report window is still seen", app, "tôi băn ");
     }
 
     // Without a usable report the field may have changed under the word.

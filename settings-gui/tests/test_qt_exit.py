@@ -10,7 +10,7 @@ from test_core_toolkit_free import GUI_DIR
 
 TESTS_DIR = GUI_DIR / "tests"
 
-# Opens the real Qt window through main.run_qt, closes it as the user would and lets Python exit.
+# A child process, since the crash comes only when the interpreter exits.
 OPEN_AND_CLOSE = """
 import sys
 import fake_fcitx

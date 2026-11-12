@@ -1254,7 +1254,8 @@ namespace ngosen {
     }
 
     bool TypingState::isEmptyHistory() const {
-        return !hasHistory_;
+        // A raw word keeps no history, yet an app reset after each of its keys must not end it.
+        return !hasHistory_ && !slashWord_;
     }
 
 } // namespace ngosen

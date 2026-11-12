@@ -48,6 +48,11 @@ namespace ngosen {
         return at;
     }
 
+    bool TypingState::nothingBeforeCursor() const {
+        const Surrounding s = host_->surrounding();
+        return host_->field().surroundingText && s.isValid() && s.cursor() == 0 && s.anchor() == 0;
+    }
+
     // Commands and paths filter as they are typed, so each key must reach the app unchanged.
     bool TypingState::handleRawWordKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (keyEvent.isRelease() || keyEvent.isModifier())
@@ -76,6 +81,9 @@ namespace ngosen {
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             hasHistory_ = false;
+        } else if (key::isBackspace(currentSym) && nothingBeforeCursor()) {
+            // It deletes nothing, so the app reports nothing new and the field still starts a word.
+            return false;
         } else {
             afterWordEnd_ = endsWord(currentSym) || (afterWordEnd_ && leadsRawWord(currentSym));
             return false;

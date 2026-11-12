@@ -295,6 +295,7 @@ namespace ngosen {
         bool afterWordEnd_ = true; ///< the last key ended a word, for fields that do not report their text
         bool handleRawWordKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
         bool atRawWordStart() const;
+        bool nothingBeforeCursor() const;
 
         // XIM, IBus and D-Bus clients queue forwarded keys, and XIM may hand one back; without a
         // surrounding text report the commit waits this long for them.

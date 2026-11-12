@@ -208,6 +208,17 @@ namespace {
         }
     }
 
+    // Clearing a field by habit sends a BackSpace that deletes nothing, so the app reports nothing new.
+    void testBackspaceInEmptyField() {
+        for (const Mode mode : {Mode::Sen, Mode::Preedit}) {
+            std::vector<uint32_t> keys = {NewFocus, ngosen::key::BackSpace};
+            for (const uint32_t k : keysOf("/cost "))
+                keys.push_back(k);
+            const std::string got = textAfterEachKey(mode, keys).back();
+            check(got == "/cost ", std::string(modeName(mode)) + ": BackSpace in an empty field, then /cost", got);
+        }
+    }
+
     void testOptionOff() {
         const std::string got = finalText(Mode::Sen, "/cost", true, [](FakeResources& r) { r.mutableOptions().rawWordAfterSlash = false; });
         check(got == "/cót", "with the option off, /cost gets a tone as before", got);
@@ -257,6 +268,7 @@ int main() {
     testClickEndsRawWord();
     testDoubledKeysStayRaw();
     testAppResetAfterEachKey();
+    testBackspaceInEmptyField();
     testOptionOff();
     testHiddenPromptEndsRawWord();
     if (failures != 0) {

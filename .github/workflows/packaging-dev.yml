@@ -18,9 +18,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
-  # A pull request or a push to patch that changes no packaging or build files builds one package per
-  # family. Other pushes, releases and changes that do touch them build every target in
-  # .github/package-matrix.json.
+  # Runners are shared, so a change that cannot break packaging builds one package per family;
+  # releases, next and packaging changes build every target in .github/package-matrix.json.
   scope:
     name: Package targets
     # A test-build pull request already builds every target through PR Test Build.
@@ -206,6 +205,7 @@ jobs:
           retention-days: 3
   build-arch:
     name: Arch Linux (pacman)
+    needs: scope
     runs-on: ubuntu-latest
 
     steps:

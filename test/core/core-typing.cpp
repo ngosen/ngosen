@@ -889,6 +889,20 @@ namespace {
         }
     }
 
+    // Univer's input box takes one key, hands it to the sheet and empties itself, so its reports show
+    // neither the word nor a cursor move.
+    void testFieldEmptiedAfterEachKey() {
+        const Field                 chrome = makeField("ibus", true, "google-chrome.desktop");
+        const std::string           typed  = "tieengs vieetj ddaay laf ";
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        ngosen::test::AppQuirks     quirks;
+        quirks.keepsOwnText       = true;
+        quirks.emptiesAfterEditMs = 40;
+        FakeResources resources;
+        const auto    sheet = ngosen::test::typeInAppTraced(resources, chrome, quirks, keys, std::vector<int>(keys.size(), 150));
+        check(sheet.text == "tiếng việt đây là ", "field emptied after each key: tones still land", sheet.text);
+    }
+
     // Lark Sheets in a browser keeps its own text and takes only key presses: a deletion through the
     // surrounding text changes the copy the browser reports but not what the user sees.
     void testPageKeepsOwnText() {
@@ -4130,6 +4144,7 @@ int main() {
     testLateEmptyCellAfterFirstLetter();
     testLateEmptyFieldStillClick();
     testPageKeepsOwnText();
+    testFieldEmptiedAfterEachKey();
     testMacroKeepsSpace();
     testMacroBeforeEnter();
     testEnterDuringReplacement();

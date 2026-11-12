@@ -531,11 +531,28 @@ namespace ngosen {
         return before.size() < word.size() || before.compare(before.size() - word.size(), word.size(), word) != 0;
     }
 
+    // Univer's input box hands each key to its sheet and empties itself, so an empty report from such a
+    // field is neither a cursor move nor a new cell.
+    bool TypingState::fieldEmptiedItself(const Surrounding& s) {
+        const bool emptied = hasLastSurrounding_ && s.text().empty() && keyCount_ == keysAtLastSurrounding_ && ngosen::utf8::length(lastSurroundingText_) == 1 &&
+            !is_deleting_.load(std::memory_order_acquire);
+        keysAtLastSurrounding_ = keyCount_;
+        if (emptied)
+            ++sinceFocus_.emptiedItself;
+        return emptied && sinceFocus_.emptiedItself >= 2;
+    }
+
     // Wayland apps report a click only as a cursor move; the IM gets no reset or mouse event.
     void TypingState::checkCursorJump() {
         const auto s = host_->surrounding();
         if (!s.isValid()) {
             hasLastSurrounding_ = false;
+            return;
+        }
+        if (fieldEmptiedItself(s)) {
+            lastSurroundingText_.clear();
+            lastSurroundingCursor_ = lastSurroundingAnchor_ = 0;
+            unreportedCommitLength_ = unreportedDeleteLength_ = 0;
             return;
         }
         const bool         sameText       = hasLastSurrounding_ && s.text() == lastSurroundingText_;

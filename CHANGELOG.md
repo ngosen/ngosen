@@ -15,6 +15,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trên GNOME, Gõ Sen không còn làm từ đang gõ chớp ở dạng chưa đổi dấu hoặc chữ khoảng 30 ms mỗi lần sửa từ (từ version 1.8): thay đổi hiện ngay trong Chromium, Chrome, VS Code, Thunderbird, GNOME Text Editor, LibreOffice Writer và các app khác. Firefox và các trình duyệt dựa trên Firefox (Zen, LibreWolf…) vẫn giữ khoảng chờ ngắn để tránh lệch con trỏ, làm hỏng từ (#720).
 - Ở chế độ Preedit trên KDE Plasma Wayland, chữ đang gạch chân trong ô tìm kiếm của Dolphin (Ctrl+F) không còn bị mất khi app làm mới ô tìm kiếm: gõ chậm `tôi là ai` ra đủ `tôi là ai`, không còn ra `tôi à i` (#722, sửa #717).
 - Trong Lark Base trên Chrome ở GNOME, Gõ Sen không còn làm ô lưu mất dấu dù lúc gõ chữ trông vẫn đúng: gõ `tieengs`, `ddaay`, `laf` rồi Enter hoặc click sang ô khác giờ lưu `tiếng`, `đây`, `là`, không còn thành `tiêng`, `đay`, `la` (#728).
+- Trong bảng tính web Univer trên Chrome ở GNOME, Gõ Sen không còn bỏ sót phím dấu thanh gõ sau trong từ: gõ `tieengs`, `vieetj`, `laf` giờ ra `tiếng`, `việt`, `là`, không còn thành `tiêngs`, `viêtj`, `laf` (#732).
 
 ## [1.10.0-1] — 12/11/2026
 

@@ -17,6 +17,7 @@
 #include "ngosen-icon-resolver.h"
 #include "ngosen-menu-icon.h"
 #include "ngosen-plasma-theme.h"
+#include "ngosen-clock.h"
 #include "ngosen-fcitx-host.h"
 #include "ngosen-gnome-shell.h"
 #include "ngosen-migration.h"
@@ -303,7 +304,8 @@ namespace fcitx {
 
     NgoSenEngine::NgoSenEngine(Instance* instance) :
         instance_(instance), factory_([this](InputContext& ic) {
-            return new TypingStateProperty(std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_, shellDropsKeys(), &shellFocusedApp_)));
+            return new TypingStateProperty(
+                std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_, shellDropsKeys(), &shellFocusedApp_, &focusInUs_)));
         }) { //NOLINT
         Init();
         {
@@ -757,6 +759,7 @@ namespace fcitx {
 
         std::string appName = getProgramName(ic);
         NGOSEN_INFO("App name: " + appName);
+        focusInUs_ = ngosen::monotonicUs();
 
         // Next to other input methods fcitx5 owns the switch, so picking Ngó Sen there means Vietnamese.
         // The group is checked first: a lone input method can be activated with a plain InputContextEvent.
@@ -1022,9 +1025,10 @@ namespace fcitx {
             return;
         }
 
-        if (event.type() == EventType::InputContextFocusOut || event.type() == EventType::InputContextReset) {
-            state->reset(event.type() == EventType::InputContextFocusOut);
-        }
+        if (event.type() == EventType::InputContextFocusOut)
+            state->reset(true);
+        else if (event.type() == EventType::InputContextReset)
+            state->appReset();
     }
 
     void NgoSenEngine::deactivate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {

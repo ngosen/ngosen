@@ -5,6 +5,7 @@
  */
 #include "ngosen-fcitx-host.h"
 #include "ngosen-app-quirks.h"
+#include "ngosen-clock.h"
 
 #include "ngosen-gnome-shell.h"
 #include "ngosen-keysym.h"
@@ -168,6 +169,8 @@ namespace ngosen {
         f.caretHeight      = ic_->cursorRect().height();
         if (f.program != ic_->program())
             f.reportedProgram = ic_->program();
+        // GNOME Shell tells which app has focus a moment after the focus moves.
+        f.appNameCurrent = focus_in_us_ != nullptr && monotonicUs() > *focus_in_us_ + 50000;
         // fcitx5 before 5.1.22 names every app GNOME Shell relays after the shell; fixed GNOME versions come with newer fcitx5.
         f.sendsNoKeys = shell_drops_keys_ != nullptr && *shell_drops_keys_ && f.frontend == "ibus" && ic_->program() == "gnome-shell";
         return f;

@@ -11,10 +11,11 @@ permissions:
   contents: read
 
 env:
-  # Ngó Sen for GNOME ships from the same repositories, so one source line and one key cover both.
-  # Run this workflow by hand from the newest ngosen-* tag after an ibus-ngosen release; see
-  # RELEASING.md there.
+  # Ngó Sen for GNOME and Ngó Sen for Wayland ship from the same repositories, so one source line and
+  # one key cover all three. Run this workflow by hand from the newest ngosen-* tag after an
+  # ibus-ngosen or wl-ngosen release; see RELEASING.md there.
   IBUS_REPOSITORY: ngosen/ibus-ngosen
+  WL_REPOSITORY: ngosen/wl-ngosen
 
 # bash runs with pipefail, so a failed release listing stops the job instead of leaving a package out.
 defaults:
@@ -46,6 +47,7 @@ jobs:
           for repo in "$GITHUB_REPOSITORY" "$IBUS_REPOSITORY"; do
               packaging/download-release-files.sh "$repo" 2 '*.deb' debs
           done
+          packaging/download-release-files.sh --new-edition "$WL_REPOSITORY" 2 '*.deb' debs
 
       - name: Import signing key
         env:
@@ -54,6 +56,11 @@ jobs:
 
       - name: Build repository
         run: packaging/build-apt-repo.sh debs apt
+
+      # install.sh adds the repository only with the key it pins; another key would leave new
+      # installs without updates.
+      - name: Check the key install.sh pins
+        run: test "$(sha256sum apt/ngosen.gpg | cut -d' ' -f1)" = "$(sed -n 's/^REPO_KEY_SHA256=//p' install.sh)"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -73,7 +80,7 @@ jobs:
 
       - uses: actions/checkout@v7
 
-      # The newest release of each edition; ibus-ngosen may have none yet.
+      # The newest release of each edition.
       - name: Download packages
         env:
           GH_TOKEN: ${{ github.token }}
@@ -81,6 +88,7 @@ jobs:
           for repo in "$GITHUB_REPOSITORY" "$IBUS_REPOSITORY"; do
               packaging/download-release-files.sh "$repo" 1 '*.pkg.tar.zst' pkgs
           done
+          packaging/download-release-files.sh --new-edition "$WL_REPOSITORY" 1 '*.pkg.tar.zst' pkgs
 
       - name: Import signing key
         env:
@@ -116,6 +124,7 @@ jobs:
           for repo in "$GITHUB_REPOSITORY" "$IBUS_REPOSITORY"; do
               packaging/download-release-files.sh "$repo" 2 '*.opensuse-tumbleweed.x86_64.rpm' rpms
           done
+          packaging/download-release-files.sh --new-edition "$WL_REPOSITORY" 2 '*.opensuse-tumbleweed.x86_64.rpm' rpms
 
       - name: Import signing key
         env:

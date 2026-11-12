@@ -8,8 +8,8 @@ fcitx5 runs on GNOME, KDE, Xfce, Sway and Hyprland, has many features and uses l
 typing core as the fcitx5 version, so their features are almost identical. New features may reach the IBus
 version later than the fcitx5 version.
 
-The settings window comes in two versions: Qt and GTK (styled like GNOME apps). GNOME and Linux Mint
-(Cinnamon) open the GTK version; other desktops open Qt. On KDE and GNOME, the window follows the system's
+The settings window comes in two versions: Qt and GTK (styled like GNOME apps). GNOME, Linux Mint
+(Cinnamon) and Xfce open the GTK version; other desktops open Qt. On KDE and GNOME, the window follows the system's
 light or dark theme. Changes are saved immediately, with a "Hoàn tác" (Undo) button.
 
 GTK version on GNOME:

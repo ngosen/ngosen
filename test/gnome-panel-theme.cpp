@@ -163,6 +163,13 @@ int main() {
     check("T10 stale_swaysock_on_kde", !fcitx::trayWantsIconName("KDE", "plasma", "/run/user/1000/sway-ipc.1000.1.sock"), "KDE with a stale SWAYSOCK given a name");
     check("T4 gnome_tray_tighter_icon", fcitx::trayIconNames("fcitx-ngosen", "fcitx-ngosen", "ubuntu:GNOME").front() == "fcitx-ngosen-gnome",
           "GNOME Shell not given the GNOME icon first");
+    using fcitx::TrayIconStyle;
+    check("I1 tile_normal", fcitx::trayIconName("fcitx-ngosen", TrayIconStyle::Tile, false, false) == "fcitx-ngosen", "normal tile renamed");
+    check("I2 tile_large", fcitx::trayIconName("fcitx-ngosen-off", TrayIconStyle::Tile, true, false) == "fcitx-ngosen-off-large", "large tile not chosen");
+    check("I3 gnome_keeps_normal", fcitx::trayIconName("fcitx-ngosen", TrayIconStyle::Tile, true, true) == "fcitx-ngosen", "GNOME given the large tile");
+    check("I4 plain_ignores_size", fcitx::trayIconName("fcitx-ngosen-emoji", TrayIconStyle::PlainWhite, true, false) == "fcitx-ngosen-emoji-default",
+          "plain icon given a large name");
+    check("I5 plain_black", fcitx::trayIconName("fcitx-ngosen", TrayIconStyle::PlainBlack, false, false) == "fcitx-ngosen-default-black", "black plain icon not chosen");
     check("T5 kde_tray_usual_icon", fcitx::trayIconNames("fcitx-ngosen-off", "fcitx-ngosen-off", "KDE").front() == "fcitx-ngosen-off", "KDE given the GNOME icon");
 
     writeFile(root / "usr/share/themes/Mint-Y-Dark-Aqua/cinnamon/cinnamon.css",

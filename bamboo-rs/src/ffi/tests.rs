@@ -116,6 +116,7 @@ fn new_engine_needs_a_macro_table() {
 fn invalid_handles_are_ignored() {
     assert_eq!(EngineProcessKeyEvent(0, 'a' as u32, 0), 0);
     assert!(take_string(EnginePullPreedit(0)).is_none());
+    assert!(take_string(EnginePullRawText(0)).is_none());
     assert!(take_string(EnginePullCommit(0)).is_none());
     EngineCommitPreedit(0);
     ResetEngine(0);
@@ -133,6 +134,25 @@ fn dictionary_words_are_lowercased_and_trimmed() {
     assert!(!words.contains(""), "blank lines are skipped");
     DeleteObject(dict);
     assert_eq!(NewDictionary(usize::MAX), 0);
+}
+
+#[test]
+fn raw_text_returns_the_keys_typed() {
+    let table = new_macro_table(&[]);
+    let engine = new_engine("Telex", 0, table);
+    DeleteObject(table);
+    type_keys(engine, "tieengs");
+    assert_eq!(
+        take_string(EnginePullPreedit(engine)).as_deref(),
+        Some("tiếng")
+    );
+    assert_eq!(
+        take_string(EnginePullRawText(engine)).as_deref(),
+        Some("tieengs")
+    );
+    ResetEngine(engine);
+    assert_eq!(take_string(EnginePullRawText(engine)).as_deref(), Some(""));
+    DeleteObject(engine);
 }
 
 #[test]

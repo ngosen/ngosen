@@ -15,8 +15,8 @@ from urllib.parse import urlencode
 
 from i18n import _
 
-from core import session_setup
-from core.brand import ISSUE_URL
+from core import session_setup, update_repo
+from core.brand import ISSUE_URL, UPDATE_GUIDE_URL
 
 IM_VARIABLES = ("GTK_IM_MODULE", "QT_IM_MODULE", "XMODIFIERS", "SDL_IM_MODULE")
 
@@ -67,6 +67,8 @@ class Facts:
     has_kwriteconfig: bool = False
     # False when fcitx5 runs but KWin did not start it, so Qt apps cannot type through it yet.
     started_by_kwin: bool = True
+    # One of update_repo's states: whether new Ngó Sen versions reach this machine.
+    update_repo: str = update_repo.NONE
 
     @property
     def session(self):
@@ -491,6 +493,24 @@ def summary(found, failed=()):
     return title, text
 
 
+def version_line(facts):
+    """Text under the summary, and the page to link when new versions do not reach this machine."""
+    version = facts.ngosen_version or "?"
+    if facts.update_repo == update_repo.ON:
+        text = _(
+            "Ngó Sen {}. This machine has the Ngó Sen repository on: new versions come with "
+            "system updates."
+        )
+        return text.format(version), None
+    if facts.update_repo == update_repo.OFF:
+        text = _(
+            "Ngó Sen {}. This machine does not have the Ngó Sen repository, so it gets no new "
+            "versions; the problem you hit may already be fixed."
+        )
+        return text.format(version), UPDATE_GUIDE_URL
+    return f"Ngó Sen {version}", None
+
+
 def copied_text(command):
     """A long command would not fit in the message."""
     if len(command) > 60:
@@ -667,6 +687,8 @@ def report(facts, findings, app_test=None):
             portal = {True: "answered", False: "silent", None: "unknown"}[facts.portal_answered]
             line += f", portal: {portal if facts.has_gnome_portal else 'not installed'}"
         lines.append(line)
+    repo = {update_repo.ON: "ngosen repo on", update_repo.OFF: "no ngosen repo"}
+    lines.append("Updates: " + repo.get(facts.update_repo, "unknown"))
     lines.append("")
     lines += [f"[{marks[f.level]}] {f.title}" for f in findings] or ["[OK] no setup problem found"]
     if facts.apps:
@@ -702,6 +724,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
     if _is_kde_wayland(facts):
         facts.started_by_kwin = _fcitx5_started_by_kwin()
     facts.addon_replaced = runs_replaced_addon()
+    facts.update_repo = update_repo.state()
     if "GNOME" in facts.desktops:
         facts.gnome_shell_version = _gnome_shell_version()
         facts.forward_keys_state = _extension_state(FORWARD_KEYS)

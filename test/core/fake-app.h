@@ -7,6 +7,7 @@
 
 #include "ngosen-utf8.h"
 #include "fake-host.h"
+#include "ngosen-mode.h"
 
 #include <cstdint>
 #include <memory>
@@ -49,6 +50,7 @@ namespace ngosen::test {
         bool announcesSelection     = false; // makes a selection the X11 primary selection, as Chromium on X11 does
         bool ignoresSurroundingDel  = false; // takes no deletion through its surrounding text, as WPS over D-Bus does
         bool reportsEmptyText       = false; // declares surrounding text but reports none and drops deletions through it, as Konsole does
+        bool reportsTrailingNbsp    = false; // reports a space right before the cursor as U+00A0, as Firefox contenteditable does
         bool neverSendsText         = false; // declares surrounding text but never sends any, as WPS's own fcitx4 module does
         // Shows its own copy of the text, which takes typed text and Backspace but no deletion through the
         // surrounding text, while it reports the browser's copy, which a Backspace leaves alone: Lark Sheets.
@@ -130,6 +132,9 @@ namespace ngosen::test {
         // Moves within ms to an empty field of the same page that keeps its own text, as a click from a
         // page's search box into a Lark sheet does.
         void switchToOwnTextField(int ms);
+        // Loses focus and gets it back within ms in a new empty field, with no reset in between, as a
+        // browser closed and opened again does under GNOME Shell.
+        void focusNewEmptyField(ngosen::Mode mode, int ms);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.

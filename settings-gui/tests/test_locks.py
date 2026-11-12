@@ -5,6 +5,7 @@ import unittest
 
 # isort: off
 from support import FakeDBusHandler, app
+from fake_fcitx import lock_groups
 from core.catalog import DEPENDS, locked_by
 from core.settings_model import SettingsModel
 from qtpy.QtCore import Qt
@@ -16,9 +17,8 @@ from ui.pages.macro_editor import MacroEditorPage
 
 # isort: on
 
-ALL_LOCKED = {
-    controller: "False" if needed == "True" else "True" for controller, needed in DEPENDS.values()
-}
+LOCK_GROUPS = lock_groups()
+ALL_LOCKED = LOCK_GROUPS[0][0]
 
 
 class LockedByTest(unittest.TestCase):
@@ -32,6 +32,8 @@ class LockedByTest(unittest.TestCase):
         self.assertIsNone(locked_by("SpellCheck", {"AutoNonVnRestore": "True"}.get))
         self.assertEqual(locked_by("IconTheme", {"UseLotusIcons": "True"}.get), "UseLotusIcons")
         self.assertIsNone(locked_by("IconTheme", {"UseLotusIcons": "False"}.get))
+        self.assertEqual(locked_by("TrayIconSize", {"UseLotusIcons": "False"}.get), "UseLotusIcons")
+        self.assertIsNone(locked_by("TrayIconSize", {"UseLotusIcons": "True"}.get))
 
     def test_the_macro_table_reads_its_switches_as_booleans(self):
         self.assertEqual(locked_by("TimeFormat", {"EnableMacro": False}.get), "EnableMacro")
@@ -68,34 +70,38 @@ class QtWindowLocksTest(unittest.TestCase):
         )
 
     def test_every_locked_setting_is_disabled_and_opens_what_unlocks_it(self):
-        window = self.window(ALL_LOCKED)
-        for key, (controller, _needed) in DEPENDS.items():
-            page = self.page_with(window, key)
-            self.assertFalse(page.control_for(key).isEnabled(), key)
-            self.assertTrue(window.open_setting(key), key)
-            self.assertIs(window.focusWidget(), page.control_for(controller), key)
+        for locked, _unlocked, keys in LOCK_GROUPS:
+            window = self.window(locked)
+            for key in keys:
+                page = self.page_with(window, key)
+                self.assertFalse(page.control_for(key).isEnabled(), key)
+                self.assertTrue(window.open_setting(key), key)
+                self.assertIs(window.focusWidget(), page.control_for(DEPENDS[key][0]), key)
 
     def test_every_setting_is_enabled_and_opens_itself_when_unlocked(self):
-        values = {c: needed for c, needed in DEPENDS.values()}
-        window = self.window(values)
-        for key in DEPENDS:
-            page = self.page_with(window, key)
-            self.assertTrue(page.control_for(key).isEnabled(), key)
-            self.assertTrue(window.open_setting(key), key)
-            self.assertIs(window.focusWidget(), page.control_for(key), key)
+        for _locked, unlocked, keys in LOCK_GROUPS:
+            window = self.window(unlocked)
+            for key in keys:
+                page = self.page_with(window, key)
+                self.assertTrue(page.control_for(key).isEnabled(), key)
+                self.assertTrue(window.open_setting(key), key)
+                self.assertIs(window.focusWidget(), page.control_for(key), key)
 
     def test_a_search_result_for_a_locked_setting_opens_what_unlocks_it(self):
-        window = self.window(ALL_LOCKED)
-        box = window.search_results
-        for key, (controller, _needed) in DEPENDS.items():
-            page = self.page_with(window, key)
-            window.search_field.setText(self.shown_name(page, key))
-            found = [
-                box.item(r) for r in range(box.count()) if box.item(r).data(Qt.UserRole)[2] == key
-            ]
-            self.assertTrue(found, key)
-            window.open_search_result(found[0])
-            self.assertIs(window.focusWidget(), page.control_for(controller), key)
+        for locked, _unlocked, keys in LOCK_GROUPS:
+            window = self.window(locked)
+            box = window.search_results
+            for key in keys:
+                page = self.page_with(window, key)
+                window.search_field.setText(self.shown_name(page, key))
+                found = [
+                    box.item(r)
+                    for r in range(box.count())
+                    if box.item(r).data(Qt.UserRole)[2] == key
+                ]
+                self.assertTrue(found, key)
+                window.open_search_result(found[0])
+                self.assertIs(window.focusWidget(), page.control_for(DEPENDS[key][0]), key)
 
     @staticmethod
     def shown_name(page, key):

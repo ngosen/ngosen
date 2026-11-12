@@ -360,6 +360,33 @@ namespace {
         check(offer == "(no offer)", "a click before the switch key drops the text", offer);
     }
 
+    // English typed before a password prompt must not come back as an offer once the prompt is over.
+    void testHiddenPromptDropsKeys() {
+        for (const bool prompt : {false, true}) {
+            realMode = Mode::Off;
+            FakeLoop      loop;
+            FakeResources resources;
+            Field         field       = makeField("wayland", true);
+            field.program             = "kitty";
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            noteWhileOff(state, "abc tieengs");
+            resources.terminalHidesInput = prompt;
+            state.passesHiddenInput();
+            resources.terminalHidesInput = false;
+            state.passesHiddenInput();
+            state.activate(Mode::Sen, false);
+            state.offerRetype();
+            loop.pump(150);
+            const std::string offer = !host->candidates() ? "(no offer)" : (host->labels().empty() ? "(empty)" : host->labels()[0]);
+            if (prompt)
+                check(offer == "(no offer)", "a hidden prompt drops the English typed before it", offer);
+            else
+                check(offer == "abc tieengs → abc tiếng", "without a prompt the English is offered", offer);
+        }
+    }
+
     void pressInState(ngosen::TypingState& state, uint32_t sym, uint32_t states = 0) {
         FakeKey down(sym, false, states);
         state.keyEvent(down);
@@ -614,6 +641,7 @@ int main() {
     // IBus reports the text too late to check it, so only the reset tells of the click.
     testClickDropsRetype("ibus", true, true);
     testClickBeforeSwitchDropsKeys();
+    testHiddenPromptDropsKeys();
     testRetypeInSteppingApp();
     testNoRetypeInGnomeSearch();
     testRetypeRightAfterSwitchKey();

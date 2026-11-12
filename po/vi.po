@@ -171,6 +171,10 @@ msgstr "Cứu chữ: gõ lại có dấu khi quên bật tiếng Việt"
 msgid "Change the tone of a selected word"
 msgstr "Cứu dấu: sửa dấu chữ đang bôi đen"
 
+#: src/ngosen-config.h
+msgid "Type a word that starts with / as is"
+msgstr "Gõ thô sau dấu / đầu từ (lệnh, đường dẫn)"
+
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
 msgstr "Tự khôi phục từ gõ sai"
@@ -265,6 +269,21 @@ msgstr "Phím tắt cho Tắt"
 
 
 
+msgid "Show Vim mode"
+msgstr "Hiển thị Vim mode"
+
+msgid "Shortcut for Vim mode"
+msgstr "Phím tắt cho Vim mode"
+
+msgid "Vim mode"
+msgstr "Vim mode"
+
+msgid "Vim mode: on"
+msgstr "Vim mode: bật"
+
+msgid "Vim mode: off"
+msgstr "Vim mode: tắt"
+
 #: src/ngosen-config.h:265
 msgid "Allow Macro in Off Mode"
 msgstr "Cho phép gõ tắt trong chế độ \"Tắt\""
@@ -284,6 +303,18 @@ msgstr "Định dạng ngày ($DATE trong macro)"
 #: src/ngosen-config.h:276
 msgid "Icon Color"
 msgstr "Màu biểu tượng"
+
+#: src/ngosen-config.h
+msgid "Tray Icon Size"
+msgstr "Cỡ biểu tượng khay"
+
+#: src/ngosen-config.h
+msgid "Normal"
+msgstr "Bình thường"
+
+#: src/ngosen-config.h
+msgid "Large"
+msgstr "Lớn"
 
 #: src/ngosen-config.h
 msgid "Interface Language"
@@ -326,8 +357,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.9: on GNOME, typing modes and per-app settings now work with the Ngó Sen extension off. See also Check my machine, Cứu chữ, Cứu dấu and typing tips."
-msgstr "Version 1.9: trên GNOME, chế độ gõ và cài đặt riêng theo từng app nay chạy được khi tắt extension Ngó Sen. Xem thêm trang Kiểm tra máy, Cứu chữ, Cứu dấu và mẹo gõ."
+msgid "Version 1.10: Vim mode for each app, words starting with / typed as is, and Telex words with a forgotten circumflex or horn fixed. See What's new for more."
+msgstr "Version 1.10: Vim mode cho từng app, từ bắt đầu bằng / giữ nguyên, và chữ Telex quên mũ hoặc móc vẫn ra đúng. Xem thêm ở trang Có gì mới."
 
 #: src/ngosen-engine.cpp
 msgid "Show"
@@ -1475,6 +1506,10 @@ msgstr ""
 "Bôi đen nhanh rồi gõ s: nhánh. Tab, Esc hoặc gõ s lần nữa để trả lại s. Chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng): nguoi không thành người được."
 
 #: settings-gui/ui/pages/dynamic_settings.py
+msgid "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
+msgstr "/cost và /usr/share giữ nguyên như đã gõ khi ở đầu dòng hoặc sau dấu cách, để lệnh chat và đường dẫn file chạy đúng. và/hoặc và @tên vẫn có dấu."
+
+#: settings-gui/ui/pages/dynamic_settings.py
 msgid "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."
 msgstr "Mở menu chọn chế độ gõ cho app đang dùng. Chỉ khi đang gõ tiếng Việt; lúc gõ tiếng Anh phím gõ ra như thường."
 
@@ -1489,6 +1524,10 @@ msgstr "Khi menu chế độ đang mở, bấm phím của một chế độ đ�
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Off: plain one-colour icons, in the colour picked below."
 msgstr "Tắt: dùng biểu tượng một màu, theo màu chọn bên dưới."
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Large draws the Ngó Sen icon bigger in its tray slot. No change on GNOME, where it already fills the slot."
+msgstr "Lớn: biểu tượng Ngó Sen to hơn trong ô của nó trên khay. Trên GNOME không đổi, vì biểu tượng đã đầy ô."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
@@ -1688,6 +1727,34 @@ msgid "Check that fcitx5 is running."
 msgstr "Hãy xem fcitx5 có đang chạy không."
 
 #: settings-gui/core/whats_new_content.py
+msgid "Commands and paths"
+msgstr "Lệnh và đường dẫn"
+
+#: settings-gui/core/whats_new_content.py
+msgid "A word that starts with / at the start of a line or after a space stays as typed, for chat commands and paths in a terminal."
+msgstr "Từ bắt đầu bằng / ở đầu dòng hoặc ngay sau dấu cách được giữ nguyên như gõ, để gõ lệnh chat và đường dẫn trong terminal."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Forgotten circumflex or horn"
+msgstr "Quên mũ hoặc móc"
+
+#: settings-gui/core/whats_new_content.py
+msgid "In Telex, a word typed without its circumflex or horn still comes out right where the vowel always takes one."
+msgstr "Gõ Telex quên mũ hoặc móc ở những vần luôn có chúng vẫn ra chữ đúng."
+
+#: settings-gui/core/whats_new_content.py
+msgid "More place and people names"
+msgstr "Thêm tên địa danh và dân tộc"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Names such as plông, Mnông and Đakrông now type instead of turning back into the keys you typed."
+msgstr "Các tên như plông, Mnông, Đakrông nay gõ ra đúng chữ, không còn bị trả về phím đã gõ."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Turn on Vim mode for an app from the ` menu: Vim commands after Esc go through as typed, and the first word after entering insert mode gets its marks. For nvim, Claude Code and the Vim plugins of Obsidian and JetBrains IDEs."
+msgstr "Bật Vim mode cho từng app trong menu `: sau Esc, lệnh Vim đi qua nguyên vẹn, và từ đầu tiên gõ sau khi vào insert mode có dấu ngay. Dùng cho nvim, Claude Code và plugin Vim của Obsidian, JetBrains IDE."
+
+#: settings-gui/core/whats_new_content.py
 msgid "GNOME without the extension"
 msgstr "GNOME không cần extension"
 
@@ -1722,6 +1789,25 @@ msgstr "Bấm nút ở bước đó. Ngó Sen chỉ đổi cài đặt của tà
 #: settings-gui/core/system_check.py
 msgid "Each step says what to do."
 msgstr "Mỗi bước ghi rõ việc cần làm."
+
+#: settings-gui/core/system_check.py
+msgid ""
+"Ngó Sen {}. This machine has the Ngó Sen repository on: new versions come with "
+"system updates."
+msgstr ""
+"Ngó Sen {}. Máy đang bật repo Ngó Sen: version mới tới khi cập nhật hệ thống."
+
+#: settings-gui/core/system_check.py
+msgid ""
+"Ngó Sen {}. This machine does not have the Ngó Sen repository, so it gets no new "
+"versions; the problem you hit may already be fixed."
+msgstr ""
+"Ngó Sen {}. Máy chưa bật repo Ngó Sen nên không nhận version mới; lỗi bạn gặp có "
+"thể đã sửa."
+
+#: settings-gui/ui/pages/check.py settings-gui/ui_gtk/check_page.py
+msgid "How to get new versions"
+msgstr "Cách nhận version mới"
 
 #: settings-gui/core/system_check.py
 msgid "Start fcitx5"

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Builds the signed APT repository from release .deb files named by collect-release-files.sh
-# (fcitx5-ngosen_<version>_<codename>_<arch>.deb), plus ibus-ngosen's, which are named the same way
-# but cover fewer codenames. Each codename is its own suite with its own pool, because every
+# (fcitx5-ngosen_<version>_<codename>_<arch>.deb), plus those of ibus-ngosen and wl-ngosen, which are
+# named the same way but cover fewer codenames. Each codename is its own suite with its own pool, because every
 # distribution gets a build with the same version but different contents.
 # Signs with the default secret key in the caller's GnuPG home.
 set -euo pipefail
@@ -17,7 +17,7 @@ mkdir -p "$out"
 for codename in $codenames; do
     pool=$out/pool/$codename
     mkdir -p "$pool"
-    for deb in "$src"/fcitx5-ngosen_*_"${codename}"_*.deb "$src"/ibus-ngosen_*_"${codename}"_*.deb; do
+    for deb in "$src"/{fcitx5,ibus,wl}-ngosen_*_"${codename}"_*.deb; do
         [ -e "$deb" ] || continue
         cp "$deb" "$pool/"
     done
@@ -49,6 +49,16 @@ for codename in $codenames; do
     gpg --batch --yes --clearsign -o "$out/dists/$codename/InRelease" "$out/dists/$codename/Release"
     gpg --batch --yes --armor --detach-sign -o "$out/dists/$codename/Release.gpg" \
         "$out/dists/$codename/Release"
+done
+
+# A package under a name or codename this script does not know would be signed away silently.
+listed=$(sed -n 's|^Filename: .*/||p' "$out"/dists/*/main/binary-*/Packages | sort -u)
+for deb in "$src"/*.deb; do
+    [ -e "$deb" ] || continue
+    if ! grep -qxF "$(basename "$deb")" <<<"$listed"; then
+        echo "$(basename "$deb") is not in the repository" >&2
+        exit 1
+    fi
 done
 
 gpg --batch --export > "$out/ngosen.gpg"

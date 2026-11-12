@@ -49,6 +49,20 @@ target_link_libraries(core_retone PRIVATE ngosen_core)
 add_test(NAME core_retone COMMAND core_retone)
 set_tests_properties(core_retone PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
 
+add_executable(core_raw_word core-raw-word.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
+target_compile_definitions(core_raw_word PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+    NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt")
+target_link_libraries(core_raw_word PRIVATE ngosen_core)
+add_test(NAME core_raw_word COMMAND core_raw_word)
+set_tests_properties(core_raw_word PROPERTIES LABELS "unit;core" TIMEOUT 120 ENVIRONMENT "DISPLAY=")
+
+add_executable(core_vim core-vim.cpp fake-host.cpp fake-engine.cpp)
+target_compile_definitions(core_vim PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+    NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt")
+target_link_libraries(core_vim PRIVATE ngosen_core)
+add_test(NAME core_vim COMMAND core_vim)
+set_tests_properties(core_vim PROPERTIES LABELS "unit;core" TIMEOUT 60 ENVIRONMENT "DISPLAY=")
+
 add_executable(core_surrounding_count core-surrounding-count.cpp)
 target_link_libraries(core_surrounding_count PRIVATE ngosen_core)
 add_test(NAME core_surrounding_count COMMAND core_surrounding_count)
@@ -63,6 +77,11 @@ add_executable(core_flatpak_names core-flatpak-names.cpp)
 target_link_libraries(core_flatpak_names PRIVATE ngosen_core)
 add_test(NAME core_flatpak_names COMMAND core_flatpak_names)
 set_tests_properties(core_flatpak_names PROPERTIES LABELS "unit;core" TIMEOUT 30)
+
+add_executable(core_pty core-pty.cpp)
+target_link_libraries(core_pty PRIVATE ngosen_core util)
+add_test(NAME core_pty COMMAND core_pty)
+set_tests_properties(core_pty PROPERTIES LABELS "unit;core" TIMEOUT 30)
 
 # How each replacement in these tests deletes and ends, so code that moves them can show it changes none.
 foreach (name core_typing core_fuzz core_retype core_retone)

@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>aggrid</title>
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+</head>
+<body style="margin:8px">
+<div id="s" class="ag-theme-quartz" style="height:420px;width:760px"></div>
+<script src="report.js"></script>
+<script>
+  const cols = ['a', 'b', 'c', 'd', 'e'];
+  const api = agGrid.createGrid(document.getElementById('s'), {
+    columnDefs: cols.map((f) => ({ field: f, editable: true, width: 140 })),
+    rowData: Array.from({ length: 12 }, () => ({})),
+    // Excel-like keys: Enter saves and moves down, and typing on a cell starts editing it.
+    enterNavigatesVertically: true,
+    enterNavigatesVerticallyAfterEdit: true,
+    singleClickEdit: false,
+    stopEditingWhenCellsLoseFocus: true,
+  });
+  setTimeout(() => api.setFocusedCell(0, 'a'), 300);
+  function cells() {
+    const out = [];
+    api.forEachNode((n) => out.push(cols.map((f) => n.data[f])));
+    return out;
+  }
+  function center(r, c) {
+    return centerOf(document.querySelector(`.ag-row[row-index="${r}"] .ag-cell[col-id="${cols[c]}"]`));
+  }
+  report('aggrid', cells, center);
+</script>
+</body></html>

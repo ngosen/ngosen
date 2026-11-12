@@ -115,6 +115,20 @@ namespace fcitx {
      */
     bool trayWantsIconName(const std::string& xdgCurrentDesktop, const std::string& desktopSession, const std::string& swaySock);
 
+    enum class TrayIconStyle {
+        Tile,
+        PlainWhite,
+        PlainBlack
+    };
+
+    /**
+     * @brief Name of the tray icon for a mode's base name ("fcitx-ngosen-off").
+     *
+     * Only the tile has a large copy. GNOME Shell keeps the normal name: its copy
+     * already fills the top bar's icon box.
+     */
+    std::string trayIconName(const std::string& baseIconName, TrayIconStyle style, bool large, bool gnomeShell);
+
     /**
      * @brief Icon names to try for the tray, best first.
      *

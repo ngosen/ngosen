@@ -35,11 +35,12 @@ namespace {
         }
 
         // Qt drops the preedit on a reset and reports the same text again; fcitx5's own Qt and GTK modules commit
-        // it first. GTK, Firefox and Chromium over Wayland commit it after the reset, Chromium reporting the old
-        // text once more first.
+        // it first, reporting that only later. GTK, Firefox and Chromium over Wayland commit it after the reset,
+        // Chromium reporting the old text once more first.
         enum class OnReset {
             Drop,
             CommitFirst,
+            CommitFirstUnreported,
             CommitAfter,
             CommitAfterOldReport,
             CommitAndMoveToStart
@@ -47,10 +48,10 @@ namespace {
 
         void reset(OnReset how = OnReset::Drop) {
             const std::string preedit = preedit_;
-            if (how == OnReset::CommitFirst) {
+            if (how == OnReset::CommitFirst || how == OnReset::CommitFirstUnreported)
                 insert(preedit);
+            if (how == OnReset::CommitFirst)
                 report();
-            }
             preedit_.clear();
             fcitx::InputContextEvent event(context_.get(), fcitx::EventType::InputContextReset);
             engine_.reset(entry_, event);
@@ -221,9 +222,18 @@ int main() {
     {
         PreeditApp app(testInstance, engine, entry, "dbus");
         app.type("tooi l");
-        app.reset(PreeditApp::OnReset::CommitFirst);
+        app.reset(PreeditApp::OnReset::CommitFirstUnreported);
         app.type("af ");
         ok &= expect("an app that commits the preedit on a reset does not get it twice", app, "tôi là ");
+    }
+
+    // Qt over text-input-v2 commits the word and reports it before the reset.
+    {
+        PreeditApp app(testInstance, engine, entry, "wayland");
+        app.type("tooi l");
+        app.reset(PreeditApp::OnReset::CommitFirst);
+        app.type("af ");
+        ok &= expect("a Wayland app that commits the word before the reset does not get it twice", app, "tôi là ");
     }
 
     // A click in GTK or Firefox: the app commits the word after the reset.

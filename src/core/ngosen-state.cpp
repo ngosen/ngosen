@@ -1080,7 +1080,8 @@ namespace ngosen {
         if (!s.isValid() || s.cursor() != s.anchor())
             return false;
         const ngosen::UniqueCPtr<char> word(EnginePullPreedit(bambooEngine_.handle()));
-        return word && *word.get() != 0;
+        // Qt over text-input-v2 commits the word and reports it before the reset.
+        return word && *word.get() != 0 && !endsBeforeCursor(s, word.get(), false);
     }
 
     void TypingState::resetField(bool isFocusOut, bool commitPreedit, bool keepOpenWord) {

@@ -54,6 +54,7 @@ def run_gtk():
 def run_qt():
     # Picks Qt6 when both PyQt5 and PyQt6 are installed, so it comes before anything else from Qt.
     import qt_api  # noqa: F401
+    from qtpy.QtCore import Qt
     from qtpy.QtWidgets import QApplication
     from ui import brand, color_scheme, scroll_bars
     from ui.main_window import NgoSenSettingsWindow
@@ -69,6 +70,8 @@ def run_qt():
     scroll_bars.install(app)
 
     window = NgoSenSettingsWindow()
+    # A window still alive at interpreter exit is deleted by PyQt6's own cleanup, which crashes on 6.11.
+    window.setAttribute(Qt.WA_DeleteOnClose)
     if args.page:
         window.show_page(args.page)
     window.show()

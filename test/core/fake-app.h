@@ -55,6 +55,9 @@ namespace ngosen::test {
         // Shows its own copy of the text, which takes typed text and Backspace but no deletion through the
         // surrounding text, while it reports the browser's copy, which a Backspace leaves alone: Lark Sheets.
         bool keepsOwnText = false;
+        // With keepsOwnText, a Backspace also changes the copy it reports, and the report holds a U+200B
+        // after the cursor: Lark Base.
+        bool backspacesShowInReport = false;
         // Turns a deletion of characters into bytes on the text it reported last, as mutter does for
         // text-input-v3 and fcitx5 does on Wayland.
         bool             convertsDeleteOnReportedCopy = false;

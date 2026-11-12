@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Trong bảng tính web Univer trên Chrome ở GNOME, Gõ Sen không còn bỏ sót phím dấu thanh gõ sau trong từ: gõ `tieengs`, `vieetj`, `laf` giờ ra `tiếng`, `việt`, `là`, không còn thành `tiêngs`, `viêtj`, `laf` (#732).
+- Trong Firefox trên GNOME, Gõ Sen không còn xoá mất chữ cái trước từ khi gõ nhanh rồi bấm BackSpace ngay sau một chữ: gõ `tieesng`, hai BackSpace, `ng` giờ ra `tiếng`, không còn thành `ieesnng` (#739).
 
 ## [1.10.1-1] — 12/11/2026
 

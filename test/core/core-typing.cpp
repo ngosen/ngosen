@@ -3150,6 +3150,19 @@ namespace {
         check(fast.text == "việt nam ", "a long turn: a replayed key waits for the edit to come out", fast.text);
     }
 
+    // GNOME Shell sends a deletion and its commit in separate turns, so a typed Backspace can land between them.
+    void testBackspaceBetweenSplitEdits() {
+        Field field           = makeField("ibus", true, "firefox_firefox.desktop");
+        field.reportedProgram = "gnome-shell";
+        field.appNameCurrent  = true;
+        FakeResources           resources;
+        ngosen::test::AppQuirks firefox{.reportDelayMs = 70, .backspacesSkipLag = true, .reportsTextAtChange = true, .keepsLastEditPerTurn = true, .turnMs = 3};
+        auto                    keys = keysOf("nam tieesng<<ng ");
+        std::replace(keys.begin(), keys.end(), static_cast<uint32_t>('<'), static_cast<uint32_t>(ngosen::key::BackSpace));
+        const auto run = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 60));
+        check(run.text == "nam tiếng ", "split edit on GNOME: a Backspace typed between the deletion and the commit follows the commit", run.text);
+    }
+
     // The cursor moving over our own edit is not a click, so the word goes on.
     void testCursorMovesBeforeEditText() {
         realMode = ngosen::Mode::Sen;
@@ -4303,6 +4316,7 @@ int main() {
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();
     testLongTurnKeepsTheEdit();
+    testBackspaceBetweenSplitEdits();
     testCopyWaitEndsAfterTheReport();
     testEditBeforeOtherText();
     testCursorMovesBeforeEditText();

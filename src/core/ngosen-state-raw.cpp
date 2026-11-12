@@ -9,6 +9,7 @@
 #include "ngosen-utf8.h"
 
 #include <string>
+#include <string_view>
 
 namespace ngosen {
 
@@ -42,7 +43,9 @@ namespace ngosen {
         for (unsigned int i = 0; i < s.cursor() && it != t.end(); ++i) {
             const auto next = utf8::nextChar(it, t.end());
             const char c    = next - it == 1 ? *it : '\0';
-            at              = c == ' ' || c == '\t' || c == '\n' || (at && leadsRawWord(static_cast<char32_t>(c)));
+            // Firefox contenteditable reports a trailing space as U+00A0.
+            const bool nbsp = std::string_view(&*it, static_cast<size_t>(next - it)) == "\u00a0";
+            at              = c == ' ' || c == '\t' || c == '\n' || nbsp || (at && leadsRawWord(static_cast<char32_t>(c)));
             it              = next;
         }
         return at;

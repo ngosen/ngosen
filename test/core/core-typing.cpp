@@ -922,6 +922,13 @@ namespace {
         check(plain.text == "tiếng việt " && plain.sent.surroundingDeletes > 0, "plain page: back to the surrounding text",
               plain.text + ", " + std::to_string(plain.sent.surroundingDeletes) + " surrounding deletions");
 
+        // Lark Base shows our backspaces in its report, yet still takes no deletion through the text.
+        ngosen::test::AppQuirks base = quirks;
+        base.backspacesShowInReport  = true;
+        base.textAfterCursor         = "\u200b";
+        const auto baseCell          = ngosen::test::typeInAppTraced(resources, brave, base, keys, std::vector<int>(keys.size(), 100));
+        check(baseCell.text == "tiếng việt ", "page with its own text that shows backspaces: keep backspaces", baseCell.text);
+
         // KDE relays Chromium through text-input, with the app name KWin gives fcitx5.
         const Field kdeChromium = makeField("wayland", true, "chromium");
         const auto  kdeSheet    = ngosen::test::typeInAppTraced(resources, kdeChromium, quirks, keys, std::vector<int>(keys.size(), 100));

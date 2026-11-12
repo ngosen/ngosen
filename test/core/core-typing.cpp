@@ -989,6 +989,16 @@ namespace {
             const std::string cell = typeText("daay");
             check(cell == "đây", "cell showing a letter with no key after Enter: dd gives đ", cell);
         }
+        // Firefox on KDE gives the new cell's editor focus first, empty, and then shows the letter.
+        for (const uint32_t enter : {ngosen::key::Return, ngosen::key::KP_Enter}) {
+            app->type(enter);
+            app->focusNewFieldWith("", 5);
+            loop.pump(150);
+            app->pageShowsCell("d");
+            loop.pump(150);
+            const std::string cell = typeText("daay");
+            check(cell == "đây", "new cell editor focused after Enter, then showing a letter: dd gives đ", cell);
+        }
         // Up and Down through a field's history, or Tab completing, can bring back a one-letter entry.
         for (const uint32_t recall : {ngosen::key::Up, ngosen::key::Down, ngosen::key::Tab}) {
             app->pageShowsCell("");

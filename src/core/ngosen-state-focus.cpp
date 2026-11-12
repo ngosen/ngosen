@@ -96,7 +96,10 @@ namespace ngosen {
             sinceFocus_.showedBackspace = false;
             // The release of a cell's first key comes after the cell editor gets focus.
             unseenPress_.reset();
-            cellMove_.reset();
+            // Firefox on KDE focuses the next cell's editor before it shows the letter; a field that already
+            // held it shows no change.
+            if (cellMove_)
+                cellMove_->second = s.isValid() ? s.text() : std::string();
         }
 
         if (isFocusIn && host_->field().frontend == "dbus" && !s.isValid()) {

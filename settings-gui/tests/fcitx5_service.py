@@ -9,6 +9,7 @@ Run as a script, it serves the controller and appends each SetConfig to a JSON l
 import importlib.util
 import json
 import os
+import select
 import shutil
 import subprocess
 import sys
@@ -58,7 +59,8 @@ class PrivateFcitx5:
             stdout=subprocess.PIPE,
             text=True,
         )
-        if self.service.stdout.readline().strip() != "ready":
+        ready, _, _ = select.select([self.service.stdout], [], [], 10)
+        if not ready or self.service.stdout.readline().strip() != "ready":
             raise RuntimeError("fake fcitx5 did not start")
 
     def set_config_calls(self, log=None):
@@ -97,6 +99,11 @@ def _serve(log):
             return dbus.Dictionary(items, signature="sv", variant_level=variant_level)
         return dbus.String(value)
 
+    def fcitx5_reads(value):
+        if isinstance(value, dbus.Dictionary):
+            return value.signature == "sv" and all(map(fcitx5_reads, value.values()))
+        return isinstance(value, dbus.String)
+
     def plain(value):
         if isinstance(value, dict):
             return {str(k): plain(v) for k, v in value.items()}
@@ -122,8 +129,9 @@ def _serve(log):
             "org.fcitx.Fcitx.Controller1", in_signature="sv", message_keyword="message"
         )
         def SetConfig(self, uri, new_values, message):
-            # fcitx5 rejects a call whose wire signature differs from "sv"; dbus-python accepts it.
-            if message.get_signature() != "sv":
+            # fcitx5 rejects a call whose wire signature differs from "sv", and ignores a value
+            # that is not a string or a{sv}; dbus-python accepts both.
+            if message.get_signature() != "sv" or not fcitx5_reads(new_values):
                 raise dbus.exceptions.DBusException(
                     "got " + message.get_signature(), name="org.freedesktop.DBus.Error.InvalidArgs"
                 )

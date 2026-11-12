@@ -941,10 +941,16 @@ namespace ngosen {
         // autocompletion unless the commit comes in the deletion's turn.
         uint64_t holdUs = 0;
         if (!(retype + pending_commit_string_).empty()) {
-            if (ngosen::keepsLastEditPerTurn(host_->field()) && !cursorIsBeforeAutofill(surrounding))
+            const Field field          = host_->field();
+            const bool  messengerFirst = looksLikeMessengerComposer(surrounding) && isFirstWordOfMessage(surrounding);
+            // The second step of clearing an address bar's completion keeps the split it was built with.
+            const bool joins = ngosen::takesJoinedEdit(field) && extraBeforeCursor == 0 && !messengerFirst;
+            if (ngosen::keepsLastEditPerTurn(field) && joins)
+                NGOSEN_INFO("Join the deletion and the commit for " + field.program);
+            else if (ngosen::keepsLastEditPerTurn(field) && !cursorIsBeforeAutofill(surrounding))
                 holdUs = SplitEditWaitUs;
             // A just-emptied Messenger composer reloads its placeholder and drops a commit sent with the deletion.
-            else if (looksLikeMessengerComposer(surrounding) && isFirstWordOfMessage(surrounding))
+            else if (messengerFirst)
                 holdUs = static_cast<uint64_t>(std::max(engine_->options().waitSurroundingSettleFirstWordMs, 0)) * 1000ULL;
         }
         if (holdUs > 0) {

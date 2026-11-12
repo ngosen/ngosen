@@ -3022,6 +3022,41 @@ namespace {
         const auto run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 150));
         check(run.text == "ngữ chào", "text after the cursor: the deletion and the commit go apart", run.text);
 
+        // Firefox named by GNOME Shell still gets them apart.
+        Field named           = surroundingOnlyField();
+        named.program         = "firefox_firefox.desktop";
+        named.reportedProgram = "gnome-shell";
+        named.appNameCurrent  = true;
+        FakeResources namedResources;
+        ngosen::test::captureLog(true);
+        const auto namedRun   = ngosen::test::typeInAppTraced(namedResources, named, firefox, keys, std::vector<int>(keys.size(), 150));
+        const auto namedLines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(namedRun.text == "ngữ chào", "text after the cursor in named Firefox: the word types right", namedRun.text);
+        check(countHaving(namedLines, "Join the deletion and the commit") == 0, "text after the cursor in named Firefox: the edits go apart", join(namedLines));
+
+        // Other apps take the two in one turn, so the word shows no gap.
+        ngosen::test::AppQuirks chromium = firefox;
+        chromium.cursorStaysPastEdit     = false;
+        Field other                      = named;
+        other.program                    = "chromium_chromium.desktop";
+        FakeResources otherResources;
+        ngosen::test::captureLog(true);
+        const auto otherRun   = ngosen::test::typeInAppTraced(otherResources, other, chromium, keys, std::vector<int>(keys.size(), 150));
+        const auto otherLines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(otherRun.text == "ngữ chào", "text after the cursor in Chromium: the word types right", otherRun.text);
+        check(countHaving(otherLines, "Join the deletion and the commit") == 2, "text after the cursor in Chromium: both edits go out joined", join(otherLines));
+
+        // Right after a focus change the name may still be the last app's.
+        other.appNameCurrent = false;
+        FakeResources staleResources;
+        ngosen::test::captureLog(true);
+        ngosen::test::typeInAppTraced(staleResources, other, chromium, keys, std::vector<int>(keys.size(), 150));
+        const auto staleLines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(staleLines, "Join the deletion and the commit") == 0, "a name that may be stale: the edits go apart", join(staleLines));
+
         // GTK asks for a new copy only when a commit arrives, so a wait for the copy has to send one.
         ngosen::test::AppQuirks quiet{.dropsForwardedKeys           = true,
                                       .convertsDeleteOnReportedCopy = true,

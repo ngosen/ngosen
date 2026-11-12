@@ -1448,6 +1448,12 @@ Replace: method=surrounding wait=copy ended=committed after 10 ms
 Replace: method=surrounding wait=none ended=committed after 30 ms
 Replace: method=surrounding wait=none ended=committed after 30 ms
 Replace: method=surrounding wait=none ended=committed after 30 ms
+Replace: method=surrounding wait=none ended=committed after 30 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 30 ms
+Replace: method=surrounding wait=none ended=committed after 30 ms
+Replace: method=surrounding wait=none ended=committed after 30 ms
 Replace: method=surrounding wait=copy ended=committed after 30 ms
 Replace: method=surrounding wait=none ended=committed after 30 ms
 Replace: method=surrounding wait=copy ended=committed after 30 ms

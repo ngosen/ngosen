@@ -20,6 +20,7 @@
 #include "emoji.h"
 #include "ngosen-options.h"
 #include "ngosen-go-object.h"
+#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <mutex>
@@ -470,6 +471,7 @@ namespace fcitx {
         // Null when nothing tells whether GNOME Shell loses forwarded keys.
         const bool* shellDropsKeys() const;
         std::string shellFocusedApp_;
+        uint64_t    focusInUs_ = 0;
         // Compared only, never dereferenced: fcitx5 may drop a context without a deactivate.
         InputContext* activeContext_ = nullptr;
         void          showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn);

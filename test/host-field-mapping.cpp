@@ -108,11 +108,14 @@ namespace {
 
     void checkJoinedEdit(TestInstance& testInstance) {
         TestInputContext context(&testInstance.instance, "chromium", "ibus");
-        uint64_t         focusInUs = ngosen::monotonicUs();
+        ngosen::fakeClockUs      = 1000000;
+        const uint64_t focusInUs = ngosen::monotonicUs();
+        ngosen::fakeClockUs += 50000;
         check("right after a focus change the app name may be the old one",
               !ngosen::FcitxHost(&context, &testInstance.instance, nullptr, nullptr, &focusInUs).field().appNameCurrent);
-        focusInUs -= 100000;
+        ngosen::fakeClockUs += 1;
         check("a while after a focus change the app name is current", ngosen::FcitxHost(&context, &testInstance.instance, nullptr, nullptr, &focusInUs).field().appNameCurrent);
+        ngosen::fakeClockUs = 0;
         check("without a focus time the app name is never current", !ngosen::FcitxHost(&context, &testInstance.instance).field().appNameCurrent);
 
         auto relayed = [](const char* program) {

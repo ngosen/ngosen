@@ -318,6 +318,8 @@ namespace ngosen {
             return;
         }
 
+        if (unseenPress_)
+            takeLetterFieldOpenedWith();
         const bool startsWord = oldPreBuffer_.empty();
         bool       processed  = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
@@ -424,6 +426,48 @@ namespace ngosen {
             return;
         lastWord_.clear();
         EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
+    }
+
+    void TypingState::notePressOrRelease(const ngosen::KeyPress& keyEvent) {
+        const uint32_t sym = keyEvent.sym() < 0x80 ? static_cast<uint32_t>(std::tolower(static_cast<int>(keyEvent.sym()))) : keyEvent.sym();
+        const auto     at  = std::find(pressedKeys_.begin(), pressedKeys_.end(), sym);
+        if (!keyEvent.isRelease()) {
+            if (at == pressedKeys_.end() && pressedKeys_.size() < 16)
+                pressedKeys_.push_back(sym);
+            if (unseenPress_ && keyCount_ == unseenPress_->second)
+                keyAfterUnseen_ = std::make_pair(keyEvent.sym(), keyEvent.states());
+        } else if (at != pressedKeys_.end()) {
+            pressedKeys_.erase(at);
+        } else if (sym >= 'a' && sym <= 'z') {
+            unseenPress_ = std::make_pair(sym, keyCount_);
+            keyAfterUnseen_.reset();
+        }
+    }
+
+    void TypingState::takeLetterFieldOpenedWith() {
+        const Field    field     = host_->field();
+        const uint64_t keysSince = keyCount_ - unseenPress_->second;
+        // AG Grid reports the letter only with the change the next key makes.
+        const bool late = keysSince == 2 && keyAfterUnseen_ && !oldPreBuffer_.empty();
+        if (keysSince > 2 || (keysSince == 1 && !oldPreBuffer_.empty()))
+            unseenPress_.reset();
+        if (!unseenPress_ || (keysSince != 1 && !late) || field.url || field.password)
+            return;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || s.cursor() != s.anchor())
+            return;
+        const std::string before     = textBeforeCursor(s);
+        const std::string afterKey   = late ? oldPreBuffer_ : std::string();
+        const bool        sameLetter = before.size() == 1 + afterKey.size() && static_cast<uint32_t>(std::tolower(static_cast<unsigned char>(before[0]))) == unseenPress_->first &&
+            before.compare(1, std::string::npos, afterKey) == 0;
+        if (!sameLetter || s.text().find_first_not_of('\n', before.size()) != std::string::npos)
+            return;
+        NGOSEN_INFO("Word starts with the letter whose key went to the app before the field: " + logged(before.substr(0, 1)));
+        EngineRebuildFromText(bambooEngine_.handle(), before.substr(0, 1).c_str());
+        if (late)
+            EngineProcessKeyEvent(bambooEngine_.handle(), keyAfterUnseen_->first, keyAfterUnseen_->second);
+        oldPreBuffer_ = before;
+        unseenPress_.reset();
     }
 
     bool TypingState::reopenWordInPreedit(ngosen::KeyPress& keyEvent) {
@@ -560,6 +604,8 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        if (!keyEvent.isModifier())
+            notePressOrRelease(keyEvent);
         // Counted first, so a replacement this key starts does not count it as a later key.
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;

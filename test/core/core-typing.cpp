@@ -889,6 +889,63 @@ namespace {
         }
     }
 
+    // Handsontable opens a cell editor on the first key, which reaches the page while no field is focused:
+    // the editor reports empty, then holds that letter, and the word goes on from it.
+    void testCellOpenedByFirstKey() {
+        const Field   chrome = makeField("ibus", true, "google-chrome.desktop");
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, chrome, ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& typed) {
+            for (const char c : typed) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(200);
+            return app->text();
+        };
+        const auto openCell = [&](const std::string& before, const std::string& after) {
+            app->focusNewFieldWith("", 5);
+            loop.pump(50);
+            app->pageTakesKey(static_cast<uint32_t>(before.back()), before, after);
+            loop.pump(100);
+        };
+        openCell("d", "");
+        const std::string dd = typeText("daay ");
+        check(dd == "đây ", "cell opened by its first key: dd gives đ", dd);
+        // The next cell comes within a focus bounce, as Enter in a sheet does.
+        openCell("a", "");
+        const std::string aw = typeText("wn ");
+        check(aw == "ăn ", "next cell opened by its first key: aw gives ă", aw);
+        // A field that already held a letter when it got focus did not get it from a key just now.
+        app->focusNewFieldWith("a", 300);
+        loop.pump(450);
+        const std::string held = typeText("s ");
+        check(held == "as ", "field holding one letter at focus: no word taken from it", held);
+        // A release from the last cell says nothing about a field the user moves to before the next key.
+        for (const int ms : {5, 300}) {
+            openCell("a", "");
+            app->focusNewFieldWith("a", ms);
+            loop.pump(450);
+            const std::string moved = typeText("s ");
+            check(moved == "as ", "field reached after a cell's first key: no word taken from it", moved);
+        }
+        // AG Grid reports the letter only with the next key's change, so the word is fixed one key later.
+        for (const auto& [first, rest, want] : {std::make_tuple('d', "daay ", "đây "), std::make_tuple('a', "wn ", "ăn "), std::make_tuple('a', "s ", "á ")}) {
+            app->focusNewFieldWith("", 5);
+            loop.pump(50);
+            app->pageTakesKeyUnreported(static_cast<uint32_t>(first), std::string(1, first));
+            loop.pump(100);
+            const std::string late = typeText(rest);
+            check(late == want, "cell whose first letter is reported late: word starts from it", late);
+        }
+    }
+
     // Lark Sheets in a browser keeps its own text and takes only key presses: a deletion through the
     // surrounding text changes the copy the browser reports but not what the user sees.
     void testPageKeepsOwnText() {
@@ -921,6 +978,25 @@ namespace {
         const auto plain = ngosen::test::typeInAppTraced(resources, brave, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 100));
         check(plain.text == "tiếng việt " && plain.sent.surroundingDeletes > 0, "plain page: back to the surrounding text",
               plain.text + ", " + std::to_string(plain.sent.surroundingDeletes) + " surrounding deletions");
+
+        // Lark Base shows our backspaces in its report, yet still takes no deletion through the text.
+        ngosen::test::AppQuirks base = quirks;
+        base.backspacesShowInReport  = true;
+        base.textAfterCursor         = "\u200b";
+        const auto baseCell          = ngosen::test::typeInAppTraced(resources, brave, base, keys, std::vector<int>(keys.size(), 100));
+        check(baseCell.text == "tiếng việt ", "page with its own text that shows backspaces: keep backspaces", baseCell.text);
+        // Such a page still reports its edits, so the backspaces wait for the last commit to land.
+        ngosen::test::AppQuirks lagging;
+        lagging.textAfterCursor              = "\u200b";
+        lagging.lagMs                        = 30;
+        lagging.reportDelayMs                = 8;
+        lagging.backspacesSkipLag            = true;
+        lagging.convertsDeleteOnReportedCopy = true;
+        lagging.reportsTextAtChange          = true;
+        const std::string           chu      = "chuwx ";
+        const std::vector<uint32_t> chuKeys(chu.begin(), chu.end());
+        const auto                  lagged = ngosen::test::typeInAppTraced(resources, makeField("ibus", true, "chromium"), lagging, chuKeys, std::vector<int>(chuKeys.size(), 60));
+        check(lagged.text == "chữ \u200b", "page with U+200B that lags: wait for the commit before backspaces", lagged.text);
 
         // KDE relays Chromium through text-input, with the app name KWin gives fcitx5.
         const Field kdeChromium = makeField("wayland", true, "chromium");
@@ -4110,6 +4186,7 @@ int main() {
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();
     testLateEmptyFieldStillClick();
+    testCellOpenedByFirstKey();
     testPageKeepsOwnText();
     testMacroKeepsSpace();
     testMacroBeforeEnter();

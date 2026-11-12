@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.10.0
+Version:        1.10.1
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -100,6 +100,9 @@ else
 fi
 
 %changelog
+* Thu Nov 12 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.10.1-1
+- The Qt settings window no longer crashes on close with PyQt6 6.11 (#731); web sheets such as Handsontable, AG Grid and Lark Base keep tone keys after moving between cells on GNOME (#728, #730); GNOME no longer flashes the word on each edit (#720); the Dolphin search field keeps the preedit word on KDE Plasma Wayland (#722).
+
 * Thu Nov 12 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.10.0-1
 - Vim mode for each app in the mode menu (#302, #587); words starting with / stay as typed, in Firefox too (#312, #716, #718, #719, #721); Telex words with a forgotten circumflex or horn come out right (#696); names such as plông and Đakrông type (#706, #708); typing pauses at hidden terminal password prompts (#106, #645); the tray icon can be larger (#675, #671); Check my machine shows the version and whether the repo is on (#657); the installer adds the APT repo (#654) and the repo carries wl-ngosen (#702, #703); Lark sheets in Chrome keep the first word after moving to a cell (#704); BackSpace after an extra d keeps the stroke of đ (#712).
 

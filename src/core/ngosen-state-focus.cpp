@@ -92,8 +92,11 @@ namespace ngosen {
         }
 
         // A click into another field of the same page looks like a bounce, and that field may keep its own text.
-        if (isFocusIn)
+        if (isFocusIn) {
             sinceFocus_.showedBackspace = false;
+            // The release of a cell's first key comes after the cell editor gets focus.
+            unseenPress_.reset();
+        }
 
         if (isFocusIn && host_->field().frontend == "dbus" && !s.isValid()) {
             NGOSEN_INFO("Skip clearAllBuffers");

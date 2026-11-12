@@ -941,10 +941,10 @@ namespace ngosen {
         // autocompletion unless the commit comes in the deletion's turn.
         uint64_t holdUs = 0;
         if (!(retype + pending_commit_string_).empty()) {
-            const Field field          = host_->field();
-            const bool  messengerFirst = looksLikeMessengerComposer(surrounding) && isFirstWordOfMessage(surrounding);
-            // The second step of clearing an address bar's completion keeps the split it was built with.
-            const bool joins = ngosen::takesJoinedEdit(field) && extraBeforeCursor == 0 && !messengerFirst;
+            const Field field            = host_->field();
+            const bool  messengerFirst   = looksLikeMessengerComposer(surrounding) && isFirstWordOfMessage(surrounding);
+            const bool  clearsCompletion = extraBeforeCursor != 0;
+            const bool  joins            = ngosen::takesJoinedEdit(field) && !clearsCompletion && !messengerFirst;
             if (ngosen::keepsLastEditPerTurn(field) && joins)
                 NGOSEN_INFO("Join the deletion and the commit for " + field.program);
             else if (ngosen::keepsLastEditPerTurn(field) && !cursorIsBeforeAutofill(surrounding))

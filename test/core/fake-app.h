@@ -55,6 +55,9 @@ namespace ngosen::test {
         // Shows its own copy of the text, which takes typed text and Backspace but no deletion through the
         // surrounding text, while it reports the browser's copy, which a Backspace leaves alone: Lark Sheets.
         bool keepsOwnText = false;
+        // With keepsOwnText, a Backspace also changes the copy it reports, and the report holds a U+200B
+        // after the cursor: Lark Base.
+        bool backspacesShowInReport = false;
         // Turns a deletion of characters into bytes on the text it reported last, as mutter does for
         // text-input-v3 and fcitx5 does on Wayland.
         bool             convertsDeleteOnReportedCopy = false;
@@ -135,6 +138,15 @@ namespace ngosen::test {
         // Loses focus and gets it back within ms in a new empty field, with no reset in between, as a
         // browser closed and opened again does under GNOME Shell.
         void focusNewEmptyField(ngosen::Mode mode, int ms);
+        // Leaves the field, then within ms focuses a new one that holds text before the cursor.
+        void focusNewFieldWith(const std::string& text, int ms);
+        // Puts text around the cursor with no key through the input method, as a paste does.
+        void pageInserts(const std::string& before, const std::string& after);
+        // A key whose press reached the page before the field had focus, as the key that opens a sheet's
+        // cell editor: the page puts text around the cursor, and the input method gets only the release.
+        void pageTakesKey(uint32_t sym, const std::string& before, const std::string& after);
+        // Like pageTakesKey, but the field reports the letter only with its next change, as AG Grid does.
+        void pageTakesKeyUnreported(uint32_t sym, const std::string& letter);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.
@@ -268,6 +280,7 @@ namespace ngosen::test {
         size_t                              cursorPastBy_ = 0;
         std::optional<unsigned int>         heldDelete_;
         bool                                showsMovedCursor_ = false;
+        bool                                holdsUnreported_  = false;
         int                                 emptyCommits_     = 0;
         int                                 deletions_        = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};

@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Trong bảng tính web Univer trên Chrome ở GNOME, Gõ Sen không còn bỏ sót phím dấu thanh gõ sau trong từ: gõ `tieengs`, `vieetj`, `laf` giờ ra `tiếng`, `việt`, `là`, không còn thành `tiêngs`, `viêtj`, `laf` (#732).
+- Trong các bảng tính web Handsontable và AG Grid trên Firefox ở KDE Plasma, Gõ Sen không còn bỏ sót phím đầu sau khi chuyển cell bằng Enter: gõ `ddaay` trong cell mới giờ ra `đây`, không còn thành `ddây` (#735, sửa tiếp #730).
 
 ## [1.10.1-1] — 12/11/2026
 

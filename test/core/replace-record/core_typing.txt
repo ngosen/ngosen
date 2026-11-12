@@ -41,6 +41,8 @@ Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 60 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 30 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
 Replace: method=forwarded backspaces wait=none ended=event after 0 ms
@@ -563,6 +565,7 @@ Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 60 ms
 Replace: method=surrounding wait=none ended=committed after 60 ms
 Replace: method=surrounding wait=none ended=focus lost, text dropped after 105 ms
+Replace: method=surrounding wait=none ended=committed after 60 ms
 Replace: method=surrounding wait=none ended=committed after 30 ms
 Replace: method=surrounding wait=none ended=committed after 30 ms
 Replace: method=none wait=copy ended=key went to another field after 0 ms
@@ -1445,6 +1448,12 @@ Replace: method=surrounding wait=copy ended=committed after 10 ms
 Replace: method=surrounding wait=copy ended=committed after 10 ms
 Replace: method=surrounding wait=copy ended=committed after 10 ms
 Replace: method=surrounding wait=copy ended=committed after 10 ms
+Replace: method=surrounding wait=none ended=committed after 30 ms
+Replace: method=surrounding wait=none ended=committed after 30 ms
+Replace: method=surrounding wait=none ended=committed after 30 ms
+Replace: method=surrounding wait=none ended=committed after 30 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 30 ms
 Replace: method=surrounding wait=none ended=committed after 30 ms
 Replace: method=surrounding wait=none ended=committed after 30 ms

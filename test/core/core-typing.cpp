@@ -417,6 +417,25 @@ namespace {
             loop.pump(3);
             check(host->deletes().size() == 1 && join(host->commits()) == "['ê']", "messenger: a later word is committed at once", join(host->commits()));
         }
+        // Under GNOME, in an app that takes joined edits, only later words are joined.
+        for (const std::string before : {"", "chào "}) {
+            FakeLoop      loop;
+            FakeResources resources;
+            Field         field       = makeField("ibus", true, "chromium_chromium.desktop");
+            field.sendsNoKeys         = true;
+            field.reportedProgram     = "gnome-shell";
+            field.appNameCurrent      = true;
+            auto                owned = std::make_unique<FakeHost>(loop, field);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            typeInMessengerComposer(state, *host, loop, before, "tie");
+            loop.pump(3);
+            const bool        first = before.empty();
+            const std::string what  = first ? "messenger on GNOME: the first word's commit waits" : "messenger on GNOME: a later word is joined";
+            check(host->deletes().size() == 1 && host->commits().size() == (first ? 0U : 1U), what, std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
+            loop.pump(60);
+            check(join(host->commits()) == "['ê']", what + ", then the commit", join(host->commits()));
+        }
     }
 
     // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
@@ -2744,10 +2763,14 @@ namespace {
         FakeHost*                            host = nullptr;
         std::unique_ptr<ngosen::TypingState> state;
 
-        TailRun(const std::string& shown, unsigned int anchor) {
-            realMode                = ngosen::Mode::Sen;
-            Field field             = surroundingOnlyField();
-            field.program           = "gnome-shell";
+        TailRun(const std::string& shown, unsigned int anchor, const std::string& program = "gnome-shell") {
+            realMode      = ngosen::Mode::Sen;
+            Field field   = surroundingOnlyField();
+            field.program = program;
+            if (program != "gnome-shell") {
+                field.reportedProgram = "gnome-shell";
+                field.appNameCurrent  = true;
+            }
             auto owned              = std::make_unique<FakeHost>(loop, field);
             host                    = owned.get();
             state                   = std::make_unique<ngosen::TypingState>(&resources, std::move(owned));
@@ -2798,6 +2821,16 @@ namespace {
         moved.state->activate(ngosen::Mode::Sen, true);
         moved.loop.pump(200);
         check(moved.host->deletes().empty(), "selected tail: another field gets none of the rest", std::to_string(moved.host->deletes().size()));
+
+        // In an app that takes joined edits, the step after the space still sends the commit apart.
+        TailRun named("tieng.lan:8765/", 15, "chromium_chromium.desktop");
+        named.host->setSurrounding("tie ", 4);
+        named.state->surroundingUpdated();
+        named.loop.pump(35);
+        check(named.host->deletes() == Deletes{{-2, 2}} && named.host->commits().size() == 1, "selected tail in Chromium: the commit waits after the deletion",
+              std::to_string(named.host->deletes().size()) + " deletes, " + join(named.host->commits()));
+        named.loop.pump(200);
+        check(named.host->commits().size() > 1 && named.host->commits()[1] == "ê", "selected tail in Chromium: then the commit", join(named.host->commits()));
 
         TailRun inside("tieng.lan:8765/ x", 15);
         check(inside.host->deletes() == Deletes{{-1, 1}}, "selected tail: a selection ending before the text's end is the user's", std::to_string(inside.host->deletes().size()));
@@ -3021,6 +3054,41 @@ namespace {
         const auto keys = keysOf("nguwx ");
         const auto run  = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 150));
         check(run.text == "ngữ chào", "text after the cursor: the deletion and the commit go apart", run.text);
+
+        // Firefox named by GNOME Shell still gets them apart.
+        Field named           = surroundingOnlyField();
+        named.program         = "firefox_firefox.desktop";
+        named.reportedProgram = "gnome-shell";
+        named.appNameCurrent  = true;
+        FakeResources namedResources;
+        ngosen::test::captureLog(true);
+        const auto namedRun   = ngosen::test::typeInAppTraced(namedResources, named, firefox, keys, std::vector<int>(keys.size(), 150));
+        const auto namedLines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(namedRun.text == "ngữ chào", "text after the cursor in named Firefox: the word types right", namedRun.text);
+        check(countHaving(namedLines, "Join the deletion and the commit") == 0, "text after the cursor in named Firefox: the edits go apart", join(namedLines));
+
+        // Other apps take the two in one turn, so the word shows no gap.
+        ngosen::test::AppQuirks chromium = firefox;
+        chromium.cursorStaysPastEdit     = false;
+        Field other                      = named;
+        other.program                    = "chromium_chromium.desktop";
+        FakeResources otherResources;
+        ngosen::test::captureLog(true);
+        const auto otherRun   = ngosen::test::typeInAppTraced(otherResources, other, chromium, keys, std::vector<int>(keys.size(), 150));
+        const auto otherLines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(otherRun.text == "ngữ chào", "text after the cursor in Chromium: the word types right", otherRun.text);
+        check(countHaving(otherLines, "Join the deletion and the commit") == 2, "text after the cursor in Chromium: both edits go out joined", join(otherLines));
+
+        // Right after a focus change the name may still be the last app's.
+        other.appNameCurrent = false;
+        FakeResources staleResources;
+        ngosen::test::captureLog(true);
+        ngosen::test::typeInAppTraced(staleResources, other, chromium, keys, std::vector<int>(keys.size(), 150));
+        const auto staleLines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(staleLines, "Join the deletion and the commit") == 0, "a name that may be stale: the edits go apart", join(staleLines));
 
         // GTK asks for a new copy only when a commit arrives, so a wait for the copy has to send one.
         ngosen::test::AppQuirks quiet{.dropsForwardedKeys           = true,

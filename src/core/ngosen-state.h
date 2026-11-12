@@ -713,7 +713,8 @@ namespace ngosen {
 
         // A key whose release we got with no press: its press went to the app before the field had focus.
         std::vector<uint32_t>                        pressedKeys_;
-        std::optional<std::pair<uint32_t, uint64_t>> unseenPress_; ///< the letter and keyCount_ at its release
+        std::optional<std::pair<uint32_t, uint64_t>> unseenPress_;    ///< the letter and keyCount_ at its release
+        std::optional<std::pair<uint32_t, uint32_t>> keyAfterUnseen_; ///< sym and states of the next key
 
         // What the field showed since it got focus. A focus-in that is not a bounce starts it over, and
         // nothing else does.

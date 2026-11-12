@@ -145,6 +145,8 @@ namespace ngosen::test {
         // A key whose press reached the page before the field had focus, as the key that opens a sheet's
         // cell editor: the page puts text around the cursor, and the input method gets only the release.
         void pageTakesKey(uint32_t sym, const std::string& before, const std::string& after);
+        // Like pageTakesKey, but the field reports the letter only with its next change, as AG Grid does.
+        void pageTakesKeyUnreported(uint32_t sym, const std::string& letter);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.
@@ -278,6 +280,7 @@ namespace ngosen::test {
         size_t                              cursorPastBy_ = 0;
         std::optional<unsigned int>         heldDelete_;
         bool                                showsMovedCursor_ = false;
+        bool                                holdsUnreported_  = false;
         int                                 emptyCommits_     = 0;
         int                                 deletions_        = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};

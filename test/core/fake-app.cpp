@@ -496,12 +496,21 @@ namespace ngosen::test {
         state_->keyEvent(up);
     }
 
+    void FakeApp::pageTakesKeyUnreported(uint32_t sym, const std::string& letter) {
+        const std::u32string l = utf8::decode(letter);
+        text_.insert(cursor_, l);
+        cursor_ = anchor_ = cursor_ + l.size();
+        holdsUnreported_  = true;
+        FakeKey up(sym, true, 0, static_cast<uint32_t>(monotonicUs() / 1000));
+        state_->keyEvent(up);
+    }
+
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};
         if (quirks_.reportsEmptyText)
             return Surrounding("", 0, 0);
-        if (silentAfterDelete_ || quirks_.reportsTextAtChange || showsMovedCursor_)
+        if (silentAfterDelete_ || quirks_.reportsTextAtChange || showsMovedCursor_ || holdsUnreported_)
             return Surrounding(encode(reportedText_), static_cast<unsigned int>(reportedCursor_), static_cast<unsigned int>(reportedAnchor_));
         if (quirks_.staleReport)
             return Surrounding(encode(previousText_), static_cast<unsigned int>(previousCursor_), static_cast<unsigned int>(previousCursor_));
@@ -616,8 +625,9 @@ namespace ngosen::test {
     }
 
     void FakeApp::changed() {
-        shownCursor_ = cursor_;
-        shownAnchor_ = anchor_;
+        holdsUnreported_ = false;
+        shownCursor_     = cursor_;
+        shownAnchor_     = anchor_;
         if (silentAfterDelete_ && !quirks_.repeatsOldTextAfterDelete)
             return;
         if (field_.surroundingText && quirks_.reports)

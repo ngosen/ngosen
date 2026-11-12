@@ -935,6 +935,15 @@ namespace {
             const std::string moved = typeText("s ");
             check(moved == "as ", "field reached after a cell's first key: no word taken from it", moved);
         }
+        // AG Grid reports the letter only with the next key's change, so the word is fixed one key later.
+        for (const auto& [first, rest, want] : {std::make_tuple('d', "daay ", "đây "), std::make_tuple('a', "wn ", "ăn "), std::make_tuple('a', "s ", "á ")}) {
+            app->focusNewFieldWith("", 5);
+            loop.pump(50);
+            app->pageTakesKeyUnreported(static_cast<uint32_t>(first), std::string(1, first));
+            loop.pump(100);
+            const std::string late = typeText(rest);
+            check(late == want, "cell whose first letter is reported late: word starts from it", late);
+        }
     }
 
     // Lark Sheets in a browser keeps its own text and takes only key presses: a deletion through the

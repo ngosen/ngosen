@@ -16,6 +16,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Ở chế độ Preedit trên KDE Plasma Wayland, chữ đang gạch chân trong ô tìm kiếm của Dolphin (Ctrl+F) không còn bị mất khi app làm mới ô tìm kiếm: gõ chậm `tôi là ai` ra đủ `tôi là ai`, không còn ra `tôi à i` (#722, sửa #717).
 - Trong các bảng tính web mở trình sửa cell ngay từ phím đầu như Handsontable, jspreadsheet và AG Grid trên Chrome và Firefox ở GNOME, Gõ Sen không còn bỏ sót phím đầu sau khi chuyển cell bằng Enter, Tab hoặc Down: gõ `ddaay` trong cell mới giờ ra `đây`, không còn thành `ddây` (#730).
 - Trong Lark Base trên Chrome ở GNOME, Gõ Sen không còn làm ô lưu mất dấu dù lúc gõ chữ trông vẫn đúng: gõ `tieengs`, `ddaay`, `laf` rồi Enter hoặc click sang ô khác giờ lưu `tiếng`, `đây`, `là`, không còn thành `tiêng`, `đay`, `la` (#728).
+- Trong bảng tính web Univer trên Chrome ở GNOME, Gõ Sen không còn bỏ sót phím dấu thanh gõ sau trong từ: gõ `tieengs`, `vieetj`, `laf` giờ ra `tiếng`, `việt`, `là`, không còn thành `tiêngs`, `viêtj`, `laf` (#732).
 - Cửa sổ cài đặt Ngó Sen giao diện Qt trên Fedora 44 và các distro có PyQt6 6.11 nay thoát bình thường khi đóng, không còn crash khiến hệ thống báo lỗi core dump dù cài đặt đã được lưu (#731, sửa #729).
 
 ## [1.10.0-1] — 12/11/2026

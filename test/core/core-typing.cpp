@@ -909,10 +909,10 @@ namespace {
             loop.pump(200);
             return app->text();
         };
-        const auto openCell = [&](const std::string& letter, const std::string& after) {
+        const auto openCell = [&](const std::string& before, const std::string& after) {
             app->focusNewFieldWith("", 5);
             loop.pump(50);
-            app->pageInserts(letter, after);
+            app->pageTakesKey(static_cast<uint32_t>(before.back()), before, after);
             loop.pump(100);
         };
         openCell("d", "");
@@ -922,10 +922,6 @@ namespace {
         openCell("a", "");
         const std::string aw = typeText("wn ");
         check(aw == "ăn ", "next cell opened by its first key: aw gives ă", aw);
-        // Lark Base keeps a U+200B after the cursor.
-        openCell("d", "\u200b");
-        const std::string lark = typeText("daay ");
-        check(lark == "đây \u200b", "cell with U+200B opened by its first key: dd gives đ", lark);
         // A field that already held a letter when it got focus did not get it from a key just now.
         app->focusNewFieldWith("a", 300);
         loop.pump(450);

@@ -490,6 +490,12 @@ namespace ngosen::test {
         changed();
     }
 
+    void FakeApp::pageTakesKey(uint32_t sym, const std::string& before, const std::string& after) {
+        pageInserts(before, after);
+        FakeKey up(sym, true, 0, static_cast<uint32_t>(monotonicUs() / 1000));
+        state_->keyEvent(up);
+    }
+
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};

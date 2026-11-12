@@ -137,9 +137,11 @@ namespace ngosen::test {
         void focusNewEmptyField(ngosen::Mode mode, int ms);
         // Leaves the field, then within ms focuses a new one that holds text before the cursor.
         void focusNewFieldWith(const std::string& text, int ms);
-        // Puts text around the cursor with no key through the input method, as a sheet does with the key
-        // that opens a cell editor, which reaches the page before the editor has focus.
+        // Puts text around the cursor with no key through the input method, as a paste does.
         void pageInserts(const std::string& before, const std::string& after);
+        // A key whose press reached the page before the field had focus, as the key that opens a sheet's
+        // cell editor: the page puts text around the cursor, and the input method gets only the release.
+        void pageTakesKey(uint32_t sym, const std::string& before, const std::string& after);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.

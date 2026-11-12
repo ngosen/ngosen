@@ -428,22 +428,31 @@ namespace ngosen {
         EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
     }
 
+    void TypingState::notePressOrRelease(const ngosen::KeyPress& keyEvent) {
+        const uint32_t sym = keyEvent.sym() < 0x80 ? static_cast<uint32_t>(std::tolower(static_cast<int>(keyEvent.sym()))) : keyEvent.sym();
+        const auto     at  = std::find(pressedKeys_.begin(), pressedKeys_.end(), sym);
+        if (!keyEvent.isRelease()) {
+            if (at == pressedKeys_.end() && pressedKeys_.size() < 16)
+                pressedKeys_.push_back(sym);
+        } else if (at != pressedKeys_.end()) {
+            pressedKeys_.erase(at);
+        } else if (sym >= 'a' && sym <= 'z') {
+            unseenPress_ = std::make_pair(sym, keyCount_);
+        }
+    }
+
     void TypingState::takeLetterFieldOpenedWith() {
         const Field field = host_->field();
-        if (!emptyAtKey_ || keyCount_ != *emptyAtKey_ + 1 || field.url || field.password)
+        if (!unseenPress_ || keyCount_ != unseenPress_->second + 1 || field.url || field.password)
             return;
         const Surrounding s = host_->surrounding();
         if (!s.isValid() || s.cursor() != s.anchor())
             return;
-        // Lark Base keeps a U+200B beside the letter.
-        std::string before = textBeforeCursor(s);
-        std::string after  = s.text().substr(before.size());
-        for (std::string* part : {&before, &after})
-            for (size_t at; (at = part->find("\u200b")) != std::string::npos;)
-                part->erase(at, 3);
-        if (before.size() != 1 || !std::isalpha(static_cast<unsigned char>(before[0])) || after.find_first_not_of('\n') != std::string::npos)
+        const std::string before     = textBeforeCursor(s);
+        const bool        sameLetter = before.size() == 1 && static_cast<uint32_t>(std::tolower(static_cast<unsigned char>(before[0]))) == unseenPress_->first;
+        if (!sameLetter || s.text().find_first_not_of('\n', before.size()) != std::string::npos)
             return;
-        NGOSEN_INFO("Word starts with the letter the field got with no key: " + logged(before));
+        NGOSEN_INFO("Word starts with the letter whose key went to the app before the field: " + logged(before));
         EngineRebuildFromText(bambooEngine_.handle(), before.c_str());
         oldPreBuffer_ = before;
     }
@@ -582,6 +591,8 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        if (!keyEvent.isModifier())
+            notePressOrRelease(keyEvent);
         // Counted first, so a replacement this key starts does not count it as a later key.
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;

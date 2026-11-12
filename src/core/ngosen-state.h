@@ -701,8 +701,7 @@ namespace ngosen {
         bool                            appMarkedUntrusted() const;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
-        uint64_t                        keyCount_ = 0;               ///< key presses other than modifiers
-        std::optional<uint64_t>         emptyAtKey_;                 ///< keyCount_ at the last report of an empty field
+        uint64_t                        keyCount_               = 0; ///< key presses other than modifiers
         int                             surrUnanswered_         = 0; ///< checks in a row left unanswered in this field
         static constexpr int            MinAnswersForPlainCount = 2;
         uint64_t                        commitCount_            = 0;
@@ -710,6 +709,10 @@ namespace ngosen {
         bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
         std::unique_ptr<ngosen::Timer>  replay_timer_;
         bool                            rawWord_ = false; ///< the rest of this word goes to the app as typed
+
+        // A key whose release we got with no press: its press went to the app before the field had focus.
+        std::vector<uint32_t>                        pressedKeys_;
+        std::optional<std::pair<uint32_t, uint64_t>> unseenPress_; ///< the letter and keyCount_ at its release
 
         // What the field showed since it got focus. A focus-in that is not a bounce starts it over, and
         // nothing else does.
@@ -793,9 +796,10 @@ namespace ngosen {
         bool replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent);
         // Backspace from after lastWord_ into it: the engine takes up what is left of that word.
         void reopenLastWord();
-        // A sheet opens a cell editor on a key that reaches the page before the input method has a field:
-        // the editor reports empty, then holds that letter, and the word starts from it.
+        // A sheet opens a cell editor on a key whose press reaches the page before the input method has a
+        // field: we get only its release, the editor holds that letter, and the word starts from it.
         void takeLetterFieldOpenedWith();
+        void notePressOrRelease(const ngosen::KeyPress& keyEvent);
         // Backspace right after a commit in Preedit: take the word back from the app as preedit.
         bool reopenWordInPreedit(ngosen::KeyPress& keyEvent);
         bool rebuildable(const std::string& committed) const;

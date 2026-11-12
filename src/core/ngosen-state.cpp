@@ -430,17 +430,22 @@ namespace ngosen {
 
     void TypingState::takeLetterFieldOpenedWith() {
         const Field field = host_->field();
-        if (keyCount_ != sinceFocus_.keysAtFocus + 1 || !field.surroundingText || field.url || field.password)
+        if (!emptyAtKey_ || keyCount_ != *emptyAtKey_ + 1 || field.url || field.password)
             return;
         const Surrounding s = host_->surrounding();
-        if (!s.isValid() || s.cursor() != 1 || s.anchor() != 1)
+        if (!s.isValid() || s.cursor() != s.anchor())
             return;
-        const std::string letter = textBeforeCursor(s);
-        if (letter.size() != 1 || !std::isalpha(static_cast<unsigned char>(letter[0])) || s.text().find_first_not_of('\n', letter.size()) != std::string::npos)
+        // Lark Base keeps a U+200B beside the letter.
+        std::string before = textBeforeCursor(s);
+        std::string after  = s.text().substr(before.size());
+        for (std::string* part : {&before, &after})
+            for (size_t at; (at = part->find("\u200b")) != std::string::npos;)
+                part->erase(at, 3);
+        if (before.size() != 1 || !std::isalpha(static_cast<unsigned char>(before[0])) || after.find_first_not_of('\n') != std::string::npos)
             return;
-        NGOSEN_INFO("Word starts with the letter the field opened with: " + letter);
-        EngineRebuildFromText(bambooEngine_.handle(), letter.c_str());
-        oldPreBuffer_ = letter;
+        NGOSEN_INFO("Word starts with the letter the field got with no key: " + logged(before));
+        EngineRebuildFromText(bambooEngine_.handle(), before.c_str());
+        oldPreBuffer_ = before;
     }
 
     bool TypingState::reopenWordInPreedit(ngosen::KeyPress& keyEvent) {

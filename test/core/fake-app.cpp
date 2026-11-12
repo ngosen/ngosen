@@ -483,6 +483,13 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::pageInserts(const std::string& before, const std::string& after) {
+        const std::u32string b = utf8::decode(before);
+        text_.insert(cursor_, b + utf8::decode(after));
+        cursor_ = anchor_ = cursor_ + b.size();
+        changed();
+    }
+
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};

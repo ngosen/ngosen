@@ -306,7 +306,9 @@ namespace ngosen {
         if (host_->hasFocus() && host_->surrounding().isValid()) {
             if (showsText(host_->surrounding()))
                 sinceFocus_.seenText = true;
-            else if (keyCount_ == sinceFocus_.keysAtFocus)
+            else
+                emptyAtKey_ = keyCount_;
+            if (!showsText(host_->surrounding()) && keyCount_ == sinceFocus_.keysAtFocus)
                 sinceFocus_.seenEmpty = true;
         }
         noteAutofill(host_->surrounding());

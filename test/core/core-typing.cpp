@@ -890,20 +890,18 @@ namespace {
     }
 
     // Handsontable opens a cell editor on the first key, which reaches the page while no field is focused:
-    // the new editor holds that letter, and the word goes on from it.
+    // the editor reports empty, then holds that letter, and the word goes on from it.
     void testCellOpenedByFirstKey() {
         const Field   chrome = makeField("ibus", true, "google-chrome.desktop");
         FakeResources resources;
-        const auto    typeAfterOpen = [&](const std::string& opened, const std::string& typed) {
-            realMode = ngosen::Mode::Sen;
-            realtextLen.store(0);
-            FakeLoop            loop;
-            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, chrome, ngosen::test::AppQuirks{});
-            auto*               app   = owned.get();
-            ngosen::TypingState state(&resources, std::move(owned));
-            app->attach(&state);
-            app->focusNewFieldWith(opened, 5);
-            loop.pump(150);
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, chrome, ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& typed) {
             for (const char c : typed) {
                 app->type(static_cast<uint32_t>(c));
                 loop.pump(100);
@@ -911,13 +909,28 @@ namespace {
             loop.pump(200);
             return app->text();
         };
-        const std::string dd = typeAfterOpen("d", "daay ");
+        const auto openCell = [&](const std::string& letter, const std::string& after) {
+            app->focusNewFieldWith("", 5);
+            loop.pump(50);
+            app->pageInserts(letter, after);
+            loop.pump(100);
+        };
+        openCell("d", "");
+        const std::string dd = typeText("daay ");
         check(dd == "đây ", "cell opened by its first key: dd gives đ", dd);
-        const std::string aw = typeAfterOpen("a", "wn ");
-        check(aw == "ăn ", "cell opened by its first key: aw gives ă", aw);
-        // A field with more text was not opened by a key, so its text stays as it is.
-        const std::string longer = typeAfterOpen("ab", "s ");
-        check(longer == "abs ", "field with more text at focus: no word taken from it", longer);
+        // The next cell comes within a focus bounce, as Enter in a sheet does.
+        openCell("a", "");
+        const std::string aw = typeText("wn ");
+        check(aw == "ăn ", "next cell opened by its first key: aw gives ă", aw);
+        // Lark Base keeps a U+200B after the cursor.
+        openCell("d", "\u200b");
+        const std::string lark = typeText("daay ");
+        check(lark == "đây \u200b", "cell with U+200B opened by its first key: dd gives đ", lark);
+        // A field that already held a letter when it got focus did not get it from a key just now.
+        app->focusNewFieldWith("a", 300);
+        loop.pump(450);
+        const std::string held = typeText("s ");
+        check(held == "as ", "field holding one letter at focus: no word taken from it", held);
     }
 
     // Lark Sheets in a browser keeps its own text and takes only key presses: a deletion through the

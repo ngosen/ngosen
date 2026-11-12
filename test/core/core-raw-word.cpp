@@ -48,12 +48,13 @@ namespace {
         return {typed.begin(), typed.end()};
     }
 
-    constexpr uint32_t Click    = 0;
-    constexpr uint32_t NewFocus = 1;
-    constexpr uint32_t AppReset = 2;
+    constexpr uint32_t Click     = 0;
+    constexpr uint32_t NewFocus  = 1;
+    constexpr uint32_t AppReset  = 2;
+    constexpr uint32_t NewWindow = 3;
 
-    // The app's text after each key, typed 20 ms apart. Click, NewFocus and AppReset stand for those
-    // events; the shells pass an app's reset on only when no word is in progress.
+    // The app's text after each key, typed 20 ms apart. Click, NewFocus, AppReset and NewWindow stand
+    // for those events; the shells pass an app's reset on only when no word is in progress.
     std::vector<std::string> textAfterEachKey(Mode mode, const std::vector<uint32_t>& keys, bool surroundingText = true, const std::function<void(FakeResources&)>& configure = {},
                                               AppQuirks quirks = {}) {
         FakeResources resources;
@@ -79,6 +80,11 @@ namespace {
             if (key == AppReset) {
                 if (state.isEmptyHistory())
                     state.reset(false);
+                continue;
+            }
+            if (key == NewWindow) {
+                app->focusNewEmptyField(mode, 500);
+                loop.pump(600);
                 continue;
             }
             app->type(key);
@@ -227,6 +233,23 @@ namespace {
         }
     }
 
+    // Closing a browser and opening it again reaches the typing logic as a focus out and a focus in,
+    // with no reset that says the focus left.
+    void testBackspaceInNewWindow() {
+        for (const bool surroundingText : {true, false}) {
+            const std::string field = surroundingText ? "" : " (no reports)";
+            for (const Mode mode : {Mode::Sen, Mode::Preedit}) {
+                std::vector<uint32_t> keys = keysOf("parts ");
+                keys.push_back(NewWindow);
+                keys.push_back(ngosen::key::BackSpace);
+                for (const uint32_t k : keysOf("/cost "))
+                    keys.push_back(k);
+                const std::string got = textAfterEachKey(mode, keys, surroundingText).back();
+                check(got == "/cost ", std::string(modeName(mode)) + field + ": parts, new window, BackSpace, /cost", got);
+            }
+        }
+    }
+
     void testSpaceReportedAsNbsp() {
         for (const Mode mode : {Mode::Sen, Mode::Preedit}) {
             for (const auto& [typed, want] : std::vector<std::pair<std::string, std::string>>{{"cd /usr/share ", "cd /usr/share "}, {"vaf/hoawcj ", "và/hoặc "}}) {
@@ -286,6 +309,7 @@ int main() {
     testDoubledKeysStayRaw();
     testAppResetAfterEachKey();
     testBackspaceInEmptyField();
+    testBackspaceInNewWindow();
     testSpaceReportedAsNbsp();
     testOptionOff();
     testHiddenPromptEndsRawWord();

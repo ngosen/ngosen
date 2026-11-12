@@ -69,6 +69,10 @@ namespace ngosen {
     // last deletion and commit of a turn.
     bool keepsLastEditPerTurn(const Field& field);
 
+    // Within GNOME Shell's turn limit, whether a deletion and its commit can go out together. Firefox and
+    // its forks then leave the cursor one past the real one, and nothing they report shows it.
+    bool takesJoinedEdit(const Field& field);
+
     bool namesNoApp(const Field& field);
 
     // GNOME acts on Tab and Esc in its search box before the input method sees them, so nothing typed

@@ -93,6 +93,8 @@ namespace ngosen {
         // reset() for an app that commits the preedit by itself on a reset or focus out, as IBus clients
         // do with IBUS_ENGINE_PREEDIT_COMMIT: the word is dropped instead of committed a second time.
         void resetAfterAppCommit(bool isFocusOut);
+        // The app reset the field it keeps focused, as Dolphin's search field does while the user types.
+        void appReset();
 
         // The app runs Vim or Vim keys (#302): after Escape, letters are commands until Vim goes into
         // insert mode, and they reach the app untouched.
@@ -145,7 +147,7 @@ namespace ngosen {
         /**
          * @brief Clears all internal buffers.
          */
-        void clearAllBuffers();
+        void clearAllBuffers(bool keepOpenWord = false);
 
         /**
          * @brief Checks if history buffer is empty.
@@ -314,7 +316,8 @@ namespace ngosen {
         void recordKey(const ngosen::KeyPress& keyEvent);
 
         void handleKey(ngosen::KeyPress& keyEvent);
-        void resetField(bool isFocusOut, bool commitPreedit);
+        void resetField(bool isFocusOut, bool commitPreedit, bool keepOpenWord = false);
+        bool keepsWordOnAppReset() const;
         // Typed text as a log line may show it: hidden in a password or private field.
         std::string logged(const std::string& text) const;
         // The steps of keyEvent, in order. A true result means the key needs nothing more.
@@ -413,6 +416,10 @@ namespace ngosen {
 
         // Text and cursor a move without an edit left, until the next key or focus change.
         std::optional<std::pair<std::string, unsigned int>> jumpedFrom_;
+
+        // Text and cursor when a reset kept the open word, until the app changes either or the next key.
+        std::optional<std::pair<std::string, unsigned int>> fieldAtKeptReset_;
+        void                                                checkFieldAfterKeptReset();
 
         // Last key press seen, to spot one the app sends twice.
         uint32_t lastPressCode_      = 0;

@@ -946,6 +946,60 @@ namespace {
         }
     }
 
+    // Firefox on KDE can hide both the press and the release of the key that opens the next cell: the cell
+    // just shows the letter after Enter, and the word goes on from it.
+    void testCellLetterWithNoKey() {
+        const Field   firefox = makeField("wayland", true, "firefox");
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, firefox, ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& typed) {
+            for (const char c : typed) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(200);
+            return app->text();
+        };
+        typeText("nhaanj");
+        for (const uint32_t move : {ngosen::key::Return, ngosen::key::Tab, ngosen::key::Down}) {
+            app->type(move);
+            loop.pump(150);
+            app->pageShowsCell("d");
+            loop.pump(150);
+            const std::string cell = typeText("daay");
+            check(cell == "đây", "cell showing a letter with no key after a move: dd gives đ", cell);
+        }
+        // Moving the cursor in a field that already held one letter shows no new text.
+        app->focusNewFieldWith("a", 300);
+        loop.pump(450);
+        app->type(ngosen::key::Down);
+        loop.pump(150);
+        const std::string held = typeText("s ");
+        check(held == "as ", "letter already there before a cursor move: no word taken from it", held);
+        // Tab into another field of a form brings focus with it.
+        app->type(ngosen::key::Tab);
+        app->focusNewFieldWith("a", 5);
+        loop.pump(150);
+        const std::string form = typeText("s ");
+        check(form == "as ", "field reached by Tab holding one letter: no word taken from it", form);
+        // A letter that shows up later than the first key after the move is not from the move.
+        app->type(ngosen::key::Return);
+        loop.pump(150);
+        app->pageShowsCell("");
+        loop.pump(150);
+        typeText("x");
+        app->pageShowsCell("a");
+        loop.pump(150);
+        const std::string late = typeText("s");
+        check(late == "as", "letter appearing after a later key: no word taken from it", late);
+    }
+
     // Lark Sheets in a browser keeps its own text and takes only key presses: a deletion through the
     // surrounding text changes the copy the browser reports but not what the user sees.
     void testPageKeepsOwnText() {
@@ -4187,6 +4241,7 @@ int main() {
     testLateEmptyCellAfterFirstLetter();
     testLateEmptyFieldStillClick();
     testCellOpenedByFirstKey();
+    testCellLetterWithNoKey();
     testPageKeepsOwnText();
     testMacroKeepsSpace();
     testMacroBeforeEnter();

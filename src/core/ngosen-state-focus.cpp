@@ -96,6 +96,7 @@ namespace ngosen {
             sinceFocus_.showedBackspace = false;
             // The release of a cell's first key comes after the cell editor gets focus.
             unseenPress_.reset();
+            cellMove_.reset();
         }
 
         if (isFocusIn && host_->field().frontend == "dbus" && !s.isValid()) {

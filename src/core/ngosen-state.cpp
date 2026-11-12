@@ -320,6 +320,8 @@ namespace ngosen {
 
         if (unseenPress_)
             takeLetterFieldOpenedWith();
+        if (cellMove_)
+            takeLetterCellShows();
         const bool startsWord = oldPreBuffer_.empty();
         bool       processed  = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
@@ -436,6 +438,8 @@ namespace ngosen {
                 pressedKeys_.push_back(sym);
             if (unseenPress_ && keyCount_ == unseenPress_->second)
                 keyAfterUnseen_ = std::make_pair(keyEvent.sym(), keyEvent.states());
+            if (movesCell(keyEvent.sym()))
+                cellMove_ = std::make_pair(keyCount_ + 1, host_->surrounding().text());
         } else if (at != pressedKeys_.end()) {
             pressedKeys_.erase(at);
         } else if (sym >= 'a' && sym <= 'z') {
@@ -468,6 +472,31 @@ namespace ngosen {
             EngineProcessKeyEvent(bambooEngine_.handle(), keyAfterUnseen_->first, keyAfterUnseen_->second);
         oldPreBuffer_ = before;
         unseenPress_.reset();
+    }
+
+    bool TypingState::movesCell(uint32_t sym) {
+        using namespace ngosen::key;
+        return sym == Return || sym == KP_Enter || sym == Tab || sym == ISO_Left_Tab || sym == Up || sym == Down || sym == Left || sym == Right;
+    }
+
+    // Firefox on KDE can hide both the press and the release of the key that opens the next cell: that cell
+    // then holds just the letter, in place of what the last one showed.
+    void TypingState::takeLetterCellShows() {
+        const auto move = std::move(cellMove_);
+        cellMove_.reset();
+        const Field field = host_->field();
+        if (keyCount_ != move->first + 1 || !oldPreBuffer_.empty() || field.url || field.password)
+            return;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || s.cursor() != s.anchor() || s.text() == move->second)
+            return;
+        const std::string before = textBeforeCursor(s);
+        const char        letter = before.size() == 1 ? static_cast<char>(std::tolower(static_cast<unsigned char>(before[0]))) : '\0';
+        if (letter < 'a' || letter > 'z' || s.text().find_first_not_of('\n', 1) != std::string::npos)
+            return;
+        NGOSEN_INFO("Word starts with the letter the new cell shows: " + logged(before));
+        EngineRebuildFromText(bambooEngine_.handle(), before.c_str());
+        oldPreBuffer_ = before;
     }
 
     bool TypingState::reopenWordInPreedit(ngosen::KeyPress& keyEvent) {

@@ -58,6 +58,8 @@ namespace ngosen::test {
         // With keepsOwnText, a Backspace also changes the copy it reports, and the report holds a U+200B
         // after the cursor: Lark Base.
         bool backspacesShowInReport = false;
+        // With keepsOwnText, empties the field it reports this long after each edit, as Univer's input box does.
+        int emptiesAfterEditMs = 0;
         // Turns a deletion of characters into bytes on the text it reported last, as mutter does for
         // text-input-v3 and fcitx5 does on Wayland.
         bool             convertsDeleteOnReportedCopy = false;

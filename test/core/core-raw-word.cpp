@@ -54,15 +54,15 @@ namespace {
 
     // The app's text after each key, typed 20 ms apart. Click, NewFocus and AppReset stand for those
     // events; the shells pass an app's reset on only when no word is in progress.
-    std::vector<std::string> textAfterEachKey(Mode mode, const std::vector<uint32_t>& keys, bool surroundingText = true,
-                                              const std::function<void(FakeResources&)>& configure = {}) {
+    std::vector<std::string> textAfterEachKey(Mode mode, const std::vector<uint32_t>& keys, bool surroundingText = true, const std::function<void(FakeResources&)>& configure = {},
+                                              AppQuirks quirks = {}) {
         FakeResources resources;
         if (configure)
             configure(resources);
         realMode = mode;
         realtextLen.store(0);
         FakeLoop            loop;
-        auto                owned = std::make_unique<FakeApp>(loop, makeField(surroundingText), AppQuirks{});
+        auto                owned = std::make_unique<FakeApp>(loop, makeField(surroundingText), quirks);
         FakeApp*            app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
@@ -227,6 +227,15 @@ namespace {
         }
     }
 
+    void testSpaceReportedAsNbsp() {
+        for (const Mode mode : {Mode::Sen, Mode::Preedit}) {
+            for (const auto& [typed, want] : std::vector<std::pair<std::string, std::string>>{{"cd /usr/share ", "cd /usr/share "}, {"vaf/hoawcj ", "và/hoặc "}}) {
+                const std::string got = textAfterEachKey(mode, keysOf(typed), true, {}, AppQuirks{.reportsTrailingNbsp = true}).back();
+                check(got == want, std::string(modeName(mode)) + ": " + typed + "in a field that reports the space as U+00A0", got);
+            }
+        }
+    }
+
     void testOptionOff() {
         const std::string got = finalText(Mode::Sen, "/cost", true, [](FakeResources& r) { r.mutableOptions().rawWordAfterSlash = false; });
         check(got == "/cót", "with the option off, /cost gets a tone as before", got);
@@ -277,6 +286,7 @@ int main() {
     testDoubledKeysStayRaw();
     testAppResetAfterEachKey();
     testBackspaceInEmptyField();
+    testSpaceReportedAsNbsp();
     testOptionOff();
     testHiddenPromptEndsRawWord();
     if (failures != 0) {

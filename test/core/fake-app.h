@@ -7,6 +7,7 @@
 
 #include "ngosen-utf8.h"
 #include "fake-host.h"
+#include "ngosen-mode.h"
 
 #include <cstdint>
 #include <memory>
@@ -131,6 +132,9 @@ namespace ngosen::test {
         // Moves within ms to an empty field of the same page that keeps its own text, as a click from a
         // page's search box into a Lark sheet does.
         void switchToOwnTextField(int ms);
+        // Loses focus and gets it back within ms in a new empty field, with no reset in between, as a
+        // browser closed and opened again does under GNOME Shell.
+        void focusNewEmptyField(ngosen::Mode mode, int ms);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.

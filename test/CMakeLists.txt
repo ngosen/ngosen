@@ -102,6 +102,7 @@ endfunction()
 
 add_ngosen_headless_test(preedit_lifecycle preedit-lifecycle.cpp "integration;preedit")
 add_ngosen_headless_test(click_keeps_preedit click-keeps-preedit.cpp "integration;preedit")
+add_ngosen_headless_test(preedit_reset_keeps_word preedit-reset-keeps-word.cpp "integration;preedit;surrounding")
 add_ngosen_headless_test(app_rule_reset app-rule-reset.cpp "integration;apprule")
 add_ngosen_headless_test(default_app_mode default-app-mode.cpp "integration;apprule")
 add_test(NAME default_app_mode_override COMMAND default_app_mode override)

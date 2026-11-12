@@ -555,6 +555,7 @@ namespace ngosen {
         // Counted first, so a replacement this key starts does not count it as a later key.
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;
+            keptWord_.reset();
             if (ngosen::key::isBackspace(keyEvent.sym()))
                 closeCheckBeforeOtherEdit();
             if (oldPreBuffer_.empty())
@@ -1043,7 +1044,53 @@ namespace ngosen {
         resetField(isFocusOut, false);
     }
 
-    void TypingState::resetField(bool isFocusOut, bool commitPreedit) {
+    void TypingState::appReset() {
+        const bool keep = keepsWordOnAppReset();
+        keptWord_.reset();
+        if (keep) {
+            const Surrounding              s = host_->surrounding();
+            const ngosen::UniqueCPtr<char> word(EnginePullPreedit(bambooEngine_.handle()));
+            keptWord_ = KeptWord{s.text(), s.cursor(), word ? word.get() : ""};
+        }
+        resetField(false, true, keep);
+    }
+
+    // GTK, Firefox and Chromium commit the preedit themselves right after the reset; then ours goes.
+    void TypingState::checkKeptWordCommitted() {
+        if (!keptWord_)
+            return;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || s.text() == keptWord_->text)
+            return;
+        std::u32string withWord = ngosen::utf8::decode(keptWord_->text);
+        withWord.insert(std::min<size_t>(keptWord_->cursor, withWord.size()), ngosen::utf8::decode(keptWord_->word));
+        const bool committed = ngosen::utf8::decode(s.text()) == withWord;
+        keptWord_.reset();
+        if (!committed || !bambooEngine_)
+            return;
+        NGOSEN_INFO("App committed the kept word");
+        ResetEngine(bambooEngine_.handle());
+        oldPreBuffer_.clear();
+        hasHistory_ = false;
+        host_->showPreedit("", false);
+        host_->refreshPreedit();
+    }
+
+    // Qt over the Wayland text-input protocol drops the preedit on a reset, so the word is lost unless
+    // we keep it. fcitx5's own Qt and GTK modules commit it before the reset, so keeping it would type it twice.
+    bool TypingState::keepsWordOnAppReset() const {
+        if (realMode.load() != ngosen::Mode::Preedit || !bambooEngine_ || host_->field().frontend != "wayland")
+            return false;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || s.cursor() != s.anchor())
+            return false;
+        const ngosen::UniqueCPtr<char> word(EnginePullPreedit(bambooEngine_.handle()));
+        return word && *word.get() != 0;
+    }
+
+    void TypingState::resetField(bool isFocusOut, bool commitPreedit, bool keepOpenWord) {
+        if (!keepOpenWord)
+            keptWord_.reset();
         // After focus out a forwarded key may reach the window that took focus.
         if (isFocusOut) {
             held_enter_pending_ = false;
@@ -1079,18 +1126,25 @@ namespace ngosen {
                     NGOSEN_INFO("Commit: " + logged(pulled.get()));
                 }
             }
-            ResetEngine(bambooEngine_.handle());
-            oldPreBuffer_.clear();
-            hasHistory_ = false;
+            if (!keepOpenWord) {
+                ResetEngine(bambooEngine_.handle());
+                oldPreBuffer_.clear();
+                hasHistory_ = false;
+            }
         }
         if (host_->field().frontend != "dbus")
-            clearAllBuffers();
+            clearAllBuffers(keepOpenWord);
         shouldCapitalize_ = keepCapitalize;
 
         switch (mode()) {
             case ngosen::Mode::Preedit: {
                 host_->resetPanel();
                 host_->refreshPanel();
+                if (keepOpenWord) {
+                    const ngosen::UniqueCPtr<char> word(EnginePullPreedit(bambooEngine_.handle()));
+                    host_->showPreedit(word ? word.get() : "", false);
+                    NGOSEN_INFO("Reset kept the open word");
+                }
                 host_->refreshPreedit();
                 break;
             }
@@ -1155,7 +1209,7 @@ namespace ngosen {
         ResetEngine(bambooEngine_.handle());
     }
 
-    void TypingState::clearAllBuffers() {
+    void TypingState::clearAllBuffers(bool keepOpenWord) {
         NGOSEN_DEBUG("Clear all buffers");
         if (is_deleting_.load(std::memory_order_acquire)) {
             return;
@@ -1163,9 +1217,11 @@ namespace ngosen {
         tracking_modifier_tap_   = false;
         lock_word_pending_       = false;
         enter_after_replacement_ = false;
-        oldPreBuffer_.clear();
+        if (!keepOpenWord) {
+            oldPreBuffer_.clear();
+            hasHistory_ = false;
+        }
         lastWord_.clear();
-        hasHistory_ = false;
         earlierWords_.clear();
         rawWord_ = false;
         wordBeforeReplacement_.clear();
@@ -1184,7 +1240,7 @@ namespace ngosen {
         isPrevSpace_          = false;
         isPrevHyphen_         = false;
         isPrevPunctuation_    = false;
-        if (bambooEngine_)
+        if (bambooEngine_ && !keepOpenWord)
             ResetEngine(bambooEngine_.handle());
     }
 

@@ -1009,9 +1009,10 @@ namespace fcitx {
             return;
         }
 
-        if (event.type() == EventType::InputContextFocusOut || event.type() == EventType::InputContextReset) {
-            state->reset(event.type() == EventType::InputContextFocusOut);
-        }
+        if (event.type() == EventType::InputContextFocusOut)
+            state->reset(true);
+        else if (event.type() == EventType::InputContextReset)
+            state->appReset();
     }
 
     void NgoSenEngine::deactivate(const InputMethodEntry& /*entry*/, InputContextEvent& event) {

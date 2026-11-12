@@ -92,6 +92,8 @@ namespace ngosen {
         // reset() for an app that commits the preedit by itself on a reset or focus out, as IBus clients
         // do with IBUS_ENGINE_PREEDIT_COMMIT: the word is dropped instead of committed a second time.
         void resetAfterAppCommit(bool isFocusOut);
+        // The app reset the field it keeps focused, as Dolphin's search field does while the user types.
+        void appReset();
 
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.
@@ -140,7 +142,7 @@ namespace ngosen {
         /**
          * @brief Clears all internal buffers.
          */
-        void clearAllBuffers();
+        void clearAllBuffers(bool keepOpenWord = false);
 
         /**
          * @brief Checks if history buffer is empty.
@@ -279,7 +281,8 @@ namespace ngosen {
         void recordKey(const ngosen::KeyPress& keyEvent);
 
         void handleKey(ngosen::KeyPress& keyEvent);
-        void resetField(bool isFocusOut, bool commitPreedit);
+        void resetField(bool isFocusOut, bool commitPreedit, bool keepOpenWord = false);
+        bool keepsWordOnAppReset() const;
         // Typed text as a log line may show it: hidden in a password or private field.
         std::string logged(const std::string& text) const;
         // The steps of keyEvent, in order. A true result means the key needs nothing more.
@@ -378,6 +381,15 @@ namespace ngosen {
 
         // Text and cursor a move without an edit left, until the next key or focus change.
         std::optional<std::pair<std::string, unsigned int>> jumpedFrom_;
+
+        // The field and the word a reset kept, until the app's next change or the next key.
+        struct KeptWord {
+            std::string  text;
+            unsigned int cursor = 0;
+            std::string  word;
+        };
+        std::optional<KeptWord> keptWord_;
+        void                    checkKeptWordCommitted();
 
         // Last key press seen, to spot one the app sends twice.
         uint32_t lastPressCode_      = 0;

@@ -440,6 +440,8 @@ namespace fcitx {
         instance_->inputContextManager().registerProperty("NgoSenState", &factory_);
         appRulesPath_ = configDir + "/ngosen-app-rules.conf";
         loadAppRules();
+        vimAppsPath_ = configDir + "/ngosen-vim-apps.conf";
+        loadVimApps();
         menuEntries_ = {{inputMethodAction_.get(), &config_.showMenuInputMethod},
                         {charsetAction_.get(), &config_.showMenuCharset},
                         {spellCheckAction_.get(), &config_.showMenuSpellCheck},
@@ -559,6 +561,7 @@ namespace fcitx {
         }
         loadEnglishWords();
         loadAppRules();
+        loadVimApps();
         populateConfig();
     }
 
@@ -593,8 +596,8 @@ namespace fcitx {
             constexpr int32_t neverExpire = 0;
             addon->call<INotifications::sendNotification>(
                 "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
-                _("Version 1.9: on GNOME, typing modes and per-app settings now work with the Ngó Sen extension off. See also Check my machine, Cứu chữ, Cứu dấu "
-                  "and typing tips."),
+                _("Version 1.10: Vim mode for each app, words starting with / typed as is, and Telex words with a forgotten circumflex or horn fixed. See What's "
+                  "new for more."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;
         });
@@ -646,6 +649,7 @@ namespace fcitx {
         o.doubleHyphenToEmDash             = config_.doubleHyphenToEmDash.value();
         o.retypeAfterSwitch                = config_.retypeAfterSwitch.value();
         o.retoneSelection                  = config_.retoneSelection.value();
+        o.rawWordAfterSlash                = config_.rawWordAfterSlash.value();
         o.messengerSelectOvertype          = config_.messengerSelectOvertype.value();
         o.copyWaitRecovery                 = config_.copyWaitRecovery.value();
         o.foldReplayReplacement            = config_.foldReplayReplacement.value();
@@ -774,6 +778,7 @@ namespace fcitx {
         updateCharsetAction(event.inputContext());
 
         activeContext_ = ic;
+        stateFor(ic)->setVimKeys(vimModeFor(appName));
         showMode(ic, targetMode, event.type() == EventType::InputContextFocusIn);
         stateFor(ic)->offerRetype();
     }
@@ -803,6 +808,13 @@ namespace fcitx {
 
         if (handleToggleKey(keyEvent))
             return;
+
+        // A terminal password prompt gets the keys as typed, and they stay out of the typing log.
+        if (stateFor(ic)->passesHiddenInput()) {
+            if (isModeMenuOpen(ic))
+                closeModeMenuPanel(ic, false);
+            return;
+        }
 
         if (isModeMenuOpen(ic)) {
             handleModeMenuKey(keyEvent);
@@ -860,6 +872,10 @@ namespace fcitx {
             default: break;
         }
 
+        if (vimMenuKey_ != FcitxKey_None && keySym == vimMenuKey_) {
+            toggleVimMode(ic);
+            return;
+        }
         if (auto it = modeMenuMapping_.find(keySym); it != modeMenuMapping_.end()) {
             NGOSEN_INFO("Selected mode: " + ngosen::ModeI18NAnnotation::toString(it->second));
             pickMenuMode(ic, it->second);
@@ -1222,6 +1238,49 @@ namespace fcitx {
         return it == appRules_.end() ? std::nullopt : std::optional<NgoSenMode>(it->second);
     }
 
+    bool NgoSenEngine::vimModeFor(const std::string& appName) const {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        return vimApps_.count(appName) > 0 || vimApps_.count(stripDesktopSuffix(appName)) > 0;
+    }
+
+    void NgoSenEngine::loadVimApps() {
+        std::ifstream               file(vimAppsPath_);
+        std::string                 line;
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        vimApps_.clear();
+        while (std::getline(file, line)) {
+            if (!line.empty() && line[0] != '#')
+                vimApps_.insert(line);
+        }
+    }
+
+    // A file of its own, so the app rules file stays readable by versions without Vim mode.
+    void NgoSenEngine::saveVimApps() const {
+        std::ofstream file(vimAppsPath_, std::ios::trunc);
+        if (!file.is_open())
+            return;
+        file << "# Apps where Ngó Sen follows Vim's normal-mode keys, one per line\n";
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        for (const auto& app : vimApps_) {
+            if (!isStartsWith(app, "ctx_"))
+                file << app << "\n";
+        }
+    }
+
+    void NgoSenEngine::toggleVimMode(InputContext* ic) {
+        bool on = false;
+        {
+            std::lock_guard<std::mutex> lock(appRulesMutex_);
+            const size_t                erased = vimApps_.erase(currentConfigureApp_) + vimApps_.erase(stripDesktopSuffix(currentConfigureApp_));
+            on                                 = erased == 0;
+            if (on)
+                vimApps_.insert(currentConfigureApp_);
+        }
+        saveVimApps();
+        stateFor(ic)->setVimKeys(on);
+        closeModeMenuPanel(ic, true);
+    }
+
     NgoSenMode NgoSenEngine::vietnameseMode() const {
         return config_.mode.value() == NgoSenMode::Off ? NgoSenMode::Sen : config_.mode.value();
     }
@@ -1398,7 +1457,8 @@ namespace fcitx {
         std::unordered_map<std::string, ModeMenuItem> modeMap = {{"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
                                                                  {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
                                                                  {"Emoji", {NgoSenMode::Emoji, _("Emoji Picker"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji}},
-                                                                 {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}}};
+                                                                 {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
+                                                                 {"Vim", {NgoSenMode::Sen, _("Vim mode"), getShortcut(*config_.shortcutVim), *config_.showModeVim, true}}};
 
         std::vector<ModeMenuItem>                     allModes;
         auto                                          order = stringutils::split(*config_.modeOrder, ",");
@@ -1436,11 +1496,22 @@ namespace fcitx {
         std::unordered_set<KeySym> usedModeKeys;
 
         modeMenuMapping_.clear();
+        vimMenuKey_ = FcitxKey_None;
 
         for (const auto& info : modeMenuItems()) {
             if (!info.visible)
                 continue;
             const bool hasShortcut = info.key != FcitxKey_None && info.key != FcitxKey_VoidSymbol;
+            if (info.vim) {
+                if (hasShortcut && usedModeKeys.insert(info.key).second)
+                    vimMenuKey_ = info.key;
+                const std::string keyUtf8 = Key::keySymToUTF8(info.key);
+                const std::string label   = vimModeFor(currentConfigureApp_) ? _("Vim mode: on") : _("Vim mode: off");
+                candidateList->append(
+                    std::make_unique<AppModeCandidateWord>(Text("   " + (keyUtf8.empty() ? "" : "[" + keyUtf8 + "] ") + label), [this](InputContext* ic) { toggleVimMode(ic); }));
+                currentCandidateIdx++;
+                continue;
+            }
             if (hasShortcut && usedModeKeys.insert(info.key).second) {
                 modeMenuMapping_[info.key] = info.mode;
             }
@@ -1596,19 +1667,14 @@ namespace fcitx {
             default: baseIconName = "fcitx-ngosen"; break;
         }
 
-        std::string iconName;
-        if (*config_.useNgoSenIcons) {
-            iconName = baseIconName;
-        } else {
+        auto style = TrayIconStyle::Tile;
+        if (!*config_.useNgoSenIcons) {
             const auto& iconTheme = config_.iconTheme.value();
-            if (iconTheme == IconTheme::Light) {
-                iconName = baseIconName + "-default-black";
-            } else if (iconTheme == IconTheme::Dark) {
-                iconName = baseIconName + "-default";
-            } else {
-                iconName = baseIconName + (isDarkMode() ? "-default" : "-default-black");
-            }
+            const bool  darkPanel = iconTheme == IconTheme::Dark || (iconTheme == IconTheme::Auto && isDarkMode());
+            style                 = darkPanel ? TrayIconStyle::PlainWhite : TrayIconStyle::PlainBlack;
         }
+        static const bool gnomeShell = isGnomeShellSession(getEnv("XDG_CURRENT_DESKTOP"));
+        const std::string iconName   = trayIconName(baseIconName, style, *config_.trayIconSize == TrayIconSize::Large, gnomeShell);
 
         static const bool kTrayWantsIconName = trayWantsIconName(getEnv("XDG_CURRENT_DESKTOP"), getEnv("DESKTOP_SESSION"), getEnv("SWAYSOCK"));
         if (kTrayWantsIconName) {

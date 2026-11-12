@@ -19,7 +19,7 @@ from i18n import _
 from ui_gtk.pages import SettingsPage
 from ui_gtk.toolkit_switch import toolkit_row
 
-TRAY_KEYS = ("UseLotusIcons", "IconTheme")
+TRAY_KEYS = ("UseLotusIcons", "TrayIconSize", "IconTheme")
 
 
 class AppearancePage(SettingsPage):

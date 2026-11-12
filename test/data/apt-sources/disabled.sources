@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://ngosen.github.io/ngosen/apt
+Suites: noble
+Components: main
+Enabled: no

@@ -85,6 +85,9 @@ namespace ngosen {
                 surr_check_timer_.reset();
                 surrUnanswered_  = 0;
                 copyWaitsRunOut_ = 0;
+                // A new field starts a word even without a focus-out reset, which a reopened browser never sends.
+                afterWordEnd_    = true;
+                typedSinceFocus_ = false;
             }
         }
 

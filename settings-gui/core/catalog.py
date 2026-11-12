@@ -60,6 +60,7 @@ SETTINGS_MAP = {
             "DoubleHyphenToEmDash",
             "AutoCapitalizeAfterPunctuation",
             "CapitalizeStartOfText",
+            "RawWordAfterSlash",
         ],
     },
     SettingsCategory.SHORTCUTS: {
@@ -69,11 +70,12 @@ SETTINGS_MAP = {
             "ShortcutPreedit",
             "ShortcutEmoji",
             "ShortcutOff",
+            "ShortcutVim",
         ],
     },
     SettingsCategory.APPEARANCE: {
         N_("Language"): ["UiLanguage"],
-        TRAY_ICON: ["UseLotusIcons", "IconTheme"],
+        TRAY_ICON: ["UseLotusIcons", "TrayIconSize", "IconTheme"],
         N_("Show in the tray menu"): list(MENU_ENTRIES),
         N_("Settings Window"): ["SettingsToolkit"],
     },
@@ -121,6 +123,9 @@ HINTS = {
     "RetoneSelection": N_(
         "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s. Only the tone mark changes: nguoi does not become người."
     ),
+    "RawWordAfterSlash": N_(
+        "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
+    ),
     "ModeMenuKey": N_(
         "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."
     ),
@@ -132,6 +137,9 @@ HINTS = {
         "to follow the global setting and switch key again; OFF stays set for the app."
     ),
     "UseLotusIcons": N_("Off: plain one-colour icons, in the colour picked below."),
+    "TrayIconSize": N_(
+        "Large draws the Ngó Sen icon bigger in its tray slot. No change on GNOME, where it already fills the slot."
+    ),
     "IconTheme": N_(
         "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
     ),
@@ -170,6 +178,7 @@ MODE_SHORTCUT_TO_VISIBILITY = {
     "ShortcutPreedit": "ShowModePreedit",
     "ShortcutEmoji": "ShowModeEmoji",
     "ShortcutOff": "ShowModeOff",
+    "ShortcutVim": "ShowModeVim",
 }
 
 MODE_KEY_TO_INTERNAL_NAME = {
@@ -177,6 +186,7 @@ MODE_KEY_TO_INTERNAL_NAME = {
     "ShortcutPreedit": "Preedit",
     "ShortcutEmoji": "Emoji",
     "ShortcutOff": "Off",
+    "ShortcutVim": "Vim",
 }
 
 MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
@@ -186,6 +196,7 @@ DEPENDS = {
     "SpellCheck": ("AutoNonVnRestore", "True"),
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
     "IconTheme": ("UseLotusIcons", "False"),
+    "TrayIconSize": ("UseLotusIcons", "True"),
     "CapitalizeMacro": ("EnableMacro", "True"),
     "EnableMacroInOffMode": ("EnableMacro", "True"),
     "TimeFormat": ("EnableMacro", "True"),

@@ -1,0 +1,18 @@
+# file  whether it enables the Ngó Sen repository (yes/no)
+readme.list yes
+installer.list yes
+commented.list no
+deb-src.list no
+trailing-slash.list yes
+spaced-options.list yes
+other.list no
+similar-uri.list no
+enabled.sources yes
+disabled.sources no
+source-only.sources no
+second-stanza.sources yes
+commented.sources no
+disabled-false.sources no
+comment-in-uris.sources yes
+no-colon-line.sources no
+double-slash.list no

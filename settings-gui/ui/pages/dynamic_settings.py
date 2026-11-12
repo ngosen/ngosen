@@ -735,7 +735,7 @@ class DynamicSettingsPage(QWidget):
         # Get current order from config
         order_str = self.current_values.get(
             "ModeOrder",
-            "Sen,Preedit,Emoji,Off",
+            "Sen,Preedit,Emoji,Off,Vim",
         )
         # The addon renames old mode names before it hands the config out.
         order = list(dict.fromkeys(order_str.split(",")))
@@ -898,7 +898,7 @@ class DynamicSettingsPage(QWidget):
             self._show_mode()
         if key in ("InputMethod", "OutputCharset", "RetoneSelection"):
             self.refresh_status()
-        if key in ("UseLotusIcons", "IconTheme"):
+        if key in ("UseLotusIcons", "TrayIconSize", "IconTheme"):
             self._update_tray_preview()
 
         # Real-time validation if it's a shortcut

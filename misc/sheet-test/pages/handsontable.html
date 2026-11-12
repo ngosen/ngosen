@@ -1,0 +1,22 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>handsontable</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@14.6.1/dist/handsontable.full.min.css">
+<script src="https://cdn.jsdelivr.net/npm/handsontable@14.6.1/dist/handsontable.full.min.js"></script>
+</head>
+<body style="font-size:18px">
+<div id="s"></div>
+<script src="report.js"></script>
+<script>window.arrowsCommit = true;</script>
+<script>
+  const hot = new Handsontable(document.getElementById('s'), {
+    data: Handsontable.helper.createEmptySpreadsheetData(12, 5),
+    rowHeaders: true,
+    colHeaders: true,
+    colWidths: 140,
+    enterMoves: { row: 1, col: 0 },
+    licenseKey: 'non-commercial-and-evaluation',
+  });
+  hot.selectCell(0, 0);
+  report('handsontable', () => hot.getData(), (r, c) => centerOf(hot.getCell(r, c)));
+</script>
+</body></html>

@@ -408,6 +408,22 @@ fn print_retone_lookalikes() {
     }
 }
 
+// Prints the words on each line of NGOSEN_WORDS that a space would give marks if they were not
+// in english-mark-lookalikes.txt, for misc/gen-english-words.py.
+#[test]
+#[ignore = "measurement input, not a check"]
+fn print_mark_lookalikes() {
+    let path = std::env::var("NGOSEN_WORDS").unwrap();
+    let mut e = engine_with_default_settings("Telex");
+    for word in std::fs::read_to_string(path).unwrap().lines() {
+        e.reset();
+        type_keys(&mut e, word);
+        if let Some(marked) = e.auto_marked_word_of(word) {
+            println!("LOOKALIKE\t{word}\t{marked}");
+        }
+    }
+}
+
 // Prints what the keys on each line of NGOSEN_WORDS commit when a space ends them, with the
 // default settings and dictionary, for misc/check-word-endings.py.
 #[test]
@@ -416,6 +432,7 @@ fn print_committed_words() {
     let path = std::env::var("NGOSEN_WORDS").unwrap();
     let method = std::env::var("NGOSEN_INPUT_METHOD").unwrap_or_else(|_| "Telex".to_string());
     let mut e = engine_with_default_settings(&method);
+    e.english_words = shipped_english_words();
     for line in std::fs::read_to_string(path).unwrap().lines() {
         let keys = line.split('\t').next().unwrap_or_default();
         e.reset();
@@ -432,6 +449,68 @@ fn committed_with(method: &str, keys: &str, end: u32) -> String {
     type_keys(&mut e, keys);
     e.process_key_event(end, 0);
     e.commit_text
+}
+
+#[test]
+fn test_marks_added_to_rimes_that_always_have_them() {
+    for (keys, word) in [
+        ("benhj", "bệnh"),
+        ("luanj", "luận"),
+        ("cuops", "cướp"),
+        ("khuays", "khuấy"),
+        ("quyets", "quyết"),
+        ("NGUYENX", "NGUYỄN"),
+        ("ddieuf", "điều"),
+        ("dieuf", "diều"),
+        ("ruouj", "rượu"),
+    ] {
+        assert_eq!(
+            committed_with("Telex", keys, KEY_SPACE),
+            format!("{word} "),
+            "{keys}"
+        );
+    }
+    // A digit tone in VNI could be a number, and `user` has its tone key between the vowels.
+    for (method, keys) in [
+        ("VNI", "tien2"),
+        ("Telex + VNI", "tien2"),
+        ("Telex", "user"),
+        ("Telex", "techs"),
+        ("Telex", "Hersch"),
+    ] {
+        assert_eq!(
+            committed_with(method, keys, KEY_SPACE),
+            format!("{keys} "),
+            "{method} {keys}"
+        );
+    }
+    // Sentence punctuation ends a word; a digit, @ or _ may go on with a name or a handle.
+    for end in ['.', '"', ')'] {
+        assert_eq!(
+            committed_with("Telex", "tienf", end as u32),
+            format!("tiền{end}"),
+            "tienf{end}"
+        );
+    }
+    for end in ['@', '_'] {
+        assert_eq!(
+            committed_with("Telex", "tuans", end as u32),
+            format!("tuans{end}"),
+            "tuans{end}"
+        );
+    }
+    // Without spell checking luạn is a valid syllable, but the dictionary still has luận.
+    let mut e = engine_with_default_settings("Telex");
+    e.spell_check_with_dicts = false;
+    type_keys(&mut e, "luanj");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "luận ");
+    // Macros keep a digit in the word, so they are off for the digit to end it.
+    let mut e = engine_with_default_settings("Telex");
+    e.macro_enabled = false;
+    type_keys(&mut e, "tuans");
+    e.process_key_event('2' as u32, 0);
+    assert_eq!(e.commit_text, "tuans2");
 }
 
 #[test]
@@ -500,7 +579,6 @@ fn test_misspelt_words_commit_the_keys() {
         "coot",
         "teet",
         "laap",
-        "huux",
         "tienr",
         "khyeenr",
         "quuyeets",
@@ -513,7 +591,6 @@ fn test_misspelt_words_commit_the_keys() {
         "nghieenh",
         "ngiuj",
         "gems",
-        "uux",
         "nghueechs",
     ]
     .iter()
@@ -600,6 +677,21 @@ fn test_retone_lookalikes_are_listed_once_in_order() {
         assert!(
             e.retoned_word_of(word).is_some(),
             "{word} is not typed like a retone"
+        );
+    }
+}
+
+#[test]
+fn test_mark_lookalikes_are_listed_once_in_order() {
+    let words: Vec<&str> = ENGLISH_MARK_LOOKALIKES.lines().collect();
+    assert!(words.is_sorted_by(|a, b| a < b), "sorted, no duplicates");
+    for word in words {
+        assert_eq!(committed_with("Telex", word, KEY_SPACE), format!("{word} "));
+        let mut e = engine_with_default_settings("Telex");
+        type_keys(&mut e, word);
+        assert!(
+            e.auto_marked_word_of(word).is_some(),
+            "{word} would not get marks anyway"
         );
     }
 }
@@ -888,6 +980,177 @@ fn test_reopened_word_keeps_its_marks_when_a_digit_is_deleted() {
     assert_eq!(e.preedit_text, "tôi");
 }
 
+/// The English list the apps load next to the dictionary.
+fn shipped_english_words() -> Arc<WordList> {
+    let words = include_str!("../../../data/english-common.txt");
+    Arc::new(words.lines().map(str::to_string).collect())
+}
+
+#[test]
+fn test_shipped_lists_keep_doubled_keys_and_names() {
+    for (keys, shown) in [
+        ("tesst", "test"),
+        ("iss", "is"),
+        ("off", "of"),
+        ("ass", "as"),
+        ("suss", "sus"),
+        ("Marry", "Mary"),
+        ("Loss", "Los"),
+        ("cross", "cross"),
+        ("dds", "đs"),
+        ("draw", "draw"),
+        ("drawng", "drăng"),
+        ("ploong", "plông"),
+        ("grats", "grát"),
+        ("slinf", "slìn"),
+        ("sreepoocs", "srêpốc"),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        e.english_words = shipped_english_words();
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{shown} "), "keys {keys}");
+    }
+}
+
+#[test]
+fn test_shipped_dictionary_has_place_and_ethnic_names() {
+    for (keys, shown) in [
+        ("ddakroong", "đakrông"),
+        ("mnoong", "mnông"),
+        ("kmawl", "kmăl"),
+        ("knoops", "knốp"),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        e.english_words = shipped_english_words();
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{shown} "), "keys {keys}");
+    }
+}
+
+#[test]
+fn test_english_keys_keep_a_doubled_tone_key_after_a_name() {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, "grass");
+    assert_eq!(e.preedit_text, "grass");
+    for word in ["jussive", "justs"] {
+        let mut e = engine_with_english(&[word]);
+        type_keys(&mut e, word);
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, format!("{word} "));
+    }
+}
+
+#[test]
+fn test_backspace_into_a_name_keeps_what_the_app_shows() {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, "grats");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "grá");
+    type_keys(&mut e, "t");
+    assert_eq!(e.preedit_text, "grát");
+}
+
+#[test]
+fn test_handle_keys_do_not_end_a_name() {
+    for (keys, end) in [("croo", '@'), ("croo", '_')] {
+        let mut e = engine_with_default_settings("Telex");
+        e.english_words = shipped_english_words();
+        type_keys(&mut e, keys);
+        e.process_key_event(end as u32, 0);
+        assert_eq!(e.commit_text, format!("{keys}{end}"));
+    }
+}
+
+#[test]
+fn test_dictionary_names_need_an_english_list() {
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "draw");
+    assert_eq!(e.preedit_text, "draw");
+    e.reset();
+    type_keys(&mut e, "broom");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "broom ");
+}
+
+#[test]
+fn test_enter_keeps_english_keys_that_spell_no_name() {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, "gras");
+    e.process_key_event(KEY_RETURN, 0);
+    assert_eq!(e.commit_text, "gras");
+}
+
+#[test]
+fn test_z_still_removes_the_tone_of_a_name() {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, "grasz");
+    assert_eq!(e.preedit_text, "gra");
+}
+
+#[test]
+fn test_dictionary_names_need_spell_checking() {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    e.spell_check_with_dicts = false;
+    type_keys(&mut e, "ploo");
+    assert_eq!(e.preedit_text, "ploo");
+    type_keys(&mut e, "ng");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "ploong ");
+}
+
+#[test]
+fn test_dictionary_prefix_keeps_typed_marks() {
+    let dictionary: Dictionary = ["plông", "nêu"].into_iter().map(String::from).collect();
+    assert!(dictionary.starts_word("plo"));
+    assert!(dictionary.starts_word("plô"));
+    assert!(!dictionary.starts_word("plơ"));
+    assert!(dictionary.starts_word("ne"));
+    assert!(!dictionary.starts_word("neư"));
+    let dictionary: Dictionary = ["grát", "crông"].into_iter().map(String::from).collect();
+    assert!(dictionary.starts_word("grat"));
+    assert!(dictionary.starts_word("grá"));
+    assert!(!dictionary.starts_word("grà"));
+    assert!(!dictionary.starts_word("cró"));
+}
+
+#[test]
+fn test_dictionary_prefix_waits_for_english_keys_to_end() {
+    let mut e = engine_with_english(&["draw", "drawn"]);
+    type_keys(&mut e, "draw");
+    assert_eq!(e.preedit_text, "draw");
+    type_keys(&mut e, "n");
+    assert_eq!(e.preedit_text, "drawn");
+    type_keys(&mut e, "g");
+    assert_eq!(e.preedit_text, "drăng");
+    e.reset();
+    type_keys(&mut e, "ploo");
+    assert_eq!(e.preedit_text, "plô");
+}
+
+#[test]
+fn test_name_ends_as_composed_when_keys_only_start_english() {
+    let mut e = engine_with_english(&["canoodle", "draw"]);
+    type_keys(&mut e, "canoo");
+    assert_eq!(e.preedit_text, "canoo");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "canô ");
+    e.reset();
+    type_keys(&mut e, "canoo");
+    e.process_key_event(KEY_RETURN, 0);
+    assert_eq!(e.commit_text, "canô");
+    e.reset();
+    type_keys(&mut e, "draw");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "draw ");
+}
+
 fn engine_with_english(words: &[&str]) -> BambooEngine {
     let mut e = engine_with_default_settings("Telex");
     e.english_words = Arc::new(words.iter().map(|w| w.to_string()).collect());
@@ -916,6 +1179,40 @@ fn test_backspace_composes_keys_that_are_not_english() {
     e.process_key_event(KEY_BACKSPACE, 0);
     assert_eq!(e.preedit_text, "đưỡ");
     assert!(!e.shown_as_typed());
+}
+
+#[test]
+fn test_backspace_after_a_d_keeps_the_stroke() {
+    // The last d takes the stroke off đ while the keys are shown as typed (#202).
+    for (keys, left) in [
+        ("dduowjcd", "được"),
+        ("Dduowjcd", "Được"),
+        ("ddeerd", "để"),
+        ("ddiajd", "địa"),
+    ] {
+        let mut e = engine_with_english(&["are", "perl"]);
+        type_keys(&mut e, keys);
+        assert!(e.shown_as_typed(), "keys {keys}");
+        e.process_key_event(KEY_BACKSPACE, 0);
+        assert_eq!(e.preedit_text, left, "keys {keys}");
+    }
+}
+
+#[test]
+fn test_backspace_after_restored_keys_keeps_reopened_text() {
+    for (im, text, keys, left) in [
+        ("Telex", "tooi2", "asq", "tooi2á"),
+        ("Telex", "tôi", "q", "tôi"),
+        ("VNI", "tôi", "q", "tôi"),
+        ("VNI", "1", "a6q", "1â"),
+        ("VIQR", "'", "a^q", "'â"),
+    ] {
+        let mut e = engine_with_default_settings(im);
+        e.rebuild_from_text(text);
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_BACKSPACE, 0);
+        assert_eq!(e.preedit_text, left, "{im} {text} {keys}");
+    }
 }
 
 #[test]

@@ -6,11 +6,13 @@
 
     check-word-endings.py run OUT_DIR       type every corpus, write OUT_DIR/<corpus>.tsv
     check-word-endings.py compare BASE NEW  list what changed between two runs
+    check-word-endings.py places JSON       rewrite places.tsv from the administrative units list
 
 A corpus line is the keys, then optionally a tab and the word they should give. Corpora with an
 expected word report how many give it; the others report only what changed against BASE.
 """
 
+import json
 import os
 import re
 import subprocess
@@ -28,6 +30,13 @@ WORD_LIST = Path("/usr/share/dict/words")
 MARKS = {"â": "aa", "ă": "aw", "ê": "ee", "ô": "oo", "ơ": "ow", "ư": "uw", "đ": "dd"}
 TONES = {"́": "s", "̀": "f", "̉": "r", "̃": "x", "̣": "j"}
 FINALS = ("ch", "c", "p", "t")
+# The engine's tables in bamboo-rs/src/engine/mod.rs, for the words it adds marks to.
+ONSETS = "ngh ng nh gh kh ph th tr ch qu gi b c d đ g h k l m n p r s t v x".split() + [""]
+MARKED_RIMES = set(
+    "iên iêu iêm iêng iêt iêp iêc yên yêu yêm yêt uyên uyêt ênh êu êch uê uêch uênh uân uât uây"
+    " ưu ươu ươp".split()
+)
+UNMARKED = {"aa": "a", "ee": "e", "ow": "o", "uw": "u"}
 
 
 def telex(word):
@@ -45,7 +54,7 @@ def telex(word):
 
 def vietnamese():
     """Dictionary words typed with the tone last, and right after the last vowel."""
-    last, after_vowel, retone = [], [], []
+    last, after_vowel, retone, left_out = [], [], [], []
     for line in DICTIONARY.read_text(encoding="utf-8").splitlines():
         word = line.strip().lower()
         typed = telex(word) if word and " " not in word else None
@@ -68,11 +77,34 @@ def vietnamese():
                     retone.append(f"{stem}{rest}{wrong}{tone}\t{word}")
         else:
             after_vowel.append(f"{keys}{tone}\t{word}")
+        if tone:
+            left_out.extend(f"{keys}\t{word}" for keys in marks_left_out(word, letters, tone))
     return {
         "vietnamese-tone-last": unambiguous(last),
         "vietnamese-tone-after-vowel": unambiguous(after_vowel),
         "retone-generated": unambiguous(retone),
+        "vietnamese-marks-left-out": unambiguous(left_out),
     }
+
+
+def marks_left_out(word, letters, tone):
+    """Keys for a word whose rime always has ê, â, ơ or ư, typed without them: tone last, and
+    right after the vowels when a final follows."""
+    plain = "".join(c for c in unicodedata.normalize("NFD", word) if c not in TONES)
+    plain = unicodedata.normalize("NFC", plain)
+    for onset in ONSETS:
+        rime = plain[len(onset) :] if plain.startswith(onset) else None
+        if rime in MARKED_RIMES:
+            break
+    else:
+        return []
+    bare = letters[: len(onset)] + [UNMARKED.get(p, p) for p in letters[len(onset) :]]
+    rows = [f"{''.join(bare)}{tone}"]
+    vowels = [i for i, p in enumerate(bare) if p[0] in "aeiouy"]
+    if vowels[-1] + 1 < len(bare):
+        i = vowels[-1] + 1
+        rows.append(f"{''.join(bare[:i])}{tone}{''.join(bare[i:])}")
+    return rows
 
 
 def unambiguous(lines):
@@ -104,11 +136,17 @@ def english():
         "names": sorted(names),
         "english-words": listed,
         "technical": technical,
+        # The same on every machine, unlike the host's word list and dictionary above.
+        "english-common": (ROOT / "data/english-common.txt").read_text().splitlines(),
     }
 
 
 def corpora():
-    result = {"telex": (CASES / "telex.tsv").read_text(encoding="utf-8").splitlines()}
+    result = {
+        path.stem: path.read_text(encoding="utf-8").splitlines()
+        for path in sorted(CASES.glob("*.tsv"))
+        if path.stem != "vni"
+    }
     result.update(vietnamese())
     result.update(english())
     return result
@@ -207,9 +245,38 @@ def compare(base_dir, new_dir, limit=20):
             print(f"{path.stem}: missing from {new_dir}")
 
 
+def typeable(letters):
+    """Whether Telex types these letters as written: a written w, j, f or z, a doubled a/e/o
+    (Khoong) or a final s/r/x (Tôr) composes instead."""
+    # A marked letter (ô as `oo`) stands as its base in upper case, so `ôo` is caught too.
+    written = "".join(p if len(p) == 1 else p[0].upper() for p in letters)
+    return not re.search(r"[wjfz]|(?i:aa|ee|oo)|[srx]$", written)
+
+
+def places(units_json):
+    """Writes the syllables of province and commune names; the source is in places.tsv.license."""
+    units = json.loads(units_json.read_text(encoding="utf-8"))
+    names = [u["FullName"] for u in units] + [w["FullName"] for u in units for w in u["Wards"]]
+    syllables = set()
+    for name in names:
+        name = unicodedata.normalize("NFC", name.lower())
+        name = re.sub(r"^(thành phố|tỉnh|phường|xã|đặc khu) ", "", name)
+        for word in name.split():
+            # Names like M'Drắk need the apostrophe typed in English mode.
+            typed = telex(word) if re.fullmatch(r"[^\W\d_]+", word) else None
+            if typed and typeable(typed[0]):
+                letters, tone = typed
+                syllables.add(f"{''.join(letters)}{tone}\t{word}")
+    lines = unambiguous(sorted(syllables))
+    (CASES / "places.tsv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"places: {len(lines)} syllables from {len(names)} names")
+
+
 def main():
     if len(sys.argv) == 3 and sys.argv[1] == "run":
         run(Path(sys.argv[2]))
+    elif len(sys.argv) == 3 and sys.argv[1] == "places":
+        places(Path(sys.argv[2]))
     elif len(sys.argv) == 4 and sys.argv[1] == "compare":
         compare(Path(sys.argv[2]), Path(sys.argv[3]))
     else:

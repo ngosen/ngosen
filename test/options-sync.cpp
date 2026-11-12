@@ -44,6 +44,7 @@ namespace {
         c.setValueByPath("AutoCapitalizeAfterPunctuation", "True");
         c.setValueByPath("DoubleSpaceToPeriod", "True");
         c.setValueByPath("DoubleHyphenToEmDash", "True");
+        c.setValueByPath("RawWordAfterSlash", "False");
         c.setValueByPath("MessengerSelectOvertype", "False");
         c.setValueByPath("CopyWaitRecovery", "False");
         c.setValueByPath("FoldReplayReplacement", "False");
@@ -81,6 +82,7 @@ namespace {
         check(step + ": CapitalizeStartOfText", o.capitalizeStartOfText == c.capitalizeStartOfText.value());
         check(step + ": DoubleSpaceToPeriod", o.doubleSpaceToPeriod == c.doubleSpaceToPeriod.value());
         check(step + ": DoubleHyphenToEmDash", o.doubleHyphenToEmDash == c.doubleHyphenToEmDash.value());
+        check(step + ": RawWordAfterSlash", o.rawWordAfterSlash == c.rawWordAfterSlash.value());
         check(step + ": MessengerSelectOvertype", o.messengerSelectOvertype == c.messengerSelectOvertype.value());
         check(step + ": CopyWaitRecovery", o.copyWaitRecovery == c.copyWaitRecovery.value());
         check(step + ": FoldReplayReplacement", o.foldReplayReplacement == c.foldReplayReplacement.value());
@@ -124,6 +126,7 @@ namespace {
         check("default CapitalizeStartOfText", o.capitalizeStartOfText == d.capitalizeStartOfText);
         check("default DoubleSpaceToPeriod", o.doubleSpaceToPeriod == d.doubleSpaceToPeriod);
         check("default DoubleHyphenToEmDash", o.doubleHyphenToEmDash == d.doubleHyphenToEmDash);
+        check("default RawWordAfterSlash", o.rawWordAfterSlash == d.rawWordAfterSlash);
         check("default RetypeAfterSwitch", o.retypeAfterSwitch == d.retypeAfterSwitch);
         check("default RetoneSelection", o.retoneSelection == d.retoneSelection);
         check("default MessengerSelectOvertype", o.messengerSelectOvertype == d.messengerSelectOvertype);

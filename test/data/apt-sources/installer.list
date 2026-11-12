@@ -1,0 +1,2 @@
+# Added by the Ngó Sen installer; install.sh --uninstall removes it.
+deb [signed-by=/usr/share/keyrings/ngosen.gpg] https://ngosen.github.io/ngosen/apt trixie main

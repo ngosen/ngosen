@@ -75,12 +75,14 @@ Hoàn tác.
 - **Cứu dấu:** bôi đen chữ rồi bấm phím dấu thanh để thêm, đổi hoặc bỏ dấu (`nhanh` + `s` → `nhánh`). Ở
   chế độ Gõ Sen, chỉ cần bấm chuột ngay sau từ (`nhanh|` + `s`) là sửa được dấu mà không cần bôi đen.
 - **Menu chế độ riêng cho từng app:** nhấn phím `` ` `` để mở menu cạnh con trỏ, chọn **Gõ Sen (1)**,
-  **Gạch chân (q)**, **Chọn Emoji (w)** hoặc **Tắt (e)**. Ngó Sen nhớ lựa chọn riêng cho từng app.
+  **Gạch chân (q)**, **Chọn Emoji (w)** hoặc **Tắt (e)**, và bật **Vim mode (v)** cho app dùng phím Vim như
+  nvim hay Claude Code. Ngó Sen nhớ lựa chọn riêng cho từng app.
 - **Gõ thẳng không gạch chân (Gõ Sen):** chữ vào app ngay khi gõ; gợi ý ở thanh địa chỉ hay ô tìm kiếm
   hiện theo từng phím.
 - **Nhận ra tiếng Anh:** chữ không thể thành tiếng Việt thì hiện lại đúng phím đã gõ. Đo bằng Telex, cài
   đặt mặc định, trên 9.884 từ tiếng Anh thông dụng: 92,9% đúng ngay khi gõ, 96,9% đúng sau khi bấm Space.
   Muốn giữ từ tiếng Anh trùng cách gõ tiếng Việt thì gõ đúp phím dấu (`thiss` → `this`).
+- **Lệnh và đường dẫn:** từ bắt đầu bằng `/` giữ nguyên như gõ (`/cost`, `cd /usr/share`).
 - **Chèn emoji:** gõ từ khoá tiếng Anh (`smile`, `heart`), danh sách emoji hiện cạnh con trỏ để chọn nhanh
   bằng số.
 - **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey, người dùng cũ giữ
@@ -187,8 +189,12 @@ Xem thêm ở [README của bản IBus](https://github.com/ngosen/ibus-ngosen#re
 ### 3. Cài qua trình quản lý gói
 
 Mỗi release đều có trên repo có chữ ký, nên version mới đến qua update của hệ thống (`dnf upgrade`,
-`apt upgrade`, `pacman -Syu`, `zypper up`). Các repo dùng chung key có fingerprint
-`6D4A 2075 F985 3BE8 F6B6 FE7E 7550 1858 158B 36CD`.
+`apt upgrade`, `pacman -Syu`, `zypper up`). Repo APT, pacman và zypper dùng chung key có fingerprint
+`6D4A 2075 F985 3BE8 F6B6 FE7E 7550 1858 158B 36CD`. COPR trên Fedora dùng key của COPR.
+
+Trên Debian, Ubuntu và các distro dựa trên chúng, lệnh cài một dòng nay tự thêm repo APT sau khi cài.
+Nếu đã cài bằng lệnh này trước đây, chạy lại để thêm repo. Fedora, Arch và openSUSE vẫn thêm repo theo
+hướng dẫn dưới đây.
 
 Đã cài bằng lệnh một dòng thì chỉ cần thêm repo. Máy chưa có Ngó Sen thì cài gói xong làm theo mục
 [Thiết lập sau khi cài đặt](#thiet-lap).
@@ -233,7 +239,8 @@ sudo zypper install fcitx5-ngosen
 
 zypper hỏi một lần có tin cậy key không; đối chiếu fingerprint rồi chọn tin cậy.
 
-Bản IBus cũng có trong repo APT, pacman và zypper: thay `fcitx5-ngosen` bằng `ibus-ngosen` trong lệnh cài.
+Bản IBus và bản Wayland (cho niri, Sway, Hyprland) cũng có trong repo APT, pacman và zypper: thay `fcitx5-ngosen` bằng
+`ibus-ngosen` hoặc [`wl-ngosen`](https://github.com/ngosen/wl-ngosen) trong lệnh cài.
 
 <a id="nixos"></a>
 

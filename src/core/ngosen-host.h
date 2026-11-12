@@ -70,6 +70,7 @@ namespace ngosen {
         bool        terminal         = false; // the field is a terminal, which erases a character for each DEL committed
         bool        sendsNoKeys      = false; // keys the input method sends never reach the app; it deletes only through text
         bool        preeditFallback  = false; // the host may type a word in the preedit when deleting in the field fails
+        bool        appNameCurrent   = false; // program names the app focused now, not the one before
         int         caretWidth       = 0;     // size of the cursor rectangle the app last reported, in pixels
         int         caretHeight      = 0;
 

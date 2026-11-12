@@ -35,6 +35,19 @@ namespace ngosen {
             return program;
         }
 
+        // Debian names its Firefox ESR program firefox-esr. GNOME names relayed apps by desktop file, a
+        // reverse-DNS ID for Fedora's Firefox and for Flatpaks.
+        bool isFirefoxFamily(const std::string& program) {
+            if (isStartsWith(program, "firefox"))
+                return true;
+            for (const char* name : {"zen", "librewolf", "waterfox", "floorp", "mullvadbrowser", "mullvad-browser", "icecat", "org.mozilla.firefox", "app.zen_browser.zen",
+                                     "io.gitlab.librewolf-community", "net.waterfox.waterfox", "one.ablaze.floorp", "net.mullvad.MullvadBrowser"}) {
+                if (program == name)
+                    return true;
+            }
+            return false;
+        }
+
         // WPS Writer, Spreadsheets and Presentation.
         bool isWps(const std::string& program) {
             return program == "wps" || program == "et" || program == "wpp";
@@ -186,6 +199,11 @@ namespace ngosen {
         return field.frontend == "ibus" && (appName(field) == "gnome-shell" || field.reportedProgram == "gnome-shell");
     }
 
+    // An app with no name of its own could be Firefox, as could a name left over from the window before.
+    bool takesJoinedEdit(const Field& field) {
+        return field.appNameCurrent && !namesNoApp(field) && !isGnomeSearch(field) && !isStartsWith(field.program, "ctx_") && !isFirefoxFamily(appName(field));
+    }
+
     // With its extension off, GNOME Shell relays every app under its own name.
     bool namesNoApp(const Field& field) {
         return field.frontend == "ibus" && appName(field) == "gnome-shell";
@@ -236,18 +254,9 @@ namespace ngosen {
             (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc"));
     }
 
+    // The forks share Firefox's address bar.
     bool hidesAddressBarFlag(const Field& field) {
-        // Debian names its Firefox ESR program firefox-esr; the forks share Firefox's address bar. GNOME names
-        // relayed apps by desktop file, a reverse-DNS ID for Fedora's Firefox and for Flatpaks.
-        const std::string program = appName(field);
-        if (isStartsWith(program, "firefox"))
-            return true;
-        for (const char* name : {"zen", "librewolf", "waterfox", "floorp", "mullvadbrowser", "mullvad-browser", "icecat", "org.mozilla.firefox", "app.zen_browser.zen",
-                                 "io.gitlab.librewolf-community", "net.waterfox.waterfox", "one.ablaze.floorp", "net.mullvad.MullvadBrowser"}) {
-            if (program == name)
-                return true;
-        }
-        return false;
+        return isFirefoxFamily(appName(field));
     }
 
 } // namespace ngosen

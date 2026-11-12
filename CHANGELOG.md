@@ -10,6 +10,19 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.10.1-1] — 12/11/2026
+
+Trên GNOME, Gõ Sen không còn làm từ đang gõ chớp ở dạng chưa đổi dấu hoặc chữ trong các app ngoài nhóm Firefox (#720), preedit trong ô tìm kiếm Dolphin trên KDE Plasma Wayland không còn mất chữ khi app làm mới ô tìm kiếm (#722, sửa #717), bảng tính web như Handsontable, jspreadsheet và AG Grid trên Chrome và Firefox ở GNOME không còn bỏ sót phím đầu sau khi chuyển cell (#730), Lark Base trên Chrome ở GNOME không còn lưu mất dấu (#728), cửa sổ cài đặt Qt trên Fedora 44 và các distro có PyQt6 6.11 không còn crash khi đóng (#731, sửa #729).
+Tải ở [ngosen-1.10.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.10.1-1).
+
+### Sửa
+
+- Trên GNOME, Gõ Sen không còn làm từ đang gõ chớp ở dạng chưa đổi dấu hoặc chữ khoảng 30 ms mỗi lần sửa từ (từ version 1.8): thay đổi hiện ngay trong Chromium, Chrome, VS Code, Thunderbird, GNOME Text Editor, LibreOffice Writer và các app khác. Firefox và các trình duyệt dựa trên Firefox (Zen, LibreWolf…) vẫn giữ khoảng chờ ngắn để tránh lệch con trỏ, làm hỏng từ (#720).
+- Ở chế độ Preedit trên KDE Plasma Wayland, chữ đang gạch chân trong ô tìm kiếm của Dolphin (Ctrl+F) không còn bị mất khi app làm mới ô tìm kiếm: gõ chậm `tôi là ai` ra đủ `tôi là ai`, không còn ra `tôi à i` (#722, sửa #717).
+- Trong các bảng tính web mở trình sửa cell ngay từ phím đầu như Handsontable, jspreadsheet và AG Grid trên Chrome và Firefox ở GNOME, Gõ Sen không còn bỏ sót phím đầu sau khi chuyển cell bằng Enter, Tab hoặc Down: gõ `ddaay` trong cell mới giờ ra `đây`, không còn thành `ddây` (#730).
+- Trong Lark Base trên Chrome ở GNOME, Gõ Sen không còn làm ô lưu mất dấu dù lúc gõ chữ trông vẫn đúng: gõ `tieengs`, `ddaay`, `laf` rồi Enter hoặc click sang ô khác giờ lưu `tiếng`, `đây`, `là`, không còn thành `tiêng`, `đay`, `la` (#728).
+- Cửa sổ cài đặt Ngó Sen giao diện Qt trên Fedora 44 và các distro có PyQt6 6.11 nay thoát bình thường khi đóng, không còn crash khiến hệ thống báo lỗi core dump dù cài đặt đã được lưu (#731, sửa #729).
+
 ## [1.10.0-1] — 12/11/2026
 
 Vim mode cho từng app trong menu chế độ, để lệnh Vim đi qua nguyên vẹn và từ đầu tiên sau khi vào insert mode có dấu ngay (#302, #587). Từ bắt đầu bằng `/` giữ nguyên như gõ, cho lệnh chat và đường dẫn trong terminal, kể cả trong Firefox (#312, #716, #718, #719, #721). Gõ Telex quên mũ hoặc móc như `tienf`, `Nguyenx` vẫn ra tiền, Nguyễn (#696); các tên như plông, Mnông, Đakrông gõ ra đúng chữ (#706, #708). Terminal hỏi password ẩn chữ thì tự ngừng gõ tiếng Việt (#106, #645). Icon khay có cỡ Lớn và icon kiểu trơn cao bằng ô (#675, #671). Lệnh cài tự thêm repo APT (#654), repo có thêm gói `wl-ngosen` (#702, #703), trang Kiểm tra máy hiện version và trạng thái repo (#657). Bảng tính Lark trên Chrome không còn quên chữ đầu sau khi chuyển ô (#704); BackSpace sau chữ `d` thừa không còn mất nét của `đ` (#712).

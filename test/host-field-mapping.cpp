@@ -5,6 +5,7 @@
 // preedit must reach the app or the panel as before. A key press must read and change the fcitx5
 // key event the way the typing logic used to.
 #include "ngosen-app-quirks.h"
+#include "ngosen-clock.h"
 #include "ngosen-fcitx-host.h"
 #include "ngosen-gnome-shell.h"
 #include "ngosen-program-name.h"
@@ -103,6 +104,34 @@ namespace {
         focused = "firefox.desktop";
         check("older fcitx5 reports no name for what GNOME Shell relays", field("", "ibus", &focused).program == "firefox.desktop");
         check("fcitx5's own GTK module keeps its name", field("gnome-shell", "dbus", &focused).program == "gnome-shell");
+    }
+
+    void checkJoinedEdit(TestInstance& testInstance) {
+        TestInputContext context(&testInstance.instance, "chromium", "ibus");
+        ngosen::fakeClockUs      = 1000000;
+        const uint64_t focusInUs = ngosen::monotonicUs();
+        ngosen::fakeClockUs += 50000;
+        check("right after a focus change the app name may be the old one",
+              !ngosen::FcitxHost(&context, &testInstance.instance, nullptr, nullptr, &focusInUs).field().appNameCurrent);
+        ngosen::fakeClockUs += 1;
+        check("a while after a focus change the app name is current", ngosen::FcitxHost(&context, &testInstance.instance, nullptr, nullptr, &focusInUs).field().appNameCurrent);
+        ngosen::fakeClockUs = 0;
+        check("without a focus time the app name is never current", !ngosen::FcitxHost(&context, &testInstance.instance).field().appNameCurrent);
+
+        auto relayed = [](const char* program) {
+            ngosen::Field f   = field("ibus", program);
+            f.reportedProgram = "gnome-shell";
+            f.appNameCurrent  = true;
+            return f;
+        };
+        for (const char* program : {"chromium_chromium.desktop", "google-chrome.desktop", "thunderbird_thunderbird.desktop", "code.desktop", "org.gnome.TextEditor.desktop"})
+            check(std::string(program) + " takes a joined edit", ngosen::takesJoinedEdit(relayed(program)));
+        for (const char* program : {"firefox_firefox.desktop", "firefox-esr.desktop", "org.mozilla.firefox.desktop", "zen.desktop", "app.zen_browser.zen.desktop",
+                                    "io.gitlab.librewolf-community.desktop", "gnome-shell", "gnome-shell-overview", "ctx_0x1234"})
+            check(std::string(program) + " keeps the edit split", !ngosen::takesJoinedEdit(relayed(program)));
+        ngosen::Field stale  = relayed("chromium_chromium.desktop");
+        stale.appNameCurrent = false;
+        check("a name that may be the old app's keeps the edit split", !ngosen::takesJoinedEdit(stale));
     }
 
     void checkSurrounding(TestInstance& testInstance) {
@@ -284,6 +313,7 @@ int main() {
     checkFlags(testInstance);
     checkShellDropsKeys(testInstance);
     checkShellFocusedApp(testInstance);
+    checkJoinedEdit(testInstance);
     checkSurrounding(testInstance);
     checkFocus(testInstance);
     checkPreedit(testInstance);

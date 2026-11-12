@@ -658,8 +658,8 @@ namespace ngosen {
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");
-        if (pageHidesBackspaces())
-            fails.emplace_back("page has not shown a backspace");
+        if (pageHidesBackspaces() || cellKeepsOwnText())
+            fails.emplace_back("page may keep its own text");
         return fails;
     }
 
@@ -873,6 +873,12 @@ namespace ngosen {
         return ngosen::pageMayKeepOwnText(host_->field()) && !sinceFocus_.showedBackspace;
     }
 
+    // Lark Base's cells keep a U+200B in the text and their own copy, which takes backspaces but no
+    // deletion through the text, even though the browser's report shows the backspaces.
+    bool TypingState::cellKeepsOwnText() const {
+        return ngosen::pageMayKeepOwnText(host_->field()) && host_->surrounding().text().find("\u200b") != std::string::npos;
+    }
+
     bool TypingState::checksGetAnswered() const {
         if (!engine_->options().copyWaitRecovery)
             return sinceFocus_.answeredUnasked >= sinceFocus_.checksMissed;
@@ -941,10 +947,16 @@ namespace ngosen {
         // autocompletion unless the commit comes in the deletion's turn.
         uint64_t holdUs = 0;
         if (!(retype + pending_commit_string_).empty()) {
-            if (ngosen::keepsLastEditPerTurn(host_->field()) && !cursorIsBeforeAutofill(surrounding))
+            const Field field            = host_->field();
+            const bool  messengerFirst   = looksLikeMessengerComposer(surrounding) && isFirstWordOfMessage(surrounding);
+            const bool  clearsCompletion = extraBeforeCursor != 0;
+            const bool  joins            = ngosen::takesJoinedEdit(field) && !clearsCompletion && !messengerFirst;
+            if (ngosen::keepsLastEditPerTurn(field) && joins)
+                NGOSEN_INFO("Join the deletion and the commit for " + field.program);
+            else if (ngosen::keepsLastEditPerTurn(field) && !cursorIsBeforeAutofill(surrounding))
                 holdUs = SplitEditWaitUs;
             // A just-emptied Messenger composer reloads its placeholder and drops a commit sent with the deletion.
-            else if (looksLikeMessengerComposer(surrounding) && isFirstWordOfMessage(surrounding))
+            else if (messengerFirst)
                 holdUs = static_cast<uint64_t>(std::max(engine_->options().waitSurroundingSettleFirstWordMs, 0)) * 1000ULL;
         }
         if (holdUs > 0) {

@@ -318,6 +318,8 @@ namespace ngosen {
             return;
         }
 
+        if (unseenPress_)
+            takeLetterFieldOpenedWith();
         const bool startsWord = oldPreBuffer_.empty();
         bool       processed  = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
@@ -424,6 +426,48 @@ namespace ngosen {
             return;
         lastWord_.clear();
         EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
+    }
+
+    void TypingState::notePressOrRelease(const ngosen::KeyPress& keyEvent) {
+        const uint32_t sym = keyEvent.sym() < 0x80 ? static_cast<uint32_t>(std::tolower(static_cast<int>(keyEvent.sym()))) : keyEvent.sym();
+        const auto     at  = std::find(pressedKeys_.begin(), pressedKeys_.end(), sym);
+        if (!keyEvent.isRelease()) {
+            if (at == pressedKeys_.end() && pressedKeys_.size() < 16)
+                pressedKeys_.push_back(sym);
+            if (unseenPress_ && keyCount_ == unseenPress_->second)
+                keyAfterUnseen_ = std::make_pair(keyEvent.sym(), keyEvent.states());
+        } else if (at != pressedKeys_.end()) {
+            pressedKeys_.erase(at);
+        } else if (sym >= 'a' && sym <= 'z') {
+            unseenPress_ = std::make_pair(sym, keyCount_);
+            keyAfterUnseen_.reset();
+        }
+    }
+
+    void TypingState::takeLetterFieldOpenedWith() {
+        const Field    field     = host_->field();
+        const uint64_t keysSince = keyCount_ - unseenPress_->second;
+        // AG Grid reports the letter only with the change the next key makes.
+        const bool late = keysSince == 2 && keyAfterUnseen_ && !oldPreBuffer_.empty();
+        if (keysSince > 2 || (keysSince == 1 && !oldPreBuffer_.empty()))
+            unseenPress_.reset();
+        if (!unseenPress_ || (keysSince != 1 && !late) || field.url || field.password)
+            return;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || s.cursor() != s.anchor())
+            return;
+        const std::string before     = textBeforeCursor(s);
+        const std::string afterKey   = late ? oldPreBuffer_ : std::string();
+        const bool        sameLetter = before.size() == 1 + afterKey.size() && static_cast<uint32_t>(std::tolower(static_cast<unsigned char>(before[0]))) == unseenPress_->first &&
+            before.compare(1, std::string::npos, afterKey) == 0;
+        if (!sameLetter || s.text().find_first_not_of('\n', before.size()) != std::string::npos)
+            return;
+        NGOSEN_INFO("Word starts with the letter whose key went to the app before the field: " + logged(before.substr(0, 1)));
+        EngineRebuildFromText(bambooEngine_.handle(), before.substr(0, 1).c_str());
+        if (late)
+            EngineProcessKeyEvent(bambooEngine_.handle(), keyAfterUnseen_->first, keyAfterUnseen_->second);
+        oldPreBuffer_ = before;
+        unseenPress_.reset();
     }
 
     bool TypingState::reopenWordInPreedit(ngosen::KeyPress& keyEvent) {
@@ -560,9 +604,12 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        if (!keyEvent.isModifier())
+            notePressOrRelease(keyEvent);
         // Counted first, so a replacement this key starts does not count it as a later key.
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;
+            fieldAtKeptReset_.reset();
             if (ngosen::key::isBackspace(keyEvent.sym()))
                 closeCheckBeforeOtherEdit();
             if (oldPreBuffer_.empty())
@@ -1067,7 +1114,49 @@ namespace ngosen {
         resetField(isFocusOut, false);
     }
 
-    void TypingState::resetField(bool isFocusOut, bool commitPreedit) {
+    void TypingState::appReset() {
+        const bool keep = keepsWordOnAppReset();
+        fieldAtKeptReset_.reset();
+        if (keep)
+            fieldAtKeptReset_ = std::make_pair(host_->surrounding().text(), host_->surrounding().cursor());
+        resetField(false, true, keep);
+    }
+
+    // Qt reports the field unchanged after dropping the word; GTK, Firefox and Chromium commit it themselves.
+    // Any change before the next key means the app did something with the field, so ours goes as before.
+    void TypingState::checkFieldAfterKeptReset() {
+        if (!fieldAtKeptReset_)
+            return;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || (s.text() == fieldAtKeptReset_->first && s.cursor() == fieldAtKeptReset_->second))
+            return;
+        fieldAtKeptReset_.reset();
+        if (!bambooEngine_)
+            return;
+        NGOSEN_INFO("App changed the field after the reset, dropping the kept word");
+        ResetEngine(bambooEngine_.handle());
+        oldPreBuffer_.clear();
+        hasHistory_ = false;
+        host_->showPreedit("", false);
+        host_->refreshPreedit();
+    }
+
+    // Qt over the Wayland text-input protocol drops the preedit on a reset, so the word is lost unless
+    // we keep it. fcitx5's own Qt and GTK modules commit it before the reset, so keeping it would type it twice.
+    bool TypingState::keepsWordOnAppReset() const {
+        if (realMode.load() != ngosen::Mode::Preedit || !bambooEngine_ || host_->field().frontend != "wayland")
+            return false;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || s.cursor() != s.anchor())
+            return false;
+        const ngosen::UniqueCPtr<char> word(EnginePullPreedit(bambooEngine_.handle()));
+        // Qt over text-input-v2 commits the word and reports it before the reset.
+        return word && *word.get() != 0 && !endsBeforeCursor(s, word.get(), false);
+    }
+
+    void TypingState::resetField(bool isFocusOut, bool commitPreedit, bool keepOpenWord) {
+        if (!keepOpenWord)
+            fieldAtKeptReset_.reset();
         // After focus out a forwarded key may reach the window that took focus.
         if (isFocusOut) {
             held_enter_pending_ = false;
@@ -1108,18 +1197,25 @@ namespace ngosen {
                     NGOSEN_INFO("Commit: " + logged(pulled.get()));
                 }
             }
-            ResetEngine(bambooEngine_.handle());
-            oldPreBuffer_.clear();
-            hasHistory_ = false;
+            if (!keepOpenWord) {
+                ResetEngine(bambooEngine_.handle());
+                oldPreBuffer_.clear();
+                hasHistory_ = false;
+            }
         }
         if (host_->field().frontend != "dbus")
-            clearAllBuffers();
+            clearAllBuffers(keepOpenWord);
         shouldCapitalize_ = keepCapitalize;
 
         switch (mode()) {
             case ngosen::Mode::Preedit: {
                 host_->resetPanel();
                 host_->refreshPanel();
+                if (keepOpenWord) {
+                    const ngosen::UniqueCPtr<char> word(EnginePullPreedit(bambooEngine_.handle()));
+                    host_->showPreedit(word ? word.get() : "", false);
+                    NGOSEN_INFO("Reset kept the open word");
+                }
                 host_->refreshPreedit();
                 break;
             }
@@ -1184,7 +1280,7 @@ namespace ngosen {
         ResetEngine(bambooEngine_.handle());
     }
 
-    void TypingState::clearAllBuffers() {
+    void TypingState::clearAllBuffers(bool keepOpenWord) {
         NGOSEN_DEBUG("Clear all buffers");
         if (is_deleting_.load(std::memory_order_acquire)) {
             return;
@@ -1192,9 +1288,11 @@ namespace ngosen {
         tracking_modifier_tap_   = false;
         lock_word_pending_       = false;
         enter_after_replacement_ = false;
-        oldPreBuffer_.clear();
+        if (!keepOpenWord) {
+            oldPreBuffer_.clear();
+            hasHistory_ = false;
+        }
         lastWord_.clear();
-        hasHistory_ = false;
         earlierWords_.clear();
         rawWord_ = false;
         wordBeforeReplacement_.clear();
@@ -1213,7 +1311,7 @@ namespace ngosen {
         isPrevSpace_          = false;
         isPrevHyphen_         = false;
         isPrevPunctuation_    = false;
-        if (bambooEngine_)
+        if (bambooEngine_ && !keepOpenWord)
             ResetEngine(bambooEngine_.handle());
     }
 

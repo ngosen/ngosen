@@ -93,6 +93,8 @@ namespace ngosen {
         // reset() for an app that commits the preedit by itself on a reset or focus out, as IBus clients
         // do with IBUS_ENGINE_PREEDIT_COMMIT: the word is dropped instead of committed a second time.
         void resetAfterAppCommit(bool isFocusOut);
+        // The app reset the field it keeps focused, as Dolphin's search field does while the user types.
+        void appReset();
 
         // The app runs Vim or Vim keys (#302): after Escape, letters are commands until Vim goes into
         // insert mode, and they reach the app untouched.
@@ -145,7 +147,7 @@ namespace ngosen {
         /**
          * @brief Clears all internal buffers.
          */
-        void clearAllBuffers();
+        void clearAllBuffers(bool keepOpenWord = false);
 
         /**
          * @brief Checks if history buffer is empty.
@@ -314,7 +316,8 @@ namespace ngosen {
         void recordKey(const ngosen::KeyPress& keyEvent);
 
         void handleKey(ngosen::KeyPress& keyEvent);
-        void resetField(bool isFocusOut, bool commitPreedit);
+        void resetField(bool isFocusOut, bool commitPreedit, bool keepOpenWord = false);
+        bool keepsWordOnAppReset() const;
         // Typed text as a log line may show it: hidden in a password or private field.
         std::string logged(const std::string& text) const;
         // The steps of keyEvent, in order. A true result means the key needs nothing more.
@@ -413,6 +416,10 @@ namespace ngosen {
 
         // Text and cursor a move without an edit left, until the next key or focus change.
         std::optional<std::pair<std::string, unsigned int>> jumpedFrom_;
+
+        // Text and cursor when a reset kept the open word, until the app changes either or the next key.
+        std::optional<std::pair<std::string, unsigned int>> fieldAtKeptReset_;
+        void                                                checkFieldAfterKeptReset();
 
         // Last key press seen, to spot one the app sends twice.
         uint32_t lastPressCode_      = 0;
@@ -691,6 +698,7 @@ namespace ngosen {
         bool surroundingUntrusted() const;
         // A page that may keep its own text, before any report showed our backspaces taking effect.
         bool                            pageHidesBackspaces() const;
+        bool                            cellKeepsOwnText() const;
         bool                            appMarkedUntrusted() const;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
@@ -702,6 +710,11 @@ namespace ngosen {
         bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
         std::unique_ptr<ngosen::Timer>  replay_timer_;
         bool                            rawWord_ = false; ///< the rest of this word goes to the app as typed
+
+        // A key whose release we got with no press: its press went to the app before the field had focus.
+        std::vector<uint32_t>                        pressedKeys_;
+        std::optional<std::pair<uint32_t, uint64_t>> unseenPress_;    ///< the letter and keyCount_ at its release
+        std::optional<std::pair<uint32_t, uint32_t>> keyAfterUnseen_; ///< sym and states of the next key
 
         // What the field showed since it got focus. A focus-in that is not a bounce starts it over, and
         // nothing else does.
@@ -785,6 +798,10 @@ namespace ngosen {
         bool replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent);
         // Backspace from after lastWord_ into it: the engine takes up what is left of that word.
         void reopenLastWord();
+        // A sheet opens a cell editor on a key whose press reaches the page before the input method has a
+        // field: we get only its release, the editor holds that letter, and the word starts from it.
+        void takeLetterFieldOpenedWith();
+        void notePressOrRelease(const ngosen::KeyPress& keyEvent);
         // Backspace right after a commit in Preedit: take the word back from the app as preedit.
         bool reopenWordInPreedit(ngosen::KeyPress& keyEvent);
         bool rebuildable(const std::string& committed) const;

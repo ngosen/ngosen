@@ -927,6 +927,14 @@ namespace {
         loop.pump(450);
         const std::string held = typeText("s ");
         check(held == "as ", "field holding one letter at focus: no word taken from it", held);
+        // A release from the last cell says nothing about a field the user moves to before the next key.
+        for (const int ms : {5, 300}) {
+            openCell("a", "");
+            app->focusNewFieldWith("a", ms);
+            loop.pump(450);
+            const std::string moved = typeText("s ");
+            check(moved == "as ", "field reached after a cell's first key: no word taken from it", moved);
+        }
     }
 
     // Lark Sheets in a browser keeps its own text and takes only key presses: a deletion through the

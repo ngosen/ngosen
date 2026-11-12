@@ -1089,7 +1089,8 @@ namespace ngosen {
         if (isFocusOut) {
             keySinceReport_ = false;
             // A chat box is usually empty when it gets focus.
-            afterWordEnd_ = true;
+            afterWordEnd_    = true;
+            typedSinceFocus_ = false;
         }
         // GTK resets the context when Enter inserts a new line; the sentence started there still capitalizes.
         const bool keepCapitalize = shouldCapitalize_ && !isFocusOut;

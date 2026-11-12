@@ -208,6 +208,25 @@ namespace {
         }
     }
 
+    // Clearing a field by habit sends a BackSpace that deletes nothing, so the app reports nothing new.
+    void testBackspaceInEmptyField() {
+        for (const bool surroundingText : {true, false}) {
+            const std::string field = surroundingText ? "" : " (no reports)";
+            for (const Mode mode : {Mode::Sen, Mode::Preedit}) {
+                std::vector<uint32_t> keys = {NewFocus, ngosen::key::BackSpace};
+                for (const uint32_t k : keysOf("/cost "))
+                    keys.push_back(k);
+                std::string got = textAfterEachKey(mode, keys, surroundingText).back();
+                check(got == "/cost ", std::string(modeName(mode)) + field + ": BackSpace in an empty field, then /cost", got);
+                // A BackSpace after typing may join the '/' to a word, as in và/hoặc.
+                keys = keysAround("vaf ", ngosen::key::BackSpace, "/hoawcj ");
+                keys.insert(keys.begin(), NewFocus);
+                got = textAfterEachKey(mode, keys, surroundingText).back();
+                check(got == "và/hoặc ", std::string(modeName(mode)) + field + ": vaf, BackSpace, /hoawcj", got);
+            }
+        }
+    }
+
     void testOptionOff() {
         const std::string got = finalText(Mode::Sen, "/cost", true, [](FakeResources& r) { r.mutableOptions().rawWordAfterSlash = false; });
         check(got == "/cót", "with the option off, /cost gets a tone as before", got);
@@ -257,6 +276,7 @@ int main() {
     testClickEndsRawWord();
     testDoubledKeysStayRaw();
     testAppResetAfterEachKey();
+    testBackspaceInEmptyField();
     testOptionOff();
     testHiddenPromptEndsRawWord();
     if (failures != 0) {

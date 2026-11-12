@@ -76,12 +76,17 @@ namespace ngosen {
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             hasHistory_ = false;
+        } else if (key::isBackspace(currentSym) && !typedSinceFocus_) {
+            // Nothing typed here yet, so it deletes none of the user's text and the field still starts a word.
+            return false;
         } else {
-            afterWordEnd_ = endsWord(currentSym) || (afterWordEnd_ && leadsRawWord(currentSym));
+            afterWordEnd_    = endsWord(currentSym) || (afterWordEnd_ && leadsRawWord(currentSym));
+            typedSinceFocus_ = true;
             return false;
         }
-        isPrevSpace_  = false;
-        isPrevHyphen_ = false;
+        isPrevSpace_     = false;
+        isPrevHyphen_    = false;
+        typedSinceFocus_ = true;
         // Firefox applies a key it let through ahead of a commit it already has.
         if (realMode == ngosen::Mode::Sen && typedBeforeCommitArrived(keyEvent, currentSym)) {
             keyEvent.accept();

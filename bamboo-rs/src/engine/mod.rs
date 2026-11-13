@@ -1128,9 +1128,35 @@ impl BambooEngine {
     pub fn rebuild_from_text(&mut self, text: &str) {
         self.kept = None;
         self.preeditor.rebuild_from_text(text);
+        if !self.keep_guard.is_empty() && self.get_preedit_string() != text {
+            self.rebuild_kept_word(text);
+        }
         self.keep_marks_until_next_key = false;
         self.keep_keys_until_next_key = false;
         self.preedit_text = self.get_preedit_string();
         self.commit_text.clear();
+    }
+
+    /// A word kept with keys after it, like `đượcd`, does not compose from its letters: the
+    /// longest dictionary word it starts with is rebuilt and the rest typed as keys.
+    fn rebuild_kept_word(&mut self, text: &str) {
+        let chars: Vec<char> = text.chars().collect();
+        for end in (1..chars.len()).rev() {
+            let head: String = chars[..end].iter().collect();
+            if !self.dictionary.contains(&head.to_lowercase()) {
+                continue;
+            }
+            self.preeditor.rebuild_from_text(&head);
+            if self.get_preedit_string() != head {
+                continue;
+            }
+            let keys = self.raw_text().chars().count();
+            for &c in &chars[end..] {
+                self.preeditor.process_key(c, Mode::English);
+            }
+            self.kept = Some(KeptWord { shown: head, keys });
+            return;
+        }
+        self.preeditor.rebuild_from_text(text);
     }
 }

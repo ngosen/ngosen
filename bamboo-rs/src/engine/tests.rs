@@ -1374,3 +1374,26 @@ fn test_dictionary_has_no_unmarked_rimes() {
         .collect();
     assert!(typos.is_empty(), "{typos:?}");
 }
+
+#[test]
+fn test_reopened_kept_word_keeps_its_text() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    e.rebuild_from_text("đượcd");
+    assert_eq!(e.preedit_text, "đượcd");
+    type_keys(&mut e, "x");
+    assert_eq!(e.preedit_text, "đượcdx");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.pull_commit(), "đượcdx ");
+}
+
+#[test]
+fn test_backspace_into_a_reopened_kept_word() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    e.rebuild_from_text("đượcdi");
+    e.backspace();
+    assert_eq!(e.preedit_text, "đượcd");
+    e.backspace();
+    assert_eq!(e.preedit_text, "được");
+    type_keys(&mut e, "s");
+    assert_eq!(e.preedit_text, "đước");
+}

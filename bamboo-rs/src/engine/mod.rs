@@ -8,7 +8,6 @@
 //! What one key press does to the word being typed: Vietnamese composition, falling back to
 //! the typed keys for English words, macros and the output charset.
 
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use bamboo_core::advanced::encode;
@@ -23,6 +22,9 @@ use crate::text::{
     vowel_count, without_marks, without_tone_position, without_tones,
 };
 use crate::time_format::format_time;
+use packed::Packed;
+
+mod packed;
 
 #[cfg(test)]
 mod options_tests;
@@ -59,9 +61,11 @@ pub const INPUT_METHOD_NAMES: [&str; 7] = [
 /// Words for spell checking, matched whatever tone style the user picked.
 #[derive(Debug, Default)]
 pub struct Dictionary {
-    words: HashSet<String>,
-    // Each word in lower case, sorted by its letters without marks or tones.
-    prefixes: Box<[(Box<str>, Box<str>)]>,
+    // Sorted, with the tone placed one way so either tone style finds the word.
+    words: Packed,
+    // Each word without marks or tones, sorted, and beside it the word in lower case.
+    bare: Packed,
+    lower: Packed,
 }
 
 impl Dictionary {
@@ -74,45 +78,45 @@ impl Dictionary {
     /// start crông and the second s of cross would undo its tone.
     pub fn starts_word(&self, typed: &str) -> bool {
         let key = without_marks(&without_tones(typed).0);
-        let first = self.prefixes.partition_point(|(w, _)| **w < *key);
-        self.prefixes[first..]
-            .iter()
-            .take_while(|(w, _)| w.starts_with(&*key))
-            .any(|(_, word)| grows_into(typed, word))
+        let first = self.bare.partition_point(|w| w < key.as_str());
+        (first..self.bare.len())
+            .take_while(|&i| self.bare.get(i).starts_with(&*key))
+            .any(|i| grows_into(typed, self.lower.get(i)))
     }
 }
 
 impl FromIterator<String> for Dictionary {
     fn from_iter<I: IntoIterator<Item = String>>(words: I) -> Self {
         let words: Vec<String> = words.into_iter().collect();
-        let mut prefixes: Vec<_> = words
+        let mut prefixes: Vec<(String, String)> = words
             .iter()
-            .map(|w| {
-                let bare = without_marks(&without_tones(w).0).into_boxed_str();
-                (bare, w.to_lowercase().into_boxed_str())
-            })
+            .map(|w| (without_marks(&without_tones(w).0), w.to_lowercase()))
             .collect();
         prefixes.sort();
         prefixes.dedup();
+        let mut placed: Vec<String> = words.iter().map(|w| without_tone_position(w)).collect();
+        placed.sort();
+        placed.dedup();
         Self {
-            prefixes: prefixes.into_boxed_slice(),
-            words: words.iter().map(|w| without_tone_position(w)).collect(),
+            words: placed.iter().map(String::as_str).collect(),
+            bare: prefixes.iter().map(|(b, _)| b.as_str()).collect(),
+            lower: prefixes.iter().map(|(_, w)| w.as_str()).collect(),
         }
     }
 }
 
 /// English words, sorted, to tell whether keys shown as typed start one.
 #[derive(Debug, Default)]
-pub struct WordList(Box<[Box<str>]>);
+pub struct WordList(Packed);
 
 impl WordList {
     pub fn starts_word(&self, keys: &str) -> bool {
-        let i = self.0.partition_point(|w| &**w < keys);
-        self.0.get(i).is_some_and(|w| w.starts_with(keys))
+        let i = self.0.partition_point(|w| w < keys);
+        i < self.0.len() && self.0.get(i).starts_with(keys)
     }
 
     pub fn contains(&self, keys: &str) -> bool {
-        self.0.binary_search_by(|w| (**w).cmp(keys)).is_ok()
+        self.0.contains(keys)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -122,13 +126,10 @@ impl WordList {
 
 impl FromIterator<String> for WordList {
     fn from_iter<I: IntoIterator<Item = String>>(words: I) -> Self {
-        let mut words: Vec<Box<str>> = words
-            .into_iter()
-            .map(|w| w.to_lowercase().into_boxed_str())
-            .collect();
+        let mut words: Vec<String> = words.into_iter().map(|w| w.to_lowercase()).collect();
         words.sort();
         words.dedup();
-        Self(words.into_boxed_slice())
+        Self(words.iter().map(String::as_str).collect())
     }
 }
 

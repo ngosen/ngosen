@@ -683,8 +683,6 @@ namespace fcitx {
         o.waitSurroundingSettleMs          = config_.waitSurroundingSettleMs.value();
         o.waitSurroundingSettleFirstWordMs = config_.waitSurroundingSettleFirstWordMs.value();
         o.waitSurroundingProbeEvery        = config_.waitSurroundingProbeEvery.value();
-        o.surrDeleteSleepMs                = config_.surrDeleteSleepMs.value();
-        o.surrCommitSleepMs                = config_.surrCommitSleepMs.value();
         switch (config_.lockWordModifier.value()) {
             case LockWordModifier::Shift: o.lockWordKey = ngosen::LockWordKey::Shift; break;
             case LockWordModifier::Ctrl: o.lockWordKey = ngosen::LockWordKey::Ctrl; break;

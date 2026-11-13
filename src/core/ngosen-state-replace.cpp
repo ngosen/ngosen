@@ -940,7 +940,6 @@ namespace ngosen {
         unreportedDeleteKey_    = keyCount_;
         host_->deleteSurrounding(-(count + extraBeforeCursor), static_cast<unsigned int>(count + extraBeforeCursor));
         NGOSEN_INFO("Delete using surrounding text");
-        ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrDeleteSleepMs * count, 0)) * 1000ULL);
         // Firefox's cursor stays one past the real one when a deletion and a commit of the same length
         // arrive together, and the next deletion then takes what follows the word. It shows only the
         // current line, so a line below cannot be told from the end of the text. An address bar keeps its
@@ -1033,7 +1032,6 @@ namespace ngosen {
         if (!text.empty()) {
             commit(text);
             NGOSEN_INFO("Commit: " + logged(text));
-            ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrCommitSleepMs * static_cast<int>(ngosen::utf8::length(text)), 0)) * 1000ULL);
         }
         openSurroundingCheck(surrounding, retype);
         logReplaceEnd("committed");

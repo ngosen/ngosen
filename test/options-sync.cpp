@@ -59,8 +59,6 @@ namespace {
         c.setValueByPath("WaitSurroundingSettleMs", "44");
         c.setValueByPath("WaitSurroundingSettleFirstWordMs", "55");
         c.setValueByPath("WaitSurroundingProbeEvery", "6");
-        c.setValueByPath("SurrDeleteSleepMs", "7");
-        c.setValueByPath("SurrCommitSleepMs", "8");
         return c;
     }
 
@@ -101,8 +99,6 @@ namespace {
         check(step + ": WaitSurroundingSettleMs", o.waitSurroundingSettleMs == c.waitSurroundingSettleMs.value());
         check(step + ": WaitSurroundingSettleFirstWordMs", o.waitSurroundingSettleFirstWordMs == c.waitSurroundingSettleFirstWordMs.value());
         check(step + ": WaitSurroundingProbeEvery", o.waitSurroundingProbeEvery == c.waitSurroundingProbeEvery.value());
-        check(step + ": SurrDeleteSleepMs", o.surrDeleteSleepMs == c.surrDeleteSleepMs.value());
-        check(step + ": SurrCommitSleepMs", o.surrCommitSleepMs == c.surrCommitSleepMs.value());
         const auto lock = c.lockWordModifier.value();
         const auto want = lock == fcitx::LockWordModifier::Shift ? ngosen::LockWordKey::Shift :
             lock == fcitx::LockWordModifier::Ctrl                ? ngosen::LockWordKey::Ctrl :
@@ -151,8 +147,6 @@ namespace {
         check("default WaitSurroundingSettleMs", o.waitSurroundingSettleMs == d.waitSurroundingSettleMs);
         check("default WaitSurroundingSettleFirstWordMs", o.waitSurroundingSettleFirstWordMs == d.waitSurroundingSettleFirstWordMs);
         check("default WaitSurroundingProbeEvery", o.waitSurroundingProbeEvery == d.waitSurroundingProbeEvery);
-        check("default SurrDeleteSleepMs", o.surrDeleteSleepMs == d.surrDeleteSleepMs);
-        check("default SurrCommitSleepMs", o.surrCommitSleepMs == d.surrCommitSleepMs);
     }
 
 } // namespace

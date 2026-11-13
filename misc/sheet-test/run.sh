@@ -165,8 +165,11 @@ send_keys() {
         xdotool key --delay "$delay" "$@"
         return
     fi
+    # QEMU waits the hold time after the press and again after the release, so half the delay keeps
+    # keys from queueing up.
+    local hold=$((delay / 2))
     for k in "$@"; do
-        "${virsh[@]}" send-key "$vm" "$k" >/dev/null
+        "${virsh[@]}" send-key "$vm" --holdtime "$hold" "$k" >/dev/null
         sleep "$(printf '%d.%03d' $((delay / 1000)) $((delay % 1000)))"
     done
 }

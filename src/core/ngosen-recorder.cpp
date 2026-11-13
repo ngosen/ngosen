@@ -92,6 +92,9 @@ namespace ngosen {
             std::optional<std::string> takeSelection() override {
                 return host_->takeSelection();
             }
+            std::string primarySelection() const override {
+                return host_->primarySelection();
+            }
 
             void showPreedit(const std::string& text, bool underline) override {
                 recorder_.add("preedit", quoted(text));

@@ -63,6 +63,13 @@ target_link_libraries(core_vim PRIVATE ngosen_core)
 add_test(NAME core_vim COMMAND core_vim)
 set_tests_properties(core_vim PROPERTIES LABELS "unit;core" TIMEOUT 60 ENVIRONMENT "DISPLAY=")
 
+add_executable(core_convert core-convert.cpp fake-host.cpp fake-engine.cpp)
+target_compile_definitions(core_convert PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+    NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt")
+target_link_libraries(core_convert PRIVATE ngosen_core)
+add_test(NAME core_convert COMMAND core_convert)
+set_tests_properties(core_convert PROPERTIES LABELS "unit;core" TIMEOUT 30 ENVIRONMENT "DISPLAY=")
+
 add_executable(core_surrounding_count core-surrounding-count.cpp)
 target_link_libraries(core_surrounding_count PRIVATE ngosen_core)
 add_test(NAME core_surrounding_count COMMAND core_surrounding_count)

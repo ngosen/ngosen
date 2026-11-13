@@ -186,6 +186,9 @@ namespace ngosen::test {
         std::optional<std::string> takeSelection() override {
             return std::exchange(announced_, std::nullopt);
         }
+        std::string primarySelection() const override {
+            return announced_.value_or("");
+        }
 
         void showPreedit(const std::string& text, bool /*underline*/) override {
             if (!text.empty())

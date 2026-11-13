@@ -75,6 +75,17 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(LockWordModifier, N_("Disabled"), N_("Shift"), N_("Ctrl"), N_("Alt"));
 
+    // In the order of ConvertText's letterCase.
+    enum class ConvertCase : std::uint8_t {
+        Keep     = 0,
+        Upper    = 1,
+        Lower    = 2,
+        Sentence = 3,
+        Title    = 4,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(ConvertCase, N_("Keep"), N_("UPPER CASE"), N_("lower case"), N_("Sentence case"), N_("Title Case"));
+
     /**
      * @brief Icon theme options.
      */
@@ -261,7 +272,15 @@ namespace fcitx {
         HiddenOption<std::string> announcedVersion{this, "AnnouncedVersion", _("Announced Version"), ""}; KeyListOption modeMenuKey{
             this, "ModeMenuKey", _("Mode Menu Hotkey"), {Key("grave")}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
         KeyListOption cycleModeKey{this, "CycleModeKey", _("Cycle Mode Hotkey"), {}, KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
-        SubConfigOption                                                                appRules{this, "AppRules", _("App Rules"), "fcitx://config/addon/ngosen/app_rules"};
+        // No default: every key worth taking is already used by some app.
+        KeyListOption                                           convertKey{this, "ConvertKey", _("Convert Selected Text Hotkey"), {}, KeyListConstrain()};
+        OptionWithAnnotation<std::string, StringListAnnotation> convertFrom{
+            this, "ConvertFrom", _("Convert From"), ngosen::defaultOptions.convertFrom, {}, {}, StringListAnnotation()};
+        OptionWithAnnotation<std::string, StringListAnnotation> convertTo{this, "ConvertTo", _("Convert To"), ngosen::defaultOptions.convertTo, {}, {}, StringListAnnotation()};
+        OptionWithAnnotation<ConvertCase, ConvertCaseI18NAnnotation> convertCase{this, "ConvertCase", _("Letter Case After Converting"),
+                                                                                 static_cast<ConvertCase>(ngosen::defaultOptions.convertCase)};
+        Option<bool>    convertStripDiacritics{this, "ConvertStripDiacritics", _("Remove Diacritics When Converting"), ngosen::defaultOptions.convertStripDiacritics};
+        SubConfigOption appRules{this, "AppRules", _("App Rules"), "fcitx://config/addon/ngosen/app_rules"};
         OptionWithAnnotation<W2UMode, W2UModeI18NAnnotation>                           w2u{this, "W2U", _("Type w to Produce ư"), static_cast<W2UMode>(ngosen::defaultOptions.w2u)};
         OptionWithAnnotation<BracketTransformMode, BracketTransformModeI18NAnnotation> bracketTransform{this, "BracketTransform", _("Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"),
                                                                                                         static_cast<BracketTransformMode>(ngosen::defaultOptions.bracketTransform)};

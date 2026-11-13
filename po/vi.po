@@ -123,6 +123,62 @@ msgstr "Phím tắt menu chế độ gõ"
 msgid "Cycle Mode Hotkey"
 msgstr "Phím tắt chuyển nhanh chế độ"
 
+#: src/ngosen-config.h
+msgid "Keep"
+msgstr "Giữ nguyên"
+
+#: src/ngosen-config.h
+msgid "UPPER CASE"
+msgstr "CHỮ HOA"
+
+#: src/ngosen-config.h
+msgid "lower case"
+msgstr "chữ thường"
+
+#: src/ngosen-config.h
+msgid "Sentence case"
+msgstr "Viết hoa đầu câu"
+
+#: src/ngosen-config.h
+msgid "Title Case"
+msgstr "Viết Hoa Mỗi Từ"
+
+#: src/ngosen-config.h
+msgid "Convert Selected Text Hotkey"
+msgstr "Phím tắt chuyển mã chữ bôi đen"
+
+#: src/ngosen-config.h
+msgid "Convert From"
+msgstr "Chuyển từ bảng mã"
+
+#: src/ngosen-config.h
+msgid "Convert To"
+msgstr "Sang bảng mã"
+
+#: src/ngosen-config.h
+msgid "Letter Case After Converting"
+msgstr "Chữ hoa, chữ thường sau khi chuyển"
+
+#: src/ngosen-config.h
+msgid "Remove Diacritics When Converting"
+msgstr "Bỏ dấu khi chuyển mã"
+
+#: src/ngosen-engine.cpp
+msgid "Convert"
+msgstr "Chuyển mã"
+
+#: src/ngosen-engine.cpp
+msgid "The selected text is the same in both charsets. Check the charsets on the Convert page."
+msgstr "Chữ bôi đen giống nhau ở cả hai bảng mã. Xem lại bảng mã ở trang Chuyển mã."
+
+#: src/ngosen-engine.cpp
+msgid "Select the text to convert, then press the key again."
+msgstr "Bôi đen chữ cần chuyển mã rồi bấm lại phím."
+
+#: src/ngosen-engine.cpp
+msgid "Finish the word being typed, then press the key again."
+msgstr "Gõ xong chữ đang gõ rồi bấm lại phím."
+
 #: src/ngosen-config.h:227
 msgid "App Rules"
 msgstr "Quy tắc ứng dụng"

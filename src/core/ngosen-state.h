@@ -52,6 +52,15 @@ namespace fcitx {
 
 namespace ngosen {
 
+    // What convertSelection did, so the framework can tell the user.
+    enum class ConvertResult {
+        Converted,
+        Unchanged,   // the text is the same after conversion
+        NoSelection, // nothing selected, or the app tells nothing of the selection
+        Busy,        // a word is still in the preedit
+        Refused,     // a password field, or a charset the core does not know
+    };
+
     /**
      * @brief Per-field typing state.
      *
@@ -136,6 +145,9 @@ namespace ngosen {
          * @brief Commits the current buffer.
          */
         void commitBuffer();
+
+        // Converts the selected text with the convert options and types the result over it (#655).
+        ConvertResult convertSelection();
 
         /**
          * @brief Like commitBuffer(), but in Preedit the word is committed the way Enter leaves it.

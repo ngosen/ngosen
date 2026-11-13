@@ -545,8 +545,6 @@ namespace ngosen {
             return;
         const size_t   at     = left.cursor;
         const char32_t letter = now[at];
-        // Firefox's contenteditable reports a space as U+00A0.
-        const auto isWordChar = [](char32_t c) { return c != 0xA0 && (c >= 0x80 || std::isalnum(static_cast<int>(c)) != 0); };
         if (!((letter >= 'a' && letter <= 'z') || (letter >= 'A' && letter <= 'Z')) || (at > 0 && isWordChar(now[at - 1])))
             return;
         const std::string typed(1, static_cast<char>(letter));

@@ -1054,6 +1054,9 @@ namespace {
         away("xin chào ", 4, "n");
         const std::string nbsp = typeText("guwx ");
         check(nbsp == "xin ngữ chào ", "letter typed while away after U+00A0: word starts from it", nbsp);
+        away("xin \u201c", 5, "a");
+        const std::string quote = typeText("s ");
+        check(quote == "xin \u201c\u00e1 ", "letter typed while away after an opening quote: word starts from it", quote);
         // A bounce before any key must not save the missed letter as text the field held.
         away("xin chào ", 4, "n");
         app->leaveFocus(30);

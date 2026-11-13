@@ -483,6 +483,12 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::pageShowsCell(const std::string& text) {
+        text_   = utf8::decode(text);
+        cursor_ = anchor_ = text_.size();
+        changed();
+    }
+
     void FakeApp::pageInserts(const std::string& before, const std::string& after) {
         const std::u32string b = utf8::decode(before);
         text_.insert(cursor_, b + utf8::decode(after));

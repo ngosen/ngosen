@@ -960,6 +960,52 @@ namespace {
         }
     }
 
+    // On GNOME the first key typed right after Alt+Tab can reach the window before the input method gets
+    // focus-in, in the middle of text the field already holds.
+    void testFirstKeyBeforeFocusMidText() {
+        const Field   chrome = makeField("ibus", true, "google-chrome.desktop");
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, chrome, ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& typed) {
+            for (const char c : typed) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(200);
+            return app->text();
+        };
+        const auto switchIn = [&](const std::string& before, char key, const std::string& after) {
+            app->focusNewFieldWith(before, 5);
+            loop.pump(50);
+            app->pageTakesKey(static_cast<uint32_t>(key), std::string(1, key), after);
+            loop.pump(100);
+        };
+        switchIn("xin ", 'n', "chào ");
+        const std::string mid = typeText("guwx ");
+        check(mid == "xin ngữ chào ", "first key before focus-in, mid text: word starts from it", mid);
+        switchIn("xin chào ", 'd', "");
+        const std::string end = typeText("dax ");
+        check(end == "xin chào đã ", "first key before focus-in, end of text: word starts from it", end);
+        // The letter goes on a word the field already held: a tone on that letter alone would split the word.
+        switchIn("xin c", 'a', "");
+        const std::string inWord = typeText("s ");
+        check(inWord == "xin cas ", "first key before focus-in, inside a word: nothing taken", inWord);
+        // Ctrl+F and the like move focus while held: that release typed nothing into the new field.
+        app->focusNewFieldWith("xin a", 5);
+        loop.pump(50);
+        FakeKey shortcutUp('a', true, ngosen::modifier::Ctrl);
+        state.keyEvent(shortcutUp);
+        loop.pump(100);
+        const std::string shortcut = typeText("s ");
+        check(shortcut == "xin as ", "release of a shortcut after focus-in: nothing taken", shortcut);
+    }
+
     // Firefox on KDE can hide both the press and the release of the key that opens the next cell: the cell
     // just shows the letter after Enter, and the word goes on from it.
     void testCellLetterWithNoKey() {
@@ -4402,6 +4448,7 @@ int main() {
     testLateEmptyCellAfterFirstLetter();
     testLateEmptyFieldStillClick();
     testCellOpenedByFirstKey();
+    testFirstKeyBeforeFocusMidText();
     testCellLetterWithNoKey();
     testPageKeepsOwnText();
     testFieldEmptiedAfterEachKey();

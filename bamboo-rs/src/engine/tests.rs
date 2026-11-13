@@ -514,6 +514,42 @@ fn test_marks_added_to_rimes_that_always_have_them() {
 }
 
 #[test]
+fn test_tone_typed_after_a_final_the_rules_reject() {
+    for (keys, word) in [
+        ("peks", "pék"),
+        ("PEKS", "PÉK"),
+        ("ngokj", "ngọk"),
+        ("puchs", "púch"),
+        ("tehr", "tẻh"),
+        ("tringj", "trịng"),
+        ("eengf", "ềng"),
+    ] {
+        assert_eq!(
+            committed_with("Telex", keys, KEY_SPACE),
+            format!("{word} "),
+            "{keys}"
+        );
+    }
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, "peks");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "pék ", "with the English list");
+    // The last s of hursts undoes the tone its r put on, so it must not put one back.
+    for keys in ["hursts", "Burnss", "barff", "sends", "peksx"] {
+        let text = committed_with("Telex", keys, KEY_SPACE);
+        assert_eq!(without_tones(&text.to_lowercase()).1, 0, "{keys}: {text}");
+    }
+    assert_eq!(committed_with("Telex", "tehr", '.' as u32), "tẻh.");
+    assert_eq!(committed_with("Telex", "peks", KEY_RETURN), "pék");
+    // EHR is an English abbreviation as well as the keys of ẻh.
+    for keys in ["ehr", "EHR"] {
+        assert_eq!(committed_with("Telex", keys, KEY_SPACE), format!("{keys} "));
+    }
+    assert_eq!(committed_with("Telex", "peks", '@' as u32), "peks@");
+}
+
+#[test]
 fn test_tone_changed_after_final_consonant() {
     for (keys, word) in [
         ("dduoxwcj", "được"),
@@ -675,7 +711,7 @@ fn test_retone_lookalikes_are_listed_once_in_order() {
         let mut e = engine_with_default_settings("Telex");
         type_keys(&mut e, word);
         assert!(
-            e.retoned_word_of(word).is_some(),
+            e.retoned_word_of(word).is_some() || e.late_tone_word_of(word).is_some(),
             "{word} is not typed like a retone"
         );
     }

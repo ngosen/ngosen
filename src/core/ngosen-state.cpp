@@ -322,6 +322,8 @@ namespace ngosen {
             takeLetterFieldOpenedWith(keyEvent);
         if (cellMove_)
             takeLetterCellShows();
+        if (!leftFields_.empty())
+            takeLetterTypedWhileAway();
         const bool startsWord = oldPreBuffer_.empty();
         bool       processed  = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
 
@@ -502,6 +504,53 @@ namespace ngosen {
         NGOSEN_INFO("Word starts with the letter whose key went to the app before the field, as this key changes it: " + logged(letter));
         EngineRebuildFromText(bambooEngine_.handle(), letter.c_str());
         oldPreBuffer_ = letter;
+    }
+
+    // An empty field would match any field holding one letter.
+    bool TypingState::holdsOneMore(const LeftField& left, const Surrounding& s, const std::u32string& now) {
+        const size_t at = left.cursor;
+        return !left.text.empty() && at <= left.text.size() && at < now.size() && s.cursor() == at + 1 && now.compare(0, at, left.text, 0, at) == 0 &&
+            now.compare(at + 1, std::u32string::npos, left.text, at) == 0;
+    }
+
+    // On GNOME with IBus every window shares one context, so each app keeps its own entry.
+    void TypingState::rememberLeftField() {
+        const Field       field = host_->field();
+        const Surrounding s     = host_->surrounding();
+        const auto        same  = [&](const LeftField& f) { return f.program == field.program; };
+        // A focus bounce before any key would save the missed letter as if the field had held it.
+        const std::u32string now = s.isValid() ? ngosen::utf8::decode(s.text()) : std::u32string();
+        if (keyCount_ == sinceFocus_.keysAtFocus && std::any_of(leftFields_.begin(), leftFields_.end(), [&](const LeftField& f) { return holdsOneMore(f, s, now); }))
+            return;
+        leftFields_.erase(std::remove_if(leftFields_.begin(), leftFields_.end(), same), leftFields_.end());
+        if (!s.isValid() || s.cursor() != s.anchor() || field.url || field.hidesText())
+            return;
+        if (leftFields_.size() >= 4)
+            leftFields_.erase(leftFields_.begin());
+        leftFields_.push_back({field.program, ngosen::utf8::decode(s.text()), s.cursor()});
+    }
+
+    // Firefox can get both the press and the release of the first key after Alt+Tab before focus-in. The
+    // field then holds one letter more, at the cursor it had when it lost focus.
+    void TypingState::takeLetterTypedWhileAway() {
+        const Field field = host_->field();
+        const auto  was   = std::find_if(leftFields_.begin(), leftFields_.end(), [&](const LeftField& f) { return f.program == field.program; });
+        if (keyCount_ != sinceFocus_.keysAtFocus + 1 || was == leftFields_.end())
+            return;
+        const LeftField left = std::move(*was);
+        leftFields_.erase(was);
+        const Surrounding    s   = host_->surrounding();
+        const std::u32string now = s.isValid() ? ngosen::utf8::decode(s.text()) : std::u32string();
+        if (!holdsOneMore(left, s, now) || !oldPreBuffer_.empty() || field.url || field.password || s.cursor() != s.anchor())
+            return;
+        const size_t   at     = left.cursor;
+        const char32_t letter = now[at];
+        if (!((letter >= 'a' && letter <= 'z') || (letter >= 'A' && letter <= 'Z')) || (at > 0 && isWordChar(now[at - 1])))
+            return;
+        const std::string typed(1, static_cast<char>(letter));
+        NGOSEN_INFO("Word starts with the letter typed before focus came back: " + logged(typed));
+        EngineRebuildFromText(bambooEngine_.handle(), typed.c_str());
+        oldPreBuffer_ = typed;
     }
 
     // Firefox on KDE can hide both the press and the release of the key that opens the next cell: that cell

@@ -124,6 +124,7 @@ namespace ngosen {
         echoKeyAtUs_             = 0;
         flushPendingReplacement(); // commit pending text into the field we are leaving
         if (isFocusOut) {
+            rememberLeftField();
             commitNotSeen_.clear();
             overtype_focus_bounced_         = overtype_pending_;
             field_keeps_focus_on_selection_ = false;

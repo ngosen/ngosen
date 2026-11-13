@@ -445,6 +445,19 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::returnWithText(const std::string& typed, int ms) {
+        focused_ = false;
+        state_->deactivate(true);
+        later(ms, [this, typed] {
+            const std::u32string t = utf8::decode(typed);
+            text_.insert(cursor_, t);
+            cursor_ = anchor_ = cursor_ + t.size();
+            focused_          = true;
+            state_->activate(Mode::Sen, true);
+            changed();
+        });
+    }
+
     void FakeApp::switchToOwnTextField(int ms) {
         focused_ = false;
         state_->deactivate(true);

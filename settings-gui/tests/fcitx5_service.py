@@ -73,13 +73,13 @@ class PrivateFcitx5:
     def stop_service(self):
         if self.service:
             self.service.kill()
-            self.service.wait()
+            self.service.communicate()
             self.service = None
 
     def close(self):
         self.stop_service()
         self.daemon.kill()
-        self.daemon.wait()
+        self.daemon.communicate()
 
 
 def _serve(log):

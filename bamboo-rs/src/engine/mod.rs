@@ -1144,12 +1144,32 @@ impl BambooEngine {
             .then_some(text)
     }
 
+    /// The word a `g` after a kept word stands for, written for `ng` as in `nhưg` or `đúg`
+    /// (`ddugs`): no Vietnamese syllable ends in `g` alone.
+    fn shorthand_word(&self, kept: &KeptWord) -> Option<String> {
+        let keys: Vec<char> = self.raw_text().chars().collect();
+        let g = *keys.get(kept.keys)?;
+        if !g.eq_ignore_ascii_case(&'g') {
+            return None;
+        }
+        let n = if g.is_ascii_uppercase() { 'N' } else { 'n' };
+        let (head, tail) = keys.split_at(kept.keys);
+        let typed = self.typed_alone(head.iter().chain([&n]).chain(tail).copied());
+        let text = typed.get_processed_str(OutputOptions::NONE);
+        let whole = typed.get_processed_str(OutputOptions::FULL_TEXT) == text;
+        (whole && typed.is_valid_word() && self.dictionary.contains(&text.to_lowercase()))
+            .then_some(text)
+    }
+
     /// What Space turns a kept word into: two words when the keys after it type one
     /// (`côngty`), else the word without them. A digit stays unless the input method uses it
     /// (VNI): in Telex it is rarely typed by mistake.
     fn fixed_kept_word(&self, kept: &KeptWord, shown: &str) -> Option<String> {
         if !self.drop_kept_tail || self.keep_guard.contains(&shown.to_lowercase()) {
             return None;
+        }
+        if let Some(word) = self.shorthand_word(kept) {
+            return Some(word);
         }
         if let Some(word) = self.tail_word(kept) {
             return Some(format!("{} {word}", kept.shown));

@@ -1461,6 +1461,30 @@ fn test_space_drops_keys_after_a_kept_word() {
 }
 
 #[test]
+fn test_space_reads_g_as_ng() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    for (keys, commit, dropped) in [
+        ("nhuwg", "nhưng ", "nhưg"),
+        ("Nhuwg", "Nhưng ", "Nhưg"),
+        ("khoog", "không ", "khôg"),
+        ("cuxg", "cũng ", "cũg"),
+        ("ddag", "đang ", "đag"),
+        ("ddugs", "đúng ", "đugs"),
+        ("nhuwgx", "những ", "nhưgx"),
+        ("dduowjcg", "được ", "đượcg"),
+        ("dduowjcgi", "được gi ", "đượcgi"),
+    ] {
+        assert_eq!(
+            commit_dropping(&mut e, keys),
+            (commit.to_string(), dropped.to_string()),
+            "{keys}"
+        );
+    }
+    let mut e = engine_keeping_words("VNI", &["bank"]);
+    assert_eq!(commit_dropping(&mut e, "nhu7g").0, "nhưng ");
+}
+
+#[test]
 fn test_keys_after_a_kept_word_stay_unless_asked() {
     let mut e = engine_keeping_words("Telex", &["bank"]);
     assert_eq!(commit_of(&mut e, "dduowjcd"), "đượcd ");

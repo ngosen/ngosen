@@ -20,6 +20,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Thêm mục “✔ Tiếng Việt” / “✖ Tiếng Việt” luôn hiện ở đầu menu khay fcitx5 để chuyển ngôn ngữ khi không dùng được `Ctrl + Shift`, ghi nhớ lựa chọn cho từng app qua các lần khởi động lại (#749).
 - Danh sách từ tiếng Anh và từ điển tiếng Việt của Ngó Sen nay cất gọn hơn, giúp fcitx5 dùng ít RAM hơn khoảng 3 MB (danh sách tiếng Anh từ 2,8 MB xuống 1,1 MB, từ điển tiếng Việt từ 1,4 MB xuống 0,2 MB), cách gõ không đổi (#754).
 - Gõ thêm phím không ghép được vào từ tiếng Việt nay giữ dấu: Telex `dduowjcd` hoặc VNI `d9u7o7c5d` ra `đượcd` thay vì trả về phím thô; Backspace xoá `d`, còn `được`. Phím còn là đầu từ tiếng Anh hoặc từ quen dùng như axit, photoshop, lastname vẫn hiện như gõ; không áp dụng cho từ viết toàn chữ hoa (#756).
+- Nhấn Space sau từ có phím thừa nay tách thành hai từ nếu phần thừa là từ tiếng Việt (`côngty` → `công ty`), hoặc bỏ phần thừa (`đượcd` → `được`); nhấn Backspace ngay sau đó khôi phục đúng nội dung đã gõ. Telex giữ chữ số phía sau (`đượcd2`), còn VNI bỏ cả chữ số vì đó là phím gõ. Các từ thường viết liền như `lênin`, `mômen` vẫn giữ nguyên. Chỉ áp dụng khi nhấn Space, không áp dụng với Enter, dấu câu, ô mật khẩu, bảng mã không phải Unicode hoặc Preedit khi app không cung cấp văn bản quanh con trỏ (#757).
 
 ## [1.10.1-1] — 12/11/2026
 

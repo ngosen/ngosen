@@ -76,6 +76,7 @@ class ConvertBox(QWidget):
         self.timer = QTimer(self, singleShot=True, interval=DELAY_MS)
         self.timer.timeout.connect(self.refresh)
         self.source.textChanged.connect(self.timer.start)
+        self.copied = None
         self._show("", None)
 
     def refresh(self):
@@ -91,6 +92,9 @@ class ConvertBox(QWidget):
 
     def _copy(self):
         QApplication.clipboard().setText(self.result.toPlainText())
-        label = self.copy.text()
         self.copy.setText(_("Copied"))
-        QTimer.singleShot(COPIED_MS, lambda: self.copy.setText(label))
+        # A child timer goes with the page, which an Undo may rebuild before it fires.
+        if self.copied is None:
+            self.copied = QTimer(self, singleShot=True)
+            self.copied.timeout.connect(lambda: self.copy.setText(_("&Copy result")))
+        self.copied.start(COPIED_MS)

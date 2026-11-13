@@ -1,11 +1,16 @@
 # SPDX-FileCopyrightText: 2026 Ngó Sen contributors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import sys
 import unittest
+from unittest import mock
 
 from core.settings_model import SettingsModel
+from qtpy.QtCore import QEvent
+from qtpy.QtTest import QTest
 from qtpy.QtWidgets import QApplication, QComboBox, QPushButton
 from support import FakeDBusHandler, app  # noqa: F401
+from ui import convert_box
 from ui.convert_box import ConvertBox
 from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
 
@@ -68,6 +73,21 @@ class ConvertPageTest(unittest.TestCase):
         self.assertTrue(self.box.copy.isEnabled())
         self.box.copy.click()
         self.assertEqual(QApplication.clipboard().text(), "Tiếng Việt")
+
+    def test_page_rebuilt_right_after_copying(self):
+        # An Undo rebuilds the page while the button still says Copied.
+        self.type("abc")
+        errors = []
+        hook = mock.patch.object(sys, "excepthook", lambda *exc: errors.append(exc[1]))
+        hook.start()
+        self.addCleanup(hook.stop)
+        with mock.patch.object(convert_box, "COPIED_MS", 10):
+            self.box.copy.click()
+        self.page.load_config()
+        app.sendPostedEvents(None, QEvent.DeferredDelete)
+        QTest.qWait(50)
+        app.processEvents()
+        self.assertEqual(errors, [])
 
     def test_a_changed_setting_converts_again(self):
         self.type("TiÕng")

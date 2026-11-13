@@ -19,6 +19,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trang Kiểm tra máy và cửa sổ cài đặt gọi extension GNOME bằng đúng tên trong app Extensions (Ngó Sen GNOME fixes), không còn lúc gọi "bản sửa" lúc gọi "extension GNOME"; ô gõ thử ghi "Gõ thử ở đây" thay cho "Test gõ ngay tại đây", và định dạng ngày ghi "$DATE trong gõ tắt" như định dạng giờ (#744).
 - Thêm mục “✔ Tiếng Việt” / “✖ Tiếng Việt” luôn hiện ở đầu menu khay fcitx5 để chuyển ngôn ngữ khi không dùng được `Ctrl + Shift`, ghi nhớ lựa chọn cho từng app qua các lần khởi động lại (#749).
 - Danh sách từ tiếng Anh và từ điển tiếng Việt của Ngó Sen nay cất gọn hơn, giúp fcitx5 dùng ít RAM hơn khoảng 3 MB (danh sách tiếng Anh từ 2,8 MB xuống 1,1 MB, từ điển tiếng Việt từ 1,4 MB xuống 0,2 MB), cách gõ không đổi (#754).
+- Gõ thêm phím không ghép được vào từ tiếng Việt nay giữ dấu: Telex `dduowjcd` hoặc VNI `d9u7o7c5d` ra `đượcd` thay vì trả về phím thô; Backspace xoá `d`, còn `được`. Phím còn là đầu từ tiếng Anh hoặc từ quen dùng như axit, photoshop, lastname vẫn hiện như gõ; không áp dụng cho từ viết toàn chữ hoa (#756).
 
 ## [1.10.1-1] — 12/11/2026
 

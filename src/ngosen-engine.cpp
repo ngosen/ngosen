@@ -578,25 +578,26 @@ namespace fcitx {
                 }
             }
         }
-        loadEnglishWords();
+        loadWordList(englishWords_, "ngosen/english-common.txt");
+        loadWordList(keepWords_, "ngosen/keep-words.txt");
         loadAppRules();
         loadVimApps();
         populateConfig();
     }
 
     // The list changes only with the package, so a settings reload keeps it.
-    void NgoSenEngine::loadEnglishWords() {
-        if (englishWords_)
+    void NgoSenEngine::loadWordList(ngosen::CGoObject& list, const char* path) {
+        if (list)
             return;
 #if NGOSEN_USE_MODERN_FCITX_API
-        auto fd = StandardPaths::global().open(StandardPathsType::PkgData, "ngosen/english-common.txt");
+        auto fd = StandardPaths::global().open(StandardPathsType::PkgData, path);
 #else
-        auto fd = StandardPath::global().open(StandardPath::Type::PkgData, "ngosen/english-common.txt", O_RDONLY);
+        auto fd = StandardPath::global().open(StandardPath::Type::PkgData, path, O_RDONLY);
 #endif
         if (fd.isValid())
-            englishWords_.reset(NewWordList(fd.release()));
+            list.reset(NewWordList(fd.release()));
         else
-            NGOSEN_WARN("English word list not found");
+            NGOSEN_WARN(std::string("Word list not found: ") + path);
     }
 
     void NgoSenEngine::announceRelease(const std::string& release) {

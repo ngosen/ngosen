@@ -51,10 +51,12 @@ namespace ngosen {
             charArray.push_back(nullptr);
             const uintptr_t engine = NewCustomEngine(charArray.data(), engine_->dictionary(), engine_->macroTable());
             EngineSetEnglishWords(engine, engine_->englishWords());
+            EngineSetKeepGuard(engine, engine_->keepWords());
             return engine;
         }
         const uintptr_t engine = NewEngine(engine_->options().inputMethod.data(), engine_->dictionary(), engine_->macroTable());
         EngineSetEnglishWords(engine, engine_->englishWords());
+        EngineSetKeepGuard(engine, engine_->keepWords());
         return engine;
     }
 
@@ -525,6 +527,11 @@ namespace ngosen {
         lastWord_ = rebuildable(commitStr) ? commitStr : std::string();
     }
 
+    bool TypingState::fieldLostWord() const {
+        const Surrounding s = host_->surrounding();
+        return hasLastSurrounding_ && !lastSurroundingText_.empty() && (!s.isValid() || s.text().empty());
+    }
+
     void TypingState::replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8) {
         hasHistory_ = true;
         realtextLen.fetch_add(1, std::memory_order_acq_rel);
@@ -534,6 +541,16 @@ namespace ngosen {
 
         std::string              deletedPart;
         std::string              addedPart;
+
+        // Keeping the word sends no edit whose check would show that the key went to another cell.
+        if (live_key_ && EngineKeptAtLastKey(bambooEngine_.handle()) && fieldLostWord()) {
+            NGOSEN_INFO("Field no longer shows the word, starting a new word");
+            ResetEngine(bambooEngine_.handle());
+            EngineProcessKeyEvent(bambooEngine_.handle(), live_key_->sym, live_key_->state);
+            preeditC.reset(EnginePullPreedit(bambooEngine_.handle()));
+            preeditStr = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
+            oldPreBuffer_.clear();
+        }
 
         if (ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, preeditStr, deletedPart, addedPart) != 0) {
             if (deletedPart.empty()) {

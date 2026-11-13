@@ -4065,6 +4065,28 @@ namespace {
         check(text == "grát ", "sen: a backspace into a name whose keys start an English word keeps the name", text);
     }
 
+    // A key that breaks a Vietnamese word adds itself after the word instead of showing the keys.
+    void testBreakingKeyKeepsWord() {
+        ngosen::test::FakeResources resources;
+        const Field                 field = makeField("wayland", true);
+        const auto                  sen   = [&](const std::string& typed) {
+            std::vector<uint32_t> keys;
+            for (const char c : typed)
+                keys.push_back(c == '<' ? uint32_t{ngosen::key::BackSpace} : static_cast<uint32_t>(c));
+            return ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
+        };
+        const auto preedit = [&](const std::string& typed) { return ngosen::test::telexOutput(resources, std::vector<uint32_t>(typed.begin(), typed.end())); };
+        for (const auto& [keys, want] : std::vector<std::pair<std::string, std::string>>{
+                 {"dduowjcd ", "đượcd "}, {"yeeuvn ", "yêuvn "}, {"dduowjcd< ", "được "}, {"axit ", "axit "}, {"photoshop ", "photoshop "}}) {
+            const std::string text = sen(keys);
+            check(text == want, "sen: " + keys + " gives " + want, text);
+        }
+        for (const auto& [keys, want] : std::vector<std::pair<std::string, std::string>>{{"dduowjcd ", "đượcd "}, {"axit ", "axit "}}) {
+            const std::string text = preedit(keys);
+            check(text == want, "preedit: " + keys + " gives " + want, text);
+        }
+    }
+
     void testEnglishWordKeepsDoubledLetter() {
         const auto typed = [](const std::string& word, uint32_t end) {
             std::vector<uint32_t> keys(word.begin(), word.end());
@@ -4154,6 +4176,7 @@ namespace {
 
 int main() {
     testBackspaceIntoKeysShownAsTyped();
+    testBreakingKeyKeepsWord();
     testEnglishWordKeepsDoubledLetter();
     testHoldsWordAcrossReload();
     testQuirks();

@@ -207,6 +207,18 @@ fn keys_with_mark(raw: &str, onset_len: usize, bare: &str, marked: &str) -> Opti
 }
 
 /// Key values outside Unicode (fcitx keysyms) match no character class.
+/// More than one character and none of them lower case, like `AWG` or `ĐT`.
+fn is_all_caps(chars: impl Iterator<Item = char>) -> bool {
+    let mut count = 0;
+    for c in chars {
+        if c.is_lowercase() {
+            return false;
+        }
+        count += 1;
+    }
+    count > 1
+}
+
 fn key_char(key_val: u32) -> char {
     char::from_u32(key_val).unwrap_or(char::REPLACEMENT_CHARACTER)
 }
@@ -278,11 +290,21 @@ const MARKED_RIMES: [(&str, &str); 25] = [
     ("uop", "ươp"),
 ];
 
+struct KeptWord {
+    shown: String,
+    // How many keys typed it; the keys after these show as typed.
+    keys: usize,
+}
+
 pub struct BambooEngine {
     pub(crate) preeditor: Engine,
     pub(crate) macro_table: Arc<MacroTable>,
     pub(crate) dictionary: Arc<Dictionary>,
     pub(crate) english_words: Arc<WordList>,
+    /// Words whose keys may break a Vietnamese word on purpose; empty turns keeping words off.
+    pub(crate) keep_guard: Arc<WordList>,
+    /// The Vietnamese word a key broke, kept as shown with the later keys after it.
+    kept: Option<KeptWord>,
     pub(crate) auto_non_vn_restore: bool,
     pub(crate) dd_free_style: bool,
     pub(crate) macro_enabled: bool,
@@ -310,6 +332,8 @@ impl BambooEngine {
             macro_table,
             dictionary,
             english_words: Arc::default(),
+            keep_guard: Arc::default(),
+            kept: None,
             auto_non_vn_restore: true,
             dd_free_style: true,
             macro_enabled: false,
@@ -348,7 +372,7 @@ impl BambooEngine {
         if !self.macro_enabled || self.macro_table.is_empty() {
             return None;
         }
-        let text = self.last_spaced_word();
+        let text = self.macro_word();
         let macro_val = self.macro_table.get(&text)?;
         Some(self.expand_macro(&text, macro_val))
     }
@@ -409,6 +433,14 @@ impl BambooEngine {
 
     /// The text typed since the last space. The crate's punctuation mode reads only the active
     /// syllable, which a digit or symbol has already committed: macro keys like `123` need this.
+    /// The text a macro is looked up by: a kept word as shown, since its keys no longer compose it.
+    fn macro_word(&self) -> String {
+        match self.kept {
+            Some(_) => self.get_preedit_string(),
+            None => self.last_spaced_word(),
+        }
+    }
+
     fn last_spaced_word(&self) -> String {
         let full = self.get_processed_string(OutputOptions::FULL_TEXT);
         full.rsplit(' ').next().unwrap_or_default().to_string()
@@ -434,6 +466,10 @@ impl BambooEngine {
     }
 
     pub(crate) fn get_preedit_string(&self) -> String {
+        if let Some(kept) = &self.kept {
+            let tail: String = self.raw_text().chars().skip(kept.keys).collect();
+            return format!("{}{tail}", kept.shown);
+        }
         if self.keep_keys_until_next_key
             || self.should_fallback_to_english(true)
             || self.keys_start_english_over_name()
@@ -688,6 +724,9 @@ impl BambooEngine {
 
     fn text_of_finished_word(&self) -> String {
         let shown = self.get_preedit_string();
+        if self.kept.is_some() {
+            return shown;
+        }
         if self.lost_a_letter_of_english_word(&shown) {
             self.raw_text()
         } else {
@@ -771,6 +810,10 @@ impl BambooEngine {
             self.preeditor.reset();
             return (format!("{expanded}{key}"), true);
         }
+        if self.kept.is_some() {
+            self.preeditor.process_key(key, Mode::English);
+            return (format!("{old_text}{key}"), true);
+        }
         // A digit or a symbol like @ or _ may continue a name or a handle (`tuans@`).
         let ends_sentence = " .,;:!?)]}\"'".contains(key);
         let name = ends_sentence.then(|| self.finished_name()).flatten();
@@ -816,6 +859,7 @@ impl BambooEngine {
         self.preeditor.reset();
         self.keep_marks_until_next_key = false;
         self.keep_keys_until_next_key = false;
+        self.kept = None;
     }
 
     pub(crate) fn update_preedit(&mut self, processed: &str) {
@@ -836,7 +880,7 @@ impl BambooEngine {
         if key_val == KEY_TAB
             && self.macro_enabled
             && !self.preedit_text.is_empty()
-            && self.macro_table.get(&self.last_spaced_word()).is_some()
+            && self.macro_table.get(&self.macro_word()).is_some()
         {
             return true;
         }
@@ -855,7 +899,10 @@ impl BambooEngine {
     }
 
     fn get_composed_string(&self, old_text: String) -> String {
-        if has_any_vietnamese_rune(&old_text) && self.must_fallback_to_english() {
+        if self.kept.is_none()
+            && has_any_vietnamese_rune(&old_text)
+            && self.must_fallback_to_english()
+        {
             return self.raw_text();
         }
         old_text
@@ -919,6 +966,25 @@ impl BambooEngine {
             self.commit_preedit_and_reset(String::new());
             return true;
         }
+        if let Some(kept) = self.kept.take() {
+            let mut keys = self.raw_text();
+            keys.pop();
+            let typed = self
+                .typed_alone(keys.chars())
+                .get_processed_str(OutputOptions::NONE);
+            if keys.chars().count() > kept.keys {
+                self.kept = Some(kept);
+                self.retype_keys(&keys, false);
+            } else if typed == kept.shown {
+                self.retype_keys(&keys, false);
+            } else {
+                // A word taken back from the app has marks no key typed.
+                self.rebuild_from_text(&kept.shown);
+            }
+            let preedit = self.get_preedit_string();
+            self.update_preedit(&preedit);
+            return true;
+        }
         let shown_as_typed = self.shown_as_typed();
         let english = shown_as_typed
             && self
@@ -976,7 +1042,7 @@ impl BambooEngine {
                 let text = match self.get_macro_text() {
                     Some(macro_text) if enter => macro_text,
                     // Gõ Sen keeps the word as shown on other keys, so Preedit fixes it on Enter only.
-                    _ if enter => self
+                    _ if enter && self.kept.is_none() => self
                         .retoned_word()
                         .or_else(|| self.auto_marked_word())
                         .or_else(|| self.finished_name())
@@ -991,18 +1057,46 @@ impl BambooEngine {
             return self.backspace();
         }
         let old_text = self.get_preedit_string();
+        let old_keys = self.raw_text();
         self.keep_marks_until_next_key = false;
         self.keep_keys_until_next_key = false;
         if key_val == KEY_TAB {
             return self.tab(old_text);
         }
-        let (new_text, is_word_break) = self.get_commit_text(key_val, state, &old_text);
+        let (mut new_text, is_word_break) = self.get_commit_text(key_val, state, &old_text);
         if is_word_break {
             self.commit_preedit_and_reset(new_text);
             return true;
         }
+        if self.breaks_kept_word(&old_text, &old_keys) {
+            self.kept = Some(KeptWord {
+                shown: old_text,
+                keys: old_keys.chars().count(),
+            });
+            new_text = self.get_preedit_string();
+        }
         self.update_preedit(&new_text);
         true
+    }
+
+    /// Whether the key just typed turned a dictionary word shown with its marks into keys shown
+    /// as typed, without starting a word the guard list knows: `dduowcjd` keeps được.
+    /// All-caps words are left alone, since abbreviations such as AWG would be cut.
+    fn breaks_kept_word(&self, old_text: &str, old_keys: &str) -> bool {
+        self.kept.is_none()
+            && self.auto_non_vn_restore
+            && self.spell_check_with_dicts
+            && !self.keep_guard.is_empty()
+            && old_text != old_keys
+            && !is_all_caps(old_text.chars())
+            && !is_all_caps(old_keys.chars().filter(|c| c.is_alphabetic()))
+            && !is_all_caps(self.raw_text().chars().filter(|c| c.is_alphabetic()))
+            && self.shown_as_typed()
+            && self.dictionary.contains(&old_text.to_lowercase())
+            && {
+                let keys = self.raw_text().to_lowercase();
+                !self.keep_guard.starts_word(&keys) && !self.english_words.starts_word(&keys)
+            }
     }
 
     pub fn pull_commit(&mut self) -> String {
@@ -1019,16 +1113,58 @@ impl BambooEngine {
         self.commit_preedit_and_reset(String::new());
     }
 
+    /// Whether the last key started keeping a word, which sends the app nothing to rewrite.
+    pub fn kept_at_last_key(&self) -> bool {
+        self.kept
+            .as_ref()
+            .is_some_and(|kept| kept.keys + 1 == self.raw_text().chars().count())
+    }
+
     /// Whether the word shows the keys as typed rather than the Vietnamese they compose.
     pub fn shown_as_typed(&self) -> bool {
         self.get_preedit_string() == self.raw_text()
     }
 
     pub fn rebuild_from_text(&mut self, text: &str) {
+        self.kept = None;
         self.preeditor.rebuild_from_text(text);
+        if !self.keep_guard.is_empty() && self.get_preedit_string() != text {
+            self.rebuild_kept_word(text);
+        }
         self.keep_marks_until_next_key = false;
         self.keep_keys_until_next_key = false;
         self.preedit_text = self.get_preedit_string();
         self.commit_text.clear();
+    }
+
+    /// A word kept with keys after it, like `đượcd`, does not compose from its letters: the
+    /// longest dictionary word it starts with is rebuilt and the rest typed again as keys.
+    fn rebuild_kept_word(&mut self, text: &str) {
+        let chars: Vec<char> = text.chars().collect();
+        for end in (1..chars.len()).rev() {
+            let head: String = chars[..end].iter().collect();
+            let tail = &chars[end..];
+            if !tail.iter().all(char::is_ascii_alphanumeric)
+                || !self.dictionary.contains(&head.to_lowercase())
+            {
+                continue;
+            }
+            self.preeditor.rebuild_from_text(&head);
+            if self.get_preedit_string() != head {
+                continue;
+            }
+            // Typing the keys shows whether they break the word; `hòa` is `hò` and an `a` that composes.
+            self.kept = None;
+            self.commit_text.clear();
+            self.preedit_text = head;
+            for &c in tail {
+                self.process_key_event(c as u32, 0);
+            }
+            if self.commit_text.is_empty() && self.get_preedit_string() == text {
+                return;
+            }
+        }
+        self.kept = None;
+        self.preeditor.rebuild_from_text(text);
     }
 }

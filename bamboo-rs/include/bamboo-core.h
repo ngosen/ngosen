@@ -56,6 +56,8 @@ extern char**    GetInputMethodNames(void);
 extern uintptr_t NewDictionary(uintptr_t fd);
 extern uintptr_t NewWordList(uintptr_t fd);
 extern void      EngineSetEnglishWords(uintptr_t engine, uintptr_t list);
+extern void      EngineSetKeepGuard(uintptr_t engine, uintptr_t list);
+extern uint8_t   EngineKeptAtLastKey(uintptr_t engine);
 extern uint8_t   EngineShownAsTyped(uintptr_t engine);
 
 #ifdef __cplusplus

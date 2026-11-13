@@ -819,6 +819,8 @@ namespace ngosen {
         bool rebuildable(const std::string& committed) const;
         // The engine finished a word: send what differs from the text already typed.
         void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr);
+        // The field reports no text where the word stood, as after a click on another cell.
+        bool fieldLostWord() const;
         // The word is still open: bring the app's text in line with the new preedit.
         void replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8);
 

@@ -53,6 +53,7 @@ function(ngosen_headless_test_settings target)
         NGOSEN_ICON_DIR="${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps"
         NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
         NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt"
+        NGOSEN_TEST_KEEP_WORDS="${PROJECT_SOURCE_DIR}/data/keep-words.txt"
     )
     target_link_libraries(${target} PRIVATE
         ngosen_core

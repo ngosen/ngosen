@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Chuyển mã chữ bôi đen bằng phím tắt: bôi đen đoạn chữ gõ bằng TCVN3, VNI… rồi bấm phím, chữ được đổi sang bảng mã đã chọn, có thể đổi chữ hoa, chữ thường hoặc bỏ dấu. Phím tắt chưa đặt sẵn; trang cài đặt sẽ có ở bản sau (#748).
+
 ### Thay đổi
 
 - Trang Kiểm tra máy và cửa sổ cài đặt gọi extension GNOME bằng đúng tên trong app Extensions (Ngó Sen GNOME fixes), không còn lúc gọi "bản sửa" lúc gọi "extension GNOME"; ô gõ thử ghi "Gõ thử ở đây" thay cho "Test gõ ngay tại đây", và định dạng ngày ghi "$DATE trong gõ tắt" như định dạng giờ (#744).

@@ -77,6 +77,13 @@ if (Fcitx5ModuleNotifications_FOUND)
     add_definitions(-DNGOSEN_HAS_NOTIFICATIONS)
     set(NGOSEN_NOTIFICATIONS_MODULE Fcitx5::Module::Notifications)
 endif()
+# Missing when fcitx5 is built without its clipboard module; the convert hotkey then sees only
+# selections the app reports.
+find_package(Fcitx5ModuleClipboard)
+if (Fcitx5ModuleClipboard_FOUND)
+    add_definitions(-DNGOSEN_HAS_CLIPBOARD)
+    set(NGOSEN_CLIPBOARD_MODULE Fcitx5::Module::Clipboard)
+endif()
 find_package(Pthread REQUIRED)
 find_package(Gettext REQUIRED)
 

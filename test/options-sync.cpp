@@ -28,6 +28,10 @@ namespace {
         fcitx::RawConfig c;
         c.setValueByPath("InputMethod", "VNI");
         c.setValueByPath("SpellCheck", "False");
+        c.setValueByPath("ConvertFrom", "VNI Windows");
+        c.setValueByPath("ConvertTo", "VIQR");
+        c.setValueByPath("ConvertCase", "Title Case");
+        c.setValueByPath("ConvertStripDiacritics", "True");
         c.setValueByPath("ModernStyle", "False");
         c.setValueByPath("FreeMarking", "False");
         c.setValueByPath("W2U", "Everywhere");
@@ -66,6 +70,10 @@ namespace {
         check(step + ": InputMethod", o.inputMethod == c.inputMethod.value());
         check(step + ": OutputCharset", o.outputCharset == c.outputCharset.value());
         check(step + ": SpellCheck", o.spellCheck == c.spellCheck.value());
+        check(step + ": ConvertFrom", o.convertFrom == c.convertFrom.value());
+        check(step + ": ConvertTo", o.convertTo == c.convertTo.value());
+        check(step + ": ConvertCase", o.convertCase == static_cast<int>(c.convertCase.value()));
+        check(step + ": ConvertStripDiacritics", o.convertStripDiacritics == c.convertStripDiacritics.value());
         check(step + ": ModernStyle", o.modernStyle == c.modernStyle.value());
         check(step + ": FreeMarking", o.freeMarking == c.freeMarking.value());
         check(step + ": W2U", o.w2u == static_cast<int>(c.w2u.value()));
@@ -109,6 +117,10 @@ namespace {
         check("default InputMethod", o.inputMethod == d.inputMethod);
         check("default OutputCharset", o.outputCharset == d.outputCharset);
         check("default SpellCheck", o.spellCheck == d.spellCheck);
+        check("default ConvertFrom", o.convertFrom == d.convertFrom);
+        check("default ConvertTo", o.convertTo == d.convertTo);
+        check("default ConvertCase", o.convertCase == d.convertCase);
+        check("default ConvertStripDiacritics", o.convertStripDiacritics == d.convertStripDiacritics);
         check("default ModernStyle", o.modernStyle == d.modernStyle);
         check("default FreeMarking", o.freeMarking == d.freeMarking);
         check("default W2U", o.w2u == d.w2u);

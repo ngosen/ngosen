@@ -382,6 +382,8 @@ namespace fcitx {
             },
             uiManager);
         config_.outputCharset.annotation().setList(charsets);
+        config_.convertFrom.annotation().setList(charsets);
+        config_.convertTo.annotation().setList(charsets);
 
         initToggleAction(spellCheckAction_, config_.spellCheck, "ngosen-spellcheck", "tools-check-spelling", _("Spell Check"), N_("Spell Check"), uiManager);
         initToggleAction(macroAction_, config_.enableMacro, "ngosen-macro", "document-edit", _("Macro"), N_("Macro"), uiManager);
@@ -632,6 +634,10 @@ namespace fcitx {
         auto& o                            = options_;
         o.inputMethod                      = config_.inputMethod.value();
         o.outputCharset                    = config_.outputCharset.value();
+        o.convertFrom                      = config_.convertFrom.value();
+        o.convertTo                        = config_.convertTo.value();
+        o.convertCase                      = static_cast<int>(config_.convertCase.value());
+        o.convertStripDiacritics           = config_.convertStripDiacritics.value();
         o.spellCheck                       = config_.spellCheck.value();
         o.modernStyle                      = config_.modernStyle.value();
         o.freeMarking                      = config_.freeMarking.value();
@@ -830,6 +836,11 @@ namespace fcitx {
             return;
         }
 
+        if (!keyEvent.isRelease() && !config_.convertKey->empty() && keyEvent.key().checkKeyList(*config_.convertKey) && convertSelection(ic)) {
+            keyEvent.filterAndAccept();
+            return;
+        }
+
         // In English the menu key types its character; ` is common in code and Markdown.
         if (realMode != NgoSenMode::Off && !keyEvent.isRelease() && !config_.modeMenuKey->empty() && keyEvent.key().checkKeyList(*config_.modeMenuKey) &&
             modeMenuCanDraw(instance_->currentUI(), ic->frontend(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel))) {
@@ -987,6 +998,26 @@ namespace fcitx {
             }
         }
         return enabledModes;
+    }
+
+    bool NgoSenEngine::convertSelection(InputContext* ic) {
+        std::string tip;
+        switch (stateFor(ic)->convertSelection()) {
+            case ngosen::ConvertResult::Converted: return true;
+            case ngosen::ConvertResult::Refused: return false;
+            case ngosen::ConvertResult::Unchanged: tip = _("The selected text is the same in both charsets. Check the charsets on the Convert page."); break;
+            case ngosen::ConvertResult::NoSelection: tip = _("Select the text to convert, then press the key again."); break;
+            case ngosen::ConvertResult::Busy: tip = _("Finish the word being typed, then press the key again."); break;
+        }
+        NGOSEN_INFO("Convert key: " + tip);
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        if (auto* addon = notifications()) {
+            constexpr int32_t timeoutMs = 4000;
+            convertNotificationId_ = addon->call<INotifications::sendNotification>("fcitx", convertNotificationId_, "fcitx-ngosen", _("Convert"), tip, std::vector<std::string>{},
+                                                                                   timeoutMs, nullptr, nullptr);
+        }
+#endif
+        return true;
     }
 
     void NgoSenEngine::cycleMode(InputContext* ic) {

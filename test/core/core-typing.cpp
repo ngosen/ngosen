@@ -4135,6 +4135,28 @@ namespace {
         check(early == "côngty", "slow app: backspace right after the fix brings the word back", early);
         const std::string during = typed("coongty <", std::vector<int>(9, 20), 60);
         check(during == "côngty", "slow app: backspace while the fix is still deleting brings the word back", during);
+
+        // A click during the fix leaves the word: Backspace adds no edit of its own. The fake app puts the
+        // late edits at the new cursor, hence the mixed text.
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop                loop;
+        FakeResources           resources;
+        ngosen::test::AppQuirks quirks;
+        quirks.lagMs              = 60;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), quirks);
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (char c : std::string("coongty ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(20);
+        }
+        app->moveCursor(1);
+        loop.pump(0);
+        app->type(ngosen::key::BackSpace);
+        loop.pump(300);
+        check(app->text() == " tyôngt", "slow app: backspace after a click leaves the fixed word", app->text());
         std::vector<int> gaps(9, 200);
         gaps.insert(gaps.end(), {2, 2, 2, 300, 0});
         const std::string later = typed("dduowjcd ddo <", gaps);

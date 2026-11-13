@@ -557,8 +557,8 @@ namespace ngosen {
     bool TypingState::restoreDroppedWord(ngosen::KeyPress& keyEvent) {
         std::string deletedPart;
         std::string addedPart;
-        // A slow app may not show the fix yet, or report anything since it; it still applies the edits in the order sent.
-        const bool        inPlace  = !reportSinceEdit_ || typedBeforeCursor(lastWord_, true) || (!droppedWord_.empty() && typedBeforeCursor(droppedWord_, true));
+        // A slow app may not show the fix yet, or even the whole word; it still applies the edits in the order sent.
+        const bool        inPlace  = typedBeforeCursor(lastWord_, true) || (!droppedWord_.empty() && (typedBeforeCursor(droppedWord_, true) || showsStartAtEnd(droppedWord_)));
         const std::string restored = inPlace ? undoSpaceFix(deletedPart, addedPart) : std::string();
         if (restored.empty()) {
             droppedWord_.clear();
@@ -569,6 +569,16 @@ namespace ngosen {
         performReplacement(deletedPart, addedPart);
         oldPreBuffer_ = restored;
         return true;
+    }
+
+    bool TypingState::showsStartAtEnd(const std::string& word) const {
+        const Surrounding s = host_->surrounding();
+        if (reportSinceEdit_ || !s.isValid() || s.cursor() != s.anchor() || s.cursor() != ngosen::utf8::decode(s.text()).size())
+            return false;
+        std::string start = word;
+        while (!start.empty() && !isEndsWith(s.text(), start))
+            ngosen::utf8::eraseLastCodepoint(start);
+        return !start.empty();
     }
 
     std::string TypingState::undoSpaceFix(std::string& deletedPart, std::string& addedPart) {

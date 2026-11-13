@@ -3161,6 +3161,12 @@ namespace {
         std::replace(keys.begin(), keys.end(), static_cast<uint32_t>('<'), static_cast<uint32_t>(ngosen::key::BackSpace));
         const auto run = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 60));
         check(run.text == "nam tiếng ", "split edit on GNOME: a Backspace typed between the deletion and the commit follows the commit", run.text);
+
+        // Two held Backspaces: a key typed when the first goes out must not pass the keys after the second.
+        FakeResources slowResources;
+        firefox.reportDelayMs = 90;
+        const auto slow       = ngosen::test::typeInAppTraced(slowResources, field, firefox, keys, std::vector<int>(keys.size(), 60));
+        check(slow.text == "nam tiếng ", "split edit on GNOME: a key typed while a replayed Backspace is held waits behind the keys before it", slow.text);
     }
 
     // The cursor moving over our own edit is not a click, so the word goes on.

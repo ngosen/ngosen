@@ -298,7 +298,7 @@ msgstr "Định dạng giờ ($TIME trong gõ tắt)"
 
 #: src/ngosen-config.h:272
 msgid "Date Format ($DATE in macro)"
-msgstr "Định dạng ngày ($DATE trong macro)"
+msgstr "Định dạng ngày ($DATE trong gõ tắt)"
 
 #: src/ngosen-config.h:276
 msgid "Icon Color"
@@ -377,7 +377,7 @@ msgid "this window"
 msgstr "cửa sổ này"
 
 msgid "apps with no name (the Ngó Sen extension can tell them apart)"
-msgstr "app chưa có tên (bật extension Ngó Sen để đặt riêng)"
+msgstr "app chưa có tên (bật extension Ngó Sen GNOME fixes để đặt riêng)"
 
 #: src/ngosen-engine.cpp:1099
 msgid "Unknown Mode"
@@ -1093,11 +1093,11 @@ msgstr "Đổi chế độ"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Try it:"
-msgstr "Test:"
+msgstr "Gõ thử:"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Type here to test"
-msgstr "Gõ vào đây để test"
+msgstr "Gõ vào đây để thử"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Words that are not Vietnamese get no tone marks."
@@ -1270,7 +1270,7 @@ msgstr "Đã cài Input Method Panel."
 
 #: settings-gui/core/system_check.py
 msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
-msgstr "Bật bản sửa: gnome-extensions enable {}. Nếu vẫn mất phím thì đăng xuất rồi đăng nhập lại."
+msgstr "Bật extension Ngó Sen GNOME fixes: gnome-extensions enable {}. Nếu vẫn mất phím thì đăng xuất rồi đăng nhập lại."
 
 #: settings-gui/core/system_check.py
 msgid "Log out and back in. If this stays, update Ngó Sen or update to GNOME 50.4."
@@ -1299,7 +1299,7 @@ msgstr "App X11 cũ gõ qua fcitx5"
 #: settings-gui/core/system_check.py
 #, python-brace-format
 msgid "The fix for GNOME {} is on"
-msgstr "Bản sửa cho GNOME {} đang bật"
+msgstr "Extension Ngó Sen GNOME fixes cho GNOME {} đang bật"
 
 #: settings-gui/core/system_check.py
 msgid "Apps keep their own typing mode"
@@ -1320,7 +1320,7 @@ msgstr "Đăng xuất rồi đăng nhập lại. Nếu vẫn thấy dòng này, 
 #: settings-gui/core/system_check.py
 #, python-brace-format
 msgid "Turn on the extension: gnome-extensions enable {}, then log out and back in."
-msgstr "Bật extension: gnome-extensions enable {}, rồi đăng xuất và đăng nhập lại."
+msgstr "Bật extension Ngó Sen GNOME fixes: gnome-extensions enable {}, rồi đăng xuất và đăng nhập lại."
 
 #: settings-gui/core/system_check.py
 msgid "Qt apps use fcitx5"
@@ -1839,7 +1839,7 @@ msgstr "Đã thêm Ngó Sen vào danh sách bộ gõ."
 
 #: settings-gui/core/system_check.py
 msgid "Turned on the GNOME extension."
-msgstr "Đã bật extension GNOME."
+msgstr "Đã bật extension Ngó Sen GNOME fixes."
 
 #: settings-gui/core/system_check.py
 msgid "This machine is ready"
@@ -1847,7 +1847,7 @@ msgstr "Máy đã sẵn sàng"
 
 #: settings-gui/core/system_check.py
 msgid "Try typing in any app."
-msgstr "Gõ để test trong app bất kỳ."
+msgstr "Gõ thử trong app bất kỳ."
 
 #: settings-gui/core/system_check.py
 #, python-brace-format
@@ -1872,7 +1872,7 @@ msgstr "App không có trong danh sách chưa kết nối với bộ gõ: mở l
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "Try typing here"
-msgstr "Test gõ ngay tại đây"
+msgstr "Gõ thử ở đây"
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "In Telex, vieetj becomes việt."

@@ -557,8 +557,8 @@ namespace ngosen {
     bool TypingState::restoreDroppedWord(ngosen::KeyPress& keyEvent) {
         std::string deletedPart;
         std::string addedPart;
-        // A slow app may not show the fix yet; it still applies the edits in the order sent.
-        const bool        inPlace  = typedBeforeCursor(lastWord_, true) || (!droppedWord_.empty() && typedBeforeCursor(droppedWord_, true));
+        // A slow app may not show the fix yet, or report anything since it; it still applies the edits in the order sent.
+        const bool        inPlace  = !reportSinceEdit_ || typedBeforeCursor(lastWord_, true) || (!droppedWord_.empty() && typedBeforeCursor(droppedWord_, true));
         const std::string restored = inPlace ? undoSpaceFix(deletedPart, addedPart) : std::string();
         if (restored.empty()) {
             droppedWord_.clear();
@@ -774,7 +774,9 @@ namespace ngosen {
         // Backspaces we press through XTEST come back here while we delete; they belong to the commit.
         const bool deleting     = is_deleting_.load(std::memory_order_acquire);
         const bool ownBackspace = deleting && ngosen::key::isBackspace(currentSym) && !ngosen::forwardsBackspaces(host_->field());
-        if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
+        // A Backspace during the Space fix waits for it and then takes the fix back.
+        const bool undoesFix = deleting && !droppedWord_.empty();
+        if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace && !undoesFix))
             lastWord_.clear();
         if (handleKeyDuringReplacement(keyEvent, currentSym))
             return;

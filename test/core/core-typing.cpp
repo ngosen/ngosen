@@ -1006,6 +1006,57 @@ namespace {
         check(shortcut == "xin as ", "release of a shortcut after focus-in: nothing taken", shortcut);
     }
 
+    // Chromium on X11 reports no surrounding text, so the letter a cell opened with can't be seen: it is
+    // taken only when the next key changes it.
+    void testCellOpenedByFirstKeyNoSurrounding() {
+        Field chromium            = makeField("dbus", false, "chromium.desktop");
+        chromium.keyEventOrderFix = true;
+        FakeResources resources;
+        resources.setMacros({{"s", "search"}});
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, chromium, ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& typed) {
+            for (const char c : typed) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(200);
+            return app->text();
+        };
+        const auto openWith = [&](const std::string& held, char key, const std::string& shown) {
+            app->focusNewFieldWith(held, 5);
+            loop.pump(50);
+            app->pageTakesKey(static_cast<uint32_t>(key), shown, "");
+            loop.pump(100);
+        };
+        for (const auto& [first, rest, want] :
+             {std::make_tuple('d', "daay ", "đây "), std::make_tuple('D', "daay ", "Đây "), std::make_tuple('a', "wn ", "ăn "), std::make_tuple('a', "s ", "á ")}) {
+            openWith("", first, std::string(1, first));
+            const std::string cell = typeText(rest);
+            check(cell == want, "cell opened by its first key, no surrounding text: word starts from it", cell);
+        }
+        openWith("xin ", 'd', "d");
+        const std::string mid = typeText("dax ");
+        check(mid == "xin đã ", "first key before focus-in, no surrounding text: word starts from it", mid);
+        // A letter the next key leaves alone needs no fixing, and may not be in the field at all.
+        openWith("", 'n', "n");
+        const std::string kept = typeText("haanj ");
+        check(kept == "nhận ", "letter the next key leaves alone: typed as before", kept);
+        // A page shortcut such as GitHub's s focuses a search box without typing into it.
+        openWith("", 's', "");
+        const std::string search = typeText("tieengs ");
+        check(search == "tiếng ", "shortcut that focuses a field, no surrounding text: nothing deleted", search);
+        // Space after the shortcut letter would expand a macro named after it.
+        openWith("", 's', "");
+        const std::string space = typeText(" ");
+        check(space == " ", "shortcut letter that names a macro: no expansion", space);
+    }
+
     // Firefox on KDE can hide both the press and the release of the key that opens the next cell: the cell
     // just shows the letter after Enter, and the word goes on from it.
     void testCellLetterWithNoKey() {
@@ -4449,6 +4500,7 @@ int main() {
     testLateEmptyFieldStillClick();
     testCellOpenedByFirstKey();
     testFirstKeyBeforeFocusMidText();
+    testCellOpenedByFirstKeyNoSurrounding();
     testCellLetterWithNoKey();
     testPageKeepsOwnText();
     testFieldEmptiedAfterEachKey();

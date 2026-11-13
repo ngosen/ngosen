@@ -830,7 +830,8 @@ namespace ngosen {
         void reopenLastWord();
         // A key's press can reach the app before the input method has the field (a sheet opening a cell
         // editor, the first key after Alt+Tab): we get only its release, and the word starts from that letter.
-        void takeLetterFieldOpenedWith();
+        void takeLetterFieldOpenedWith(const ngosen::KeyPress& keyEvent);
+        void guessLetterFieldOpenedWith(const ngosen::KeyPress& keyEvent);
         void takeLetterCellShows();
         void notePressOrRelease(const ngosen::KeyPress& keyEvent);
         // Backspace right after a commit in Preedit: take the word back from the app as preedit.

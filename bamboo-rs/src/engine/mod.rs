@@ -1138,7 +1138,10 @@ impl BambooEngine {
     fn tail_word(&self, kept: &KeptWord) -> Option<String> {
         let typed = self.typed_alone(self.raw_text().chars().skip(kept.keys));
         let text = typed.get_processed_str(OutputOptions::NONE);
-        (typed.is_valid_word() && self.dictionary.contains(&text.to_lowercase())).then_some(text)
+        // After a digit the engine reads only the last syllable; the whole tail must be one word.
+        let whole = typed.get_processed_str(OutputOptions::FULL_TEXT) == text;
+        (whole && typed.is_valid_word() && self.dictionary.contains(&text.to_lowercase()))
+            .then_some(text)
     }
 
     /// What Space turns a kept word into: two words when the keys after it type one

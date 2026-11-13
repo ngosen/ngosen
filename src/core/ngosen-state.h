@@ -825,6 +825,11 @@ namespace ngosen {
         // Whether Space may split a kept word or drop the keys after it: Backspace must be able to undo it.
         bool mayFixKeptWord(bool inPreedit) const;
         bool restoreDroppedWord(ngosen::KeyPress& keyEvent);
+        // Puts the engine back on the word Space fixed and returns it, empty when there is none;
+        // the parts are what the app must change.
+        std::string undoSpaceFix(std::string& deletedPart, std::string& addedPart);
+        // The word just committed, with what it was before Space fixed it, for a Backspace right after.
+        void rememberWord(const std::string& committed, const char* dropped);
         // The word is still open: bring the app's text in line with the new preedit.
         void replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8);
 

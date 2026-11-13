@@ -112,10 +112,8 @@ namespace ngosen {
                 commit(pulled.get());
                 // A key the engine leaves to the app (Enter, Ctrl+A, Tab) acts after the word, so it is not the break to take back.
                 ngosen::UniqueCPtr<char> dropped(EnginePullDroppedWord(bambooEngine_.handle()));
-                if (engineTook && !keyEvent.hasModifier() && rebuildable(pulled.get())) {
-                    lastWord_    = pulled.get();
-                    droppedWord_ = dropped ? dropped.get() : "";
-                }
+                if (engineTook && !keyEvent.hasModifier())
+                    rememberWord(pulled.get(), dropped.get());
                 if (ngosen::key::isEnter(currentSym) && !engineTook && !keyEvent.hasModifier())
                     holdEnterAfterCommit(keyEvent);
             }
@@ -508,15 +506,15 @@ namespace ngosen {
 
     void TypingState::commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr) {
         ngosen::UniqueCPtr<char> dropped(EnginePullDroppedWord(bambooEngine_.handle()));
-        droppedWord_.clear();
-        std::string deletedPart;
-        std::string addedPart;
+        std::string              deletedPart;
+        std::string              addedPart;
         ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
 
         if (!deletedPart.empty() && keepsWordRaw(deletedPart)) {
             // This key ends the word, so the next one starts afresh, and the field never showed the word to reopen.
             rawWord_ = false;
             lastWord_.clear();
+            droppedWord_.clear();
             keyEvent.passToApp();
             return;
         }
@@ -538,9 +536,12 @@ namespace ngosen {
         hasHistory_ = false;
         ResetEngine(bambooEngine_.handle());
         oldPreBuffer_.clear();
-        lastWord_ = rebuildable(commitStr) ? commitStr : std::string();
-        if (!lastWord_.empty() && dropped)
-            droppedWord_ = dropped.get();
+        rememberWord(commitStr, dropped.get());
+    }
+
+    void TypingState::rememberWord(const std::string& committed, const char* dropped) {
+        lastWord_    = rebuildable(committed) ? committed : std::string();
+        droppedWord_ = !lastWord_.empty() && dropped != nullptr ? dropped : "";
     }
 
     bool TypingState::mayFixKeptWord(bool inPreedit) const {
@@ -554,21 +555,32 @@ namespace ngosen {
 
     // Backspace right after Space split a word or dropped keys after it brings back what was typed.
     bool TypingState::restoreDroppedWord(ngosen::KeyPress& keyEvent) {
-        const std::string dropped = std::move(droppedWord_);
-        droppedWord_.clear();
-        if (dropped.empty() || lastWord_.empty() || !oldPreBuffer_.empty() || !canSendBackspaces() || !typedBeforeCursor(lastWord_, true))
-            return false;
         std::string deletedPart;
         std::string addedPart;
+        // A slow app may not show the fix yet; it still applies the edits in the order sent.
+        const bool        inPlace  = typedBeforeCursor(lastWord_, true) || (!droppedWord_.empty() && typedBeforeCursor(droppedWord_, true));
+        const std::string restored = inPlace ? undoSpaceFix(deletedPart, addedPart) : std::string();
+        if (restored.empty()) {
+            droppedWord_.clear();
+            return false;
+        }
+        is_deleting_.store(false, std::memory_order_release);
+        keyEvent.accept();
+        performReplacement(deletedPart, addedPart);
+        oldPreBuffer_ = restored;
+        return true;
+    }
+
+    std::string TypingState::undoSpaceFix(std::string& deletedPart, std::string& addedPart) {
+        std::string dropped = std::move(droppedWord_);
+        droppedWord_.clear();
+        if (dropped.empty() || lastWord_.empty() || !oldPreBuffer_.empty() || !canSendBackspaces())
+            return {};
         ngosen::utf8::compareAndSplitStrings(lastWord_, dropped, deletedPart, addedPart);
         lastWord_.clear();
         EngineRebuildFromText(bambooEngine_.handle(), dropped.c_str());
-        is_deleting_.store(false, std::memory_order_release);
         hasHistory_ = true;
-        keyEvent.accept();
-        performReplacement(deletedPart, addedPart);
-        oldPreBuffer_ = dropped;
-        return true;
+        return dropped;
     }
 
     bool TypingState::fieldLostWord() const {

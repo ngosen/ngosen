@@ -1479,3 +1479,10 @@ fn test_keys_after_a_kept_word_stay_unless_asked() {
         assert!(e.pull_commit().starts_with("đượcd"), "{key}");
     }
 }
+
+#[test]
+fn test_space_keeps_a_tail_of_several_words() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    e.macro_enabled = true;
+    assert_eq!(commit_dropping(&mut e, "coongty2me").0, "côngty2me ");
+}

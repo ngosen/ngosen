@@ -1296,6 +1296,17 @@ namespace ngosen {
         if (oldPreBuffer_.empty())
             backspaceInWord_ = false;
         if (ngosen::key::isBackspace(sym)) {
+            // The Space fix still on its way can be taken back like one already shown.
+            std::string       deletedPart;
+            std::string       addedPart;
+            const std::string restored = undoSpaceFix(deletedPart, addedPart);
+            if (!restored.empty()) {
+                const bool folded = foldIntoReplay(out, deletedPart, addedPart);
+                if (!folded)
+                    replaceDuringReplay(keys, i, out, deletedPart, addedPart);
+                oldPreBuffer_ = restored;
+                return !folded;
+            }
             // Like a typed backspace: the engine drops a letter and the app deletes it after the commit.
             dropLetterForBackspace();
             if (realtextLen.load(std::memory_order_acquire) > 0)
@@ -1319,6 +1330,8 @@ namespace ngosen {
         }
 
         lastWord_.clear();
+        if (sym == ngosen::key::space)
+            EngineSetDropKeptTail(bambooEngine_.handle(), mayFixKeptWord(false) ? 1 : 0);
         bool processed = EngineProcessKeyEvent(bambooEngine_.handle(), sym, state) != 0U;
 
         auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
@@ -1344,7 +1357,8 @@ namespace ngosen {
             hasHistory_ = false;
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
-            lastWord_ = rebuildable(commitF.get()) ? commitF.get() : std::string();
+            ngosen::UniqueCPtr<char> dropped(EnginePullDroppedWord(bambooEngine_.handle()));
+            rememberWord(commitF.get(), dropped.get());
             if (sent && !replacing)
                 return holdReplayedKey(keys, i, out, *sent);
             if (!replacing)

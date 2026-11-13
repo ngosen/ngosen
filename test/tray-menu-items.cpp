@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// The tray menu shows the entries the user chose; Settings and Save typing log always show. A
+// The tray menu shows the entries the user chose; Vietnamese, Settings and Save typing log always show. A
 // choice entry names the current choice, since GNOME's kimpanel shows no check marks.
 #include "ngosen-engine.h"
+#include "ngosen-utils.h"
 #include "test-input-context.h"
 
 #include <fcitx/action.h>
@@ -63,6 +64,21 @@ int main() {
     fcitx::InputContextEvent in(&context, fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, in);
 
+    // The way into Vietnamese without the toggle key: the first entry, marked like the switches.
+    check("the Vietnamese entry comes first", !menu(context).empty() && menu(context).front() == "ngosen-vietnamese");
+    auto* vietnamese = entryNamed(context, "ngosen-vietnamese");
+    check("the Vietnamese entry starts off", vietnamese && vietnamese->shortText(&context) == "✖ Vietnamese");
+    if (vietnamese) {
+        vietnamese->activate(&context);
+        check("a click turns Vietnamese on", ::realMode.load() != fcitx::NgoSenMode::Off);
+        check("a click marks the entry", vietnamese->shortText(&context) == "✔ Vietnamese");
+        // Clicked with no field focused, it switches the mode new apps start in.
+        vietnamese->activate(nullptr);
+        check("a click with no field turns Vietnamese off", ::realMode.load() == fcitx::NgoSenMode::Off);
+        check("a click with no field marks the entry", vietnamese->shortText(&context) == "✖ Vietnamese");
+        vietnamese->activate(&context);
+    }
+
     auto* inputMethod = entryNamed(context, "ngosen-input-method");
     check("the entry names the input method", inputMethod && inputMethod->shortText(&context) == "Input Method (Telex)");
     check("the current input method is marked", inputMethod && choices(context, *inputMethod) == std::vector<std::string>{"✔ Telex", "VNI"});
@@ -95,7 +111,7 @@ int main() {
     check("no menu text has a colon", colonFree);
 
     auto names = menu(context);
-    check("every entry shows by default", names.size() == 10 && has(names, "ngosen-input-method") && has(names, "ngosen-charset"));
+    check("every entry shows by default", names.size() == 11 && has(names, "ngosen-input-method") && has(names, "ngosen-charset"));
 
     fcitx::RawConfig hidden;
     hidden.setValueByPath("ShowMenuCharset", "False");
@@ -103,8 +119,8 @@ int main() {
     check("the focused field's menu changes at once", !has(menu(context), "ngosen-charset"));
     engine.activate(entry, in);
     names = menu(context);
-    check("a hidden entry leaves the menu", !has(names, "ngosen-charset") && names.size() == 9);
-    check("Settings and Save typing log stay", has(names, "ngosen-settings") && has(names, "ngosen-save-log"));
+    check("a hidden entry leaves the menu", !has(names, "ngosen-charset") && names.size() == 10);
+    check("Settings, Save typing log and Vietnamese stay", has(names, "ngosen-settings") && has(names, "ngosen-save-log") && has(names, "ngosen-vietnamese"));
 
     // The tray keeps showing the last field's menu while the settings window has focus.
     context.focusOut();

@@ -1471,6 +1471,7 @@ fn test_space_reads_g_as_ng() {
         ("ddag", "đang ", "đag"),
         ("ddugs", "đúng ", "đugs"),
         ("nhuwgx", "những ", "nhưgx"),
+        ("gieefgs", "giếng ", "giềgs"),
         ("dduowjcg", "được ", "đượcg"),
         ("dduowjcgi", "được gi ", "đượcgi"),
     ] {
@@ -1482,6 +1483,7 @@ fn test_space_reads_g_as_ng() {
     }
     let mut e = engine_keeping_words("VNI", &["bank"]);
     assert_eq!(commit_dropping(&mut e, "nhu7g").0, "nhưng ");
+    assert_eq!(commit_dropping(&mut e, "gie62g1").0, "giếng ");
     // Backspace brings the word back from its text, whose keys no longer carry the marks.
     for (method, toned) in [("Telex", "đugs"), ("VNI", "đug1")] {
         let mut e = engine_keeping_words(method, &["bank"]);

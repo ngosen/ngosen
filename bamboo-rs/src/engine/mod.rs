@@ -1153,8 +1153,12 @@ impl BambooEngine {
             return None;
         }
         let n = if g.is_ascii_uppercase() { 'N' } else { 'n' };
-        let (head, tail) = keys.split_at(kept.keys);
-        let typed = self.typed_alone(head.iter().chain([&n]).chain(tail).copied());
+        // From the word as shown: a word Backspace brought back has keys without its marks.
+        let mut typed = self.typed_alone([]);
+        typed.rebuild_from_text(&format!("{}{n}", kept.shown));
+        for &key in &keys[kept.keys..] {
+            typed.process_key(key, Mode::Vietnamese);
+        }
         let text = typed.get_processed_str(OutputOptions::NONE);
         let whole = typed.get_processed_str(OutputOptions::FULL_TEXT) == text;
         (whole && typed.is_valid_word() && self.dictionary.contains(&text.to_lowercase()))

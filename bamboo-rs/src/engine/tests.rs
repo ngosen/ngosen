@@ -1482,6 +1482,17 @@ fn test_space_reads_g_as_ng() {
     }
     let mut e = engine_keeping_words("VNI", &["bank"]);
     assert_eq!(commit_dropping(&mut e, "nhu7g").0, "nhưng ");
+    // Backspace brings the word back from its text, whose keys no longer carry the marks.
+    for (method, toned) in [("Telex", "đugs"), ("VNI", "đug1")] {
+        let mut e = engine_keeping_words(method, &["bank"]);
+        for (text, commit) in [("nhưg", "nhưng "), ("cũg", "cũng "), (toned, "đúng ")] {
+            e.reset();
+            e.rebuild_from_text(text);
+            e.drop_kept_tail = true;
+            e.process_key_event(KEY_SPACE, 0);
+            assert_eq!(e.pull_commit(), commit, "{method} {text}");
+        }
+    }
 }
 
 #[test]

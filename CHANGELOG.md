@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Trang Kiểm tra máy và cửa sổ cài đặt gọi extension GNOME bằng đúng tên trong app Extensions (Ngó Sen GNOME fixes), không còn lúc gọi "bản sửa" lúc gọi "extension GNOME"; ô gõ thử ghi "Gõ thử ở đây" thay cho "Test gõ ngay tại đây", và định dạng ngày ghi "$DATE trong gõ tắt" như định dạng giờ (#744).
+
 ## [1.10.1-1] — 12/11/2026
 
 Trên GNOME, Gõ Sen không còn làm từ đang gõ chớp ở dạng chưa đổi dấu hoặc chữ trong các app ngoài nhóm Firefox (#720), preedit trong ô tìm kiếm Dolphin trên KDE Plasma Wayland không còn mất chữ khi app làm mới ô tìm kiếm (#722, sửa #717), bảng tính web như Handsontable, jspreadsheet và AG Grid trên Chrome và Firefox ở GNOME không còn bỏ sót phím đầu sau khi chuyển cell (#730), Lark Base trên Chrome ở GNOME không còn lưu mất dấu (#728), cửa sổ cài đặt Qt trên Fedora 44 và các distro có PyQt6 6.11 không còn crash khi đóng (#731, sửa #729).

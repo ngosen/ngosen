@@ -996,6 +996,14 @@ namespace {
         switchIn("xin c", 'a', "");
         const std::string inWord = typeText("s ");
         check(inWord == "xin cas ", "first key before focus-in, inside a word: nothing taken", inWord);
+        // Ctrl+F and the like move focus while held: that release typed nothing into the new field.
+        app->focusNewFieldWith("xin a", 5);
+        loop.pump(50);
+        FakeKey shortcutUp('a', true, ngosen::modifier::Ctrl);
+        state.keyEvent(shortcutUp);
+        loop.pump(100);
+        const std::string shortcut = typeText("s ");
+        check(shortcut == "xin as ", "release of a shortcut after focus-in: nothing taken", shortcut);
     }
 
     // Firefox on KDE can hide both the press and the release of the key that opens the next cell: the cell

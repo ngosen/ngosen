@@ -442,7 +442,8 @@ namespace ngosen {
                 cellMove_ = std::make_pair(keyCount_ + 1, host_->surrounding().text());
         } else if (at != pressedKeys_.end()) {
             pressedKeys_.erase(at);
-        } else if (sym >= 'a' && sym <= 'z') {
+        } else if (sym >= 'a' && sym <= 'z' && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U) {
+            // A shortcut such as Ctrl+F moves focus while held, and its letter never reached the new field.
             unseenPress_ = std::make_pair(sym, keyCount_);
             keyAfterUnseen_.reset();
         }

@@ -746,6 +746,7 @@ namespace ngosen {
             bool                      showedBackspace   = false; ///< a report showed the deletion our backspaces made
             std::string               cursorPastReport;          ///< reportKey() of a report with the cursor past the last commit
             bool                      cursorPastSeen = false;    ///< some report showed that since focus
+            std::vector<uint64_t>     echoesUs;                  ///< how long the last letters took to show, newest last
         };
         FieldHistory sinceFocus_;
 
@@ -759,6 +760,14 @@ namespace ngosen {
         void                    noteEditLeft(const Surrounding& copy, int count, const std::string& committed);
         void                    noteCursorPast(const Surrounding& report);
         bool                    cursorStaysPast() const;
+        // A letter typed with no edit, to time how long the app takes to show it.
+        uint64_t     echoKeyAtUs_   = 0;
+        uint64_t     echoLastKeyUs_ = 0;
+        std::string  echoText_;
+        unsigned int echoCursor_ = 0;
+        void         startEchoTimer(const ngosen::KeyPress& keyEvent);
+        void         noteEcho(const Surrounding& report);
+        uint64_t     splitEditWaitUs() const;
 
         // One debug line per replacement: how it deleted, what it waited for first, how it ended.
         void        startReplaceLog(const char* wait);

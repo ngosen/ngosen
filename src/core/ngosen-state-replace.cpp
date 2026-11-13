@@ -953,9 +953,11 @@ namespace ngosen {
         return static_cast<int>(deletion.chars);
     }
 
-    constexpr uint64_t SplitEditWaitUs = 30000;
+    constexpr uint64_t SplitEditWaitUs    = 30000;
+    constexpr uint64_t SplitEditMinWaitUs = 8000;
     // A page slow enough to leave Firefox's cursor past a commit can take this long over a deletion.
-    constexpr uint64_t CursorPastSplitWaitUs = 120000;
+    constexpr uint64_t SplitEditMaxWaitUs = 120000;
+    constexpr size_t   EchoesKept         = 6;
     // As long as a focus bounce lasts; the deletion is out, so giving up loses the word's letters.
     constexpr int SplitEditFocusRetries = 50;
 
@@ -989,7 +991,7 @@ namespace ngosen {
             if (ngosen::keepsLastEditPerTurn(field) && joins)
                 NGOSEN_INFO("Join the deletion and the commit for " + field.program);
             else if (ngosen::keepsLastEditPerTurn(field) && !cursorIsBeforeAutofill(surrounding))
-                holdUs = sinceFocus_.cursorPastSeen ? CursorPastSplitWaitUs : SplitEditWaitUs;
+                holdUs = splitEditWaitUs();
             // A just-emptied Messenger composer reloads its placeholder and drops a commit sent with the deletion.
             else if (messengerFirst)
                 holdUs = static_cast<uint64_t>(std::max(engine_->options().waitSurroundingSettleFirstWordMs, 0)) * 1000ULL;
@@ -1072,6 +1074,45 @@ namespace ngosen {
         left += committed;
         editLeft_ =
             EditLeft{.text = left + copy.text().substr(before.size()), .cursor = static_cast<unsigned int>(utf8::length(left)), .deleted = static_cast<unsigned int>(count)};
+    }
+
+    // Only a key typed after a pause, so no report of an earlier key can still be on its way.
+    void TypingState::startEchoTimer(const ngosen::KeyPress& keyEvent) {
+        const uint64_t now         = monotonicUs();
+        const bool     paused      = now >= echoLastKeyUs_ + SplitEditMaxWaitUs;
+        echoLastKeyUs_             = now;
+        echoKeyAtUs_               = 0;
+        const Surrounding& copy    = host_->surrounding();
+        const std::string  key     = host_->keyText(keyEvent.sym());
+        const bool         editing = is_deleting_.load(std::memory_order_acquire) || split_edit_pending_ || key_report_pending_ || !buffered_keys_.empty();
+        if (!ngosen::keepsLastEditPerTurn(host_->field()) || !paused || keySinceReport_ || editing || !copy.isValid() || copy.cursor() != copy.anchor())
+            return;
+        if ((keyEvent.states() & ~ngosen::modifier::Shift) != 0 || key.size() != 1)
+            return;
+        const std::string before = textBeforeCursor(copy);
+        echoText_                = before + key + copy.text().substr(before.size());
+        echoCursor_              = copy.cursor() + 1;
+        echoKeyAtUs_             = now;
+    }
+
+    void TypingState::noteEcho(const Surrounding& report) {
+        if (echoKeyAtUs_ == 0 || !report.isValid() || report.text() != echoText_ || report.cursor() != echoCursor_)
+            return;
+        auto& echoes = sinceFocus_.echoesUs;
+        echoes.push_back(monotonicUs() - echoKeyAtUs_);
+        echoKeyAtUs_ = 0;
+        if (echoes.size() > EchoesKept)
+            echoes.erase(echoes.begin());
+    }
+
+    // A busy page shows typed letters late and takes as long over a deletion, which the commit must not overtake.
+    uint64_t TypingState::splitEditWaitUs() const {
+        const auto& echoes = sinceFocus_.echoesUs;
+        if (sinceFocus_.cursorPastSeen)
+            return SplitEditMaxWaitUs;
+        if (echoes.empty())
+            return SplitEditWaitUs;
+        return std::clamp<uint64_t>(2 * *std::max_element(echoes.begin(), echoes.end()), SplitEditMinWaitUs, SplitEditMaxWaitUs);
     }
 
     // Firefox moves its cursor over a commit before the page has taken the deletion ahead of it, and

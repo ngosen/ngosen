@@ -647,6 +647,7 @@ namespace ngosen {
                 closeCheckBeforeOtherEdit();
             if (oldPreBuffer_.empty())
                 backspaceInWord_ = false;
+            startEchoTimer(keyEvent);
         }
         handleKey(keyEvent);
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
@@ -1208,6 +1209,7 @@ namespace ngosen {
     }
 
     void TypingState::resetField(bool isFocusOut, bool commitPreedit, bool keepOpenWord) {
+        echoKeyAtUs_ = 0;
         if (!keepOpenWord)
             fieldAtKeptReset_.reset();
         // After focus out a forwarded key may reach the window that took focus.

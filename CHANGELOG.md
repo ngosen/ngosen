@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Thay đổi
 
 - Trang Kiểm tra máy và cửa sổ cài đặt gọi extension GNOME bằng đúng tên trong app Extensions (Ngó Sen GNOME fixes), không còn lúc gọi "bản sửa" lúc gọi "extension GNOME"; ô gõ thử ghi "Gõ thử ở đây" thay cho "Test gõ ngay tại đây", và định dạng ngày ghi "$DATE trong gõ tắt" như định dạng giờ (#744).
+- Thêm mục “✔ Tiếng Việt” / “✖ Tiếng Việt” luôn hiện ở đầu menu khay fcitx5 để chuyển ngôn ngữ khi không dùng được `Ctrl + Shift`, ghi nhớ lựa chọn cho từng app qua các lần khởi động lại (#749).
 
 ## [1.10.1-1] — 12/11/2026
 

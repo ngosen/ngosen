@@ -127,7 +127,8 @@ SHA-256, hỏi lại trước khi cài và tự thiết lập theo desktop đang
 mới; cấu hình cũ giữ nguyên. Thiết lập chỉ áp dụng cho tài khoản chạy lệnh.
 
 Sau khi cài, nhấn rồi thả `Ctrl + Shift` để chuyển giữa tiếng Anh và tiếng Việt; biểu tượng khay hiện chữ V
-khi đang gõ tiếng Việt.
+khi đang gõ tiếng Việt. Bạn cũng có thể bấm “✔ Tiếng Việt” / “✖ Tiếng Việt”, mục luôn hiện ở đầu menu khay
+fcitx5, để chuyển ngôn ngữ như `Ctrl + Shift` cho app đang gõ và giữ lựa chọn sau khi khởi động lại.
 
 <details>
 <summary>Lệnh cài làm gì trên từng desktop</summary>

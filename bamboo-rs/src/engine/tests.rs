@@ -1415,3 +1415,74 @@ fn test_reopened_word_in_another_tone_style_is_not_kept() {
         assert_eq!(e.preedit_text, plain.preedit_text, "{im} {text}");
     }
 }
+
+fn commit_dropping(e: &mut BambooEngine, keys: &str) -> (String, String) {
+    e.reset();
+    type_keys(e, keys);
+    e.drop_kept_tail = true;
+    e.process_key_event(KEY_SPACE, 0);
+    (e.pull_commit(), std::mem::take(&mut e.dropped_word))
+}
+
+#[test]
+fn test_space_drops_keys_after_a_kept_word() {
+    let mut e = engine_keeping_words("Telex", &["axit", "lênin"]);
+    for (keys, commit, dropped) in [
+        ("dduowjcd", "được ", "đượcd"),
+        ("dduowjcdi", "được di ", "đượcdi"),
+        ("Dduowjcd", "Được ", "Đượcd"),
+        ("coongty", "công ty ", "côngty"),
+        ("coongtys", "công tý ", "côngtys"),
+        ("khoonggian", "không gian ", "khônggian"),
+        ("coongTy", "công Ty ", "côngTy"),
+        ("Leenin", "Lênin ", ""),
+        ("axit", "axit ", ""),
+    ] {
+        assert_eq!(
+            commit_dropping(&mut e, keys),
+            (commit.to_string(), dropped.to_string()),
+            "{keys}"
+        );
+    }
+    let mut e = engine_keeping_words("VNI", &["bank"]);
+    assert_eq!(commit_dropping(&mut e, "d9u7o7c5d").0, "được ");
+    assert_eq!(commit_dropping(&mut e, "co6ngty1").0, "công tý ");
+    assert_eq!(
+        commit_dropping(&mut e, "d9u7o7c5d2").0,
+        "được ",
+        "VNI keys go"
+    );
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    assert_eq!(
+        commit_dropping(&mut e, "dduowjcd2").0,
+        "đượcd2 ",
+        "digits stay"
+    );
+}
+
+#[test]
+fn test_keys_after_a_kept_word_stay_unless_asked() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    assert_eq!(commit_of(&mut e, "dduowjcd"), "đượcd ");
+    // Only the key right after the request may drop them.
+    e.reset();
+    type_keys(&mut e, "dduowjc");
+    e.drop_kept_tail = true;
+    type_keys(&mut e, "d");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.pull_commit(), "đượcd ");
+    for key in [KEY_RETURN, u32::from(b'.')] {
+        e.reset();
+        type_keys(&mut e, "dduowjcd");
+        e.drop_kept_tail = true;
+        e.process_key_event(key, 0);
+        assert!(e.pull_commit().starts_with("đượcd"), "{key}");
+    }
+}
+
+#[test]
+fn test_space_keeps_a_tail_of_several_words() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    e.macro_enabled = true;
+    assert_eq!(commit_dropping(&mut e, "coongty2me").0, "côngty2me ");
+}

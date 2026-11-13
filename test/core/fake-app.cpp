@@ -42,12 +42,12 @@ namespace ngosen::test {
 
     } // namespace
 
-    std::string telexOutput(const std::vector<uint32_t>& keys) {
+    std::string telexOutput(const std::vector<uint32_t>& keys, bool reportsText) {
         FakeResources resources;
-        return telexOutput(resources, keys);
+        return telexOutput(resources, keys, reportsText);
     }
 
-    std::string telexOutput(FakeResources& resources, const std::vector<uint32_t>& keys) {
+    std::string telexOutput(FakeResources& resources, const std::vector<uint32_t>& keys, bool reportsText) {
         realMode = Mode::Preedit;
         realtextLen.store(0);
         FakeLoop loop;
@@ -57,6 +57,8 @@ namespace ngosen::test {
         auto        owned = std::make_unique<FakeHost>(loop, field);
         FakeHost*   host  = owned.get();
         TypingState state(&resources, std::move(owned));
+        if (reportsText)
+            host->setSurrounding("", 0, 0);
         std::string text;
         size_t      seenCommits = 0;
         for (uint32_t sym : keys) {

@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Regenerates data/keep-words.txt: words whose keys must not be cut back to a Vietnamese word
-when a key breaks it, like `axit` or `photoshop`.
+when a key breaks it, like `axit` or `photoshop`, and written words Space must not cut short,
+like `lênin`.
 
 The list is SCOWL en_US-large and misc/keep-words-written.txt, minus data/english-common.txt,
 which the engine already checks. Pass --zip to read a downloaded copy of the SCOWL archive.

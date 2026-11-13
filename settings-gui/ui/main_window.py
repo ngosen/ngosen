@@ -325,6 +325,11 @@ class NgoSenSettingsWindow(QMainWindow):
 
             return DynamicSettingsPage(self.dbus_handler, category=SettingsCategory.SHORTCUTS)
 
+        def create_convert():
+            from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
+
+            return DynamicSettingsPage(self.dbus_handler, category=SettingsCategory.CONVERT)
+
         def create_appearance():
             from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
 
@@ -360,6 +365,13 @@ class NgoSenSettingsWindow(QMainWindow):
             "preferences-desktop-keyboard",
             (_("Shortcuts"), create_shortcuts),
             (_("Keymap"), create_keymap),
+        )
+        self._add_page(
+            _("Convert"),
+            # Breeze has character-set; elsewhere the copy Ngó Sen installs.
+            ("character-set", "ngosen-charset"),
+            (None, create_convert),
+            names=["convert"],
         )
         self._add_page(
             _("Appearance"),

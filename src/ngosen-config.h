@@ -277,9 +277,9 @@ namespace fcitx {
         OptionWithAnnotation<std::string, StringListAnnotation> convertFrom{
             this, "ConvertFrom", _("Convert From"), ngosen::defaultOptions.convertFrom, {}, {}, StringListAnnotation()};
         OptionWithAnnotation<std::string, StringListAnnotation> convertTo{this, "ConvertTo", _("Convert To"), ngosen::defaultOptions.convertTo, {}, {}, StringListAnnotation()};
-        OptionWithAnnotation<ConvertCase, ConvertCaseI18NAnnotation> convertCase{this, "ConvertCase", _("Letter Case After Converting"),
+        OptionWithAnnotation<ConvertCase, ConvertCaseI18NAnnotation> convertCase{this, "ConvertCase", _("Letter Case"),
                                                                                  static_cast<ConvertCase>(ngosen::defaultOptions.convertCase)};
-        Option<bool>    convertStripDiacritics{this, "ConvertStripDiacritics", _("Remove Diacritics When Converting"), ngosen::defaultOptions.convertStripDiacritics};
+        Option<bool>    convertStripDiacritics{this, "ConvertStripDiacritics", _("Remove Diacritics"), ngosen::defaultOptions.convertStripDiacritics};
         SubConfigOption appRules{this, "AppRules", _("App Rules"), "fcitx://config/addon/ngosen/app_rules"};
         OptionWithAnnotation<W2UMode, W2UModeI18NAnnotation>                           w2u{this, "W2U", _("Type w to Produce ư"), static_cast<W2UMode>(ngosen::defaultOptions.w2u)};
         OptionWithAnnotation<BracketTransformMode, BracketTransformModeI18NAnnotation> bracketTransform{this, "BracketTransform", _("Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"),

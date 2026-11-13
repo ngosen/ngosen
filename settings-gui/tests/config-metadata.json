@@ -114,6 +114,98 @@
     }
    ],
    [
+    "ConvertKey",
+    "List|Key",
+    "Convert Selected Text Hotkey",
+    "",
+    {}
+   ],
+   [
+    "ConvertFrom",
+    "String",
+    "Convert From",
+    "TCVN3 (ABC)",
+    {
+     "IsEnum": "True",
+     "Enum": {
+      "0": "Unicode",
+      "1": "BKHCM 1",
+      "2": "BKHCM 2",
+      "3": "NCR Decimal",
+      "4": "NCR Hex",
+      "5": "TCVN3 (ABC)",
+      "6": "UTF-8",
+      "7": "Unicode C string Decimal",
+      "8": "Unicode C string Hex",
+      "9": "Unicode tổ hợp",
+      "10": "VIQR",
+      "11": "VISCII",
+      "12": "VNI Windows",
+      "13": "VPS",
+      "14": "Vietware Full",
+      "15": "Vietware X",
+      "16": "Windows 1258 codepage"
+     }
+    }
+   ],
+   [
+    "ConvertTo",
+    "String",
+    "Convert To",
+    "Unicode",
+    {
+     "IsEnum": "True",
+     "Enum": {
+      "0": "Unicode",
+      "1": "BKHCM 1",
+      "2": "BKHCM 2",
+      "3": "NCR Decimal",
+      "4": "NCR Hex",
+      "5": "TCVN3 (ABC)",
+      "6": "UTF-8",
+      "7": "Unicode C string Decimal",
+      "8": "Unicode C string Hex",
+      "9": "Unicode tổ hợp",
+      "10": "VIQR",
+      "11": "VISCII",
+      "12": "VNI Windows",
+      "13": "VPS",
+      "14": "Vietware Full",
+      "15": "Vietware X",
+      "16": "Windows 1258 codepage"
+     }
+    }
+   ],
+   [
+    "ConvertCase",
+    "Enum",
+    "Letter Case",
+    "Keep",
+    {
+     "EnumI18n": {
+      "0": "Keep",
+      "1": "UPPER CASE",
+      "2": "lower case",
+      "3": "Sentence case",
+      "4": "Title Case"
+     },
+     "Enum": {
+      "0": "Keep",
+      "1": "UPPER CASE",
+      "2": "lower case",
+      "3": "Sentence case",
+      "4": "Title Case"
+     }
+    }
+   ],
+   [
+    "ConvertStripDiacritics",
+    "Boolean",
+    "Remove Diacritics",
+    "False",
+    {}
+   ],
+   [
     "AppRules",
     "External",
     "App Rules",

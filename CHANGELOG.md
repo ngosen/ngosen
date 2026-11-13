@@ -20,6 +20,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trong Firefox trên GNOME khi tắt extension Ngó Sen, Gõ Sen nay đo tốc độ trang web hiện chữ để điều chỉnh khoảng chờ giữa xoá chữ cũ và gõ chữ mới khi thêm dấu thanh: khoảng 15 ms trên trang nhàn nên chữ cũ gần như không còn chớp, tăng tới khoảng 75 ms trên trang bận để chữ mới không đến trước khi xoá xong. Trước đây, khoảng chờ cố định 30 ms khiến chữ cũ chớp trên trang nhàn và vẫn có thể gõ sai dấu trên trang bận; nay thử trên trang bận ra đúng dấu 20/20 lần, so với 16/20 lần ở version 1.10.1 (#747).
 - Trong Firefox ở GNOME, Gõ Sen giảm lỗi giữ nguyên phím Telex khi gõ ngay sau Alt+Tab chuyển window: gõ `nguwx` giờ ra `ngữ`, không còn thành `nguwx`, nhưng lỗi vẫn có thể xảy ra nếu nhấn và thả phím đầu quá nhanh (#743).
 - Trong Gõ Sen và Preedit, khi gõ Telex với phím dấu thanh sau phụ âm cuối ở từ có vần ngoài quy tắc tiếng Việt thông thường, Ngó Sen nay đặt dấu lên nguyên âm nếu từ có trong từ điển: gõ `peks`, `tehr` rồi Space, dấu câu hoặc Enter giờ ra `pék`, `tẻh`, không còn thành `peks`, `tehr`; trong lúc gõ vẫn hiện nguyên phím đã gõ (#753).
+- Trong các bảng tính web Handsontable, jspreadsheet và AG Grid trên Chromium ở X11, Gõ Sen không còn bỏ sót chữ đầu sau khi chuyển cell bằng Enter, Tab hoặc phím mũi tên: gõ `ddaay` trong cell mới giờ ra `đây`, không còn thành `ddây` (#PR).
 
 ## [1.10.1-1] — 12/11/2026
 

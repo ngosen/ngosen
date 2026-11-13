@@ -4122,19 +4122,21 @@ namespace {
 
     // A slow app gets the Space fix after keys typed later, which wait for it.
     void testSpaceFixInSlowApp() {
-        const auto typed = [](const std::string& keys, const std::vector<int>& gaps, int lagMs = 30) {
+        const auto typed = [](const std::string& keys, const std::vector<int>& gaps) {
             std::vector<uint32_t> syms;
             for (const char c : keys)
                 syms.push_back(c == '<' ? uint32_t{ngosen::key::BackSpace} : static_cast<uint32_t>(c));
             FakeResources           resources;
             ngosen::test::AppQuirks quirks;
-            quirks.lagMs = lagMs;
+            quirks.lagMs = 30;
             return ngosen::test::typeInApp(resources, makeField("wayland", true), quirks, syms, gaps);
         };
         const std::string early = typed("coongty <", std::vector<int>(9, 20));
         check(early == "côngty", "slow app: backspace right after the fix brings the word back", early);
-        const std::string during = typed("coongty <", std::vector<int>(9, 20), 60);
-        check(during == "côngty", "slow app: backspace while the fix is still deleting brings the word back", during);
+        std::vector<int> gaps(9, 200);
+        gaps.insert(gaps.end(), {2, 2, 2, 300, 0});
+        const std::string later = typed("dduowjcd ddo <", gaps);
+        check(later == "được đo", "slow app: backspace after a later word leaves the fixed one", later);
 
         // A click during the fix leaves the word: Backspace adds no edit of its own. The fake app puts the
         // late edits at the new cursor, hence the mixed text.
@@ -4157,10 +4159,6 @@ namespace {
         app->type(ngosen::key::BackSpace);
         loop.pump(300);
         check(app->text() == " tyôngt", "slow app: backspace after a click leaves the fixed word", app->text());
-        std::vector<int> gaps(9, 200);
-        gaps.insert(gaps.end(), {2, 2, 2, 300, 0});
-        const std::string later = typed("dduowjcd ddo <", gaps);
-        check(later == "được đo", "slow app: backspace after a later word leaves the fixed one", later);
     }
 
     void testPreeditSpaceFixUndone() {

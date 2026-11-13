@@ -1006,6 +1006,66 @@ namespace {
         check(shortcut == "xin as ", "release of a shortcut after focus-in: nothing taken", shortcut);
     }
 
+    // Firefox can get both the press and the release of the first key after Alt+Tab before focus-in, so
+    // the only sign of it is one letter more at the cursor than the field held when it lost focus.
+    void testFirstKeyTypedWhileAway() {
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("fcitx4", true, "firefox"), ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& typed) {
+            for (const char c : typed) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(200);
+            return app->text();
+        };
+        const auto away = [&](const std::string& text, size_t cursor, const std::string& typed, const std::string& backIn = "firefox") {
+            app->setProgram("firefox");
+            app->focusNewFieldWith(text, 5);
+            loop.pump(50);
+            app->moveCursor(cursor);
+            loop.pump(50);
+            app->returnWithText(typed, 300);
+            app->setProgram(backIn);
+            loop.pump(400);
+        };
+        away("xin chào ", 4, "n");
+        const std::string mid = typeText("guwx ");
+        check(mid == "xin ngữ chào ", "first key typed while away, mid text: word starts from it", mid);
+        away("xin chào ", 9, "d");
+        const std::string end = typeText("dax ");
+        check(end == "xin chào đã ", "first key typed while away, end of text: word starts from it", end);
+        away("xin c", 5, "a");
+        const std::string inWord = typeText("s ");
+        check(inWord == "xin cas ", "letter typed while away inside a word: nothing taken", inWord);
+        away("xin chào ", 4, "nn");
+        const std::string two = typeText("guwx ");
+        check(two == "xin nnguwx chào ", "two letters typed while away: nothing taken", two);
+        // On GNOME with IBus every window shares one context: a field another app left says nothing here.
+        away("xin chào ", 4, "n", "org.gnome.TextEditor");
+        const std::string other = typeText("guwx ");
+        check(other == "xin nguwx chào ", "focus back in another app: nothing taken", other);
+        away("xin chào ", 4, "n");
+        const std::string nbsp = typeText("guwx ");
+        check(nbsp == "xin ngữ chào ", "letter typed while away after U+00A0: word starts from it", nbsp);
+        // A bounce before any key must not save the missed letter as text the field held.
+        away("xin chào ", 4, "n");
+        app->leaveFocus(30);
+        loop.pump(100);
+        const std::string bounce = typeText("guwx ");
+        check(bounce == "xin ngữ chào ", "focus bounce after focus back: word starts from the letter", bounce);
+        // Any field holding one letter would match an empty one, so another field's letter is left alone.
+        away("", 0, "a");
+        const std::string empty = typeText("s ");
+        check(empty == "as ", "field left empty, back to one letter: nothing taken", empty);
+    }
+
     // Chromium on X11 reports no surrounding text, so the letter a cell opened with can't be seen: it is
     // taken only when the next key changes it.
     void testCellOpenedByFirstKeyNoSurrounding() {
@@ -4500,6 +4560,7 @@ int main() {
     testLateEmptyFieldStillClick();
     testCellOpenedByFirstKey();
     testFirstKeyBeforeFocusMidText();
+    testFirstKeyTypedWhileAway();
     testCellOpenedByFirstKeyNoSurrounding();
     testCellLetterWithNoKey();
     testPageKeepsOwnText();

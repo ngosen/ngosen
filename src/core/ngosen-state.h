@@ -723,6 +723,14 @@ namespace ngosen {
         std::optional<std::pair<uint32_t, uint32_t>>    keyAfterUnseen_; ///< sym and states of the next key
         std::optional<std::pair<uint64_t, std::string>> cellMove_;       ///< keyCount_ after Enter, and the text then
 
+        // What each app's field held when it lost focus, to see a key typed there before focus came back.
+        struct LeftField {
+            std::string    program;
+            std::u32string text;
+            size_t         cursor = 0;
+        };
+        std::vector<LeftField> leftFields_;
+
         // What the field showed since it got focus. A focus-in that is not a bounce starts it over, and
         // nothing else does.
         struct FieldHistory {
@@ -832,8 +840,12 @@ namespace ngosen {
         // editor, the first key after Alt+Tab): we get only its release, and the word starts from that letter.
         void takeLetterFieldOpenedWith(const ngosen::KeyPress& keyEvent);
         void guessLetterFieldOpenedWith(const ngosen::KeyPress& keyEvent);
+        void rememberLeftField();
+        void takeLetterTypedWhileAway();
         void takeLetterCellShows();
         void notePressOrRelease(const ngosen::KeyPress& keyEvent);
+        // The field now holds what it held when it lost focus, plus one character at that cursor.
+        static bool holdsOneMore(const LeftField& left, const Surrounding& s, const std::u32string& now);
         // Backspace right after a commit in Preedit: take the word back from the app as preedit.
         bool reopenWordInPreedit(ngosen::KeyPress& keyEvent);
         bool rebuildable(const std::string& committed) const;

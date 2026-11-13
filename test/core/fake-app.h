@@ -137,6 +137,9 @@ namespace ngosen::test {
         void select(size_t anchor, size_t cursor);
         // Leaves focus for ms and takes it back, as WPS does when it opens a window on a double click.
         void leaveFocus(int ms);
+        // Leaves focus and comes back after ms with text put at the cursor meanwhile, as a key typed right
+        // after Alt+Tab does when both its press and release reach the window before focus-in.
+        void returnWithText(const std::string& typed, int ms);
         // Moves within ms to an empty field of the same page that keeps its own text, as a click from a
         // page's search box into a Lark sheet does.
         void switchToOwnTextField(int ms);

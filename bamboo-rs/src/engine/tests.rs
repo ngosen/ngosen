@@ -1198,6 +1198,132 @@ fn test_backspace_after_a_d_keeps_the_stroke() {
     }
 }
 
+fn engine_keeping_words(method: &str, guard: &[&str]) -> BambooEngine {
+    let mut e = engine_with_default_settings(method);
+    e.english_words = Arc::new(["are", "perl"].iter().map(|w| w.to_string()).collect());
+    e.keep_guard = Arc::new(guard.iter().map(|w| w.to_string()).collect());
+    e
+}
+
+fn commit_of(e: &mut BambooEngine, keys: &str) -> String {
+    e.reset();
+    type_keys(e, keys);
+    e.process_key_event(KEY_SPACE, 0);
+    e.pull_commit()
+}
+
+#[test]
+fn test_key_breaking_a_word_keeps_it() {
+    for (method, keys, kept) in [
+        ("Telex", "dduowjcd", "đượcd"),
+        ("Telex", "Dduowjcd", "Đượcd"),
+        ("Telex", "dduowcjdi", "đượcdi"),
+        ("Telex", "yeeuvn", "yêuvn"),
+        ("VNI", "d9u7o7c5d", "đượcd"),
+    ] {
+        let mut e = engine_keeping_words(method, &["bank"]);
+        type_keys(&mut e, keys);
+        assert_eq!(e.preedit_text, kept, "{method} {keys}");
+        assert!(!e.shown_as_typed(), "{method} {keys}");
+        assert_eq!(
+            commit_of(&mut e, keys),
+            format!("{kept} "),
+            "{method} {keys}"
+        );
+    }
+}
+
+#[test]
+fn test_kept_word_left_alone_where_today_it_is_not() {
+    for (guard, keys, typed) in [
+        // The guard list starts with these keys.
+        (&["axit"][..], "axit", "axit "),
+        // An empty guard list turns keeping off, as in builds that do not load it.
+        (&[][..], "dduowjcd", "dduowjcd "),
+        // All caps, as abbreviations are typed.
+        (&["bank"][..], "DDUOWJCD", "DDUOWJCD "),
+    ] {
+        let mut e = engine_keeping_words("Telex", guard);
+        assert_eq!(commit_of(&mut e, keys), typed, "{guard:?} {keys}");
+    }
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    assert_eq!(commit_of(&mut e, "axit"), "ãit ");
+}
+
+#[test]
+fn test_backspace_into_a_kept_word_composes_it_again() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    type_keys(&mut e, "dduowjcdi");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "đượcd");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    assert_eq!(e.preedit_text, "được");
+    // Composing goes on as for any word: a tone key retones it.
+    type_keys(&mut e, "s");
+    assert_eq!(e.preedit_text, "đước");
+}
+
+#[test]
+fn test_kept_word_commits_on_enter_and_tab() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    type_keys(&mut e, "dduowjcd");
+    e.commit_preedit();
+    assert_eq!(e.pull_commit(), "đượcd");
+    type_keys(&mut e, "dduowjcd");
+    e.process_key_event(KEY_TAB, 0);
+    assert_eq!(e.pull_commit(), "đượcd");
+}
+
+#[test]
+fn test_kept_at_last_key_only_on_the_breaking_key() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    type_keys(&mut e, "dduowjc");
+    assert!(!e.kept_at_last_key());
+    type_keys(&mut e, "d");
+    assert!(e.kept_at_last_key());
+    type_keys(&mut e, "i");
+    assert!(!e.kept_at_last_key());
+}
+
+#[test]
+fn test_kept_word_review_cases() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    e.rebuild_from_text("tôi");
+    type_keys(&mut e, "q");
+    e.backspace();
+    assert_eq!(e.preedit_text, "tôi", "rebuilt word");
+    e.reset();
+    type_keys(&mut e, "AWG");
+    assert_eq!(e.preedit_text, "AWG", "all-caps keys");
+    for (keys, want) in [("ROMraid", "ROMraid"), ("ROMr", "RỎM"), ("OFun", "OFun")] {
+        e.reset();
+        type_keys(&mut e, keys);
+        assert_eq!(e.preedit_text, want, "all-caps word");
+    }
+    let mut e = engine_keeping_words("VNI", &["bank"]);
+    type_keys(&mut e, "O6sin");
+    assert_eq!(e.preedit_text, "Ôsin", "a digit is not a capital");
+    e.reset();
+    type_keys(&mut e, "A8G");
+    assert_eq!(e.preedit_text, "A8G", "all-caps VNI keys");
+}
+
+#[test]
+fn test_kept_word_takes_its_macro_like_any_word() {
+    for key in [KEY_SPACE, KEY_RETURN, KEY_TAB] {
+        let mut e = engine_keeping_words("Telex", &["bank"]);
+        e.macro_enabled = true;
+        e.macro_table = macro_table(&[("đượcd", "được đâu")]);
+        type_keys(&mut e, "dduowjcd");
+        e.process_key_event(key, 0);
+        assert!(
+            e.commit_text.starts_with("được đâu"),
+            "{key}: {}",
+            e.commit_text
+        );
+    }
+}
+
 #[test]
 fn test_backspace_after_restored_keys_keeps_reopened_text() {
     for (im, text, keys, left) in [

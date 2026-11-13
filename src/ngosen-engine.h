@@ -209,6 +209,9 @@ namespace fcitx {
         uintptr_t englishWords() const override {
             return englishWords_.handle();
         }
+        uintptr_t keepWords() const override {
+            return keepWords_.handle();
+        }
 
         /**
          * @brief Gets the emoji loader.
@@ -294,6 +297,7 @@ namespace fcitx {
         std::vector<ScopedConnection>               connections_;
         ngosen::CGoObject                           dictionary_;
         ngosen::CGoObject                           englishWords_;
+        ngosen::CGoObject                           keepWords_;
         std::unordered_map<std::string, NgoSenMode> appRules_;
         std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
@@ -419,7 +423,7 @@ namespace fcitx {
          */
         void loadAppRules();
 
-        void loadEnglishWords();
+        void loadWordList(ngosen::CGoObject& list, const char* path);
 
         /**
          * @brief Saves application-specific mode rules.

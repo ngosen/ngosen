@@ -350,6 +350,19 @@ pub extern "C" fn EngineSetEnglishWords(engine: usize, list: usize) {
     handles::with_engine(engine, |e| e.english_words = words);
 }
 
+/// Keys that start a word in `list` are never cut back to the Vietnamese word they broke;
+/// 0 for `list` turns that rule off.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetKeepGuard(engine: usize, list: usize) {
+    let words = handles::word_list(list).unwrap_or_default();
+    handles::with_engine(engine, |e| e.keep_guard = words);
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineKeptAtLastKey(engine: usize) -> u8 {
+    handles::with_engine(engine, |e| e.kept_at_last_key()).unwrap_or(false) as u8
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn EngineShownAsTyped(engine: usize) -> u8 {
     handles::with_engine(engine, |e| e.shown_as_typed()).unwrap_or(false) as u8

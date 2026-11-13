@@ -730,6 +730,9 @@ namespace ngosen {
             size_t         cursor = 0;
         };
         std::vector<LeftField> leftFields_;
+        // Unlike sinceFocus_, this starts over on a bounce too: GNOME's shared context makes every window switch one.
+        uint64_t keysAtFocusIn_  = 0;
+        uint64_t keysAtFocusOut_ = 0;
 
         // What the field showed since it got focus. A focus-in that is not a bounce starts it over, and
         // nothing else does.

@@ -96,6 +96,7 @@ namespace ngosen {
         // A click into another field of the same page looks like a bounce, and that field may keep its own text.
         if (isFocusIn) {
             sinceFocus_.showedBackspace = false;
+            keysAtFocusIn_              = keyCount_;
             // The release of a cell's first key comes after the cell editor gets focus.
             unseenPress_.reset();
             // Firefox on KDE focuses the next cell's editor before it shows the letter; a field that already
@@ -125,6 +126,7 @@ namespace ngosen {
         flushPendingReplacement(); // commit pending text into the field we are leaving
         if (isFocusOut) {
             rememberLeftField();
+            keysAtFocusOut_ = keyCount_;
             commitNotSeen_.clear();
             overtype_focus_bounced_         = overtype_pending_;
             field_keeps_focus_on_selection_ = false;

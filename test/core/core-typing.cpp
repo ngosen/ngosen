@@ -1067,6 +1067,44 @@ namespace {
         away("", 0, "a");
         const std::string empty = typeText("s ");
         check(empty == "as ", "field left empty, back to one letter: nothing taken", empty);
+        // GNOME's shared context makes the switch back look like a focus bounce.
+        away("xin chào ", 4, "", "org.gnome.TextEditor");
+        app->gnomeReturnWithKey('n', 40);
+        app->setProgram("firefox");
+        loop.pump(400);
+        const std::string gnome = typeText("guwx ");
+        check(gnome == "xin ngữ chào ", "key seen in the window left, letter landed here: word starts from it", gnome);
+    }
+
+    // A key we see while focus is away was not missed, though a late report may not show it yet.
+    void testKeyInFocusGapNotTakenAsAway() {
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop                loop;
+        ngosen::test::AppQuirks quirks;
+        quirks.reportDelayMs       = 100;
+        quirks.reportsTextAtChange = true;
+        auto                owned  = std::make_unique<ngosen::test::FakeApp>(loop, makeField("fcitx4", true, "firefox"), quirks);
+        auto*               app    = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        app->focusNewFieldWith("xin chào ", 300);
+        loop.pump(400);
+        app->moveCursor(4);
+        loop.pump(100);
+        app->type('a');
+        loop.pump(80);
+        app->leaveFocus(50);
+        state.reset(true);
+        loop.pump(20);
+        app->type(' ');
+        loop.pump(30);
+        app->type('s');
+        loop.pump(100);
+        app->type(' ');
+        loop.pump(200);
+        check(app->text() == "xin a s chào ", "key seen during a focus bounce: the letter before it is not taken", app->text());
     }
 
     // Chromium on X11 reports no surrounding text, so the letter a cell opened with can't be seen: it is
@@ -4564,6 +4602,7 @@ int main() {
     testCellOpenedByFirstKey();
     testFirstKeyBeforeFocusMidText();
     testFirstKeyTypedWhileAway();
+    testKeyInFocusGapNotTakenAsAway();
     testCellOpenedByFirstKeyNoSurrounding();
     testCellLetterWithNoKey();
     testPageKeepsOwnText();

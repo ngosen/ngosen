@@ -520,7 +520,7 @@ namespace ngosen {
         const auto        same  = [&](const LeftField& f) { return f.program == field.program; };
         // A focus bounce before any key would save the missed letter as if the field had held it.
         const std::u32string now = s.isValid() ? ngosen::utf8::decode(s.text()) : std::u32string();
-        if (keyCount_ == sinceFocus_.keysAtFocus && std::any_of(leftFields_.begin(), leftFields_.end(), [&](const LeftField& f) { return holdsOneMore(f, s, now); }))
+        if (keyCount_ == keysAtFocusIn_ && std::any_of(leftFields_.begin(), leftFields_.end(), [&](const LeftField& f) { return holdsOneMore(f, s, now); }))
             return;
         leftFields_.erase(std::remove_if(leftFields_.begin(), leftFields_.end(), same), leftFields_.end());
         if (!s.isValid() || s.cursor() != s.anchor() || field.url || field.hidesText())
@@ -535,7 +535,8 @@ namespace ngosen {
     void TypingState::takeLetterTypedWhileAway() {
         const Field field = host_->field();
         const auto  was   = std::find_if(leftFields_.begin(), leftFields_.end(), [&](const LeftField& f) { return f.program == field.program; });
-        if (keyCount_ != sinceFocus_.keysAtFocus + 1 || was == leftFields_.end())
+        // A key we saw while focus was away was not missed, though a late report may not show it yet.
+        if (keyCount_ != keysAtFocusIn_ + 1 || keysAtFocusIn_ != keysAtFocusOut_ || was == leftFields_.end())
             return;
         const LeftField left = std::move(*was);
         leftFields_.erase(was);

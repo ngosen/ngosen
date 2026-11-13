@@ -4077,13 +4077,66 @@ namespace {
         };
         const auto preedit = [&](const std::string& typed) { return ngosen::test::telexOutput(resources, std::vector<uint32_t>(typed.begin(), typed.end())); };
         for (const auto& [keys, want] : std::vector<std::pair<std::string, std::string>>{
-                 {"dduowjcd ", "đượcd "}, {"yeeuvn ", "yêuvn "}, {"dduowjcd< ", "được "}, {"axit ", "axit "}, {"photoshop ", "photoshop "}}) {
+                 {"dduowjcd ", "được "}, {"yeeuvn ", "yêu "}, {"dduowjcd< ", "được "}, {"axit ", "axit "}, {"photoshop ", "photoshop "}}) {
             const std::string text = sen(keys);
             check(text == want, "sen: " + keys + " gives " + want, text);
         }
         for (const auto& [keys, want] : std::vector<std::pair<std::string, std::string>>{{"dduowjcd ", "đượcd "}, {"axit ", "axit "}}) {
             const std::string text = preedit(keys);
             check(text == want, "preedit: " + keys + " gives " + want, text);
+        }
+    }
+
+    void testSpaceFixesKeptWord() {
+        const auto sen = [](FakeResources& resources, const Field& field, const std::string& typed) {
+            std::vector<uint32_t> keys;
+            for (const char c : typed)
+                keys.push_back(c == '<' ? uint32_t{ngosen::key::BackSpace} : static_cast<uint32_t>(c));
+            return ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 20));
+        };
+        FakeResources resources;
+        const Field   field = makeField("wayland", true);
+        for (const auto& [keys, want] : std::vector<std::pair<std::string, std::string>>{{"dduowjcd ", "được "},
+                                                                                         {"dduowjcd <", "đượcd"},
+                                                                                         {"dduowjcd <<s ", "đước "},
+                                                                                         {"coongty ", "công ty "},
+                                                                                         {"coongty <", "côngty"},
+                                                                                         {"dduowjcd  ", "được  "},
+                                                                                         {"dduowjcd. ", "đượcd. "},
+                                                                                         {"dduowjcd2 ", "đượcd2 "},
+                                                                                         {"dduowjcd x<", "được "}}) {
+            const std::string text = sen(resources, field, keys);
+            check(text == want, "sen: " + keys + " gives " + want, text);
+        }
+        Field password           = field;
+        password.password        = true;
+        const std::string hidden = sen(resources, password, "dduowjcd ");
+        check(hidden != "được ", "sen: a password field keeps the keys typed", hidden);
+        FakeResources legacy;
+        legacy.mutableOptions().outputCharset = "VNI Windows";
+        const std::string vniWin              = sen(legacy, field, "dduowjcd ");
+        check(vniWin.size() > 2 && vniWin.compare(vniWin.size() - 2, 2, "d ") == 0, "sen: a legacy charset keeps the keys typed", vniWin);
+        check(ngosen::test::telexOutput(resources, std::vector<uint32_t>({'d', 'd', 'u', 'o', 'w', 'j', 'c', 'd', ' '})) == "đượcd ",
+              "preedit: without surrounding text the keys stay", "");
+    }
+
+    void testPreeditSpaceFixUndone() {
+        realMode = ngosen::Mode::Preedit;
+        for (const auto& [keys, committed, preedit] :
+             std::vector<std::tuple<std::string, std::string, std::string>>{{"dduowjcd ", "được ", "đượcd"}, {"coongty ", "công ty ", "côngty"}}) {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            host->setSurrounding("", 0, 0);
+            state.surroundingUpdated();
+            const PreeditReopen r      = backspaceAfterPreeditCommit(state, *host, keys, committed);
+            const auto          length = static_cast<int>(ngosen::utf8::length(committed));
+            check(join(host->commits()) == "['" + committed + "']", "preedit: " + keys + " commits " + committed, join(host->commits()));
+            check(r.bsAccepted && r.deletes.size() == 1 && r.deletes[0] == std::make_pair(-length, static_cast<unsigned int>(length)),
+                  "preedit: backspace takes " + committed + " back", std::to_string(r.deletes.size()));
+            check(r.preedit == preedit, "preedit: backspace brings back " + preedit, r.preedit);
         }
     }
 
@@ -4177,6 +4230,8 @@ namespace {
 int main() {
     testBackspaceIntoKeysShownAsTyped();
     testBreakingKeyKeepsWord();
+    testSpaceFixesKeptWord();
+    testPreeditSpaceFixUndone();
     testEnglishWordKeepsDoubledLetter();
     testHoldsWordAcrossReload();
     testQuirks();

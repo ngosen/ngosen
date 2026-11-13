@@ -305,6 +305,10 @@ pub struct BambooEngine {
     pub(crate) keep_guard: Arc<WordList>,
     /// The Vietnamese word a key broke, kept as shown with the later keys after it.
     kept: Option<KeptWord>,
+    /// Set for the next key only, where Backspace can bring the dropped keys back.
+    pub(crate) drop_kept_tail: bool,
+    /// The word as shown before Space split it or dropped the keys after it.
+    pub(crate) dropped_word: String,
     pub(crate) auto_non_vn_restore: bool,
     pub(crate) dd_free_style: bool,
     pub(crate) macro_enabled: bool,
@@ -334,6 +338,8 @@ impl BambooEngine {
             english_words: Arc::default(),
             keep_guard: Arc::default(),
             kept: None,
+            drop_kept_tail: false,
+            dropped_word: String::new(),
             auto_non_vn_restore: true,
             dd_free_style: true,
             macro_enabled: false,
@@ -810,9 +816,17 @@ impl BambooEngine {
             self.preeditor.reset();
             return (format!("{expanded}{key}"), true);
         }
-        if self.kept.is_some() {
+        if let Some(kept) = &self.kept {
+            let mut shown = old_text.to_string();
+            if let Some(fixed) = (key == ' ')
+                .then(|| self.fixed_kept_word(kept, old_text))
+                .flatten()
+            {
+                shown = fixed;
+                self.dropped_word = old_text.to_string();
+            }
             self.preeditor.process_key(key, Mode::English);
-            return (format!("{old_text}{key}"), true);
+            return (format!("{shown}{key}"), true);
         }
         // A digit or a symbol like @ or _ may continue a name or a handle (`tuans@`).
         let ends_sentence = " .,;:!?)]}\"'".contains(key);
@@ -1028,6 +1042,13 @@ impl BambooEngine {
 
     /// Returns whether the key was used; the caller forwards it to the app otherwise.
     pub fn process_key_event(&mut self, key_val: u32, state: u32) -> bool {
+        self.dropped_word.clear();
+        let used = self.handle_key_event(key_val, state);
+        self.drop_kept_tail = false;
+        used
+    }
+
+    fn handle_key_event(&mut self, key_val: u32, state: u32) -> bool {
         let has_preedit = !self.preedit_text.is_empty();
         // Commit and pass the key on, which Chrome's address bar and Google Sheets need.
         if !Self::is_valid_state(state)
@@ -1111,6 +1132,32 @@ impl BambooEngine {
 
     pub fn reset(&mut self) {
         self.commit_preedit_and_reset(String::new());
+    }
+
+    /// The keys after a kept word typed as a word of their own, when that is a dictionary word.
+    fn tail_word(&self, kept: &KeptWord) -> Option<String> {
+        let typed = self.typed_alone(self.raw_text().chars().skip(kept.keys));
+        let text = typed.get_processed_str(OutputOptions::NONE);
+        (typed.is_valid_word() && self.dictionary.contains(&text.to_lowercase())).then_some(text)
+    }
+
+    /// What Space turns a kept word into: two words when the keys after it type one
+    /// (`côngty`), else the word without them. A digit stays unless the input method uses it
+    /// (VNI): in Telex it is rarely typed by mistake.
+    fn fixed_kept_word(&self, kept: &KeptWord, shown: &str) -> Option<String> {
+        if !self.drop_kept_tail || self.keep_guard.contains(&shown.to_lowercase()) {
+            return None;
+        }
+        if let Some(word) = self.tail_word(kept) {
+            return Some(format!("{} {word}", kept.shown));
+        }
+        let keys = self.preeditor.input_method().keys();
+        let tail_is_keys = self
+            .raw_text()
+            .chars()
+            .skip(kept.keys)
+            .all(|c| c.is_alphabetic() || in_key_list(keys, c.to_ascii_lowercase()));
+        tail_is_keys.then(|| kept.shown.clone())
     }
 
     /// Whether the last key started keeping a word, which sends the app nothing to rewrite.

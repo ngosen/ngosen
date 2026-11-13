@@ -188,7 +188,8 @@ namespace ngosen {
         ngosen::EngineResources* engine_;
         CGoObject                bambooEngine_;
         std::string              oldPreBuffer_;
-        std::string              lastWord_; ///< The word and break we last committed, while only backspaces follow
+        std::string              lastWord_;    ///< The word and break we last committed, while only backspaces follow
+        std::string              droppedWord_; ///< lastWord_ as typed, before Space split it or dropped keys after it
         bool                     hasHistory_              = false;
         bool                     preeditWord_             = false; ///< Sen is on, but this word goes into the preedit
         int                      expected_backspaces_     = 0;     ///< backspaces the key paths still send; XTEST adds one that comes back
@@ -821,6 +822,9 @@ namespace ngosen {
         void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr);
         // The field reports no text where the word stood, as after a click on another cell.
         bool fieldLostWord() const;
+        // Whether Space may split a kept word or drop the keys after it: Backspace must be able to undo it.
+        bool mayFixKeptWord(bool inPreedit) const;
+        bool restoreDroppedWord(ngosen::KeyPress& keyEvent);
         // The word is still open: bring the app's text in line with the new preedit.
         void replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8);
 

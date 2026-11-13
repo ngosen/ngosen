@@ -358,6 +358,19 @@ pub extern "C" fn EngineSetKeepGuard(engine: usize, list: usize) {
     handles::with_engine(engine, |e| e.keep_guard = words);
 }
 
+/// Lets the next key, if it is Space, split a kept word or drop the keys typed after it.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetDropKeptTail(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.drop_kept_tail = on != 0);
+}
+
+/// The word as shown before the last key split it or dropped its tail; empty otherwise.
+#[unsafe(no_mangle)]
+pub extern "C" fn EnginePullDroppedWord(engine: usize) -> *mut c_char {
+    handles::with_engine(engine, |e| c_string(&std::mem::take(&mut e.dropped_word)))
+        .unwrap_or(std::ptr::null_mut())
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn EngineKeptAtLastKey(engine: usize) -> u8 {
     handles::with_engine(engine, |e| e.kept_at_last_key()).unwrap_or(false) as u8

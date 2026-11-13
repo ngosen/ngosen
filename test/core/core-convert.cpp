@@ -122,13 +122,19 @@ namespace {
         }
     }
 
-    // Firefox and LibreOffice report no selection; their primary selection holds it.
+    // Firefox and LibreOffice report no selection, only a cursor at its start; their primary selection holds it.
     void primarySelection() {
         {
             Setup s;
-            s.host().setSurrounding("a TiÕng b", 7);
+            s.host().setSurrounding("a ViÖt b", 2);
             s.host().setPrimary("ViÖt");
             expect(s, "primary selection", ConvertResult::Converted, {"Việt"}, {});
+        }
+        {
+            Setup s;
+            s.host().setSurrounding("a ViÖt\nhay", 2);
+            s.host().setPrimary("ViÖt\nhay\nnữa");
+            expect(s, "primary selection longer than the surrounding text", ConvertResult::Converted, {"Việt\nhay\nnữa"}, {});
         }
         {
             Setup s;
@@ -149,6 +155,20 @@ namespace {
             Setup s;
             s.host().setSurrounding("a TiÕng b", 7);
             expect(s, "no selection", ConvertResult::NoSelection, {}, {});
+        }
+        {
+            // Firefox keeps the primary selection after Right moves the cursor past it, and fcitx5 keeps
+            // its copy of an X11 one after the app drops it.
+            Setup s;
+            s.host().setSurrounding("TiÕng ViÖt hay", 14);
+            s.host().setPrimary("TiÕng ViÖt hay");
+            expect(s, "primary selection left behind", ConvertResult::NoSelection, {}, {});
+        }
+        {
+            Setup s;
+            s.host().setSurrounding("abc", 0);
+            s.host().setPrimary("ViÖt");
+            expect(s, "primary selection from another field", ConvertResult::NoSelection, {}, {});
         }
         {
             Setup s;

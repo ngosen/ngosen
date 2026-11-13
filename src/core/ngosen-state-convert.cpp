@@ -6,6 +6,7 @@
 #include "bamboo-core.h"
 #include "ngosen-log.h"
 #include "ngosen-state.h"
+#include "ngosen-strings.h"
 #include "ngosen-utf8.h"
 
 #include <algorithm>
@@ -35,6 +36,16 @@ namespace ngosen {
             return s.text().substr(begin, byteOffset(s.text(), to) - begin);
         }
 
+        // Apps that report no selection put their cursor at its start, so a primary selection
+        // anywhere else is one the app has let go of.
+        bool primaryAtCursor(const Surrounding& s, const std::string& primary) {
+            if (!s.isValid() || !utf8::validate(s.text()) || s.cursor() > utf8::length(s.text()))
+                return true;
+            const std::string after = s.text().substr(byteOffset(s.text(), s.cursor()));
+            // A long selection can run past the part of the text the app sends.
+            return !after.empty() && (isStartsWith(after, primary) || isStartsWith(primary, after));
+        }
+
     } // namespace
 
     ConvertResult TypingState::convertSelection() {
@@ -52,8 +63,13 @@ namespace ngosen {
         std::string       selected = reportedSelection(s);
         const bool        reported = !selected.empty();
         // Firefox and LibreOffice report no selection, but put it in the primary selection.
-        if (!reported)
+        if (!reported) {
             selected = host_->primarySelection();
+            if (!selected.empty() && !primaryAtCursor(s, selected)) {
+                NGOSEN_INFO("Convert: the primary selection is not at the cursor");
+                return ConvertResult::NoSelection;
+            }
+        }
         if (selected.empty())
             return ConvertResult::NoSelection;
 

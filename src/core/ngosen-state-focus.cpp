@@ -30,6 +30,7 @@ namespace ngosen {
         const bool        bounce = targetMode == ngosen::Mode::Sen && lastDeactivateTime_ > 0 && now - lastDeactivateTime_ < FocusBounceMs;
         const bool        resume = bounce && deletionInterruptedAt_ > 0 && is_deleting_.load();
         deletionInterruptedAt_   = 0;
+        echoKeyAtUs_             = 0; // a report of another field would end it
         if (key_report_pending_ && !resume) {
             key_report_timer_.reset();
             dropReplacementAfterFocusLoss();
@@ -120,7 +121,8 @@ namespace ngosen {
 
     void TypingState::deactivate(bool isFocusOut) {
         enter_after_replacement_ = false; // an Enter would land in the next field
-        flushPendingReplacement();        // commit pending text into the field we are leaving
+        echoKeyAtUs_             = 0;
+        flushPendingReplacement(); // commit pending text into the field we are leaving
         if (isFocusOut) {
             commitNotSeen_.clear();
             overtype_focus_bounced_         = overtype_pending_;

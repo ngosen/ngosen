@@ -3329,6 +3329,39 @@ namespace {
         check(spaceRun.text == "xem  chào", "busy page: a doubled space after a cursor past the commit", spaceRun.text);
     }
 
+    // How late the app shows typed letters says how long to keep the commit behind the deletion.
+    void testSplitWaitFollowsEchoes() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks busy{
+            .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true, .turnMs = 3, .appliesDeletionAfterMs = 50, .textAfterCursor = "chào"};
+        busy.reportDelayMs = 30;
+        const auto    keys = keysOf("nguwx nguwx ");
+        FakeResources busyResources;
+        const auto    busyRun = ngosen::test::typeInAppTraced(busyResources, field, busy, keys, std::vector<int>(keys.size(), 150));
+        check(busyRun.text == "ngữ ngữ chào", "busy page: the commit waits until the deletion is in", busyRun.text);
+
+        // Letters typed faster than the page shows them must not take the report of the one before.
+        ngosen::test::AppQuirks rolled = busy;
+        rolled.appliesDeletionAfterMs  = 25;
+        const auto    rollKeys         = keysOf("nguwx ");
+        FakeResources rollResources;
+        const auto    rollRun = ngosen::test::typeInAppTraced(rollResources, field, rolled, rollKeys, {20, 20, 150, 150, 150, 150});
+        check(rollRun.text == "ngữ chào", "busy page, letters rolled over: the commit still waits for the deletion", rollRun.text);
+
+        ngosen::test::AppQuirks idle = busy;
+        idle.reportDelayMs           = 0;
+        idle.appliesDeletionAfterMs  = 0;
+        FakeResources idleResources;
+        ngosen::test::captureLog(true);
+        const auto idleRun   = ngosen::test::typeInAppTraced(idleResources, field, idle, keys, std::vector<int>(keys.size(), 150));
+        const auto idleLines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(idleRun.text == "ngữ ngữ chào", "idle page: the words come out right", idleRun.text);
+        // An edit's own report is no echo: it would stretch the next wait.
+        check(countHaving(idleLines, "ended=committed after 8 ms") == 4, "idle page: every commit follows its deletion at the shortest wait", join(idleLines));
+    }
+
     // Firefox's cursor stays past the real one after a deletion and a commit in one turn, so the next
     // deletion would take what follows the word.
     void testEditBeforeOtherText() {
@@ -4443,6 +4476,7 @@ int main() {
     testSplitTimerSurvivesReplay();
     testSplitOutlastsFocusBounce();
     testCursorPastOnBusyPage();
+    testSplitWaitFollowsEchoes();
     testAutofillTailCommitsWithDeletion();
     testSelectedTailGoesFirst();
     testReportRequestIsNotInput();

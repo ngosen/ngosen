@@ -405,6 +405,20 @@ namespace fcitx {
         initToggleAction(enableDictionaryAction_, config_.enableDictionary, "ngosen-dictionary", "accessories-dictionary", _("Custom Dictionary"), N_("Custom Dictionary"),
                          uiManager);
 
+        // A way into Vietnamese for keyboards that cannot press the toggle key.
+        vietnameseAction_ = std::make_unique<SimpleAction>();
+        vietnameseAction_->setIcon("fcitx-ngosen");
+        connections_.emplace_back(vietnameseAction_->connect<SimpleAction::Activated>([this](InputContext* ic) {
+            if (ic != nullptr) {
+                toggleVietnamese(ic, false);
+                return;
+            }
+            config_.vietnameseOn.setValue(!*config_.vietnameseOn);
+            saveConfig();
+            setMode(globalMode(), nullptr);
+        }));
+        uiManager.registerAction("ngosen-vietnamese", vietnameseAction_.get());
+
         settingsAction_ = std::make_unique<SimpleAction>();
         settingsAction_->setShortText(_("Settings"));
         settingsAction_->setIcon("configure");
@@ -446,7 +460,8 @@ namespace fcitx {
         loadAppRules();
         vimAppsPath_ = configDir + "/ngosen-vim-apps.conf";
         loadVimApps();
-        menuEntries_ = {{inputMethodAction_.get(), &config_.showMenuInputMethod},
+        menuEntries_ = {{vietnameseAction_.get(), nullptr},
+                        {inputMethodAction_.get(), &config_.showMenuInputMethod},
                         {charsetAction_.get(), &config_.showMenuCharset},
                         {spellCheckAction_.get(), &config_.showMenuSpellCheck},
                         {macroAction_.get(), &config_.showMenuMacro},
@@ -1142,7 +1157,16 @@ namespace fcitx {
         checkChoice(*inputMethodAction_, _("Input Method"), inputMethodSubAction_, InputMethodActionId, *config_.inputMethod, ic);
     }
 
+    void NgoSenEngine::updateVietnameseAction(InputContext* ic) {
+        if (!vietnameseAction_)
+            return;
+        vietnameseAction_->setShortText((realMode != NgoSenMode::Off ? "✔ " : "✖ ") + std::string(_("Vietnamese")));
+        if (ic != nullptr)
+            vietnameseAction_->update(ic);
+    }
+
     void NgoSenEngine::fillStatusArea(InputContext* ic) {
+        updateVietnameseAction(nullptr);
         auto& statusArea = ic->statusArea();
         statusArea.clearGroup(StatusGroup::InputMethod);
         for (const auto& entry : menuEntries_) {
@@ -1686,6 +1710,7 @@ namespace fcitx {
 
     void NgoSenEngine::setMode(NgoSenMode mode, InputContext* ic) {
         realMode = mode;
+        updateVietnameseAction(ic);
         if (ic != nullptr) {
             if (auto* state = stateFor(ic)) {
                 state->clearAllBuffers();

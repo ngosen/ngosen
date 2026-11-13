@@ -286,6 +286,7 @@ namespace fcitx {
         std::unique_ptr<SimpleAction>               capitalizeStartAction_;
         std::unique_ptr<SimpleAction>               autoNonVnRestoreAction_;
         std::unique_ptr<SimpleAction>               enableDictionaryAction_;
+        std::unique_ptr<SimpleAction>               vietnameseAction_;
         std::unique_ptr<SimpleAction>               settingsAction_;
         std::unique_ptr<SimpleAction>               saveLogAction_;
         ngosen::Recorder                            recorder_;
@@ -403,6 +404,7 @@ namespace fcitx {
          * @brief Puts the menu entries the user chose into the tray menu of ic.
          */
         void fillStatusArea(InputContext* ic);
+        void updateVietnameseAction(InputContext* ic);
 
         /**
          * @brief Populates input method names from bamboo core.

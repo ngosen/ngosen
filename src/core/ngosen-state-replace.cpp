@@ -685,7 +685,34 @@ namespace ngosen {
         return fails;
     }
 
+    // A deletion would start from that cursor, and nothing the input method sends can move it.
+    bool TypingState::keepsWordRawWhileCursorPast() {
+        if (!cursorStaysPast())
+            return false;
+        NGOSEN_INFO("Keep the word as typed" + loggedField(host_->field()) + ": the app's cursor is past its last commit");
+        rawWord_    = true;
+        hasHistory_ = false;
+        ResetEngine(bambooEngine_.handle());
+        oldPreBuffer_.clear();
+        return true;
+    }
+
+    // A key outside the word can start an edit of its own: a doubled space or hyphen, a macro.
+    bool TypingState::passesKeyWhileCursorPast(ngosen::KeyPress& keyEvent, uint32_t sym) {
+        if (keyEvent.isRelease() || keyEvent.isModifier() || (mode() != ngosen::Mode::Sen && mode() != ngosen::Mode::Off))
+            return false;
+        if (belongsToRawWord(sym, keyEvent.states()) || host_->keyText(sym).empty() || !keepsWordRawWhileCursorPast())
+            return false;
+        rawWord_      = false;
+        isPrevSpace_  = false;
+        isPrevHyphen_ = false;
+        keyEvent.passToApp();
+        return true;
+    }
+
     bool TypingState::keepsWordRaw(const std::string& deletedPart) {
+        if (keepsWordRawWhileCursorPast())
+            return true;
         const Field field = host_->field();
         if (!field.preeditFallback || !deletesOnlyThroughSurrounding())
             return false;
@@ -724,16 +751,20 @@ namespace ngosen {
         }
         if (!rawWord_)
             return false;
-        const std::u32string chars = ngosen::utf8::decode(host_->keyText(sym));
-        // Telex types ư and ơ with the bracket keys, so they belong to the word too.
-        const bool wordChar  = chars.size() == 1 && (isWordChar(chars[0]) || chars[0] == U'[' || chars[0] == U']');
-        const bool shiftOnly = (keyEvent.states() & ~(ngosen::modifier::Shift | ngosen::modifier::Repeat)) == 0;
-        if (shiftOnly && (wordChar || ngosen::key::isBackspace(sym))) {
+        if (belongsToRawWord(sym, keyEvent.states())) {
             keyEvent.passToApp();
             return true;
         }
         rawWord_ = false;
         return false;
+    }
+
+    bool TypingState::belongsToRawWord(uint32_t sym, uint32_t states) const {
+        const std::u32string chars = ngosen::utf8::decode(host_->keyText(sym));
+        // Telex types ư and ơ with the bracket keys, so they belong to the word too.
+        const bool wordChar  = chars.size() == 1 && (isWordChar(chars[0]) || chars[0] == U'[' || chars[0] == U']');
+        const bool shiftOnly = (states & ~(ngosen::modifier::Shift | ngosen::modifier::Repeat)) == 0;
+        return shiftOnly && (wordChar || ngosen::key::isBackspace(sym));
     }
 
     void TypingState::noteAutofill(const Surrounding& report) {
@@ -923,6 +954,8 @@ namespace ngosen {
     }
 
     constexpr uint64_t SplitEditWaitUs = 30000;
+    // A page slow enough to leave Firefox's cursor past a commit can take this long over a deletion.
+    constexpr uint64_t CursorPastSplitWaitUs = 120000;
     // As long as a focus bounce lasts; the deletion is out, so giving up loses the word's letters.
     constexpr int SplitEditFocusRetries = 50;
 
@@ -938,6 +971,8 @@ namespace ngosen {
         editSentAtUs_           = monotonicUs();
         unreportedDeleteLength_ = static_cast<unsigned int>(count);
         unreportedDeleteKey_    = keyCount_;
+        if (ngosen::keepsLastEditPerTurn(host_->field()) && extraBeforeCursor == 0)
+            noteEditLeft(surrounding, count, retype + pending_commit_string_);
         host_->deleteSurrounding(-(count + extraBeforeCursor), static_cast<unsigned int>(count + extraBeforeCursor));
         NGOSEN_INFO("Delete using surrounding text");
         ngosen::sleepUs(static_cast<uint64_t>(std::max(engine_->options().surrDeleteSleepMs * count, 0)) * 1000ULL);
@@ -954,7 +989,7 @@ namespace ngosen {
             if (ngosen::keepsLastEditPerTurn(field) && joins)
                 NGOSEN_INFO("Join the deletion and the commit for " + field.program);
             else if (ngosen::keepsLastEditPerTurn(field) && !cursorIsBeforeAutofill(surrounding))
-                holdUs = SplitEditWaitUs;
+                holdUs = sinceFocus_.cursorPastSeen ? CursorPastSplitWaitUs : SplitEditWaitUs;
             // A just-emptied Messenger composer reloads its placeholder and drops a commit sent with the deletion.
             else if (messengerFirst)
                 holdUs = static_cast<uint64_t>(std::max(engine_->options().waitSurroundingSettleFirstWordMs, 0)) * 1000ULL;
@@ -1024,6 +1059,45 @@ namespace ngosen {
             replaceThroughSurrounding(copy, 1);
             return tail_clear_pending_;
         });
+    }
+
+    void TypingState::noteEditLeft(const Surrounding& copy, int count, const std::string& committed) {
+        editLeft_.reset();
+        if (!copy.isValid() || copy.cursor() < static_cast<unsigned int>(count))
+            return;
+        const std::string before = textBeforeCursor(copy);
+        std::string       left   = before;
+        for (int i = 0; i < count; ++i)
+            utf8::eraseLastCodepoint(left);
+        left += committed;
+        editLeft_ =
+            EditLeft{.text = left + copy.text().substr(before.size()), .cursor = static_cast<unsigned int>(utf8::length(left)), .deleted = static_cast<unsigned int>(count)};
+    }
+
+    // Firefox moves its cursor over a commit before the page has taken the deletion ahead of it, and
+    // keeps it there until a typed key moves it.
+    void TypingState::noteCursorPast(const Surrounding& report) {
+        const std::string key = reportKey(report);
+        if (key != sinceFocus_.cursorPastReport)
+            sinceFocus_.cursorPastReport.clear();
+        if (!editLeft_ || !report.isValid() || report.cursor() != report.anchor() || report.text() != editLeft_->text)
+            return;
+        const unsigned int expected = editLeft_->cursor;
+        if (report.cursor() == expected) {
+            editLeft_.reset();
+            return;
+        }
+        if (report.cursor() < expected || report.cursor() > expected + editLeft_->deleted)
+            return;
+        editLeft_.reset();
+        sinceFocus_.cursorPastReport = key;
+        if (!sinceFocus_.cursorPastSeen)
+            NGOSEN_INFO("The app shows its cursor " + std::to_string(report.cursor() - expected) + " past the last commit; wait longer before commits here");
+        sinceFocus_.cursorPastSeen = true;
+    }
+
+    bool TypingState::cursorStaysPast() const {
+        return !sinceFocus_.cursorPastReport.empty() && reportKey(host_->surrounding()) == sinceFocus_.cursorPastReport;
     }
 
     void TypingState::finishSurroundingEdit(const Surrounding& surrounding, const std::string& retype) {
@@ -1295,6 +1369,13 @@ namespace ngosen {
         // As for a typed key: a word that ended in the replay takes no Backspace into the next one.
         if (oldPreBuffer_.empty())
             backspaceInWord_ = false;
+        if (rawWord_ && !ngosen::key::isBackspace(sym)) {
+            if (belongsToRawWord(sym, state)) {
+                out += keyUtf8;
+                return false;
+            }
+            rawWord_ = false;
+        }
         if (ngosen::key::isBackspace(sym)) {
             // Like a typed backspace: the engine drops a letter and the app deletes it after the commit.
             dropLetterForBackspace();
@@ -1332,6 +1413,13 @@ namespace ngosen {
             const bool        folded = replacing && !sent && foldIntoReplay(out, deletedPart, addedPart);
             if (folded) {
                 out += owed;
+            } else if (replacing && keepsWordRawWhileCursorPast()) {
+                rawWord_ = false;
+                lastWord_.clear();
+                if (sent)
+                    return holdReplayedKey(keys, i, out, *sent);
+                out += keyUtf8;
+                return false;
             } else if (replacing) {
                 if (sent) {
                     enter_after_replacement_ = true;
@@ -1382,6 +1470,10 @@ namespace ngosen {
         }
         if (foldIntoReplay(out, deletedPart, addedPart)) {
             oldPreBuffer_ = preeditStr;
+            return false;
+        }
+        if (keepsWordRawWhileCursorPast()) {
+            out += keyUtf8;
             return false;
         }
         if (is_deleting_.load()) {

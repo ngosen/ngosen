@@ -241,7 +241,7 @@ namespace ngosen {
         std::string        addMarks(const std::string& typed);
         bool               everyWordTakesMarks(const std::string& typed);
         void               applyRetype();
-        void               replaceRetyped(const std::string& from, const std::string& to);
+        bool               replaceRetyped(const std::string& from, const std::string& to);
         void               acceptRetype(const std::string& hint);
         void               applyRetypeSoon(std::string hint);
         void               reopenTypedKey();
@@ -691,6 +691,9 @@ namespace ngosen {
         std::vector<std::string> wordStartFails() const;
         // The first letters are already in the field and its copy does not show them: leave the word raw.
         bool keepsWordRaw(const std::string& deletedPart);
+        bool keepsWordRawWhileCursorPast();
+        bool passesKeyWhileCursorPast(ngosen::KeyPress& keyEvent, uint32_t sym);
+        bool belongsToRawWord(uint32_t sym, uint32_t states) const;
         void noteAutofill(const Surrounding& report);
         // Why this word cannot be deleted through the surrounding text; chars is what the deletion would ask for.
         std::vector<std::string> surroundingPathFails(const Surrounding& surrounding, unsigned int& chars) const;
@@ -741,8 +744,21 @@ namespace ngosen {
             int                       copyWaitsHeldBack = 0;     ///< replacements while unanswered checks keep the copy wait off
             int                       retriesRunOut     = 0;     ///< waits tried again in a row that ran out
             bool                      showedBackspace   = false; ///< a report showed the deletion our backspaces made
+            std::string               cursorPastReport;          ///< reportKey() of a report with the cursor past the last commit
+            bool                      cursorPastSeen = false;    ///< some report showed that since focus
         };
         FieldHistory sinceFocus_;
+
+        // The text a split edit leaves, to tell a report whose cursor stayed past its commit.
+        struct EditLeft {
+            std::string  text;
+            unsigned int cursor  = 0;
+            unsigned int deleted = 0;
+        };
+        std::optional<EditLeft> editLeft_;
+        void                    noteEditLeft(const Surrounding& copy, int count, const std::string& committed);
+        void                    noteCursorPast(const Surrounding& report);
+        bool                    cursorStaysPast() const;
 
         // One debug line per replacement: how it deleted, what it waited for first, how it ended.
         void        startReplaceLog(const char* wait);

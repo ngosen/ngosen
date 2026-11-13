@@ -1155,22 +1155,18 @@ impl BambooEngine {
         let n = if g.is_ascii_uppercase() { 'N' } else { 'n' };
         let (head, tail) = keys.split_at(kept.keys);
         let from_keys = self.typed_alone(head.iter().chain([&n]).chain(tail).copied());
-        // A word Backspace brought back has keys without its marks, so the text shown comes first.
+        // A word Backspace brought back has keys without its marks, so the text shown comes first;
+        // the keys alone can move a tone typed after the g (`gieefgs` is giếng).
         let mut from_shown = self.typed_alone([]);
         from_shown.rebuild_from_text(&format!("{}{n}", kept.shown));
         for &key in tail {
             from_shown.process_key(key, Mode::Vietnamese);
         }
-        // Keys typed after the g may move the tone (`gieefgs` is giếng), but keep the letters shown.
-        let letters = without_tones(&format!("{}ng", kept.shown)).0;
         [from_shown, from_keys].into_iter().find_map(|typed| {
             let text = typed.get_processed_str(OutputOptions::NONE);
             let whole = typed.get_processed_str(OutputOptions::FULL_TEXT) == text;
-            (whole
-                && without_tones(&text).0 == letters
-                && typed.is_valid_word()
-                && self.dictionary.contains(&text.to_lowercase()))
-            .then_some(text)
+            (whole && typed.is_valid_word() && self.dictionary.contains(&text.to_lowercase()))
+                .then_some(text)
         })
     }
 

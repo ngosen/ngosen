@@ -144,6 +144,8 @@ namespace ngosen::test {
         void focusNewFieldWith(const std::string& text, int ms);
         // Puts text around the cursor with no key through the input method, as a paste does.
         void pageInserts(const std::string& before, const std::string& after);
+        // The field now holds only this text, cursor at its end, with no key: another cell in the same context.
+        void pageShowsCell(const std::string& text);
         // A key whose press reached the page before the field had focus, as the key that opens a sheet's
         // cell editor: the page puts text around the cursor, and the input method gets only the release.
         void pageTakesKey(uint32_t sym, const std::string& before, const std::string& after);

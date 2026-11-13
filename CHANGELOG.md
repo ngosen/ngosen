@@ -17,6 +17,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trong các bảng tính web Handsontable và AG Grid trên Firefox ở KDE Plasma, Gõ Sen không còn bỏ sót phím đầu sau khi chuyển cell bằng Enter: gõ `ddaay` trong cell mới giờ ra `đây`, không còn thành `ddây` (#735, sửa tiếp #730).
 - Trong Firefox trên GNOME, Gõ Sen không còn đảo thứ tự chữ khi gõ nhanh với hai BackSpace liền nhau: gõ `tieesng`, hai BackSpace, `ng` giờ ra `tiếng`, không còn thành `tieesgn` hay `tiees ng` (#741).
 - Trong Firefox trên GNOME khi tắt extension Ngó Sen, Gõ Sen không còn xoá mất chữ cái sau từ khi đổi dấu thanh hai lần liền trên trang web đang bận: gõ `nguwxs` giữa `xin chào` trước có thể thành `xin ngữứ hào` rồi ô ngừng gõ tiếng Việt tới khi khởi động lại fcitx5; nay khi nhận ra con trỏ bị lệch, Gõ Sen giữ nguyên phím vừa gõ, thành `ngữs` để người dùng thấy và sửa, ô vẫn gõ được tiếng Việt và các lần sửa tiếp trong ô chờ lâu hơn để tránh lặp lại lỗi (#745).
+- Trong Firefox trên GNOME khi tắt extension Ngó Sen, Gõ Sen nay đo tốc độ trang web hiện chữ để điều chỉnh khoảng chờ giữa xoá chữ cũ và gõ chữ mới khi thêm dấu thanh: khoảng 15 ms trên trang nhàn nên chữ cũ gần như không còn chớp, tăng tới khoảng 75 ms trên trang bận để chữ mới không đến trước khi xoá xong. Trước đây, khoảng chờ cố định 30 ms khiến chữ cũ chớp trên trang nhàn và vẫn có thể gõ sai dấu trên trang bận; nay thử trên trang bận ra đúng dấu 20/20 lần, so với 16/20 lần ở version 1.10.1 (#747).
 
 ## [1.10.1-1] — 12/11/2026
 

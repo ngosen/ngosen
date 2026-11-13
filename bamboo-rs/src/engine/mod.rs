@@ -1138,25 +1138,33 @@ impl BambooEngine {
     }
 
     /// A word kept with keys after it, like `đượcd`, does not compose from its letters: the
-    /// longest dictionary word it starts with is rebuilt and the rest typed as keys.
+    /// longest dictionary word it starts with is rebuilt and the rest typed again as keys.
     fn rebuild_kept_word(&mut self, text: &str) {
         let chars: Vec<char> = text.chars().collect();
         for end in (1..chars.len()).rev() {
             let head: String = chars[..end].iter().collect();
-            if !self.dictionary.contains(&head.to_lowercase()) {
+            let tail = &chars[end..];
+            if !tail.iter().all(char::is_ascii_alphanumeric)
+                || !self.dictionary.contains(&head.to_lowercase())
+            {
                 continue;
             }
             self.preeditor.rebuild_from_text(&head);
             if self.get_preedit_string() != head {
                 continue;
             }
-            let keys = self.raw_text().chars().count();
-            for &c in &chars[end..] {
-                self.preeditor.process_key(c, Mode::English);
+            // Typing the keys shows whether they break the word; `hòa` is `hò` and an `a` that composes.
+            self.kept = None;
+            self.commit_text.clear();
+            self.preedit_text = head;
+            for &c in tail {
+                self.process_key_event(c as u32, 0);
             }
-            self.kept = Some(KeptWord { shown: head, keys });
-            return;
+            if self.commit_text.is_empty() && self.get_preedit_string() == text {
+                return;
+            }
         }
+        self.kept = None;
         self.preeditor.rebuild_from_text(text);
     }
 }

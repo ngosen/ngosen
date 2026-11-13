@@ -1397,3 +1397,21 @@ fn test_backspace_into_a_reopened_kept_word() {
     type_keys(&mut e, "s");
     assert_eq!(e.preedit_text, "đước");
 }
+
+#[test]
+fn test_reopened_word_in_another_tone_style_is_not_kept() {
+    for (im, text, key) in [
+        ("Telex", "hòa", "s"),
+        ("Telex", "HÒA", "s"),
+        ("Telex", "hòa2", "s"),
+        ("VNI", "hòa", "1"),
+    ] {
+        let mut plain = engine_keeping_words(im, &[]);
+        plain.rebuild_from_text(text);
+        type_keys(&mut plain, key);
+        let mut e = engine_keeping_words(im, &["bank"]);
+        e.rebuild_from_text(text);
+        type_keys(&mut e, key);
+        assert_eq!(e.preedit_text, plain.preedit_text, "{im} {text}");
+    }
+}

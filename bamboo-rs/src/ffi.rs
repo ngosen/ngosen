@@ -17,6 +17,7 @@ use std::sync::Arc;
 use bamboo_core::advanced::get_charset_names;
 use bamboo_core::{BracketMode, Config, InputMethod, ToneStyle, W2uMode};
 
+use crate::convert::{LetterCase, convert};
 use crate::engine::{BambooEngine, Dictionary, INPUT_METHOD_NAMES, WordList, input_method_by_name};
 use crate::handles::{self, Object};
 use crate::macro_table::MacroTable;
@@ -262,6 +263,31 @@ pub unsafe extern "C" fn EngineRebuildFromText(engine: usize, text: *const c_cha
     // SAFETY: the caller passes a valid C string or null.
     let text = unsafe { string_from_c(text) };
     handles::with_engine(engine, |e| e.rebuild_from_text(&text));
+}
+
+/// Converts `text` between two charsets named as in GetCharsetNames. `letter_case` is 0 to keep,
+/// 1 upper, 2 lower, 3 sentence or 4 title case. Returns null for an unknown charset or case.
+///
+/// # Safety
+/// Each pointer is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ConvertText(
+    text: *const c_char,
+    from: *const c_char,
+    to: *const c_char,
+    letter_case: c_int,
+    strip_diacritics: bool,
+) -> *mut c_char {
+    // SAFETY: the caller passes valid C strings or null.
+    let (text, from, to) = unsafe { (string_from_c(text), string_from_c(from), string_from_c(to)) };
+    let (Ok(from), Ok(to), Some(case)) = (
+        from.parse(),
+        to.parse(),
+        LetterCase::from_index(letter_case),
+    ) else {
+        return std::ptr::null_mut();
+    };
+    c_string(&convert(&text, from, to, case, strip_diacritics))
 }
 
 #[unsafe(no_mangle)]

@@ -3271,6 +3271,25 @@ namespace {
         check(fast.text == "việt nam ", "a long turn: a replayed key waits for the edit to come out", fast.text);
     }
 
+    // GNOME Shell sends a deletion and its commit in separate turns, so a typed Backspace can land between them.
+    void testBackspaceBetweenSplitEdits() {
+        Field field           = makeField("ibus", true, "firefox_firefox.desktop");
+        field.reportedProgram = "gnome-shell";
+        field.appNameCurrent  = true;
+        FakeResources           resources;
+        ngosen::test::AppQuirks firefox{.reportDelayMs = 70, .backspacesSkipLag = true, .reportsTextAtChange = true, .keepsLastEditPerTurn = true, .turnMs = 3};
+        auto                    keys = keysOf("nam tieesng<<ng ");
+        std::replace(keys.begin(), keys.end(), static_cast<uint32_t>('<'), static_cast<uint32_t>(ngosen::key::BackSpace));
+        const auto run = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 60));
+        check(run.text == "nam tiếng ", "split edit on GNOME: a Backspace typed between the deletion and the commit follows the commit", run.text);
+
+        // Two held Backspaces: a key typed when the first goes out must not pass the keys after the second.
+        FakeResources slowResources;
+        firefox.reportDelayMs = 90;
+        const auto slow       = ngosen::test::typeInAppTraced(slowResources, field, firefox, keys, std::vector<int>(keys.size(), 60));
+        check(slow.text == "nam tiếng ", "split edit on GNOME: a key typed while a replayed Backspace is held waits behind the keys before it", slow.text);
+    }
+
     // The cursor moving over our own edit is not a click, so the word goes on.
     void testCursorMovesBeforeEditText() {
         realMode = ngosen::Mode::Sen;
@@ -3292,6 +3311,68 @@ namespace {
         ckeditor.showsDeletionWithCursorPast = true;
         const auto ckRun = ngosen::test::typeInAppTraced(ckResources, makeField("wayland", true, "firefox"), ckeditor, keys, std::vector<int>(keys.size(), 150));
         check(ckRun.text == "ngữ chào", "deletion shown with the cursor past the commit: the word keeps its tone", ckRun.text);
+    }
+
+    // On a busy page Firefox can move its cursor over a commit before it takes the deletion ahead of it,
+    // and a deletion from there would take what follows the word.
+    void testCursorPastOnBusyPage() {
+        Field field   = surroundingOnlyField();
+        field.program = "gnome-shell";
+        ngosen::test::AppQuirks busy{
+            .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true, .turnMs = 3, .appliesDeletionAfterMs = 60, .textAfterCursor = "chào"};
+        const auto    keys = keysOf("nguwx nguwx ");
+        FakeResources resources;
+        ngosen::test::captureLog(true);
+        const auto run   = ngosen::test::typeInAppTraced(resources, field, busy, keys, std::vector<int>(keys.size(), 150));
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        // The key after the edit that left the cursor past goes in as typed, and the next word waits longer.
+        check(run.text == "ngưx ngữ chào", "busy page: no deletion from a cursor past the commit", run.text);
+        check(countHaving(lines, "past the last commit; wait longer") == 1, "busy page: the cursor past the commit is seen", join(lines));
+        check(countHaving(lines, "the app's cursor is past its last commit") == 1, "busy page: one key goes in as typed", join(lines));
+
+        // A key typed during the edit's wait comes back in the replay, which must not delete either.
+        std::vector<int> gaps(keys.size(), 150);
+        gaps[3] = 15;
+        FakeResources replayResources;
+        const auto    replayRun = ngosen::test::typeInAppTraced(replayResources, field, busy, keys, gaps);
+        check(replayRun.text == "ngưx ngữ chào", "busy page: no deletion from a cursor past the commit in a replay", replayRun.text);
+
+        // Backspace taking the tone mark off deletes too, so it goes to the app instead.
+        FakeResources toneResources;
+        toneResources.mutableOptions().backspaceRemovesTone = true;
+        const std::vector<uint32_t> toneKeys                = {'l', 'a', 's', ngosen::key::BackSpace, ' '};
+        const auto                  toneRun                 = ngosen::test::typeInAppTraced(toneResources, field, busy, toneKeys, std::vector<int>(toneKeys.size(), 150));
+        check(toneRun.text == "l chào", "busy page: Backspace on a cursor past the commit goes to the app", toneRun.text);
+
+        // Text replayed after the edit is a commit that moves the cursor back, so the next word edits again.
+        const auto       rollKeys = keysOf("as as");
+        std::vector<int> rollGaps(rollKeys.size(), 150);
+        rollGaps[1] = rollGaps[2] = 15;
+        FakeResources rollResources;
+        const auto    rollRun = ngosen::test::typeInAppTraced(rollResources, field, busy, rollKeys, rollGaps);
+        check(rollRun.text == "á áchào", "busy page: replayed text after a cursor past the commit", rollRun.text);
+
+        // An Enter forwarded from the replay ends the word as typed, without the macro's deletion.
+        Field forwarding                  = makeField("ibus", true);
+        forwarding.program                = "gnome-shell";
+        ngosen::test::AppQuirks enterBusy = busy;
+        enterBusy.dropsForwardedKeys      = false;
+        enterBusy.showsEnter              = true;
+        enterBusy.textAfterCursor         = "á chào";
+        FakeResources enterResources;
+        enterResources.setMacros({{"á", "hello"}});
+        const std::vector<uint32_t> enterKeys = {'a', 's', ngosen::key::Return};
+        const auto                  enterRun  = ngosen::test::typeInAppTraced(enterResources, forwarding, enterBusy, enterKeys, {150, 15, 150});
+        check(enterRun.text == "á\ná chào", "busy page: a replayed Enter after a cursor past the commit", enterRun.text);
+
+        // A key outside the word can start an edit of its own, so it goes to the app too.
+        FakeResources spaceResources;
+        spaceResources.mutableOptions().doubleSpaceToPeriod = true;
+        spaceResources.setMacros({{"e", "xem"}});
+        const std::vector<uint32_t> spaceKeys = {'e', ' ', ' '};
+        const auto                  spaceRun  = ngosen::test::typeInAppTraced(spaceResources, field, busy, spaceKeys, std::vector<int>(spaceKeys.size(), 150));
+        check(spaceRun.text == "xem  chào", "busy page: a doubled space after a cursor past the commit", spaceRun.text);
     }
 
     // Firefox's cursor stays past the real one after a deletion and a commit in one turn, so the next
@@ -4408,6 +4489,7 @@ int main() {
     testAnsweringAppGetsPlainCount();
     testSplitTimerSurvivesReplay();
     testSplitOutlastsFocusBounce();
+    testCursorPastOnBusyPage();
     testAutofillTailCommitsWithDeletion();
     testSelectedTailGoesFirst();
     testReportRequestIsNotInput();
@@ -4426,6 +4508,7 @@ int main() {
     testFirefoxOnPlasmaDeletesThroughSurrounding();
     testLineBreakPastTheWord();
     testLongTurnKeepsTheEdit();
+    testBackspaceBetweenSplitEdits();
     testCopyWaitEndsAfterTheReport();
     testEditBeforeOtherText();
     testCursorMovesBeforeEditText();

@@ -381,7 +381,7 @@ namespace ngosen {
 
     bool TypingState::removeToneMark(ngosen::KeyPress& keyEvent) {
         const std::string untoned = withoutToneMark(oldPreBuffer_);
-        if (untoned == oldPreBuffer_ || !canSendBackspaces())
+        if (untoned == oldPreBuffer_ || !canSendBackspaces() || cursorStaysPast())
             return false;
 
         std::string deletedPart;
@@ -736,7 +736,9 @@ namespace ngosen {
         const bool ownBackspace = deleting && ngosen::key::isBackspace(currentSym) && !ngosen::forwardsBackspaces(host_->field());
         if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
             lastWord_.clear();
-        if (handleKeyDuringReplacement(keyEvent, currentSym))
+        if (holdKeyBehindHeldKey(keyEvent, currentSym))
+            return;
+        if (handleKeyDuringReplacement(keyEvent, currentSym) || passesKeyWhileCursorPast(keyEvent, currentSym))
             return;
         // Before the doubled keys, so -- stays as typed in a path.
         // The shell line still sees the key, so /usr/bin/vim starts Vim mode.
@@ -1034,6 +1036,18 @@ namespace ngosen {
         return ngosen::key::isBackspace(currentSym) && !keyEvent.hasModifier() && forwardsEnterAfterCommit() && !engine_->options().backspaceRemovesTone;
     }
 
+    // Sending the held key replayed the keys after it only up to the next held one, so this key queues behind them.
+    bool TypingState::holdKeyBehindHeldKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (!held_enter_pending_ || keyEvent.isRelease() || keyEvent.isModifier() || buffered_keys_.size() >= MAX_BUFFERED_KEYS)
+            return false;
+        if (!typesText(keyEvent, currentSym) && !holdsBackspace(keyEvent, currentSym) && !replayedEditKey(currentSym, keyEvent.states()))
+            return false;
+        noteHeldKeyForDoubling(keyEvent, currentSym);
+        buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code()});
+        keyEvent.accept();
+        return true;
+    }
+
     // A held key skips handleDoubledKey, but the next one still has to see it.
     void TypingState::noteHeldKeyForDoubling(const ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         isPrevSpace_  = !keyEvent.hasModifier() && (currentSym == ngosen::key::space || currentSym == ngosen::key::KP_Space);
@@ -1043,6 +1057,12 @@ namespace ngosen {
     bool TypingState::handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (holdKeyDuringEditHold(keyEvent, currentSym))
             return true;
+        if (split_edit_pending_ && holdsBackspace(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            // Sent now, it would reach the app between the deletion and its commit and take the letter before the word.
+            buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code()});
+            keyEvent.accept();
+            return true;
+        }
         if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_ && ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" &&
             ngosen::forwardsBackspaces(host_->field())) {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the

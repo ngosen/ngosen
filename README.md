@@ -74,6 +74,10 @@ Hoàn tác.
   trong ô mật khẩu.
 - **Cứu dấu:** bôi đen chữ rồi bấm phím dấu thanh để thêm, đổi hoặc bỏ dấu (`nhanh` + `s` → `nhánh`). Ở
   chế độ Gõ Sen, chỉ cần bấm chuột ngay sau từ (`nhanh|` + `s`) là sửa được dấu mà không cần bôi đen.
+- **Chuyển mã:** bôi đen đoạn chữ gõ bằng bảng mã cũ (TCVN3, VNI…) rồi bấm phím chuyển mã, chữ được đổi
+  sang Unicode; có thể đổi chữ hoa, chữ thường hoặc bỏ dấu cùng lúc. Đặt phím và bảng mã ở trang
+  **Chuyển mã** trong cửa sổ cài đặt; trang này còn có ô để dán chữ vào và chuyển ngay. Đã thử trên GNOME
+  với Firefox, Chromium, LibreOffice Writer và GNOME Text Editor; không dùng được trong terminal.
 - **Menu chế độ riêng cho từng app:** nhấn phím `` ` `` để mở menu cạnh con trỏ, chọn **Gõ Sen (1)**,
   **Gạch chân (q)**, **Chọn Emoji (w)** hoặc **Tắt (e)**, và bật **Vim mode (v)** cho app dùng phím Vim như
   nvim hay Claude Code. Ngó Sen nhớ lựa chọn riêng cho từng app.
@@ -427,7 +431,8 @@ ported from the original Go [bamboo-core](https://github.com/BambooEngine/bamboo
 [SCOWL](https://wordlist.aspell.net) by Kevin Atkinson.
 
 It includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to change the tone
-mark of a selected word. [Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in
-IBus and shares the same typing core. If you reuse Ngó Sen's code, keep the GPL and its notices, including when
+mark of a selected word. A convert hotkey turns selected TCVN3 or VNI text into Unicode.
+[Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in IBus and shares the same
+typing core. If you reuse Ngó Sen's code, keep the GPL and its notices, including when
 an AI tool rewrites it. If you port its approaches to another input method, credit this repository with a link.
 The rest of this page is in Vietnamese.

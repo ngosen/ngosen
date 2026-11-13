@@ -460,17 +460,24 @@ namespace ngosen {
         const Surrounding s = host_->surrounding();
         if (!s.isValid() || s.cursor() != s.anchor())
             return;
-        const std::string before     = textBeforeCursor(s);
-        const std::string afterKey   = late ? oldPreBuffer_ : std::string();
-        const bool        sameLetter = before.size() == 1 + afterKey.size() && static_cast<uint32_t>(std::tolower(static_cast<unsigned char>(before[0]))) == unseenPress_->first &&
-            before.compare(1, std::string::npos, afterKey) == 0;
-        if (!sameLetter || s.text().find_first_not_of('\n', before.size()) != std::string::npos)
+        const std::string before   = textBeforeCursor(s);
+        const std::string afterKey = late ? oldPreBuffer_ : std::string();
+        if (before.size() < 1 + afterKey.size())
             return;
-        NGOSEN_INFO("Word starts with the letter whose key went to the app before the field: " + logged(before.substr(0, 1)));
-        EngineRebuildFromText(bambooEngine_.handle(), before.substr(0, 1).c_str());
+        const size_t at = before.size() - 1 - afterKey.size();
+        const bool   sameLetter =
+            static_cast<uint32_t>(std::tolower(static_cast<unsigned char>(before[at]))) == unseenPress_->first && before.compare(at + 1, std::string::npos, afterKey) == 0;
+        // Bytes from 0x80 up belong to Vietnamese letters, so only ASCII that is not a letter or digit ends a word.
+        const bool startsWord = at == 0 || (static_cast<unsigned char>(before[at - 1]) < 0x80 && !std::isalnum(static_cast<unsigned char>(before[at - 1])));
+        // A sheet's cell editor holds only the letter; after Alt+Tab the field keeps its text around it.
+        const bool emptyCell = at == 0 && s.text().find_first_not_of('\n', before.size()) == std::string::npos;
+        if (!sameLetter || !startsWord || (late && !emptyCell))
+            return;
+        NGOSEN_INFO("Word starts with the letter whose key went to the app before the field: " + logged(before.substr(at, 1)));
+        EngineRebuildFromText(bambooEngine_.handle(), before.substr(at, 1).c_str());
         if (late)
             EngineProcessKeyEvent(bambooEngine_.handle(), keyAfterUnseen_->first, keyAfterUnseen_->second);
-        oldPreBuffer_ = before;
+        oldPreBuffer_ = before.substr(at);
         unseenPress_.reset();
     }
 

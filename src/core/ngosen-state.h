@@ -802,8 +802,8 @@ namespace ngosen {
         bool replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent);
         // Backspace from after lastWord_ into it: the engine takes up what is left of that word.
         void reopenLastWord();
-        // A sheet opens a cell editor on a key whose press reaches the page before the input method has a
-        // field: we get only its release, the editor holds that letter, and the word starts from it.
+        // A key's press can reach the app before the input method has the field (a sheet opening a cell
+        // editor, the first key after Alt+Tab): we get only its release, and the word starts from that letter.
         void takeLetterFieldOpenedWith();
         void takeLetterCellShows();
         void notePressOrRelease(const ngosen::KeyPress& keyEvent);

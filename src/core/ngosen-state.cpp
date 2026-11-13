@@ -319,7 +319,7 @@ namespace ngosen {
         }
 
         if (unseenPress_)
-            takeLetterFieldOpenedWith();
+            takeLetterFieldOpenedWith(keyEvent);
         if (cellMove_)
             takeLetterCellShows();
         const bool startsWord = oldPreBuffer_.empty();
@@ -444,12 +444,12 @@ namespace ngosen {
             pressedKeys_.erase(at);
         } else if (sym >= 'a' && sym <= 'z' && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U) {
             // A shortcut such as Ctrl+F moves focus while held, and its letter never reached the new field.
-            unseenPress_ = std::make_pair(sym, keyCount_);
+            unseenPress_ = std::make_pair(keyEvent.sym(), keyCount_);
             keyAfterUnseen_.reset();
         }
     }
 
-    void TypingState::takeLetterFieldOpenedWith() {
+    void TypingState::takeLetterFieldOpenedWith(const ngosen::KeyPress& keyEvent) {
         const Field    field     = host_->field();
         const uint64_t keysSince = keyCount_ - unseenPress_->second;
         // AG Grid reports the letter only with the change the next key makes.
@@ -458,6 +458,10 @@ namespace ngosen {
             unseenPress_.reset();
         if (!unseenPress_ || (keysSince != 1 && !late) || field.url || field.password)
             return;
+        if (!field.surroundingText) {
+            guessLetterFieldOpenedWith(keyEvent);
+            return;
+        }
         const Surrounding s = host_->surrounding();
         if (!s.isValid() || s.cursor() != s.anchor())
             return;
@@ -467,7 +471,7 @@ namespace ngosen {
             return;
         const size_t at = before.size() - 1 - afterKey.size();
         const bool   sameLetter =
-            static_cast<uint32_t>(std::tolower(static_cast<unsigned char>(before[at]))) == unseenPress_->first && before.compare(at + 1, std::string::npos, afterKey) == 0;
+            std::tolower(static_cast<unsigned char>(before[at])) == std::tolower(static_cast<int>(unseenPress_->first)) && before.compare(at + 1, std::string::npos, afterKey) == 0;
         // Bytes from 0x80 up belong to Vietnamese letters, so only ASCII that is not a letter or digit ends a word.
         const bool startsWord = at == 0 || (static_cast<unsigned char>(before[at - 1]) < 0x80 && !std::isalnum(static_cast<unsigned char>(before[at - 1])));
         // A sheet's cell editor holds only the letter; after Alt+Tab the field keeps its text around it.
@@ -480,6 +484,24 @@ namespace ngosen {
             EngineProcessKeyEvent(bambooEngine_.handle(), keyAfterUnseen_->first, keyAfterUnseen_->second);
         oldPreBuffer_ = before.substr(at);
         unseenPress_.reset();
+    }
+
+    // A page shortcut can also move focus with a letter (GitHub's s), so a letter we can't see in the field is
+    // taken only when this key changes it.
+    void TypingState::guessLetterFieldOpenedWith(const ngosen::KeyPress& keyEvent) {
+        const std::string letter(1, static_cast<char>(unseenPress_->first));
+        unseenPress_.reset();
+        EngineRebuildFromText(bambooEngine_.handle(), letter.c_str());
+        EngineProcessKeyEvent(bambooEngine_.handle(), keyEvent.sym(), keyEvent.states());
+        const auto shown  = ngosen::UniqueCPtr<char>(EnginePullPreedit(bambooEngine_.handle()));
+        const auto commit = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
+        ResetEngine(bambooEngine_.handle());
+        // A key that ends the word, such as Space expanding a macro named after the letter, changes nothing in it.
+        if (!shown || (commit && *commit.get() != 0) || letter + host_->keyText(keyEvent.sym()) == shown.get())
+            return;
+        NGOSEN_INFO("Word starts with the letter whose key went to the app before the field, as this key changes it: " + logged(letter));
+        EngineRebuildFromText(bambooEngine_.handle(), letter.c_str());
+        oldPreBuffer_ = letter;
     }
 
     // Firefox on KDE can hide both the press and the release of the key that opens the next cell: that cell

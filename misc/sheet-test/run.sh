@@ -18,7 +18,6 @@
 #   KIT       guest path of the copied misc/ directory (default /tmp/ngosen-kit/misc)
 #   SCREEN    guest screen size in pixels (default 1280x800)
 #   LIBVIRT   libvirt URI (default qemu:///system)
-#   HOLD      ms each key stays down (default 80, as a person types; virsh alone releases far sooner)
 #
 # Prints one tab-separated line per run: page, case, expected, got, ok/FAIL/skip.
 set -u
@@ -166,8 +165,11 @@ send_keys() {
         xdotool key --delay "$delay" "$@"
         return
     fi
+    # QEMU waits the hold time after the press and again after the release, so half the delay keeps
+    # keys from queueing up.
+    local hold=$((delay / 2))
     for k in "$@"; do
-        "${virsh[@]}" send-key "$vm" --holdtime "${HOLD:-80}" "$k" >/dev/null
+        "${virsh[@]}" send-key "$vm" --holdtime "$hold" "$k" >/dev/null
         sleep "$(printf '%d.%03d' $((delay / 1000)) $((delay % 1000)))"
     done
 }

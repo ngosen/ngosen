@@ -77,6 +77,16 @@ int main() {
         check("a click with no field turns Vietnamese off", ::realMode.load() == fcitx::NgoSenMode::Off);
         check("a click with no field marks the entry", vietnamese->shortText(&context) == "✖ Vietnamese");
         vietnamese->activate(&context);
+        // Turning Vietnamese off another way unmarks the entry too.
+        for (auto sym : {FcitxKey_grave, FcitxKey_e}) {
+            fcitx::KeyEvent down(&context, fcitx::Key(sym), false);
+            engine.keyEvent(entry, down);
+            fcitx::KeyEvent up(&context, fcitx::Key(sym), true);
+            engine.keyEvent(entry, up);
+        }
+        check("picking Off in the mode menu turns Vietnamese off", ::realMode.load() == fcitx::NgoSenMode::Off);
+        check("picking Off in the mode menu unmarks the entry", vietnamese->shortText(&context) == "✖ Vietnamese");
+        vietnamese->activate(&context);
     }
 
     auto* inputMethod = entryNamed(context, "ngosen-input-method");

@@ -414,7 +414,6 @@ namespace fcitx {
             config_.vietnameseOn.setValue(!*config_.vietnameseOn);
             saveConfig();
             setMode(globalMode(), nullptr);
-            updateVietnameseAction(nullptr);
         }));
         uiManager.registerAction("ngosen-vietnamese", vietnameseAction_.get());
 
@@ -1128,6 +1127,8 @@ namespace fcitx {
     }
 
     void NgoSenEngine::updateVietnameseAction(InputContext* ic) {
+        if (!vietnameseAction_)
+            return;
         vietnameseAction_->setShortText((realMode != NgoSenMode::Off ? "✔ " : "✖ ") + std::string(_("Vietnamese")));
         if (ic != nullptr)
             vietnameseAction_->update(ic);
@@ -1386,7 +1387,6 @@ namespace fcitx {
         // Shows "Ngó Sen (OFF)" or the input method; older fcitx5 has no custom text here.
         instance_->showInputMethodInformation(ic);
 #endif
-        updateVietnameseAction(ic);
         if (turnOn && offerRetype)
             stateFor(ic)->offerRetype();
     }
@@ -1679,6 +1679,7 @@ namespace fcitx {
 
     void NgoSenEngine::setMode(NgoSenMode mode, InputContext* ic) {
         realMode = mode;
+        updateVietnameseAction(ic);
         if (ic != nullptr) {
             if (auto* state = stateFor(ic)) {
                 state->clearAllBuffers();

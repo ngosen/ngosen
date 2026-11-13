@@ -233,8 +233,8 @@ namespace ngosen {
         if (!toned.empty() && toned != shown && withoutToneMark(toned) == withoutToneMark(shown)) {
             keyEvent.accept();
             NGOSEN_INFO("Retone: " + logged(shown) + " -> " + logged(toned));
-            replaceRetyped(shown + retype_->after, toned + retype_->after);
-            retype_->marked = toned;
+            if (replaceRetyped(shown + retype_->after, toned + retype_->after))
+                retype_->marked = toned;
             return true;
         }
         reopenTypedKey();

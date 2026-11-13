@@ -293,6 +293,8 @@ namespace ngosen {
         const std::string report     = host_->field().hidesText() ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
         sinceFocus_.reported         = sinceFocus_.reported || host_->surrounding().isValid();
         reportSinceEdit_             = true;
+        if (ngosen::keepsLastEditPerTurn(host_->field()))
+            noteCursorPast(host_->surrounding());
         // A repeat that a wait acts on stays in the log for its timing.
         if (waiting || overtyping || key_report_pending_)
             engine_->recorder().add("app", report);

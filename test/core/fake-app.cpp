@@ -699,12 +699,22 @@ namespace ngosen::test {
             return;
         turnPending_           = false;
         const bool oneTurnEdit = quirks_.cursorStaysPastEdit && turnDeleteBytes_ && turnCommit_ && !turnCommit_->empty();
+        const bool commitOnly  = !turnDeleteBytes_ && turnCommit_ && !turnCommit_->empty();
+        const bool overtakes = commitOnly && quirks_.appliesDeletionAfterMs > 0 && monotonicUs() < deletionTurnAtUs_ + static_cast<uint64_t>(quirks_.appliesDeletionAfterMs) * 1000;
         if (turnDeleteBytes_) {
             cursor_ += cursorPastBy_;
             anchor_                  = cursor_;
             cursorPastBy_            = 0;
             const unsigned int chars = charsForBytesBefore(*turnDeleteBytes_);
             eraseAround(-static_cast<int>(chars), chars);
+            deletionTurnAtUs_  = monotonicUs();
+            deletionTurnChars_ = chars;
+        }
+        if (commitOnly && quirks_.appliesDeletionAfterMs > 0 && !overtakes)
+            cursorPastBy_ = 0;
+        if (overtakes) {
+            cursorPastBy_     = deletionTurnChars_;
+            deletionTurnAtUs_ = 0;
         }
         if (turnCommit_ && focused_)
             insert(utf8::decode(*turnCommit_));

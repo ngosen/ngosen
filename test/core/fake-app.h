@@ -84,8 +84,11 @@ namespace ngosen::test {
         int  turnMs               = 0; // how long such a turn stays open
         // Its cursor stays past the real one after a deletion and a commit in one turn, as Firefox's does,
         // until a typed key corrects it.
-        bool cursorStaysPastEdit  = false;
-        int  oldTextAfterDeleteMs = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
+        bool cursorStaysPastEdit = false;
+        // The first commit whose turn ends this soon after a deletion's leaves the cursor past by the
+        // deletion, as Firefox does when the page is busy, until a typed key or another commit moves it.
+        int appliesDeletionAfterMs = 0;
+        int oldTextAfterDeleteMs   = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
         // Reports the cursor moving over a deletion and its commit on the old text before the new text, as
         // Slate in Firefox on Plasma does.
         bool movesCursorBeforeText = false;
@@ -281,7 +284,9 @@ namespace ngosen::test {
         bool                                turnPending_       = false;
         std::optional<size_t>               turnDeleteBytes_;
         std::optional<std::string>          turnCommit_;
-        size_t                              cursorPastBy_ = 0;
+        size_t                              cursorPastBy_      = 0;
+        uint64_t                            deletionTurnAtUs_  = 0;
+        size_t                              deletionTurnChars_ = 0;
         std::optional<unsigned int>         heldDelete_;
         bool                                showsMovedCursor_ = false;
         bool                                holdsUnreported_  = false;

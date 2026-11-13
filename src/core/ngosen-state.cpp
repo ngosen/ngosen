@@ -381,7 +381,7 @@ namespace ngosen {
 
     bool TypingState::removeToneMark(ngosen::KeyPress& keyEvent) {
         const std::string untoned = withoutToneMark(oldPreBuffer_);
-        if (untoned == oldPreBuffer_ || !canSendBackspaces())
+        if (untoned == oldPreBuffer_ || !canSendBackspaces() || cursorStaysPast())
             return false;
 
         std::string deletedPart;
@@ -730,7 +730,7 @@ namespace ngosen {
             lastWord_.clear();
         if (holdKeyBehindHeldKey(keyEvent, currentSym))
             return;
-        if (handleKeyDuringReplacement(keyEvent, currentSym))
+        if (handleKeyDuringReplacement(keyEvent, currentSym) || passesKeyWhileCursorPast(keyEvent, currentSym))
             return;
         // Before the doubled keys, so -- stays as typed in a path.
         // The shell line still sees the key, so /usr/bin/vim starts Vim mode.

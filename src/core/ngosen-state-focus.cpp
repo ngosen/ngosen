@@ -83,6 +83,7 @@ namespace ngosen {
                 // These also start over at other times, so they stay out of FieldHistory.
                 surrCheck_.reset();
                 surr_check_timer_.reset();
+                editLeft_.reset();
                 surrUnanswered_  = 0;
                 copyWaitsRunOut_ = 0;
                 // A new field starts a word even without a focus-out reset, which a reopened browser never sends.

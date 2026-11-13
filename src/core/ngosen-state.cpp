@@ -728,6 +728,8 @@ namespace ngosen {
         const bool ownBackspace = deleting && ngosen::key::isBackspace(currentSym) && !ngosen::forwardsBackspaces(host_->field());
         if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
             lastWord_.clear();
+        if (holdKeyBehindHeldKey(keyEvent, currentSym))
+            return;
         if (handleKeyDuringReplacement(keyEvent, currentSym))
             return;
         // Before the doubled keys, so -- stays as typed in a path.
@@ -1024,6 +1026,18 @@ namespace ngosen {
     // The replay drops a whole letter, so a backspace that only removes the tone goes through as before.
     bool TypingState::holdsBackspace(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const {
         return ngosen::key::isBackspace(currentSym) && !keyEvent.hasModifier() && forwardsEnterAfterCommit() && !engine_->options().backspaceRemovesTone;
+    }
+
+    // Sending the held key replayed the keys after it only up to the next held one, so this key queues behind them.
+    bool TypingState::holdKeyBehindHeldKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (!held_enter_pending_ || keyEvent.isRelease() || keyEvent.isModifier() || buffered_keys_.size() >= MAX_BUFFERED_KEYS)
+            return false;
+        if (!typesText(keyEvent, currentSym) && !holdsBackspace(keyEvent, currentSym) && !replayedEditKey(currentSym, keyEvent.states()))
+            return false;
+        noteHeldKeyForDoubling(keyEvent, currentSym);
+        buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code()});
+        keyEvent.accept();
+        return true;
     }
 
     // A held key skips handleDoubledKey, but the next one still has to see it.

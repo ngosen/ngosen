@@ -522,6 +522,7 @@ namespace ngosen {
         bool                           forwardsEnterAfterCommit() const;
         bool                           holdsBackspace(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
         bool                           holdBackspaceForCopy(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool                           holdKeyBehindHeldKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
         bool                           dropsForwardedKeys() const;
         void                           sendHeldEnter();
         std::unique_ptr<ngosen::Timer> held_enter_timer_;

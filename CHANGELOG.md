@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
-- Chuyển mã chữ bôi đen bằng phím tắt: bôi đen đoạn chữ gõ bằng TCVN3, VNI… rồi bấm phím, chữ được đổi sang bảng mã đã chọn, có thể đổi chữ hoa, chữ thường hoặc bỏ dấu. Phím tắt chưa đặt sẵn, đặt ở trang Chuyển mã mới trong cửa sổ cài đặt; trang này còn có hai ô để dán chữ vào và chuyển ngay tại chỗ (#748, #750).
+- Chuyển mã chữ bôi đen bằng phím tắt: bôi đen đoạn chữ gõ bằng TCVN3, VNI… rồi bấm phím, chữ được đổi sang bảng mã đã chọn, có thể đổi chữ hoa, chữ thường hoặc bỏ dấu. Phím tắt chưa đặt sẵn, đặt ở trang Chuyển mã mới trong cửa sổ cài đặt; trang này còn có hai ô để dán chữ vào và chuyển ngay tại chỗ. Bấm phím khi chưa bôi đen gì thì chỉ hiện thông báo, không chèn chữ (#748, #750, #751).
 
 ### Thay đổi
 

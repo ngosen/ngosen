@@ -6,6 +6,7 @@ Dynamic Settings Page with Card-based Layout matching modern guidelines.
 """
 
 from core.catalog import (
+    CONVERT_CHARSETS,
     DEPENDS,
     GROUPS_WITH_NAME_LINE,
     HINTS,
@@ -48,13 +49,14 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import page_status
+from core import convert, page_status
 from ui import brand
 from ui.components import (
     HotkeyEditorWidget,
     NoWheelComboBox,
     SingleKeyCaptureWidget,
 )
+from ui.convert_box import ConvertBox
 from ui.toolkit_switch import toolkit_field
 from ui.typography import emphasize, mute, page_title
 
@@ -195,6 +197,7 @@ class DynamicSettingsPage(QWidget):
         self._fields = {}
         self._custom_hint = None
         self._retone_note = None
+        self._convert_box = None
         self._following = False
 
         self._setup_ui()
@@ -270,6 +273,7 @@ class DynamicSettingsPage(QWidget):
             self._fields.clear()
             self._custom_hint = None
             self._retone_note = None
+            self._convert_box = None
             self._mode_hint = None
             self._mode_buttons = {}
             self._tray_preview = None
@@ -318,7 +322,7 @@ class DynamicSettingsPage(QWidget):
                         self._render_toggle_key(item)
                     elif k == "SettingsToolkit":
                         self._render_toolkit(item)
-                    elif k in ["ModeMenuKey", "CycleModeKey"] or item[1] == "Hotkey":
+                    elif item[1] in ("List|Key", "Hotkey"):
                         self._render_hotkey(item)
                     elif k == "Mode":
                         self._render_mode_buttons(item)
@@ -332,6 +336,8 @@ class DynamicSettingsPage(QWidget):
                     name_line.setBuddy(self._controls.get(shown[0]))
                 if group == TRAY_ICON:
                     self._render_tray_preview()
+                if group == CONVERT_CHARSETS:
+                    self._render_swap()
 
             if self.category == SettingsCategory.TYPING:
                 self.form.addRow(self._separator())
@@ -339,6 +345,10 @@ class DynamicSettingsPage(QWidget):
                 try_it.setPlaceholderText(_("Type here to test"))
                 try_it.setFont(brand.sized_font(17))
                 self.form.addRow(_("Try it:"), try_it)
+            if self.category == SettingsCategory.CONVERT:
+                self.form.addRow(self._separator())
+                self._convert_box = ConvertBox(self.model, self.dbus)
+                self.form.addRow(_("Convert here:"), self._convert_box)
 
             self._apply_locks()
             self.refresh_status()
@@ -514,6 +524,21 @@ class DynamicSettingsPage(QWidget):
     def _set_first_hotkey(self, key, text):
         self.model.set_first_hotkey(key, text)
         self.update_config(key, self.model.current[key])
+
+    def _render_swap(self):
+        if not {"ConvertFrom", "ConvertTo"} <= self._controls.keys():
+            return
+        button = QPushButton(QIcon.fromTheme("object-flip-vertical"), _("S&wap"))
+        button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
+        def swap():
+            source, target = self._controls["ConvertFrom"], self._controls["ConvertTo"]
+            first, second = source.currentIndex(), target.currentIndex()
+            source.setCurrentIndex(second)
+            target.setCurrentIndex(first)
+
+        button.clicked.connect(swap)
+        self.form.addRow("", button)
 
     def _render_toolkit(self, item):
         field, button = toolkit_field(self.model)
@@ -900,6 +925,8 @@ class DynamicSettingsPage(QWidget):
             self.refresh_status()
         if key in ("UseLotusIcons", "TrayIconSize", "IconTheme"):
             self._update_tray_preview()
+        if key in convert.SETTING_KEYS and self._convert_box is not None:
+            self._convert_box.refresh()
 
         # Real-time validation if it's a shortcut
         if key in MODE_SHORTCUT_KEYS or key in MODE_SHORTCUT_TO_VISIBILITY.values():

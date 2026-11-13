@@ -156,12 +156,12 @@ msgid "Convert To"
 msgstr "Sang bảng mã"
 
 #: src/ngosen-config.h
-msgid "Letter Case After Converting"
-msgstr "Chữ hoa, chữ thường sau khi chuyển"
+msgid "Letter Case"
+msgstr "Chữ hoa, chữ thường"
 
 #: src/ngosen-config.h
-msgid "Remove Diacritics When Converting"
-msgstr "Bỏ dấu khi chuyển mã"
+msgid "Remove Diacritics"
+msgstr "Bỏ dấu"
 
 #: src/ngosen-engine.cpp
 msgid "Convert"
@@ -2095,3 +2095,83 @@ msgstr "Đã chép lệnh."
 #: settings-gui/core/system_check.py
 msgid "~/.config/environment.d sets {} to another value; change it to use fcitx5."
 msgstr "~/.config/environment.d đang đặt {} thành giá trị khác; đổi lại để dùng fcitx5."
+
+#: settings-gui/core/catalog.py
+msgid "Charsets"
+msgstr "Bảng mã"
+
+#: settings-gui/core/catalog.py
+msgid "Hotkey"
+msgstr "Phím tắt"
+
+#: settings-gui/core/catalog.py
+msgid "After converting"
+msgstr "Sau khi chuyển"
+
+#: settings-gui/core/catalog.py
+msgid "Select text in an app, then press this key. The text changes in place; Ctrl+Z brings it back."
+msgstr "Bôi đen chữ trong app rồi bấm phím này. Chữ được đổi ngay tại chỗ; Ctrl+Z để lấy lại."
+
+#: settings-gui/core/catalog.py
+msgid "Old documents are often TCVN3."
+msgstr "Văn bản cũ thường gõ bằng TCVN3."
+
+#: settings-gui/core/catalog.py
+msgid "Tiếng Việt becomes Tieng Viet."
+msgstr "Tiếng Việt thành Tieng Viet."
+
+#: settings-gui/core/convert.py
+msgid "No desktop session bus, so Ngó Sen cannot be reached."
+msgstr "Không có session bus của desktop nên không gọi được Ngó Sen."
+
+#: settings-gui/core/convert.py
+msgid "Ngó Sen is not loaded. Switch to Ngó Sen once, then try again."
+msgstr "Ngó Sen chưa được nạp. Chuyển sang Ngó Sen một lần rồi thử lại."
+
+#: settings-gui/core/convert.py
+msgid "The running Ngó Sen is older than this window. Restart fcitx5 to convert here."
+msgstr "Ngó Sen đang chạy là bản cũ hơn cửa sổ này. Khởi động lại fcitx5 để chuyển mã ở đây."
+
+#: settings-gui/ui/convert_box.py
+msgid "Paste the text to convert"
+msgstr "Dán chữ cần chuyển mã vào đây"
+
+#: settings-gui/ui/convert_box.py
+msgid "The converted text shows here"
+msgstr "Chữ đã chuyển hiện ở đây"
+
+#: settings-gui/ui/convert_box.py
+msgid "&Copy result"
+msgstr "&Chép kết quả"
+
+#: settings-gui/ui/convert_box.py
+msgid "Copied"
+msgstr "Đã chép"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "S&wap"
+msgstr "Đả&o chiều"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Convert here:"
+msgstr "Chuyển ngay ở đây:"
+
+#: settings-gui/ui_gtk/convert.py
+msgid "S_wap"
+msgstr "Đả_o chiều"
+
+#: settings-gui/ui_gtk/convert.py
+msgid "Swap the charsets"
+msgstr "Đảo hai bảng mã"
+
+#: settings-gui/ui_gtk/convert.py
+msgid "Convert here"
+msgstr "Chuyển ngay ở đây"
+
+#: settings-gui/ui_gtk/convert.py
+msgid "Paste text in the first box; the second shows it converted."
+msgstr "Dán chữ vào ô trên, ô dưới hiện chữ đã chuyển."
+
+#: settings-gui/ui_gtk/convert.py
+msgid "_Copy result"
+msgstr "_Chép kết quả"

@@ -433,20 +433,6 @@
     {}
    ],
    [
-    "SurrDeleteSleepMs",
-    "Integer",
-    "Experiment: ms per deleted char to sleep after deleteSurroundingText",
-    "0",
-    {}
-   ],
-   [
-    "SurrCommitSleepMs",
-    "Integer",
-    "Experiment: ms per committed char to sleep after commitString on the surrounding-text path",
-    "0",
-    {}
-   ],
-   [
     "UseLotusIcons",
     "Boolean",
     "Use Ngó Sen Status Icons",

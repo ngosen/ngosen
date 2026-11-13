@@ -328,10 +328,6 @@ namespace fcitx {
         HiddenOption<int>  waitSurroundingMinPerKeyMs{this, "WaitSurroundingMinPerKeyMs",
                                                       _("Experiment: a snapshot identical to the one at send time counts as done only after this many ms per backspace"),
                                                       ngosen::defaultOptions.waitSurroundingMinPerKeyMs};
-        HiddenOption<int>  surrDeleteSleepMs{this, "SurrDeleteSleepMs", _("Experiment: ms per deleted char to sleep after deleteSurroundingText"),
-                                             ngosen::defaultOptions.surrDeleteSleepMs};
-        HiddenOption<int>  surrCommitSleepMs{this, "SurrCommitSleepMs", _("Experiment: ms per committed char to sleep after commitString on the surrounding-text path"),
-                                             ngosen::defaultOptions.surrCommitSleepMs};
         // The key keeps its old name so saved settings still load.
         Option<bool>                                                   useNgoSenIcons{this, "UseLotusIcons", _("Use Ngó Sen Status Icons"), true};
         OptionWithAnnotation<TrayIconSize, TrayIconSizeI18NAnnotation> trayIconSize{this, "TrayIconSize", _("Tray Icon Size"), TrayIconSize::Normal};

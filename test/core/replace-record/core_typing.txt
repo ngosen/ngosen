@@ -164,21 +164,21 @@ Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=event after 0 ms
 Replace: method=forwarded backspaces wait=none ended=event after 0 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
@@ -416,6 +416,46 @@ Replace: method=forwarded backspaces wait=none ended=timeout after 300 ms
 Replace: method=forwarded backspaces wait=none ended=timeout after 300 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 70 ms
+Replace: method=surrounding wait=copy ended=committed after 140 ms
+Replace: method=surrounding wait=copy ended=committed after 210 ms
+Replace: method=surrounding wait=copy ended=committed after 70 ms
+Replace: method=surrounding wait=copy ended=committed after 120 ms
+Replace: method=surrounding wait=copy ended=committed after 240 ms
+Replace: method=surrounding wait=copy ended=committed after 300 ms
+Replace: method=surrounding wait=copy ended=committed after 120 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 700 ms
+Replace: method=surrounding wait=copy ended=committed after 200 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 200 ms
+Replace: method=surrounding wait=copy ended=committed after 200 ms
+Replace: method=surrounding wait=copy ended=committed after 200 ms
+Replace: method=surrounding wait=copy ended=committed after 70 ms
+Replace: method=surrounding wait=copy ended=committed after 700 ms
+Replace: method=surrounding wait=copy ended=committed after 200 ms
+Replace: method=surrounding wait=copy ended=committed after 200 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=copy ended=committed after 100 ms
 Replace: method=surrounding wait=copy ended=committed after 100 ms
 Replace: method=surrounding wait=copy ended=committed after 100 ms
@@ -552,10 +592,20 @@ Replace: method=del wait=none ended=committed after 0 ms
 Replace: method=del wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
-Replace: method=forwarded backspaces wait=none ended=event after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
 Replace: method=forwarded backspaces wait=none ended=timeout after 50 ms
 Replace: method=forwarded backspaces wait=none ended=timeout after 50 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
@@ -1176,13 +1226,75 @@ Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=none wait=copy ended=focus lost, text dropped after 210 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=copy ended=committed after 210 ms
+Replace: method=surrounding wait=copy ended=committed after 270 ms
+Replace: method=surrounding wait=copy ended=committed after 270 ms
+Replace: method=surrounding wait=copy ended=committed after 270 ms
+Replace: method=surrounding wait=copy ended=committed after 210 ms
+Replace: method=surrounding wait=copy ended=committed after 270 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=copy ended=committed after 560 ms
+Replace: method=surrounding wait=copy ended=committed after 620 ms
+Replace: method=surrounding wait=copy ended=committed after 600 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=copy ended=committed after 390 ms
+Replace: method=surrounding wait=copy ended=committed after 450 ms
+Replace: method=surrounding wait=copy ended=committed after 450 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=forwarded backspaces wait=copy ended=key arrived after 740 ms
+Replace: method=forwarded backspaces wait=copy ended=timeout after 300 ms
+Replace: method=forwarded backspaces wait=none ended=timeout after 100 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=copy ended=event after 245 ms
+Replace: method=forwarded backspaces wait=copy ended=event after 280 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=copy ended=timeout after 300 ms
-Replace: method=surrounding wait=copy ended=committed after 55 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=copy ended=timer after 740 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=copy ended=committed after 23 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=copy ended=committed after 355 ms
+Replace: method=surrounding wait=copy ended=committed after 415 ms
+Replace: method=forwarded backspaces wait=copy ended=event after 295 ms
+Replace: method=forwarded backspaces wait=copy ended=event after 295 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=surrounding wait=copy ended=committed after 355 ms
+Replace: method=surrounding wait=copy ended=committed after 415 ms
+Replace: method=surrounding wait=copy ended=committed after 355 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=copy ended=committed after 23 ms
+Replace: method=forwarded backspaces wait=copy ended=timeout after 800 ms
+Replace: method=forwarded backspaces wait=copy ended=timeout after 300 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=copy ended=committed after 23 ms
 Replace: method=surrounding wait=copy ended=committed after 135 ms

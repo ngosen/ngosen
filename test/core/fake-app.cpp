@@ -158,7 +158,13 @@ namespace ngosen::test {
             } else if ((state & modifier::Ctrl) != 0U || keyText(sym).empty() || sym == key::Delete || sym == key::Escape) {
                 later(quirks_.lagMs, [this, sym, state] { applyFieldKey(sym, state); });
             } else if (const auto text = keyText(down.appSym()); !text.empty() && static_cast<unsigned char>(text[0]) >= 0x20 && text[0] != '\x7f')
-                later(quirks_.lagMs, [this, text] { insert(utf8::decode(text), true); });
+                later(quirks_.lagMs, [this, text] {
+                    if (std::exchange(cellOpensOnKey_, false)) {
+                        text_.clear();
+                        cursor_ = anchor_ = 0;
+                    }
+                    insert(utf8::decode(text), true);
+                });
         }
 
         FakeKey up(sym, true, state);
@@ -283,6 +289,8 @@ namespace ngosen::test {
     bool FakeApp::applyFieldKey(uint32_t sym, uint32_t state) {
         if ((state & (modifier::Ctrl | modifier::Alt)) != 0U) {
             ++shortcuts_;
+            if (state == modifier::Ctrl && sym == 'a')
+                select(0, text_.size());
             return true;
         }
         switch (sym) {
@@ -359,6 +367,7 @@ namespace ngosen::test {
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
         ++sent_.surroundingDeletes;
         ++deletions_;
+        surroundingDropped_ = quirks_.dropsSurroundingOnDelete;
         if (quirks_.oldTextAfterDeleteMs > 0) {
             oldText_        = text_;
             oldCursor_      = cursor_;
@@ -393,7 +402,7 @@ namespace ngosen::test {
             return;
         }
         const int extra = quirks_.deletesOneTooMany ? 1 : 0;
-        later(quirks_.lagMs, [this, offset, size, extra] { eraseAround(offset - extra, size + extra); });
+        later(quirks_.deletionsSkipLag ? 0 : quirks_.lagMs, [this, offset, size, extra] { eraseAround(offset - extra, size + extra); });
     }
 
     size_t FakeApp::reportedBytesBefore(unsigned int size) const {
@@ -445,6 +454,11 @@ namespace ngosen::test {
             state_->activate(Mode::Sen, true);
             changed();
         });
+    }
+
+    void FakeApp::clickCellOpenedByKey(int ms) {
+        cellOpensOnKey_ = true;
+        leaveFocus(ms);
     }
 
     void FakeApp::returnWithText(const std::string& typed, int ms) {
@@ -576,8 +590,10 @@ namespace ngosen::test {
     }
 
     void FakeApp::insert(const std::u32string& text, bool typed) {
-        if (typed)
+        if (typed) {
             noteTypedKey();
+            surroundingDropped_ = false;
+        }
         if (quirks_.erasesOnDel && !text.empty() && text[0] == U'\x7f') {
             const size_t dels = text.find_first_not_of(U'\x7f');
             eraseBefore(dels == std::u32string::npos ? text.size() : dels);

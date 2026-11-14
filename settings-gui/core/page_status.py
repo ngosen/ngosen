@@ -5,6 +5,7 @@
 
 from i18n import _
 
+from core.catalog import SETTINGS_MAP
 from core.settings_model import SettingsModel
 
 
@@ -69,3 +70,13 @@ def retone_line(model):
     if _off(model, "RetoneSelection") or charset is None or charset == "Unicode":
         return ""
     return _("Not in use now: Cứu dấu works only with Unicode.")
+
+
+def older_fcitx_line(model, category):
+    # Updating the package does not restart fcitx5, which then has no metadata for newer settings.
+    keys = [key for keys in SETTINGS_MAP.get(category, {}).values() for key in keys]
+    if all(key in model.metadata for key in keys):
+        return ""
+    return _(
+        "The running Ngó Sen is older than this window, so settings are missing here. Restart fcitx5 to see them."
+    )

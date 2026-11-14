@@ -43,6 +43,7 @@ namespace ngosen::test {
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
         int  backspaceLagMs         = 0;     // applies forwarded backspaces this late but commits at once, as Antigravity's editor on GNOME sometimes does
         bool backspacesSkipLag      = false; // applies forwarded backspaces ahead of what lagMs holds back, as GNOME Shell's IBus bridge with forward-keys@ngosen.github.io does
+        bool deletionsSkipLag       = false; // applies deletions through the text ahead of what lagMs holds back, as Firefox's snap does right after it opens
         bool hidesCursorMoves       = false; // reports no click and shows the cursor where the last edit left it, as GTK 3 on Plasma does
         bool dropsForwardedKeys     = false; // never gets keys the input method sends, as under GNOME Shell's IBus bridge
         bool erasesOnDel            = false; // erases the character before the cursor for each DEL committed, as a terminal does
@@ -75,6 +76,7 @@ namespace ngosen::test {
         bool             keepsLineBreakAfterCommit = false;    // keeps a line break after a commit with the cursor past it until a typed key, as Ace in Firefox does
         bool             reportsOnFocus            = false;    // reports its field, empty or not, when it gets focus, as Firefox over GTK does
         bool             deletesAtReportedCursor   = false;    // deletes at the cursor of its last report and leaves the cursor there, as Firefox over GTK does
+        bool             dropsSurroundingOnDelete  = false;    // stops declaring surrounding text after a deletion through it until a typed key, as Firefox over fcitx5-gtk does
         int              reportsOnEdit             = 0;        // the nth deletion is reported anyway, as Qt now and then
         bool             showsEnter                = false;    // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
         bool             showsTab                  = false;    // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
@@ -121,6 +123,10 @@ namespace ngosen::test {
         void setReportDelay(int ms) {
             quirks_.reportDelayMs = ms;
         }
+        // Lets a test slow down how fast the app applies edits for a stretch, as a starved app does.
+        void setLag(int ms) {
+            quirks_.lagMs = ms;
+        }
         // Renames the app with no focus change, as GNOME Shell does when it names the app late.
         void setProgram(const std::string& program) {
             field_.program = program;
@@ -146,6 +152,9 @@ namespace ngosen::test {
         // Moves within ms to an empty field of the same page that keeps its own text, as a click from a
         // page's search box into a Lark sheet does.
         void switchToOwnTextField(int ms);
+        // Leaves focus for ms and comes back to the same editor, which still shows the last cell until the
+        // next typed key replaces it, as a click on another cell in Luckysheet does.
+        void clickCellOpenedByKey(int ms);
         // Loses focus and gets it back within ms in a new empty field, with no reset in between, as a
         // browser closed and opened again does under GNOME Shell.
         void focusNewEmptyField(ngosen::Mode mode, int ms);
@@ -190,6 +199,8 @@ namespace ngosen::test {
         Field       field() const override {
             Field field = field_;
             if (quirks_.reportsTextOnceFilled && text_.empty())
+                field.surroundingText = false;
+            if (surroundingDropped_)
                 field.surroundingText = false;
             return field;
         }
@@ -285,12 +296,13 @@ namespace ngosen::test {
         std::u32string                      reportedText_;
         size_t                              reportedCursor_ = 0;
         std::u32string                      oldText_;
-        size_t                              oldCursor_         = 0;
-        uint64_t                            oldTextUntilUs_    = 0;
-        size_t                              reportedAnchor_    = 0;
-        bool                                silentAfterDelete_ = false;
-        int                                 keysSinceDelete_   = 0;
-        bool                                turnPending_       = false;
+        size_t                              oldCursor_          = 0;
+        uint64_t                            oldTextUntilUs_     = 0;
+        size_t                              reportedAnchor_     = 0;
+        bool                                silentAfterDelete_  = false;
+        bool                                surroundingDropped_ = false;
+        int                                 keysSinceDelete_    = 0;
+        bool                                turnPending_        = false;
         std::optional<size_t>               turnDeleteBytes_;
         std::optional<std::string>          turnCommit_;
         size_t                              cursorPastBy_      = 0;
@@ -299,6 +311,7 @@ namespace ngosen::test {
         std::optional<unsigned int>         heldDelete_;
         bool                                showsMovedCursor_ = false;
         bool                                holdsUnreported_  = false;
+        bool                                cellOpensOnKey_   = false;
         int                                 emptyCommits_     = 0;
         int                                 deletions_        = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};

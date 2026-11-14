@@ -23,6 +23,8 @@ namespace ngosen {
 
     namespace {
         constexpr int LaggingReportWaitMs = 100;
+        // A busy app over IBus can send its copy late, and backspaces sent instead overtake the commit (#362).
+        constexpr int SlowCopyWaitMs = 700;
     } // namespace
 
     bool TypingState::sendBackspaceKeys(int count) const {
@@ -267,6 +269,8 @@ namespace ngosen {
     }
 
     void TypingState::forwardBackspaces(int count) {
+        if (count > 0)
+            unconfirmedBackspacesUs_ = ngosen::monotonicUs();
         for (int i = 0; i < count; ++i) {
             forwardTap(ngosen::EditKey::BackSpace);
         }
@@ -324,8 +328,11 @@ namespace ngosen {
         if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !host_->surrounding().isValid()) {
             // A field that stops reporting is not the one the word was typed in.
             finishKeyReportWait(false, false);
-        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && copyWaitNeed() == CopyWait::No) {
-            key_report_copy_fits_ = true;
+        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && copyWaitDone()) {
+            key_report_copy_fits_  = true;
+            sinceFocus_.copyFitted = true;
+            if (!ngosen::namesNoApp(host_->field()))
+                engine_->noteCopyFitted(host_->field().frontend, host_->field().program);
             key_report_timer_->rearm(ngosen::monotonicUs());
         } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
@@ -364,7 +371,14 @@ namespace ngosen {
         // Firefox over GTK 3 can stay quiet about typed keys after an edit until something asks.
         if (untilCopyFits && (ngosen::keepsOldCopyAfterEdit(host_->field()) || ngosen::keepsLastEditPerTurn(host_->field())))
             askForReportAfterEdit();
-        const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(2 * LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
+        // A field that never sent a fitting copy may not report at all, so it keeps the short wait.
+        const Field field     = host_->field();
+        const bool  appFitted = !ngosen::namesNoApp(field) && engine_->copyFitted(field.frontend, field.program);
+        const bool  waitsLonger =
+            (((sinceFocus_.copyFitted || appFitted) && ngosen::reportsReplacementsWithLaterKey(field)) || ngosen::appliesDeletionsEarly(field)) && !sinceFocus_.longWaitRanOut;
+        copyWaitLong_             = untilCopyFits && waitsLonger;
+        const int      copyWaitMs = waitsLonger ? SlowCopyWaitMs : 2 * LaggingReportWaitMs;
+        const uint64_t waitUs     = untilCopyFits ? static_cast<uint64_t>(copyWaitMs) * 1000ULL : KeyReportWaitUs;
         // A replay from the timer can start the next wait, so the timer is rearmed rather than replaced.
         if (key_report_timer_) {
             key_report_timer_->rearm(ngosen::monotonicUs() + waitUs);
@@ -383,6 +397,11 @@ namespace ngosen {
             if (key_report_until_copy_fits_) {
                 if (!key_report_copy_fits_)
                     NGOSEN_INFO("Copy of the text still short, deleting anyway");
+                // One field of an app can lack what another reports; it should stall once, not on every word.
+                if (!key_report_copy_fits_ && copyWaitLong_) {
+                    sinceFocus_.longWaitRanOut = true;
+                    NGOSEN_INFO("Longer copy wait ran out: short waits in this field");
+                }
                 copyWaitTimedOut_ = !key_report_copy_fits_;
                 copyWaitsRunOut_  = copyWaitTimedOut_ ? copyWaitsRunOut_ + 1 : 0;
                 if (copyWaitRetry_)
@@ -600,6 +619,7 @@ namespace ngosen {
         const bool firstLetterPending = passed_key_ && sinceInputUs < SuggestionStepUs && oldPreBuffer_ == host_->keyText(passed_key_->sym);
         const bool keyStartedCell =
             passed_key_ && !sameText && s.text().empty() && !oldPreBuffer_.empty() && ((settling && ngosen::reportsFieldOnlyOnKey(host_->field())) || firstLetterPending);
+        const auto keysInNewCell = hasLastSurrounding_ && !sameText ? keysTakenOverCell(s, textBeforeCursor) : std::nullopt;
         // Our own Right presses carrying the cursor to the end of a word being retoned.
         const bool ownMove   = retoneMove_.has_value();
         jumped               = ((jumped && !echo && !intoSuggestion && !caretSettling && !ownMove) || newField) && !settling;
@@ -614,6 +634,13 @@ namespace ngosen {
         hasLastSurrounding_ = true;
         if (keyStartedCell && !is_deleting_.load(std::memory_order_acquire)) {
             startWordWithKey(*passed_key_);
+            return;
+        }
+        if (keysInNewCell && !is_deleting_.load(std::memory_order_acquire)) {
+            NGOSEN_INFO("Keys went to another cell, starting a new word");
+            clearAllBuffers();
+            EngineRebuildFromText(bambooEngine_.handle(), keysInNewCell->c_str());
+            oldPreBuffer_ = *keysInNewCell;
             return;
         }
         // VS Code reports the cursor at the line start and then back at the word end, with no edit.
@@ -633,6 +660,20 @@ namespace ngosen {
             jumpedFrom_ = std::make_pair(s.text(), previousCursor);
         needEngineReset.store(true, std::memory_order_release);
         g_mouse_clicked.store(true, std::memory_order_release);
+    }
+
+    // Luckysheet's one editor still shows the last cell after a click on another, until the first key typed
+    // replaces it. Returns the keys typed since, which the field now holds; a box that empties itself after
+    // each key (Univer) never showed the whole word.
+    std::optional<std::string> TypingState::keysTakenOverCell(const Surrounding& s, const std::u32string& shownBefore) const {
+        const std::string& now = s.text();
+        if (wordAtBounce_.empty() || now.empty() || s.cursor() != s.anchor() || textBeforeCursor(s) != now || !isStartsWith(oldPreBuffer_, wordAtBounce_))
+            return std::nullopt;
+        std::string          typed = oldPreBuffer_.substr(wordAtBounce_.size());
+        const std::u32string word  = ngosen::utf8::decode(wordAtBounce_);
+        if (!isStartsWith(typed, now) || word.size() < 2 || shownBefore.size() < word.size() || shownBefore.compare(shownBefore.size() - word.size(), word.size(), word) != 0)
+            return std::nullopt;
+        return typed;
     }
 
     // The key is already in the app; only the engine has to forget the word before it.

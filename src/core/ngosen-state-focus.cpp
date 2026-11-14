@@ -56,6 +56,7 @@ namespace ngosen {
         if (bounce) {
             NGOSEN_INFO("Focus bounce: keep word buffers");
             checkWordAfterBounce_ = true;
+            wordAtBounce_         = oldPreBuffer_;
             // Only a bounce right after a key or our own edit tells that the field redraws.
             const bool inWait = now - static_cast<int64_t>(surr_wait_started_at_ / 1000) < RedrawWaitMs;
             if (inWait || now - static_cast<int64_t>(lastInputAtUs_ / 1000) < RedrawWaitMs) {
@@ -74,6 +75,7 @@ namespace ngosen {
             redrawBounces_        = 0;
             lastKeyLeftText_      = false;
             checkWordAfterBounce_ = false;
+            wordAtBounce_.clear();
             if (isFocusIn) {
                 // A GNOME app's new context gets a copy of the previous window's text before focus-in, so
                 // that copy is not text this field showed.

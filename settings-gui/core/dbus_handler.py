@@ -135,6 +135,28 @@ class NgoSenDBusHandler:
             print(f"Failed to read fcitx5 debug info: {e}")
             return ""
 
+    def convert_text(self, text, from_charset, to_charset, letter_case, strip_diacritics):
+        """Raises convert.ConvertError when the running Ngó Sen cannot do it."""
+        from core.convert import ConvertError
+
+        if not self.bus:
+            raise ConvertError(None)
+        try:
+            # The unique name reaches the running fcitx5 and never starts a new one.
+            owner = self.bus.get_name_owner("org.fcitx.Fcitx5")
+            proxy = self.bus.get_object(owner, "/ngosen", introspect=False)
+            result = dbus.Interface(proxy, "io.github.ngosen.NgoSen1").ConvertText(
+                text,
+                from_charset,
+                to_charset,
+                dbus.Int32(letter_case),
+                dbus.Boolean(strip_diacritics),
+                timeout=5,
+            )
+        except dbus.DBusException as e:
+            raise ConvertError(e.get_dbus_name(), e.get_dbus_message() or "") from e
+        return str(result)
+
     def get_sub_config_list(self, path: str, root_key: str) -> list:
         """Get sub config list from Fcitx5 and convert to Python list."""
         if not self.iface:

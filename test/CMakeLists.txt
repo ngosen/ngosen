@@ -19,6 +19,7 @@ target_link_libraries(ngosen_test_core PRIVATE
     Fcitx5::Module::Emoji
     ${NGOSEN_DBUS_MODULE}
     ${NGOSEN_NOTIFICATIONS_MODULE}
+    ${NGOSEN_CLIPBOARD_MODULE}
     Bamboo::Core
     Pthread::Pthread
 )
@@ -52,6 +53,7 @@ function(ngosen_headless_test_settings target)
         NGOSEN_ICON_DIR="${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps"
         NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
         NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt"
+        NGOSEN_TEST_KEEP_WORDS="${PROJECT_SOURCE_DIR}/data/keep-words.txt"
     )
     target_link_libraries(${target} PRIVATE
         ngosen_core
@@ -61,6 +63,7 @@ function(ngosen_headless_test_settings target)
         Fcitx5::Module::Emoji
         ${NGOSEN_DBUS_MODULE}
         ${NGOSEN_NOTIFICATIONS_MODULE}
+        ${NGOSEN_CLIPBOARD_MODULE}
         Bamboo::Core
         Pthread::Pthread
     )
@@ -120,6 +123,9 @@ add_ngosen_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp
 add_ngosen_headless_test(mode_name_migration mode-name-migration.cpp "integration;mode")
 add_ngosen_headless_test(messenger_defaults messenger-defaults.cpp "integration;mode")
 add_ngosen_headless_test(options_sync options-sync.cpp "integration;config")
+if (Fcitx5ModuleDBus_FOUND)
+    add_ngosen_headless_test(dbus_convert_text dbus-convert-text.cpp "unit;dbus")
+endif()
 add_ngosen_headless_test(tray_menu_items tray-menu-items.cpp "integration;config")
 add_ngosen_headless_test(ui_language ui-language.cpp "integration;config")
 target_compile_definitions(ui_language PRIVATE NGOSEN_TEST_CATALOG="${PROJECT_BINARY_DIR}/po/fcitx5-ngosen-vi.mo")

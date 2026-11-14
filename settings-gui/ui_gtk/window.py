@@ -27,6 +27,7 @@ from core import backup, defaults, settings_snapshot  # noqa: E402
 from ui_gtk import brand, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
 from ui_gtk.check_page import CheckPage  # noqa: E402
+from ui_gtk.convert import ConvertPage  # noqa: E402
 from ui_gtk.dictionary import DictionaryPage  # noqa: E402
 from ui_gtk.focus import focus_when_laid_out  # noqa: E402
 from ui_gtk.keymap import KeymapPage  # noqa: E402
@@ -96,7 +97,7 @@ class Window(Adw.ApplicationWindow):
         """Builds the pages that show saved settings, as (name, title, icon, widget, searchable)."""
         self.model = SettingsModel(self.dbus)
         self.typing = self.macros = self.dictionary = self.keymap = self.shortcuts = None
-        self.appearance = None
+        self.appearance = self.convert = None
         self.tabs = {}
         self.tab_parents = {}
         if self.model.load():
@@ -104,6 +105,7 @@ class Window(Adw.ApplicationWindow):
                 self.model, self.save, tip=random_tip(), on_tip=self.show_tips
             )
             self.appearance = AppearancePage(self.model, self.save)
+            self.convert = ConvertPage(self.model, self.save, self.dbus)
             others = [n for n in (self.dbus.input_method_names() or []) if n != "ngosen"]
             self.shortcuts = ShortcutsPage(self.model, self.save, bool(others))
             table = MacroTable(self.dbus)
@@ -129,6 +131,7 @@ class Window(Adw.ApplicationWindow):
                 self._tabs("keys", shortcuts=self.shortcuts, keymap=self.keymap),
                 False,
             ),
+            ("convert", _("Convert"), "ngosen-charset", _widget(self.convert), True),
             (
                 "appearance",
                 _("Appearance"),

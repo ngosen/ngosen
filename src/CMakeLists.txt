@@ -11,6 +11,7 @@ target_link_libraries(ngosen
   Fcitx5::Module::Emoji
   ${NGOSEN_DBUS_MODULE}
   ${NGOSEN_NOTIFICATIONS_MODULE}
+  ${NGOSEN_CLIPBOARD_MODULE}
 	Bamboo::Core
 	Pthread::Pthread
 )

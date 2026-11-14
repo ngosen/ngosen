@@ -60,9 +60,12 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
 
 - Window: sidebar list on the left, page on the right. Below about 620px wide the form labels go
   above their fields.
-- Sidebar: the wordmark, a search field, then seven pages with a small line icon each:
-  Gõ chữ, Gõ tắt & Từ điển, Phím, Giao diện, Có gì mới & mẹo, Kiểm tra máy, Giới thiệu. The current page uses
+- Sidebar: the wordmark, a search field, then eight pages with a small line icon each:
+  Gõ chữ, Gõ tắt & Từ điển, Phím, Chuyển mã, Giao diện, Có gì mới & mẹo, Kiểm tra máy, Giới thiệu. The current page uses
   the platform's selection look.
+- Chuyển mã: the hotkey that converts text selected in an app, the two charsets with a Đảo chiều
+  button, what to do after converting, then two text boxes in the typed size: text pasted in the
+  first shows converted in the second as it is typed, through the running Ngó Sen.
 - Có gì mới & mẹo: one card per recent feature (name, how to use it, a typed example, an "Mở cài đặt" button that jumps to the setting), then the tips as plain lines. Nothing
   on it is a control, so the search field skips it. Gõ chữ shows one tip, picked at random, above
   its form.
@@ -107,7 +110,7 @@ settings only through `settings-gui/core/`, so both windows save the same values
 
 - **libadwaita 1.5 or newer** (Ubuntu 24.04, Mint 22, Debian 13, Fedora 43). Where the system has an
   older one (Debian 12, Mint 21) the installer picks the Qt window.
-- **Stock widgets.** `AdwNavigationSplitView` with the seven pages in the sidebar, as in GNOME
+- **Stock widgets.** `AdwNavigationSplitView` with the eight pages in the sidebar, as in GNOME
   Settings; below about 600sp only one side shows. Each page is an `AdwPreferencesPage` of
   `AdwPreferencesGroup`s with `AdwSwitchRow`, `AdwComboRow`, `AdwEntryRow` and `AdwSpinRow`. A
   hint is the row's subtitle. No CSS beyond the brand marks and the accent colour.

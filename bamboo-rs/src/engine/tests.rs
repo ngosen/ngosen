@@ -162,10 +162,10 @@ fn test_auto_restore_dict_mode() {
     assert_eq!(e.commit_text, "chào ", "dict hit");
 
     let mut e = new_test_engine(&["chào"], true);
-    type_keys(&mut e, "khoawjm");
-    assert_eq!(e.preedit_text, "khoặm");
+    type_keys(&mut e, "chaf");
+    assert_eq!(e.preedit_text, "chà");
     e.process_key_event(KEY_SPACE, 0);
-    assert_eq!(e.commit_text, "khoawjm ", "dict miss restores the keys");
+    assert_eq!(e.commit_text, "chaf ", "dict miss restores the keys");
 }
 
 #[test]
@@ -863,17 +863,55 @@ fn test_english_number_w2u_in_macro_mode() {
 fn test_word_before_digits_shown_as_typed() {
     let mut e = engine_with_default_settings("Telex");
     let mut shown = Vec::new();
-    for key in "Sose2026".chars() {
+    for key in "suoos2026".chars() {
         e.process_key_event(key as u32, 0);
         shown.push(e.preedit_text.clone());
     }
     assert_eq!(
         shown,
         [
-            "S", "So", "Só", "Soé", "Sose2", "Sose20", "Sose202", "Sose2026"
+            "s",
+            "su",
+            "suo",
+            "suô",
+            "suố",
+            "suoos2",
+            "suoos20",
+            "suoos202",
+            "suoos2026"
         ]
         .map(String::from)
     );
+}
+
+#[test]
+fn test_non_dictionary_prefix_shown_as_typed() {
+    let mut e = engine_with_default_settings("Telex");
+    let mut shown = Vec::new();
+    for key in "roses".chars() {
+        e.process_key_event(key as u32, 0);
+        shown.push(e.preedit_text.clone());
+    }
+    assert_eq!(shown, ["r", "ro", "ró", "rose", "roses"].map(String::from));
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "roses ");
+
+    for (keys, want) in [
+        ("rose", "rose"),
+        ("Sose2026", "Sose2026"),
+        ("more", "more"),
+        ("case", "case"),
+        ("cases", "cases"),
+        ("house", "house"),
+        ("lose", "loé"),
+        ("khuyr", "khuỷ"),
+        ("khuyru", "khuỷu"),
+        ("tienf", "tièn"),
+    ] {
+        let mut e = engine_with_default_settings("Telex");
+        type_keys(&mut e, keys);
+        assert_eq!(e.preedit_text, want, "{keys}");
+    }
 }
 
 #[test]

@@ -44,6 +44,12 @@ namespace ngosen {
         bool        retoneSelection                = true;
         bool        rawWordAfterSlash              = true;
 
+        // The conversion hotkey: charsets as named by GetCharsetNames, and ConvertText's letter case.
+        std::string convertFrom            = "TCVN3 (ABC)";
+        std::string convertTo              = "Unicode";
+        int         convertCase            = 0;
+        bool        convertStripDiacritics = false;
+
         // How old text is replaced in the app.
         bool messengerSelectOvertype          = true;
         bool copyWaitRecovery                 = true;
@@ -55,8 +61,6 @@ namespace ngosen {
         int  waitSurroundingSettleMs          = 40;
         int  waitSurroundingSettleFirstWordMs = 60;
         int  waitSurroundingProbeEvery        = 4;
-        int  surrDeleteSleepMs                = 0;
-        int  surrCommitSleepMs                = 0;
     };
 
     inline const Options defaultOptions{};

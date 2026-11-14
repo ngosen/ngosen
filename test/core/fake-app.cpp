@@ -283,6 +283,8 @@ namespace ngosen::test {
     bool FakeApp::applyFieldKey(uint32_t sym, uint32_t state) {
         if ((state & (modifier::Ctrl | modifier::Alt)) != 0U) {
             ++shortcuts_;
+            if (state == modifier::Ctrl && sym == 'a')
+                select(0, text_.size());
             return true;
         }
         switch (sym) {

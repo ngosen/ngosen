@@ -233,6 +233,31 @@ namespace {
         }
     }
 
+    // Ctrl+A then BackSpace empties a field that may report nothing, as Chromium on X11 does.
+    void testBackspaceAfterSelectAll() {
+        for (const bool surroundingText : {true, false}) {
+            const std::string field = surroundingText ? "" : " (no reports)";
+            for (const Mode mode : {Mode::Sen, Mode::Preedit}) {
+                std::vector<uint32_t> keys = keysOf("xin chaof ");
+                keys.push_back('a' | ngosen::test::WithCtrl);
+                keys.push_back(ngosen::key::BackSpace);
+                for (const uint32_t k : keysOf("/cost "))
+                    keys.push_back(k);
+                std::string got = textAfterEachKey(mode, keys, surroundingText).back();
+                check(got == "/cost ", std::string(modeName(mode)) + field + ": Ctrl+A, BackSpace, /cost", got);
+            }
+        }
+        // A click after Ctrl+A may drop the selection, so the BackSpace can join the '/' to a word.
+        std::vector<uint32_t> keys = keysOf("vaf ");
+        keys.push_back('a' | ngosen::test::WithCtrl);
+        keys.push_back(Click);
+        keys.push_back(ngosen::key::BackSpace);
+        for (const uint32_t k : keysOf("/hoawcj "))
+            keys.push_back(k);
+        const std::string got = textAfterEachKey(Mode::Sen, keys, false).back();
+        check(got == "/hoặc ", "sen (no reports): Ctrl+A, click, BackSpace, /hoawcj", got);
+    }
+
     // Closing a browser and opening it again reaches the typing logic as a focus out and a focus in,
     // with no reset that says the focus left.
     void testBackspaceInNewWindow() {
@@ -310,6 +335,7 @@ int main() {
     testAppResetAfterEachKey();
     testBackspaceInEmptyField();
     testBackspaceInNewWindow();
+    testBackspaceAfterSelectAll();
     testSpaceReportedAsNbsp();
     testOptionOff();
     testHiddenPromptEndsRawWord();

@@ -1461,6 +1461,45 @@ fn test_space_drops_keys_after_a_kept_word() {
 }
 
 #[test]
+fn test_space_reads_g_as_ng() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    for (keys, commit, dropped) in [
+        ("nhuwg", "nhưng ", "nhưg"),
+        ("Nhuwg", "Nhưng ", "Nhưg"),
+        ("khoog", "không ", "khôg"),
+        ("cuxg", "cũng ", "cũg"),
+        ("ddag", "đang ", "đag"),
+        ("ddugs", "đúng ", "đugs"),
+        ("nhuwgx", "những ", "nhưgx"),
+        ("gieefgs", "giếng ", "giềgs"),
+        ("ddugws", "đứng ", "đugws"),
+        ("dduowjcg", "được ", "đượcg"),
+        ("dduowjcgi", "được gi ", "đượcgi"),
+    ] {
+        assert_eq!(
+            commit_dropping(&mut e, keys),
+            (commit.to_string(), dropped.to_string()),
+            "{keys}"
+        );
+    }
+    let mut e = engine_keeping_words("VNI", &["bank"]);
+    assert_eq!(commit_dropping(&mut e, "nhu7g").0, "nhưng ");
+    assert_eq!(commit_dropping(&mut e, "gie62g1").0, "giếng ");
+    assert_eq!(commit_dropping(&mut e, "d9ug71").0, "đứng ");
+    // Backspace brings the word back from its text, whose keys no longer carry the marks.
+    for (method, toned) in [("Telex", "đugs"), ("VNI", "đug1")] {
+        let mut e = engine_keeping_words(method, &["bank"]);
+        for (text, commit) in [("nhưg", "nhưng "), ("cũg", "cũng "), (toned, "đúng ")] {
+            e.reset();
+            e.rebuild_from_text(text);
+            e.drop_kept_tail = true;
+            e.process_key_event(KEY_SPACE, 0);
+            assert_eq!(e.pull_commit(), commit, "{method} {text}");
+        }
+    }
+}
+
+#[test]
 fn test_keys_after_a_kept_word_stay_unless_asked() {
     let mut e = engine_keeping_words("Telex", &["bank"]);
     assert_eq!(commit_of(&mut e, "dduowjcd"), "đượcd ");

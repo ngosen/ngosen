@@ -23,6 +23,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trong các bảng tính web Handsontable, jspreadsheet và AG Grid trên Chromium ở X11, Gõ Sen không còn bỏ sót chữ đầu sau khi chuyển cell bằng Enter, Tab hoặc phím mũi tên: gõ `ddaay` trong cell mới giờ ra `đây`, không còn thành `ddây` (#755).
 - Trong Firefox trên GNOME, Gõ Sen sửa tiếp lỗi giữ nguyên phím Telex khi gõ ngay sau Alt+Tab chuyển window: gõ `nguwx` vào giữa `xin chào` giờ ra `ngữ`; thử trên máy ảo Ubuntu 24.04 GNOME 46 và Ubuntu 26.04 GNOME 50 dùng IBus qua GNOME Shell, tắt extension Ngó Sen, đều đúng 20/20 lần, so với 0/20 lần trước khi sửa (#759, #761, sửa tiếp #743).
 - Trên GNOME, sau vài giây máy bận, gõ trong app như ô chat Antigravity không còn mất chữ mãi tới khi bấm sang chỗ khác hoặc khởi động lại fcitx5: bộ gõ nay chờ app như cũ khi app theo kịp, và không đánh dấu app là hỏng vì chính phím BackSpace của mình tới muộn (#362, #767).
+- Trên GNOME khi máy rất bận, gõ trong app như ô chat Antigravity ít mất chữ hơn: bộ gõ chờ app gửi lại nội dung ô lâu hơn (tới 0,7 giây, chỉ với ô đã từng gửi kịp), thay vì xoá bằng BackSpace dễ tới sau chữ mới; thử trên máy ảo bị dồn vào một lõi, chữ sai giảm từ 62/255 xuống 22/255 (#362, #773).
 
 ## [1.10.1-1] — 12/11/2026
 

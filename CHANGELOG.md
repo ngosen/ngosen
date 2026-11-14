@@ -24,6 +24,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gói Ngó Sen do distro đóng gói (như gói trong kho Debian) không còn bị trang Kiểm tra máy báo "không nhận version mới" và chỉ cách thêm repo Ngó Sen: distro tự đưa version mới qua cập nhật hệ thống. Người đóng gói bật cờ `NGOSEN_DISTRO_PACKAGE` khi build (#774).
 - Cập nhật package có cài đặt mới mà chưa khởi động lại fcitx5 thì trang cài đặt trong cửa sổ Qt và GTK (như trang Chuyển mã của 1.11.0) chỉ hiện tiêu đề, không nói vì sao; nay trang báo Ngó Sen đang chạy là bản cũ hơn cửa sổ cài đặt và cần khởi động lại fcitx5 (#777).
 - Trong Firefox bản snap trên Ubuntu 24.04 (GNOME), dùng fcitx4 GTK module đi kèm snap, Gõ Sen không còn gõ sai ngay sau khi mở Firefox do chữ mới đến trước BackSpace xoá chữ cũ: gõ `sose2026` giờ ra `sose2026`, không còn thành `soése026` hay `sóse2026`; Ngó Sen xoá qua surrounding text, kể cả khi Firefox chưa kịp báo lần sửa trước. Thử trên Ubuntu 24.04 với Firefox 159, mỗi lần mở Firefox mới rồi gõ `sose2026 tooi2 `: version 1.11.0-1 sai 3/10, sau khi sửa đúng 20/20 (#778).
+- Trong Luckysheet trên Chrome ở GNOME, gõ `tieengs` trong một cell, click sang cell khác rồi gõ `vieetj`, Gõ Sen không còn ra `vieetj` thay vì `việt`: Luckysheet dùng chung một ô soạn thảo cho mọi cell, nên Gõ Sen tưởng vẫn đang gõ tiếp từ cũ; nay Gõ Sen bắt đầu từ mới trong cell mới. Thử trên Ubuntu 24.04 với Chrome 156, 5 lần: trước đúng 0/5, nay 5/5. Chưa che: nếu gõ phím dấu trước khi trang kịp báo cell mới, từ vẫn giữ nguyên như đã gõ (#782).
 
 ## [1.11.0-1] — 14/11/2026
 

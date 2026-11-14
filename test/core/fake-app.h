@@ -75,6 +75,7 @@ namespace ngosen::test {
         bool             keepsLineBreakAfterCommit = false;    // keeps a line break after a commit with the cursor past it until a typed key, as Ace in Firefox does
         bool             reportsOnFocus            = false;    // reports its field, empty or not, when it gets focus, as Firefox over GTK does
         bool             deletesAtReportedCursor   = false;    // deletes at the cursor of its last report and leaves the cursor there, as Firefox over GTK does
+        bool             dropsSurroundingOnDelete  = false;    // stops declaring surrounding text after a deletion through it until a typed key, as Firefox over fcitx5-gtk does
         int              reportsOnEdit             = 0;        // the nth deletion is reported anyway, as Qt now and then
         bool             showsEnter                = false;    // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
         bool             showsTab                  = false;    // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
@@ -195,6 +196,8 @@ namespace ngosen::test {
             Field field = field_;
             if (quirks_.reportsTextOnceFilled && text_.empty())
                 field.surroundingText = false;
+            if (surroundingDropped_)
+                field.surroundingText = false;
             return field;
         }
         bool hasFocus() const override {
@@ -286,12 +289,13 @@ namespace ngosen::test {
         std::u32string                      reportedText_;
         size_t                              reportedCursor_ = 0;
         std::u32string                      oldText_;
-        size_t                              oldCursor_         = 0;
-        uint64_t                            oldTextUntilUs_    = 0;
-        size_t                              reportedAnchor_    = 0;
-        bool                                silentAfterDelete_ = false;
-        int                                 keysSinceDelete_   = 0;
-        bool                                turnPending_       = false;
+        size_t                              oldCursor_          = 0;
+        uint64_t                            oldTextUntilUs_     = 0;
+        size_t                              reportedAnchor_     = 0;
+        bool                                silentAfterDelete_  = false;
+        bool                                surroundingDropped_ = false;
+        int                                 keysSinceDelete_    = 0;
+        bool                                turnPending_        = false;
         std::optional<size_t>               turnDeleteBytes_;
         std::optional<std::string>          turnCommit_;
         size_t                              cursorPastBy_      = 0;

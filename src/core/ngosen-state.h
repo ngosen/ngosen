@@ -753,6 +753,7 @@ namespace ngosen {
             bool        untrusted      = false;  ///< the untrusted mark of an app GNOME Shell does not name
             std::string lastPath;                ///< how its last replacement deleted
             bool        checkAnswered   = false; ///< a check came out correct
+            bool        copyFitted      = false; ///< a copy wait ended on a copy that fits
             int         answeredUnasked = 0;     ///< checks answered with no key since the edit
             int         checksMissed    = 0;     ///< checks left unanswered
 

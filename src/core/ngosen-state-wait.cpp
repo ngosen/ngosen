@@ -23,6 +23,8 @@ namespace ngosen {
 
     namespace {
         constexpr int LaggingReportWaitMs = 100;
+        // A busy app over IBus can send its copy late, and backspaces sent instead overtake the commit (#362).
+        constexpr int SlowCopyWaitMs = 700;
     } // namespace
 
     bool TypingState::sendBackspaceKeys(int count) const {
@@ -327,7 +329,8 @@ namespace ngosen {
             // A field that stops reporting is not the one the word was typed in.
             finishKeyReportWait(false, false);
         } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && copyWaitDone()) {
-            key_report_copy_fits_ = true;
+            key_report_copy_fits_  = true;
+            sinceFocus_.copyFitted = true;
             key_report_timer_->rearm(ngosen::monotonicUs());
         } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
@@ -366,7 +369,10 @@ namespace ngosen {
         // Firefox over GTK 3 can stay quiet about typed keys after an edit until something asks.
         if (untilCopyFits && (ngosen::keepsOldCopyAfterEdit(host_->field()) || ngosen::keepsLastEditPerTurn(host_->field())))
             askForReportAfterEdit();
-        const uint64_t waitUs = untilCopyFits ? static_cast<uint64_t>(2 * LaggingReportWaitMs) * 1000ULL : KeyReportWaitUs;
+        // A field that never sent a fitting copy may not report at all, so it keeps the short wait.
+        const bool     waitsLonger = sinceFocus_.copyFitted && ngosen::reportsReplacementsWithLaterKey(host_->field());
+        const int      copyWaitMs  = waitsLonger ? SlowCopyWaitMs : 2 * LaggingReportWaitMs;
+        const uint64_t waitUs      = untilCopyFits ? static_cast<uint64_t>(copyWaitMs) * 1000ULL : KeyReportWaitUs;
         // A replay from the timer can start the next wait, so the timer is rearmed rather than replaced.
         if (key_report_timer_) {
             key_report_timer_->rearm(ngosen::monotonicUs() + waitUs);

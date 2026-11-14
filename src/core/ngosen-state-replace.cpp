@@ -282,9 +282,10 @@ namespace ngosen {
                 surr_frozen_streak_ = 0;
             }
         } else if (std::string(reason) == "event" || std::string(reason) == "threshold") {
-            surr_snapshot_trusted_ = true;
-            surr_timeout_streak_   = 0;
-            surr_frozen_streak_    = 0;
+            unconfirmedBackspacesUs_ = 0;
+            surr_snapshot_trusted_   = true;
+            surr_timeout_streak_     = 0;
+            surr_frozen_streak_      = 0;
             if (surr_frozen_) {
                 surr_frozen_ = false;
                 NGOSEN_INFO("Surr frozen: resume waiting");

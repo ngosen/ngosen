@@ -3913,6 +3913,39 @@ namespace {
         check(countHaving(lines, "still short") == 0, "no copy wait in an IBus field that takes no backspaces", join(lines));
     }
 
+    // Backspaces sent after a copy wait ran out can reach a starved app after the commit behind them and
+    // change the text before the next replacement. That is our doing, not the app's (#362).
+    void testLateBackspacesLeaveNoMark() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(
+            loop, makeField("ibus", true, "antigravity-ide"),
+            ngosen::test::AppQuirks{
+                .reportDelayMs = 8, .lagMs = 15, .backspaceLagMs = 200, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+        auto*               app = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typed = [&](const std::string& text) {
+            for (const uint32_t key : keysOf(text)) {
+                app->type(key);
+                loop.pump(35);
+            }
+        };
+        ngosen::test::captureLog(true);
+        typed("nguoiwf ");
+        loop.pump(300);
+        app->setReportDelay(300);
+        typed("tieengs vieetj cos ");
+        app->setReportDelay(8);
+        typed("daaus khoong bij maats ");
+        loop.pump(1500);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(countHaving(lines, "Surrounding text untrusted") == 0, "late backspaces: no mark on the app", app->text() + " " + join(lines));
+    }
+
     // A starved app applies commits late while forwarded backspaces overtake them, so copy waits run
     // out in a row; once it catches up, the words after that stretch wait for the copy again (#362).
     void testStarvedStretchKeepsCopyWait() {
@@ -4723,6 +4756,7 @@ int main() {
     testCopyWaitsRunOutPerField();
     testFocusLossLogsDroppedKeys();
     testStarvedStretchKeepsCopyWait();
+    testLateBackspacesLeaveNoMark();
     testOneLateCopyKeepsWaiting();
     testBackspaceDuringCopyWait();
     testNoCopyWaitWithoutBackspaces();

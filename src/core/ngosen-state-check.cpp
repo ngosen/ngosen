@@ -23,6 +23,8 @@ namespace ngosen {
         constexpr int LaterKeyCheckWaitMs = 1000;
         // Unanswered checks in a row, with none correct, that would make the field untrusted.
         constexpr int UnansweredLimit = 3;
+        // How late a starved app can apply backspaces whose wait ran out.
+        constexpr uint64_t LateBackspacesUs = 1000000;
     } // namespace
 
     bool TypingState::deletesOnlyThroughSurrounding() const {
@@ -156,6 +158,12 @@ namespace ngosen {
             return;
         }
         surrUnanswered_ = verdict == SurroundingVerdict::NoAnswer ? surrUnanswered_ + 1 : 0;
+        // Our own backspaces landing late change the text the same way, so they prove nothing about the app.
+        const bool wrongText = verdict == SurroundingVerdict::DroppedDeletion || verdict == SurroundingVerdict::WrongEarlierPart;
+        if (wrongText && unconfirmedBackspacesUs_ != 0 && monotonicUs() - unconfirmedBackspacesUs_ < LateBackspacesUs) {
+            NGOSEN_INFO("Backspaces sent before may still land: no mark");
+            return;
+        }
         // Calc reports an empty field and GTK 4 an old copy as a matter of course, so with no other way
         // to delete only a dropped deletion is worth giving up on the field for.
         const bool onlyWay = deletesOnlyThroughSurrounding() && !host_->field().preeditFallback;

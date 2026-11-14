@@ -61,12 +61,21 @@ namespace ngosen {
         void markSurroundingUntrusted(const std::string& frontend, const std::string& program) {
             apps_[{frontend, program}].surroundingUntrusted = true;
         }
+        // Apps that sent a copy that fits, so a field they open again is worth the longer copy wait.
+        bool copyFitted(const std::string& frontend, const std::string& program) const {
+            const auto app = apps_.find({frontend, program});
+            return app != apps_.end() && app->second.copyFitted;
+        }
+        void noteCopyFitted(const std::string& frontend, const std::string& program) {
+            apps_[{frontend, program}].copyFitted = true;
+        }
 
       private:
         // What an app showed in this session. The same app can delete differently over IBus and over
         // Wayland, so the frontend is part of the key.
         struct AppHistory {
             bool surroundingUntrusted = false;
+            bool copyFitted           = false;
         };
         std::map<std::pair<std::string, std::string>, AppHistory> apps_;
     };

@@ -331,6 +331,8 @@ namespace ngosen {
         } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && copyWaitDone()) {
             key_report_copy_fits_  = true;
             sinceFocus_.copyFitted = true;
+            if (!ngosen::namesNoApp(host_->field()))
+                engine_->noteCopyFitted(host_->field().frontend, host_->field().program);
             key_report_timer_->rearm(ngosen::monotonicUs());
         } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
@@ -370,9 +372,12 @@ namespace ngosen {
         if (untilCopyFits && (ngosen::keepsOldCopyAfterEdit(host_->field()) || ngosen::keepsLastEditPerTurn(host_->field())))
             askForReportAfterEdit();
         // A field that never sent a fitting copy may not report at all, so it keeps the short wait.
-        const bool     waitsLonger = sinceFocus_.copyFitted && ngosen::reportsReplacementsWithLaterKey(host_->field());
-        const int      copyWaitMs  = waitsLonger ? SlowCopyWaitMs : 2 * LaggingReportWaitMs;
-        const uint64_t waitUs      = untilCopyFits ? static_cast<uint64_t>(copyWaitMs) * 1000ULL : KeyReportWaitUs;
+        const Field field         = host_->field();
+        const bool  appFitted     = !ngosen::namesNoApp(field) && engine_->copyFitted(field.frontend, field.program);
+        const bool  waitsLonger   = (sinceFocus_.copyFitted || appFitted) && !sinceFocus_.longWaitRanOut && ngosen::reportsReplacementsWithLaterKey(field);
+        copyWaitLong_             = untilCopyFits && waitsLonger;
+        const int      copyWaitMs = waitsLonger ? SlowCopyWaitMs : 2 * LaggingReportWaitMs;
+        const uint64_t waitUs     = untilCopyFits ? static_cast<uint64_t>(copyWaitMs) * 1000ULL : KeyReportWaitUs;
         // A replay from the timer can start the next wait, so the timer is rearmed rather than replaced.
         if (key_report_timer_) {
             key_report_timer_->rearm(ngosen::monotonicUs() + waitUs);
@@ -391,6 +396,11 @@ namespace ngosen {
             if (key_report_until_copy_fits_) {
                 if (!key_report_copy_fits_)
                     NGOSEN_INFO("Copy of the text still short, deleting anyway");
+                // One field of an app can lack what another reports; it should stall once, not on every word.
+                if (!key_report_copy_fits_ && copyWaitLong_) {
+                    sinceFocus_.longWaitRanOut = true;
+                    NGOSEN_INFO("Longer copy wait ran out: short waits in this field");
+                }
                 copyWaitTimedOut_ = !key_report_copy_fits_;
                 copyWaitsRunOut_  = copyWaitTimedOut_ ? copyWaitsRunOut_ + 1 : 0;
                 if (copyWaitRetry_)

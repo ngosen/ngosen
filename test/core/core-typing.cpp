@@ -4010,6 +4010,39 @@ namespace {
         }
     }
 
+    // Focus moves with every window switch, and the first waits after it would run out on a busy app.
+    void testSlowCopyAfterRefocus() {
+        for (const int reportMs : {400, 1500}) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop      loop;
+            FakeResources resources;
+            auto          owned = std::make_unique<ngosen::test::FakeApp>(
+                loop, makeField("ibus", true, "antigravity-ide"),
+                ngosen::test::AppQuirks{.reportDelayMs = 8, .lagMs = 15, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+            auto*               app = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            typeRolledInto(app, loop, "nguoiwf ", {5});
+            app->focusNewFieldWith(app->text(), 1000);
+            loop.pump(1500);
+            app->setReportDelay(reportMs);
+            ngosen::test::captureLog(true);
+            const int before = app->sent().forwardedBackSpaces;
+            typeRolledInto(app, loop, "tieengs vieetj cos ", {});
+            loop.pump(2000);
+            const auto lines = ngosen::test::capturedLog();
+            ngosen::test::captureLog(false);
+            const int backspaces = app->sent().forwardedBackSpaces - before;
+            if (reportMs == 400) {
+                check(isEndsWith(app->text(), "người tiếng việt có "), "slow copy after refocus: the words keep their letters", app->text());
+                check(backspaces == 0, "slow copy after refocus: the words wait for the copy", std::to_string(backspaces));
+            } else {
+                check(countHaving(lines, "short waits in this field") == 1, "copy later than the long wait: only the first wait is long", join(lines));
+            }
+        }
+    }
+
     // One report held up past the wait is no reason to stop waiting in that field.
     void testOneLateCopyKeepsWaiting() {
         realMode = ngosen::Mode::Sen;
@@ -4792,6 +4825,7 @@ int main() {
     testLateBackspacesLeaveNoMark();
     testOneLateCopyKeepsWaiting();
     testSlowCopyGetsLongerWait();
+    testSlowCopyAfterRefocus();
     testBackspaceDuringCopyWait();
     testNoCopyWaitWithoutBackspaces();
     testFirefoxOnPlasmaDeletesThroughSurrounding();

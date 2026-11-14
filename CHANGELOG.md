@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.11.1-1] — 14/11/2026
+
+Nhấn Space sau từ kéo dài khi chat nay giữ nguyên chữ đang hiện, như `ừaaa`, `ờaaa`, `khônggg` (#768). Sửa lỗi mất chữ kéo dài và giảm mất chữ khi máy bận trên GNOME trong app như ô chat Antigravity (#767, #773); sửa lỗi chữ mới đến trước BackSpace trong Firefox trên Linux Mint và Firefox bản snap trên Ubuntu bằng cách xoá qua surrounding text (#766, #778). Trong Chromium trên X11, lệnh hoặc đường dẫn bắt đầu bằng `/` không còn bị đổi dấu sau khi xoá hết ô bằng Ctrl+A rồi BackSpace (#775). Trang Kiểm tra máy không còn báo gói do distro đóng gói là "không nhận version mới" (#774); lệnh cài trên Debian và distro dựa trên Debian báo trước khi thay gói của distro bằng gói Ngó Sen, README hướng dẫn quay lại gói của distro và link cập nhật mở đúng mục (#776). Trang cài đặt Qt và GTK nay báo cần khởi động lại fcitx5 khi Ngó Sen đang chạy là bản cũ hơn cửa sổ cài đặt (#777).
+Tải ở [ngosen-1.11.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.11.1-1).
+
 ### Thay đổi
 
 - Lệnh cài một dòng trên Debian và distro dựa trên Debian nay báo trước khi thay gói `fcitx5-ngosen` của distro bằng gói Ngó Sen: từ đó apt chỉ lấy version mới từ Ngó Sen. README có thêm mục "Gói của distro" chỉ cách quay lại gói của distro, và link "cập nhật bằng trình quản lý gói" trong lệnh cài và trang Kiểm tra nay mở đúng mục trong README thay vì đầu trang (#776).

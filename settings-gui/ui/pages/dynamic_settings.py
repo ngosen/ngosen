@@ -293,6 +293,12 @@ class DynamicSettingsPage(QWidget):
                 row.addWidget(line)
                 row.addStretch()
                 self.container_layout.addLayout(row)
+            older = page_status.older_fcitx_line(self.model, self.category)
+            if older:
+                note = HintLabel(older)
+                note.setObjectName("OlderFcitxNote")
+                note.searchable = False
+                self.container_layout.addWidget(note)
 
             form_widget = QWidget()
             self.form = QFormLayout(form_widget)

@@ -9,6 +9,7 @@ from unittest import mock
 
 # isort: off
 from support import FakeDBusHandler, app
+from fake_fcitx import OlderFcitx
 from qtpy.QtCore import QEvent
 from qtpy.QtWidgets import QLabel
 from ui.main_window import NgoSenSettingsWindow
@@ -346,6 +347,20 @@ class WindowStatusTest(unittest.TestCase):
         self.assertFalse(page.status_line.isHidden())
         window.undo()
         self.assertTrue(page.status_line.isHidden())
+
+
+class OlderFcitxTest(unittest.TestCase):
+    def test_the_line_names_a_restart_when_settings_are_missing(self):
+        old = page_status.read(OlderFcitx())
+        self.assertIn("Restart fcitx5", page_status.older_fcitx_line(old, SettingsCategory.CONVERT))
+        self.assertEqual(page_status.older_fcitx_line(old, SettingsCategory.TYPING), "")
+        self.assertEqual(page_status.older_fcitx_line(model_of({}), SettingsCategory.CONVERT), "")
+
+    def test_the_convert_page_says_fcitx5_is_older(self):
+        page = DynamicSettingsPage(OlderFcitx(), category=SettingsCategory.CONVERT)
+        self.assertTrue(hint_shown(page, "OlderFcitxNote"))
+        page = DynamicSettingsPage(FakeDBusHandler(), category=SettingsCategory.CONVERT)
+        self.assertFalse(hint_shown(page, "OlderFcitxNote"))
 
 
 if __name__ == "__main__":

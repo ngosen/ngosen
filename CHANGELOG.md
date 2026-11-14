@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Lệnh cài một dòng trên Debian và distro dựa trên Debian nay báo trước khi thay gói `fcitx5-ngosen` của distro bằng gói Ngó Sen: từ đó apt chỉ lấy version mới từ Ngó Sen. README có thêm mục "Gói của distro" chỉ cách quay lại gói của distro, và link "cập nhật bằng trình quản lý gói" trong lệnh cài và trang Kiểm tra nay mở đúng mục trong README thay vì đầu trang (#775).
+
 ### Sửa
 
 - Trong bảng tính web Univer trên Chrome ở GNOME, Gõ Sen không còn bỏ sót phím dấu thanh gõ sau trong từ: gõ `tieengs`, `vieetj`, `laf` giờ ra `tiếng`, `việt`, `là`, không còn thành `tiêngs`, `viêtj`, `laf` (#732).

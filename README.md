@@ -185,6 +185,7 @@ Xem thêm ở [README của bản IBus](https://github.com/ngosen/ibus-ngosen#re
 </details>
 
 <a id="trinh-quan-ly-goi"></a>
+<a id="cập-nhật-bằng-trình-quản-lý-gói"></a>
 
 ### 3. Cài qua trình quản lý gói
 
@@ -241,6 +242,27 @@ zypper hỏi một lần có tin cậy key không; đối chiếu fingerprint r�
 
 Bản IBus và bản Wayland (cho niri, Sway, Hyprland) cũng có trong repo APT, pacman và zypper: thay `fcitx5-ngosen` bằng
 `ibus-ngosen` hoặc [`wl-ngosen`](https://github.com/ngosen/wl-ngosen) trong lệnh cài.
+
+<a id="goi-cua-distro"></a>
+
+**Gói của distro:** Debian có gói `fcitx5-ngosen` riêng, do Debian build và đưa version mới tới qua
+`apt upgrade`; các distro lấy gói từ Debian cũng vậy. apt luôn coi gói của Ngó Sen là mới hơn gói của
+distro, kể cả khi số version nhỏ hơn, nên mỗi máy chỉ nên theo một bên:
+
+- Muốn dùng gói của distro: `sudo apt install fcitx5-ngosen`, không thêm repo Ngó Sen và không chạy lệnh
+  cài một dòng. Lệnh cài một dòng thay gói của distro bằng gói Ngó Sen (lệnh báo trước rồi mới hỏi).
+- Đang dùng gói Ngó Sen, muốn quay về gói của distro: báo apt ưu tiên gói `fcitx5-ngosen` của distro
+  (version có `+ds`) rồi cài lại. Từ đó apt theo version của distro. Repo vẫn giữ, nên `ibus-ngosen`
+  và `wl-ngosen` vẫn nhận version mới. apt gọi việc này là hạ version vì cách đánh số, dù version của
+  distro có thể mới hơn.
+
+```bash
+printf '%s\n' 'Package: fcitx5-ngosen' 'Pin: version /\+ds/' 'Pin-Priority: 1001' | sudo tee /etc/apt/preferences.d/ngosen-fcitx5
+sudo apt update
+sudo apt install --allow-downgrades fcitx5-ngosen
+```
+
+Muốn dùng lại gói Ngó Sen thì xoá `/etc/apt/preferences.d/ngosen-fcitx5` rồi chạy `sudo apt upgrade`.
 
 <a id="nixos"></a>
 

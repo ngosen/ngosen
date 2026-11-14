@@ -87,6 +87,8 @@ Hoàn tác.
   đặt mặc định, trên 9.884 từ tiếng Anh thông dụng: 92,9% đúng ngay khi gõ, 96,9% đúng sau khi bấm Space.
   Muốn giữ từ tiếng Anh trùng cách gõ tiếng Việt thì gõ đúp phím dấu (`thiss` → `this`).
 - **Lệnh và đường dẫn:** từ bắt đầu bằng `/` giữ nguyên như gõ (`/cost`, `cd /usr/share`).
+- **Gõ thừa phím vẫn giữ dấu:** `dduowjcd` + Space ra `được`, `coongty` + Space ra `công ty`, `nhuwg` + Space
+  ra `nhưng`; bấm Backspace ngay sau đó thì trả lại đúng chữ đã gõ.
 - **Chèn emoji:** gõ từ khoá tiếng Anh (`smile`, `heart`), danh sách emoji hiện cạnh con trỏ để chọn nhanh
   bằng số.
 - **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey, người dùng cũ giữ

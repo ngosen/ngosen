@@ -458,6 +458,17 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::gnomeReturnWithKey(uint32_t sym, int ms) {
+        const auto time = static_cast<uint32_t>(monotonicUs() / 1000);
+        FakeKey    down(sym, false, 0, time);
+        state_->keyEvent(down);
+        FakeKey up(sym, true, 0, time);
+        state_->keyEvent(up);
+        // fcitx5 resets the engine on focus out, which drops the word the key started.
+        state_->reset(true);
+        returnWithText(keyText(sym), ms);
+    }
+
     void FakeApp::switchToOwnTextField(int ms) {
         focused_ = false;
         state_->deactivate(true);

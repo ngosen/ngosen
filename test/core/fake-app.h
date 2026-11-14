@@ -140,6 +140,9 @@ namespace ngosen::test {
         // Leaves focus and comes back after ms with text put at the cursor meanwhile, as a key typed right
         // after Alt+Tab does when both its press and release reach the window before focus-in.
         void returnWithText(const std::string& typed, int ms);
+        // The input method sees the key in the window it is leaving, the letter lands here, and focus comes
+        // back within ms, as GNOME Shell's IBus bridge does for a key typed right after Alt+Tab.
+        void gnomeReturnWithKey(uint32_t sym, int ms);
         // Moves within ms to an empty field of the same page that keeps its own text, as a click from a
         // page's search box into a Lark sheet does.
         void switchToOwnTextField(int ms);

@@ -2207,3 +2207,7 @@ msgstr "Dán chữ vào ô trên, ô dưới hiện chữ đã chuyển."
 #: settings-gui/ui_gtk/convert.py
 msgid "_Copy result"
 msgstr "_Chép kết quả"
+
+#: settings-gui/core/page_status.py
+msgid "The running Ngó Sen is older than this window, so settings are missing here. Restart fcitx5 to see them."
+msgstr "Ngó Sen đang chạy là bản cũ hơn cửa sổ này nên thiếu một số cài đặt ở đây. Khởi động lại fcitx5 để thấy chúng."

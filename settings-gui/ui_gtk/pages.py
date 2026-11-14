@@ -21,7 +21,7 @@ from i18n import _
 from core import page_status
 from ui_gtk import brand
 from ui_gtk.check_page import open_uri
-from ui_gtk.status_row import show_status, status_row
+from ui_gtk.status_row import older_fcitx_group, show_status, status_row
 from ui_gtk.whats_new import tip_text
 
 
@@ -41,6 +41,8 @@ class SettingsPage:
         self.rows = {}
         self._following = False
         self.page = Adw.PreferencesPage(title=title, icon_name=icon)
+        older, self.older_note = older_fcitx_group(model, category)
+        self.page.add(older)
         self._add_header()
         for title, keys in SETTINGS_MAP[category].items():
             # The page title already says this one.

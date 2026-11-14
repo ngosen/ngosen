@@ -10,6 +10,7 @@
 
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace ngosen {
 
@@ -25,6 +26,11 @@ namespace ngosen {
         // May come before the '/' of a path or command: ./x, ../x, ~/x, `/cost`, (/x).
         bool leadsRawWord(char32_t c) {
             return c == '.' || c == '~' || c == '`' || c == '(' || c == '"' || c == '\'';
+        }
+
+        bool selectsAll(const KeyPress& keyEvent) {
+            constexpr uint32_t held = modifier::Shift | modifier::Ctrl | modifier::Alt | modifier::Super;
+            return (keyEvent.states() & held) == modifier::Ctrl && (keyEvent.sym() == 'a' || keyEvent.sym() == 'A');
         }
     } // namespace
 
@@ -55,9 +61,11 @@ namespace ngosen {
     bool TypingState::handleRawWordKey(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (keyEvent.isRelease() || keyEvent.isModifier())
             return false;
+        const bool afterSelectAll = std::exchange(selectedAll_, false);
         // Outside insert mode Vim reads the keys itself; its search may be Vietnamese.
         if (!engine_->options().rawWordAfterSlash || keyEvent.hasModifier() || (vimOn() && vimState_ != VimState::Insert)) {
-            slashWord_ = false;
+            slashWord_   = false;
+            selectedAll_ = selectsAll(keyEvent);
             return false;
         }
         if (slashWord_) {
@@ -81,6 +89,10 @@ namespace ngosen {
             hasHistory_ = false;
         } else if (key::isBackspace(currentSym) && !typedSinceFocus_) {
             // Nothing typed here yet, so it deletes none of the user's text and the field still starts a word.
+            return false;
+        } else if (key::isBackspace(currentSym) && afterSelectAll) {
+            // A field that reports nothing cannot show it is now empty.
+            afterWordEnd_ = true;
             return false;
         } else {
             afterWordEnd_    = endsWord(currentSym) || (afterWordEnd_ && leadsRawWord(currentSym));

@@ -15,6 +15,7 @@ from gi.repository import Adw, Gdk, GLib, GObject, Gtk
 from i18n import _
 
 from ui_gtk.hotkey_button import HotkeyButton
+from ui_gtk.status_row import older_fcitx_group
 
 DEFAULT_ORDER = "Sen,Preedit,Emoji,Off"
 
@@ -29,6 +30,8 @@ class ShortcutsPage:
         self.page = Adw.PreferencesPage(
             title=_("Shortcuts"), icon_name="preferences-desktop-keyboard-shortcuts-symbolic"
         )
+        older, self.older_note = older_fcitx_group(model, SettingsCategory.SHORTCUTS)
+        self.page.add(older)
         groups = SETTINGS_MAP[SettingsCategory.SHORTCUTS]
         for title, keys in groups.items():
             if title != MODE_SWITCHING:

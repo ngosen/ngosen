@@ -112,6 +112,11 @@ namespace ngosen {
             const std::string& t = s.text();
             return t.size() > buff.size() && t.compare(0, buff.size(), buff) == 0;
         }
+
+        bool onlyStaleCopy(const std::vector<std::string>& fails) {
+            return std::all_of(fails.begin(), fails.end(),
+                               [](const std::string& fail) { return fail == "no copy" || fail == "copy shows another word" || fail == "copy older than the last commit"; });
+        }
     } // namespace
 
     bool TypingState::isAutofillCertain(const ngosen::Surrounding& s) {
@@ -282,9 +287,10 @@ namespace ngosen {
                 surr_frozen_streak_ = 0;
             }
         } else if (std::string(reason) == "event" || std::string(reason) == "threshold") {
-            surr_snapshot_trusted_ = true;
-            surr_timeout_streak_   = 0;
-            surr_frozen_streak_    = 0;
+            unconfirmedBackspacesUs_ = 0;
+            surr_snapshot_trusted_   = true;
+            surr_timeout_streak_     = 0;
+            surr_frozen_streak_      = 0;
             if (surr_frozen_) {
                 surr_frozen_ = false;
                 NGOSEN_INFO("Surr frozen: resume waiting");
@@ -819,12 +825,20 @@ namespace ngosen {
             notePath("surrounding", "the field takes no keys");
             return true;
         }
+        if (!host_->field().surroundingText && sinceFocus_.lastPath == "surrounding" && ngosen::takesDeletionWhileUndeclared(host_->field())) {
+            NGOSEN_INFO("Delete through the surrounding text the field stopped declaring after our edit");
+            return true;
+        }
         if (host_->field().surroundingText) {
             unsigned int chars = 0;
             const auto   fails = surroundingPathFails(surrounding, chars);
             if (ngosen::deletesThroughSurroundingFirst(host_->field())) {
                 if (fails.empty()) {
                     notePath("surrounding", "the field reports this word");
+                    return true;
+                }
+                if (sinceFocus_.lastPath == "surrounding" && ngosen::takesDeletionOnStaleCopy(host_->field()) && onlyStaleCopy(fails)) {
+                    NGOSEN_INFO("Delete through the surrounding text again though the copy lags: " + joined(fails));
                     return true;
                 }
                 notePath("backspaces", joined(fails));
@@ -876,9 +890,15 @@ namespace ngosen {
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
     TypingState::CopyWait TypingState::copyWaitNeed() const {
         const auto surrounding = host_->surrounding();
-        if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
+        if (!surrounding.isValid())
             return CopyWait::No;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        // The deletion would go ahead of keys and commits the copy does not show yet. Backspaces gain
+        // nothing from waiting.
+        if (ngosen::appliesDeletionsEarly(host_->field()) && sinceFocus_.seenText && !surroundingUntrusted())
+            return deletion.match == SurroundingDeletion::Match::Fresh ? CopyWait::Fits : CopyWait::Yes;
+        if (!ngosen::countsDeletionOnCopy(host_->field()))
+            return CopyWait::No;
         // A copy that ends at the earlier word is about to catch up in an app that reports, and a deletion
         // counted on it would leave part of the word in place.
         if (deletesOnlyThroughSurrounding())
@@ -893,8 +913,10 @@ namespace ngosen {
         const bool overIbus = ngosen::reportsReplacementsWithLaterKey(field);
         if (overIbus && !ngosen::forwardsBackspaces(field))
             return CopyWait::No;
-        if (!sinceFocus_.seenText || backspaceInWord_ || (unreportedCommitLength_ == 0 && deletion.match != SurroundingDeletion::Match::None))
+        if (!sinceFocus_.seenText || backspaceInWord_)
             return CopyWait::No;
+        if (unreportedCommitLength_ == 0 && deletion.match != SurroundingDeletion::Match::None)
+            return deletion.match == SurroundingDeletion::Match::Fresh ? CopyWait::Fits : CopyWait::No;
         if (overIbus)
             return copyWaitsRunOut_ < MaxCopyWaitsRunOut ? CopyWait::Yes : CopyWait::No;
         return checksGetAnswered() || copyWaitRetry_ ? CopyWait::Yes : CopyWait::HeldBack;
@@ -921,6 +943,14 @@ namespace ngosen {
     // show whether it has caught up. One that never answered, or stayed behind on the last tries, gains nothing.
     bool TypingState::waitsForCopy() {
         const CopyWait need = copyWaitNeed();
+        // The app has caught up, as a starved one does once the load is gone, so waits that ran out
+        // before no longer count (#362).
+        if (need == CopyWait::Fits) {
+            if (copyWaitsRunOut_ >= MaxCopyWaitsRunOut)
+                NGOSEN_INFO("Copy shows the word again: wait for the copy from now");
+            copyWaitsRunOut_ = 0;
+            return false;
+        }
         if (need != CopyWait::HeldBack)
             return need == CopyWait::Yes;
         if (!engine_->options().copyWaitRecovery || !sinceFocus_.checkAnswered || sinceFocus_.retriesRunOut >= MaxCopyWaitsRunOut ||

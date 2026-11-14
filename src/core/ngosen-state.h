@@ -213,7 +213,8 @@ namespace ngosen {
         std::vector<std::string> earlierWords_;                  ///< the current word before each of its earlier replacements
         std::string              wordBeforeReplacement_;         ///< the word the last replacement started from
         std::string              wordAfterReplacement_;          ///< the word the last replacement left
-        bool                     checkWordAfterBounce_  = false; ///< focus came back too fast to tell whether it is the same field
+        bool                     checkWordAfterBounce_ = false;  ///< focus came back too fast to tell whether it is the same field
+        std::string              wordAtBounce_;                  ///< the word kept through the last focus bounce
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
         bool                     hiddenInput_           = false; ///< the terminal hid input at the last key
@@ -309,6 +310,7 @@ namespace ngosen {
         int  slashWordLen_    = 0;    ///< characters typed after the '/'
         bool afterWordEnd_    = true; ///< the last key ended a word, for fields that do not report their text
         bool typedSinceFocus_ = false;
+        bool selectedAll_     = false; ///< the last key was Ctrl+A
         bool handleRawWordKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
         bool atRawWordStart() const;
 
@@ -480,20 +482,29 @@ namespace ngosen {
         std::optional<KeyEntry>        live_key_;   ///< key being handled, replayed if it landed in another field
         std::optional<KeyEntry>        passed_key_; ///< last key let through to the app as typed
         void                           startWordWithKey(const KeyEntry& key);
+        std::optional<std::string>     keysTakenOverCell(const Surrounding& s, const std::u32string& shownBefore) const;
         KeyEntry                       key_report_key_{};
         KeyEntry                       replayed_key_{};
-        bool                           key_report_copy_fits_ = false;
-        bool                           copyWaitTimedOut_     = false; ///< keeps replayed keys from each waiting out a copy that never fits
-        int                            copyWaitsRunOut_      = 0;     ///< copy waits in a row that ran out in this field
-        static constexpr int           MaxCopyWaitsRunOut    = 2;
+        bool                           key_report_copy_fits_    = false;
+        bool                           copyWaitLong_            = false; ///< the copy wait running now has the longer cap
+        bool                           copyWaitTimedOut_        = false; ///< keeps replayed keys from each waiting out a copy that never fits
+        int                            copyWaitsRunOut_         = 0;     ///< copy waits in a row that ran out in this field
+        uint64_t                       unconfirmedBackspacesUs_ = 0;     ///< when backspaces went out that no report has shown yet, 0 if none
+        static constexpr int           MaxCopyWaitsRunOut       = 2;
 
         // HeldBack: the copy would give a wrong deletion, but this field's checks go unanswered.
+        // Fits: no wait, as the copy already ends with the word as we know it.
         enum class CopyWait {
             No,
             Yes,
-            HeldBack
+            HeldBack,
+            Fits
         };
-        CopyWait                       copyWaitNeed() const;
+        CopyWait copyWaitNeed() const;
+        bool     copyWaitDone() const {
+            const CopyWait need = copyWaitNeed();
+            return need == CopyWait::No || need == CopyWait::Fits;
+        }
         bool                           waitsForCopy();
         bool                           checksGetAnswered() const;
         bool                           copyWaitRetry_         = false; ///< this wait is the one tried again in a held-back field
@@ -717,6 +728,7 @@ namespace ngosen {
         // A page that may keep its own text, before any report showed our backspaces taking effect.
         bool                            pageHidesBackspaces() const;
         bool                            cellKeepsOwnText() const;
+        bool                            marksFieldOnly() const;
         bool                            appMarkedUntrusted() const;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
@@ -759,6 +771,8 @@ namespace ngosen {
             bool        untrusted      = false;  ///< the untrusted mark of an app GNOME Shell does not name
             std::string lastPath;                ///< how its last replacement deleted
             bool        checkAnswered   = false; ///< a check came out correct
+            bool        copyFitted      = false; ///< a copy wait ended on a copy that fits
+            bool        longWaitRanOut  = false; ///< a longer copy wait ran out with no copy that fits
             int         answeredUnasked = 0;     ///< checks answered with no key since the edit
             int         checksMissed    = 0;     ///< checks left unanswered
 

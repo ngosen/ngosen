@@ -206,6 +206,9 @@ namespace ngosen::test {
         std::optional<std::string> takeSelection() override {
             return std::exchange(announced_, std::nullopt);
         }
+        std::string primarySelection() const override {
+            return announced_.value_or("");
+        }
 
         void showPreedit(const std::string& text, bool /*underline*/) override {
             if (!text.empty())
@@ -311,9 +314,10 @@ namespace ngosen::test {
     };
 
     // The text the keys give in Preedit mode, where the app only ever gets finished text.
-    std::string telexOutput(const std::vector<uint32_t>& keys);
+    // reportsText: the field reports its text, which Space needs to fix a kept word.
+    std::string telexOutput(const std::vector<uint32_t>& keys, bool reportsText = false);
     // The same with the given settings and macro table.
-    std::string telexOutput(FakeResources& resources, const std::vector<uint32_t>& keys);
+    std::string telexOutput(FakeResources& resources, const std::vector<uint32_t>& keys, bool reportsText = false);
 
     // What the app shows after typing, and what the typing logic sent it to get there.
     struct Typed {

@@ -25,6 +25,7 @@ License: LGPL-2.1-or-later
 
 Files: bamboo-rs/src/engine/english-words*
        data/english-common.txt
+       data/keep-words.txt
 Copyright: 2000-2026 Kevin Atkinson
 License: SCOWL
  Permission to use, copy, modify, distribute, and sell any part of SCOWLv2, or
@@ -33,6 +34,13 @@ License: SCOWL
  copyright notice and this notice appear in supporting documentation.  Kevin
  Atkinson makes no representations about the suitability of this database for
  any purpose.  It is provided "as is" without express or implied warranty.
+
+Files: misc/keep-words-written.txt
+Copyright: 2026 Ngó Sen contributors
+License: GPL-3.0-or-later
+Comment: The words were counted in FineWeb-2 (https://huggingface.co/datasets/HuggingFaceFW/fineweb-2),
+ made available by Hugging Face under the Open Data Commons Attribution License (ODC-By) v1.0.
+ data/keep-words.txt also includes these words.
 
 Files: bamboo-rs/vendor/bamboo-core/*
 Copyright: 2018 Luong Thanh Lam <ltlam93@gmail.com>

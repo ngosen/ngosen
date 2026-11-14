@@ -81,6 +81,9 @@ namespace ngosen::test {
         std::optional<std::string> takeSelection() override {
             return std::nullopt;
         }
+        std::string primarySelection() const override {
+            return primary_;
+        }
 
         void showPreedit(const std::string& text, bool /*underline*/) override {
             preedit_ = text;
@@ -139,6 +142,9 @@ namespace ngosen::test {
         void setHasFocus(bool hasFocus) {
             hasFocus_ = hasFocus;
         }
+        void setPrimary(std::string text) {
+            primary_ = std::move(text);
+        }
         void setSystemKeysWork(bool works) {
             systemKeysWork_ = works;
         }
@@ -178,6 +184,7 @@ namespace ngosen::test {
         std::vector<int>                          systemKeys_;
         std::string                               preedit_;
         std::string                               status_;
+        std::string                               primary_;
         std::optional<CandidatePage>              candidates_;
         std::vector<std::string>                  labels_;
         std::function<void(size_t)>               onPick_;

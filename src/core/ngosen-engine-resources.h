@@ -39,6 +39,10 @@ namespace ngosen {
         virtual uintptr_t englishWords() const {
             return 0;
         }
+        // Words a breaking key must not cut back to Vietnamese, like `axit`; 0 turns that off.
+        virtual uintptr_t keepWords() const {
+            return 0;
+        }
 
         virtual std::vector<EmojiEntry> emojiHistory()                         = 0;
         virtual std::vector<EmojiEntry> searchEmoji(const std::string& prefix) = 0;

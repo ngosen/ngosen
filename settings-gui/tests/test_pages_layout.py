@@ -23,7 +23,7 @@ class LayoutTest(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def test_seven_pages(self):
+    def test_eight_pages(self):
         window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler())
         titles = [window.sidebar.item(r).text() for r in range(window.sidebar.count())]
         self.assertEqual(
@@ -32,6 +32,7 @@ class LayoutTest(unittest.TestCase):
                 "Typing",
                 "Macros & Dictionary",
                 "Keys",
+                "Convert",
                 "Appearance",
                 "What's new & tips",
                 "Check my machine",

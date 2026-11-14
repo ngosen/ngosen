@@ -13,7 +13,8 @@ Chưa có số version, xếp theo thứ tự định làm:
 
 1. Bớt đổi nhầm chữ tiếng Anh thành tiếng Việt, như `nest` thành `nét`, `too` thành `tô`.
 2. Đoán dấu: gõ cả câu không dấu rồi bấm một phím để thêm dấu.
-3. Bôi đen một đoạn rồi thêm dấu, bỏ dấu hoặc chuyển chữ mã cũ (TCVN3, VNI) sang Unicode.
+3. Bôi đen một đoạn không dấu rồi bấm phím để thêm dấu cả đoạn. Chuyển mã cũ (TCVN3, VNI) sang Unicode
+   và bỏ dấu đoạn bôi đen đã xong ở #655.
 4. Sửa lỗi gõ vội, như `tiếgn` thành `tiếng`.
 5. Tự chạy "Kiểm tra máy tôi" lần đầu mở cửa sổ cài đặt. Có thêm bảng các app gõ được, lấy từ kết quả test
    người dùng gửi về.

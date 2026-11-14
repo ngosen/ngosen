@@ -820,6 +820,10 @@ namespace ngosen {
             notePath("surrounding", "the field takes no keys");
             return true;
         }
+        if (!host_->field().surroundingText && sinceFocus_.lastPath == "surrounding" && ngosen::takesDeletionWhileUndeclared(host_->field())) {
+            NGOSEN_INFO("Delete through the surrounding text the field stopped declaring after our edit");
+            return true;
+        }
         if (host_->field().surroundingText) {
             unsigned int chars = 0;
             const auto   fails = surroundingPathFails(surrounding, chars);

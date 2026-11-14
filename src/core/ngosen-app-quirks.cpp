@@ -226,6 +226,10 @@ namespace ngosen {
         return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2" || field.frontend == "dbus";
     }
 
+    bool takesDeletionWhileUndeclared(const Field& field) {
+        return field.frontend == "dbus";
+    }
+
     bool reportsTrailKeys(const Field& field) {
         return field.frontend != "ibus" && hidesAddressBarFlag(field);
     }

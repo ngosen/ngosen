@@ -90,6 +90,11 @@ namespace ngosen {
     // the other frontends keep backspaces until they are measured.
     bool deletesThroughSurroundingFirst(const Field& field);
 
+    // fcitx5-gtk stops declaring surrounding text while Firefox's selection is invalid after a deletion,
+    // though the next deletion still works; a forwarded backspace there waits behind GDK events and can
+    // land after the commit that follows it.
+    bool takesDeletionWhileUndeclared(const Field& field);
+
     // These frontends turn a surrounding deletion's character count into bytes on their own copy of
     // the text, which can lag behind the app.
     bool countsDeletionOnCopy(const Field& field);

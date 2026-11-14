@@ -116,6 +116,10 @@ namespace ngosen::test {
         void setReportDelay(int ms) {
             quirks_.reportDelayMs = ms;
         }
+        // Lets a test slow down how fast the app applies edits for a stretch, as a starved app does.
+        void setLag(int ms) {
+            quirks_.lagMs = ms;
+        }
         // Renames the app with no focus change, as GNOME Shell does when it names the app late.
         void setProgram(const std::string& program) {
             field_.program = program;

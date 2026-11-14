@@ -488,12 +488,18 @@ namespace ngosen {
         static constexpr int           MaxCopyWaitsRunOut    = 2;
 
         // HeldBack: the copy would give a wrong deletion, but this field's checks go unanswered.
+        // Fits: no wait, as the copy already ends with the word as we know it.
         enum class CopyWait {
             No,
             Yes,
-            HeldBack
+            HeldBack,
+            Fits
         };
-        CopyWait                       copyWaitNeed() const;
+        CopyWait copyWaitNeed() const;
+        bool     copyWaitDone() const {
+            const CopyWait need = copyWaitNeed();
+            return need == CopyWait::No || need == CopyWait::Fits;
+        }
         bool                           waitsForCopy();
         bool                           checksGetAnswered() const;
         bool                           copyWaitRetry_         = false; ///< this wait is the one tried again in a held-back field

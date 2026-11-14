@@ -3500,6 +3500,37 @@ namespace {
         check(countHaving(lines, "still short") == 0, "no copy wait in an IBus field that takes no backspaces", join(lines));
     }
 
+    // A starved app applies commits late while forwarded backspaces overtake them, so copy waits run
+    // out in a row; once it catches up, the words after that stretch wait for the copy again (#362).
+    void testStarvedStretchKeepsCopyWait() {
+        for (const int lagMs : {120, 300}) {
+            for (const int reportMs : {150, 500}) {
+                realMode = ngosen::Mode::Sen;
+                realtextLen.store(0);
+                FakeLoop      loop;
+                FakeResources resources;
+                auto          owned = std::make_unique<ngosen::test::FakeApp>(
+                    loop, makeField("ibus", true, "antigravity-ide"),
+                    ngosen::test::AppQuirks{.reportDelayMs = 8, .lagMs = 15, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+                auto*               app = owned.get();
+                ngosen::TypingState state(&resources, std::move(owned));
+                app->attach(&state);
+                typeRolledInto(app, loop, "nguoiwf ", {5});
+                app->setReportDelay(reportMs);
+                app->setLag(lagMs);
+                typeRolledInto(app, loop, "tieengs vieetj cos daaus ", {});
+                app->setReportDelay(8);
+                app->setLag(15);
+                loop.pump(1000);
+                const int before = app->sent().forwardedBackSpaces;
+                typeRolledInto(app, loop, "nguoiwf nguoiwf ", {5, 13});
+                const std::string name = "starved stretch, lag " + std::to_string(lagMs) + " ms, reports " + std::to_string(reportMs) + " ms late: ";
+                check(isEndsWith(app->text(), "người người "), name + "the words after it keep their letters", app->text());
+                check(app->sent().forwardedBackSpaces == before, name + "the words after it send no backspaces", std::to_string(app->sent().forwardedBackSpaces - before));
+            }
+        }
+    }
+
     // One report held up past the wait is no reason to stop waiting in that field.
     void testOneLateCopyKeepsWaiting() {
         realMode = ngosen::Mode::Sen;
@@ -4390,6 +4421,7 @@ int main() {
     testRolledKeysWaitForIbusCopy();
     testCopyWaitsRunOutPerField();
     testFocusLossLogsDroppedKeys();
+    testStarvedStretchKeepsCopyWait();
     testOneLateCopyKeepsWaiting();
     testBackspaceDuringCopyWait();
     testNoCopyWaitWithoutBackspaces();

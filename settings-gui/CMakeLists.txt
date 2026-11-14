@@ -4,6 +4,12 @@ set(SETTINGS_GUI_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/settings-
 set(SETTINGS_GUI_FULL_PATH "${CMAKE_INSTALL_FULL_DATADIR}/${PROJECT_NAME}/settings-gui")
 
 option(NGOSEN_BYTECOMPILE_PYTHON "Byte-compile Python scripts during install" ON)
+option(NGOSEN_DISTRO_PACKAGE "Built for a distribution's archive, which delivers new versions itself" OFF)
+if(NGOSEN_DISTRO_PACKAGE)
+    set(NGOSEN_DISTRO_PACKAGE_PY True)
+else()
+    set(NGOSEN_DISTRO_PACKAGE_PY False)
+endif()
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/version.py.in"

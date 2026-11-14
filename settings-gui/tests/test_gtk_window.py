@@ -9,7 +9,7 @@ from unittest import mock
 from urllib.parse import unquote
 
 # isort: off
-from fake_fcitx import DEFAULTS, FakeDBusHandler, lock_groups
+from fake_fcitx import DEFAULTS, FakeDBusHandler, OlderFcitx, lock_groups
 import ui_gtk
 
 # isort: on
@@ -795,6 +795,13 @@ class GtkStatusLinesTest(unittest.TestCase):
         fake.sub_configs["custom_keymap"] = [{"Key": "q", "Value": "XoaDauThanh"}]
         w._refresh_statuses()
         self.assertFalse(w.typing.custom_note.get_visible())
+
+    def test_the_convert_page_says_fcitx5_is_older(self):
+        self.assertTrue(self.window(OlderFcitx()).convert.older_note.get_visible())
+        self.assertFalse(self.window(FakeDBusHandler()).convert.older_note.get_visible())
+        w = self.window(OlderFcitx(missing=("CycleModeKey",)))
+        self.assertTrue(w.shortcuts.older_note.get_visible())
+        self.assertFalse(w.convert.older_note.get_visible())
 
     def test_the_retone_note_follows_the_charset(self):
         fake = FakeDBusHandler({"RetoneSelection": "True", "OutputCharset": "Unicode"})

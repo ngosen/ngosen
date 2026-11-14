@@ -165,9 +165,19 @@ def _pacman_state(root):
     return state
 
 
-def state(root="/", program=__file__):
+def _distro_package():
+    try:
+        from version import DISTRO_PACKAGE
+    except ImportError:
+        return False
+    return DISTRO_PACKAGE
+
+
+def state(root="/", program=__file__, distro=None):
     """ON as soon as one file enables the repository, even when another could not be read."""
-    if os.path.realpath(program).startswith("/nix/store/"):
+    if distro is None:
+        distro = _distro_package()
+    if distro or os.path.realpath(program).startswith("/nix/store/"):
         return NONE
     found = _pacman_state(root)
     if found == ON:

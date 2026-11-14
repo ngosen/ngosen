@@ -5,6 +5,8 @@
 
 from gi.repository import Adw
 
+from core import page_status
+
 
 def status_row():
     row = Adw.ActionRow(use_markup=False, css_classes=["dim-label"], visible=False)
@@ -16,3 +18,12 @@ def status_row():
 def show_status(row, text):
     row.set_title(text)
     row.set_visible(bool(text))
+
+
+def older_fcitx_group(model, category):
+    """A group holding the older-fcitx5 row, and the row."""
+    row = status_row()
+    show_status(row, page_status.older_fcitx_line(model, category))
+    group = Adw.PreferencesGroup()
+    group.add(row)
+    return group, row

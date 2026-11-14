@@ -5,6 +5,7 @@
 //! Per-key typing logic of Ngó Sen on top of the `bamboo-core` crate, exported with the C
 //! interface in `include/bamboo-core.h`.
 
+mod convert;
 mod engine;
 mod ffi;
 mod handles;

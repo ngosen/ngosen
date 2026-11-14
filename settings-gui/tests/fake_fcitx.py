@@ -67,6 +67,20 @@ class FakeDBusHandler:
         self.values.update(copy.deepcopy(values))
         return True
 
+    # Enough of TCVN3 for the tests; the real tables are tested in the Rust core.
+    TCVN3 = str.maketrans({"Õ": "ế", "Ö": "ệ", "µ": "à", "é": "ộ"})
+
+    def convert_text(self, text, from_charset, to_charset, letter_case, strip_diacritics):
+        from core.convert import ConvertError
+
+        self.conversions = getattr(self, "conversions", [])
+        self.conversions.append((text, from_charset, to_charset, letter_case, strip_diacritics))
+        if hasattr(self, "convert_error"):
+            raise ConvertError(self.convert_error)
+        if from_charset == "TCVN3 (ABC)" and to_charset == "Unicode":
+            text = text.translate(self.TCVN3)
+        return text.upper() if letter_case == 1 else text
+
     def get_sub_config_list(self, path, root_key):
         return copy.deepcopy(self.sub_configs.get(path, []))
 

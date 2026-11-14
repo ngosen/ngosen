@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
         std::vector<int> gaps;
         for (size_t i = 0; i < s.keys.size(); ++i)
             gaps.push_back(i + 1 < s.keys.size() ? static_cast<int>(s.timesMs[i + 1] - s.timesMs[i]) : 0);
-        const std::string want = ngosen::test::telexOutput(s.keys);
+        const std::string want = ngosen::test::telexOutput(s.keys, true);
         const std::string seen = ngosen::test::typeInApp(s.field, quirks, s.keys, gaps);
         std::printf("%s %s, keys \"%s\"%s\n  app:   \"%s\"\n  telex: \"%s\"\n", s.field.frontend.c_str(), s.field.program.c_str(), describe(s.keys).c_str(),
                     s.skipped > 0 ? (", left out shortcut keys: " + std::to_string(s.skipped)).c_str() : "", seen.c_str(), want.c_str());

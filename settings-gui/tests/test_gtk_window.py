@@ -561,6 +561,63 @@ class GtkAppearancePageTest(unittest.TestCase):
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+class GtkConvertPageTest(unittest.TestCase):
+    def setUp(self):
+        Adw.init()
+        isolate(self)
+        self.dbus = FakeDBusHandler()
+        self.window = window.Window(None, self.dbus)
+        self.page = self.window.convert
+
+    @staticmethod
+    def text(view):
+        buffer = view.get_buffer()
+        return buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), False)
+
+    def type(self, text):
+        self.page.source.get_buffer().set_text(text)
+        context = GLib.MainContext.default()
+        for _ in range(100):
+            if self.page._pending == 0:
+                break
+            context.iteration(False)
+            time.sleep(0.01)
+
+    def test_pasted_text_shows_converted(self):
+        self.type("TiÕng ViÖt")
+        self.assertEqual(self.text(self.page.result), "Tiếng Việt")
+        self.assertTrue(self.page.copy.get_sensitive())
+
+    def test_a_changed_setting_saves_and_converts_again(self):
+        self.type("TiÕng")
+        row = self.page.rows["ConvertCase"]
+        row.set_selected(row.values.index("UPPER CASE"))
+        self.assertEqual(self.dbus.values["ConvertCase"], "UPPER CASE")
+        self.assertEqual(self.text(self.page.result), "TIẾNG")
+
+    def test_swap_saves_both_charsets_at_once(self):
+        saves = []
+        original = self.dbus.set_config
+        self.dbus.set_config = lambda values: saves.append(dict(values)) or original(values)
+        self.page._swap()
+        self.assertEqual(self.dbus.values["ConvertFrom"], "Unicode")
+        self.assertEqual(self.dbus.values["ConvertTo"], "TCVN3 (ABC)")
+        self.assertEqual(len(saves), 1)
+
+    def test_failure_shows_why(self):
+        self.dbus.convert_error = "org.freedesktop.DBus.Error.ServiceUnknown"
+        self.type("abc")
+        self.assertTrue(self.page.error.get_visible())
+        self.assertIn("fcitx5 is not running", self.page.error.get_text())
+        self.assertFalse(self.page.copy.get_sensitive())
+
+    def test_hotkey_is_saved(self):
+        self.page.hotkey.emit("recorded", "Control+Shift+F9")
+        self.assertEqual(self.dbus.values["ConvertKey"], {"0": "Control+Shift+F9"})
+        self.assertIs(self.page.control_for("ConvertKey"), self.page.hotkey)
+
+
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
 class GtkTypingPageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()

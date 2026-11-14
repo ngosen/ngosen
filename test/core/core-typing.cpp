@@ -1818,7 +1818,7 @@ namespace {
         const std::string log = resources.recorder().dump();
         check(has(log, "\tfield\tfrontend=fcitx4 program=firefox (org.mozilla.firefox) surrounding=1 preedit=1 mode=Sen\n"), "recorder: notes the field and mode", log);
         check(has(log, "\tkey\tdown 0x0065 e\n"), "recorder: notes the key", log);
-        check(has(log, "\tforward\tBackSpace down\n"), "recorder: notes the forwarded backspace", log);
+        check(has(log, "\tdelete\toffset=-1 size=1\n"), "recorder: notes the deletion", log);
         check(has(log, "\tapp\t\"ti|\" cursor=2 anchor=2 length=2\n"), "recorder: notes the app's report", log);
         check(has(log, "\tcommit\t\"ê\"\n"), "recorder: notes the commit", log);
     }
@@ -2757,8 +2757,8 @@ namespace {
         check(countHaving(lines, "not answered") >= 3 && countHaving(lines, "untrusted") == 0, "check: an app that never reports goes unanswered", join(lines));
 
         // A field outside the surrounding rule keeps its keys, and logs what the surrounding path would have done.
-        lines = logLinesWhileTyping(makeField("fcitx4", true), {}, "vieetj nam ", "Surrounding path would", &run);
-        check(lines.size() == 2 && countHaving(lines, "fails: none") == 2 && run.sent.surroundingDeletes == 0, "check: one observation line per replacement on an fcitx4 field",
+        lines = logLinesWhileTyping(makeField("xim", true), {}, "vieetj nam ", "Surrounding path would", &run);
+        check(lines.size() == 2 && countHaving(lines, "fails: none") == 2 && run.sent.surroundingDeletes == 0, "check: one observation line per replacement on an XIM field",
               run.text + " " + join(lines));
 
         // A message written as `cond ? "a" : "b"` must reach the log as text, not as the condition's value.
@@ -3673,6 +3673,18 @@ namespace {
         const auto run = ngosen::test::typeInAppTraced(resources, field, {.backspaceLagMs = 60, .dropsSurroundingOnDelete = true}, keys, std::vector<int>(keys.size(), 120));
         check(run.text == "tiền nguyễn luận ", "dbus: a field that stopped declaring its text still deletes through it", run.text);
         check(run.sent.forwardedBackSpaces == 0, "dbus: no backspace for a field that stopped declaring its text", std::to_string(run.sent.forwardedBackSpaces));
+    }
+
+    // Firefox's snap carries the fcitx4 GTK module, which queues forwarded keys behind GDK events like
+    // fcitx5-gtk; right after Firefox opens, its reports come later than the next key.
+    void testSnapFirefoxReportingLate() {
+        FakeResources    resources;
+        const auto       keys = keysOf("a sose2026 tooi2 ");
+        std::vector<int> gaps(keys.size(), 80);
+        gaps[1]        = 1000;
+        const auto run = ngosen::test::typeInAppTraced(resources, makeField("fcitx4", true, "firefox"), {.reportDelayMs = 300, .backspaceLagMs = 60}, keys, gaps);
+        check(run.text == "a sose2026 tôi2 ", "fcitx4: a copy behind the last deletion does not send the next one to backspaces", run.text);
+        check(run.sent.forwardedBackSpaces == 0, "fcitx4: no backspace after a deletion through the text", std::to_string(run.sent.forwardedBackSpaces));
     }
 
     // A quick focus change can land in another widget of the same context that never had surrounding text.
@@ -4774,6 +4786,7 @@ int main() {
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();
     testFieldDroppingSurroundingAfterDelete();
+    testSnapFirefoxReportingLate();
     testUndeclaredFieldAfterFocusChange();
     testLateCopiesRecoverOnWlroots();
     testLockWordNotOnChord();

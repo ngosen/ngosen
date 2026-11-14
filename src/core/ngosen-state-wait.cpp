@@ -372,9 +372,10 @@ namespace ngosen {
         if (untilCopyFits && (ngosen::keepsOldCopyAfterEdit(host_->field()) || ngosen::keepsLastEditPerTurn(host_->field())))
             askForReportAfterEdit();
         // A field that never sent a fitting copy may not report at all, so it keeps the short wait.
-        const Field field         = host_->field();
-        const bool  appFitted     = !ngosen::namesNoApp(field) && engine_->copyFitted(field.frontend, field.program);
-        const bool  waitsLonger   = (sinceFocus_.copyFitted || appFitted) && !sinceFocus_.longWaitRanOut && ngosen::reportsReplacementsWithLaterKey(field);
+        const Field field     = host_->field();
+        const bool  appFitted = !ngosen::namesNoApp(field) && engine_->copyFitted(field.frontend, field.program);
+        const bool  waitsLonger =
+            (((sinceFocus_.copyFitted || appFitted) && ngosen::reportsReplacementsWithLaterKey(field)) || ngosen::appliesDeletionsEarly(field)) && !sinceFocus_.longWaitRanOut;
         copyWaitLong_             = untilCopyFits && waitsLonger;
         const int      copyWaitMs = waitsLonger ? SlowCopyWaitMs : 2 * LaggingReportWaitMs;
         const uint64_t waitUs     = untilCopyFits ? static_cast<uint64_t>(copyWaitMs) * 1000ULL : KeyReportWaitUs;

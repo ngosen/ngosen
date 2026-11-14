@@ -3740,6 +3740,32 @@ namespace {
         const auto run = ngosen::test::typeInAppTraced(resources, makeField("fcitx4", true, "firefox"), {.reportDelayMs = 300, .backspaceLagMs = 60}, keys, gaps);
         check(run.text == "a sose2026 tôi2 ", "fcitx4: a copy behind the last deletion does not send the next one to backspaces", run.text);
         check(run.sent.forwardedBackSpaces == 0, "fcitx4: no backspace after a deletion through the text", std::to_string(run.sent.forwardedBackSpaces));
+
+        // Right after it opens, Firefox can apply a deletion ahead of the commit sent before it.
+        FakeResources    slowResources;
+        std::vector<int> slowGaps(keys.size(), 180);
+        slowGaps[1]        = 1000;
+        const auto slowRun = ngosen::test::typeInAppTraced(slowResources, makeField("fcitx4", true, "firefox"), {.lagMs = 250, .deletionsSkipLag = true}, keys, slowGaps);
+        check(slowRun.text == "a sose2026 tôi2 ", "fcitx4: a deletion waits for the text Firefox has not shown yet", slowRun.text);
+
+        // Once deletions go to backspaces, waiting for the copy only holds each word back.
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeResources slowCopyResources;
+        FakeLoop      loop;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(
+            loop, makeField("fcitx4", true, "firefox"),
+            ngosen::test::AppQuirks{.repeatsOldTextAfterDelete = true, .keysBeforeNewReport = 99, .emptyCommitsBeforeReport = 1, .reportsOnlyWhenAsked = true});
+        auto*               app = owned.get();
+        ngosen::TypingState state(&slowCopyResources, std::move(owned));
+        app->attach(&state);
+        for (const uint32_t key : keysOf("a tieengs vieetj nam tieengs vieetj")) {
+            app->type(key);
+            loop.pump(120);
+        }
+        app->type(' ');
+        loop.pump(100);
+        check(app->text() == "a tiếng việt nam tiếng việt ", "fcitx4: no copy wait once deletions go to backspaces", app->text());
     }
 
     // A quick focus change can land in another widget of the same context that never had surrounding text.

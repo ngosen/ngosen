@@ -890,9 +890,15 @@ namespace ngosen {
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
     TypingState::CopyWait TypingState::copyWaitNeed() const {
         const auto surrounding = host_->surrounding();
-        if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
+        if (!surrounding.isValid())
             return CopyWait::No;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        // The deletion would go ahead of keys and commits the copy does not show yet. Backspaces gain
+        // nothing from waiting.
+        if (ngosen::appliesDeletionsEarly(host_->field()) && sinceFocus_.seenText && !surroundingUntrusted())
+            return deletion.match == SurroundingDeletion::Match::Fresh ? CopyWait::Fits : CopyWait::Yes;
+        if (!ngosen::countsDeletionOnCopy(host_->field()))
+            return CopyWait::No;
         // A copy that ends at the earlier word is about to catch up in an app that reports, and a deletion
         // counted on it would leave part of the word in place.
         if (deletesOnlyThroughSurrounding())

@@ -324,7 +324,7 @@ namespace ngosen {
         if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !host_->surrounding().isValid()) {
             // A field that stops reporting is not the one the word was typed in.
             finishKeyReportWait(false, false);
-        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && copyWaitNeed() == CopyWait::No) {
+        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && copyWaitDone()) {
             key_report_copy_fits_ = true;
             key_report_timer_->rearm(ngosen::monotonicUs());
         } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {

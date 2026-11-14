@@ -1,8 +1,8 @@
 fcitx5-ngosen (1:1.11.1-1) unstable; urgency=medium
 
-  * Settings pages tell the user to restart fcitx5 when the running Ngó Sen is older than the window (#777); Firefox on GNOME, Mint and the Ubuntu snap types the last word right when new text arrives before the backspaces (#766, #778); GNOME apps such as the Antigravity chat lose fewer keys when the machine is busy (#767, #773); a / word after Ctrl+A and BackSpace stays as typed in Chromium (#775); Space keeps stretched words such as ừaaa (#768); distribution packages skip the Ngó Sen repository line on the Check page, and install.sh warns before replacing one (#774, #776).
+  * Settings pages tell the user to restart fcitx5 when the running Ngó Sen is older than the window (#777); Firefox on Mint types the last word right when new text arrives before the backspaces (#766); right after the Ubuntu snap Firefox opens, Ngó Sen deletes through surrounding text, waits for its last commit to show and keeps a backspace fallback to that window (#778, #780, #781); GNOME apps such as the Antigravity chat lose fewer keys when the machine is busy (#767, #773); a / word after Ctrl+A and BackSpace stays as typed in Chromium (#775); Space keeps stretched words such as ừaaa (#768); distribution packages skip the Ngó Sen repository line on the Check page, and install.sh warns before replacing one (#774, #776); Luckysheet starts a new word after a click on another cell (#782).
 
- -- Nguyen Phi <nguyenphidt@gmail.com>  Sat, 14 Nov 2026 19:30:00 +0700
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 15 Nov 2026 01:30:00 +0700
 
 fcitx5-ngosen (1:1.11.0-1) unstable; urgency=medium
 

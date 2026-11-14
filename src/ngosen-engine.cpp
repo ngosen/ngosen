@@ -382,6 +382,8 @@ namespace fcitx {
             },
             uiManager);
         config_.outputCharset.annotation().setList(charsets);
+        config_.convertFrom.annotation().setList(charsets);
+        config_.convertTo.annotation().setList(charsets);
 
         initToggleAction(spellCheckAction_, config_.spellCheck, "ngosen-spellcheck", "tools-check-spelling", _("Spell Check"), N_("Spell Check"), uiManager);
         initToggleAction(macroAction_, config_.enableMacro, "ngosen-macro", "document-edit", _("Macro"), N_("Macro"), uiManager);
@@ -402,6 +404,20 @@ namespace fcitx {
                          uiManager);
         initToggleAction(enableDictionaryAction_, config_.enableDictionary, "ngosen-dictionary", "accessories-dictionary", _("Custom Dictionary"), N_("Custom Dictionary"),
                          uiManager);
+
+        // A way into Vietnamese for keyboards that cannot press the toggle key.
+        vietnameseAction_ = std::make_unique<SimpleAction>();
+        vietnameseAction_->setIcon("fcitx-ngosen");
+        connections_.emplace_back(vietnameseAction_->connect<SimpleAction::Activated>([this](InputContext* ic) {
+            if (ic != nullptr) {
+                toggleVietnamese(ic, false);
+                return;
+            }
+            config_.vietnameseOn.setValue(!*config_.vietnameseOn);
+            saveConfig();
+            setMode(globalMode(), nullptr);
+        }));
+        uiManager.registerAction("ngosen-vietnamese", vietnameseAction_.get());
 
         settingsAction_ = std::make_unique<SimpleAction>();
         settingsAction_->setShortText(_("Settings"));
@@ -444,7 +460,8 @@ namespace fcitx {
         loadAppRules();
         vimAppsPath_ = configDir + "/ngosen-vim-apps.conf";
         loadVimApps();
-        menuEntries_ = {{inputMethodAction_.get(), &config_.showMenuInputMethod},
+        menuEntries_ = {{vietnameseAction_.get(), nullptr},
+                        {inputMethodAction_.get(), &config_.showMenuInputMethod},
                         {charsetAction_.get(), &config_.showMenuCharset},
                         {spellCheckAction_.get(), &config_.showMenuSpellCheck},
                         {macroAction_.get(), &config_.showMenuMacro},
@@ -561,25 +578,26 @@ namespace fcitx {
                 }
             }
         }
-        loadEnglishWords();
+        loadWordList(englishWords_, "ngosen/english-common.txt");
+        loadWordList(keepWords_, "ngosen/keep-words.txt");
         loadAppRules();
         loadVimApps();
         populateConfig();
     }
 
     // The list changes only with the package, so a settings reload keeps it.
-    void NgoSenEngine::loadEnglishWords() {
-        if (englishWords_)
+    void NgoSenEngine::loadWordList(ngosen::CGoObject& list, const char* path) {
+        if (list)
             return;
 #if NGOSEN_USE_MODERN_FCITX_API
-        auto fd = StandardPaths::global().open(StandardPathsType::PkgData, "ngosen/english-common.txt");
+        auto fd = StandardPaths::global().open(StandardPathsType::PkgData, path);
 #else
-        auto fd = StandardPath::global().open(StandardPath::Type::PkgData, "ngosen/english-common.txt", O_RDONLY);
+        auto fd = StandardPath::global().open(StandardPath::Type::PkgData, path, O_RDONLY);
 #endif
         if (fd.isValid())
-            englishWords_.reset(NewWordList(fd.release()));
+            list.reset(NewWordList(fd.release()));
         else
-            NGOSEN_WARN("English word list not found");
+            NGOSEN_WARN(std::string("Word list not found: ") + path);
     }
 
     void NgoSenEngine::announceRelease(const std::string& release) {
@@ -598,8 +616,8 @@ namespace fcitx {
             constexpr int32_t neverExpire = 0;
             addon->call<INotifications::sendNotification>(
                 "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
-                _("Version 1.10: Vim mode for each app, words starting with / typed as is, and Telex words with a forgotten circumflex or horn fixed. See What's "
-                  "new for more."),
+                _("Version 1.11: convert selected text between charsets with a hotkey, and extra keys after a word no longer undo its marks. See What's new for "
+                  "more."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;
         });
@@ -632,6 +650,10 @@ namespace fcitx {
         auto& o                            = options_;
         o.inputMethod                      = config_.inputMethod.value();
         o.outputCharset                    = config_.outputCharset.value();
+        o.convertFrom                      = config_.convertFrom.value();
+        o.convertTo                        = config_.convertTo.value();
+        o.convertCase                      = static_cast<int>(config_.convertCase.value());
+        o.convertStripDiacritics           = config_.convertStripDiacritics.value();
         o.spellCheck                       = config_.spellCheck.value();
         o.modernStyle                      = config_.modernStyle.value();
         o.freeMarking                      = config_.freeMarking.value();
@@ -662,8 +684,6 @@ namespace fcitx {
         o.waitSurroundingSettleMs          = config_.waitSurroundingSettleMs.value();
         o.waitSurroundingSettleFirstWordMs = config_.waitSurroundingSettleFirstWordMs.value();
         o.waitSurroundingProbeEvery        = config_.waitSurroundingProbeEvery.value();
-        o.surrDeleteSleepMs                = config_.surrDeleteSleepMs.value();
-        o.surrCommitSleepMs                = config_.surrCommitSleepMs.value();
         switch (config_.lockWordModifier.value()) {
             case LockWordModifier::Shift: o.lockWordKey = ngosen::LockWordKey::Shift; break;
             case LockWordModifier::Ctrl: o.lockWordKey = ngosen::LockWordKey::Ctrl; break;
@@ -830,6 +850,11 @@ namespace fcitx {
             return;
         }
 
+        if (!keyEvent.isRelease() && !config_.convertKey->empty() && keyEvent.key().checkKeyList(*config_.convertKey) && convertSelection(ic)) {
+            keyEvent.filterAndAccept();
+            return;
+        }
+
         // In English the menu key types its character; ` is common in code and Markdown.
         if (realMode != NgoSenMode::Off && !keyEvent.isRelease() && !config_.modeMenuKey->empty() && keyEvent.key().checkKeyList(*config_.modeMenuKey) &&
             modeMenuCanDraw(instance_->currentUI(), ic->frontend(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel))) {
@@ -989,6 +1014,26 @@ namespace fcitx {
         return enabledModes;
     }
 
+    bool NgoSenEngine::convertSelection(InputContext* ic) {
+        std::string tip;
+        switch (stateFor(ic)->convertSelection()) {
+            case ngosen::ConvertResult::Converted: return true;
+            case ngosen::ConvertResult::Refused: return false;
+            case ngosen::ConvertResult::Unchanged: tip = _("The selected text is the same in both charsets. Check the charsets on the Convert page."); break;
+            case ngosen::ConvertResult::NoSelection: tip = _("Select the text to convert, then press the key again."); break;
+            case ngosen::ConvertResult::Busy: tip = _("Finish the word being typed, then press the key again."); break;
+        }
+        NGOSEN_INFO("Convert key: " + tip);
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        if (auto* addon = notifications()) {
+            constexpr int32_t timeoutMs = 4000;
+            convertNotificationId_ = addon->call<INotifications::sendNotification>("fcitx", convertNotificationId_, "fcitx-ngosen", _("Convert"), tip, std::vector<std::string>{},
+                                                                                   timeoutMs, nullptr, nullptr);
+        }
+#endif
+        return true;
+    }
+
     void NgoSenEngine::cycleMode(InputContext* ic) {
         NGOSEN_INFO("Cycle mode key pressed");
         const std::string appName      = getProgramName(ic);
@@ -1111,7 +1156,16 @@ namespace fcitx {
         checkChoice(*inputMethodAction_, _("Input Method"), inputMethodSubAction_, InputMethodActionId, *config_.inputMethod, ic);
     }
 
+    void NgoSenEngine::updateVietnameseAction(InputContext* ic) {
+        if (!vietnameseAction_)
+            return;
+        vietnameseAction_->setShortText((realMode != NgoSenMode::Off ? "✔ " : "✖ ") + std::string(_("Vietnamese")));
+        if (ic != nullptr)
+            vietnameseAction_->update(ic);
+    }
+
     void NgoSenEngine::fillStatusArea(InputContext* ic) {
+        updateVietnameseAction(nullptr);
         auto& statusArea = ic->statusArea();
         statusArea.clearGroup(StatusGroup::InputMethod);
         for (const auto& entry : menuEntries_) {
@@ -1655,6 +1709,7 @@ namespace fcitx {
 
     void NgoSenEngine::setMode(NgoSenMode mode, InputContext* ic) {
         realMode = mode;
+        updateVietnameseAction(ic);
         if (ic != nullptr) {
             if (auto* state = stateFor(ic)) {
                 state->clearAllBuffers();

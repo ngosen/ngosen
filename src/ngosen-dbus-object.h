@@ -8,6 +8,7 @@
 #include <fcitx-utils/dbus/message.h>
 #include <fcitx-utils/dbus/objectvtable.h>
 
+#include <cstdint>
 #include <string>
 
 namespace fcitx {
@@ -24,11 +25,14 @@ namespace fcitx {
 
         std::string saveTypingLog();
         bool        gnomePortalAnswered();
+        // For the settings window, which converts with the values it shows before they are saved.
+        std::string convertText(const std::string& text, const std::string& from, const std::string& to, int32_t letterCase, bool stripDiacritics);
 
       private:
         NgoSenEngine* engine_;
         FCITX_OBJECT_VTABLE_METHOD(saveTypingLog, "SaveTypingLog", "", "s");
         FCITX_OBJECT_VTABLE_METHOD(gnomePortalAnswered, "GnomePortalAnswered", "", "b");
+        FCITX_OBJECT_VTABLE_METHOD(convertText, "ConvertText", "sssib", "s");
     };
 
 } // namespace fcitx

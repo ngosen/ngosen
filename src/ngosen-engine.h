@@ -209,6 +209,9 @@ namespace fcitx {
         uintptr_t englishWords() const override {
             return englishWords_.handle();
         }
+        uintptr_t keepWords() const override {
+            return keepWords_.handle();
+        }
 
         /**
          * @brief Gets the emoji loader.
@@ -286,6 +289,7 @@ namespace fcitx {
         std::unique_ptr<SimpleAction>               capitalizeStartAction_;
         std::unique_ptr<SimpleAction>               autoNonVnRestoreAction_;
         std::unique_ptr<SimpleAction>               enableDictionaryAction_;
+        std::unique_ptr<SimpleAction>               vietnameseAction_;
         std::unique_ptr<SimpleAction>               settingsAction_;
         std::unique_ptr<SimpleAction>               saveLogAction_;
         ngosen::Recorder                            recorder_;
@@ -293,6 +297,7 @@ namespace fcitx {
         std::vector<ScopedConnection>               connections_;
         ngosen::CGoObject                           dictionary_;
         ngosen::CGoObject                           englishWords_;
+        ngosen::CGoObject                           keepWords_;
         std::unordered_map<std::string, NgoSenMode> appRules_;
         std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
@@ -305,9 +310,11 @@ namespace fcitx {
         std::string                      currentConfigureApp_;
         std::unique_ptr<EventSourceTime> cycleModeNotificationTimer_;
         std::unique_ptr<EventSourceTime> announceTimer_;
-        std::string                      iconCacheName_;
-        std::string                      iconCachePath_;
-        static constexpr uint64_t        CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
+        // Replaced by the next tip, so pressing the key repeatedly shows one.
+        uint32_t                  convertNotificationId_ = 0;
+        std::string               iconCacheName_;
+        std::string               iconCachePath_;
+        static constexpr uint64_t CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
         FCITX_ADDON_DEPENDENCY_LOADER(emoji, instance_->addonManager());
 #ifdef NGOSEN_HAS_DBUS
         FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
@@ -401,6 +408,7 @@ namespace fcitx {
          * @brief Puts the menu entries the user chose into the tray menu of ic.
          */
         void fillStatusArea(InputContext* ic);
+        void updateVietnameseAction(InputContext* ic);
 
         /**
          * @brief Populates input method names from bamboo core.
@@ -415,7 +423,7 @@ namespace fcitx {
          */
         void loadAppRules();
 
-        void loadEnglishWords();
+        void loadWordList(ngosen::CGoObject& list, const char* path);
 
         /**
          * @brief Saves application-specific mode rules.
@@ -499,6 +507,8 @@ namespace fcitx {
         // The modes the cycle key steps through, in the configured order.
         std::vector<NgoSenMode> cycleModes(const std::string& appName);
         void                    cycleMode(InputContext* ic);
+        // False when the key should reach the app, as in a password field.
+        bool convertSelection(InputContext* ic);
 
         /**
          * @brief Shows a brief notification of the cycled mode.

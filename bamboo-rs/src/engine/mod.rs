@@ -83,6 +83,10 @@ impl Dictionary {
             .take_while(|&i| self.bare.get(i).starts_with(&*key))
             .any(|i| grows_into(typed, self.lower.get(i)))
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.words.is_empty()
+    }
 }
 
 impl FromIterator<String> for Dictionary {
@@ -433,6 +437,22 @@ impl BambooEngine {
                 .starts_word(&self.raw_text().to_lowercase())
     }
 
+    /// A syllable valid by the spelling rules alone, such as `roé` from `rose`, still shows as
+    /// typed once no dictionary word can start with it (#613).
+    fn starts_no_dictionary_word(&self) -> bool {
+        let vn_seq = self.get_processed_string(OutputOptions::LOWER_CASE);
+        self.auto_non_vn_restore
+            && !self.keep_marks_until_next_key
+            && self.spell_check_with_dicts
+            && !self.dictionary.is_empty()
+            && self.preeditor.is_valid_prefix()
+            && !(self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some())
+            && !(self.dd_free_style && vn_seq.contains('đ'))
+            && has_any_vietnamese_rune(&vn_seq)
+            && !self.dictionary.starts_word(&vn_seq)
+            && self.keys_compose_word()
+    }
+
     fn get_processed_string(&self, options: OutputOptions) -> String {
         self.preeditor.get_processed_str(options)
     }
@@ -479,6 +499,7 @@ impl BambooEngine {
         if self.keep_keys_until_next_key
             || self.should_fallback_to_english(true)
             || self.keys_start_english_over_name()
+            || self.starts_no_dictionary_word()
             || self.word_before_digits_is_english()
         {
             return self.raw_text();
@@ -748,12 +769,14 @@ impl BambooEngine {
 
     fn appending_key_text(&mut self, key: char, old_text: &str) -> (String, bool) {
         let full_seq = self.get_processed_string(OutputOptions::NONE);
-        let new_text =
-            if self.should_fallback_to_english(true) || self.keys_start_english_over_name() {
-                self.raw_text()
-            } else {
-                full_seq.clone()
-            };
+        let new_text = if self.should_fallback_to_english(true)
+            || self.keys_start_english_over_name()
+            || self.starts_no_dictionary_word()
+        {
+            self.raw_text()
+        } else {
+            full_seq.clone()
+        };
         if !full_seq.is_empty() && get_last_rune(&full_seq) == key {
             // [[ => [
             let ret = self.get_preedit_string();
@@ -789,9 +812,9 @@ impl BambooEngine {
             key = self.to_upper(key);
         }
         let mode = self.get_bamboo_input_mode();
-        // A second s after grá would undo its tone and drop a letter of grass, while z typed to
-        // remove the tone has not been typed before.
-        let repeated = self.keys_start_english_over_name()
+        // A second s after grá or roé would undo its tone and drop a letter of grass or roses,
+        // while z typed to remove the tone has not been typed before.
+        let repeated = (self.keys_start_english_over_name() || self.starts_no_dictionary_word())
             && self
                 .raw_text()
                 .chars()
@@ -1108,6 +1131,7 @@ impl BambooEngine {
             && self.auto_non_vn_restore
             && self.spell_check_with_dicts
             && !self.keep_guard.is_empty()
+            && !self.preeditor.is_valid_prefix()
             && old_text != old_keys
             && !is_all_caps(old_text.chars())
             && !is_all_caps(old_keys.chars().filter(|c| c.is_alphabetic()))

@@ -112,8 +112,16 @@ pub fn without_diacritics(text: &str) -> String {
         .collect()
 }
 
-/// Whether more keys can turn `typed` into the start of `word`: each letter is the same, or lacks
-/// a mark or tone the word's letter has, so `grat` may become grát but `cró` never crông.
+fn tones(word: &str) -> impl Iterator<Item = usize> + '_ {
+    word.chars()
+        .filter_map(|c| vowel_position(lower(c)))
+        .map(|pos| pos % 6)
+        .filter(|&t| t != 0)
+}
+
+/// Whether more keys can turn `typed` into the start of `word`: each letter is the same or lacks a
+/// mark the word's letter has, and any tone typed matches the word's tone even if more letters move
+/// it (`khủy` to khuỷu), while `cró` never grows into crông.
 pub fn grows_into(typed: &str, word: &str) -> bool {
     let covers = |t: char, w: char| {
         if t == w {
@@ -126,9 +134,10 @@ pub fn grows_into(typed: &str, word: &str) -> bool {
             return false;
         };
         let (t_row, w_row) = (t / 6, w / 6);
-        (t % 6 == 0 || t % 6 == w % 6) && (t_row == w_row || t_row == UNMARKED_ROW[w_row])
+        t_row == w_row || t_row == UNMARKED_ROW[w_row]
     };
-    typed.chars().count() <= word.chars().count()
+    (tones(typed).next().is_none() || tones(typed).eq(tones(word)))
+        && typed.chars().count() <= word.chars().count()
         && typed
             .chars()
             .map(lower)

@@ -36,9 +36,16 @@ namespace ngosen {
         return field.surroundingText && (isLibreOffice || dropsForwardedKeys() || field.sendsNoKeys);
     }
 
+    // Under one shared name a mark would spread to every app. Firefox's snap goes wrong only while it is
+    // busy after opening, so a mark for the app would outlast that.
+    bool TypingState::marksFieldOnly() const {
+        const Field field = host_->field();
+        return ngosen::namesNoApp(field) || ngosen::appliesDeletionsEarly(field);
+    }
+
     bool TypingState::appMarkedUntrusted() const {
         const Field field = host_->field();
-        return ngosen::namesNoApp(field) ? sinceFocus_.untrusted : engine_->surroundingUntrusted(field.frontend, field.program);
+        return marksFieldOnly() ? sinceFocus_.untrusted : engine_->surroundingUntrusted(field.frontend, field.program);
     }
 
     bool TypingState::surroundingUntrusted() const {
@@ -57,8 +64,7 @@ namespace ngosen {
         const Field field = host_->field();
         if (appMarkedUntrusted())
             return;
-        // Under one shared name a mark would spread to every app.
-        if (ngosen::namesNoApp(field))
+        if (marksFieldOnly())
             sinceFocus_.untrusted = true;
         else
             engine_->markSurroundingUntrusted(field.frontend, field.program);
@@ -167,13 +173,15 @@ namespace ngosen {
         // Calc reports an empty field and GTK 4 an old copy as a matter of course, so with no other way
         // to delete only a dropped deletion is worth giving up on the field for.
         const bool onlyWay = deletesOnlyThroughSurrounding() && !host_->field().preeditFallback;
+        // Firefox's snap answers late while it is busy, and backspaces there can land after the next commit.
+        const bool answersLate = ngosen::appliesDeletionsEarly(host_->field());
         if (verdict == SurroundingVerdict::DroppedDeletion) {
             markSurroundingUntrusted("the app dropped a deletion");
             if (report != nullptr && !deletesOnlyThroughSurrounding())
                 fixDroppedDeletion(check, *report);
         } else if (verdict == SurroundingVerdict::WrongEarlierPart && !onlyWay) {
             markSurroundingUntrusted("the text before a commit changed");
-        } else if (!sinceFocus_.checkAnswered && surrUnanswered_ >= UnansweredLimit && !onlyWay && !checkWaitsForLaterKey()) {
+        } else if (!sinceFocus_.checkAnswered && surrUnanswered_ >= UnansweredLimit && !onlyWay && !checkWaitsForLaterKey() && !answersLate) {
             markSurroundingUntrusted(std::to_string(surrUnanswered_) + " deletions in a row went unanswered");
         }
     }

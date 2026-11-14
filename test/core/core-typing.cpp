@@ -3693,6 +3693,19 @@ namespace {
         const auto slowRun = ngosen::test::typeInAppTraced(slowResources, makeField("fcitx4", true, "firefox"), {.lagMs = 250, .deletionsSkipLag = true}, keys, slowGaps);
         check(slowRun.text == "a sose2026 tôi2 ", "fcitx4: a deletion waits for the text Firefox has not shown yet", slowRun.text);
 
+        FakeResources lateResources;
+        const auto    lateRun = ngosen::test::typeInAppTraced(lateResources, makeField("fcitx4", true, "firefox"),
+                                                              {.reportDelayMs = 300, .backspaceLagMs = 60, .reportsTextAtChange = true}, keys, slowGaps);
+        check(lateRun.text == "a sose2026 tôi2 ", "fcitx4: waits for late reports do not send replacements to backspaces", lateRun.text);
+
+        // A window that went wrong while Firefox was busy says nothing about the next one.
+        FakeResources windowResources;
+        const auto    words = keysOf("tieengs vieetj ");
+        ngosen::test::typeInAppTraced(windowResources, makeField("fcitx4", true, "firefox"), {.ignoresSurroundingDel = true}, words, std::vector<int>(words.size(), 150));
+        const auto next = ngosen::test::typeInAppTraced(windowResources, makeField("fcitx4", true, "firefox"), {}, words, std::vector<int>(words.size(), 150));
+        check(next.text == "tiếng việt " && next.sent.forwardedBackSpaces == 0, "fcitx4: a wrong check in one Firefox window does not send the next window to backspaces",
+              next.text + ", " + std::to_string(next.sent.forwardedBackSpaces) + " backspaces");
+
         // Once deletions go to backspaces, waiting for the copy only holds each word back.
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
@@ -3710,7 +3723,16 @@ namespace {
         }
         app->type(' ');
         loop.pump(100);
-        check(app->text() == "a tiếng việt nam tiếng việt ", "fcitx4: no copy wait once deletions go to backspaces", app->text());
+        check(app->text() == "a tiếng việt nam tiếng việt ", "fcitx4: a copy that lags behind holds no word past the next key", app->text());
+
+        // A field that stops reporting after its first deletion still applies deletions ahead of commits.
+        FakeResources    silentResources;
+        const auto       silentKeys = keysOf("a tieengs vieetj ");
+        std::vector<int> silentGaps(silentKeys.size(), 180);
+        silentGaps[1]        = 1000;
+        const auto silentRun = ngosen::test::typeInAppTraced(silentResources, makeField("fcitx4", true, "firefox"),
+                                                             {.lagMs = 250, .deletionsSkipLag = true, .silentFromFirstDeletion = true}, silentKeys, silentGaps);
+        check(silentRun.text == "a tiếng việt ", "fcitx4: waits that run out do not let a deletion overtake the commit before it", silentRun.text);
     }
 
     // A quick focus change can land in another widget of the same context that never had surrounding text.

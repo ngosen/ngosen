@@ -43,6 +43,7 @@ namespace ngosen::test {
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
         int  backspaceLagMs         = 0;     // applies forwarded backspaces this late but commits at once, as Antigravity's editor on GNOME sometimes does
         bool backspacesSkipLag      = false; // applies forwarded backspaces ahead of what lagMs holds back, as GNOME Shell's IBus bridge with forward-keys@ngosen.github.io does
+        bool deletionsSkipLag       = false; // applies deletions through the text ahead of what lagMs holds back, as Firefox's snap does right after it opens
         bool hidesCursorMoves       = false; // reports no click and shows the cursor where the last edit left it, as GTK 3 on Plasma does
         bool dropsForwardedKeys     = false; // never gets keys the input method sends, as under GNOME Shell's IBus bridge
         bool erasesOnDel            = false; // erases the character before the cursor for each DEL committed, as a terminal does

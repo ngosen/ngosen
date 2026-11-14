@@ -99,6 +99,10 @@ namespace ngosen {
     // wrong, while a backspace sent instead can land after the next commit (#770).
     bool takesDeletionOnStaleCopy(const Field& field);
 
+    // Firefox's snap, busy right after it opens, can apply a deletion through its text ahead of keys and
+    // commits sent before it, so the deletion takes the wrong letters (#770).
+    bool appliesDeletionsEarly(const Field& field);
+
     // These frontends turn a surrounding deletion's character count into bytes on their own copy of
     // the text, which can lag behind the app.
     bool countsDeletionOnCopy(const Field& field);

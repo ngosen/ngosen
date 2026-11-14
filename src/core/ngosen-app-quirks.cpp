@@ -235,6 +235,10 @@ namespace ngosen {
         return (field.frontend == "dbus" || field.frontend == "fcitx4") && isFirefoxFamily(appName(field));
     }
 
+    bool appliesDeletionsEarly(const Field& field) {
+        return field.frontend == "fcitx4" && isFirefoxFamily(appName(field));
+    }
+
     bool reportsTrailKeys(const Field& field) {
         return field.frontend != "ibus" && hidesAddressBarFlag(field);
     }

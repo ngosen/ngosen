@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thay đổi
 
-- Lệnh cài một dòng trên Debian và distro dựa trên Debian nay báo trước khi thay gói `fcitx5-ngosen` của distro bằng gói Ngó Sen: từ đó apt chỉ lấy version mới từ Ngó Sen. README có thêm mục "Gói của distro" chỉ cách quay lại gói của distro, và link "cập nhật bằng trình quản lý gói" trong lệnh cài và trang Kiểm tra nay mở đúng mục trong README thay vì đầu trang (#775).
+- Lệnh cài một dòng trên Debian và distro dựa trên Debian nay báo trước khi thay gói `fcitx5-ngosen` của distro bằng gói Ngó Sen: từ đó apt chỉ lấy version mới từ Ngó Sen. README có thêm mục "Gói của distro" chỉ cách quay lại gói của distro, và link "cập nhật bằng trình quản lý gói" trong lệnh cài và trang Kiểm tra nay mở đúng mục trong README thay vì đầu trang (#776).
 
 ### Sửa
 

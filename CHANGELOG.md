@@ -20,6 +20,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trong Chromium trên X11, Gõ Sen không còn đổi `/cost` thành `/cót` khi gõ sau khi xoá hết ô bằng Ctrl+A rồi BackSpace: lệnh hoặc đường dẫn bắt đầu bằng `/` giờ giữ nguyên phím đã gõ. Trước đây lần đầu sau khi mở trang vẫn đúng, từ lần xoá thứ hai thì sai. Thử trên Linux Mint 22.1 Cinnamon với Chromium 154, mỗi bản 10 lần: trước sai 9/10, nay đúng 10/10 (#775, sửa tiếp #718).
 - Nhấn Space sau từ kéo dài khi chat nay giữ nguyên chữ đang hiện: Telex `uwfaaa` giữ `ừaaa` thay vì thành `ừa â`, `owfaaa` giữ `ờaaa`, `muwaaaa` giữ `mưaaaa`, `khoonggg` giữ `khônggg`; sửa lỗi từ version 1.11.0-1 (#757), áp dụng cả với VNI `u72aaa`. Chỉ giữ khi phần gõ thêm có ít nhất hai chữ cái giống nhau và từ đang hiện kết thúc bằng ít nhất ba chữ cái ấy; `đượcd`, `đượcc` vẫn thành `được`, còn `cáioo` vẫn tách thành `cái ô` (#768).
 - Gói Ngó Sen do distro đóng gói (như gói trong kho Debian) không còn bị trang Kiểm tra máy báo "không nhận version mới" và chỉ cách thêm repo Ngó Sen: distro tự đưa version mới qua cập nhật hệ thống. Người đóng gói bật cờ `NGOSEN_DISTRO_PACKAGE` khi build (#774).
+- Cập nhật package có cài đặt mới mà chưa khởi động lại fcitx5 thì trang cài đặt trong cửa sổ Qt và GTK (như trang Chuyển mã của 1.11.0) chỉ hiện tiêu đề, không nói vì sao; nay trang báo Ngó Sen đang chạy là bản cũ hơn cửa sổ cài đặt và cần khởi động lại fcitx5 (#777).
 
 ## [1.11.0-1] — 14/11/2026
 

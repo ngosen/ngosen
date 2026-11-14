@@ -6,3 +6,5 @@ Auto-generated version file by CMake.
 """
 
 __version__ = "@PROJECT_VERSION@"
+# The check page then does not ask for the Ngó Sen repository.
+DISTRO_PACKAGE = @NGOSEN_DISTRO_PACKAGE_PY@

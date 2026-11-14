@@ -43,6 +43,7 @@ namespace ngosen::test {
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
         int  backspaceLagMs         = 0;     // applies forwarded backspaces this late but commits at once, as Antigravity's editor on GNOME sometimes does
         bool backspacesSkipLag      = false; // applies forwarded backspaces ahead of what lagMs holds back, as GNOME Shell's IBus bridge with forward-keys@ngosen.github.io does
+        bool deletionsSkipLag       = false; // applies deletions through the text ahead of what lagMs holds back, as Firefox's snap does right after it opens
         bool hidesCursorMoves       = false; // reports no click and shows the cursor where the last edit left it, as GTK 3 on Plasma does
         bool dropsForwardedKeys     = false; // never gets keys the input method sends, as under GNOME Shell's IBus bridge
         bool erasesOnDel            = false; // erases the character before the cursor for each DEL committed, as a terminal does
@@ -151,6 +152,9 @@ namespace ngosen::test {
         // Moves within ms to an empty field of the same page that keeps its own text, as a click from a
         // page's search box into a Lark sheet does.
         void switchToOwnTextField(int ms);
+        // Leaves focus for ms and comes back to the same editor, which still shows the last cell until the
+        // next typed key replaces it, as a click on another cell in Luckysheet does.
+        void clickCellOpenedByKey(int ms);
         // Loses focus and gets it back within ms in a new empty field, with no reset in between, as a
         // browser closed and opened again does under GNOME Shell.
         void focusNewEmptyField(ngosen::Mode mode, int ms);
@@ -307,6 +311,7 @@ namespace ngosen::test {
         std::optional<unsigned int>         heldDelete_;
         bool                                showsMovedCursor_ = false;
         bool                                holdsUnreported_  = false;
+        bool                                cellOpensOnKey_   = false;
         int                                 emptyCommits_     = 0;
         int                                 deletions_        = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};

@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Lệnh cài một dòng trên Debian và distro dựa trên Debian nay báo trước khi thay gói `fcitx5-ngosen` của distro bằng gói Ngó Sen: từ đó apt chỉ lấy version mới từ Ngó Sen. README có thêm mục "Gói của distro" chỉ cách quay lại gói của distro, và link "cập nhật bằng trình quản lý gói" trong lệnh cài và trang Kiểm tra nay mở đúng mục trong README thay vì đầu trang (#776).
+
 ### Sửa
 
 - Trong ô soạn thảo rich text (contenteditable) trên Firefox ở Linux Mint 22.1 (Cinnamon, X11), dùng fcitx5 GTK module, Gõ Sen không còn làm hỏng từ cuối do chữ mới đến trước các phím BackSpace xoá chữ cũ: gõ `tienf nguyenx luanj ` giờ ra `tiền nguyễn luận`, không còn thành `tiền nguyễn luạnậ`; Ngó Sen tiếp tục xoá qua surrounding text thay vì BackSpace. Thử trên Mint 22.1 với Firefox 157, mỗi bản 40 lần: lỗi này xảy ra 2/40 lần ở version 1.10.1 và 0/40 lần sau khi sửa; một lần khác vẫn mất dấu thanh do Firefox báo sai vị trí con trỏ (#766).

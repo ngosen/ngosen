@@ -4228,6 +4228,7 @@ namespace {
         bool                  doubleSpaceToPeriod = false;
         int                   gapMs               = 30;
         int                   maxLagMs            = 45;
+        std::vector<uint32_t> keysAfterWait       = {}; // typed once the wait is over, 200 ms apart
     };
 
     struct TypedInWait {
@@ -4264,6 +4265,10 @@ namespace {
             loop.pump(c.gapMs);
         }
         loop.pump(600);
+        for (const uint32_t key : c.keysAfterWait) {
+            app->type(key);
+            loop.pump(200);
+        }
         app->setReportDelay(8);
         typeRolledInto(app, loop, "ng ", {});
         lines = ngosen::test::capturedLog();
@@ -4298,7 +4303,18 @@ namespace {
             {"space takes a macro, then backspace and space", "ko ", {bs, ' '}, true, 30, 15},
             // The second space comes after the wait, so it is typed rather than replayed.
             {"space takes a macro, then backspace and a later space", "ko ", {bs, ' '}, true, 100, 15},
+            // The Backspace empties the word only when it replays, and the tone after it goes onto the word before.
+            {"backspace empties a word, then a cursor move and a tone",
+             "ca",
+             {ngosen::key::Left, ngosen::key::Right, 'd', 'd', bs, ngosen::key::Left, ngosen::key::Right},
+             false,
+             30,
+             45,
+             {'s', ' '}},
+            {"backspace empties a word after a cursor move, then a tone", "ca", {ngosen::key::Left, ngosen::key::Right, 'd', 'd', bs}, false, 30, 45, {'s', ' '}},
         };
+        const auto retoned = typedWithKeysInWait(cases.back(), 8, 40, 15, lines);
+        check(retoned.text == "người cá ng ", "backspace in a copy wait: without the wait the tone goes onto the word before", retoned.text);
         for (const auto& c : cases) {
             const auto expected = typedWithKeysInWait(c, 8, 40, 15, lines);
             // A held Backspace goes out as a forwarded key, where without the wait the app got it directly.

@@ -10,6 +10,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Trên GNOME dùng IBus, trong app báo chữ chậm (copy wait), sau khi kết thúc từ bằng cách di chuyển con trỏ, gõ `dd` thành `đ` rồi nhấn nhanh Backspace xoá hết từ trong lúc chờ, phím dấu gõ tiếp ngay sau từ trước nay đặt dấu lên từ đó: `ca` rồi `s` thành `cá`, không còn thành `cas`. Chỉ thử với app giả trong unit test, chưa thử app thật (#785).
+
 ## [1.11.1-1] — 15/11/2026
 
 Nhấn Space sau từ kéo dài khi chat nay giữ nguyên chữ đang hiện, như `ừaaa`, `ờaaa`, `khônggg` (#768). Sửa lỗi mất chữ kéo dài sau khi máy bận và giảm mất chữ khi máy rất bận trên GNOME trong app như ô chat Antigravity (#767, #773); sửa lỗi chữ mới đến trước BackSpace trong Firefox trên Linux Mint bằng cách xoá qua surrounding text (#766). Sửa lỗi gõ sai ngay khi mở Firefox bản snap trên Ubuntu bằng cách chờ chữ đã gửi hiện lên rồi xoá qua surrounding text, đồng thời không để một lần kiểm tra sai làm các window mở sau chuyển sang xoá bằng BackSpace (#778, #780, #781). Trong Chromium trên X11, lệnh hoặc đường dẫn bắt đầu bằng `/` không còn bị đổi dấu sau khi xoá hết ô bằng Ctrl+A rồi BackSpace (#775). Trong Luckysheet trên Chrome ở GNOME, chuyển cell rồi gõ từ mới không còn bị giữ nguyên phím Telex vì bộ gõ tưởng vẫn đang gõ tiếp từ cũ (#782). Trang Kiểm tra máy không còn báo gói do distro đóng gói là “không nhận version mới” (#774); lệnh cài trên Debian và distro dựa trên Debian báo trước khi thay gói của distro bằng gói Ngó Sen, README hướng dẫn quay lại gói của distro và link cập nhật mở đúng mục (#776). Trang cài đặt Qt và GTK nay báo cần khởi động lại fcitx5 khi Ngó Sen đang chạy là bản cũ hơn cửa sổ cài đặt (#777).

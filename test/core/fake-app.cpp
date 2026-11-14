@@ -357,6 +357,7 @@ namespace ngosen::test {
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
         ++sent_.surroundingDeletes;
         ++deletions_;
+        surroundingDropped_ = quirks_.dropsSurroundingOnDelete;
         if (quirks_.oldTextAfterDeleteMs > 0) {
             oldText_        = text_;
             oldCursor_      = cursor_;
@@ -574,8 +575,10 @@ namespace ngosen::test {
     }
 
     void FakeApp::insert(const std::u32string& text, bool typed) {
-        if (typed)
+        if (typed) {
             noteTypedKey();
+            surroundingDropped_ = false;
+        }
         if (quirks_.erasesOnDel && !text.empty() && text[0] == U'\x7f') {
             const size_t dels = text.find_first_not_of(U'\x7f');
             eraseBefore(dels == std::u32string::npos ? text.size() : dels);

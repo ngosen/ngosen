@@ -96,7 +96,8 @@ namespace ngosen {
         // A click into another field of the same page looks like a bounce, and that field may keep its own text.
         if (isFocusIn) {
             sinceFocus_.showedBackspace = false;
-            keysAtFocusIn_              = keyCount_;
+            sinceFocus_.lastPath.clear();
+            keysAtFocusIn_ = keyCount_;
             // The release of a cell's first key comes after the cell editor gets focus.
             unseenPress_.reset();
             // Firefox on KDE focuses the next cell's editor before it shows the letter; a field that already

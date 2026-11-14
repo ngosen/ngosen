@@ -50,10 +50,16 @@ extern void      DeleteObject(uintptr_t handle);
 extern void      ResetEngine(uintptr_t engine);
 extern void      EngineRebuildFromText(uintptr_t engine, cchar* text);
 extern char**    GetCharsetNames(void);
+// letterCase: 0 keep, 1 upper, 2 lower, 3 sentence, 4 title. Null for an unknown charset or case.
+extern char*     ConvertText(cchar* text, cchar* from, cchar* to, int letterCase, bool stripDiacritics);
 extern char**    GetInputMethodNames(void);
 extern uintptr_t NewDictionary(uintptr_t fd);
 extern uintptr_t NewWordList(uintptr_t fd);
 extern void      EngineSetEnglishWords(uintptr_t engine, uintptr_t list);
+extern void      EngineSetKeepGuard(uintptr_t engine, uintptr_t list);
+extern void      EngineSetDropKeptTail(uintptr_t engine, uint8_t on);
+extern char*     EnginePullDroppedWord(uintptr_t engine);
+extern uint8_t   EngineKeptAtLastKey(uintptr_t engine);
 extern uint8_t   EngineShownAsTyped(uintptr_t engine);
 
 #ifdef __cplusplus

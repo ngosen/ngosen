@@ -52,6 +52,15 @@ namespace fcitx {
 
 namespace ngosen {
 
+    // What convertSelection did, so the framework can tell the user.
+    enum class ConvertResult {
+        Converted,
+        Unchanged,   // the text is the same after conversion
+        NoSelection, // nothing selected, or the app tells nothing of the selection
+        Busy,        // a word is still in the preedit
+        Refused,     // a password field, or a charset the core does not know
+    };
+
     /**
      * @brief Per-field typing state.
      *
@@ -137,6 +146,9 @@ namespace ngosen {
          */
         void commitBuffer();
 
+        // Converts the selected text with the convert options and types the result over it (#655).
+        ConvertResult convertSelection();
+
         /**
          * @brief Like commitBuffer(), but in Preedit the word is committed the way Enter leaves it.
          *
@@ -176,7 +188,8 @@ namespace ngosen {
         ngosen::EngineResources* engine_;
         CGoObject                bambooEngine_;
         std::string              oldPreBuffer_;
-        std::string              lastWord_; ///< The word and break we last committed, while only backspaces follow
+        std::string              lastWord_;    ///< The word and break we last committed, while only backspaces follow
+        std::string              droppedWord_; ///< lastWord_ as typed, before Space split it or dropped keys after it
         bool                     hasHistory_              = false;
         bool                     preeditWord_             = false; ///< Sen is on, but this word goes into the preedit
         int                      expected_backspaces_     = 0;     ///< backspaces the key paths still send; XTEST adds one that comes back
@@ -861,6 +874,16 @@ namespace ngosen {
         bool rebuildable(const std::string& committed) const;
         // The engine finished a word: send what differs from the text already typed.
         void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr);
+        // The field reports no text where the word stood, as after a click on another cell.
+        bool fieldLostWord() const;
+        // Whether Space may split a kept word or drop the keys after it: Backspace must be able to undo it.
+        bool mayFixKeptWord(bool inPreedit) const;
+        bool restoreDroppedWord(ngosen::KeyPress& keyEvent);
+        // Puts the engine back on the word Space fixed and returns it, empty when there is none;
+        // the parts are what the app must change.
+        std::string undoSpaceFix(std::string& deletedPart, std::string& addedPart);
+        // The word just committed, with what it was before Space fixed it, for a Backspace right after.
+        void rememberWord(const std::string& committed, const char* dropped);
         // The word is still open: bring the app's text in line with the new preedit.
         void replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8);
 

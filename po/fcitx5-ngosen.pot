@@ -344,7 +344,7 @@ msgid "What's new in Ngó Sen?"
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.10: Vim mode for each app, words starting with / typed as is, and Telex words with a forgotten circumflex or horn fixed. See What's new for more."
+msgid "Version 1.11: convert selected text between charsets with a hotkey, and extra keys after a word no longer undo its marks. See What's new for more."
 msgstr ""
 
 #: src/ngosen-engine.cpp
@@ -1612,6 +1612,38 @@ msgstr ""
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Convert selected text"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Select text typed in TCVN3, VNI or another charset and press the convert hotkey to change it to the charset you chose. Set the hotkey on the Convert page, which also converts text pasted into it."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Extra keys after a word"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "A key that does not fit the word no longer undoes its marks. Space then drops the extra keys, or splits them off when they make a word; BackSpace right after brings back what you typed."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "g for ng"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "After a word that already has its marks, a final g becomes ng when you press Space."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Vietnamese in the tray menu"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "The tray menu starts with an item that turns Vietnamese on or off, for when Ctrl + Shift does not work. Each app keeps its choice."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py

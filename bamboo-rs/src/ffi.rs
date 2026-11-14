@@ -17,6 +17,7 @@ use std::sync::Arc;
 use bamboo_core::advanced::get_charset_names;
 use bamboo_core::{BracketMode, Config, InputMethod, ToneStyle, W2uMode};
 
+use crate::convert::{LetterCase, convert};
 use crate::engine::{BambooEngine, Dictionary, INPUT_METHOD_NAMES, WordList, input_method_by_name};
 use crate::handles::{self, Object};
 use crate::macro_table::MacroTable;
@@ -264,6 +265,31 @@ pub unsafe extern "C" fn EngineRebuildFromText(engine: usize, text: *const c_cha
     handles::with_engine(engine, |e| e.rebuild_from_text(&text));
 }
 
+/// Converts `text` between two charsets named as in GetCharsetNames. `letter_case` is 0 to keep,
+/// 1 upper, 2 lower, 3 sentence or 4 title case. Returns null for an unknown charset or case.
+///
+/// # Safety
+/// Each pointer is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ConvertText(
+    text: *const c_char,
+    from: *const c_char,
+    to: *const c_char,
+    letter_case: c_int,
+    strip_diacritics: bool,
+) -> *mut c_char {
+    // SAFETY: the caller passes valid C strings or null.
+    let (text, from, to) = unsafe { (string_from_c(text), string_from_c(from), string_from_c(to)) };
+    let (Ok(from), Ok(to), Some(case)) = (
+        from.parse(),
+        to.parse(),
+        LetterCase::from_index(letter_case),
+    ) else {
+        return std::ptr::null_mut();
+    };
+    c_string(&convert(&text, from, to, case, strip_diacritics))
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn GetCharsetNames() -> *mut *mut c_char {
     let mut names = get_charset_names();
@@ -322,6 +348,32 @@ pub extern "C" fn NewWordList(fd: usize) -> usize {
 pub extern "C" fn EngineSetEnglishWords(engine: usize, list: usize) {
     let words = handles::word_list(list).unwrap_or_default();
     handles::with_engine(engine, |e| e.english_words = words);
+}
+
+/// Keys that start a word in `list` are never cut back to the Vietnamese word they broke;
+/// 0 for `list` turns that rule off.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetKeepGuard(engine: usize, list: usize) {
+    let words = handles::word_list(list).unwrap_or_default();
+    handles::with_engine(engine, |e| e.keep_guard = words);
+}
+
+/// Lets the next key, if it is Space, split a kept word or drop the keys typed after it.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetDropKeptTail(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.drop_kept_tail = on != 0);
+}
+
+/// The word as shown before the last key split it or dropped its tail; empty otherwise.
+#[unsafe(no_mangle)]
+pub extern "C" fn EnginePullDroppedWord(engine: usize) -> *mut c_char {
+    handles::with_engine(engine, |e| c_string(&std::mem::take(&mut e.dropped_word)))
+        .unwrap_or(std::ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineKeptAtLastKey(engine: usize) -> u8 {
+    handles::with_engine(engine, |e| e.kept_at_last_key()).unwrap_or(false) as u8
 }
 
 #[unsafe(no_mangle)]

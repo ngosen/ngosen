@@ -22,6 +22,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trong Gõ Sen và Preedit, khi gõ Telex với phím dấu thanh sau phụ âm cuối ở từ có vần ngoài quy tắc tiếng Việt thông thường, Ngó Sen nay đặt dấu lên nguyên âm nếu từ có trong từ điển: gõ `peks`, `tehr` rồi Space, dấu câu hoặc Enter giờ ra `pék`, `tẻh`, không còn thành `peks`, `tehr`; trong lúc gõ vẫn hiện nguyên phím đã gõ (#753).
 - Trong các bảng tính web Handsontable, jspreadsheet và AG Grid trên Chromium ở X11, Gõ Sen không còn bỏ sót chữ đầu sau khi chuyển cell bằng Enter, Tab hoặc phím mũi tên: gõ `ddaay` trong cell mới giờ ra `đây`, không còn thành `ddây` (#755).
 - Trong Firefox trên GNOME, Gõ Sen sửa tiếp lỗi giữ nguyên phím Telex khi gõ ngay sau Alt+Tab chuyển window: gõ `nguwx` vào giữa `xin chào` giờ ra `ngữ`; thử trên máy ảo Ubuntu 24.04 GNOME 46 và Ubuntu 26.04 GNOME 50 dùng IBus qua GNOME Shell, tắt extension Ngó Sen, đều đúng 20/20 lần, so với 0/20 lần trước khi sửa (#759, #761, sửa tiếp #743).
+- Trong ô soạn thảo rich text (contenteditable) trên Firefox ở Linux Mint 22.1 (Cinnamon, X11), dùng fcitx5 GTK module, Gõ Sen không còn làm hỏng từ cuối do chữ mới đến trước các phím BackSpace xoá chữ cũ: gõ `tienf nguyenx luanj ` giờ ra `tiền nguyễn luận`, không còn thành `tiền nguyễn luạnậ`; Ngó Sen tiếp tục xoá qua surrounding text thay vì BackSpace. Thử trên Mint 22.1 với Firefox 157, mỗi bản 40 lần: lỗi này xảy ra 2/40 lần ở version 1.10.1 và 0/40 lần sau khi sửa; một lần khác vẫn mất dấu thanh do Firefox báo sai vị trí con trỏ (#766).
 
 ## [1.10.1-1] — 12/11/2026
 

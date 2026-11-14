@@ -213,7 +213,8 @@ namespace ngosen {
         std::vector<std::string> earlierWords_;                  ///< the current word before each of its earlier replacements
         std::string              wordBeforeReplacement_;         ///< the word the last replacement started from
         std::string              wordAfterReplacement_;          ///< the word the last replacement left
-        bool                     checkWordAfterBounce_  = false; ///< focus came back too fast to tell whether it is the same field
+        bool                     checkWordAfterBounce_ = false;  ///< focus came back too fast to tell whether it is the same field
+        std::string              wordAtBounce_;                  ///< the word kept through the last focus bounce
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
         bool                     hiddenInput_           = false; ///< the terminal hid input at the last key
@@ -481,6 +482,7 @@ namespace ngosen {
         std::optional<KeyEntry>        live_key_;   ///< key being handled, replayed if it landed in another field
         std::optional<KeyEntry>        passed_key_; ///< last key let through to the app as typed
         void                           startWordWithKey(const KeyEntry& key);
+        std::optional<std::string>     keysTakenOverCell(const Surrounding& s, const std::u32string& shownBefore) const;
         KeyEntry                       key_report_key_{};
         KeyEntry                       replayed_key_{};
         bool                           key_report_copy_fits_    = false;

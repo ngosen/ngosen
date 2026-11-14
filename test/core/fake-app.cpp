@@ -158,7 +158,13 @@ namespace ngosen::test {
             } else if ((state & modifier::Ctrl) != 0U || keyText(sym).empty() || sym == key::Delete || sym == key::Escape) {
                 later(quirks_.lagMs, [this, sym, state] { applyFieldKey(sym, state); });
             } else if (const auto text = keyText(down.appSym()); !text.empty() && static_cast<unsigned char>(text[0]) >= 0x20 && text[0] != '\x7f')
-                later(quirks_.lagMs, [this, text] { insert(utf8::decode(text), true); });
+                later(quirks_.lagMs, [this, text] {
+                    if (std::exchange(cellOpensOnKey_, false)) {
+                        text_.clear();
+                        cursor_ = anchor_ = 0;
+                    }
+                    insert(utf8::decode(text), true);
+                });
         }
 
         FakeKey up(sym, true, state);
@@ -448,6 +454,11 @@ namespace ngosen::test {
             state_->activate(Mode::Sen, true);
             changed();
         });
+    }
+
+    void FakeApp::clickCellOpenedByKey(int ms) {
+        cellOpensOnKey_ = true;
+        leaveFocus(ms);
     }
 
     void FakeApp::returnWithText(const std::string& typed, int ms) {

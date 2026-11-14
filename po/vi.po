@@ -123,6 +123,62 @@ msgstr "Phím tắt menu chế độ gõ"
 msgid "Cycle Mode Hotkey"
 msgstr "Phím tắt chuyển nhanh chế độ"
 
+#: src/ngosen-config.h
+msgid "Keep"
+msgstr "Giữ nguyên"
+
+#: src/ngosen-config.h
+msgid "UPPER CASE"
+msgstr "CHỮ HOA"
+
+#: src/ngosen-config.h
+msgid "lower case"
+msgstr "chữ thường"
+
+#: src/ngosen-config.h
+msgid "Sentence case"
+msgstr "Viết hoa đầu câu"
+
+#: src/ngosen-config.h
+msgid "Title Case"
+msgstr "Viết Hoa Mỗi Từ"
+
+#: src/ngosen-config.h
+msgid "Convert Selected Text Hotkey"
+msgstr "Phím tắt chuyển mã chữ bôi đen"
+
+#: src/ngosen-config.h
+msgid "Convert From"
+msgstr "Chuyển từ bảng mã"
+
+#: src/ngosen-config.h
+msgid "Convert To"
+msgstr "Sang bảng mã"
+
+#: src/ngosen-config.h
+msgid "Letter Case"
+msgstr "Chữ hoa, chữ thường"
+
+#: src/ngosen-config.h
+msgid "Remove Diacritics"
+msgstr "Bỏ dấu"
+
+#: src/ngosen-engine.cpp
+msgid "Convert"
+msgstr "Chuyển mã"
+
+#: src/ngosen-engine.cpp
+msgid "The selected text is the same in both charsets. Check the charsets on the Convert page."
+msgstr "Chữ bôi đen giống nhau ở cả hai bảng mã. Xem lại bảng mã ở trang Chuyển mã."
+
+#: src/ngosen-engine.cpp
+msgid "Select the text to convert, then press the key again."
+msgstr "Bôi đen chữ cần chuyển mã rồi bấm lại phím."
+
+#: src/ngosen-engine.cpp
+msgid "Finish the word being typed, then press the key again."
+msgstr "Gõ xong chữ đang gõ rồi bấm lại phím."
+
 #: src/ngosen-config.h:227
 msgid "App Rules"
 msgstr "Quy tắc ứng dụng"
@@ -298,7 +354,7 @@ msgstr "Định dạng giờ ($TIME trong gõ tắt)"
 
 #: src/ngosen-config.h:272
 msgid "Date Format ($DATE in macro)"
-msgstr "Định dạng ngày ($DATE trong macro)"
+msgstr "Định dạng ngày ($DATE trong gõ tắt)"
 
 #: src/ngosen-config.h:276
 msgid "Icon Color"
@@ -357,8 +413,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.10: Vim mode for each app, words starting with / typed as is, and Telex words with a forgotten circumflex or horn fixed. See What's new for more."
-msgstr "Version 1.10: Vim mode cho từng app, từ bắt đầu bằng / giữ nguyên, và chữ Telex quên mũ hoặc móc vẫn ra đúng. Xem thêm ở trang Có gì mới."
+msgid "Version 1.11: convert selected text between charsets with a hotkey, and extra keys after a word no longer undo its marks. See What's new for more."
+msgstr "Version 1.11: chuyển mã chữ bôi đen bằng phím tắt, và gõ thừa phím sau từ không còn làm mất dấu. Xem thêm ở trang Có gì mới."
 
 #: src/ngosen-engine.cpp
 msgid "Show"
@@ -377,7 +433,7 @@ msgid "this window"
 msgstr "cửa sổ này"
 
 msgid "apps with no name (the Ngó Sen extension can tell them apart)"
-msgstr "app chưa có tên (bật extension Ngó Sen để đặt riêng)"
+msgstr "app chưa có tên (bật extension Ngó Sen GNOME fixes để đặt riêng)"
 
 #: src/ngosen-engine.cpp:1099
 msgid "Unknown Mode"
@@ -1093,11 +1149,11 @@ msgstr "Đổi chế độ"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Try it:"
-msgstr "Test:"
+msgstr "Gõ thử:"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Type here to test"
-msgstr "Gõ vào đây để test"
+msgstr "Gõ vào đây để thử"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Words that are not Vietnamese get no tone marks."
@@ -1270,7 +1326,7 @@ msgstr "Đã cài Input Method Panel."
 
 #: settings-gui/core/system_check.py
 msgid "Turn on the fix: gnome-extensions enable {}. If keys still drop, log out and back in."
-msgstr "Bật bản sửa: gnome-extensions enable {}. Nếu vẫn mất phím thì đăng xuất rồi đăng nhập lại."
+msgstr "Bật extension Ngó Sen GNOME fixes: gnome-extensions enable {}. Nếu vẫn mất phím thì đăng xuất rồi đăng nhập lại."
 
 #: settings-gui/core/system_check.py
 msgid "Log out and back in. If this stays, update Ngó Sen or update to GNOME 50.4."
@@ -1299,7 +1355,7 @@ msgstr "App X11 cũ gõ qua fcitx5"
 #: settings-gui/core/system_check.py
 #, python-brace-format
 msgid "The fix for GNOME {} is on"
-msgstr "Bản sửa cho GNOME {} đang bật"
+msgstr "Extension Ngó Sen GNOME fixes cho GNOME {} đang bật"
 
 #: settings-gui/core/system_check.py
 msgid "Apps keep their own typing mode"
@@ -1320,7 +1376,7 @@ msgstr "Đăng xuất rồi đăng nhập lại. Nếu vẫn thấy dòng này, 
 #: settings-gui/core/system_check.py
 #, python-brace-format
 msgid "Turn on the extension: gnome-extensions enable {}, then log out and back in."
-msgstr "Bật extension: gnome-extensions enable {}, rồi đăng xuất và đăng nhập lại."
+msgstr "Bật extension Ngó Sen GNOME fixes: gnome-extensions enable {}, rồi đăng xuất và đăng nhập lại."
 
 #: settings-gui/core/system_check.py
 msgid "Qt apps use fcitx5"
@@ -1727,6 +1783,38 @@ msgid "Check that fcitx5 is running."
 msgstr "Hãy xem fcitx5 có đang chạy không."
 
 #: settings-gui/core/whats_new_content.py
+msgid "Convert selected text"
+msgstr "Chuyển mã chữ bôi đen"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Select text typed in TCVN3, VNI or another charset and press the convert hotkey to change it to the charset you chose. Set the hotkey on the Convert page, which also converts text pasted into it."
+msgstr "Bôi đen đoạn chữ gõ bằng TCVN3, VNI hay bảng mã khác rồi bấm phím tắt chuyển mã, chữ được đổi sang bảng mã đã chọn. Đặt phím tắt ở trang Chuyển mã; trang này cũng chuyển được chữ dán vào."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Extra keys after a word"
+msgstr "Gõ thừa phím sau từ"
+
+#: settings-gui/core/whats_new_content.py
+msgid "A key that does not fit the word no longer undoes its marks. Space then drops the extra keys, or splits them off when they make a word; BackSpace right after brings back what you typed."
+msgstr "Phím không ghép được vào từ không còn làm mất dấu. Nhấn Space thì phím thừa được bỏ đi, hoặc tách thành từ riêng nếu chúng là một từ; nhấn BackSpace ngay sau đó khôi phục đúng những gì đã gõ."
+
+#: settings-gui/core/whats_new_content.py
+msgid "g for ng"
+msgstr "g thay cho ng"
+
+#: settings-gui/core/whats_new_content.py
+msgid "After a word that already has its marks, a final g becomes ng when you press Space."
+msgstr "Sau phần từ đã có dấu, g ở cuối thành ng khi nhấn Space."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Vietnamese in the tray menu"
+msgstr "Tiếng Việt trong menu khay"
+
+#: settings-gui/core/whats_new_content.py
+msgid "The tray menu starts with an item that turns Vietnamese on or off, for when Ctrl + Shift does not work. Each app keeps its choice."
+msgstr "Đầu menu khay có mục bật hoặc tắt tiếng Việt, dùng khi Ctrl + Shift không chạy. Mỗi app nhớ lựa chọn riêng."
+
+#: settings-gui/core/whats_new_content.py
 msgid "Commands and paths"
 msgstr "Lệnh và đường dẫn"
 
@@ -1839,7 +1927,7 @@ msgstr "Đã thêm Ngó Sen vào danh sách bộ gõ."
 
 #: settings-gui/core/system_check.py
 msgid "Turned on the GNOME extension."
-msgstr "Đã bật extension GNOME."
+msgstr "Đã bật extension Ngó Sen GNOME fixes."
 
 #: settings-gui/core/system_check.py
 msgid "This machine is ready"
@@ -1847,7 +1935,7 @@ msgstr "Máy đã sẵn sàng"
 
 #: settings-gui/core/system_check.py
 msgid "Try typing in any app."
-msgstr "Gõ để test trong app bất kỳ."
+msgstr "Gõ thử trong app bất kỳ."
 
 #: settings-gui/core/system_check.py
 #, python-brace-format
@@ -1872,7 +1960,7 @@ msgstr "App không có trong danh sách chưa kết nối với bộ gõ: mở l
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "Try typing here"
-msgstr "Test gõ ngay tại đây"
+msgstr "Gõ thử ở đây"
 
 #: settings-gui/ui_gtk/check_page.py
 msgid "In Telex, vieetj becomes việt."
@@ -2039,3 +2127,83 @@ msgstr "Đã chép lệnh."
 #: settings-gui/core/system_check.py
 msgid "~/.config/environment.d sets {} to another value; change it to use fcitx5."
 msgstr "~/.config/environment.d đang đặt {} thành giá trị khác; đổi lại để dùng fcitx5."
+
+#: settings-gui/core/catalog.py
+msgid "Charsets"
+msgstr "Bảng mã"
+
+#: settings-gui/core/catalog.py
+msgid "Hotkey"
+msgstr "Phím tắt"
+
+#: settings-gui/core/catalog.py
+msgid "After converting"
+msgstr "Sau khi chuyển"
+
+#: settings-gui/core/catalog.py
+msgid "Select text in an app, then press this key. The text changes in place; Ctrl+Z brings it back."
+msgstr "Bôi đen chữ trong app rồi bấm phím này. Chữ được đổi ngay tại chỗ; Ctrl+Z để lấy lại."
+
+#: settings-gui/core/catalog.py
+msgid "Old documents are often TCVN3."
+msgstr "Văn bản cũ thường gõ bằng TCVN3."
+
+#: settings-gui/core/catalog.py
+msgid "Tiếng Việt becomes Tieng Viet."
+msgstr "Tiếng Việt thành Tieng Viet."
+
+#: settings-gui/core/convert.py
+msgid "No desktop session bus, so Ngó Sen cannot be reached."
+msgstr "Không có session bus của desktop nên không gọi được Ngó Sen."
+
+#: settings-gui/core/convert.py
+msgid "Ngó Sen is not loaded. Switch to Ngó Sen once, then try again."
+msgstr "Ngó Sen chưa được nạp. Chuyển sang Ngó Sen một lần rồi thử lại."
+
+#: settings-gui/core/convert.py
+msgid "The running Ngó Sen is older than this window. Restart fcitx5 to convert here."
+msgstr "Ngó Sen đang chạy là bản cũ hơn cửa sổ này. Khởi động lại fcitx5 để chuyển mã ở đây."
+
+#: settings-gui/ui/convert_box.py
+msgid "Paste the text to convert"
+msgstr "Dán chữ cần chuyển mã vào đây"
+
+#: settings-gui/ui/convert_box.py
+msgid "The converted text shows here"
+msgstr "Chữ đã chuyển hiện ở đây"
+
+#: settings-gui/ui/convert_box.py
+msgid "&Copy result"
+msgstr "&Chép kết quả"
+
+#: settings-gui/ui/convert_box.py
+msgid "Copied"
+msgstr "Đã chép"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "S&wap"
+msgstr "Đả&o chiều"
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Convert here:"
+msgstr "Chuyển ngay ở đây:"
+
+#: settings-gui/ui_gtk/convert.py
+msgid "S_wap"
+msgstr "Đả_o chiều"
+
+#: settings-gui/ui_gtk/convert.py
+msgid "Swap the charsets"
+msgstr "Đảo hai bảng mã"
+
+#: settings-gui/ui_gtk/convert.py
+msgid "Convert here"
+msgstr "Chuyển ngay ở đây"
+
+#: settings-gui/ui_gtk/convert.py
+msgid "Paste text in the first box; the second shows it converted."
+msgstr "Dán chữ vào ô trên, ô dưới hiện chữ đã chuyển."
+
+#: settings-gui/ui_gtk/convert.py
+msgid "_Copy result"
+msgstr "_Chép kết quả"

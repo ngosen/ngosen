@@ -14,7 +14,11 @@
 #include "ngosen-ui-text.h"
 #include "ngosen-xtest.h"
 
+#ifdef NGOSEN_HAS_CLIPBOARD
+#include <clipboard_public.h>
+#endif
 #include <fcitx-utils/key.h>
+#include <fcitx/addonmanager.h>
 #include <fcitx/candidatelist.h>
 #include <fcitx/event.h>
 #include <fcitx/instance.h>
@@ -182,6 +186,14 @@ namespace ngosen {
 
     std::optional<std::string> FcitxHost::takeSelection() {
         return x11_selection.take();
+    }
+
+    std::string FcitxHost::primarySelection() const {
+#ifdef NGOSEN_HAS_CLIPBOARD
+        if (auto* clipboard = instance_->addonManager().addon("clipboard", true))
+            return clipboard->call<fcitx::IClipboard::primary>(ic_);
+#endif
+        return {};
     }
 
     void FcitxHost::showPreedit(const std::string& text, bool underline) {

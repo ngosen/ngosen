@@ -92,6 +92,26 @@ pub fn without_marks(word: &str) -> String {
         .collect()
 }
 
+/// The text without tones, marks and combining diacritics, keeping case: `Đà Nẵng` becomes `Da Nang`.
+pub fn without_diacritics(text: &str) -> String {
+    text.chars()
+        .filter(|c| !('\u{300}'..='\u{36f}').contains(c))
+        .map(|c| {
+            let plain = match lower(c) {
+                'đ' => 'd',
+                l => vowel_position(l)
+                    .and_then(|pos| VOWELS.chars().nth(UNMARKED_ROW[pos / 6] * 6))
+                    .unwrap_or(c),
+            };
+            if plain != c && c.is_uppercase() {
+                plain.to_ascii_uppercase()
+            } else {
+                plain
+            }
+        })
+        .collect()
+}
+
 /// Whether more keys can turn `typed` into the start of `word`: each letter is the same, or lacks
 /// a mark or tone the word's letter has, so `grat` may become grát but `cró` never crông.
 pub fn grows_into(typed: &str, word: &str) -> bool {
@@ -142,6 +162,18 @@ mod tests {
         assert_eq!(without_tones("hoà"), ("hoa".to_string(), 1));
         assert_eq!(without_tones("đuo3"), ("đuo3".to_string(), 0));
         assert_eq!(vowel_count("đươc"), 2);
+    }
+
+    #[test]
+    fn diacritics_removed() {
+        assert_eq!(
+            without_diacritics("Tiếng Việt, ĐÀ NẴNG"),
+            "Tieng Viet, DA NANG"
+        );
+        assert_eq!(without_diacritics("Ư ơ ỹ"), "U o y");
+        // Unicode tổ hợp: a letter followed by combining marks.
+        assert_eq!(without_diacritics("Vie\u{302}\u{323}t"), "Viet");
+        assert_eq!(without_diacritics("naïve 2€"), "naïve 2€");
     }
 
     #[test]

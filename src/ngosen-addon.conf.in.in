@@ -12,3 +12,4 @@ Configurable=True
 [Addon/OptionalDependencies]
 0=dbus
 1=notifications
+2=clipboard

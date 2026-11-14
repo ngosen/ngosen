@@ -276,3 +276,26 @@ fn custom_engine_uses_its_definition() {
     DeleteObject(engine);
     DeleteObject(table);
 }
+
+#[test]
+fn convert_text_reports_unknown_names() {
+    let convert = |text: &str, from: &str, to: &str, case: c_int| {
+        let (text, from, to) = (
+            CString::new(text).unwrap(),
+            CString::new(from).unwrap(),
+            CString::new(to).unwrap(),
+        );
+        // SAFETY: the arguments are NUL-terminated strings.
+        take_string(unsafe { ConvertText(text.as_ptr(), from.as_ptr(), to.as_ptr(), case, false) })
+    };
+    assert_eq!(
+        convert("TiÕng ViÖt", "TCVN3 (ABC)", "Unicode", 0).as_deref(),
+        Some("Tiếng Việt")
+    );
+    assert_eq!(
+        convert("Tiếng Việt", "Unicode", "VNI Windows", 1).as_deref(),
+        Some("TIEÁNG VIEÄT")
+    );
+    assert_eq!(convert("a", "Latin-1", "Unicode", 0), None);
+    assert_eq!(convert("a", "Unicode", "Unicode", 5), None);
+}

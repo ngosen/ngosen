@@ -15,6 +15,47 @@ from i18n import N_
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
     {
+        "version": "1.11",
+        "title": N_("Convert selected text"),
+        "how": N_(
+            "Select text typed in TCVN3, VNI or another charset and press the convert hotkey to "
+            "change it to the charset you chose. Set the hotkey on the Convert page, which also "
+            "converts text pasted into it."
+        ),
+        "example": "",
+        "target": ("page", "convert"),
+    },
+    {
+        "version": "1.11",
+        "title": N_("Extra keys after a word"),
+        "how": N_(
+            "A key that does not fit the word no longer undoes its marks. Space then drops the "
+            "extra keys, or splits them off when they make a word; BackSpace right after brings "
+            "back what you typed."
+        ),
+        "example": "dduowjcd → được, coongty → công ty",
+        "target": None,
+    },
+    {
+        "version": "1.11",
+        "title": N_("g for ng"),
+        "how": N_(
+            "After a word that already has its marks, a final g becomes ng when you press Space."
+        ),
+        "example": "nhuwg → nhưng, khoog → không",
+        "target": None,
+    },
+    {
+        "version": "1.11",
+        "title": N_("Vietnamese in the tray menu"),
+        "how": N_(
+            "The tray menu starts with an item that turns Vietnamese on or off, for when "
+            "Ctrl + Shift does not work. Each app keeps its choice."
+        ),
+        "example": "",
+        "target": None,
+    },
+    {
         "version": "1.10",
         "title": N_("Vim mode"),
         "how": N_(

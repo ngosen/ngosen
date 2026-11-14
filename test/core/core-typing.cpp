@@ -2027,6 +2027,61 @@ namespace {
         }
     }
 
+    // Luckysheet keeps one editor for every cell: a click on another cell bounces focus and the editor
+    // still shows the last cell until the next key replaces it.
+    void testClickCellOpenedByKey() {
+        const auto clickAndType = [](int reportDelayMs, int gapMs) {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeResources resources;
+            FakeLoop      loop;
+            auto  owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "google-chrome.desktop"), ngosen::test::AppQuirks{.reportDelayMs = reportDelayMs});
+            auto* app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            const auto typeText = [&](const std::string& typed) {
+                for (const char c : typed) {
+                    app->type(static_cast<uint32_t>(c));
+                    loop.pump(gapMs);
+                }
+                loop.pump(500);
+            };
+            typeText("tieengs");
+            loop.pump(500);
+            app->clickCellOpenedByKey(50);
+            loop.pump(400);
+            typeText("vieetj");
+            return app->text();
+        };
+        const std::string cell = clickAndType(0, 120);
+        check(cell == "việt", "click on another cell: the word starts in the new cell", cell);
+        // The second key can come before the report of the first.
+        const std::string fast = clickAndType(80, 50);
+        check(fast == "việt", "click on another cell, typing fast: the word starts in the new cell", fast);
+
+        // Univer's input box empties itself after each key, so a bounce there leaves it holding one letter.
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeResources       resources;
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "google-chrome.desktop"),
+                                                                            ngosen::test::AppQuirks{.keepsOwnText = true, .emptiesAfterEditMs = 40});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        app->type('t');
+        loop.pump(150);
+        app->type('i');
+        loop.pump(20);
+        app->leaveFocus(5);
+        loop.pump(130);
+        for (const char c : std::string("eengs")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        check(app->text() == "tiếng", "focus bounce in a box that empties itself: the word goes on", app->text());
+    }
+
     void testHomeDictionaryPath() {
         check(isInHomeDirectory("/home/an/.local/share/fcitx5/ngosen/vietnamese.cm.dict"), "dictionary path: the custom one is skipped when it is off",
               "a dictionary under /home was not recognised");
@@ -4979,6 +5034,7 @@ int main() {
     testRecorderLimits();
     testRecorderSkipsRepeatedReports();
     testFocusBounce();
+    testClickCellOpenedByKey();
     testTypingIntoSuggestion();
     testClickAfterTypingIsNotSuggestion();
     testHomeDictionaryPath();

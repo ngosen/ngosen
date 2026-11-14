@@ -619,6 +619,7 @@ namespace ngosen {
         const bool firstLetterPending = passed_key_ && sinceInputUs < SuggestionStepUs && oldPreBuffer_ == host_->keyText(passed_key_->sym);
         const bool keyStartedCell =
             passed_key_ && !sameText && s.text().empty() && !oldPreBuffer_.empty() && ((settling && ngosen::reportsFieldOnlyOnKey(host_->field())) || firstLetterPending);
+        const auto keysInNewCell = hasLastSurrounding_ && !sameText ? keysTakenOverCell(s, textBeforeCursor) : std::nullopt;
         // Our own Right presses carrying the cursor to the end of a word being retoned.
         const bool ownMove   = retoneMove_.has_value();
         jumped               = ((jumped && !echo && !intoSuggestion && !caretSettling && !ownMove) || newField) && !settling;
@@ -633,6 +634,13 @@ namespace ngosen {
         hasLastSurrounding_ = true;
         if (keyStartedCell && !is_deleting_.load(std::memory_order_acquire)) {
             startWordWithKey(*passed_key_);
+            return;
+        }
+        if (keysInNewCell && !is_deleting_.load(std::memory_order_acquire)) {
+            NGOSEN_INFO("Keys went to another cell, starting a new word");
+            clearAllBuffers();
+            EngineRebuildFromText(bambooEngine_.handle(), keysInNewCell->c_str());
+            oldPreBuffer_ = *keysInNewCell;
             return;
         }
         // VS Code reports the cursor at the line start and then back at the word end, with no edit.
@@ -652,6 +660,20 @@ namespace ngosen {
             jumpedFrom_ = std::make_pair(s.text(), previousCursor);
         needEngineReset.store(true, std::memory_order_release);
         g_mouse_clicked.store(true, std::memory_order_release);
+    }
+
+    // Luckysheet's one editor still shows the last cell after a click on another, until the first key typed
+    // replaces it. Returns the keys typed since, which the field now holds; a box that empties itself after
+    // each key (Univer) never showed the whole word.
+    std::optional<std::string> TypingState::keysTakenOverCell(const Surrounding& s, const std::u32string& shownBefore) const {
+        const std::string& now = s.text();
+        if (wordAtBounce_.empty() || now.empty() || s.cursor() != s.anchor() || textBeforeCursor(s) != now || !isStartsWith(oldPreBuffer_, wordAtBounce_))
+            return std::nullopt;
+        std::string          typed = oldPreBuffer_.substr(wordAtBounce_.size());
+        const std::u32string word  = ngosen::utf8::decode(wordAtBounce_);
+        if (!isStartsWith(typed, now) || word.size() < 2 || shownBefore.size() < word.size() || shownBefore.compare(shownBefore.size() - word.size(), word.size(), word) != 0)
+            return std::nullopt;
+        return typed;
     }
 
     // The key is already in the app; only the engine has to forget the word before it.

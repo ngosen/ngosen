@@ -42,12 +42,12 @@ namespace ngosen::test {
 
     } // namespace
 
-    std::string telexOutput(const std::vector<uint32_t>& keys) {
+    std::string telexOutput(const std::vector<uint32_t>& keys, bool reportsText) {
         FakeResources resources;
-        return telexOutput(resources, keys);
+        return telexOutput(resources, keys, reportsText);
     }
 
-    std::string telexOutput(FakeResources& resources, const std::vector<uint32_t>& keys) {
+    std::string telexOutput(FakeResources& resources, const std::vector<uint32_t>& keys, bool reportsText) {
         realMode = Mode::Preedit;
         realtextLen.store(0);
         FakeLoop loop;
@@ -57,6 +57,8 @@ namespace ngosen::test {
         auto        owned = std::make_unique<FakeHost>(loop, field);
         FakeHost*   host  = owned.get();
         TypingState state(&resources, std::move(owned));
+        if (reportsText)
+            host->setSurrounding("", 0, 0);
         std::string text;
         size_t      seenCommits = 0;
         for (uint32_t sym : keys) {
@@ -445,6 +447,30 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::returnWithText(const std::string& typed, int ms) {
+        focused_ = false;
+        state_->deactivate(true);
+        later(ms, [this, typed] {
+            const std::u32string t = utf8::decode(typed);
+            text_.insert(cursor_, t);
+            cursor_ = anchor_ = cursor_ + t.size();
+            focused_          = true;
+            state_->activate(Mode::Sen, true);
+            changed();
+        });
+    }
+
+    void FakeApp::gnomeReturnWithKey(uint32_t sym, int ms) {
+        const auto time = static_cast<uint32_t>(monotonicUs() / 1000);
+        FakeKey    down(sym, false, 0, time);
+        state_->keyEvent(down);
+        FakeKey up(sym, true, 0, time);
+        state_->keyEvent(up);
+        // fcitx5 resets the engine on focus out, which drops the word the key started.
+        state_->reset(true);
+        returnWithText(keyText(sym), ms);
+    }
+
     void FakeApp::switchToOwnTextField(int ms) {
         focused_ = false;
         state_->deactivate(true);
@@ -481,6 +507,12 @@ namespace ngosen::test {
             state_->activate(Mode::Sen, true);
             changed();
         });
+    }
+
+    void FakeApp::pageShowsCell(const std::string& text) {
+        text_   = utf8::decode(text);
+        cursor_ = anchor_ = text_.size();
+        changed();
     }
 
     void FakeApp::pageInserts(const std::string& before, const std::string& after) {
@@ -571,6 +603,12 @@ namespace ngosen::test {
         changed();
         if (!quirks_.redrawsOnlyOnDeletion)
             redrawAfterEdit();
+        if (quirks_.emptiesAfterEditMs > 0)
+            later(quirks_.emptiesAfterEditMs, [this] {
+                text_.clear();
+                cursor_ = anchor_ = 0;
+                changed();
+            });
     }
 
     void FakeApp::noteTypedKey() {
@@ -687,12 +725,22 @@ namespace ngosen::test {
             return;
         turnPending_           = false;
         const bool oneTurnEdit = quirks_.cursorStaysPastEdit && turnDeleteBytes_ && turnCommit_ && !turnCommit_->empty();
+        const bool commitOnly  = !turnDeleteBytes_ && turnCommit_ && !turnCommit_->empty();
+        const bool overtakes = commitOnly && quirks_.appliesDeletionAfterMs > 0 && monotonicUs() < deletionTurnAtUs_ + static_cast<uint64_t>(quirks_.appliesDeletionAfterMs) * 1000;
         if (turnDeleteBytes_) {
             cursor_ += cursorPastBy_;
             anchor_                  = cursor_;
             cursorPastBy_            = 0;
             const unsigned int chars = charsForBytesBefore(*turnDeleteBytes_);
             eraseAround(-static_cast<int>(chars), chars);
+            deletionTurnAtUs_  = monotonicUs();
+            deletionTurnChars_ = chars;
+        }
+        if (commitOnly && quirks_.appliesDeletionAfterMs > 0 && !overtakes)
+            cursorPastBy_ = 0;
+        if (overtakes) {
+            cursorPastBy_     = deletionTurnChars_;
+            deletionTurnAtUs_ = 0;
         }
         if (turnCommit_ && focused_)
             insert(utf8::decode(*turnCommit_));

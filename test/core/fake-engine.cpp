@@ -31,6 +31,11 @@ namespace {
         return message.rfind("[DEBUG] Replace: ", 0) == 0;
     }
 
+    uintptr_t wordList(const char* path) {
+        const int fd = ::open(path, O_RDONLY | O_CLOEXEC);
+        return fd == -1 ? uintptr_t{0} : NewWordList(static_cast<uintptr_t>(fd));
+    }
+
 } // namespace
 
 namespace ngosen {
@@ -76,11 +81,10 @@ namespace ngosen::test {
         if (fd != -1)
             dictionary_ = NewDictionary(static_cast<uintptr_t>(fd));
         // Read once: tests build many of these, and the list never changes.
-        static const uintptr_t englishWords = [] {
-            const int fd = ::open(NGOSEN_TEST_ENGLISH_WORDS, O_RDONLY | O_CLOEXEC);
-            return fd == -1 ? uintptr_t{0} : NewWordList(static_cast<uintptr_t>(fd));
-        }();
-        englishWords_ = englishWords;
+        static const uintptr_t englishWords = wordList(NGOSEN_TEST_ENGLISH_WORDS);
+        static const uintptr_t keepWords    = wordList(NGOSEN_TEST_KEEP_WORDS);
+        englishWords_                       = englishWords;
+        keepWords_                          = keepWords;
     }
 
     void FakeResources::setMacros(const std::vector<std::pair<std::string, std::string>>& macros) {

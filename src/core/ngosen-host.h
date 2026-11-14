@@ -122,6 +122,9 @@ namespace ngosen {
         // The text last selected in the focused X11 window, if nothing was clicked or typed since. Some
         // apps announce a selection this way only. Taking it forgets it.
         virtual std::optional<std::string> takeSelection() = 0;
+        // The primary selection, which most apps set to what is selected, on X11 and Wayland alike. Firefox
+        // and Qt keep it after the selection is gone. Empty when unknown.
+        virtual std::string primarySelection() const = 0;
 
         // Shows text not committed yet: in the app when it can draw it, otherwise in the panel.
         virtual void showPreedit(const std::string& text, bool underline) = 0;

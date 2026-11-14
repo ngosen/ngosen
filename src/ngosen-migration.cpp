@@ -184,13 +184,6 @@ namespace ngosen {
             // Retyping was a hidden option, so a saved False is fcitx5's default, not the user's choice.
             settings.setValueByPath("RetypeAfterSwitch", "True");
         }
-        if (saved && from < 2) {
-            // The old hidden defaults, saved by fcitx5 versions that write every option.
-            if (const auto* sleep = settings.valueByPath("SurrDeleteSleepMs"); sleep != nullptr && *sleep == "4")
-                settings.remove("SurrDeleteSleepMs");
-            if (const auto* sleep = settings.valueByPath("SurrCommitSleepMs"); sleep != nullptr && *sleep == "3")
-                settings.remove("SurrCommitSleepMs");
-        }
         settings.setValueByPath("SettingsVersion", std::to_string(Version));
         return true;
     }

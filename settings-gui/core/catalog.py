@@ -12,12 +12,14 @@ class SettingsCategory(Enum):
     APPEARANCE = "appearance"
     TYPING = "typing"
     SHORTCUTS = "shortcuts"
+    CONVERT = "convert"
 
 
 TYPING_GROUP = N_("Typing")
 TYPING_KEYS = N_("Typing keys")
 MODE_SWITCHING = N_("Mode switching")
 TRAY_ICON = N_("Tray icon")
+CONVERT_CHARSETS = N_("Charsets")
 
 # A light and a dark panel, behind the tray icon preview.
 TRAY_PANEL = ("#e6e6e6", "#2d2d2d")
@@ -72,6 +74,11 @@ SETTINGS_MAP = {
             "ShortcutOff",
             "ShortcutVim",
         ],
+    },
+    SettingsCategory.CONVERT: {
+        N_("Hotkey"): ["ConvertKey"],
+        CONVERT_CHARSETS: ["ConvertFrom", "ConvertTo"],
+        N_("After converting"): ["ConvertStripDiacritics", "ConvertCase"],
     },
     SettingsCategory.APPEARANCE: {
         N_("Language"): ["UiLanguage"],
@@ -129,6 +136,11 @@ HINTS = {
     "ModeMenuKey": N_(
         "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."
     ),
+    "ConvertKey": N_(
+        "Select text in an app, then press this key. The text changes in place; Ctrl+Z brings it back."
+    ),
+    "ConvertFrom": N_("Old documents are often TCVN3."),
+    "ConvertStripDiacritics": N_("Tiếng Việt becomes Tieng Viet."),
     "CycleModeKey": N_(
         "Moves the app in use to the next mode in the list below, and remembers it for that app."
     ),

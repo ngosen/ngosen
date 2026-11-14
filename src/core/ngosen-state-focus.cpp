@@ -30,6 +30,7 @@ namespace ngosen {
         const bool        bounce = targetMode == ngosen::Mode::Sen && lastDeactivateTime_ > 0 && now - lastDeactivateTime_ < FocusBounceMs;
         const bool        resume = bounce && deletionInterruptedAt_ > 0 && is_deleting_.load();
         deletionInterruptedAt_   = 0;
+        echoKeyAtUs_             = 0; // a report of another field would end it
         if (key_report_pending_ && !resume) {
             key_report_timer_.reset();
             dropReplacementAfterFocusLoss();
@@ -83,6 +84,7 @@ namespace ngosen {
                 // These also start over at other times, so they stay out of FieldHistory.
                 surrCheck_.reset();
                 surr_check_timer_.reset();
+                editLeft_.reset();
                 surrUnanswered_  = 0;
                 copyWaitsRunOut_ = 0;
                 // A new field starts a word even without a focus-out reset, which a reopened browser never sends.
@@ -94,8 +96,13 @@ namespace ngosen {
         // A click into another field of the same page looks like a bounce, and that field may keep its own text.
         if (isFocusIn) {
             sinceFocus_.showedBackspace = false;
+            keysAtFocusIn_              = keyCount_;
             // The release of a cell's first key comes after the cell editor gets focus.
             unseenPress_.reset();
+            // Firefox on KDE focuses the next cell's editor before it shows the letter; a field that already
+            // held it shows no change.
+            if (cellMove_)
+                cellMove_->second = s.isValid() ? s.text() : std::string();
         }
 
         if (isFocusIn && host_->field().frontend == "dbus" && !s.isValid()) {
@@ -115,8 +122,11 @@ namespace ngosen {
 
     void TypingState::deactivate(bool isFocusOut) {
         enter_after_replacement_ = false; // an Enter would land in the next field
-        flushPendingReplacement();        // commit pending text into the field we are leaving
+        echoKeyAtUs_             = 0;
+        flushPendingReplacement(); // commit pending text into the field we are leaving
         if (isFocusOut) {
+            rememberLeftField();
+            keysAtFocusOut_ = keyCount_;
             commitNotSeen_.clear();
             overtype_focus_bounced_         = overtype_pending_;
             field_keeps_focus_on_selection_ = false;

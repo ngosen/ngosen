@@ -5,7 +5,9 @@
  */
 #include "ngosen-dbus-object.h"
 
+#include "bamboo-core.h"
 #include "ngosen-engine.h"
+#include "ngosen-go-object.h"
 #include "ngosen-log.h"
 
 #include <fcitx-utils/i18n.h>
@@ -25,6 +27,13 @@ namespace fcitx {
 
     bool NgoSenDBusObject::gnomePortalAnswered() {
         return engine_->gnomePortalAnswered();
+    }
+
+    std::string NgoSenDBusObject::convertText(const std::string& text, const std::string& from, const std::string& to, int32_t letterCase, bool stripDiacritics) {
+        const ngosen::UniqueCPtr<char> converted(ConvertText(text.c_str(), from.c_str(), to.c_str(), letterCase, stripDiacritics));
+        if (!converted)
+            throw dbus::MethodCallError("org.freedesktop.DBus.Error.InvalidArgs", "Unknown charset or letter case");
+        return converted.get();
     }
 
 } // namespace fcitx

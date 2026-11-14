@@ -18,10 +18,15 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
-  # A pull request that changes no packaging or build files builds one package per family. Pushes,
-  # releases and pull requests that do touch them build every target in .github/package-matrix.json.
+  # Runners are shared, so a change that cannot break packaging builds one package per family;
+  # releases, next and packaging changes build every target in .github/package-matrix.json.
   scope:
     name: Package targets
+    # A test-build pull request already builds every target through PR Test Build.
+    if: >-
+      inputs.test-build || github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      !contains(github.event.pull_request.labels.*.name, 'test-build')
     runs-on: ubuntu-latest
     outputs:
       full: ${{ steps.scope.outputs.full }}
@@ -34,14 +39,23 @@ jobs:
       - id: scope
         env:
           EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          BEFORE: ${{ github.event.before }}
           TEST_BUILD: ${{ inputs.test-build }}
         run: |
+          # HEAD of a pull request is the branch merged into its base as of the event; diffing against the
+          # first parent leaves out what other pull requests merged there. A push to patch is compared with
+          # the tip it replaced. A failed diff, or a commit that cannot be compared, leaves the full set.
+          base=
+          if [ "$EVENT" = pull_request ] && [ "$TEST_BUILD" != true ] && git rev-parse -q --verify HEAD^2 >/dev/null; then
+              base=HEAD^1
+          elif [ "$EVENT" = push ] && [ "$REF" = refs/heads/patch ] && [ -n "$BEFORE" ] &&
+              [ "$BEFORE" != 0000000000000000000000000000000000000000 ] &&
+              git fetch -q --depth=1 origin "$BEFORE"; then
+              base=$BEFORE
+          fi
           full=true
-          # HEAD is the pull request merged into its base branch as of the event; diffing against the first
-          # parent leaves out what other pull requests merged there. A failed diff, or a HEAD that is not
-          # such a merge, leaves the full set.
-          if [ "$EVENT" = pull_request ] && [ "$TEST_BUILD" != true ] && git rev-parse -q --verify HEAD^2 >/dev/null &&
-              changed=$(git diff --name-only HEAD^1 HEAD) &&
+          if [ -n "$base" ] && changed=$(git diff --name-only "$base" HEAD) &&
               ! printf '%s\n' "$changed" |
               grep -qE '^(packaging/|install\.sh$|test/install-smoke\.sh$|\.github/|cmake/|bamboo|settings-gui/|pyproject\.toml$)|CMakeLists\.txt$'; then
               full=false
@@ -191,6 +205,7 @@ jobs:
           retention-days: 3
   build-arch:
     name: Arch Linux (pacman)
+    needs: scope
     runs-on: ubuntu-latest
 
     steps:

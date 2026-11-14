@@ -49,7 +49,6 @@ int main() {
     collect(description);
     check("SpellCheck shows in the config window", names.find("SpellCheck\n") != std::string::npos);
     check("WaitSurroundingEvent is hidden from the config window", names.find("WaitSurroundingEvent\n") == std::string::npos);
-    check("SurrCommitSleepMs is hidden from the config window", names.find("SurrCommitSleepMs\n") == std::string::npos);
 
     return failures == 0 ? 0 : 1;
 }

@@ -311,11 +311,11 @@ jobs:
             install: >-
               apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y
               --no-install-recommends python3 python3-gi python3-dbus gir1.2-gtk-4.0 gir1.2-adw-1
-              xvfb xauth fonts-dejavu-core
+              dbus xvfb xauth fonts-dejavu-core
           - name: newest libadwaita
             image: archlinux:latest
             install: >-
-              pacman -Syu --noconfirm python python-gobject python-dbus gtk4 libadwaita
+              pacman -Syu --noconfirm python python-gobject python-dbus gtk4 libadwaita dbus
               xorg-server-xvfb xorg-xauth ttf-dejavu
     env:
       GDK_BACKEND: x11
@@ -327,7 +327,9 @@ jobs:
       - uses: actions/checkout@v7
       - name: Test
         working-directory: settings-gui/tests
-        run: xvfb-run -a python3 -m unittest -v test_gtk_window test_launcher test_core_toolkit_free test_hotkey_recorder
+        run: >-
+          xvfb-run -a python3 -m unittest -v test_gtk_window test_launcher test_core_toolkit_free
+          test_hotkey_recorder test_save_journey
 
   python-lint:
     name: Python lint

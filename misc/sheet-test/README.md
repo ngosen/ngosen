@@ -62,6 +62,12 @@ process (`gnome-shell`, `plasmashell`, `cinnamon`) and starts the program as a t
 Each `virsh send-key` call takes a few tens of milliseconds, so the `fast` case is slower than 30 ms
 per key there.
 
+Each key stays down for half the delay between keys (60 ms by default). Released within 10–20 ms, as
+`virsh send-key` does by default, an Enter that closes a cell editor on KDE Plasma can lose its release
+on the way back from fcitx5; the browser then ignores the next Enter. The `fast` case still holds keys
+only 15 ms, so it can show this there. QEMU waits the hold time again after each release, which is why
+the hold is not longer.
+
 ## Writing a page
 
 Load `report.js` and call `report(name, getCells, cellCenter)`. `getCells` returns the cell values

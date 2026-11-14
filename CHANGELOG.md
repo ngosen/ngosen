@@ -10,6 +10,37 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.11.0-1] — 14/11/2026
+
+Chuyển mã chữ bôi đen bằng phím tắt tự đặt trong trang Chuyển mã mới (#748, #750, #751). Gõ thêm phím thừa vẫn giữ dấu (#756); nhấn Space tách `côngty` thành `công ty` hoặc bỏ phím thừa ở `đượcd` (#757), đổi `nhưg`, `khôg`, `đúg` thành `nhưng`, `không`, `đúng` (#760). Menu khay có mục Tiếng Việt luôn hiện ở đầu, nhớ lựa chọn cho từng app (#749); fcitx5 dùng ít RAM hơn khoảng 3 MB (#754). Sửa lỗi sót dấu thanh và chữ đầu khi chuyển cell trong bảng tính web (#732, #735, #755), mất chữ hoặc đảo chữ trong Firefox trên GNOME (#739, #741, #745), chữ cũ chớp khi thêm dấu (#747), lỗi giữ nguyên phím Telex sau Alt+Tab chuyển window (#743, #759, #761), và đặt dấu thanh sau phụ âm cuối ngoài quy tắc khi từ có trong từ điển, như `peks` thành `pék` khi nhấn Space, dấu câu hoặc Enter (#753).
+Tải ở [ngosen-1.11.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.11.0-1).
+
+### Thêm
+
+- Chuyển mã chữ bôi đen bằng phím tắt: bôi đen đoạn chữ gõ bằng TCVN3, VNI… rồi bấm phím, chữ được đổi sang bảng mã đã chọn, có thể đổi chữ hoa, chữ thường hoặc bỏ dấu. Phím tắt chưa đặt sẵn, đặt ở trang Chuyển mã mới trong cửa sổ cài đặt; trang này còn có hai ô để dán chữ vào và chuyển ngay tại chỗ. Bấm phím khi chưa bôi đen gì thì chỉ hiện thông báo, không chèn chữ (#748, #750, #751).
+
+### Thay đổi
+
+- Trang Kiểm tra máy và cửa sổ cài đặt gọi extension GNOME bằng đúng tên trong app Extensions (Ngó Sen GNOME fixes), không còn lúc gọi "bản sửa" lúc gọi "extension GNOME"; ô gõ thử ghi "Gõ thử ở đây" thay cho "Test gõ ngay tại đây", và định dạng ngày ghi "$DATE trong gõ tắt" như định dạng giờ (#744).
+- Thêm mục “✔ Tiếng Việt” / “✖ Tiếng Việt” luôn hiện ở đầu menu khay fcitx5 để chuyển ngôn ngữ khi không dùng được `Ctrl + Shift`, ghi nhớ lựa chọn cho từng app qua các lần khởi động lại (#749).
+- Danh sách từ tiếng Anh và từ điển tiếng Việt của Ngó Sen nay cất gọn hơn, giúp fcitx5 dùng ít RAM hơn khoảng 3 MB (danh sách tiếng Anh từ 2,8 MB xuống 1,1 MB, từ điển tiếng Việt từ 1,4 MB xuống 0,2 MB), cách gõ không đổi (#754).
+- Gõ thêm phím không ghép được vào từ tiếng Việt nay giữ dấu: Telex `dduowjcd` hoặc VNI `d9u7o7c5d` ra `đượcd` thay vì trả về phím thô; Backspace xoá `d`, còn `được`. Phím còn là đầu từ tiếng Anh hoặc từ quen dùng như axit, photoshop, lastname vẫn hiện như gõ; không áp dụng cho từ viết toàn chữ hoa (#756).
+- Nhấn Space sau từ có phím thừa nay tách thành hai từ nếu phần thừa là từ tiếng Việt (`côngty` → `công ty`), hoặc bỏ phần thừa (`đượcd` → `được`); nhấn Backspace ngay sau đó khôi phục đúng nội dung đã gõ. Telex giữ chữ số phía sau (`đượcd2`), còn VNI bỏ cả chữ số vì đó là phím gõ. Các từ thường viết liền như `lênin`, `mômen` vẫn giữ nguyên. Chỉ áp dụng khi nhấn Space, không áp dụng với Enter, dấu câu, ô mật khẩu, bảng mã không phải Unicode hoặc Preedit khi app không cung cấp văn bản quanh con trỏ (#757).
+- Gõ tắt `ng` bằng `g` sau phần từ đã có dấu như `nhưg`, `khôg`, `đúg` (Telex `nhuwg`, `khoog`, `ddugs`), nhấn Space nay ra `nhưng`, `không`, `đúng` thay vì mất `g` như từ #757 (`nhưg` thành `như`); Backspace ngay sau đó khôi phục đúng nội dung đã gõ. Chỉ áp dụng trong các trường hợp xử lý Space của #757; nếu chưa có dấu lúc gõ `g`, như `cũg` gõ bằng `cugx`, vẫn giữ nguyên (#760).
+
+### Sửa
+
+- Trong bảng tính web Univer trên Chrome ở GNOME, Gõ Sen không còn bỏ sót phím dấu thanh gõ sau trong từ: gõ `tieengs`, `vieetj`, `laf` giờ ra `tiếng`, `việt`, `là`, không còn thành `tiêngs`, `viêtj`, `laf` (#732).
+- Trong Firefox trên GNOME, Gõ Sen không còn xoá mất chữ cái trước từ khi gõ nhanh rồi bấm BackSpace ngay sau một chữ: gõ `tieesng`, hai BackSpace, `ng` giờ ra `tiếng`, không còn thành `ieesnng` (#739).
+- Trong các bảng tính web Handsontable và AG Grid trên Firefox ở KDE Plasma, Gõ Sen không còn bỏ sót phím đầu sau khi chuyển cell bằng Enter: gõ `ddaay` trong cell mới giờ ra `đây`, không còn thành `ddây` (#735, sửa tiếp #730).
+- Trong Firefox trên GNOME, Gõ Sen không còn đảo thứ tự chữ khi gõ nhanh với hai BackSpace liền nhau: gõ `tieesng`, hai BackSpace, `ng` giờ ra `tiếng`, không còn thành `tieesgn` hay `tiees ng` (#741).
+- Trong Firefox trên GNOME khi tắt extension Ngó Sen, Gõ Sen không còn xoá mất chữ cái sau từ khi đổi dấu thanh hai lần liền trên trang web đang bận: gõ `nguwxs` giữa `xin chào` trước có thể thành `xin ngữứ hào` rồi ô ngừng gõ tiếng Việt tới khi khởi động lại fcitx5; nay khi nhận ra con trỏ bị lệch, Gõ Sen giữ nguyên phím vừa gõ, thành `ngữs` để người dùng thấy và sửa, ô vẫn gõ được tiếng Việt và các lần sửa tiếp trong ô chờ lâu hơn để tránh lặp lại lỗi (#745).
+- Trong Firefox trên GNOME khi tắt extension Ngó Sen, Gõ Sen nay đo tốc độ trang web hiện chữ để điều chỉnh khoảng chờ giữa xoá chữ cũ và gõ chữ mới khi thêm dấu thanh: khoảng 15 ms trên trang nhàn nên chữ cũ gần như không còn chớp, tăng tới khoảng 75 ms trên trang bận để chữ mới không đến trước khi xoá xong. Trước đây, khoảng chờ cố định 30 ms khiến chữ cũ chớp trên trang nhàn và vẫn có thể gõ sai dấu trên trang bận; nay thử trên trang bận ra đúng dấu 20/20 lần, so với 16/20 lần ở version 1.10.1 (#747).
+- Trong Firefox ở GNOME, Gõ Sen giảm lỗi giữ nguyên phím Telex khi gõ ngay sau Alt+Tab chuyển window: gõ `nguwx` giờ ra `ngữ`, không còn thành `nguwx`, nhưng lỗi vẫn có thể xảy ra nếu nhấn và thả phím đầu quá nhanh (#743).
+- Trong Gõ Sen và Preedit, khi gõ Telex với phím dấu thanh sau phụ âm cuối ở từ có vần ngoài quy tắc tiếng Việt thông thường, Ngó Sen nay đặt dấu lên nguyên âm nếu từ có trong từ điển: gõ `peks`, `tehr` rồi Space, dấu câu hoặc Enter giờ ra `pék`, `tẻh`, không còn thành `peks`, `tehr`; trong lúc gõ vẫn hiện nguyên phím đã gõ (#753).
+- Trong các bảng tính web Handsontable, jspreadsheet và AG Grid trên Chromium ở X11, Gõ Sen không còn bỏ sót chữ đầu sau khi chuyển cell bằng Enter, Tab hoặc phím mũi tên: gõ `ddaay` trong cell mới giờ ra `đây`, không còn thành `ddây` (#755).
+- Trong Firefox trên GNOME, Gõ Sen sửa tiếp lỗi giữ nguyên phím Telex khi gõ ngay sau Alt+Tab chuyển window: gõ `nguwx` vào giữa `xin chào` giờ ra `ngữ`; thử trên máy ảo Ubuntu 24.04 GNOME 46 và Ubuntu 26.04 GNOME 50 dùng IBus qua GNOME Shell, tắt extension Ngó Sen, đều đúng 20/20 lần, so với 0/20 lần trước khi sửa (#759, #761, sửa tiếp #743).
+
 ## [1.10.1-1] — 12/11/2026
 
 Trên GNOME, Gõ Sen không còn làm từ đang gõ chớp ở dạng chưa đổi dấu hoặc chữ trong các app ngoài nhóm Firefox (#720), preedit trong ô tìm kiếm Dolphin trên KDE Plasma Wayland không còn mất chữ khi app làm mới ô tìm kiếm (#722, sửa #717), bảng tính web như Handsontable, jspreadsheet và AG Grid trên Chrome và Firefox ở GNOME không còn bỏ sót phím đầu sau khi chuyển cell (#730), Lark Base trên Chrome ở GNOME không còn lưu mất dấu (#728), cửa sổ cài đặt Qt trên Fedora 44 và các distro có PyQt6 6.11 không còn crash khi đóng (#731, sửa #729).

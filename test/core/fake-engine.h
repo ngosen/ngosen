@@ -44,6 +44,9 @@ namespace ngosen::test {
         uintptr_t englishWords() const override {
             return englishWords_;
         }
+        uintptr_t keepWords() const override {
+            return keepWords_;
+        }
         // Replaces the macro table; call before building a TypingState.
         void                    setMacros(const std::vector<std::pair<std::string, std::string>>& macros);
         std::vector<EmojiEntry> emojiHistory() override {
@@ -66,6 +69,7 @@ namespace ngosen::test {
         uintptr_t dictionary_   = 0;
         uintptr_t macroTable_   = 0;
         uintptr_t englishWords_ = 0;
+        uintptr_t keepWords_    = 0;
         Recorder  recorder_;
     };
 

@@ -293,6 +293,10 @@ namespace ngosen {
         const std::string report     = host_->field().hidesText() ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
         sinceFocus_.reported         = sinceFocus_.reported || host_->surrounding().isValid();
         reportSinceEdit_             = true;
+        if (ngosen::keepsLastEditPerTurn(host_->field())) {
+            noteCursorPast(host_->surrounding());
+            noteEcho(host_->surrounding());
+        }
         // A repeat that a wait acts on stays in the log for its timing.
         if (waiting || overtyping || key_report_pending_)
             engine_->recorder().add("app", report);
@@ -531,11 +535,30 @@ namespace ngosen {
         return before.size() < word.size() || before.compare(before.size() - word.size(), word.size(), word) != 0;
     }
 
+    // Univer's input box hands each key to its sheet and empties itself, so an empty report from such a
+    // field is neither a cursor move nor a new cell.
+    bool TypingState::fieldEmptiedItself(const Surrounding& s) {
+        // It empties within tens of ms of the key or our commit; a click to an empty cell comes later.
+        constexpr uint64_t SelfEmptyUs = 100000;
+        const bool         emptied     = hasLastSurrounding_ && s.text().empty() && keyCount_ == keysAtLastSurrounding_ && ngosen::utf8::length(lastSurroundingText_) == 1 &&
+            !is_deleting_.load(std::memory_order_acquire) && ngosen::monotonicUs() - lastInputAtUs_ < SelfEmptyUs;
+        keysAtLastSurrounding_ = keyCount_;
+        if (emptied)
+            ++sinceFocus_.emptiedItself;
+        return emptied && sinceFocus_.emptiedItself >= 2;
+    }
+
     // Wayland apps report a click only as a cursor move; the IM gets no reset or mouse event.
     void TypingState::checkCursorJump() {
         const auto s = host_->surrounding();
         if (!s.isValid()) {
             hasLastSurrounding_ = false;
+            return;
+        }
+        if (fieldEmptiedItself(s)) {
+            lastSurroundingText_.clear();
+            lastSurroundingCursor_ = lastSurroundingAnchor_ = 0;
+            unreportedCommitLength_ = unreportedDeleteLength_ = 0;
             return;
         }
         const bool         sameText       = hasLastSurrounding_ && s.text() == lastSurroundingText_;

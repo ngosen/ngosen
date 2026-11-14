@@ -309,6 +309,7 @@ namespace ngosen {
         int  slashWordLen_    = 0;    ///< characters typed after the '/'
         bool afterWordEnd_    = true; ///< the last key ended a word, for fields that do not report their text
         bool typedSinceFocus_ = false;
+        bool selectedAll_     = false; ///< the last key was Ctrl+A
         bool handleRawWordKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
         bool atRawWordStart() const;
 

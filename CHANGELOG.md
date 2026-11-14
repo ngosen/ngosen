@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.11.0-1] — 14/11/2026
+
+Chuyển mã chữ bôi đen bằng phím tắt tự đặt trong trang Chuyển mã mới (#748, #750, #751). Gõ thêm phím thừa vẫn giữ dấu (#756); nhấn Space tách `côngty` thành `công ty` hoặc bỏ phím thừa ở `đượcd` (#757), đổi `nhưg`, `khôg`, `đúg` thành `nhưng`, `không`, `đúng` (#760). Menu khay có mục Tiếng Việt luôn hiện ở đầu, nhớ lựa chọn cho từng app (#749); fcitx5 dùng ít RAM hơn khoảng 3 MB (#754). Sửa lỗi sót dấu thanh và chữ đầu khi chuyển cell trong bảng tính web (#732, #735, #755), mất chữ hoặc đảo chữ trong Firefox trên GNOME (#739, #741, #745), chữ cũ chớp khi thêm dấu (#747), lỗi giữ nguyên phím Telex sau Alt+Tab chuyển window (#743, #759, #761), và đặt dấu thanh sau phụ âm cuối ngoài quy tắc khi từ có trong từ điển, như `peks` thành `pék` khi nhấn Space, dấu câu hoặc Enter (#753).
+Tải ở [ngosen-1.11.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.11.0-1).
+
 ### Thêm
 
 - Chuyển mã chữ bôi đen bằng phím tắt: bôi đen đoạn chữ gõ bằng TCVN3, VNI… rồi bấm phím, chữ được đổi sang bảng mã đã chọn, có thể đổi chữ hoa, chữ thường hoặc bỏ dấu. Phím tắt chưa đặt sẵn, đặt ở trang Chuyển mã mới trong cửa sổ cài đặt; trang này còn có hai ô để dán chữ vào và chuyển ngay tại chỗ. Bấm phím khi chưa bôi đen gì thì chỉ hiện thông báo, không chèn chữ (#748, #750, #751).

@@ -14,6 +14,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Trong ô soạn thảo rich text (contenteditable) trên Firefox ở Linux Mint 22.1 (Cinnamon, X11), dùng fcitx5 GTK module, Gõ Sen không còn làm hỏng từ cuối do chữ mới đến trước các phím BackSpace xoá chữ cũ: gõ `tienf nguyenx luanj ` giờ ra `tiền nguyễn luận`, không còn thành `tiền nguyễn luạnậ`; Ngó Sen tiếp tục xoá qua surrounding text thay vì BackSpace. Thử trên Mint 22.1 với Firefox 157, mỗi bản 40 lần: lỗi này xảy ra 2/40 lần ở version 1.10.1 và 0/40 lần sau khi sửa; một lần khác vẫn mất dấu thanh do Firefox báo sai vị trí con trỏ (#766).
 - Trong Chromium trên X11, Gõ Sen không còn đổi `/cost` thành `/cót` khi gõ sau khi xoá hết ô bằng Ctrl+A rồi BackSpace: lệnh hoặc đường dẫn bắt đầu bằng `/` giờ giữ nguyên phím đã gõ. Trước đây lần đầu sau khi mở trang vẫn đúng, từ lần xoá thứ hai thì sai. Thử trên Linux Mint 22.1 Cinnamon với Chromium 154, mỗi bản 10 lần: trước sai 9/10, nay đúng 10/10 (#775, sửa tiếp #718).
+- Trong Firefox bản snap trên Ubuntu 24.04 (GNOME), dùng fcitx4 GTK module đi kèm snap, Gõ Sen không còn gõ sai ngay sau khi mở Firefox do chữ mới đến trước BackSpace xoá chữ cũ: gõ `sose2026` giờ ra `sose2026`, không còn thành `soése026` hay `sóse2026`; Ngó Sen xoá qua surrounding text, kể cả khi Firefox chưa kịp báo lần sửa trước. Thử trên Ubuntu 24.04 với Firefox 159, mỗi lần mở Firefox mới rồi gõ `sose2026 tooi2 `: version 1.11.0-1 sai 3/10, sau khi sửa đúng 20/20 (#778).
 
 ## [1.11.0-1] — 14/11/2026
 

@@ -3663,6 +3663,41 @@ namespace {
         check(run.text == "tiếng ngữ của ", "wlroots: a late backspace is not overtaken by the commit", run.text);
     }
 
+    // fcitx5-gtk queues forwarded keys behind GDK events but hands commits to the app at once, and Firefox
+    // stops declaring its text for a moment after a deletion through it.
+    void testFieldDroppingSurroundingAfterDelete() {
+        FakeResources resources;
+        Field         field    = makeField("dbus", true, "firefox");
+        field.keyEventOrderFix = true;
+        const auto keys        = keysOf("tienf nguyenx luanj ");
+        const auto run = ngosen::test::typeInAppTraced(resources, field, {.backspaceLagMs = 60, .dropsSurroundingOnDelete = true}, keys, std::vector<int>(keys.size(), 120));
+        check(run.text == "tiền nguyễn luận ", "dbus: a field that stopped declaring its text still deletes through it", run.text);
+        check(run.sent.forwardedBackSpaces == 0, "dbus: no backspace for a field that stopped declaring its text", std::to_string(run.sent.forwardedBackSpaces));
+    }
+
+    // A quick focus change can land in another widget of the same context that never had surrounding text.
+    void testUndeclaredFieldAfterFocusChange() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField("dbus", true, "firefox");
+        field.keyEventOrderFix    = true;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.dropsSurroundingOnDelete = true});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (const uint32_t key : keysOf("tienf")) {
+            app->type(key);
+            loop.pump(120);
+        }
+        app->leaveFocus(10);
+        loop.pump(120);
+        app->type(' ');
+        loop.pump(400);
+        check(app->sent().forwardedBackSpaces > 0, "dbus: a focus change ends deleting through undeclared text", std::to_string(app->sent().forwardedBackSpaces));
+    }
+
     // Firefox on Hyprland answers after the next key when typing fast, and a report held up past the check
     // counts as a miss. A field that then catches up must get back to the surrounding text.
     std::vector<std::string> replacementsAfterLateWords(bool recovery, int laterDelayMs = 120, int laterGapMs = 60, int laterRounds = 1) {
@@ -4738,6 +4773,8 @@ int main() {
     testRestoreBeforeDigitWhileTyping();
     testSlowBackspaceOverIbus();
     testSlowBackspaceOnWlroots();
+    testFieldDroppingSurroundingAfterDelete();
+    testUndeclaredFieldAfterFocusChange();
     testLateCopiesRecoverOnWlroots();
     testLockWordNotOnChord();
     testMacroCapitalized();

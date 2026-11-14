@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.10.1
+Version:        1.11.0
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -100,6 +100,9 @@ else
 fi
 
 %changelog
+* Sat Nov 14 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.11.0-1
+- Convert selected text between charsets with a hotkey and on a new Convert page (#748, #750, #751); extra keys after a word keep its marks, and Space drops them or splits off a word (#756, #757); a final g after a marked word types ng (#760); a Vietnamese on/off item heads the tray menu (#749); the word lists take about 3 MB less memory (#754); web sheets, Firefox and Alt+Tab on GNOME lose fewer keys (#732, #739, #741, #743, #745, #747, #755, #759, #761); a tone typed after a final the rules reject lands on the vowel (#753).
+
 * Thu Nov 12 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.10.1-1
 - The Qt settings window no longer crashes on close with PyQt6 6.11 (#731); web sheets such as Handsontable, AG Grid and Lark Base keep tone keys after moving between cells on GNOME (#728, #730); GNOME no longer flashes the word on each edit (#720); the Dolphin search field keeps the preedit word on KDE Plasma Wayland (#722).
 

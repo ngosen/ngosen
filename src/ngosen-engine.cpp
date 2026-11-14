@@ -616,8 +616,8 @@ namespace fcitx {
             constexpr int32_t neverExpire = 0;
             addon->call<INotifications::sendNotification>(
                 "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
-                _("Version 1.10: Vim mode for each app, words starting with / typed as is, and Telex words with a forgotten circumflex or horn fixed. See What's "
-                  "new for more."),
+                _("Version 1.11: convert selected text between charsets with a hotkey, and extra keys after a word no longer undo its marks. See What's new for "
+                  "more."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;
         });

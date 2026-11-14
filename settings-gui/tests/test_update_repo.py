@@ -3,8 +3,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
 import shutil
+import sys
 import tempfile
+import types
 import unittest
+from unittest import mock
 
 # support puts the settings window on sys.path, so it has to come first.
 # isort: off
@@ -145,6 +148,19 @@ class StateTest(unittest.TestCase):
         self.put("etc/apt/sources.list.d/ngosen.list", read(APT, "installer.list"))
         program = "/nix/store/abc-fcitx5-ngosen/share/ngosen/core/update_repo.py"
         self.assertEqual(update_repo.state(self.root, program=program), update_repo.NONE)
+
+    def test_distribution_package_has_no_repository_line(self):
+        # A package from the distribution's own archive gets new versions from that archive.
+        for distro, want in ((True, update_repo.NONE), (False, update_repo.OFF)):
+            got = update_repo.state(self.root, program=__file__, distro=distro)
+            self.assertEqual(got, want, distro)
+
+    def test_the_build_says_whether_a_distribution_packaged_it(self):
+        version = types.ModuleType("version")
+        with mock.patch.dict(sys.modules, {"version": version}):
+            for distro, want in ((True, update_repo.NONE), (False, update_repo.OFF)):
+                version.DISTRO_PACKAGE = distro
+                self.assertEqual(self.state(), want, distro)
 
 
 if __name__ == "__main__":

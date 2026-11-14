@@ -1062,6 +1062,7 @@ namespace ngosen {
             clickBeforeKey_ = true;
             slashWord_      = false;
             afterWordEnd_   = false;
+            selectedAll_    = false;
         }
     }
 

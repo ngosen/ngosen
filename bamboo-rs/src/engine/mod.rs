@@ -19,7 +19,7 @@ use bamboo_core::{
 use crate::macro_table::MacroTable;
 use crate::text::{
     grows_into, has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol,
-    vowel_count, without_marks, without_tone_position, without_tones,
+    vowel_count, without_diacritics, without_marks, without_tone_position, without_tones,
 };
 use crate::time_format::format_time;
 use packed::Packed;
@@ -1222,11 +1222,31 @@ impl BambooEngine {
         })
     }
 
+    /// Whether the word is stretched by repeating a letter (`ừaaa`, `ờaaa`, `trờiii`), rather
+    /// than followed by stray keys or a second word (`cáioo`).
+    fn has_stretched_tail(&self, kept: &KeptWord, shown: &str) -> bool {
+        let tail: Vec<char> = self.raw_text().chars().skip(kept.keys).collect();
+        let Some(&first) = tail.first().filter(|c| c.is_ascii_alphabetic()) else {
+            return false;
+        };
+        tail.len() >= 2
+            && tail.iter().all(|c| c.eq_ignore_ascii_case(&first))
+            && without_diacritics(shown)
+                .chars()
+                .rev()
+                .take_while(|c| c.eq_ignore_ascii_case(&first))
+                .count()
+                >= 3
+    }
+
     /// What Space turns a kept word into: two words when the keys after it type one
     /// (`côngty`), else the word without them. A digit stays unless the input method uses it
     /// (VNI): in Telex it is rarely typed by mistake.
     fn fixed_kept_word(&self, kept: &KeptWord, shown: &str) -> Option<String> {
-        if !self.drop_kept_tail || self.keep_guard.contains(&shown.to_lowercase()) {
+        if !self.drop_kept_tail
+            || self.keep_guard.contains(&shown.to_lowercase())
+            || self.has_stretched_tail(kept, shown)
+        {
             return None;
         }
         if let Some(word) = self.shorthand_word(kept) {

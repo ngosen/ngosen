@@ -86,9 +86,22 @@ namespace ngosen {
     bool appliesBackspacesLate(const Field& field);
 
     // A field on these frontends that also takes keys deletes through its surrounding text when it can.
-    // Through GNOME's IBus bridge forwarded backspaces can land after the commit that follows them (#362);
-    // the other frontends keep backspaces until they are measured.
+    // Through GNOME's IBus bridge (#362), fcitx5-gtk and the fcitx4 GTK module in Firefox's snap (#770)
+    // forwarded backspaces can land after the commit that follows them.
     bool deletesThroughSurroundingFirst(const Field& field);
+
+    // fcitx5-gtk stops declaring surrounding text while Firefox's selection is invalid after a deletion,
+    // though the next deletion still works; a forwarded backspace there waits behind GDK events and can
+    // land after the commit that follows it.
+    bool takesDeletionWhileUndeclared(const Field& field);
+
+    // Firefox's GTK modules count a deletion on the page's own text, so a lagging copy cannot make it
+    // wrong, while a backspace sent instead can land after the next commit (#770).
+    bool takesDeletionOnStaleCopy(const Field& field);
+
+    // Firefox's snap, busy right after it opens, can apply a deletion through its text ahead of keys and
+    // commits sent before it, so the deletion takes the wrong letters (#770).
+    bool appliesDeletionsEarly(const Field& field);
 
     // These frontends turn a surrounding deletion's character count into bytes on their own copy of
     // the text, which can lag behind the app.

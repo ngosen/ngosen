@@ -111,3 +111,17 @@ class FakeDBusHandler:
 
     def debug_info(self):
         return "Group [wayland:] has 1 InputContext(s)\n  IC [1] program:kate frontend:wayland cap:72 focus:1\n"
+
+
+class OlderFcitx(FakeDBusHandler):
+    """An fcitx5 still running a Ngó Sen without the settings named by `missing`."""
+
+    def __init__(self, missing=("ConvertKey", "ConvertFrom", "ConvertTo"), values=None):
+        super().__init__(values)
+        self.missing = missing
+
+    def get_config(self):
+        config = super().get_config()
+        for group in config["metadata"]:
+            group[1] = [item for item in group[1] if item[0] not in self.missing]
+        return config

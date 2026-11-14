@@ -484,6 +484,7 @@ namespace ngosen {
         KeyEntry                       key_report_key_{};
         KeyEntry                       replayed_key_{};
         bool                           key_report_copy_fits_    = false;
+        bool                           copyWaitLong_            = false; ///< the copy wait running now has the longer cap
         bool                           copyWaitTimedOut_        = false; ///< keeps replayed keys from each waiting out a copy that never fits
         int                            copyWaitsRunOut_         = 0;     ///< copy waits in a row that ran out in this field
         uint64_t                       unconfirmedBackspacesUs_ = 0;     ///< when backspaces went out that no report has shown yet, 0 if none
@@ -767,6 +768,8 @@ namespace ngosen {
             bool        untrusted      = false;  ///< the untrusted mark of an app GNOME Shell does not name
             std::string lastPath;                ///< how its last replacement deleted
             bool        checkAnswered   = false; ///< a check came out correct
+            bool        copyFitted      = false; ///< a copy wait ended on a copy that fits
+            bool        longWaitRanOut  = false; ///< a longer copy wait ran out with no copy that fits
             int         answeredUnasked = 0;     ///< checks answered with no key since the edit
             int         checksMissed    = 0;     ///< checks left unanswered
 

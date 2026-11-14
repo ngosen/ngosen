@@ -58,6 +58,8 @@ namespace ngosen::test {
         // With keepsOwnText, a Backspace also changes the copy it reports, and the report holds a U+200B
         // after the cursor: Lark Base.
         bool backspacesShowInReport = false;
+        // With keepsOwnText, empties the field it reports this long after each edit, as Univer's input box does.
+        int emptiesAfterEditMs = 0;
         // Turns a deletion of characters into bytes on the text it reported last, as mutter does for
         // text-input-v3 and fcitx5 does on Wayland.
         bool             convertsDeleteOnReportedCopy = false;
@@ -82,8 +84,11 @@ namespace ngosen::test {
         int  turnMs               = 0; // how long such a turn stays open
         // Its cursor stays past the real one after a deletion and a commit in one turn, as Firefox's does,
         // until a typed key corrects it.
-        bool cursorStaysPastEdit  = false;
-        int  oldTextAfterDeleteMs = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
+        bool cursorStaysPastEdit = false;
+        // The first commit whose turn ends this soon after a deletion's leaves the cursor past by the
+        // deletion, as Firefox does when the page is busy, until a typed key or another commit moves it.
+        int appliesDeletionAfterMs = 0;
+        int oldTextAfterDeleteMs   = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
         // Reports the cursor moving over a deletion and its commit on the old text before the new text, as
         // Slate in Firefox on Plasma does.
         bool movesCursorBeforeText = false;
@@ -132,6 +137,12 @@ namespace ngosen::test {
         void select(size_t anchor, size_t cursor);
         // Leaves focus for ms and takes it back, as WPS does when it opens a window on a double click.
         void leaveFocus(int ms);
+        // Leaves focus and comes back after ms with text put at the cursor meanwhile, as a key typed right
+        // after Alt+Tab does when both its press and release reach the window before focus-in.
+        void returnWithText(const std::string& typed, int ms);
+        // The input method sees the key in the window it is leaving, the letter lands here, and focus comes
+        // back within ms, as GNOME Shell's IBus bridge does for a key typed right after Alt+Tab.
+        void gnomeReturnWithKey(uint32_t sym, int ms);
         // Moves within ms to an empty field of the same page that keeps its own text, as a click from a
         // page's search box into a Lark sheet does.
         void switchToOwnTextField(int ms);
@@ -142,6 +153,8 @@ namespace ngosen::test {
         void focusNewFieldWith(const std::string& text, int ms);
         // Puts text around the cursor with no key through the input method, as a paste does.
         void pageInserts(const std::string& before, const std::string& after);
+        // The field now holds only this text, cursor at its end, with no key: another cell in the same context.
+        void pageShowsCell(const std::string& text);
         // A key whose press reached the page before the field had focus, as the key that opens a sheet's
         // cell editor: the page puts text around the cursor, and the input method gets only the release.
         void pageTakesKey(uint32_t sym, const std::string& before, const std::string& after);
@@ -280,7 +293,9 @@ namespace ngosen::test {
         bool                                turnPending_       = false;
         std::optional<size_t>               turnDeleteBytes_;
         std::optional<std::string>          turnCommit_;
-        size_t                              cursorPastBy_ = 0;
+        size_t                              cursorPastBy_      = 0;
+        uint64_t                            deletionTurnAtUs_  = 0;
+        size_t                              deletionTurnChars_ = 0;
         std::optional<unsigned int>         heldDelete_;
         bool                                showsMovedCursor_ = false;
         bool                                holdsUnreported_  = false;

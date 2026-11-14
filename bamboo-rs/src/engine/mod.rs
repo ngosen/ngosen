@@ -249,8 +249,8 @@ pub fn default_config() -> Config {
 const ENGLISH_WORDS: &str = include_str!("english-words.txt");
 // Those whose shorter form is a name: `Marry` is how people type "Mary", `marry` means marry.
 const WORDS_SHORTER_WHEN_CAPITALIZED: &str = include_str!("english-words-shorter-capitalized.txt");
-// English words typed like a Vietnamese one whose tone was changed after the final consonant
-// (`parts` and pát); they stay English.
+// English words typed like a Vietnamese one whose tone was typed or changed after the final
+// consonant (`parts` and pát, `ehr` and ẻh); they stay English.
 const ENGLISH_RETONE_LOOKALIKES: &str = include_str!("english-retone-lookalikes.txt");
 const FINAL_CONSONANTS: [&str; 4] = ["c", "ch", "p", "t"];
 // English words typed like a Vietnamese one with its ê, â, ơ or ư left out (`hues` and huế); they
@@ -696,6 +696,56 @@ impl BambooEngine {
             .then_some(text)
     }
 
+    /// The word asked for by a tone typed after a final the rules reject (`peks` for "pék"): the
+    /// crate puts a late tone only on rimes it knows, so the tone key stays a letter.
+    fn late_tone_word(&self) -> Option<String> {
+        let raw = self.raw_text();
+        let word = self.late_tone_word_of(&raw)?;
+        let lower = raw.to_lowercase();
+        let listed = ENGLISH_RETONE_LOOKALIKES
+            .lines()
+            .any(|english| english == lower);
+        (!listed).then_some(word)
+    }
+
+    fn late_tone_word_of(&self, raw: &str) -> Option<String> {
+        if !self.auto_non_vn_restore || !self.preeditor.config().free_tone_marking {
+            return None;
+        }
+        let keys: Vec<char> = raw.chars().collect();
+        let (tone, rest) = keys.split_last()?;
+        let tone_keys = self.preeditor.input_method().tone_keys();
+        if !tone_keys.contains(&tone.to_ascii_lowercase())
+            || self.tone_count() != 0
+            || self.get_processed_string(OutputOptions::RAW) != raw
+        {
+            return None;
+        }
+        let composed = self.get_processed_string(OutputOptions::LOWER_CASE);
+        let stem = composed.strip_suffix(tone.to_ascii_lowercase())?;
+        if !has_any_vietnamese_vowel(stem) || self.english_words.contains(&raw.to_lowercase()) {
+            return None;
+        }
+        // A tone already on the keys before means the last key undid it, as in `hursts`.
+        let before = self.typed_alone(rest.iter().copied());
+        if without_tones(&before.get_processed_str(OutputOptions::LOWER_CASE)).1 != 0 {
+            return None;
+        }
+        // Only the final can follow the vowel, so the tone moves back over consonants alone.
+        (1..rest.len())
+            .rev()
+            .take_while(|&at| !"aeiouy".contains(rest[at].to_ascii_lowercase()))
+            .find_map(|at| {
+                let mut moved = rest.to_vec();
+                moved.insert(at, *tone);
+                let word = self.typed_alone(moved);
+                let text = word.get_processed_str(OutputOptions::NONE);
+                let lower = text.to_lowercase();
+                (without_tones(&lower) == (stem.to_string(), 1) && self.dictionary.contains(&lower))
+                    .then_some(text)
+            })
+    }
+
     fn lost_a_letter_of_english_word(&self, shown: &str) -> bool {
         if !self.auto_non_vn_restore || !shown.is_ascii() {
             return false;
@@ -833,7 +883,8 @@ impl BambooEngine {
         let name = ends_sentence.then(|| self.finished_name()).flatten();
         let old_text = name.as_deref().unwrap_or(old_text);
         let marked = || ends_sentence.then(|| self.auto_marked_word()).flatten();
-        if let Some(word) = self.retoned_word().or_else(marked) {
+        let late = || ends_sentence.then(|| self.late_tone_word()).flatten();
+        if let Some(word) = self.retoned_word().or_else(marked).or_else(late) {
             self.preeditor.reset();
             return (format!("{word}{key}"), true);
         }
@@ -1066,6 +1117,7 @@ impl BambooEngine {
                     _ if enter && self.kept.is_none() => self
                         .retoned_word()
                         .or_else(|| self.auto_marked_word())
+                        .or_else(|| self.late_tone_word())
                         .or_else(|| self.finished_name())
                         .unwrap_or_else(|| self.text_of_finished_word()),
                     _ => self.text_of_finished_word(),

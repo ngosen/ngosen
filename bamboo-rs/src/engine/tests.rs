@@ -1561,3 +1561,40 @@ fn test_space_keeps_a_tail_of_several_words() {
     e.macro_enabled = true;
     assert_eq!(commit_dropping(&mut e, "coongty2me").0, "côngty2me ");
 }
+
+#[test]
+fn test_space_keeps_stretched_words() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    for (keys, commit) in [
+        ("uwfaaa", "ừaaa "),
+        ("owfaaa", "ờaaa "),
+        ("vuwfaaa", "vừaaa "),
+        ("muwaaaa", "mưaaaa "),
+        ("uwfeee", "ừeee "),
+        ("owiii", "ơiii "),
+        ("trowifii", "trờiii "),
+        ("trowifiii", "trờiiii "),
+        ("nayfyyy", "nàyyyy "),
+        ("khoonggg", "khônggg "),
+    ] {
+        assert_eq!(
+            commit_dropping(&mut e, keys),
+            (commit.to_string(), String::new()),
+            "{keys}"
+        );
+    }
+    // Two-letter second words and bounced consonant keys still split or trim.
+    assert_eq!(commit_dropping(&mut e, "caisoo").0, "cái ô ");
+    assert_eq!(commit_dropping(&mut e, "dduowjcc").0, "được ");
+    assert_eq!(commit_dropping(&mut e, "dduowjctt").0, "được ");
+
+    let mut vni = engine_keeping_words("VNI", &["bank"]);
+    assert_eq!(commit_dropping(&mut vni, "u72aaa").0, "ừaaa ");
+    assert_eq!(commit_dropping(&mut vni, "o72aaa").0, "ờaaa ");
+
+    e.reset();
+    e.rebuild_from_text("ừaaa");
+    e.drop_kept_tail = true;
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.pull_commit(), "ừaaa ");
+}

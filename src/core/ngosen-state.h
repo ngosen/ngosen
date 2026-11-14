@@ -728,6 +728,7 @@ namespace ngosen {
         // A page that may keep its own text, before any report showed our backspaces taking effect.
         bool                            pageHidesBackspaces() const;
         bool                            cellKeepsOwnText() const;
+        bool                            marksFieldOnly() const;
         bool                            appMarkedUntrusted() const;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;

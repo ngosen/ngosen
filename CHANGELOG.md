@@ -23,6 +23,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Nhấn Space sau từ có phím thừa nay tách thành hai từ nếu phần thừa là từ tiếng Việt (`côngty` → `công ty`), hoặc bỏ phần thừa (`đượcd` → `được`); nhấn Backspace ngay sau đó khôi phục đúng nội dung đã gõ. Telex giữ chữ số phía sau (`đượcd2`), còn VNI bỏ cả chữ số vì đó là phím gõ. Các từ thường viết liền như `lênin`, `mômen` vẫn giữ nguyên. Chỉ áp dụng khi nhấn Space, không áp dụng với Enter, dấu câu, ô mật khẩu, bảng mã không phải Unicode hoặc Preedit khi app không cung cấp văn bản quanh con trỏ (#757).
 - Gõ tắt `ng` bằng `g` sau phần từ đã có dấu như `nhưg`, `khôg`, `đúg` (Telex `nhuwg`, `khoog`, `ddugs`), nhấn Space nay ra `nhưng`, `không`, `đúng` thay vì mất `g` như từ #757 (`nhưg` thành `như`); Backspace ngay sau đó khôi phục đúng nội dung đã gõ. Chỉ áp dụng trong các trường hợp xử lý Space của #757; nếu chưa có dấu lúc gõ `g`, như `cũg` gõ bằng `cugx`, vẫn giữ nguyên (#760).
 
+### Sửa
+
+- Trên GNOME, sau vài giây máy bận, gõ trong app như ô chat Antigravity không còn mất chữ mãi tới khi bấm sang chỗ khác hoặc khởi động lại fcitx5: bộ gõ nay chờ app như cũ khi app theo kịp, và không đánh dấu app là hỏng vì chính phím BackSpace của mình tới muộn (#362, #762).
+
 ## [1.10.1-1] — 12/11/2026
 
 Trên GNOME, Gõ Sen không còn làm từ đang gõ chớp ở dạng chưa đổi dấu hoặc chữ trong các app ngoài nhóm Firefox (#720), preedit trong ô tìm kiếm Dolphin trên KDE Plasma Wayland không còn mất chữ khi app làm mới ô tìm kiếm (#722, sửa #717), bảng tính web như Handsontable, jspreadsheet và AG Grid trên Chrome và Firefox ở GNOME không còn bỏ sót phím đầu sau khi chuyển cell (#730), Lark Base trên Chrome ở GNOME không còn lưu mất dấu (#728), cửa sổ cài đặt Qt trên Fedora 44 và các distro có PyQt6 6.11 không còn crash khi đóng (#731, sửa #729).

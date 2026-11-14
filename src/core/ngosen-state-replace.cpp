@@ -287,9 +287,10 @@ namespace ngosen {
                 surr_frozen_streak_ = 0;
             }
         } else if (std::string(reason) == "event" || std::string(reason) == "threshold") {
-            surr_snapshot_trusted_ = true;
-            surr_timeout_streak_   = 0;
-            surr_frozen_streak_    = 0;
+            unconfirmedBackspacesUs_ = 0;
+            surr_snapshot_trusted_   = true;
+            surr_timeout_streak_     = 0;
+            surr_frozen_streak_      = 0;
             if (surr_frozen_) {
                 surr_frozen_ = false;
                 NGOSEN_INFO("Surr frozen: resume waiting");
@@ -906,8 +907,10 @@ namespace ngosen {
         const bool overIbus = ngosen::reportsReplacementsWithLaterKey(field);
         if (overIbus && !ngosen::forwardsBackspaces(field))
             return CopyWait::No;
-        if (!sinceFocus_.seenText || backspaceInWord_ || (unreportedCommitLength_ == 0 && deletion.match != SurroundingDeletion::Match::None))
+        if (!sinceFocus_.seenText || backspaceInWord_)
             return CopyWait::No;
+        if (unreportedCommitLength_ == 0 && deletion.match != SurroundingDeletion::Match::None)
+            return deletion.match == SurroundingDeletion::Match::Fresh ? CopyWait::Fits : CopyWait::No;
         if (overIbus)
             return copyWaitsRunOut_ < MaxCopyWaitsRunOut ? CopyWait::Yes : CopyWait::No;
         return checksGetAnswered() || copyWaitRetry_ ? CopyWait::Yes : CopyWait::HeldBack;
@@ -934,6 +937,14 @@ namespace ngosen {
     // show whether it has caught up. One that never answered, or stayed behind on the last tries, gains nothing.
     bool TypingState::waitsForCopy() {
         const CopyWait need = copyWaitNeed();
+        // The app has caught up, as a starved one does once the load is gone, so waits that ran out
+        // before no longer count (#362).
+        if (need == CopyWait::Fits) {
+            if (copyWaitsRunOut_ >= MaxCopyWaitsRunOut)
+                NGOSEN_INFO("Copy shows the word again: wait for the copy from now");
+            copyWaitsRunOut_ = 0;
+            return false;
+        }
         if (need != CopyWait::HeldBack)
             return need == CopyWait::Yes;
         if (!engine_->options().copyWaitRecovery || !sinceFocus_.checkAnswered || sinceFocus_.retriesRunOut >= MaxCopyWaitsRunOut ||

@@ -482,10 +482,11 @@ namespace ngosen {
         void                           startWordWithKey(const KeyEntry& key);
         KeyEntry                       key_report_key_{};
         KeyEntry                       replayed_key_{};
-        bool                           key_report_copy_fits_ = false;
-        bool                           copyWaitTimedOut_     = false; ///< keeps replayed keys from each waiting out a copy that never fits
-        int                            copyWaitsRunOut_      = 0;     ///< copy waits in a row that ran out in this field
-        static constexpr int           MaxCopyWaitsRunOut    = 2;
+        bool                           key_report_copy_fits_    = false;
+        bool                           copyWaitTimedOut_        = false; ///< keeps replayed keys from each waiting out a copy that never fits
+        int                            copyWaitsRunOut_         = 0;     ///< copy waits in a row that ran out in this field
+        uint64_t                       unconfirmedBackspacesUs_ = 0;     ///< when backspaces went out that no report has shown yet, 0 if none
+        static constexpr int           MaxCopyWaitsRunOut       = 2;
 
         // HeldBack: the copy would give a wrong deletion, but this field's checks go unanswered.
         // Fits: no wait, as the copy already ends with the word as we know it.

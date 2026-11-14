@@ -267,6 +267,8 @@ namespace ngosen {
     }
 
     void TypingState::forwardBackspaces(int count) {
+        if (count > 0)
+            unconfirmedBackspacesUs_ = ngosen::monotonicUs();
         for (int i = 0; i < count; ++i) {
             forwardTap(ngosen::EditKey::BackSpace);
         }

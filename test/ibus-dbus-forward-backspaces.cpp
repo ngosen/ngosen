@@ -391,27 +391,6 @@ namespace {
         return true;
     }
 
-    // Snap apps load the fcitx4 GTK module, which keeps forwarded keys ahead of commits it reports
-    // surrounding text for.
-    bool fcitx4ForwardsWithSurroundingText(Harness& h) {
-        const auto caps    = fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit, fcitx::CapabilityFlag::SurroundingText};
-        auto       context = h.open("firefox", "fcitx4", caps);
-        if (!h.typeTie(*context) || !h.type(*context, FcitxKey_e, true))
-            return false;
-        if (!forwardedOneBackspace(*context)) {
-            reportFailure("fcitx4 firefox: forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
-            return false;
-        }
-        Harness::setSnapshot(*context, "ti", 2);
-        const uint64_t start = nowUs();
-        h.pumpUntil([&] { return !context->commits().empty(); }, start + 500000);
-        if (context->commits() != std::vector<std::string>{"ê"}) {
-            reportFailure("fcitx4 firefox: commit e -> ê", "['ê']", joinCommits(*context));
-            return false;
-        }
-        return true;
-    }
-
     // SDL handles only commits and preedit from the IM, so neither forwarded keys nor surrounding text
     // deletes anything there. Without XTEST nothing can delete, and the key goes through unchanged.
     bool sdlGetsNoDeletion(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
@@ -485,7 +464,9 @@ int main() {
         return 1;
     if (!forwardWithoutSurroundingWaits(h, "chrome", "fcitx4", fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit}, WaitUs))
         return 1;
-    if (!fcitx4ForwardsWithSurroundingText(h))
+    // Snap apps load the fcitx4 GTK module, which queues forwarded keys behind GDK events (#770).
+    if (!deletesThroughSurroundingText(h, "firefox", "fcitx4",
+                                       fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit, fcitx::CapabilityFlag::SurroundingText}))
         return 1;
     const auto sdlCaps = fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::FormattedPreedit};
     if (!sdlGetsNoDeletion(h, "Medieval2", "dbus", sdlCaps))

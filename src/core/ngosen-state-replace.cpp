@@ -112,6 +112,11 @@ namespace ngosen {
             const std::string& t = s.text();
             return t.size() > buff.size() && t.compare(0, buff.size(), buff) == 0;
         }
+
+        bool onlyStaleCopy(const std::vector<std::string>& fails) {
+            return std::all_of(fails.begin(), fails.end(),
+                               [](const std::string& fail) { return fail == "no copy" || fail == "copy shows another word" || fail == "copy older than the last commit"; });
+        }
     } // namespace
 
     bool TypingState::isAutofillCertain(const ngosen::Surrounding& s) {
@@ -829,6 +834,10 @@ namespace ngosen {
             if (ngosen::deletesThroughSurroundingFirst(host_->field())) {
                 if (fails.empty()) {
                     notePath("surrounding", "the field reports this word");
+                    return true;
+                }
+                if (sinceFocus_.lastPath == "surrounding" && ngosen::takesDeletionOnStaleCopy(host_->field()) && onlyStaleCopy(fails)) {
+                    NGOSEN_INFO("Delete through the surrounding text again though the copy lags: " + joined(fails));
                     return true;
                 }
                 notePath("backspaces", joined(fails));

@@ -358,6 +358,23 @@ namespace ngosen {
 
     // Keys shown as typed can compose once one goes (`dduoxwc` gives đưỡ), but the app deletes one character.
     bool TypingState::replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent) {
+        std::optional<std::string> edited;
+        std::string                deletedPart;
+        std::string                addedPart;
+        if (!backspaceIntoKeysShownAsTyped(edited, deletedPart, addedPart))
+            return false;
+        if (edited) {
+            is_deleting_.store(false, std::memory_order_release);
+            keyEvent.accept();
+            performReplacement(deletedPart, addedPart);
+            oldPreBuffer_ = *edited;
+            return true;
+        }
+        keyEvent.passToApp();
+        return true;
+    }
+
+    bool TypingState::backspaceIntoKeysShownAsTyped(std::optional<std::string>& edited, std::string& deletedPart, std::string& addedPart) {
         const uintptr_t engine = bambooEngine_.handle();
         if (oldPreBuffer_.empty() || EngineShownAsTyped(engine) == 0U)
             return false;
@@ -370,21 +387,15 @@ namespace ngosen {
         ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(engine));
         const std::string        preedit = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
         hasHistory_                      = true;
-        std::string deletedPart;
-        std::string addedPart;
         ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, preedit, deletedPart, addedPart);
         if (preedit != appText && canSendBackspaces() && !keepsWordRaw(deletedPart)) {
-            is_deleting_.store(false, std::memory_order_release);
-            keyEvent.accept();
-            performReplacement(deletedPart, addedPart);
-            oldPreBuffer_ = preedit;
+            edited = preedit;
             return true;
         }
         // The field cannot take the edit, so the engine follows what the app shows.
         if (preedit != appText)
             EngineRebuildFromText(engine, appText.c_str());
         oldPreBuffer_ = appText;
-        keyEvent.passToApp();
         return true;
     }
 

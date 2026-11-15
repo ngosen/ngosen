@@ -4322,9 +4322,13 @@ namespace {
              45,
              {'s', ' '}},
             {"backspace empties a word after a cursor move, then a tone", "ca", {ngosen::key::Left, ngosen::key::Right, 'd', 'd', bs}, false, 30, 45, {'s', ' '}},
+            // The Backspace takes the stray key off a kept word, which brings its marks back.
+            {"backspace after a stray tone key", "thuwcx", {bs, 'j', ' '}},
         };
-        const auto retoned = typedWithKeysInWait(cases.back(), 8, 40, 15, lines);
+        const auto retoned = typedWithKeysInWait(cases[cases.size() - 2], 8, 40, 15, lines);
         check(retoned.text == "người cá ng ", "backspace in a copy wait: without the wait the tone goes onto the word before", retoned.text);
+        const auto unstrayed = typedWithKeysInWait(cases.back(), 8, 40, 15, lines);
+        check(unstrayed.text == "người thực ng ", "backspace in a copy wait: without the wait the Backspace brings the kept word back", unstrayed.text);
         for (const auto& c : cases) {
             const auto expected = typedWithKeysInWait(c, 8, 40, 15, lines);
             // A held Backspace goes out as a forwarded key, where without the wait the app got it directly.

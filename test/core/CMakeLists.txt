@@ -106,3 +106,8 @@ foreach (name core_typing core_fuzz core_retype core_retone)
             -DEXPECTED=${CMAKE_CURRENT_SOURCE_DIR}/replace-record/${name}.txt -P ${CMAKE_CURRENT_SOURCE_DIR}/replace-record.cmake)
     set_tests_properties(${name}_record PROPERTIES LABELS "unit;core" TIMEOUT 240)
 endforeach ()
+
+add_executable(core_emoji_keywords core-emoji-keywords.cpp)
+target_link_libraries(core_emoji_keywords PRIVATE ngosen_core)
+add_test(NAME core_emoji_keywords COMMAND core_emoji_keywords)
+set_tests_properties(core_emoji_keywords PROPERTIES LABELS "unit;core" TIMEOUT 30)

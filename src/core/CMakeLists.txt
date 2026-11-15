@@ -15,6 +15,7 @@ add_library(ngosen_core STATIC
     ngosen-state-vim.cpp
     ngosen-vim.cpp
     ngosen-app-quirks.cpp
+    ngosen-emoji-keywords.cpp
     ngosen-flatpak-names.cpp
     ngosen-globals.cpp
     ngosen-gnome-apps.cpp

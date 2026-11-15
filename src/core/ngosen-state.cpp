@@ -793,7 +793,7 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
-        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+        if (!keyEvent.isRelease() && !keyEvent.isModifier() && !lock_word_pending_ && !isOwnBackspace(keyEvent.sym()))
             lockedWord_.reset();
         if (!keyEvent.isModifier())
             notePressOrRelease(keyEvent);
@@ -892,7 +892,10 @@ namespace ngosen {
         // Only plain backspaces typed after a finished commit may reopen the word; anything else changes the text after it.
         // Backspaces we press through XTEST come back here while we delete; they belong to the commit.
         const bool deleting     = is_deleting_.load(std::memory_order_acquire);
-        const bool ownBackspace = deleting && ngosen::key::isBackspace(currentSym) && !ngosen::forwardsBackspaces(host_->field());
+        const bool ownBackspace = isOwnBackspace(currentSym);
+        // A tap that waited on the swap ran in settleBeforeKey; this key ends the word, or does when it replays.
+        if (!keyEvent.isRelease() && !keyEvent.isModifier() && !deleting)
+            lockedWord_.reset();
         if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
             lastWord_.clear();
         if (holdKeyBehindHeldKey(keyEvent, currentSym))
@@ -1496,8 +1499,13 @@ namespace ngosen {
         ResetEngine(bambooEngine_.handle());
     }
 
+    bool TypingState::isOwnBackspace(uint32_t sym) const {
+        return is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(sym) && !ngosen::forwardsBackspaces(host_->field());
+    }
+
     void TypingState::clearAllBuffers(bool keepOpenWord) {
         NGOSEN_DEBUG("Clear all buffers");
+        lockedWord_.reset();
         if (is_deleting_.load(std::memory_order_acquire)) {
             return;
         }

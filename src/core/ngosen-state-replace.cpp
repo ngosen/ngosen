@@ -1331,6 +1331,16 @@ namespace ngosen {
             commitReplayed(out);
             sendEnterAfterReplacement();
         }
+        // A tap that came during a swap swaps the word back before the keys typed after it.
+        if (lock_word_pending_ && lockedWord_) {
+            commitReplayed(out);
+            lock_word_pending_ = false;
+            swapLockedWord();
+            return;
+        }
+        // The keys typed during the swap end the word.
+        if (!buffered_keys_.empty())
+            lockedWord_.reset();
         NGOSEN_INFO("Starting replay buffered keys");
         replaying_       = true;
         const auto guard = std::unique_ptr<bool, void (*)(bool*)>(&replaying_, [](bool* flag) { *flag = false; });

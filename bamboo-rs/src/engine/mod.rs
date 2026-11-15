@@ -482,7 +482,7 @@ impl BambooEngine {
         if !self.preeditor.is_valid_prefix() {
             return String::new();
         }
-        self.get_processed_string(OutputOptions::FULL_TEXT)
+        self.encode_text(&self.get_processed_string(OutputOptions::FULL_TEXT))
     }
 
     /// A digit shows the word before it is not Vietnamese as well as a space does.

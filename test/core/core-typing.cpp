@@ -2519,6 +2519,65 @@ namespace {
         }
     }
 
+    // A swap needs the word where it was left, in the charset the app shows.
+    void testLockWordToggleEdges() {
+        FakeResources           resources;
+        ngosen::test::AppQuirks xtest;
+        xtest.takesXTest = true;
+        setXTestSenderForTest([](int) { return true; });
+        expectTyped(resources, makeField("xim", false), "tunx^^ ", "tunx ", "lock toggle: XTEST backspaces keep the word", xtest);
+        setXTestSenderForTest({});
+        ngosen::test::AppQuirks slow;
+        slow.lagMs = 40;
+        expectTyped(resources, makeField("wayland", true), "ok tunx^^ ", "ok tunx ", "lock toggle: a second tap during the swap", slow, 10);
+
+        const auto tap = [](ngosen::TypingState& state) {
+            FakeKey down(ngosen::key::Control_L, false, 0);
+            state.keyEvent(down);
+            FakeKey up(ngosen::key::Control_L, true, ngosen::modifier::Ctrl);
+            state.keyEvent(up);
+        };
+        for (const bool click : {true, false}) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       plain;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&plain, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("abc tunx")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            tap(state);
+            loop.pump(300);
+            if (click) {
+                app->moveCursor(3);
+            } else {
+                realMode = ngosen::Mode::Off;
+                state.clearAllBuffers();
+            }
+            loop.pump(300);
+            tap(state);
+            loop.pump(300);
+            realMode = ngosen::Mode::Sen;
+            check(app->text() == "abc tũn", click ? "lock toggle: a click leaves the word alone" : "lock toggle: a mode change leaves the word alone", app->text());
+        }
+
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop      loop;
+        FakeResources viqr;
+        viqr.mutableOptions().outputCharset = "VIQR";
+        auto                owned           = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host            = owned.get();
+        ngosen::TypingState state(&viqr, std::move(owned));
+        for (char c : std::string("tunx"))
+            press(state, static_cast<uint32_t>(c));
+        tap(state);
+        press(state, ngosen::key::space);
+        check(join(host->commits()) == "['tu~n'][' ']", "lock toggle: VIQR commits the marks in VIQR", join(host->commits()));
+    }
+
     // The lock key is held back from the engine in a preedit field, so a shortcut must still commit the word.
     void testLockKeyShortcutInPreedit() {
         realMode = ngosen::Mode::Preedit;
@@ -5077,6 +5136,7 @@ int main() {
     testLockWord();
     testLockWordToggles();
     testLockKeyShortcutInPreedit();
+    testLockWordToggleEdges();
     testLockWordPreedit();
     testRetoneAtWordEndInBothModes();
     testAutoMarkAtWordEndInBothModes();

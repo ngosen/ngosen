@@ -8,8 +8,10 @@
  */
 // TypingState: macros, double space to period, double hyphen to em dash, and the key that locks a word.
 #include "ngosen-state.h"
+#include "ngosen-globals.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
+#include "ngosen-strings.h"
 #include "ngosen-utf8.h"
 
 #include <cstddef>
@@ -197,8 +199,9 @@ namespace ngosen {
             return;
         tracking_modifier_tap_ = false;
         // Keys typed while a replacement is in flight replay after it; lock the word once they have.
+        // Two taps on a locked word cancel out.
         if (is_deleting_.load(std::memory_order_acquire))
-            lock_word_pending_ = true;
+            lock_word_pending_ = lockedWord_ ? !lock_word_pending_ : true;
         else
             lockWord();
     }
@@ -211,10 +214,10 @@ namespace ngosen {
         lock_word_pending_ = false;
         if (mode() == ngosen::Mode::Emoji)
             return;
-        if (lockedWord_) {
+        if (lockedWord_ && lockedWordStillThere())
             swapLockedWord();
+        if (lockedWord_)
             return;
-        }
         // A tap between words leaves the last word open to Backspace.
         const uintptr_t          engine = bambooEngine_.handle();
         ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(engine));
@@ -249,6 +252,23 @@ namespace ngosen {
         ResetEngine(bambooEngine_.handle());
         host_->refreshPanel();
         host_->refreshPreedit();
+    }
+
+    // A click or a field that shows other text before the cursor means the word is no longer where it was.
+    bool TypingState::lockedWordStillThere() {
+        if (g_mouse_clicked.load(std::memory_order_acquire)) {
+            lockedWord_.reset();
+            return false;
+        }
+        const Surrounding s = host_->surrounding();
+        if (!host_->field().surroundingText || !s.isValid())
+            return true;
+        // A late report may still show the form before the last swap.
+        const std::string before = textBeforeCursor(s);
+        if (isEndsWith(before, lockedWord_->keys) || isEndsWith(before, lockedWord_->composed))
+            return true;
+        lockedWord_.reset();
+        return false;
     }
 
     // Each tap after the lock swaps the word between the keys typed and the marks they make.

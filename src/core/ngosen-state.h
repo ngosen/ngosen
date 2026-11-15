@@ -957,6 +957,8 @@ namespace ngosen {
         void lockWord();
         void commitComposedPreedit(const std::string& composed);
         void swapLockedWord();
+        bool lockedWordStillThere();
+        bool isOwnBackspace(uint32_t sym) const;
 
         // Everything sent to the app goes through here, so the typing logic does not call fcitx5 directly.
         std::unique_ptr<ngosen::Host> host_;

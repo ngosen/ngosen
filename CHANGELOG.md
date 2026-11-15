@@ -26,6 +26,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Tuỳ chọn "Khi chọn emoji": "Đặt sau từ" (`cười 😂`, như trước) hoặc "Thay luôn từ" (`😂`); `máy bay` được thay
   cả hai chữ. `haha` và `:)` thì luôn được thay (#110, #793).
 
+### Thay đổi
+
+- Bỏ nhãn "(thử nghiệm)" sau ba tuỳ chọn "Tự viết hoa đầu câu", "Hai dấu cách thành dấu chấm" và "Tự viết hoa chữ đầu văn bản và đầu dòng" trên trang Gõ chữ trong cửa sổ cài đặt; mặc định giữ nguyên (#796).
+
 ### Bỏ
 
 - Chế độ Chọn Emoji (gõ tên tiếng Anh rồi chọn emoji) được thay bằng gợi ý emoji khi gõ. Ai đang dùng chế độ

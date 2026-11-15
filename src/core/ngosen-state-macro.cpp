@@ -8,6 +8,7 @@
  */
 // TypingState: macros, double space to period, double hyphen to em dash, and the key that locks a word.
 #include "ngosen-state.h"
+#include "ngosen-clock.h"
 #include "ngosen-globals.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
@@ -217,7 +218,7 @@ namespace ngosen {
         if (mode() == ngosen::Mode::Emoji)
             return;
         if (lockedWord_ && lockedWordStillThere())
-            swapLockedWord();
+            swapLockedWordSoon();
         if (lockedWord_)
             return;
         // A tap between words leaves the last word open to Backspace.
@@ -245,6 +246,28 @@ namespace ngosen {
             return;
         lockedWord_ = word;
         if (!word.showsComposed)
+            swapLockedWordSoon();
+    }
+
+    // Backspaces sent before the app sees the lock key go up would delete as Ctrl+BackSpace, the whole word.
+    // A second tap before the swap ran takes it back.
+    void TypingState::swapLockedWordSoon() {
+        constexpr uint64_t LockKeyUpUs = 30000;
+        if (std::exchange(lockSwapDue_, false)) {
+            NGOSEN_INFO("Locked word swap taken back");
+            return;
+        }
+        lockSwapDue_     = true;
+        lock_swap_timer_ = host_->startTimer(ngosen::monotonicUs() + LockKeyUpUs, 0, [this](ngosen::Timer&) {
+            runDueLockSwap();
+            return false;
+        });
+    }
+
+    void TypingState::runDueLockSwap() {
+        if (!std::exchange(lockSwapDue_, false))
+            return;
+        if (lockedWord_ && !is_deleting_.load(std::memory_order_acquire))
             swapLockedWord();
     }
 

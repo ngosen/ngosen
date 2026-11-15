@@ -793,6 +793,9 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        // The key comes after the tap, so the swap goes first; this key then waits behind it.
+        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+            runDueLockSwap();
         if (!keyEvent.isRelease() && !keyEvent.isModifier() && !isOwnBackspace(keyEvent.sym()))
             lockedWord_.reset();
         if (!keyEvent.isModifier())

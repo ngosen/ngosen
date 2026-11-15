@@ -2525,11 +2525,14 @@ namespace {
         ngosen::test::AppQuirks xtest;
         xtest.takesXTest = true;
         setXTestSenderForTest([](int) { return true; });
-        expectTyped(resources, makeField("xim", false), "tunx^^ ", "tunx ", "lock toggle: XTEST backspaces keep the word", xtest);
+        expectTyped(resources, makeField("xim", false), "tunx^^ ", "tunx ", "lock toggle: XTEST backspaces keep the word", xtest, 200);
         setXTestSenderForTest({});
-        ngosen::test::AppQuirks slow;
-        slow.lagMs = 40;
-        expectTyped(resources, makeField("wayland", true), "ok tunx^^ ", "ok tũn ", "lock toggle: a tap during the swap is dropped", slow, 10);
+        // Chrome reads a BackSpace forwarded before it saw Ctrl go up as Ctrl+BackSpace.
+        ngosen::test::AppQuirks ctrlWord;
+        ctrlWord.ctrlBackSpaceDeletesWord = true;
+        expectTyped(resources, makeField("ibus", false), "ok tunx^ ", "ok tũn ", "lock toggle: the swap waits for the app to see Ctrl go up", ctrlWord);
+        // The second tap lands before the first swap has started.
+        expectTyped(resources, makeField("wayland", true), "ok tunx^^ ", "ok tunx ", "lock toggle: two quick taps cancel out", {}, 10);
 
         const auto tap = [](ngosen::TypingState& state) {
             FakeKey down(ngosen::key::Control_L, false, 0);

@@ -228,7 +228,9 @@ namespace ngosen {
             std::string composed;
             bool        showsComposed;
         };
-        std::optional<LockedWord> lockedWord_; ///< the word just locked, which another tap swaps between its two forms
+        std::optional<LockedWord>      lockedWord_; ///< the word just locked, which another tap swaps between its two forms
+        std::unique_ptr<ngosen::Timer> lock_swap_timer_;
+        bool                           lockSwapDue_ = false; ///< a swap waits for the app to see the lock key go up
 
         enum class VimState : std::uint8_t {
             Insert,
@@ -957,6 +959,8 @@ namespace ngosen {
         void lockWord();
         void commitComposedPreedit(const std::string& composed);
         void swapLockedWord();
+        void swapLockedWordSoon();
+        void runDueLockSwap();
         bool lockedWordStillThere();
         bool isOwnBackspace(uint32_t sym) const;
 

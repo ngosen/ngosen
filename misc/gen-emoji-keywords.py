@@ -29,7 +29,8 @@ def literal(text):
 def main():
     rows, seen = [], set()
     for line in (ROOT / "data/emoji-keywords.tsv").read_text(encoding="utf-8").splitlines():
-        if not line or line.startswith("#"):
+        # Yahoo codes such as #-o start with #, so a comment is a line without tabs.
+        if not line or (line.startswith("#") and "\t" not in line):
             continue
         keyword, emoji, kind = line.split("\t")
         rows.append((keyword, emoji, kind))

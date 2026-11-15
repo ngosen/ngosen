@@ -95,6 +95,10 @@ int main() {
     offers({"cơm"}, "🍚");
     offersNothing({"báo", "cáo"});
     offersNothing({"ý", "kiến"});
+    offersNothing({"kiên", "nhẫn"});
+    offersNothing({"cứng", "rắn"});
+    offers({"con", "rắn"}, "🐍", 2);
+    offers({"gấu", "trúc"}, "🐼", 2);
 
     offers({"=))"}, "🤣");
     offers({":))"}, "😆");
@@ -102,6 +106,8 @@ int main() {
     offers({"@};-"}, "🌹");
     offers({":\">"}, "😳");
     offers({"\\m/"}, "🤘");
+    offers({"#-o"}, "🤦");
+    offers({"#:-S"}, "😅");
     check(suggestEmoji({"=))"}, yahoo)->kind == EmojiKind::Emoticon, "a Yahoo code is replaced like an emoticon");
     yahoo = false;
     offersNothing({"=))"});

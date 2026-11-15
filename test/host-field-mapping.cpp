@@ -303,6 +303,22 @@ namespace {
         check("a native name is not marked as mapped", ngosen::FcitxHost(&gedit, &testInstance.instance).field().reportedProgram.empty());
     }
 
+    // The typing logic asks for exact timers with an accuracy of 0; sd-event reads 0 as 250 ms.
+    void checkTimer(TestInstance& testInstance) {
+        TestInputContext   context(&testInstance.instance);
+        ngosen::FcitxHost  host(&context, &testInstance.instance);
+        constexpr uint64_t StepUs = 30000;
+        int                fired  = 0;
+        auto               timer  = host.startTimer(ngosen::monotonicUs() + StepUs, 0, [&fired](ngosen::Timer& t) {
+            if (++fired == 5)
+                return false;
+            t.rearm(ngosen::monotonicUs() + StepUs);
+            return true;
+        });
+        pumpEventLoop(testInstance.instance, 400);
+        check("five 30 ms timers in a row fire within 400 ms", fired == 5);
+    }
+
 } // namespace
 
 int main() {
@@ -320,5 +336,6 @@ int main() {
     checkKeys(testInstance);
     checkQuirks();
     checkFlatpakNames(testInstance);
+    checkTimer(testInstance);
     return failures == 0 ? 0 : 1;
 }

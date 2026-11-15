@@ -28,6 +28,8 @@
 #include <fcitx/text.h>
 #include <fcitx/userinterface.h>
 
+#include <algorithm>
+
 namespace ngosen {
 
     // The typing logic compares keys against its own numbers, so they must match what fcitx5 sends.
@@ -290,9 +292,10 @@ namespace ngosen {
     }
 
     std::unique_ptr<Timer> FcitxHost::startTimer(uint64_t deadlineUs, uint64_t accuracyUs, std::function<bool(Timer&)> onTime) {
-        auto  timer    = std::make_unique<FcitxTimer>();
-        auto* self     = timer.get();
-        timer->source_ = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, deadlineUs, accuracyUs,
+        auto  timer = std::make_unique<FcitxTimer>();
+        auto* self  = timer.get();
+        // sd-event reads an accuracy of 0 as its default of 250 ms; 1 µs is the closest it gets to exact.
+        timer->source_ = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, deadlineUs, std::max<uint64_t>(accuracyUs, 1),
                                                              [self, onTime = std::move(onTime)](fcitx::EventSourceTime*, uint64_t) { return onTime(*self); });
         return timer;
     }

@@ -34,7 +34,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import backup, settings_snapshot
+from core import backup, check_reminder, settings_snapshot
 from ui import brand, search
 from ui.confirm import confirm
 from ui.message_bar import MessageBar
@@ -243,6 +243,22 @@ class NgoSenSettingsWindow(QMainWindow):
 
     def show_tips(self):
         self.show_page("whats-new").show_tips()
+
+    def start_on(self, page):
+        """Opens on `page`, or on Check my machine when that is due; only the latter counts an open."""
+        if page:
+            self.show_page(page)
+        else:
+            # After the window shows, so the check does not hold it back.
+            QTimer.singleShot(0, self.open_check_if_due)
+
+    def open_check_if_due(self, path=None):
+        """Lands on Check my machine the first time, and while a step that stops typing is undone."""
+        page = self._page_for_item(self._check_item) if self._check_item else None
+        if page is None:
+            return
+        if check_reminder.should_open(page.found, path or check_reminder.state_file()):
+            self.show_page("check")
 
     def _build_all_pages(self):
         # Pages are built when first opened; reset and search need all of them.

@@ -72,8 +72,7 @@ def run_qt():
     window = NgoSenSettingsWindow()
     # A window still alive at interpreter exit is deleted by PyQt6's own cleanup, which crashes on 6.11.
     window.setAttribute(Qt.WA_DeleteOnClose)
-    if args.page:
-        window.show_page(args.page)
+    window.start_on(args.page)
     window.show()
 
     try:

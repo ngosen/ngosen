@@ -89,6 +89,8 @@ class Finding:
     command: str = ""
     # Already saved: only a new login is left, and every such step shares one notice.
     after_login: bool = False
+    # A warning on the page that still leaves Ngó Sen unable to type, so the window opens on it.
+    stops_typing: bool = False
 
 
 START_FCITX, RESTART_FCITX, ADD_NGOSEN, ENABLE_FORWARD_KEYS, INSTALL_INPUT_PANEL = (
@@ -217,7 +219,9 @@ def steps(facts):
     if facts.ngosen_in_group:
         found.append(Finding(OK, _("Ngó Sen is in the fcitx5 input method list")))
     elif not facts.ngosen_loaded and not facts.addon_replaced:
-        found.append(_restart_finding(facts, _("fcitx5 started before Ngó Sen was installed")))
+        finding = _restart_finding(facts, _("fcitx5 started before Ngó Sen was installed"))
+        finding.stops_typing = True
+        found.append(finding)
     else:
         found.append(
             Finding(

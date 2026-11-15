@@ -1228,6 +1228,32 @@ class GtkCheckPageTest(unittest.TestCase):
         self.assertFalse(self.check.wrong_btn.get_visible())
         self.assertIn("result: wrong", self.check.report_text())
 
+    def test_opens_on_the_check_page_first_and_for_an_undone_step(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        win = window.Window(None, FakeDBusHandler())
+        self.addCleanup(win.destroy)
+        win.open_check_if_due(path)
+        self.assertEqual(win.stack.get_visible_child_name(), "check")
+        win.show_page("typing")
+        win.open_check_if_due(path)
+        self.assertEqual(win.stack.get_visible_child_name(), "typing")
+
+    def test_a_page_launch_or_a_launch_into_the_open_window_does_not_count(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        win = window.Window(None, FakeDBusHandler())
+        self.addCleanup(win.destroy)
+        with mock.patch("core.check_reminder.state_file", return_value=path):
+            win.start_on("typing")
+            win.start_on(None, opened=False)
+            self.assertFalse(os.path.exists(path))
+            self.assertEqual(win.stack.get_visible_child_name(), "typing")
+            win.start_on(None)
+        self.assertEqual(win.stack.get_visible_child_name(), "check")
+
     def test_window_counts_steps_left_and_checks_again_on_opening(self):
         win = window.Window(None, FakeDBusHandler())
         self.addCleanup(win.destroy)

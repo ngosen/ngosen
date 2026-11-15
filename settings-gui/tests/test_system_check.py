@@ -1017,6 +1017,52 @@ class CheckPageWindowTest(unittest.TestCase):
             window.show_page("check")
         run.assert_called_once()
 
+    def test_opens_on_the_check_page_first_and_for_an_undone_step(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        window = self.window(FakeDBusHandler())
+        window.open_check_if_due(path)
+        self.assertEqual(window.sidebar.currentItem().text(), "Check my machine")
+        window.show_page("typing")
+        window.open_check_if_due(path)
+        self.assertEqual(window.sidebar.currentItem().text(), "Typing")
+
+    def reminders_in_a_folder(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        patcher = mock.patch("core.check_reminder.state_file", return_value=path)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return path
+
+    def test_a_page_launch_neither_counts_nor_lands_on_the_check_page(self):
+        path = self.reminders_in_a_folder()
+        window = self.window(FakeDBusHandler())
+        window.start_on("typing")
+        app.processEvents()
+        self.assertEqual(window.sidebar.currentItem().text(), "Typing")
+        self.assertFalse(os.path.exists(path))
+
+    def test_a_plain_launch_lands_on_the_check_page_once_shown(self):
+        path = self.reminders_in_a_folder()
+        window = self.window(FakeDBusHandler())
+        window.start_on(None)
+        app.processEvents()
+        self.assertEqual(window.sidebar.currentItem().text(), "Check my machine")
+        self.assertTrue(os.path.exists(path))
+
+    def test_deciding_reuses_the_check_the_page_ran(self):
+        window = self.window(FakeDBusHandler())
+        app.processEvents()
+        with (
+            mock.patch("core.check_reminder.should_open", return_value=False),
+            mock.patch.object(system_check, "collect") as collect,
+        ):
+            window.open_check_if_due(os.devnull)
+        collect.assert_not_called()
+
     def test_badge_shows_before_the_page_is_opened(self):
         window = self.window(FakeDBusHandler())
         app.processEvents()

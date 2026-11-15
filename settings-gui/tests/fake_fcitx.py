@@ -17,6 +17,9 @@ sys.path.insert(0, os.path.dirname(HERE))
 # A reset or save in a test must never read or delete the dictionary of whoever runs the tests.
 os.environ["XDG_DATA_HOME"] = tempfile.mkdtemp(prefix="ngosen-test-data-")
 atexit.register(shutil.rmtree, os.environ["XDG_DATA_HOME"], ignore_errors=True)
+# Nor leave a window state, such as when Check my machine last opened, in the real home.
+os.environ["XDG_STATE_HOME"] = tempfile.mkdtemp(prefix="ngosen-test-state-")
+atexit.register(shutil.rmtree, os.environ["XDG_STATE_HOME"], ignore_errors=True)
 
 with open(os.path.join(HERE, "config-metadata.json"), encoding="utf-8") as f:
     METADATA = json.load(f)

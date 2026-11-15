@@ -2448,7 +2448,9 @@ namespace {
         slow.lagMs = 40;
         FakeResources lagging;
         // s finishes the replacement on arrival and must not join the word locked before it.
-        expectTyped(lagging, makeField("wayland", true), "tunx^s ", "tũns ", "lock: Ctrl during a replacement", slow, 10);
+        expectTyped(lagging, makeField("wayland", true), "banj^s ", "bạns ", "lock: Ctrl during a replacement", slow, 10);
+        FakeResources quick;
+        expectTyped(quick, makeField("wayland", true), "tunx^s ", "tunxs ", "lock toggle: a key right after the tap keeps the keys", {}, 10);
         // A tap between words does not close the last one to Backspace.
         FakeResources plain;
         expectTyped(plain, makeField("wayland", true), "ban ^<f ", "bàn ", "lock: Ctrl after a word");
@@ -2525,11 +2527,18 @@ namespace {
         ngosen::test::AppQuirks xtest;
         xtest.takesXTest = true;
         setXTestSenderForTest([](int) { return true; });
-        expectTyped(resources, makeField("xim", false), "tunx^^ ", "tunx ", "lock toggle: XTEST backspaces keep the word", xtest);
+        expectTyped(resources, makeField("xim", false), "tunx^^ ", "tunx ", "lock toggle: XTEST backspaces keep the word", xtest, 200);
         setXTestSenderForTest({});
-        ngosen::test::AppQuirks slow;
-        slow.lagMs = 40;
-        expectTyped(resources, makeField("wayland", true), "ok tunx^^ ", "ok tũn ", "lock toggle: a tap during the swap is dropped", slow, 10);
+        // Chrome reads a BackSpace forwarded before it saw Ctrl go up as Ctrl+BackSpace.
+        ngosen::test::AppQuirks ctrlWord;
+        ctrlWord.ctrlBackSpaceDeletesWord = true;
+        expectTyped(resources, makeField("ibus", false), "ok tunx^ ", "ok tũn ", "lock toggle: the swap waits for the app to see Ctrl go up", ctrlWord);
+        // The second tap lands before the first swap has started; Space comes after the swap would have run.
+        const auto       quickKeys = editKeysOf("ok tunx^^ ");
+        std::vector<int> quickGaps(quickKeys.size(), 10);
+        quickGaps[quickGaps.size() - 2] = 100;
+        const std::string quickTaps     = ngosen::test::typeInApp(resources, makeField("wayland", true), {}, quickKeys, quickGaps);
+        check(quickTaps == "ok tunx ", "lock toggle: two quick taps cancel out", quickTaps);
 
         const auto tap = [](ngosen::TypingState& state) {
             FakeKey down(ngosen::key::Control_L, false, 0);
@@ -2562,6 +2571,54 @@ namespace {
             loop.pump(300);
             realMode = ngosen::Mode::Sen;
             check(app->text() == "abc tũn", click ? "lock toggle: a click leaves the word alone" : "lock toggle: a mode change leaves the word alone", app->text());
+        }
+        {
+            // Konsole reports a valid empty text, which says nothing about where the word is.
+            FakeResources           konsole;
+            ngosen::test::AppQuirks empty;
+            empty.reportsEmptyText = true;
+            expectTyped(konsole, makeField("wayland", true), "tunx^ ", "tũn ", "lock toggle: an empty report does not drop the word", empty);
+        }
+        {
+            // Ctrl going down while a swap waits on the Shift lock key: the backspaces would go out with Ctrl held.
+            realMode = ngosen::Mode::Sen;
+            FakeLoop      loop;
+            FakeResources shiftLock;
+            shiftLock.mutableOptions().lockWordKey = ngosen::LockWordKey::Shift;
+            auto                owned              = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+            auto*               app                = owned.get();
+            ngosen::TypingState state(&shiftLock, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("ok tunx")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            FakeKey shiftDown(ngosen::key::Shift_L, false, 0);
+            state.keyEvent(shiftDown);
+            FakeKey shiftUp(ngosen::key::Shift_L, true, ngosen::modifier::Shift);
+            state.keyEvent(shiftUp);
+            FakeKey ctrlDown(ngosen::key::Control_L, false, 0);
+            state.keyEvent(ctrlDown);
+            loop.pump(300);
+            check(app->text() == "ok tunx", "lock toggle: another modifier going down drops the swap", app->text());
+        }
+        {
+            // A click before the delayed swap runs.
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       plain;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&plain, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("abc tunx")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            tap(state);
+            app->moveCursor(3);
+            loop.pump(300);
+            check(app->text() == "abc tunx", "lock toggle: a click right after the tap leaves the word alone", app->text());
         }
 
         realMode = ngosen::Mode::Preedit;

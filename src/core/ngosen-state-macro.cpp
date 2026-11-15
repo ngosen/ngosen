@@ -8,6 +8,7 @@
  */
 // TypingState: macros, double space to period, double hyphen to em dash, and the key that locks a word.
 #include "ngosen-state.h"
+#include "ngosen-clock.h"
 #include "ngosen-globals.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
@@ -187,17 +188,26 @@ namespace ngosen {
     void TypingState::handleModifierTap(const ngosen::KeyPress& keyEvent) {
         if (!isLockWordModifier(keyEvent.sym())) {
             tracking_modifier_tap_ = false;
+            // A waiting swap would go out with this modifier held.
+            if (!keyEvent.isRelease())
+                lockSwapDue_ = false;
             return;
         }
         if (!keyEvent.isRelease()) {
             // Releasing Ctrl first from a held Shift+Ctrl is a chord, not a tap.
             constexpr uint32_t held = ngosen::modifier::Shift | ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super;
             tracking_modifier_tap_  = (keyEvent.states() & held) == 0;
+            // Pressed again before the swap ran: the swap would go out with Ctrl down, and this tap takes it back.
+            tapTakesBackSwap_ = std::exchange(lockSwapDue_, false);
             return;
         }
         if (!tracking_modifier_tap_)
             return;
         tracking_modifier_tap_ = false;
+        if (std::exchange(tapTakesBackSwap_, false)) {
+            NGOSEN_INFO("Locked word swap taken back");
+            return;
+        }
         // Keys typed while a replacement is in flight replay after it; lock the word once they have.
         if (!is_deleting_.load(std::memory_order_acquire))
             lockWord();
@@ -217,7 +227,7 @@ namespace ngosen {
         if (mode() == ngosen::Mode::Emoji)
             return;
         if (lockedWord_ && lockedWordStillThere())
-            swapLockedWord();
+            swapLockedWordSoon();
         if (lockedWord_)
             return;
         // A tap between words leaves the last word open to Backspace.
@@ -245,6 +255,23 @@ namespace ngosen {
             return;
         lockedWord_ = word;
         if (!word.showsComposed)
+            swapLockedWordSoon();
+    }
+
+    // Backspaces sent before the app sees the lock key go up would delete as Ctrl+BackSpace, the whole word.
+    void TypingState::swapLockedWordSoon() {
+        constexpr uint64_t LockKeyUpUs = 30000;
+        lockSwapDue_                   = true;
+        lock_swap_timer_               = host_->startTimer(ngosen::monotonicUs() + LockKeyUpUs, 0, [this](ngosen::Timer&) {
+            runDueLockSwap();
+            return false;
+        });
+    }
+
+    void TypingState::runDueLockSwap() {
+        if (!std::exchange(lockSwapDue_, false))
+            return;
+        if (lockedWord_ && !is_deleting_.load(std::memory_order_acquire) && lockedWordStillThere())
             swapLockedWord();
     }
 
@@ -263,7 +290,8 @@ namespace ngosen {
             return false;
         }
         const Surrounding s = host_->surrounding();
-        if (!host_->field().surroundingText || !s.isValid())
+        // Konsole reports a valid empty text, which says nothing about the word.
+        if (!host_->field().surroundingText || !s.isValid() || s.text().empty())
             return true;
         // A late report may still show the form before the last swap.
         const std::string before = textBeforeCursor(s);

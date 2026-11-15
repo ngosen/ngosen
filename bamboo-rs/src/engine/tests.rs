@@ -939,6 +939,8 @@ fn test_non_dictionary_prefix_shown_as_typed() {
         ("case", "case"),
         ("cases", "cases"),
         ("house", "house"),
+        ("moses", "moses"),
+        ("poisson", "poisson"),
         ("lose", "loé"),
         ("khuyr", "khuỷ"),
         ("khuyru", "khuỷu"),
@@ -948,6 +950,43 @@ fn test_non_dictionary_prefix_shown_as_typed() {
         type_keys(&mut e, keys);
         assert_eq!(e.preedit_text, want, "{keys}");
     }
+}
+
+#[test]
+fn test_backspace_keeps_non_dictionary_prefix_as_typed() {
+    // As for a word in the English list: Backspace takes the last key shown, and the next key
+    // decides the marks.
+    for (method, keys, backspaces, shown, spaced, typed_on, then) in [
+        ("Telex", "Sose", 1, "Sos", "Sos ", "t", "Sót"),
+        ("Telex", "Sose", 2, "So", "So ", "s", "Só"),
+        ("VNI", "ro1e", 1, "ro1", "ro1 ", "t", "rót"),
+    ] {
+        let label = format!("{method} {keys} + {backspaces} Backspace");
+        let mut e = engine_with_default_settings(method);
+        type_keys(&mut e, keys);
+        for _ in 0..backspaces {
+            e.process_key_event(KEY_BACKSPACE, 0);
+        }
+        assert_eq!(e.preedit_text, shown, "{label}");
+        let mut next = engine_with_default_settings(method);
+        type_keys(&mut next, keys);
+        for _ in 0..backspaces {
+            next.process_key_event(KEY_BACKSPACE, 0);
+        }
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.commit_text, spaced, "{label}, Space");
+        type_keys(&mut next, typed_on);
+        assert_eq!(next.preedit_text, then, "{label}, {typed_on}");
+    }
+}
+
+#[test]
+fn test_repeated_tone_key_keeps_a_macro() {
+    let mut e = engine_with_default_settings("Telex");
+    e.macro_table = macro_table(&[("roes", "X")]);
+    type_keys(&mut e, "roess");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "X ");
 }
 
 #[test]

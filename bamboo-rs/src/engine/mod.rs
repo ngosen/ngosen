@@ -871,7 +871,8 @@ impl BambooEngine {
                 .any(|c| c.eq_ignore_ascii_case(&key));
         let tones = if repeated { self.tone_count() } else { 0 };
         self.preeditor.process_key(key, mode);
-        if repeated && self.tone_count() < tones {
+        // Undoing the tone can reach a macro, as it does for a Vietnamese word.
+        if repeated && self.tone_count() < tones && self.get_macro_text().is_none() {
             self.drop_last_key(false);
             self.preeditor.process_key(key, Mode::English);
         }
@@ -1074,10 +1075,12 @@ impl BambooEngine {
             return true;
         }
         let shown_as_typed = self.shown_as_typed();
+        // A prefix no dictionary word starts with goes the same way.
         let english = shown_as_typed
-            && self
-                .english_words
-                .starts_word(&self.raw_text().to_lowercase());
+            && (self.starts_no_dictionary_word()
+                || self
+                    .english_words
+                    .starts_word(&self.raw_text().to_lowercase()));
         // Removing the last letter shown would take a tone key with it (`Per` shows as typed but
         // composes Pẻ), while the app deletes only the last key.
         if english {

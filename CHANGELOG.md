@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Trên GNOME dùng IBus, trong app báo chữ chậm (copy wait), sau khi kết thúc từ bằng cách di chuyển con trỏ, gõ `dd` thành `đ` rồi nhấn nhanh Backspace xoá hết từ trong lúc chờ, phím dấu gõ tiếp ngay sau từ trước nay đặt dấu lên từ đó: `ca` rồi `s` thành `cá`, không còn thành `cas`. Chỉ thử với app giả trong unit test, chưa thử app thật (#785).
+- Trên GNOME dùng IBus, trong app báo chữ chậm, nhấn Backspace trong lúc chờ để xoá phím thừa sau từ (như `thuwcx` rồi Backspace) nay khôi phục từ có dấu như khi không phải chờ: gõ tiếp `j` ra `thực`, không còn thành `thuực`. Chỉ thử với app giả trong unit test, chưa thử app thật (#787).
 
 ## [1.11.1-1] — 15/11/2026
 

@@ -2622,6 +2622,8 @@ namespace {
         };
         std::string text = typed({.ignoresSurroundingDel = true}, "tiee");
         check(text == "tieê", "quirk: a dropped deletion leaves the old letter", text);
+        text = typed({.deletesOneCharOnly = true}, "vinx");
+        check(text == "viĩn", "quirk: a short deletion leaves the first old letter", text);
         text = typed({.reportsEmptyText = true}, "tiee");
         check(text == "tieê", "quirk: a field that reports no text drops the deletion", text);
         text = typed({.convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true}, "vieetj nam tieesng");
@@ -2989,6 +2991,14 @@ namespace {
         text = typedWithBackspaces(gnome, {.ignoresSurroundingDel = true, .repeatsOldTextAfterDelete = true}, "too too ", 400, lines);
         check(text == "toô tô " && countHaving(lines, "Leave the dropped deletion") == 1 && countHaving(lines, "Surrounding text untrusted") == 1,
               "long check: a dropped deletion seen after a key costs one word", text + " " + join(lines));
+    }
+
+    // An app that deletes one character of two must not keep the other in the word.
+    void testShortDeletion() {
+        std::vector<std::string> lines;
+        const auto               text = typedWithBackspaces(makeField("ibus", true), {.deletesOneCharOnly = true}, "vinxh nam ", 400, lines);
+        check(text == "vĩnh nam " && countHaving(lines, "Surrounding check: app deleted too little") == 1 && countHaving(lines, "Fix the dropped deletion") == 1,
+              "short deletion: the letter left is fixed with backspaces", text + " " + join(lines));
     }
 
     // A check open while GNOME Shell names the app late says nothing about either app.
@@ -4312,9 +4322,13 @@ namespace {
              45,
              {'s', ' '}},
             {"backspace empties a word after a cursor move, then a tone", "ca", {ngosen::key::Left, ngosen::key::Right, 'd', 'd', bs}, false, 30, 45, {'s', ' '}},
+            // The Backspace takes the stray key off a kept word, which brings its marks back.
+            {"backspace after a stray tone key", "thuwcx", {bs, 'j', ' '}},
         };
-        const auto retoned = typedWithKeysInWait(cases.back(), 8, 40, 15, lines);
+        const auto retoned = typedWithKeysInWait(cases[cases.size() - 2], 8, 40, 15, lines);
         check(retoned.text == "người cá ng ", "backspace in a copy wait: without the wait the tone goes onto the word before", retoned.text);
+        const auto unstrayed = typedWithKeysInWait(cases.back(), 8, 40, 15, lines);
+        check(unstrayed.text == "người thực ng ", "backspace in a copy wait: without the wait the Backspace brings the kept word back", unstrayed.text);
         for (const auto& c : cases) {
             const auto expected = typedWithKeysInWait(c, 8, 40, 15, lines);
             // A held Backspace goes out as a forwarded key, where without the wait the app got it directly.
@@ -5138,6 +5152,7 @@ int main() {
     testBackspacePathDuringLongCheck();
     testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
+    testShortDeletion();
     testCheckAcrossLateAppName();
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();

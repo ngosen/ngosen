@@ -401,6 +401,10 @@ namespace ngosen::test {
             later(60, [this] { applyHeldEdit(""); });
             return;
         }
+        if (quirks_.deletesOneCharOnly && offset == -static_cast<int>(size) && size > 1) {
+            offset = -1;
+            size   = 1;
+        }
         const int extra = quirks_.deletesOneTooMany ? 1 : 0;
         later(quirks_.deletionsSkipLag ? 0 : quirks_.lagMs, [this, offset, size, extra] { eraseAround(offset - extra, size + extra); });
     }

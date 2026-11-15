@@ -1458,8 +1458,20 @@ namespace ngosen {
                 oldPreBuffer_ = restored;
                 return !folded;
             }
-            // Like a typed backspace: the engine drops a letter and the app deletes it after the commit.
-            dropLetterForBackspace();
+            std::optional<std::string> edited;
+            if (backspaceIntoKeysShownAsTyped(edited, deletedPart, addedPart)) {
+                if (edited) {
+                    const bool folded = foldIntoReplay(out, deletedPart, addedPart);
+                    if (!folded)
+                        replaceDuringReplay(keys, i, out, deletedPart, addedPart);
+                    oldPreBuffer_    = *edited;
+                    backspaceInWord_ = true;
+                    return !folded;
+                }
+            } else {
+                // Like a typed backspace: the engine drops a letter and the app deletes it after the commit.
+                dropLetterForBackspace();
+            }
             if (realtextLen.load(std::memory_order_acquire) > 0)
                 realtextLen.fetch_sub(1, std::memory_order_acq_rel);
             // Counted against the word as it is now, which keys replayed before it may have ended or reopened.

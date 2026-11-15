@@ -2454,6 +2454,15 @@ namespace {
         expectTyped(plain, makeField("wayland", true), "ban ^<f ", "bàn ", "lock: Ctrl after a word");
     }
 
+    // Each further tap swaps a locked word between the keys typed and the marks they make.
+    void testLockWordToggles() {
+        const Field   field = makeField("wayland", true);
+        FakeResources resources;
+        expectTyped(resources, field, "tunx^^ ", "tunx ", "lock toggle: a second tap brings the keys back");
+        expectTyped(resources, field, "tunx^^^ ", "tũn ", "lock toggle: a third tap brings the marks back");
+        expectTyped(resources, field, "tieengs^^ ", "tieengs ", "lock toggle: a word shown with marks swaps to its keys");
+    }
+
     // Over GNOME's IBus bridge a slow app can apply our backspace after the commit sent behind it, which then
     // erases the new letter (#362).
     void testSlowBackspaceOverIbus() {
@@ -2502,10 +2511,94 @@ namespace {
             for (char c : std::string("tunx"))
                 press(state, static_cast<uint32_t>(c));
             press(state, modifier);
+            // The first tap commits the word, so a second one has nothing left to swap.
+            press(state, modifier);
             press(state, ngosen::key::space);
             const std::string name = modifier == ngosen::key::Shift_L ? "Shift" : "Ctrl";
             check(join(host->commits()) == "['tũn'][' ']", "lock preedit: " + name + " commits tũn as shown", join(host->commits()));
         }
+    }
+
+    // A swap needs the word where it was left, in the charset the app shows.
+    void testLockWordToggleEdges() {
+        FakeResources           resources;
+        ngosen::test::AppQuirks xtest;
+        xtest.takesXTest = true;
+        setXTestSenderForTest([](int) { return true; });
+        expectTyped(resources, makeField("xim", false), "tunx^^ ", "tunx ", "lock toggle: XTEST backspaces keep the word", xtest);
+        setXTestSenderForTest({});
+        ngosen::test::AppQuirks slow;
+        slow.lagMs = 40;
+        expectTyped(resources, makeField("wayland", true), "ok tunx^^ ", "ok tũn ", "lock toggle: a tap during the swap is dropped", slow, 10);
+
+        const auto tap = [](ngosen::TypingState& state) {
+            FakeKey down(ngosen::key::Control_L, false, 0);
+            state.keyEvent(down);
+            FakeKey up(ngosen::key::Control_L, true, ngosen::modifier::Ctrl);
+            state.keyEvent(up);
+        };
+        for (const bool click : {true, false}) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       plain;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&plain, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("abc tunx")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            tap(state);
+            loop.pump(300);
+            if (click) {
+                app->moveCursor(3);
+            } else {
+                realMode = ngosen::Mode::Off;
+                state.clearAllBuffers();
+            }
+            loop.pump(300);
+            tap(state);
+            loop.pump(300);
+            realMode = ngosen::Mode::Sen;
+            check(app->text() == "abc tũn", click ? "lock toggle: a click leaves the word alone" : "lock toggle: a mode change leaves the word alone", app->text());
+        }
+
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop      loop;
+        FakeResources viqr;
+        viqr.mutableOptions().outputCharset = "VIQR";
+        auto                owned           = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host            = owned.get();
+        ngosen::TypingState state(&viqr, std::move(owned));
+        for (char c : std::string("tunx"))
+            press(state, static_cast<uint32_t>(c));
+        tap(state);
+        press(state, ngosen::key::space);
+        check(join(host->commits()) == "['tu~n'][' ']", "lock toggle: VIQR commits the marks in VIQR", join(host->commits()));
+    }
+
+    // The lock key is held back from the engine in a preedit field, so a shortcut must still commit the word.
+    void testLockKeyShortcutInPreedit() {
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        for (char c : std::string("tieengs"))
+            press(state, static_cast<uint32_t>(c));
+        FakeKey ctrlDown(ngosen::key::Control_L, false, 0);
+        state.keyEvent(ctrlDown);
+        FakeKey shortcut('a', false, ngosen::modifier::Ctrl);
+        state.keyEvent(shortcut);
+        const bool forwarded = !shortcut.accepted();
+        FakeKey    shortcutUp('a', true, ngosen::modifier::Ctrl);
+        state.keyEvent(shortcutUp);
+        FakeKey ctrlUp(ngosen::key::Control_L, true, ngosen::modifier::Ctrl);
+        state.keyEvent(ctrlUp);
+        check(join(host->commits()) == "['tiếng']" && host->preedit().empty() && forwarded, "lock preedit: Ctrl+a commits the word before the shortcut",
+              join(host->commits()) + " preedit " + host->preedit());
     }
 
     // ^ in typed keys is a Ctrl tap, \n Enter, \t Tab and \x1b Escape.
@@ -4648,7 +4741,7 @@ namespace {
             loop.pump(300);
             const auto lines = ngosen::test::capturedLog();
             ngosen::test::captureLog(false);
-            check(app->text() == "xiniệt việt v" && countHaving(lines, "Cursor came back to the word") == 0, "bounce: a move that ends elsewhere still forgets the word",
+            check(app->text() == "xinieetj việt v" && countHaving(lines, "Cursor came back to the word") == 0, "bounce: a move that ends elsewhere still forgets the word",
                   std::string(field.preeditFallback ? "IBus edition " : "fcitx5 ") + app->text() + " " + join(lines));
         }
     }
@@ -4680,7 +4773,7 @@ namespace {
                 if (comesBack)
                     check(app->text() == "tiếng việt t", "first letter: the cursor coming back keeps the word", std::to_string(lateMs) + " ms: " + app->text());
                 else if (lateMs > 30)
-                    check(app->text() == "iệttt", "first letter: a cursor staying at the line start forgets the word", std::to_string(lateMs) + " ms: " + app->text());
+                    check(app->text() == "ieetjtt", "first letter: a cursor staying at the line start forgets the word", std::to_string(lateMs) + " ms: " + app->text());
             }
         }
     }
@@ -5041,6 +5134,9 @@ int main() {
     testMacroBeforeEnter();
     testEnterDuringReplacement();
     testLockWord();
+    testLockWordToggles();
+    testLockKeyShortcutInPreedit();
+    testLockWordToggleEdges();
     testLockWordPreedit();
     testRetoneAtWordEndInBothModes();
     testAutoMarkAtWordEndInBothModes();

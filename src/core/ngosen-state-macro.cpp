@@ -8,8 +8,10 @@
  */
 // TypingState: macros, double space to period, double hyphen to em dash, and the key that locks a word.
 #include "ngosen-state.h"
+#include "ngosen-globals.h"
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
+#include "ngosen-strings.h"
 #include "ngosen-utf8.h"
 
 #include <cstddef>
@@ -197,10 +199,13 @@ namespace ngosen {
             return;
         tracking_modifier_tap_ = false;
         // Keys typed while a replacement is in flight replay after it; lock the word once they have.
-        if (is_deleting_.load(std::memory_order_acquire))
-            lock_word_pending_ = true;
-        else
+        if (!is_deleting_.load(std::memory_order_acquire))
             lockWord();
+        else if (lockedWord_)
+            // Swapping again only once the app shows this swap keeps the deletion off text not there yet.
+            NGOSEN_INFO("Tap during a swap dropped");
+        else
+            lock_word_pending_ = true;
     }
 
     void TypingState::cancelModifierTap() {
@@ -211,17 +216,74 @@ namespace ngosen {
         lock_word_pending_ = false;
         if (mode() == ngosen::Mode::Emoji)
             return;
+        if (lockedWord_ && lockedWordStillThere())
+            swapLockedWord();
+        if (lockedWord_)
+            return;
         // A tap between words leaves the last word open to Backspace.
-        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+        const uintptr_t          engine = bambooEngine_.handle();
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(engine));
         if (!preedit || *preedit.get() == 0)
             return;
-        commitBuffer();
+        ngosen::UniqueCPtr<char> keys(EnginePullRawText(engine));
+        ngosen::UniqueCPtr<char> composed(EnginePullComposed(engine));
+        LockedWord               word{.keys = keys ? keys.get() : "", .composed = composed ? composed.get() : "", .showsComposed = true};
+        // A word shown as typed is locked with the marks its keys make, since keeping the keys needs no lock.
+        word.showsComposed = word.composed.empty() || word.composed == word.keys || word.keys != preedit.get();
+        if (!word.showsComposed && mode() == ngosen::Mode::Preedit)
+            commitComposedPreedit(word.composed);
+        else
+            commitBuffer();
         // The word is already in the app; the engine only has to forget it. Off mode keeps a word for macros too.
-        ResetEngine(bambooEngine_.handle());
+        ResetEngine(engine);
         oldPreBuffer_.clear();
         lastWord_.clear();
         hasHistory_ = false;
         NGOSEN_INFO("Word locked");
+        // A preedit field commits on the tap, so the word is no longer there to swap.
+        if (mode() != ngosen::Mode::Sen)
+            return;
+        lockedWord_ = word;
+        if (!word.showsComposed)
+            swapLockedWord();
+    }
+
+    void TypingState::commitComposedPreedit(const std::string& composed) {
+        host_->resetPanel();
+        commit(composed);
+        ResetEngine(bambooEngine_.handle());
+        host_->refreshPanel();
+        host_->refreshPreedit();
+    }
+
+    // A click or a field that shows other text before the cursor means the word is no longer where it was.
+    bool TypingState::lockedWordStillThere() {
+        if (g_mouse_clicked.load(std::memory_order_acquire)) {
+            lockedWord_.reset();
+            return false;
+        }
+        const Surrounding s = host_->surrounding();
+        if (!host_->field().surroundingText || !s.isValid())
+            return true;
+        // A late report may still show the form before the last swap.
+        const std::string before = textBeforeCursor(s);
+        if (isEndsWith(before, lockedWord_->keys) || isEndsWith(before, lockedWord_->composed))
+            return true;
+        lockedWord_.reset();
+        return false;
+    }
+
+    // Each tap after the lock swaps the word between the keys typed and the marks they make.
+    void TypingState::swapLockedWord() {
+        LockedWord& word = *lockedWord_;
+        if (word.composed.empty() || word.composed == word.keys)
+            return;
+        std::string deletedPart;
+        std::string addedPart;
+        ngosen::utf8::compareAndSplitStrings(word.showsComposed ? word.composed : word.keys, word.showsComposed ? word.keys : word.composed, deletedPart, addedPart);
+        word.showsComposed = !word.showsComposed;
+        NGOSEN_INFO(std::string("Locked word swapped to its ") + (word.showsComposed ? "marks" : "keys"));
+        performReplacement(deletedPart, addedPart);
     }
 
 } // namespace ngosen

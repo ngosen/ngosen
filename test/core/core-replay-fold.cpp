@@ -164,14 +164,14 @@ namespace {
     // The restore of an English-looking word at the space goes into the replay too.
     void testReplayFoldAtWordEnd() {
         const Field field = makeField("wayland_v2", true, "firefox");
-        const Run   on    = typed(field, lateFirefox, "nguwx tunx nguwx tunx ", 40, true);
-        const Run   off   = typed(field, lateFirefox, "nguwx tunx nguwx tunx ", 40, false);
+        const Run   on    = typed(field, lateFirefox, "nguwx khuyr nguwx khuyr ", 40, true);
+        const Run   off   = typed(field, lateFirefox, "nguwx khuyr nguwx khuyr ", 40, false);
         const bool  atEnd = std::any_of(on.lines.begin(), on.lines.end(),
-                                        [](const std::string& line) { return line.find("Fold replacement into the replay") != std::string::npos && isEndsWith(line, "unx "); });
+                                        [](const std::string& line) { return line.find("Fold replacement into the replay") != std::string::npos && isEndsWith(line, "yr "); });
         check(atEnd, "word end: the restored word is folded", join(on.lines));
         check(replacementsOfReplayedText(on.lines) == 0, "word end: nothing replayed is deleted", std::to_string(replacementsOfReplayedText(on.lines)));
         check(replacementsOfReplayedText(off.lines) > 0, "word end, fold off: replayed text is deleted", "0");
-        check(on.text == "tiếng ngữ tunx ngữ tunx " && off.text == on.text, "word end: the words come out right", on.text + " / " + off.text);
+        check(on.text == "tiếng ngữ khuyr ngữ khuyr " && off.text == on.text, "word end: the words come out right", on.text + " / " + off.text);
     }
 
     void testReplayFoldPasswordHidden() {
@@ -200,10 +200,10 @@ namespace {
     void testReplayFoldBeforeEnter() {
         for (const char* frontend : {"xim", "x11"}) {
             const std::string name = frontend;
-            const Run         on   = typed(makeField(frontend, false), lateXTest, "nguwx cuar tunx\nnguwx tunx\n", 40, true);
-            const Run         off  = typed(makeField(frontend, false), lateXTest, "nguwx cuar tunx\nnguwx tunx\n", 40, false);
+            const Run         on   = typed(makeField(frontend, false), lateXTest, "nguwx cuar tieengs\nnguwx tieengs\n", 40, true);
+            const Run         off  = typed(makeField(frontend, false), lateXTest, "nguwx cuar tieengs\nnguwx tieengs\n", 40, false);
             check(folds(on) >= 1, name + " Enter: a replacement is folded", join(on.lines));
-            check(on.text == "tiếng ngữ của tũn\rngữ tũn\r" && off.text == on.text, name + " Enter: each Enter once, after its word", on.text + " / " + off.text);
+            check(on.text == "tiếng ngữ của tiếng\rngữ tiếng\r" && off.text == on.text, name + " Enter: each Enter once, after its word", on.text + " / " + off.text);
         }
     }
 

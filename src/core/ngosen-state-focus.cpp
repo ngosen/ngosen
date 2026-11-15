@@ -124,6 +124,7 @@ namespace ngosen {
     }
 
     void TypingState::deactivate(bool isFocusOut) {
+        lockedWord_.reset();
         enter_after_replacement_ = false; // an Enter would land in the next field
         echoKeyAtUs_             = 0;
         flushPendingReplacement(); // commit pending text into the field we are leaving

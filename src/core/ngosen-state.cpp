@@ -793,6 +793,8 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        if (!keyEvent.isRelease() && !keyEvent.isModifier() && !isOwnBackspace(keyEvent.sym()))
+            lockedWord_.reset();
         if (!keyEvent.isModifier())
             notePressOrRelease(keyEvent);
         // Counted first, so a replacement this key starts does not count it as a later key.
@@ -890,7 +892,10 @@ namespace ngosen {
         // Only plain backspaces typed after a finished commit may reopen the word; anything else changes the text after it.
         // Backspaces we press through XTEST come back here while we delete; they belong to the commit.
         const bool deleting     = is_deleting_.load(std::memory_order_acquire);
-        const bool ownBackspace = deleting && ngosen::key::isBackspace(currentSym) && !ngosen::forwardsBackspaces(host_->field());
+        const bool ownBackspace = isOwnBackspace(currentSym);
+        // A key typed during the swap ends the word when it replays.
+        if (!keyEvent.isRelease() && !keyEvent.isModifier() && !deleting)
+            lockedWord_.reset();
         if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
             lastWord_.clear();
         if (holdKeyBehindHeldKey(keyEvent, currentSym))
@@ -958,7 +963,8 @@ namespace ngosen {
         }
         if (keyEvent.isModifier()) {
             handleModifierTap(keyEvent);
-            if (mode() != ngosen::Mode::Preedit || keyEvent.isBareShift())
+            // A tap of the lock key decides how the word is committed; a key held with it still commits the word first.
+            if (mode() != ngosen::Mode::Preedit || keyEvent.isBareShift() || isLockWordModifier(keyEvent.sym()))
                 return true;
         } else {
             cancelModifierTap();
@@ -1369,6 +1375,7 @@ namespace ngosen {
         echoKeyAtUs_ = 0;
         if (!keepOpenWord)
             fieldAtKeptReset_.reset();
+        lockedWord_.reset();
         // After focus out a forwarded key may reach the window that took focus.
         if (isFocusOut) {
             held_enter_pending_ = false;
@@ -1492,8 +1499,13 @@ namespace ngosen {
         ResetEngine(bambooEngine_.handle());
     }
 
+    bool TypingState::isOwnBackspace(uint32_t sym) const {
+        return is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(sym) && !ngosen::forwardsBackspaces(host_->field());
+    }
+
     void TypingState::clearAllBuffers(bool keepOpenWord) {
         NGOSEN_DEBUG("Clear all buffers");
+        lockedWord_.reset();
         if (is_deleting_.load(std::memory_order_acquire)) {
             return;
         }

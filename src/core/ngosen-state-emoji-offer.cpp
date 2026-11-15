@@ -143,9 +143,14 @@ namespace ngosen {
             dropEmojiOffer();
             return;
         }
-        std::string keyword;
-        for (size_t i = words.size() - found->words; i < words.size(); ++i)
-            keyword += (keyword.empty() ? "" : " ") + words[i];
+        // As typed, with every space between its words, for the length to delete.
+        size_t start = text.size();
+        for (size_t n = 0; n < found->words; ++n) {
+            start = text.find_last_not_of(' ', start - 1);
+            start = text.find_last_of(' ', start);
+            start = start == std::string::npos ? 0 : start + 1;
+        }
+        std::string keyword = text.substr(start);
         emojiOffer_ = EmojiOffer{.suggestion = std::move(*found), .covered = covered, .keyword = std::move(keyword)};
         showEmojiOffer();
     }

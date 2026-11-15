@@ -158,19 +158,19 @@ namespace ngosen {
             suggestion.keyword = found.empty() ? phrase : found.front()->keyword;
             if (!found.empty())
                 suggestion.kind = found.front()->kind == EmojiKind::Yahoo ? EmojiKind::Emoticon : found.front()->kind;
-            // An edit names the keyword as typed, or the default one it matched, as haha for hahaha.
-            const auto names = [&](const EmojiWordEdit& edit) { return edit.keyword == phrase || edit.keyword == suggestion.keyword; };
+            // An edit names the keyword as typed, or a default one it matched, as haha for hahaha.
+            const auto names = [&](const EmojiWordEdit& edit, const Entry* entry) { return edit.keyword == phrase || (entry && edit.keyword == entry->keyword); };
             const auto add   = [&](const std::string& emoji) {
                 if (suggestion.emoji.size() < 5 && std::find(suggestion.emoji.begin(), suggestion.emoji.end(), emoji) == suggestion.emoji.end())
                     suggestion.emoji.push_back(emoji);
             };
             for (const auto& edit : edits) {
-                if (edit.on && names(edit))
+                if (edit.on && (names(edit, nullptr) || std::any_of(found.begin(), found.end(), [&](const Entry* entry) { return names(edit, entry); })))
                     add(edit.emoji);
             }
             for (const Entry* entry : found) {
                 for (const auto& emoji : split(entry->emoji)) {
-                    const bool off = std::any_of(edits.begin(), edits.end(), [&](const EmojiWordEdit& edit) { return !edit.on && edit.emoji == emoji && names(edit); });
+                    const bool off = std::any_of(edits.begin(), edits.end(), [&](const EmojiWordEdit& edit) { return !edit.on && edit.emoji == emoji && names(edit, entry); });
                     if (!off)
                         add(emoji);
                 }

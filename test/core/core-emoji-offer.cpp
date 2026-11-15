@@ -199,6 +199,10 @@ namespace {
         check(r.text == "con 🐈", "only the keyword goes", r.text);
         r = type(keysOf("mays bay") + std::vector<uint32_t>{Tab, Tab}, Mode::Sen, makeField(), replace);
         check(r.text == "✈️", "a keyword of two words is replaced whole", r.text);
+        r = type(keysOf("mays  bay") + std::vector<uint32_t>{Tab, Tab}, Mode::Sen, makeField(), replace);
+        check(r.text == "✈️", "the spaces between its words go too", r.text);
+        r = type(keysOf("mays  bay") + std::vector<uint32_t>{Tab, Tab}, Mode::Preedit, makeField(), replace);
+        check(r.text == "✈️", "and in the preedit", r.text);
         r = type(keysOf("cuwowif") + std::vector<uint32_t>{Tab, Tab}, Mode::Preedit, makeField(), replace);
         check(r.text == "😂", "a word in the preedit is replaced", r.text);
         r = type(keysOf("mays bay") + std::vector<uint32_t>{Tab, Tab}, Mode::Preedit, makeField(), replace);

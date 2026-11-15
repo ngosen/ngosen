@@ -382,6 +382,10 @@ msgstr ""
 msgid "Page "
 msgstr ""
 
+#: src/core/ngosen-state-emoji-offer.cpp
+msgid "pick, Space or Enter: the first, Esc: keep the word"
+msgstr ""
+
 #: src/core/ngosen-state-retype.cpp
 msgid "Enter: retype in Vietnamese, Tab or Esc: keep"
 msgstr ""

@@ -156,6 +156,8 @@ namespace ngosen {
                 if (emojiOffer_ && !replacementPending() && index < emojiOffer_->suggestion.emoji.size())
                     insertEmoji(index);
             });
+            const std::string numbers = emoji.size() > 1 ? "1–" + std::to_string(emoji.size()) : "1";
+            host_->setStatus(numbers + ": " + host_->translate("pick, Space or Enter: the first, Esc: keep the word"));
         }
         host_->refreshPanel();
     }
@@ -163,6 +165,8 @@ namespace ngosen {
     void TypingState::dropEmojiOffer() {
         if (!emojiOffer_)
             return;
+        if (emojiOffer_->picking)
+            host_->setStatus({});
         emojiOffer_.reset();
         host_->hideCandidates();
         host_->refreshPanel();

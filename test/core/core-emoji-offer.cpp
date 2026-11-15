@@ -42,6 +42,7 @@ namespace {
     constexpr uint32_t Click   = 0;
     constexpr uint32_t Hint    = 1; // records the panel's labels
     constexpr uint32_t OffMode = 2;
+    constexpr uint32_t Status  = 3; // records the line under the panel
 
     Field              makeField() {
         Field field;
@@ -64,6 +65,7 @@ namespace {
     struct Result {
         std::string              text;
         std::vector<std::string> hints; // the first label at each Hint
+        std::vector<std::string> statuses;
     };
 
     Result type(const std::vector<uint32_t>& keys, Mode mode = Mode::Sen, Field field = makeField(), const std::function<void(FakeResources&)>& configure = {}) {
@@ -83,6 +85,8 @@ namespace {
                 g_mouse_clicked.store(true);
             } else if (key == OffMode) {
                 realMode = Mode::Off;
+            } else if (key == Status) {
+                result.statuses.push_back(app->status());
             } else if (key == Hint) {
                 result.hints.push_back(app->labels().empty() ? "(none)" : app->labels().front());
             } else {
@@ -157,6 +161,12 @@ namespace {
         check(r.text == "cười ", "a click closes the list, so Space after it is typed", r.text);
         r = type(word + std::vector<uint32_t>{Tab, OffMode, '1'});
         check(r.text == "cười1", "switching to English closes the list", r.text);
+        r = type(word + std::vector<uint32_t>{Status, Tab, Status, '2', Status});
+        check(r.statuses == std::vector<std::string>{"", "1–5: pick, Space or Enter: the first, Esc: keep the word", ""}, "the keys are named while the list is open",
+              r.statuses[0] + " / " + r.statuses[1] + " / " + r.statuses[2]);
+        r = type(keysOf("camr own") + std::vector<uint32_t>{Tab, Status, Esc, Status});
+        check(r.statuses == std::vector<std::string>{"1–2: pick, Space or Enter: the first, Esc: keep the word", ""}, "the line counts the emoji and goes with Esc",
+              r.statuses[0] + " / " + r.statuses[1]);
         r = type(keysOf("con meof") + std::vector<uint32_t>{Tab, Tab, ' ', 'a'});
         check(r.text == "con mèo 🐈 a", "typing goes on after the emoji", r.text);
     }

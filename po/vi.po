@@ -451,6 +451,10 @@ msgstr "Ngó Sen - Tắt"
 msgid "Page "
 msgstr "Trang "
 
+#: src/core/ngosen-state-emoji-offer.cpp
+msgid "pick, Space or Enter: the first, Esc: keep the word"
+msgstr "chọn · Space, Enter: lấy cái đầu · Esc: giữ chữ"
+
 #: src/core/ngosen-state-retype.cpp
 msgid "Enter: retype in Vietnamese, Tab or Esc: keep"
 msgstr "Cứu chữ: Enter để đổi, Tab hoặc Esc để giữ nguyên"

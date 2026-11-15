@@ -13,7 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Thêm
 
 - Gợi ý emoji khi gõ: gõ xong `cười`, `con mèo`, `cảm ơn`, `haha` hay `:)` là hiện `Tab: 😂 …` cạnh con
-  trỏ. Bấm Tab để đánh số, rồi 1–5 chọn một emoji; Tab, Space hoặc Enter lấy emoji đầu, Esc giữ nguyên
+  trỏ. Bấm Tab để đánh số (kèm dòng nhắc phím), rồi 1–5 chọn một emoji; Tab, Space hoặc Enter lấy emoji đầu, Esc giữ nguyên
   chữ. Chữ thường giữ lại và emoji thêm vào sau; `haha` và `:)` được thay bằng emoji. Gõ không dấu như
   `cuoi` vẫn ra, còn `cho`, `meo` thì không, vì đó đã là chữ tiếng Việt. Cờ hiện khi tên nước viết hoa
   (`Việt Nam`, `Pháp`). Hiện với giao diện fcitx5 mặc định và extension Input Method Panel trên GNOME;

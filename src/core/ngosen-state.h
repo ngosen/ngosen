@@ -254,6 +254,7 @@ namespace ngosen {
         struct EmojiOffer {
             ngosen::EmojiSuggestion suggestion;
             std::string             covered; // the typed text a sound or an emoticon stands for
+            std::string             keyword; // the typed words the keyword covers, as they are in the app
             bool                    picking = false;
         };
         std::optional<EmojiOffer>      emojiOffer_;
@@ -279,6 +280,7 @@ namespace ngosen {
         bool               everyWordTakesMarks(const std::string& typed);
         void               applyRetype();
         bool               replaceRetyped(const std::string& from, const std::string& to);
+        bool               replacesKeyword(const EmojiOffer& offer, const std::string& inPreedit, const std::string& emoji);
         void               acceptRetype(const std::string& hint);
         void               applyRetypeSoon(std::string hint);
         void               reopenTypedKey();

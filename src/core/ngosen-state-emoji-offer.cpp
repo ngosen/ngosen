@@ -10,6 +10,7 @@
 #include "ngosen-keysym.h"
 #include "ngosen-log.h"
 #include "ngosen-state.h"
+#include "ngosen-strings.h"
 #include "ngosen-utf8.h"
 
 #include <algorithm>
@@ -142,7 +143,10 @@ namespace ngosen {
             dropEmojiOffer();
             return;
         }
-        emojiOffer_ = EmojiOffer{.suggestion = std::move(*found), .covered = covered};
+        std::string keyword;
+        for (size_t i = words.size() - found->words; i < words.size(); ++i)
+            keyword += (keyword.empty() ? "" : " ") + words[i];
+        emojiOffer_ = EmojiOffer{.suggestion = std::move(*found), .covered = covered, .keyword = std::move(keyword)};
         showEmojiOffer();
     }
 
@@ -249,15 +253,30 @@ namespace ngosen {
         if (preedit) {
             host_->clearPreedit();
             host_->refreshPreedit();
-            commit(replaces ? emoji : word + " " + emoji);
+            if (replaces)
+                commit(emoji);
+            else if (!replacesKeyword(offer, word, emoji))
+                commit(word + " " + emoji);
             return;
         }
         // The word is already in the app.
         oldPreBuffer_.clear();
         if (replaces)
             replaceRetyped(offer.covered, emoji);
-        else
+        else if (!replacesKeyword(offer, {}, emoji))
             commit(" " + emoji);
+    }
+
+    // With the emoji set to stand in for the word, takes out what the app holds of the keyword.
+    bool TypingState::replacesKeyword(const EmojiOffer& offer, const std::string& inPreedit, const std::string& emoji) {
+        if (!engine_->options().emojiReplacesWord || !isEndsWith(offer.keyword, inPreedit))
+            return false;
+        const std::string inApp = offer.keyword.substr(0, offer.keyword.size() - inPreedit.size());
+        if (inApp.empty()) {
+            commit(emoji);
+            return true;
+        }
+        return canReplaceInApp() && replaceRetyped(inApp, emoji);
     }
 
 } // namespace ngosen

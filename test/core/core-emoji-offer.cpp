@@ -191,6 +191,22 @@ namespace {
         check(r.text == "cười 😂", "a word in the preedit is kept", r.text);
     }
 
+    void testReplacingWords() {
+        const auto replace = [](FakeResources& r) { r.mutableOptions().emojiReplacesWord = true; };
+        auto       r       = type(keysOf("cuwowif") + std::vector<uint32_t>{Tab, Tab}, Mode::Sen, makeField(), replace);
+        check(r.text == "😂", "the setting replaces the word", r.text);
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Tab, Tab}, Mode::Sen, makeField(), replace);
+        check(r.text == "con 🐈", "only the keyword goes", r.text);
+        r = type(keysOf("mays bay") + std::vector<uint32_t>{Tab, Tab}, Mode::Sen, makeField(), replace);
+        check(r.text == "✈️", "a keyword of two words is replaced whole", r.text);
+        r = type(keysOf("cuwowif") + std::vector<uint32_t>{Tab, Tab}, Mode::Preedit, makeField(), replace);
+        check(r.text == "😂", "a word in the preedit is replaced", r.text);
+        r = type(keysOf("mays bay") + std::vector<uint32_t>{Tab, Tab}, Mode::Preedit, makeField(), replace);
+        check(r.text == "✈️", "the words before the preedit go too", r.text);
+        r = type(keysOf("ddi mays bay") + std::vector<uint32_t>{Tab, Tab, ' ', 'a'}, Mode::Sen, makeField(), replace);
+        check(r.text == "đi ✈️ a", "words before the keyword stay", r.text);
+    }
+
     // In a slow app the tone key's replacement is still on its way, and a pick then would land inside the word.
     void testSlowApp() {
         FakeResources resources;
@@ -246,6 +262,7 @@ int main() {
     testWhereNoHint();
     testPicking();
     testReplacing();
+    testReplacingWords();
     testSlowApp();
     testRelease();
     if (failures)

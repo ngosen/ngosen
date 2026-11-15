@@ -178,6 +178,18 @@ msgstr ""
 msgid "Yahoo Messenger emoticons"
 msgstr ""
 
+#: src/ngosen-config.h
+msgid "Put a picked emoji"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "After the word"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Instead of the word"
+msgstr ""
+
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
 msgstr ""
@@ -1399,6 +1411,10 @@ msgstr ""
 
 #: settings-gui/core/catalog.py
 msgid "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
 msgstr ""
 
 #: settings-gui/core/catalog.py

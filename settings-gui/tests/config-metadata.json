@@ -354,6 +354,22 @@
     {}
    ],
    [
+    "EmojiPlacement",
+    "Enum",
+    "Put a picked emoji",
+    "After the word",
+    {
+     "EnumI18n": {
+      "0": "After the word",
+      "1": "Instead of the word"
+     },
+     "Enum": {
+      "0": "After the word",
+      "1": "Instead of the word"
+     }
+    }
+   ],
+   [
     "AutoNonVnRestore",
     "Boolean",
     "Auto Restore Invalid Words",

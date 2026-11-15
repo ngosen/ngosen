@@ -681,6 +681,7 @@ namespace fcitx {
         o.rawWordAfterSlash                = config_.rawWordAfterSlash.value();
         o.emojiSuggestions                 = config_.emojiSuggestions.value();
         o.yahooEmoticons                   = config_.yahooEmoticons.value();
+        o.emojiReplacesWord                = config_.emojiPlacement.value() == EmojiPlacement::InsteadOfWord;
         o.messengerSelectOvertype          = config_.messengerSelectOvertype.value();
         o.copyWaitRecovery                 = config_.copyWaitRecovery.value();
         o.foldReplayReplacement            = config_.foldReplayReplacement.value();

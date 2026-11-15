@@ -45,6 +45,7 @@ namespace ngosen {
         bool        rawWordAfterSlash              = true;
         bool        emojiSuggestions               = true;
         bool        yahooEmoticons                 = true;
+        bool        emojiReplacesWord              = false;
 
         // The conversion hotkey: charsets as named by GetCharsetNames, and ConvertText's letter case.
         std::string convertFrom            = "TCVN3 (ABC)";

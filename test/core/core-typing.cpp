@@ -2546,6 +2546,30 @@ namespace {
             FakeKey up(ngosen::key::Control_L, true, ngosen::modifier::Ctrl);
             state.keyEvent(up);
         };
+        // Firefox through the fcitx4 frontend resets the context after each commit, the swap's own too.
+        for (const bool click : {false, true}) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       plain;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("dbus", true), ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&plain, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("abc tunx")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            tap(state);
+            loop.pump(40);
+            if (click)
+                app->moveCursor(3);
+            state.appReset();
+            loop.pump(100);
+            tap(state);
+            loop.pump(300);
+            const std::string want = click ? "abc tũn" : "abc tunx";
+            check(app->text() == want, click ? "lock toggle: a reset after a click leaves the word alone" : "lock toggle: an app reset after the swap keeps the word", app->text());
+        }
         for (const bool click : {true, false}) {
             realMode = ngosen::Mode::Sen;
             FakeLoop            loop;

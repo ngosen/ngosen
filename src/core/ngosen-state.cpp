@@ -1336,7 +1336,14 @@ namespace ngosen {
         fieldAtKeptReset_.reset();
         if (keep)
             fieldAtKeptReset_ = std::make_pair(host_->surrounding().text(), host_->surrounding().cursor());
+        // Firefox through the fcitx4 frontend resets after each commit, the lock key's swap included.
+        // The next tap checks that the word is still there, which only a field with a report can tell.
+        std::optional<LockedWord> locked;
+        const Surrounding         s = host_->surrounding();
+        if (host_->field().surroundingText && s.isValid() && !s.text().empty())
+            locked = lockedWord_;
         resetField(false, true, keep);
+        lockedWord_ = std::move(locked);
     }
 
     // Qt reports the field unchanged after dropping the word; GTK, Firefox and Chromium commit it themselves.

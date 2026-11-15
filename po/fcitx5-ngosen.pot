@@ -29,10 +29,6 @@ msgstr ""
 msgid "Preedit"
 msgstr ""
 
-#: src/ngosen-config.h:41 src/ngosen-engine.cpp:988 src/ngosen-engine.cpp:1096
-msgid "Emoji Picker"
-msgstr ""
-
 #: src/ngosen-config.h:58 src/ngosen-config.h:69 src/ngosen-config.h:81
 msgid "Disabled"
 msgstr ""
@@ -254,14 +250,6 @@ msgstr ""
 msgid "Shortcut for Preedit"
 msgstr ""
 
-#: src/ngosen-config.h:261
-msgid "Show Emoji Picker"
-msgstr ""
-
-#: src/ngosen-config.h:262
-msgid "Shortcut for Emoji Picker"
-msgstr ""
-
 #: src/ngosen-config.h:262
 msgid "Show OFF"
 msgstr ""
@@ -376,10 +364,6 @@ msgstr ""
 
 #: src/ngosen-engine.cpp:1204
 msgid "Ngó Sen - Off"
-msgstr ""
-
-#: src/lotus-state.cpp:241
-msgid "Page "
 msgstr ""
 
 #: src/core/ngosen-state-emoji-offer.cpp
@@ -1485,10 +1469,6 @@ msgid "A new install switches with Ctrl+Shift, an older one keeps Ctrl+Space; Ng
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
-msgid "Press ` to pick Sen, Preedit, Emoji Picker or OFF for the app in use."
-msgstr ""
-
-#: settings-gui/ui/whats_new_content.py
 msgid "Tap Ctrl alone to keep the word as typed: tunx, Ctrl, Space keeps tũn."
 msgstr ""
 
@@ -1877,10 +1857,30 @@ msgstr ""
 msgid "The word is underlined until it is done. Use it in an app that Sen does not work with."
 msgstr ""
 
-#: settings-gui/core/catalog.py
-msgid "Type an emoji name, then pick from the list."
-msgstr ""
-
 #: settings-gui/core/page_status.py
 msgid "The running Ngó Sen is older than this window, so settings are missing here. Restart fcitx5 to see them."
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Show emoji suggestions"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Shortcut for emoji suggestions"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Emoji suggestions"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Emoji suggestions: on"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Emoji suggestions: off"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Press ` to pick Sen, Preedit or OFF for the app in use, or to turn emoji or Vim keys on or off for it."
 msgstr ""

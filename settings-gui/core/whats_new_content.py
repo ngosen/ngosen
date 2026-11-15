@@ -162,7 +162,9 @@ FEATURES = [
 
 TIPS = [
     {
-        "text": N_("Press ` to pick Sen, Preedit, Emoji Picker or OFF for the app in use."),
+        "text": N_(
+            "Press ` to pick Sen, Preedit or OFF for the app in use, or to turn emoji or Vim keys on or off for it."
+        ),
         "target": ("setting", "ModeMenuKey"),
     },
     {

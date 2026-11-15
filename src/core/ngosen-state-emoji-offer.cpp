@@ -56,7 +56,7 @@ namespace ngosen {
     }
 
     bool TypingState::offersEmojiHere() const {
-        if (!bambooEngine_ || !engine_->options().emojiSuggestions || retype_)
+        if (!bambooEngine_ || !engine_->options().emojiSuggestions || !emojiOn_ || retype_)
             return false;
         if (mode() != ngosen::Mode::Sen && mode() != ngosen::Mode::Preedit)
             return false;
@@ -65,6 +65,14 @@ namespace ngosen {
         // Tab is held only where the panel is known to show the hint, so it never vanishes unseen.
         const Field field = host_->field();
         return field.drawsCandidates && !field.hidesText() && !field.terminal && !inAddressBar();
+    }
+
+    void TypingState::setEmojiOn(bool on) {
+        emojiOn_ = on;
+        if (!on) {
+            emojiTail_.clear();
+            dropEmojiOffer();
+        }
     }
 
     void TypingState::noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore) {

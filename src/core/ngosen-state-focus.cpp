@@ -159,7 +159,7 @@ namespace ngosen {
             forgetSelection();
         host_->resetPanel();
         host_->refreshPanel();
-        if (mode() == ngosen::Mode::Preedit || mode() == ngosen::Mode::Emoji)
+        if (mode() == ngosen::Mode::Preedit)
             host_->refreshPreedit();
     }
 

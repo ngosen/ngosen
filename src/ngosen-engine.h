@@ -17,7 +17,6 @@
 
 #include "ngosen-config.h"
 #include "ngosen-engine-resources.h"
-#include "emoji.h"
 #include "ngosen-options.h"
 #include "ngosen-go-object.h"
 #include <cstdint>
@@ -213,26 +212,6 @@ namespace fcitx {
             return keepWords_.handle();
         }
 
-        /**
-         * @brief Gets the emoji loader.
-         * @return Reference to emoji loader instance.
-         */
-        EmojiLoader& emojiLoader() {
-            if (!emojiLoader_) {
-                emojiLoader_ = std::make_unique<EmojiLoader>(&instance_->addonManager());
-            }
-            return *emojiLoader_;
-        }
-
-        std::vector<EmojiEntry> emojiHistory() override {
-            return emojiLoader().history();
-        }
-        std::vector<EmojiEntry> searchEmoji(const std::string& prefix) override {
-            return emojiLoader().search(prefix);
-        }
-        void recordEmoji(const EmojiEntry& entry) override {
-            emojiLoader().recordHistory(entry);
-        }
         ngosen::Recorder& recorder() override {
             return recorder_;
         }
@@ -302,6 +281,7 @@ namespace fcitx {
         std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
         std::string                                 vimAppsPath_;
+        std::string                                 emojiOffAppsPath_;
         std::weak_ptr<CandidateList>                modeMenuList_;
         // A modifier-only toggle key fires on release, unless another key came in between.
         bool                             toggleTapArmed_  = false;
@@ -315,7 +295,6 @@ namespace fcitx {
         std::string               iconCacheName_;
         std::string               iconCachePath_;
         static constexpr uint64_t CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
-        FCITX_ADDON_DEPENDENCY_LOADER(emoji, instance_->addonManager());
 #ifdef NGOSEN_HAS_DBUS
         FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
         std::unique_ptr<NgoSenDBusObject>          dbusObject_;
@@ -324,11 +303,12 @@ namespace fcitx {
 #ifdef NGOSEN_HAS_NOTIFICATIONS
         FCITX_ADDON_DEPENDENCY_LOADER(notifications, instance_->addonManager());
 #endif
-        std::unique_ptr<EmojiLoader>           emojiLoader_;
         mutable std::mutex                     appRulesMutex_;
         std::unordered_map<KeySym, NgoSenMode> modeMenuMapping_;
         std::unordered_set<std::string>        vimApps_; ///< Apps whose fields follow Vim's normal-mode keys
         KeySym                                 vimMenuKey_ = FcitxKey_None;
+        std::unordered_set<std::string>        emojiOffApps_; ///< Apps where the user turned emoji suggestions off
+        KeySym                                 emojiMenuKey_ = FcitxKey_None;
         // A Wayland click reaches the IM only as a surrounding text update.
         std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> commitWatcher_;
@@ -436,6 +416,10 @@ namespace fcitx {
         void                       loadVimApps();
         void                       saveVimApps() const;
         void                       toggleVimMode(InputContext* ic);
+        bool                       emojiOnFor(const std::string& appName) const;
+        void                       loadEmojiOffApps();
+        void                       saveEmojiOffApps() const;
+        void                       toggleEmoji(InputContext* ic);
         std::optional<NgoSenMode>  findAppRule(const std::string& appName) const;
         // The mode Vietnamese typing uses: the configured one, unless that is Off.
         NgoSenMode vietnameseMode() const;
@@ -476,7 +460,8 @@ namespace fcitx {
             std::string label;
             KeySym      key;
             bool        visible;
-            bool        vim = false; // the Vim mode switch rather than a typing mode
+            bool        vim   = false; // the Vim mode switch rather than a typing mode
+            bool        emoji = false; // the emoji suggestions switch
         };
         // Every mode in the configured order, then the ones the order leaves out.
         std::vector<ModeMenuItem> modeMenuItems();
@@ -498,7 +483,7 @@ namespace fcitx {
         void          moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
-        // Applies a mode picked from the menu and remembers it for the app, unless it is the emoji picker.
+        // Applies a mode picked from the menu and remembers it for the app.
         void pickMenuMode(InputContext* ic, NgoSenMode mode);
         void keepAppMode(const std::string& appName, NgoSenMode mode);
         void openModeMenu(InputContext* ic);

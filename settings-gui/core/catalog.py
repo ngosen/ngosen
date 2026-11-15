@@ -161,13 +161,12 @@ HINTS = {
     ),
 }
 
-MODE_BUTTON_ORDER = ["Sen", "Preedit", "Emoji Picker"]
+MODE_BUTTON_ORDER = ["Sen", "Preedit"]
 MODE_HINTS = {
     "Sen": N_("Text goes straight into the app as you type."),
     "Preedit": N_(
         "The word is underlined until it is done. Use it in an app that Sen does not work with."
     ),
-    "Emoji Picker": N_("Type an emoji name, then pick from the list."),
 }
 
 

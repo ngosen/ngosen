@@ -5,7 +5,6 @@
  */
 #pragma once
 
-#include "emoji-entry.h"
 #include "ngosen-options.h"
 #include "ngosen-pty.h"
 #include "ngosen-recorder.h"
@@ -43,10 +42,6 @@ namespace ngosen {
         virtual uintptr_t keepWords() const {
             return 0;
         }
-
-        virtual std::vector<EmojiEntry> emojiHistory()                         = 0;
-        virtual std::vector<EmojiEntry> searchEmoji(const std::string& prefix) = 0;
-        virtual void                    recordEmoji(const EmojiEntry& entry)   = 0;
 
         // Shared by every field, so a saved log follows the user across windows.
         virtual Recorder& recorder() = 0;

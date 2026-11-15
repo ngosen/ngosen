@@ -61,7 +61,6 @@ namespace {
             case ngosen::Mode::Off: return "Off";
             case ngosen::Mode::Sen: return "Sen";
             case ngosen::Mode::Preedit: return "Preedit";
-            case ngosen::Mode::Emoji: return "Emoji";
         }
         return "?";
     }
@@ -90,10 +89,11 @@ int main() {
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 
-    // Sen, Preedit, Emoji, Off, the Vim mode switch (missing from the saved order, so last), and "type `".
+    // Sen, Preedit, the emoji switch, Off, the Vim mode switch (missing from the saved order, so last), and "type `".
     press(engine, entry, *context, FcitxKey_grave);
     auto list = menu(*context);
     check(list && list->totalSize() == 6, "menu opens with six items", list ? std::to_string(list->totalSize()) : "no menu");
+    check(list && label(*list, 2) == "   [w] Emoji suggestions: on", "the emoji switch starts on", list ? label(*list, 2) : "no menu");
     check(list && label(*list, 4) == "   [v] Vim mode: off", "the Vim mode switch starts off", list ? label(*list, 4) : "no menu");
     // gedit has no rule of its own, so it follows the global Preedit.
     check(list && list->globalCursorIndex() == 1, "the app's mode is highlighted", list ? std::to_string(list->globalCursorIndex()) : "no menu");
@@ -149,6 +149,72 @@ int main() {
     check(list && label(*list, 4) == "   [v] Vim mode: on", "the menu shows Vim mode on", list ? label(*list, 4) : "no menu");
     press(engine, entry, *context, FcitxKey_v);
     check(vimApps().empty(), "v again turns Vim mode off", vimApps());
+
+    // w turns emoji suggestions off for the app and keeps the typing mode.
+    const auto emojiOffApps = [] {
+        std::ifstream file(std::filesystem::temp_directory_path() / "fcitx5-ngosen-mode-menu-keys/config/fcitx5/conf/ngosen-emoji-off-apps.conf");
+        std::string   line;
+        std::string   apps;
+        while (std::getline(file, line)) {
+            if (!line.empty() && line[0] != '#')
+                apps += line + ";";
+        }
+        return apps;
+    };
+    press(engine, entry, *context, FcitxKey_grave);
+    press(engine, entry, *context, FcitxKey_w);
+    check(!menu(*context), "w closes the menu", "menu still open");
+    check(realMode.load() == ngosen::Mode::Preedit, "w keeps the typing mode", modeName(realMode.load()));
+    check(emojiOffApps() == "gedit;", "w saves emoji off for gedit", emojiOffApps());
+    check(context->commits().size() == 1, "w types nothing", std::to_string(context->commits().size()) + " commits");
+    press(engine, entry, *context, FcitxKey_grave);
+    list = menu(*context);
+    check(list && label(*list, 2) == "   [w] Emoji suggestions: off", "the menu shows emoji off", list ? label(*list, 2) : "no menu");
+    press(engine, entry, *context, FcitxKey_w);
+    check(emojiOffApps().empty(), "w again turns emoji back on", emojiOffApps());
+    {
+        fcitx::RawConfig off;
+        off.setValueByPath("EmojiSuggestions", "False");
+        engine.setConfig(off);
+        press(engine, entry, *context, FcitxKey_grave);
+        list = menu(*context);
+        check(list && list->totalSize() == 5, "with emoji off everywhere the switch leaves the menu", list ? std::to_string(list->totalSize()) : "no menu");
+        press(engine, entry, *context, FcitxKey_Escape);
+        off.setValueByPath("EmojiSuggestions", "True");
+        engine.setConfig(off);
+    }
+
+    // A window without a name keeps its emoji switch through a settings reload, and loses it when it closes.
+    auto unnamed = std::make_unique<TestInputContext>(&testInstance.instance, "gnome-shell");
+    unnamed->focusIn();
+    fcitx::InputContextEvent unnamedFocus(unnamed.get(), fcitx::EventType::InputContextFocusIn);
+    context->focusOut();
+    engine.activate(entry, unnamedFocus);
+    press(engine, entry, *unnamed, FcitxKey_grave);
+    press(engine, entry, *unnamed, FcitxKey_w);
+    engine.reloadConfig();
+    press(engine, entry, *unnamed, FcitxKey_grave);
+    list = menu(*unnamed);
+    check(list && label(*list, 2) == "   [w] Emoji suggestions: off", "a reload keeps emoji off for a window without a name", list ? label(*list, 2) : "no menu");
+    press(engine, entry, *unnamed, FcitxKey_Escape);
+    const void* closed = unnamed.get();
+    unnamed->focusOut();
+    unnamed.reset();
+    auto reopened = std::make_unique<TestInputContext>(&testInstance.instance, "gnome-shell");
+    if (reopened.get() == closed) {
+        reopened->focusIn();
+        fcitx::InputContextEvent reopenedFocus(reopened.get(), fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, reopenedFocus);
+        press(engine, entry, *reopened, FcitxKey_grave);
+        list = menu(*reopened);
+        check(list && label(*list, 2) == "   [w] Emoji suggestions: on", "a new window at a closed one's address starts with emoji on", list ? label(*list, 2) : "no menu");
+        press(engine, entry, *reopened, FcitxKey_Escape);
+    } else {
+        std::cerr << "note: the new window got another address, so window was not checked\n";
+    }
+    reopened->focusOut();
+    context->focusIn();
+    engine.activate(entry, focus);
 
     // A field that reports no app of its own, away from GNOME Shell's frontend.
     auto relayed = std::make_unique<TestInputContext>(&testInstance.instance, "gnome-shell");
@@ -304,13 +370,13 @@ int main() {
     check(fcitx::modeMenuCanDraw("classicui", "ibus", "wayland:", true), "a client that draws its own panel can draw", "false");
 
     // With a label, GNOME's kimpanel shows text in the top bar instead of the Ngó Sen icon.
-    for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Off, ngosen::Mode::Emoji}) {
+    for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Off}) {
         realMode         = mode;
         const auto label = engine.subModeLabel(entry, *context);
         check(label.empty(), "no panel label in " + modeName(mode), label);
-        // The switch popup still has to tell Off and the emoji picker apart.
+        // The switch popup still has to tell Sen and Off apart.
         const auto subMode  = engine.subMode(entry, *context);
-        const auto expected = mode == ngosen::Mode::Sen ? "Telex" : mode == ngosen::Mode::Off ? "OFF" : "Emoji Picker";
+        const auto expected = mode == ngosen::Mode::Sen ? "Telex" : "OFF";
         check(subMode == expected, "switch popup names " + modeName(mode), subMode);
     }
 

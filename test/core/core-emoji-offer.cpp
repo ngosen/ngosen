@@ -43,6 +43,7 @@ namespace {
     constexpr uint32_t Hint    = 1; // records the panel's labels
     constexpr uint32_t OffMode = 2;
     constexpr uint32_t Status  = 3; // records the line under the panel
+    constexpr uint32_t AppOff  = 4; // the user turns emoji off for this app
 
     Field              makeField() {
         Field field;
@@ -85,6 +86,8 @@ namespace {
                 g_mouse_clicked.store(true);
             } else if (key == OffMode) {
                 realMode = Mode::Off;
+            } else if (key == AppOff) {
+                state.setEmojiOn(false);
             } else if (key == Status) {
                 result.statuses.push_back(app->status());
             } else if (key == Hint) {
@@ -135,6 +138,10 @@ namespace {
         check(hintAfter("cuwowif", Mode::Sen, url) == "(none)", "no hint in an address bar", "hint");
         const auto off = hintAfter("cuwowif", Mode::Sen, makeField(), [](FakeResources& r) { r.mutableOptions().emojiSuggestions = false; });
         check(off == "(none)", "no hint with the setting off", off);
+        const auto appOff = type(std::vector<uint32_t>{AppOff} + keysOf("cuwowif") + std::vector<uint32_t>{Hint, Tab});
+        check(appOff.hints.front() == "(none)" && appOff.text == "cười⇥", "no hint in an app with emoji turned off", appOff.hints.front() + " / " + appOff.text);
+        const auto turnedOff = type(keysOf("cuwowif") + std::vector<uint32_t>{AppOff, Hint, Tab});
+        check(turnedOff.hints.front() == "(none)" && turnedOff.text == "cười⇥", "turning emoji off drops the hint already shown", turnedOff.hints.front() + " / " + turnedOff.text);
         const auto noTab = type(keysOf("cuwowif") + std::vector<uint32_t>{Tab}, Mode::Sen, unknownPanel).text;
         check(noTab == "cười⇥", "Tab reaches the app where no hint shows", noTab);
     }

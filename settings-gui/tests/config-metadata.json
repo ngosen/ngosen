@@ -11,14 +11,12 @@
      "EnumI18n": {
       "0": "OFF",
       "1": "Sen",
-      "2": "Preedit",
-      "3": "Emoji Picker"
+      "2": "Preedit"
      },
      "Enum": {
       "0": "OFF",
       "1": "Sen",
-      "2": "Preedit",
-      "3": "Emoji Picker"
+      "2": "Preedit"
      }
     }
    ],
@@ -563,14 +561,14 @@
    [
     "ShowModeEmoji",
     "Boolean",
-    "Show Emoji Picker",
+    "Show emoji suggestions",
     "True",
     {}
    ],
    [
     "ShortcutEmoji",
     "String",
-    "Shortcut for Emoji Picker",
+    "Shortcut for emoji suggestions",
     "w",
     {}
    ],

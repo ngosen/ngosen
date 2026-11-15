@@ -18,6 +18,14 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   `cuoi` vẫn ra, còn `cho`, `meo` thì không, vì đó đã là chữ tiếng Việt. Cờ hiện khi tên nước viết hoa
   (`Việt Nam`, `Pháp`). Hiện với giao diện fcitx5 mặc định và extension Input Method Panel trên GNOME;
   không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trong nhóm Gõ nhanh, mặc định bật (#110, #788).
+- Phím `w` trong menu `` ` `` nay bật/tắt gợi ý emoji cho app đang dùng, giống Vim mode; chế độ gõ của app
+  giữ nguyên (#110, #791).
+
+### Bỏ
+
+- Chế độ Chọn Emoji (gõ tên tiếng Anh rồi chọn emoji) được thay bằng gợi ý emoji khi gõ. Ai đang dùng chế độ
+  này, chung hay riêng cho một app, được chuyển sang Gõ Sen. Ngó Sen không còn cần addon emoji của fcitx5
+  (#110, #791).
 
 ## [1.11.1-1] — 15/11/2026
 

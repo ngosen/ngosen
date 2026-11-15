@@ -42,7 +42,7 @@ Mockups the direction was chosen from: <https://claude.ai/artifact/7cDzgu8A56Mk9
    - The app icon (`fcitx-ngosen`, a lotus-root slice on enamel green), shown once: the window
      manager draws it in the title bar, so the sidebar does not repeat it.
    - The wordmark "Ngó Sen" at the top of the sidebar, at a fixed large size, with diacritics, never in bold.
-   - The current typing mode (Gõ Sen, Gạch chân, Chọn Emoji) as a segmented row of buttons; the checked
+   - The current typing mode (Gõ Sen, Gạch chân) as a segmented row of buttons; the checked
      one is filled enamel with `on-enamel` text.
    - Typed text at a fixed size: the keys-to-result example under the input method
      (`vieetj → việt`) and the test field.

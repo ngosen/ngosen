@@ -1428,6 +1428,7 @@ namespace ngosen {
     }
 
     bool TypingState::replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
+        backspaceBeforeKey_ = false;
         if (keys[i].actsOnField)
             return holdReplayedFieldKey(keys, i, out);
         auto        sym     = keys[i].sym;
@@ -1464,6 +1465,8 @@ namespace ngosen {
             // Counted against the word as it is now, which keys replayed before it may have ended or reopened.
             if (!oldPreBuffer_.empty())
                 backspaceInWord_ = true;
+            // At the press the word still held the letter this Backspace drops.
+            backspaceBeforeKey_ = oldPreBuffer_.empty();
             return holdReplayedKey(keys, i, out, ngosen::EditKey::BackSpace);
         }
         if (keyUtf8.empty() && !sent) {

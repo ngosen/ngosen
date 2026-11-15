@@ -793,7 +793,7 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
-        if (!keyEvent.isRelease() && !keyEvent.isModifier() && !lock_word_pending_ && !isOwnBackspace(keyEvent.sym()))
+        if (!keyEvent.isRelease() && !keyEvent.isModifier() && !isOwnBackspace(keyEvent.sym()))
             lockedWord_.reset();
         if (!keyEvent.isModifier())
             notePressOrRelease(keyEvent);
@@ -893,7 +893,7 @@ namespace ngosen {
         // Backspaces we press through XTEST come back here while we delete; they belong to the commit.
         const bool deleting     = is_deleting_.load(std::memory_order_acquire);
         const bool ownBackspace = isOwnBackspace(currentSym);
-        // A tap that waited on the swap ran in settleBeforeKey; this key ends the word, or does when it replays.
+        // A key typed during the swap ends the word when it replays.
         if (!keyEvent.isRelease() && !keyEvent.isModifier() && !deleting)
             lockedWord_.reset();
         if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))

@@ -1331,13 +1331,6 @@ namespace ngosen {
             commitReplayed(out);
             sendEnterAfterReplacement();
         }
-        // A tap that came during a swap swaps the word back before the keys typed after it.
-        if (lock_word_pending_ && lockedWord_) {
-            commitReplayed(out);
-            lock_word_pending_ = false;
-            swapLockedWord();
-            return;
-        }
         // The keys typed during the swap end the word.
         if (!buffered_keys_.empty())
             lockedWord_.reset();

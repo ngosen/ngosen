@@ -2529,7 +2529,7 @@ namespace {
         setXTestSenderForTest({});
         ngosen::test::AppQuirks slow;
         slow.lagMs = 40;
-        expectTyped(resources, makeField("wayland", true), "ok tunx^^ ", "ok tunx ", "lock toggle: a second tap during the swap", slow, 10);
+        expectTyped(resources, makeField("wayland", true), "ok tunx^^ ", "ok tũn ", "lock toggle: a tap during the swap is dropped", slow, 10);
 
         const auto tap = [](ngosen::TypingState& state) {
             FakeKey down(ngosen::key::Control_L, false, 0);

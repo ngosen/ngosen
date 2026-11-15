@@ -199,11 +199,13 @@ namespace ngosen {
             return;
         tracking_modifier_tap_ = false;
         // Keys typed while a replacement is in flight replay after it; lock the word once they have.
-        // Two taps on a locked word cancel out.
-        if (is_deleting_.load(std::memory_order_acquire))
-            lock_word_pending_ = lockedWord_ ? !lock_word_pending_ : true;
-        else
+        if (!is_deleting_.load(std::memory_order_acquire))
             lockWord();
+        else if (lockedWord_)
+            // Swapping again only once the app shows this swap keeps the deletion off text not there yet.
+            NGOSEN_INFO("Tap during a swap dropped");
+        else
+            lock_word_pending_ = true;
     }
 
     void TypingState::cancelModifierTap() {

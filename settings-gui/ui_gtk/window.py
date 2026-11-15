@@ -443,6 +443,13 @@ class Window(Adw.ApplicationWindow):
             [Gtk.AccessibleProperty.LABEL], [_("Steps left to fix: {}").format(count)]
         )
 
+    def start_on(self, page, opened=True):
+        """Opens on `page`, or on Check my machine when due; a launch into this window does not count."""
+        if page:
+            self.show_page(page)
+        elif opened:
+            self.open_check_if_due()
+
     def open_check_if_due(self, path=None):
         """Lands on Check my machine the first time, and while a step that stops typing is undone."""
         if check_reminder.should_open(self.check.found, path or check_reminder.state_file()):
@@ -563,10 +570,7 @@ class App(Adw.Application):
         opened = window is None
         if opened:
             window = Window(self, self.dbus)
-        if args.page:
-            window.show_page(args.page)
-        elif opened:
-            window.open_check_if_due()
+        window.start_on(args.page, opened)
         window.present()
         return 0
 

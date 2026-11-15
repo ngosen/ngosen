@@ -108,6 +108,7 @@ class SaveJourney:
             PYTHONPATH=GUI_DIR,
             XDG_CONFIG_HOME=os.path.join(tmp.name, "config"),
             XDG_DATA_HOME=os.path.join(tmp.name, "data"),
+            XDG_STATE_HOME=os.path.join(tmp.name, "state"),
         )
 
     def test_a_changed_setting_reaches_fcitx5(self):

@@ -1,0 +1,97 @@
+# SPDX-FileCopyrightText: 2026 Ngó Sen contributors
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Words that offer an emoji while typing: keyword, emoji (best first, at most five), kind.
+# Kinds: word keeps the word and adds the emoji after it; sound (haha, huhu) and emoticon (:))
+# are replaced by the emoji. Country names come from CLDR in misc/gen-emoji-keywords.py.
+# The list is picked by hand: CLDR keywords alone include words such as `có` and `không`.
+cười	😂 🤣 😄 😆 😁	word
+haha	😂 🤣 😆	sound
+hihi	😁 😊 😆	sound
+hehe	😁 😆 😅	sound
+kk	😂 🤣	sound
+lol	😂 🤣	sound
+vãi	😂 🤣 😱	word
+huhu	😭 😢	sound
+hic	😢 😭 🥲	sound
+hix	😢 😭 🥲	sound
+khóc	😢 😭 🥲	word
+buồn	😔 😢 😞	word
+vui	😊 😄 😁	word
+giận	😠 😡 🤬	word
+tức	😤 😠 😡	word
+sợ	😨 😱 😰	word
+wow	😮 🤩 😲	word
+omg	😱 😮	word
+ngại	😳 🙈 😅	word
+xấu hổ	😳 🙈 😊	word
+mệt	😩 😫 🥱	word
+buồn ngủ	😴 🥱	word
+ngủ	😴 💤	word
+chán	😒 😑 🙄	word
+hôn	😘 😗 💋	word
+thương	❤️ 🥰 🤗	word
+yêu	❤️ 😍 🥰 💕	word
+tim	❤️ 💕 💖	word
+love	❤️ 😍 🥰	word
+thích	😍 👍 ❤️	word
+ôm	🤗 🫂	word
+ngầu	😎	word
+cool	😎 👍	word
+ngon	😋 🤤	word
+đói	🤤 😋	word
+ốm	🤒 🤧 😷	word
+say	🥴 🍺	word
+hmm	🤔	word
+ok	👌 👍	word
+oke	👌 👍	word
+like	👍	word
+tốt	👍 💯	word
+good	👍	word
+tuyệt	👏 🤩 👍	word
+đỉnh	🔥 👍 💯	word
+xin lỗi	🙏 😔	word
+cảm ơn	🙏 😊	word
+thanks	🙏 😊	word
+chào	👋 😊	word
+hello	👋 😊	word
+bye	👋	word
+vỗ tay	👏	word
+cố lên	💪	word
+chúc mừng	🎉 🥳 👏	word
+sinh nhật	🎂 🎉 🥳 🎁	word
+quà	🎁	word
+tết	🧧 🎆 🌸	word
+giáng sinh	🎄 🎅	word
+noel	🎄 🎅	word
+mèo	🐈 🐱	word
+chó	🐕 🐶	word
+heo	🐷 🐖	word
+cà phê	☕	word
+cafe	☕	word
+trà sữa	🧋	word
+bia	🍺 🍻	word
+pizza	🍕	word
+phở	🍜	word
+mưa	🌧️ ☔	word
+nắng	☀️ 😎	word
+lạnh	🥶	word
+nóng	🥵 🔥	word
+hoa hồng	🌹	word
+:)	🙂 😊	emoticon
+:d	😃 😄	emoticon
+:(	🙁 😞	emoticon
+:'(	😢 😭	emoticon
+;)	😉	emoticon
+:p	😛	emoticon
+<3	❤️	emoticon
+:3	🥰 😺	emoticon
+=)	🙂	emoticon
+:v	😆 😏	emoticon
+xd	😆 🤣	emoticon
+# Short names CLDR leaves out; not "Anh" or "Trung", which start sentences and names.
+mỹ	🇺🇸	country
+ý	🇮🇹	country
+nhật	🇯🇵	country
+hàn	🇰🇷	country

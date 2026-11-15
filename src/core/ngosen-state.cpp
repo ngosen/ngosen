@@ -794,7 +794,14 @@ namespace ngosen {
                 backspaceInWord_ = false;
             startEchoTimer(keyEvent);
         }
+        const bool        typedKey   = !keyEvent.isRelease() && !keyEvent.isModifier();
+        const std::string wordBefore = typedKey ? openWord() : std::string();
+        emojiTookPress_              = false;
         handleKey(keyEvent);
+        if (typedKey && !emojiTookPress_) {
+            noteTypedForEmoji(keyEvent, wordBefore);
+            updateEmojiOffer();
+        }
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             keySinceReport_ = true;
             clickBeforeKey_ = false;
@@ -872,7 +879,7 @@ namespace ngosen {
             // Taken on every key, so only the key right after the selection can use it.
             selectedBeforeKey_ = host_->takeSelection();
         }
-        if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || skipsKey(keyEvent))
+        if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || handleEmojiOfferKey(keyEvent) || skipsKey(keyEvent))
             return;
         settleBeforeKey();
         const uint32_t currentSym = trackCapitalization(keyEvent);
@@ -1373,6 +1380,7 @@ namespace ngosen {
         }
         // The cursor may have moved, so Enter or Esc must not replace text before it.
         dropRetype();
+        dropEmojiOffer();
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
         slashWord_             = false;
@@ -1505,6 +1513,8 @@ namespace ngosen {
         }
         emojiBuffer_.clear();
         emojiCandidates_.clear();
+        emojiTail_.clear();
+        dropEmojiOffer();
         buffered_keys_.clear();
         edit_hold_            = false;
         report_requests_left_ = 0;
@@ -1543,6 +1553,7 @@ namespace ngosen {
                 commit(raw.get());
         }
         dropRetype();
+        dropEmojiOffer();
         dropRetoneKey();
         forgetKeysWhileOff();
         clearAllBuffers();

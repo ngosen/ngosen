@@ -174,6 +174,10 @@ msgstr ""
 msgid "Type a word that starts with / as is"
 msgstr ""
 
+#: src/ngosen-config.h
+msgid "Suggest emoji while typing"
+msgstr ""
+
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
 msgstr ""
@@ -376,6 +380,10 @@ msgstr ""
 
 #: src/lotus-state.cpp:241
 msgid "Page "
+msgstr ""
+
+#: src/core/ngosen-state-emoji-offer.cpp
+msgid "pick, Space or Enter: the first, Esc: keep the word"
 msgstr ""
 
 #: src/core/ngosen-state-retype.cpp
@@ -1399,6 +1407,10 @@ msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py

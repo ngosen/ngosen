@@ -63,6 +63,7 @@ SETTINGS_MAP = {
             "AutoCapitalizeAfterPunctuation",
             "CapitalizeStartOfText",
             "RawWordAfterSlash",
+            "EmojiSuggestions",
         ],
     },
     SettingsCategory.SHORTCUTS: {
@@ -129,6 +130,9 @@ HINTS = {
     ),
     "RetoneSelection": N_(
         "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s. Only the tone mark changes: nguoi does not become người."
+    ),
+    "EmojiSuggestions": N_(
+        "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."
     ),
     "RawWordAfterSlash": N_(
         "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."

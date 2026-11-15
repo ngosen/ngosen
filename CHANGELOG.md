@@ -10,6 +10,15 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Gợi ý emoji khi gõ: gõ xong `cười`, `con mèo`, `cảm ơn`, `haha` hay `:)` là hiện `Tab: 😂 …` cạnh con
+  trỏ. Bấm Tab để đánh số (kèm dòng nhắc phím), rồi 1–5 chọn một emoji; Tab, Space hoặc Enter lấy emoji đầu, Esc giữ nguyên
+  chữ. Chữ thường giữ lại và emoji thêm vào sau; `haha` và `:)` được thay bằng emoji. Gõ không dấu như
+  `cuoi` vẫn ra, còn `cho`, `meo` thì không, vì đó đã là chữ tiếng Việt. Cờ hiện khi tên nước viết hoa
+  (`Việt Nam`, `Pháp`). Hiện với giao diện fcitx5 mặc định và extension Input Method Panel trên GNOME;
+  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trong nhóm Gõ nhanh, mặc định bật (#110, #788).
+
 ## [1.11.1-1] — 15/11/2026
 
 Nhấn Space sau từ kéo dài khi chat nay giữ nguyên chữ đang hiện, như `ừaaa`, `ờaaa`, `khônggg` (#768). Sửa lỗi mất chữ kéo dài sau khi máy bận và giảm mất chữ khi máy rất bận trên GNOME trong app như ô chat Antigravity (#767, #773); sửa lỗi chữ mới đến trước BackSpace trong Firefox trên Linux Mint bằng cách xoá qua surrounding text (#766). Sửa lỗi gõ sai ngay khi mở Firefox bản snap trên Ubuntu bằng cách chờ chữ đã gửi hiện lên rồi xoá qua surrounding text, đồng thời không để một lần kiểm tra sai làm các window mở sau chuyển sang xoá bằng BackSpace (#778, #780, #781). Trong Chromium trên X11, lệnh hoặc đường dẫn bắt đầu bằng `/` không còn bị đổi dấu sau khi xoá hết ô bằng Ctrl+A rồi BackSpace (#775). Trong Luckysheet trên Chrome ở GNOME, chuyển cell rồi gõ từ mới không còn bị giữ nguyên phím Telex vì bộ gõ tưởng vẫn đang gõ tiếp từ cũ (#782). Trang Kiểm tra máy không còn báo gói do distro đóng gói là “không nhận version mới” (#774); lệnh cài trên Debian và distro dựa trên Debian báo trước khi thay gói của distro bằng gói Ngó Sen, README hướng dẫn quay lại gói của distro và link cập nhật mở đúng mục (#776). Trang cài đặt Qt và GTK nay báo cần khởi động lại fcitx5 khi Ngó Sen đang chạy là bản cũ hơn cửa sổ cài đặt (#777).

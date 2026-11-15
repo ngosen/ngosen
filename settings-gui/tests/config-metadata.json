@@ -342,6 +342,13 @@
     {}
    ],
    [
+    "EmojiSuggestions",
+    "Boolean",
+    "Suggest emoji while typing",
+    "True",
+    {}
+   ],
+   [
     "AutoNonVnRestore",
     "Boolean",
     "Auto Restore Invalid Words",

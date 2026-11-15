@@ -111,3 +111,11 @@ add_executable(core_emoji_keywords core-emoji-keywords.cpp)
 target_link_libraries(core_emoji_keywords PRIVATE ngosen_core)
 add_test(NAME core_emoji_keywords COMMAND core_emoji_keywords)
 set_tests_properties(core_emoji_keywords PROPERTIES LABELS "unit;core" TIMEOUT 30)
+
+add_executable(core_emoji_offer core-emoji-offer.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
+target_compile_definitions(core_emoji_offer PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"
+    NGOSEN_TEST_ENGLISH_WORDS="${PROJECT_SOURCE_DIR}/data/english-common.txt"
+    NGOSEN_TEST_KEEP_WORDS="${PROJECT_SOURCE_DIR}/data/keep-words.txt")
+target_link_libraries(core_emoji_offer PRIVATE ngosen_core)
+add_test(NAME core_emoji_offer COMMAND core_emoji_offer)
+set_tests_properties(core_emoji_offer PROPERTIES LABELS "unit;core" TIMEOUT 60 ENVIRONMENT "DISPLAY=")

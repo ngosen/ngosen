@@ -222,8 +222,21 @@ namespace ngosen {
     }
 
     bool deletesThroughSurroundingFirst(const Field& field) {
-        // XIM has no surrounding text; fcitx4 is the GTK module in old snaps, which nobody has measured.
-        return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2" || field.frontend == "dbus";
+        // XIM has no surrounding text.
+        return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2" || field.frontend == "dbus" || field.frontend == "fcitx4";
+    }
+
+    bool takesDeletionWhileUndeclared(const Field& field) {
+        return field.frontend == "dbus";
+    }
+
+    bool takesDeletionOnStaleCopy(const Field& field) {
+        // The name stands for a GTK client: Qt ones convert the count on their own cached copy.
+        return (field.frontend == "dbus" || field.frontend == "fcitx4") && isFirefoxFamily(appName(field));
+    }
+
+    bool appliesDeletionsEarly(const Field& field) {
+        return field.frontend == "fcitx4" && isFirefoxFamily(appName(field));
     }
 
     bool reportsTrailKeys(const Field& field) {

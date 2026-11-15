@@ -265,6 +265,17 @@ namespace {
         check(text == "tieengs vieetj", "retype where nothing can delete leaves the text", text);
     }
 
+    // On a busy page Firefox can keep its cursor past the retype's commit, and Esc would delete from there.
+    void testRetypeUndoWithCursorPast() {
+        Field field       = makeField("ibus", true);
+        field.sendsNoKeys = true;
+        field.program     = "gnome-shell";
+        const AppQuirks busy{
+            .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true, .keepsLastEditPerTurn = true, .turnMs = 3, .appliesDeletionAfterMs = 60, .textAfterCursor = " chào"};
+        const std::string text = retypeInApp(field, Mode::Sen, "as", {ngosen::key::Escape}, busy);
+        check(text == "á chào", "busy page: Esc leaves the retyped word while the cursor is past", text);
+    }
+
     void testRetypeInApp(const std::string& frontend, bool surroundingText, Mode mode) {
         const Field       field = makeField(frontend, surroundingText);
         const std::string what  = frontend + (mode == Mode::Sen ? " sen: " : " preedit: ");
@@ -629,6 +640,7 @@ int main() {
     testFocusInDoesNotOffer();
     testOwnEnglish();
     testRetypeWithNoWayToDelete();
+    testRetypeUndoWithCursorPast();
     testRetypeInApp("wayland", true, Mode::Sen);
     testRetypeInApp("xim", false, Mode::Sen);
     testRetypeInApp("wayland", true, Mode::Preedit);

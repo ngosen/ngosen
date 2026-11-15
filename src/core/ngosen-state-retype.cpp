@@ -179,14 +179,19 @@ namespace ngosen {
         hideOffer();
         const bool        undo   = retype_->applied;
         const std::string marked = retype_->marked + retype_->after;
-        replaceRetyped(undo ? marked : retype_->typed, undo ? retype_->typed : marked);
+        const bool        edited = replaceRetyped(undo ? marked : retype_->typed, undo ? retype_->typed : marked);
         if (undo)
             retype_.reset();
         else
-            retype_->applied = true;
+            retype_->applied = edited;
     }
 
-    void TypingState::replaceRetyped(const std::string& from, const std::string& to) {
+    bool TypingState::replaceRetyped(const std::string& from, const std::string& to) {
+        // A deletion would start from that cursor, so the word stays as the app shows it.
+        if (cursorStaysPast()) {
+            NGOSEN_INFO("Leave the word as it is" + loggedField(host_->field()) + ": the app's cursor is past its last commit");
+            return false;
+        }
         if (canSendBackspaces()) {
             performReplacement(from, to);
         } else {
@@ -194,6 +199,7 @@ namespace ngosen {
             host_->deleteSurrounding(-length, static_cast<unsigned int>(length));
             commit(to);
         }
+        return true;
     }
 
     void TypingState::acceptRetype(const std::string& hint) {

@@ -514,6 +514,42 @@ fn test_marks_added_to_rimes_that_always_have_them() {
 }
 
 #[test]
+fn test_tone_typed_after_a_final_the_rules_reject() {
+    for (keys, word) in [
+        ("peks", "pék"),
+        ("PEKS", "PÉK"),
+        ("ngokj", "ngọk"),
+        ("puchs", "púch"),
+        ("tehr", "tẻh"),
+        ("tringj", "trịng"),
+        ("eengf", "ềng"),
+    ] {
+        assert_eq!(
+            committed_with("Telex", keys, KEY_SPACE),
+            format!("{word} "),
+            "{keys}"
+        );
+    }
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, "peks");
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.commit_text, "pék ", "with the English list");
+    // The last s of hursts undoes the tone its r put on, so it must not put one back.
+    for keys in ["hursts", "Burnss", "barff", "sends", "peksx"] {
+        let text = committed_with("Telex", keys, KEY_SPACE);
+        assert_eq!(without_tones(&text.to_lowercase()).1, 0, "{keys}: {text}");
+    }
+    assert_eq!(committed_with("Telex", "tehr", '.' as u32), "tẻh.");
+    assert_eq!(committed_with("Telex", "peks", KEY_RETURN), "pék");
+    // EHR is an English abbreviation as well as the keys of ẻh.
+    for keys in ["ehr", "EHR"] {
+        assert_eq!(committed_with("Telex", keys, KEY_SPACE), format!("{keys} "));
+    }
+    assert_eq!(committed_with("Telex", "peks", '@' as u32), "peks@");
+}
+
+#[test]
 fn test_tone_changed_after_final_consonant() {
     for (keys, word) in [
         ("dduoxwcj", "được"),
@@ -675,7 +711,7 @@ fn test_retone_lookalikes_are_listed_once_in_order() {
         let mut e = engine_with_default_settings("Telex");
         type_keys(&mut e, word);
         assert!(
-            e.retoned_word_of(word).is_some(),
+            e.retoned_word_of(word).is_some() || e.late_tone_word_of(word).is_some(),
             "{word} is not typed like a retone"
         );
     }
@@ -1562,4 +1598,41 @@ fn test_space_keeps_a_tail_of_several_words() {
     let mut e = engine_keeping_words("Telex", &["bank"]);
     e.macro_enabled = true;
     assert_eq!(commit_dropping(&mut e, "coongty2me").0, "côngty2me ");
+}
+
+#[test]
+fn test_space_keeps_stretched_words() {
+    let mut e = engine_keeping_words("Telex", &["bank"]);
+    for (keys, commit) in [
+        ("uwfaaa", "ừaaa "),
+        ("owfaaa", "ờaaa "),
+        ("vuwfaaa", "vừaaa "),
+        ("muwaaaa", "mưaaaa "),
+        ("uwfeee", "ừeee "),
+        ("owiii", "ơiii "),
+        ("trowifii", "trờiii "),
+        ("trowifiii", "trờiiii "),
+        ("nayfyyy", "nàyyyy "),
+        ("khoonggg", "khônggg "),
+    ] {
+        assert_eq!(
+            commit_dropping(&mut e, keys),
+            (commit.to_string(), String::new()),
+            "{keys}"
+        );
+    }
+    // Two-letter second words and bounced consonant keys still split or trim.
+    assert_eq!(commit_dropping(&mut e, "caisoo").0, "cái ô ");
+    assert_eq!(commit_dropping(&mut e, "dduowjcc").0, "được ");
+    assert_eq!(commit_dropping(&mut e, "dduowjctt").0, "được ");
+
+    let mut vni = engine_keeping_words("VNI", &["bank"]);
+    assert_eq!(commit_dropping(&mut vni, "u72aaa").0, "ừaaa ");
+    assert_eq!(commit_dropping(&mut vni, "o72aaa").0, "ờaaa ");
+
+    e.reset();
+    e.rebuild_from_text("ừaaa");
+    e.drop_kept_tail = true;
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.pull_commit(), "ừaaa ");
 }

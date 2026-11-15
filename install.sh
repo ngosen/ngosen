@@ -14,6 +14,7 @@ REPO_URL=${NGOSEN_REPO_URL:-https://ngosen.github.io/ngosen}
 SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/TU-DUNG.md"
 OSTREE_ISSUE="https://github.com/ngosen/ngosen/issues/492"
 UPDATE_GUIDE="https://github.com/ngosen/ngosen#cập-nhật-bằng-trình-quản-lý-gói"
+DISTRO_GUIDE="https://github.com/ngosen/ngosen#goi-cua-distro"
 # The repository key is pinned here because this script is what users already trust; the
 # release workflow refuses to publish a key with another checksum.
 REPO_KEY_SHA256=c21e303174f29e12540e993893f20d0b76488bbaa6a8c2f5bea6f6a64ab03fb7
@@ -336,6 +337,19 @@ remove_other_package() {
     other_removed=1
 }
 
+# The version of fcitx5-ngosen when it came from the distribution's archive. Those packages carry
+# +ds and no epoch, so ours always count as newer and apt never brings them back by itself.
+distro_package_version() {
+    local version
+    [ "$manager" = apt ] && [ "$edition" = fcitx5 ] && is_package_installed fcitx5-ngosen || return 1
+    version=$(dpkg-query -W -f='${Version}' fcitx5-ngosen 2>/dev/null) || return 1
+    case "$version" in
+        *:*) return 1 ;;
+        *+ds*) printf '%s\n' "$version" ;;
+        *) return 1 ;;
+    esac
+}
+
 # Everything the install will change, listed before the one question that lets it go ahead.
 show_plan() {
     local name="bản fcitx5"
@@ -343,6 +357,16 @@ show_plan() {
     say ""
     say "Lệnh sẽ:"
     step "cài Ngó Sen $name bằng $manager, từ gói:" "$RELEASE_URL/$1"
+    local distro_version
+    if distro_version=$(distro_package_version); then
+        step "thay gói fcitx5-ngosen $distro_version của distro bằng gói Ngó Sen. Từ đó apt chỉ lấy" \
+            "version mới từ Ngó Sen, kể cả khi distro có version mới hơn. Cách quay lại gói của distro:" \
+            "$DISTRO_GUIDE"
+        if ! wants_repo && ! apt_repo_file /etc/apt "$REPO_URL/apt" >/dev/null; then
+            step "không thêm repo Ngó Sen, nên máy không nhận version mới nào nữa cho tới khi quay lại" \
+                "gói của distro"
+        fi
+    fi
     if [ "$replace_other" -eq 1 ]; then
         step "gỡ gói $other_package trong cùng lần cài, nên mọi tài khoản trên máy đều mất $other_name." \
             "Cài lỗi thì $other_name vẫn giữ nguyên."

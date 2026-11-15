@@ -227,6 +227,7 @@ namespace ngosen {
             std::string keys;
             std::string composed;
             bool        showsComposed;
+            uint64_t    editedAtUs = 0; ///< when the lock or the last swap went to the app
         };
         std::optional<LockedWord>      lockedWord_; ///< the word just locked, which another tap swaps between its two forms
         std::unique_ptr<ngosen::Timer> lock_swap_timer_;

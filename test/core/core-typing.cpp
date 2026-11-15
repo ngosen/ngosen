@@ -2547,11 +2547,23 @@ namespace {
             state.keyEvent(up);
         };
         // Firefox through the fcitx4 frontend resets the context after each commit, the swap's own too.
-        for (const bool click : {false, true}) {
+        // GTK 3 on Plasma reports a click late, so only the time since our edit tells the reset apart.
+        const struct {
+            bool        click;
+            bool        hidesClick;
+            int         waitMs;
+            const char* want;
+            const char* step;
+        } resets[] = {{false, false, 40, "abc tunx", "lock toggle: an app reset after the swap keeps the word"},
+                      {true, false, 40, "abc tũn", "lock toggle: a reset after a click leaves the word alone"},
+                      {true, true, 300, "abc tũn", "lock toggle: a reset after a click the app reports late leaves the word alone"}};
+        for (const auto& r : resets) {
             realMode = ngosen::Mode::Sen;
+            ngosen::test::AppQuirks quirks;
+            quirks.hidesCursorMoves = r.hidesClick;
             FakeLoop            loop;
             FakeResources       plain;
-            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("dbus", true), ngosen::test::AppQuirks{});
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("dbus", true), quirks);
             auto*               app   = owned.get();
             ngosen::TypingState state(&plain, std::move(owned));
             app->attach(&state);
@@ -2560,15 +2572,14 @@ namespace {
                 loop.pump(30);
             }
             tap(state);
-            loop.pump(40);
-            if (click)
+            loop.pump(r.waitMs);
+            if (r.click)
                 app->moveCursor(3);
             state.appReset();
             loop.pump(100);
             tap(state);
             loop.pump(300);
-            const std::string want = click ? "abc tũn" : "abc tunx";
-            check(app->text() == want, click ? "lock toggle: a reset after a click leaves the word alone" : "lock toggle: an app reset after the swap keeps the word", app->text());
+            check(app->text() == r.want, r.step, app->text());
         }
         for (const bool click : {true, false}) {
             realMode = ngosen::Mode::Sen;

@@ -1336,11 +1336,12 @@ namespace ngosen {
         fieldAtKeptReset_.reset();
         if (keep)
             fieldAtKeptReset_ = std::make_pair(host_->surrounding().text(), host_->surrounding().cursor());
-        // Firefox through the fcitx4 frontend resets after each commit, the lock key's swap included.
-        // The next tap checks that the word is still there, which only a field with a report can tell.
+        // Firefox through the fcitx4 frontend resets right after each commit, the lock key's swap
+        // included. A later reset may be a click the report does not show yet, so it drops the word.
+        constexpr uint64_t        OwnEditResetUs = 100000;
         std::optional<LockedWord> locked;
         const Surrounding         s = host_->surrounding();
-        if (host_->field().surroundingText && s.isValid() && !s.text().empty())
+        if (lockedWord_ && ngosen::monotonicUs() - lockedWord_->editedAtUs < OwnEditResetUs && host_->field().surroundingText && s.isValid() && !s.text().empty())
             locked = lockedWord_;
         resetField(false, true, keep);
         lockedWord_ = std::move(locked);

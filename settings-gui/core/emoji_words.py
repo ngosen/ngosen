@@ -51,10 +51,7 @@ class EmojiWords:
             if all(key):
                 self.edits[key] = str(item.get("On", "True")).lower() == "true"
         self._saved = dict(self.edits)
-        self.off_apps = [
-            item.get("App", "") for item in self.dbus.get_sub_config_list(*OFF_APPS) or []
-        ]
-        self.off_apps = [app for app in self.off_apps if app]
+        self.off_apps = self._read_apps()
 
     # The words of an emoji, as (word, on): its defaults, then the user's own, then its name's.
     def chips(self, emoji):
@@ -108,22 +105,37 @@ class EmojiWords:
             shown.append(row)
         return shown
 
+    def _read_apps(self):
+        apps = [item.get("App", "") for item in self.dbus.get_sub_config_list(*OFF_APPS) or []]
+        return [app for app in apps if app]
+
+    def _write_apps(self, apps):
+        if not self.dbus.set_sub_config_list(*OFF_APPS, [{"App": app} for app in apps]):
+            return False
+        self.off_apps = apps
+        return True
+
     def enable_app(self, app):
-        """Offers emoji in the app again; returns an undo that puts it back, or None if not saved."""
-        before = list(self.off_apps)
-        self.off_apps = [a for a in self.off_apps if a != app]
-        if not self.save_apps():
-            self.off_apps = before
+        """Offers emoji in the app again; returns an undo that puts it back, or None if not saved.
+
+        Both start from fcitx5's list, which the keyboard may have changed since the page loaded.
+        """
+        before = self._read_apps()
+        if not self._write_apps([a for a in before if a != app]):
             return None
+        place = before.index(app) if app in before else len(before)
 
         def undo():
-            self.off_apps = before
-            return self.save_apps()
+            current = self._read_apps()
+            if app in current:
+                self.off_apps = current
+                return True
+            return self._write_apps([*current[:place], app, *current[place:]])
 
         return undo
 
     def save_apps(self):
-        return self.dbus.set_sub_config_list(*OFF_APPS, [{"App": app} for app in self.off_apps])
+        return self._write_apps(list(self.off_apps))
 
     def is_modified(self):
         return self.edits != self._saved

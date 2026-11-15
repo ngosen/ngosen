@@ -472,6 +472,8 @@ class EmojiPage(DynamicSettingsPage):
     def _remember_saved(self):
         self._saved_edits = dict(self.words.edits)
         self._saved_apps = list(self.words.off_apps)
+        # Defaults write the empty list even when it matches: the keyboard may have added apps.
+        self._apps_reset = False
 
     def load_config(self, values=None):
         super().load_config(values)
@@ -658,13 +660,15 @@ class EmojiPage(DynamicSettingsPage):
         if self.view is not None:
             self.view.fill()
 
-    def _toggle_hint(self):
-        return toggle_hint(self.value_of("ModeMenuKey"), self.value_of("ShortcutEmoji"))
+    def _toggle_hint(self, values=None):
+        values = values or {}
+        keys = [values.get(k, self.value_of(k)) for k in ("ModeMenuKey", "ShortcutEmoji")]
+        return toggle_hint(*keys)
 
     def showEvent(self, event):
         super().showEvent(event)
-        # The keys may have changed on the Keys page.
-        self._apps_hint.setText(self._toggle_hint())
+        # The Keys page keeps its own copy of the settings, so ask fcitx5.
+        self._apps_hint.setText(self._toggle_hint(self.dbus.get_config().get("values")))
         # Built hidden at window start, the form may have chosen its layout for a stale width.
         QTimer.singleShot(0, self._update_wrap_policy)
         QTimer.singleShot(0, self._fill_view)
@@ -690,6 +694,7 @@ class EmojiPage(DynamicSettingsPage):
         return (
             super().is_modified()
             or self.words.is_modified()
+            or self._apps_reset
             or self.words.off_apps != self._saved_apps
         )
 
@@ -704,7 +709,8 @@ class EmojiPage(DynamicSettingsPage):
             self.words.edits = dict(self._saved_edits)
             self._redraw_words()
             return False
-        if self.words.off_apps != self._saved_apps and not self.words.save_apps():
+        apps_changed = self._apps_reset or self.words.off_apps != self._saved_apps
+        if apps_changed and not self.words.save_apps():
             self.words.off_apps = list(self._saved_apps)
             self._show_apps()
             return False
@@ -718,6 +724,7 @@ class EmojiPage(DynamicSettingsPage):
 
     def restore_defaults(self):
         self.words.restore_defaults()
+        self._apps_reset = True
         super().restore_defaults()
         self._show_apps()
         self._redraw_words()

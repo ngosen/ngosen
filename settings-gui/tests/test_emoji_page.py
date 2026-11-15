@@ -157,6 +157,23 @@ class EmojiPageTest(unittest.TestCase):
         self.assertEqual(self.fake.sub_configs["emoji_words"], [])
         self.assertEqual(self.fake.sub_configs["emoji_off_apps"], [])
 
+    def test_defaults_turn_on_an_app_turned_off_after_opening(self):
+        self.open()
+        self.fake.sub_configs["emoji_off_apps"] = [{"App": "kate"}]
+        with mock.patch("ui.main_window.confirm", return_value=True):
+            self.window.on_restore_defaults()
+        self.window.save_pending()
+        self.assertEqual(self.fake.sub_configs["emoji_off_apps"], [])
+
+    def test_the_hint_names_keys_saved_on_another_page(self):
+        self.open()
+        self.assertIn("press ` then w", self.page._apps_hint.text())
+        self.fake.values.update(ModeMenuKey={"0": "Control+e"}, ShortcutEmoji="x")
+        self.window.show_page("typing")
+        self.window.show_page("emoji")
+        app.processEvents()
+        self.assertIn("press Ctrl+E then x", self.page._apps_hint.text())
+
 
 if __name__ == "__main__":
     unittest.main()

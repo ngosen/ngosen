@@ -137,6 +137,21 @@ class OffAppsTest(unittest.TestCase):
         self.assertTrue(undo())
         self.assertEqual(fake.sub_configs["emoji_off_apps"], [{"App": "firefox"}, {"App": "kate"}])
 
+    def test_turning_back_on_keeps_an_app_turned_off_since(self):
+        fake = FakeDBusHandler(sub_configs={"emoji_off_apps": [{"App": "firefox"}]})
+        table = words(fake)
+        fake.sub_configs["emoji_off_apps"].append({"App": "kate"})
+        table.enable_app("firefox")
+        self.assertEqual(fake.sub_configs["emoji_off_apps"], [{"App": "kate"}])
+        self.assertEqual(table.off_apps, ["kate"])
+
+    def test_undo_keeps_an_app_turned_off_since(self):
+        fake = FakeDBusHandler(sub_configs={"emoji_off_apps": [{"App": "firefox"}]})
+        undo = words(fake).enable_app("firefox")
+        fake.sub_configs["emoji_off_apps"].append({"App": "kate"})
+        self.assertTrue(undo())
+        self.assertEqual(fake.sub_configs["emoji_off_apps"], [{"App": "firefox"}, {"App": "kate"}])
+
 
 class ToggleHintTest(unittest.TestCase):
     def test_names_the_keys_the_user_set(self):

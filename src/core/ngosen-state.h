@@ -864,6 +864,9 @@ namespace ngosen {
         // Backspace on a word with a tone mark: take off only the mark. False leaves the key as is.
         bool removeToneMark(ngosen::KeyPress& keyEvent);
         bool replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent);
+        // False when the Backspace only drops a letter. Otherwise `edited` holds the word to show instead of the
+        // app's text less one character, if the field can take that edit.
+        bool backspaceIntoKeysShownAsTyped(std::optional<std::string>& edited, std::string& deletedPart, std::string& addedPart);
         // Backspace from after lastWord_ into it: the engine takes up what is left of that word.
         void reopenLastWord();
         // A key's press can reach the app before the input method has the field (a sheet opening a cell

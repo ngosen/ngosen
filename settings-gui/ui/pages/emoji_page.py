@@ -188,13 +188,22 @@ class Chip(QAbstractButton):
             painter.setBrush(QColor(0, 0, 0, 0) if not hovered else _faint(text))
             pen = QPen(accent if self.hasFocus() else text, 2 if self.hasFocus() else 1)
             pen.setDashPattern([3, 2])
-            font.setStrikeOut(True)
+            font.setStrikeOut(self.isCheckable())
         painter.setPen(pen)
         radius = rect.height() / 2
         painter.drawRoundedRect(rect, radius, radius)
         painter.setFont(font)
         painter.setPen(text)
         painter.drawText(self.rect(), Qt.AlignCenter, self.text())
+
+
+class NewWord(Chip):
+    """The "+ word" button, which turns into a box to type in when clicked."""
+
+    def __init__(self, emoji, parent=None):
+        super().__init__("", emoji, parent)
+        self.setCheckable(False)
+        self.setAccessibleName(_("Add a word for {}").format(emoji))
 
 
 def _faint(color):
@@ -249,18 +258,13 @@ class EmojiRow(Row):
 
         self.word_box = QWidget()
         self.flow = FlowLayout(self.word_box)
-        self.entry = QLineEdit()
-        self.entry.setPlaceholderText(_("+ word"))
-        self.entry.setAccessibleName(_("Add a word for {}").format(self.emoji))
-        self.entry.setFixedWidth(ENTRY_WIDTH)
-        self.entry.setText(page.drafts.get(self.emoji, ""))
-        self.add_button = QPushButton(_("Add"))
-        self.add_button.setVisible(bool(self.entry.text().strip()))
-        self.entry.textChanged.connect(self._on_draft)
-        self.entry.returnPressed.connect(self._add)
-        self.add_button.clicked.connect(self._add)
-        self.flow.addWidget(self.entry)
-        self.flow.addWidget(self.add_button)
+        # A button until clicked: an entry in every row built would double their cost.
+        self.new = NewWord(self.emoji, self.word_box)
+        self.new.clicked.connect(self.open_entry)
+        self.flow.addWidget(self.new)
+        self.entry = None
+        self.add_button = None
+        self._label_new()
         layout.addWidget(self.word_box, 1)
 
         self.reset_button = QPushButton(_("As before"))
@@ -289,9 +293,59 @@ class EmojiRow(Row):
         self.reset_button.setVisible(self.page.words.changed(self.emoji))
         self.page.view.fit(self)
 
+    def _label_new(self):
+        self.new.setText(self.page.drafts.get(self.emoji) or _("+ word"))
+
+    def open_entry(self):
+        for row in self.page.view.live.values():
+            if row is not self:
+                row.close_entry()
+        if self.entry is None:
+            self.entry = QLineEdit(self.word_box)
+            self.entry.setPlaceholderText(_("+ word"))
+            self.entry.setAccessibleName(_("Add a word for {}").format(self.emoji))
+            self.entry.setFixedWidth(ENTRY_WIDTH)
+            self.entry.setText(self.page.drafts.get(self.emoji, ""))
+            self.add_button = QPushButton(_("Add"), self.word_box)
+            self.add_button.setVisible(bool(self.entry.text().strip()))
+            self.entry.textChanged.connect(self._on_draft)
+            self.entry.returnPressed.connect(self._add)
+            self.entry.editingFinished.connect(lambda: QTimer.singleShot(0, self._close_if_empty))
+            self.add_button.clicked.connect(self._add)
+            self.flow.insertWidget(len(self.chips), self.entry)
+            self.flow.insertWidget(len(self.chips) + 1, self.add_button)
+            # Shown now, not on the queued show, so the row is measured with it.
+            self.entry.show()
+            self.new.hide()
+            self.flow.drop(self.new)
+            self.page.view.fit(self)
+        self.entry.setFocus()
+
+    def close_entry(self):
+        if self.entry is None:
+            return
+        for widget in (self.entry, self.add_button):
+            self.flow.drop(widget)
+            widget.hide()
+            widget.deleteLater()
+        self.entry = self.add_button = None
+        self._label_new()
+        self.flow.insertWidget(len(self.chips), self.new)
+        self.new.show()
+        self.page.view.fit(self)
+
+    def _close_if_empty(self):
+        if self.entry is None or self.entry.text():
+            return
+        if not (self.entry.hasFocus() or self.add_button.hasFocus()):
+            self.close_entry()
+
     def _on_draft(self, text):
         # Kept by the page, since the row goes away when it scrolls out of sight.
-        self.page.drafts[self.emoji] = text
+        if text:
+            self.page.drafts[self.emoji] = text
+        else:
+            self.page.drafts.pop(self.emoji, None)
         self.add_button.setVisible(bool(text.strip()))
         self.page.view.fit(self)
 
@@ -312,7 +366,7 @@ class EmojiRow(Row):
     def _reset(self):
         self.page.words.reset(self.emoji)
         self.show_words()
-        self.entry.setFocus()
+        (self.entry or self.new).setFocus()
         self.page.words_changed(self.emoji)
 
 
@@ -333,7 +387,7 @@ class RowsView(QWidget):
         self._parts = []
         self._totals = {}
         sizes = page.sizes
-        self._line = max(sizes["chip"], sizes["entry"].height())
+        self._line = sizes["chip"]
         self._face = QFontMetrics(page.face_font).height()
 
     def set_rows(self, rows):
@@ -379,7 +433,7 @@ class RowsView(QWidget):
     def _part(self, emoji):
         sizes = self.page.sizes
         widths = [sizes["word"](w) for w, _on in self.page.words.chips(emoji)]
-        widths.append(sizes["entry"].width())
+        widths.append(sizes["word"](self.page.drafts.get(emoji) or _("+ word")))
         return widths, self.page.words.changed(emoji)
 
     def _estimate(self, part, width):
@@ -781,7 +835,6 @@ def _row_sizes():
     return {
         "chip": probe.sizeHint().height(),
         "word": word,
-        "entry": QSize(ENTRY_WIDTH, QLineEdit().sizeHint().height()),
         "reset": reset.sizeHint().width() + ROW_SPACING,
         "fixed": 2 * ROW_MARGIN + FACE_WIDTH + ROW_SPACING,
     }

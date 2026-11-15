@@ -64,6 +64,8 @@ class EmojiPageTest(unittest.TestCase):
     def test_a_word_typed_in_the_box_is_added_on(self):
         self.open()
         row = self.row("😂")
+        self.assertIsNone(row.entry)
+        row.new.click()
         self.assertTrue(row.add_button.isHidden())
         row.entry.setText("Hài Quá")
         self.assertFalse(row.add_button.isHidden())
@@ -71,6 +73,47 @@ class EmojiPageTest(unittest.TestCase):
         self.assertTrue(self.chip(row, "hài quá").isChecked())
         self.assertEqual(row.entry.text(), "")
         self.assertEqual(self.saved_words(), [{"Keyword": "hài quá", "Emoji": "😂", "On": "True"}])
+
+    def test_the_row_grows_when_add_wraps_onto_a_new_line(self):
+        self.open()
+        for pause in (False, True):
+            with self.subTest(pause=pause):
+                row = self.row("😆")
+                row.new.click()
+                if pause:
+                    app.processEvents()
+                row.entry.setText("hí hí")
+                app.processEvents()
+                bottom = row.word_box.y() + row.add_button.geometry().bottom()
+                self.assertLess(bottom, row.height())
+                row.entry.clear()
+                row.close_entry()
+
+    def test_one_box_is_open_and_a_draft_stays_on_its_button(self):
+        self.open()
+        self.find("cười")
+        first, second = list(self.page.view.live.values())[:2]
+        first.new.click()
+        first.entry.setText("vui ghê")
+        second.new.click()
+        self.assertIsNone(first.entry)
+        self.assertEqual(first.new.text(), "vui ghê")
+        self.assertIsNotNone(second.entry)
+        first.new.click()
+        self.assertEqual(first.entry.text(), "vui ghê")
+
+    def test_an_empty_box_turns_back_into_the_button(self):
+        self.open()
+        row = self.row("😂")
+        self.window.activateWindow()
+        row.new.click()
+        app.processEvents()
+        self.assertTrue(row.entry.hasFocus())
+        self.page.search.setFocus()
+        app.processEvents()
+        app.processEvents()
+        self.assertIsNone(row.entry)
+        self.assertFalse(row.new.isHidden())
 
     def test_as_before_puts_back_the_default_words(self):
         self.open()

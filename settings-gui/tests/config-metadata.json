@@ -347,6 +347,13 @@
     {}
    ],
    [
+    "YahooEmoticons",
+    "Boolean",
+    "Yahoo Messenger emoticons",
+    "True",
+    {}
+   ],
+   [
     "AutoNonVnRestore",
     "Boolean",
     "Auto Restore Invalid Words",

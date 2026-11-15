@@ -133,7 +133,7 @@ namespace ngosen {
 
     } // namespace
 
-    std::optional<EmojiSuggestion> suggestEmoji(const std::vector<std::string>& words) {
+    std::optional<EmojiSuggestion> suggestEmoji(const std::vector<std::string>& words, bool yahooEmoticons) {
         const size_t most = std::min(words.size(), index().maxWords);
         for (size_t n = most; n > 0; --n) {
             const std::vector<std::string> typed(words.end() - static_cast<std::ptrdiff_t>(n), words.end());
@@ -144,9 +144,11 @@ namespace ngosen {
             for (const Entry* entry : lookup(typed, lowered)) {
                 if (entry->kind == EmojiKind::Country && !startsCapitalized(typed.front()))
                     continue;
+                if (entry->kind == EmojiKind::Yahoo && !yahooEmoticons)
+                    continue;
                 if (suggestion.emoji.empty()) {
                     suggestion.keyword = entry->keyword;
-                    suggestion.kind    = entry->kind;
+                    suggestion.kind    = entry->kind == EmojiKind::Yahoo ? EmojiKind::Emoticon : entry->kind;
                 }
                 for (auto& emoji : split(entry->emoji)) {
                     if (suggestion.emoji.size() < 5 && std::find(suggestion.emoji.begin(), suggestion.emoji.end(), emoji) == suggestion.emoji.end())

@@ -16,6 +16,7 @@ using ngosen::suggestEmoji;
 namespace {
 
     int  failures = 0;
+    bool yahoo    = true;
 
     void check(bool ok, const std::string& what) {
         if (!ok) {
@@ -25,7 +26,7 @@ namespace {
     }
 
     std::string first(const std::vector<std::string>& words) {
-        const auto s = suggestEmoji(words);
+        const auto s = suggestEmoji(words, yahoo);
         return s ? s->emoji.front() : std::string("none");
     }
 
@@ -33,7 +34,7 @@ namespace {
         std::string typed;
         for (const auto& w : words)
             typed += w + " ";
-        const auto s = suggestEmoji(words);
+        const auto s = suggestEmoji(words, yahoo);
         check(s && s->emoji.front() == emoji && s->words == covered, typed + "-> " + emoji + ", got " + first(words) + (s ? " over " + std::to_string(s->words) : ""));
     }
 
@@ -41,7 +42,7 @@ namespace {
         std::string typed;
         for (const auto& w : words)
             typed += w + " ";
-        check(!suggestEmoji(words), typed + "-> nothing, got " + first(words));
+        check(!suggestEmoji(words, yahoo), typed + "-> nothing, got " + first(words));
     }
 
 } // namespace
@@ -65,12 +66,12 @@ int main() {
     offers({"kkkk"}, "😂");
     offers({"hahaha"}, "😂");
     offers({"hihihi"}, "😁");
-    check(suggestEmoji({"haha"})->kind == EmojiKind::Sound, "haha is a sound");
-    check(suggestEmoji({"mèo"})->kind == EmojiKind::Word, "mèo is a word");
+    check(suggestEmoji({"haha"}, yahoo)->kind == EmojiKind::Sound, "haha is a sound");
+    check(suggestEmoji({"mèo"}, yahoo)->kind == EmojiKind::Word, "mèo is a word");
     offers({":)"}, "🙂");
     offers({":D"}, "😃");
     offers({"<3"}, "❤️");
-    check(suggestEmoji({":)"})->kind == EmojiKind::Emoticon, ":) is an emoticon");
+    check(suggestEmoji({":)"}, yahoo)->kind == EmojiKind::Emoticon, ":) is an emoticon");
 
     // A country needs its capital, which keeps flags off words such as "biện pháp".
     offers({"nước", "Pháp"}, "🇫🇷");
@@ -88,12 +89,32 @@ int main() {
     offersNothing({"việt", "nam"});
     offers({"Vietnam"}, "🇻🇳");
 
+    // Whole-word emoji names from CLDR, but not a syllable that mostly sits inside other words.
+    offers({"máy", "bay"}, "✈️", 2);
+    offers({"đi", "xe", "máy"}, "🏍️", 2);
+    offers({"cơm"}, "🍚");
+    offersNothing({"báo", "cáo"});
+    offersNothing({"ý", "kiến"});
+
+    offers({"=))"}, "🤣");
+    offers({":))"}, "😆");
+    offers({"B-)"}, "😎");
+    offers({"@};-"}, "🌹");
+    offers({":\">"}, "😳");
+    offers({"\\m/"}, "🤘");
+    check(suggestEmoji({"=))"}, yahoo)->kind == EmojiKind::Emoticon, "a Yahoo code is replaced like an emoticon");
+    yahoo = false;
+    offersNothing({"=))"});
+    offersNothing({"@};-"});
+    offers({":)"}, "🙂");
+    yahoo = true;
+
     offersNothing({});
     offersNothing({"có"});
     offersNothing({"không"});
     offersNothing({"free"});
 
-    const auto many = suggestEmoji({"cười"});
+    const auto many = suggestEmoji({"cười"}, yahoo);
     check(many && many->emoji.size() == 5, "cười offers five emoji");
 
     if (failures)

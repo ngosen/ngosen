@@ -231,6 +231,10 @@ msgstr "Gõ thô sau dấu / đầu từ (lệnh, đường dẫn)"
 msgid "Suggest emoji while typing"
 msgstr "Gợi ý emoji khi gõ"
 
+#: src/ngosen-config.h
+msgid "Yahoo Messenger emoticons"
+msgstr "Mã emoji Yahoo Messenger"
+
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
 msgstr "Tự khôi phục từ gõ sai"
@@ -1556,6 +1560,10 @@ msgstr ""
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
 msgstr "/cost và /usr/share giữ nguyên như đã gõ khi ở đầu dòng hoặc sau dấu cách, để lệnh chat và đường dẫn file chạy đúng. và/hoặc và @tên vẫn có dấu."
+
+#: settings-gui/core/catalog.py
+msgid "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
+msgstr "Gõ =)) hay :x là gợi ý 🤣 hay 😍 như hồi Yahoo Messenger; bấm Tab để thay mã bằng emoji."
 
 #: settings-gui/core/catalog.py
 msgid "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."

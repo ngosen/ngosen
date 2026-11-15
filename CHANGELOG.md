@@ -20,6 +20,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trong nhóm Gõ nhanh, mặc định bật (#110, #788).
 - Phím `w` trong menu `` ` `` nay bật/tắt gợi ý emoji cho app đang dùng, giống Vim mode; chế độ gõ của app
   giữ nguyên (#110, #791).
+- Gợi ý emoji thêm khoảng 460 từ lấy theo tên emoji, như `máy bay` ✈️, `xe máy` 🏍️, `cơm` 🍚, `bóng đá` ⚽, và 86 mã
+  Yahoo Messenger như `=))`, `:x`, `:">`, `@};-`, bấm Tab là mã thành emoji. Tuỳ chọn "Mã emoji Yahoo Messenger"
+  mặc định bật (#110, #792).
 
 ### Bỏ
 

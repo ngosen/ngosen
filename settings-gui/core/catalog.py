@@ -64,6 +64,7 @@ SETTINGS_MAP = {
             "CapitalizeStartOfText",
             "RawWordAfterSlash",
             "EmojiSuggestions",
+            "YahooEmoticons",
         ],
     },
     SettingsCategory.SHORTCUTS: {
@@ -133,6 +134,9 @@ HINTS = {
     ),
     "EmojiSuggestions": N_(
         "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."
+    ),
+    "YahooEmoticons": N_(
+        "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
     ),
     "RawWordAfterSlash": N_(
         "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
@@ -215,6 +219,7 @@ DEPENDS = {
     "CapitalizeMacro": ("EnableMacro", "True"),
     "EnableMacroInOffMode": ("EnableMacro", "True"),
     "TimeFormat": ("EnableMacro", "True"),
+    "YahooEmoticons": ("EmojiSuggestions", "True"),
     "DateFormat": ("EnableMacro", "True"),
     **{shortcut: (shown, "True") for shortcut, shown in MODE_SHORTCUT_TO_VISIBILITY.items()},
 }

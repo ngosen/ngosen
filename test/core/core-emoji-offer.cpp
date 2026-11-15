@@ -119,6 +119,8 @@ namespace {
         check(hint == "(none)", "a click starts the words over", hint);
         hint = hintAfter(":)");
         check(hint == "Tab: 🙂 😊", "an emoticon outside a word", hint);
+        hint = hintAfter("=))");
+        check(hint == "Tab: 🤣", "a Yahoo Messenger code typed in Telex", hint);
         hint = hintAfter("cuwowif", Mode::Preedit);
         check(hint == "Tab: 😂 🤣 😄 😆 😁", "the preedit shows the hint too", hint);
     }

@@ -236,6 +236,26 @@ msgid "Yahoo Messenger emoticons"
 msgstr "Mã emoji Yahoo Messenger"
 
 #: src/ngosen-config.h
+msgid "Apps"
+msgstr "App tắt emoji"
+
+#: src/ngosen-config.h
+msgid "Keyword"
+msgstr "Từ khoá"
+
+#: src/ngosen-config.h
+msgid "Emoji"
+msgstr "Emoji"
+
+#: src/ngosen-config.h
+msgid "On"
+msgstr "Bật"
+
+#: src/ngosen-config.h
+msgid "Words"
+msgstr "Từ gợi ý emoji"
+
+#: src/ngosen-config.h
 msgid "Put a picked emoji"
 msgstr "Khi chọn emoji"
 

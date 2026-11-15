@@ -6,6 +6,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace ngosen {
 
@@ -19,33 +20,41 @@ namespace ngosen {
 
     // The settings the typing logic reads, as plain values. The framework copies them from its own
     // configuration each time that changes. The initial values are the defaults every frontend starts from.
+    // A change to the default emoji keywords: an emoji added to a keyword, or a default pair turned off.
+    struct EmojiWordEdit {
+        std::string keyword; // lower case, as the settings window saves it
+        std::string emoji;
+        bool        on = true;
+    };
+
     struct Options {
-        std::string inputMethod                    = "Telex";
-        std::string outputCharset                  = "Unicode";
-        bool        spellCheck                     = true;
-        bool        modernStyle                    = true;
-        bool        freeMarking                    = true;
-        int         w2u                            = 1;
-        int         bracketTransform               = 0;
-        std::string timeFormat                     = "%H:%M";
-        std::string dateFormat                     = "%d/%m/%Y";
-        bool        autoNonVnRestore               = true;
-        bool        ddFreeStyle                    = true;
-        bool        backspaceRemovesTone           = false;
-        bool        enableMacro                    = true;
-        bool        enableMacroInOffMode           = false;
-        bool        capitalizeMacro                = true;
-        LockWordKey lockWordKey                    = LockWordKey::Ctrl;
-        bool        autoCapitalizeAfterPunctuation = false;
-        bool        capitalizeStartOfText          = false;
-        bool        doubleSpaceToPeriod            = false;
-        bool        doubleHyphenToEmDash           = false;
-        bool        retypeAfterSwitch              = true;
-        bool        retoneSelection                = true;
-        bool        rawWordAfterSlash              = true;
-        bool        emojiSuggestions               = true;
-        bool        yahooEmoticons                 = true;
-        bool        emojiReplacesWord              = false;
+        std::string                inputMethod                    = "Telex";
+        std::string                outputCharset                  = "Unicode";
+        bool                       spellCheck                     = true;
+        bool                       modernStyle                    = true;
+        bool                       freeMarking                    = true;
+        int                        w2u                            = 1;
+        int                        bracketTransform               = 0;
+        std::string                timeFormat                     = "%H:%M";
+        std::string                dateFormat                     = "%d/%m/%Y";
+        bool                       autoNonVnRestore               = true;
+        bool                       ddFreeStyle                    = true;
+        bool                       backspaceRemovesTone           = false;
+        bool                       enableMacro                    = true;
+        bool                       enableMacroInOffMode           = false;
+        bool                       capitalizeMacro                = true;
+        LockWordKey                lockWordKey                    = LockWordKey::Ctrl;
+        bool                       autoCapitalizeAfterPunctuation = false;
+        bool                       capitalizeStartOfText          = false;
+        bool                       doubleSpaceToPeriod            = false;
+        bool                       doubleHyphenToEmDash           = false;
+        bool                       retypeAfterSwitch              = true;
+        bool                       retoneSelection                = true;
+        bool                       rawWordAfterSlash              = true;
+        bool                       emojiSuggestions               = true;
+        bool                       yahooEmoticons                 = true;
+        bool                       emojiReplacesWord              = false;
+        std::vector<EmojiWordEdit> emojiWordEdits;
 
         // The conversion hotkey: charsets as named by GetCharsetNames, and ConvertText's letter case.
         std::string convertFrom            = "TCVN3 (ABC)";

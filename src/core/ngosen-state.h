@@ -108,6 +108,9 @@ namespace ngosen {
         void setVimKeys(bool on);
         // The user turned emoji suggestions on or off for the app (the w key in the mode menu).
         void setEmojiOn(bool on);
+        bool emojiOn() const {
+            return emojiOn_;
+        }
 
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.

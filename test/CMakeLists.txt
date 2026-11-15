@@ -121,6 +121,7 @@ add_ngosen_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp
 add_ngosen_headless_test(mode_name_migration mode-name-migration.cpp "integration;mode")
 add_ngosen_headless_test(messenger_defaults messenger-defaults.cpp "integration;mode")
 add_ngosen_headless_test(options_sync options-sync.cpp "integration;config")
+add_ngosen_headless_test(emoji_settings emoji-settings.cpp "integration;config")
 if (Fcitx5ModuleDBus_FOUND)
     add_ngosen_headless_test(dbus_convert_text dbus-convert-text.cpp "unit;dbus")
 endif()

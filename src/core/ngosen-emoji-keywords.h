@@ -5,6 +5,8 @@
  */
 #pragma once
 
+#include "ngosen-options.h"
+
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -29,7 +31,7 @@ namespace ngosen {
 
     // The emoji for the longest keyword the typed words end with. Words are as typed, the last one
     // at the back; a word without marks matches a marked keyword only when it is not Vietnamese
-    // as written, so "cuoi" offers 😂 and "cho" offers nothing.
-    std::optional<EmojiSuggestion> suggestEmoji(const std::vector<std::string>& words, bool yahooEmoticons);
+    // as written, so "cuoi" offers 😂 and "cho" offers nothing. The user's edits come before the defaults.
+    std::optional<EmojiSuggestion> suggestEmoji(const std::vector<std::string>& words, bool yahooEmoticons, const std::vector<EmojiWordEdit>& edits);
 
 } // namespace ngosen

@@ -254,6 +254,18 @@ namespace fcitx {
                         OptionWithAnnotation<std::vector<ngosenAppSwitch>, ListDisplayOptionAnnotation> switches{
                             this, "Switches", _("Switches"), {}, {}, {}, ListDisplayOptionAnnotation("App")};);
 
+    FCITX_CONFIGURATION(ngosenAppName, Option<std::string> app{this, "App", _("App"), ""};);
+    FCITX_CONFIGURATION(ngosenAppNames,
+                        OptionWithAnnotation<std::vector<ngosenAppName>, ListDisplayOptionAnnotation> apps{
+                            this, "Apps", _("Apps"), {}, {}, {}, ListDisplayOptionAnnotation("App")};);
+
+    // Only what differs from the default keywords: On adds the emoji to the keyword, off removes it.
+    FCITX_CONFIGURATION(ngosenEmojiWord, Option<std::string> keyword{this, "Keyword", _("Keyword"), ""}; Option<std::string> emoji{this, "Emoji", _("Emoji"), ""};
+                        Option<bool> on{this, "On", _("On"), true};);
+    FCITX_CONFIGURATION(ngosenEmojiWords,
+                        OptionWithAnnotation<std::vector<ngosenEmojiWord>, ListDisplayOptionAnnotation> words{
+                            this, "Words", _("Words"), {}, {}, {}, ListDisplayOptionAnnotation("Keyword")};);
+
     /**
      * @brief Main configuration structure for the Ngó Sen input method.
      */

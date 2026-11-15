@@ -228,6 +228,8 @@ namespace fcitx {
         void shellFocusedAppChanged(const std::string& app);
         // The mode appName types in: its toggle-key switch, else its menu rule, else the last switch.
         NgoSenMode modeFor(const std::string& appName) const;
+        // Whether the field offers emoji, which the app's entry in the emoji menu decides.
+        bool emojiOnIn(InputContext* ic);
 
       private:
         // A tray menu entry and the option that shows it; nullptr means always shown.
@@ -247,6 +249,8 @@ namespace fcitx {
         ngosen::CGoObject                           macroTableObject_;
         ngosenAppRules                              appRulesTables_;
         ngosenAppSwitches                           appSwitchesTables_;
+        mutable ngosenAppNames                      emojiOffAppsTable_; ///< emojiOffApps_ as the settings window reads it
+        ngosenEmojiWords                            emojiWordsTable_;
 
         FactoryFor<TypingStateProperty>             factory_;
         std::vector<std::string>                    imNames_;

@@ -132,7 +132,7 @@ namespace ngosen {
         const std::string word  = openWord();
         const std::string text  = emojiTail_ + word;
         const auto        words = splitWords(text);
-        auto              found = text.empty() || text.back() == ' ' ? std::nullopt : suggestEmoji(words, engine_->options().yahooEmoticons);
+        auto              found = text.empty() || text.back() == ' ' ? std::nullopt : suggestEmoji(words, engine_->options().yahooEmoticons, engine_->options().emojiWordEdits);
         if (!found) {
             dropEmojiOffer();
             return;

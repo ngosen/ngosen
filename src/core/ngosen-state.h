@@ -17,6 +17,7 @@
 #include "ngosen-go-object.h"
 #include "emoji-entry.h"
 #include "ngosen-globals.h"
+#include "ngosen-emoji-keywords.h"
 #include "ngosen-engine-resources.h"
 #include "ngosen-host.h"
 #include "ngosen-key.h"
@@ -251,6 +252,30 @@ namespace ngosen {
         std::string                    typedWhileOff_;
         std::optional<Retype>          retype_;
         std::unique_ptr<ngosen::Timer> retype_timer_;
+
+        // Emoji offered for the words just typed (#110): a hint first, a numbered list after Tab.
+        struct EmojiOffer {
+            ngosen::EmojiSuggestion suggestion;
+            std::string             covered; // the typed text a sound or an emoticon stands for
+            bool                    picking = false;
+        };
+        std::optional<EmojiOffer>      emojiOffer_;
+        std::string                    emojiTail_;              ///< text typed before the open word since the cursor last moved
+        bool                           emojiTookPress_ = false; ///< the offer took the key being handled
+        std::vector<uint32_t>          emojiTakenSyms_;         ///< keys the offer took, whose releases it takes too
+        std::unique_ptr<ngosen::Timer> emojiRecheck_;           ///< looks again once the word is in the app
+        std::string                    openWord();
+        bool                           offersEmojiHere() const;
+        bool                           replacementPending() const;
+        bool                           inAddressBar() const;
+        void                           noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore);
+        void                           updateEmojiOffer();
+        void                           offerForTypedText();
+        void                           showEmojiOffer();
+        void                           dropEmojiOffer();
+        bool                           handleEmojiOfferKey(ngosen::KeyPress& keyEvent);
+        void                           takeEmojiKey(ngosen::KeyPress& keyEvent);
+        void                           insertEmoji(size_t index);
         // What typed reads as with this field's input method, or typed when it changes nothing.
         std::string        addMarks(const std::string& typed);
         bool               everyWordTakesMarks(const std::string& typed);

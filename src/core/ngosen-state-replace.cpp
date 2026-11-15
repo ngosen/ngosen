@@ -886,6 +886,11 @@ namespace ngosen {
         wordAfterReplacement_  = surr_wait_prefix_ + addedPart;
     }
 
+    bool TypingState::inAddressBar() const {
+        const Field field = host_->field();
+        return field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(host_->surrounding()));
+    }
+
     // The frontend turns a deletion into bytes on its copy of the text, which can still lack what the
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
     TypingState::CopyWait TypingState::copyWaitNeed() const {

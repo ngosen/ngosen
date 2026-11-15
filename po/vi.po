@@ -231,6 +231,10 @@ msgstr "Cứu dấu: sửa dấu chữ đang bôi đen"
 msgid "Type a word that starts with / as is"
 msgstr "Gõ thô sau dấu / đầu từ (lệnh, đường dẫn)"
 
+#: src/ngosen-config.h
+msgid "Suggest emoji while typing"
+msgstr "Gợi ý emoji khi gõ"
+
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
 msgstr "Tự khôi phục từ gõ sai"
@@ -1564,6 +1568,10 @@ msgstr ""
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
 msgstr "/cost và /usr/share giữ nguyên như đã gõ khi ở đầu dòng hoặc sau dấu cách, để lệnh chat và đường dẫn file chạy đúng. và/hoặc và @tên vẫn có dấu."
+
+#: settings-gui/core/catalog.py
+msgid "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."
+msgstr "Gõ cười là hiện Tab: 😂 … cạnh con trỏ. Bấm Tab để đánh số: 1–5 chọn một emoji, Tab, Space hoặc Enter lấy cái đầu, Esc giữ nguyên chữ. haha và :) được thay bằng emoji. Chỉ hiện ở nơi chắc chắn vẽ được gợi ý."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."

@@ -17,6 +17,7 @@ Tải ở [ngosen-1.11.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
 
 ### Sửa
 
+- Trên fcitx5 của Ubuntu, Mint và Fedora, nhấn Ctrl sau chữ đang hiện đúng phím đã gõ, như `tunx`, nay đổi ngay thành `tũn`; trước đây thường không đổi, và nhấn Ctrl lần hai có khi bỏ luôn lần đổi đầu. Các việc bộ gõ hẹn làm ngay, như đổi dấu sau Enter, cũng không còn trễ tới 250 ms. Đã thử bằng unit test với vòng lặp sự kiện thật của fcitx5, chưa thử lại trên máy ảo (#799).
 - Trên GNOME dùng IBus, trong app báo chữ chậm (copy wait), sau khi kết thúc từ bằng cách di chuyển con trỏ, gõ `dd` thành `đ` rồi nhấn nhanh Backspace xoá hết từ trong lúc chờ, phím dấu gõ tiếp ngay sau từ trước nay đặt dấu lên từ đó: `ca` rồi `s` thành `cá`, không còn thành `cas`. Chỉ thử với app giả trong unit test, chưa thử app thật (#785).
 - Trên GNOME dùng IBus, trong ô chat của Lark mở bằng Helium, gõ `Vinxh` không còn ra `Viĩnh`: ô này chỉ xoá một trong hai chữ bộ gõ xin xoá qua surrounding text, nay bộ gõ thấy chữ còn sót, xoá lại bằng BackSpace và gõ lại cho đúng `Vĩnh`. Chỉ thử với app giả trong unit test, chưa thử lại trong Lark (#790).
 - Trên GNOME dùng IBus, trong app báo chữ chậm, nhấn Backspace trong lúc chờ để xoá phím thừa sau từ (như `thuwcx` rồi Backspace) nay khôi phục từ có dấu như khi không phải chờ: gõ tiếp `j` ra `thực`, không còn thành `thuực`. Chỉ thử với app giả trong unit test, chưa thử app thật (#787).

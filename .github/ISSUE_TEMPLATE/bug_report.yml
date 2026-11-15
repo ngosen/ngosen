@@ -36,7 +36,6 @@ body:
       options:
         - Gõ Sen
         - Gạch chân (Preedit)
-        - Chọn Emoji
         - Không rõ
     validations:
       required: true

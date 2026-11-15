@@ -4,7 +4,6 @@ add_library(ngosen_core STATIC
     ngosen-state.cpp
     ngosen-state-check.cpp
     ngosen-state-convert.cpp
-    ngosen-state-emoji.cpp
     ngosen-state-emoji-offer.cpp
     ngosen-state-focus.cpp
     ngosen-state-macro.cpp

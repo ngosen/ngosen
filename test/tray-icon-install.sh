@@ -20,7 +20,7 @@ need() {
         fail=1
     }
 }
-for base in fcitx-ngosen fcitx-ngosen-off fcitx-ngosen-emoji; do
+for base in fcitx-ngosen fcitx-ngosen-off; do
     for name in "$base" "$base-large" "$base-default" "$base-default-black"; do
         need "hicolor/scalable/status/$name.svg"
         need "hicolor/scalable/apps/$name.svg"

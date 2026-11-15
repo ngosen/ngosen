@@ -43,7 +43,6 @@ set(ngosen_fcitx_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-gnome-theme.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-gnome-shell.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ngosen-ui-text.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/emoji.cpp
 )
 
 set(REQUIRED_FCITX_VERSION 5.0.14)
@@ -54,7 +53,6 @@ include(GNUInstallDirs)
 include(ECMUninstallTarget)
 
 find_package(Fcitx5Core ${REQUIRED_FCITX_VERSION} REQUIRED)
-find_package(Fcitx5ModuleEmoji REQUIRED)
 # Missing when fcitx5 is built without D-Bus; ngosen-save-log then has nothing to call.
 find_package(Fcitx5ModuleDBus)
 if (Fcitx5ModuleDBus_FOUND)

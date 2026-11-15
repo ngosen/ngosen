@@ -14,7 +14,6 @@ namespace ngosen {
         Off,
         Sen,
         Preedit,
-        Emoji,
     };
 
 } // namespace ngosen

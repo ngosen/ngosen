@@ -20,7 +20,6 @@ body:
       options:
         - Gõ Sen
         - Gạch chân (Preedit)
-        - Chọn Emoji
     validations:
       required: true
 

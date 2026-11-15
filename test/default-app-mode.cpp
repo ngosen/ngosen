@@ -29,7 +29,6 @@ namespace {
             case fcitx::NgoSenMode::Off: return "Off";
             case fcitx::NgoSenMode::Preedit: return "Preedit";
             case fcitx::NgoSenMode::Sen: return "Sen";
-            case fcitx::NgoSenMode::Emoji: return "Emoji";
             default: return "Unknown";
         }
     }
@@ -119,7 +118,7 @@ int main(int argc, char** argv) {
     expectMode("deepin-editor types in Preedit", fcitx::NgoSenMode::Preedit);
 
     // With no rule of its own the app follows its default, so the menu marks Preedit
-    // (Sen, Preedit, Emoji, Off, "type `").
+    // (Sen, Preedit, the emoji switch, Off, "type `").
     press(engine, editor, FcitxKey_grave);
     auto list = std::dynamic_pointer_cast<fcitx::CommonCandidateList>(editor.inputPanel().candidateList());
     if (!list || list->globalCursorIndex() != 1) {

@@ -209,8 +209,6 @@ namespace ngosen {
 
     void TypingState::lockWord() {
         lock_word_pending_ = false;
-        if (mode() == ngosen::Mode::Emoji)
-            return;
         // A tap between words leaves the last word open to Backspace.
         ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         if (!preedit || *preedit.get() == 0)

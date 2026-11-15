@@ -757,7 +757,7 @@ namespace ngosen {
     }
 
     void TypingState::recordKey(const ngosen::KeyPress& keyEvent) {
-        static const char* const modeNames[] = {"Off", "Sen", "Preedit", "Emoji"};
+        static const char* const modeNames[] = {"Off", "Sen", "Preedit"};
         const auto               f           = host_->field();
         const std::string        program     = f.reportedProgram.empty() ? f.program : f.program + " (" + f.reportedProgram + ")";
         std::string field = "frontend=" + f.frontend + " program=" + program + " surrounding=" + (f.surroundingText ? "1" : "0") + " preedit=" + (f.preedit ? "1" : "0") +
@@ -924,10 +924,6 @@ namespace ngosen {
             }
             case ngosen::Mode::Preedit: {
                 handlePreeditMode(keyEvent, currentSym);
-                break;
-            }
-            case ngosen::Mode::Emoji: {
-                handleEmojiMode(keyEvent);
                 break;
             }
             default: {
@@ -1432,12 +1428,6 @@ namespace ngosen {
                 host_->resetPanel();
                 break;
             }
-            case ngosen::Mode::Emoji: {
-                host_->resetPanel();
-                host_->refreshPanel();
-                host_->refreshPreedit();
-                break;
-            }
             default: {
                 break;
             }
@@ -1511,8 +1501,6 @@ namespace ngosen {
             current_backspace_count_ = 0;
             pending_commit_string_.clear();
         }
-        emojiBuffer_.clear();
-        emojiCandidates_.clear();
         emojiTail_.clear();
         dropEmojiOffer();
         buffered_keys_.clear();
@@ -1557,7 +1545,7 @@ namespace ngosen {
         dropRetoneKey();
         forgetKeysWhileOff();
         clearAllBuffers();
-        if (mode() == ngosen::Mode::Preedit || mode() == ngosen::Mode::Emoji) {
+        if (mode() == ngosen::Mode::Preedit) {
             host_->resetPanel();
             host_->refreshPanel();
             host_->refreshPreedit();

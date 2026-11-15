@@ -27,7 +27,7 @@
 namespace ngosen {
 
     // Config reads and writes find these helpers by argument-dependent lookup, so they sit next to Mode.
-    FCITX_CONFIG_ENUM_NAME_WITH_I18N(Mode, N_("OFF"), N_("Sen"), N_("Preedit"), N_("Emoji Picker"));
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(Mode, N_("OFF"), N_("Sen"), N_("Preedit"));
 
 } // namespace ngosen
 
@@ -349,8 +349,8 @@ namespace fcitx {
         Option<bool> showModeSen{this, "ShowModeSen", _("Show Sen"), true}; Option<std::string> shortcutSen{this, "ShortcutSen", _("Shortcut for Sen"), "1"};
         Option<bool>                                                                            showModePreedit{this, "ShowModePreedit", _("Show Preedit"), true};
         Option<std::string>                                                                     shortcutPreedit{this, "ShortcutPreedit", _("Shortcut for Preedit"), "q"};
-        Option<bool>                                                                            showModeEmoji{this, "ShowModeEmoji", _("Show Emoji Picker"), true};
-        Option<std::string> shortcutEmoji{this, "ShortcutEmoji", _("Shortcut for Emoji Picker"), "w"}; Option<bool> showModeOff{this, "ShowModeOff", _("Show OFF"), true};
+        Option<bool>                                                                            showModeEmoji{this, "ShowModeEmoji", _("Show emoji suggestions"), true};
+        Option<std::string> shortcutEmoji{this, "ShortcutEmoji", _("Shortcut for emoji suggestions"), "w"}; Option<bool> showModeOff{this, "ShowModeOff", _("Show OFF"), true};
         Option<std::string> shortcutOff{this, "ShortcutOff", _("Shortcut for OFF"), "e"}; Option<bool> showModeVim{this, "ShowModeVim", _("Show Vim mode"), true};
         Option<std::string>                                                                            shortcutVim{this, "ShortcutVim", _("Shortcut for Vim mode"), "v"};
         Option<bool>        enableMacroInOffMode{this, "EnableMacroInOffMode", _("Allow Macro in Off Mode"), ngosen::defaultOptions.enableMacroInOffMode};

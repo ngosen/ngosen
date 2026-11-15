@@ -79,8 +79,8 @@ Hoàn tác.
   **Chuyển mã** trong cửa sổ cài đặt; trang này còn có ô để dán chữ vào và chuyển ngay. Đã thử trên GNOME
   với Firefox, Chromium, LibreOffice Writer và GNOME Text Editor; không dùng được trong terminal.
 - **Menu chế độ riêng cho từng app:** nhấn phím `` ` `` để mở menu cạnh con trỏ, chọn **Gõ Sen (1)**,
-  **Gạch chân (q)**, **Chọn Emoji (w)** hoặc **Tắt (e)**, và bật **Vim mode (v)** cho app dùng phím Vim như
-  nvim hay Claude Code. Ngó Sen nhớ lựa chọn riêng cho từng app.
+  **Gạch chân (q)** hoặc **Tắt (e)**, tắt **Gợi ý emoji (w)** cho app không cần, và bật **Vim mode (v)** cho
+  app dùng phím Vim như nvim hay Claude Code. Ngó Sen nhớ lựa chọn riêng cho từng app.
 - **Gõ thẳng không gạch chân (Gõ Sen):** chữ vào app ngay khi gõ; gợi ý ở thanh địa chỉ hay ô tìm kiếm
   hiện theo từng phím.
 - **Nhận ra tiếng Anh:** chữ không thể thành tiếng Việt thì hiện lại đúng phím đã gõ. Đo bằng Telex, cài
@@ -89,8 +89,8 @@ Hoàn tác.
 - **Lệnh và đường dẫn:** từ bắt đầu bằng `/` giữ nguyên như gõ (`/cost`, `cd /usr/share`).
 - **Gõ thừa phím vẫn giữ dấu:** `dduowjcd` + Space ra `được`, `coongty` + Space ra `công ty`, `nhuwg` + Space
   ra `nhưng`; bấm Backspace ngay sau đó thì trả lại đúng chữ đã gõ.
-- **Chèn emoji:** gõ từ khoá tiếng Anh (`smile`, `heart`), danh sách emoji hiện cạnh con trỏ để chọn nhanh
-  bằng số.
+- **Gợi ý emoji khi gõ:** gõ xong `cười`, `con mèo` hay `haha` là hiện `Tab: 😂 …` cạnh con trỏ; Tab để
+  đánh số rồi chọn bằng số, Esc giữ nguyên chữ.
 - **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey, người dùng cũ giữ
   `Ctrl + Space`. Mỗi app nhớ riêng đang gõ Anh hay Việt.
 - **Phím chốt chữ (Ctrl):** bấm rồi thả `Ctrl` để giữ nguyên từ đang gõ, không thêm dấu hay bung gõ tắt.

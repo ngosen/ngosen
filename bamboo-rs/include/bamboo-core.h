@@ -62,7 +62,7 @@ extern char*     EnginePullDroppedWord(uintptr_t engine);
 extern uint8_t   EngineKeptAtLastKey(uintptr_t engine);
 extern uint8_t   EngineShownAsTyped(uintptr_t engine);
 // 1 when text is one correctly spelled Vietnamese syllable exactly as written, marks included.
-extern uint8_t   IsVietnameseSyllable(cchar* text);
+extern uint8_t IsVietnameseSyllable(cchar* text);
 
 #ifdef __cplusplus
 }

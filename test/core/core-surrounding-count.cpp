@@ -79,6 +79,9 @@ int main() {
     // With no prefix, "dđ" also ends with the correct shape "đ".
     expectVerdict("a dropped deletion at the start of a word", ngosen::judgeSurroundingReport("dđ", "", "d", "đ", 0), Verdict::DroppedDeletion);
     expectVerdict("the first letter of the old part left", ngosen::judgeSurroundingReport("hwa Viĩn", "V", "in", "ĩn", 0), Verdict::ShortDeletion);
+    expectVerdict("a left-over letter with a mark", ngosen::judgeSurroundingReport("nam tiêếngx", "ti", "êng", "ếng", 1), Verdict::ShortDeletion);
+    // With no prefix, an i before the word is not a left-over part.
+    expectVerdict("a letter before a word replaced from its start", ngosen::judgeSurroundingReport("iĩn", "", "in", "ĩn", 0), Verdict::Correct);
     expectVerdict("too many bytes deleted before the new part", ngosen::judgeSurroundingReport("tiííiếng", "ti", "ê", "ế", 2), Verdict::WrongEarlierPart);
     expectVerdict("the report from before the replacement", ngosen::judgeSurroundingReport("nam tie", "ti", "e", "ê", 0), Verdict::NoAnswer);
     expectVerdict("the deletion applied, the commit not yet", ngosen::judgeSurroundingReport("nam ti", "ti", "e", "ê", 0), Verdict::NoAnswer);

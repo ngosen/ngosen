@@ -23,7 +23,7 @@ namespace ngosen {
     SurroundingVerdict judgeSurroundingReport(const std::string& beforeCursor, const std::string& prefix, const std::string& deleted, const std::string& added,
                                               unsigned int keysAfter);
 
-    // The longest start of deleted that the app left between prefix and added, or "" if none.
+    // An app that deletes too little takes characters from the end, so the start of deleted is what stays.
     std::string deletionLeftOver(const std::string& beforeCursor, const std::string& prefix, const std::string& deleted, const std::string& added);
 
     const char* verdictName(SurroundingVerdict verdict);

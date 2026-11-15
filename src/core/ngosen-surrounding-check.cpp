@@ -29,8 +29,11 @@ namespace ngosen {
             const std::string shown = beforeCursor.substr(0, end);
             // Checked first: with no prefix, the correct shape prefix + added matches a dropped deletion too.
             const std::string left = deletionLeftOver(shown, prefix, deleted, added);
-            if (!left.empty())
-                return left == deleted ? SurroundingVerdict::DroppedDeletion : SurroundingVerdict::ShortDeletion;
+            if (!left.empty() && left == deleted)
+                return SurroundingVerdict::DroppedDeletion;
+            // With no prefix, the letters before the word may only look like a left-over part.
+            if (!left.empty() && !prefix.empty())
+                return SurroundingVerdict::ShortDeletion;
             if (isEndsWith(shown, prefix + added))
                 return SurroundingVerdict::Correct;
             if (!added.empty() && isEndsWith(shown, added))

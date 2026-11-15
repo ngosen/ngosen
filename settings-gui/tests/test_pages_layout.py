@@ -31,6 +31,7 @@ class LayoutTest(unittest.TestCase):
             [
                 "Typing",
                 "Macros & Dictionary",
+                "Emoji",
                 "Keys",
                 "Convert",
                 "Appearance",

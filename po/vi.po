@@ -1739,8 +1739,8 @@ msgid "Menu"
 msgstr "Menu"
 
 #: settings-gui/core/defaults.py
-msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
-msgstr "Gõ tắt, từ đã thêm vào từ điển, phím tự đặt và kiểu gõ đã nhớ cho từng app cũng bị xoá. Có thể hoàn tác ngay sau đó."
+msgid "Macros, words added to the dictionary, custom keys, emoji words and what is remembered for each app are cleared too. You can undo this right after."
+msgstr "Gõ tắt, từ đã thêm vào từ điển, phím tự đặt, từ gợi ý emoji và những gì đã nhớ cho từng app cũng bị xoá. Có thể hoàn tác ngay sau đó."
 
 #: settings-gui/core/defaults.py
 msgid "The key that switches between Vietnamese and English goes back to Ctrl+Shift."
@@ -2267,3 +2267,131 @@ msgstr "Gợi ý emoji: tắt"
 #: settings-gui/core/whats_new_content.py
 msgid "Press ` to pick Sen, Preedit or OFF for the app in use, or to turn emoji or Vim keys on or off for it."
 msgstr "Bấm ` để chọn Sen, Preedit hoặc Tắt cho app đang dùng, hoặc bật/tắt emoji hay phím Vim cho app đó."
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Smileys"
+msgstr "Mặt cười"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "People & gestures"
+msgstr "Người, cử chỉ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Animals & plants"
+msgstr "Con vật, cây cỏ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Food & drink"
+msgstr "Ăn uống"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Travel & weather"
+msgstr "Đi lại, thời tiết"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Activities & events"
+msgstr "Hoạt động, lễ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Objects"
+msgstr "Đồ vật"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Symbols"
+msgstr "Ký hiệu"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Flags"
+msgstr "Cờ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn off {word} for {emoji}"
+msgstr "Tắt từ {word} cho {emoji}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn on {word} for {emoji}"
+msgstr "Bật từ {word} cho {emoji}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "+ word"
+msgstr "+ từ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Add a word for {}"
+msgstr "Thêm từ cho {}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "As before"
+msgstr "Như cũ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Put back the words {} came with"
+msgstr "Trả {} về các từ có sẵn"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Apps without emoji"
+msgstr "App đã tắt emoji"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Emoji and their words"
+msgstr "Emoji và từ gợi ý"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Not turned off in any app."
+msgstr "Chưa tắt ở app nào."
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn back on"
+msgstr "Bật lại"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn emoji back on in {}"
+msgstr "Bật lại emoji trong {}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Emoji are back on in {}."
+msgstr "Đã bật lại emoji trong {}."
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Click a word to turn it off or on. Dashed words are off; type a new word in the box next to them to add it. A word on for several emoji offers all of them."
+msgstr "Bấm một từ để tắt hay bật nó. Từ gạch đứt đang tắt; gõ từ mới vào ô bên cạnh để thêm. Một từ bật ở nhiều emoji thì gợi ý cả các emoji đó."
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Find an emoji or a word, e.g. tiền"
+msgstr "Tìm emoji hoặc từ, vd. tiền"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Only emoji with a word on"
+msgstr "Chỉ emoji có từ đang bật"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "All"
+msgstr "Tất cả"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "{} emoji"
+msgstr "{} emoji"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "No emoji match"
+msgstr "Không có emoji nào khớp"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "1. Type a word"
+msgstr "1. Gõ một từ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "2. Press Tab"
+msgstr "2. Bấm Tab"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "3. Press 2"
+msgstr "3. Bấm 2"
+
+#: settings-gui/core/emoji_words.py
+msgid "Set a mode menu key and an emoji key on the Keys page to turn suggestions off for one app."
+msgstr "Đặt phím mở menu chế độ và phím emoji ở trang Phím để tắt gợi ý cho riêng một app."
+
+#: settings-gui/core/emoji_words.py
+msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
+msgstr "Ở app đang gõ, bấm {menu} rồi {key} để tắt hay bật lại gợi ý cho riêng app đó. Kiểu gõ của app vẫn giữ nguyên."

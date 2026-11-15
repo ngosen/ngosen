@@ -13,6 +13,7 @@ class SettingsCategory(Enum):
     TYPING = "typing"
     SHORTCUTS = "shortcuts"
     CONVERT = "convert"
+    EMOJI = "emoji"
 
 
 TYPING_GROUP = N_("Typing")
@@ -20,6 +21,7 @@ TYPING_KEYS = N_("Typing keys")
 MODE_SWITCHING = N_("Mode switching")
 TRAY_ICON = N_("Tray icon")
 CONVERT_CHARSETS = N_("Charsets")
+EMOJI_GROUP = N_("Emoji")
 
 # A light and a dark panel, behind the tray icon preview.
 TRAY_PANEL = ("#e6e6e6", "#2d2d2d")
@@ -63,10 +65,10 @@ SETTINGS_MAP = {
             "AutoCapitalizeAfterPunctuation",
             "CapitalizeStartOfText",
             "RawWordAfterSlash",
-            "EmojiSuggestions",
-            "YahooEmoticons",
-            "EmojiPlacement",
         ],
+    },
+    SettingsCategory.EMOJI: {
+        EMOJI_GROUP: ["EmojiSuggestions", "EmojiPlacement", "YahooEmoticons"],
     },
     SettingsCategory.SHORTCUTS: {
         N_("Hotkeys"): ["ToggleKey", "ModeMenuKey", "CycleModeKey"],

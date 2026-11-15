@@ -650,7 +650,7 @@ class GtkLocksTest(unittest.TestCase):
 
     @staticmethod
     def page_with(w, key):
-        pages = (w.typing, w.shortcuts, w.appearance, w.macros)
+        pages = (w.typing, w.shortcuts, w.appearance, w.macros, w.emoji)
         return next(p for p in pages if p.control_for(key) is not None)
 
     def test_every_locked_setting_is_insensitive_and_opens_what_unlocks_it(self):

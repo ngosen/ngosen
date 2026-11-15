@@ -1017,6 +1017,17 @@ class CheckPageWindowTest(unittest.TestCase):
             window.show_page("check")
         run.assert_called_once()
 
+    def test_opens_on_the_check_page_first_and_for_an_undone_step(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        window = self.window(FakeDBusHandler())
+        window.open_check_if_due(path)
+        self.assertEqual(window.sidebar.currentItem().text(), "Check my machine")
+        window.show_page("typing")
+        window.open_check_if_due(path)
+        self.assertEqual(window.sidebar.currentItem().text(), "Typing")
+
     def test_badge_shows_before_the_page_is_opened(self):
         window = self.window(FakeDBusHandler())
         app.processEvents()

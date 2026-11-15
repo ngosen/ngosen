@@ -54,7 +54,7 @@ def run_gtk():
 def run_qt():
     # Picks Qt6 when both PyQt5 and PyQt6 are installed, so it comes before anything else from Qt.
     import qt_api  # noqa: F401
-    from qtpy.QtCore import Qt
+    from qtpy.QtCore import Qt, QTimer
     from qtpy.QtWidgets import QApplication
     from ui import brand, color_scheme, scroll_bars
     from ui.main_window import NgoSenSettingsWindow
@@ -75,6 +75,9 @@ def run_qt():
     if args.page:
         window.show_page(args.page)
     window.show()
+    if not args.page:
+        # After the window shows, so the check does not hold it back.
+        QTimer.singleShot(0, window.open_check_if_due)
 
     try:
         return app.exec()

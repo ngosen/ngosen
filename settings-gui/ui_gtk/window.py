@@ -24,7 +24,7 @@ from core.whats_new_content import random_tip  # noqa: E402
 from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 from i18n import _  # noqa: E402
 
-from core import backup, defaults, settings_snapshot  # noqa: E402
+from core import backup, check_reminder, defaults, settings_snapshot  # noqa: E402
 from ui_gtk import brand, emoji, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
 from ui_gtk.check_page import CheckPage  # noqa: E402
@@ -443,6 +443,11 @@ class Window(Adw.ApplicationWindow):
             [Gtk.AccessibleProperty.LABEL], [_("Steps left to fix: {}").format(count)]
         )
 
+    def open_check_if_due(self, path=None):
+        """Lands on Check my machine the first time, and while a step that stops typing is undone."""
+        if check_reminder.should_open(self.check.found, path or check_reminder.state_file()):
+            self.show_page("check")
+
     def show_check_message(self, text, undo):
         """A toast from a page, with Undo when what it did can be taken back."""
         toast = Adw.Toast(title=text, timeout=0 if undo is not None else 5)
@@ -554,9 +559,14 @@ class App(Adw.Application):
     def do_command_line(self, command_line):
         # A second launch, such as the What's new notification, lands here in the running window.
         args = parse_args(command_line.get_arguments()[1:])
-        window = self.get_active_window() or Window(self, self.dbus)
+        window = self.get_active_window()
+        opened = window is None
+        if opened:
+            window = Window(self, self.dbus)
         if args.page:
             window.show_page(args.page)
+        elif opened:
+            window.open_check_if_due()
         window.present()
         return 0
 

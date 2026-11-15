@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.11.1
+Version:        1.11.2
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -100,6 +100,9 @@ else
 fi
 
 %changelog
+* Sun Nov 15 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.11.2-1
+- Words no dictionary word starts with, such as rose or Sose, show as typed, Backspace after one takes only the last key, and the lock key swaps such a word between its keys and its marks (#764); on GNOME with IBus, Backspace while a slow app reports keeps the word and its marks (#785, #787), a deletion the Lark chat applies only in part is redone (#790), and on GNOME 50.0-50.3 Backspaces GNOME drops no longer let the next Backspace reach Firefox behind Ngó Sen (#789).
+
 * Sun Nov 15 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.11.1-1
 - Settings pages tell the user to restart fcitx5 when the running Ngó Sen is older than the window (#777); Firefox on Mint types the last word right when new text arrives before the backspaces (#766); right after the Ubuntu snap Firefox opens, Ngó Sen deletes through surrounding text, waits for its last commit to show and keeps a backspace fallback to that window (#778, #780, #781); GNOME apps such as the Antigravity chat lose fewer keys when the machine is busy (#767, #773); a / word after Ctrl+A and BackSpace stays as typed in Chromium (#775); Space keeps stretched words such as ừaaa (#768); distribution packages skip the Ngó Sen repository line on the Check page, and install.sh warns before replacing one (#774, #776); Luckysheet starts a new word after a click on another cell (#782).
 

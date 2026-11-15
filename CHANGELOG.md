@@ -16,8 +16,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   trỏ. Bấm Tab để đánh số, rồi 1–5 chọn một emoji; Tab, Space hoặc Enter lấy emoji đầu, Esc giữ nguyên
   chữ. Chữ thường giữ lại và emoji thêm vào sau; `haha` và `:)` được thay bằng emoji. Gõ không dấu như
   `cuoi` vẫn ra, còn `cho`, `meo` thì không, vì đó đã là chữ tiếng Việt. Cờ hiện khi tên nước viết hoa
-  (`Việt Nam`, `Pháp`). Chỉ hiện với giao diện fcitx5 mặc định, nên trên GNOME chưa có ở app đi qua IBus
-  (đa số app GTK); không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trong nhóm Gõ nhanh, mặc định bật (#110, #788).
+  (`Việt Nam`, `Pháp`). Hiện với giao diện fcitx5 mặc định và extension Input Method Panel trên GNOME;
+  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trong nhóm Gõ nhanh, mặc định bật (#110, #788).
 
 ## [1.11.1-1] — 15/11/2026
 

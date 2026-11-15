@@ -172,9 +172,10 @@ namespace ngosen {
         f.terminal         = caps.test(fcitx::CapabilityFlag::Terminal);
         f.caretWidth       = ic_->cursorRect().width();
         f.caretHeight      = ic_->cursorRect().height();
-        // The only panel the emoji hint was tried on; another may show nothing while Tab is held for it.
+        // The panels the emoji hint was tried on; another may show nothing while Tab is held for it.
         const std::string ui = instance_->currentUI();
-        f.drawsCandidates    = ui == "classicui" && fcitx::modeMenuCanDraw(ui, f.frontend, ic_->display(), caps.test(fcitx::CapabilityFlag::ClientSideInputPanel));
+        f.drawsCandidates =
+            (ui == "classicui" || ui == "kimpanel") && fcitx::modeMenuCanDraw(ui, f.frontend, ic_->display(), caps.test(fcitx::CapabilityFlag::ClientSideInputPanel));
         if (f.program != ic_->program())
             f.reportedProgram = ic_->program();
         // GNOME Shell tells which app has focus a moment after the focus moves.

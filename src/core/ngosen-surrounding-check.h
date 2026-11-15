@@ -12,6 +12,7 @@ namespace ngosen {
     // What a report after a replacement through the surrounding text says the app did with it.
     enum class SurroundingVerdict {
         DroppedDeletion, // the old part is still there, with the new one after it
+        ShortDeletion,   // the start of the old part is still there, with the new one after it
         Correct,
         WrongEarlierPart, // the new part is there, but what stood before it changed
         NoAnswer,         // the report does not show the new part yet
@@ -22,6 +23,9 @@ namespace ngosen {
     SurroundingVerdict judgeSurroundingReport(const std::string& beforeCursor, const std::string& prefix, const std::string& deleted, const std::string& added,
                                               unsigned int keysAfter);
 
-    const char*        verdictName(SurroundingVerdict verdict);
+    // The longest start of deleted that the app left between prefix and added, or "" if none.
+    std::string deletionLeftOver(const std::string& beforeCursor, const std::string& prefix, const std::string& deleted, const std::string& added);
+
+    const char* verdictName(SurroundingVerdict verdict);
 
 } // namespace ngosen

@@ -205,11 +205,11 @@ msgstr "Phím chốt chữ"
 
 #: src/ngosen-config.h:236
 msgid "Auto capitalize after sentence-ending punctuation (. ! ? Enter)"
-msgstr "Tự viết hoa đầu câu (thử nghiệm)"
+msgstr "Tự viết hoa đầu câu"
 
 #: src/ngosen-config.h:237
 msgid "Double Space to Period"
-msgstr "Hai dấu cách thành dấu chấm (thử nghiệm)"
+msgstr "Hai dấu cách thành dấu chấm"
 
 #: src/ngosen-config.h:238
 msgid "Double Hyphen to Em-Dash (--)"
@@ -430,7 +430,7 @@ msgid "Start of text or line"
 msgstr "Đầu văn bản, đầu dòng"
 
 msgid "Capitalize the first letter of the text or of a line"
-msgstr "Tự viết hoa chữ đầu văn bản và đầu dòng (thử nghiệm)"
+msgstr "Tự viết hoa chữ đầu văn bản và đầu dòng"
 
 #: src/ngosen-engine.cpp:252
 msgid "Settings"

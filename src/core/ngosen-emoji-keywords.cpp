@@ -133,26 +133,46 @@ namespace ngosen {
 
     } // namespace
 
-    std::optional<EmojiSuggestion> suggestEmoji(const std::vector<std::string>& words, bool yahooEmoticons) {
-        const size_t most = std::min(words.size(), index().maxWords);
+    std::optional<EmojiSuggestion> suggestEmoji(const std::vector<std::string>& words, bool yahooEmoticons, const std::vector<EmojiWordEdit>& edits) {
+        size_t most = index().maxWords;
+        for (const auto& edit : edits)
+            most = std::max<size_t>(most, std::count(edit.keyword.begin(), edit.keyword.end(), ' ') + 1);
+        most = std::min(words.size(), most);
         for (size_t n = most; n > 0; --n) {
             const std::vector<std::string> typed(words.end() - static_cast<std::ptrdiff_t>(n), words.end());
             std::vector<std::string>       lowered;
             for (const auto& word : typed)
                 lowered.push_back(lower(word));
-            EmojiSuggestion suggestion;
+            std::vector<const Entry*> found;
             for (const Entry* entry : lookup(typed, lowered)) {
                 if (entry->kind == EmojiKind::Country && !startsCapitalized(typed.front()))
                     continue;
                 if (entry->kind == EmojiKind::Yahoo && !yahooEmoticons)
                     continue;
-                if (suggestion.emoji.empty()) {
-                    suggestion.keyword = entry->keyword;
-                    suggestion.kind    = entry->kind == EmojiKind::Yahoo ? EmojiKind::Emoticon : entry->kind;
-                }
-                for (auto& emoji : split(entry->emoji)) {
-                    if (suggestion.emoji.size() < 5 && std::find(suggestion.emoji.begin(), suggestion.emoji.end(), emoji) == suggestion.emoji.end())
-                        suggestion.emoji.push_back(std::move(emoji));
+                found.push_back(entry);
+            }
+            std::string phrase;
+            for (const auto& word : lowered)
+                phrase += (phrase.empty() ? "" : " ") + word;
+            EmojiSuggestion suggestion;
+            suggestion.keyword = found.empty() ? phrase : found.front()->keyword;
+            if (!found.empty())
+                suggestion.kind = found.front()->kind == EmojiKind::Yahoo ? EmojiKind::Emoticon : found.front()->kind;
+            // An edit names the keyword as typed, or a default one it matched, as haha for hahaha.
+            const auto names = [&](const EmojiWordEdit& edit, const Entry* entry) { return edit.keyword == phrase || (entry && edit.keyword == entry->keyword); };
+            const auto add   = [&](const std::string& emoji) {
+                if (suggestion.emoji.size() < 5 && std::find(suggestion.emoji.begin(), suggestion.emoji.end(), emoji) == suggestion.emoji.end())
+                    suggestion.emoji.push_back(emoji);
+            };
+            for (const auto& edit : edits) {
+                if (edit.on && (names(edit, nullptr) || std::any_of(found.begin(), found.end(), [&](const Entry* entry) { return names(edit, entry); })))
+                    add(edit.emoji);
+            }
+            for (const Entry* entry : found) {
+                for (const auto& emoji : split(entry->emoji)) {
+                    const bool off = std::any_of(edits.begin(), edits.end(), [&](const EmojiWordEdit& edit) { return !edit.on && edit.emoji == emoji && names(edit, entry); });
+                    if (!off)
+                        add(emoji);
                 }
             }
             if (!suggestion.emoji.empty()) {

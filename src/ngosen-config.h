@@ -104,6 +104,13 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(TrayIconSize, N_("Normal"), N_("Large"));
 
+    enum class EmojiPlacement : std::uint8_t {
+        AfterWord,
+        InsteadOfWord,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(EmojiPlacement, N_("After the word"), N_("Instead of the word"));
+
     enum class UiLanguage : std::uint8_t {
         Vietnamese,
         English,
@@ -247,6 +254,18 @@ namespace fcitx {
                         OptionWithAnnotation<std::vector<ngosenAppSwitch>, ListDisplayOptionAnnotation> switches{
                             this, "Switches", _("Switches"), {}, {}, {}, ListDisplayOptionAnnotation("App")};);
 
+    FCITX_CONFIGURATION(ngosenAppName, Option<std::string> app{this, "App", _("App"), ""};);
+    FCITX_CONFIGURATION(ngosenAppNames,
+                        OptionWithAnnotation<std::vector<ngosenAppName>, ListDisplayOptionAnnotation> apps{
+                            this, "Apps", _("Apps"), {}, {}, {}, ListDisplayOptionAnnotation("App")};);
+
+    // Only what differs from the default keywords: On adds the emoji to the keyword, off removes it.
+    FCITX_CONFIGURATION(ngosenEmojiWord, Option<std::string> keyword{this, "Keyword", _("Keyword"), ""}; Option<std::string> emoji{this, "Emoji", _("Emoji"), ""};
+                        Option<bool> on{this, "On", _("On"), true};);
+    FCITX_CONFIGURATION(ngosenEmojiWords,
+                        OptionWithAnnotation<std::vector<ngosenEmojiWord>, ListDisplayOptionAnnotation> words{
+                            this, "Words", _("Words"), {}, {}, {}, ListDisplayOptionAnnotation("Keyword")};);
+
     /**
      * @brief Main configuration structure for the Ngó Sen input method.
      */
@@ -300,6 +319,7 @@ namespace fcitx {
         Option<bool> rawWordAfterSlash{this, "RawWordAfterSlash", _("Type a word that starts with / as is"), ngosen::defaultOptions.rawWordAfterSlash};
         Option<bool> emojiSuggestions{this, "EmojiSuggestions", _("Suggest emoji while typing"), ngosen::defaultOptions.emojiSuggestions};
         Option<bool> yahooEmoticons{this, "YahooEmoticons", _("Yahoo Messenger emoticons"), ngosen::defaultOptions.yahooEmoticons};
+        OptionWithAnnotation<EmojiPlacement, EmojiPlacementI18NAnnotation> emojiPlacement{this, "EmojiPlacement", _("Put a picked emoji"), EmojiPlacement::AfterWord};
         Option<bool> autoNonVnRestore{this, "AutoNonVnRestore", _("Auto Restore Invalid Words"), ngosen::defaultOptions.autoNonVnRestore};
         Option<bool> modernStyle{this, "ModernStyle", _("Use oà, uý (Instead Of òa, úy)"), ngosen::defaultOptions.modernStyle};
         Option<bool> freeMarking{this, "FreeMarking", _("Allow Type With More Freedom"), ngosen::defaultOptions.freeMarking};

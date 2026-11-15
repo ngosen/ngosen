@@ -23,6 +23,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gợi ý emoji thêm khoảng 460 từ lấy theo tên emoji, như `máy bay` ✈️, `xe máy` 🏍️, `cơm` 🍚, `bóng đá` ⚽, và 86 mã
   Yahoo Messenger như `=))`, `:x`, `:">`, `@};-`, bấm Tab là mã thành emoji. Tuỳ chọn "Mã emoji Yahoo Messenger"
   mặc định bật (#110, #792).
+- Tuỳ chọn "Khi chọn emoji": "Đặt sau từ" (`cười 😂`, như trước) hoặc "Thay luôn từ" (`😂`); `máy bay` được thay
+  cả hai chữ. `haha` và `:)` thì luôn được thay (#110, #793).
 
 ### Bỏ
 

@@ -70,6 +70,7 @@ namespace fcitx {
     const std::string     CustomKeymapFile    = "conf/ngosen-custom-keymap.conf";
     const std::string     MacroTableFile      = "conf/ngosen-macro-table.conf";
     const std::string     AppSwitchFile       = "conf/ngosen-app-switch.conf";
+    const std::string     EmojiWordsFile      = "conf/ngosen-emoji-words.conf";
 
     int                   modeToInt(NgoSenMode mode) {
         switch (mode) {
@@ -550,6 +551,7 @@ namespace fcitx {
         readAsIni(macroTables_, MacroTableFile);
         macroTableObject_.reset(newMacroTable(macroTables_));
         readAsIni(appSwitchesTables_, AppSwitchFile);
+        readAsIni(emojiWordsTable_, EmojiWordsFile);
         if (config_.enableDictionary.value()) {
 #if NGOSEN_USE_MODERN_FCITX_API
             auto fd = StandardPaths::global().open(StandardPathsType::PkgData, "ngosen/vietnamese.cm.dict");
@@ -640,6 +642,21 @@ namespace fcitx {
         }
         if (path == "app_switches")
             return &appSwitchesTables_;
+        if (path == "emoji_off_apps") {
+            std::vector<ngosenAppName> apps;
+            {
+                std::lock_guard<std::mutex> lock(appRulesMutex_);
+                for (const auto& app : emojiOffApps_) {
+                    if (!isStartsWith(app, "ctx_"))
+                        apps.emplace_back().app.setValue(app);
+                }
+            }
+            std::sort(apps.begin(), apps.end(), [](const auto& a, const auto& b) { return *a.app < *b.app; });
+            emojiOffAppsTable_.apps.setValue(std::move(apps));
+            return &emojiOffAppsTable_;
+        }
+        if (path == "emoji_words")
+            return &emojiWordsTable_;
         return nullptr;
     }
 
@@ -652,35 +669,39 @@ namespace fcitx {
     }
 
     void NgoSenEngine::syncOptions() {
-        auto& o                            = options_;
-        o.inputMethod                      = config_.inputMethod.value();
-        o.outputCharset                    = config_.outputCharset.value();
-        o.convertFrom                      = config_.convertFrom.value();
-        o.convertTo                        = config_.convertTo.value();
-        o.convertCase                      = static_cast<int>(config_.convertCase.value());
-        o.convertStripDiacritics           = config_.convertStripDiacritics.value();
-        o.spellCheck                       = config_.spellCheck.value();
-        o.modernStyle                      = config_.modernStyle.value();
-        o.freeMarking                      = config_.freeMarking.value();
-        o.w2u                              = static_cast<int>(config_.w2u.value());
-        o.bracketTransform                 = static_cast<int>(config_.bracketTransform.value());
-        o.timeFormat                       = config_.timeFormat.value();
-        o.dateFormat                       = config_.dateFormat.value();
-        o.autoNonVnRestore                 = config_.autoNonVnRestore.value();
-        o.ddFreeStyle                      = config_.ddFreeStyle.value();
-        o.backspaceRemovesTone             = config_.backspaceRemovesTone.value();
-        o.enableMacro                      = config_.enableMacro.value();
-        o.enableMacroInOffMode             = config_.enableMacroInOffMode.value();
-        o.capitalizeMacro                  = config_.capitalizeMacro.value();
-        o.autoCapitalizeAfterPunctuation   = config_.autoCapitalizeAfterPunctuation.value();
-        o.capitalizeStartOfText            = config_.capitalizeStartOfText.value();
-        o.doubleSpaceToPeriod              = config_.doubleSpaceToPeriod.value();
-        o.doubleHyphenToEmDash             = config_.doubleHyphenToEmDash.value();
-        o.retypeAfterSwitch                = config_.retypeAfterSwitch.value();
-        o.retoneSelection                  = config_.retoneSelection.value();
-        o.rawWordAfterSlash                = config_.rawWordAfterSlash.value();
-        o.emojiSuggestions                 = config_.emojiSuggestions.value();
-        o.yahooEmoticons                   = config_.yahooEmoticons.value();
+        auto& o                          = options_;
+        o.inputMethod                    = config_.inputMethod.value();
+        o.outputCharset                  = config_.outputCharset.value();
+        o.convertFrom                    = config_.convertFrom.value();
+        o.convertTo                      = config_.convertTo.value();
+        o.convertCase                    = static_cast<int>(config_.convertCase.value());
+        o.convertStripDiacritics         = config_.convertStripDiacritics.value();
+        o.spellCheck                     = config_.spellCheck.value();
+        o.modernStyle                    = config_.modernStyle.value();
+        o.freeMarking                    = config_.freeMarking.value();
+        o.w2u                            = static_cast<int>(config_.w2u.value());
+        o.bracketTransform               = static_cast<int>(config_.bracketTransform.value());
+        o.timeFormat                     = config_.timeFormat.value();
+        o.dateFormat                     = config_.dateFormat.value();
+        o.autoNonVnRestore               = config_.autoNonVnRestore.value();
+        o.ddFreeStyle                    = config_.ddFreeStyle.value();
+        o.backspaceRemovesTone           = config_.backspaceRemovesTone.value();
+        o.enableMacro                    = config_.enableMacro.value();
+        o.enableMacroInOffMode           = config_.enableMacroInOffMode.value();
+        o.capitalizeMacro                = config_.capitalizeMacro.value();
+        o.autoCapitalizeAfterPunctuation = config_.autoCapitalizeAfterPunctuation.value();
+        o.capitalizeStartOfText          = config_.capitalizeStartOfText.value();
+        o.doubleSpaceToPeriod            = config_.doubleSpaceToPeriod.value();
+        o.doubleHyphenToEmDash           = config_.doubleHyphenToEmDash.value();
+        o.retypeAfterSwitch              = config_.retypeAfterSwitch.value();
+        o.retoneSelection                = config_.retoneSelection.value();
+        o.rawWordAfterSlash              = config_.rawWordAfterSlash.value();
+        o.emojiSuggestions               = config_.emojiSuggestions.value();
+        o.yahooEmoticons                 = config_.yahooEmoticons.value();
+        o.emojiReplacesWord              = config_.emojiPlacement.value() == EmojiPlacement::InsteadOfWord;
+        o.emojiWordEdits.clear();
+        for (const auto& word : *emojiWordsTable_.words)
+            o.emojiWordEdits.push_back({*word.keyword, *word.emoji, *word.on});
         o.messengerSelectOvertype          = config_.messengerSelectOvertype.value();
         o.copyWaitRecovery                 = config_.copyWaitRecovery.value();
         o.foldReplayReplacement            = config_.foldReplayReplacement.value();
@@ -761,6 +782,22 @@ namespace fcitx {
             if (appSwitchesTables_.switches->empty())
                 ctxSwitches_.clear();
             safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
+            refreshEngine();
+        } else if (path == "emoji_off_apps") {
+            emojiOffAppsTable_.load(config, true);
+            {
+                std::lock_guard<std::mutex> lock(appRulesMutex_);
+                for (auto it = emojiOffApps_.begin(); it != emojiOffApps_.end();)
+                    it = isStartsWith(*it, "ctx_") ? std::next(it) : emojiOffApps_.erase(it);
+                for (const auto& entry : *emojiOffAppsTable_.apps)
+                    emojiOffApps_.insert(*entry.app);
+            }
+            saveEmojiOffApps();
+            refreshEngine();
+        } else if (path == "emoji_words") {
+            emojiWordsTable_.load(config, true);
+            safeSaveAsIni(emojiWordsTable_, EmojiWordsFile);
+            syncOptions();
             refreshEngine();
         }
     }
@@ -1086,6 +1123,7 @@ namespace fcitx {
         instance_->inputContextManager().foreach ([this](InputContext* ic) {
             auto* state = stateFor(ic);
             state->setEngine();
+            state->setEmojiOn(emojiOnFor(getProgramName(ic)));
             if (ic->hasFocus()) {
                 // Re-resolve the focused window's rule; setEngine() must not
                 // reset it to the global mode.
@@ -1532,6 +1570,10 @@ namespace fcitx {
     bool NgoSenEngine::emojiOnFor(const std::string& appName) const {
         std::lock_guard<std::mutex> lock(appRulesMutex_);
         return !listsApp(emojiOffApps_, appName);
+    }
+
+    bool NgoSenEngine::emojiOnIn(InputContext* ic) {
+        return stateFor(ic)->emojiOn();
     }
 
     void NgoSenEngine::loadEmojiOffApps() {

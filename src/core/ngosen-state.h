@@ -108,6 +108,9 @@ namespace ngosen {
         void setVimKeys(bool on);
         // The user turned emoji suggestions on or off for the app (the w key in the mode menu).
         void setEmojiOn(bool on);
+        bool emojiOn() const {
+            return emojiOn_;
+        }
 
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.
@@ -254,6 +257,7 @@ namespace ngosen {
         struct EmojiOffer {
             ngosen::EmojiSuggestion suggestion;
             std::string             covered; // the typed text a sound or an emoticon stands for
+            std::string             keyword; // the typed words the keyword covers, as they are in the app
             bool                    picking = false;
         };
         std::optional<EmojiOffer>      emojiOffer_;
@@ -279,6 +283,7 @@ namespace ngosen {
         bool               everyWordTakesMarks(const std::string& typed);
         void               applyRetype();
         bool               replaceRetyped(const std::string& from, const std::string& to);
+        bool               replacesKeyword(const EmojiOffer& offer, const std::string& inPreedit, const std::string& emoji);
         void               acceptRetype(const std::string& hint);
         void               applyRetypeSoon(std::string hint);
         void               reopenTypedKey();

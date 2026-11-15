@@ -65,6 +65,7 @@ SETTINGS_MAP = {
             "RawWordAfterSlash",
             "EmojiSuggestions",
             "YahooEmoticons",
+            "EmojiPlacement",
         ],
     },
     SettingsCategory.SHORTCUTS: {
@@ -137,6 +138,9 @@ HINTS = {
     ),
     "YahooEmoticons": N_(
         "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
+    ),
+    "EmojiPlacement": N_(
+        "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
     ),
     "RawWordAfterSlash": N_(
         "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
@@ -220,6 +224,7 @@ DEPENDS = {
     "EnableMacroInOffMode": ("EnableMacro", "True"),
     "TimeFormat": ("EnableMacro", "True"),
     "YahooEmoticons": ("EmojiSuggestions", "True"),
+    "EmojiPlacement": ("EmojiSuggestions", "True"),
     "DateFormat": ("EnableMacro", "True"),
     **{shortcut: (shown, "True") for shortcut, shown in MODE_SHORTCUT_TO_VISIBILITY.items()},
 }

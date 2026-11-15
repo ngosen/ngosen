@@ -235,6 +235,38 @@ msgstr "Gợi ý emoji khi gõ"
 msgid "Yahoo Messenger emoticons"
 msgstr "Mã emoji Yahoo Messenger"
 
+#: src/ngosen-config.h
+msgid "Apps"
+msgstr "App tắt emoji"
+
+#: src/ngosen-config.h
+msgid "Keyword"
+msgstr "Từ khoá"
+
+#: src/ngosen-config.h
+msgid "Emoji"
+msgstr "Emoji"
+
+#: src/ngosen-config.h
+msgid "On"
+msgstr "Bật"
+
+#: src/ngosen-config.h
+msgid "Words"
+msgstr "Từ gợi ý emoji"
+
+#: src/ngosen-config.h
+msgid "Put a picked emoji"
+msgstr "Khi chọn emoji"
+
+#: src/ngosen-config.h
+msgid "After the word"
+msgstr "Đặt sau từ"
+
+#: src/ngosen-config.h
+msgid "Instead of the word"
+msgstr "Thay luôn từ"
+
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
 msgstr "Tự khôi phục từ gõ sai"
@@ -1564,6 +1596,10 @@ msgstr "/cost và /usr/share giữ nguyên như đã gõ khi ở đầu dòng ho
 #: settings-gui/core/catalog.py
 msgid "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
 msgstr "Gõ =)) hay :x là gợi ý 🤣 hay 😍 như hồi Yahoo Messenger; bấm Tab để thay mã bằng emoji."
+
+#: settings-gui/core/catalog.py
+msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
+msgstr "Đặt sau từ: cười 😂. Thay luôn từ: 😂. Còn haha và :) thì luôn được thay."
 
 #: settings-gui/core/catalog.py
 msgid "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."

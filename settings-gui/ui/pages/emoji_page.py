@@ -297,7 +297,8 @@ class EmojiRow(Row):
         self.new.setText(self.page.drafts.get(self.emoji) or _("+ word"))
 
     def open_entry(self):
-        for row in self.page.view.live.values():
+        # Copied: closing a box refits its row, which can build or drop rows.
+        for row in list(self.page.view.live.values()):
             if row is not self:
                 row.close_entry()
         if self.entry is None:

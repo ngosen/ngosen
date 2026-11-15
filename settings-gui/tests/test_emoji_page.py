@@ -31,7 +31,13 @@ class EmojiPageTest(unittest.TestCase):
     def find(self, query):
         self.page.search.setText(query)
         self.page.search.returnPressed.emit()
-        self.page.scroll.ensureWidgetVisible(self.page.view)
+        view = self.page.view
+        # The page's layouts take a few passes to shrink to the filtered rows.
+        for _ in range(20):
+            app.processEvents()
+            if view.height() == view.sizeHint().height():
+                break
+        self.page.scroll.ensureWidgetVisible(view)
         app.processEvents()
         self.page.view.fill()
 

@@ -6,7 +6,7 @@ from unittest import mock
 
 # isort: off
 from fake_fcitx import FakeDBusHandler
-from core.emoji_words import EmojiWords
+from core.emoji_words import EmojiWords, toggle_hint
 
 # isort: on
 
@@ -136,6 +136,16 @@ class OffAppsTest(unittest.TestCase):
         self.assertEqual(fake.sub_configs["emoji_off_apps"], [{"App": "kate"}])
         self.assertTrue(undo())
         self.assertEqual(fake.sub_configs["emoji_off_apps"], [{"App": "firefox"}, {"App": "kate"}])
+
+
+class ToggleHintTest(unittest.TestCase):
+    def test_names_the_keys_the_user_set(self):
+        self.assertIn("press ` then w", toggle_hint({"0": "grave"}, "w"))
+        self.assertIn("press Ctrl+E then e", toggle_hint({"0": "Control+e"}, "e"))
+
+    def test_without_a_menu_key_points_to_where_to_set_one(self):
+        self.assertNotIn("press", toggle_hint({}, "w"))
+        self.assertNotIn("press", toggle_hint({"0": "grave"}, ""))
 
 
 class DefaultsTest(unittest.TestCase):

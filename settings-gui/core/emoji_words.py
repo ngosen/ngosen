@@ -9,7 +9,10 @@ still reach the user.
 
 import unicodedata
 
+from i18n import _
+
 from core.emoji_table import EMOJI, GROUPS
+from core.hotkeys import pretty_format_hotkey_parts
 
 WORDS = ("emoji_words", "Words")
 OFF_APPS = ("emoji_off_apps", "Apps")
@@ -19,6 +22,21 @@ _BY_EMOJI = {row[0]: row for row in EMOJI}
 def clean(word):
     """A word as the engine compares it: lower case, composed, single spaces."""
     return " ".join(unicodedata.normalize("NFC", word).lower().split())
+
+
+def toggle_hint(menu_keys, emoji_key):
+    """How to turn emoji off for one app, with the keys the user set (ModeMenuKey, ShortcutEmoji)."""
+    keys = list(menu_keys.values()) if isinstance(menu_keys, dict) else list(menu_keys or [])
+    menu = "+".join(pretty_format_hotkey_parts(keys[0])) if keys else ""
+    if not menu or not emoji_key:
+        return _(
+            "Set a mode menu key and an emoji key on the Keys page to turn suggestions off"
+            " for one app."
+        )
+    return _(
+        "In the app you are typing in, press {menu} then {key} to turn suggestions off or back"
+        " on for that app. The app keeps its typing mode."
+    ).format(menu=menu, key=emoji_key)
 
 
 class EmojiWords:

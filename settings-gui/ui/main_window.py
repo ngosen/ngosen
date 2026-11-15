@@ -315,6 +315,11 @@ class NgoSenSettingsWindow(QMainWindow):
 
             return DictEditorPage(self.dbus_handler)
 
+        def create_emoji():
+            from ui.pages.emoji_page import EmojiPage
+
+            return EmojiPage(self.dbus_handler)
+
         def create_keymap():
             from ui.pages.keymap_editor import KeymapEditorPage
 
@@ -359,6 +364,13 @@ class NgoSenSettingsWindow(QMainWindow):
             (_("Macros"), create_macros),
             (_("Dictionary"), create_dict),
             names=["macros", "dictionary"],
+        )
+        self._add_page(
+            _("Emoji"),
+            # Breeze has face-smile; Adwaita ships only symbolic emote and emoji icons.
+            ("face-smile", "face-smile-symbolic", "emoji-people-symbolic"),
+            (None, create_emoji),
+            names=["emoji"],
         )
         self._add_page(
             _("Keys"),
@@ -507,8 +519,12 @@ class NgoSenSettingsWindow(QMainWindow):
 
     def show_check_message(self, text, undo):
         """A message from the check page, with Undo when its fix can be taken back."""
+        self.show_page_message(text, undo)
+
+    def show_page_message(self, text, undo=None, error=False):
+        """A message about a change a page saved itself; undo() returns whether it worked."""
         self._undo_to = None
-        self._show_message(text, undo=undo is not None, keep=undo is not None)
+        self._show_message(text, undo=undo is not None, error=error, keep=undo is not None)
         self._undo_fix = undo
 
     def _show_count(self, count):

@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.11.2-1] — 15/11/2026
+
+Chữ không phải tiếng Việt mà vẫn đúng luật đánh vần, như `rose`, `Sose`, nay hiện đúng phím đã gõ ngay lúc gõ; BackSpace sau chữ như vậy chỉ xoá phím cuối, và nhấn Ctrl đổi chữ qua lại giữa phím đã gõ và chữ có dấu (#764). Trên GNOME dùng IBus, nhấn Backspace trong lúc chờ app báo chữ không còn làm mất dấu hay đặt dấu nhầm từ (#785, #787), ô chat Lark không còn ra `Viĩnh` khi gõ `Vinxh` (#790), và trên GNOME 50.0–50.3 phím Backspace gõ sau khi GNOME làm mất Backspace của Ngó Sen không còn tới thẳng Firefox (#789).
+Tải ở [ngosen-1.11.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.11.2-1).
+
 ### Sửa
 
 - Trên GNOME dùng IBus, trong app báo chữ chậm (copy wait), sau khi kết thúc từ bằng cách di chuyển con trỏ, gõ `dd` thành `đ` rồi nhấn nhanh Backspace xoá hết từ trong lúc chờ, phím dấu gõ tiếp ngay sau từ trước nay đặt dấu lên từ đó: `ca` rồi `s` thành `cá`, không còn thành `cas`. Chỉ thử với app giả trong unit test, chưa thử app thật (#785).

@@ -111,6 +111,11 @@ class ShouldOpenTest(unittest.TestCase):
             self.assertEqual(f.read(), before)
         self.assertEqual(json.loads(before)["version"], 1)
 
+    def test_a_title_that_cannot_be_written_back_leaves_nothing_behind(self):
+        self.write('{"version": 1, "known": ["\\ud800"], "opens": 0, "gap": 3}')
+        self.assertEqual(self.opens(OFF), [True])
+        self.assertEqual(os.listdir(os.path.dirname(self.path)), ["check-reminders.json"])
+
     def test_it_lives_with_the_typing_logs(self):
         path = check_reminder.state_file({"XDG_STATE_HOME": "/s", "HOME": "/h"})
         self.assertEqual(path, "/s/ngosen/check-reminders.json")

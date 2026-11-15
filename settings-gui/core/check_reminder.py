@@ -104,7 +104,8 @@ def _write(path, state):
             temp = f.name
             json.dump(state, f, ensure_ascii=False)
         os.replace(temp, path)
-    except OSError:
+    # ValueError: a title read from a hand-edited file that UTF-8 cannot hold.
+    except (OSError, ValueError):
         if temp is not None:
             try:
                 os.unlink(temp)

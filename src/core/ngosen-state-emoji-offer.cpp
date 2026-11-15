@@ -151,7 +151,7 @@ namespace ngosen {
             start = start == std::string::npos ? 0 : start + 1;
         }
         std::string keyword = text.substr(start);
-        emojiOffer_ = EmojiOffer{.suggestion = std::move(*found), .covered = covered, .keyword = std::move(keyword)};
+        emojiOffer_         = EmojiOffer{.suggestion = std::move(*found), .covered = covered, .keyword = std::move(keyword)};
         showEmojiOffer();
     }
 

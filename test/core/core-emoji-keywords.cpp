@@ -137,7 +137,7 @@ int main() {
     offers({"mèo", "đen"}, "🐈‍⬛", 2);
     offers({"chúc", "ngủ", "ngon"}, "😴", 3);
     offers({"hahaha"}, "😂");
-    edits = {{"xương", "🦴", false}, {"xương", "💀", true}};
+    edits             = {{"xương", "🦴", false}, {"xương", "💀", true}};
     const auto folded = suggestEmoji({"xuong"}, yahoo, edits);
     check(folded && std::find(folded->emoji.begin(), folded->emoji.end(), "🦴") == folded->emoji.end(), "an edit reaches every keyword typed without marks");
     offers({"xuong"}, "💀");

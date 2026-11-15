@@ -13,6 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Sửa
 
 - Trên GNOME dùng IBus, trong app báo chữ chậm (copy wait), sau khi kết thúc từ bằng cách di chuyển con trỏ, gõ `dd` thành `đ` rồi nhấn nhanh Backspace xoá hết từ trong lúc chờ, phím dấu gõ tiếp ngay sau từ trước nay đặt dấu lên từ đó: `ca` rồi `s` thành `cá`, không còn thành `cas`. Chỉ thử với app giả trong unit test, chưa thử app thật (#785).
+- Trên GNOME dùng IBus, trong ô chat của Lark mở bằng Helium, gõ `Vinxh` không còn ra `Viĩnh`: ô này chỉ xoá một trong hai chữ bộ gõ xin xoá qua surrounding text, nay bộ gõ thấy chữ còn sót, xoá lại bằng BackSpace và gõ lại cho đúng `Vĩnh`. Chỉ thử với app giả trong unit test, chưa thử lại trong Lark (#790).
 
 ## [1.11.1-1] — 15/11/2026
 

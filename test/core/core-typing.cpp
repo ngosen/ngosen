@@ -2622,6 +2622,8 @@ namespace {
         };
         std::string text = typed({.ignoresSurroundingDel = true}, "tiee");
         check(text == "tieê", "quirk: a dropped deletion leaves the old letter", text);
+        text = typed({.deletesOneCharOnly = true}, "vinx");
+        check(text == "viĩn", "quirk: a short deletion leaves the first old letter", text);
         text = typed({.reportsEmptyText = true}, "tiee");
         check(text == "tieê", "quirk: a field that reports no text drops the deletion", text);
         text = typed({.convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true}, "vieetj nam tieesng");
@@ -2989,6 +2991,14 @@ namespace {
         text = typedWithBackspaces(gnome, {.ignoresSurroundingDel = true, .repeatsOldTextAfterDelete = true}, "too too ", 400, lines);
         check(text == "toô tô " && countHaving(lines, "Leave the dropped deletion") == 1 && countHaving(lines, "Surrounding text untrusted") == 1,
               "long check: a dropped deletion seen after a key costs one word", text + " " + join(lines));
+    }
+
+    // An app that deletes one character of two must not keep the other in the word.
+    void testShortDeletion() {
+        std::vector<std::string> lines;
+        const auto               text = typedWithBackspaces(makeField("ibus", true), {.deletesOneCharOnly = true}, "vinxh nam ", 400, lines);
+        check(text == "vĩnh nam " && countHaving(lines, "Surrounding check: app deleted too little") == 1 && countHaving(lines, "Fix the dropped deletion") == 1,
+              "short deletion: the letter left is fixed with backspaces", text + " " + join(lines));
     }
 
     // A check open while GNOME Shell names the app late says nothing about either app.
@@ -5138,6 +5148,7 @@ int main() {
     testBackspacePathDuringLongCheck();
     testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
+    testShortDeletion();
     testCheckAcrossLateAppName();
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();

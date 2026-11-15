@@ -69,6 +69,7 @@ namespace ngosen::test {
         int              keysBeforeNewReport          = 1;     // typed keys it takes to end repeatsOldTextAfterDelete
         bool             silentFromFirstDeletion      = false; // stops reporting at its first deletion through the surrounding text, for good
         bool             deletesOneTooMany            = false; // takes one more character than a deletion through the surrounding text asks for
+        bool             deletesOneCharOnly           = false; // takes only the last character of a longer deletion, as a Lark chat box in Chromium
         bool             reportsTextAtChange          = false; // a late report shows the text as it was at that change, not as it is on arrival
         int              emptyCommitsBeforeReport     = 0;     // empty commits it takes to end repeatsOldTextAfterDelete, as Firefox on GNOME
         std::vector<int> ignoresRequestsOnEdits;               // these deletions get no report for empty commits, as Firefox on GNOME now and then

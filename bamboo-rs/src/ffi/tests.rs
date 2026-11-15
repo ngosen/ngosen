@@ -299,3 +299,21 @@ fn convert_text_reports_unknown_names() {
     assert_eq!(convert("a", "Latin-1", "Unicode", 0), None);
     assert_eq!(convert("a", "Unicode", "Unicode", 5), None);
 }
+
+fn is_syllable(text: &str) -> bool {
+    let text = CString::new(text).unwrap();
+    // SAFETY: `text` is a NUL-terminated string.
+    unsafe { IsVietnameseSyllable(text.as_ptr()) == 1 }
+}
+
+#[test]
+fn plain_words_that_are_already_vietnamese() {
+    for word in ["cho", "trong", "khi", "meo", "xe", "cười", "khóc", "đạp"] {
+        assert!(is_syllable(word), "{word}");
+    }
+    for word in [
+        "cuoi", "khoc", "dap", "car", "haha", "ok", "", "xe dap", "b", "đ", "ngh", "kk",
+    ] {
+        assert!(!is_syllable(word), "{word}");
+    }
+}

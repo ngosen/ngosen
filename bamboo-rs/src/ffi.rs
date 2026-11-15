@@ -381,5 +381,41 @@ pub extern "C" fn EngineShownAsTyped(engine: usize) -> u8 {
     handles::with_engine(engine, |e| e.shown_as_typed()).unwrap_or(false) as u8
 }
 
+/// 1 when `text` is one correctly spelled Vietnamese syllable exactly as written, so `cho` is one
+/// and `cuoi`, which needs a mark, is not.
+///
+/// # Safety
+/// `text` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn IsVietnameseSyllable(text: *const c_char) -> u8 {
+    // SAFETY: the caller passes a valid C string or null.
+    let text = unsafe { string_from_c(text) };
+    let mut engine =
+        bamboo_core::Engine::with_config(InputMethod::default(), crate::engine::default_config());
+    engine.rebuild_from_text(&text);
+    let rebuilt = engine.get_processed_str(bamboo_core::OutputOptions::NONE);
+    u8::from(
+        rebuilt == text && has_vowel(&text) && engine.is_valid_word() && stop_final_has_tone(&text),
+    )
+}
+
+/// The engine also accepts a lone onset such as `ngh`, a syllable still being typed.
+fn has_vowel(text: &str) -> bool {
+    crate::text::without_diacritics(text)
+        .to_lowercase()
+        .contains(['a', 'e', 'i', 'o', 'u', 'y'])
+}
+
+/// A syllable ending in c, ch, p or t is only ever spoken with the sắc or nặng tone.
+fn stop_final_has_tone(text: &str) -> bool {
+    let lower = text.to_lowercase();
+    if !["c", "ch", "p", "t"].iter().any(|f| lower.ends_with(f)) {
+        return true;
+    }
+    lower
+        .chars()
+        .any(|c| "áắấéếíóốớúứýạặậẹệịọộợụựỵ".contains(c))
+}
+
 #[cfg(test)]
 mod tests;

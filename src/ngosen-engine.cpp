@@ -344,6 +344,8 @@ namespace fcitx {
                 const std::string appName = contextRuleName(ic);
                 clearAppRule(appName);
                 clearAppSwitch(appName);
+                std::lock_guard<std::mutex> lock(appRulesMutex_);
+                emojiOffApps_.erase(appName);
             }
         });
 
@@ -1296,10 +1298,12 @@ namespace fcitx {
             return apps.count(appName) > 0 || apps.count(stripDesktopSuffix(appName)) > 0;
         }
 
+        // Windows without a name are never saved, so they keep their entry while they are open.
         void readAppList(const std::string& path, std::unordered_set<std::string>& apps) {
             std::ifstream file(path);
             std::string   line;
-            apps.clear();
+            for (auto it = apps.begin(); it != apps.end();)
+                it = isStartsWith(*it, "ctx_") ? std::next(it) : apps.erase(it);
             while (std::getline(file, line)) {
                 if (!line.empty() && line[0] != '#')
                     apps.insert(line);

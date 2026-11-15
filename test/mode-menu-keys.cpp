@@ -184,6 +184,38 @@ int main() {
         engine.setConfig(off);
     }
 
+    // A window without a name keeps its emoji switch through a settings reload, and loses it when it closes.
+    auto unnamed = std::make_unique<TestInputContext>(&testInstance.instance, "gnome-shell");
+    unnamed->focusIn();
+    fcitx::InputContextEvent unnamedFocus(unnamed.get(), fcitx::EventType::InputContextFocusIn);
+    context->focusOut();
+    engine.activate(entry, unnamedFocus);
+    press(engine, entry, *unnamed, FcitxKey_grave);
+    press(engine, entry, *unnamed, FcitxKey_w);
+    engine.reloadConfig();
+    press(engine, entry, *unnamed, FcitxKey_grave);
+    list = menu(*unnamed);
+    check(list && label(*list, 2) == "   [w] Emoji suggestions: off", "a reload keeps emoji off for a window without a name", list ? label(*list, 2) : "no menu");
+    press(engine, entry, *unnamed, FcitxKey_Escape);
+    const void* closed = unnamed.get();
+    unnamed->focusOut();
+    unnamed.reset();
+    auto reopened = std::make_unique<TestInputContext>(&testInstance.instance, "gnome-shell");
+    if (reopened.get() == closed) {
+        reopened->focusIn();
+        fcitx::InputContextEvent reopenedFocus(reopened.get(), fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, reopenedFocus);
+        press(engine, entry, *reopened, FcitxKey_grave);
+        list = menu(*reopened);
+        check(list && label(*list, 2) == "   [w] Emoji suggestions: on", "a new window at a closed one's address starts with emoji on", list ? label(*list, 2) : "no menu");
+        press(engine, entry, *reopened, FcitxKey_Escape);
+    } else {
+        std::cerr << "note: the new window got another address, so window was not checked\n";
+    }
+    reopened->focusOut();
+    context->focusIn();
+    engine.activate(entry, focus);
+
     // A field that reports no app of its own, away from GNOME Shell's frontend.
     auto relayed = std::make_unique<TestInputContext>(&testInstance.instance, "gnome-shell");
     relayed->focusIn();

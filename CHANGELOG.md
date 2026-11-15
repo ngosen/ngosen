@@ -25,6 +25,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   mặc định bật (#110, #792).
 - Tuỳ chọn "Khi chọn emoji": "Đặt sau từ" (`cười 😂`, như trước) hoặc "Thay luôn từ" (`😂`); `máy bay` được thay
   cả hai chữ. `haha` và `:)` thì luôn được thay (#110, #793).
+- Trang Emoji mới trong cửa sổ cài đặt: các tuỳ chọn emoji, danh sách app đã tắt emoji kèm nút bật lại, và bảng
+  mọi emoji kèm từ gợi ý. Bấm một từ để tắt hay bật, thêm từ của riêng mình, "Như cũ" để trả về từ có sẵn; tìm
+  theo từ, lọc theo nhóm (#110, #795).
 
 ### Bỏ
 

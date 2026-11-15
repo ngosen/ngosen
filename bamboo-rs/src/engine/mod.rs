@@ -476,6 +476,15 @@ impl BambooEngine {
         self.get_processed_string(OutputOptions::RAW | OutputOptions::FULL_TEXT)
     }
 
+    /// The word the keys compose, even while it shows as typed; empty when the spelling rules
+    /// reject it.
+    pub(crate) fn composed_text(&self) -> String {
+        if !self.preeditor.is_valid_prefix() {
+            return String::new();
+        }
+        self.get_processed_string(OutputOptions::FULL_TEXT)
+    }
+
     /// A digit shows the word before it is not Vietnamese as well as a space does.
     fn word_before_digits_is_english(&self) -> bool {
         !self.keep_marks_until_next_key

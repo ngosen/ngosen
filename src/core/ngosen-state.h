@@ -223,6 +223,13 @@ namespace ngosen {
         bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key
         Surrounding              reportAtKey_;
 
+        struct LockedWord {
+            std::string keys;
+            std::string composed;
+            bool        showsComposed;
+        };
+        std::optional<LockedWord> lockedWord_; ///< the word just locked, which another tap swaps between its two forms
+
         enum class VimState : std::uint8_t {
             Insert,
             Normal,
@@ -943,9 +950,13 @@ namespace ngosen {
         void cancelModifierTap();
 
         /**
-         * @brief Keeps the word being typed as it is shown: no more tone marks, restore or macro.
+         * @brief Keeps the word being typed: no more tone marks, restore or macro.
+         *
+         * A word shown as typed is kept with its marks, and each further tap swaps the two forms.
          */
         void lockWord();
+        void commitComposedPreedit(const std::string& composed);
+        void swapLockedWord();
 
         // Everything sent to the app goes through here, so the typing logic does not call fcitx5 directly.
         std::unique_ptr<ngosen::Host> host_;

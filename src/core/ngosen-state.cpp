@@ -793,6 +793,8 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+            lockedWord_.reset();
         if (!keyEvent.isModifier())
             notePressOrRelease(keyEvent);
         // Counted first, so a replacement this key starts does not count it as a later key.
@@ -958,7 +960,8 @@ namespace ngosen {
         }
         if (keyEvent.isModifier()) {
             handleModifierTap(keyEvent);
-            if (mode() != ngosen::Mode::Preedit || keyEvent.isBareShift())
+            // A tap of the lock key decides how the word is committed; a key held with it still commits the word first.
+            if (mode() != ngosen::Mode::Preedit || keyEvent.isBareShift() || isLockWordModifier(keyEvent.sym()))
                 return true;
         } else {
             cancelModifierTap();
@@ -1369,6 +1372,7 @@ namespace ngosen {
         echoKeyAtUs_ = 0;
         if (!keepOpenWord)
             fieldAtKeptReset_.reset();
+        lockedWord_.reset();
         // After focus out a forwarded key may reach the window that took focus.
         if (isFocusOut) {
             held_enter_pending_ = false;

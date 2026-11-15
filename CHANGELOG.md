@@ -16,6 +16,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trên GNOME dùng IBus, trong ô chat của Lark mở bằng Helium, gõ `Vinxh` không còn ra `Viĩnh`: ô này chỉ xoá một trong hai chữ bộ gõ xin xoá qua surrounding text, nay bộ gõ thấy chữ còn sót, xoá lại bằng BackSpace và gõ lại cho đúng `Vĩnh`. Chỉ thử với app giả trong unit test, chưa thử lại trong Lark (#790).
 - Trên GNOME dùng IBus, trong app báo chữ chậm, nhấn Backspace trong lúc chờ để xoá phím thừa sau từ (như `thuwcx` rồi Backspace) nay khôi phục từ có dấu như khi không phải chờ: gõ tiếp `j` ra `thực`, không còn thành `thuực`. Chỉ thử với app giả trong unit test, chưa thử app thật (#787).
 - Trên GNOME 50.0–50.3, khi GNOME làm mất các phím Backspace Ngó Sen gửi, phím Backspace gõ sau đó không còn bị extension chuyển thẳng tới app mà Ngó Sen không biết: trong Firefox, `thuwcx` rồi Backspace, `j` không còn ra `tực`. Đã thử Firefox trên Ubuntu 26.04 GNOME 50.1 (#789).
+- Gõ chữ không phải tiếng Việt mà vẫn đúng luật đánh vần, như `rose`, `case`, `Sose`, nay hiện đúng phím đã gõ ngay khi không còn từ nào trong từ điển bắt đầu như vậy, thay vì hiện `roé`, `caé`, `Soé` tới khi nhấn Space; gõ `roses`, `cases` không còn mất chữ `s` thứ hai. BackSpace sau chữ như vậy chỉ xoá phím cuối (`Sose` rồi BackSpace ra `Sos`), và gõ tắt vẫn chạy khi phím dấu lặp lại trả về đúng từ khoá. 16 từ tiếng Anh thông dụng nay ra đúng, như `moses`, `pierre`, `poisson` (#764).
 
 ## [1.11.1-1] — 15/11/2026
 

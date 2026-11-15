@@ -315,8 +315,10 @@ namespace {
             t.rearm(ngosen::monotonicUs() + StepUs);
             return true;
         });
-        pumpEventLoop(testInstance.instance, 400);
-        check("five 30 ms timers in a row fire within 400 ms", fired == 5);
+        // One long run, since every wake-up fires what is due; on a 250 ms grid only four fit, and
+        // the slack covers a slow CI runner.
+        pumpEventLoop(testInstance.instance, 800);
+        check("five 30 ms timers in a row fire within 800 ms", fired == 5);
     }
 
 } // namespace

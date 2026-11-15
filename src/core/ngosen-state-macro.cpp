@@ -188,6 +188,9 @@ namespace ngosen {
     void TypingState::handleModifierTap(const ngosen::KeyPress& keyEvent) {
         if (!isLockWordModifier(keyEvent.sym())) {
             tracking_modifier_tap_ = false;
+            // A waiting swap would go out with this modifier held.
+            if (!keyEvent.isRelease())
+                lockSwapDue_ = false;
             return;
         }
         if (!keyEvent.isRelease()) {
@@ -287,7 +290,8 @@ namespace ngosen {
             return false;
         }
         const Surrounding s = host_->surrounding();
-        if (!host_->field().surroundingText || !s.isValid())
+        // Konsole reports a valid empty text, which says nothing about the word.
+        if (!host_->field().surroundingText || !s.isValid() || s.text().empty())
             return true;
         // A late report may still show the form before the last swap.
         const std::string before = textBeforeCursor(s);

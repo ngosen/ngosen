@@ -2573,6 +2573,36 @@ namespace {
             check(app->text() == "abc tũn", click ? "lock toggle: a click leaves the word alone" : "lock toggle: a mode change leaves the word alone", app->text());
         }
         {
+            // Konsole reports a valid empty text, which says nothing about where the word is.
+            FakeResources           konsole;
+            ngosen::test::AppQuirks empty;
+            empty.reportsEmptyText = true;
+            expectTyped(konsole, makeField("wayland", true), "tunx^ ", "tũn ", "lock toggle: an empty report does not drop the word", empty);
+        }
+        {
+            // Ctrl going down while a swap waits on the Shift lock key: the backspaces would go out with Ctrl held.
+            realMode = ngosen::Mode::Sen;
+            FakeLoop      loop;
+            FakeResources shiftLock;
+            shiftLock.mutableOptions().lockWordKey = ngosen::LockWordKey::Shift;
+            auto                owned              = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+            auto*               app                = owned.get();
+            ngosen::TypingState state(&shiftLock, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("ok tunx")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            FakeKey shiftDown(ngosen::key::Shift_L, false, 0);
+            state.keyEvent(shiftDown);
+            FakeKey shiftUp(ngosen::key::Shift_L, true, ngosen::modifier::Shift);
+            state.keyEvent(shiftUp);
+            FakeKey ctrlDown(ngosen::key::Control_L, false, 0);
+            state.keyEvent(ctrlDown);
+            loop.pump(300);
+            check(app->text() == "ok tunx", "lock toggle: another modifier going down drops the swap", app->text());
+        }
+        {
             // A click before the delayed swap runs.
             realMode = ngosen::Mode::Sen;
             FakeLoop            loop;

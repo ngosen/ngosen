@@ -879,10 +879,8 @@ namespace fcitx {
             return;
         }
 
-        if (isModeMenuOpen(ic)) {
-            handleModeMenuKey(keyEvent);
+        if (isModeMenuOpen(ic) && handleModeMenuKey(keyEvent))
             return;
-        }
 
         if (!keyEvent.isRelease() && !config_.cycleModeKey->empty() && keyEvent.key().checkKeyList(*config_.cycleModeKey)) {
             cycleMode(ic);
@@ -912,19 +910,23 @@ namespace fcitx {
         return clientDrawsPanel || currentUi != "classicui" || frontend != "ibus" || !isStartsWith(display, "wayland:");
     }
 
-    void NgoSenEngine::handleModeMenuKey(KeyEvent& keyEvent) {
+    bool NgoSenEngine::handleModeMenuKey(KeyEvent& keyEvent) {
         if (keyEvent.isRelease())
-            return;
+            return true;
         auto*  ic       = keyEvent.inputContext();
         auto   menuList = std::dynamic_pointer_cast<CommonCandidateList>(ic->inputPanel().candidateList());
         KeySym keySym   = keyEvent.key().sym();
-        keyEvent.filterAndAccept();
+        // Shift or Ctrl pressed on its own starts a combination, so the menu waits for the next key.
+        if (keyEvent.key().isModifier()) {
+            keyEvent.filterAndAccept();
+            return true;
+        }
 
         switch (keySym) {
             case FcitxKey_Tab:
-            case FcitxKey_Down: moveModeMenuCursor(ic, menuList.get(), 1); return;
+            case FcitxKey_Down: moveModeMenuCursor(ic, menuList.get(), 1); break;
             case FcitxKey_ISO_Left_Tab:
-            case FcitxKey_Up: moveModeMenuCursor(ic, menuList.get(), -1); return;
+            case FcitxKey_Up: moveModeMenuCursor(ic, menuList.get(), -1); break;
             case FcitxKey_space:
             case FcitxKey_Return: {
                 if (menuList && !menuList->empty()) {
@@ -934,33 +936,40 @@ namespace fcitx {
                     }
                     menuList->candidateFromAll(selectedIndex).select(ic);
                 }
-                return;
+                break;
             }
-            case FcitxKey_Escape: closeModeMenuPanel(ic, false); return;
-            default: break;
+            case FcitxKey_Escape: closeModeMenuPanel(ic, false); break;
+            default: return handleModeMenuPick(keyEvent);
         }
+        keyEvent.filterAndAccept();
+        return true;
+    }
+
+    bool NgoSenEngine::handleModeMenuPick(KeyEvent& keyEvent) {
+        auto*  ic     = keyEvent.inputContext();
+        KeySym keySym = keyEvent.key().sym();
 
         if (vimMenuKey_ != FcitxKey_None && keySym == vimMenuKey_) {
             toggleVimMode(ic);
-            return;
-        }
-        if (emojiMenuKey_ != FcitxKey_None && keySym == emojiMenuKey_) {
+        } else if (emojiMenuKey_ != FcitxKey_None && keySym == emojiMenuKey_) {
             toggleEmoji(ic);
-            return;
-        }
-        if (auto it = modeMenuMapping_.find(keySym); it != modeMenuMapping_.end()) {
+        } else if (auto it = modeMenuMapping_.find(keySym); it != modeMenuMapping_.end()) {
             NGOSEN_INFO("Selected mode: " + ngosen::ModeI18NAnnotation::toString(it->second));
             pickMenuMode(ic, it->second);
-            return;
-        }
-        const auto& kl = *config_.modeMenuKey;
-        if (kl.size() != 1 || kl[0].hasModifier())
-            return;
-        std::string charStr = Key::keySymToUTF8(kl[0].sym());
-        if (!charStr.empty() && keySym == typeKeyForModeMenuHotkey(kl[0].sym(), config_)) {
+        } else if (const auto& kl = *config_.modeMenuKey;
+                   kl.size() == 1 && !kl[0].hasModifier() && !Key::keySymToUTF8(kl[0].sym()).empty() && keySym == typeKeyForModeMenuHotkey(kl[0].sym(), config_)) {
             closeModeMenuPanel(ic, true);
-            ic->commitString(charStr);
+            ic->commitString(Key::keySymToUTF8(kl[0].sym()));
+        } else if (keyEvent.key().checkKeyList(kl)) {
+            // Passed on, a hotkey with a modifier would open the menu again.
+            closeModeMenuPanel(ic, false);
+        } else {
+            // Any other key means the user went on typing.
+            closeModeMenuPanel(ic, true);
+            return false;
         }
+        keyEvent.filterAndAccept();
+        return true;
     }
 
     void NgoSenEngine::moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta) {
@@ -987,6 +996,7 @@ namespace fcitx {
 
         menuList->setGlobalCursorIndex(nextIndex);
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
+        closeModeMenuLater(ic);
     }
 
     bool NgoSenEngine::isModeMenuOpen(InputContext* ic) const {
@@ -1701,6 +1711,17 @@ namespace fcitx {
         }
         ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
+        closeModeMenuLater(ic);
+    }
+
+    // Shares the notice's timer, so a notice shown just before cannot clear the menu.
+    void NgoSenEngine::closeModeMenuLater(InputContext* ic) {
+        cycleModeNotificationTimer_ = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + MODE_MENU_TIMEOUT_USEC, 0,
+                                                                          [this, icRef = ic->watch()](EventSourceTime*, uint64_t) {
+                                                                              if (auto* ic = icRef.get(); ic && isModeMenuOpen(ic))
+                                                                                  closeModeMenuPanel(ic, false);
+                                                                              return false;
+                                                                          });
     }
 
     void NgoSenEngine::appendTypeHotkeyItem(CommonCandidateList& candidateList) {

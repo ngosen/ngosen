@@ -1073,6 +1073,18 @@ class CheckPageWindowTest(unittest.TestCase):
         self.assertEqual(window.sidebar.currentItem().text(), "Check my machine")
         self.assertTrue(os.path.exists(path))
 
+    def test_after_install_it_lands_on_the_check_page_and_counts_the_open(self):
+        path = self.reminders_in_a_folder()
+        window = self.window(FakeDBusHandler())
+        opened = []
+        for after_install in (True, True, False):
+            window.show_page("typing")
+            window.start_on(None, after_install)
+            app.processEvents()
+            opened.append(window.sidebar.currentItem().text())
+        self.assertEqual(opened, ["Check my machine", "Check my machine", "Typing"])
+        self.assertTrue(os.path.exists(path))
+
     def test_deciding_reuses_the_check_the_page_ran(self):
         window = self.window(FakeDBusHandler())
         app.processEvents()

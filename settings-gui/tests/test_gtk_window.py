@@ -1275,6 +1275,20 @@ class GtkCheckPageTest(unittest.TestCase):
             win.start_on(None)
         self.assertEqual(win.stack.get_visible_child_name(), "check")
 
+    def test_after_install_it_lands_on_the_check_page_even_in_the_open_window(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        win = window.Window(None, FakeDBusHandler())
+        self.addCleanup(win.destroy)
+        shown = []
+        with mock.patch("core.check_reminder.state_file", return_value=path):
+            for opened, after_install in ((True, True), (True, True), (False, True), (True, False)):
+                win.show_page("typing")
+                win.start_on(None, opened, after_install)
+                shown.append(win.stack.get_visible_child_name())
+        self.assertEqual(shown, ["check", "check", "check", "typing"])
+
     def test_window_counts_steps_left_and_checks_again_on_opening(self):
         win = window.Window(None, FakeDBusHandler())
         self.addCleanup(win.destroy)

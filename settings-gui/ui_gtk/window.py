@@ -443,16 +443,19 @@ class Window(Adw.ApplicationWindow):
             [Gtk.AccessibleProperty.LABEL], [_("Steps left to fix: {}").format(count)]
         )
 
-    def start_on(self, page, opened=True):
+    def start_on(self, page, opened=True, after_install=False):
         """Opens on `page`, or on Check my machine when due; a launch into this window does not count."""
         if page:
             self.show_page(page)
         elif opened:
-            self.open_check_if_due()
+            self.open_check_if_due(always=after_install)
+        elif after_install:
+            self.show_page("check")
 
-    def open_check_if_due(self, path=None):
+    def open_check_if_due(self, path=None, always=False):
         """Lands on Check my machine the first time, and while a step that stops typing is undone."""
-        if check_reminder.should_open(self.check.found, path or check_reminder.state_file()):
+        due = check_reminder.should_open(self.check.found, path or check_reminder.state_file())
+        if due or always:
             self.show_page("check")
 
     def show_check_message(self, text, undo):
@@ -570,7 +573,7 @@ class App(Adw.Application):
         opened = window is None
         if opened:
             window = Window(self, self.dbus)
-        window.start_on(args.page, opened)
+        window.start_on(args.page, opened, args.after_install)
         window.present()
         return 0
 

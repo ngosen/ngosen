@@ -10,7 +10,12 @@ from i18n import _
 from ui_gtk.focus import focus_when_laid_out
 
 # Sidebar pages the tips point at, named as they are in the window.
-PAGE_TITLES = {"macros": _("Macros"), "check": _("Check my machine"), "convert": _("Convert")}
+PAGE_TITLES = {
+    "macros": _("Macros"),
+    "check": _("Check my machine"),
+    "convert": _("Convert"),
+    "emoji": _("Emoji"),
+}
 
 
 def tip_text(tip):

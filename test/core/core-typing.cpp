@@ -3230,6 +3230,35 @@ namespace {
         }
     }
 
+    // fcitx5 can leave every app GNOME Shell relays under the shell's name and drop their deletions;
+    // each click opens a new field, which must not lose its first word again (#816).
+    void testDroppedDeletionKeptAcrossFocus() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "gnome-shell"), ngosen::test::AppQuirks{.ignoresSurroundingDel = true});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        ngosen::test::captureLog(true);
+        const auto typeWord = [&] {
+            for (const char c : std::string("ddi ")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(150);
+            }
+            loop.pump(600);
+        };
+        typeWord();
+        app->focusNewEmptyField(ngosen::Mode::Sen, 100);
+        loop.pump(300);
+        typeWord();
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(app->text() == "đi " && countHaving(lines, "Surrounding text untrusted") == 1, "shared GNOME Shell name: a dropped deletion is remembered after a click",
+              app->text() + " " + join(lines));
+    }
+
     // The user's own edits while a long check is open say nothing about the app.
     void testEditsDuringLongCheck() {
         const Field              gnome = makeField("ibus", true);
@@ -5413,6 +5442,7 @@ int main() {
     testBackspacePathDuringLongCheck();
     testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
+    testDroppedDeletionKeptAcrossFocus();
     testShortDeletion();
     testCheckAcrossLateAppName();
     testEditsDuringLongCheck();

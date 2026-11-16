@@ -12,6 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Trong Firefox, gõ mặt cười kiểu Yahoo như `:)`, `:))`, `=))`, `:x` nay hiện gợi ý emoji như khi gõ chữ, thay vì không ra gì (#819).
 - Khi menu chọn chế độ gõ (mở bằng `` ` ``) đang hiện, bấm một phím không có trong menu nay đóng menu và gõ ra phím đó, thay vì menu đứng yên và phím bị nuốt. Không bấm gì thì menu tự tắt sau 5 giây (#814, #817).
 - Trong Firefox trên GNOME, gõ `nhưg` rồi Space ra `nhưng`, nhấn Backspace ngay sau đó nay trả lại đúng `nhưg` thay vì chỉ xoá dấu cách (#813).
 - Khôi phục từ tệp sao lưu sửa tay có giá trị viết `true`, `false` hay số không còn báo xong mà bỏ qua các mục đó: nay các giá trị này được khôi phục, còn giá trị là danh sách thì cửa sổ báo tệp hỏng trước khi ghi gì. Tệp do Ngó Sen tự xuất vẫn khôi phục như trước. Chỉ thử bằng unit test, chưa thử với fcitx5 thật (#805).

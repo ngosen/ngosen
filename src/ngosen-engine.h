@@ -295,7 +295,8 @@ namespace fcitx {
         std::unique_ptr<EventSourceTime> cycleModeNotificationTimer_;
         std::unique_ptr<EventSourceTime> announceTimer_;
         // Replaced by the next tip, so pressing the key repeatedly shows one.
-        uint32_t                  convertNotificationId_ = 0;
+        uint32_t                  convertNotificationId_   = 0;
+        uint32_t                  pinnedOffNotificationId_ = 0;
         std::string               iconCacheName_;
         std::string               iconCachePath_;
         static constexpr uint64_t CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
@@ -441,6 +442,8 @@ namespace fcitx {
         bool switchesEachApp() const;
         // A Vietnamese mode picked for an app turns Vietnamese on for all apps when they switch together.
         void turnOnForPickedMode(NgoSenMode mode);
+        // The toggle key in an app the menu keeps in English.
+        void explainPinnedOff(InputContext* ic, const std::string& app);
 
         /**
          * @brief Set application-specific mode rules

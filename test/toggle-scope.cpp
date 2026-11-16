@@ -8,7 +8,8 @@
 
 #include <fcitx/candidatelist.h>
 
-#include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -79,10 +80,20 @@ namespace {
         return std::string(getenv("XDG_CONFIG_HOME")) + "/fcitx5/conf/" + name;
     }
 
+    std::string readFile(const std::string& path) {
+        std::ifstream     file(path);
+        std::stringstream text;
+        text << file.rdbuf();
+        return text.str();
+    }
+
 } // namespace
 
 int main() {
     configureTestPaths("fcitx5-ngosen-toggle-scope");
+    // A switch saved while each app kept its own; ngosen.conf is missing, as on a new install.
+    const std::string savedSwitches = "[Switches]\n[Switches/0]\nApp=kate\nVietnamese=False\n";
+    std::ofstream(configFile("ngosen-app-switch.conf")) << savedSwitches;
     TestInstance            testInstance;
     fcitx::NgoSenEngine     engine(&testInstance.instance);
     fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
@@ -100,7 +111,7 @@ int main() {
     keys.ctrlShift(*kate);
     keys.focus(*gedit);
     check(realMode.load() == ngosen::Mode::Sen, "the app switched first follows the next switch too", modeName(realMode.load()));
-    check(!std::filesystem::exists(configFile("ngosen-app-switch.conf")), "no app keeps a switch of its own", "switch file saved");
+    check(readFile(configFile("ngosen-app-switch.conf")) == savedSwitches, "saved switches are neither used nor rewritten", readFile(configFile("ngosen-app-switch.conf")));
 
     // OFF picked from the menu keeps gedit in English while the others stay in Vietnamese.
     keys.tap(*gedit, "grave");

@@ -142,6 +142,14 @@ msgstr ""
 msgid "Capitalize Macro"
 msgstr ""
 
+#: src/ngosen-engine.cpp
+msgid "This app is set to English"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "To use the toggle key here, go to Settings → Shortcuts → Switch Applies To and choose Each app."
+msgstr ""
+
 #: src/ngosen-config.h
 msgid "Switch Applies To"
 msgstr ""

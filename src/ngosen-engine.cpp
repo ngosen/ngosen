@@ -1485,14 +1485,8 @@ namespace fcitx {
             state->reset();
         }
         if (pinnedOff) {
-            // Switching every app from here would leave this one in English anyway; the menu can change its OFF.
-            NGOSEN_INFO("Toggle key in " + app + ", which the menu keeps in English");
-            if (menuWasOpen)
-                return;
-            if (modeMenuCanDraw(instance_->currentUI(), ic->frontend(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel)))
-                openModeMenu(ic);
-            else
-                showCycleModeNotification(NgoSenMode::Off, ic);
+            if (!menuWasOpen)
+                explainPinnedOff(ic, app);
             return;
         }
         const bool turnOn = switchesEachApp() ? realMode == NgoSenMode::Off : !*config_.vietnameseOn;
@@ -1512,6 +1506,24 @@ namespace fcitx {
 #endif
         if (turnOn && offerRetype)
             stateFor(ic)->offerRetype();
+    }
+
+    // Switching every app from here would leave this one in English anyway; the menu can change its OFF.
+    void NgoSenEngine::explainPinnedOff(InputContext* ic, const std::string& app) {
+        NGOSEN_INFO("Toggle key in " + app + ", which the menu keeps in English");
+        if (modeMenuCanDraw(instance_->currentUI(), ic->frontend(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel))) {
+            openModeMenu(ic);
+            return;
+        }
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        // The panel the menu would use cannot draw here either.
+        if (auto* addon = notifications()) {
+            constexpr int32_t timeoutMs = 6000;
+            pinnedOffNotificationId_    = addon->call<INotifications::sendNotification>(
+                "fcitx", pinnedOffNotificationId_, "fcitx-ngosen", _("This app is set to English"),
+                _("To use the toggle key here, go to Settings → Shortcuts → Switch Applies To and choose Each app."), std::vector<std::string>{}, timeoutMs, nullptr, nullptr);
+        }
+#endif
     }
 
     void NgoSenEngine::setAppRule(const std::string& appName, NgoSenMode mode) {

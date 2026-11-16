@@ -199,6 +199,14 @@ msgstr "Bật gõ tắt"
 msgid "Capitalize Macro"
 msgstr "Gõ tắt chữ hoa"
 
+#: src/ngosen-engine.cpp
+msgid "This app is set to English"
+msgstr "App này đang ở chế độ tiếng Anh"
+
+#: src/ngosen-engine.cpp
+msgid "To use the toggle key here, go to Settings → Shortcuts → Switch Applies To and choose Each app."
+msgstr "Để dùng phím chuyển trong app này, vào Cài đặt → Phím tắt → Phím chuyển áp dụng cho và chọn Từng app."
+
 #: src/ngosen-config.h
 msgid "Switch Applies To"
 msgstr "Phím chuyển áp dụng cho"

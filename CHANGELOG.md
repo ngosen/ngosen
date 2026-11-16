@@ -41,7 +41,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cài mới bật sẵn tiếng Việt; người dùng cũ giữ trạng thái đang dùng. Phím chuyển Anh/Việt nay mặc định
   chuyển mọi app cùng lúc như UniKey, kể cả khi cập nhật. App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh;
   bấm phím chuyển tại đó mở menu để chọn Gõ Sen hoặc Gạch chân. Muốn mỗi app nhớ riêng như trước, chọn
-  “Từng app” ở “Phím chuyển áp dụng cho”, ngay dưới phím chuyển trên trang Phím tắt (#PR).
+  “Từng app” ở “Phím chuyển áp dụng cho”, ngay dưới phím chuyển trên trang Phím tắt (#825).
 - Bỏ nhãn "(thử nghiệm)" sau ba tuỳ chọn "Tự viết hoa đầu câu", "Hai dấu cách thành dấu chấm" và "Tự viết hoa chữ đầu văn bản và đầu dòng" trên trang Gõ chữ trong cửa sổ cài đặt; mặc định giữ nguyên (#796).
 
 ### Bỏ

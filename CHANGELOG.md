@@ -12,6 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Khôi phục từ tệp sao lưu sửa tay có giá trị viết `true`, `false` hay số không còn báo xong mà bỏ qua các mục đó: nay các giá trị này được khôi phục, còn giá trị là danh sách thì cửa sổ báo tệp hỏng trước khi ghi gì. Tệp do Ngó Sen tự xuất vẫn khôi phục như trước. Chỉ thử bằng unit test, chưa thử với fcitx5 thật (#805).
 - Trong Firefox trên Linux Mint, chữ đầu tiên gõ ngay sau khi mở Firefox không còn thỉnh thoảng mất chữ `n` tự thêm, như `cuxg` ra `cũg` thay vì `cũng`; nhấn Ctrl hai lần sau `tunx` nay cũng trở lại `tunx` như trên Ubuntu. Chỉ thử với app giả trong unit test, chưa thử lại trên máy ảo (#804).
 - Trong Firefox, nhấn Ctrl hai lần sau chữ đang hiện đúng phím đã gõ, như `tunx`, nay đổi thành `tũn` rồi trở lại `tunx` như trong Chrome, thay vì giữ `tũn`. Chỉ thử với app giả trong unit test, chưa thử lại trên máy ảo (#800).
 - Trên fcitx5 của Ubuntu, Mint và Fedora, nhấn Ctrl sau chữ đang hiện đúng phím đã gõ, như `tunx`, nay đổi ngay thành `tũn`; trước đây thường không đổi, và nhấn Ctrl lần hai có khi bỏ luôn lần đổi đầu. Các việc bộ gõ hẹn làm ngay, như đổi dấu sau Enter, cũng không còn trễ tới 250 ms. Đã thử bằng unit test với vòng lặp sự kiện thật của fcitx5, chưa thử lại trên máy ảo (#799).

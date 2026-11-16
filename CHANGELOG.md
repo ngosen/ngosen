@@ -17,6 +17,7 @@ Tải ở [ngosen-1.11.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
 
 ### Sửa
 
+- Trong Firefox trên Linux Mint, chữ đầu tiên gõ ngay sau khi mở Firefox không còn thỉnh thoảng mất chữ `n` tự thêm, như `cuxg` ra `cũg` thay vì `cũng`; nhấn Ctrl hai lần sau `tunx` nay cũng trở lại `tunx` như trên Ubuntu. Chỉ thử với app giả trong unit test, chưa thử lại trên máy ảo (#804).
 - Trong Firefox, nhấn Ctrl hai lần sau chữ đang hiện đúng phím đã gõ, như `tunx`, nay đổi thành `tũn` rồi trở lại `tunx` như trong Chrome, thay vì giữ `tũn`. Chỉ thử với app giả trong unit test, chưa thử lại trên máy ảo (#800).
 - Trên fcitx5 của Ubuntu, Mint và Fedora, nhấn Ctrl sau chữ đang hiện đúng phím đã gõ, như `tunx`, nay đổi ngay thành `tũn`; trước đây thường không đổi, và nhấn Ctrl lần hai có khi bỏ luôn lần đổi đầu. Các việc bộ gõ hẹn làm ngay, như đổi dấu sau Enter, cũng không còn trễ tới 250 ms. Đã thử bằng unit test với vòng lặp sự kiện thật của fcitx5, chưa thử lại trên máy ảo (#799).
 - Trên GNOME dùng IBus, trong app báo chữ chậm (copy wait), sau khi kết thúc từ bằng cách di chuyển con trỏ, gõ `dd` thành `đ` rồi nhấn nhanh Backspace xoá hết từ trong lúc chờ, phím dấu gõ tiếp ngay sau từ trước nay đặt dấu lên từ đó: `ca` rồi `s` thành `cá`, không còn thành `cas`. Chỉ thử với app giả trong unit test, chưa thử app thật (#785).

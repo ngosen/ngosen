@@ -702,7 +702,8 @@ namespace ngosen::test {
         shownAnchor_     = anchor_;
         if (silentAfterDelete_ && !quirks_.repeatsOldTextAfterDelete)
             return;
-        if (field_.surroundingText && quirks_.reports)
+        // A field that stopped declaring its text sends no report either.
+        if (field_.surroundingText && !surroundingDropped_ && quirks_.reports)
             later(quirks_.reportDelayMs, [this, text = text_, cursor = cursor_, anchor = anchor_] {
                 if (monotonicUs() < oldTextUntilUs_) {
                     reportedText_   = oldText_;

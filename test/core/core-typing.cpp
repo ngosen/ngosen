@@ -3931,6 +3931,10 @@ namespace {
         const auto run = ngosen::test::typeInAppTraced(resources, field, {.backspaceLagMs = 60, .dropsSurroundingOnDelete = true}, keys, std::vector<int>(keys.size(), 120));
         check(run.text == "tiền nguyễn luận ", "dbus: a field that stopped declaring its text still deletes through it", run.text);
         check(run.sent.forwardedBackSpaces == 0, "dbus: no backspace for a field that stopped declaring its text", std::to_string(run.sent.forwardedBackSpaces));
+        // The key after the deletion arrives while the field declares no text, which is not a field that lost the word.
+        const auto ngKeys = keysOf("cuxg nhuwg ");
+        const auto ng     = ngosen::test::typeInAppTraced(resources, field, {.dropsSurroundingOnDelete = true}, ngKeys, std::vector<int>(ngKeys.size(), 120));
+        check(ng.text == "cũng nhưng ", "dbus: a key while the field declares no text stays in the word", ng.text);
     }
 
     // Firefox's snap carries the fcitx4 GTK module, which queues forwarded keys behind GDK events like

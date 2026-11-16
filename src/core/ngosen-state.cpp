@@ -699,9 +699,10 @@ namespace ngosen {
         return dropped;
     }
 
+    // Firefox stops declaring its text for a moment after a deletion through it, which says nothing of the word.
     bool TypingState::fieldLostWord() const {
         const Surrounding s = host_->surrounding();
-        return hasLastSurrounding_ && !lastSurroundingText_.empty() && (!s.isValid() || s.text().empty());
+        return hasLastSurrounding_ && !lastSurroundingText_.empty() && host_->field().surroundingText && (!s.isValid() || s.text().empty());
     }
 
     void TypingState::replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8) {

@@ -43,9 +43,19 @@ namespace ngosen {
         return ngosen::namesNoApp(field) || ngosen::appliesDeletionsEarly(field);
     }
 
-    bool TypingState::appMarkedUntrusted() const {
+    // fcitx5 can relay every app under GNOME Shell's name and drop all their deletions (#816). Backspaces
+    // still work there, so remembering the drop for the shared name costs other apps nothing.
+    bool TypingState::keepsDropForSharedName() const {
         const Field field = host_->field();
-        return marksFieldOnly() ? sinceFocus_.untrusted : engine_->surroundingUntrusted(field.frontend, field.program);
+        return ngosen::namesNoApp(field) && !ngosen::appliesDeletionsEarly(field) && !deletesOnlyThroughSurrounding();
+    }
+
+    bool TypingState::appMarkedUntrusted() const {
+        const Field field     = host_->field();
+        const bool  appMarked = engine_->surroundingUntrusted(field.frontend, field.program);
+        if (!marksFieldOnly())
+            return appMarked;
+        return sinceFocus_.untrusted || (appMarked && keepsDropForSharedName());
     }
 
     bool TypingState::surroundingUntrusted() const {
@@ -60,13 +70,13 @@ namespace ngosen {
         return (canSendBackspaces() || host_->field().surroundingText) && !stopsReplacing() && !rawWord_;
     }
 
-    void TypingState::markSurroundingUntrusted(const std::string& why) {
+    void TypingState::markSurroundingUntrusted(const std::string& why, bool dropped) {
         const Field field = host_->field();
         if (appMarkedUntrusted())
             return;
         if (marksFieldOnly())
             sinceFocus_.untrusted = true;
-        else
+        if (!marksFieldOnly() || (dropped && keepsDropForSharedName()))
             engine_->markSurroundingUntrusted(field.frontend, field.program);
         const char* next = !deletesOnlyThroughSurrounding() ? "delete with backspaces" : field.preeditFallback ? "type words in the preedit" : "type keys as they are";
         NGOSEN_INFO("Surrounding text untrusted" + loggedField(field) + ": " + why + "; from now " + next);
@@ -177,7 +187,7 @@ namespace ngosen {
         // Firefox's snap answers late while it is busy, and backspaces there can land after the next commit.
         const bool answersLate = ngosen::appliesDeletionsEarly(host_->field());
         if (dropped) {
-            markSurroundingUntrusted(verdict == SurroundingVerdict::DroppedDeletion ? "the app dropped a deletion" : "the app deleted too little");
+            markSurroundingUntrusted(verdict == SurroundingVerdict::DroppedDeletion ? "the app dropped a deletion" : "the app deleted too little", true);
             if (report != nullptr && !deletesOnlyThroughSurrounding())
                 fixDroppedDeletion(check, *report);
         } else if (verdict == SurroundingVerdict::WrongEarlierPart && !onlyWay) {

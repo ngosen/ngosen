@@ -717,7 +717,7 @@ namespace ngosen {
         SurroundingVerdict judgeOpenCheck(const Surrounding& report) const;
         void               closeSurroundingCheck(SurroundingVerdict verdict, const Surrounding* report, bool beforeNext = false);
         void               fixDroppedDeletion(const SurroundingCheck& check, const Surrounding& report);
-        void               markSurroundingUntrusted(const std::string& why);
+        void               markSurroundingUntrusted(const std::string& why, bool dropped = false);
         // The field takes no keys or applies them out of order, so surrounding text is its only way to delete.
         bool deletesOnlyThroughSurrounding() const;
         void askForReportAfterEdit();
@@ -746,6 +746,7 @@ namespace ngosen {
         bool                            pageHidesBackspaces() const;
         bool                            cellKeepsOwnText() const;
         bool                            marksFieldOnly() const;
+        bool                            keepsDropForSharedName() const;
         bool                            appMarkedUntrusted() const;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;

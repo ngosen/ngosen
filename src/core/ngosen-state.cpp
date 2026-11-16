@@ -1351,12 +1351,13 @@ namespace ngosen {
         std::optional<LockedWord> locked;
         if (lockedWord_ && ngosen::monotonicUs() - lockedWord_->editedAtUs < OwnEditResetUs)
             locked = lockedWord_;
-        const bool  ownCommit = !lastWord_.empty() && ngosen::monotonicUs() - lastWordAtUs_ < OwnEditResetUs;
-        std::string committed = ownCommit ? lastWord_ : std::string();
-        std::string dropped   = ownCommit ? droppedWord_ : std::string();
+        // A Firefox that just opened resets well after our commit; Backspace still checks the field first.
+        constexpr uint64_t SpaceFixResetUs = 250000;
+        const bool         ownCommit       = !lastWord_.empty() && ngosen::monotonicUs() - lastWordAtUs_ < SpaceFixResetUs;
+        std::string        committed       = ownCommit ? lastWord_ : std::string();
+        std::string        dropped         = ownCommit ? droppedWord_ : std::string();
         resetField(false, true, keep);
         lockedWord_ = std::move(locked);
-        // Backspace checks the field before it undoes Space, so a click hidden in this reset is safe.
         if (ownCommit) {
             lastWord_    = std::move(committed);
             droppedWord_ = std::move(dropped);

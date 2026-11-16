@@ -3967,12 +3967,14 @@ namespace {
     // Firefox resets the context right after our commit; Backspace still undoes what Space did to the word.
     void testFirefoxResetAfterSpaceFix() {
         struct Case {
+            int         resetMs;
             bool        click;
             std::string want;
             const char* step;
         };
-        const Case cases[] = {{false, "nhưg", "fcitx4: a reset right after Space keeps the word for Backspace"},
-                              {true, "nhưng ", "fcitx4: a click before the reset leaves the word alone"}};
+        const Case cases[] = {{10, false, "nhưg", "fcitx4: a reset right after Space keeps the word for Backspace"},
+                              {100, false, "nhưg", "fcitx4: a reset from a Firefox that just opened keeps the word for Backspace"},
+                              {10, true, "nhưng ", "fcitx4: a click before the reset leaves the word alone"}};
         for (const auto& c : cases) {
             realMode = ngosen::Mode::Sen;
             FakeLoop            loop;
@@ -3983,7 +3985,7 @@ namespace {
             app->attach(&state);
             for (const uint32_t key : keysOf("nhuwg ")) {
                 app->type(key);
-                loop.pump(key == ' ' ? 10 : 150);
+                loop.pump(key == ' ' ? c.resetMs : 150);
             }
             if (c.click)
                 app->moveCursor(0);

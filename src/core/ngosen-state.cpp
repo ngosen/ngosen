@@ -699,9 +699,14 @@ namespace ngosen {
         return dropped;
     }
 
+    // Firefox stops declaring its text after a deletion through it until it reports the edit; Calc does so
+    // during every key. A report of our edit still due tells Firefox apart, but only for a moment, since a
+    // check can stay open long enough for a click into another cell.
     bool TypingState::fieldLostWord() const {
-        const Surrounding s = host_->surrounding();
-        return hasLastSurrounding_ && !lastSurroundingText_.empty() && (!s.isValid() || s.text().empty());
+        constexpr uint64_t OwnEditReportUs = 250000;
+        const bool         reportDue       = surrCheck_ && monotonicUs() - surrCheck_->sentAtUs < OwnEditReportUs;
+        const Surrounding  s               = host_->surrounding();
+        return hasLastSurrounding_ && !lastSurroundingText_.empty() && !reportDue && (!s.isValid() || s.text().empty());
     }
 
     void TypingState::replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8) {
@@ -1336,12 +1341,11 @@ namespace ngosen {
         fieldAtKeptReset_.reset();
         if (keep)
             fieldAtKeptReset_ = std::make_pair(host_->surrounding().text(), host_->surrounding().cursor());
-        // Firefox through the fcitx4 frontend resets right after each commit, the lock key's swap
-        // included. A later reset may be a click the report does not show yet, so it drops the word.
+        // Firefox resets right after each commit, the lock key's swap included, and over fcitx5-gtk it
+        // hides its text just then. A later reset may be a click the report does not show yet.
         constexpr uint64_t        OwnEditResetUs = 50000;
         std::optional<LockedWord> locked;
-        const Surrounding         s = host_->surrounding();
-        if (lockedWord_ && ngosen::monotonicUs() - lockedWord_->editedAtUs < OwnEditResetUs && host_->field().surroundingText && s.isValid() && !s.text().empty())
+        if (lockedWord_ && ngosen::monotonicUs() - lockedWord_->editedAtUs < OwnEditResetUs)
             locked = lockedWord_;
         resetField(false, true, keep);
         lockedWord_ = std::move(locked);

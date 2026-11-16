@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.12.0-1] — 16/11/2026
+
+Gợi ý emoji khi gõ: gõ xong `cười`, `con mèo`, `haha` hay mã Yahoo Messenger như `=))` là emoji hiện cạnh con trỏ, bấm Tab để chọn; trang Emoji mới trong cửa sổ cài đặt liệt kê mọi emoji kèm từ gợi ý, và chế độ Chọn Emoji cũ được thay bằng tính năng này (#788, #791, #792, #793, #795). Cửa sổ cài đặt tự mở trang Kiểm tra máy khi còn bước làm không gõ được tiếng Việt, khi đã đăng nhập lại mà thiết lập vẫn chưa có tác dụng, và sau lần cài đầu bằng lệnh cài một dòng (#798, #801, #802, #806).
+Tải ở [ngosen-1.12.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.12.0-1).
+
 ### Thêm
 
 - Gợi ý emoji khi gõ: gõ xong `cười`, `con mèo`, `cảm ơn`, `haha` hay `:)` là hiện `Tab: 😂 …` cạnh con

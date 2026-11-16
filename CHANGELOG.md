@@ -10,16 +10,16 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
-## [1.11.2-1] — 15/11/2026
+## [1.11.2-1] — 16/11/2026
 
-Chữ không phải tiếng Việt mà vẫn đúng luật đánh vần, như `rose`, `Sose`, nay hiện đúng phím đã gõ ngay lúc gõ; BackSpace sau chữ như vậy chỉ xoá phím cuối, và nhấn Ctrl đổi chữ qua lại giữa phím đã gõ và chữ có dấu (#764). Trên GNOME dùng IBus, nhấn Backspace trong lúc chờ app báo chữ không còn làm mất dấu hay đặt dấu nhầm từ (#785, #787), ô chat Lark không còn ra `Viĩnh` khi gõ `Vinxh` (#790), và trên GNOME 50.0–50.3 phím Backspace gõ sau khi GNOME làm mất Backspace của Ngó Sen không còn tới thẳng Firefox (#789).
+Chữ không phải tiếng Việt mà vẫn đúng luật đánh vần, như `rose`, `Sose`, nay hiện đúng phím đã gõ ngay lúc gõ; BackSpace sau chữ như vậy chỉ xoá phím cuối, và nhấn Ctrl đổi chữ qua lại giữa phím đã gõ và chữ có dấu (#764, #799, #800). Trong Firefox trên Linux Mint, chữ gõ ngay sau khi mở Firefox không còn thỉnh thoảng mất chữ `n` tự thêm (#804). Trên GNOME dùng IBus, nhấn Backspace trong lúc chờ app báo chữ không còn làm mất dấu hay đặt dấu nhầm từ (#785, #787), ô chat Lark không còn ra `Viĩnh` khi gõ `Vinxh` (#790), và trên GNOME 50.0–50.3 phím Backspace gõ sau khi GNOME làm mất Backspace của Ngó Sen không còn tới thẳng Firefox (#789).
 Tải ở [ngosen-1.11.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.11.2-1).
 
 ### Sửa
 
-- Trong Firefox trên Linux Mint, chữ đầu tiên gõ ngay sau khi mở Firefox không còn thỉnh thoảng mất chữ `n` tự thêm, như `cuxg` ra `cũg` thay vì `cũng`; nhấn Ctrl hai lần sau `tunx` nay cũng trở lại `tunx` như trên Ubuntu. Chỉ thử với app giả trong unit test, chưa thử lại trên máy ảo (#804).
-- Trong Firefox, nhấn Ctrl hai lần sau chữ đang hiện đúng phím đã gõ, như `tunx`, nay đổi thành `tũn` rồi trở lại `tunx` như trong Chrome, thay vì giữ `tũn`. Chỉ thử với app giả trong unit test, chưa thử lại trên máy ảo (#800).
-- Trên fcitx5 của Ubuntu, Mint và Fedora, nhấn Ctrl sau chữ đang hiện đúng phím đã gõ, như `tunx`, nay đổi ngay thành `tũn`; trước đây thường không đổi, và nhấn Ctrl lần hai có khi bỏ luôn lần đổi đầu. Các việc bộ gõ hẹn làm ngay, như đổi dấu sau Enter, cũng không còn trễ tới 250 ms. Đã thử bằng unit test với vòng lặp sự kiện thật của fcitx5, chưa thử lại trên máy ảo (#799).
+- Trong Firefox trên Linux Mint, chữ đầu tiên gõ ngay sau khi mở Firefox không còn thỉnh thoảng mất chữ `n` tự thêm, như `cuxg` ra `cũg` thay vì `cũng`; nhấn Ctrl hai lần sau `tunx` nay cũng trở lại `tunx` như trên Ubuntu. Đã thử trên máy ảo Linux Mint 22.1: 10 lần mở Firefox rồi gõ `cuxg khoog`, cả 10 lần ra `cũng không` (bản trước 1/10 ra `cũg`), và `tunx` Ctrl Ctrl đúng 2/2 (#804).
+- Trong Firefox, nhấn Ctrl hai lần sau chữ đang hiện đúng phím đã gõ, như `tunx`, nay đổi thành `tũn` rồi trở lại `tunx` như trong Chrome, thay vì giữ `tũn`. Đã thử Firefox trên máy ảo Ubuntu 24.04 và Linux Mint 22.1, mỗi máy 2/2 (#800).
+- Trên fcitx5 của Ubuntu, Mint và Fedora, nhấn Ctrl sau chữ đang hiện đúng phím đã gõ, như `tunx`, nay đổi ngay thành `tũn`; trước đây thường không đổi, và nhấn Ctrl lần hai có khi bỏ luôn lần đổi đầu. Các việc bộ gõ hẹn làm ngay, như đổi dấu sau Enter, cũng không còn trễ tới 250 ms. Đã thử Firefox và Chrome/Chromium trên máy ảo Ubuntu 24.04 và Linux Mint 22.1: nhấn Ctrl một lần và hai lần, đúng 16/16 (#799).
 - Trên GNOME dùng IBus, trong app báo chữ chậm (copy wait), sau khi kết thúc từ bằng cách di chuyển con trỏ, gõ `dd` thành `đ` rồi nhấn nhanh Backspace xoá hết từ trong lúc chờ, phím dấu gõ tiếp ngay sau từ trước nay đặt dấu lên từ đó: `ca` rồi `s` thành `cá`, không còn thành `cas`. Chỉ thử với app giả trong unit test, chưa thử app thật (#785).
 - Trên GNOME dùng IBus, trong ô chat của Lark mở bằng Helium, gõ `Vinxh` không còn ra `Viĩnh`: ô này chỉ xoá một trong hai chữ bộ gõ xin xoá qua surrounding text, nay bộ gõ thấy chữ còn sót, xoá lại bằng BackSpace và gõ lại cho đúng `Vĩnh`. Chỉ thử với app giả trong unit test, chưa thử lại trong Lark (#790).
 - Trên GNOME dùng IBus, trong app báo chữ chậm, nhấn Backspace trong lúc chờ để xoá phím thừa sau từ (như `thuwcx` rồi Backspace) nay khôi phục từ có dấu như khi không phải chờ: gõ tiếp `j` ra `thực`, không còn thành `thuực`. Chỉ thử với app giả trong unit test, chưa thử app thật (#787).

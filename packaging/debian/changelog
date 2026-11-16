@@ -1,8 +1,8 @@
 fcitx5-ngosen (1:1.11.2-1) unstable; urgency=medium
 
-  * Words no dictionary word starts with, such as rose or Sose, show as typed, Backspace after one takes only the last key, and the lock key swaps such a word between its keys and its marks (#764); on GNOME with IBus, Backspace while a slow app reports keeps the word and its marks (#785, #787), a deletion the Lark chat applies only in part is redone (#790), and on GNOME 50.0-50.3 Backspaces GNOME drops no longer let the next Backspace reach Firefox behind Ngó Sen (#789).
+  * Words no dictionary word starts with, such as rose or Sose, show as typed, Backspace after one takes only the last key, and the lock key swaps such a word between its keys and its marks (#764); on GNOME with IBus, Backspace while a slow app reports keeps the word and its marks (#785, #787), a deletion the Lark chat applies only in part is redone (#790), and on GNOME 50.0-50.3 Backspaces GNOME drops no longer let the next Backspace reach Firefox behind Ngó Sen (#789); on fcitx5 the lock key swaps at once and swaps back in Firefox too (#799, #800), and Firefox on Mint keeps the n it adds to the first word typed after it opens (#804).
 
- -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 15 Nov 2026 16:40:00 +0700
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Mon, 16 Nov 2026 12:00:00 +0700
 
 fcitx5-ngosen (1:1.11.1-1) unstable; urgency=medium
 

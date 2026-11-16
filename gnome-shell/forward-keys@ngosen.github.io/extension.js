@@ -8,8 +8,8 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-// A key we pressed stays here until it reaches the IM filter, which must hand it straight to the app.
-const PENDING_LIMIT_US = 500000;
+import {PendingKeys} from './pending-keys.js';
+
 const PASS_THROUGH = Symbol('pass through');
 
 const FCITX_SERVICE = 'org.fcitx.Fcitx5';
@@ -45,7 +45,7 @@ export default class ForwardKeys extends Extension {
     _enableKeyForwarding() {
         const seat = global.stage.context.get_backend().get_default_seat();
         this._keyboard = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
-        this._pending = [];
+        this._pending = new PendingKeys();
 
         // The stock forward_key builds a key event without a source device, which mutter 50.0-50.3 drops.
         this._im = Main.inputMethod;
@@ -77,17 +77,8 @@ export default class ForwardKeys extends Extension {
 
     _press(keyval, press) {
         const now = GLib.get_monotonic_time();
-        this._pending = this._pending.filter(key => now - key.time < PENDING_LIMIT_US);
-        this._pending.push({keyval, press, time: now});
+        this._pending.add(keyval, press, now);
         this._keyboard.notify_keyval(now, keyval, press ? Clutter.KeyState.PRESSED : Clutter.KeyState.RELEASED);
-    }
-
-    _takePending(keyval, press) {
-        const i = this._pending.findIndex(key => key.keyval === keyval && key.press === press);
-        if (i < 0)
-            return false;
-        this._pending.splice(i, 1);
-        return true;
     }
 
     _wrap(context) {
@@ -97,7 +88,7 @@ export default class ForwardKeys extends Extension {
         context._ngosenFinish = context.process_key_event_async_finish;
         context.process_key_event_async = (keyval, keycode, state, timeout, cancellable, callback) => {
             const press = (state & IBus.ModifierType.RELEASE_MASK) === 0;
-            if (this._takePending(keyval, press)) {
+            if (this._pending.take(keyval, press, GLib.get_monotonic_time())) {
                 // Reporting "not handled" makes GNOME Shell deliver the key to the app.
                 callback(context, PASS_THROUGH);
                 return;

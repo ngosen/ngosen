@@ -165,7 +165,8 @@ namespace ngosen {
         }
         surrUnanswered_ = verdict == SurroundingVerdict::NoAnswer ? surrUnanswered_ + 1 : 0;
         // Our own backspaces landing late change the text the same way, so they prove nothing about the app.
-        const bool wrongText = verdict == SurroundingVerdict::DroppedDeletion || verdict == SurroundingVerdict::WrongEarlierPart;
+        const bool dropped   = verdict == SurroundingVerdict::DroppedDeletion || verdict == SurroundingVerdict::ShortDeletion;
+        const bool wrongText = dropped || verdict == SurroundingVerdict::WrongEarlierPart;
         if (wrongText && unconfirmedBackspacesUs_ != 0 && monotonicUs() - unconfirmedBackspacesUs_ < LateBackspacesUs) {
             NGOSEN_INFO("Backspaces sent before may still land: no mark");
             return;
@@ -175,8 +176,8 @@ namespace ngosen {
         const bool onlyWay = deletesOnlyThroughSurrounding() && !host_->field().preeditFallback;
         // Firefox's snap answers late while it is busy, and backspaces there can land after the next commit.
         const bool answersLate = ngosen::appliesDeletionsEarly(host_->field());
-        if (verdict == SurroundingVerdict::DroppedDeletion) {
-            markSurroundingUntrusted("the app dropped a deletion");
+        if (dropped) {
+            markSurroundingUntrusted(verdict == SurroundingVerdict::DroppedDeletion ? "the app dropped a deletion" : "the app deleted too little");
             if (report != nullptr && !deletesOnlyThroughSurrounding())
                 fixDroppedDeletion(check, *report);
         } else if (verdict == SurroundingVerdict::WrongEarlierPart && !onlyWay) {
@@ -188,9 +189,9 @@ namespace ngosen {
 
     void TypingState::fixDroppedDeletion(const SurroundingCheck& check, const Surrounding& report) {
         // Backspaces would land on whatever came after, so fix only text that is exactly what we left.
-        const std::string left      = check.prefix + check.deleted + check.added;
         const std::string before    = textBeforeCursor(report);
-        const bool        exact     = report.cursor() == report.anchor() && isEndsWith(before, left) && report.text().substr(before.size()) == check.sentAfter;
+        const std::string leftOver  = deletionLeftOver(before, check.prefix, check.deleted, check.added);
+        const bool        exact     = report.cursor() == report.anchor() && !leftOver.empty() && report.text().substr(before.size()) == check.sentAfter;
         const bool        untouched = keyCount_ == check.keysAtSend && commitCount_ == check.commitsAtSend;
         // With no prefix the text before the word may only look like the dropped part. Unmarked, the
         // fix would go through the surrounding text again and be dropped again.
@@ -198,7 +199,7 @@ namespace ngosen {
             NGOSEN_INFO("Leave the dropped deletion as it is");
             return;
         }
-        const std::string extra = check.deleted + check.added;
+        const std::string extra = leftOver + check.added;
         NGOSEN_INFO("Fix the dropped deletion with " + std::to_string(utf8::length(extra)) + " backspaces");
         commitNotSeen_.clear();
         pending_commit_string_         = check.added;

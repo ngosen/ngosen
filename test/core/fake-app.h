@@ -69,6 +69,7 @@ namespace ngosen::test {
         int              keysBeforeNewReport          = 1;     // typed keys it takes to end repeatsOldTextAfterDelete
         bool             silentFromFirstDeletion      = false; // stops reporting at its first deletion through the surrounding text, for good
         bool             deletesOneTooMany            = false; // takes one more character than a deletion through the surrounding text asks for
+        bool             deletesOneCharOnly           = false; // takes only the last character of a longer deletion, as a Lark chat box in Chromium
         bool             reportsTextAtChange          = false; // a late report shows the text as it was at that change, not as it is on arrival
         int              emptyCommitsBeforeReport     = 0;     // empty commits it takes to end repeatsOldTextAfterDelete, as Firefox on GNOME
         std::vector<int> ignoresRequestsOnEdits;               // these deletions get no report for empty commits, as Firefox on GNOME now and then
@@ -79,6 +80,7 @@ namespace ngosen::test {
         bool             dropsSurroundingOnDelete  = false;    // stops declaring surrounding text after a deletion through it until a typed key, as Firefox over fcitx5-gtk does
         int              reportsOnEdit             = 0;        // the nth deletion is reported anyway, as Qt now and then
         bool             showsEnter                = false;    // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
+        bool             ctrlBackSpaceDeletesWord  = false;    // a BackSpace forwarded before the app saw Ctrl go up deletes the word, as in Chrome
         bool             showsTab                  = false;    // shows each Tab key as ⇥ and Shift+Tab as ⇤, unlike a tab character in a commit
         // Applies deletions and commits once per main-loop turn, keeping only the last of each, as a
         // client behind mutter's text-input-v3 does; a key let through ends the turn first.
@@ -312,6 +314,7 @@ namespace ngosen::test {
         bool                                showsMovedCursor_ = false;
         bool                                holdsUnreported_  = false;
         bool                                cellOpensOnKey_   = false;
+        bool                                ctrlDown_         = false;
         int                                 emptyCommits_     = 0;
         int                                 deletions_        = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};

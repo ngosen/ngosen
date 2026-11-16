@@ -141,6 +141,12 @@ pub extern "C" fn EnginePullRawText(engine: usize) -> *mut c_char {
     handles::with_engine(engine, |e| c_string(&e.raw_text())).unwrap_or(std::ptr::null_mut())
 }
 
+/// The word the keys compose, with its marks even while the preedit shows the keys.
+#[unsafe(no_mangle)]
+pub extern "C" fn EnginePullComposed(engine: usize) -> *mut c_char {
+    handles::with_engine(engine, |e| c_string(&e.composed_text())).unwrap_or(std::ptr::null_mut())
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn EngineCommitPreedit(engine: usize) {
     handles::with_engine(engine, BambooEngine::commit_preedit);

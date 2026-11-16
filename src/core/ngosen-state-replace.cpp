@@ -1336,6 +1336,9 @@ namespace ngosen {
             commitReplayed(out);
             sendEnterAfterReplacement();
         }
+        // The keys typed during the swap end the word.
+        if (!buffered_keys_.empty())
+            lockedWord_.reset();
         NGOSEN_INFO("Starting replay buffered keys");
         replaying_       = true;
         const auto guard = std::unique_ptr<bool, void (*)(bool*)>(&replaying_, [](bool* flag) { *flag = false; });
@@ -1433,6 +1436,7 @@ namespace ngosen {
     }
 
     bool TypingState::replayKey(const std::vector<KeyEntry>& keys, size_t i, std::string& out) {
+        backspaceBeforeKey_ = false;
         if (keys[i].actsOnField)
             return holdReplayedFieldKey(keys, i, out);
         auto        sym     = keys[i].sym;
@@ -1462,13 +1466,27 @@ namespace ngosen {
                 oldPreBuffer_ = restored;
                 return !folded;
             }
-            // Like a typed backspace: the engine drops a letter and the app deletes it after the commit.
-            dropLetterForBackspace();
+            std::optional<std::string> edited;
+            if (backspaceIntoKeysShownAsTyped(edited, deletedPart, addedPart)) {
+                if (edited) {
+                    const bool folded = foldIntoReplay(out, deletedPart, addedPart);
+                    if (!folded)
+                        replaceDuringReplay(keys, i, out, deletedPart, addedPart);
+                    oldPreBuffer_    = *edited;
+                    backspaceInWord_ = true;
+                    return !folded;
+                }
+            } else {
+                // Like a typed backspace: the engine drops a letter and the app deletes it after the commit.
+                dropLetterForBackspace();
+            }
             if (realtextLen.load(std::memory_order_acquire) > 0)
                 realtextLen.fetch_sub(1, std::memory_order_acq_rel);
             // Counted against the word as it is now, which keys replayed before it may have ended or reopened.
             if (!oldPreBuffer_.empty())
                 backspaceInWord_ = true;
+            // At the press the word still held the letter this Backspace drops.
+            backspaceBeforeKey_ = oldPreBuffer_.empty();
             return holdReplayedKey(keys, i, out, ngosen::EditKey::BackSpace);
         }
         if (keyUtf8.empty() && !sent) {

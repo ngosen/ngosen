@@ -699,10 +699,11 @@ namespace ngosen {
         return dropped;
     }
 
-    // Firefox stops declaring its text for a moment after a deletion through it, which says nothing of the word.
+    // Firefox stops declaring its text after a deletion through it until it reports the edit; Calc does so
+    // during every key, so only a field with no report of our edit still due has lost the word.
     bool TypingState::fieldLostWord() const {
         const Surrounding s = host_->surrounding();
-        return hasLastSurrounding_ && !lastSurroundingText_.empty() && host_->field().surroundingText && (!s.isValid() || s.text().empty());
+        return hasLastSurrounding_ && !lastSurroundingText_.empty() && !surrCheck_ && (!s.isValid() || s.text().empty());
     }
 
     void TypingState::replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8) {

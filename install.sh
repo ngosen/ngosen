@@ -2081,6 +2081,8 @@ open_check_page() {
         say "Đang mở trang Kiểm tra máy để xem còn bước nào chưa xong."
         return 0
     fi
+    # Sway, Hyprland and niri start no autostart entries unless the user's config runs them.
+    wants_sway_hyprland_setup && return 0
     mkdir -p "$(config_home)/autostart"
     check_autostart_entry >"$(config_home)/autostart/$CHECK_AUTOSTART"
     say "Lần đăng nhập sau, Ngó Sen mở trang Kiểm tra máy một lần để xem còn bước nào chưa xong."

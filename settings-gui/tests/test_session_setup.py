@@ -346,7 +346,9 @@ class InstallerOpensCheckTest(SessionSetupCase):
 
     FUNCTIONS = "say config_home open_check_page check_autostart_entry"
 
-    def open_check(self, first=1, setup=1, uid=1000, running=1, display=":0", launcher=True):
+    def open_check(
+        self, first=1, setup=1, uid=1000, running=1, display=":0", launcher=True, compositor=0
+    ):
         bin_dir = os.path.join(self.home, "bin")
         launched = os.path.join(self.home, "launched")
         self.write(os.path.join(bin_dir, "setsid"), f'#!/bin/sh\necho "$@" >>"{launched}"\n')
@@ -368,11 +370,12 @@ class InstallerOpensCheckTest(SessionSetupCase):
             f'for f in {self.FUNCTIONS}; do eval "$(sed -n "/^$f() {{/,/^}}/p" "$0")"; done; '
             'CHECK_AUTOSTART=$(sed -n "s/^CHECK_AUTOSTART=//p" "$0"); '
             'id() { echo "$FAKE_UID"; }; fcitx5_is_running() { [ "$FAKE_RUNNING" = 1 ]; }; '
+            'wants_sway_hyprland_setup() { [ "$FAKE_COMPOSITOR" = 1 ]; }; '
             "open_check_page; wait"
         )
         env = {"HOME": self.home, "PATH": bin_dir, "DISPLAY": display}
         env.update(first_install=str(first), setup_session=str(setup))
-        env.update(FAKE_UID=str(uid), FAKE_RUNNING=str(running))
+        env.update(FAKE_UID=str(uid), FAKE_RUNNING=str(running), FAKE_COMPOSITOR=str(compositor))
         bash = shutil.which("bash")
         subprocess.run([bash, "-c", script, INSTALL_SH], env=env, check=True, capture_output=True)
         return (
@@ -390,6 +393,11 @@ class InstallerOpensCheckTest(SessionSetupCase):
             self.assertIn(
                 'Exec=sh -c "sleep 10; exec fcitx5-ngosen-settings --after-install"', entry
             )
+
+    def test_sway_hyprland_and_niri_get_no_entry_they_would_not_run(self):
+        self.assertEqual(self.open_check(running=0, compositor=1), (None, None))
+        launched, _entry = self.open_check(compositor=1)
+        self.assertEqual(launched, "fcitx5-ngosen-settings --after-install")
 
     def test_the_window_removes_the_entry_install_sh_wrote(self):
         self.open_check(running=0)

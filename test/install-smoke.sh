@@ -224,7 +224,7 @@ check_session_files() {
         check "the final message names the toggle key" install_names Ctrl+Shift
         check "the final message has the autostart line" has_autostart_line
         check "the desktop config is untouched" desktop_config_untouched
-        check "with fcitx5 running the check page opens now, not at login" test ! -e "$check_entry"
+        check "with fcitx5 running no entry waits for the next login" test ! -e "$check_entry"
     else
         check "environment.d selects fcitx" has_line "$im_env" 'GTK_IM_MODULE=fcitx'
         check "fcitx5 starts at login" test -e "$autostart"

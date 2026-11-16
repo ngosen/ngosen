@@ -2549,14 +2549,18 @@ namespace {
         // Firefox through the fcitx4 frontend resets the context after each commit, the swap's own too.
         // GTK 3 on Plasma reports a click late, so only the time since our edit tells the reset apart.
         const struct {
+            const char* typed;
+            bool        tapsBefore;
             bool        click;
             bool        hidesClick;
             int         waitMs;
             const char* want;
             const char* step;
-        } resets[] = {{false, false, 40, "abc tunx", "lock toggle: an app reset after the swap keeps the word"},
-                      {true, false, 40, "abc tũn", "lock toggle: a reset after a click leaves the word alone"},
-                      {true, true, 300, "abc tũn", "lock toggle: a reset after a click the app reports late leaves the word alone"}};
+        } resets[] = {{"abc tunx", false, false, false, 40, "abc tunx", "lock toggle: an app reset after the swap keeps the word"},
+                      {"abc tieengs", false, false, false, 40, "abc tieengs", "lock toggle: an app reset after the lock keeps the word"},
+                      {"abc tunx", true, false, false, 40, "abc tũn", "lock toggle: an app reset after the swap back keeps the word"},
+                      {"abc tunx", false, true, false, 40, "abc tũn", "lock toggle: a reset after a click leaves the word alone"},
+                      {"abc tunx", false, true, true, 300, "abc tũn", "lock toggle: a reset after a click the app reports late leaves the word alone"}};
         for (const auto& r : resets) {
             realMode = ngosen::Mode::Sen;
             ngosen::test::AppQuirks quirks;
@@ -2567,9 +2571,13 @@ namespace {
             auto*               app   = owned.get();
             ngosen::TypingState state(&plain, std::move(owned));
             app->attach(&state);
-            for (char c : std::string("abc tunx")) {
+            for (char c : std::string(r.typed)) {
                 app->type(static_cast<uint32_t>(c));
                 loop.pump(30);
+            }
+            if (r.tapsBefore) {
+                tap(state);
+                loop.pump(300);
             }
             tap(state);
             loop.pump(r.waitMs);

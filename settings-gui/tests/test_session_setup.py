@@ -401,18 +401,16 @@ class InstallerOpensCheckTest(SessionSetupCase):
         launched, _entry = self.open_check(compositor=1)
         self.assertEqual(launched, "fcitx5-ngosen-settings --after-install")
 
+    def block_autostart_folder(self):
+        # A file where the folder goes stops root too, as CI runs; a read-only folder does not.
+        self.write(os.path.join(self.config, "autostart"), "")
+
     def test_an_unwritable_autostart_folder_leaves_the_install_successful(self):
-        folder = os.path.join(self.config, "autostart")
-        os.makedirs(folder)
-        os.chmod(folder, 0o555)
-        self.addCleanup(os.chmod, folder, 0o755)
+        self.block_autostart_folder()
         self.assertEqual(self.open_check(running=0), (None, None))
 
     def test_the_window_cannot_remove_the_entry_without_failing(self):
-        self.open_check(running=0)
-        folder = os.path.join(self.config, "autostart")
-        os.chmod(folder, 0o555)
-        self.addCleanup(os.chmod, folder, 0o755)
+        self.block_autostart_folder()
         session_setup.remove_check_autostart(self.env)
 
     def test_the_window_removes_the_entry_install_sh_wrote(self):

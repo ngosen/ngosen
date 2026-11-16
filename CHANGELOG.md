@@ -28,6 +28,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trang Emoji mới trong cửa sổ cài đặt: các tuỳ chọn emoji, danh sách app đã tắt emoji kèm nút bật lại, và bảng
   mọi emoji kèm từ gợi ý. Bấm một từ để tắt hay bật, thêm từ của riêng mình, "Như cũ" để trả về từ có sẵn; tìm
   theo từ, lọc theo nhóm (#110, #795).
+- Trên GNOME không có extension Input Method Panel, Chrome và các app GNOME chuyển phím hộ trước đây không hiện
+  gợi ý emoji. Nay dừng gõ chừng nửa giây là gợi ý hiện ngay trong ô, gạch chân, lấy emoji của mọi từ trong câu
+  (`con mèo cười quá` → `Tab: 😂 🤣 😄 🐈 🐱`); Tab rồi số để chọn, emoji thêm vào chỗ con trỏ (#110, #821).
 - Cửa sổ cài đặt mở thẳng trang Kiểm tra máy lần đầu mở, và khi còn bước làm không gõ được tiếng Việt (fcitx5
   không chạy, chưa thêm Ngó Sen, fcitx5 chạy từ trước lúc cài Ngó Sen, app chưa nhận bộ gõ…): báo ngay lần phát
   hiện, rồi nhắc lại sau 3, 6, 12… lần mở cho tới khi sửa xong. Cảnh báo vàng khác thì không tự mở (#798).

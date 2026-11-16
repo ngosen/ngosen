@@ -22,7 +22,7 @@ FEATURES = [
             "to number them, then 1 to 5 to pick one; Tab, Space or Enter takes the first. The "
             "Emoji page lists every emoji with its words, which you can change."
         ),
-        "example": "cười → cười 😂, haha → 😂",
+        "example": "",
         "target": ("page", "emoji"),
     },
     {

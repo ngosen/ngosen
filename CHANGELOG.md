@@ -12,6 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Trong Firefox, gõ mặt cười kiểu Yahoo như `:)`, `:))`, `=))`, `:x` nay hiện gợi ý emoji như khi gõ chữ, thay vì không ra gì (#819).
 - Trên GNOME, gõ nhanh ngay sau khi mở Firefox, nhấn Backspace hai lần liền không còn mất một lần (`nam tieesng`, xoá `ng` rồi gõ lại ra `nam tiiếng`) (#815).
 - Khi menu chọn chế độ gõ (mở bằng `` ` ``) đang hiện, bấm một phím không có trong menu nay đóng menu và gõ ra phím đó, thay vì menu đứng yên và phím bị nuốt. Không bấm gì thì menu tự tắt sau 5 giây (#814, #817).
 - Trên GNOME với fcitx5 5.1.23, Ngó Sen nay nhớ cách xoá bằng BackSpace tới hết phiên, nên chỉ hỏng chữ đầu tiên thay vì hỏng chữ đầu sau mỗi lần bấm chuột sang ô khác trong app như VaultID (#816, #818).

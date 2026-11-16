@@ -274,6 +274,7 @@ namespace ngosen {
         };
         std::optional<EmojiOffer>      emojiOffer_;
         std::string                    emojiTail_;              ///< text typed before the open word since the cursor last moved
+        std::string                    emojiTailAtReset_;       ///< emojiTail_ at an app reset, until the app reports its text
         bool                           emojiTookPress_ = false; ///< the offer took the key being handled
         std::vector<uint32_t>          emojiTakenSyms_;         ///< keys the offer took, whose releases it takes too
         std::unique_ptr<ngosen::Timer> emojiRecheck_;           ///< looks again once the word is in the app
@@ -283,6 +284,7 @@ namespace ngosen {
         bool                           replacementPending() const;
         bool                           inAddressBar() const;
         void                           noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore);
+        bool                           restoreEmojiTail(std::string& tail);
         void                           updateEmojiOffer();
         void                           offerForTypedText();
         void                           showEmojiOffer();

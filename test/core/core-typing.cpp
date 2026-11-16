@@ -3702,6 +3702,14 @@ namespace {
         firefox.reportDelayMs = 90;
         const auto slow       = ngosen::test::typeInAppTraced(slowResources, field, firefox, keys, std::vector<int>(keys.size(), 60));
         check(slow.text == "nam tiếng ", "split edit on GNOME: a key typed while a replayed Backspace is held waits behind the keys before it", slow.text);
+
+        // GNOME Shell drops a key forwarded while the user holds that key down.
+        FakeResources heldResources;
+        firefox.reportDelayMs         = 120;
+        firefox.keyHoldMs             = 30;
+        firefox.dropsForwardedHeldKey = true;
+        const auto held               = ngosen::test::typeInAppTraced(heldResources, field, firefox, keys, std::vector<int>(keys.size(), 100));
+        check(held.text == "nam tiếng ", "split edit on GNOME: a held Backspace waits for the next Backspace to come up", held.text);
     }
 
     // The cursor moving over our own edit is not a click, so the word goes on.

@@ -596,6 +596,7 @@ namespace ngosen {
         ngosen::EditKey                held_key_           = ngosen::EditKey::Return;
         std::optional<KeyEntry>        held_field_key_; ///< held in place of held_key_
         bool                           heldKeyIs(uint32_t sym) const;
+        bool                           waitsForHeldKeyRelease(const ngosen::KeyPress& keyEvent) const;
 
         void                           commitPulledText();
 

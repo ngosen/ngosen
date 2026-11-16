@@ -2109,6 +2109,15 @@ msgid "Copy {} to ~/.config/autostart/."
 msgstr "Chép {} vào ~/.config/autostart/."
 
 #: settings-gui/core/system_check.py
+msgid "Logged back in, but the settings still do not apply"
+msgstr "Đã đăng nhập lại nhưng thiết lập vẫn chưa có tác dụng"
+
+#: settings-gui/core/system_check.py
+msgid ""
+"Something else overrides them after login: send the result to Ngó Sen."
+msgstr "Có thứ khác ghi đè lên sau khi đăng nhập: gửi kết quả cho Ngó Sen."
+
+#: settings-gui/core/system_check.py
 msgid "Log out and back in to finish the setup"
 msgstr "Đăng xuất rồi đăng nhập lại để thiết lập xong"
 

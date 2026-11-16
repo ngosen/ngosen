@@ -31,6 +31,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Cửa sổ cài đặt mở thẳng trang Kiểm tra máy lần đầu mở, và khi còn bước làm không gõ được tiếng Việt (fcitx5
   không chạy, chưa thêm Ngó Sen, fcitx5 chạy từ trước lúc cài Ngó Sen, app chưa nhận bộ gõ…): báo ngay lần phát
   hiện, rồi nhắc lại sau 3, 6, 12… lần mở cho tới khi sửa xong. Cảnh báo vàng khác thì không tự mở (#798).
+- Trang Kiểm tra máy báo đỏ "Đã đăng nhập lại nhưng thiết lập vẫn chưa có tác dụng" khi bước chờ đăng nhập lại vẫn
+  còn sau khi đã đăng xuất rồi đăng nhập lại (hoặc khởi động lại máy), và tự mở trang để nhắc gửi kết quả cho Ngó Sen (#801).
 - Lần cài đầu bằng lệnh cài một dòng, cửa sổ cài đặt tự mở trang Kiểm tra máy để xem còn bước nào chưa xong:
   mở ngay nếu fcitx5 đang chạy, không thì mở một lần ở lần đăng nhập sau. Cập nhật thì không mở (#802).
 

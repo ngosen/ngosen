@@ -50,7 +50,7 @@ def should_open(found, path):
     # With fcitx5 off the check sees nothing else, which says nothing about the other steps.
     hidden = any(f.action == system_check.START_FCITX for f in found)
     state["known"] = sorted(set(now) | set(state["known"])) if hidden else now
-    if writable and not _write(path, state):
+    if writable and not write_json(path, state):
         # Nothing remembers this open, so the next one must not look like the first.
         return bool(now)
     return show
@@ -92,17 +92,17 @@ def _valid(state):
     )
 
 
-def _write(path, state):
+def write_json(path, data):
     """Replaces the file whole, so a write cut short leaves the last one."""
     folder = os.path.dirname(path)
     temp = None
     try:
         os.makedirs(folder, exist_ok=True)
         with tempfile.NamedTemporaryFile(
-            "w", encoding="utf-8", dir=folder, prefix=".check-reminders-", delete=False
+            "w", encoding="utf-8", dir=folder, prefix=f".{os.path.basename(path)}-", delete=False
         ) as f:
             temp = f.name
-            json.dump(state, f, ensure_ascii=False)
+            json.dump(data, f, ensure_ascii=False)
         os.replace(temp, path)
     # ValueError: a title read from a hand-edited file that UTF-8 cannot hold.
     except (OSError, ValueError):

@@ -50,7 +50,9 @@ class ShouldOpenTest(unittest.TestCase):
         self.assertEqual(self.opens(FINE + [warning], FINE + [later]), [False, False])
 
     def test_a_login_wait_from_the_real_check_does_not_open_it(self):
-        found = system_check._with_one_login_notice(FINE + [Finding(FAIL, "Qt", after_login=True)])
+        found = system_check._with_one_login_notice(
+            FINE + [Finding(FAIL, "Qt", after_login=True)], facts()
+        )
         self.opens(FINE)
         self.assertEqual(self.opens(found), [False])
 

@@ -69,6 +69,9 @@ class Facts:
     started_by_kwin: bool = True
     # One of update_repo's states: whether new Ngó Sen versions reach this machine.
     update_repo: str = update_repo.NONE
+    # This login, and for each step waiting for a login, the login that first saw it waiting.
+    login: str = ""
+    login_waits: dict = field(default_factory=dict)
 
     @property
     def session(self):
@@ -91,6 +94,8 @@ class Finding:
     after_login: bool = False
     # A warning on the page that still leaves Ngó Sen unable to type, so the window opens on it.
     stops_typing: bool = False
+    # The titles of the steps a login notice stands for.
+    waiting: tuple = ()
 
 
 START_FCITX, RESTART_FCITX, ADD_NGOSEN, ENABLE_FORWARD_KEYS, INSTALL_INPUT_PANEL = (
@@ -187,18 +192,34 @@ def _login_start_findings(facts):
     return [Finding(WARN, title, fix, ENABLE_AUTOSTART, session_setup.ENABLE_AUTOSTART_COMMAND)]
 
 
-def _with_one_login_notice(found):
-    if not any(f.after_login for f in found):
+def _with_one_login_notice(found, facts):
+    waiting = tuple(f.title for f in found if f.after_login)
+    if not waiting:
         return found
-    notice = Finding(
-        WARN,
-        _("Log out and back in to finish the setup"),
-        _(
-            "The settings are saved, but apps read them at login. If this stays after that, "
-            "something else overrides them: send the result to Ngó Sen."
-        ),
-    )
+    if _left_by_a_login(facts, waiting):
+        notice = Finding(
+            FAIL,
+            _("Logged back in, but the settings still do not apply"),
+            _("Something else overrides them after login: send the result to Ngó Sen."),
+            waiting=waiting,
+        )
+    else:
+        notice = Finding(
+            WARN,
+            _("Log out and back in to finish the setup"),
+            _(
+                "The settings are saved, but apps read them at login. If this stays after "
+                "that, something else overrides them: send the result to Ngó Sen."
+            ),
+            waiting=waiting,
+        )
     return [f for f in found if not f.after_login] + [notice]
+
+
+def _left_by_a_login(facts, waiting):
+    return bool(facts.login) and any(
+        facts.login_waits.get(title, facts.login) != facts.login for title in waiting
+    )
 
 
 def steps(facts):
@@ -254,7 +275,7 @@ def steps(facts):
                 after_login=any(f.after_login for f in found),
             )
         )
-    return _with_one_login_notice(found)
+    return _with_one_login_notice(found, facts)
 
 
 def _replaced_addon_finding(facts):

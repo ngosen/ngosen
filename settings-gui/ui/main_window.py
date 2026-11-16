@@ -244,20 +244,21 @@ class NgoSenSettingsWindow(QMainWindow):
     def show_tips(self):
         self.show_page("whats-new").show_tips()
 
-    def start_on(self, page):
+    def start_on(self, page, after_install=False):
         """Opens on `page`, or on Check my machine when that is due; only the latter counts an open."""
         if page:
             self.show_page(page)
         else:
             # After the window shows, so the check does not hold it back.
-            QTimer.singleShot(0, self.open_check_if_due)
+            QTimer.singleShot(0, lambda: self.open_check_if_due(always=after_install))
 
-    def open_check_if_due(self, path=None):
+    def open_check_if_due(self, path=None, always=False):
         """Lands on Check my machine the first time, and while a step that stops typing is undone."""
         page = self._page_for_item(self._check_item) if self._check_item else None
         if page is None:
             return
-        if check_reminder.should_open(page.found, path or check_reminder.state_file()):
+        due = check_reminder.should_open(page.found, path or check_reminder.state_file())
+        if due or always:
             self.show_page("check")
 
     def _build_all_pages(self):

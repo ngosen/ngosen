@@ -150,6 +150,9 @@ fcitx5, để chuyển ngôn ngữ như `Ctrl + Shift` cho app đang gõ và gi�
 
 Desktop khác: cài xong thì đăng xuất rồi đăng nhập lại.
 
+Lần cài đầu, lệnh mở trang **Kiểm tra máy** trong cửa sổ cài đặt để xem còn bước nào chưa xong: mở ngay nếu
+fcitx5 đang chạy, không thì mở một lần ở lần đăng nhập sau.
+
 </details>
 
 <a id="chon-ban"></a>
@@ -335,6 +338,8 @@ bước sau (hoặc chạy lệnh cài một dòng ở trên để nó làm giú
   `echo 'XMODIFIERS=@im=fcitx' > ~/.config/environment.d/90-ngosen.conf` trước khi đăng xuất.
 - **Xfce, Cinnamon, MATE** (Debian, Ubuntu, Mint): chạy `im-config -n fcitx5`, rồi đăng xuất và đăng nhập lại.
 - **Sway, Hyprland, niri:** chạy lệnh cài một dòng từ terminal trong phiên desktop để được thiết lập sẵn.
+- **Kiểm tra lại:** sau khi đăng nhập lại, mở cửa sổ cài đặt Ngó Sen (`fcitx5-ngosen-settings`). Lần mở đầu
+  tiên nó vào trang **Kiểm tra máy**, nơi liệt kê bước nào còn thiếu và có nút sửa cho nhiều bước.
 
 <a id="khac-phuc-su-co"></a>
 <a id="lỗi-thường-gặp"></a>

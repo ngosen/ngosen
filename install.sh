@@ -9,6 +9,7 @@ set -euo pipefail
 
 FCITX5_RELEASE_URL=${NGOSEN_RELEASE_URL:-https://github.com/ngosen/ngosen/releases/latest/download}
 RELEASE_URL=$FCITX5_RELEASE_URL
+CHECK_AUTOSTART=ngosen-check-after-install.desktop
 IBUS_RELEASE_URL=${NGOSEN_IBUS_RELEASE_URL:-https://github.com/ngosen/ibus-ngosen/releases/latest/download}
 REPO_URL=${NGOSEN_REPO_URL:-https://ngosen.github.io/ngosen}
 SOURCE_GUIDE="https://github.com/ngosen/ngosen/blob/main/TU-DUNG.md"
@@ -39,6 +40,7 @@ session_changes=()
 keyboard_dropped=0
 fcitx5_reloaded=0
 package_changed=1
+first_install=0
 fcitx5_current=0
 manager=
 pattern=
@@ -1886,6 +1888,7 @@ uninstall() {
         report_unknown_changes
         rm -f "$(changes_file)"
     fi
+    rm -f "$(config_home)/autostart/$CHECK_AUTOSTART"
     as_root "${remove[@]}"
     # Only after the package is gone, so a failed removal keeps its updates.
     remove_ngosen_repo
@@ -1995,6 +1998,7 @@ main() {
     chmod 755 "$workdir"
 
     download_package "$hash" "$file"
+    is_package_installed "$package_name" || first_install=1
     if is_package_installed "$package_name" &&
         [ "$(installed_package_version)" = "$(package_file_version "$workdir/$file")" ]; then
         package_changed=0
@@ -2025,6 +2029,11 @@ main() {
     if [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ]; then
         unmask_fcitx5_autostart
     fi
+    setup_desktop
+    open_check_page
+}
+
+setup_desktop() {
     if wants_gnome_setup; then
         setup_gnome_session
         return
@@ -2059,6 +2068,29 @@ main() {
     say "     KDE Wayland: đăng xuất rồi đăng nhập lại."
     say "  2. Mở 'Fcitx5 Configuration', thêm bộ gõ Ngó Sen."
     say "  3. KDE Wayland: System Settings → Virtual Keyboard → chọn 'Fcitx 5'."
+}
+
+# A first install shows Check my machine: now when fcitx5 runs, otherwise once at the next login,
+# since before that the check would only find fcitx5 stopped.
+open_check_page() {
+    [ "$first_install" -eq 1 ] && [ "$setup_session" -eq 1 ] && [ "$(id -u)" -ne 0 ] || return 0
+    command -v fcitx5-ngosen-settings >/dev/null 2>&1 || return 0
+    say ""
+    if fcitx5_is_running && [ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]; then
+        setsid fcitx5-ngosen-settings --after-install </dev/null >/dev/null 2>&1 &
+        say "Đang mở trang Kiểm tra máy để xem còn bước nào chưa xong."
+        return 0
+    fi
+    mkdir -p "$(config_home)/autostart"
+    check_autostart_entry >"$(config_home)/autostart/$CHECK_AUTOSTART"
+    say "Lần đăng nhập sau, Ngó Sen mở trang Kiểm tra máy một lần để xem còn bước nào chưa xong."
+}
+
+# The window removes this entry when it opens. The wait leaves time for fcitx5, which its own
+# autostart entry starts at the same time.
+check_autostart_entry() {
+    printf '%s\n' "[Desktop Entry]" "Type=Application" "Name=Ngó Sen" "NoDisplay=true" \
+        'Exec=sh -c "sleep 10; exec fcitx5-ngosen-settings --after-install"'
 }
 
 main "$@"

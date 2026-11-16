@@ -3230,8 +3230,8 @@ namespace {
         }
     }
 
-    // fcitx5 can leave every app GNOME Shell relays under the shell's name and drop their deletions;
-    // each click opens a new field, which must not lose its first word again (#816).
+    // An app relayed under GNOME Shell's name can drop every deletion, and each click opens a new
+    // field, which must not lose its first word again (#816).
     void testDroppedDeletionKeptAcrossFocus() {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);

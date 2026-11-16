@@ -132,6 +132,9 @@ namespace ngosen::test {
         const uint32_t state = ((sym & WithShift) != 0U ? modifier::Shift : 0U) | ((sym & WithCtrl) != 0U ? modifier::Ctrl : 0U);
         sym &= ~(WithShift | WithCtrl);
         FakeKey down(sym, false, state, time);
+        // The key is down from its press on, so a key forwarded while handling it counts.
+        if (quirks_.keyHoldMs > 0)
+            heldSym_ = sym;
         if (sym == key::Control_L)
             ctrlDown_ = true;
         // As the fcitx5 shell does, a terminal hiding input gets the key without the typing logic.
@@ -169,6 +172,10 @@ namespace ngosen::test {
                 });
         }
 
+        if (quirks_.keyHoldMs > 0) {
+            loop_.pump(quirks_.keyHoldMs);
+            heldSym_ = 0;
+        }
         FakeKey up(sym, true, state);
         state_->keyEvent(up);
         // The app learns of the release only once the input method passes it on.
@@ -327,7 +334,7 @@ namespace ngosen::test {
         if (key != EditKey::BackSpace || release)
             return;
         ++sent_.forwardedBackSpaces;
-        if (quirks_.dropsForwardedKeys)
+        if (quirks_.dropsForwardedKeys || (quirks_.dropsForwardedHeldKey && heldSym_ == key::BackSpace))
             return;
         if (quirks_.ctrlBackSpaceDeletesWord && ctrlDown_) {
             later(quirks_.lagMs, [this] {

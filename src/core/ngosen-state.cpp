@@ -881,11 +881,13 @@ namespace ngosen {
     void TypingState::handleKey(ngosen::KeyPress& keyEvent) {
         chooseWordMode(keyEvent);
         recordKey(keyEvent);
+        const bool pressedAgain = waitsForHeldKeyRelease(keyEvent);
         if (heldKeyIs(keyEvent.sym())) {
             const bool heldRelease = keyEvent.isRelease() && held_enter_release_;
             held_enter_release_    = false;
             if (heldRelease) {
                 keyEvent.accept();
+                noteBufferedRelease(keyEvent.sym());
                 if (ngosen::monotonicUs() >= held_enter_due_us_)
                     sendHeldEnter();
                 return;
@@ -893,6 +895,8 @@ namespace ngosen {
         }
         if (keyEvent.isRelease())
             noteBufferedRelease(keyEvent.sym());
+        else if (pressedAgain)
+            held_enter_release_ = true;
         else
             sendHeldEnter();
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
@@ -1021,6 +1025,14 @@ namespace ngosen {
         if (held_field_key_)
             return sym == held_field_key_->sym;
         return held_key_ == ngosen::EditKey::BackSpace ? ngosen::key::isBackspace(sym) : ngosen::key::isEnter(sym);
+    }
+
+    // GNOME Shell drops a key forwarded while the user holds that key down, so the held one waits for this
+    // press to come up and the press queues behind it.
+    bool TypingState::waitsForHeldKeyRelease(const ngosen::KeyPress& keyEvent) const {
+        const uint32_t sym = keyEvent.sym();
+        return held_enter_pending_ && !held_field_key_ && !keyEvent.isRelease() && heldKeyIs(sym) && ngosen::surroundingTextLags(host_->field()) &&
+            buffered_keys_.size() < MAX_BUFFERED_KEYS && (holdsBackspace(keyEvent, sym) || replayedEditKey(sym, keyEvent.states()));
     }
 
     void TypingState::forwardKeyTap(const KeyEntry& key) {

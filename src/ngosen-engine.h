@@ -437,6 +437,10 @@ namespace fcitx {
         // Handles the toggle key; returns whether the key was it.
         bool handleToggleKey(KeyEvent& keyEvent);
         void toggleVietnamese(InputContext* ic, bool offerRetype = true);
+        // Per-app switches are only read and written when the toggle key switches each app on its own.
+        bool switchesEachApp() const;
+        // A Vietnamese mode picked for an app turns Vietnamese on for all apps when they switch together.
+        void turnOnForPickedMode(NgoSenMode mode);
 
         /**
          * @brief Set application-specific mode rules

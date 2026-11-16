@@ -111,6 +111,7 @@ set_tests_properties(default_app_mode_override PROPERTIES LABELS "integration;ap
 add_ngosen_headless_test(ctx_rule_cleanup ctx-rule-cleanup.cpp "integration;apprule")
 add_ngosen_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule")
 add_ngosen_headless_test(toggle_key toggle-key.cpp "integration;apprule")
+add_ngosen_headless_test(toggle_scope toggle-scope.cpp "integration;apprule")
 add_ngosen_headless_test(hidden_input hidden-input.cpp "integration;terminal")
 target_link_libraries(hidden_input PRIVATE util)
 # Its prompt is seen by every test that types into a terminal, since the engine scans all of the user's ptys.

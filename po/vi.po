@@ -199,6 +199,18 @@ msgstr "Bật gõ tắt"
 msgid "Capitalize Macro"
 msgstr "Gõ tắt chữ hoa"
 
+#: src/ngosen-config.h
+msgid "Switch Applies To"
+msgstr "Phím chuyển áp dụng cho"
+
+#: src/ngosen-config.h
+msgid "All apps"
+msgstr "Mọi app"
+
+#: src/ngosen-config.h
+msgid "Each app"
+msgstr "Từng app"
+
 #: src/ngosen-config.h:235
 msgid "Key to Keep the Word as Typed"
 msgstr "Phím chốt chữ"
@@ -1532,6 +1544,10 @@ msgid "Tap it alone to switch. The tray icon shows V while typing Vietnamese."
 msgstr "Nhấp riêng phím này để chuyển. Biểu tượng khay hiện chữ V khi đang gõ tiếng Việt."
 
 #: settings-gui/ui/pages/dynamic_settings.py
+msgid "All apps switches English/Vietnamese everywhere except apps set to OFF; Each app remembers a separate choice for each app."
+msgstr "Mọi app chuyển Anh/Việt cùng lúc, trừ app đặt Tắt; Từng app nhớ lựa chọn riêng cho mỗi app."
+
+#: settings-gui/ui/pages/dynamic_settings.py
 msgid "Switch with Ctrl+Shift, as in UniKey?"
 msgstr "Chuyển bằng Ctrl+Shift như UniKey?"
 
@@ -1610,12 +1626,12 @@ msgid "Opens a menu to pick a mode for the app in use. Only while typing Vietnam
 msgstr "Mở menu chọn chế độ gõ cho app đang dùng. Chỉ khi đang gõ tiếng Việt; lúc gõ tiếng Anh phím gõ ra như thường."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Moves the app in use to the next mode in the list below, and remembers it for that app."
-msgstr "Chuyển app đang dùng sang chế độ kế tiếp trong danh sách bên dưới và nhớ cho app đó."
+msgid "Moves the app in use to the next mode in the list below, and remembers it for that app. With All apps, choosing Sen or Preedit while in English turns Vietnamese on for all apps."
+msgstr "Chuyển app đang dùng sang chế độ kế tiếp trong danh sách bên dưới và nhớ cho app đó. Khi chọn Mọi app, chuyển sang Gõ Sen hoặc Gạch chân lúc đang gõ tiếng Anh sẽ bật tiếng Việt cho mọi app."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) to follow the global setting and switch key again; OFF stays set for the app."
-msgstr "Khi menu chế độ đang mở, bấm phím của một chế độ để chọn cho app đang dùng. Chọn chế độ mặc định của app (thường là Gõ Sen, đôi khi là Gạch chân) để app lại theo thiết lập chung và phím chuyển; Tắt vẫn được nhớ riêng cho app."
+msgid "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) to follow the global setting and switch key again; OFF stays set for the app and keeps it in English even when other apps type Vietnamese. With All apps, the switch key in an OFF app opens the mode menu; pick Sen or Preedit there to type Vietnamese in that app."
+msgstr "Khi menu chế độ đang mở, bấm phím của một chế độ để chọn cho app đang dùng. Chọn chế độ mặc định của app (thường là Gõ Sen, đôi khi là Gạch chân) để app lại theo thiết lập chung và phím chuyển; Tắt vẫn được nhớ riêng cho app và giữ app gõ tiếng Anh ngay cả khi các app khác gõ tiếng Việt. Khi chọn Mọi app, bấm phím chuyển trong app đặt Tắt sẽ mở menu chế độ; chọn Gõ Sen hoặc Gạch chân tại đó để app gõ tiếng Việt."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Off: plain one-colour icons, in the colour picked below."
@@ -1847,8 +1863,16 @@ msgid "Vietnamese in the tray menu"
 msgstr "Tiếng Việt trong menu khay"
 
 #: settings-gui/core/whats_new_content.py
-msgid "The tray menu starts with an item that turns Vietnamese on or off, for when Ctrl + Shift does not work. Each app keeps its choice."
-msgstr "Đầu menu khay có mục bật hoặc tắt tiếng Việt, dùng khi Ctrl + Shift không chạy. Mỗi app nhớ lựa chọn riêng."
+msgid "The tray menu starts with an item that turns Vietnamese on or off, for when Ctrl + Shift does not work."
+msgstr "Đầu menu khay có mục bật hoặc tắt tiếng Việt, dùng khi Ctrl + Shift không chạy."
+
+#: settings-gui/core/whats_new_content.py
+msgid "One switch for every app"
+msgstr "Một phím chuyển cho mọi app"
+
+#: settings-gui/core/whats_new_content.py
+msgid "New installs start in Vietnamese, and the switch key now changes all apps at once, as in UniKey. Apps set to OFF stay in English; the switch key there opens the ` menu to pick Sen or Preedit. For the old behavior, choose Each app under Switch Applies To on the Shortcuts page."
+msgstr "Cài mới bật sẵn tiếng Việt, và phím chuyển nay đổi mọi app cùng lúc như UniKey. App đặt Tắt vẫn gõ tiếng Anh; bấm phím chuyển tại đó mở menu ` để chọn Gõ Sen hoặc Gạch chân. Muốn dùng như trước, chọn “Từng app” ở “Phím chuyển áp dụng cho” trên trang Phím tắt."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Commands and paths"

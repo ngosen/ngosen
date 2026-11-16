@@ -142,6 +142,18 @@ msgstr ""
 msgid "Capitalize Macro"
 msgstr ""
 
+#: src/ngosen-config.h
+msgid "Switch Applies To"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "All apps"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Each app"
+msgstr ""
+
 #: src/ngosen-config.h:235
 msgid "Key to Keep the Word as Typed"
 msgstr ""

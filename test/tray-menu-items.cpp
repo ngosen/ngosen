@@ -3,6 +3,7 @@
 // The tray menu shows the entries the user chose; Vietnamese, Settings and Save typing log always show. A
 // choice entry names the current choice, since GNOME's kimpanel shows no check marks.
 #include "ngosen-engine.h"
+#include <fstream>
 #include "ngosen-utils.h"
 #include "test-input-context.h"
 
@@ -55,6 +56,7 @@ namespace {
 
 int main() {
     configureTestPaths("fcitx5-ngosen-tray-menu-items");
+    std::ofstream(std::string(getenv("XDG_CONFIG_HOME")) + "/fcitx5/conf/ngosen.conf") << "SettingsVersion=2\n";
     TestInstance        testInstance;
     fcitx::NgoSenEngine engine(&testInstance.instance);
 

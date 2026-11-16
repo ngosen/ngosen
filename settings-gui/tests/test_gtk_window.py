@@ -448,6 +448,13 @@ class GtkShortcutsPageTest(unittest.TestCase):
         self.assertFalse(self.page.offer.get_visible())
         self.assertEqual(self.page.hotkeys["ToggleKey"].key, "Control+Shift")
 
+    def test_the_switch_scope_is_picked_from_a_list(self):
+        row = self.page.hotkeys["ToggleScope"]
+        self.assertIsInstance(row, Adw.ComboRow)
+        self.assertEqual(row.get_selected(), 0)
+        row.set_selected(1)
+        self.assertEqual(self.dbus.values["ToggleScope"], "Each app")
+
     def test_a_new_menu_key_keeps_the_keys_after_it(self):
         dbus = FakeDBusHandler({"ModeMenuKey": {"0": "grave", "1": "Control+space"}})
         page = window.Window(None, dbus).shortcuts

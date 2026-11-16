@@ -75,6 +75,16 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(LockWordModifier, N_("Disabled"), N_("Shift"), N_("Ctrl"), N_("Alt"));
 
+    /**
+     * @brief Which apps the toggle key switches.
+     */
+    enum class ToggleScope : std::uint8_t {
+        AllApps = 0,
+        EachApp = 1,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(ToggleScope, N_("All apps"), N_("Each app"));
+
     // In the order of ConvertText's letterCase.
     enum class ConvertCase : std::uint8_t {
         Keep     = 0,
@@ -283,6 +293,8 @@ namespace fcitx {
                                 _("Switch Between English and Vietnamese"),
                                 {Key("Control+Shift_L"), Key("Control+Shift_R"), Key("Shift+Control_L"), Key("Shift+Control_R")},
                                 KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
+        // All apps switch together, as in UniKey.
+        OptionWithAnnotation<ToggleScope, ToggleScopeI18NAnnotation> toggleScope{this, "ToggleScope", _("Switch Applies To"), ToggleScope::AllApps};
         // What the toggle key last chose, for apps without a rule of their own.
         HiddenOption<bool> vietnameseOn{this, "VietnameseOn", _("Vietnamese On"), false};
         // Set once the settings were upgraded; fcitx5 leaves defaults out of the file, so nothing else tells.

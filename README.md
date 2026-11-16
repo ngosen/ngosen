@@ -91,8 +91,10 @@ Hoàn tác.
   ra `nhưng`; bấm Backspace ngay sau đó thì trả lại đúng chữ đã gõ.
 - **Gợi ý emoji khi gõ:** gõ xong `cười`, `con mèo` hay `haha` là hiện `Tab: 😂 …` cạnh con trỏ; Tab để
   đánh số rồi chọn bằng số, Esc giữ nguyên chữ.
-- **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey, người dùng cũ giữ
-  `Ctrl + Space`. Mỗi app nhớ riêng đang gõ Anh hay Việt.
+- **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey và bật sẵn tiếng Việt;
+  người dùng cũ giữ phím chuyển và trạng thái đang dùng. Mặc định, phím chuyển đổi mọi app cùng lúc.
+  Muốn mỗi app nhớ riêng như trước, chọn “Từng app” ở “Phím chuyển áp dụng cho” trên trang Phím tắt.
+  App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh.
 - **Phím chốt chữ (Ctrl):** bấm rồi thả `Ctrl` để giữ nguyên từ đang gõ, không thêm dấu hay bung gõ tắt.
 - **Gõ tắt (macro):** tự theo chữ hoa: `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
@@ -132,9 +134,12 @@ Lệnh tải gói đúng distro từ [release mới nhất](https://github.com/n
 SHA-256, hỏi lại trước khi cài và tự thiết lập theo desktop đang dùng. Chạy lại lệnh này để cập nhật version
 mới; cấu hình cũ giữ nguyên. Thiết lập chỉ áp dụng cho tài khoản chạy lệnh.
 
-Sau khi cài, nhấn rồi thả `Ctrl + Shift` để chuyển giữa tiếng Anh và tiếng Việt; biểu tượng khay hiện chữ V
-khi đang gõ tiếng Việt. Bạn cũng có thể bấm “✔ Tiếng Việt” / “✖ Tiếng Việt”, mục luôn hiện ở đầu menu khay
-fcitx5, để chuyển ngôn ngữ như `Ctrl + Shift` cho app đang gõ và giữ lựa chọn sau khi khởi động lại.
+Cài mới bật sẵn tiếng Việt. Nhấn rồi thả `Ctrl + Shift` để chuyển giữa tiếng Anh và tiếng Việt; biểu
+tượng khay hiện chữ V khi đang gõ tiếng Việt. Bạn cũng có thể bấm “✔ Tiếng Việt” / “✖ Tiếng Việt”,
+mục luôn hiện ở đầu menu khay fcitx5, để chuyển ngôn ngữ như phím chuyển và giữ lựa chọn sau khi
+khởi động lại. Mặc định, cả hai cách chuyển mọi app cùng lúc; chọn “Từng app” ở “Phím chuyển áp dụng
+cho” trên trang Phím tắt để mỗi app nhớ riêng. App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh; bấm
+phím chuyển trong app đó mở menu để chọn Gõ Sen hoặc Gạch chân và gõ tiếng Việt trở lại.
 
 <details>
 <summary>Lệnh cài làm gì trên từng desktop</summary>

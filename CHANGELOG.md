@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.12.1-1] — 17/11/2026
+
+Trong Firefox, gõ mã Yahoo như `:)`, `=))` nay hiện gợi ý emoji (#819). Trên GNOME, hai lần Backspace liền ngay sau khi mở Firefox không còn mất một lần (#815), và với fcitx5 5.1.23 chỉ còn hỏng chữ đầu tiên của phiên thay vì chữ đầu sau mỗi lần bấm sang ô khác (#816, #818). Menu chọn chế độ gõ đóng lại khi bấm phím không có trong menu hoặc sau 5 giây (#814, #817). Trong Firefox, Backspace ngay sau Space đã sửa `nhưg` thành `nhưng` trả lại `nhưg` (#813). Khôi phục tệp sao lưu sửa tay không còn bỏ qua giá trị `true`, `false` hay số (#805).
+Tải ở [ngosen-1.12.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.12.1-1).
+
 ### Sửa
 
 - Trong Firefox, gõ mặt cười kiểu Yahoo như `:)`, `:))`, `=))`, `:x` nay hiện gợi ý emoji như khi gõ chữ, thay vì không ra gì (#819).

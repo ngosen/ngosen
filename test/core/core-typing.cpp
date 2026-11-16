@@ -2546,6 +2546,49 @@ namespace {
             FakeKey up(ngosen::key::Control_L, true, ngosen::modifier::Ctrl);
             state.keyEvent(up);
         };
+        // Firefox through the fcitx4 frontend resets the context after each commit, the swap's own too.
+        // GTK 3 on Plasma reports a click late, so only the time since our edit tells the reset apart.
+        const struct {
+            const char* typed;
+            bool        tapsBefore;
+            bool        click;
+            bool        hidesClick;
+            int         waitMs;
+            const char* want;
+            const char* step;
+        } resets[] = {{"abc tunx", false, false, false, 40, "abc tunx", "lock toggle: an app reset after the swap keeps the word"},
+                      {"abc tieengs", false, false, false, 40, "abc tieengs", "lock toggle: an app reset after the lock keeps the word"},
+                      {"abc tunx", true, false, false, 40, "abc tũn", "lock toggle: an app reset after the swap back keeps the word"},
+                      {"abc tunx", false, true, false, 40, "abc tũn", "lock toggle: a reset after a click leaves the word alone"},
+                      {"abc tunx", false, true, true, 300, "abc tũn", "lock toggle: a reset after a click the app reports late leaves the word alone"}};
+        for (const auto& r : resets) {
+            realMode = ngosen::Mode::Sen;
+            ngosen::test::AppQuirks quirks;
+            quirks.hidesCursorMoves = r.hidesClick;
+            FakeLoop            loop;
+            FakeResources       plain;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("dbus", true), quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&plain, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string(r.typed)) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            if (r.tapsBefore) {
+                tap(state);
+                loop.pump(300);
+            }
+            tap(state);
+            loop.pump(r.waitMs);
+            if (r.click)
+                app->moveCursor(3);
+            state.appReset();
+            loop.pump(100);
+            tap(state);
+            loop.pump(300);
+            check(app->text() == r.want, r.step, app->text());
+        }
         for (const bool click : {true, false}) {
             realMode = ngosen::Mode::Sen;
             FakeLoop            loop;

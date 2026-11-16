@@ -253,7 +253,8 @@ namespace ngosen {
         // A preedit field commits on the tap, so the word is no longer there to swap.
         if (mode() != ngosen::Mode::Sen)
             return;
-        lockedWord_ = word;
+        word.editedAtUs = ngosen::monotonicUs();
+        lockedWord_     = word;
         if (!word.showsComposed)
             swapLockedWordSoon();
     }
@@ -310,6 +311,7 @@ namespace ngosen {
         std::string addedPart;
         ngosen::utf8::compareAndSplitStrings(word.showsComposed ? word.composed : word.keys, word.showsComposed ? word.keys : word.composed, deletedPart, addedPart);
         word.showsComposed = !word.showsComposed;
+        word.editedAtUs    = ngosen::monotonicUs();
         NGOSEN_INFO(std::string("Locked word swapped to its ") + (word.showsComposed ? "marks" : "keys"));
         performReplacement(deletedPart, addedPart);
     }

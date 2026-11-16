@@ -89,10 +89,9 @@ class StepsTest(unittest.TestCase):
         self.assertEqual(self.notices(facts("b/2", **kde)), [WARN])
 
     def test_an_unwritable_folder_remembers_nothing_and_never_turns_red(self):
-        folder = os.path.dirname(self.path)
-        os.makedirs(folder)
-        os.chmod(folder, 0o555)
-        self.addCleanup(os.chmod, folder, 0o755)
+        # A file where the folder goes stops root too, as CI runs; a read-only folder does not.
+        with open(os.path.dirname(self.path), "w", encoding="utf-8"):
+            pass
         self.assertEqual(self.notices(facts("b/1"), facts("b/2")), [WARN, WARN])
         self.assertFalse(os.path.exists(self.path))
 

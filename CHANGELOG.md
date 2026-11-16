@@ -17,7 +17,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   chữ. Chữ thường giữ lại và emoji thêm vào sau; `haha` và `:)` được thay bằng emoji. Gõ không dấu như
   `cuoi` vẫn ra, còn `cho`, `meo` thì không, vì đó đã là chữ tiếng Việt. Cờ hiện khi tên nước viết hoa
   (`Việt Nam`, `Pháp`). Hiện với giao diện fcitx5 mặc định và extension Input Method Panel trên GNOME;
-  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trong nhóm Gõ nhanh, mặc định bật (#110, #788).
+  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trên trang Emoji, mặc định bật (#110, #788).
 - Phím `w` trong menu `` ` `` nay bật/tắt gợi ý emoji cho app đang dùng, giống Vim mode; chế độ gõ của app
   giữ nguyên (#110, #791).
 - Gợi ý emoji thêm khoảng 460 từ lấy theo tên emoji, như `máy bay` ✈️, `xe máy` 🏍️, `cơm` 🍚, `bóng đá` ⚽, và 86 mã

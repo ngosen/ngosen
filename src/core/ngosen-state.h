@@ -26,6 +26,7 @@
 #include <bitset>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -266,29 +267,39 @@ namespace ngosen {
 
         // Emoji offered for the words just typed (#110): a hint first, a numbered list after Tab.
         struct EmojiOffer {
-            ngosen::EmojiSuggestion suggestion;
-            std::string             covered; // the typed text a sound or an emoticon stands for
-            std::string             keyword; // the typed words the keyword covers, as they are in the app
-            bool                    picking = false;
+            ngosen::EmojiSuggestion  suggestion;
+            std::string              covered; // the typed text a sound or an emoticon stands for
+            std::string              keyword; // the typed words the keyword covers, as they are in the app
+            bool                     picking = false;
+            bool                     inField = false; // shown in the field, as no panel can show the list here
+            std::vector<std::string> earlier;         // emoji of keywords before the last word, added at the cursor
+            bool                     afterSpace = false;
         };
         std::optional<EmojiOffer>      emojiOffer_;
         std::string                    emojiTail_;              ///< text typed before the open word since the cursor last moved
         bool                           emojiTookPress_ = false; ///< the offer took the key being handled
         std::vector<uint32_t>          emojiTakenSyms_;         ///< keys the offer took, whose releases it takes too
         std::unique_ptr<ngosen::Timer> emojiRecheck_;           ///< looks again once the word is in the app
+        std::function<void()>          emojiAfterHint_;         ///< the emoji picked, put in once the field drops the hint
+        std::unique_ptr<ngosen::Timer> emojiPause_;             ///< offers the sentence's emoji in the field once typing stops
         bool                           emojiOn_ = true;         ///< false when the user turned emoji off for the app
         std::string                    openWord();
         bool                           offersEmojiHere() const;
+        bool                           hintsInField(const ngosen::Field& field) const;
         bool                           replacementPending() const;
         bool                           inAddressBar() const;
         void                           noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore);
         void                           updateEmojiOffer();
         void                           offerForTypedText();
+        void                           offerForSentence();
+        std::vector<std::string>       offeredEmoji() const;
         void                           showEmojiOffer();
         void                           dropEmojiOffer();
         bool                           handleEmojiOfferKey(ngosen::KeyPress& keyEvent);
         void                           takeEmojiKey(ngosen::KeyPress& keyEvent);
         void                           insertEmoji(size_t index);
+        void                           placeEmoji(const EmojiOffer& offer, size_t index);
+        void                           dropHintBeforeKey();
         // What typed reads as with this field's input method, or typed when it changes nothing.
         std::string        addMarks(const std::string& typed);
         bool               everyWordTakesMarks(const std::string& typed);

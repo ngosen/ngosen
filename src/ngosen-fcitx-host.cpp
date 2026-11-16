@@ -219,6 +219,17 @@ namespace ngosen {
         ic_->inputPanel().setPreedit(fcitx::Text());
     }
 
+    void FcitxHost::showHint(const std::string& text) {
+        fcitx::Text hint;
+        // DontCommit makes the IBus frontend ask GNOME Shell to drop the hint on focus out rather than commit it.
+        if (!text.empty())
+            hint.append(text, fcitx::TextFormatFlags{fcitx::TextFormatFlag::Underline, fcitx::TextFormatFlag::DontCommit});
+        // The cursor stays at the end of the word, before the hint.
+        hint.setCursor(0);
+        ic_->inputPanel().setClientPreedit(hint);
+        ic_->updatePreedit();
+    }
+
     void FcitxHost::resetPanel() {
         ic_->inputPanel().reset();
     }

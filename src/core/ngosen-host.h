@@ -130,6 +130,9 @@ namespace ngosen {
         // Shows text not committed yet: in the app when it can draw it, otherwise in the panel.
         virtual void showPreedit(const std::string& text, bool underline) = 0;
         virtual void clearPreedit()                                       = 0;
+        // Shows text after the cursor in the field that the app never commits, not even when focus
+        // leaves; empty takes it away. Reaches the app at once.
+        virtual void showHint(const std::string& text) = 0;
         // Clears the preedit, the candidates and the status line of the panel.
         virtual void resetPanel() = 0;
         // Changes above reach the app and the panel only when refreshed.

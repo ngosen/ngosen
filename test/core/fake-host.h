@@ -91,6 +91,12 @@ namespace ngosen::test {
         void clearPreedit() override {
             preedit_.clear();
         }
+        void showHint(const std::string& text) override {
+            hint_ = text;
+        }
+        const std::string& hint() const {
+            return hint_;
+        }
         void resetPanel() override {
             preedit_.clear();
             candidates_.reset();
@@ -183,6 +189,7 @@ namespace ngosen::test {
         std::vector<std::pair<int, unsigned int>> deletes_;
         std::vector<int>                          systemKeys_;
         std::string                               preedit_;
+        std::string                               hint_;
         std::string                               status_;
         std::string                               primary_;
         std::optional<CandidatePage>              candidates_;

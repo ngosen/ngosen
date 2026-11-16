@@ -232,6 +232,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::commitText(const std::string& text) {
+        if (!hint_.empty() && !text.empty())
+            ++editsUnderHint_;
         if (forwardedAt_ > 0) {
             slowestCommitMs_ = std::max(slowestCommitMs_, static_cast<int>((monotonicUs() - forwardedAt_) / 1000));
             forwardedAt_     = 0;
@@ -312,6 +314,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::forwardKey(EditKey key, bool release, uint32_t time) {
+        if (!hint_.empty() && !release)
+            ++editsUnderHint_;
         if ((key == EditKey::Tab || key == EditKey::ShiftTab) && !release && quirks_.showsTab && !quirks_.dropsForwardedKeys) {
             later(quirks_.lagMs, [this, key] { insert(key == EditKey::ShiftTab ? U"⇤" : U"⇥", true); });
             return;
@@ -379,6 +383,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
+        if (!hint_.empty())
+            ++editsUnderHint_;
         ++sent_.surroundingDeletes;
         ++deletions_;
         surroundingDropped_ = quirks_.dropsSurroundingOnDelete;

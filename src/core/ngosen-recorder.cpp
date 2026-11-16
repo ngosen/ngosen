@@ -103,6 +103,10 @@ namespace ngosen {
             void clearPreedit() override {
                 host_->clearPreedit();
             }
+            void showHint(const std::string& text) override {
+                recorder_.add("hint", quoted(text));
+                host_->showHint(text);
+            }
             void resetPanel() override {
                 host_->resetPanel();
             }

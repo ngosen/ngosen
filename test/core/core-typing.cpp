@@ -2556,7 +2556,10 @@ namespace {
             int         waitMs;
             const char* want;
             const char* step;
+            bool        hidesText = false;
         } resets[] = {{"abc tunx", false, false, false, 40, "abc tunx", "lock toggle: an app reset after the swap keeps the word"},
+                      // Firefox over fcitx5-gtk resets while it hides its text after the swap's deletion.
+                      {"abc tunx", false, false, false, 40, "abc tunx", "lock toggle: a reset while the field hides its text keeps the word", true},
                       {"abc tieengs", false, false, false, 40, "abc tieengs", "lock toggle: an app reset after the lock keeps the word"},
                       {"abc tunx", true, false, false, 40, "abc tũn", "lock toggle: an app reset after the swap back keeps the word"},
                       {"abc tunx", false, true, false, 40, "abc tũn", "lock toggle: a reset after a click leaves the word alone"},
@@ -2564,7 +2567,8 @@ namespace {
         for (const auto& r : resets) {
             realMode = ngosen::Mode::Sen;
             ngosen::test::AppQuirks quirks;
-            quirks.hidesCursorMoves = r.hidesClick;
+            quirks.hidesCursorMoves         = r.hidesClick;
+            quirks.dropsSurroundingOnDelete = r.hidesText;
             FakeLoop            loop;
             FakeResources       plain;
             auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("dbus", true), quirks);

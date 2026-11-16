@@ -140,6 +140,11 @@ def _serve(log):
             with open(log, "a", encoding="utf-8") as f:
                 f.write(json.dumps({"uri": str(uri), "values": plain(new_values)}) + "\n")
 
+        # Restoring a backup asks the addon to read its dictionary file again.
+        @dbus.service.method("org.fcitx.Fcitx.Controller1", in_signature="s")
+        def ReloadAddonConfig(self, addon_name):
+            pass
+
     DBusGMainLoop(set_as_default=True)
     bus = dbus.SessionBus()
     _name = dbus.service.BusName("org.fcitx.Fcitx5", bus)

@@ -16,6 +16,8 @@ import subprocess
 
 AUTOSTART_NAME = "org.fcitx.Fcitx5.desktop"
 AUTOSTART_SOURCE = f"/usr/share/applications/{AUTOSTART_NAME}"
+# install.sh writes it for a first install that needs a new login; the window opens once from it.
+CHECK_AUTOSTART_NAME = "ngosen-check-after-install.desktop"
 AUTOSTART_MASK = "[Desktop Entry]\nType=Application\nName=Fcitx 5\nHidden=true\n"
 ENV_FILE = "90-ngosen.conf"
 GNOME_ENV = "GTK_IM_MODULE=fcitx\nQT_IM_MODULE=fcitx\nXMODIFIERS=@im=fcitx\nSDL_IM_MODULE=fcitx\n"
@@ -166,6 +168,14 @@ def _succeeds(cmd):
         return subprocess.run(cmd, capture_output=True, timeout=10).returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False
+
+
+def remove_check_autostart(env=None):
+    env = os.environ if env is None else env
+    try:
+        os.remove(os.path.join(_config_home(env), "autostart", CHECK_AUTOSTART_NAME))
+    except OSError:
+        pass
 
 
 def enable_autostart(env):

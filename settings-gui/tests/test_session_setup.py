@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -338,6 +339,91 @@ class SameAsInstallerTest(SessionSetupCase):
         self.run_command(command)
         self.assertEqual(self.read(self.env_file), "FOO=bar\n" + session_setup.GNOME_ENV)
         self.assertIn("cp -n ", session_setup.ENABLE_AUTOSTART_COMMAND)
+
+
+class InstallerOpensCheckTest(SessionSetupCase):
+    """install.sh after a first install: the window now, or an entry for the next login."""
+
+    FUNCTIONS = "say config_home open_check_page check_autostart_entry"
+
+    def open_check(
+        self, first=1, setup=1, uid=1000, running=1, display=":0", launcher=True, compositor=0
+    ):
+        bin_dir = os.path.join(self.home, "bin")
+        launched = os.path.join(self.home, "launched")
+        self.write(os.path.join(bin_dir, "setsid"), f'#!/bin/sh\necho "$@" >>"{launched}"\n')
+        entry = os.path.join(self.config, "autostart", session_setup.CHECK_AUTOSTART_NAME)
+        for path in (launched, entry, os.path.join(bin_dir, "fcitx5-ngosen-settings")):
+            if os.path.exists(path):
+                os.remove(path)
+        if launcher:
+            self.write(os.path.join(bin_dir, "fcitx5-ngosen-settings"), "#!/bin/sh\n")
+        for name in ("setsid", "fcitx5-ngosen-settings"):
+            if os.path.exists(os.path.join(bin_dir, name)):
+                os.chmod(os.path.join(bin_dir, name), 0o755)
+        # Only these, so the window installed on the machine running the tests is not found.
+        for tool in ("sed", "mkdir"):
+            link = os.path.join(bin_dir, tool)
+            if not os.path.exists(link):
+                os.symlink(shutil.which(tool), link)
+        script = (
+            # install.sh runs under these, so a failing step there stops the whole install.
+            "set -euo pipefail; "
+            f'for f in {self.FUNCTIONS}; do eval "$(sed -n "/^$f() {{/,/^}}/p" "$0")"; done; '
+            'CHECK_AUTOSTART=$(sed -n "s/^CHECK_AUTOSTART=//p" "$0"); '
+            'id() { echo "$FAKE_UID"; }; fcitx5_is_running() { [ "$FAKE_RUNNING" = 1 ]; }; '
+            'wants_sway_hyprland_setup() { [ "$FAKE_COMPOSITOR" = 1 ]; }; '
+            "open_check_page; wait"
+        )
+        env = {"HOME": self.home, "PATH": bin_dir, "DISPLAY": display}
+        env.update(first_install=str(first), setup_session=str(setup))
+        env.update(FAKE_UID=str(uid), FAKE_RUNNING=str(running), FAKE_COMPOSITOR=str(compositor))
+        bash = shutil.which("bash")
+        subprocess.run([bash, "-c", script, INSTALL_SH], env=env, check=True, capture_output=True)
+        return (
+            self.read(launched).strip() if os.path.exists(launched) else None,
+            self.read(entry) if os.path.exists(entry) else None,
+        )
+
+    def test_with_fcitx5_running_it_opens_the_window_now(self):
+        self.assertEqual(self.open_check(), ("fcitx5-ngosen-settings --after-install", None))
+
+    def test_otherwise_it_opens_once_at_the_next_login(self):
+        for changes in ({"running": 0}, {"display": ""}):
+            launched, entry = self.open_check(**changes)
+            self.assertIsNone(launched, changes)
+            self.assertIn(
+                'Exec=sh -c "sleep 10; exec fcitx5-ngosen-settings --after-install"', entry
+            )
+
+    def test_sway_hyprland_and_niri_get_no_entry_they_would_not_run(self):
+        self.assertEqual(self.open_check(running=0, compositor=1), (None, None))
+        launched, _entry = self.open_check(compositor=1)
+        self.assertEqual(launched, "fcitx5-ngosen-settings --after-install")
+
+    def block_autostart_folder(self):
+        # A file where the folder goes stops root too, as CI runs; a read-only folder does not.
+        self.write(os.path.join(self.config, "autostart"), "")
+
+    def test_an_unwritable_autostart_folder_leaves_the_install_successful(self):
+        self.block_autostart_folder()
+        self.assertEqual(self.open_check(running=0), (None, None))
+
+    def test_the_window_cannot_remove_the_entry_without_failing(self):
+        self.block_autostart_folder()
+        session_setup.remove_check_autostart(self.env)
+
+    def test_the_window_removes_the_entry_install_sh_wrote(self):
+        self.open_check(running=0)
+        entry = os.path.join(self.config, "autostart", session_setup.CHECK_AUTOSTART_NAME)
+        self.assertTrue(os.path.exists(entry))
+        session_setup.remove_check_autostart(self.env)
+        self.assertFalse(os.path.exists(entry))
+        session_setup.remove_check_autostart(self.env)
+
+    def test_nothing_opens_after_an_update_as_root_without_setup_or_window(self):
+        for changes in ({"first": 0}, {"uid": 0}, {"setup": 0}, {"launcher": False}):
+            self.assertEqual(self.open_check(running=0, **changes), (None, None), changes)
 
 
 if __name__ == "__main__":

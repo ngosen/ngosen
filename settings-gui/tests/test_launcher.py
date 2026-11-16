@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 import fake_fcitx  # noqa: F401  (puts settings-gui on the path)
 import main
@@ -81,6 +82,26 @@ class LauncherTest(unittest.TestCase):
         self.assertTrue(main.has_qt(found("PyQt6")))
         self.assertFalse(main.has_qt(found("PySide6")))
         self.assertFalse(main.has_qt(found("qtpy")))
+
+
+class AfterInstallTest(unittest.TestCase):
+    def test_the_option_is_off_unless_given(self):
+        self.assertFalse(main.parse_args([]).after_install)
+        self.assertTrue(main.parse_args(["--after-install"]).after_install)
+
+    def test_opening_after_install_removes_the_one_time_entry(self):
+        for argv, removed in ((["--after-install"], 1), ([], 0)):
+            with (
+                mock.patch.object(sys, "argv", ["fcitx5-ngosen-settings", *argv]),
+                mock.patch.object(main, "setup_i18n"),
+                mock.patch.object(main, "toolkit", return_value="qt"),
+                mock.patch.object(main, "run_qt", return_value=0),
+                mock.patch.object(main, "reopen_if_switched"),
+                mock.patch.object(main.session_setup, "remove_check_autostart") as remove,
+                self.assertRaises(SystemExit),
+            ):
+                main.main()
+            self.assertEqual(remove.call_count, removed, argv)
 
 
 def yes():

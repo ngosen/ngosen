@@ -151,6 +151,8 @@ namespace ngosen {
         needEngineReset.store(false);
         jumpedFrom_.reset();
         retype_.reset();
+        emojiOffer_.reset();
+        emojiRecheck_.reset();
         dropRetoneKey();
         // Keys typed while another input method is active never reach us to take the selection.
         // On focus out, activate() decides once it knows whether focus only bounced.
@@ -158,7 +160,7 @@ namespace ngosen {
             forgetSelection();
         host_->resetPanel();
         host_->refreshPanel();
-        if (mode() == ngosen::Mode::Preedit || mode() == ngosen::Mode::Emoji)
+        if (mode() == ngosen::Mode::Preedit)
             host_->refreshPreedit();
     }
 

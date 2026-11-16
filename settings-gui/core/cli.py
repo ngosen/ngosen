@@ -9,7 +9,9 @@ import argparse
 def parse_args(argv):
     parser = argparse.ArgumentParser(prog="fcitx5-ngosen-settings")
     # The What's new notification opens the window on its page, a switched window on its button.
-    parser.add_argument("--page", choices=["whats-new", "appearance", "check"])
+    parser.add_argument("--page", choices=["whats-new", "appearance", "check", "emoji"])
+    # install.sh opens Check my machine after a first install, an open that counts as the first.
+    parser.add_argument("--after-install", action="store_true")
     # Qt and GTK read their own options from argv, so the unknown ones stay.
     args, _unknown = parser.parse_known_args(argv)
     return args

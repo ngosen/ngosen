@@ -41,12 +41,12 @@ Qt version on KDE Plasma:
   text to the input method. Tested with OnlyOffice 10.0.0 Document Editor on X11. Typing a tone key
   replaces the selected text as normal typing would. Ctrl+Z restores the text.
 - Per-app mode menu: press `` ` `` to open a menu next to the cursor.
-  Choose "Gõ Sen" (key 1), "Gạch chân" (preedit with an underline, q), "Chọn Emoji" (emoji picker, w)
-  or "Tắt" (off, e); Ngó Sen remembers the choice for that app. Select the app's original mode again
+  Choose "Gõ Sen" (key 1), "Gạch chân" (preedit with an underline, q) or "Tắt" (off, e); Ngó Sen
+  remembers the choice for that app. "Gợi ý emoji" (w) turns emoji suggestions off or on for the app. Select the app's original mode again
   (usually Gõ Sen) to return to the global settings; choosing "Tắt" is still remembered for that app.
   The menu only opens while Vietnamese is enabled.
-- "Chọn Emoji": type an English keyword such as `smile` or `heart`. An emoji list appears next to the
-  cursor; press a number to choose one.
+- Emoji suggestions: after a word such as `cười`, `con mèo` or `haha`, `Tab: 😂 …` appears next to the
+  cursor. Tab numbers the emoji, a number picks one, Esc keeps the text.
 - Separate English/Vietnamese toggle: new installations use Ctrl+Shift, as in UniKey; existing installations keep
   Ctrl+Space. In English mode, typing works as if no input method were active. Each app remembers its
   English or Vietnamese choice across logouts; apps where you have not used the toggle follow its most
@@ -145,7 +145,7 @@ Ctrl+Shift to switch between English and Vietnamese.
 The [IBus version](https://github.com/ngosen/ibus-ngosen) (package `ibus-ngosen`) shares the fcitx5
 version's typing core: Gõ Sen, input styles, macros, custom dictionary and custom keymap. It also lets
 you choose Gõ Sen or "Gạch chân" per app (press `` ` `` to choose). Remaining differences: no
-"Chọn Emoji" yet. Cứu dấu works in fields using Gõ Sen (click just after a word and type a tone key);
+emoji suggestions yet. Cứu dấu works in fields using Gõ Sen (click just after a word and type a tone key);
 changing the tone of selected text only works in X11 apps. Cứu chữ is currently only available on X11.
 In some apps, the word being typed is underlined.
 

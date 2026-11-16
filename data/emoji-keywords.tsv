@@ -1,0 +1,648 @@
+# SPDX-FileCopyrightText: 2026 Ngó Sen contributors
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Words that offer an emoji while typing: keyword, emoji (best first, at most five), kind.
+# Kinds: word keeps the word and adds the emoji after it; sound (haha, huhu), emoticon (:)) and
+# yahoo (Yahoo! Messenger codes, behind the YahooEmoticons option) are replaced by the emoji.
+# Country names come from CLDR in misc/gen-emoji-keywords.py. The first block is picked by hand:
+# CLDR keywords alone include words such as `có` and `không`.
+cười	😂 🤣 😄 😆 😁	word
+haha	😂 🤣 😆	sound
+hihi	😁 😊 😆	sound
+hehe	😁 😆 😅	sound
+kk	😂 🤣	sound
+lol	😂 🤣	sound
+vãi	😂 🤣 😱	word
+huhu	😭 😢	sound
+hic	😢 😭 🥲	sound
+hix	😢 😭 🥲	sound
+khóc	😢 😭 🥲	word
+buồn	😔 😢 😞	word
+vui	😊 😄 😁	word
+giận	😠 😡 🤬	word
+tức	😤 😠 😡	word
+sợ	😨 😱 😰	word
+wow	😮 🤩 😲	word
+omg	😱 😮	word
+ngại	😳 🙈 😅	word
+xấu hổ	😳 🙈 😊	word
+mệt	😩 😫 🥱	word
+buồn ngủ	😴 🥱	word
+ngủ	😴 💤	word
+chán	😒 😑 🙄	word
+hôn	😘 😗 💋	word
+thương	❤️ 🥰 🤗	word
+yêu	❤️ 😍 🥰 💕	word
+tim	❤️ 💕 💖	word
+love	❤️ 😍 🥰	word
+thích	😍 👍 ❤️	word
+ôm	🤗 🫂	word
+ngầu	😎	word
+cool	😎 👍	word
+ngon	😋 🤤	word
+đói	🤤 😋	word
+ốm	🤒 🤧 😷	word
+say	🥴 🍺	word
+hmm	🤔	word
+ok	👌 👍	word
+oke	👌 👍	word
+like	👍	word
+tốt	👍 💯	word
+good	👍	word
+tuyệt	👏 🤩 👍	word
+đỉnh	🔥 👍 💯	word
+xin lỗi	🙏 😔	word
+cảm ơn	🙏 😊	word
+thanks	🙏 😊	word
+chào	👋 😊	word
+hello	👋 😊	word
+bye	👋	word
+vỗ tay	👏	word
+cố lên	💪	word
+chúc mừng	🎉 🥳 👏	word
+sinh nhật	🎂 🎉 🥳 🎁	word
+quà	🎁	word
+tết	🧧 🎆 🌸	word
+giáng sinh	🎄 🎅	word
+noel	🎄 🎅	word
+mèo	🐈 🐱	word
+chó	🐕 🐶	word
+heo	🐷 🐖	word
+cà phê	☕	word
+cafe	☕	word
+trà sữa	🧋	word
+bia	🍺 🍻	word
+pizza	🍕	word
+phở	🍜	word
+mưa	🌧️ ☔	word
+nắng	☀️ 😎	word
+lạnh	🥶	word
+nóng	🥵 🔥	word
+hoa hồng	🌹	word
+:)	🙂 😊	emoticon
+:d	😃 😄	emoticon
+:(	🙁 😞	emoticon
+:'(	😢 😭	emoticon
+;)	😉	emoticon
+:p	😛	emoticon
+<3	❤️	emoticon
+:3	🥰 😺	emoticon
+=)	🙂	emoticon
+:v	😆 😏	emoticon
+xd	😆 🤣	emoticon
+# Short names CLDR leaves out; not "Anh" or "Trung", which start sentences and names.
+mỹ	🇺🇸	country
+ý	🇮🇹	country
+nhật	🇯🇵	country
+hàn	🇰🇷	country
+# Emoji names from CLDR (annotations/vi.xml) that are a whole word, minus syllables that mostly
+# appear inside other words, such as cáo in báo cáo or tất in tất cả.
+100 điểm	💯	word
+adn	🧬	word
+anh đào	🍒	word
+bi xoay	🖲️	word
+bia mộ	🪦	word
+biên nhận	🧾	word
+bom	💣 💥	word
+bong bóng	🫧 💬 🗯️ 💭 🧋	word
+bowling	🎳	word
+bumơrang	🪃	word
+bàn chân	🦶 🐾	word
+bàn phím	⌨️ 🎹	word
+bàn tính	🧮	word
+bánh bao	🥟	word
+bánh burrito	🌯	word
+bánh gạo	🍘	word
+bánh hamburger	🍔	word
+bánh kếp	🥞	word
+bánh mì	🍞 🫓	word
+bánh ngọt	🍰 🍥 🧁	word
+bánh nướng	🥧	word
+bánh pizza	🍕	word
+bánh quy	🍪	word
+bánh quế	🧇	word
+bánh răng	⚙️	word
+bánh taco	🌮	word
+bánh tamale	🫔	word
+bánh trứng	🍮	word
+bánh xe	🛞 🎡	word
+bát mì	🍜	word
+bình minh	🌅 🌄	word
+bình đựng	🫙	word
+bò cái	🐄 🐮	word
+bò rừng	🦬	word
+bò đực	🐂	word
+bó hoa	💐	word
+bó lúa	🌾	word
+bóng bay	🎈	word
+bóng bàn	🏓	word
+bóng chuyền	🏐	word
+bóng chày	⚾	word
+bóng mềm	🥎	word
+bóng rổ	🏀 ⛹️	word
+bóng vợt	🥍	word
+bóng đá	⚽ 🏉	word
+bóng đèn	💡	word
+bông tuyết	❄️	word
+búa	🔨 ⛏️ ⚒️ 🛠️	word
+búa chim	⛏️ ⚒️	word
+bút	🖊️ ✒️ 🖋️ 🔏	word
+bút chì	✏️ 📝	word
+bút máy	🖋️	word
+băng dính	🩹	word
+băng video	📼	word
+bưu điện	🏤 🏣 📯	word
+bướm	🦋	word
+bạch tuộc	🐙	word
+bảng clapper	🎬	word
+bảng hiệu	🪧	word
+bảng màu	🎨 🧑‍🎨 👨‍🎨 👩‍🎨	word
+bảo vệ	💂	word
+bẫy chuột	🪤	word
+bắp ngô	🌽	word
+bắt tay	🤝	word
+bệnh viện	🏥	word
+bọ cạp	🦂	word
+bọ rùa	🐞	word
+bọt biển	🧽	word
+bỏng ngô	🍿	word
+bồ câu	🕊️	word
+bồn cầu	🚽	word
+bồn tắm	🛁 🛀	word
+bộ bích	♠️	word
+bộ cơ	♥️	word
+bộ nhép	♣️	word
+bộ rô	♦️	word
+ca sĩ	🧑‍🎤 👨‍🎤 👩‍🎤	word
+chanh ta	🍋‍🟩	word
+chanh tây	🍋	word
+chim cưu	🦤	word
+choáng váng	💫 😯 😳 🌀	word
+chuông gió	🎐	word
+chuối	🍌 🐒	word
+chuột	🐁 🐭	word
+chuột cống	🐀	word
+chuột túi	🦘	word
+chân giả	🦿	word
+chìa khóa	🔑 🗝️	word
+chó biển	🦭	word
+chó sói	🐺	word
+chó xù	🐩	word
+chùm nho	🍇	word
+chạm cốc	🥂 🍻	word
+chắp tay	🙏	word
+con bọ	🐛	word
+con công	🦚	word
+con gián	🪳	word
+con gái	👧	word
+con lười	🦥	word
+con lừa	🫏	word
+con lửng	🦡	word
+con muỗi	🦟	word
+con ngỗng	🪿	word
+con ruồi	🪰	word
+con trai	👦	word
+con vẹt	🦜	word
+cua	🦀	word
+cung tên	🏹	word
+cuộn giấy	🧻 📜	word
+cuộn sách	📜	word
+cà chua	🍅	word
+cà rốt	🥕	word
+cà tím	🍆	word
+cà vạt	👔	word
+cá heo	🐬	word
+cá mập	🦈	word
+cá nóc	🐡	word
+cá sấu	🐊	word
+cá voi	🐋 🐳	word
+cái chuông	🔔	word
+cái ghế	💺	word
+cái giỏ	🧺	word
+cái khiên	🛡️	word
+cái kẹp	🗜️	word
+cái ô	☂️	word
+cáp treo	🚡	word
+cây chổi	🧹	word
+cây cọ	🌴	word
+cây non	🌱	word
+cây tanabata	🎋	word
+công chúa	👸	word
+công trường	🚧	word
+cúp	🏆	word
+cơm	🍚 🍙 🍛	word
+cơm nắm	🍙	word
+cưa mộc	🪚	word
+cảnh sát	👮 🚓 🚔 🚨	word
+cầu lông	🏸	word
+cầu trượt	🛝	word
+cầu vồng	🌈	word
+cắm trại	🏕️ ⛺ 🥾	word
+cắn môi	🫦	word
+cốc bia	🍺	word
+cốc sữa	🥛	word
+cờ lê	🔧 🛠️	word
+cụ bà	👵	word
+cụ ông	👴	word
+củ gừng	🫚	word
+cừu cái	🐑	word
+cừu đực	🐏	word
+cửa	🚪	word
+cửa sổ	🪟	word
+dao cạo	🪒	word
+dao găm	🗡️	word
+diều	🪁	word
+dvd	📀	word
+dâu tây	🍓	word
+dây xích	⛓️	word
+dê	🐐	word
+dơi	🦇	word
+dưa	🍈	word
+dưa chuột	🥒	word
+dưa hấu	🍉	word
+dế	🦗	word
+dứa	🍍	word
+dừa	🥥	word
+email	📧 ✉️ 📨 📩	word
+ga tàu	🚉	word
+ghim băng	🧷	word
+ghép hình	🧩	word
+ghế	🪑 💺	word
+giun	🪱	word
+giày bệt	🥿	word
+giày chạy	👟	word
+giày nam	👞	word
+giáo viên	🧑‍🏫 👨‍🏫 👩‍🏫	word
+giường	🛏️	word
+giọt máu	🩸	word
+giọt nước	💧 💦	word
+gà	🐔 🐣 🐤 🐥 🦤	word
+gà con	🐤 🐥 🐣	word
+gà trống	🐓	word
+gà tây	🦃 🍗	word
+gói quà	🎁	word
+găng tay	🧤 🥊	word
+gương	🪞	word
+gạch	🧱	word
+gấu	🐻 🐻‍❄️	word
+gấu bông	🧸	word
+gấu mèo	🦝	word
+gấu trúc	🐼	word
+gấu túi	🐨	word
+gật đầu	🙂‍↕️	word
+gậy thần	🪄	word
+gỗ	🪵 🪾 🪓	word
+hamsa	🪬	word
+hoa héo	🥀	word
+hoa sen	🪷	word
+hoa trắng	💮	word
+hoa tulip	🌷	word
+hoàng hôn	🌇 🌆	word
+hoàng tử	🤴	word
+hà mã	🦛	word
+hàu	🦪 🥡	word
+hòm thư	📮 📫 📪 📬 📭	word
+hươu	🦌	word
+hạt dẻ	🌰	word
+hạt đậu	🫘	word
+hải ly	🦫	word
+họa sĩ	🧑‍🎨	word
+hồng hạc	🦩	word
+kaaba	🕋	word
+kem	🍨 🍦 🍧	word
+kem mềm	🍦	word
+khoai tây	🥔	word
+khung thành	🥅	word
+khuông nhạc	🎼	word
+khách sạn	🏨 🏩 🛌 🛍️ 🛏️	word
+khăn quàng	🧣	word
+khỉ	🐒 🙈 🙉 🙊 🐵	word
+khỉ đột	🦍	word
+kim may	🪡	word
+kimono	👘	word
+kèn saxophone	🎷	word
+kèn trumpet	🎺	word
+kính mắt	👓 🕶️	word
+kính râm	🕶️	word
+kẹo	🍬 🍭 🪅	word
+kẹo mút	🍭	word
+kẹp giấy	📎 🖇️	word
+kỳ lân	🦄	word
+la bàn	🧭	word
+lao đi	💨	word
+ly cocktail	🍸	word
+lá phong	🍁	word
+lá rụng	🍂	word
+lâu đài	🏰 🏯	word
+lông chim	🪶	word
+lạc đà	🐪	word
+lắc đầu	🙂‍↔️	word
+lều	⛺ 🎪	word
+lốc xoáy	🌪️	word
+lợn	🐖 🐷 🐗 🐽	word
+lợn rừng	🐗	word
+lục bình	🪻	word
+lửa	🔥 🚒 🧯	word
+maraca	🪇	word
+micrô	🎤 🎙️	word
+muối	🧂	word
+máy bay	✈️ 🛩️ 🧑‍✈️ 👨‍✈️ 👩‍✈️	word
+máy fax	📠	word
+máy in	🖨️	word
+máy kéo	🚜	word
+máy ảnh	📷 📸 🤳	word
+mèo đen	🐈‍⬛	word
+món oden	🍢	word
+mũi lợn	🐽	word
+mạng nhện	🕸️	word
+mắt xích	🔗	word
+mỏ neo	⚓	word
+mở khóa	🔓	word
+mực ống	🦑	word
+nam châm	🧲	word
+ngân hàng	🏦 💳 💱	word
+ngón giữa	🖕	word
+ngôi nhà	🏠 🏚️ 🏡	word
+ngưỡng mộ	🤩	word
+ngựa	🐎 🏇 🐴 🎠	word
+ngựa vằn	🦓	word
+nhiệt kế	🌡️ 🤒	word
+nhà máy	🏭 🧑‍🏭 👨‍🏭 👩‍🏭	word
+nhà thờ	⛪ 🔔	word
+nhím	🦔	word
+chiếc nhẫn	💍	word
+nhện	🕷️ 🕸️	word
+ninja	🥷	word
+não	🧠	word
+nông dân	🧑‍🌾 👨‍🌾 👩‍🌾	word
+núi	⛰️ 🧗 🚵 🏔️	word
+núi lửa	🌋	word
+nút thắt	🪢	word
+nạng	🩼	word
+nấm	🍄 🍄‍🟫	word
+nấu ăn	🍳 🧑‍🍳 👨‍🍳 👩‍🍳 🍴	word
+nắm đấm	👊 🤛 🤜	word
+nến	🕯️	word
+nốt nhạc	🎵 🎶	word
+ong mật	🐝	word
+phi công	🧑‍✈️ 👨‍✈️ 👩‍✈️	word
+phong bì	✉️ 📨 📩	word
+phong cầm	🪗	word
+phà	⛴️	word
+pháo	🧨	word
+pháo bông	🎇	word
+pháo hoa	🎆 🎇 🧨	word
+pháp sư	🧙	word
+phím đàn	🎹	word
+phượng hoàng	🐦‍🔥	word
+phổi	🫁	word
+pin	🔋	word
+pin yếu	🪫	word
+piñata	🪅	word
+quan tài	⚰️	word
+quân tốt	♟️	word
+quýt	🍊	word
+quạt giấy	🪭	word
+quả bơ	🥑	word
+quả kiwi	🥝	word
+quả ớt	🌶️	word
+quần bò	👖	word
+quần lót	🩲 🩳	word
+quần soóc	🩳	word
+quần vợt	🎾	word
+radio	📻	word
+rau củ	🫜 🥜	word
+ruy băng	🎀 💝 🎗️	word
+rái cá	🦦	word
+rìu	🪓	word
+rùa	🐢	word
+răng	🦷 🪥 🦫	word
+rượu sake	🍶	word
+con rắn	🐍	word
+rồng	🐉 🐲	word
+sa mạc	🏜️ 🐪 🐫 🌵	word
+san hô	🪸	word
+sao băng	🌠	word
+sao chổi	☄️	word
+sinh viên	🧑‍🎓 👨‍🎓 👩‍🎓	word
+son môi	💄	word
+spaghetti	🍝	word
+sushi	🍣	word
+sách đóng	📕	word
+sóc chuột	🐿️	word
+sóng nước	🌊	word
+súng nước	🔫	word
+sư tử	🦁	word
+sương mù	🌫️	word
+sọt rác	🗑️	word
+sổ cái	📒	word
+sợi chỉ	🧵	word
+sứa	🪼	word
+tai nghe	🎧	word
+taxi	🚕	word
+thang máy	🛗	word
+thiên nga	🦢	word
+thuyền buồm	⛵	word
+thuyền máy	🛥️	word
+thuốc lá	🚬	word
+thám tử	🕵️	word
+tháp tokyo	🗼	word
+thìa	🥄 🥣	word
+thùng dầu	🛢️	word
+thư tình	💌	word
+thước thẳng	📏	word
+thảo mộc	🌿 🫚	word
+thẩm phán	🧑‍⚖️ 👩‍⚖️	word
+thằn lằn	🦎	word
+thỏ	🐇 🐰	word
+thợ máy	🧑‍🔧 🧰	word
+tivi	📺	word
+toa tàu	🚃	word
+tràng hạt	📿	word
+trâu nước	🐃	word
+trúng đích	🎯	word
+trăng khuyết	🌔 🌖	word
+trăng non	🌑	word
+trăng tròn	🌕	word
+trường học	🏫 🚌 📚	word
+trẻ con	👶	word
+trẻ em	🧒 👶 👩‍🍼	word
+trống dài	🪘	word
+trứng	🥚 🍳	word
+tua vít	🪛	word
+tàu hỏa	🚆 🚂 🚃 🚄 🚅	word
+tàu thủy	🚢 🛳️	word
+tàu điện	🚋 🚇 🚃	word
+táo xanh	🍏	word
+táo đỏ	🍎	word
+tê giác	🦏	word
+tên lửa	🚀 🧑‍🚀 👨‍🚀 👩‍🚀	word
+tôm	🦐 🍤	word
+tôm chiên	🍤	word
+tôm hùm	🦞 🍤	word
+túi tiền	💰	word
+túi xách	👜	word
+túp lều	🛖	word
+tượng moai	🗿	word
+tảng thịt	🥩	word
+tắt loa	🔇	word
+tỏi	🧄	word
+tự sướng	🤳	word
+va chạm	💥	word
+vi trùng	🦠	word
+viên thuốc	💊	word
+viên đá	🧊	word
+voi	🐘	word
+ván trượt	🛹	word
+váy	👗 🥻	word
+vé	🎫 🎟️	word
+vương miện	👑 🤴 👸	word
+vẫy tay	👋	word
+vệ tinh	🛰️ 📡	word
+vịt	🦆	word
+x-quang	🩻	word
+xanh lá	🥬	word
+xari	🥻	word
+xe buýt	🚌 🚍 🚐 🚏 🚎	word
+xe hẩy	🛴	word
+xe lam	🛺	word
+xe máy	🏍️	word
+xe điện	🚊 🚋 🚎	word
+xe đua	🏎️	word
+xe đạp	🚲 🚴 🚵	word
+xoài	🥭	word
+xuồng	🛶 🚣	word
+xà phòng	🧼 🫧	word
+xương	🦴 🍖 🍗 🩻	word
+xẻng	🪏	word
+yo-yo	🪀	word
+yêu ma	🧝	word
+yêu tinh	👺 🧝	word
+áo khoác	🧥	word
+áo phông	👕	word
+ô tô	🚗 🚘 🚙 🛻 🚛	word
+ôliu	🫒	word
+đinh ghim	📌 📍	word
+đua ngựa	🏇	word
+đàn banjo	🪕	word
+đàn ghi-ta	🎸	word
+đàn hạc	🪉	word
+đàn violin	🎻	word
+đá bào	🍧	word
+đá quý	💎	word
+đám cưới	💒	word
+đám mây	☁️ 🌬️	word
+đèn diya	🪔	word
+đèn pin	🔦	word
+đôi mắt	👀	word
+đĩa bay	🛸 👽 👾	word
+đĩa mềm	💾	word
+đĩa petri	🧫	word
+đĩa quang	💿	word
+đũa	🥢 🍜 🥡	word
+đười ươi	🦧	word
+đường ray	🛤️	word
+đại bàng	🦅	word
+đảo hoang	🏝️	word
+đầu bếp	🧑‍🍳 👨‍🍳 👩‍🍳	word
+đầu lâu	💀 ☠️	word
+đậu phộng	🥜	word
+đền hindu	🛕	word
+đống phân	💩	word
+đồng tiền	🪙 👛	word
+đổi tiền	💱	word
+ấm trà	🫖	word
+ếch	🐸	word
+ốc sên	🐌	word
+ống nghe	🩺 📞	word
+ống nghiệm	🧪	word
+ống tiêm	💉	word
+ớt chuông	🫑	word
+# Yahoo! Messenger 5.5 to 9 emoticons, typed in any case. The old codes above stay on with the option off.
+;;)	😊 🥰	yahoo
+:-/	😕	yahoo
+:x	😍 🥰	yahoo
+:">	😳 ☺️	yahoo
+:-*	😘	yahoo
+:-o	😮 😲	yahoo
+x(	😠 😡	yahoo
+:>	😏	yahoo
+b-)	😎	yahoo
+:-s	😟	yahoo
+>:)	😈	yahoo
+:((	😭 😢	yahoo
+:))	😆 😂	yahoo
+:|	😐	yahoo
+/:)	🤨	yahoo
+o:-)	😇	yahoo
+:-b	🤓	yahoo
+=;	✋	yahoo
+i-)	😴	yahoo
+8-|	🙄	yahoo
+:-&	🤢	yahoo
+:-$	🤐	yahoo
+[-(	😶	yahoo
+:o)	🤡	yahoo
+8-}	🤪	yahoo
+(:|	🥱	yahoo
+=p~	🤤	yahoo
+:-?	🤔	yahoo
+#-o	🤦	yahoo
+=d>	👏	yahoo
+:@)	🐷	yahoo
+3:-o	🐮	yahoo
+:(|)	🐵	yahoo
+~:>	🐔	yahoo
+@};-	🌹	yahoo
+%%-	🍀	yahoo
+**==	🇺🇸	yahoo
+(~~)	🎃	yahoo
+~o)	☕	yahoo
+*-:)	💡	yahoo
+8-x	💀	yahoo
+=:)	🐛	yahoo
+>-)	👽	yahoo
+:-l	😤	yahoo
+<):)	🤠	yahoo
+[-o<	🙏	yahoo
+@-)	😵‍💫	yahoo
+$-)	🤑	yahoo
+:-"	😗	yahoo
+:^o	🤥	yahoo
+b-(	🤕	yahoo
+:)>-	✌️	yahoo
+[-x	☝️	yahoo
+\:d/	💃 🕺	yahoo
+>:d<	🤗	yahoo
+=((	💔	yahoo
+#:-s	😅	yahoo
+=))	🤣	yahoo
+l-)	🫠	yahoo
+<:-p	🥳	yahoo
+:-ss	😬	yahoo
+:-w	⏳	yahoo
+:-<	😮‍💨	yahoo
+>:p	😝	yahoo
+>:/	🤜	yahoo
+;))	🤭	yahoo
+:-@	🗣️	yahoo
+^:)^	🙇	yahoo
+:-j	😒	yahoo
+(*)	⭐	yahoo
+:)]	📞	yahoo
+:-c	🤙	yahoo
+~x(	😫	yahoo
+:-h	👋	yahoo
+:-t	⏱️	yahoo
+8->	💭	yahoo
+:-??	🤷	yahoo
+%-(	🙉	yahoo
+x_x	🙈	yahoo
+:!!	⏰	yahoo
+\m/	🤘	yahoo
+:-q	👎	yahoo
+:-bd	👍	yahoo
+^#(^	🙄	yahoo
+:bz	🐝	yahoo
+(%)	☯️	yahoo

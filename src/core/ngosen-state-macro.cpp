@@ -224,8 +224,6 @@ namespace ngosen {
 
     void TypingState::lockWord() {
         lock_word_pending_ = false;
-        if (mode() == ngosen::Mode::Emoji)
-            return;
         if (lockedWord_ && lockedWordStillThere())
             swapLockedWordSoon();
         if (lockedWord_)

@@ -16,6 +16,7 @@ from core.catalog import MODE_SHORTCUT_TO_VISIBILITY, locked_by  # noqa: E402
 from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
 from core.dictionary import Dictionary  # noqa: E402
+from core.emoji_words import EmojiWords  # noqa: E402
 from core.keymap import Keymap  # noqa: E402
 from core.macros import MacroTable  # noqa: E402
 from core.settings_model import SettingsModel  # noqa: E402
@@ -23,8 +24,8 @@ from core.whats_new_content import random_tip  # noqa: E402
 from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 from i18n import _  # noqa: E402
 
-from core import backup, defaults, settings_snapshot  # noqa: E402
-from ui_gtk import brand, pages, search  # noqa: E402
+from core import backup, check_reminder, defaults, settings_snapshot  # noqa: E402
+from ui_gtk import brand, emoji, pages, search  # noqa: E402
 from ui_gtk.appearance import AppearancePage  # noqa: E402
 from ui_gtk.check_page import CheckPage  # noqa: E402
 from ui_gtk.convert import ConvertPage  # noqa: E402
@@ -97,7 +98,7 @@ class Window(Adw.ApplicationWindow):
         """Builds the pages that show saved settings, as (name, title, icon, widget, searchable)."""
         self.model = SettingsModel(self.dbus)
         self.typing = self.macros = self.dictionary = self.keymap = self.shortcuts = None
-        self.appearance = self.convert = None
+        self.appearance = self.convert = self.emoji = None
         self.tabs = {}
         self.tab_parents = {}
         if self.model.load():
@@ -112,6 +113,13 @@ class Window(Adw.ApplicationWindow):
             table.load()
             self.macros = MacroPage(table, self.save_with_undo)
             self.dictionary = DictionaryPage(Dictionary(self.dbus), self.save_with_undo)
+            self.emoji = emoji.EmojiPage(
+                self.model,
+                self.save,
+                EmojiWords(self.dbus),
+                self.save_with_undo,
+                self.show_check_message,
+            )
             keys = Keymap(self.dbus)
             keys.load()
             self.keymap = KeymapPage(keys, self.save_with_undo)
@@ -124,6 +132,7 @@ class Window(Adw.ApplicationWindow):
                 self._tabs("macros", macros=self.macros, dictionary=self.dictionary),
                 False,
             ),
+            ("emoji", _("Emoji"), emoji.ICON, _widget(self.emoji), True),
             (
                 "keys",
                 _("Keys"),
@@ -173,7 +182,7 @@ class Window(Adw.ApplicationWindow):
         self._show(Adw.Toast(title=_("Change undone.")))
 
     def _refresh_statuses(self):
-        for page in (self.typing, self.macros, self.dictionary, self.keymap):
+        for page in (self.typing, self.macros, self.dictionary, self.keymap, self.emoji):
             if page:
                 page.refresh_status()
 
@@ -417,6 +426,7 @@ class Window(Adw.ApplicationWindow):
             ("shortcuts", self.shortcuts),
             ("appearance", self.appearance),
             ("macros", self.macros),
+            ("emoji", self.emoji),
         ):
             control = page.control_for(key) if page else None
             if control is not None:
@@ -433,8 +443,23 @@ class Window(Adw.ApplicationWindow):
             [Gtk.AccessibleProperty.LABEL], [_("Steps left to fix: {}").format(count)]
         )
 
+    def start_on(self, page, opened=True, after_install=False):
+        """Opens on `page`, or on Check my machine when due; a launch into this window does not count."""
+        if page:
+            self.show_page(page)
+        elif opened:
+            self.open_check_if_due(always=after_install)
+        elif after_install:
+            self.show_page("check")
+
+    def open_check_if_due(self, path=None, always=False):
+        """Lands on Check my machine the first time, and while a step that stops typing is undone."""
+        due = check_reminder.should_open(self.check.found, path or check_reminder.state_file())
+        if due or always:
+            self.show_page("check")
+
     def show_check_message(self, text, undo):
-        """A toast from the check page, with Undo when its fix can be taken back."""
+        """A toast from a page, with Undo when what it did can be taken back."""
         toast = Adw.Toast(title=text, timeout=0 if undo is not None else 5)
         if undo is not None:
             _undo_button(toast, lambda: self._undo_fix(undo))
@@ -544,9 +569,11 @@ class App(Adw.Application):
     def do_command_line(self, command_line):
         # A second launch, such as the What's new notification, lands here in the running window.
         args = parse_args(command_line.get_arguments()[1:])
-        window = self.get_active_window() or Window(self, self.dbus)
-        if args.page:
-            window.show_page(args.page)
+        window = self.get_active_window()
+        opened = window is None
+        if opened:
+            window = Window(self, self.dbus)
+        window.start_on(args.page, opened, args.after_install)
         window.present()
         return 0
 

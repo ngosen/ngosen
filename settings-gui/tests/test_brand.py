@@ -21,7 +21,7 @@ class TypingMarksTest(unittest.TestCase):
 
     def test_mode_is_a_row_of_buttons(self):
         buttons = {b.text(): b for b in self.page.findChildren(QPushButton) if b.isCheckable()}
-        self.assertEqual(list(buttons), ["Sen", "Preedit", "Emoji Picker"])
+        self.assertEqual(list(buttons), ["Sen", "Preedit"])
         self.assertTrue(buttons["Sen"].isChecked())
         buttons["Preedit"].click()
         self.assertEqual(self.page.current_values["Mode"], "Preedit")

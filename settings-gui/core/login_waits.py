@@ -9,6 +9,7 @@ failed instead of asking to log in again.
 
 import json
 import os
+import subprocess
 
 from core import check_reminder, system_check
 from core.typing_log import log_dir
@@ -24,13 +25,24 @@ def state_file(env=None):
 def login_id(env, boot_id_path=BOOT_ID):
     """Empty when unknown, so a step is never reported as left over by mistake."""
     # Session numbers start over after a restart, so the boot tells them apart.
-    session = env.get("XDG_SESSION_ID", "")
+    session = env.get("XDG_SESSION_ID") or _display_session()
     try:
         with open(boot_id_path, encoding="ascii") as f:
             boot = f.read().strip()
     except OSError:
         return ""
     return f"{boot}/{session}" if boot and session else ""
+
+
+def _display_session():
+    """The session logind shows the user's desktop in, for apps started without XDG_SESSION_ID."""
+    # GNOME and Plasma start apps from the systemd user manager, which outlives one login.
+    cmd = ["loginctl", "show-user", str(os.getuid()), "--property=Display", "--value"]
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return out.stdout.strip()
 
 
 def run(dbus_handler, ngosen_version="", env=None, path=None, boot_id_path=None):

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -126,9 +127,29 @@ class LoginIdTest(unittest.TestCase):
         self.assertEqual(login_waits.login_id({"XDG_SESSION_ID": "3"}, self.boot), "5e1f/3")
 
     def test_it_is_empty_when_either_is_missing(self):
-        self.assertEqual(login_waits.login_id({}, self.boot), "")
+        with mock.patch.object(login_waits, "_display_session", return_value=""):
+            self.assertEqual(login_waits.login_id({}, self.boot), "")
         missing = os.path.join(os.path.dirname(self.boot), "none")
         self.assertEqual(login_waits.login_id({"XDG_SESSION_ID": "3"}, missing), "")
+
+    def test_without_the_variable_it_asks_logind_for_the_desktop_session(self):
+        # GNOME and Plasma start apps from systemd, which leaves XDG_SESSION_ID out.
+        with mock.patch.object(login_waits, "_display_session", return_value="7"):
+            self.assertEqual(login_waits.login_id({}, self.boot), "5e1f/7")
+            self.assertEqual(login_waits.login_id({"XDG_SESSION_ID": "3"}, self.boot), "5e1f/3")
+
+    def test_the_desktop_session_is_empty_when_logind_cannot_tell(self):
+        answers = [
+            subprocess.CompletedProcess([], 0, stdout="12\n"),
+            subprocess.CompletedProcess([], 1, stdout="", stderr="no such user"),
+            FileNotFoundError("loginctl"),
+            subprocess.TimeoutExpired("loginctl", 5),
+        ]
+        found = []
+        for answer in answers:
+            with mock.patch.object(subprocess, "run", side_effect=[answer]):
+                found.append(login_waits._display_session())
+        self.assertEqual(found, ["12", "", "", ""])
 
     def test_run_tells_the_check_this_login(self):
         env = {"XDG_SESSION_ID": "3", "XDG_STATE_HOME": os.path.dirname(self.boot)}

@@ -393,6 +393,35 @@ int main() {
         engine.setConfig(ctrlGrave);
     }
 
+    // The notice of a mode change must not clear a menu opened while it shows.
+    press(engine, entry, *notes, FcitxKey_grave);
+    press(engine, entry, *notes, FcitxKey_q);
+    press(engine, entry, *notes, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 1000);
+    check(menu(*notes) != nullptr, "a menu opened right after a mode change stays", "menu closed");
+    press(engine, entry, *notes, FcitxKey_Escape);
+
+    // The wait of a menu already closed leaves what is typed after it alone.
+    press(engine, entry, *notes, FcitxKey_grave);
+    press(engine, entry, *notes, FcitxKey_Escape);
+    press(engine, entry, *notes, FcitxKey_b);
+    pumpEventLoop(testInstance.instance, 5300);
+    const auto kept = notes->inputPanel().clientPreedit().toString();
+    check(kept == "b", "the wait of a closed menu keeps the text typed after it", kept);
+
+    // A menu nobody uses closes by itself; moving in it starts the wait again.
+    press(engine, entry, *notes, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 5300);
+    check(!menu(*notes), "a menu left alone closes by itself", "menu still open");
+    press(engine, entry, *notes, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 3000);
+    press(engine, entry, *notes, FcitxKey_Down);
+    pumpEventLoop(testInstance.instance, 3000);
+    check(menu(*notes) != nullptr, "moving in the menu keeps it open", "menu closed");
+    pumpEventLoop(testInstance.instance, 2500);
+    check(!menu(*notes), "an unused menu closes by itself", "menu still open");
+    check(realMode.load() == ngosen::Mode::Preedit, "closing by itself keeps the mode", modeName(realMode.load()));
+
     check(!fcitx::modeMenuCanDraw("classicui", "ibus", "wayland:", false), "a field relayed on Wayland has no panel", "true");
     check(fcitx::modeMenuCanDraw("classicui", "ibus", "x11::0", false), "a relayed field on X11 can draw", "false");
     check(fcitx::modeMenuCanDraw("classicui", "dbus", "wayland:", false), "another frontend can draw", "false");

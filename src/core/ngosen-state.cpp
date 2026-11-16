@@ -813,7 +813,9 @@ namespace ngosen {
                 backspaceInWord_ = false;
             startEchoTimer(keyEvent);
         }
-        const bool        typedKey   = !keyEvent.isRelease() && !keyEvent.isModifier();
+        const bool typedKey = !keyEvent.isRelease() && !keyEvent.isModifier();
+        if (typedKey)
+            emojiTailAtReset_.clear();
         const std::string wordBefore = typedKey ? openWord() : std::string();
         emojiTookPress_              = false;
         handleKey(keyEvent);
@@ -1356,12 +1358,26 @@ namespace ngosen {
         const bool         ownCommit       = !lastWord_.empty() && ngosen::monotonicUs() - lastWordAtUs_ < SpaceFixResetUs;
         std::string        committed       = ownCommit ? lastWord_ : std::string();
         std::string        dropped         = ownCommit ? droppedWord_ : std::string();
+        std::string        emojiTail       = emojiTail_;
         resetField(false, true, keep);
         lockedWord_ = std::move(locked);
         if (ownCommit) {
             lastWord_    = std::move(committed);
             droppedWord_ = std::move(dropped);
         }
+        // Firefox resets after each key it types itself, as the : of :), before it reports that key.
+        if (!restoreEmojiTail(emojiTail))
+            emojiTailAtReset_ = std::move(emojiTail);
+    }
+
+    // The cursor stayed if the field still ends with what was typed outside a word.
+    bool TypingState::restoreEmojiTail(std::string& tail) {
+        const Surrounding s = host_->surrounding();
+        if (tail.empty() || !s.isValid() || s.cursor() != s.anchor() || !endsBeforeCursor(s, tail, false))
+            return false;
+        emojiTail_ = std::move(tail);
+        updateEmojiOffer();
+        return true;
     }
 
     // Qt reports the field unchanged after dropping the word; GTK, Firefox and Chromium commit it themselves.
@@ -1547,6 +1563,7 @@ namespace ngosen {
             pending_commit_string_.clear();
         }
         emojiTail_.clear();
+        emojiTailAtReset_.clear();
         dropEmojiOffer();
         buffered_keys_.clear();
         edit_hold_            = false;

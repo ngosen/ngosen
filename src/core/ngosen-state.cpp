@@ -656,8 +656,9 @@ namespace ngosen {
     }
 
     void TypingState::rememberWord(const std::string& committed, const char* dropped) {
-        lastWord_    = rebuildable(committed) ? committed : std::string();
-        droppedWord_ = !lastWord_.empty() && dropped != nullptr ? dropped : "";
+        lastWord_     = rebuildable(committed) ? committed : std::string();
+        droppedWord_  = !lastWord_.empty() && dropped != nullptr ? dropped : "";
+        lastWordAtUs_ = ngosen::monotonicUs();
     }
 
     bool TypingState::mayFixKeptWord(bool inPreedit) const {
@@ -1350,8 +1351,16 @@ namespace ngosen {
         std::optional<LockedWord> locked;
         if (lockedWord_ && ngosen::monotonicUs() - lockedWord_->editedAtUs < OwnEditResetUs)
             locked = lockedWord_;
+        const bool  ownCommit = !lastWord_.empty() && ngosen::monotonicUs() - lastWordAtUs_ < OwnEditResetUs;
+        std::string committed = ownCommit ? lastWord_ : std::string();
+        std::string dropped   = ownCommit ? droppedWord_ : std::string();
         resetField(false, true, keep);
         lockedWord_ = std::move(locked);
+        // Backspace checks the field before it undoes Space, so a click hidden in this reset is safe.
+        if (ownCommit) {
+            lastWord_    = std::move(committed);
+            droppedWord_ = std::move(dropped);
+        }
     }
 
     // Qt reports the field unchanged after dropping the word; GTK, Firefox and Chromium commit it themselves.

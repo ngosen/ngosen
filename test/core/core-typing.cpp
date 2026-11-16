@@ -3964,6 +3964,37 @@ namespace {
         }
     }
 
+    // Firefox resets the context right after our commit; Backspace still undoes what Space did to the word.
+    void testFirefoxResetAfterSpaceFix() {
+        struct Case {
+            bool        click;
+            std::string want;
+            const char* step;
+        };
+        const Case cases[] = {{false, "nhưg", "fcitx4: a reset right after Space keeps the word for Backspace"},
+                              {true, "nhưng ", "fcitx4: a click before the reset leaves the word alone"}};
+        for (const auto& c : cases) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       plain;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("fcitx4", true, "firefox"), ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&plain, std::move(owned));
+            app->attach(&state);
+            for (const uint32_t key : keysOf("nhuwg ")) {
+                app->type(key);
+                loop.pump(key == ' ' ? 10 : 150);
+            }
+            if (c.click)
+                app->moveCursor(0);
+            state.appReset();
+            loop.pump(150);
+            app->type(ngosen::key::BackSpace);
+            loop.pump(300);
+            check(app->text() == c.want, c.step, app->text());
+        }
+    }
+
     // Firefox's snap carries the fcitx4 GTK module, which queues forwarded keys behind GDK events like
     // fcitx5-gtk; right after Firefox opens, its reports come later than the next key.
     void testSnapFirefoxReportingLate() {
@@ -5277,6 +5308,7 @@ int main() {
     testSlowBackspaceOnWlroots();
     testFieldDroppingSurroundingAfterDelete();
     testSnapFirefoxReportingLate();
+    testFirefoxResetAfterSpaceFix();
     testUndeclaredFieldAfterFocusChange();
     testLateCopiesRecoverOnWlroots();
     testLockWordNotOnChord();

@@ -191,8 +191,9 @@ namespace ngosen {
         ngosen::EngineResources* engine_;
         CGoObject                bambooEngine_;
         std::string              oldPreBuffer_;
-        std::string              lastWord_;    ///< The word and break we last committed, while only backspaces follow
-        std::string              droppedWord_; ///< lastWord_ as typed, before Space split it or dropped keys after it
+        std::string              lastWord_;                    ///< The word and break we last committed, while only backspaces follow
+        std::string              droppedWord_;                 ///< lastWord_ as typed, before Space split it or dropped keys after it
+        uint64_t                 lastWordAtUs_            = 0; ///< When lastWord_ was committed
         bool                     hasHistory_              = false;
         bool                     preeditWord_             = false; ///< Sen is on, but this word goes into the preedit
         int                      expected_backspaces_     = 0;     ///< backspaces the key paths still send; XTEST adds one that comes back

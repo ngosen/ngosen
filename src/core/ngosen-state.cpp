@@ -700,10 +700,13 @@ namespace ngosen {
     }
 
     // Firefox stops declaring its text after a deletion through it until it reports the edit; Calc does so
-    // during every key, so only a field with no report of our edit still due has lost the word.
+    // during every key. A report of our edit still due tells Firefox apart, but only for a moment, since a
+    // check can stay open long enough for a click into another cell.
     bool TypingState::fieldLostWord() const {
-        const Surrounding s = host_->surrounding();
-        return hasLastSurrounding_ && !lastSurroundingText_.empty() && !surrCheck_ && (!s.isValid() || s.text().empty());
+        constexpr uint64_t OwnEditReportUs = 250000;
+        const bool         reportDue       = surrCheck_ && monotonicUs() - surrCheck_->sentAtUs < OwnEditReportUs;
+        const Surrounding  s               = host_->surrounding();
+        return hasLastSurrounding_ && !lastSurroundingText_.empty() && !reportDue && (!s.isValid() || s.text().empty());
     }
 
     void TypingState::replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8) {

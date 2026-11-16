@@ -3939,6 +3939,29 @@ namespace {
         const auto ngKeys = keysOf("cuxg nhuwg ");
         const auto ng     = ngosen::test::typeInAppTraced(resources, field, {.dropsSurroundingOnDelete = true}, ngKeys, std::vector<int>(ngKeys.size(), 120));
         check(ng.text == "cũng nhưng ", "dbus: a key while the field declares no text stays in the word", ng.text);
+        // Over IBus the check of our edit stays open for a second, long enough for a click into another cell.
+        for (const char* frontend : {"dbus", "ibus"}) {
+            realMode                   = ngosen::Mode::Sen;
+            Field cellField            = makeField(frontend, true, "firefox");
+            cellField.keyEventOrderFix = true;
+            FakeLoop            loop;
+            FakeResources       cells;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, cellField, ngosen::test::AppQuirks{.dropsSurroundingOnDelete = true});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&cells, std::move(owned));
+            app->attach(&state);
+            for (const uint32_t key : keysOf("chaof")) {
+                app->type(key);
+                loop.pump(120);
+            }
+            app->pageShowsCell("");
+            loop.pump(400);
+            for (const uint32_t key : keysOf("t ")) {
+                app->type(key);
+                loop.pump(120);
+            }
+            check(app->text() == "t ", std::string(frontend) + ": a key in another cell well after our edit starts a new word", app->text());
+        }
     }
 
     // Firefox's snap carries the fcitx4 GTK module, which queues forwarded keys behind GDK events like

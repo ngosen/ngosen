@@ -88,6 +88,14 @@ class StepsTest(unittest.TestCase):
         self.notices(facts("b/1"))
         self.assertEqual(self.notices(facts("b/2", **kde)), [WARN])
 
+    def test_an_unwritable_folder_remembers_nothing_and_never_turns_red(self):
+        folder = os.path.dirname(self.path)
+        os.makedirs(folder)
+        os.chmod(folder, 0o555)
+        self.addCleanup(os.chmod, folder, 0o755)
+        self.assertEqual(self.notices(facts("b/1"), facts("b/2")), [WARN, WARN])
+        self.assertFalse(os.path.exists(self.path))
+
     def test_a_broken_file_starts_over(self):
         self.write("{not json")
         self.assertEqual(self.notices(facts("b/1"), facts("b/2")), [WARN, FAIL])

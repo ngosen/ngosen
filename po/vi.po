@@ -30,10 +30,6 @@ msgstr "Gõ Sen"
 msgid "Preedit"
 msgstr "Gạch chân"
 
-#: src/ngosen-config.h:41 src/ngosen-engine.cpp:988 src/ngosen-engine.cpp:1096
-msgid "Emoji Picker"
-msgstr "Chọn Emoji"
-
 #: src/ngosen-config.h:58 src/ngosen-config.h:69 src/ngosen-config.h:81
 msgid "Disabled"
 msgstr "Tắt"
@@ -209,11 +205,11 @@ msgstr "Phím chốt chữ"
 
 #: src/ngosen-config.h:236
 msgid "Auto capitalize after sentence-ending punctuation (. ! ? Enter)"
-msgstr "Tự viết hoa đầu câu (thử nghiệm)"
+msgstr "Tự viết hoa đầu câu"
 
 #: src/ngosen-config.h:237
 msgid "Double Space to Period"
-msgstr "Hai dấu cách thành dấu chấm (thử nghiệm)"
+msgstr "Hai dấu cách thành dấu chấm"
 
 #: src/ngosen-config.h:238
 msgid "Double Hyphen to Em-Dash (--)"
@@ -230,6 +226,46 @@ msgstr "Cứu dấu: sửa dấu chữ đang bôi đen"
 #: src/ngosen-config.h
 msgid "Type a word that starts with / as is"
 msgstr "Gõ thô sau dấu / đầu từ (lệnh, đường dẫn)"
+
+#: src/ngosen-config.h
+msgid "Suggest emoji while typing"
+msgstr "Gợi ý emoji khi gõ"
+
+#: src/ngosen-config.h
+msgid "Yahoo Messenger emoticons"
+msgstr "Mã emoji Yahoo Messenger"
+
+#: src/ngosen-config.h
+msgid "Apps"
+msgstr "App tắt emoji"
+
+#: src/ngosen-config.h
+msgid "Keyword"
+msgstr "Từ khoá"
+
+#: src/ngosen-config.h
+msgid "Emoji"
+msgstr "Emoji"
+
+#: src/ngosen-config.h
+msgid "On"
+msgstr "Bật"
+
+#: src/ngosen-config.h
+msgid "Words"
+msgstr "Từ gợi ý emoji"
+
+#: src/ngosen-config.h
+msgid "Put a picked emoji"
+msgstr "Khi chọn emoji"
+
+#: src/ngosen-config.h
+msgid "After the word"
+msgstr "Đặt sau từ"
+
+#: src/ngosen-config.h
+msgid "Instead of the word"
+msgstr "Thay luôn từ"
 
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
@@ -306,14 +342,6 @@ msgstr "Hiển thị chế độ Gạch chân"
 #: src/ngosen-config.h:260
 msgid "Shortcut for Preedit"
 msgstr "Phím tắt cho Gạch chân"
-
-#: src/ngosen-config.h:261
-msgid "Show Emoji Picker"
-msgstr "Hiển thị chế độ Chọn Emoji"
-
-#: src/ngosen-config.h:262
-msgid "Shortcut for Emoji Picker"
-msgstr "Phím tắt cho Chọn Emoji"
 
 #: src/ngosen-config.h:262
 msgid "Show OFF"
@@ -402,7 +430,7 @@ msgid "Start of text or line"
 msgstr "Đầu văn bản, đầu dòng"
 
 msgid "Capitalize the first letter of the text or of a line"
-msgstr "Tự viết hoa chữ đầu văn bản và đầu dòng (thử nghiệm)"
+msgstr "Tự viết hoa chữ đầu văn bản và đầu dòng"
 
 #: src/ngosen-engine.cpp:252
 msgid "Settings"
@@ -413,8 +441,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.11: convert selected text between charsets with a hotkey, and extra keys after a word no longer undo its marks. See What's new for more."
-msgstr "Version 1.11: chuyển mã chữ bôi đen bằng phím tắt, và gõ thừa phím sau từ không còn làm mất dấu. Xem thêm ở trang Có gì mới."
+msgid "Version 1.12: emoji suggestions while typing, and the settings window opens Check my machine when a setup step is left. See What's new for more."
+msgstr "Version 1.12: gợi ý emoji khi gõ, và cửa sổ cài đặt tự mở trang Kiểm tra máy khi còn bước thiết lập chưa xong. Xem thêm ở trang Có gì mới."
 
 #: src/ngosen-engine.cpp
 msgid "Show"
@@ -443,9 +471,9 @@ msgstr "Không rõ chế độ"
 msgid "Ngó Sen - Off"
 msgstr "Ngó Sen - Tắt"
 
-#: src/lotus-state.cpp:241
-msgid "Page "
-msgstr "Trang "
+#: src/core/ngosen-state-emoji-offer.cpp
+msgid "pick, Space or Enter: the first, Esc: keep the word"
+msgstr "chọn · Space, Enter: lấy cái đầu · Esc: giữ chữ"
 
 #: src/core/ngosen-state-retype.cpp
 msgid "Enter: retype in Vietnamese, Tab or Esc: keep"
@@ -1565,6 +1593,18 @@ msgstr ""
 msgid "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
 msgstr "/cost và /usr/share giữ nguyên như đã gõ khi ở đầu dòng hoặc sau dấu cách, để lệnh chat và đường dẫn file chạy đúng. và/hoặc và @tên vẫn có dấu."
 
+#: settings-gui/core/catalog.py
+msgid "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
+msgstr "Gõ =)) hay :x là gợi ý 🤣 hay 😍 như hồi Yahoo Messenger; bấm Tab để thay mã bằng emoji."
+
+#: settings-gui/core/catalog.py
+msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
+msgstr "Đặt sau từ: cười 😂. Thay luôn từ: 😂. Còn haha và :) thì luôn được thay."
+
+#: settings-gui/core/catalog.py
+msgid "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."
+msgstr "Gõ cười là hiện Tab: 😂 … cạnh con trỏ. Bấm Tab để đánh số: 1–5 chọn một emoji, Tab, Space hoặc Enter lấy cái đầu, Esc giữ nguyên chữ. haha và :) được thay bằng emoji. Chỉ hiện ở nơi chắc chắn vẽ được gợi ý."
+
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."
 msgstr "Mở menu chọn chế độ gõ cho app đang dùng. Chỉ khi đang gõ tiếng Việt; lúc gõ tiếng Anh phím gõ ra như thường."
@@ -1641,10 +1681,6 @@ msgid "A new install switches with Ctrl+Shift, an older one keeps Ctrl+Space; Ng
 msgstr "Cài mới dùng Ctrl+Shift, cài từ trước giữ Ctrl+Space; Ngó Sen nhớ chế độ qua lần đăng xuất."
 
 #: settings-gui/ui/whats_new_content.py
-msgid "Press ` to pick Sen, Preedit, Emoji Picker or OFF for the app in use."
-msgstr "Bấm ` để chọn Gõ Sen, Gạch chân, Chọn Emoji hoặc Tắt cho app đang dùng."
-
-#: settings-gui/ui/whats_new_content.py
 msgid "Tap Ctrl alone to keep the word as typed: tunx, Ctrl, Space keeps tũn."
 msgstr "Nhấp thả Ctrl để chốt chữ như đã gõ: tunx, Ctrl, Space giữ tũn."
 
@@ -1703,8 +1739,8 @@ msgid "Menu"
 msgstr "Menu"
 
 #: settings-gui/core/defaults.py
-msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
-msgstr "Gõ tắt, từ đã thêm vào từ điển, phím tự đặt và kiểu gõ đã nhớ cho từng app cũng bị xoá. Có thể hoàn tác ngay sau đó."
+msgid "Macros, words added to the dictionary, custom keys, emoji words and what is remembered for each app are cleared too. You can undo this right after."
+msgstr "Gõ tắt, từ đã thêm vào từ điển, phím tự đặt, từ gợi ý emoji và những gì đã nhớ cho từng app cũng bị xoá. Có thể hoàn tác ngay sau đó."
 
 #: settings-gui/core/defaults.py
 msgid "The key that switches between Vietnamese and English goes back to Ctrl+Shift."
@@ -1781,6 +1817,22 @@ msgstr "Không đổi được"
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
 msgstr "Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji while typing"
+msgstr "Gợi ý emoji khi gõ"
+
+#: settings-gui/core/whats_new_content.py
+msgid "After a word such as cười, con mèo or haha, emoji show next to the cursor. Press Tab to number them, then 1 to 5 to pick one; Tab, Space or Enter takes the first. The Emoji page lists every emoji with its words, which you can change."
+msgstr "Gõ xong một từ như cười, con mèo hay haha là emoji hiện cạnh con trỏ. Bấm Tab để đánh số, rồi bấm 1 đến 5 để chọn; Tab, Space hoặc Enter lấy emoji đầu. Trang Emoji liệt kê mọi emoji kèm từ gợi ý, và bạn đổi được các từ đó."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Check my machine opens by itself"
+msgstr "Tự mở trang Kiểm tra máy"
+
+#: settings-gui/core/whats_new_content.py
+msgid "When a step that stops Vietnamese typing is left, the settings window opens on Check my machine, then reminds you less and less often until it is fixed. After a first install it opens once to show what is left."
+msgstr "Khi còn bước làm không gõ được tiếng Việt, cửa sổ cài đặt mở thẳng trang Kiểm tra máy, rồi nhắc thưa dần cho tới khi sửa xong. Sau lần cài đầu, trang mở một lần để bạn xem còn bước nào chưa xong."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Convert selected text"
@@ -2052,10 +2104,6 @@ msgstr "Chữ đi thẳng vào app ngay khi gõ."
 msgid "The word is underlined until it is done. Use it in an app that Sen does not work with."
 msgstr "Chữ đang gõ có gạch dưới cho tới khi gõ xong. Dùng khi app không tương thích với Gõ Sen."
 
-#: settings-gui/core/catalog.py
-msgid "Type an emoji name, then pick from the list."
-msgstr "Gõ tên emoji rồi chọn trong danh sách."
-
 #: settings-gui/core/system_check.py
 msgid "Add {} to ~/.config/environment.d/{}, then log out and back in."
 msgstr "Thêm {} vào ~/.config/environment.d/{}, rồi đăng xuất và đăng nhập lại."
@@ -2075,6 +2123,15 @@ msgstr "Lần đăng nhập sau fcitx5 sẽ không tự chạy"
 #: settings-gui/core/system_check.py
 msgid "Copy {} to ~/.config/autostart/."
 msgstr "Chép {} vào ~/.config/autostart/."
+
+#: settings-gui/core/system_check.py
+msgid "Logged back in, but the settings still do not apply"
+msgstr "Đã đăng nhập lại nhưng thiết lập vẫn chưa có tác dụng"
+
+#: settings-gui/core/system_check.py
+msgid ""
+"Something else overrides them after login: send the result to Ngó Sen."
+msgstr "Có thứ khác ghi đè lên sau khi đăng nhập: gửi kết quả cho Ngó Sen."
 
 #: settings-gui/core/system_check.py
 msgid "Log out and back in to finish the setup"
@@ -2211,3 +2268,155 @@ msgstr "_Chép kết quả"
 #: settings-gui/core/page_status.py
 msgid "The running Ngó Sen is older than this window, so settings are missing here. Restart fcitx5 to see them."
 msgstr "Ngó Sen đang chạy là bản cũ hơn cửa sổ này nên thiếu một số cài đặt ở đây. Khởi động lại fcitx5 để thấy chúng."
+
+#: src/ngosen-config.h
+msgid "Show emoji suggestions"
+msgstr "Hiển thị Gợi ý emoji"
+
+#: src/ngosen-config.h
+msgid "Shortcut for emoji suggestions"
+msgstr "Phím tắt cho Gợi ý emoji"
+
+#: src/ngosen-engine.cpp
+msgid "Emoji suggestions"
+msgstr "Gợi ý emoji"
+
+#: src/ngosen-engine.cpp
+msgid "Emoji suggestions: on"
+msgstr "Gợi ý emoji: bật"
+
+#: src/ngosen-engine.cpp
+msgid "Emoji suggestions: off"
+msgstr "Gợi ý emoji: tắt"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Press ` to pick Sen, Preedit or OFF for the app in use, or to turn emoji or Vim keys on or off for it."
+msgstr "Bấm ` để chọn Sen, Preedit hoặc Tắt cho app đang dùng, hoặc bật/tắt emoji hay phím Vim cho app đó."
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Smileys"
+msgstr "Mặt cười"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "People & gestures"
+msgstr "Người, cử chỉ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Animals & plants"
+msgstr "Con vật, cây cỏ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Food & drink"
+msgstr "Ăn uống"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Travel & weather"
+msgstr "Đi lại, thời tiết"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Activities & events"
+msgstr "Hoạt động, lễ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Objects"
+msgstr "Đồ vật"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Symbols"
+msgstr "Ký hiệu"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Flags"
+msgstr "Cờ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn off {word} for {emoji}"
+msgstr "Tắt từ {word} cho {emoji}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn on {word} for {emoji}"
+msgstr "Bật từ {word} cho {emoji}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "+ word"
+msgstr "+ từ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Add a word for {}"
+msgstr "Thêm từ cho {}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "As before"
+msgstr "Như cũ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Put back the words {} came with"
+msgstr "Trả {} về các từ có sẵn"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Apps without emoji"
+msgstr "App đã tắt emoji"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Emoji and their words"
+msgstr "Emoji và từ gợi ý"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Not turned off in any app."
+msgstr "Chưa tắt ở app nào."
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn back on"
+msgstr "Bật lại"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn emoji back on in {}"
+msgstr "Bật lại emoji trong {}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Emoji are back on in {}."
+msgstr "Đã bật lại emoji trong {}."
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Click a word to turn it off or on. Dashed words are off; type a new word in the box next to them to add it. A word on for several emoji offers all of them."
+msgstr "Bấm một từ để tắt hay bật nó. Từ gạch đứt đang tắt; gõ từ mới vào ô bên cạnh để thêm. Một từ bật ở nhiều emoji thì gợi ý cả các emoji đó."
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Find an emoji or a word, e.g. tiền"
+msgstr "Tìm emoji hoặc từ, vd. tiền"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Only emoji with a word on"
+msgstr "Chỉ emoji có từ đang bật"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "All"
+msgstr "Tất cả"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "{} emoji"
+msgstr "{} emoji"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "No emoji match"
+msgstr "Không có emoji nào khớp"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "1. Type a word"
+msgstr "1. Gõ một từ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "2. Press Tab"
+msgstr "2. Bấm Tab"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "3. Press 2"
+msgstr "3. Bấm 2"
+
+#: settings-gui/core/emoji_words.py
+msgid "Set a mode menu key and an emoji key on the Keys page to turn suggestions off for one app."
+msgstr "Đặt phím mở menu chế độ và phím emoji ở trang Phím để tắt gợi ý cho riêng một app."
+
+#: settings-gui/core/emoji_words.py
+msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
+msgstr "Ở app đang gõ, bấm {menu} rồi {key} để tắt hay bật lại gợi ý cho riêng app đó. Kiểu gõ của app vẫn giữ nguyên."

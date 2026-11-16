@@ -33,7 +33,6 @@ namespace {
             case ngosen::Mode::Off: return "Off";
             case ngosen::Mode::Sen: return "Sen";
             case ngosen::Mode::Preedit: return "Preedit";
-            case ngosen::Mode::Emoji: return "Emoji";
         }
         return "?";
     }

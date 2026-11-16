@@ -22,7 +22,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import system_check, typing_log
+from core import login_waits, system_check, typing_log
 from ui import brand
 from ui.pages.dynamic_settings import CardWidget
 from ui.typography import emphasize, mute
@@ -183,8 +183,7 @@ class CheckPage(QWidget):
         return card
 
     def run(self):
-        self.facts = system_check.collect(self.dbus_handler, self.ngosen_version)
-        self.found = system_check.steps(self.facts)
+        self.facts, self.found = login_waits.run(self.dbus_handler, self.ngosen_version)
         self.findings = [f for f in self.found if f.level != system_check.OK]
         self._show_steps()
         self._show_version()

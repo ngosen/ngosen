@@ -15,6 +15,28 @@ from i18n import N_
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
     {
+        "version": "1.12",
+        "title": N_("Emoji while typing"),
+        "how": N_(
+            "After a word such as cười, con mèo or haha, emoji show next to the cursor. Press Tab "
+            "to number them, then 1 to 5 to pick one; Tab, Space or Enter takes the first. The "
+            "Emoji page lists every emoji with its words, which you can change."
+        ),
+        "example": "",
+        "target": ("page", "emoji"),
+    },
+    {
+        "version": "1.12",
+        "title": N_("Check my machine opens by itself"),
+        "how": N_(
+            "When a step that stops Vietnamese typing is left, the settings window opens on Check "
+            "my machine, then reminds you less and less often until it is fixed. After a first "
+            "install it opens once to show what is left."
+        ),
+        "example": "",
+        "target": ("page", "check"),
+    },
+    {
         "version": "1.11",
         "title": N_("Convert selected text"),
         "how": N_(
@@ -162,7 +184,9 @@ FEATURES = [
 
 TIPS = [
     {
-        "text": N_("Press ` to pick Sen, Preedit, Emoji Picker or OFF for the app in use."),
+        "text": N_(
+            "Press ` to pick Sen, Preedit or OFF for the app in use, or to turn emoji or Vim keys on or off for it."
+        ),
         "target": ("setting", "ModeMenuKey"),
     },
     {

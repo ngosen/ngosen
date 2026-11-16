@@ -16,7 +16,6 @@ target_link_libraries(ngosen_test_core PRIVATE
     ngosen_core
     Fcitx5::Core
     Fcitx5::Config
-    Fcitx5::Module::Emoji
     ${NGOSEN_DBUS_MODULE}
     ${NGOSEN_NOTIFICATIONS_MODULE}
     ${NGOSEN_CLIPBOARD_MODULE}
@@ -60,7 +59,6 @@ function(ngosen_headless_test_settings target)
         ngosen_migration
         Fcitx5::Core
         Fcitx5::Config
-        Fcitx5::Module::Emoji
         ${NGOSEN_DBUS_MODULE}
         ${NGOSEN_NOTIFICATIONS_MODULE}
         ${NGOSEN_CLIPBOARD_MODULE}
@@ -123,6 +121,7 @@ add_ngosen_headless_test(gnome_shared_ibus_context gnome-shared-ibus-context.cpp
 add_ngosen_headless_test(mode_name_migration mode-name-migration.cpp "integration;mode")
 add_ngosen_headless_test(messenger_defaults messenger-defaults.cpp "integration;mode")
 add_ngosen_headless_test(options_sync options-sync.cpp "integration;config")
+add_ngosen_headless_test(emoji_settings emoji-settings.cpp "integration;config")
 if (Fcitx5ModuleDBus_FOUND)
     add_ngosen_headless_test(dbus_convert_text dbus-convert-text.cpp "unit;dbus")
 endif()
@@ -180,9 +179,6 @@ add_ngosen_headless_test(replay_single_commit
     replay-single-commit.cpp "integration;sen")
 add_ngosen_headless_test(sen_settle_first_word
     sen-settle-first-word.cpp "integration;sen")
-add_ngosen_headless_test(emoji_candidate_keys emoji-candidate-keys.cpp "integration;emoji")
-add_ngosen_headless_test(emoji_history_page_navigation
-    emoji-history-page-navigation.cpp "integration;emoji")
 add_ngosen_headless_test(property_invariants
     property-invariants.cpp "integration;property")
 add_bamboo_test(numeric_macro_case_preservation

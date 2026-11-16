@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -11,7 +12,7 @@ from urllib.parse import parse_qs, urlparse
 # support puts the settings window on sys.path, so it has to come first.
 # isort: off
 from support import FakeDBusHandler, app  # noqa: F401
-from core import session_setup, system_check, update_repo
+from core import login_waits, session_setup, system_check, update_repo
 from core.system_check import FAIL, OK, WARN, Facts
 
 # isort: on
@@ -857,6 +858,25 @@ class CheckPageTest(unittest.TestCase):
     def row(self, title):
         return next(row for row in self.page.rows if row.title == title)
 
+    def test_a_step_left_by_a_new_login_shows_as_failed(self):
+        state = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, state)
+        boot = os.path.join(state, "boot_id")
+        with open(boot, "w", encoding="ascii") as f:
+            f.write("b\n")
+        os.environ.update(XDG_STATE_HOME=state, XDG_SESSION_ID="2")
+        for name in ("has_im_config", "xinputrc_runs_fcitx5"):
+            patcher = mock.patch.object(session_setup, name, return_value=True)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        with mock.patch.object(login_waits, "BOOT_ID", boot):
+            self.page.run()
+            first = [f.level for f in self.page.found if f.waiting]
+            os.environ["XDG_SESSION_ID"] = "3"
+            self.page.run()
+        self.assertEqual(first, [system_check.WARN])
+        self.assertEqual([f.level for f in self.page.found if f.waiting], [system_check.FAIL])
+
     def settle(self):
         from qtpy.QtWidgets import QApplication
 
@@ -1016,6 +1036,64 @@ class CheckPageWindowTest(unittest.TestCase):
             window.show_page("about")
             window.show_page("check")
         run.assert_called_once()
+
+    def test_opens_on_the_check_page_first_and_for_an_undone_step(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        window = self.window(FakeDBusHandler())
+        window.open_check_if_due(path)
+        self.assertEqual(window.sidebar.currentItem().text(), "Check my machine")
+        window.show_page("typing")
+        window.open_check_if_due(path)
+        self.assertEqual(window.sidebar.currentItem().text(), "Typing")
+
+    def reminders_in_a_folder(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        patcher = mock.patch("core.check_reminder.state_file", return_value=path)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return path
+
+    def test_a_page_launch_neither_counts_nor_lands_on_the_check_page(self):
+        path = self.reminders_in_a_folder()
+        window = self.window(FakeDBusHandler())
+        window.start_on("typing")
+        app.processEvents()
+        self.assertEqual(window.sidebar.currentItem().text(), "Typing")
+        self.assertFalse(os.path.exists(path))
+
+    def test_a_plain_launch_lands_on_the_check_page_once_shown(self):
+        path = self.reminders_in_a_folder()
+        window = self.window(FakeDBusHandler())
+        window.start_on(None)
+        app.processEvents()
+        self.assertEqual(window.sidebar.currentItem().text(), "Check my machine")
+        self.assertTrue(os.path.exists(path))
+
+    def test_after_install_it_lands_on_the_check_page_and_counts_the_open(self):
+        path = self.reminders_in_a_folder()
+        window = self.window(FakeDBusHandler())
+        opened = []
+        for after_install in (True, True, False):
+            window.show_page("typing")
+            window.start_on(None, after_install)
+            app.processEvents()
+            opened.append(window.sidebar.currentItem().text())
+        self.assertEqual(opened, ["Check my machine", "Check my machine", "Typing"])
+        self.assertTrue(os.path.exists(path))
+
+    def test_deciding_reuses_the_check_the_page_ran(self):
+        window = self.window(FakeDBusHandler())
+        app.processEvents()
+        with (
+            mock.patch("core.check_reminder.should_open", return_value=False),
+            mock.patch.object(system_check, "collect") as collect,
+        ):
+            window.open_check_if_due(os.devnull)
+        collect.assert_not_called()
 
     def test_badge_shows_before_the_page_is_opened(self):
         window = self.window(FakeDBusHandler())

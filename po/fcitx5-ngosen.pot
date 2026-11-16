@@ -29,10 +29,6 @@ msgstr ""
 msgid "Preedit"
 msgstr ""
 
-#: src/ngosen-config.h:41 src/ngosen-engine.cpp:988 src/ngosen-engine.cpp:1096
-msgid "Emoji Picker"
-msgstr ""
-
 #: src/ngosen-config.h:58 src/ngosen-config.h:69 src/ngosen-config.h:81
 msgid "Disabled"
 msgstr ""
@@ -174,6 +170,46 @@ msgstr ""
 msgid "Type a word that starts with / as is"
 msgstr ""
 
+#: src/ngosen-config.h
+msgid "Suggest emoji while typing"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Yahoo Messenger emoticons"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Apps"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Keyword"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Emoji"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "On"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Words"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Put a picked emoji"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "After the word"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Instead of the word"
+msgstr ""
+
 #: src/ngosen-config.h:239 src/ngosen-engine.cpp:246
 msgid "Auto Restore Invalid Words"
 msgstr ""
@@ -248,14 +284,6 @@ msgstr ""
 
 #: src/ngosen-config.h:260
 msgid "Shortcut for Preedit"
-msgstr ""
-
-#: src/ngosen-config.h:261
-msgid "Show Emoji Picker"
-msgstr ""
-
-#: src/ngosen-config.h:262
-msgid "Shortcut for Emoji Picker"
 msgstr ""
 
 #: src/ngosen-config.h:262
@@ -344,7 +372,7 @@ msgid "What's new in Ngó Sen?"
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.11: convert selected text between charsets with a hotkey, and extra keys after a word no longer undo its marks. See What's new for more."
+msgid "Version 1.12: emoji suggestions while typing, and the settings window opens Check my machine when a setup step is left. See What's new for more."
 msgstr ""
 
 #: src/ngosen-engine.cpp
@@ -374,8 +402,8 @@ msgstr ""
 msgid "Ngó Sen - Off"
 msgstr ""
 
-#: src/lotus-state.cpp:241
-msgid "Page "
+#: src/core/ngosen-state-emoji-offer.cpp
+msgid "pick, Space or Enter: the first, Esc: keep the word"
 msgstr ""
 
 #: src/core/ngosen-state-retype.cpp
@@ -1401,6 +1429,18 @@ msgstr ""
 msgid "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
 msgstr ""
 
+#: settings-gui/core/catalog.py
+msgid "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."
+msgstr ""
+
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Opens a menu to pick a mode for the app in use. Only while typing Vietnamese; in English the key types as usual."
 msgstr ""
@@ -1473,10 +1513,6 @@ msgid "A new install switches with Ctrl+Shift, an older one keeps Ctrl+Space; Ng
 msgstr ""
 
 #: settings-gui/ui/whats_new_content.py
-msgid "Press ` to pick Sen, Preedit, Emoji Picker or OFF for the app in use."
-msgstr ""
-
-#: settings-gui/ui/whats_new_content.py
 msgid "Tap Ctrl alone to keep the word as typed: tunx, Ctrl, Space keeps tũn."
 msgstr ""
 
@@ -1535,7 +1571,7 @@ msgid "Menu"
 msgstr ""
 
 #: settings-gui/core/defaults.py
-msgid "Macros, words added to the dictionary, custom keys and the modes remembered for each app are cleared too. You can undo this right after."
+msgid "Macros, words added to the dictionary, custom keys, emoji words and what is remembered for each app are cleared too. You can undo this right after."
 msgstr ""
 
 #: settings-gui/core/defaults.py
@@ -1612,6 +1648,22 @@ msgstr ""
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji while typing"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "After a word such as cười, con mèo or haha, emoji show next to the cursor. Press Tab to number them, then 1 to 5 to pick one; Tab, Space or Enter takes the first. The Emoji page lists every emoji with its words, which you can change."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Check my machine opens by itself"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "When a step that stops Vietnamese typing is left, the settings window opens on Check my machine, then reminds you less and less often until it is fixed. After a first install it opens once to show what is left."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
@@ -1865,10 +1917,158 @@ msgstr ""
 msgid "The word is underlined until it is done. Use it in an app that Sen does not work with."
 msgstr ""
 
-#: settings-gui/core/catalog.py
-msgid "Type an emoji name, then pick from the list."
-msgstr ""
-
 #: settings-gui/core/page_status.py
 msgid "The running Ngó Sen is older than this window, so settings are missing here. Restart fcitx5 to see them."
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Show emoji suggestions"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Shortcut for emoji suggestions"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Emoji suggestions"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Emoji suggestions: on"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Emoji suggestions: off"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Press ` to pick Sen, Preedit or OFF for the app in use, or to turn emoji or Vim keys on or off for it."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Smileys"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "People & gestures"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Animals & plants"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Food & drink"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Travel & weather"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Activities & events"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Objects"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Symbols"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Flags"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn off {word} for {emoji}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn on {word} for {emoji}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "+ word"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Add a word for {}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "As before"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Put back the words {} came with"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Apps without emoji"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Emoji and their words"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Not turned off in any app."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn back on"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Turn emoji back on in {}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Emoji are back on in {}."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Click a word to turn it off or on. Dashed words are off; type a new word in the box next to them to add it. A word on for several emoji offers all of them."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Find an emoji or a word, e.g. tiền"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Only emoji with a word on"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "All"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "{} emoji"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "No emoji match"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "1. Type a word"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "2. Press Tab"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "3. Press 2"
+msgstr ""
+
+#: settings-gui/core/emoji_words.py
+msgid "Set a mode menu key and an emoji key on the Keys page to turn suggestions off for one app."
+msgstr ""
+
+#: settings-gui/core/emoji_words.py
+msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
 msgstr ""

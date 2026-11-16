@@ -13,14 +13,12 @@ import tempfile
 import zlib
 
 SIZES = (16, 22, 24, 32)
-TILES = ("fcitx-ngosen", "fcitx-ngosen-off", "fcitx-ngosen-emoji")
+TILES = ("fcitx-ngosen", "fcitx-ngosen-off")
 PLAIN = (
     "fcitx-ngosen-default",
     "fcitx-ngosen-default-black",
     "fcitx-ngosen-off-default",
     "fcitx-ngosen-off-default-black",
-    "fcitx-ngosen-emoji-default",
-    "fcitx-ngosen-emoji-default-black",
 )
 
 

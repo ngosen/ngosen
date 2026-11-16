@@ -6,12 +6,11 @@ install(DIRECTORY icons/ DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/"
 # Engine resolves icons to absolute paths (see ngosen-engine.cpp
 # subModeIconImpl) to bypass XDG icon theme lookup on non-Breeze themes.
 # Install copies of every variant into hicolor status dirs (SVG + PNG).
-set(NGOSEN_TILE_ICONS fcitx-ngosen fcitx-ngosen-off fcitx-ngosen-emoji)
+set(NGOSEN_TILE_ICONS fcitx-ngosen fcitx-ngosen-off)
 set(NGOSEN_STATUS_ICONS
     ${NGOSEN_TILE_ICONS}
     fcitx-ngosen-default fcitx-ngosen-default-black
-    fcitx-ngosen-off-default fcitx-ngosen-off-default-black
-    fcitx-ngosen-emoji-default fcitx-ngosen-emoji-default-black)
+    fcitx-ngosen-off-default fcitx-ngosen-off-default-black)
 
 foreach(ICON ${NGOSEN_STATUS_ICONS})
     # status/ — system tray (SVG, renderable by most compositors)

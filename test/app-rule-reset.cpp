@@ -39,7 +39,6 @@ namespace {
             case fcitx::NgoSenMode::Off: return "Off";
             case fcitx::NgoSenMode::Preedit: return "Preedit";
             case fcitx::NgoSenMode::Sen: return "Sen";
-            case fcitx::NgoSenMode::Emoji: return "Emoji";
             default: return "Unknown";
         }
     }

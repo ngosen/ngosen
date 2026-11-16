@@ -4,7 +4,7 @@ add_library(ngosen_core STATIC
     ngosen-state.cpp
     ngosen-state-check.cpp
     ngosen-state-convert.cpp
-    ngosen-state-emoji.cpp
+    ngosen-state-emoji-offer.cpp
     ngosen-state-focus.cpp
     ngosen-state-macro.cpp
     ngosen-state-replace.cpp
@@ -15,6 +15,7 @@ add_library(ngosen_core STATIC
     ngosen-state-vim.cpp
     ngosen-vim.cpp
     ngosen-app-quirks.cpp
+    ngosen-emoji-keywords.cpp
     ngosen-flatpak-names.cpp
     ngosen-globals.cpp
     ngosen-gnome-apps.cpp

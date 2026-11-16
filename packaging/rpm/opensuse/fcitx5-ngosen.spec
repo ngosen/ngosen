@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.11.2
+Version:        1.12.0
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -100,6 +100,9 @@ else
 fi
 
 %changelog
+* Mon Nov 16 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.12.0-1
+- Emoji suggestions while typing: a Vietnamese word such as cười, a Yahoo Messenger code or :) shows emoji next to the cursor and Tab picks one, with a new Emoji page in the settings window; they replace the Emoji picker mode (#788, #791, #792, #793, #795). The settings window opens Check my machine on first open, while a step that stops typing is left, when a re-login did not apply the setup, and after a first install with install.sh (#798, #801, #802, #806). Three capitalization options lose their experimental label (#796).
+
 * Mon Nov 16 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.11.2-1
 - Words no dictionary word starts with, such as rose or Sose, show as typed, Backspace after one takes only the last key, and the lock key swaps such a word between its keys and its marks (#764); on GNOME with IBus, Backspace while a slow app reports keeps the word and its marks (#785, #787), a deletion the Lark chat applies only in part is redone (#790), and on GNOME 50.0-50.3 Backspaces GNOME drops no longer let the next Backspace reach Firefox behind Ngó Sen (#789); on fcitx5 the lock key swaps at once and swaps back in Firefox too (#799, #800), and Firefox on Mint keeps the n it adds to the first word typed after it opens (#804).
 

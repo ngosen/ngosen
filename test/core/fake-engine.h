@@ -48,14 +48,7 @@ namespace ngosen::test {
             return keepWords_;
         }
         // Replaces the macro table; call before building a TypingState.
-        void                    setMacros(const std::vector<std::pair<std::string, std::string>>& macros);
-        std::vector<EmojiEntry> emojiHistory() override {
-            return {};
-        }
-        std::vector<EmojiEntry> searchEmoji(const std::string& /*prefix*/) override {
-            return {};
-        }
-        void recordEmoji(const EmojiEntry& /*entry*/) override {}
+        void setMacros(const std::vector<std::pair<std::string, std::string>>& macros);
         bool anyTerminalHidesInput() const override {
             return terminalHidesInput;
         }

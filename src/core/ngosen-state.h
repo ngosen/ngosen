@@ -15,8 +15,8 @@
 #pragma once
 
 #include "ngosen-go-object.h"
-#include "emoji-entry.h"
 #include "ngosen-globals.h"
+#include "ngosen-emoji-keywords.h"
 #include "ngosen-engine-resources.h"
 #include "ngosen-host.h"
 #include "ngosen-key.h"
@@ -31,8 +31,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-struct EmojiEntry;
 
 /**
  * @brief Key event entry for replay buffer.
@@ -108,6 +106,11 @@ namespace ngosen {
         // The app runs Vim or Vim keys (#302): after Escape, letters are commands until Vim goes into
         // insert mode, and they reach the app untouched.
         void setVimKeys(bool on);
+        // The user turned emoji suggestions on or off for the app (the w key in the mode menu).
+        void setEmojiOn(bool on);
+        bool emojiOn() const {
+            return emojiOn_;
+        }
 
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.
@@ -195,8 +198,6 @@ namespace ngosen {
         int                      expected_backspaces_     = 0;     ///< backspaces the key paths still send; XTEST adds one that comes back
         int                      current_backspace_count_ = 0;
         std::string              pending_commit_string_;
-        std::string              emojiBuffer_;
-        std::vector<EmojiEntry>  emojiCandidates_;
         std::vector<KeyEntry>    buffered_keys_; ///< Keystrokes buffered during replacement
         bool                     isPrevSpace_           = false;
         bool                     isPrevHyphen_          = false;
@@ -262,11 +263,38 @@ namespace ngosen {
         std::string                    typedWhileOff_;
         std::optional<Retype>          retype_;
         std::unique_ptr<ngosen::Timer> retype_timer_;
+
+        // Emoji offered for the words just typed (#110): a hint first, a numbered list after Tab.
+        struct EmojiOffer {
+            ngosen::EmojiSuggestion suggestion;
+            std::string             covered; // the typed text a sound or an emoticon stands for
+            std::string             keyword; // the typed words the keyword covers, as they are in the app
+            bool                    picking = false;
+        };
+        std::optional<EmojiOffer>      emojiOffer_;
+        std::string                    emojiTail_;              ///< text typed before the open word since the cursor last moved
+        bool                           emojiTookPress_ = false; ///< the offer took the key being handled
+        std::vector<uint32_t>          emojiTakenSyms_;         ///< keys the offer took, whose releases it takes too
+        std::unique_ptr<ngosen::Timer> emojiRecheck_;           ///< looks again once the word is in the app
+        bool                           emojiOn_ = true;         ///< false when the user turned emoji off for the app
+        std::string                    openWord();
+        bool                           offersEmojiHere() const;
+        bool                           replacementPending() const;
+        bool                           inAddressBar() const;
+        void                           noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore);
+        void                           updateEmojiOffer();
+        void                           offerForTypedText();
+        void                           showEmojiOffer();
+        void                           dropEmojiOffer();
+        bool                           handleEmojiOfferKey(ngosen::KeyPress& keyEvent);
+        void                           takeEmojiKey(ngosen::KeyPress& keyEvent);
+        void                           insertEmoji(size_t index);
         // What typed reads as with this field's input method, or typed when it changes nothing.
         std::string        addMarks(const std::string& typed);
         bool               everyWordTakesMarks(const std::string& typed);
         void               applyRetype();
         bool               replaceRetyped(const std::string& from, const std::string& to);
+        bool               replacesKeyword(const EmojiOffer& offer, const std::string& inPreedit, const std::string& emoji);
         void               acceptRetype(const std::string& hint);
         void               applyRetypeSoon(std::string hint);
         void               reopenTypedKey();
@@ -576,29 +604,6 @@ namespace ngosen {
         bool            enter_after_replacement_ = false;
         ngosen::EditKey enter_after_key_         = ngosen::EditKey::Return;
         bool            enter_key_live_          = false;
-
-        /**
-         * @brief Updates emoji page status in candidate list.
-         */
-        void updateEmojiPageStatus();
-        // Commits a picked emoji and records it in the history.
-        void pickEmoji(const EmojiEntry& entry);
-
-        /**
-         * @brief Handles key events in emoji mode.
-         * @param keyEvent The key event to process.
-         */
-        void handleEmojiMode(ngosen::KeyPress& keyEvent);
-
-        // Moves the highlight or the page for navigation keys; false for any other key.
-        bool moveInEmojiList(const ngosen::CandidatePage& list, uint32_t currentSym);
-        // Picks, commits, cancels or adds to the search text.
-        void handleEmojiTextKey(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::optional<ngosen::CandidatePage>& list);
-
-        /**
-         * @brief Updates preedit display for emoji mode.
-         */
-        void updateEmojiPreedit();
 
         /**
          * @brief Counts a backspace that comes back while Sen mode replaces a word; the last one

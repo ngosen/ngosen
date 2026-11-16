@@ -7,7 +7,7 @@ from core.brand import MESSENGER_URL
 from gi.repository import Adw, Gdk, GLib, Gtk
 from i18n import _
 
-from core import system_check, typing_log
+from core import login_waits, system_check, typing_log
 
 ICONS = {
     system_check.OK: ("object-select-symbolic", "success"),
@@ -143,8 +143,7 @@ class CheckPage:
         return group
 
     def run(self):
-        self.facts = system_check.collect(self.dbus, self.ngosen_version)
-        self.found = system_check.steps(self.facts)
+        self.facts, self.found = login_waits.run(self.dbus, self.ngosen_version)
         self.findings = [f for f in self.found if f.level != system_check.OK]
         self._show_steps()
         self._show_version()

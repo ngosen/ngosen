@@ -125,7 +125,7 @@ class CheckPageAppTestTest(unittest.TestCase):
                 self.assertIsNone(dialog.app_test)
                 self.assertTrue(dialog.right_btn.isHidden())
 
-                os.makedirs(typing_log.log_dir())
+                os.makedirs(typing_log.log_dir(), exist_ok=True)
                 with open(
                     os.path.join(typing_log.log_dir(), "typing-20261015-100000.log"), "w"
                 ) as f:

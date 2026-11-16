@@ -13,6 +13,7 @@ class SettingsCategory(Enum):
     TYPING = "typing"
     SHORTCUTS = "shortcuts"
     CONVERT = "convert"
+    EMOJI = "emoji"
 
 
 TYPING_GROUP = N_("Typing")
@@ -20,6 +21,7 @@ TYPING_KEYS = N_("Typing keys")
 MODE_SWITCHING = N_("Mode switching")
 TRAY_ICON = N_("Tray icon")
 CONVERT_CHARSETS = N_("Charsets")
+EMOJI_GROUP = N_("Emoji")
 
 # A light and a dark panel, behind the tray icon preview.
 TRAY_PANEL = ("#e6e6e6", "#2d2d2d")
@@ -64,6 +66,9 @@ SETTINGS_MAP = {
             "CapitalizeStartOfText",
             "RawWordAfterSlash",
         ],
+    },
+    SettingsCategory.EMOJI: {
+        EMOJI_GROUP: ["EmojiSuggestions", "EmojiPlacement", "YahooEmoticons"],
     },
     SettingsCategory.SHORTCUTS: {
         N_("Hotkeys"): ["ToggleKey", "ModeMenuKey", "CycleModeKey"],
@@ -130,6 +135,15 @@ HINTS = {
     "RetoneSelection": N_(
         "Select nhanh and type s: nhánh. Tab, Esc or s again gives back s. Only the tone mark changes: nguoi does not become người."
     ),
+    "EmojiSuggestions": N_(
+        "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."
+    ),
+    "YahooEmoticons": N_(
+        "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
+    ),
+    "EmojiPlacement": N_(
+        "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
+    ),
     "RawWordAfterSlash": N_(
         "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
     ),
@@ -157,13 +171,12 @@ HINTS = {
     ),
 }
 
-MODE_BUTTON_ORDER = ["Sen", "Preedit", "Emoji Picker"]
+MODE_BUTTON_ORDER = ["Sen", "Preedit"]
 MODE_HINTS = {
     "Sen": N_("Text goes straight into the app as you type."),
     "Preedit": N_(
         "The word is underlined until it is done. Use it in an app that Sen does not work with."
     ),
-    "Emoji Picker": N_("Type an emoji name, then pick from the list."),
 }
 
 
@@ -212,6 +225,8 @@ DEPENDS = {
     "CapitalizeMacro": ("EnableMacro", "True"),
     "EnableMacroInOffMode": ("EnableMacro", "True"),
     "TimeFormat": ("EnableMacro", "True"),
+    "YahooEmoticons": ("EmojiSuggestions", "True"),
+    "EmojiPlacement": ("EmojiSuggestions", "True"),
     "DateFormat": ("EnableMacro", "True"),
     **{shortcut: (shown, "True") for shortcut, shown in MODE_SHORTCUT_TO_VISIBILITY.items()},
 }

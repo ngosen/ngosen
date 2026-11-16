@@ -223,6 +223,17 @@ namespace ngosen {
         bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key
         Surrounding              reportAtKey_;
 
+        struct LockedWord {
+            std::string keys;
+            std::string composed;
+            bool        showsComposed;
+            uint64_t    editedAtUs = 0; ///< when the lock or the last swap went to the app
+        };
+        std::optional<LockedWord>      lockedWord_; ///< the word just locked, which another tap swaps between its two forms
+        std::unique_ptr<ngosen::Timer> lock_swap_timer_;
+        bool                           lockSwapDue_      = false; ///< a swap waits for the app to see the lock key go up
+        bool                           tapTakesBackSwap_ = false; ///< the lock key went down again while a swap waited
+
         enum class VimState : std::uint8_t {
             Insert,
             Normal,
@@ -864,6 +875,9 @@ namespace ngosen {
         // Backspace on a word with a tone mark: take off only the mark. False leaves the key as is.
         bool removeToneMark(ngosen::KeyPress& keyEvent);
         bool replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent);
+        // False when the Backspace only drops a letter. Otherwise `edited` holds the word to show instead of the
+        // app's text less one character, if the field can take that edit.
+        bool backspaceIntoKeysShownAsTyped(std::optional<std::string>& edited, std::string& deletedPart, std::string& addedPart);
         // Backspace from after lastWord_ into it: the engine takes up what is left of that word.
         void reopenLastWord();
         // A key's press can reach the app before the input method has the field (a sheet opening a cell
@@ -940,9 +954,17 @@ namespace ngosen {
         void cancelModifierTap();
 
         /**
-         * @brief Keeps the word being typed as it is shown: no more tone marks, restore or macro.
+         * @brief Keeps the word being typed: no more tone marks, restore or macro.
+         *
+         * A word shown as typed is kept with its marks, and each further tap swaps the two forms.
          */
         void lockWord();
+        void commitComposedPreedit(const std::string& composed);
+        void swapLockedWord();
+        void swapLockedWordSoon();
+        void runDueLockSwap();
+        bool lockedWordStillThere();
+        bool isOwnBackspace(uint32_t sym) const;
 
         // Everything sent to the app goes through here, so the typing logic does not call fcitx5 directly.
         std::unique_ptr<ngosen::Host> host_;

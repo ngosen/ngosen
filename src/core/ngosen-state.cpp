@@ -358,6 +358,23 @@ namespace ngosen {
 
     // Keys shown as typed can compose once one goes (`dduoxwc` gives đưỡ), but the app deletes one character.
     bool TypingState::replaceKeysShownAsTyped(ngosen::KeyPress& keyEvent) {
+        std::optional<std::string> edited;
+        std::string                deletedPart;
+        std::string                addedPart;
+        if (!backspaceIntoKeysShownAsTyped(edited, deletedPart, addedPart))
+            return false;
+        if (edited) {
+            is_deleting_.store(false, std::memory_order_release);
+            keyEvent.accept();
+            performReplacement(deletedPart, addedPart);
+            oldPreBuffer_ = *edited;
+            return true;
+        }
+        keyEvent.passToApp();
+        return true;
+    }
+
+    bool TypingState::backspaceIntoKeysShownAsTyped(std::optional<std::string>& edited, std::string& deletedPart, std::string& addedPart) {
         const uintptr_t engine = bambooEngine_.handle();
         if (oldPreBuffer_.empty() || EngineShownAsTyped(engine) == 0U)
             return false;
@@ -370,21 +387,15 @@ namespace ngosen {
         ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(engine));
         const std::string        preedit = (preeditC && (*preeditC.get() != 0)) ? preeditC.get() : "";
         hasHistory_                      = true;
-        std::string deletedPart;
-        std::string addedPart;
         ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, preedit, deletedPart, addedPart);
         if (preedit != appText && canSendBackspaces() && !keepsWordRaw(deletedPart)) {
-            is_deleting_.store(false, std::memory_order_release);
-            keyEvent.accept();
-            performReplacement(deletedPart, addedPart);
-            oldPreBuffer_ = preedit;
+            edited = preedit;
             return true;
         }
         // The field cannot take the edit, so the engine follows what the app shows.
         if (preedit != appText)
             EngineRebuildFromText(engine, appText.c_str());
         oldPreBuffer_ = appText;
-        keyEvent.passToApp();
         return true;
     }
 
@@ -688,9 +699,14 @@ namespace ngosen {
         return dropped;
     }
 
+    // Firefox stops declaring its text after a deletion through it until it reports the edit; Calc does so
+    // during every key. A report of our edit still due tells Firefox apart, but only for a moment, since a
+    // check can stay open long enough for a click into another cell.
     bool TypingState::fieldLostWord() const {
-        const Surrounding s = host_->surrounding();
-        return hasLastSurrounding_ && !lastSurroundingText_.empty() && (!s.isValid() || s.text().empty());
+        constexpr uint64_t OwnEditReportUs = 250000;
+        const bool         reportDue       = surrCheck_ && monotonicUs() - surrCheck_->sentAtUs < OwnEditReportUs;
+        const Surrounding  s               = host_->surrounding();
+        return hasLastSurrounding_ && !lastSurroundingText_.empty() && !reportDue && (!s.isValid() || s.text().empty());
     }
 
     void TypingState::replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8) {
@@ -782,6 +798,8 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        if (!keyEvent.isRelease() && !keyEvent.isModifier() && !isOwnBackspace(keyEvent.sym()))
+            lockedWord_.reset();
         if (!keyEvent.isModifier())
             notePressOrRelease(keyEvent);
         // Counted first, so a replacement this key starts does not count it as a later key.
@@ -879,7 +897,10 @@ namespace ngosen {
         // Only plain backspaces typed after a finished commit may reopen the word; anything else changes the text after it.
         // Backspaces we press through XTEST come back here while we delete; they belong to the commit.
         const bool deleting     = is_deleting_.load(std::memory_order_acquire);
-        const bool ownBackspace = deleting && ngosen::key::isBackspace(currentSym) && !ngosen::forwardsBackspaces(host_->field());
+        const bool ownBackspace = isOwnBackspace(currentSym);
+        // A key typed during the swap ends the word when it replays.
+        if (!keyEvent.isRelease() && !keyEvent.isModifier() && !deleting)
+            lockedWord_.reset();
         if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
             lastWord_.clear();
         if (holdKeyBehindHeldKey(keyEvent, currentSym))
@@ -947,7 +968,8 @@ namespace ngosen {
         }
         if (keyEvent.isModifier()) {
             handleModifierTap(keyEvent);
-            if (mode() != ngosen::Mode::Preedit || keyEvent.isBareShift())
+            // A tap of the lock key decides how the word is committed; a key held with it still commits the word first.
+            if (mode() != ngosen::Mode::Preedit || keyEvent.isBareShift() || isLockWordModifier(keyEvent.sym()))
                 return true;
         } else {
             cancelModifierTap();
@@ -1319,7 +1341,14 @@ namespace ngosen {
         fieldAtKeptReset_.reset();
         if (keep)
             fieldAtKeptReset_ = std::make_pair(host_->surrounding().text(), host_->surrounding().cursor());
+        // Firefox resets right after each commit, the lock key's swap included, and over fcitx5-gtk it
+        // hides its text just then. A later reset may be a click the report does not show yet.
+        constexpr uint64_t        OwnEditResetUs = 50000;
+        std::optional<LockedWord> locked;
+        if (lockedWord_ && ngosen::monotonicUs() - lockedWord_->editedAtUs < OwnEditResetUs)
+            locked = lockedWord_;
         resetField(false, true, keep);
+        lockedWord_ = std::move(locked);
     }
 
     // Qt reports the field unchanged after dropping the word; GTK, Firefox and Chromium commit it themselves.
@@ -1358,6 +1387,7 @@ namespace ngosen {
         echoKeyAtUs_ = 0;
         if (!keepOpenWord)
             fieldAtKeptReset_.reset();
+        lockedWord_.reset();
         // After focus out a forwarded key may reach the window that took focus.
         if (isFocusOut) {
             held_enter_pending_ = false;
@@ -1481,8 +1511,13 @@ namespace ngosen {
         ResetEngine(bambooEngine_.handle());
     }
 
+    bool TypingState::isOwnBackspace(uint32_t sym) const {
+        return is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(sym) && !ngosen::forwardsBackspaces(host_->field());
+    }
+
     void TypingState::clearAllBuffers(bool keepOpenWord) {
         NGOSEN_DEBUG("Clear all buffers");
+        lockedWord_.reset();
         if (is_deleting_.load(std::memory_order_acquire)) {
             return;
         }

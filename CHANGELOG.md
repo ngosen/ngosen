@@ -12,6 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Trên GNOME, gõ nhanh ngay sau khi mở Firefox, nhấn Backspace hai lần liền không còn mất một lần (`nam tieesng`, xoá `ng` rồi gõ lại ra `nam tiiếng`) (#815).
 - Trong Firefox trên GNOME, gõ `nhưg` rồi Space ra `nhưng`, nhấn Backspace ngay sau đó nay trả lại đúng `nhưg` thay vì chỉ xoá dấu cách (#813).
 - Khôi phục từ tệp sao lưu sửa tay có giá trị viết `true`, `false` hay số không còn báo xong mà bỏ qua các mục đó: nay các giá trị này được khôi phục, còn giá trị là danh sách thì cửa sổ báo tệp hỏng trước khi ghi gì. Tệp do Ngó Sen tự xuất vẫn khôi phục như trước. Chỉ thử bằng unit test, chưa thử với fcitx5 thật (#805).
 

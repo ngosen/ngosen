@@ -43,8 +43,8 @@ namespace ngosen {
         return ngosen::namesNoApp(field) || ngosen::appliesDeletionsEarly(field);
     }
 
-    // fcitx5 can relay every app under GNOME Shell's name and drop all their deletions (#816). Backspaces
-    // still work there, so remembering the drop for the shared name costs other apps nothing.
+    // An app GNOME Shell relays under its own name may drop every deletion, as VaultID does (#816).
+    // Backspaces work for all of them, so remembering the drop for the shared name costs nothing.
     bool TypingState::keepsDropForSharedName() const {
         const Field field = host_->field();
         return ngosen::namesNoApp(field) && !ngosen::appliesDeletionsEarly(field) && !deletesOnlyThroughSurrounding();

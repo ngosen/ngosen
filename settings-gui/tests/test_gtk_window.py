@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import shutil
 import tempfile
 import time
 import unittest
@@ -39,6 +40,7 @@ if CAN_RUN:
     from core import (
         dictionary,
         keymap,
+        login_waits,
         page_status,
         session_setup,
         system_check,
@@ -1089,6 +1091,25 @@ class GtkCheckPageTest(unittest.TestCase):
         self.assertEqual(row.button.get_label(), "Add Ngó Sen")
         row.copy_button.emit("clicked")
         self.assertEqual(self.clipboard(), "fcitx5-configtool")
+
+    def test_a_step_left_by_a_new_login_shows_as_failed(self):
+        state = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, state)
+        boot = os.path.join(state, "boot_id")
+        with open(boot, "w", encoding="ascii") as f:
+            f.write("b\n")
+        os.environ.update(XDG_STATE_HOME=state, XDG_SESSION_ID="2")
+        for name in ("has_im_config", "xinputrc_runs_fcitx5"):
+            patcher = mock.patch.object(session_setup, name, return_value=True)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        with mock.patch.object(login_waits, "BOOT_ID", boot):
+            self.check.run()
+            first = [f.level for f in self.check.found if f.waiting]
+            os.environ["XDG_SESSION_ID"] = "3"
+            self.check.run()
+        self.assertEqual(first, [system_check.WARN])
+        self.assertEqual([f.level for f in self.check.found if f.waiting], [system_check.FAIL])
 
     def test_copy_icon_is_in_adwaita(self):
         theme = Gtk.IconTheme()

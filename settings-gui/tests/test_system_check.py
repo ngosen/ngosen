@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -11,7 +12,7 @@ from urllib.parse import parse_qs, urlparse
 # support puts the settings window on sys.path, so it has to come first.
 # isort: off
 from support import FakeDBusHandler, app  # noqa: F401
-from core import session_setup, system_check, update_repo
+from core import login_waits, session_setup, system_check, update_repo
 from core.system_check import FAIL, OK, WARN, Facts
 
 # isort: on
@@ -856,6 +857,25 @@ class CheckPageTest(unittest.TestCase):
 
     def row(self, title):
         return next(row for row in self.page.rows if row.title == title)
+
+    def test_a_step_left_by_a_new_login_shows_as_failed(self):
+        state = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, state)
+        boot = os.path.join(state, "boot_id")
+        with open(boot, "w", encoding="ascii") as f:
+            f.write("b\n")
+        os.environ.update(XDG_STATE_HOME=state, XDG_SESSION_ID="2")
+        for name in ("has_im_config", "xinputrc_runs_fcitx5"):
+            patcher = mock.patch.object(session_setup, name, return_value=True)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        with mock.patch.object(login_waits, "BOOT_ID", boot):
+            self.page.run()
+            first = [f.level for f in self.page.found if f.waiting]
+            os.environ["XDG_SESSION_ID"] = "3"
+            self.page.run()
+        self.assertEqual(first, [system_check.WARN])
+        self.assertEqual([f.level for f in self.page.found if f.waiting], [system_check.FAIL])
 
     def settle(self):
         from qtpy.QtWidgets import QApplication

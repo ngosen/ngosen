@@ -72,6 +72,9 @@ def _as_text(value, name):
         return "True" if value else "False"
     if isinstance(value, (str, int, float)):
         return str(value)
+    if value is None:
+        # Restores have always sent null as empty text.
+        return ""
     raise ValueError(f"the {name} in the file are damaged")
 
 

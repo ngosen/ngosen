@@ -2083,8 +2083,9 @@ open_check_page() {
     fi
     # Sway, Hyprland and niri start no autostart entries unless the user's config runs them.
     wants_sway_hyprland_setup && return 0
-    mkdir -p "$(config_home)/autostart"
-    check_autostart_entry >"$(config_home)/autostart/$CHECK_AUTOSTART"
+    # Ngó Sen is installed by now; an autostart folder it cannot write must not fail the install.
+    { mkdir -p "$(config_home)/autostart" &&
+        check_autostart_entry >"$(config_home)/autostart/$CHECK_AUTOSTART"; } 2>/dev/null || return 0
     say "Lần đăng nhập sau, Ngó Sen mở trang Kiểm tra máy một lần để xem còn bước nào chưa xong."
 }
 

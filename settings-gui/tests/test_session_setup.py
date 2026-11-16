@@ -367,6 +367,8 @@ class InstallerOpensCheckTest(SessionSetupCase):
             if not os.path.exists(link):
                 os.symlink(shutil.which(tool), link)
         script = (
+            # install.sh runs under these, so a failing step there stops the whole install.
+            "set -euo pipefail; "
             f'for f in {self.FUNCTIONS}; do eval "$(sed -n "/^$f() {{/,/^}}/p" "$0")"; done; '
             'CHECK_AUTOSTART=$(sed -n "s/^CHECK_AUTOSTART=//p" "$0"); '
             'id() { echo "$FAKE_UID"; }; fcitx5_is_running() { [ "$FAKE_RUNNING" = 1 ]; }; '
@@ -398,6 +400,20 @@ class InstallerOpensCheckTest(SessionSetupCase):
         self.assertEqual(self.open_check(running=0, compositor=1), (None, None))
         launched, _entry = self.open_check(compositor=1)
         self.assertEqual(launched, "fcitx5-ngosen-settings --after-install")
+
+    def test_an_unwritable_autostart_folder_leaves_the_install_successful(self):
+        folder = os.path.join(self.config, "autostart")
+        os.makedirs(folder)
+        os.chmod(folder, 0o555)
+        self.addCleanup(os.chmod, folder, 0o755)
+        self.assertEqual(self.open_check(running=0), (None, None))
+
+    def test_the_window_cannot_remove_the_entry_without_failing(self):
+        self.open_check(running=0)
+        folder = os.path.join(self.config, "autostart")
+        os.chmod(folder, 0o555)
+        self.addCleanup(os.chmod, folder, 0o755)
+        session_setup.remove_check_autostart(self.env)
 
     def test_the_window_removes_the_entry_install_sh_wrote(self):
         self.open_check(running=0)

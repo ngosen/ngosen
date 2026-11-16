@@ -44,7 +44,12 @@ elif case == "keymap":
 elif case == "app_modes":
     from core.app_modes import RememberedAppModes
 
+    # The fake fcitx5 remembers no app, so give Defaults something to forget.
     modes = RememberedAppModes(dbus)
+    modes.lists = {
+        "app_rules": [{"App": "kate", "Mode": "Preedit"}],
+        "app_switches": [{"App": "kate", "Vietnamese": "True"}],
+    }
     modes.restore_defaults()
     print(modes.save_data())
 elif case == "emoji_words":
@@ -138,15 +143,16 @@ class ListsReachFcitx5Test(unittest.TestCase):
         saved = self.save("backup", path)
         self.assertEqual(saved[ADDON]["SpellCheck"], "False")
         self.assertEqual(saved[ADDON]["ToggleKey"], {"0": "Control+space"})
-        for uri in (
-            "ngosen-macro",
-            "custom_keymap",
-            "app_rules",
-            "app_switches",
-            "emoji_words",
-            "emoji_off_apps",
-        ):
-            self.assertEqual(len(next(iter(saved[uri].values()))), 1, uri)
+        expected = {
+            "ngosen-macro": {"Macro": {"0": {"Key": "vn", "Value": "Việt Nam"}}},
+            "custom_keymap": {"CustomKeymap": {"0": {"Key": "z", "Value": "D_Đ"}}},
+            "app_rules": {"Rules": {"0": {"App": "kate", "Mode": "Preedit"}}},
+            "app_switches": {"Switches": {"0": {"App": "kate", "Vietnamese": "True"}}},
+            "emoji_words": {"Words": {"0": {"Keyword": "vui", "Emoji": "😀", "On": "True"}}},
+            "emoji_off_apps": {"Apps": {"0": {"App": "firefox"}}},
+        }
+        for uri, values in expected.items():
+            self.assertEqual(saved[uri], values, uri)
 
 
 if __name__ == "__main__":

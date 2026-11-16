@@ -328,8 +328,9 @@ jobs:
       - name: Test
         working-directory: settings-gui/tests
         # Every test_gtk_* file runs here; the Qt jobs skip them, so a file left out ran nowhere.
+        # unittest takes file names, and a glob that matches nothing stays literal and fails.
         run: >-
-          xvfb-run -a python3 -m unittest -v $(ls test_gtk_*.py | sed 's/\.py$//')
+          xvfb-run -a python3 -m unittest -v test_gtk_*.py
           test_launcher test_core_toolkit_free test_hotkey_recorder test_save_journey
           test_lists_reach_fcitx5
 

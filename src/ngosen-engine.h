@@ -483,7 +483,8 @@ namespace fcitx {
         void          showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn);
         void          clearPanelLater(InputContext* ic, uint64_t delayUs);
 
-        void          handleModeMenuKey(KeyEvent& keyEvent);
+        bool          handleModeMenuKey(KeyEvent& keyEvent);
+        bool          handleModeMenuPick(KeyEvent& keyEvent);
         void          moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);

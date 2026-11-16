@@ -99,7 +99,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          pacman -Syu --noconfirm base-devel clang cmake ninja extra-cmake-modules fmt libuv boost git systemd-libs extra-cmake-modules python librsvg rust
+          pacman -Syu --noconfirm base-devel clang cmake ninja extra-cmake-modules fmt libuv boost git systemd-libs extra-cmake-modules python librsvg rust nodejs
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global --add safe.directory "$GITHUB_WORKSPACE/ngosen"
           git config --global --add safe.directory "$GITHUB_WORKSPACE/fcitx5"

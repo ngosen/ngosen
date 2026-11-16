@@ -310,5 +310,17 @@ add_test(NAME vendored_crates_switch
          COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/vendored-crates-switch.sh ${CMAKE_COMMAND} ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 set_tests_properties(vendored_crates_switch PROPERTIES LABELS "unit;packaging" TIMEOUT 60)
 
+# The GNOME Shell extension runs only inside the shell; its plain logic runs under node where it exists.
+find_program(NODE_EXECUTABLE node)
+if(NODE_EXECUTABLE)
+    execute_process(COMMAND ${NODE_EXECUTABLE} --version OUTPUT_VARIABLE NODE_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX REPLACE "^v" "" NODE_VERSION "${NODE_VERSION}")
+endif()
+# An older node reads the extension's .js files as CommonJS.
+if(NODE_EXECUTABLE AND NODE_VERSION VERSION_GREATER_EQUAL 22.7)
+    add_test(NAME gnome_shell_pending_keys COMMAND ${NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/gnome-shell/pending-keys.test.mjs)
+    set_tests_properties(gnome_shell_pending_keys PROPERTIES LABELS "unit" TIMEOUT 60)
+endif()
+
 # Tests of the typing logic alone; NGOSEN_CORE_ONLY builds just these.
 add_subdirectory(core)

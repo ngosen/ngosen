@@ -2448,10 +2448,21 @@ namespace {
         slow.lagMs = 40;
         FakeResources lagging;
         // s finishes the replacement on arrival and must not join the word locked before it.
-        expectTyped(lagging, makeField("wayland", true), "tunx^s ", "tũns ", "lock: Ctrl during a replacement", slow, 10);
+        expectTyped(lagging, makeField("wayland", true), "banj^s ", "bạns ", "lock: Ctrl during a replacement", slow, 10);
+        FakeResources quick;
+        expectTyped(quick, makeField("wayland", true), "tunx^s ", "tunxs ", "lock toggle: a key right after the tap keeps the keys", {}, 10);
         // A tap between words does not close the last one to Backspace.
         FakeResources plain;
         expectTyped(plain, makeField("wayland", true), "ban ^<f ", "bàn ", "lock: Ctrl after a word");
+    }
+
+    // Each further tap swaps a locked word between the keys typed and the marks they make.
+    void testLockWordToggles() {
+        const Field   field = makeField("wayland", true);
+        FakeResources resources;
+        expectTyped(resources, field, "tunx^^ ", "tunx ", "lock toggle: a second tap brings the keys back");
+        expectTyped(resources, field, "tunx^^^ ", "tũn ", "lock toggle: a third tap brings the marks back");
+        expectTyped(resources, field, "tieengs^^ ", "tieengs ", "lock toggle: a word shown with marks swaps to its keys");
     }
 
     // Over GNOME's IBus bridge a slow app can apply our backspace after the commit sent behind it, which then
@@ -2502,10 +2513,196 @@ namespace {
             for (char c : std::string("tunx"))
                 press(state, static_cast<uint32_t>(c));
             press(state, modifier);
+            // The first tap commits the word, so a second one has nothing left to swap.
+            press(state, modifier);
             press(state, ngosen::key::space);
             const std::string name = modifier == ngosen::key::Shift_L ? "Shift" : "Ctrl";
             check(join(host->commits()) == "['tũn'][' ']", "lock preedit: " + name + " commits tũn as shown", join(host->commits()));
         }
+    }
+
+    // A swap needs the word where it was left, in the charset the app shows.
+    void testLockWordToggleEdges() {
+        FakeResources           resources;
+        ngosen::test::AppQuirks xtest;
+        xtest.takesXTest = true;
+        setXTestSenderForTest([](int) { return true; });
+        expectTyped(resources, makeField("xim", false), "tunx^^ ", "tunx ", "lock toggle: XTEST backspaces keep the word", xtest, 200);
+        setXTestSenderForTest({});
+        // Chrome reads a BackSpace forwarded before it saw Ctrl go up as Ctrl+BackSpace.
+        ngosen::test::AppQuirks ctrlWord;
+        ctrlWord.ctrlBackSpaceDeletesWord = true;
+        expectTyped(resources, makeField("ibus", false), "ok tunx^ ", "ok tũn ", "lock toggle: the swap waits for the app to see Ctrl go up", ctrlWord);
+        // The second tap lands before the first swap has started; Space comes after the swap would have run.
+        const auto       quickKeys = editKeysOf("ok tunx^^ ");
+        std::vector<int> quickGaps(quickKeys.size(), 10);
+        quickGaps[quickGaps.size() - 2] = 100;
+        const std::string quickTaps     = ngosen::test::typeInApp(resources, makeField("wayland", true), {}, quickKeys, quickGaps);
+        check(quickTaps == "ok tunx ", "lock toggle: two quick taps cancel out", quickTaps);
+
+        const auto tap = [](ngosen::TypingState& state) {
+            FakeKey down(ngosen::key::Control_L, false, 0);
+            state.keyEvent(down);
+            FakeKey up(ngosen::key::Control_L, true, ngosen::modifier::Ctrl);
+            state.keyEvent(up);
+        };
+        // Firefox through the fcitx4 frontend resets the context after each commit, the swap's own too.
+        // GTK 3 on Plasma reports a click late, so only the time since our edit tells the reset apart.
+        const struct {
+            const char* typed;
+            bool        tapsBefore;
+            bool        click;
+            bool        hidesClick;
+            int         waitMs;
+            const char* want;
+            const char* step;
+            bool        hidesText = false;
+        } resets[] = {{"abc tunx", false, false, false, 40, "abc tunx", "lock toggle: an app reset after the swap keeps the word"},
+                      // Firefox over fcitx5-gtk resets while it hides its text after the swap's deletion.
+                      {"abc tunx", false, false, false, 40, "abc tunx", "lock toggle: a reset while the field hides its text keeps the word", true},
+                      {"abc tieengs", false, false, false, 40, "abc tieengs", "lock toggle: an app reset after the lock keeps the word"},
+                      {"abc tunx", true, false, false, 40, "abc tũn", "lock toggle: an app reset after the swap back keeps the word"},
+                      {"abc tunx", false, true, false, 40, "abc tũn", "lock toggle: a reset after a click leaves the word alone"},
+                      {"abc tunx", false, true, true, 300, "abc tũn", "lock toggle: a reset after a click the app reports late leaves the word alone"}};
+        for (const auto& r : resets) {
+            realMode = ngosen::Mode::Sen;
+            ngosen::test::AppQuirks quirks;
+            quirks.hidesCursorMoves         = r.hidesClick;
+            quirks.dropsSurroundingOnDelete = r.hidesText;
+            FakeLoop            loop;
+            FakeResources       plain;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("dbus", true), quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&plain, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string(r.typed)) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            if (r.tapsBefore) {
+                tap(state);
+                loop.pump(300);
+            }
+            tap(state);
+            loop.pump(r.waitMs);
+            if (r.click)
+                app->moveCursor(3);
+            state.appReset();
+            loop.pump(100);
+            tap(state);
+            loop.pump(300);
+            check(app->text() == r.want, r.step, app->text());
+        }
+        for (const bool click : {true, false}) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       plain;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&plain, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("abc tunx")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            tap(state);
+            loop.pump(300);
+            if (click) {
+                app->moveCursor(3);
+            } else {
+                realMode = ngosen::Mode::Off;
+                state.clearAllBuffers();
+            }
+            loop.pump(300);
+            tap(state);
+            loop.pump(300);
+            realMode = ngosen::Mode::Sen;
+            check(app->text() == "abc tũn", click ? "lock toggle: a click leaves the word alone" : "lock toggle: a mode change leaves the word alone", app->text());
+        }
+        {
+            // Konsole reports a valid empty text, which says nothing about where the word is.
+            FakeResources           konsole;
+            ngosen::test::AppQuirks empty;
+            empty.reportsEmptyText = true;
+            expectTyped(konsole, makeField("wayland", true), "tunx^ ", "tũn ", "lock toggle: an empty report does not drop the word", empty);
+        }
+        {
+            // Ctrl going down while a swap waits on the Shift lock key: the backspaces would go out with Ctrl held.
+            realMode = ngosen::Mode::Sen;
+            FakeLoop      loop;
+            FakeResources shiftLock;
+            shiftLock.mutableOptions().lockWordKey = ngosen::LockWordKey::Shift;
+            auto                owned              = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+            auto*               app                = owned.get();
+            ngosen::TypingState state(&shiftLock, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("ok tunx")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            FakeKey shiftDown(ngosen::key::Shift_L, false, 0);
+            state.keyEvent(shiftDown);
+            FakeKey shiftUp(ngosen::key::Shift_L, true, ngosen::modifier::Shift);
+            state.keyEvent(shiftUp);
+            FakeKey ctrlDown(ngosen::key::Control_L, false, 0);
+            state.keyEvent(ctrlDown);
+            loop.pump(300);
+            check(app->text() == "ok tunx", "lock toggle: another modifier going down drops the swap", app->text());
+        }
+        {
+            // A click before the delayed swap runs.
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       plain;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&plain, std::move(owned));
+            app->attach(&state);
+            for (char c : std::string("abc tunx")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(30);
+            }
+            tap(state);
+            app->moveCursor(3);
+            loop.pump(300);
+            check(app->text() == "abc tunx", "lock toggle: a click right after the tap leaves the word alone", app->text());
+        }
+
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop      loop;
+        FakeResources viqr;
+        viqr.mutableOptions().outputCharset = "VIQR";
+        auto                owned           = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host            = owned.get();
+        ngosen::TypingState state(&viqr, std::move(owned));
+        for (char c : std::string("tunx"))
+            press(state, static_cast<uint32_t>(c));
+        tap(state);
+        press(state, ngosen::key::space);
+        check(join(host->commits()) == "['tu~n'][' ']", "lock toggle: VIQR commits the marks in VIQR", join(host->commits()));
+    }
+
+    // The lock key is held back from the engine in a preedit field, so a shortcut must still commit the word.
+    void testLockKeyShortcutInPreedit() {
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        for (char c : std::string("tieengs"))
+            press(state, static_cast<uint32_t>(c));
+        FakeKey ctrlDown(ngosen::key::Control_L, false, 0);
+        state.keyEvent(ctrlDown);
+        FakeKey shortcut('a', false, ngosen::modifier::Ctrl);
+        state.keyEvent(shortcut);
+        const bool forwarded = !shortcut.accepted();
+        FakeKey    shortcutUp('a', true, ngosen::modifier::Ctrl);
+        state.keyEvent(shortcutUp);
+        FakeKey ctrlUp(ngosen::key::Control_L, true, ngosen::modifier::Ctrl);
+        state.keyEvent(ctrlUp);
+        check(join(host->commits()) == "['tiếng']" && host->preedit().empty() && forwarded, "lock preedit: Ctrl+a commits the word before the shortcut",
+              join(host->commits()) + " preedit " + host->preedit());
     }
 
     // ^ in typed keys is a Ctrl tap, \n Enter, \t Tab and \x1b Escape.
@@ -2622,6 +2819,8 @@ namespace {
         };
         std::string text = typed({.ignoresSurroundingDel = true}, "tiee");
         check(text == "tieê", "quirk: a dropped deletion leaves the old letter", text);
+        text = typed({.deletesOneCharOnly = true}, "vinx");
+        check(text == "viĩn", "quirk: a short deletion leaves the first old letter", text);
         text = typed({.reportsEmptyText = true}, "tiee");
         check(text == "tieê", "quirk: a field that reports no text drops the deletion", text);
         text = typed({.convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true}, "vieetj nam tieesng");
@@ -2989,6 +3188,14 @@ namespace {
         text = typedWithBackspaces(gnome, {.ignoresSurroundingDel = true, .repeatsOldTextAfterDelete = true}, "too too ", 400, lines);
         check(text == "toô tô " && countHaving(lines, "Leave the dropped deletion") == 1 && countHaving(lines, "Surrounding text untrusted") == 1,
               "long check: a dropped deletion seen after a key costs one word", text + " " + join(lines));
+    }
+
+    // An app that deletes one character of two must not keep the other in the word.
+    void testShortDeletion() {
+        std::vector<std::string> lines;
+        const auto               text = typedWithBackspaces(makeField("ibus", true), {.deletesOneCharOnly = true}, "vinxh nam ", 400, lines);
+        check(text == "vĩnh nam " && countHaving(lines, "Surrounding check: app deleted too little") == 1 && countHaving(lines, "Fix the dropped deletion") == 1,
+              "short deletion: the letter left is fixed with backspaces", text + " " + join(lines));
     }
 
     // A check open while GNOME Shell names the app late says nothing about either app.
@@ -3728,6 +3935,33 @@ namespace {
         const auto run = ngosen::test::typeInAppTraced(resources, field, {.backspaceLagMs = 60, .dropsSurroundingOnDelete = true}, keys, std::vector<int>(keys.size(), 120));
         check(run.text == "tiền nguyễn luận ", "dbus: a field that stopped declaring its text still deletes through it", run.text);
         check(run.sent.forwardedBackSpaces == 0, "dbus: no backspace for a field that stopped declaring its text", std::to_string(run.sent.forwardedBackSpaces));
+        // The key after the deletion arrives while the field declares no text, which is not a field that lost the word.
+        const auto ngKeys = keysOf("cuxg nhuwg ");
+        const auto ng     = ngosen::test::typeInAppTraced(resources, field, {.dropsSurroundingOnDelete = true}, ngKeys, std::vector<int>(ngKeys.size(), 120));
+        check(ng.text == "cũng nhưng ", "dbus: a key while the field declares no text stays in the word", ng.text);
+        // Over IBus the check of our edit stays open for a second, long enough for a click into another cell.
+        for (const char* frontend : {"dbus", "ibus"}) {
+            realMode                   = ngosen::Mode::Sen;
+            Field cellField            = makeField(frontend, true, "firefox");
+            cellField.keyEventOrderFix = true;
+            FakeLoop            loop;
+            FakeResources       cells;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, cellField, ngosen::test::AppQuirks{.dropsSurroundingOnDelete = true});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&cells, std::move(owned));
+            app->attach(&state);
+            for (const uint32_t key : keysOf("chaof")) {
+                app->type(key);
+                loop.pump(120);
+            }
+            app->pageShowsCell("");
+            loop.pump(400);
+            for (const uint32_t key : keysOf("t ")) {
+                app->type(key);
+                loop.pump(120);
+            }
+            check(app->text() == "t ", std::string(frontend) + ": a key in another cell well after our edit starts a new word", app->text());
+        }
     }
 
     // Firefox's snap carries the fcitx4 GTK module, which queues forwarded keys behind GDK events like
@@ -4228,6 +4462,7 @@ namespace {
         bool                  doubleSpaceToPeriod = false;
         int                   gapMs               = 30;
         int                   maxLagMs            = 45;
+        std::vector<uint32_t> keysAfterWait       = {}; // typed once the wait is over, 200 ms apart
     };
 
     struct TypedInWait {
@@ -4264,6 +4499,10 @@ namespace {
             loop.pump(c.gapMs);
         }
         loop.pump(600);
+        for (const uint32_t key : c.keysAfterWait) {
+            app->type(key);
+            loop.pump(200);
+        }
         app->setReportDelay(8);
         typeRolledInto(app, loop, "ng ", {});
         lines = ngosen::test::capturedLog();
@@ -4298,7 +4537,22 @@ namespace {
             {"space takes a macro, then backspace and space", "ko ", {bs, ' '}, true, 30, 15},
             // The second space comes after the wait, so it is typed rather than replayed.
             {"space takes a macro, then backspace and a later space", "ko ", {bs, ' '}, true, 100, 15},
+            // The Backspace empties the word only when it replays, and the tone after it goes onto the word before.
+            {"backspace empties a word, then a cursor move and a tone",
+             "ca",
+             {ngosen::key::Left, ngosen::key::Right, 'd', 'd', bs, ngosen::key::Left, ngosen::key::Right},
+             false,
+             30,
+             45,
+             {'s', ' '}},
+            {"backspace empties a word after a cursor move, then a tone", "ca", {ngosen::key::Left, ngosen::key::Right, 'd', 'd', bs}, false, 30, 45, {'s', ' '}},
+            // The Backspace takes the stray key off a kept word, which brings its marks back.
+            {"backspace after a stray tone key", "thuwcx", {bs, 'j', ' '}},
         };
+        const auto retoned = typedWithKeysInWait(cases[cases.size() - 2], 8, 40, 15, lines);
+        check(retoned.text == "người cá ng ", "backspace in a copy wait: without the wait the tone goes onto the word before", retoned.text);
+        const auto unstrayed = typedWithKeysInWait(cases.back(), 8, 40, 15, lines);
+        check(unstrayed.text == "người thực ng ", "backspace in a copy wait: without the wait the Backspace brings the kept word back", unstrayed.text);
         for (const auto& c : cases) {
             const auto expected = typedWithKeysInWait(c, 8, 40, 15, lines);
             // A held Backspace goes out as a forwarded key, where without the wait the app got it directly.
@@ -4618,7 +4872,7 @@ namespace {
             loop.pump(300);
             const auto lines = ngosen::test::capturedLog();
             ngosen::test::captureLog(false);
-            check(app->text() == "xiniệt việt v" && countHaving(lines, "Cursor came back to the word") == 0, "bounce: a move that ends elsewhere still forgets the word",
+            check(app->text() == "xinieetj việt v" && countHaving(lines, "Cursor came back to the word") == 0, "bounce: a move that ends elsewhere still forgets the word",
                   std::string(field.preeditFallback ? "IBus edition " : "fcitx5 ") + app->text() + " " + join(lines));
         }
     }
@@ -4650,7 +4904,7 @@ namespace {
                 if (comesBack)
                     check(app->text() == "tiếng việt t", "first letter: the cursor coming back keeps the word", std::to_string(lateMs) + " ms: " + app->text());
                 else if (lateMs > 30)
-                    check(app->text() == "iệttt", "first letter: a cursor staying at the line start forgets the word", std::to_string(lateMs) + " ms: " + app->text());
+                    check(app->text() == "ieetjtt", "first letter: a cursor staying at the line start forgets the word", std::to_string(lateMs) + " ms: " + app->text());
             }
         }
     }
@@ -5011,6 +5265,9 @@ int main() {
     testMacroBeforeEnter();
     testEnterDuringReplacement();
     testLockWord();
+    testLockWordToggles();
+    testLockKeyShortcutInPreedit();
+    testLockWordToggleEdges();
     testLockWordPreedit();
     testRetoneAtWordEndInBothModes();
     testAutoMarkAtWordEndInBothModes();
@@ -5122,6 +5379,7 @@ int main() {
     testBackspacePathDuringLongCheck();
     testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
+    testShortDeletion();
     testCheckAcrossLateAppName();
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();

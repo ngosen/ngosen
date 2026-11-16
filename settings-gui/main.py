@@ -15,6 +15,8 @@ from core.cli import parse_args
 from core.toolkit_install import has_gtk, has_qt, reopen_if_switched
 from i18n import saved_setting, setup_i18n
 
+from core import session_setup
+
 # The desktops whose own apps are GTK and libadwaita, and their session names.
 # Xfce is GTK too, and libadwaita suits it better than Qt does.
 GTK_DESKTOPS = {"GNOME", "X-Cinnamon", "XFCE"}
@@ -72,8 +74,7 @@ def run_qt():
     window = NgoSenSettingsWindow()
     # A window still alive at interpreter exit is deleted by PyQt6's own cleanup, which crashes on 6.11.
     window.setAttribute(Qt.WA_DeleteOnClose)
-    if args.page:
-        window.show_page(args.page)
+    window.start_on(args.page, args.after_install)
     window.show()
 
     try:
@@ -86,6 +87,9 @@ def run_qt():
 def main():
     """Main execution function."""
     setup_i18n()
+    if parse_args(sys.argv[1:]).after_install:
+        # Opened once from install.sh's autostart entry, which must not open it at every login.
+        session_setup.remove_check_autostart()
     code = run_gtk() if toolkit() == "gtk" else run_qt()
     reopen_if_switched()
     sys.exit(code)

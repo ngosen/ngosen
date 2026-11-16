@@ -7,6 +7,7 @@ from i18n import _
 
 from core.app_modes import RememberedAppModes
 from core.dictionary import Dictionary
+from core.emoji_words import EmojiWords
 from core.keymap import Keymap
 from core.macros import MacroTable
 from core.settings_model import SettingsModel
@@ -28,14 +29,18 @@ def restore(dbus):
     app_modes = RememberedAppModes(dbus)
     app_modes.restore_defaults()
     ok = app_modes.save_data() and ok
+    emoji = EmojiWords(dbus)
+    emoji.restore_defaults()
+    ok = emoji.save() and ok
+    ok = emoji.save_apps() and ok
     return _restore_dictionary(dbus) and ok
 
 
 def warning(model):
     """What a reset does beyond the settings the user can see on the pages."""
     cleared = _(
-        "Macros, words added to the dictionary, custom keys and the modes remembered"
-        " for each app are cleared too. You can undo this right after."
+        "Macros, words added to the dictionary, custom keys, emoji words and what is"
+        " remembered for each app are cleared too. You can undo this right after."
     )
     if not model.metadata or model.toggle_is_ctrl_shift():
         return cleared

@@ -51,8 +51,6 @@ namespace ngosen {
     ConvertResult TypingState::convertSelection() {
         if (host_->field().hidesText())
             return ConvertResult::Refused;
-        if (!emojiBuffer_.empty())
-            return ConvertResult::Busy;
         if (mode() == Mode::Preedit && bambooEngine_) {
             const UniqueCPtr<char> word(EnginePullPreedit(bambooEngine_.handle()));
             if (word && *word.get() != '\0')

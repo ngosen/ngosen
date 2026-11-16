@@ -34,7 +34,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import backup, settings_snapshot
+from core import backup, check_reminder, settings_snapshot
 from ui import brand, search
 from ui.confirm import confirm
 from ui.message_bar import MessageBar
@@ -244,6 +244,23 @@ class NgoSenSettingsWindow(QMainWindow):
     def show_tips(self):
         self.show_page("whats-new").show_tips()
 
+    def start_on(self, page, after_install=False):
+        """Opens on `page`, or on Check my machine when that is due; only the latter counts an open."""
+        if page:
+            self.show_page(page)
+        else:
+            # After the window shows, so the check does not hold it back.
+            QTimer.singleShot(0, lambda: self.open_check_if_due(always=after_install))
+
+    def open_check_if_due(self, path=None, always=False):
+        """Lands on Check my machine the first time, and while a step that stops typing is undone."""
+        page = self._page_for_item(self._check_item) if self._check_item else None
+        if page is None:
+            return
+        due = check_reminder.should_open(page.found, path or check_reminder.state_file())
+        if due or always:
+            self.show_page("check")
+
     def _build_all_pages(self):
         # Pages are built when first opened; reset and search need all of them.
         for row in range(self.sidebar.count()):
@@ -315,6 +332,11 @@ class NgoSenSettingsWindow(QMainWindow):
 
             return DictEditorPage(self.dbus_handler)
 
+        def create_emoji():
+            from ui.pages.emoji_page import EmojiPage
+
+            return EmojiPage(self.dbus_handler)
+
         def create_keymap():
             from ui.pages.keymap_editor import KeymapEditorPage
 
@@ -359,6 +381,13 @@ class NgoSenSettingsWindow(QMainWindow):
             (_("Macros"), create_macros),
             (_("Dictionary"), create_dict),
             names=["macros", "dictionary"],
+        )
+        self._add_page(
+            _("Emoji"),
+            # Breeze has face-smile; Adwaita ships only symbolic emote and emoji icons.
+            ("face-smile", "face-smile-symbolic", "emoji-people-symbolic"),
+            (None, create_emoji),
+            names=["emoji"],
         )
         self._add_page(
             _("Keys"),
@@ -507,8 +536,12 @@ class NgoSenSettingsWindow(QMainWindow):
 
     def show_check_message(self, text, undo):
         """A message from the check page, with Undo when its fix can be taken back."""
+        self.show_page_message(text, undo)
+
+    def show_page_message(self, text, undo=None, error=False):
+        """A message about a change a page saved itself; undo() returns whether it worked."""
         self._undo_to = None
-        self._show_message(text, undo=undo is not None, keep=undo is not None)
+        self._show_message(text, undo=undo is not None, error=error, keep=undo is not None)
         self._undo_fix = undo
 
     def _show_count(self, count):

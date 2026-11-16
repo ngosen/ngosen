@@ -14,6 +14,47 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Khôi phục từ tệp sao lưu sửa tay có giá trị viết `true`, `false` hay số không còn báo xong mà bỏ qua các mục đó: nay các giá trị này được khôi phục, còn giá trị là danh sách thì cửa sổ báo tệp hỏng trước khi ghi gì. Tệp do Ngó Sen tự xuất vẫn khôi phục như trước. Chỉ thử bằng unit test, chưa thử với fcitx5 thật (#805).
 
+## [1.12.0-1] — 16/11/2026
+
+Gợi ý emoji khi gõ: gõ xong `cười`, `con mèo`, `haha` hay mã Yahoo Messenger như `=))` là emoji hiện cạnh con trỏ, bấm Tab để chọn; trang Emoji mới trong cửa sổ cài đặt liệt kê mọi emoji kèm từ gợi ý, và chế độ Chọn Emoji cũ được thay bằng tính năng này (#788, #791, #792, #793, #795). Cửa sổ cài đặt tự mở trang Kiểm tra máy khi còn bước làm không gõ được tiếng Việt, khi đã đăng nhập lại mà thiết lập vẫn chưa có tác dụng, và sau lần cài đầu bằng lệnh cài một dòng (#798, #801, #802, #806).
+Tải ở [ngosen-1.12.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.12.0-1).
+
+### Thêm
+
+- Gợi ý emoji khi gõ: gõ xong `cười`, `con mèo`, `cảm ơn`, `haha` hay `:)` là hiện `Tab: 😂 …` cạnh con
+  trỏ. Bấm Tab để đánh số (kèm dòng nhắc phím), rồi 1–5 chọn một emoji; Tab, Space hoặc Enter lấy emoji đầu, Esc giữ nguyên
+  chữ. Chữ thường giữ lại và emoji thêm vào sau; `haha` và `:)` được thay bằng emoji. Gõ không dấu như
+  `cuoi` vẫn ra, còn `cho`, `meo` thì không, vì đó đã là chữ tiếng Việt. Cờ hiện khi tên nước viết hoa
+  (`Việt Nam`, `Pháp`). Hiện với giao diện fcitx5 mặc định và extension Input Method Panel trên GNOME;
+  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trong nhóm Gõ nhanh, mặc định bật (#110, #788).
+- Phím `w` trong menu `` ` `` nay bật/tắt gợi ý emoji cho app đang dùng, giống Vim mode; chế độ gõ của app
+  giữ nguyên (#110, #791).
+- Gợi ý emoji thêm khoảng 460 từ lấy theo tên emoji, như `máy bay` ✈️, `xe máy` 🏍️, `cơm` 🍚, `bóng đá` ⚽, và 86 mã
+  Yahoo Messenger như `=))`, `:x`, `:">`, `@};-`, bấm Tab là mã thành emoji. Tuỳ chọn "Mã emoji Yahoo Messenger"
+  mặc định bật (#110, #792).
+- Tuỳ chọn "Khi chọn emoji": "Đặt sau từ" (`cười 😂`, như trước) hoặc "Thay luôn từ" (`😂`); `máy bay` được thay
+  cả hai chữ. `haha` và `:)` thì luôn được thay (#110, #793).
+- Trang Emoji mới trong cửa sổ cài đặt: các tuỳ chọn emoji, danh sách app đã tắt emoji kèm nút bật lại, và bảng
+  mọi emoji kèm từ gợi ý. Bấm một từ để tắt hay bật, thêm từ của riêng mình, "Như cũ" để trả về từ có sẵn; tìm
+  theo từ, lọc theo nhóm (#110, #795).
+- Cửa sổ cài đặt mở thẳng trang Kiểm tra máy lần đầu mở, và khi còn bước làm không gõ được tiếng Việt (fcitx5
+  không chạy, chưa thêm Ngó Sen, fcitx5 chạy từ trước lúc cài Ngó Sen, app chưa nhận bộ gõ…): báo ngay lần phát
+  hiện, rồi nhắc lại sau 3, 6, 12… lần mở cho tới khi sửa xong. Cảnh báo vàng khác thì không tự mở (#798).
+- Trang Kiểm tra máy báo đỏ "Đã đăng nhập lại nhưng thiết lập vẫn chưa có tác dụng" khi bước chờ đăng nhập lại vẫn
+  còn sau khi đã đăng xuất rồi đăng nhập lại (hoặc khởi động lại máy), và tự mở trang để nhắc gửi kết quả cho Ngó Sen (#801).
+- Lần cài đầu bằng lệnh cài một dòng, cửa sổ cài đặt tự mở trang Kiểm tra máy để xem còn bước nào chưa xong:
+  mở ngay nếu fcitx5 đang chạy, không thì mở một lần ở lần đăng nhập sau. Cập nhật thì không mở (#802).
+
+### Thay đổi
+
+- Bỏ nhãn "(thử nghiệm)" sau ba tuỳ chọn "Tự viết hoa đầu câu", "Hai dấu cách thành dấu chấm" và "Tự viết hoa chữ đầu văn bản và đầu dòng" trên trang Gõ chữ trong cửa sổ cài đặt; mặc định giữ nguyên (#796).
+
+### Bỏ
+
+- Chế độ Chọn Emoji (gõ tên tiếng Anh rồi chọn emoji) được thay bằng gợi ý emoji khi gõ. Ai đang dùng chế độ
+  này, chung hay riêng cho một app, được chuyển sang Gõ Sen. Ngó Sen không còn cần addon emoji của fcitx5
+  (#110, #791).
+
 ## [1.11.2-1] — 16/11/2026
 
 Chữ không phải tiếng Việt mà vẫn đúng luật đánh vần, như `rose`, `Sose`, nay hiện đúng phím đã gõ ngay lúc gõ; BackSpace sau chữ như vậy chỉ xoá phím cuối, và nhấn Ctrl đổi chữ qua lại giữa phím đã gõ và chữ có dấu (#764, #799, #800). Trong Firefox trên Linux Mint, chữ gõ ngay sau khi mở Firefox không còn thỉnh thoảng mất chữ `n` tự thêm (#804). Trên GNOME dùng IBus, nhấn Backspace trong lúc chờ app báo chữ không còn làm mất dấu hay đặt dấu nhầm từ (#785, #787), ô chat Lark không còn ra `Viĩnh` khi gõ `Vinxh` (#790), và trên GNOME 50.0–50.3 phím Backspace gõ sau khi GNOME làm mất Backspace của Ngó Sen không còn tới thẳng Firefox (#789).

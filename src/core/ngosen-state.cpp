@@ -773,7 +773,7 @@ namespace ngosen {
     }
 
     void TypingState::recordKey(const ngosen::KeyPress& keyEvent) {
-        static const char* const modeNames[] = {"Off", "Sen", "Preedit", "Emoji"};
+        static const char* const modeNames[] = {"Off", "Sen", "Preedit"};
         const auto               f           = host_->field();
         const std::string        program     = f.reportedProgram.empty() ? f.program : f.program + " (" + f.reportedProgram + ")";
         std::string field = "frontend=" + f.frontend + " program=" + program + " surrounding=" + (f.surroundingText ? "1" : "0") + " preedit=" + (f.preedit ? "1" : "0") +
@@ -812,7 +812,14 @@ namespace ngosen {
                 backspaceInWord_ = false;
             startEchoTimer(keyEvent);
         }
+        const bool        typedKey   = !keyEvent.isRelease() && !keyEvent.isModifier();
+        const std::string wordBefore = typedKey ? openWord() : std::string();
+        emojiTookPress_              = false;
         handleKey(keyEvent);
+        if (typedKey && !emojiTookPress_) {
+            noteTypedForEmoji(keyEvent, wordBefore);
+            updateEmojiOffer();
+        }
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             keySinceReport_ = true;
             clickBeforeKey_ = false;
@@ -890,7 +897,7 @@ namespace ngosen {
             // Taken on every key, so only the key right after the selection can use it.
             selectedBeforeKey_ = host_->takeSelection();
         }
-        if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || skipsKey(keyEvent))
+        if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || handleEmojiOfferKey(keyEvent) || skipsKey(keyEvent))
             return;
         settleBeforeKey();
         const uint32_t currentSym = trackCapitalization(keyEvent);
@@ -938,10 +945,6 @@ namespace ngosen {
             }
             case ngosen::Mode::Preedit: {
                 handlePreeditMode(keyEvent, currentSym);
-                break;
-            }
-            case ngosen::Mode::Emoji: {
-                handleEmojiMode(keyEvent);
                 break;
             }
             default: {
@@ -1403,6 +1406,7 @@ namespace ngosen {
         }
         // The cursor may have moved, so Enter or Esc must not replace text before it.
         dropRetype();
+        dropEmojiOffer();
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
         slashWord_             = false;
@@ -1452,12 +1456,6 @@ namespace ngosen {
             }
             case ngosen::Mode::Sen: {
                 host_->resetPanel();
-                break;
-            }
-            case ngosen::Mode::Emoji: {
-                host_->resetPanel();
-                host_->refreshPanel();
-                host_->refreshPreedit();
                 break;
             }
             default: {
@@ -1538,8 +1536,8 @@ namespace ngosen {
             current_backspace_count_ = 0;
             pending_commit_string_.clear();
         }
-        emojiBuffer_.clear();
-        emojiCandidates_.clear();
+        emojiTail_.clear();
+        dropEmojiOffer();
         buffered_keys_.clear();
         edit_hold_            = false;
         report_requests_left_ = 0;
@@ -1578,10 +1576,11 @@ namespace ngosen {
                 commit(raw.get());
         }
         dropRetype();
+        dropEmojiOffer();
         dropRetoneKey();
         forgetKeysWhileOff();
         clearAllBuffers();
-        if (mode() == ngosen::Mode::Preedit || mode() == ngosen::Mode::Emoji) {
+        if (mode() == ngosen::Mode::Preedit) {
             host_->resetPanel();
             host_->refreshPanel();
             host_->refreshPreedit();

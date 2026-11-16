@@ -173,6 +173,7 @@ config=$home/.config/fcitx5/config
 im_env=$home/.config/environment.d/90-ngosen.conf
 compositor_env_file=$home/.config/environment.d/90-ngosen-sway-hyprland.conf
 autostart=$home/.config/autostart/org.fcitx.Fcitx5.desktop
+check_entry=$home/.config/autostart/ngosen-check-after-install.desktop
 hidden_launcher=$home/.local/share/applications/org.fcitx.Fcitx5.desktop
 kwinrc=$home/.config/kwinrc
 kwin_im='InputMethod=/usr/share/applications/org.fcitx.Fcitx5.desktop'
@@ -223,10 +224,14 @@ check_session_files() {
         check "the final message names the toggle key" install_names Ctrl+Shift
         check "the final message has the autostart line" has_autostart_line
         check "the desktop config is untouched" desktop_config_untouched
+        check "with fcitx5 running no entry waits for the next login" test ! -e "$check_entry"
     else
         check "environment.d selects fcitx" has_line "$im_env" 'GTK_IM_MODULE=fcitx'
         check "fcitx5 starts at login" test -e "$autostart"
         check "the Fcitx 5 launcher is hidden" has_line "$hidden_launcher" 'NoDisplay=true'
+    fi
+    if [ -z "$desktop_config" ]; then
+        check "the check page opens at the next login" has_line "$check_entry" 'Type=Application'
     fi
     check "profile lists ngosen" has_line "$profile" 'Name=ngosen'
     check "profile has no keyboard next to ngosen" lacks_keyboard "$profile"
@@ -235,6 +240,7 @@ check_session_files() {
 
 check_uninstalled_state() {
     check "fcitx5-ngosen is removed" is_removed fcitx5-ngosen
+    check "the one-time check page entry is removed" test ! -e "$check_entry"
     if command -v apt-get >/dev/null 2>&1; then
         check "the repository it added is removed" no_repo_files
     fi

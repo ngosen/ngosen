@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import shutil
 import tempfile
 import time
 import unittest
@@ -39,6 +40,7 @@ if CAN_RUN:
     from core import (
         dictionary,
         keymap,
+        login_waits,
         page_status,
         session_setup,
         system_check,
@@ -650,7 +652,7 @@ class GtkLocksTest(unittest.TestCase):
 
     @staticmethod
     def page_with(w, key):
-        pages = (w.typing, w.shortcuts, w.appearance, w.macros)
+        pages = (w.typing, w.shortcuts, w.appearance, w.macros, w.emoji)
         return next(p for p in pages if p.control_for(key) is not None)
 
     def test_every_locked_setting_is_insensitive_and_opens_what_unlocks_it(self):
@@ -1090,6 +1092,25 @@ class GtkCheckPageTest(unittest.TestCase):
         row.copy_button.emit("clicked")
         self.assertEqual(self.clipboard(), "fcitx5-configtool")
 
+    def test_a_step_left_by_a_new_login_shows_as_failed(self):
+        state = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, state)
+        boot = os.path.join(state, "boot_id")
+        with open(boot, "w", encoding="ascii") as f:
+            f.write("b\n")
+        os.environ.update(XDG_STATE_HOME=state, XDG_SESSION_ID="2")
+        for name in ("has_im_config", "xinputrc_runs_fcitx5"):
+            patcher = mock.patch.object(session_setup, name, return_value=True)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        with mock.patch.object(login_waits, "BOOT_ID", boot):
+            self.check.run()
+            first = [f.level for f in self.check.found if f.waiting]
+            os.environ["XDG_SESSION_ID"] = "3"
+            self.check.run()
+        self.assertEqual(first, [system_check.WARN])
+        self.assertEqual([f.level for f in self.check.found if f.waiting], [system_check.FAIL])
+
     def test_copy_icon_is_in_adwaita(self):
         theme = Gtk.IconTheme()
         theme.set_theme_name("Adwaita")
@@ -1227,6 +1248,46 @@ class GtkCheckPageTest(unittest.TestCase):
         self.check.wrong_btn.emit("clicked")
         self.assertFalse(self.check.wrong_btn.get_visible())
         self.assertIn("result: wrong", self.check.report_text())
+
+    def test_opens_on_the_check_page_first_and_for_an_undone_step(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        win = window.Window(None, FakeDBusHandler())
+        self.addCleanup(win.destroy)
+        win.open_check_if_due(path)
+        self.assertEqual(win.stack.get_visible_child_name(), "check")
+        win.show_page("typing")
+        win.open_check_if_due(path)
+        self.assertEqual(win.stack.get_visible_child_name(), "typing")
+
+    def test_a_page_launch_or_a_launch_into_the_open_window_does_not_count(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        win = window.Window(None, FakeDBusHandler())
+        self.addCleanup(win.destroy)
+        with mock.patch("core.check_reminder.state_file", return_value=path):
+            win.start_on("typing")
+            win.start_on(None, opened=False)
+            self.assertFalse(os.path.exists(path))
+            self.assertEqual(win.stack.get_visible_child_name(), "typing")
+            win.start_on(None)
+        self.assertEqual(win.stack.get_visible_child_name(), "check")
+
+    def test_after_install_it_lands_on_the_check_page_even_in_the_open_window(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = os.path.join(folder.name, "reminders.json")
+        win = window.Window(None, FakeDBusHandler())
+        self.addCleanup(win.destroy)
+        shown = []
+        with mock.patch("core.check_reminder.state_file", return_value=path):
+            for opened, after_install in ((True, True), (True, True), (False, True), (True, False)):
+                win.show_page("typing")
+                win.start_on(None, opened, after_install)
+                shown.append(win.stack.get_visible_child_name())
+        self.assertEqual(shown, ["check", "check", "check", "typing"])
 
     def test_window_counts_steps_left_and_checks_again_on_opening(self):
         win = window.Window(None, FakeDBusHandler())

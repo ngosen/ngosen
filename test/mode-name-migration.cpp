@@ -3,7 +3,7 @@
  * @file mode-name-migration.cpp
  * @brief Headless test: every former name of the direct typing mode (Uinput, and before that Smooth,
  *        Slow, Super Smooth, Minecraft) and the removed Surrounding Text mode load as Sen, with the
- *        menu visibility and shortcut of Uinput kept.
+ *        menu visibility and shortcut of Uinput kept. The removed Emoji Picker mode loads as Sen too.
  *
  * The mode is persisted by name in ngosen.conf and by number in ngosen-app-rules.conf. An unknown
  * name makes fcitx keep the option default (Preedit), so without a migration the user would
@@ -73,11 +73,21 @@ int main() {
     }
 
     // setConfig is the path the settings GUI and fcitx5-configtool use.
-    for (const char* legacy : {"Uinput", "Uinput (Smooth)", "Uinput (Slow)", "Uinput (Super Smooth)", "Minecraft", "Surrounding Text"}) {
+    for (const char* legacy : {"Uinput", "Uinput (Smooth)", "Uinput (Slow)", "Uinput (Super Smooth)", "Minecraft", "Surrounding Text", "Emoji Picker"}) {
         fcitx::RawConfig config;
         config.setValueByPath("Mode", legacy);
         engine.setConfig(config);
         check(std::string("setConfig Mode=\"") + legacy + "\" gives Sen", engine.config().mode.value() == fcitx::NgoSenMode::Sen);
+    }
+
+    {
+        std::ofstream file(confFile, std::ios::trunc);
+        file << "Mode=\"Emoji Picker\"\n";
+    }
+    {
+        TestInstance        upgraded;
+        fcitx::NgoSenEngine upgradedEngine(&upgraded.instance);
+        check("ngosen.conf with \"Emoji Picker\" loads as Sen", upgradedEngine.config().mode.value() == fcitx::NgoSenMode::Sen);
     }
 
     // The macro skip key became the lock key; its old default, Disabled, becomes the new default.
@@ -92,8 +102,8 @@ int main() {
     }
 
     // Per-app rules store the mode as a number: 1 = Smooth, 2 = Uinput, 3 = Super Smooth, 4 = Surrounding
-    // Text, 8 = Minecraft.
-    for (int legacy : {1, 2, 3, 4, 8}) {
+    // Text, 6 = Emoji Picker, 8 = Minecraft.
+    for (int legacy : {1, 2, 3, 4, 6, 8}) {
         check("app rule mode " + std::to_string(legacy) + " gives Sen", fcitx::intToMode(legacy) == fcitx::NgoSenMode::Sen);
     }
 

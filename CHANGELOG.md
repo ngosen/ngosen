@@ -29,7 +29,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gợi ý emoji nay mặc định hiện "Ở cuối câu", vì lúc đang gõ nhanh ít ai nhìn lên danh sách; muốn như trước thì
   chọn "Sau mỗi từ" ở tuỳ chọn "Gợi ý emoji". Ở cuối câu, gõ `.` `!` `?` hay dừng tay một
   chút thì danh sách hiện emoji của mọi từ khoá trong câu, emoji chọn được thêm sau dấu câu (`vui quá! 😂`). Gợi ý
-  trong ô gõ nay cũng nhận từ đứng trước dấu chấm (`con mèo.` gợi ý 🐈) (#110, #834).
+  trong ô gõ nay cũng nhận từ đứng trước dấu chấm (`con mèo.` gợi ý 🐈) (#110, #834, #845).
 - Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
   giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
   vẫn giữ nguyên (#701, #829).

@@ -269,7 +269,8 @@ namespace ngosen {
 
     bool mayShowWebTerminal(const Field& field) {
         const std::string program = appName(field);
-        return isFirefoxFamily(program) || program == "epiphany" || program == "org.gnome.Epiphany" || isStartsWith(program, "vaultid");
+        return isFirefoxFamily(program) || program == "epiphany" || program == "org.gnome.Epiphany" || isStartsWith(program, "vaultid") ||
+            (field.frontend == "ibus" && program == "gnome-shell");
     }
 
     // The forks share Firefox's address bar.

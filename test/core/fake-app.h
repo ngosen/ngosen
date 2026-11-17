@@ -103,6 +103,9 @@ namespace ngosen::test {
         // commit made outside a composition once more with the text since the last composition started, as
         // xterm.js does in WebKitGTK. A commit sent before WebKitGTK has taken its preedit starts none.
         bool keepsOnlyCommits = false;
+        // With keepsOnlyCommits, sends its last commit to the terminal again on an empty commit, as xterm.js in
+        // VaultID does behind GNOME Shell.
+        bool resendsOnEmptyCommit = false;
         // With movesCursorBeforeText, shows the deletion first with the cursor still past the commit, as
         // CKEditor in Firefox on Plasma does.
         bool        showsDeletionWithCursorPast = false;
@@ -327,12 +330,13 @@ namespace ngosen::test {
         std::vector<std::unique_ptr<Timer>> timers_;
 
         // With keepsOnlyCommits: the composition xterm.js tracks, and a preedit that has not started one yet.
-        bool        composing_        = false;
-        size_t      compositionStart_ = 0;
-        std::string shownPreedit_;
-        bool        preeditWaits_           = false;
-        bool        clearsPreeditAtTurnEnd_ = false;
-        void        startComposition();
+        bool           composing_ = false;
+        std::u32string lastCommit_;
+        size_t         compositionStart_ = 0;
+        std::string    shownPreedit_;
+        bool           preeditWaits_           = false;
+        bool           clearsPreeditAtTurnEnd_ = false;
+        void           startComposition();
     };
 
     // The text the keys give in Preedit mode, where the app only ever gets finished text.

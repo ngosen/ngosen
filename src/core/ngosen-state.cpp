@@ -1380,15 +1380,22 @@ namespace ngosen {
         std::string        dropped         = ownCommit ? droppedWord_ : std::string();
         std::string        emojiTail       = emojiTail_;
         const bool         emojiMuted      = emojiMuted_;
+        // Firefox resets after each key; the preview stays unless the field shows the cursor moved.
+        holdEmojiPreview_ = emojiOffer_ && emojiOffer_->preview;
         resetField(false, true, keep);
-        emojiMuted_ = emojiMuted;
-        lockedWord_ = std::move(locked);
+        holdEmojiPreview_ = false;
+        emojiMuted_       = emojiMuted;
+        lockedWord_       = std::move(locked);
         if (ownCommit) {
             lastWord_    = std::move(committed);
             droppedWord_ = std::move(dropped);
         }
         // Firefox resets after each key it types itself, as the : of :), before it reports that key.
-        if (!restoreEmojiTail(emojiTail))
+        if (restoreEmojiTail(emojiTail))
+            return;
+        if (emojiTail.empty())
+            dropEmojiOffer();
+        else
             emojiTailAtReset_ = std::move(emojiTail);
     }
 
@@ -1505,7 +1512,8 @@ namespace ngosen {
                 break;
             }
             case ngosen::Mode::Sen: {
-                host_->resetPanel();
+                if (!holdEmojiPreview_)
+                    host_->resetPanel();
                 break;
             }
             default: {

@@ -321,7 +321,8 @@ namespace ngosen {
         if (!emojiTailAtReset_.empty()) {
             std::string tail = std::move(emojiTailAtReset_);
             emojiTailAtReset_.clear();
-            restoreEmojiTail(tail);
+            if (!restoreEmojiTail(tail))
+                dropEmojiOffer();
         }
         checkSurroundingReport();
         surr_silent_        = false;

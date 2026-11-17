@@ -124,8 +124,12 @@ namespace ngosen {
             return;
         }
         if (ngosen::key::isBackspace(sym)) {
-            if (wordBefore.empty())
+            if (wordBefore.empty()) {
                 ngosen::utf8::eraseLastCodepoint(emojiTail_);
+                // Erasing the muted sentence starts a new one.
+                if (emojiTail_.empty())
+                    emojiMuted_ = false;
+            }
             return;
         }
         const std::string text = host_->keyText(sym);

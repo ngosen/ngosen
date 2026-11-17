@@ -31,6 +31,7 @@ namespace ngosen {
         std::string                inputMethod                    = "Telex";
         std::string                outputCharset                  = "Unicode";
         bool                       spellCheck                     = true;
+        bool                       teencode                       = false;
         bool                       modernStyle                    = true;
         bool                       freeMarking                    = true;
         int                        w2u                            = 1;

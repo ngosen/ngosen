@@ -64,7 +64,29 @@ def load(path):
             raise ValueError(f"the {name} in the file are damaged")
     if not isinstance(backup.get("dictionary", ""), str):
         raise ValueError("the dictionary in the file is damaged")
+    if "config" in backup:
+        backup["config"] = _as_text(backup["config"], "settings")
+    for name in SUB_CONFIGS:
+        if name in backup:
+            backup[name] = [_as_text(item, name) for item in backup[name]]
     return backup
+
+
+def _as_text(value, name):
+    """A value as fcitx5 stores it: text, or a dict of them.
+
+    fcitx5 silently drops anything else, so a hand-edited true or 5 would not be restored.
+    """
+    if isinstance(value, dict):
+        return {str(k): _as_text(v, name) for k, v in value.items()}
+    if isinstance(value, bool):
+        return "True" if value else "False"
+    if isinstance(value, (str, int, float)):
+        return str(value)
+    if value is None:
+        # Restores have always sent null as empty text.
+        return ""
+    raise ValueError(f"the {name} in the file are damaged")
 
 
 def _edition(backup):

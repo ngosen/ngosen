@@ -194,6 +194,7 @@ fn typing_through_the_c_interface() {
         bracket_transform: 0,
         time_format: c"%H:%M".as_ptr(),
         date_format: c"%d/%m/%Y".as_ptr(),
+        teencode: false,
     };
     // SAFETY: a valid option struct.
     unsafe { EngineSetOption(engine, &option) };
@@ -230,6 +231,7 @@ fn set_option_applies_settings_and_charset() {
         bracket_transform: 2,
         time_format: c"%H:%M".as_ptr(),
         date_format: c"%d/%m/%Y".as_ptr(),
+        teencode: false,
     };
     // SAFETY: a valid option struct.
     unsafe { EngineSetOption(engine, &option) };

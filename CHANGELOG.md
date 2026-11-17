@@ -10,6 +10,22 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Trên GNOME không có extension Input Method Panel, Chrome và các app GNOME chuyển phím hộ trước đây không hiện
+  gợi ý emoji. Nay dừng gõ chừng nửa giây là gợi ý hiện ngay trong ô, gạch chân, lấy emoji của mọi từ trong câu
+  (`con mèo cười quá` → `Tab: 😂 🤣 😄 🐈 🐱`); Tab rồi số để chọn, emoji thêm vào chỗ con trỏ (#110, #821).
+- Khi danh sách emoji đã đánh số, phím mũi tên dời ô đang chọn và Enter, Space hoặc Tab lấy emoji đang chọn. Ô nổi
+  của fcitx5 mặc định vẽ chữ to hơn (Sans 13 thay Sans 10) cho dễ nhìn emoji; ai đã tự đặt font thì giữ nguyên (#110, #827).
+- Gợi ý emoji nhận cả từ tiếng Anh theo danh sách của Unicode: `cat` 🐈, `star` ⭐, `thumbs up` 👍. Từ quá chung
+  (`man`, `hand`, `face`) và từ trùng chữ Việt như `can`, `me` thì không gợi ý. Trang Emoji hiện từ tiếng Anh cạnh
+  từ tiếng Việt; tuỳ chọn "Từ khoá tiếng Anh" mặc định bật, tắt đi là gỡ hết (#110, #830).
+- Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
+  giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
+  vẫn giữ nguyên (#701, #829).
+- Teencode giữ thêm chữ kéo dài (`nhaaa`, `chàiii` gõ `chaiiif`) và viết tắt ghép (`cgái`, `bthường`,
+  `đthoại`) (#701, #833).
+
 ## [1.12.1-1] — 17/11/2026
 
 Trong Firefox, gõ mã Yahoo như `:)`, `=))` nay hiện gợi ý emoji (#819). Trên GNOME, hai lần Backspace liền ngay sau khi mở Firefox không còn mất một lần (#815), và với fcitx5 5.1.23 chỉ còn hỏng chữ đầu tiên của phiên thay vì chữ đầu sau mỗi lần bấm sang ô khác (#816, #818). Menu chọn chế độ gõ đóng lại khi bấm phím không có trong menu hoặc sau 5 giây (#814, #817). Trong Firefox, Backspace ngay sau Space đã sửa `nhưg` thành `nhưng` trả lại `nhưg` (#813). Khôi phục tệp sao lưu sửa tay không còn bỏ qua giá trị `true`, `false` hay số (#805).
@@ -36,7 +52,7 @@ Tải ở [ngosen-1.12.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
   chữ. Chữ thường giữ lại và emoji thêm vào sau; `haha` và `:)` được thay bằng emoji. Gõ không dấu như
   `cuoi` vẫn ra, còn `cho`, `meo` thì không, vì đó đã là chữ tiếng Việt. Cờ hiện khi tên nước viết hoa
   (`Việt Nam`, `Pháp`). Hiện với giao diện fcitx5 mặc định và extension Input Method Panel trên GNOME;
-  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trên trang Emoji, mặc định bật (#110, #788).
+  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trong nhóm Gõ nhanh, mặc định bật (#110, #788).
 - Phím `w` trong menu `` ` `` nay bật/tắt gợi ý emoji cho app đang dùng, giống Vim mode; chế độ gõ của app
   giữ nguyên (#110, #791).
 - Gợi ý emoji thêm khoảng 460 từ lấy theo tên emoji, như `máy bay` ✈️, `xe máy` 🏍️, `cơm` 🍚, `bóng đá` ⚽, và 86 mã
@@ -47,14 +63,6 @@ Tải ở [ngosen-1.12.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
 - Trang Emoji mới trong cửa sổ cài đặt: các tuỳ chọn emoji, danh sách app đã tắt emoji kèm nút bật lại, và bảng
   mọi emoji kèm từ gợi ý. Bấm một từ để tắt hay bật, thêm từ của riêng mình, "Như cũ" để trả về từ có sẵn; tìm
   theo từ, lọc theo nhóm (#110, #795).
-- Trên GNOME không có extension Input Method Panel, Chrome và các app GNOME chuyển phím hộ trước đây không hiện
-  gợi ý emoji. Nay dừng gõ chừng nửa giây là gợi ý hiện ngay trong ô, gạch chân, lấy emoji của mọi từ trong câu
-  (`con mèo cười quá` → `Tab: 😂 🤣 😄 🐈 🐱`); Tab rồi số để chọn, emoji thêm vào chỗ con trỏ (#110, #821).
-- Khi danh sách emoji đã đánh số, phím mũi tên dời ô đang chọn và Enter, Space hoặc Tab lấy emoji đang chọn. Ô nổi
-  của fcitx5 mặc định vẽ chữ to hơn (Sans 13 thay Sans 10) cho dễ nhìn emoji; ai đã tự đặt font thì giữ nguyên (#110, #827).
-- Gợi ý emoji nhận cả từ tiếng Anh theo danh sách của Unicode: `cat` 🐈, `star` ⭐, `thumbs up` 👍. Từ quá chung
-  (`man`, `hand`, `face`) và từ trùng chữ Việt như `can`, `me` thì không gợi ý. Trang Emoji hiện từ tiếng Anh cạnh
-  từ tiếng Việt; tuỳ chọn "Từ khoá tiếng Anh" mặc định bật, tắt đi là gỡ hết (#110, #830).
 - Cửa sổ cài đặt mở thẳng trang Kiểm tra máy lần đầu mở, và khi còn bước làm không gõ được tiếng Việt (fcitx5
   không chạy, chưa thêm Ngó Sen, fcitx5 chạy từ trước lúc cài Ngó Sen, app chưa nhận bộ gõ…): báo ngay lần phát
   hiện, rồi nhắc lại sau 3, 6, 12… lần mở cho tới khi sửa xong. Cảnh báo vàng khác thì không tự mở (#798).
@@ -62,11 +70,6 @@ Tải ở [ngosen-1.12.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
   còn sau khi đã đăng xuất rồi đăng nhập lại (hoặc khởi động lại máy), và tự mở trang để nhắc gửi kết quả cho Ngó Sen (#801).
 - Lần cài đầu bằng lệnh cài một dòng, cửa sổ cài đặt tự mở trang Kiểm tra máy để xem còn bước nào chưa xong:
   mở ngay nếu fcitx5 đang chạy, không thì mở một lần ở lần đăng nhập sau. Cập nhật thì không mở (#802).
-- Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
-  giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
-  vẫn giữ nguyên (#701, #829).
-- Teencode giữ thêm chữ kéo dài (`nhaaa`, `chàiii` gõ `chaiiif`) và viết tắt ghép (`cgái`, `bthường`,
-  `đthoại`) (#701, #833).
 
 ### Thay đổi
 

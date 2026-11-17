@@ -30,7 +30,13 @@ namespace fcitx {
     }
 
     bool NgoSenDBusObject::toggleVietnamese() {
-        return engine_->toggleFromShortcut();
+        const auto on = engine_->toggleFromShortcut();
+        if (!on) {
+            const std::string message = _("Ngó Sen is not in the current input method group. Add it to this group in fcitx5 settings.");
+            NGOSEN_WARN(message);
+            throw dbus::MethodCallError("org.freedesktop.DBus.Error.Failed", message.c_str());
+        }
+        return *on;
     }
 
     std::string NgoSenDBusObject::convertText(const std::string& text, const std::string& from, const std::string& to, int32_t letterCase, bool stripDiacritics) {

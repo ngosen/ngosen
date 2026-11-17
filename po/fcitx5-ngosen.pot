@@ -142,6 +142,10 @@ msgstr ""
 msgid "Capitalize Macro"
 msgstr ""
 
+#: src/ngosen-dbus-object.cpp
+msgid "Ngó Sen is not in the current input method group. Add it to this group in fcitx5 settings."
+msgstr ""
+
 #: src/ngosen-engine.cpp
 msgid "This app is set to English"
 msgstr ""

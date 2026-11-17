@@ -199,6 +199,10 @@ msgstr "Bật gõ tắt"
 msgid "Capitalize Macro"
 msgstr "Gõ tắt chữ hoa"
 
+#: src/ngosen-dbus-object.cpp
+msgid "Ngó Sen is not in the current input method group. Add it to this group in fcitx5 settings."
+msgstr "Ngó Sen chưa có trong nhóm bộ gõ đang dùng. Thêm Ngó Sen vào nhóm này trong cài đặt fcitx5."
+
 #: src/ngosen-engine.cpp
 msgid "This app is set to English"
 msgstr "App này đang ở chế độ tiếng Anh"

@@ -1523,8 +1523,8 @@ namespace fcitx {
 #endif
     }
 
-    bool NgoSenEngine::toggleFromShortcut() {
-        // The shortcut's modifiers come up after this; their release must not count as a tap of the toggle key.
+    std::optional<bool> NgoSenEngine::toggleFromShortcut() {
+        // Modifiers still held come up after this, and their release must not count as a tap of the toggle key.
         toggleTapArmed_       = false;
         retypeOnRelease_      = false;
         InputContext* focused = nullptr;
@@ -1538,9 +1538,13 @@ namespace fcitx {
         }
         const std::string inputMethod = instance_->inputMethod(focused);
         if (!inputMethod.empty() && inputMethod != "ngosen") {
-            // As picking Ngó Sen in the tray, which turns Vietnamese on.
+            // Typed before this field left Ngó Sen; activating it would offer to retype that.
+            stateFor(focused)->forgetKeysWhileOff();
+            // As picking Ngó Sen in the tray, which turns Vietnamese on; fcitx5 refuses it outside the group.
             instance_->setCurrentInputMethod(focused, "ngosen", true);
-            return true;
+            if (instance_->inputMethod(focused) != "ngosen")
+                return std::nullopt;
+            return realMode != NgoSenMode::Off;
         }
         // No retype: XTEST backspaces sent while the shortcut is held reach the app as Alt+BackSpace.
         toggleVietnamese(focused, false);
@@ -1551,9 +1555,9 @@ namespace fcitx {
         config_.vietnameseOn.setValue(!*config_.vietnameseOn);
         saveConfig();
         setMode(globalMode(), nullptr);
-        // The tray shows the last focused field's icon, which setMode cannot reach without a field.
-        if (auto* last = instance_->inputContextManager().lastFocusedInputContext())
-            last->updateUserInterface(UserInterfaceComponent::StatusArea);
+        // The tray shows the most recent field's icon, which setMode cannot reach without a field.
+        if (auto* recent = instance_->inputContextManager().mostRecentInputContext())
+            recent->updateUserInterface(UserInterfaceComponent::StatusArea);
     }
 
     void NgoSenEngine::setAppRule(const std::string& appName, NgoSenMode mode) {

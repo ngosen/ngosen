@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: 2026 Ngó Sen contributors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import json
 import os
+import tempfile
 import time
 import unittest
 
@@ -184,6 +186,21 @@ class GtkEmojiPageTest(unittest.TestCase):
         self.assertEqual(self.page.picked.get_text(), "Hôm nay 🤣")
         self.page.rows["EmojiSuggestions"].set_active(False)
         self.assertFalse(self.page.example.get_visible())
+
+    def test_import_saves_the_shared_words(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "words.json")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "meta": {"kind": "ngosen-emoji-words", "version": 1},
+                        "emoji_words": [{"Keyword": "hài quá", "Emoji": "😂"}],
+                    },
+                    f,
+                )
+            self.page.import_from(path)
+        self.assertEqual(self.words(), [{"Keyword": "hài quá", "Emoji": "😂", "On": "True"}])
+        self.assertIn("hài quá", [c.word for c in self.row("😂").chips if c.get_visible()])
 
     def test_english_switch_hides_english_words(self):
         shown = lambda: [c.word for c in self.row("😂").chips if c.get_visible()]  # noqa: E731

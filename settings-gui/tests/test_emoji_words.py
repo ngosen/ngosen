@@ -1,12 +1,15 @@
 # SPDX-FileCopyrightText: 2026 Ngó Sen contributors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import json
+import os
+import tempfile
 import unittest
 from unittest import mock
 
 # isort: off
 from fake_fcitx import FakeDBusHandler
-from core.emoji_words import EmojiWords, toggle_hint
+from core.emoji_words import EmojiWords, export_words, read_shared, toggle_hint
 
 # isort: on
 
@@ -181,6 +184,63 @@ class ToggleHintTest(unittest.TestCase):
     def test_without_a_menu_key_points_to_where_to_set_one(self):
         self.assertNotIn("press", toggle_hint({}, "w"))
         self.assertNotIn("press", toggle_hint({"0": "grave"}, ""))
+
+
+class ShareTest(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.path = os.path.join(tmp.name, "words.json")
+
+    def write(self, data):
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+    def test_export_then_import_adds_the_words_turned_on(self):
+        mine = words()
+        mine.add("👔", "sếp lớn")
+        mine.toggle("😂", "cười")
+        self.assertEqual(export_words(mine, self.path), 1)
+        theirs = words()
+        self.assertEqual(theirs.merge(read_shared(self.path)), 1)
+        self.assertTrue(theirs.is_on("👔", "sếp lớn"))
+        self.assertTrue(theirs.is_on("😂", "cười"))
+
+    def test_import_keeps_a_word_the_user_turned_off(self):
+        self.write(
+            {
+                "meta": {"kind": "ngosen-emoji-words", "version": 1},
+                "emoji_words": [{"Keyword": "cười", "Emoji": "😂"}],
+            }
+        )
+        table = words()
+        table.toggle("😂", "cười")
+        self.assertEqual(table.merge(read_shared(self.path)), 0)
+        self.assertFalse(table.is_on("😂", "cười"))
+
+    def test_unknown_emoji_and_long_words_are_skipped(self):
+        self.write(
+            {
+                "meta": {"kind": "ngosen-emoji-words", "version": 1},
+                "emoji_words": [
+                    {"Keyword": "Sếp  Lớn", "Emoji": "👔"},
+                    {"Keyword": "x", "Emoji": "not an emoji"},
+                    {"Keyword": "y" * 41, "Emoji": "👔"},
+                ],
+            }
+        )
+        self.assertEqual(read_shared(self.path), [("👔", "sếp lớn")])
+
+    def test_other_files_are_refused(self):
+        for data in (
+            {"config": {}, "emoji_words": []},
+            {"meta": {"kind": "ngosen-emoji-words"}, "emoji_words": "sếp"},
+            {"meta": {"kind": "ngosen-emoji-words"}, "emoji_words": [5]},
+            [1, 2],
+        ):
+            self.write(data)
+            with self.assertRaises(ValueError, msg=data):
+                read_shared(self.path)
 
 
 class DefaultsTest(unittest.TestCase):

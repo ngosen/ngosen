@@ -5,8 +5,8 @@
 
 from core.catalog import EMOJI_GROUP, SettingsCategory
 from core.emoji_table import GROUPS
-from core.emoji_words import toggle_hint
-from gi.repository import Adw, Gdk, GLib, GObject, Graphene, Gsk, Gtk
+from core.emoji_words import export_words, read_shared, toggle_hint
+from gi.repository import Adw, Gdk, Gio, GLib, GObject, Graphene, Gsk, Gtk
 from i18n import N_, _
 
 from ui_gtk.pages import SettingsPage
@@ -325,7 +325,54 @@ class EmojiPage(SettingsPage):
         bar.append(top)
         bar.append(kinds)
         group.add(bar)
+        group.set_header_suffix(self._share_buttons())
         return group
+
+    def _share_buttons(self):
+        box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
+        self.export_button = Gtk.Button(
+            label=_("Export…"), tooltip_text=_("Save the words you turned on, to share them")
+        )
+        self.export_button.connect("clicked", lambda _b: self._choose_export())
+        self.import_button = Gtk.Button(
+            label=_("Import…"), tooltip_text=_("Add the words from a file someone shared")
+        )
+        self.import_button.connect("clicked", lambda _b: self._choose_import())
+        box.append(self.export_button)
+        box.append(self.import_button)
+        return box
+
+    def _choose_export(self):
+        dialog = _json_dialog(_("Export Emoji Words"))
+        dialog.set_initial_name("ngosen-emoji-words.json")
+        dialog.save(self.page.get_root(), None, _on_file, dialog.save_finish, self.export_to)
+
+    def _choose_import(self):
+        dialog = _json_dialog(_("Import Emoji Words"))
+        dialog.open(self.page.get_root(), None, _on_file, dialog.open_finish, self.import_from)
+
+    def export_to(self, path):
+        try:
+            count = export_words(self.words, path)
+        except OSError as e:
+            self.show_message(_("Could not export: {}").format(e), None)
+            return
+        self.show_message(_("Saved {} words to {}.").format(count, path), None)
+
+    def import_from(self, path):
+        try:
+            pairs = read_shared(path)
+        except (OSError, ValueError) as e:
+            self.show_message(_("Could not import: {}").format(e), None)
+            return
+        before = dict(self.words.edits)
+        added = self.words.merge(pairs)
+        if not added:
+            self.show_message(_("You already have every word in that file."), None)
+            return
+        if not self.on_save(self.words.save, _("{} words from the file").format(added)):
+            self.words.edits = before
+        self.refilter()
 
     def _table(self):
         # Items are places in self.shown, not emoji: filtering then changes what the rows show
@@ -392,6 +439,23 @@ class EmojiPage(SettingsPage):
             if row.emoji == emoji:
                 row.show(emoji)
         return ok
+
+
+def _json_dialog(title):
+    files = Gtk.FileFilter(name=_("Emoji words"))
+    files.add_suffix("json")
+    filters = Gio.ListStore.new(Gtk.FileFilter)
+    filters.append(files)
+    return Gtk.FileDialog(title=title, modal=True, filters=filters, default_filter=files)
+
+
+def _on_file(_dialog, result, finish, use):
+    try:
+        file = finish(result)
+    except GLib.Error:
+        return  # Cancelled.
+    if file is not None and file.get_path():
+        use(file.get_path())
 
 
 def _small(text, *css):

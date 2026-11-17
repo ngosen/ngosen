@@ -43,6 +43,14 @@ class LoadTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.load(data)
 
+    def test_a_file_of_shared_emoji_words_is_not_restored(self):
+        shared = {
+            "meta": {"kind": "ngosen-emoji-words", "version": 1},
+            "emoji_words": [{"Keyword": "sếp", "Emoji": "👔"}],
+        }
+        with self.assertRaises(ValueError):
+            self.load(shared)
+
 
 class RoundTripTest(unittest.TestCase):
     def test_the_toggle_key_switches_come_back_with_the_rules(self):

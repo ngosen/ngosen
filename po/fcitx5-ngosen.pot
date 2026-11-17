@@ -2064,3 +2064,67 @@ msgstr ""
 #: settings-gui/core/emoji_words.py
 msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
 msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Export…"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Import…"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Save the words you turned on, to share them"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Add the words from a file someone shared"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Export Emoji Words"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Import Emoji Words"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Could not export: {}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Saved {} words to {}."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Could not import: {}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "You already have every word in that file."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "{} words from the file"
+msgstr ""
+
+#: settings-gui/ui_gtk/emoji.py
+msgid "Emoji words"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py
+msgid "Emoji words (*.json);;All Files (*)"
+msgstr ""
+
+#: settings-gui/core/emoji_words.py
+msgid "This is not a file of emoji words exported from Ngó Sen."
+msgstr ""
+
+#: settings-gui/core/emoji_words.py
+msgid "The emoji words in the file are damaged."
+msgstr ""
+
+#: settings-gui/core/backup.py
+msgid "this file holds emoji words; import it on the Emoji page"
+msgstr ""

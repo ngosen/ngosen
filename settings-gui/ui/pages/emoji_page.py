@@ -3,12 +3,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The Emoji page: the emoji settings, the apps that offer none, and the words of each emoji."""
 
+import os
 from bisect import bisect_left, bisect_right
 from itertools import accumulate
 
 from core.catalog import SettingsCategory
 from core.emoji_table import GROUPS
-from core.emoji_words import EmojiWords, toggle_hint
+from core.emoji_words import EmojiWords, export_words, read_shared, toggle_hint
 from i18n import N_, _
 from qtpy.QtCore import QEvent, QPoint, QRect, QRectF, QSignalBlocker, QSize, Qt, QTimer
 from qtpy.QtGui import QColor, QFontMetrics, QPainter, QPalette, QPen
@@ -16,6 +17,7 @@ from qtpy.QtWidgets import (
     QAbstractButton,
     QApplication,
     QButtonGroup,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -663,6 +665,14 @@ class EmojiPage(DynamicSettingsPage):
         self.only_on.setChecked(self._only_on)
         self.only_on.toggled.connect(self._on_only_on)
         tools.addWidget(self.only_on)
+        self.export_button = QPushButton(_("Export…"))
+        self.export_button.setToolTip(_("Save the words you turned on, to share them"))
+        self.export_button.clicked.connect(self._choose_export)
+        tools.addWidget(self.export_button)
+        self.import_button = QPushButton(_("Import…"))
+        self.import_button.setToolTip(_("Add the words from a file someone shared"))
+        self.import_button.clicked.connect(self._choose_import)
+        tools.addWidget(self.import_button)
         filters_layout.addLayout(tools)
 
         groups = QWidget()
@@ -687,6 +697,48 @@ class EmojiPage(DynamicSettingsPage):
         mute(self.count_line)
         layout.addWidget(self.count_line)
         return section
+
+    def _choose_export(self):
+        path, _filter = QFileDialog.getSaveFileName(
+            self,
+            _("Export Emoji Words"),
+            os.path.join(os.path.expanduser("~"), "ngosen-emoji-words.json"),
+            _("Emoji words (*.json);;All Files (*)"),
+        )
+        if path:
+            self.export_to(path)
+
+    def _choose_import(self):
+        path, _filter = QFileDialog.getOpenFileName(
+            self,
+            _("Import Emoji Words"),
+            os.path.expanduser("~"),
+            _("Emoji words (*.json);;All Files (*)"),
+        )
+        if path:
+            self.import_from(path)
+
+    def export_to(self, path):
+        try:
+            count = export_words(self.words, path)
+        except OSError as e:
+            self._show_message(_("Could not export: {}").format(e), error=True)
+            return
+        self._show_message(_("Saved {} words to {}.").format(count, path))
+
+    def import_from(self, path):
+        try:
+            pairs = read_shared(path)
+        except (OSError, ValueError) as e:
+            self._show_message(_("Could not import: {}").format(e), error=True)
+            return
+        added = self.words.merge(pairs)
+        if not added:
+            self._show_message(_("You already have every word in that file."))
+            return
+        self.words_changed(_("{} words from the file").format(added))
+        self._redraw_words()
+        self._apply_filter()
 
     def _toggle_button(self, text):
         button = QPushButton(text)

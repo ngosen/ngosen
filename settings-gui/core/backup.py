@@ -7,6 +7,9 @@ import json
 import os
 from datetime import datetime
 
+from i18n import _
+
+from core.emoji_words import SHARE_KIND
 from core.settings_snapshot import local_dict_path
 
 COMPONENTS = (
@@ -55,6 +58,9 @@ def load(path):
         backup = json.load(f)
     if not isinstance(backup, dict) or not any(k in backup for k in COMPONENTS):
         raise ValueError("no settings found in the file")
+    # Restoring it would replace all of the user's emoji words with the shared ones.
+    if _kind(backup) == SHARE_KIND:
+        raise ValueError(_("this file holds emoji words; import it on the Emoji page"))
     # Checked before anything is written, so a damaged file changes nothing.
     if not isinstance(backup.get("config", {}), dict):
         raise ValueError("the settings in the file are damaged")
@@ -70,6 +76,11 @@ def load(path):
 def _edition(backup):
     meta = backup.get("meta")
     return meta.get("edition") if isinstance(meta, dict) else None
+
+
+def _kind(backup):
+    meta = backup.get("meta")
+    return meta.get("kind") if isinstance(meta, dict) else None
 
 
 def apply(dbus, backup):

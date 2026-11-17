@@ -81,7 +81,7 @@ namespace ngosen::test {
         fireDue();
     }
 
-    void FakeHost::showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick) {
+    void FakeHost::showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick, CandidateLayout /*layout*/) {
         labels_     = labels;
         onPick_     = std::move(onPick);
         candidates_ = CandidatePage{static_cast<int>(labels.size()), 0, pageSize, labels.empty() ? -1 : 0, static_cast<int>(labels.size()) > pageSize, false};

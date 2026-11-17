@@ -165,10 +165,13 @@ namespace ngosen {
         }
         NGOSEN_INFO("Offer retype: " + logged(typed) + " -> " + logged(marked));
         retype_ = Retype{.typed = typed, .marked = marked};
-        host_->showCandidates({typed + " → " + marked}, 1, [this](size_t) {
-            if (retype_ && !retype_->applied)
-                acceptRetype(host_->translate("Tab or Esc: put back what was typed"));
-        });
+        host_->showCandidates(
+            {typed + " → " + marked}, 1,
+            [this](size_t) {
+                if (retype_ && !retype_->applied)
+                    acceptRetype(host_->translate("Tab or Esc: put back what was typed"));
+            },
+            ngosen::CandidateLayout::Column);
         host_->setStatus(host_->translate("Enter: retype in Vietnamese, Tab or Esc: keep"));
         host_->refreshPanel();
     }

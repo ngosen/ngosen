@@ -35,6 +35,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   còn sau khi đã đăng xuất rồi đăng nhập lại (hoặc khởi động lại máy), và tự mở trang để nhắc gửi kết quả cho Ngó Sen (#801).
 - Lần cài đầu bằng lệnh cài một dòng, cửa sổ cài đặt tự mở trang Kiểm tra máy để xem còn bước nào chưa xong:
   mở ngay nếu fcitx5 đang chạy, không thì mở một lần ở lần đăng nhập sau. Cập nhật thì không mở (#802).
+- Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
+  giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
+  vẫn giữ nguyên (#701, #829).
 
 ### Thay đổi
 

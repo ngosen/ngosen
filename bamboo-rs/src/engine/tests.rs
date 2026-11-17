@@ -1736,11 +1736,31 @@ fn test_teencode_off_shows_the_keys() {
 fn test_teencode_lets_stretched_words_end_as_before() {
     let mut on = teencode_engine(true);
     let mut off = teencode_engine(false);
-    for keys in ["nhaa", "dduowjcc", "khoonggg"] {
+    for keys in ["nhaa", "dduowjcc"] {
         assert_eq!(
             commit_of(&mut on, keys),
             commit_of(&mut off, keys),
             "{keys}"
         );
     }
+}
+
+#[test]
+fn test_teencode_keeps_held_letters() {
+    let mut e = teencode_engine(true);
+    for (keys, word) in [
+        ("nhaaa", "nhaaa"),
+        ("chaiiif", "chàiii"),
+        ("kiaaaf", "kìaaa"),
+        ("chaammms", "chấmmm"),
+        ("chowttttts", "chớttttt"),
+        ("dzowiiiif", "dzờiiii"),
+        ("khoonggg", "khônggg"),
+    ] {
+        assert_eq!(commit_of(&mut e, keys), format!("{word} "), "{keys}");
+    }
+    let mut off = teencode_engine(false);
+    assert_eq!(commit_of(&mut off, "chaiiif"), "chaiiif ");
+    // An acronym in capitals takes no tone from its last letter.
+    assert_eq!(commit_of(&mut e, "WAAAF"), commit_of(&mut off, "WAAAF"));
 }

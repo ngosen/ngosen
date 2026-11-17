@@ -874,7 +874,8 @@ namespace fcitx {
     void NgoSenEngine::keyEvent(const InputMethodEntry& /*entry*/, KeyEvent& keyEvent) {
         auto* ic = keyEvent.inputContext();
         dropStaleSurroundingText(ic);
-        if (isModeMenuOpen(ic)) {
+        // Only a pressed key reaches the menu; a release may end a key held across a click.
+        if (isModeMenuOpen(ic) && !keyEvent.isRelease()) {
             modeMenuQuietSince_ = ngosen::monotonicUs();
             menuClickTimer_.reset();
         }

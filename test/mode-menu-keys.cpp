@@ -469,6 +469,18 @@ int main() {
     check(realMode.load() == ngosen::Mode::Sen, "a key right after a late report reaches the menu", modeName(realMode.load()));
     keyField.reset();
 
+    // Releasing a key held across the click is not a key for the menu.
+    auto releaseField = openField("releasefield");
+    press(engine, entry, *releaseField, FcitxKey_grave);
+    check(menu(*releaseField) != nullptr, "the menu opens in releaseField", "no menu");
+    pumpEventLoop(testInstance.instance, 300);
+    releaseField->updateSurroundingText();
+    fcitx::KeyEvent ctrlUp(releaseField.get(), fcitx::Key(FcitxKey_Control_L), true);
+    engine.keyEvent(entry, ctrlUp);
+    pumpEventLoop(testInstance.instance, 200);
+    check(!menu(*releaseField), "a key release after a late report leaves the close", "menu still open");
+    releaseField.reset();
+
     // A click X11 reports elsewhere, such as in another field of the same window.
     auto clickedAway = openField("clickedaway");
     press(engine, entry, *clickedAway, FcitxKey_grave);

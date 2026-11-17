@@ -38,6 +38,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
   giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
   vẫn giữ nguyên (#701, #829).
+- Teencode giữ thêm chữ kéo dài (`nhaaa`, `chàiii` gõ `chaiiif`) và viết tắt ghép (`cgái`, `bthường`,
+  `đthoại`) (#701, #833).
 
 ### Thay đổi
 

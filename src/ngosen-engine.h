@@ -310,6 +310,8 @@ namespace fcitx {
         static constexpr uint64_t MODE_MENU_CLICK_DELAY_USEC = 100000;
         // A report this soon after the menu opens or a key answers the commit or the key, not a click.
         static constexpr uint64_t MODE_MENU_ECHO_USEC = 250000;
+        // Clears a menu left where no click reaches the engine, such as Konsole on Wayland.
+        static constexpr uint64_t MODE_MENU_TIMEOUT_USEC = 5000000;
 #ifdef NGOSEN_HAS_DBUS
         FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
         std::unique_ptr<NgoSenDBusObject>          dbusObject_;
@@ -497,6 +499,7 @@ namespace fcitx {
         bool          handleModeMenuKey(KeyEvent& keyEvent);
         bool          handleModeMenuPick(KeyEvent& keyEvent);
         void          moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
+        void          closeModeMenuLater(InputContext* ic);
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
         // Applies a mode picked from the menu and remembers it for the app.

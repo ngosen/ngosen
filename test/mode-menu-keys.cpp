@@ -401,11 +401,27 @@ int main() {
     check(menu(*notes) != nullptr, "a menu opened right after a mode change stays", "menu closed");
     press(engine, entry, *notes, FcitxKey_Escape);
 
-    // A menu left alone stays until a key or a click.
+    // The wait of a menu already closed leaves what is typed after it alone.
+    press(engine, entry, *notes, FcitxKey_grave);
+    press(engine, entry, *notes, FcitxKey_Escape);
+    press(engine, entry, *notes, FcitxKey_b);
+    pumpEventLoop(testInstance.instance, 5300);
+    const auto kept = notes->inputPanel().clientPreedit().toString();
+    check(kept == "b", "the wait of a closed menu keeps the text typed after it", kept);
+    press(engine, entry, *notes, FcitxKey_Escape);
+
+    // A menu nobody uses closes by itself; moving in it starts the wait again.
     press(engine, entry, *notes, FcitxKey_grave);
     pumpEventLoop(testInstance.instance, 5300);
-    check(menu(*notes) != nullptr, "a menu left alone stays open", "menu closed");
-    press(engine, entry, *notes, FcitxKey_Escape);
+    check(!menu(*notes), "a menu left alone closes by itself", "menu still open");
+    press(engine, entry, *notes, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 3000);
+    press(engine, entry, *notes, FcitxKey_Down);
+    pumpEventLoop(testInstance.instance, 3000);
+    check(menu(*notes) != nullptr, "moving in the menu keeps it open", "menu closed");
+    pumpEventLoop(testInstance.instance, 2500);
+    check(!menu(*notes), "an unused menu closes by itself", "menu still open");
+    check(realMode.load() == ngosen::Mode::Preedit, "closing by itself keeps the mode", modeName(realMode.load()));
 
     // Each click case gets its own field, so one failing leaves the next alone.
     engine.setConfig(config);

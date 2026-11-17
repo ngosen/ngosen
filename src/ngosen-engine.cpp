@@ -1011,6 +1011,7 @@ namespace fcitx {
 
         menuList->setGlobalCursorIndex(nextIndex);
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
+        closeModeMenuLater(ic);
     }
 
     bool NgoSenEngine::isModeMenuOpen(InputContext* ic) const {
@@ -1729,9 +1730,19 @@ namespace fcitx {
         }
         ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-        // A notice shown just before would clear the menu when its time is up, and so would an earlier click.
-        cycleModeNotificationTimer_.reset();
+        // An earlier click would close the menu that just opened.
         menuClickTimer_.reset();
+        closeModeMenuLater(ic);
+    }
+
+    // Shares the notice's timer, so a notice shown just before cannot clear the menu.
+    void NgoSenEngine::closeModeMenuLater(InputContext* ic) {
+        cycleModeNotificationTimer_ = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + MODE_MENU_TIMEOUT_USEC, 0,
+                                                                          [this, icRef = ic->watch()](EventSourceTime*, uint64_t) {
+                                                                              if (auto* ic = icRef.get(); ic && isModeMenuOpen(ic))
+                                                                                  closeModeMenuPanel(ic, false);
+                                                                              return false;
+                                                                          });
     }
 
     void NgoSenEngine::pointerClicked() {

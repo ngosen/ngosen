@@ -280,6 +280,7 @@ namespace ngosen {
             std::string              keyword; // the typed words the keyword covers, as they are in the app
             bool                     picking = false;
             bool                     preview = false; // shown while the sentence goes on, for a look only
+            bool                     digits  = false; // numbered, so a digit picks without Tab
             bool                     inField = false; // shown in the field, as no panel can show the list here
             std::vector<std::string> earlier;         // emoji of keywords before the last word, added at the cursor
             bool                     afterSpace = false;
@@ -314,6 +315,7 @@ namespace ngosen {
         SentenceOffer            offerForSentence(bool settled, bool preview);
         void                     startEmojiPause();
         bool                     previewsSentence() const;
+        bool                     digitsPickEmoji();
         void                     previewSentence();
         std::vector<std::string> offeredEmoji() const;
         void                     showEmojiOffer();

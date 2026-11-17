@@ -249,10 +249,14 @@ namespace ngosen::test {
         void refreshPreedit() override {}
         void refreshPanel() override {}
 
-        void showCandidates(const std::vector<std::string>& labels, int /*pageSize*/, std::function<void(size_t)> onPick) override {
+        void showCandidates(const std::vector<std::string>& labels, int /*pageSize*/, std::function<void(size_t)> onPick, CandidateLayout layout) override {
             labels_      = labels;
             onPick_      = std::move(onPick);
-            highlighted_ = 0;
+            inRow_       = layout == CandidateLayout::Row;
+            highlighted_ = inRow_ ? -1 : 0;
+        }
+        bool labelsInRow() const {
+            return inRow_;
         }
         void hideCandidates() override {
             if (!labels_.empty())
@@ -298,6 +302,7 @@ namespace ngosen::test {
       private:
         int                                 highlighted_      = 0;
         int                                 candidatesHidden_ = 0;
+        bool                                inRow_            = false;
         std::function<void(size_t)>         onPick_;
         void                                insert(const std::u32string& text, bool typed = false);
         void                                noteTypedKey();

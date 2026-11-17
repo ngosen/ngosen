@@ -62,13 +62,13 @@ namespace ngosen {
             return text;
         }
 
-        // "mèo." and "vui!!" end a sentence; ":-?", "..." and "3.5" do not.
+        // "mèo." and "vui!!" end a sentence; ":-?", "...", "3.5" and "bước 1." do not.
         bool endsSentence(const std::string& word) {
             const size_t last = word.find_last_not_of(".!?");
             if (last == std::string::npos || last + 1 == word.size())
                 return false;
             const auto c = static_cast<unsigned char>(word[last]);
-            return c >= 0x80 || std::isalnum(c);
+            return c >= 0x80 || std::isalpha(c);
         }
 
         // The typed text the last n words take up, with the spaces between them.
@@ -253,6 +253,15 @@ namespace ngosen {
         });
     }
 
+    // Where the input method gives a digit a role, as VNI does, Tab comes first.
+    bool TypingState::digitsPickEmoji() {
+        for (uint32_t digit = ngosen::key::Digit1; digit < ngosen::key::Digit1 + MaxOffered; ++digit) {
+            if (EngineComposesWith(bambooEngine_.handle(), digit) != 0U)
+                return false;
+        }
+        return true;
+    }
+
     bool TypingState::offersForSentence() const {
         return engine_->options().emojiAtSentenceEnd || hintsInField(host_->field());
     }
@@ -267,10 +276,15 @@ namespace ngosen {
         const Surrounding s     = host_->surrounding();
         std::string       typed = emojiTail_ + openWord();
         if (settled && s.isValid() && s.cursor() == s.anchor()) {
-            typed           = textBeforeCursor(s);
-            const auto line = typed.rfind('\n');
+            std::string inApp = textBeforeCursor(s);
+            const auto  line  = inApp.rfind('\n');
             if (line != std::string::npos)
-                typed.erase(0, line + 1);
+                inApp.erase(0, line + 1);
+            // Firefox on GNOME shows its text from before our last deletion, without the word's tone.
+            const auto typedWords = splitWords(typed);
+            const auto appWords   = splitWords(inApp);
+            if (typedWords.empty() || (!appWords.empty() && appWords.back() == typedWords.back()))
+                typed = std::move(inApp);
         }
         const std::string text       = lastSentence(typed);
         auto              words      = splitWords(text);
@@ -279,7 +293,8 @@ namespace ngosen {
         const bool ended = !afterSpace && !words.empty() && endsSentence(words.back());
         if (ended)
             words.back().erase(words.back().find_last_not_of(".!?") + 1);
-        EmojiOffer                            offer{.preview = preview, .inField = hintsInField(host_->field()), .afterSpace = afterSpace};
+        const bool                            inField = hintsInField(host_->field());
+        EmojiOffer                            offer{.preview = preview, .digits = !preview && !inField && digitsPickEmoji(), .inField = inField, .afterSpace = afterSpace};
         std::vector<std::vector<std::string>> earlier;
         for (size_t n = words.size(); n > 0; --n) {
             const std::vector<std::string> head(words.begin(), words.begin() + static_cast<std::ptrdiff_t>(n));
@@ -343,27 +358,46 @@ namespace ngosen {
             for (const auto& e : emoji)
                 hint += (hint.empty() ? "" : " ") + e;
             // Nothing is picked from a preview; a click on it is on our own panel, not in the field.
-            host_->showCandidates({hint}, 1, [](size_t) {
-                g_mouse_clicked.store(false, std::memory_order_release);
-                needEngineReset.store(false, std::memory_order_release);
-            });
-            host_->highlightCandidate(-1);
+            host_->showCandidates(
+                {hint}, 1,
+                [](size_t) {
+                    g_mouse_clicked.store(false, std::memory_order_release);
+                    needEngineReset.store(false, std::memory_order_release);
+                },
+                ngosen::CandidateLayout::Row);
+        } else if (emojiOffer_->digits && !emojiOffer_->picking) {
+            std::vector<std::string> labels;
+            for (size_t i = 0; i < emoji.size(); ++i)
+                labels.push_back(std::to_string(i + 1) + "." + emoji[i]);
+            host_->showCandidates(
+                labels, static_cast<int>(labels.size()),
+                [this](size_t index) {
+                    if (emojiOffer_ && !replacementPending() && index < offeredEmoji().size())
+                        insertEmoji(index);
+                },
+                ngosen::CandidateLayout::Row);
         } else if (!emojiOffer_->picking) {
             std::string hint = "Tab:";
             for (const auto& e : emoji)
                 hint += " " + e;
-            host_->showCandidates({hint}, 1, [this](size_t) {
-                if (emojiOffer_ && !replacementPending())
-                    insertEmoji(0);
-            });
+            host_->showCandidates(
+                {hint}, 1,
+                [this](size_t) {
+                    if (emojiOffer_ && !replacementPending())
+                        insertEmoji(0);
+                },
+                ngosen::CandidateLayout::Column);
         } else {
             std::vector<std::string> labels;
             for (size_t i = 0; i < emoji.size(); ++i)
                 labels.push_back(std::to_string(i + 1) + ". " + emoji[i]);
-            host_->showCandidates(labels, static_cast<int>(labels.size()), [this](size_t index) {
-                if (emojiOffer_ && !replacementPending() && index < offeredEmoji().size())
-                    insertEmoji(index);
-            });
+            host_->showCandidates(
+                labels, static_cast<int>(labels.size()),
+                [this](size_t index) {
+                    if (emojiOffer_ && !replacementPending() && index < offeredEmoji().size())
+                        insertEmoji(index);
+                },
+                ngosen::CandidateLayout::Column);
             host_->highlightCandidate(static_cast<int>(emojiOffer_->chosen));
             const std::string numbers = emoji.size() > 1 ? "1–" + std::to_string(emoji.size()) : "1";
             host_->setStatus(numbers + ": " + host_->translate("pick, or arrows then Enter, Esc: keep the word"));
@@ -424,6 +458,12 @@ namespace ngosen {
         // Keys go on to the app, and the preview follows what they type.
         if (emojiOffer_->preview)
             return false;
+        const size_t count = offeredEmoji().size();
+        if (emojiOffer_->digits && !emojiOffer_->picking && plain && sym >= ngosen::key::Digit1 && sym < ngosen::key::Digit1 + count) {
+            takeEmojiKey(keyEvent);
+            insertEmoji(sym - ngosen::key::Digit1);
+            return true;
+        }
         if (!emojiOffer_->picking) {
             if (sym != ngosen::key::Tab || !plain) {
                 dropHintBeforeKey();
@@ -434,7 +474,6 @@ namespace ngosen {
             showEmojiOffer();
             return true;
         }
-        const size_t count = offeredEmoji().size();
         if (plain && sym >= ngosen::key::Digit1 && sym < ngosen::key::Digit1 + count) {
             takeEmojiKey(keyEvent);
             insertEmoji(sym - ngosen::key::Digit1);

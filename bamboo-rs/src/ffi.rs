@@ -384,6 +384,12 @@ pub extern "C" fn EngineKeptAtLastKey(engine: usize) -> u8 {
     handles::with_engine(engine, |e| e.kept_at_last_key()).unwrap_or(false) as u8
 }
 
+/// 1 when the input method can compose a word with the key, as VNI does with digits.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineComposesWith(engine: usize, key_val: u32) -> u8 {
+    handles::with_engine(engine, |e| e.composes_with(key_val)).unwrap_or(false) as u8
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn EngineShownAsTyped(engine: usize) -> u8 {
     handles::with_engine(engine, |e| e.shown_as_typed()).unwrap_or(false) as u8

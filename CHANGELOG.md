@@ -16,6 +16,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   `mỗ`, `tổ`, `đac` như từ bản 1.11.0. Một số từ tiếng Anh ít gặp như `aface` cũng không còn bị cắt thành `ầ` (#835).
 - Trên GNOME, gõ nhanh ngay sau khi mở Firefox, xoá vài chữ bằng Backspace rồi gõ tiếp không còn thỉnh thoảng ra chữ lộn (`nam tiếig` thay vì `nam tiếng`) (#831).
 - Menu chọn chế độ gõ (mở bằng `` ` ``) nay đóng ngay khi click chuột ra ngoài, thay vì chờ tới phím kế tiếp. Click lên một mục trong menu vẫn chọn mục đó. Menu không còn tự tắt sau 5 giây (#836).
+- Trên Fedora GNOME, gõ trong Brave (như ô bình luận voz) không còn mất dấu hay lộn chữ: `oonr` ra `ổn` thay vì `ônr`, `thuwowngf` ra `thường` thay vì `thươngf` (#842).
 
 ## [1.12.1-1] — 17/11/2026
 

@@ -1301,6 +1301,9 @@ namespace ngosen {
     void TypingState::replaceThroughForwardedKeys() {
         // The XTEST count includes a sentinel that comes back to us; forwarded keys never do.
         const int count = expected_backspaces_ - 1;
+        // A slow app can show these backspaces only after our commit; that report is our edit, not a click.
+        unreportedDeleteLength_ = static_cast<unsigned int>(count);
+        unreportedDeleteKey_    = keyCount_;
         if (host_->field().frontend == "xim") {
             // We are inside the client's synchronous XIM request for the key that triggered this
             // replacement. Keys forwarded now reach the client before its reply, and libX11 may

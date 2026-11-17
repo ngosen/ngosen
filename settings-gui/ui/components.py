@@ -14,8 +14,16 @@ from core.hotkeys import (
 )
 from i18n import _
 from qtpy.QtCore import QEvent, Qt, Signal
-from qtpy.QtGui import QIcon, QKeySequence
-from qtpy.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QWidget
+from qtpy.QtGui import QIcon, QKeySequence, QPainter, QPalette
+from qtpy.QtWidgets import (
+    QComboBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ui.typography import emphasize, mute
 
@@ -281,3 +289,27 @@ class SingleKeyCaptureWidget(HotkeyCaptureWidget):
             self.current_key = base_key
             self.setChecked(False)
             self.textChanged.emit(self.current_key)
+
+
+class Lines(QFrame):
+    """A framed list on the base colour, its rows parted by thin lines."""
+
+    def __init__(self):
+        super().__init__()
+        self.setFrameShape(QFrame.StyledPanel)
+        self.setBackgroundRole(QPalette.Base)
+        self.setAutoFillBackground(True)
+        self.rows = QVBoxLayout(self)
+        self.rows.setContentsMargins(0, 0, 0, 0)
+        self.rows.setSpacing(0)
+
+
+class Row(QWidget):
+    def paintEvent(self, event):
+        if self.y() == 0:
+            return
+        color = self.palette().color(QPalette.WindowText)
+        color.setAlphaF(0.12)
+        painter = QPainter(self)
+        painter.setPen(color)
+        painter.drawLine(0, 0, self.width(), 0)

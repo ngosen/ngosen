@@ -65,6 +65,13 @@ namespace ngosen {
             setOption(bambooEngine_.handle());
     }
 
+    void TypingState::setTeencodeOn(bool on) {
+        if (teencodeOn_ == on)
+            return;
+        teencodeOn_ = on;
+        setOption();
+    }
+
     void TypingState::setOption(uintptr_t engine) const {
         FcitxBambooEngineOption option = {
             .autoNonVnRestore    = engine_->options().autoNonVnRestore,
@@ -79,7 +86,7 @@ namespace ngosen {
             .bracketTransform    = static_cast<int>(engine_->options().bracketTransform),
             .timeFormat          = engine_->options().timeFormat.data(),
             .dateFormat          = engine_->options().dateFormat.data(),
-            .teencode            = engine_->options().teencode,
+            .teencode            = teencodeOn_,
         };
 
         EngineSetOption(engine, &option);

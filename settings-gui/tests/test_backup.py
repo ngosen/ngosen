@@ -100,6 +100,16 @@ class RoundTripTest(unittest.TestCase):
         self.assertEqual(target.sub_configs["app_rules"], rules)
         self.assertEqual(target.sub_configs["app_switches"], switches)
 
+    def test_teencode_apps_come_back(self):
+        apps = [{"App": "discord"}]
+        source = fake_fcitx.FakeDBusHandler(sub_configs={"teencode_apps": apps})
+        target = fake_fcitx.FakeDBusHandler()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "b.json")
+            backup.export(source, path)
+            self.assertTrue(backup.apply(target, backup.load(path)))
+        self.assertEqual(target.sub_configs["teencode_apps"], apps)
+
     def test_an_older_backup_brings_its_rules_back_without_todays_switches(self):
         rules = [{"App": "kate", "Mode": "0"}]
         target = fake_fcitx.FakeDBusHandler(

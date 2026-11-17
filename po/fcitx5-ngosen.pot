@@ -270,7 +270,7 @@ msgstr ""
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
 msgstr ""
 
-#: src/ngosen-config.h
+#: src/ngosen-engine.cpp
 msgid "Teencode"
 msgstr ""
 
@@ -1432,10 +1432,6 @@ msgstr ""
 msgid "dd and Space stays đ instead of going back to dd."
 msgstr ""
 
-#: settings-gui/core/catalog.py
-msgid "zaayj → zậy, ddag → đag, nhuwgx → nhữg. Most English words stay as typed."
-msgstr ""
-
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "hoà, khoẻ, thuý, tuỳ. Off: hòa, khỏe, thúy, tùy."
 msgstr ""
@@ -1997,6 +1993,22 @@ msgstr ""
 msgid "Emoji suggestions: off"
 msgstr ""
 
+#: src/ngosen-config.h
+msgid "Show teencode"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Shortcut for teencode"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Teencode: on"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Teencode: off"
+msgstr ""
+
 #: settings-gui/core/whats_new_content.py
 msgid "Press ` to pick Sen, Preedit or OFF for the app in use, or to turn emoji or Vim keys on or off for it."
 msgstr ""
@@ -2127,6 +2139,26 @@ msgstr ""
 
 #: settings-gui/core/emoji_words.py
 msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
+msgstr ""
+
+#: settings-gui/core/teencode_apps.py
+msgid "Set a mode menu key and a teencode key on the Keys page to turn teencode on."
+msgstr ""
+
+#: settings-gui/core/teencode_apps.py
+msgid "Teencode keeps words like zậy, đag and nhữg instead of restoring the keys typed. In the app you are typing in, press {menu} then {key} to turn it on or off for that app."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Not on in any app."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Turn off"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Turn teencode off in {}"
 msgstr ""
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py

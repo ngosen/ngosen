@@ -90,6 +90,7 @@ namespace {
         std::vector<std::string> inField;
         std::vector<int>         chosen;
         int                      editsUnderHint = 0;
+        int                      listsHidden    = 0;
     };
 
     AppQuirks chatQuirks() {
@@ -172,6 +173,7 @@ namespace {
         loop.pump(200);
         result.text           = app->text();
         result.editsUnderHint = app->editsUnderHint();
+        result.listsHidden    = app->candidatesHidden();
         return result;
     }
 
@@ -463,8 +465,11 @@ namespace {
             if (key != Hint)
                 firefox.push_back(Reset);
         }
-        r = type(firefox, Mode::Sen, makeField(), atEnd);
-        check(allShown(r.hints), "preview: stays through Firefox's reset after each key", joined(r.hints));
+        // A one-letter word may match on its own and go with the next letter, reset or not.
+        const int hiddenWithoutReset = type(watched("con meof cuwowif", 7), Mode::Sen, makeField(), atEnd).listsHidden;
+        r                            = type(firefox, Mode::Sen, makeField(), atEnd);
+        check(allShown(r.hints) && r.listsHidden == hiddenWithoutReset, "preview: stays through Firefox's reset after each key",
+              joined(r.hints) + " hidden " + std::to_string(r.listsHidden) + " vs " + std::to_string(hiddenWithoutReset));
 
         r = type(keysOf("con meof ") + std::vector<uint32_t>{Hint} + keysOf("cuwo") + std::vector<uint32_t>{Hint} + keysOf("wif ") + std::vector<uint32_t>{Hint}, Mode::Preedit,
                  makeField(), atEnd);

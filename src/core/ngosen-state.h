@@ -287,16 +287,17 @@ namespace ngosen {
             size_t                   chosen     = 0; // the emoji Enter picks, moved with the arrow keys
         };
         std::optional<EmojiOffer>      emojiOffer_;
-        std::string                    emojiTail_;              ///< text typed before the open word since the cursor last moved
-        std::string                    emojiTailAtReset_;       ///< emojiTail_ at an app reset, until the app reports its text
-        bool                           emojiTookPress_ = false; ///< the offer took the key being handled
-        std::vector<uint32_t>          emojiTakenSyms_;         ///< keys the offer took, whose releases it takes too
-        std::unique_ptr<ngosen::Timer> emojiRecheck_;           ///< looks again once the word is in the app
-        std::function<void()>          emojiAfterHint_;         ///< the emoji picked, put in once the field drops the hint
-        std::unique_ptr<ngosen::Timer> emojiPause_;             ///< offers the sentence's emoji in the field once typing stops
-        bool                           emojiOn_    = true;      ///< false when the user turned emoji off for the app
-        bool                           emojiMuted_ = false;     ///< Esc hid the emoji for the rest of the sentence
-        bool                           teencodeOn_ = false;     ///< true when the user turned teencode on for the app
+        std::string                    emojiTail_;                ///< text typed before the open word since the cursor last moved
+        std::string                    emojiTailAtReset_;         ///< emojiTail_ at an app reset, until the app reports its text
+        bool                           emojiTookPress_ = false;   ///< the offer took the key being handled
+        std::vector<uint32_t>          emojiTakenSyms_;           ///< keys the offer took, whose releases it takes too
+        std::unique_ptr<ngosen::Timer> emojiRecheck_;             ///< looks again once the word is in the app
+        std::function<void()>          emojiAfterHint_;           ///< the emoji picked, put in once the field drops the hint
+        std::unique_ptr<ngosen::Timer> emojiPause_;               ///< offers the sentence's emoji in the field once typing stops
+        bool                           emojiOn_          = true;  ///< false when the user turned emoji off for the app
+        bool                           emojiMuted_       = false; ///< Esc hid the emoji for the rest of the sentence
+        bool                           holdEmojiPreview_ = false; ///< an app reset keeps the preview until the field is checked
+        bool                           teencodeOn_       = false; ///< true when the user turned teencode on for the app
         std::string                    openWord();
         bool                           offersEmojiHere() const;
         bool                           hintsInField(const ngosen::Field& field) const;

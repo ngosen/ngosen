@@ -405,6 +405,13 @@
     {}
    ],
    [
+    "TeenCode",
+    "Boolean",
+    "Teencode",
+    "False",
+    {}
+   ],
+   [
     "BackspaceRemovesTone",
     "Boolean",
     "Backspace Removes the Tone Mark",

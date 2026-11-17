@@ -472,8 +472,8 @@ msgid "Ngó Sen - Off"
 msgstr "Ngó Sen - Tắt"
 
 #: src/core/ngosen-state-emoji-offer.cpp
-msgid "pick, Space or Enter: the first, Esc: keep the word"
-msgstr "chọn · Space, Enter: lấy cái đầu · Esc: giữ chữ"
+msgid "pick, or arrows then Enter, Esc: keep the word"
+msgstr "chọn · hoặc mũi tên rồi Enter · Esc: giữ chữ"
 
 #: src/core/ngosen-state-retype.cpp
 msgid "Enter: retype in Vietnamese, Tab or Esc: keep"

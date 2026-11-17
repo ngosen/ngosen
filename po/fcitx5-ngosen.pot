@@ -403,7 +403,7 @@ msgid "Ngó Sen - Off"
 msgstr ""
 
 #: src/core/ngosen-state-emoji-offer.cpp
-msgid "pick, Space or Enter: the first, Esc: keep the word"
+msgid "pick, or arrows then Enter, Esc: keep the word"
 msgstr ""
 
 #: src/core/ngosen-state-retype.cpp

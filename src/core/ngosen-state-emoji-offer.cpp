@@ -130,11 +130,15 @@ namespace ngosen {
         }
         const std::string text = host_->keyText(sym);
         if (text.empty() || static_cast<unsigned char>(text[0]) < 0x20) {
+            if (ngosen::key::isEnter(sym))
+                emojiMuted_ = false;
             emojiTail_.clear();
             return;
         }
         // The key ended the word, or typed a character outside one, as the ) of :).
-        if (openWord().empty())
+        // A space held until the app shows an edit ends the word only when it replays.
+        const bool heldBreak = !buffered_keys_.empty() && buffered_keys_.back().sym == sym && !std::isalnum(static_cast<unsigned char>(text[0])) && text[0] < 0x80;
+        if (openWord().empty() || heldBreak)
             emojiTail_ += wordBefore + text;
         if (emojiTail_.size() > MaxEmojiTail) {
             const size_t cut = emojiTail_.find(' ', emojiTail_.size() - MaxEmojiTail);
@@ -146,11 +150,22 @@ namespace ngosen {
         return is_deleting_.load(std::memory_order_acquire) || key_report_pending_ || edit_hold_ || split_edit_pending_ || surr_wait_pending_ || overtype_pending_;
     }
 
+    void TypingState::panelWasCleared(bool rebuild) {
+        emojiOffer_.reset();
+        emojiPause_.reset();
+        if (rebuild && previewsSentence())
+            offerForSentence(true, true);
+    }
+
     void TypingState::updateEmojiOffer() {
         emojiRecheck_.reset();
         // The hint waits for the word to reach the app, so the emoji cannot land inside it.
+        // A preview stays meanwhile, as nothing can be picked from it.
         if (replacementPending()) {
-            dropEmojiOffer();
+            if (previewsSentence())
+                previewSentence();
+            else
+                dropEmojiOffer();
             emojiRecheck_ = host_->startTimer(ngosen::monotonicUs() + RecheckUs, RecheckUs, [this](ngosen::Timer& timer) {
                 if (!replacementPending()) {
                     offerForTypedText();
@@ -174,21 +189,26 @@ namespace ngosen {
         const std::string text  = emojiTail_ + word;
         const auto        words = splitWords(text);
         if (offersForSentence()) {
-            dropEmojiOffer();
-            // A panel shows the list at once; a hint in the field waits, as it would for a word.
-            if (!hintsInField(host_->field()) && !text.empty() && text.back() != ' ' && endsSentence(words.back())) {
-                offerForSentence(false);
+            if (hintsInField(host_->field())) {
+                dropEmojiOffer();
+                startEmojiPause();
                 return;
             }
-            emojiPause_ = host_->startTimer(ngosen::monotonicUs() + PauseUs, RecheckUs, [this](ngosen::Timer& timer) {
-                if (replacementPending()) {
-                    timer.rearm(ngosen::monotonicUs() + RecheckUs);
-                    return true;
+            if (emojiMuted_) {
+                if (lastSentence(text) == text) {
+                    dropEmojiOffer();
+                    return;
                 }
-                if (offersEmojiHere() && offersForSentence())
-                    offerForSentence(true);
-                return false;
-            });
+                emojiMuted_ = false;
+            }
+            emojiPause_.reset();
+            if (!text.empty() && text.back() != ' ' && endsSentence(words.back())) {
+                if (offerForSentence(false, false) != SentenceOffer::Shown)
+                    dropEmojiOffer();
+                return;
+            }
+            previewSentence();
+            startEmojiPause();
             return;
         }
         auto found = text.empty() || text.back() == ' ' ? std::nullopt : suggestEmoji(words, engine_->options());
@@ -208,15 +228,40 @@ namespace ngosen {
         showEmojiOffer();
     }
 
+    bool TypingState::previewsSentence() const {
+        return offersEmojiHere() && engine_->options().emojiAtSentenceEnd && !hintsInField(host_->field()) && !emojiMuted_;
+    }
+
+    void TypingState::previewSentence() {
+        const SentenceOffer shown = offerForSentence(false, true);
+        if (shown == SentenceOffer::None)
+            dropEmojiOffer();
+        // The panel was cleared along with the preedit of the open word.
+        else if (shown == SentenceOffer::Later && emojiOffer_)
+            showEmojiOffer();
+    }
+
+    void TypingState::startEmojiPause() {
+        emojiPause_ = host_->startTimer(ngosen::monotonicUs() + PauseUs, RecheckUs, [this](ngosen::Timer& timer) {
+            if (replacementPending()) {
+                timer.rearm(ngosen::monotonicUs() + RecheckUs);
+                return true;
+            }
+            if (offersEmojiHere() && offersForSentence() && !emojiMuted_ && offerForSentence(true, false) == SentenceOffer::None)
+                hideEmojiOffer();
+            return false;
+        });
+    }
+
     bool TypingState::offersForSentence() const {
         return engine_->options().emojiAtSentenceEnd || hintsInField(host_->field());
     }
 
     // The keyword nearest the cursor comes first; only a sound or an emoticon right before the cursor is replaced.
-    void TypingState::offerForSentence(bool settled) {
+    TypingState::SentenceOffer TypingState::offerForSentence(bool settled, bool preview) {
         // The open word is not in the app yet, so an emoji at the cursor would land before it.
         if (mode() == ngosen::Mode::Preedit && !openWord().empty())
-            return;
+            return SentenceOffer::Later;
         // Keys held during edits skip the typed text, and the field is settled once typing stops;
         // right after a key it may not show that key yet.
         const Surrounding s     = host_->surrounding();
@@ -234,7 +279,7 @@ namespace ngosen {
         const bool ended = !afterSpace && !words.empty() && endsSentence(words.back());
         if (ended)
             words.back().erase(words.back().find_last_not_of(".!?") + 1);
-        EmojiOffer                            offer{.inField = hintsInField(host_->field()), .afterSpace = afterSpace};
+        EmojiOffer                            offer{.preview = preview, .inField = hintsInField(host_->field()), .afterSpace = afterSpace};
         std::vector<std::vector<std::string>> earlier;
         for (size_t n = words.size(); n > 0; --n) {
             const std::vector<std::string> head(words.begin(), words.begin() + static_cast<std::ptrdiff_t>(n));
@@ -253,7 +298,7 @@ namespace ngosen {
         }
         const size_t keywords = earlier.size() + (offer.suggestion.emoji.empty() ? 0 : 1);
         if (keywords == 0)
-            return;
+            return SentenceOffer::None;
         const size_t perKeyword = keywords > 1 ? PerKeyword : MaxOffered;
         if (offer.suggestion.emoji.size() > perKeyword)
             offer.suggestion.emoji.resize(perKeyword);
@@ -272,6 +317,7 @@ namespace ngosen {
         }
         emojiOffer_ = std::move(offer);
         showEmojiOffer();
+        return SentenceOffer::Shown;
     }
 
     std::vector<std::string> TypingState::offeredEmoji() const {
@@ -292,7 +338,17 @@ namespace ngosen {
             host_->showHint(emojiOffer_->afterSpace ? hint.substr(1) : hint);
             return;
         }
-        if (!emojiOffer_->picking) {
+        if (emojiOffer_->preview) {
+            std::string hint;
+            for (const auto& e : emoji)
+                hint += (hint.empty() ? "" : " ") + e;
+            // Nothing is picked from a preview; a click on it is on our own panel, not in the field.
+            host_->showCandidates({hint}, 1, [](size_t) {
+                g_mouse_clicked.store(false, std::memory_order_release);
+                needEngineReset.store(false, std::memory_order_release);
+            });
+            host_->highlightCandidate(-1);
+        } else if (!emojiOffer_->picking) {
             std::string hint = "Tab:";
             for (const auto& e : emoji)
                 hint += " " + e;
@@ -317,6 +373,10 @@ namespace ngosen {
 
     void TypingState::dropEmojiOffer() {
         emojiPause_.reset();
+        hideEmojiOffer();
+    }
+
+    void TypingState::hideEmojiOffer() {
         if (!emojiOffer_)
             return;
         if (emojiOffer_->inField) {
@@ -351,11 +411,19 @@ namespace ngosen {
             return false;
         // A click moved the cursor away from the word, and the mode or field may have changed since.
         const bool clicked = g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire);
-        if (clicked || replacementPending() || !offersEmojiHere()) {
+        if (clicked || (replacementPending() && !emojiOffer_->preview) || !offersEmojiHere()) {
             dropEmojiOffer();
             return false;
         }
         const bool plain = !keyEvent.hasModifier();
+        if (!emojiOffer_->picking && plain && sym == ngosen::key::Escape) {
+            emojiMuted_ = true;
+            dropHintBeforeKey();
+            return false;
+        }
+        // Keys go on to the app, and the preview follows what they type.
+        if (emojiOffer_->preview)
+            return false;
         if (!emojiOffer_->picking) {
             if (sym != ngosen::key::Tab || !plain) {
                 dropHintBeforeKey();

@@ -12,6 +12,7 @@
 #include "ngosen-keysym.h"
 #include "ngosen-state.h"
 
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -55,6 +56,10 @@ namespace {
     constexpr uint32_t EarlyReset = 12;
     constexpr uint32_t Chosen     = 13; // records the highlighted item of the panel
     constexpr uint32_t Pick       = 14; // a click on the first item of the panel
+    constexpr uint32_t Gap        = 15; // 600 ms between keys, short of a pause
+    constexpr uint32_t Bounce     = 16; // the field loses focus and gets it back 30 ms later
+    constexpr uint32_t PanelReset = 17; // the engine clears the panel, as for a mode notice
+    constexpr uint32_t Backspace  = ngosen::key::BackSpace;
     constexpr uint32_t Left       = ngosen::key::Left;
     constexpr uint32_t Right      = ngosen::key::Right;
     constexpr uint32_t Down       = ngosen::key::Down;
@@ -86,14 +91,19 @@ namespace {
         int                      editsUnderHint = 0;
     };
 
-    Result type(const std::vector<uint32_t>& keys, Mode mode = Mode::Sen, Field field = makeField(), const std::function<void(FakeResources&)>& configure = {}) {
+    AppQuirks chatQuirks() {
+        return AppQuirks{.showsEnter = true, .showsTab = true};
+    }
+
+    Result type(const std::vector<uint32_t>& keys, Mode mode = Mode::Sen, Field field = makeField(), const std::function<void(FakeResources&)>& configure = {},
+                AppQuirks quirks = chatQuirks()) {
         FakeResources resources;
         if (configure)
             configure(resources);
         realMode = mode;
         realtextLen.store(0);
         FakeLoop            loop;
-        auto                owned = std::make_unique<FakeApp>(loop, field, AppQuirks{.showsEnter = true, .showsTab = true});
+        auto                owned = std::make_unique<FakeApp>(loop, field, quirks);
         FakeApp*            app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
@@ -124,6 +134,17 @@ namespace {
                 loop.pump(1000);
             } else if (key == InField) {
                 result.inField.push_back(app->hint());
+            } else if (key == Gap) {
+                loop.pump(600);
+            } else if (key == Bounce) {
+                app->leaveFocus(30);
+                loop.pump(60);
+                // As the engine's showMode does after activate().
+                app->resetPanel();
+                state.panelWasCleared(true);
+            } else if (key == PanelReset) {
+                app->resetPanel();
+                state.panelWasCleared(false);
             } else if (key == Pick) {
                 app->pickCandidate(0);
                 loop.pump(20);
@@ -364,7 +385,7 @@ namespace {
     void testSentenceEnd() {
         const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
         auto       r     = type(keysOf("cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
-        check(r.hints.front() == "(none)", "sentence end: nothing after each word", r.hints.front());
+        check(r.hints.front() == "😂 🤣 😄 😆 😁", "sentence end: a preview while the sentence goes on", r.hints.front());
         r = type(keysOf("cuwowif.") + std::vector<uint32_t>{Hint, Tab, Tab}, Mode::Sen, makeField(), atEnd);
         check(r.hints.front() == "Tab: 😂 🤣 😄 😆 😁" && r.text == "cười. 😂", "sentence end: a full stop offers the emoji, put after it", r.hints.front() + " / " + r.text);
         r = type(keysOf("con meof cuwowif quas") + std::vector<uint32_t>{Pause, Hint}, Mode::Sen, makeField(), atEnd);
@@ -391,6 +412,84 @@ namespace {
         const auto atEnd = [](FakeResources& res) { res.mutableOptions().emojiAtSentenceEnd = true; };
         r                = type(keysOf("con meof cuwowif.") + std::vector<uint32_t>{Pause, Hint, Home, Pause, Pick}, Mode::Sen, makeField(), atEnd);
         check(r.hints.front() != "(none)" && r.text == "con mèo cười.", "sentence end: a click after the cursor moved puts nothing", r.hints.front() + " / " + r.text);
+    }
+
+    // Keys in, with the panel's first label recorded after each from the given one on.
+    std::vector<uint32_t> watched(const std::string& typed, size_t from = 0) {
+        std::vector<uint32_t> keys;
+        for (size_t i = 0; i < typed.size(); ++i) {
+            keys.push_back(static_cast<unsigned char>(typed[i]));
+            if (i >= from)
+                keys.push_back(Hint);
+        }
+        return keys;
+    }
+
+    bool allShown(const std::vector<std::string>& hints) {
+        return std::none_of(hints.begin(), hints.end(), [](const std::string& h) { return h == "(none)"; });
+    }
+
+    std::string joined(const std::vector<std::string>& hints) {
+        std::string all;
+        for (const auto& h : hints)
+            all += "[" + h + "]";
+        return all;
+    }
+
+    // With a panel, the emoji of the sentence show from its first keyword on, for a look only.
+    void testSentencePreview() {
+        const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
+        // From the f that makes mèo.
+        auto r = type(watched("con meof cuwowif", 7), Mode::Sen, makeField(), atEnd);
+        check(allShown(r.hints) && r.hints.front() == "🐈 🐱" && r.hints.back() == "😂 🤣 😄 🐈 🐱", "preview: shows from the first keyword to the end", joined(r.hints));
+
+        AppQuirks slow = chatQuirks();
+        slow.lagMs     = 60;
+        r              = type(watched("con meof cuwowif", 7) + std::vector<uint32_t>{Gap, Hint}, Mode::Sen, makeField(), atEnd, slow);
+        check(allShown(r.hints) && r.hints.back() == "😂 🤣 😄 🐈 🐱", "preview: stays while a slow app takes a tone", joined(r.hints));
+
+        std::vector<uint32_t> firefox;
+        for (const uint32_t key : watched("con meof cuwowif", 7)) {
+            firefox.push_back(key);
+            if (key != Hint)
+                firefox.push_back(Reset);
+        }
+        r = type(firefox, Mode::Sen, makeField(), atEnd);
+        check(allShown(r.hints), "preview: stays through Firefox's reset after each key", joined(r.hints));
+
+        r = type(keysOf("con meof ") + std::vector<uint32_t>{Hint} + keysOf("cuwo") + std::vector<uint32_t>{Hint} + keysOf("wif ") + std::vector<uint32_t>{Hint}, Mode::Preedit,
+                 makeField(), atEnd);
+        check(r.hints.size() == 3 && r.hints[0] == "🐈 🐱" && r.hints[1] == "🐈 🐱" && r.hints[2] == "😂 🤣 😄 🐈 🐱", "preview: an open word keeps the list until it ends",
+              joined(r.hints));
+
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Bounce, Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.size() == 2 && r.hints[0] == "🐈 🐱" && r.hints[1] == "🐈 🐱", "preview: shows again after a focus bounce", joined(r.hints));
+
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Gap, ' ', Gap, 'c', Gap, Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() != "(none)" && r.hints.front().rfind("Tab:", 0) != 0, "preview: a pause counts from the last key", r.hints.front());
+
+        r = type(keysOf("meof") + std::vector<uint32_t>{Hint, Backspace, Backspace, Backspace, Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints[0] == "🐈 🐱" && r.hints[1] == "(none)", "preview: goes with its only keyword", joined(r.hints));
+
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Pick, Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints[0] == "🐈 🐱" && r.text == "con mèo", "preview: a click on it puts nothing", joined(r.hints) + " / " + r.text);
+    }
+
+    // The preview holds no key: everything typed mid-sentence reaches the app.
+    void testPreviewKeys() {
+        const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
+        auto       r     = type(keysOf("con meof lucs 3") + std::vector<uint32_t>{Hint} + keysOf(" giowf"), Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() != "(none)" && r.text == "con mèo lúc 3 giờ", "preview: digits are typed", r.hints.front() + " / " + r.text);
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Tab, Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints[0] == "🐈 🐱" && r.hints[1] == "(none)" && r.text == "con mèo⇥", "preview: Tab goes to the app and closes it", joined(r.hints) + " / " + r.text);
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Enter, Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints[0] == "🐈 🐱" && r.hints[1] == "(none)" && r.text == "con mèo\n", "preview: Enter goes to the app and closes it", joined(r.hints) + " / " + r.text);
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Pause, Hint, Enter}, Mode::Sen, makeField(), atEnd);
+        check(r.hints[0] == "Tab: 🐈 🐱" && r.text == "con mèo\n", "after a pause Enter still sends", r.hints[0] + " / " + r.text);
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Esc, Pause, Hint} + keysOf(". cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints[0] == "🐈 🐱" && r.hints[1] == "(none)" && r.hints[2] == "😂 🤣 😄 😆 😁", "Esc: no emoji for the rest of the sentence", joined(r.hints));
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, PanelReset, Tab}, Mode::Sen, makeField(), atEnd);
+        check(r.text == "con mèo⇥", "a list the engine cleared holds no key", r.text);
     }
 
     // The release of a key the list took stays away from the app as well.
@@ -435,6 +534,8 @@ int main() {
     testSlowApp();
     testSentenceEnd();
     testPickAfterCursorMoved();
+    testSentencePreview();
+    testPreviewKeys();
     testRelease();
     if (failures)
         std::cerr << failures << " failure(s)\n";

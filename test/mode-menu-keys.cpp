@@ -431,6 +431,56 @@ int main() {
     check(!menu(*clickedField), "a click in the field closes the menu", "menu still open");
     clickedField.reset();
 
+    // Some apps answer a click with a report that still has the old caret.
+    auto reportField = openField("reportfield");
+    reportField->surroundingText().setText("abc", 3, 3);
+    reportField->updateSurroundingText();
+    pumpEventLoop(testInstance.instance, 1);
+    press(engine, entry, *reportField, FcitxKey_grave);
+    check(menu(*reportField) != nullptr, "the menu opens in reportField", "no menu");
+    reportField->updateSurroundingText();
+    pumpEventLoop(testInstance.instance, 200);
+    check(menu(*reportField) != nullptr, "a report right after the menu opens keeps it", "menu closed");
+    pumpEventLoop(testInstance.instance, 100);
+    press(engine, entry, *reportField, FcitxKey_Down);
+    reportField->updateSurroundingText();
+    pumpEventLoop(testInstance.instance, 200);
+    check(menu(*reportField) != nullptr, "a report right after a key in the menu keeps it", "menu closed");
+    pumpEventLoop(testInstance.instance, 300);
+    reportField->updateSurroundingText();
+    pumpEventLoop(testInstance.instance, 200);
+    check(!menu(*reportField), "a report long after the menu opened closes it", "menu still open");
+    reportField.reset();
+
+    // KWin sends a report just before each key.
+    auto keyField = openField("keyfield");
+    press(engine, entry, *keyField, FcitxKey_grave);
+    press(engine, entry, *keyField, FcitxKey_q);
+    check(realMode.load() == ngosen::Mode::Preedit, "q picks Preedit in keyField", modeName(realMode.load()));
+    press(engine, entry, *keyField, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 300);
+    keyField->updateSurroundingText();
+    press(engine, entry, *keyField, FcitxKey_Down);
+    pumpEventLoop(testInstance.instance, 200);
+    check(menu(*keyField) != nullptr, "a key right after a late report keeps the menu", "menu closed");
+    pumpEventLoop(testInstance.instance, 300);
+    keyField->updateSurroundingText();
+    press(engine, entry, *keyField, FcitxKey_1);
+    check(realMode.load() == ngosen::Mode::Sen, "a key right after a late report reaches the menu", modeName(realMode.load()));
+    keyField.reset();
+
+    // Releasing a key held across the click is not a key for the menu.
+    auto releaseField = openField("releasefield");
+    press(engine, entry, *releaseField, FcitxKey_grave);
+    check(menu(*releaseField) != nullptr, "the menu opens in releaseField", "no menu");
+    pumpEventLoop(testInstance.instance, 300);
+    releaseField->updateSurroundingText();
+    fcitx::KeyEvent ctrlUp(releaseField.get(), fcitx::Key(FcitxKey_Control_L), true);
+    engine.keyEvent(entry, ctrlUp);
+    pumpEventLoop(testInstance.instance, 200);
+    check(!menu(*releaseField), "a key release after a late report leaves the close", "menu still open");
+    releaseField.reset();
+
     // A click X11 reports elsewhere, such as in another field of the same window.
     auto clickedAway = openField("clickedaway");
     press(engine, entry, *clickedAway, FcitxKey_grave);

@@ -110,7 +110,7 @@ namespace fcitx {
          * @param keyEvent The key event to process.
          */
         void keyEvent(const InputMethodEntry& entry, KeyEvent& keyEvent) override;
-        // A click reported by X11, outside what the app itself reports.
+        // A click that may not have moved the caret; the menu closes unless a key comes first.
         void pointerClicked();
 
         /**
@@ -290,6 +290,7 @@ namespace fcitx {
         std::string                                 vimAppsPath_;
         std::string                                 emojiOffAppsPath_;
         std::weak_ptr<CandidateList>                modeMenuList_;
+        uint64_t                                    modeMenuQuietSince_ = 0;
         // A modifier-only toggle key fires on release, unless another key came in between.
         bool                             toggleTapArmed_  = false;
         uint64_t                         toggleTapTime_   = 0;
@@ -307,6 +308,8 @@ namespace fcitx {
         static constexpr uint64_t CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
         // The panel picks an item on button press, so a click on the menu itself is handled first.
         static constexpr uint64_t MODE_MENU_CLICK_DELAY_USEC = 100000;
+        // A report this soon after the menu opens or a key answers the commit or the key, not a click.
+        static constexpr uint64_t MODE_MENU_ECHO_USEC = 250000;
 #ifdef NGOSEN_HAS_DBUS
         FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
         std::unique_ptr<NgoSenDBusObject>          dbusObject_;

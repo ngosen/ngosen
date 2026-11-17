@@ -319,10 +319,15 @@ namespace fcitx {
         cursorJumpWatcher_ = instance_->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& event) {
             auto*      ic        = static_cast<InputContextEvent&>(event).inputContext();
             const bool seenClick = g_mouse_clicked.load(std::memory_order_acquire);
+            // Firefox and GTK4 on KWin report again after a click in the field, sometimes with the old caret.
+            const bool quietMenu = isModeMenuOpen(ic) && ngosen::monotonicUs() - modeMenuQuietSince_ >= MODE_MENU_ECHO_USEC;
             stateFor(ic)->surroundingUpdated();
             // The caret moving with no edit is the only sign of a click the app gives on Wayland.
             if (!seenClick && g_mouse_clicked.load(std::memory_order_acquire) && isModeMenuOpen(ic))
                 closeModeMenuPanel(ic, true);
+            // KWin also sends a report just before each key, so a key that follows keeps the menu.
+            else if (quietMenu && isModeMenuOpen(ic))
+                pointerClicked();
         });
         commitWatcher_     = instance_->watchEvent(EventType::InputContextCommitString, EventWatcherPhase::Default, [this](Event& event) {
             auto& commit = static_cast<CommitStringEvent&>(event);
@@ -869,6 +874,11 @@ namespace fcitx {
     void NgoSenEngine::keyEvent(const InputMethodEntry& /*entry*/, KeyEvent& keyEvent) {
         auto* ic = keyEvent.inputContext();
         dropStaleSurroundingText(ic);
+        // Only a pressed key reaches the menu; a release may end a key held across a click.
+        if (isModeMenuOpen(ic) && !keyEvent.isRelease()) {
+            modeMenuQuietSince_ = ngosen::monotonicUs();
+            menuClickTimer_.reset();
+        }
 
         if (isModeMenuOpen(ic) && g_mouse_clicked.load(std::memory_order_acquire)) {
             closeModeMenuPanel(ic, true);
@@ -1711,6 +1721,7 @@ namespace fcitx {
         ic->inputPanel().reset();
         ic->inputPanel().setCandidateList(std::move(candidateList));
         modeMenuList_        = ic->inputPanel().candidateList();
+        modeMenuQuietSince_  = ngosen::monotonicUs();
         std::string appLabel = currentConfigureApp_;
         if (isStartsWith(currentConfigureApp_, "ctx_")) {
             // GNOME Shell relays every app through one field, so a rule without a name holds for all of them.

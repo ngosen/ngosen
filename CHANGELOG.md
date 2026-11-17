@@ -18,6 +18,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Menu chọn chế độ gõ (mở bằng `` ` ``) nay đóng ngay khi click chuột ra ngoài, thay vì chờ tới phím kế tiếp. Click lên một mục trong menu vẫn chọn mục đó. Menu không còn tự tắt sau 5 giây (#836).
 - Trên Fedora GNOME, gõ trong Brave (như ô bình luận voz) không còn mất dấu hay lộn chữ: `oonr` ra `ổn` thay vì `ônr`, `thuwowngf` ra `thường` thay vì `thươngf` (#842).
 - Trong terminal dùng xterm.js ở VaultID và Firefox trên KDE Wayland, chế độ Gõ Sen gõ `ddaay laf tieengs vieetj` ra đúng `đây là tiếng việt`, không còn lặp hoặc mất chữ. Một hoặc hai từ đầu sau khi fcitx5 khởi động vẫn có thể sai; sau đó Ngó Sen nhớ app để gõ đúng (#816, #846).
+- Trên KDE, click vào ô đang gõ trong Firefox, gnome-text-editor hay Dolphin nay cũng đóng menu chọn chế độ gõ, thay vì menu đứng yên tới phím kế tiếp. Trong Konsole menu vẫn chờ phím kế tiếp (#840).
 
 ## [1.12.1-1] — 17/11/2026
 

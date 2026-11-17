@@ -120,7 +120,9 @@ namespace ngosen {
     void TypingState::noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore) {
         const uint32_t sym = keyEvent.sym();
         if (clickBeforeKey_ || isShortcut(keyEvent)) {
+            // The muted sentence is no longer known, as after Ctrl+A.
             emojiTail_.clear();
+            emojiMuted_ = false;
             return;
         }
         if (ngosen::key::isBackspace(sym)) {

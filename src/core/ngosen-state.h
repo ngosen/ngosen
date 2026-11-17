@@ -835,10 +835,12 @@ namespace ngosen {
         void         noteEcho(const Surrounding& report);
         void         checkLettersInReport(const Surrounding& report);
         void         notePassedLetter(const ngosen::KeyPress& keyEvent, uint64_t commitsBefore);
+        void         noteCommitForCheck(const std::string& text);
         bool         keepsOnlyCommits() const;
         // A commit waiting for the app to start a composition on its preedit.
         std::string                    composedCommit_;
         std::unique_ptr<ngosen::Timer> composedCommitTimer_;
+        bool                           composedWait_ = false; ///< the composed commit or keys held for it wait for their turn
         void                           flushComposedCommit();
         bool                           composedCommitStep();
         uint64_t                       splitEditWaitUs() const;

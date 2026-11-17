@@ -1201,10 +1201,35 @@ namespace ngosen {
         const std::string key = host_->keyText(keyEvent.sym());
         if (keyEvent.accepted() || commitCount_ != commitsBefore || is_deleting_.load(std::memory_order_acquire) || !buffered_keys_.empty())
             return;
+        if (mode() != ngosen::Mode::Sen || !host_->field().surroundingText)
+            return;
+        std::string& passed = sinceFocus_.committedSinceReport.empty() ? sinceFocus_.passedSinceReport : sinceFocus_.passedAfterCommit;
+        if (ngosen::key::isBackspace(keyEvent.sym())) {
+            // Taking back part of a commit leaves nothing to compare.
+            if (passed.empty())
+                sinceFocus_.erasedSinceReport = -1;
+            else
+                passed.pop_back();
+            return;
+        }
         if ((keyEvent.states() & ~ngosen::modifier::Shift) != 0 || key.size() != 1 || static_cast<unsigned char>(key[0]) < ' ')
             return;
         // A late report may not show a letter typed after our commit yet, so it counts for the next one.
-        (sinceFocus_.committedSinceReport.empty() ? sinceFocus_.passedSinceReport : sinceFocus_.passedAfterCommit) += key;
+        if (passed.size() >= MaxCommitsChecked)
+            passed.erase(0, 1);
+        passed += key;
+    }
+
+    void TypingState::noteCommitForCheck(const std::string& text) {
+        if (mode() != ngosen::Mode::Sen || !host_->field().surroundingText)
+            return;
+        auto& h = sinceFocus_;
+        // A field that stopped reporting leaves nothing to compare.
+        if (h.committedSinceReport.size() > 4 * MaxCommitsChecked) {
+            h.committedSinceReport.clear();
+            h.erasedSinceReport = -1;
+        }
+        h.committedSinceReport += text;
     }
 
     // WebKitGTK ends a commit made outside a composition as a composition that never started, and xterm.js

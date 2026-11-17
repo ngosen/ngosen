@@ -2064,6 +2064,10 @@ Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=none ended=threshold after 16 ms
+Replace: method=forwarded backspaces wait=none ended=threshold after 16 ms
+Replace: method=surrounding wait=copy ended=committed after 60 ms
+Replace: method=surrounding wait=copy ended=committed after 60 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 40 ms

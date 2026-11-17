@@ -3346,6 +3346,26 @@ namespace {
         const int preedits = box->sent().preedits;
         check(box->text() == "đây là tiếng việt " && preedits <= 2, "xterm.js: a text box of the same app stops using preedits",
               box->text() + " preedits=" + std::to_string(preedits));
+
+        // The Backspace lands while the commit waits for its turn.
+        const std::string beforeErase = app->text();
+        app->type('d');
+        loop.pump(60);
+        app->type('d');
+        loop.pump(18);
+        app->type(ngosen::key::BackSpace);
+        loop.pump(600);
+        check(app->text() == beforeErase, "xterm.js: a Backspace right after a commit erases it", app->text());
+    }
+
+    // A busy page shows a letter and the Backspace that takes it back in one late report.
+    void testTypedBackspaceIsNotHiddenLetter() {
+        FakeResources               resources;
+        Field                       field = makeField("wayland", true, "firefox");
+        const std::vector<uint32_t> keys{'l', 'a', ngosen::key::BackSpace, 'a', 'f', ' ', 't', 'i', 'e', 'e', 'n', 'g', 's', ' '};
+        const auto                  out = ngosen::test::typeInAppTraced(resources, field, {.reportDelayMs = 200, .lagMs = 100}, keys, std::vector<int>(keys.size(), 60));
+        check(out.text == "là tiếng " && out.sent.preedits == 0, "a typed Backspace does not make a field look like xterm.js",
+              out.text + " preedits=" + std::to_string(out.sent.preedits));
     }
 
     // The user's own edits while a long check is open say nothing about the app.
@@ -5558,6 +5578,7 @@ int main() {
     testDroppedDeletionKeptAcrossFocus();
     testXtermKeepsOnlyCommits();
     testXtermRememberedAfterFocus();
+    testTypedBackspaceIsNotHiddenLetter();
     testShortDeletion();
     testCheckAcrossLateAppName();
     testEditsDuringLongCheck();

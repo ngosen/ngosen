@@ -710,7 +710,7 @@ namespace ngosen {
     void TypingState::commit(const std::string& text) {
         flushComposedCommit();
         ++commitCount_;
-        sinceFocus_.committedSinceReport += text;
+        noteCommitForCheck(text);
         noteCommit(text);
         // A field that rewrites what we commit never shows it; keep only the latest commits.
         if (mode() == ngosen::Mode::Sen && ngosen::appliesEarlyKeysFirst(host_->field()))
@@ -726,6 +726,7 @@ namespace ngosen {
             // Keys typed meanwhile wait, as during a replacement, so that nothing sent for them shares
             // the preedit's turn.
             is_deleting_.store(true, std::memory_order_release);
+            composedWait_ = true;
             // Replaying held keys can commit again from inside the callback, which must not destroy it.
             if (composedCommitTimer_)
                 composedCommitTimer_->rearm(monotonicUs() + ComposedCommitTurnUs);
@@ -741,14 +742,20 @@ namespace ngosen {
     // Sends the commit, then a turn later the keys held meanwhile, whose own preedit would otherwise
     // share the commit's turn.
     bool TypingState::composedCommitStep() {
+        // Focus left meanwhile and settled it.
+        if (!composedWait_)
+            return false;
         if (!composedCommit_.empty()) {
             flushComposedCommit();
-            if (buffered_keys_.empty())
+            if (buffered_keys_.empty()) {
+                composedWait_ = false;
                 return false;
+            }
             is_deleting_.store(true, std::memory_order_release);
             composedCommitTimer_->rearm(monotonicUs() + ComposedCommitTurnUs);
             return true;
         }
+        composedWait_ = false;
         is_deleting_.store(false, std::memory_order_release);
         if (!buffered_keys_.empty())
             replayBufferedKeys(std::string());

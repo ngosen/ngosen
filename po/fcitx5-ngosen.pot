@@ -2141,6 +2141,26 @@ msgstr ""
 msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
 msgstr ""
 
+#: settings-gui/core/teencode_apps.py
+msgid "Set a mode menu key and a teencode key on the Keys page to turn teencode on."
+msgstr ""
+
+#: settings-gui/core/teencode_apps.py
+msgid "Teencode keeps words like zậy, đag and nhữg instead of restoring the keys typed. In the app you are typing in, press {menu} then {key} to turn it on or off for that app."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Not on in any app."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Turn off"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Turn teencode off in {}"
+msgstr ""
+
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
 msgid "Export…"
 msgstr ""

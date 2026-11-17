@@ -27,6 +27,7 @@ from core.catalog import (
 )
 from core.dbus_handler import NgoSenDBusHandler
 from core.settings_model import SettingsModel
+from core.teencode_apps import TeencodeApps, toggle_hint
 from i18n import _
 from qtpy.QtCore import QEvent, QSize, Qt, QTimer
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap
@@ -53,7 +54,9 @@ from core import convert, page_status
 from ui import brand
 from ui.components import (
     HotkeyEditorWidget,
+    Lines,
     NoWheelComboBox,
+    Row,
     SingleKeyCaptureWidget,
 )
 from ui.convert_box import ConvertBox
@@ -198,6 +201,7 @@ class DynamicSettingsPage(QWidget):
         self._custom_hint = None
         self._retone_note = None
         self._convert_box = None
+        self._teencode = None
         self._following = False
 
         self._setup_ui()
@@ -274,6 +278,7 @@ class DynamicSettingsPage(QWidget):
             self._custom_hint = None
             self._retone_note = None
             self._convert_box = None
+            self._teencode = None
             self._mode_hint = None
             self._mode_buttons = {}
             self._tray_preview = None
@@ -347,6 +352,8 @@ class DynamicSettingsPage(QWidget):
 
             if self.category == SettingsCategory.TYPING:
                 self.form.addRow(self._separator())
+                self.form.addRow(_("Teencode") + ":", self._teencode_section())
+                self.form.addRow(self._separator())
                 try_it = QLineEdit()
                 try_it.setPlaceholderText(_("Type here to test"))
                 try_it.setFont(brand.sized_font(17))
@@ -419,8 +426,70 @@ class DynamicSettingsPage(QWidget):
         self._fields[key] = wrapper
         return wrapper
 
+    def _teencode_section(self):
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self._teencode_hint = HintLabel("")
+        mute(self._teencode_hint)
+        layout.addWidget(self._teencode_hint)
+        self._teencode = TeencodeApps(self.dbus)
+        self._teencode_list = Lines()
+        self._teencode_list.setMaximumWidth(460)
+        layout.addWidget(self._teencode_list)
+        self._show_teencode_hint()
+        self._show_teencode_apps()
+        return section
+
+    def _show_teencode_hint(self, values=None):
+        values = values or {}
+        keys = [values.get(k, self.value_of(k)) for k in ("ModeMenuKey", "ShortcutTeencode")]
+        self._teencode_hint.setText(toggle_hint(*keys))
+
+    def _show_teencode_apps(self):
+        rows = self._teencode_list.rows
+        while rows.count():
+            widget = rows.takeAt(0).widget()
+            widget.hide()
+            widget.deleteLater()
+        if not self._teencode.apps:
+            empty = QLabel(_("Not on in any app."))
+            empty.searchable = False
+            empty.setContentsMargins(10, 8, 10, 8)
+            mute(empty)
+            rows.addWidget(empty)
+        for app in self._teencode.apps:
+            row = Row()
+            line = QHBoxLayout(row)
+            line.setContentsMargins(10, 4, 6, 4)
+            name = QLabel(app)
+            name.searchable = False
+            line.addWidget(name, 1)
+            button = QPushButton(_("Turn off"))
+            button.setAccessibleName(_("Turn teencode off in {}").format(app))
+            button.clicked.connect(lambda _checked=False, a=app: self._teencode_off(a))
+            line.addWidget(button)
+            rows.addWidget(row)
+
+    def _teencode_off(self, app):
+        if not self._teencode.turn_off(app):
+            window = self.window()
+            if hasattr(window, "show_page_message"):
+                window.show_page_message(
+                    _("Could not save. Check that fcitx5 is running."), error=True
+                )
+        self._show_teencode_apps()
+
     def refresh_status(self):
         """Shows the notes that depend on what fcitx5 holds, without rebuilding the page."""
+        if self._teencode is not None:
+            # The Keys page keeps its own copy of the settings, so ask fcitx5.
+            self._show_teencode_hint((self.dbus.get_config() or {}).get("values"))
+            apps = self._teencode.read()
+            # Rows added to a shown list appear a pass later, so rebuild only on a change.
+            if apps != self._teencode.apps:
+                self._teencode.apps = apps
+                self._show_teencode_apps()
         if self._custom_hint is None and self._retone_note is None:
             return
         model = page_status.read(self.dbus)

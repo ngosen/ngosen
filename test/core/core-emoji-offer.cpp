@@ -53,16 +53,17 @@ namespace {
     constexpr uint32_t Home     = 10; // the cursor moves to the start of the field
     constexpr uint32_t Lag      = 11; // the app reports its text 5 ms after each change
     // Firefox resets right after the key and reports the text it typed only after that.
-    constexpr uint32_t EarlyReset = 12;
-    constexpr uint32_t Chosen     = 13; // records the highlighted item of the panel
-    constexpr uint32_t Pick       = 14; // a click on the first item of the panel
-    constexpr uint32_t Gap        = 15; // 600 ms between keys, short of a pause
-    constexpr uint32_t Bounce     = 16; // the field loses focus and gets it back 30 ms later
-    constexpr uint32_t PanelReset = 17; // the engine clears the panel, as for a mode notice
-    constexpr uint32_t Backspace  = ngosen::key::BackSpace;
-    constexpr uint32_t Left       = ngosen::key::Left;
-    constexpr uint32_t Right      = ngosen::key::Right;
-    constexpr uint32_t Down       = ngosen::key::Down;
+    constexpr uint32_t EarlyReset    = 12;
+    constexpr uint32_t Chosen        = 13; // records the highlighted item of the panel
+    constexpr uint32_t Pick          = 14; // a click on the first item of the panel
+    constexpr uint32_t Gap           = 15; // 600 ms between keys, short of a pause
+    constexpr uint32_t Bounce        = 16; // the field loses focus and gets it back 30 ms later
+    constexpr uint32_t PanelReset    = 17; // the engine clears the panel, as for a mode notice
+    constexpr uint32_t BrowserBounce = 18; // a bounce, a reset and an empty first report, as Brave on Wayland
+    constexpr uint32_t Backspace     = ngosen::key::BackSpace;
+    constexpr uint32_t Left          = ngosen::key::Left;
+    constexpr uint32_t Right         = ngosen::key::Right;
+    constexpr uint32_t Down          = ngosen::key::Down;
 
     Field              makeField() {
         Field field;
@@ -140,6 +141,11 @@ namespace {
                 app->leaveFocus(30);
                 loop.pump(60);
                 // As the engine's showMode does after activate().
+                app->resetPanel();
+                state.panelWasCleared(true);
+            } else if (key == BrowserBounce) {
+                app->bounceReportingEmpty(30);
+                loop.pump(60);
                 app->resetPanel();
                 state.panelWasCleared(true);
             } else if (key == PanelReset) {
@@ -467,6 +473,9 @@ namespace {
 
         r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Bounce, Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints.size() == 2 && r.hints[0] == "🐈 🐱" && r.hints[1] == "🐈 🐱", "preview: shows again after a focus bounce", joined(r.hints));
+        r = type(keysOf("con meof ") + std::vector<uint32_t>{BrowserBounce} + keysOf("cuw") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.size() == 1 && r.hints[0] == "🐈 🐱" && r.text == "con mèo cư", "preview: keeps the sentence when the field first reports empty after a bounce",
+              r.text + " / " + joined(r.hints));
 
         r = type(keysOf("con meof") + std::vector<uint32_t>{Gap, ' ', Gap, 'c', Gap, Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints.front() != "(none)" && r.hints.front().rfind("Tab:", 0) != 0, "preview: a pause counts from the last key", r.hints.front());

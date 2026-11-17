@@ -152,6 +152,7 @@ namespace ngosen::test {
         void select(size_t anchor, size_t cursor);
         // Leaves focus for ms and takes it back, as WPS does when it opens a window on a double click.
         void leaveFocus(int ms);
+        void bounceReportingEmpty(int ms);
         // Leaves focus and comes back after ms with text put at the cursor meanwhile, as a key typed right
         // after Alt+Tab does when both its press and release reach the window before focus-in.
         void returnWithText(const std::string& typed, int ms);
@@ -302,6 +303,7 @@ namespace ngosen::test {
       private:
         int                                 highlighted_      = 0;
         int                                 candidatesHidden_ = 0;
+        bool                                reportsEmptyOnce_ = false;
         bool                                inRow_            = false;
         std::function<void(size_t)>         onPick_;
         void                                insert(const std::u32string& text, bool typed = false);

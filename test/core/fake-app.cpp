@@ -487,6 +487,23 @@ namespace ngosen::test {
         });
     }
 
+    // Chromium on Wayland resets the context after taking focus back and first reports an empty field.
+    void FakeApp::bounceReportingEmpty(int ms) {
+        focused_ = false;
+        state_->deactivate(true);
+        later(ms, [this] {
+            focused_ = true;
+            state_->activate(Mode::Sen, true);
+            reportsEmptyOnce_ = true;
+            state_->appReset();
+            changed();
+            later(5, [this] {
+                reportsEmptyOnce_ = false;
+                changed();
+            });
+        });
+    }
+
     void FakeApp::clickCellOpenedByKey(int ms) {
         cellOpensOnKey_ = true;
         leaveFocus(ms);
@@ -585,7 +602,7 @@ namespace ngosen::test {
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};
-        if (quirks_.reportsEmptyText)
+        if (quirks_.reportsEmptyText || reportsEmptyOnce_)
             return Surrounding("", 0, 0);
         if (silentAfterDelete_ || quirks_.reportsTextAtChange || showsMovedCursor_ || holdsUnreported_)
             return Surrounding(encode(reportedText_), static_cast<unsigned int>(reportedCursor_), static_cast<unsigned int>(reportedAnchor_));

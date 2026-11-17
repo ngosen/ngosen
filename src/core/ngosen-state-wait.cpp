@@ -141,11 +141,11 @@ namespace ngosen {
         // Two timeouts in a row: this app does not update while deleting. Use the short timeout
         // until an event matches again.
         // Behind GNOME Shell's IBus bridge a slow app can apply our backspace after the commit sent once we stop
-        // waiting, and the backspace then erases the new letter (#362).
-        const int fullMs =
-            ngosen::surroundingTextLags(host_->field()) ? std::max(engine_->options().waitSurroundingTimeoutMs, LaggingReportWaitMs) : engine_->options().waitSurroundingTimeoutMs;
-        const int  timeoutMs = surr_timeout_streak_ >= 2 ? engine_->options().waitSurroundingShortMs : fullMs;
-        const auto timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
+        // waiting, and the backspace then erases the new letter (#362), so the short timeout is no shorter there.
+        const ngosen::Options& options   = engine_->options();
+        const int              floorMs   = ngosen::surroundingTextLags(host_->field()) ? LaggingReportWaitMs : 0;
+        const int              timeoutMs = std::max(surr_timeout_streak_ >= 2 ? options.waitSurroundingShortMs : options.waitSurroundingTimeoutMs, floorMs);
+        const auto             timeout   = static_cast<uint64_t>(timeoutMs) * 1000ULL;
         // Check once at the threshold first: many apps report "done" before it and then go quiet.
         const auto threshold     = static_cast<uint64_t>(engine_->options().waitSurroundingMinPerKeyMs) * static_cast<uint64_t>(std::max(expected_backspaces_, 1)) * 1000ULL;
         const auto firstDeadline = threshold < timeout ? surr_wait_started_at_ + threshold : surr_wait_started_at_ + timeout;

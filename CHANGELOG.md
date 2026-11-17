@@ -14,7 +14,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Trên GNOME, gõ nhanh ngay sau khi mở Firefox, xoá vài chữ bằng Backspace rồi gõ tiếp không còn thỉnh thoảng ra chữ lộn (`nam tiếig` thay vì `nam tiếng`) (#831).
 - Menu chọn chế độ gõ (mở bằng `` ` ``) nay đóng ngay khi click chuột ra ngoài, thay vì chờ tới phím kế tiếp. Click lên một mục trong menu vẫn chọn mục đó. Menu không còn tự tắt sau 5 giây (#836).
-- Trên KDE, click vào giữa chữ trong Firefox hay gnome-text-editor nay cũng đóng menu chọn chế độ gõ, thay vì menu đứng yên tới phím kế tiếp (#840).
+- Trên KDE, click vào ô đang gõ trong Firefox, gnome-text-editor hay Dolphin nay cũng đóng menu chọn chế độ gõ, thay vì menu đứng yên tới phím kế tiếp. Trong Konsole menu vẫn chờ phím kế tiếp (#840).
 
 ## [1.12.1-1] — 17/11/2026
 

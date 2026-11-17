@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.12.0
+Version:        1.12.1
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -100,6 +100,9 @@ else
 fi
 
 %changelog
+* Tue Nov 17 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.12.1-1
+- In Firefox, Yahoo Messenger codes such as :) and =)) show emoji suggestions again (#819); on GNOME two quick Backspaces right after Firefox opens both apply (#815); a key not in the mode menu closes it and types, and the menu closes itself after 5 seconds (#814, #817); with fcitx5 5.1.23 the BackSpace deletion is remembered for the session (#816, #818); Backspace right after a Space that completed a word restores the word in Firefox (#813); restoring a hand-edited backup keeps true, false and number values (#805).
+
 * Mon Nov 16 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.12.0-1
 - Emoji suggestions while typing: a Vietnamese word such as cười, a Yahoo Messenger code or :) shows emoji next to the cursor and Tab picks one, with a new Emoji page in the settings window; they replace the Emoji picker mode (#788, #791, #792, #793, #795). The settings window opens Check my machine on first open, while a step that stops typing is left, when a re-login did not apply the setup, and after a first install with install.sh (#798, #801, #802, #806). Three capitalization options lose their experimental label (#796).
 

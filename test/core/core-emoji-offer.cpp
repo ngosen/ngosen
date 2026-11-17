@@ -44,6 +44,11 @@ namespace {
     constexpr uint32_t OffMode = 2;
     constexpr uint32_t Status  = 3; // records the line under the panel
     constexpr uint32_t AppOff  = 4; // the user turns emoji off for this app
+    constexpr uint32_t Reset   = 5; // the app resets the input context, as Firefox does after each key it types
+    constexpr uint32_t Home    = 6; // the cursor moves to the start of the field
+    constexpr uint32_t Lag     = 7; // the app reports its text 5 ms after each change
+    // Firefox resets right after the key and reports the text it typed only after that.
+    constexpr uint32_t EarlyReset = 8;
 
     Field              makeField() {
         Field field;
@@ -81,11 +86,22 @@ namespace {
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
         Result result;
-        for (const uint32_t key : keys) {
+        for (size_t i = 0; i < keys.size(); ++i) {
+            const uint32_t key = keys[i];
             if (key == Click) {
                 g_mouse_clicked.store(true);
             } else if (key == OffMode) {
                 realMode = Mode::Off;
+            } else if (key == Reset || key == EarlyReset) {
+                // The engine passes a reset on only while no word is open.
+                if (state.isEmptyHistory())
+                    state.appReset();
+                if (key == EarlyReset)
+                    loop.pump(20);
+            } else if (key == Lag) {
+                app->setReportDelay(5);
+            } else if (key == Home) {
+                app->moveCursor(0);
             } else if (key == AppOff) {
                 state.setEmojiOn(false);
             } else if (key == Status) {
@@ -94,7 +110,8 @@ namespace {
                 result.hints.push_back(app->labels().empty() ? "(none)" : app->labels().front());
             } else {
                 app->type(key);
-                loop.pump(20);
+                if (i + 1 == keys.size() || keys[i + 1] != EarlyReset)
+                    loop.pump(20);
             }
         }
         loop.pump(200);
@@ -119,6 +136,18 @@ namespace {
         check(hint == "(none)", "a click starts the words over", hint);
         hint = hintAfter(":)");
         check(hint == "Tab: 🙂 😊", "an emoticon outside a word", hint);
+        hint = type(std::vector<uint32_t>{':', Reset, ')', Reset, Hint}).hints.front();
+        check(hint == "Tab: 🙂 😊", "an emoticon outlasts the app's reset after each key", hint);
+        hint = type(std::vector<uint32_t>{'=', Reset, ')', Reset, ')', Reset, Hint}).hints.front();
+        check(hint.rfind("Tab: 🤣", 0) == 0, "=)) outlasts the app's resets", hint);
+        hint = type(std::vector<uint32_t>{':', Home, Reset, ')', Reset, Hint}).hints.front();
+        check(hint == "(none)", "a reset after the cursor moved drops the emoticon typed before", hint);
+        hint = type(std::vector<uint32_t>{Lag, ':', EarlyReset, ')', EarlyReset, Hint}).hints.front();
+        check(hint == "Tab: 🙂 😊", "an emoticon outlasts a reset that comes before the app reports the key", hint);
+        hint = type(std::vector<uint32_t>{Lag, '=', EarlyReset, ')', EarlyReset, ')', EarlyReset, Hint}).hints.front();
+        check(hint.rfind("Tab: 🤣", 0) == 0, "=)) outlasts resets that come before the app reports", hint);
+        hint = type(std::vector<uint32_t>{Lag, ':', Home, EarlyReset, ')', EarlyReset, Hint}).hints.front();
+        check(hint == "(none)", "a reset before the report of a moved cursor drops the emoticon", hint);
         hint = hintAfter("=))");
         check(hint == "Tab: 🤣", "a Yahoo Messenger code typed in Telex", hint);
         hint = hintAfter("cuwowif", Mode::Preedit);

@@ -376,7 +376,7 @@ msgid "What's new in Ngó Sen?"
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.11: convert selected text between charsets with a hotkey, and extra keys after a word no longer undo its marks. See What's new for more."
+msgid "Version 1.12: emoji suggestions while typing, and the settings window opens Check my machine when a setup step is left. See What's new for more."
 msgstr ""
 
 #: src/ngosen-engine.cpp
@@ -1656,6 +1656,22 @@ msgstr ""
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji while typing"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "After a word such as cười, con mèo or haha, emoji show next to the cursor. Press Tab to number them, then 1 to 5 to pick one; Tab, Space or Enter takes the first. The Emoji page lists every emoji with its words, which you can change."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Check my machine opens by itself"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "When a step that stops Vietnamese typing is left, the settings window opens on Check my machine, then reminds you less and less often until it is fixed. After a first install it opens once to show what is left."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py

@@ -12,6 +12,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Gõ lại dấu thanh sau phụ âm cuối nay ra đúng chữ: `mooxtj` ra `một`, `toorts` ra `tốt`, `ddacxs` ra `đác`, thay vì
+  `mỗ`, `tổ`, `đac` như từ bản 1.11.0. Một số từ tiếng Anh ít gặp như `aface` cũng không còn bị cắt thành `ầ` (#835).
 - Trong Firefox, gõ mặt cười kiểu Yahoo như `:)`, `:))`, `=))`, `:x` nay hiện gợi ý emoji như khi gõ chữ, thay vì không ra gì (#819).
 - Trên GNOME, gõ nhanh ngay sau khi mở Firefox, nhấn Backspace hai lần liền không còn mất một lần (`nam tieesng`, xoá `ng` rồi gõ lại ra `nam tiiếng`) (#815).
 - Khi menu chọn chế độ gõ (mở bằng `` ` ``) đang hiện, bấm một phím không có trong menu nay đóng menu và gõ ra phím đó, thay vì menu đứng yên và phím bị nuốt. Không bấm gì thì menu tự tắt sau 5 giây (#814, #817).

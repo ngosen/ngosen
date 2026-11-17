@@ -1736,11 +1736,62 @@ fn test_teencode_off_shows_the_keys() {
 fn test_teencode_lets_stretched_words_end_as_before() {
     let mut on = teencode_engine(true);
     let mut off = teencode_engine(false);
-    for keys in ["nhaa", "dduowjcc", "khoonggg"] {
+    for keys in ["nhaa", "dduowjcc"] {
         assert_eq!(
             commit_of(&mut on, keys),
             commit_of(&mut off, keys),
             "{keys}"
         );
     }
+}
+
+#[test]
+fn test_teencode_keeps_held_letters() {
+    let mut e = teencode_engine(true);
+    for (keys, word) in [
+        ("nhaaa", "nhaaa"),
+        ("chaiiif", "chàiii"),
+        ("kiaaaf", "kìaaa"),
+        ("chaammms", "chấmmm"),
+        ("chowttttts", "chớttttt"),
+        ("dzowiiiif", "dzờiiii"),
+        ("khoonggg", "khônggg"),
+    ] {
+        assert_eq!(commit_of(&mut e, keys), format!("{word} "), "{keys}");
+    }
+    let mut off = teencode_engine(false);
+    assert_eq!(commit_of(&mut off, "chaiiif"), "chaiiif ");
+    // An acronym in capitals takes no tone from its last letter.
+    assert_eq!(commit_of(&mut e, "WAAAF"), commit_of(&mut off, "WAAAF"));
+}
+
+#[test]
+fn test_teencode_keeps_abbreviated_phrases() {
+    let mut e = teencode_engine(true);
+    for (keys, word) in [
+        ("cgais", "cgái"),
+        ("bthuwowngf", "bthường"),
+        ("ddthoaij", "đthoại"),
+        ("ctrinhf", "ctrình"),
+        ("ngddos", "ngđó"),
+    ] {
+        assert_eq!(commit_of(&mut e, keys), format!("{word} "), "{keys}");
+    }
+}
+
+#[test]
+fn test_teencode_abbreviations_leave_english_and_one_syllable() {
+    let mut on = teencode_engine(true);
+    let mut off = teencode_engine(false);
+    // English clusters, acronyms and titles.
+    for keys in ["Blas", "Stans", "fstore", "CMOS", "BPharm"] {
+        assert_eq!(
+            commit_of(&mut on, keys),
+            commit_of(&mut off, keys),
+            "{keys}"
+        );
+    }
+    // One syllable is not split into a prefix and a word.
+    assert_eq!(commit_of(&mut on, "nghieemr"), "nghiểm ");
+    assert_eq!(commit_of(&mut on, "chawc"), "chăc ");
 }

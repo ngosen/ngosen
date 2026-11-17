@@ -16,6 +16,14 @@ const OVER_ENGLISH: &str = include_str!("teencode-over-english.txt");
 
 const VOWELS: &str = "aăâeêioôơuưy";
 
+const CONSONANT_KEYS: &str = "bcdfghjklmnpqrstvxz";
+
+/// Consonant pairs that start English words (`blast`, `stan`), so they start no abbreviation.
+const ENGLISH_ONSETS: &[&str] = &[
+    "bl", "br", "cl", "cr", "dr", "fl", "fr", "gl", "gr", "pl", "pr", "sc", "sk", "sl", "sm", "sn",
+    "sp", "st", "sw", "tw", "kl", "kr", "wr", "sh", "chl", "chr", "gn", "kn",
+];
+
 const ONSETS: &[&str] = &[
     "", "b", "c", "ch", "d", "đ", "g", "gh", "gi", "h", "k", "kh", "l", "m", "n", "ng", "ngh",
     "nh", "p", "ph", "q", "qu", "r", "s", "t", "th", "tr", "v", "x", "z", "dz", "j", "f", "w",
@@ -151,14 +159,20 @@ impl BambooEngine {
         {
             return None;
         }
-        let word = self
-            .shaped_word_of(raw.chars().collect())
-            .or_else(|| self.shaped_word_with_late_tone(&raw))?;
         let keys = raw.to_lowercase();
-        if TYPED_WORDS.lines().any(|typed| typed == keys) {
+        if self.english_words.contains(&keys) && !OVER_ENGLISH.lines().any(|over| over == keys) {
             return None;
         }
-        if self.english_words.contains(&keys) && !OVER_ENGLISH.lines().any(|over| over == keys) {
+        if let Some(word) = self.stretched_word(&raw) {
+            return Some(word);
+        }
+        let Some(word) = self
+            .shaped_word_of(raw.chars().collect())
+            .or_else(|| self.shaped_word_with_late_tone(&raw))
+        else {
+            return self.abbreviated_word(&raw);
+        };
+        if TYPED_WORDS.lines().any(|typed| typed == keys) {
             return None;
         }
         // A doubled a, e or o at the end (`nhaa`) more likely stretches the word, unless the word
@@ -181,6 +195,89 @@ impl BambooEngine {
             && spends_every_key(&typed_keys, &lower)
             && !self.dictionary.contains(&lower))
         .then_some(text)
+    }
+
+    /// A word with one letter held (`chaiiif` for chàiii, `nhaaa`): the word typed with that
+    /// letter once, then the extra copies. A tone key typed after them still counts.
+    fn stretched_word(&self, raw: &str) -> Option<String> {
+        let keys: Vec<char> = raw.chars().collect();
+        let tone_keys = self.preeditor.input_method().tone_keys();
+        let (body, tone) = match keys.split_last() {
+            // In capitals the last letter more likely ends an acronym (`AAAS`) than adds a tone.
+            Some((tone, rest))
+                if !is_all_caps(keys.iter().copied())
+                    && tone_keys.contains(&tone.to_ascii_lowercase())
+                    && rest.last().is_some_and(|c| !c.eq_ignore_ascii_case(tone)) =>
+            {
+                (rest, Some(*tone))
+            }
+            _ => (&keys[..], None),
+        };
+        let held = *body.last()?;
+        let run = body
+            .iter()
+            .rev()
+            .take_while(|c| c.eq_ignore_ascii_case(&held))
+            .count();
+        if run < 3 {
+            return None;
+        }
+        let (base, copies) = body.split_at(body.len() - run + 1);
+        let mut base = base.to_vec();
+        base.extend(tone);
+        let base_keys: String = base.iter().collect::<String>().to_lowercase();
+        let typed = self.typed_alone(base);
+        let word = typed.get_processed_str(OutputOptions::NONE);
+        let lower = word.to_lowercase();
+        let known = self.dictionary.contains(&lower)
+            || (is_teencode_shaped(&lower) && spends_every_key(&base_keys, &lower));
+        let ends_held = without_diacritics(&lower)
+            .chars()
+            .last()
+            .is_some_and(|c| c.eq_ignore_ascii_case(&held));
+        (typed.get_processed_str(OutputOptions::FULL_TEXT) == word && known && ends_held)
+            .then(|| word + &copies.iter().collect::<String>())
+    }
+
+    /// A phrase shortened to the first letters of its first syllables (`cgái` for con gái,
+    /// `bthường`, `đthoại`): up to three consonant keys, then a dictionary word with a mark.
+    fn abbreviated_word(&self, raw: &str) -> Option<String> {
+        let keys: Vec<char> = raw.chars().collect();
+        // A capital after the first letter marks an acronym or title (`CMOS`, `BPharm`).
+        if keys.iter().skip(1).any(|c| c.is_uppercase()) {
+            return None;
+        }
+        let whole = self
+            .typed_alone(keys.clone())
+            .get_processed_str(OutputOptions::NONE);
+        if self.dictionary.contains(&whole.to_lowercase()) {
+            return None;
+        }
+        (1..=3).filter(|n| keys.len() > n + 1).find_map(|n| {
+            let (prefix, rest) = keys.split_at(n);
+            if !prefix
+                .iter()
+                .all(|c| CONSONANT_KEYS.contains(c.to_ascii_lowercase()))
+            {
+                return None;
+            }
+            let shown_prefix = self
+                .typed_alone(prefix.to_vec())
+                .get_processed_str(OutputOptions::NONE);
+            let rest_keys: String = rest.iter().collect::<String>().to_lowercase();
+            let typed = self.typed_alone(rest.to_vec());
+            let word = typed.get_processed_str(OutputOptions::NONE);
+            let lower = word.to_lowercase();
+            let (onset, _, _) = syllable_parts(&without_tones(&lower).0)?;
+            let joined = format!("{}{onset}", shown_prefix.to_lowercase());
+            (typed.get_processed_str(OutputOptions::FULL_TEXT) == word
+                && !lower.is_ascii()
+                && !onset.is_empty()
+                && !ENGLISH_ONSETS.iter().any(|en| joined.contains(en))
+                && self.dictionary.contains(&lower)
+                && spends_every_key(&rest_keys, &lower))
+            .then(|| shown_prefix + &word)
+        })
     }
 
     /// A tone typed after a final only teencode uses (`nhuwgx` for nhữg) is moved before it,

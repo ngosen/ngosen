@@ -512,6 +512,11 @@ namespace {
         check(r.hints[0].rfind("1.", 0) != 0 && r.hints[0].rfind("Tab:", 0) != 0 && r.text == "con mèo giá 3.5", "a dot after a digit ends no sentence",
               r.hints[0] + " / " + r.text);
 
+        AppQuirks oldText                 = chatQuirks();
+        oldText.repeatsOldTextAfterDelete = true;
+        r                                 = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '2'}, Mode::Sen, makeField(), atEnd, oldText);
+        check(r.hints[0] == "1.😂 2.🤣 3.😄 4.🐈 5.🐱" && r.text == "con mèo cười 🤣", "a field showing its text from before the tone keeps the word", r.hints[0] + " / " + r.text);
+
         const auto vni = [](FakeResources& r) {
             r.mutableOptions().emojiAtSentenceEnd = true;
             r.mutableOptions().inputMethod        = "VNI";

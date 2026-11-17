@@ -276,10 +276,15 @@ namespace ngosen {
         const Surrounding s     = host_->surrounding();
         std::string       typed = emojiTail_ + openWord();
         if (settled && s.isValid() && s.cursor() == s.anchor()) {
-            typed           = textBeforeCursor(s);
-            const auto line = typed.rfind('\n');
+            std::string inApp = textBeforeCursor(s);
+            const auto  line  = inApp.rfind('\n');
             if (line != std::string::npos)
-                typed.erase(0, line + 1);
+                inApp.erase(0, line + 1);
+            // Firefox on GNOME shows its text from before our last deletion, without the word's tone.
+            const auto typedWords = splitWords(typed);
+            const auto appWords   = splitWords(inApp);
+            if (typedWords.empty() || (!appWords.empty() && appWords.back() == typedWords.back()))
+                typed = std::move(inApp);
         }
         const std::string text       = lastSentence(typed);
         auto              words      = splitWords(text);

@@ -427,7 +427,7 @@ fn print_mark_lookalikes() {
 // Prints what the keys on each line of NGOSEN_WORDS commit when a space ends them, with the
 // default settings and dictionary, for misc/check-word-endings.py. NGOSEN_SPACE set to `plain` or
 // `fix` loads the keep list as the apps do, and `fix` lets Space fix a kept word as it does in a
-// field that can take the rewrite.
+// field that can take the rewrite. NGOSEN_TEENCODE=1 turns teencode mode on.
 #[test]
 #[ignore = "measurement input, not a check"]
 fn print_committed_words() {
@@ -436,6 +436,7 @@ fn print_committed_words() {
     let space = std::env::var("NGOSEN_SPACE").unwrap_or_default();
     let mut e = engine_with_default_settings(&method);
     e.english_words = shipped_english_words();
+    e.teencode = std::env::var("NGOSEN_TEENCODE").is_ok_and(|v| v == "1");
     match space.as_str() {
         "" => {}
         "plain" | "fix" => {
@@ -1686,4 +1687,60 @@ fn test_space_keeps_stretched_words() {
     e.drop_kept_tail = true;
     e.process_key_event(KEY_SPACE, 0);
     assert_eq!(e.pull_commit(), "ừaaa ");
+}
+
+fn teencode_engine(on: bool) -> BambooEngine {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    e.teencode = on;
+    e
+}
+
+#[test]
+fn test_teencode_keeps_words_typed_online() {
+    let mut e = teencode_engine(true);
+    for (keys, word) in [
+        ("zaayj", "zậy"),
+        ("fair", "fải"),
+        ("was", "wá"),
+        ("ddag", "đag"),
+        ("nhuwg", "nhưg"),
+        ("nhuwgx", "nhữg"),
+        ("khoong", "không"),
+        ("tienf", "tiền"),
+    ] {
+        assert_eq!(commit_of(&mut e, keys), format!("{word} "), "{keys}");
+    }
+    e.reset();
+    type_keys(&mut e, "zaayj");
+    assert_eq!(e.preedit_text, "zậy");
+}
+
+#[test]
+fn test_teencode_leaves_english_loanwords_and_tangles() {
+    let mut e = teencode_engine(true);
+    for keys in ["tons", "her", "moto", "caras", "cerfs"] {
+        assert_eq!(commit_of(&mut e, keys), format!("{keys} "), "{keys}");
+    }
+}
+
+#[test]
+fn test_teencode_off_shows_the_keys() {
+    let mut e = teencode_engine(false);
+    for keys in ["zaayj", "fair", "was", "nhuwgx"] {
+        assert_eq!(commit_of(&mut e, keys), format!("{keys} "), "{keys}");
+    }
+}
+
+#[test]
+fn test_teencode_lets_stretched_words_end_as_before() {
+    let mut on = teencode_engine(true);
+    let mut off = teencode_engine(false);
+    for keys in ["nhaa", "dduowjcc", "khoonggg"] {
+        assert_eq!(
+            commit_of(&mut on, keys),
+            commit_of(&mut off, keys),
+            "{keys}"
+        );
+    }
 }

@@ -14,6 +14,7 @@ Options of run:
                         as it does in a field that can take the rewrite (most fields)
     --case title|upper  type every corpus capitalized or in capitals
     --corpus FILE       type FILE too, as a corpus named after it (repeatable)
+    --teencode          turn teencode mode on
 
 A corpus line is the keys, then optionally a tab and the word they should give. Corpora with an
 expected word report how many give it; the others report only what changed against BASE.
@@ -172,7 +173,7 @@ def corpora():
     return result
 
 
-def committed(lines, method, space=""):
+def committed(lines, method, space="", teencode=False):
     with tempfile.NamedTemporaryFile("w", suffix=".txt", encoding="utf-8") as file:
         file.write("\n".join(lines) + "\n")
         file.flush()
@@ -193,6 +194,7 @@ def committed(lines, method, space=""):
                 "NGOSEN_WORDS": file.name,
                 "NGOSEN_INPUT_METHOD": method,
                 "NGOSEN_SPACE": space,
+                "NGOSEN_TEENCODE": "1" if teencode else "",
             },
             text=True,
             capture_output=True,
@@ -232,7 +234,7 @@ def in_case(line, case):
     return line
 
 
-def run(out_dir, space="", case="", extra=()):
+def run(out_dir, space="", case="", extra=(), teencode=False):
     out_dir.mkdir(parents=True, exist_ok=True)
     jobs = {name: (lines, "Telex") for name, lines in corpora().items()}
     jobs["vni"] = ((CASES / "vni.tsv").read_text(encoding="utf-8").splitlines(), "VNI")
@@ -241,7 +243,7 @@ def run(out_dir, space="", case="", extra=()):
     for name, (lines, method) in jobs.items():
         lines = [in_case(line, case) for line in lines if line.partition("\t")[0]]
         expected = [line.partition("\t")[2] for line in lines]
-        got = committed(lines, method, space)
+        got = committed(lines, method, space, teencode)
         if len(got) != len(expected):
             sys.exit(f"{name}: typed {len(expected)} lines, got {len(got)} results")
         rows = [f"{keys}\t{want}\t{shown}" for (keys, shown), want in zip(got, expected)]
@@ -336,13 +338,15 @@ def visolex(json_path, out_dir):
 
 
 def run_args(args):
-    """Parses `OUT_DIR [--space S] [--case C] [--corpus FILE]...` for run."""
-    out_dir, options, extra = None, {"--space": "", "--case": ""}, []
+    """Parses `OUT_DIR [--space S] [--case C] [--corpus FILE]... [--teencode]` for run."""
+    out_dir, options, extra, teencode = None, {"--space": "", "--case": ""}, [], False
     allowed = {"--space": ("plain", "fix"), "--case": ("title", "upper")}
     while args:
         arg = args.pop(0)
         if arg in options and args and args[0] in allowed[arg]:
             options[arg] = args.pop(0)
+        elif arg == "--teencode":
+            teencode = True
         elif arg == "--corpus" and args:
             extra.append(Path(args.pop(0)))
         elif out_dir is None and not arg.startswith("-"):
@@ -351,7 +355,7 @@ def run_args(args):
             sys.exit(__doc__)
     if out_dir is None:
         sys.exit(__doc__)
-    return out_dir, options["--space"], options["--case"], extra
+    return out_dir, options["--space"], options["--case"], extra, teencode
 
 
 def main():

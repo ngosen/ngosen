@@ -37,6 +37,7 @@ pub struct EngineOption {
     pub bracket_transform: c_int,
     pub time_format: *const c_char,
     pub date_format: *const c_char,
+    pub teencode: bool,
 }
 
 /// # Safety
@@ -191,6 +192,7 @@ pub unsafe extern "C" fn EngineSetOption(engine: usize, option: *const EngineOpt
         e.macro_enabled = o.macro_enabled;
         e.auto_capitalize_macro = o.auto_capitalize_macro;
         e.spell_check_with_dicts = o.spell_check_with_dicts;
+        e.teencode = o.teencode;
         e.output_charset = charset;
         e.preeditor.set_config(config);
         e.time_format = time_format;

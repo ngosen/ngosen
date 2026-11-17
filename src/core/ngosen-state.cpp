@@ -79,6 +79,7 @@ namespace ngosen {
             .bracketTransform    = static_cast<int>(engine_->options().bracketTransform),
             .timeFormat          = engine_->options().timeFormat.data(),
             .dateFormat          = engine_->options().dateFormat.data(),
+            .teencode            = engine_->options().teencode,
         };
 
         EngineSetOption(engine, &option);

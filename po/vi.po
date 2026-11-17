@@ -199,6 +199,10 @@ msgstr "Bật gõ tắt"
 msgid "Capitalize Macro"
 msgstr "Gõ tắt chữ hoa"
 
+#: src/ngosen-dbus-object.cpp
+msgid "Ngó Sen is not in the current input method group. Add it to this group in fcitx5 settings."
+msgstr "Ngó Sen chưa có trong nhóm bộ gõ đang dùng. Thêm Ngó Sen vào nhóm này trong cài đặt fcitx5."
+
 #: src/ngosen-engine.cpp
 msgid "This app is set to English"
 msgstr "App này đang ở chế độ tiếng Anh"
@@ -1551,6 +1555,14 @@ msgstr "Nhật ký chưa ghi lần gõ nào. Gõ câu mẫu rồi lưu lại nh�
 msgid "fcitx5 is not running."
 msgstr "fcitx5 không chạy."
 
+#: settings-gui/toggle.py
+msgid "Could not switch English/Vietnamese"
+msgstr "Không chuyển được Anh/Việt"
+
+#: settings-gui/toggle.py
+msgid "Ngó Sen was updated. Log out and back in, then try again."
+msgstr "Ngó Sen đã được cập nhật. Hãy đăng xuất rồi đăng nhập lại, sau đó thử lại."
+
 #: settings-gui/save_log.py
 msgid "Ngó Sen is not loaded. Switch to Ngó Sen once, then run this again."
 msgstr "Ngó Sen chưa chạy. Hãy chuyển sang Ngó Sen một lần rồi chạy lại lệnh này."
@@ -2278,6 +2290,7 @@ msgid "No desktop session bus, so Ngó Sen cannot be reached."
 msgstr "Không có session bus của desktop nên không gọi được Ngó Sen."
 
 #: settings-gui/core/convert.py
+#: settings-gui/toggle.py
 msgid "Ngó Sen is not loaded. Switch to Ngó Sen once, then try again."
 msgstr "Ngó Sen chưa được nạp. Chuyển sang Ngó Sen một lần rồi thử lại."
 

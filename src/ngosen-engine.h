@@ -221,6 +221,9 @@ namespace fcitx {
         std::filesystem::path writeTypingLog();
         // Whether GNOME's portal has told which app is focused, for apps GNOME Shell relays.
         bool gnomePortalAnswered() const;
+        // For a desktop shortcut, which reaches the engine while no field may be focused. Returns whether
+        // Vietnamese is on, or nothing when fcitx5 would not switch the field to Ngó Sen.
+        std::optional<bool> toggleFromShortcut();
 
         // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
         std::string getProgramName(InputContext* ic) const;
@@ -444,6 +447,7 @@ namespace fcitx {
         bool switchesEachApp() const;
         // A Vietnamese mode picked for an app turns Vietnamese on for all apps when they switch together.
         void turnOnForPickedMode(NgoSenMode mode);
+        void toggleWithoutField();
         // The toggle key in an app the menu keeps in English.
         void explainPinnedOff(InputContext* ic, const std::string& app);
 

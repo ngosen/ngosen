@@ -412,13 +412,10 @@ namespace fcitx {
         vietnameseAction_ = std::make_unique<SimpleAction>();
         vietnameseAction_->setIcon("fcitx-ngosen");
         connections_.emplace_back(vietnameseAction_->connect<SimpleAction::Activated>([this](InputContext* ic) {
-            if (ic != nullptr) {
+            if (ic != nullptr)
                 toggleVietnamese(ic, false);
-                return;
-            }
-            config_.vietnameseOn.setValue(!*config_.vietnameseOn);
-            saveConfig();
-            setMode(globalMode(), nullptr);
+            else
+                toggleWithoutField();
         }));
         uiManager.registerAction("ngosen-vietnamese", vietnameseAction_.get());
 
@@ -1538,6 +1535,51 @@ namespace fcitx {
                 _("To use the toggle key here, go to Settings → Shortcuts → Switch Applies To and choose Each app."), std::vector<std::string>{}, timeoutMs, nullptr, nullptr);
         }
 #endif
+    }
+
+    std::optional<bool> NgoSenEngine::toggleFromShortcut() {
+        // Modifiers still held come up after this, and their release must not count as a tap of the toggle key.
+        toggleTapArmed_       = false;
+        retypeOnRelease_      = false;
+        InputContext* focused = nullptr;
+        instance_->inputContextManager().foreachFocused([&focused](InputContext* ic) {
+            focused = ic;
+            return false;
+        });
+        if (focused == nullptr) {
+            toggleWithoutField();
+            return *config_.vietnameseOn;
+        }
+        const std::string inputMethod = instance_->inputMethod(focused);
+        if (!inputMethod.empty() && inputMethod != "ngosen") {
+            // Typed before this field left Ngó Sen; activating it would offer to retype that.
+            stateFor(focused)->forgetKeysWhileOff();
+            // As picking Ngó Sen in the tray, which turns Vietnamese on; fcitx5 refuses it outside the group.
+            instance_->setCurrentInputMethod(focused, "ngosen", true);
+            if (instance_->inputMethod(focused) != "ngosen")
+                return std::nullopt;
+            return realMode != NgoSenMode::Off;
+        }
+        // No retype: XTEST backspaces sent while the shortcut is held reach the app as Alt+BackSpace.
+        toggleVietnamese(focused, false);
+        return realMode != NgoSenMode::Off;
+    }
+
+    void NgoSenEngine::toggleWithoutField() {
+        config_.vietnameseOn.setValue(!*config_.vietnameseOn);
+        saveConfig();
+        setMode(globalMode(), nullptr);
+        // The tray redraws only for a field, which setMode lacks here; once the most recent one is
+        // closed, any open field (the panel's own on Plasma) still makes it redraw.
+        auto&         fields = instance_->inputContextManager();
+        InputContext* recent = fields.mostRecentInputContext();
+        if (recent == nullptr)
+            fields.foreach ([&recent](InputContext* ic) {
+                recent = ic;
+                return false;
+            });
+        if (recent != nullptr)
+            recent->updateUserInterface(UserInterfaceComponent::StatusArea);
     }
 
     void NgoSenEngine::setAppRule(const std::string& appName, NgoSenMode mode) {

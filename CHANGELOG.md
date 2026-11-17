@@ -12,6 +12,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Lệnh `ngosen-toggle` để gán cho phím tắt của desktop: chuyển Anh/Việt như Ctrl + Shift, kể cả khi không có
+  ô nhập nào đang focus. Nếu ô đang focus dùng bộ gõ fcitx5 khác thì chuyển sang Ngó Sen; lỗi thì hiện thông báo
+  desktop. Chưa tự gán phím tắt; bản sau sẽ cho thiết lập trong cửa sổ cài đặt (#828).
 - Trên GNOME không có extension Input Method Panel, Chrome và các app GNOME chuyển phím hộ trước đây không hiện
   gợi ý emoji. Nay dừng gõ chừng nửa giây là gợi ý hiện ngay trong ô, gạch chân, lấy emoji của mọi từ trong câu
   (`con mèo cười quá` → `Tab: 😂 🤣 😄 🐈 🐱`); Tab rồi số để chọn, emoji thêm vào chỗ con trỏ (#110, #821).

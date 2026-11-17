@@ -49,6 +49,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Bấm chuột sang chỗ khác trong ô gõ thì danh sách emoji của từ cũ đóng lại, không còn bấm vào nó mà chèn emoji (hay thay
+  chữ) ở chỗ con trỏ mới (#848).
 - Gõ lại dấu thanh sau phụ âm cuối nay ra đúng chữ: `mooxtj` ra `một`, `toorts` ra `tốt`, `ddacxs` ra `đác`, thay vì
   `mỗ`, `tổ`, `đac` như từ bản 1.11.0. Một số từ tiếng Anh ít gặp như `aface` cũng không còn bị cắt thành `ầ` (#835).
 - Trên GNOME, gõ nhanh ngay sau khi mở Firefox, xoá vài chữ bằng Backspace rồi gõ tiếp không còn thỉnh thoảng ra chữ lộn (`nam tiếig` thay vì `nam tiếng`) (#831).

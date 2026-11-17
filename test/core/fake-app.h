@@ -10,6 +10,7 @@
 #include "ngosen-mode.h"
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -241,16 +242,23 @@ namespace ngosen::test {
             else
                 hint_ = text;
         }
-        void resetPanel() override {}
+        // fcitx5 drops the candidate list along with the rest of the panel.
+        void resetPanel() override {
+            hideCandidates();
+        }
         void refreshPreedit() override {}
         void refreshPanel() override {}
 
-        void showCandidates(const std::vector<std::string>& labels, int /*pageSize*/, std::function<void(size_t)> /*onPick*/) override {
+        void showCandidates(const std::vector<std::string>& labels, int /*pageSize*/, std::function<void(size_t)> onPick) override {
             labels_      = labels;
+            onPick_      = std::move(onPick);
             highlighted_ = 0;
         }
         void hideCandidates() override {
+            if (!labels_.empty())
+                ++candidatesHidden_;
             labels_.clear();
+            onPick_ = nullptr;
         }
         std::optional<CandidatePage> candidates() const override {
             if (labels_.empty())
@@ -265,7 +273,15 @@ namespace ngosen::test {
         }
         void nextCandidatePage() override {}
         void prevCandidatePage() override {}
-        void pickCandidate(int /*index*/) override {}
+        // A click on an item of the list.
+        void pickCandidate(int index) override {
+            if (onPick_ && index >= 0 && static_cast<size_t>(index) < labels_.size())
+                onPick_(static_cast<size_t>(index));
+        }
+        // How many times a shown candidate list was taken away.
+        int candidatesHidden() const {
+            return candidatesHidden_;
+        }
         void setStatus(const std::string& text) override {
             status_ = text;
         }
@@ -280,7 +296,9 @@ namespace ngosen::test {
         std::string keyText(uint32_t sym) const override;
 
       private:
-        int                                 highlighted_ = 0;
+        int                                 highlighted_      = 0;
+        int                                 candidatesHidden_ = 0;
+        std::function<void(size_t)>         onPick_;
         void                                insert(const std::u32string& text, bool typed = false);
         void                                noteTypedKey();
         void                                goSilentAfterDelete();

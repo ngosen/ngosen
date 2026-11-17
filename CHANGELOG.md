@@ -15,7 +15,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trong Firefox, gõ mặt cười kiểu Yahoo như `:)`, `:))`, `=))`, `:x` nay hiện gợi ý emoji như khi gõ chữ, thay vì không ra gì (#819).
 - Trên GNOME, gõ nhanh ngay sau khi mở Firefox, nhấn Backspace hai lần liền không còn mất một lần (`nam tieesng`, xoá `ng` rồi gõ lại ra `nam tiiếng`) (#815).
 - Khi menu chọn chế độ gõ (mở bằng `` ` ``) đang hiện, bấm một phím không có trong menu nay đóng menu và gõ ra phím đó, thay vì menu đứng yên và phím bị nuốt (#814).
-- Menu chọn chế độ gõ nay đóng ngay khi click chuột ra ngoài, thay vì chờ tới phím kế tiếp. Click lên một mục trong menu vẫn chọn mục đó. Menu không còn tự tắt sau 5 giây (#PR).
+- Menu chọn chế độ gõ nay đóng ngay khi click chuột ra ngoài, thay vì chờ tới phím kế tiếp. Click lên một mục trong menu vẫn chọn mục đó. Menu không còn tự tắt sau 5 giây (#836).
 - Trên GNOME với fcitx5 5.1.23, Ngó Sen nay nhớ cách xoá bằng BackSpace tới hết phiên, nên chỉ hỏng chữ đầu tiên thay vì hỏng chữ đầu sau mỗi lần bấm chuột sang ô khác trong app như VaultID (#816, #818).
 - Trong Firefox trên GNOME, gõ `nhưg` rồi Space ra `nhưng`, nhấn Backspace ngay sau đó nay trả lại đúng `nhưg` thay vì chỉ xoá dấu cách (#813).
 - Khôi phục từ tệp sao lưu sửa tay có giá trị viết `true`, `false` hay số không còn báo xong mà bỏ qua các mục đó: nay các giá trị này được khôi phục, còn giá trị là danh sách thì cửa sổ báo tệp hỏng trước khi ghi gì. Tệp do Ngó Sen tự xuất vẫn khôi phục như trước. Chỉ thử bằng unit test, chưa thử với fcitx5 thật (#805).

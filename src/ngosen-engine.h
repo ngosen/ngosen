@@ -427,6 +427,7 @@ namespace fcitx {
         void                       toggleVimMode(InputContext* ic);
         bool                       emojiOnFor(const std::string& appName) const;
         void                       loadEmojiOffApps();
+        void                       enlargePanelFont();
         void                       saveEmojiOffApps() const;
         void                       toggleEmoji(InputContext* ic);
         std::optional<NgoSenMode>  findAppRule(const std::string& appName) const;

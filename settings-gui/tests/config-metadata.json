@@ -370,6 +370,13 @@
     {}
    ],
    [
+    "EnglishEmojiKeywords",
+    "Boolean",
+    "English keywords",
+    "True",
+    {}
+   ],
+   [
     "EmojiPlacement",
     "Enum",
     "Put a picked emoji",
@@ -382,6 +389,22 @@
      "Enum": {
       "0": "After the word",
       "1": "Instead of the word"
+     }
+    }
+   ],
+   [
+    "EmojiOfferAt",
+    "Enum",
+    "Offer emoji",
+    "After each word",
+    {
+     "EnumI18n": {
+      "0": "After each word",
+      "1": "At the end of a sentence"
+     },
+     "Enum": {
+      "0": "After each word",
+      "1": "At the end of a sentence"
      }
     }
    ],

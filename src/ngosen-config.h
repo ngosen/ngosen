@@ -121,6 +121,13 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(EmojiPlacement, N_("After the word"), N_("Instead of the word"));
 
+    enum class EmojiOfferAt : std::uint8_t {
+        EachWord,
+        SentenceEnd,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(EmojiOfferAt, N_("After each word"), N_("At the end of a sentence"));
+
     enum class UiLanguage : std::uint8_t {
         Vietnamese,
         English,
@@ -331,7 +338,9 @@ namespace fcitx {
         Option<bool> rawWordAfterSlash{this, "RawWordAfterSlash", _("Type a word that starts with / as is"), ngosen::defaultOptions.rawWordAfterSlash};
         Option<bool> emojiSuggestions{this, "EmojiSuggestions", _("Suggest emoji while typing"), ngosen::defaultOptions.emojiSuggestions};
         Option<bool> yahooEmoticons{this, "YahooEmoticons", _("Yahoo Messenger emoticons"), ngosen::defaultOptions.yahooEmoticons};
+        Option<bool> englishEmojiKeywords{this, "EnglishEmojiKeywords", _("English keywords"), ngosen::defaultOptions.englishEmojiKeywords};
         OptionWithAnnotation<EmojiPlacement, EmojiPlacementI18NAnnotation> emojiPlacement{this, "EmojiPlacement", _("Put a picked emoji"), EmojiPlacement::AfterWord};
+        OptionWithAnnotation<EmojiOfferAt, EmojiOfferAtI18NAnnotation>     emojiOfferAt{this, "EmojiOfferAt", _("Offer emoji"), EmojiOfferAt::EachWord};
         Option<bool> autoNonVnRestore{this, "AutoNonVnRestore", _("Auto Restore Invalid Words"), ngosen::defaultOptions.autoNonVnRestore};
         Option<bool> modernStyle{this, "ModernStyle", _("Use oà, uý (Instead Of òa, úy)"), ngosen::defaultOptions.modernStyle};
         Option<bool> freeMarking{this, "FreeMarking", _("Allow Type With More Freedom"), ngosen::defaultOptions.freeMarking};

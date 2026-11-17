@@ -7,6 +7,7 @@ fcitx5 keeps only the user's changes to the default words, so words added to a l
 still reach the user.
 """
 
+import json
 import unicodedata
 
 from i18n import _
@@ -17,11 +18,49 @@ from core.hotkeys import pretty_format_hotkey_parts
 WORDS = ("emoji_words", "Words")
 OFF_APPS = ("emoji_off_apps", "Apps")
 _BY_EMOJI = {row[0]: row for row in EMOJI}
+# A shared file is not a backup: importing it adds words, restoring a backup replaces them.
+SHARE_KIND = "ngosen-emoji-words"
+MOST_SHARED = 5000
+LONGEST_WORD = 40
 
 
 def clean(word):
     """A word as the engine compares it: lower case, composed, single spaces."""
     return " ".join(unicodedata.normalize("NFC", word).lower().split())
+
+
+def export_words(words, path):
+    """Writes the words the user turned on to path, for others to import. Returns how many."""
+    items = [{"Keyword": w, "Emoji": e} for (e, w), on in sorted(words.edits.items()) if on]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(
+            {"meta": {"kind": SHARE_KIND, "version": 1}, "emoji_words": items},
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
+    return len(items)
+
+
+def read_shared(path):
+    """The (emoji, word) pairs in a shared file; raises OSError or ValueError when it is not one."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    meta = data.get("meta") if isinstance(data, dict) else None
+    if not isinstance(meta, dict) or meta.get("kind") != SHARE_KIND:
+        raise ValueError(_("This is not a file of emoji words exported from Ngó Sen."))
+    items = data.get("emoji_words")
+    if not isinstance(items, list) or len(items) > MOST_SHARED:
+        raise ValueError(_("The emoji words in the file are damaged."))
+    pairs = []
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError(_("The emoji words in the file are damaged."))
+        emoji, word = item.get("Emoji"), clean(str(item.get("Keyword", "")))
+        # An emoji this version does not list, or a long text, is skipped rather than refused.
+        if emoji in _BY_EMOJI and word and len(word) <= LONGEST_WORD:
+            pairs.append((emoji, word))
+    return pairs
 
 
 def toggle_hint(menu_keys, emoji_key):
@@ -42,6 +81,8 @@ def toggle_hint(menu_keys, emoji_key):
 class EmojiWords:
     def __init__(self, dbus):
         self.dbus = dbus
+        # Follows EnglishEmojiKeywords: off hides the English words, as the engine skips them.
+        self.english = True
         self.load()
 
     def load(self):
@@ -53,25 +94,29 @@ class EmojiWords:
         self._saved = dict(self.edits)
         self.off_apps = self._read_apps()
 
-    # The words of an emoji, as (word, on): its defaults, then the user's own, then its name's.
+    # The words of an emoji, as (word, on): its defaults, the user's own, English, then its name's.
     def chips(self, emoji):
-        _e, _group, _name, defaults, others = _BY_EMOJI.get(emoji, (emoji, 0, "", (), ()))
-        known = (*defaults, *others)
+        row = _BY_EMOJI.get(emoji, (emoji, 0, "", (), (), ()))
+        defaults, others, english = row[3], row[4], self._english(emoji)
+        known = (*defaults, *english, *others)
         added = [w for (e, w) in self.edits if e == emoji and w not in known]
-        return [(w, self.is_on(emoji, w)) for w in (*defaults, *added, *others)]
+        return [(w, self.is_on(emoji, w)) for w in (*defaults, *added, *english, *others)]
+
+    def _english(self, emoji):
+        return _BY_EMOJI[emoji][5] if self.english and emoji in _BY_EMOJI else ()
 
     def is_on(self, emoji, word):
         return self.edits.get((emoji, word), word in self._defaults(emoji))
 
     def _defaults(self, emoji):
-        return _BY_EMOJI[emoji][3] if emoji in _BY_EMOJI else ()
+        return (*_BY_EMOJI[emoji][3], *self._english(emoji)) if emoji in _BY_EMOJI else ()
 
     def toggle(self, emoji, word):
         on = not self.is_on(emoji, word)
         row = _BY_EMOJI.get(emoji)
-        known = row is not None and word in (*row[3], *row[4])
+        known = row is not None and word in (*row[3], *row[4], *row[5])
         # A word of the user's own keeps its entry, so it stays on the page when turned off.
-        if known and on == (word in row[3]):
+        if known and on == (word in self._defaults(emoji)):
             self.edits.pop((emoji, word), None)
         else:
             self.edits[(emoji, word)] = on
@@ -83,6 +128,16 @@ class EmojiWords:
             return False
         self.edits[(emoji, word)] = True
         return True
+
+    def merge(self, pairs):
+        """Turns on the words in pairs, except ones the user turned off. Returns how many."""
+        added = 0
+        for emoji, word in pairs:
+            if (emoji, word) in self.edits or self.is_on(emoji, word):
+                continue
+            self.edits[(emoji, word)] = True
+            added += 1
+        return added
 
     def changed(self, emoji):
         return any(e == emoji for e, _w in self.edits)

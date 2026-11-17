@@ -15,6 +15,20 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Lệnh `ngosen-toggle` để gán cho phím tắt của desktop: chuyển Anh/Việt như Ctrl + Shift, kể cả khi không có
   ô nhập nào đang focus. Nếu ô đang focus dùng bộ gõ fcitx5 khác thì chuyển sang Ngó Sen; lỗi thì hiện thông báo
   desktop. Chưa tự gán phím tắt; bản sau sẽ cho thiết lập trong cửa sổ cài đặt (#828).
+- Trên GNOME không có extension Input Method Panel, Chrome và các app GNOME chuyển phím hộ trước đây không hiện
+  gợi ý emoji. Nay dừng gõ chừng nửa giây là gợi ý hiện ngay trong ô, gạch chân, lấy emoji của mọi từ trong câu
+  (`con mèo cười quá` → `Tab: 😂 🤣 😄 🐈 🐱`); Tab rồi số để chọn, emoji thêm vào chỗ con trỏ (#110, #821).
+- Khi danh sách emoji đã đánh số, phím mũi tên dời ô đang chọn và Enter, Space hoặc Tab lấy emoji đang chọn. Ô nổi
+  của fcitx5 mặc định vẽ chữ to hơn (Sans 13 thay Sans 10) cho dễ nhìn emoji; ai đã tự đặt font thì giữ nguyên (#110, #827).
+- Gợi ý emoji nhận cả từ tiếng Anh theo danh sách của Unicode: `cat` 🐈, `star` ⭐, `thumbs up` 👍. Từ quá chung
+  (`man`, `hand`, `face`) và từ trùng chữ Việt như `can`, `me` thì không gợi ý. Trang Emoji hiện từ tiếng Anh cạnh
+  từ tiếng Việt; tuỳ chọn "Từ khoá tiếng Anh" mặc định bật, tắt đi là gỡ hết (#110, #830).
+- Trang Emoji có nút "Xuất…" và "Nhập…" để chia sẻ từ gợi ý emoji: Xuất lưu các từ mình đã bật ra một file nhỏ,
+  Nhập thêm từ của file vào mà giữ nguyên từ của mình (từ mình đã tắt vẫn tắt). "Khôi phục bản sao lưu" không nhận
+  file này để khỏi xoá mất từ đang có (#110, #832).
+- Tuỳ chọn "Gợi ý emoji": "Sau mỗi từ" (như trước) hoặc "Ở cuối câu". Ở cuối câu, gõ `.` `!` `?` hay dừng tay một
+  chút thì danh sách hiện emoji của mọi từ khoá trong câu, emoji chọn được thêm sau dấu câu (`vui quá! 😂`). Gợi ý
+  trong ô gõ nay cũng nhận từ đứng trước dấu chấm (`con mèo.` gợi ý 🐈) (#110, #834).
 - Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
   giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
   vẫn giữ nguyên (#701, #829).
@@ -54,7 +68,7 @@ Tải ở [ngosen-1.12.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
   chữ. Chữ thường giữ lại và emoji thêm vào sau; `haha` và `:)` được thay bằng emoji. Gõ không dấu như
   `cuoi` vẫn ra, còn `cho`, `meo` thì không, vì đó đã là chữ tiếng Việt. Cờ hiện khi tên nước viết hoa
   (`Việt Nam`, `Pháp`). Hiện với giao diện fcitx5 mặc định và extension Input Method Panel trên GNOME;
-  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trên trang Emoji, mặc định bật (#110, #788).
+  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trong nhóm Gõ nhanh, mặc định bật (#110, #788).
 - Phím `w` trong menu `` ` `` nay bật/tắt gợi ý emoji cho app đang dùng, giống Vim mode; chế độ gõ của app
   giữ nguyên (#110, #791).
 - Gợi ý emoji thêm khoảng 460 từ lấy theo tên emoji, như `máy bay` ✈️, `xe máy` 🏍️, `cơm` 🍚, `bóng đá` ⚽, và 86 mã

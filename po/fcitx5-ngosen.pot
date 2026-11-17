@@ -203,6 +203,10 @@ msgid "Yahoo Messenger emoticons"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "English keywords"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Apps"
 msgstr ""
 
@@ -228,6 +232,18 @@ msgstr ""
 
 #: src/ngosen-config.h
 msgid "After the word"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Offer emoji"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "After each word"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "At the end of a sentence"
 msgstr ""
 
 #: src/ngosen-config.h
@@ -431,7 +447,7 @@ msgid "Ngó Sen - Off"
 msgstr ""
 
 #: src/core/ngosen-state-emoji-offer.cpp
-msgid "pick, Space or Enter: the first, Esc: keep the word"
+msgid "pick, or arrows then Enter, Esc: keep the word"
 msgstr ""
 
 #: src/core/ngosen-state-retype.cpp
@@ -1466,7 +1482,15 @@ msgid "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the co
 msgstr ""
 
 #: settings-gui/core/catalog.py
+msgid "cat and thumbs up also offer 🐈 and 👍, from the Unicode list of English words. Words that are also Vietnamese, like can, are left out."
+msgstr ""
+
+#: settings-gui/core/catalog.py
 msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "At the end of a sentence: after . ! ? or a short pause, the list holds the emoji of every keyword in the sentence, and the one picked goes at the cursor."
 msgstr ""
 
 #: settings-gui/core/catalog.py
@@ -2103,4 +2127,68 @@ msgstr ""
 
 #: settings-gui/core/emoji_words.py
 msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Export…"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Import…"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Save the words you turned on, to share them"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Add the words from a file someone shared"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Export Emoji Words"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Import Emoji Words"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Could not export: {}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Saved {} words to {}."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Could not import: {}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "You already have every word in that file."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "{} words from the file"
+msgstr ""
+
+#: settings-gui/ui_gtk/emoji.py
+msgid "Emoji words"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py
+msgid "Emoji words (*.json);;All Files (*)"
+msgstr ""
+
+#: settings-gui/core/emoji_words.py
+msgid "This is not a file of emoji words exported from Ngó Sen."
+msgstr ""
+
+#: settings-gui/core/emoji_words.py
+msgid "The emoji words in the file are damaged."
+msgstr ""
+
+#: settings-gui/core/backup.py
+msgid "this file holds emoji words; import it on the Emoji page"
 msgstr ""

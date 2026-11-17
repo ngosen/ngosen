@@ -36,19 +36,27 @@ namespace {
         }
     }
 
-    constexpr uint32_t Tab     = ngosen::key::Tab;
-    constexpr uint32_t Esc     = ngosen::key::Escape;
-    constexpr uint32_t Enter   = ngosen::key::Return;
-    constexpr uint32_t Click   = 0;
-    constexpr uint32_t Hint    = 1; // records the panel's labels
-    constexpr uint32_t OffMode = 2;
-    constexpr uint32_t Status  = 3; // records the line under the panel
-    constexpr uint32_t AppOff  = 4; // the user turns emoji off for this app
-    constexpr uint32_t Reset   = 5; // the app resets the input context, as Firefox does after each key it types
-    constexpr uint32_t Home    = 6; // the cursor moves to the start of the field
-    constexpr uint32_t Lag     = 7; // the app reports its text 5 ms after each change
+    constexpr uint32_t Tab      = ngosen::key::Tab;
+    constexpr uint32_t Esc      = ngosen::key::Escape;
+    constexpr uint32_t Enter    = ngosen::key::Return;
+    constexpr uint32_t Click    = 0;
+    constexpr uint32_t Hint     = 1; // records the panel's labels
+    constexpr uint32_t OffMode  = 2;
+    constexpr uint32_t Status   = 3; // records the line under the panel
+    constexpr uint32_t AppOff   = 4; // the user turns emoji off for this app
+    constexpr uint32_t InField  = 5; // records the hint shown in the field
+    constexpr uint32_t Pause    = 6; // the user stops typing for a second
+    constexpr uint32_t SlowHint = 7; // the app shows a change of the hint 30 ms late
+    constexpr uint32_t FocusOut = 8;
+    constexpr uint32_t Reset    = 9;  // the app resets the input context, as Firefox does after each key it types
+    constexpr uint32_t Home     = 10; // the cursor moves to the start of the field
+    constexpr uint32_t Lag      = 11; // the app reports its text 5 ms after each change
     // Firefox resets right after the key and reports the text it typed only after that.
-    constexpr uint32_t EarlyReset = 8;
+    constexpr uint32_t EarlyReset = 12;
+    constexpr uint32_t Chosen     = 13; // records the highlighted item of the panel
+    constexpr uint32_t Left       = ngosen::key::Left;
+    constexpr uint32_t Right      = ngosen::key::Right;
+    constexpr uint32_t Down       = ngosen::key::Down;
 
     Field              makeField() {
         Field field;
@@ -72,6 +80,9 @@ namespace {
         std::string              text;
         std::vector<std::string> hints; // the first label at each Hint
         std::vector<std::string> statuses;
+        std::vector<std::string> inField;
+        std::vector<int>         chosen;
+        int                      editsUnderHint = 0;
     };
 
     Result type(const std::vector<uint32_t>& keys, Mode mode = Mode::Sen, Field field = makeField(), const std::function<void(FakeResources&)>& configure = {}) {
@@ -104,6 +115,16 @@ namespace {
                 app->moveCursor(0);
             } else if (key == AppOff) {
                 state.setEmojiOn(false);
+            } else if (key == FocusOut) {
+                state.reset(true);
+            } else if (key == SlowHint) {
+                app->setHintLag(30);
+            } else if (key == Pause) {
+                loop.pump(1000);
+            } else if (key == InField) {
+                result.inField.push_back(app->hint());
+            } else if (key == Chosen) {
+                result.chosen.push_back(app->highlighted());
             } else if (key == Status) {
                 result.statuses.push_back(app->status());
             } else if (key == Hint) {
@@ -115,7 +136,8 @@ namespace {
             }
         }
         loop.pump(200);
-        result.text = app->text();
+        result.text           = app->text();
+        result.editsUnderHint = app->editsUnderHint();
         return result;
     }
 
@@ -155,8 +177,10 @@ namespace {
     }
 
     void testWhereNoHint() {
+        // Nor can the field show it.
         Field unknownPanel           = makeField();
         unknownPanel.drawsCandidates = false;
+        unknownPanel.preedit         = false;
         check(hintAfter("cuwowif", Mode::Sen, unknownPanel) == "(none)", "no hint where the panel may not show it", "hint");
         Field password    = makeField();
         password.password = true;
@@ -175,6 +199,71 @@ namespace {
         check(turnedOff.hints.front() == "(none)" && turnedOff.text == "cười⇥", "turning emoji off drops the hint already shown", turnedOff.hints.front() + " / " + turnedOff.text);
         const auto noTab = type(keysOf("cuwowif") + std::vector<uint32_t>{Tab}, Mode::Sen, unknownPanel).text;
         check(noTab == "cười⇥", "Tab reaches the app where no hint shows", noTab);
+    }
+
+    // Where no panel can show the list, as for apps GNOME Shell relays without the Input Method Panel extension.
+    void testHintInField() {
+        Field noPanel                    = makeField();
+        noPanel.drawsCandidates          = false;
+        const std::vector<uint32_t> word = keysOf("cuwowif");
+        auto                        r    = type(word + std::vector<uint32_t>{InField}, Mode::Sen, noPanel);
+        check(r.inField.front().empty(), "no panel: nothing shows while typing", r.inField.front());
+        r = type(word + std::vector<uint32_t>{Pause, InField, Hint}, Mode::Sen, noPanel);
+        check(r.inField.front() == " Tab: 😂 🤣 😄 😆 😁" && r.hints.front() == "(none)", "no panel: a pause shows the hint in the field",
+              r.inField.front() + " / " + r.hints.front());
+        check(r.text == "cười", "no panel: the hint is never committed", r.text);
+        r = type(word + std::vector<uint32_t>{Tab}, Mode::Sen, noPanel);
+        check(r.text == "cười⇥", "no panel: Tab before the hint shows reaches the app", r.text);
+        r = type(word + std::vector<uint32_t>{Pause, Tab, InField}, Mode::Sen, noPanel);
+        check(r.inField.front() == " [1.😂] 2.🤣 3.😄 4.😆 5.😁", "no panel: Tab numbers the emoji in the field", r.inField.front());
+        r = type(word + std::vector<uint32_t>{Pause, Tab, '2', InField}, Mode::Sen, noPanel);
+        check(r.text == "cười 🤣" && r.inField.front().empty(), "no panel: a number picks that emoji", r.text + " / " + r.inField.front());
+        r = type(word + std::vector<uint32_t>{Pause, Tab, Tab}, Mode::Sen, noPanel);
+        check(r.text == "cười 😂", "no panel: Tab again picks the first", r.text);
+        r = type(word + std::vector<uint32_t>{Pause, Tab, Right, InField, Enter}, Mode::Sen, noPanel);
+        check(r.inField.front() == " 1.😂 [2.🤣] 3.😄 4.😆 5.😁" && r.text == "cười 🤣", "no panel: arrows mark the emoji Enter picks", r.inField.front() + " / " + r.text);
+        r = type(word + std::vector<uint32_t>{Pause, Tab, Esc, InField}, Mode::Sen, noPanel);
+        check(r.text == "cười" && r.inField.front().empty(), "no panel: Esc keeps the word", r.text + " / " + r.inField.front());
+        r = type(word + std::vector<uint32_t>{Pause, ' ', InField}, Mode::Sen, noPanel);
+        check(r.text == "cười " && r.inField.front().empty(), "no panel: a key takes the hint away", r.text + " / " + r.inField.front());
+        r = type(word + std::vector<uint32_t>{' ', Pause, Tab, Tab}, Mode::Sen, noPanel);
+        check(r.text == "cười 😂", "no panel: after a space the emoji goes at the cursor", r.text);
+        r = type(std::vector<uint32_t>{SlowHint} + word + std::vector<uint32_t>{Pause, 's', Pause, InField}, Mode::Sen, noPanel);
+        check(r.text == "cưới" && r.inField.front().empty() && r.editsUnderHint == 0, "no panel: the hint goes before a key edits the field",
+              r.text + " / " + std::to_string(r.editsUnderHint));
+        r = type(std::vector<uint32_t>{SlowHint} + keysOf("cua") + std::vector<uint32_t>{Pause, 'r', ' '}, Mode::Sen, noPanel);
+        check(r.text == "của " && r.editsUnderHint == 0, "no panel: a tone key after the hint keeps the word", r.text + " / " + std::to_string(r.editsUnderHint));
+        r = type(std::vector<uint32_t>{SlowHint} + keysOf("hahaha") + std::vector<uint32_t>{Pause, Tab, Tab}, Mode::Sen, noPanel);
+        check(r.text == "😂" && r.editsUnderHint == 0, "no panel: a sound at the end is replaced once the hint is gone", r.text + " / " + std::to_string(r.editsUnderHint));
+        r = type(std::vector<uint32_t>{SlowHint} + keysOf("hahaha") + std::vector<uint32_t>{Pause, Tab, Tab} + keysOf(" vui"), Mode::Sen, noPanel);
+        check(r.text == "😂 vui", "no panel: keys typed after the pick come after the emoji", r.text);
+        r = type(std::vector<uint32_t>{SlowHint} + keysOf("hahaha") + std::vector<uint32_t>{Pause, Tab, Tab, FocusOut, Pause} + keysOf(" a"), Mode::Sen, noPanel);
+        check(r.text == "hahaha a", "no panel: an emoji still waiting for the hint to go is dropped on focus out", r.text);
+        r = type(word + std::vector<uint32_t>{Pause, Enter, InField}, Mode::Sen, noPanel);
+        check(r.text == "cười\n" && r.inField.front().empty(), "no panel: Enter goes to the app without the hint", r.text + " / " + r.inField.front());
+
+        // The whole sentence: the keyword nearest the cursor first, the emoji added at the cursor.
+        r = type(keysOf("con meof cuwowif quas") + std::vector<uint32_t>{Pause, InField}, Mode::Sen, noPanel);
+        check(r.inField.front() == " Tab: 😂 🤣 😄 🐈 🐱", "no panel: a pause offers the emoji of the whole sentence", r.inField.front());
+        r = type(keysOf("con meof cuwowif quas") + std::vector<uint32_t>{Pause, Tab, '4'}, Mode::Sen, noPanel);
+        check(r.text == "con mèo cười quá 🐈", "no panel: an emoji of an earlier word goes at the cursor", r.text);
+        r = type(keysOf("con meof. cuwowif") + std::vector<uint32_t>{Pause, InField}, Mode::Sen, noPanel);
+        check(r.inField.front() == " Tab: 😂 🤣 😄 😆 😁", "no panel: an earlier sentence offers nothing", r.inField.front());
+        r = type(keysOf("meof") + std::vector<uint32_t>{Pause, ' ', 'a', Pause, InField}, Mode::Sen, noPanel);
+        check(r.inField.front() == " Tab: 🐈 🐱", "no panel: a word ended by a key held for the hint still counts", r.inField.front());
+        r = type(keysOf("meof") + std::vector<uint32_t>{Pause} + keysOf(". cuwowif") + std::vector<uint32_t>{Pause, InField}, Mode::Sen, noPanel);
+        check(r.inField.front() == " Tab: 😂 🤣 😄 😆 😁", "no panel: keys typed while one is held still end the sentence", r.inField.front());
+        r = type(keysOf("hahaha vui") + std::vector<uint32_t>{Pause, Tab, Tab}, Mode::Sen, noPanel);
+        check(r.text.rfind("hahaha vui ", 0) == 0, "no panel: a sound before the last word stays", r.text);
+
+        r = type(word + std::vector<uint32_t>{InField}, Mode::Sen, makeField());
+        check(r.inField.front().empty(), "a panel that shows the list keeps the hint out of the field", r.inField.front());
+        Field noPreedit   = noPanel;
+        noPreedit.preedit = false;
+        r                 = type(word + std::vector<uint32_t>{Pause, InField, Tab}, Mode::Sen, noPreedit);
+        check(r.inField.front().empty() && r.text == "cười⇥", "no panel and no preedit: Tab reaches the app", r.inField.front() + " / " + r.text);
+        r = type(word + std::vector<uint32_t>{Pause, InField, Tab}, Mode::Preedit, noPanel);
+        check(r.inField.front().empty() && r.text == "cười⇥", "no panel in Preedit mode: Tab reaches the app", r.inField.front() + " / " + r.text);
     }
 
     void testPicking() {
@@ -200,11 +289,20 @@ namespace {
         r = type(word + std::vector<uint32_t>{Tab, OffMode, '1'});
         check(r.text == "cười1", "switching to English closes the list", r.text);
         r = type(word + std::vector<uint32_t>{Status, Tab, Status, '2', Status});
-        check(r.statuses == std::vector<std::string>{"", "1–5: pick, Space or Enter: the first, Esc: keep the word", ""}, "the keys are named while the list is open",
+        check(r.statuses == std::vector<std::string>{"", "1–5: pick, or arrows then Enter, Esc: keep the word", ""}, "the keys are named while the list is open",
               r.statuses[0] + " / " + r.statuses[1] + " / " + r.statuses[2]);
         r = type(keysOf("camr own") + std::vector<uint32_t>{Tab, Status, Esc, Status});
-        check(r.statuses == std::vector<std::string>{"1–2: pick, Space or Enter: the first, Esc: keep the word", ""}, "the line counts the emoji and goes with Esc",
+        check(r.statuses == std::vector<std::string>{"1–2: pick, or arrows then Enter, Esc: keep the word", ""}, "the line counts the emoji and goes with Esc",
               r.statuses[0] + " / " + r.statuses[1]);
+        r = type(word + std::vector<uint32_t>{Tab, Right, Right, Chosen, Enter});
+        check(r.chosen == std::vector<int>{2} && r.text == "cười 😄", "arrows move the highlight and Enter picks it",
+              std::to_string(r.chosen.empty() ? -1 : r.chosen[0]) + " / " + r.text);
+        r = type(word + std::vector<uint32_t>{Tab, Left, Chosen, ' '});
+        check(r.chosen == std::vector<int>{4} && r.text == "cười 😁", "Left from the first wraps to the last", r.text);
+        r = type(word + std::vector<uint32_t>{Tab, Down, Tab});
+        check(r.text == "cười 🤣", "Down moves on as Right does, and Tab picks the highlighted", r.text);
+        r = type(word + std::vector<uint32_t>{Left, ' '});
+        check(r.text.find("😂") == std::string::npos, "an arrow before Tab is not taken", r.text);
         r = type(keysOf("con meof") + std::vector<uint32_t>{Tab, Tab, ' ', 'a'});
         check(r.text == "con mèo 🐈 a", "typing goes on after the emoji", r.text);
     }
@@ -258,6 +356,30 @@ namespace {
         check(later == "Tab: 😂 🤣 😄 😆 😁", "the hint comes once the app shows the word", later + ", text " + app->text());
     }
 
+    // With emoji offered at the end of a sentence, after . ! ? or a pause, for every keyword in it.
+    void testSentenceEnd() {
+        const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
+        auto       r     = type(keysOf("cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() == "(none)", "sentence end: nothing after each word", r.hints.front());
+        r = type(keysOf("cuwowif.") + std::vector<uint32_t>{Hint, Tab, Tab}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() == "Tab: 😂 🤣 😄 😆 😁" && r.text == "cười. 😂", "sentence end: a full stop offers the emoji, put after it", r.hints.front() + " / " + r.text);
+        r = type(keysOf("con meof cuwowif quas") + std::vector<uint32_t>{Pause, Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() == "Tab: 😂 🤣 😄 🐈 🐱", "sentence end: a pause offers the emoji of the sentence", r.hints.front());
+        r = type(keysOf("con meof cuwowif quas!") + std::vector<uint32_t>{Tab, '4'}, Mode::Sen, makeField(), atEnd);
+        check(r.text == "con mèo cười quá! 🐈", "sentence end: an emoji of an earlier word", r.text);
+        r = type(keysOf("hahaha!") + std::vector<uint32_t>{Tab, Tab}, Mode::Sen, makeField(), atEnd);
+        check(r.text.rfind("hahaha! ", 0) == 0 && r.text.size() > 8, "sentence end: a sound before the stop stays", r.text);
+        r = type(keysOf("cuwowif. ") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() == "(none)" && r.text == "cười. ", "sentence end: typing on takes the offer away", r.hints.front() + " / " + r.text);
+        r = type(keysOf("gias 3.5") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() == "(none)", "sentence end: a decimal point ends nothing", r.hints.front());
+
+        Field noPanel           = makeField();
+        noPanel.drawsCandidates = false;
+        r                       = type(keysOf("con meof.") + std::vector<uint32_t>{Pause, InField, Tab, Tab}, Mode::Sen, noPanel);
+        check(r.inField.front() == " Tab: 🐈 🐱" && r.text == "con mèo. 🐈", "a word before a full stop counts in the field", r.inField.front() + " / " + r.text);
+    }
+
     // The release of a key the list took stays away from the app as well.
     void testRelease() {
         FakeResources resources;
@@ -293,10 +415,12 @@ namespace {
 int main() {
     testHint();
     testWhereNoHint();
+    testHintInField();
     testPicking();
     testReplacing();
     testReplacingWords();
     testSlowApp();
+    testSentenceEnd();
     testRelease();
     if (failures)
         std::cerr << failures << " failure(s)\n";

@@ -54,7 +54,9 @@ namespace ngosen {
         bool                       rawWordAfterSlash              = true;
         bool                       emojiSuggestions               = true;
         bool                       yahooEmoticons                 = true;
+        bool                       englishEmojiKeywords           = true;
         bool                       emojiReplacesWord              = false;
+        bool                       emojiAtSentenceEnd             = false;
         std::vector<EmojiWordEdit> emojiWordEdits;
 
         // The conversion hotkey: charsets as named by GetCharsetNames, and ConvertText's letter case.

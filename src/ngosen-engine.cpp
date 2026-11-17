@@ -462,6 +462,7 @@ namespace fcitx {
         loadVimApps();
         emojiOffAppsPath_ = configDir + "/ngosen-emoji-off-apps.conf";
         loadEmojiOffApps();
+        enlargePanelFont();
         menuEntries_ = {{vietnameseAction_.get(), nullptr},
                         {inputMethodAction_.get(), &config_.showMenuInputMethod},
                         {charsetAction_.get(), &config_.showMenuCharset},
@@ -696,7 +697,9 @@ namespace fcitx {
         o.rawWordAfterSlash              = config_.rawWordAfterSlash.value();
         o.emojiSuggestions               = config_.emojiSuggestions.value();
         o.yahooEmoticons                 = config_.yahooEmoticons.value();
+        o.englishEmojiKeywords           = config_.englishEmojiKeywords.value();
         o.emojiReplacesWord              = config_.emojiPlacement.value() == EmojiPlacement::InsteadOfWord;
+        o.emojiAtSentenceEnd             = config_.emojiOfferAt.value() == EmojiOfferAt::SentenceEnd;
         o.emojiWordEdits.clear();
         for (const auto& word : *emojiWordsTable_.words)
             o.emojiWordEdits.push_back({*word.keyword, *word.emoji, *word.on});
@@ -1674,6 +1677,23 @@ namespace fcitx {
 
     bool NgoSenEngine::emojiOnIn(InputContext* ic) {
         return stateFor(ic)->emojiOn();
+    }
+
+    // At fcitx5's default "Sans 10" the emoji in the list are too small to tell apart. A font the
+    // user has set, even to that default, stays.
+    void NgoSenEngine::enlargePanelFont() {
+        const std::string file = "conf/classicui.conf";
+        RawConfig         raw;
+        readAsIni(raw, file);
+        if (!*config_.emojiSuggestions || raw.valueByPath("Font"))
+            return;
+        raw.setValueByPath("Font", "Sans 13");
+        if (!safeSaveAsIni(raw, file)) {
+            NGOSEN_WARN("Could not save " + file);
+            return;
+        }
+        if (auto* classicUi = instance_->addonManager().addon("classicui"))
+            classicUi->reloadConfig();
     }
 
     void NgoSenEngine::loadEmojiOffApps() {

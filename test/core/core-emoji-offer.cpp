@@ -491,6 +491,14 @@ namespace {
         check(r.hints[0] == "1.🐈 2.🐱" && r.text == "con mèo\n", "after a pause Enter still sends", r.hints[0] + " / " + r.text);
         r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Esc, Pause, Hint} + keysOf(". cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints[0] == "🐈 🐱" && r.hints[1] == "(none)" && r.hints[2] == "😂 🤣 😄 😆 😁", "Esc: no emoji for the rest of the sentence", joined(r.hints));
+        const std::vector<uint32_t> eraseAll(7, Backspace);
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Esc} + eraseAll + keysOf("cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.text == "cười" && r.hints[1] == "😂 🤣 😄 😆 😁", "a sentence typed after the muted one is erased gets emoji again", r.text + " / " + joined(r.hints));
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Esc, Backspace} + keysOf("o") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.text == "con mèo" && r.hints[1] == "(none)", "fixing a letter keeps the sentence muted", r.text + " / " + joined(r.hints));
+        // Ctrl+A shows up as a selection, so the Backspace after it comes as a key after a click.
+        r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Esc, Click, Backspace} + keysOf(" cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints[1] == "😂 🤣 😄 😆 😁", "a selection or click forgets the muted sentence", r.text + " / " + joined(r.hints));
         r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, PanelReset, Tab}, Mode::Sen, makeField(), atEnd);
         check(r.text == "con mèo⇥", "a list the engine cleared holds no key", r.text);
     }

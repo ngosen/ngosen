@@ -34,6 +34,7 @@
 #include <fcitx/inputmethodengine.h>
 #include <fcitx/instance.h>
 #include <fcitx-utils/event.h>
+#include <fcitx-utils/eventdispatcher.h>
 
 namespace ngosen {
     class GnomeShellWatcher;
@@ -297,8 +298,8 @@ namespace fcitx {
         std::unique_ptr<EventSourceTime> cycleModeNotificationTimer_;
         std::unique_ptr<EventSourceTime> announceTimer_;
         std::unique_ptr<EventSourceTime> menuClickTimer_;
-        // Jobs the click thread hands to the event loop can run after the engine is gone.
-        std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
+        // Instance::eventDispatcher() needs fcitx5 newer than Ubuntu 24.04 and Debian 12 ship.
+        EventDispatcher clickDispatcher_;
         // Replaced by the next tip, so pressing the key repeatedly shows one.
         uint32_t                  convertNotificationId_ = 0;
         std::string               iconCacheName_;

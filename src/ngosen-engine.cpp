@@ -315,6 +315,7 @@ namespace fcitx {
             imNames_ = std::move(imNames);
         }
         config_.inputMethod.annotation().setList(imNames_);
+        clickDispatcher_.attach(&instance_->eventLoop());
         cursorJumpWatcher_ = instance_->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& event) {
             auto*      ic        = static_cast<InputContextEvent&>(event).inputContext();
             const bool seenClick = g_mouse_clicked.load(std::memory_order_acquire);
@@ -522,7 +523,6 @@ namespace fcitx {
     }
 
     NgoSenEngine::~NgoSenEngine() {
-        *alive_ = false;
         stop_flag_monitor.store(true, std::memory_order_release);
         if (mouse_thread.joinable()) {
             mouse_thread.join();
@@ -820,12 +820,7 @@ namespace fcitx {
             NGOSEN_INFO("Dropped stale surrounding text");
         static std::atomic<bool> mouseThreadStarted{false};
         if (!mouseThreadStarted.exchange(true))
-            startMouseReset([this, alive = alive_] {
-                instance_->eventDispatcher().schedule([this, alive] {
-                    if (*alive)
-                        pointerClicked();
-                });
-            });
+            startMouseReset([this] { clickDispatcher_.schedule([this] { pointerClicked(); }); });
 
         if (ic->capabilityFlags().test(CapabilityFlag::Preedit))
             instance_->inputContextManager().setPreeditEnabledByDefault(true);

@@ -412,13 +412,10 @@ namespace fcitx {
         vietnameseAction_ = std::make_unique<SimpleAction>();
         vietnameseAction_->setIcon("fcitx-ngosen");
         connections_.emplace_back(vietnameseAction_->connect<SimpleAction::Activated>([this](InputContext* ic) {
-            if (ic != nullptr) {
+            if (ic != nullptr)
                 toggleVietnamese(ic, false);
-                return;
-            }
-            config_.vietnameseOn.setValue(!*config_.vietnameseOn);
-            saveConfig();
-            setMode(globalMode(), nullptr);
+            else
+                toggleWithoutField();
         }));
         uiManager.registerAction("ngosen-vietnamese", vietnameseAction_.get());
 
@@ -1524,6 +1521,39 @@ namespace fcitx {
                 _("To use the toggle key here, go to Settings → Shortcuts → Switch Applies To and choose Each app."), std::vector<std::string>{}, timeoutMs, nullptr, nullptr);
         }
 #endif
+    }
+
+    bool NgoSenEngine::toggleFromShortcut() {
+        // The shortcut's modifiers come up after this; their release must not count as a tap of the toggle key.
+        toggleTapArmed_       = false;
+        retypeOnRelease_      = false;
+        InputContext* focused = nullptr;
+        instance_->inputContextManager().foreachFocused([&focused](InputContext* ic) {
+            focused = ic;
+            return false;
+        });
+        if (focused == nullptr) {
+            toggleWithoutField();
+            return *config_.vietnameseOn;
+        }
+        const std::string inputMethod = instance_->inputMethod(focused);
+        if (!inputMethod.empty() && inputMethod != "ngosen") {
+            // As picking Ngó Sen in the tray, which turns Vietnamese on.
+            instance_->setCurrentInputMethod(focused, "ngosen", true);
+            return true;
+        }
+        // No retype: XTEST backspaces sent while the shortcut is held reach the app as Alt+BackSpace.
+        toggleVietnamese(focused, false);
+        return realMode != NgoSenMode::Off;
+    }
+
+    void NgoSenEngine::toggleWithoutField() {
+        config_.vietnameseOn.setValue(!*config_.vietnameseOn);
+        saveConfig();
+        setMode(globalMode(), nullptr);
+        // The tray shows the last focused field's icon, which setMode cannot reach without a field.
+        if (auto* last = instance_->inputContextManager().lastFocusedInputContext())
+            last->updateUserInterface(UserInterfaceComponent::StatusArea);
     }
 
     void NgoSenEngine::setAppRule(const std::string& appName, NgoSenMode mode) {

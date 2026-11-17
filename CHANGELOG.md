@@ -12,6 +12,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Lệnh `ngosen-toggle` để gán cho phím tắt của desktop: chuyển Anh/Việt như Ctrl + Shift, kể cả khi không có
+  ô nhập nào đang focus. Nếu ô đang focus dùng bộ gõ fcitx5 khác thì chuyển sang Ngó Sen; lỗi thì hiện thông báo
+  desktop. Chưa tự gán phím tắt; bản sau sẽ cho thiết lập trong cửa sổ cài đặt (#PR).
 - Gợi ý emoji khi gõ: gõ xong `cười`, `con mèo`, `cảm ơn`, `haha` hay `:)` là hiện `Tab: 😂 …` cạnh con
   trỏ. Bấm Tab để đánh số (kèm dòng nhắc phím), rồi 1–5 chọn một emoji; Tab, Space hoặc Enter lấy emoji đầu, Esc giữ nguyên
   chữ. Chữ thường giữ lại và emoji thêm vào sau; `haha` và `:)` được thay bằng emoji. Gõ không dấu như

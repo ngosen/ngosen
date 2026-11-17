@@ -29,6 +29,10 @@ namespace fcitx {
         return engine_->gnomePortalAnswered();
     }
 
+    bool NgoSenDBusObject::toggleVietnamese() {
+        return engine_->toggleFromShortcut();
+    }
+
     std::string NgoSenDBusObject::convertText(const std::string& text, const std::string& from, const std::string& to, int32_t letterCase, bool stripDiacritics) {
         const ngosen::UniqueCPtr<char> converted(ConvertText(text.c_str(), from.c_str(), to.c_str(), letterCase, stripDiacritics));
         if (!converted)

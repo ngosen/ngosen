@@ -345,7 +345,6 @@ namespace fcitx {
         Option<bool> modernStyle{this, "ModernStyle", _("Use oà, uý (Instead Of òa, úy)"), ngosen::defaultOptions.modernStyle};
         Option<bool> freeMarking{this, "FreeMarking", _("Allow Type With More Freedom"), ngosen::defaultOptions.freeMarking};
         Option<bool> ddFreeStyle{this, "DdFreeStyle", _("Allow dd To Produce đ When Auto Restore Invalid Words Is On"), ngosen::defaultOptions.ddFreeStyle};
-        Option<bool> teencode{this, "TeenCode", _("Teencode"), ngosen::defaultOptions.teencode};
         Option<bool> backspaceRemovesTone{this, "BackspaceRemovesTone", _("Backspace Removes the Tone Mark"), ngosen::defaultOptions.backspaceRemovesTone};
         // Timing for deleting through the app. Hidden from the config window; tests and bug reports
         // still set them in ngosen.conf.
@@ -393,12 +392,14 @@ namespace fcitx {
         Option<bool>                                                                            showModePreedit{this, "ShowModePreedit", _("Show Preedit"), true};
         Option<std::string>                                                                     shortcutPreedit{this, "ShortcutPreedit", _("Shortcut for Preedit"), "q"};
         Option<bool>                                                                            showModeEmoji{this, "ShowModeEmoji", _("Show emoji suggestions"), true};
-        Option<std::string> shortcutEmoji{this, "ShortcutEmoji", _("Shortcut for emoji suggestions"), "w"}; Option<bool> showModeOff{this, "ShowModeOff", _("Show OFF"), true};
+        Option<std::string>                                                                     shortcutEmoji{this, "ShortcutEmoji", _("Shortcut for emoji suggestions"), "w"};
+        Option<bool>                                                                            showModeTeencode{this, "ShowModeTeencode", _("Show teencode"), true};
+        Option<std::string> shortcutTeencode{this, "ShortcutTeencode", _("Shortcut for teencode"), "t"}; Option<bool> showModeOff{this, "ShowModeOff", _("Show OFF"), true};
         Option<std::string> shortcutOff{this, "ShortcutOff", _("Shortcut for OFF"), "e"}; Option<bool> showModeVim{this, "ShowModeVim", _("Show Vim mode"), true};
         Option<std::string>                                                                            shortcutVim{this, "ShortcutVim", _("Shortcut for Vim mode"), "v"};
         Option<bool>        enableMacroInOffMode{this, "EnableMacroInOffMode", _("Allow Macro in Off Mode"), ngosen::defaultOptions.enableMacroInOffMode};
 
-        Option<std::string> modeOrder{this, "ModeOrder", _("Mode Order"), "Sen,Preedit,Emoji,Off,Vim"};
+        Option<std::string> modeOrder{this, "ModeOrder", _("Mode Order"), "Sen,Preedit,Emoji,Teencode,Off,Vim"};
 
         OptionWithAnnotation<std::string, TimeFormatAnnotation> timeFormat{
             this, "TimeFormat", _("Time Format ($TIME in macro)"), ngosen::defaultOptions.timeFormat, {}, {}, TimeFormatAnnotation()};

@@ -270,7 +270,7 @@ msgstr ""
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
 msgstr ""
 
-#: src/ngosen-config.h
+#: src/ngosen-engine.cpp
 msgid "Teencode"
 msgstr ""
 
@@ -1432,10 +1432,6 @@ msgstr ""
 msgid "dd and Space stays đ instead of going back to dd."
 msgstr ""
 
-#: settings-gui/core/catalog.py
-msgid "zaayj → zậy, ddag → đag, nhuwgx → nhữg. Most English words stay as typed."
-msgstr ""
-
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "hoà, khoẻ, thuý, tuỳ. Off: hòa, khỏe, thúy, tùy."
 msgstr ""
@@ -1995,6 +1991,22 @@ msgstr ""
 
 #: src/ngosen-engine.cpp
 msgid "Emoji suggestions: off"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Show teencode"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Shortcut for teencode"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Teencode: on"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Teencode: off"
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py

@@ -437,13 +437,6 @@
     {}
    ],
    [
-    "TeenCode",
-    "Boolean",
-    "Teencode",
-    "False",
-    {}
-   ],
-   [
     "BackspaceRemovesTone",
     "Boolean",
     "Backspace Removes the Tone Mark",
@@ -642,6 +635,20 @@
     {}
    ],
    [
+    "ShowModeTeencode",
+    "Boolean",
+    "Show teencode",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutTeencode",
+    "String",
+    "Shortcut for teencode",
+    "t",
+    {}
+   ],
+   [
     "ShowModeOff",
     "Boolean",
     "Show OFF",
@@ -687,7 +694,7 @@
     "ModeOrder",
     "String",
     "Mode Order",
-    "Sen,Preedit,Emoji,Off,Vim",
+    "Sen,Preedit,Emoji,Teencode,Off,Vim",
     {}
    ],
    [

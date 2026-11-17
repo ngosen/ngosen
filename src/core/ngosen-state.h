@@ -112,6 +112,11 @@ namespace ngosen {
         bool emojiOn() const {
             return emojiOn_;
         }
+        // The user turned teencode on or off for the app (the t key in the mode menu).
+        void setTeencodeOn(bool on);
+        bool teencodeOn() const {
+            return teencodeOn_;
+        }
 
         // The field gained focus and its app rule asks for targetMode. Returns true for a focus
         // bounce: focus left and came back so soon that the word being typed is kept.
@@ -285,7 +290,8 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> emojiRecheck_;           ///< looks again once the word is in the app
         std::function<void()>          emojiAfterHint_;         ///< the emoji picked, put in once the field drops the hint
         std::unique_ptr<ngosen::Timer> emojiPause_;             ///< offers the sentence's emoji in the field once typing stops
-        bool                           emojiOn_ = true;         ///< false when the user turned emoji off for the app
+        bool                           emojiOn_    = true;      ///< false when the user turned emoji off for the app
+        bool                           teencodeOn_ = false;     ///< true when the user turned teencode on for the app
         std::string                    openWord();
         bool                           offersEmojiHere() const;
         bool                           hintsInField(const ngosen::Field& field) const;

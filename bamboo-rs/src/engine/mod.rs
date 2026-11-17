@@ -19,12 +19,14 @@ use bamboo_core::{
 use crate::macro_table::MacroTable;
 use crate::text::{
     grows_into, has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol,
-    vowel_count, without_diacritics, without_marks, without_tone_position, without_tones,
+    vowel_count, with_tone, without_diacritics, without_marks, without_tone_position,
+    without_tones,
 };
 use crate::time_format::format_time;
 use packed::Packed;
 
 mod packed;
+mod teencode;
 
 #[cfg(test)]
 mod options_tests;
@@ -318,6 +320,8 @@ pub struct BambooEngine {
     pub(crate) macro_enabled: bool,
     pub(crate) auto_capitalize_macro: bool,
     pub(crate) spell_check_with_dicts: bool,
+    /// Keeps words written the way people type online (`zậy`, `fải`) instead of showing the keys.
+    pub(crate) teencode: bool,
     pub(crate) preedit_text: String,
     pub(crate) commit_text: String,
     pub(crate) output_charset: String,
@@ -349,6 +353,7 @@ impl BambooEngine {
             macro_enabled: false,
             auto_capitalize_macro: false,
             spell_check_with_dicts: true,
+            teencode: false,
             preedit_text: String::new(),
             commit_text: String::new(),
             output_charset: "Unicode".to_string(),
@@ -504,6 +509,9 @@ impl BambooEngine {
         if let Some(kept) = &self.kept {
             let tail: String = self.raw_text().chars().skip(kept.keys).collect();
             return format!("{}{tail}", kept.shown);
+        }
+        if let Some(word) = self.teencode_word() {
+            return word;
         }
         if self.keep_keys_until_next_key
             || self.should_fallback_to_english(true)
@@ -917,7 +925,13 @@ impl BambooEngine {
         let old_text = name.as_deref().unwrap_or(old_text);
         let marked = || ends_sentence.then(|| self.auto_marked_word()).flatten();
         let late = || ends_sentence.then(|| self.late_tone_word()).flatten();
-        if let Some(word) = self.retoned_word().or_else(marked).or_else(late) {
+        let teencode = || self.teencode_word();
+        if let Some(word) = self
+            .retoned_word()
+            .or_else(marked)
+            .or_else(late)
+            .or_else(teencode)
+        {
             self.preeditor.reset();
             return (format!("{word}{key}"), true);
         }
@@ -997,6 +1011,9 @@ impl BambooEngine {
     }
 
     fn get_composed_string(&self, old_text: String) -> String {
+        if let Some(word) = self.kept.is_none().then(|| self.teencode_word()).flatten() {
+            return word;
+        }
         if self.kept.is_none()
             && has_any_vietnamese_rune(&old_text)
             && self.must_fallback_to_english()
@@ -1202,6 +1219,7 @@ impl BambooEngine {
             && !is_all_caps(self.raw_text().chars().filter(|c| c.is_alphabetic()))
             && self.shown_as_typed()
             && self.dictionary.contains(&old_text.to_lowercase())
+            && self.teencode_word().is_none()
             && {
                 let keys = self.raw_text().to_lowercase();
                 !self.keep_guard.starts_word(&keys) && !self.english_words.starts_word(&keys)

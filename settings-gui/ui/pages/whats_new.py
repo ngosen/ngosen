@@ -22,7 +22,12 @@ from ui.pages.dynamic_settings import CardWidget
 from ui.typography import emphasize, page_title
 
 # Sidebar pages the tips point at, named as they are in the window.
-PAGE_TITLES = {"macros": _("Macros"), "check": _("Check my machine"), "convert": _("Convert")}
+PAGE_TITLES = {
+    "macros": _("Macros"),
+    "check": _("Check my machine"),
+    "convert": _("Convert"),
+    "emoji": _("Emoji"),
+}
 
 
 class WhatsNewPage(QWidget):

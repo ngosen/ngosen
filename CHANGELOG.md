@@ -34,6 +34,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   `nhữg`). Từ tiếng Anh phần lớn vẫn giữ nguyên (#701, #829, #843).
 - Teencode giữ thêm chữ kéo dài (`nhaaa`, `chàiii` gõ `chaiiif`) và viết tắt ghép (`cgái`, `bthường`,
   `đthoại`) (#701, #833).
+- Trang Gõ trong cửa sổ cài đặt có mục Teencode: cách bật và danh sách app đang bật, mỗi app có nút tắt. Bản sao
+  lưu cài đặt nay giữ cả danh sách này (#701, #844).
 
 ### Thay đổi
 

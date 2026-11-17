@@ -636,7 +636,9 @@ class GtkTypingPageTest(unittest.TestCase):
     def test_only_the_first_group_has_no_title(self):
         groups = [w for w in _children(self.page.page) if isinstance(w, Adw.PreferencesGroup)]
         titled = [group.get_title() for group in groups if group.get_title()]
-        self.assertEqual(titled, ["Fixing words", "Tone marks", "Typing keys", "Quick typing"])
+        self.assertEqual(
+            titled, ["Fixing words", "Tone marks", "Typing keys", "Quick typing", "Teencode"]
+        )
         mode_row = self.page.rows["InputMethod"]
         first = next(g for g in groups if mode_row in _children(g))
         self.assertEqual(first.get_title(), "")

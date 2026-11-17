@@ -15,6 +15,7 @@ from core.catalog import (
     SettingsCategory,
     shown_mode,
 )
+from core.teencode_apps import TeencodeApps, toggle_hint
 from gi.repository import Adw, Gtk
 from i18n import _
 
@@ -183,16 +184,29 @@ class SettingsPage:
 
 
 class TypingPage(SettingsPage):
-    """tip, if given, shows above the settings; on_tip(…) runs when it is clicked."""
+    """tip, if given, shows above the settings; on_tip(…) runs when it is clicked.
 
-    def __init__(self, model, on_change, tip=None, on_tip=None):
+    show_message(text, undo) shows a toast.
+    """
+
+    def __init__(self, model, on_change, tip=None, on_tip=None, show_message=None):
         self.tip = tip
         self.on_tip = on_tip
+        self.show_message = show_message
         self.custom_note = status_row()
         self.retone_note = status_row()
         super().__init__(
             model, on_change, SettingsCategory.TYPING, _("Typing"), "input-keyboard-symbolic"
         )
+        self.teencode = TeencodeApps(model.dbus)
+        self.teencode_group = Adw.PreferencesGroup(title=_("Teencode"))
+        self.teencode_apps = Gtk.ListBox(
+            selection_mode=Gtk.SelectionMode.NONE, css_classes=["boxed-list"]
+        )
+        # App names are the user's own entries, not settings to find.
+        self.teencode_apps.searchable = False
+        self.teencode_group.add(self.teencode_apps)
+        self.page.add(self.teencode_group)
         try_it = Adw.PreferencesGroup()
         entry = Adw.EntryRow(title=_("Type here to test"))
         entry.add_css_class("typed")
@@ -219,6 +233,33 @@ class TypingPage(SettingsPage):
             page_status.custom_without_keys_line(model, self.model.dbus) if model else "",
         )
         show_status(self.retone_note, page_status.retone_line(model) if model else "")
+        # The keyboard may have turned teencode on in an app since the page was built.
+        self.teencode.apps = self.teencode.read()
+        self._show_teencode()
+
+    def _show_teencode(self):
+        self.teencode_group.set_description(
+            toggle_hint(self.value_of("ModeMenuKey"), self.value_of("ShortcutTeencode"))
+        )
+        self.teencode_apps.remove_all()
+        for app in self.teencode.apps:
+            row = Adw.ActionRow(title=app, use_markup=False)
+            button = Gtk.Button(label=_("Turn off"), valign=Gtk.Align.CENTER)
+            button.update_property(
+                [Gtk.AccessibleProperty.LABEL], [_("Turn teencode off in {}").format(app)]
+            )
+            button.connect("clicked", lambda _b, app=app: self.teencode_off(app))
+            row.add_suffix(button)
+            self.teencode_apps.append(row)
+        if not self.teencode.apps:
+            empty = Adw.ActionRow(title=_("Not on in any app."), css_classes=["dim-label"])
+            empty.set_activatable(False)
+            self.teencode_apps.append(empty)
+
+    def teencode_off(self, app):
+        if not self.teencode.turn_off(app) and self.show_message:
+            self.show_message(_("Could not save. Check that fcitx5 is running."), None)
+        self._show_teencode()
 
     def _add_header(self):
         if self.tip is None:

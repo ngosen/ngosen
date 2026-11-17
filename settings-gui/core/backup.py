@@ -20,6 +20,7 @@ COMPONENTS = (
     "switches",
     "emoji_words",
     "emoji_off_apps",
+    "teencode_apps",
     "dictionary",
 )
 SUB_CONFIGS = {
@@ -29,6 +30,7 @@ SUB_CONFIGS = {
     "switches": ("app_switches", "Switches"),
     "emoji_words": ("emoji_words", "Words"),
     "emoji_off_apps": ("emoji_off_apps", "Apps"),
+    "teencode_apps": ("teencode_apps", "Apps"),
 }
 
 

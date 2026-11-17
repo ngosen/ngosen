@@ -30,7 +30,7 @@ from qtpy.QtWidgets import (
 )
 
 from ui import brand
-from ui.components import KeyCap
+from ui.components import KeyCap, Lines, Row
 from ui.pages.dynamic_settings import DynamicSettingsPage, HintLabel
 from ui.typography import mute
 
@@ -212,30 +212,6 @@ def _faint(color):
     faint = QColor(color)
     faint.setAlphaF(0.08)
     return faint
-
-
-class Lines(QFrame):
-    """A framed list on the base colour, its rows parted by thin lines."""
-
-    def __init__(self):
-        super().__init__()
-        self.setFrameShape(QFrame.StyledPanel)
-        self.setBackgroundRole(QPalette.Base)
-        self.setAutoFillBackground(True)
-        self.rows = QVBoxLayout(self)
-        self.rows.setContentsMargins(0, 0, 0, 0)
-        self.rows.setSpacing(0)
-
-
-class Row(QWidget):
-    def paintEvent(self, event):
-        if self.y() == 0:
-            return
-        color = self.palette().color(QPalette.WindowText)
-        color.setAlphaF(0.12)
-        painter = QPainter(self)
-        painter.setPen(color)
-        painter.drawLine(0, 0, self.width(), 0)
 
 
 class EmojiRow(Row):

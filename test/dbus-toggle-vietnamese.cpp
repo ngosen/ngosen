@@ -122,9 +122,17 @@ int main() {
     auto popup = std::make_unique<TestInputContext>(&testInstance.instance, "popup");
     keys.focus(*popup);
     popup.reset();
-    keys.focused = nullptr;
-    on           = object.toggleVietnamese();
+    keys.focused     = nullptr;
+    int  trayUpdates = 0;
+    auto watcher     = testInstance.instance.watchEvent(fcitx::EventType::InputContextUpdateUI, fcitx::EventWatcherPhase::PreInputMethod, [&trayUpdates](fcitx::Event& event) {
+        if (static_cast<fcitx::InputContextUpdateUIEvent&>(event).component() == fcitx::UserInterfaceComponent::StatusArea)
+            ++trayUpdates;
+    });
+    on               = object.toggleVietnamese();
+    watcher.reset();
     check(!on, "the shortcut works after the focused field is destroyed", onOff(on));
+    // The tray draws from a field; the one it last drew from is gone, but other fields are open.
+    check(trayUpdates > 0, "the tray icon follows the shortcut with no recent field", std::to_string(trayUpdates) + " updates");
     on = object.toggleVietnamese();
 
     // An app the menu keeps in English opens the menu, as the toggle key does there.

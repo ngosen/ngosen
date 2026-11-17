@@ -1555,8 +1555,16 @@ namespace fcitx {
         config_.vietnameseOn.setValue(!*config_.vietnameseOn);
         saveConfig();
         setMode(globalMode(), nullptr);
-        // The tray shows the most recent field's icon, which setMode cannot reach without a field.
-        if (auto* recent = instance_->inputContextManager().mostRecentInputContext())
+        // The tray redraws only for a field, which setMode lacks here; once the most recent one is
+        // closed, any open field (the panel's own on Plasma) still makes it redraw.
+        auto&         fields = instance_->inputContextManager();
+        InputContext* recent = fields.mostRecentInputContext();
+        if (recent == nullptr)
+            fields.foreach ([&recent](InputContext* ic) {
+                recent = ic;
+                return false;
+            });
+        if (recent != nullptr)
             recent->updateUserInterface(UserInterfaceComponent::StatusArea);
     }
 

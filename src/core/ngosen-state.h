@@ -813,6 +813,14 @@ namespace ngosen {
             int                       erasedSinceReport = 0;     ///< backspaces sent since the last report, -1 after any other deletion
             int                       lettersHidden     = 0;     ///< reports that left out letters typed into the field
             bool                      letterShown       = false; ///< a report showed letters typed into the field
+
+            // A field whose first letters no report showed is taken for xterm.js until one does.
+            bool     firstLettersHidden  = false;
+            bool     firstLettersChecked = false;
+            bool     textBeforeLetters   = false; ///< a report showed text before the first letter was let through
+            char     firstLetter         = 0;     ///< the first letter other than a space let through since focus
+            bool     firstLetterShown    = false; ///< a report showed text with that letter
+            uint64_t firstPassedAtUs     = 0;     ///< when the first letter since focus was let through
         };
         FieldHistory sinceFocus_;
 
@@ -837,6 +845,7 @@ namespace ngosen {
         void         notePassedLetter(const ngosen::KeyPress& keyEvent, uint64_t commitsBefore);
         void         noteCommitForCheck(const std::string& text);
         bool         keepsOnlyCommits() const;
+        void         checkFirstLetters();
         // A commit waiting for the app to start a composition on its preedit.
         std::string                    composedCommit_;
         std::unique_ptr<ngosen::Timer> composedCommitTimer_;

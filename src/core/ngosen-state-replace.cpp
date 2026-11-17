@@ -461,6 +461,7 @@ namespace ngosen {
 
     void TypingState::performReplacement(const std::string& deletedPart, const std::string& addedPart) {
         NGOSEN_INFO("Perform replacement: " + logged(deletedPart) + " -> " + logged(addedPart)); //NOLINT
+        checkFirstLetters();
         // The deletion changes text we committed; the replacement's own commit is what to look for.
         commitNotSeen_.clear();
         current_backspace_count_ = 0;
@@ -999,7 +1000,8 @@ namespace ngosen {
     constexpr uint64_t SplitEditMaxWaitUs = 120000;
     constexpr size_t   EchoesKept         = 6;
     // Enough that one stale report does not mark the whole app.
-    constexpr int LettersHiddenForApp = 3;
+    constexpr int      LettersHiddenForApp = 3;
+    constexpr uint64_t FirstLetterShownUs  = 60000;
     // A field that never shows our commits at the cursor is not xterm.js; stop collecting them.
     constexpr size_t MaxCommitsChecked = 64;
     // As long as a focus bounce lasts; the deletion is out, so giving up loses the word's letters.
@@ -1159,6 +1161,8 @@ namespace ngosen {
         // WebKitGTK reports a space it shows at the end as a no-break space.
         for (size_t at = now.find("\u00a0"); at != std::string::npos; at = now.find("\u00a0", at + 1))
             now.replace(at, 2, " ");
+        if (h.firstLetter != 0 && now.find(h.firstLetter) != std::string::npos)
+            h.firstLetterShown = true;
         const bool changed = now != std::exchange(h.lastReportText, now);
         if (h.committedSinceReport.empty()) {
             // A letter or deletion that shows in the field changes it; xterm.js shows only spaces.
@@ -1218,6 +1222,11 @@ namespace ngosen {
         if (passed.size() >= MaxCommitsChecked)
             passed.erase(0, 1);
         passed += key;
+        if (sinceFocus_.firstLetter == 0 && key != " ") {
+            sinceFocus_.firstLetter       = key[0];
+            sinceFocus_.firstPassedAtUs   = monotonicUs();
+            sinceFocus_.textBeforeLetters = sinceFocus_.seenText;
+        }
     }
 
     void TypingState::noteCommitForCheck(const std::string& text) {
@@ -1238,7 +1247,28 @@ namespace ngosen {
         if (sinceFocus_.letterShown || !host_->field().preedit)
             return false;
         const Field field = host_->field();
-        return sinceFocus_.lettersHidden > 0 || (!ngosen::namesNoApp(field) && engine_->keepsOnlyCommits(field.frontend, field.program));
+        return sinceFocus_.lettersHidden > 0 || sinceFocus_.firstLettersHidden || (!ngosen::namesNoApp(field) && engine_->keepsOnlyCommits(field.frontend, field.program));
+    }
+
+    // A browser shows a typed letter within tens of milliseconds, while xterm.js never reports one; without this
+    // the first words after fcitx5 starts go wrong until the app is remembered.
+    void TypingState::checkFirstLetters() {
+        auto&       h     = sinceFocus_;
+        const Field field = host_->field();
+        // xterm.js keeps our commits but never a typed letter, so text that is only our commits does not count.
+        if (h.firstLettersChecked || h.textBeforeLetters || h.firstLetterShown || h.letterShown || h.firstLetter == 0 || mode() != ngosen::Mode::Sen)
+            return;
+        // Too soon to tell; the next replacement asks again.
+        if (monotonicUs() - h.firstPassedAtUs < FirstLetterShownUs)
+            return;
+        h.firstLettersChecked = true;
+        const Surrounding s   = host_->surrounding();
+        // Such a field is deleted with backspaces, which some fields drop; and no report of a field that hides its
+        // text is read for letters, so nothing would undo the mark there.
+        if (!field.preedit || !field.surroundingText || field.sendsNoKeys || dropsForwardedKeys() || field.hidesText() || !ngosen::mayShowWebTerminal(field) || !s.isValid())
+            return;
+        h.firstLettersHidden = true;
+        NGOSEN_INFO("No report shows the first letters" + loggedField(field) + ": commit through a composition");
     }
 
     // A busy page shows typed letters late and takes as long over a deletion, which the commit must not overtake.

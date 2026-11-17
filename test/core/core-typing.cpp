@@ -3305,6 +3305,28 @@ namespace {
         check(text == expected && preedits == 0, "a field that shows typed letters gets no preedit", text + " preedits=" + std::to_string(preedits));
     }
 
+    // A terminal reports nothing for the first letter, which a text box shows before the next key.
+    void testXtermFirstWords() {
+        const std::string sentence = "ddaay laf tieengs vieetj ";
+        const std::string expected = "đây là tiếng việt ";
+        Field             dbus     = makeField("dbus", true, "vaultid_desktop");
+        dbus.keyEventOrderFix      = true;
+        std::string text           = typeInXterm(dbus, {.keepsOnlyCommits = true}, sentence);
+        check(text == expected, "xterm.js over D-Bus: the first words come out right", text);
+
+        Field gnome           = makeField("ibus", true, "vaultid_desktop.desktop");
+        gnome.reportedProgram = "gnome-shell";
+        text                  = typeInXterm(gnome, {.keepsLastEditPerTurn = true, .turnMs = 3, .keepsOnlyCommits = true}, sentence);
+        check(text == expected, "xterm.js behind GNOME Shell: the first words come out right", text);
+
+        // Konsole reports no letters either, yet takes forwarded backspaces as usual.
+        FakeResources               resources;
+        const std::vector<uint32_t> keys = keysOf("ddaay laf ");
+        const auto out = ngosen::test::typeInAppTraced(resources, makeField("ibus", true, "konsole"), {.reportsEmptyText = true}, keys, std::vector<int>(keys.size(), 100));
+        check(out.text == "đây là " && out.sent.preedits == 0, "a terminal app that reports no letters keeps committing directly",
+              out.text + " preedits=" + std::to_string(out.sent.preedits));
+    }
+
     // A click back into the terminal finds the composition start xterm.js kept from before.
     void testXtermRememberedAfterFocus() {
         realMode = ngosen::Mode::Sen;
@@ -3358,14 +3380,41 @@ namespace {
         check(app->text() == beforeErase, "xterm.js: a Backspace right after a commit erases it", app->text());
     }
 
-    // A busy page shows a letter and the Backspace that takes it back in one late report.
+    // A busy page shows a letter and the Backspace that takes it back in one late report. Its first commit
+    // still goes through a composition: no report has shown a letter by then.
+    // GTK4 over D-Bus drops forwarded backspaces, which a field taken for xterm.js is deleted with.
+    void testFirstLettersSkipDroppedKeys() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("dbus", true, "epiphany"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("", 0);
+        state.surroundingUpdated();
+        for (char c : std::string("laf")) {
+            press(state, static_cast<uint32_t>(c));
+            loop.pump(60);
+        }
+        loop.pump(300);
+        check(host->forwarded().empty() && !host->deletes().empty(), "a GTK4 field that reports late is still deleted through its text",
+              std::to_string(host->forwarded().size()) + " forwarded, " + std::to_string(host->deletes().size()) + " deletes");
+    }
+
     void testTypedBackspaceIsNotHiddenLetter() {
         FakeResources               resources;
         Field                       field = makeField("wayland", true, "firefox");
         const std::vector<uint32_t> keys{'l', 'a', ngosen::key::BackSpace, 'a', 'f', ' ', 't', 'i', 'e', 'e', 'n', 'g', 's', ' '};
         const auto                  out = ngosen::test::typeInAppTraced(resources, field, {.reportDelayMs = 200, .lagMs = 100}, keys, std::vector<int>(keys.size(), 60));
-        check(out.text == "là tiếng " && out.sent.preedits == 0, "a typed Backspace does not make a field look like xterm.js",
+        check(out.text == "là tiếng " && out.sent.preedits <= 1, "a typed Backspace does not make a field look like xterm.js",
               out.text + " preedits=" + std::to_string(out.sent.preedits));
+
+        // Reports of a sensitive field are never read for letters, so nothing could undo a mark there.
+        FakeResources sensitiveResources;
+        field.sensitive   = true;
+        const auto hidden = ngosen::test::typeInAppTraced(sensitiveResources, field, {.reportDelayMs = 200, .lagMs = 100}, keys, std::vector<int>(keys.size(), 60));
+        check(hidden.text == "là tiếng " && hidden.sent.preedits == 0, "a late sensitive field is not taken for xterm.js",
+              hidden.text + " preedits=" + std::to_string(hidden.sent.preedits));
     }
 
     // The user's own edits while a long check is open say nothing about the app.
@@ -5577,8 +5626,10 @@ int main() {
     testDroppedDeletionInLongCheck();
     testDroppedDeletionKeptAcrossFocus();
     testXtermKeepsOnlyCommits();
+    testXtermFirstWords();
     testXtermRememberedAfterFocus();
     testTypedBackspaceIsNotHiddenLetter();
+    testFirstLettersSkipDroppedKeys();
     testShortDeletion();
     testCheckAcrossLateAppName();
     testEditsDuringLongCheck();

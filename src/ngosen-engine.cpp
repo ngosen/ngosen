@@ -699,6 +699,7 @@ namespace fcitx {
         o.rawWordAfterSlash              = config_.rawWordAfterSlash.value();
         o.emojiSuggestions               = config_.emojiSuggestions.value();
         o.yahooEmoticons                 = config_.yahooEmoticons.value();
+        o.englishEmojiKeywords           = config_.englishEmojiKeywords.value();
         o.emojiReplacesWord              = config_.emojiPlacement.value() == EmojiPlacement::InsteadOfWord;
         o.emojiWordEdits.clear();
         for (const auto& word : *emojiWordsTable_.words)

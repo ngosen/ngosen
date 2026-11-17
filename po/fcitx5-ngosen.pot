@@ -179,6 +179,10 @@ msgid "Yahoo Messenger emoticons"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "English keywords"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Apps"
 msgstr ""
 
@@ -1431,6 +1435,10 @@ msgstr ""
 
 #: settings-gui/core/catalog.py
 msgid "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "cat and thumbs up also offer 🐈 and 👍, from the Unicode list of English words. Words that are also Vietnamese, like can, are left out."
 msgstr ""
 
 #: settings-gui/core/catalog.py

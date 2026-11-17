@@ -176,7 +176,7 @@ namespace ngosen {
         const std::string word  = openWord();
         const std::string text  = emojiTail_ + word;
         const auto        words = splitWords(text);
-        auto              found = text.empty() || text.back() == ' ' ? std::nullopt : suggestEmoji(words, engine_->options().yahooEmoticons, engine_->options().emojiWordEdits);
+        auto              found = text.empty() || text.back() == ' ' ? std::nullopt : suggestEmoji(words, engine_->options());
         if (!found) {
             dropEmojiOffer();
             return;
@@ -211,7 +211,7 @@ namespace ngosen {
         std::vector<std::vector<std::string>> earlier;
         for (size_t n = words.size(); n > 0; --n) {
             const std::vector<std::string> head(words.begin(), words.begin() + static_cast<std::ptrdiff_t>(n));
-            auto                           found = suggestEmoji(head, engine_->options().yahooEmoticons, engine_->options().emojiWordEdits);
+            auto                           found = suggestEmoji(head, engine_->options());
             if (!found)
                 continue;
             if (n == words.size() && !afterSpace) {

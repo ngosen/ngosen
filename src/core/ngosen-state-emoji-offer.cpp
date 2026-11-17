@@ -259,7 +259,9 @@ namespace ngosen {
             const auto  all  = offeredEmoji();
             std::string hint = emojiOffer_->picking ? "" : " Tab:";
             for (size_t i = 0; i < all.size(); ++i)
-                hint += emojiOffer_->picking ? " " + std::to_string(i + 1) + "." + all[i] : " " + all[i];
+                hint += !emojiOffer_->picking ? " " + all[i] :
+                    i == emojiOffer_->chosen  ? " [" + std::to_string(i + 1) + "." + all[i] + "]" :
+                                                " " + std::to_string(i + 1) + "." + all[i];
             host_->showHint(emojiOffer_->afterSpace ? hint.substr(1) : hint);
             return;
         }
@@ -279,8 +281,9 @@ namespace ngosen {
                 if (emojiOffer_ && !replacementPending() && index < emojiOffer_->suggestion.emoji.size())
                     insertEmoji(index);
             });
+            host_->highlightCandidate(static_cast<int>(emojiOffer_->chosen));
             const std::string numbers = emoji.size() > 1 ? "1–" + std::to_string(emoji.size()) : "1";
-            host_->setStatus(numbers + ": " + host_->translate("pick, Space or Enter: the first, Esc: keep the word"));
+            host_->setStatus(numbers + ": " + host_->translate("pick, or arrows then Enter, Esc: keep the word"));
         }
         host_->refreshPanel();
     }
@@ -344,7 +347,14 @@ namespace ngosen {
         }
         if (plain && (sym == ngosen::key::Tab || sym == ngosen::key::space || ngosen::key::isEnter(sym))) {
             takeEmojiKey(keyEvent);
-            insertEmoji(0);
+            insertEmoji(emojiOffer_->chosen);
+            return true;
+        }
+        if (plain && (sym == ngosen::key::Left || sym == ngosen::key::Up || sym == ngosen::key::Right || sym == ngosen::key::Down)) {
+            takeEmojiKey(keyEvent);
+            const bool back     = sym == ngosen::key::Left || sym == ngosen::key::Up;
+            emojiOffer_->chosen = (emojiOffer_->chosen + (back ? count - 1 : 1)) % count;
+            showEmojiOffer();
             return true;
         }
         if (plain && sym == ngosen::key::Escape) {

@@ -246,7 +246,8 @@ namespace ngosen::test {
         void refreshPanel() override {}
 
         void showCandidates(const std::vector<std::string>& labels, int /*pageSize*/, std::function<void(size_t)> /*onPick*/) override {
-            labels_ = labels;
+            labels_      = labels;
+            highlighted_ = 0;
         }
         void hideCandidates() override {
             labels_.clear();
@@ -256,7 +257,12 @@ namespace ngosen::test {
                 return std::nullopt;
             return CandidatePage{.total = static_cast<int>(labels_.size())};
         }
-        void highlightCandidate(int /*index*/) override {}
+        void highlightCandidate(int index) override {
+            highlighted_ = index;
+        }
+        int highlighted() const {
+            return highlighted_;
+        }
         void nextCandidatePage() override {}
         void prevCandidatePage() override {}
         void pickCandidate(int /*index*/) override {}
@@ -274,6 +280,7 @@ namespace ngosen::test {
         std::string keyText(uint32_t sym) const override;
 
       private:
+        int                                 highlighted_ = 0;
         void                                insert(const std::u32string& text, bool typed = false);
         void                                noteTypedKey();
         void                                goSilentAfterDelete();

@@ -53,6 +53,10 @@ namespace {
     constexpr uint32_t Lag      = 11; // the app reports its text 5 ms after each change
     // Firefox resets right after the key and reports the text it typed only after that.
     constexpr uint32_t EarlyReset = 12;
+    constexpr uint32_t Chosen     = 13; // records the highlighted item of the panel
+    constexpr uint32_t Left       = ngosen::key::Left;
+    constexpr uint32_t Right      = ngosen::key::Right;
+    constexpr uint32_t Down       = ngosen::key::Down;
 
     Field              makeField() {
         Field field;
@@ -77,6 +81,7 @@ namespace {
         std::vector<std::string> hints; // the first label at each Hint
         std::vector<std::string> statuses;
         std::vector<std::string> inField;
+        std::vector<int>         chosen;
         int                      editsUnderHint = 0;
     };
 
@@ -118,6 +123,8 @@ namespace {
                 loop.pump(1000);
             } else if (key == InField) {
                 result.inField.push_back(app->hint());
+            } else if (key == Chosen) {
+                result.chosen.push_back(app->highlighted());
             } else if (key == Status) {
                 result.statuses.push_back(app->status());
             } else if (key == Hint) {
@@ -208,11 +215,13 @@ namespace {
         r = type(word + std::vector<uint32_t>{Tab}, Mode::Sen, noPanel);
         check(r.text == "cười⇥", "no panel: Tab before the hint shows reaches the app", r.text);
         r = type(word + std::vector<uint32_t>{Pause, Tab, InField}, Mode::Sen, noPanel);
-        check(r.inField.front() == " 1.😂 2.🤣 3.😄 4.😆 5.😁", "no panel: Tab numbers the emoji in the field", r.inField.front());
+        check(r.inField.front() == " [1.😂] 2.🤣 3.😄 4.😆 5.😁", "no panel: Tab numbers the emoji in the field", r.inField.front());
         r = type(word + std::vector<uint32_t>{Pause, Tab, '2', InField}, Mode::Sen, noPanel);
         check(r.text == "cười 🤣" && r.inField.front().empty(), "no panel: a number picks that emoji", r.text + " / " + r.inField.front());
         r = type(word + std::vector<uint32_t>{Pause, Tab, Tab}, Mode::Sen, noPanel);
         check(r.text == "cười 😂", "no panel: Tab again picks the first", r.text);
+        r = type(word + std::vector<uint32_t>{Pause, Tab, Right, InField, Enter}, Mode::Sen, noPanel);
+        check(r.inField.front() == " 1.😂 [2.🤣] 3.😄 4.😆 5.😁" && r.text == "cười 🤣", "no panel: arrows mark the emoji Enter picks", r.inField.front() + " / " + r.text);
         r = type(word + std::vector<uint32_t>{Pause, Tab, Esc, InField}, Mode::Sen, noPanel);
         check(r.text == "cười" && r.inField.front().empty(), "no panel: Esc keeps the word", r.text + " / " + r.inField.front());
         r = type(word + std::vector<uint32_t>{Pause, ' ', InField}, Mode::Sen, noPanel);
@@ -280,11 +289,20 @@ namespace {
         r = type(word + std::vector<uint32_t>{Tab, OffMode, '1'});
         check(r.text == "cười1", "switching to English closes the list", r.text);
         r = type(word + std::vector<uint32_t>{Status, Tab, Status, '2', Status});
-        check(r.statuses == std::vector<std::string>{"", "1–5: pick, Space or Enter: the first, Esc: keep the word", ""}, "the keys are named while the list is open",
+        check(r.statuses == std::vector<std::string>{"", "1–5: pick, or arrows then Enter, Esc: keep the word", ""}, "the keys are named while the list is open",
               r.statuses[0] + " / " + r.statuses[1] + " / " + r.statuses[2]);
         r = type(keysOf("camr own") + std::vector<uint32_t>{Tab, Status, Esc, Status});
-        check(r.statuses == std::vector<std::string>{"1–2: pick, Space or Enter: the first, Esc: keep the word", ""}, "the line counts the emoji and goes with Esc",
+        check(r.statuses == std::vector<std::string>{"1–2: pick, or arrows then Enter, Esc: keep the word", ""}, "the line counts the emoji and goes with Esc",
               r.statuses[0] + " / " + r.statuses[1]);
+        r = type(word + std::vector<uint32_t>{Tab, Right, Right, Chosen, Enter});
+        check(r.chosen == std::vector<int>{2} && r.text == "cười 😄", "arrows move the highlight and Enter picks it",
+              std::to_string(r.chosen.empty() ? -1 : r.chosen[0]) + " / " + r.text);
+        r = type(word + std::vector<uint32_t>{Tab, Left, Chosen, ' '});
+        check(r.chosen == std::vector<int>{4} && r.text == "cười 😁", "Left from the first wraps to the last", r.text);
+        r = type(word + std::vector<uint32_t>{Tab, Down, Tab});
+        check(r.text == "cười 🤣", "Down moves on as Right does, and Tab picks the highlighted", r.text);
+        r = type(word + std::vector<uint32_t>{Left, ' '});
+        check(r.text.find("😂") == std::string::npos, "an arrow before Tab is not taken", r.text);
         r = type(keysOf("con meof") + std::vector<uint32_t>{Tab, Tab, ' ', 'a'});
         check(r.text == "con mèo 🐈 a", "typing goes on after the emoji", r.text);
     }

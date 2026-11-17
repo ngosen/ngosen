@@ -275,6 +275,7 @@ namespace ngosen {
             bool                     inField = false; // shown in the field, as no panel can show the list here
             std::vector<std::string> earlier;         // emoji of keywords before the last word, added at the cursor
             bool                     afterSpace = false;
+            size_t                   chosen     = 0; // the emoji Enter picks, moved with the arrow keys
         };
         std::optional<EmojiOffer>      emojiOffer_;
         std::string                    emojiTail_;              ///< text typed before the open word since the cursor last moved

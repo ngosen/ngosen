@@ -15,6 +15,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trên GNOME không có extension Input Method Panel, Chrome và các app GNOME chuyển phím hộ trước đây không hiện
   gợi ý emoji. Nay dừng gõ chừng nửa giây là gợi ý hiện ngay trong ô, gạch chân, lấy emoji của mọi từ trong câu
   (`con mèo cười quá` → `Tab: 😂 🤣 😄 🐈 🐱`); Tab rồi số để chọn, emoji thêm vào chỗ con trỏ (#110, #821).
+- Khi danh sách emoji đã đánh số, phím mũi tên dời ô đang chọn và Enter, Space hoặc Tab lấy emoji đang chọn. Ô nổi
+  của fcitx5 mặc định vẽ chữ to hơn (Sans 13 thay Sans 10) cho dễ nhìn emoji; ai đã tự đặt font thì giữ nguyên (#110, #827).
 - Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
   giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
   vẫn giữ nguyên (#701, #829).

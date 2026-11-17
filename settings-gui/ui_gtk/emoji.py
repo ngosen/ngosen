@@ -191,7 +191,7 @@ class EmojiPage(SettingsPage):
         candidates = "  ".join(f"<b>{i}</b>\u00a0{e}" for i, e in enumerate(EXAMPLE_CANDIDATES, 1))
         numbers = f"1–{len(EXAMPLE_CANDIDATES)}: "
         offer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-        offer.append(_small(numbers + _("pick, Space or Enter: the first, Esc: keep the word")))
+        offer.append(_small(numbers + _("pick, or arrows then Enter, Esc: keep the word")))
         offer.append(
             Gtk.Label(label=candidates, use_markup=True, xalign=0, wrap=True, max_width_chars=16)
         )

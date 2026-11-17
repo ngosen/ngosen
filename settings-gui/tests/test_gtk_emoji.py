@@ -200,7 +200,7 @@ class GtkEmojiPageTest(unittest.TestCase):
                 )
             self.page.import_from(path)
         self.assertEqual(self.words(), [{"Keyword": "hài quá", "Emoji": "😂", "On": "True"}])
-        self.assertIn("hài quá", [c.word for c in self.row("😂").chips if c.get_visible()])
+        self.assertIn("hài quá", [c.word for c in self.row("😂").chips if c.is_visible()])
 
     def test_english_switch_hides_english_words(self):
         # libadwaita 1.5 hides the FlowBoxChild around a chip, not the chip.

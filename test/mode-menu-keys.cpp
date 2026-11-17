@@ -439,18 +439,35 @@ int main() {
     press(engine, entry, *reportField, FcitxKey_grave);
     check(menu(*reportField) != nullptr, "the menu opens in reportField", "no menu");
     reportField->updateSurroundingText();
-    pumpEventLoop(testInstance.instance, 1);
+    pumpEventLoop(testInstance.instance, 200);
     check(menu(*reportField) != nullptr, "a report right after the menu opens keeps it", "menu closed");
-    pumpEventLoop(testInstance.instance, 300);
+    pumpEventLoop(testInstance.instance, 100);
     press(engine, entry, *reportField, FcitxKey_Down);
     reportField->updateSurroundingText();
-    pumpEventLoop(testInstance.instance, 1);
+    pumpEventLoop(testInstance.instance, 200);
     check(menu(*reportField) != nullptr, "a report right after a key in the menu keeps it", "menu closed");
     pumpEventLoop(testInstance.instance, 300);
     reportField->updateSurroundingText();
-    pumpEventLoop(testInstance.instance, 1);
+    pumpEventLoop(testInstance.instance, 200);
     check(!menu(*reportField), "a report long after the menu opened closes it", "menu still open");
     reportField.reset();
+
+    // KWin sends a report just before each key.
+    auto keyField = openField("keyfield");
+    press(engine, entry, *keyField, FcitxKey_grave);
+    press(engine, entry, *keyField, FcitxKey_q);
+    check(realMode.load() == ngosen::Mode::Preedit, "q picks Preedit in keyField", modeName(realMode.load()));
+    press(engine, entry, *keyField, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 300);
+    keyField->updateSurroundingText();
+    press(engine, entry, *keyField, FcitxKey_Down);
+    pumpEventLoop(testInstance.instance, 200);
+    check(menu(*keyField) != nullptr, "a key right after a late report keeps the menu", "menu closed");
+    pumpEventLoop(testInstance.instance, 300);
+    keyField->updateSurroundingText();
+    press(engine, entry, *keyField, FcitxKey_1);
+    check(realMode.load() == ngosen::Mode::Sen, "a key right after a late report reaches the menu", modeName(realMode.load()));
+    keyField.reset();
 
     // A click X11 reports elsewhere, such as in another field of the same window.
     auto clickedAway = openField("clickedaway");

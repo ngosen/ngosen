@@ -110,7 +110,7 @@ namespace fcitx {
          * @param keyEvent The key event to process.
          */
         void keyEvent(const InputMethodEntry& entry, KeyEvent& keyEvent) override;
-        // A click reported by X11, outside what the app itself reports.
+        // A click that may not have moved the caret; the menu closes unless a key comes first.
         void pointerClicked();
 
         /**

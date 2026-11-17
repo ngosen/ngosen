@@ -34,6 +34,7 @@
 #include <fcitx/inputmethodengine.h>
 #include <fcitx/instance.h>
 #include <fcitx-utils/event.h>
+#include <fcitx-utils/eventdispatcher.h>
 
 namespace ngosen {
     class GnomeShellWatcher;
@@ -109,6 +110,8 @@ namespace fcitx {
          * @param keyEvent The key event to process.
          */
         void keyEvent(const InputMethodEntry& entry, KeyEvent& keyEvent) override;
+        // A click reported by X11, outside what the app itself reports.
+        void pointerClicked();
 
         /**
          * @brief Resets the input method state.
@@ -299,13 +302,17 @@ namespace fcitx {
         std::string                      currentConfigureApp_;
         std::unique_ptr<EventSourceTime> cycleModeNotificationTimer_;
         std::unique_ptr<EventSourceTime> announceTimer_;
+        std::unique_ptr<EventSourceTime> menuClickTimer_;
+        // Instance::eventDispatcher() needs fcitx5 newer than Ubuntu 24.04 and Debian 12 ship.
+        EventDispatcher clickDispatcher_;
         // Replaced by the next tip, so pressing the key repeatedly shows one.
         uint32_t                  convertNotificationId_   = 0;
         uint32_t                  pinnedOffNotificationId_ = 0;
         std::string               iconCacheName_;
         std::string               iconCachePath_;
         static constexpr uint64_t CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
-        static constexpr uint64_t MODE_MENU_TIMEOUT_USEC               = 5000000;
+        // The panel picks an item on button press, so a click on the menu itself is handled first.
+        static constexpr uint64_t MODE_MENU_CLICK_DELAY_USEC = 100000;
 #ifdef NGOSEN_HAS_DBUS
         FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
         std::unique_ptr<NgoSenDBusObject>          dbusObject_;
@@ -508,7 +515,6 @@ namespace fcitx {
         bool          handleModeMenuKey(KeyEvent& keyEvent);
         bool          handleModeMenuPick(KeyEvent& keyEvent);
         void          moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
-        void          closeModeMenuLater(InputContext* ic);
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
         // Applies a mode picked from the menu and remembers it for the app.

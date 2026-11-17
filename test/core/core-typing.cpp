@@ -3767,6 +3767,20 @@ namespace {
         check(held.text == "nam tiếng ", "split edit on GNOME: a held Backspace waits for the next Backspace to come up", held.text);
     }
 
+    // After two waits that ran out, the short wait is still long enough for GNOME Shell to pass the backspaces on first.
+    void testShortWaitOverGnome() {
+        Field field           = makeField("ibus", true, "firefox_firefox.desktop");
+        field.reportedProgram = "gnome-shell";
+        field.appNameCurrent  = true;
+        FakeResources           resources;
+        ngosen::test::AppQuirks firefox{
+            .reportDelayMs = 70, .staleReport = true, .backspaceLagMs = 60, .backspacesSkipLag = true, .reportsTextAtChange = true, .keepsLastEditPerTurn = true, .turnMs = 3};
+        auto keys = keysOf("nam tieesng<<ng nam tieesng<<ng nam tieesng<<ng ");
+        std::replace(keys.begin(), keys.end(), static_cast<uint32_t>('<'), static_cast<uint32_t>(ngosen::key::BackSpace));
+        const auto run = ngosen::test::typeInAppTraced(resources, field, firefox, keys, std::vector<int>(keys.size(), 70));
+        check(run.text == "nam tiếng nam tiếng nam tiếng ", "GNOME: a late backspace is not overtaken once the waits get short", run.text);
+    }
+
     // The cursor moving over our own edit is not a click, so the word goes on.
     void testCursorMovesBeforeEditText() {
         realMode = ngosen::Mode::Sen;
@@ -5460,6 +5474,7 @@ int main() {
     testLineBreakPastTheWord();
     testLongTurnKeepsTheEdit();
     testBackspaceBetweenSplitEdits();
+    testShortWaitOverGnome();
     testCopyWaitEndsAfterTheReport();
     testEditBeforeOtherText();
     testCursorMovesBeforeEditText();

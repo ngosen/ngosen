@@ -473,6 +473,10 @@ namespace {
 
         r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Bounce, Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints.size() == 2 && r.hints[0] == "🐈 🐱" && r.hints[1] == "🐈 🐱", "preview: shows again after a focus bounce", joined(r.hints));
+
+        // "c" and "m" are English keywords too, so a word just started would flash their emoji.
+        r = type(keysOf("con meof c") + std::vector<uint32_t>{Hint} + keysOf("m") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.size() == 2 && r.hints[0] == "🐈 🐱" && r.hints[1] == "🐈 🐱", "preview: a one-letter open word adds no emoji", joined(r.hints));
         r = type(keysOf("con meof ") + std::vector<uint32_t>{BrowserBounce} + keysOf("cuw") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints.size() == 1 && r.hints[0] == "🐈 🐱" && r.text == "con mèo cư", "preview: keeps the sentence when the field first reports empty after a bounce",
               r.text + " / " + joined(r.hints));

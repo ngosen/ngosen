@@ -85,6 +85,7 @@ namespace ngosen {
         if (reported) {
             const unsigned int from = std::min(s.cursor(), s.anchor());
             host_->deleteSurrounding(static_cast<int>(from) - static_cast<int>(s.cursor()), std::max(s.cursor(), s.anchor()) - from);
+            sinceFocus_.erasedSinceReport = -1;
         }
         host_->commitText(converted.get());
         noteCommit(converted.get());

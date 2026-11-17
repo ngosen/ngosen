@@ -71,6 +71,22 @@ Files: io.github.ngosen.NgoSen.metainfo.xml.in.in
 Copyright: 2026 Nguyen Hoang Ky <nhktmdzhg@gmail.com>
 License: CC0-1.0
 
+Files: data/emoji-keywords.tsv
+       settings-gui/core/emoji_table.py*
+       src/core/ngosen-emoji-keywords.inc*
+Copyright: 2004-2026 Unicode, Inc.
+           2026 Ngó Sen contributors
+License: GPL-3.0-or-later and Unicode-3.0
+Comment: Emoji names, keywords and groups come from Unicode CLDR
+ (annotations, annotationsDerived) and emoji-test.txt, through
+ misc/gen-emoji-keywords.py; the hand-picked words are GPL-3.0-or-later.
+
+Files: misc/word-endings/places.tsv*
+Copyright: 2021 Thang Le Quoc
+License: Expat
+Comment: Syllables of Vietnam's province and commune names, taken from
+ https://github.com/ThangLeQuoc/vietnamese-provinces-database
+
 License: BSD-3-Clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions
@@ -172,3 +188,32 @@ License: SCOWL
  copyright notice and this notice appear in supporting documentation.  Kevin
  Atkinson makes no representations about the suitability of this database for
  any purpose.  It is provided "as is" without express or implied warranty.
+
+License: Unicode-3.0
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of data files and any associated documentation (the "Data Files") or
+ software and any associated documentation (the "Software") to deal in the
+ Data Files or Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, and/or sell
+ copies of the Data Files or Software, and to permit persons to whom the
+ Data Files or Software are furnished to do so, provided that either (a)
+ this copyright and permission notice appear with all copies of the Data
+ Files or Software, or (b) this copyright and permission notice appear in
+ associated Documentation.
+ .
+ THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+ KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF
+ THIRD PARTY RIGHTS.
+ .
+ IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE
+ BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES,
+ OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE DATA
+ FILES OR SOFTWARE.
+ .
+ Except as contained in this notice, the name of a copyright holder shall
+ not be used in advertising or otherwise to promote the sale, use or other
+ dealings in these Data Files or Software without prior written
+ authorization of the copyright holder.

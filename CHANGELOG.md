@@ -31,6 +31,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trên GNOME không có extension Input Method Panel, Chrome và các app GNOME chuyển phím hộ trước đây không hiện
   gợi ý emoji. Nay dừng gõ chừng nửa giây là gợi ý hiện ngay trong ô, gạch chân, lấy emoji của mọi từ trong câu
   (`con mèo cười quá` → `Tab: 😂 🤣 😄 🐈 🐱`); Tab rồi số để chọn, emoji thêm vào chỗ con trỏ (#110, #821).
+- Khi danh sách emoji đã đánh số, phím mũi tên dời ô đang chọn và Enter, Space hoặc Tab lấy emoji đang chọn. Ô nổi
+  của fcitx5 mặc định vẽ chữ to hơn (Sans 13 thay Sans 10) cho dễ nhìn emoji; ai đã tự đặt font thì giữ nguyên (#110, #827).
 - Cửa sổ cài đặt mở thẳng trang Kiểm tra máy lần đầu mở, và khi còn bước làm không gõ được tiếng Việt (fcitx5
   không chạy, chưa thêm Ngó Sen, fcitx5 chạy từ trước lúc cài Ngó Sen, app chưa nhận bộ gõ…): báo ngay lần phát
   hiện, rồi nhắc lại sau 3, 6, 12… lần mở cho tới khi sửa xong. Cảnh báo vàng khác thì không tự mở (#798).

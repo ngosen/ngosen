@@ -69,7 +69,12 @@ SETTINGS_MAP = {
         ],
     },
     SettingsCategory.EMOJI: {
-        EMOJI_GROUP: ["EmojiSuggestions", "EmojiPlacement", "YahooEmoticons"],
+        EMOJI_GROUP: [
+            "EmojiSuggestions",
+            "EmojiPlacement",
+            "YahooEmoticons",
+            "EnglishEmojiKeywords",
+        ],
     },
     SettingsCategory.SHORTCUTS: {
         N_("Hotkeys"): ["ToggleKey", "ModeMenuKey", "CycleModeKey"],
@@ -142,6 +147,10 @@ HINTS = {
     ),
     "YahooEmoticons": N_(
         "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
+    ),
+    "EnglishEmojiKeywords": N_(
+        "cat and thumbs up also offer 🐈 and 👍, from the Unicode list of English words. Words that"
+        " are also Vietnamese, like can, are left out."
     ),
     "EmojiPlacement": N_(
         "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
@@ -230,6 +239,7 @@ DEPENDS = {
     "TimeFormat": ("EnableMacro", "True"),
     "YahooEmoticons": ("EmojiSuggestions", "True"),
     "EmojiPlacement": ("EmojiSuggestions", "True"),
+    "EnglishEmojiKeywords": ("EmojiSuggestions", "True"),
     "DateFormat": ("EnableMacro", "True"),
     **{shortcut: (shown, "True") for shortcut, shown in MODE_SHORTCUT_TO_VISIBILITY.items()},
 }

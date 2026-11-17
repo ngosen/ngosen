@@ -17,6 +17,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   (`con mèo cười quá` → `Tab: 😂 🤣 😄 🐈 🐱`); Tab rồi số để chọn, emoji thêm vào chỗ con trỏ (#110, #821).
 - Khi danh sách emoji đã đánh số, phím mũi tên dời ô đang chọn và Enter, Space hoặc Tab lấy emoji đang chọn. Ô nổi
   của fcitx5 mặc định vẽ chữ to hơn (Sans 13 thay Sans 10) cho dễ nhìn emoji; ai đã tự đặt font thì giữ nguyên (#110, #827).
+- Gợi ý emoji nhận cả từ tiếng Anh theo danh sách của Unicode: `cat` 🐈, `star` ⭐, `thumbs up` 👍. Từ quá chung
+  (`man`, `hand`, `face`) và từ trùng chữ Việt như `can`, `me` thì không gợi ý. Trang Emoji hiện từ tiếng Anh cạnh
+  từ tiếng Việt; tuỳ chọn "Từ khoá tiếng Anh" mặc định bật, tắt đi là gỡ hết (#110, #830).
 - Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
   giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
   vẫn giữ nguyên (#701, #829).

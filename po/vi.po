@@ -236,6 +236,10 @@ msgid "Yahoo Messenger emoticons"
 msgstr "Mã emoji Yahoo Messenger"
 
 #: src/ngosen-config.h
+msgid "English keywords"
+msgstr "Từ khoá tiếng Anh"
+
+#: src/ngosen-config.h
 msgid "Apps"
 msgstr "App tắt emoji"
 
@@ -1604,6 +1608,10 @@ msgstr "/cost và /usr/share giữ nguyên như đã gõ khi ở đầu dòng ho
 #: settings-gui/core/catalog.py
 msgid "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
 msgstr "Gõ =)) hay :x là gợi ý 🤣 hay 😍 như hồi Yahoo Messenger; bấm Tab để thay mã bằng emoji."
+
+#: settings-gui/core/catalog.py
+msgid "cat and thumbs up also offer 🐈 and 👍, from the Unicode list of English words. Words that are also Vietnamese, like can, are left out."
+msgstr "Gõ cat hay thumbs up cũng gợi ý 🐈 hay 👍, theo danh sách từ tiếng Anh của Unicode. Từ trùng chữ Việt như can thì bỏ qua."
 
 #: settings-gui/core/catalog.py
 msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."

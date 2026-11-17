@@ -185,6 +185,11 @@ class EmojiPage(SettingsPage):
         replaced = self.value("EmojiPlacement") == "Instead of the word"
         kept = EXAMPLE_TEXT[:1] if replaced else EXAMPLE_TEXT
         self.picked.set_text(" ".join((*kept, EXAMPLE_CANDIDATES[1])))
+        english = self.value("EnglishEmojiKeywords").lower() == "true"
+        if english != self.words.english:
+            self.words.english = english
+            if hasattr(self, "store"):
+                self.refilter()
 
     def _example(self):
         """What typing a word does, in three steps."""

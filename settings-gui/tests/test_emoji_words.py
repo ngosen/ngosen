@@ -34,6 +34,24 @@ class ChipsTest(unittest.TestCase):
         self.assertEqual(saved(fake), [{"Keyword": "cười", "Emoji": "😂", "On": "False"}])
         self.assertFalse(dict(table.chips("😂"))["cười"])
 
+    def test_english_words_are_on_after_the_vietnamese(self):
+        words_of_cat = [w for w, _on in words().chips("🐈")]
+        self.assertIn(("cat", True), words().chips("🐈"))
+        self.assertLess(words_of_cat.index("mèo"), words_of_cat.index("cat"))
+
+    def test_english_off_hides_english_words(self):
+        table = words()
+        table.english = False
+        self.assertNotIn("cat", dict(table.chips("🐈")))
+        self.assertEqual(table.rows("cat"), [])
+
+    def test_turning_an_english_word_off_saves_it(self):
+        fake = FakeDBusHandler()
+        table = words(fake)
+        table.toggle("🐈", "cat")
+        self.assertTrue(table.save())
+        self.assertEqual(saved(fake), [{"Keyword": "cat", "Emoji": "🐈", "On": "False"}])
+
     def test_turning_it_back_on_saves_nothing(self):
         fake = FakeDBusHandler()
         table = words(fake)
@@ -115,6 +133,8 @@ class FilterTest(unittest.TestCase):
 
     def test_only_emoji_with_a_word_on(self):
         table = words()
+        # Almost every emoji has an English word on.
+        table.english = False
         self.assertNotIn("📱", [e for e, *_ in table.rows(only_on=True)])
         table.toggle("📱", "điện thoại")
         self.assertIn("📱", [e for e, *_ in table.rows(only_on=True)])

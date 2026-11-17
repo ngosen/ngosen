@@ -319,6 +319,7 @@ namespace fcitx {
         Option<bool> rawWordAfterSlash{this, "RawWordAfterSlash", _("Type a word that starts with / as is"), ngosen::defaultOptions.rawWordAfterSlash};
         Option<bool> emojiSuggestions{this, "EmojiSuggestions", _("Suggest emoji while typing"), ngosen::defaultOptions.emojiSuggestions};
         Option<bool> yahooEmoticons{this, "YahooEmoticons", _("Yahoo Messenger emoticons"), ngosen::defaultOptions.yahooEmoticons};
+        Option<bool> englishEmojiKeywords{this, "EnglishEmojiKeywords", _("English keywords"), ngosen::defaultOptions.englishEmojiKeywords};
         OptionWithAnnotation<EmojiPlacement, EmojiPlacementI18NAnnotation> emojiPlacement{this, "EmojiPlacement", _("Put a picked emoji"), EmojiPlacement::AfterWord};
         Option<bool> autoNonVnRestore{this, "AutoNonVnRestore", _("Auto Restore Invalid Words"), ngosen::defaultOptions.autoNonVnRestore};
         Option<bool> modernStyle{this, "ModernStyle", _("Use oà, uý (Instead Of òa, úy)"), ngosen::defaultOptions.modernStyle};

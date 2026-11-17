@@ -14,7 +14,7 @@ from core.emoji_table import EMOJI, GROUPS
 
 # isort: on
 
-SETTINGS = ("EmojiSuggestions", "EmojiPlacement", "YahooEmoticons")
+SETTINGS = ("EmojiSuggestions", "EmojiPlacement", "YahooEmoticons", "EnglishEmojiKeywords")
 
 
 class EmojiPageTest(unittest.TestCase):

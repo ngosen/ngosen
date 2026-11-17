@@ -549,6 +549,11 @@ class EmojiPage(DynamicSettingsPage):
         if self._example is not None:
             on = str(self.model.value_of("EmojiSuggestions")).lower() == "true"
             self._example.setEnabled(on)
+        english = str(self.model.value_of("EnglishEmojiKeywords")).lower() == "true"
+        if english != self.words.english:
+            self.words.english = english
+            if self.view is not None:
+                self._apply_filter()
 
     def _how_it_works(self):
         example = QWidget()

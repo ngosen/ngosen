@@ -354,6 +354,13 @@
     {}
    ],
    [
+    "EnglishEmojiKeywords",
+    "Boolean",
+    "English keywords",
+    "True",
+    {}
+   ],
+   [
     "EmojiPlacement",
     "Enum",
     "Put a picked emoji",

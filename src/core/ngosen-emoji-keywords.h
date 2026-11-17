@@ -20,6 +20,7 @@ namespace ngosen {
         Emoticon, // :), <3
         Country,  // offered only for a capitalized name, so "biện pháp" never gets a flag
         Yahoo,    // a Yahoo! Messenger emoticon, offered as an Emoticon when those are on
+        English,  // a CLDR English keyword, offered as a Word when those are on
     };
 
     struct EmojiSuggestion {
@@ -32,6 +33,6 @@ namespace ngosen {
     // The emoji for the longest keyword the typed words end with. Words are as typed, the last one
     // at the back; a word without marks matches a marked keyword only when it is not Vietnamese
     // as written, so "cuoi" offers 😂 and "cho" offers nothing. The user's edits come before the defaults.
-    std::optional<EmojiSuggestion> suggestEmoji(const std::vector<std::string>& words, bool yahooEmoticons, const std::vector<EmojiWordEdit>& edits);
+    std::optional<EmojiSuggestion> suggestEmoji(const std::vector<std::string>& words, const Options& options);
 
 } // namespace ngosen

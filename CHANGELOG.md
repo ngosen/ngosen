@@ -19,6 +19,7 @@ Tải ở [ngosen-1.12.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
 
 - Trong Firefox, gõ mặt cười kiểu Yahoo như `:)`, `:))`, `=))`, `:x` nay hiện gợi ý emoji như khi gõ chữ, thay vì không ra gì (#819).
 - Trên GNOME, gõ nhanh ngay sau khi mở Firefox, nhấn Backspace hai lần liền không còn mất một lần (`nam tieesng`, xoá `ng` rồi gõ lại ra `nam tiiếng`) (#815).
+- Trên GNOME, gõ nhanh ngay sau khi mở Firefox, xoá vài chữ bằng Backspace rồi gõ tiếp không còn thỉnh thoảng ra chữ lộn (`nam tiếig` thay vì `nam tiếng`) (#831).
 - Khi menu chọn chế độ gõ (mở bằng `` ` ``) đang hiện, bấm một phím không có trong menu nay đóng menu và gõ ra phím đó, thay vì menu đứng yên và phím bị nuốt. Không bấm gì thì menu tự tắt sau 5 giây (#814, #817).
 - Trên GNOME với fcitx5 5.1.23, Ngó Sen nay nhớ cách xoá bằng BackSpace tới hết phiên, nên chỉ hỏng chữ đầu tiên thay vì hỏng chữ đầu sau mỗi lần bấm chuột sang ô khác trong app như VaultID (#816, #818).
 - Trong Firefox trên GNOME, gõ `nhưg` rồi Space ra `nhưng`, nhấn Backspace ngay sau đó nay trả lại đúng `nhưg` thay vì chỉ xoá dấu cách (#813).

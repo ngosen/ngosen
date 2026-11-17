@@ -1720,8 +1720,9 @@ namespace fcitx {
         }
         ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-        // A notice shown just before would clear the menu when its time is up.
+        // A notice shown just before would clear the menu when its time is up, and so would an earlier click.
         cycleModeNotificationTimer_.reset();
+        menuClickTimer_.reset();
     }
 
     void NgoSenEngine::pointerClicked() {

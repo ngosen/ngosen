@@ -440,6 +440,21 @@ int main() {
     check(!menu(*clickedAway), "a click outside the field closes the menu", "menu still open");
     clickedAway.reset();
 
+    // A click just before the menu opens is not a click away from it.
+    auto clickedBefore = openField("clickedbefore");
+    engine.pointerClicked();
+    press(engine, entry, *clickedBefore, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 200);
+    check(menu(*clickedBefore) != nullptr, "an earlier click leaves a menu opened after it", "menu closed");
+    press(engine, entry, *clickedBefore, FcitxKey_Escape);
+    press(engine, entry, *clickedBefore, FcitxKey_grave);
+    engine.pointerClicked();
+    press(engine, entry, *clickedBefore, FcitxKey_Escape);
+    press(engine, entry, *clickedBefore, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 200);
+    check(menu(*clickedBefore) != nullptr, "a click before reopening leaves the new menu", "menu closed");
+    clickedBefore.reset();
+
     // The panel picks from the menu it shows when the button goes down.
     auto clickedMenu = openField("clickedmenu");
     press(engine, entry, *clickedMenu, FcitxKey_grave);

@@ -160,7 +160,8 @@ HINTS = {
     ),
     "EmojiOfferAt": N_(
         "At the end of a sentence: after . ! ? or a short pause, the list holds the emoji of every"
-        " keyword in the sentence, and the one picked goes at the cursor."
+        " keyword in the sentence, and the one picked goes at the cursor. After each word: the list"
+        " shows as soon as a keyword is typed."
     ),
     "EmojiPlacement": N_(
         "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."

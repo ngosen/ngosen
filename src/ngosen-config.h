@@ -340,7 +340,7 @@ namespace fcitx {
         Option<bool> yahooEmoticons{this, "YahooEmoticons", _("Yahoo Messenger emoticons"), ngosen::defaultOptions.yahooEmoticons};
         Option<bool> englishEmojiKeywords{this, "EnglishEmojiKeywords", _("English keywords"), ngosen::defaultOptions.englishEmojiKeywords};
         OptionWithAnnotation<EmojiPlacement, EmojiPlacementI18NAnnotation> emojiPlacement{this, "EmojiPlacement", _("Put a picked emoji"), EmojiPlacement::AfterWord};
-        OptionWithAnnotation<EmojiOfferAt, EmojiOfferAtI18NAnnotation>     emojiOfferAt{this, "EmojiOfferAt", _("Offer emoji"), EmojiOfferAt::EachWord};
+        OptionWithAnnotation<EmojiOfferAt, EmojiOfferAtI18NAnnotation>     emojiOfferAt{this, "EmojiOfferAt", _("Offer emoji"), EmojiOfferAt::SentenceEnd};
         Option<bool> autoNonVnRestore{this, "AutoNonVnRestore", _("Auto Restore Invalid Words"), ngosen::defaultOptions.autoNonVnRestore};
         Option<bool> modernStyle{this, "ModernStyle", _("Use oà, uý (Instead Of òa, úy)"), ngosen::defaultOptions.modernStyle};
         Option<bool> freeMarking{this, "FreeMarking", _("Allow Type With More Freedom"), ngosen::defaultOptions.freeMarking};

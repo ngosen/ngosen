@@ -4,14 +4,24 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Measures what words commit when a space ends them, to check a change to how words end.
 
-    check-word-endings.py run OUT_DIR       type every corpus, write OUT_DIR/<corpus>.tsv
-    check-word-endings.py compare BASE NEW  list what changed between two runs
-    check-word-endings.py places JSON       rewrite places.tsv from the administrative units list
+    check-word-endings.py run OUT_DIR [OPTIONS]  type every corpus, write OUT_DIR/<corpus>.tsv
+    check-word-endings.py compare BASE NEW       list what changed between two runs
+    check-word-endings.py places JSON            rewrite places.tsv from the administrative units list
+    check-word-endings.py visolex JSON OUT_DIR   write teencode corpora from the ViSoLex dictionary
+
+Options of run:
+    --space plain|fix   load the keep list as the apps do; `fix` also lets Space fix a kept word,
+                        as it does in a field that can take the rewrite (most fields)
+    --case title|upper  type every corpus capitalized or in capitals
+    --corpus FILE       type FILE too, as a corpus named after it (repeatable)
+    --teencode          turn teencode mode on
 
 A corpus line is the keys, then optionally a tab and the word they should give. Corpora with an
 expected word report how many give it; the others report only what changed against BASE.
+The ViSoLex dictionary is not shipped: download VISOLEX_URL and pass its path.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -26,6 +36,12 @@ CASES = ROOT / "misc/word-endings"
 DICTIONARY = ROOT / "data/dictionaries/vietnamese.cm.dict"
 HUNSPELL = Path("/usr/share/hunspell/en_US.dic")
 WORD_LIST = Path("/usr/share/dict/words")
+# MIT licensed; pinned so a run can be repeated on the same words.
+VISOLEX_URL = (
+    "https://raw.githubusercontent.com/HaDung2002/visolex/"
+    "2ec88c6a5e5684897150a361aa8b4a72173f1594/dict/dictionary.json"
+)
+VISOLEX_SHA256 = "caa0bca0d4eaaeb02ebf4f7477219a0a487c7f299944da8863732984e33ab690"
 
 MARKS = {"â": "aa", "ă": "aw", "ê": "ee", "ô": "oo", "ơ": "ow", "ư": "uw", "đ": "dd"}
 TONES = {"́": "s", "̀": "f", "̉": "r", "̃": "x", "̣": "j"}
@@ -63,10 +79,10 @@ def vietnamese():
         letters, tone = typed
         keys = "".join(letters)
         last.append(f"{keys}{tone}\t{word}")
+        after_vowel.append(f"{tone_after_vowel(letters, tone)}\t{word}")
         vowels = [i for i, p in enumerate(letters) if p[0] in "aeiouy"]
         if tone and vowels:
             i = vowels[-1] + 1
-            after_vowel.append(f"{''.join(letters[:i])}{tone}{''.join(letters[i:])}\t{word}")
             # A tone the final consonant does not take, then the right one, in both orders.
             final = next((f for f in FINALS if keys.endswith(f)), None)
             if final and tone in "sj":
@@ -75,8 +91,6 @@ def vietnamese():
                 for wrong in "xf":
                     retone.append(f"{stem}{wrong}{rest}{tone}\t{word}")
                     retone.append(f"{stem}{rest}{wrong}{tone}\t{word}")
-        else:
-            after_vowel.append(f"{keys}{tone}\t{word}")
         if tone:
             left_out.extend(f"{keys}\t{word}" for keys in marks_left_out(word, letters, tone))
     return {
@@ -85,6 +99,13 @@ def vietnamese():
         "retone-generated": unambiguous(retone),
         "vietnamese-marks-left-out": unambiguous(left_out),
     }
+
+
+def tone_after_vowel(letters, tone):
+    """Keys with the tone typed right after the last vowel."""
+    vowels = [i for i, p in enumerate(letters) if p[0] in "aeiouy"]
+    i = vowels[-1] + 1 if tone and vowels else len(letters)
+    return f"{''.join(letters[:i])}{tone}{''.join(letters[i:])}"
 
 
 def marks_left_out(word, letters, tone):
@@ -152,7 +173,7 @@ def corpora():
     return result
 
 
-def committed(lines, method):
+def committed(lines, method, space="", teencode=False):
     with tempfile.NamedTemporaryFile("w", suffix=".txt", encoding="utf-8") as file:
         file.write("\n".join(lines) + "\n")
         file.flush()
@@ -168,7 +189,13 @@ def committed(lines, method):
                 "--nocapture",
             ],
             cwd=ROOT / "bamboo-rs",
-            env={**os.environ, "NGOSEN_WORDS": file.name, "NGOSEN_INPUT_METHOD": method},
+            env={
+                **os.environ,
+                "NGOSEN_WORDS": file.name,
+                "NGOSEN_INPUT_METHOD": method,
+                "NGOSEN_SPACE": space,
+                "NGOSEN_TEENCODE": "1" if teencode else "",
+            },
             text=True,
             capture_output=True,
             check=True,
@@ -197,14 +224,26 @@ def same_word(a, b):
     return key(a) == key(b)
 
 
-def run(out_dir):
+def in_case(line, case):
+    """A corpus line with its keys and word capitalized or in capitals."""
+    if case == "upper":
+        return line.upper()
+    if case == "title":
+        keys, tab, word = line.partition("\t")
+        return keys[:1].upper() + keys[1:] + tab + word[:1].upper() + word[1:]
+    return line
+
+
+def run(out_dir, space="", case="", extra=(), teencode=False):
     out_dir.mkdir(parents=True, exist_ok=True)
     jobs = {name: (lines, "Telex") for name, lines in corpora().items()}
     jobs["vni"] = ((CASES / "vni.tsv").read_text(encoding="utf-8").splitlines(), "VNI")
+    for path in extra:
+        jobs[path.stem] = (path.read_text(encoding="utf-8").splitlines(), "Telex")
     for name, (lines, method) in jobs.items():
-        lines = [line for line in lines if line.partition("\t")[0]]
+        lines = [in_case(line, case) for line in lines if line.partition("\t")[0]]
         expected = [line.partition("\t")[2] for line in lines]
-        got = committed(lines, method)
+        got = committed(lines, method, space, teencode)
         if len(got) != len(expected):
             sys.exit(f"{name}: typed {len(expected)} lines, got {len(got)} results")
         rows = [f"{keys}\t{want}\t{shown}" for (keys, shown), want in zip(got, expected)]
@@ -234,7 +273,8 @@ def compare(base_dir, new_dir, limit=20):
         wrong = [k for k in new if new[k][0] and not same_word(new[k][0], new[k][1])]
         expected = sum(1 for k in new if new[k][0])
         if expected:
-            line += f", {expected - len(wrong)}/{expected} as expected"
+            exact = sum(1 for k in new if new[k][0] and new[k][0] == new[k][1])
+            line += f", {expected - len(wrong)}/{expected} as expected ({exact} letter for letter)"
         print(line)
         for keys in changed[:limit]:
             print(f"  {keys}\t{base[keys][1]} -> {new[keys][1]}")
@@ -272,9 +312,57 @@ def places(units_json):
     print(f"places: {len(lines)} syllables from {len(names)} names")
 
 
+def visolex(json_path, out_dir):
+    """Writes the words of the ViSoLex dictionary as typed in teencode, in both tone orders."""
+    data = json_path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != VISOLEX_SHA256:
+        sys.exit(f"{json_path}: not the file at {VISOLEX_URL}")
+    words = set()
+    for entry in json.loads(data):
+        text = unicodedata.normalize("NFC", entry.lower())
+        words.update(re.findall(r"[^\W\d_]+", text))
+    last, after_vowel = [], []
+    for word in sorted(words):
+        parts = unicodedata.normalize("NFD", word)
+        typed = telex(word) if sum(c in TONES for c in parts) <= 1 else None
+        if not typed:
+            continue
+        letters, tone = typed
+        last.append(f"{''.join(letters)}{tone}\t{word}")
+        after_vowel.append(f"{tone_after_vowel(letters, tone)}\t{word}")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for name, lines in (("tone-last", last), ("tone-after-vowel", after_vowel)):
+        lines = unambiguous(lines)
+        (out_dir / f"visolex-{name}.tsv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print(f"visolex-{name}: {len(lines)}")
+
+
+def run_args(args):
+    """Parses `OUT_DIR [--space S] [--case C] [--corpus FILE]... [--teencode]` for run."""
+    out_dir, options, extra, teencode = None, {"--space": "", "--case": ""}, [], False
+    allowed = {"--space": ("plain", "fix"), "--case": ("title", "upper")}
+    while args:
+        arg = args.pop(0)
+        if arg in options and args and args[0] in allowed[arg]:
+            options[arg] = args.pop(0)
+        elif arg == "--teencode":
+            teencode = True
+        elif arg == "--corpus" and args:
+            extra.append(Path(args.pop(0)))
+        elif out_dir is None and not arg.startswith("-"):
+            out_dir = Path(arg)
+        else:
+            sys.exit(__doc__)
+    if out_dir is None:
+        sys.exit(__doc__)
+    return out_dir, options["--space"], options["--case"], extra, teencode
+
+
 def main():
-    if len(sys.argv) == 3 and sys.argv[1] == "run":
-        run(Path(sys.argv[2]))
+    if len(sys.argv) >= 3 and sys.argv[1] == "run":
+        run(*run_args(sys.argv[2:]))
+    elif len(sys.argv) == 4 and sys.argv[1] == "visolex":
+        visolex(Path(sys.argv[2]), Path(sys.argv[3]))
     elif len(sys.argv) == 3 and sys.argv[1] == "places":
         places(Path(sys.argv[2]))
     elif len(sys.argv) == 4 and sys.argv[1] == "compare":

@@ -1361,6 +1361,11 @@ impl BambooEngine {
             .is_some_and(|kept| kept.keys + 1 == self.raw_text().chars().count())
     }
 
+    /// Whether the key can compose a word, as a letter does, or a digit in VNI.
+    pub fn composes_with(&self, key_val: u32) -> bool {
+        self.preeditor.can_process_key(key_char(key_val))
+    }
+
     /// Whether the word shows the keys as typed rather than the Vietnamese they compose.
     pub fn shown_as_typed(&self) -> bool {
         self.get_preedit_string() == self.raw_text()

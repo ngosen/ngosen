@@ -1814,3 +1814,20 @@ fn test_retyped_tone_after_a_final_is_not_kept() {
         );
     }
 }
+
+#[test]
+fn only_input_methods_with_digit_keys_compose_with_digits() {
+    for (name, digits) in [
+        ("Telex", false),
+        ("Telex W", false),
+        ("Telex 2", false),
+        ("VIQR", false),
+        ("VNI", true),
+        ("Telex + VNI", true),
+        ("Telex + VNI + VIQR", true),
+    ] {
+        let e = BambooEngine::new(input_method_by_name(name), Arc::default(), Arc::default());
+        assert_eq!(e.composes_with('1' as u32), digits, "{name}");
+        assert!(e.composes_with('a' as u32), "{name}");
+    }
+}

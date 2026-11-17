@@ -316,8 +316,12 @@ namespace fcitx {
         }
         config_.inputMethod.annotation().setList(imNames_);
         cursorJumpWatcher_ = instance_->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& event) {
-            auto* ic = static_cast<InputContextEvent&>(event).inputContext();
+            auto*      ic        = static_cast<InputContextEvent&>(event).inputContext();
+            const bool seenClick = g_mouse_clicked.load(std::memory_order_acquire);
             stateFor(ic)->surroundingUpdated();
+            // The caret moving with no edit is the only sign of a click the app gives on Wayland.
+            if (!seenClick && g_mouse_clicked.load(std::memory_order_acquire) && isModeMenuOpen(ic))
+                closeModeMenuPanel(ic, true);
         });
         commitWatcher_     = instance_->watchEvent(EventType::InputContextCommitString, EventWatcherPhase::Default, [this](Event& event) {
             auto& commit = static_cast<CommitStringEvent&>(event);
@@ -518,6 +522,7 @@ namespace fcitx {
     }
 
     NgoSenEngine::~NgoSenEngine() {
+        *alive_ = false;
         stop_flag_monitor.store(true, std::memory_order_release);
         if (mouse_thread.joinable()) {
             mouse_thread.join();
@@ -815,7 +820,12 @@ namespace fcitx {
             NGOSEN_INFO("Dropped stale surrounding text");
         static std::atomic<bool> mouseThreadStarted{false};
         if (!mouseThreadStarted.exchange(true))
-            startMouseReset();
+            startMouseReset([this, alive = alive_] {
+                instance_->eventDispatcher().schedule([this, alive] {
+                    if (*alive)
+                        pointerClicked();
+                });
+            });
 
         if (ic->capabilityFlags().test(CapabilityFlag::Preedit))
             instance_->inputContextManager().setPreeditEnabledByDefault(true);
@@ -996,7 +1006,6 @@ namespace fcitx {
 
         menuList->setGlobalCursorIndex(nextIndex);
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-        closeModeMenuLater(ic);
     }
 
     bool NgoSenEngine::isModeMenuOpen(InputContext* ic) const {
@@ -1711,17 +1720,19 @@ namespace fcitx {
         }
         ic->inputPanel().setAuxDown(Text(_("App: ") + appLabel));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
-        closeModeMenuLater(ic);
+        // A notice shown just before would clear the menu when its time is up.
+        cycleModeNotificationTimer_.reset();
     }
 
-    // Shares the notice's timer, so a notice shown just before cannot clear the menu.
-    void NgoSenEngine::closeModeMenuLater(InputContext* ic) {
-        cycleModeNotificationTimer_ = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + MODE_MENU_TIMEOUT_USEC, 0,
-                                                                          [this, icRef = ic->watch()](EventSourceTime*, uint64_t) {
-                                                                              if (auto* ic = icRef.get(); ic && isModeMenuOpen(ic))
-                                                                                  closeModeMenuPanel(ic, false);
-                                                                              return false;
-                                                                          });
+    void NgoSenEngine::pointerClicked() {
+        menuClickTimer_ = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + MODE_MENU_CLICK_DELAY_USEC, 0, [this](EventSourceTime*, uint64_t) {
+            instance_->inputContextManager().foreachFocused([this](InputContext* ic) {
+                if (isModeMenuOpen(ic))
+                    closeModeMenuPanel(ic, true);
+                return true;
+            });
+            return false;
+        });
     }
 
     void NgoSenEngine::appendTypeHotkeyItem(CommonCandidateList& candidateList) {

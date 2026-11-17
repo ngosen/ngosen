@@ -425,18 +425,30 @@ fn print_mark_lookalikes() {
 }
 
 // Prints what the keys on each line of NGOSEN_WORDS commit when a space ends them, with the
-// default settings and dictionary, for misc/check-word-endings.py.
+// default settings and dictionary, for misc/check-word-endings.py. NGOSEN_SPACE set to `plain` or
+// `fix` loads the keep list as the apps do, and `fix` lets Space fix a kept word as it does in a
+// field that can take the rewrite.
 #[test]
 #[ignore = "measurement input, not a check"]
 fn print_committed_words() {
     let path = std::env::var("NGOSEN_WORDS").unwrap();
     let method = std::env::var("NGOSEN_INPUT_METHOD").unwrap_or_else(|_| "Telex".to_string());
+    let space = std::env::var("NGOSEN_SPACE").unwrap_or_default();
     let mut e = engine_with_default_settings(&method);
     e.english_words = shipped_english_words();
+    match space.as_str() {
+        "" => {}
+        "plain" | "fix" => {
+            let words = include_str!("../../../data/keep-words.txt");
+            e.keep_guard = Arc::new(words.lines().map(str::to_string).collect());
+        }
+        other => panic!("NGOSEN_SPACE={other}: expected plain or fix"),
+    }
     for line in std::fs::read_to_string(path).unwrap().lines() {
         let keys = line.split('\t').next().unwrap_or_default();
         e.reset();
         type_keys(&mut e, keys);
+        e.drop_kept_tail = space == "fix";
         e.process_key_event(KEY_SPACE, 0);
         // Debug format, so a lost or doubled space shows.
         println!("COMMITTED\t{keys}\t{:?}", e.commit_text);

@@ -43,6 +43,7 @@ namespace ngosen {
 
         void                         showPreedit(const std::string& text, bool underline) override;
         void                         clearPreedit() override;
+        void                         showHint(const std::string& text) override;
         void                         resetPanel() override;
         void                         refreshPreedit() override;
         void                         refreshPanel() override;

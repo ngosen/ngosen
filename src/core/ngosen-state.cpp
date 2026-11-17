@@ -1434,6 +1434,7 @@ namespace ngosen {
         if (isFocusOut) {
             held_enter_pending_ = false;
             held_enter_timer_.reset();
+            emojiAfterHint_ = {};
         }
         sendHeldEnter();
         const auto  surrounding = host_->surrounding();

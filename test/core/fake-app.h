@@ -127,6 +127,10 @@ namespace ngosen::test {
         void setReportDelay(int ms) {
             quirks_.reportDelayMs = ms;
         }
+        // Shows a changed hint this late, after keys sent at the same time, as GNOME Shell does for Chrome.
+        void setHintLag(int ms) {
+            hintLagMs_ = ms;
+        }
         // Lets a test slow down how fast the app applies edits for a stretch, as a starved app does.
         void setLag(int ms) {
             quirks_.lagMs = ms;
@@ -185,6 +189,14 @@ namespace ngosen::test {
         const std::string& status() const {
             return status_;
         }
+        // The text shown after the cursor that is never committed.
+        const std::string& hint() const {
+            return hint_;
+        }
+        // Commits, deletions and forwarded keys sent while the hint showed.
+        int editsUnderHint() const {
+            return editsUnderHint_;
+        }
         // The longest time from forwarding a replacement's first backspace to its commit.
         int slowestCommitMs() const {
             return slowestCommitMs_;
@@ -223,6 +235,12 @@ namespace ngosen::test {
                 ++sent_.preedits;
         }
         void clearPreedit() override {}
+        void showHint(const std::string& text) override {
+            if (hintLagMs_ > 0)
+                later(hintLagMs_, [this, text] { hint_ = text; });
+            else
+                hint_ = text;
+        }
         void resetPanel() override {}
         void refreshPreedit() override {}
         void refreshPanel() override {}
@@ -296,6 +314,9 @@ namespace ngosen::test {
         size_t                              shownAnchor_ = 0;
         std::vector<std::string>            labels_;
         std::string                         status_;
+        std::string                         hint_;
+        int                                 editsUnderHint_ = 0;
+        int                                 hintLagMs_      = 0;
         std::u32string                      previousText_;
         size_t                              previousCursor_ = 0;
         std::u32string                      reportedText_;

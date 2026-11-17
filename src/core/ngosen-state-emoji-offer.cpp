@@ -20,11 +20,17 @@
 namespace ngosen {
 
     namespace {
-        // Enough for the longest keyword; older text is dropped a word at a time.
-        constexpr size_t   MaxEmojiTail = 64;
+        // Enough for a sentence where the field reports no text; older text is dropped a word at a time.
+        constexpr size_t   MaxEmojiTail = 256;
         constexpr uint64_t RecheckUs    = 20000;
+        // The field shows the hint only once typing stops, as a hint that changes under typed keys
+        // can reach the app after them.
+        constexpr uint64_t PauseUs = 700000;
+        // Emoji per keyword when a sentence has more than one, and in all, as digits pick them.
+        constexpr size_t PerKeyword = 3;
+        constexpr size_t MaxOffered = 9;
 
-        bool               isShortcut(const ngosen::KeyPress& key) {
+        bool             isShortcut(const ngosen::KeyPress& key) {
             return (key.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) != 0U;
         }
 
@@ -45,6 +51,26 @@ namespace ngosen {
         bool replacesTyped(const ngosen::EmojiSuggestion& suggestion) {
             return suggestion.kind == ngosen::EmojiKind::Sound || suggestion.kind == ngosen::EmojiKind::Emoticon;
         }
+
+        // What follows the last ". ", "! " or "? ".
+        std::string lastSentence(const std::string& text) {
+            for (size_t i = text.size(); i > 1; --i) {
+                if (text[i - 1] == ' ' && (text[i - 2] == '.' || text[i - 2] == '!' || text[i - 2] == '?'))
+                    return text.substr(i);
+            }
+            return text;
+        }
+
+        // The typed text the last n words take up, with the spaces between them.
+        size_t startOfLastWords(const std::string& text, size_t n) {
+            size_t start = text.size();
+            for (size_t i = 0; i < n; ++i) {
+                start = text.find_last_not_of(' ', start - 1);
+                start = text.find_last_of(' ', start);
+                start = start == std::string::npos ? 0 : start + 1;
+            }
+            return start;
+        }
     } // namespace
 
     std::string TypingState::openWord() {
@@ -63,9 +89,14 @@ namespace ngosen {
             return false;
         if (vimOn() && vimState_ != VimState::Insert)
             return false;
-        // Tab is held only where the panel is known to show the hint, so it never vanishes unseen.
+        // Tab is held only where the hint is known to show, so it never vanishes unseen.
         const Field field = host_->field();
-        return field.drawsCandidates && !field.hidesText() && !field.terminal && !inAddressBar();
+        return (field.drawsCandidates || hintsInField(field)) && !field.hidesText() && !field.terminal && !inAddressBar();
+    }
+
+    // The word is already in the app, so the field's preedit holds nothing but the hint.
+    bool TypingState::hintsInField(const ngosen::Field& field) const {
+        return !field.drawsCandidates && field.preedit && mode() == ngosen::Mode::Sen && !preeditWord_;
     }
 
     void TypingState::setEmojiOn(bool on) {
@@ -129,6 +160,19 @@ namespace ngosen {
             dropEmojiOffer();
             return;
         }
+        if (hintsInField(host_->field())) {
+            dropEmojiOffer();
+            emojiPause_ = host_->startTimer(ngosen::monotonicUs() + PauseUs, RecheckUs, [this](ngosen::Timer& timer) {
+                if (replacementPending()) {
+                    timer.rearm(ngosen::monotonicUs() + RecheckUs);
+                    return true;
+                }
+                if (offersEmojiHere() && hintsInField(host_->field()))
+                    offerForSentence();
+                return false;
+            });
+            return;
+        }
         const std::string word  = openWord();
         const std::string text  = emojiTail_ + word;
         const auto        words = splitWords(text);
@@ -144,19 +188,81 @@ namespace ngosen {
             return;
         }
         // As typed, with every space between its words, for the length to delete.
-        size_t start = text.size();
-        for (size_t n = 0; n < found->words; ++n) {
-            start = text.find_last_not_of(' ', start - 1);
-            start = text.find_last_of(' ', start);
-            start = start == std::string::npos ? 0 : start + 1;
-        }
-        std::string keyword = text.substr(start);
-        emojiOffer_         = EmojiOffer{.suggestion = std::move(*found), .covered = covered, .keyword = std::move(keyword)};
+        std::string keyword = text.substr(startOfLastWords(text, found->words));
+        emojiOffer_         = EmojiOffer{.suggestion = std::move(*found), .covered = covered, .keyword = std::move(keyword), .inField = hintsInField(host_->field())};
         showEmojiOffer();
+    }
+
+    // The keyword nearest the cursor comes first; only a sound or an emoticon right before the cursor is replaced.
+    void TypingState::offerForSentence() {
+        // Keys held during edits skip the typed text, and the field is settled once typing stops.
+        const Surrounding s     = host_->surrounding();
+        std::string       typed = emojiTail_ + openWord();
+        if (s.isValid() && s.cursor() == s.anchor()) {
+            typed           = textBeforeCursor(s);
+            const auto line = typed.rfind('\n');
+            if (line != std::string::npos)
+                typed.erase(0, line + 1);
+        }
+        const std::string                     text       = lastSentence(typed);
+        const auto                            words      = splitWords(text);
+        const bool                            afterSpace = !text.empty() && text.back() == ' ';
+        EmojiOffer                            offer{.inField = true, .afterSpace = afterSpace};
+        std::vector<std::vector<std::string>> earlier;
+        for (size_t n = words.size(); n > 0; --n) {
+            const std::vector<std::string> head(words.begin(), words.begin() + static_cast<std::ptrdiff_t>(n));
+            auto                           found = suggestEmoji(head, engine_->options().yahooEmoticons, engine_->options().emojiWordEdits);
+            if (!found)
+                continue;
+            if (n == words.size() && !afterSpace) {
+                if (replacesTyped(*found) && !canReplaceInApp())
+                    continue;
+                offer.covered    = words.back();
+                offer.keyword    = text.substr(startOfLastWords(text, found->words));
+                offer.suggestion = std::move(*found);
+            } else if (found->kind != ngosen::EmojiKind::Emoticon) {
+                earlier.push_back(std::move(found->emoji));
+            }
+        }
+        const size_t keywords = earlier.size() + (offer.suggestion.emoji.empty() ? 0 : 1);
+        if (keywords == 0)
+            return;
+        const size_t perKeyword = keywords > 1 ? PerKeyword : MaxOffered;
+        if (offer.suggestion.emoji.size() > perKeyword)
+            offer.suggestion.emoji.resize(perKeyword);
+        std::vector<std::string> seen = offer.suggestion.emoji;
+        for (auto& list : earlier) {
+            size_t taken = 0;
+            for (auto& e : list) {
+                if (taken == perKeyword || seen.size() == MaxOffered)
+                    break;
+                if (std::find(seen.begin(), seen.end(), e) != seen.end())
+                    continue;
+                seen.push_back(e);
+                offer.earlier.push_back(std::move(e));
+                ++taken;
+            }
+        }
+        emojiOffer_ = std::move(offer);
+        showEmojiOffer();
+    }
+
+    std::vector<std::string> TypingState::offeredEmoji() const {
+        std::vector<std::string> emoji = emojiOffer_->suggestion.emoji;
+        emoji.insert(emoji.end(), emojiOffer_->earlier.begin(), emojiOffer_->earlier.end());
+        return emoji;
     }
 
     void TypingState::showEmojiOffer() {
         const auto& emoji = emojiOffer_->suggestion.emoji;
+        if (emojiOffer_->inField) {
+            const auto  all  = offeredEmoji();
+            std::string hint = emojiOffer_->picking ? "" : " Tab:";
+            for (size_t i = 0; i < all.size(); ++i)
+                hint += emojiOffer_->picking ? " " + std::to_string(i + 1) + "." + all[i] : " " + all[i];
+            host_->showHint(emojiOffer_->afterSpace ? hint.substr(1) : hint);
+            return;
+        }
         if (!emojiOffer_->picking) {
             std::string hint = "Tab:";
             for (const auto& e : emoji)
@@ -180,8 +286,14 @@ namespace ngosen {
     }
 
     void TypingState::dropEmojiOffer() {
+        emojiPause_.reset();
         if (!emojiOffer_)
             return;
+        if (emojiOffer_->inField) {
+            emojiOffer_.reset();
+            host_->showHint({});
+            return;
+        }
         if (emojiOffer_->picking)
             host_->setStatus({});
         emojiOffer_.reset();
@@ -215,14 +327,16 @@ namespace ngosen {
         }
         const bool plain = !keyEvent.hasModifier();
         if (!emojiOffer_->picking) {
-            if (sym != ngosen::key::Tab || !plain)
+            if (sym != ngosen::key::Tab || !plain) {
+                dropHintBeforeKey();
                 return false;
+            }
             takeEmojiKey(keyEvent);
             emojiOffer_->picking = true;
             showEmojiOffer();
             return true;
         }
-        const size_t count = emojiOffer_->suggestion.emoji.size();
+        const size_t count = offeredEmoji().size();
         if (plain && sym >= ngosen::key::Digit1 && sym < ngosen::key::Digit1 + count) {
             takeEmojiKey(keyEvent);
             insertEmoji(sym - ngosen::key::Digit1);
@@ -239,13 +353,48 @@ namespace ngosen {
             return true;
         }
         // Any other key closes the list and is typed as usual.
-        dropEmojiOffer();
+        dropHintBeforeKey();
         return false;
     }
 
-    void TypingState::insertEmoji(size_t index) {
-        const EmojiOffer offer = std::move(*emojiOffer_);
+    // A key typed right after the field drops its hint waits for the app to show that, or the
+    // edit it makes can reach the app first.
+    void TypingState::dropHintBeforeKey() {
+        const bool inField = emojiOffer_ && emojiOffer_->inField;
         dropEmojiOffer();
+        if (!inField)
+            return;
+        editSentAtUs_    = ngosen::monotonicUs();
+        reportSinceEdit_ = false;
+        holdKeysUntilEditShown();
+    }
+
+    void TypingState::insertEmoji(size_t index) {
+        EmojiOffer offer = std::move(*emojiOffer_);
+        dropEmojiOffer();
+        if (!offer.inField) {
+            placeEmoji(offer, index);
+            return;
+        }
+        // The edit goes once the app has dropped the hint, or it can land inside it.
+        editSentAtUs_    = ngosen::monotonicUs();
+        reportSinceEdit_ = false;
+        emojiAfterHint_  = [this, offer = std::move(offer), index] { placeEmoji(offer, index); };
+        holdKeysUntilEditShown();
+    }
+
+    void TypingState::placeEmoji(const EmojiOffer& offer, size_t index) {
+        if (index >= offer.suggestion.emoji.size()) {
+            const std::string& emoji = offer.earlier[index - offer.suggestion.emoji.size()];
+            NGOSEN_INFO("Emoji: " + emoji + " at the cursor");
+            ResetEngine(bambooEngine_.handle());
+            hasHistory_ = false;
+            lastWord_.clear();
+            emojiTail_.clear();
+            oldPreBuffer_.clear();
+            commit(offer.afterSpace ? emoji : " " + emoji);
+            return;
+        }
         const std::string& emoji    = offer.suggestion.emoji[index];
         const bool         replaces = replacesTyped(offer.suggestion);
         const std::string  word     = openWord();

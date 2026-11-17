@@ -1268,6 +1268,8 @@ namespace ngosen {
         if (!edit_hold_)
             return;
         edit_hold_ = false;
+        if (emojiAfterHint_)
+            std::exchange(emojiAfterHint_, {})();
         if (!is_deleting_.load(std::memory_order_acquire))
             replayBufferedKeys();
     }

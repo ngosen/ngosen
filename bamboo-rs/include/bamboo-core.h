@@ -34,6 +34,7 @@ typedef struct {
     int         bracketTransform;
     const char* timeFormat;
     const char* dateFormat;
+    bool        teencode;
 } FcitxBambooEngineOption;
 
 extern void      Init(void);

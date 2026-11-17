@@ -305,6 +305,7 @@ namespace fcitx {
                                                                                                         static_cast<BracketTransformMode>(ngosen::defaultOptions.bracketTransform)};
 
         Option<bool> spellCheck{this, "SpellCheck", _("Enable Spell Check Using Dictionary"), ngosen::defaultOptions.spellCheck};
+        Option<bool> teencode{this, "TeenCode", _("Teencode"), ngosen::defaultOptions.teencode};
         Option<bool> enableMacro{this, "EnableMacro", _("Enable Macro"), ngosen::defaultOptions.enableMacro};
         Option<bool> capitalizeMacro{this, "CapitalizeMacro", _("Capitalize Macro"), ngosen::defaultOptions.capitalizeMacro};
         OptionWithAnnotation<LockWordModifier, LockWordModifierI18NAnnotation> lockWordModifier{this, "LockWordModifier", _("Key to Keep the Word as Typed"),

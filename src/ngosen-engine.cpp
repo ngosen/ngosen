@@ -677,6 +677,7 @@ namespace fcitx {
         o.convertCase                    = static_cast<int>(config_.convertCase.value());
         o.convertStripDiacritics         = config_.convertStripDiacritics.value();
         o.spellCheck                     = config_.spellCheck.value();
+        o.teencode                       = config_.teencode.value();
         o.modernStyle                    = config_.modernStyle.value();
         o.freeMarking                    = config_.freeMarking.value();
         o.w2u                            = static_cast<int>(config_.w2u.value());

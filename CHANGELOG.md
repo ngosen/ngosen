@@ -12,6 +12,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Gợi ý emoji cuối câu nay hiện suốt lúc gõ trên ô nổi của fcitx5, từ từ khoá đầu tiên tới hết câu, thay vì chỉ
+  loé lên lúc dừng tay. Dừng tay hoặc gõ `. ! ?` thì bấm Tab để chọn như trước; Esc ẩn emoji tới hết câu (#849).
 - Lệnh `ngosen-toggle` để gán cho phím tắt của desktop: chuyển Anh/Việt như Ctrl + Shift, kể cả khi không có
   ô nhập nào đang focus. Nếu ô đang focus dùng bộ gõ fcitx5 khác thì chuyển sang Ngó Sen; lỗi thì hiện thông báo
   desktop. Chưa tự gán phím tắt; bản sau sẽ cho thiết lập trong cửa sổ cài đặt (#828).

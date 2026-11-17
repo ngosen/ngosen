@@ -112,6 +112,8 @@ namespace ngosen {
         bool emojiOn() const {
             return emojiOn_;
         }
+        // The engine put something else in the panel; with rebuild, the emoji offer is shown again.
+        void panelWasCleared(bool rebuild);
         // The user turned teencode on or off for the app (the t key in the mode menu).
         void setTeencodeOn(bool on);
         bool teencodeOn() const {
@@ -277,6 +279,7 @@ namespace ngosen {
             std::string              covered; // the typed text a sound or an emoticon stands for
             std::string              keyword; // the typed words the keyword covers, as they are in the app
             bool                     picking = false;
+            bool                     preview = false; // shown while the sentence goes on, for a look only
             bool                     inField = false; // shown in the field, as no panel can show the list here
             std::vector<std::string> earlier;         // emoji of keywords before the last word, added at the cursor
             bool                     afterSpace = false;
@@ -291,6 +294,7 @@ namespace ngosen {
         std::function<void()>          emojiAfterHint_;         ///< the emoji picked, put in once the field drops the hint
         std::unique_ptr<ngosen::Timer> emojiPause_;             ///< offers the sentence's emoji in the field once typing stops
         bool                           emojiOn_    = true;      ///< false when the user turned emoji off for the app
+        bool                           emojiMuted_ = false;     ///< Esc hid the emoji for the rest of the sentence
         bool                           teencodeOn_ = false;     ///< true when the user turned teencode on for the app
         std::string                    openWord();
         bool                           offersEmojiHere() const;
@@ -302,15 +306,24 @@ namespace ngosen {
         void                           updateEmojiOffer();
         void                           offerForTypedText();
         bool                           offersForSentence() const;
-        void                           offerForSentence(bool settled);
-        std::vector<std::string>       offeredEmoji() const;
-        void                           showEmojiOffer();
-        void                           dropEmojiOffer();
-        bool                           handleEmojiOfferKey(ngosen::KeyPress& keyEvent);
-        void                           takeEmojiKey(ngosen::KeyPress& keyEvent);
-        void                           insertEmoji(size_t index);
-        void                           placeEmoji(const EmojiOffer& offer, size_t index);
-        void                           dropHintBeforeKey();
+        enum class SentenceOffer {
+            Shown,
+            None,
+            Later
+        };
+        SentenceOffer            offerForSentence(bool settled, bool preview);
+        void                     startEmojiPause();
+        bool                     previewsSentence() const;
+        void                     previewSentence();
+        std::vector<std::string> offeredEmoji() const;
+        void                     showEmojiOffer();
+        void                     dropEmojiOffer();
+        void                     hideEmojiOffer(); // keeps the pause timer, which may be the caller
+        bool                     handleEmojiOfferKey(ngosen::KeyPress& keyEvent);
+        void                     takeEmojiKey(ngosen::KeyPress& keyEvent);
+        void                     insertEmoji(size_t index);
+        void                     placeEmoji(const EmojiOffer& offer, size_t index);
+        void                     dropHintBeforeKey();
         // What typed reads as with this field's input method, or typed when it changes nothing.
         std::string        addMarks(const std::string& typed);
         bool               everyWordTakesMarks(const std::string& typed);

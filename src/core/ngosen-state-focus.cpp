@@ -76,6 +76,7 @@ namespace ngosen {
             lastKeyLeftText_      = false;
             checkWordAfterBounce_ = false;
             wordAtBounce_.clear();
+            emojiMuted_ = false;
             if (isFocusIn) {
                 // A GNOME app's new context gets a copy of the previous window's text before focus-in, so
                 // that copy is not text this field showed.

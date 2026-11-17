@@ -885,10 +885,12 @@ namespace fcitx {
     }
 
     void NgoSenEngine::showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn) {
-        auto* state = stateFor(ic);
-        state->activate(mode, isFocusIn);
+        auto*      state  = stateFor(ic);
+        const bool bounce = state->activate(mode, isFocusIn);
         ic->updateUserInterface(UserInterfaceComponent::StatusArea);
         ic->inputPanel().reset();
+        // After a focus bounce the emoji of the sentence come back.
+        state->panelWasCleared(bounce);
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
         if (realMode == NgoSenMode::Preedit)
             ic->updatePreedit();
@@ -1041,6 +1043,7 @@ namespace fcitx {
 
     void NgoSenEngine::closeModeMenuPanel(InputContext* ic, bool resetState) {
         ic->inputPanel().reset();
+        stateFor(ic)->panelWasCleared(false);
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
         if (resetState) {
             auto* state = stateFor(ic);
@@ -1882,6 +1885,7 @@ namespace fcitx {
         }
 
         ic->inputPanel().reset();
+        stateFor(ic)->panelWasCleared(false);
         ic->inputPanel().setCandidateList(std::move(candidateList));
         modeMenuList_        = ic->inputPanel().candidateList();
         std::string appLabel = currentConfigureApp_;
@@ -1949,6 +1953,7 @@ namespace fcitx {
         candidateList->setGlobalCursorIndex(0);
 
         ic->inputPanel().reset();
+        stateFor(ic)->panelWasCleared(false);
         ic->inputPanel().setCandidateList(std::move(candidateList));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
 
@@ -1958,9 +1963,10 @@ namespace fcitx {
     void NgoSenEngine::clearPanelLater(InputContext* ic, uint64_t delayUs) {
         cycleModeNotificationTimer_.reset();
         cycleModeNotificationTimer_ =
-            instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [icRef = ic->watch()](EventSourceTime*, uint64_t) {
+            instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [this, icRef = ic->watch()](EventSourceTime*, uint64_t) {
                 if (auto* ic = icRef.get(); ic && ic->hasFocus()) {
                     ic->inputPanel().reset();
+                    stateFor(ic)->panelWasCleared(false);
                     ic->updateUserInterface(UserInterfaceComponent::InputPanel);
                 }
                 return false;
@@ -2004,6 +2010,7 @@ namespace fcitx {
         if (ic == nullptr)
             return;
         ic->inputPanel().reset();
+        stateFor(ic)->panelWasCleared(false);
         ic->inputPanel().setAuxUp(Text(message));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
         clearPanelLater(ic, 5000000);

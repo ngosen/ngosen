@@ -158,9 +158,9 @@ HINTS = {
         " are also Vietnamese, like can, are left out."
     ),
     "EmojiOfferAt": N_(
-        "At the end of a sentence: after . ! ? or a short pause, the list holds the emoji of every"
-        " keyword in the sentence, and the one picked goes at the cursor. After each word: the list"
-        " shows as soon as a keyword is typed."
+        "At the end of a sentence: the emoji of the sentence show while you type. After . ! ? or a"
+        " short pause, Tab picks one, and it goes at the cursor. Esc hides them until the next sentence."
+        " After each word: the list shows as soon as a keyword is typed."
     ),
     "EmojiPlacement": N_(
         "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."

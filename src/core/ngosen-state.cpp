@@ -1379,7 +1379,9 @@ namespace ngosen {
         std::string        committed       = ownCommit ? lastWord_ : std::string();
         std::string        dropped         = ownCommit ? droppedWord_ : std::string();
         std::string        emojiTail       = emojiTail_;
+        const bool         emojiMuted      = emojiMuted_;
         resetField(false, true, keep);
+        emojiMuted_ = emojiMuted;
         lockedWord_ = std::move(locked);
         if (ownCommit) {
             lastWord_    = std::move(committed);
@@ -1454,6 +1456,7 @@ namespace ngosen {
         // The cursor may have moved, so Enter or Esc must not replace text before it.
         dropRetype();
         dropEmojiOffer();
+        emojiMuted_            = false;
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
         slashWord_             = false;

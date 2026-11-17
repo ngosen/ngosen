@@ -833,7 +833,7 @@ namespace fcitx {
         if (event.type() == EventType::InputContextSwitchInputMethod && instance_->inputMethodManager().currentGroup().inputMethodList().size() > 1 &&
             switchPickedByUser(static_cast<InputContextSwitchInputMethodEvent&>(event).reason())) {
             // An Off picked from the menu stays, as it did before apps had switches.
-            if (findAppRule(appName) != NgoSenMode::Off)
+            if (switchesEachApp() && findAppRule(appName) != NgoSenMode::Off)
                 setAppSwitch(appName, true);
             if (!*config_.vietnameseOn) {
                 config_.vietnameseOn.setValue(true);
@@ -1019,16 +1019,29 @@ namespace fcitx {
     }
 
     void NgoSenEngine::pickMenuMode(InputContext* ic, NgoSenMode mode) {
+        turnOnForPickedMode(mode);
         keepAppMode(currentConfigureApp_, mode);
         if (!isStartsWith(currentConfigureApp_, "ctx_")) {
             saveAppRules();
         }
         // A mode picked for the app wins over where the toggle key last left it.
-        clearAppSwitch(currentConfigureApp_);
+        if (switchesEachApp())
+            clearAppSwitch(currentConfigureApp_);
 
         closeModeMenuPanel(ic, true);
         setMode(mode, ic);
         showCycleModeNotification(mode, ic);
+    }
+
+    bool NgoSenEngine::switchesEachApp() const {
+        return *config_.toggleScope == ToggleScope::EachApp;
+    }
+
+    void NgoSenEngine::turnOnForPickedMode(NgoSenMode mode) {
+        if (switchesEachApp() || mode == NgoSenMode::Off || *config_.vietnameseOn)
+            return;
+        config_.vietnameseOn.setValue(true);
+        saveConfig();
     }
 
     std::vector<NgoSenMode> NgoSenEngine::cycleModes(const std::string& appName) {
@@ -1093,9 +1106,11 @@ namespace fcitx {
 
         auto       it       = std::find(enabledModes.begin(), enabledModes.end(), current);
         NgoSenMode nextMode = it == enabledModes.end() ? enabledModes[0] : enabledModes[(static_cast<size_t>(it - enabledModes.begin()) + 1) % enabledModes.size()];
+        turnOnForPickedMode(nextMode);
         setMode(nextMode, ic);
         keepAppMode(appName, nextMode);
-        clearAppSwitch(appName);
+        if (switchesEachApp())
+            clearAppSwitch(appName);
         showCycleModeNotification(nextMode, ic);
     }
 
@@ -1304,6 +1319,12 @@ namespace fcitx {
 
     NgoSenMode NgoSenEngine::modeFor(const std::string& appName) const {
         const auto rule = findAppRule(appName);
+        if (!switchesEachApp()) {
+            // OFF from the menu keeps the app in English; Sen and Preedit only pick how Vietnamese is typed.
+            if (rule == NgoSenMode::Off || !*config_.vietnameseOn)
+                return NgoSenMode::Off;
+            return rule ? *rule : vietnameseModeFor(appName);
+        }
         // Until the toggle key is pressed in the app, its rule says whether it types Vietnamese.
         const bool on = findAppSwitch(appName).value_or(rule ? *rule != NgoSenMode::Off : *config_.vietnameseOn);
         if (!on)
@@ -1467,16 +1488,24 @@ namespace fcitx {
     }
 
     void NgoSenEngine::toggleVietnamese(InputContext* ic, bool offerRetype) {
-        if (isModeMenuOpen(ic)) {
+        const std::string app         = getProgramName(ic);
+        const bool        pinnedOff   = !switchesEachApp() && findAppRule(app) == NgoSenMode::Off;
+        const bool        menuWasOpen = isModeMenuOpen(ic);
+        if (menuWasOpen) {
             closeModeMenuPanel(ic, true);
         } else if (auto* state = stateFor(ic)) {
             // Finish the word being typed in the mode it was typed in.
             state->commitBuffer();
             state->reset();
         }
-        const bool        turnOn = realMode == NgoSenMode::Off;
-        const std::string app    = getProgramName(ic);
-        setAppSwitch(app, turnOn);
+        if (pinnedOff) {
+            if (!menuWasOpen)
+                explainPinnedOff(ic, app);
+            return;
+        }
+        const bool turnOn = switchesEachApp() ? realMode == NgoSenMode::Off : !*config_.vietnameseOn;
+        if (switchesEachApp())
+            setAppSwitch(app, turnOn);
         // Apps never switched in follow the last switch.
         config_.vietnameseOn.setValue(turnOn);
         saveConfig();
@@ -1491,6 +1520,24 @@ namespace fcitx {
 #endif
         if (turnOn && offerRetype)
             stateFor(ic)->offerRetype();
+    }
+
+    // Switching every app from here would leave this one in English anyway; the menu can change its OFF.
+    void NgoSenEngine::explainPinnedOff(InputContext* ic, const std::string& app) {
+        NGOSEN_INFO("Toggle key in " + app + ", which the menu keeps in English");
+        if (modeMenuCanDraw(instance_->currentUI(), ic->frontend(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel))) {
+            openModeMenu(ic);
+            return;
+        }
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        // The panel the menu would use cannot draw here either.
+        if (auto* addon = notifications()) {
+            constexpr int32_t timeoutMs = 6000;
+            pinnedOffNotificationId_    = addon->call<INotifications::sendNotification>(
+                "fcitx", pinnedOffNotificationId_, "fcitx-ngosen", _("This app is set to English"),
+                _("To use the toggle key here, go to Settings → Shortcuts → Switch Applies To and choose Each app."), std::vector<std::string>{}, timeoutMs, nullptr, nullptr);
+        }
+#endif
     }
 
     void NgoSenEngine::setAppRule(const std::string& appName, NgoSenMode mode) {

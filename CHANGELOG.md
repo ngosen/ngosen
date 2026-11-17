@@ -32,6 +32,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Teencode giữ thêm chữ kéo dài (`nhaaa`, `chàiii` gõ `chaiiif`) và viết tắt ghép (`cgái`, `bthường`,
   `đthoại`) (#701, #833).
 
+### Thay đổi
+
+- Cài mới bật sẵn tiếng Việt; người dùng cũ giữ trạng thái đang dùng. Phím chuyển Anh/Việt nay mặc định
+  chuyển mọi app cùng lúc như UniKey, kể cả khi cập nhật. App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh;
+  bấm phím chuyển tại đó mở menu để chọn Gõ Sen hoặc Gạch chân. Muốn mỗi app nhớ riêng như trước, chọn
+  “Từng app” ở “Phím chuyển áp dụng cho”, ngay dưới phím chuyển trên trang Phím tắt (#825).
+
 ## [1.12.1-1] — 17/11/2026
 
 Trong Firefox, gõ mã Yahoo như `:)`, `=))` nay hiện gợi ý emoji (#819). Trên GNOME, hai lần Backspace liền ngay sau khi mở Firefox không còn mất một lần (#815), và với fcitx5 5.1.23 chỉ còn hỏng chữ đầu tiên của phiên thay vì chữ đầu sau mỗi lần bấm sang ô khác (#816, #818). Menu chọn chế độ gõ đóng lại khi bấm phím không có trong menu hoặc sau 5 giây (#814, #817). Trong Firefox, Backspace ngay sau Space đã sửa `nhưg` thành `nhưng` trả lại `nhưg` (#813). Khôi phục tệp sao lưu sửa tay không còn bỏ qua giá trị `true`, `false` hay số (#805).

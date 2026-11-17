@@ -86,6 +86,22 @@
     }
    ],
    [
+    "ToggleScope",
+    "Enum",
+    "Switch Applies To",
+    "All apps",
+    {
+     "EnumI18n": {
+      "0": "All apps",
+      "1": "Each app"
+     },
+     "Enum": {
+      "0": "All apps",
+      "1": "Each app"
+     }
+    }
+   ],
+   [
     "ModeMenuKey",
     "List|Key",
     "Mode Menu Hotkey",

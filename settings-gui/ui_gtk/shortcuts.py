@@ -46,6 +46,9 @@ class ShortcutsPage:
             item = self.model.metadata.get(key)
             if not item:
                 continue
+            if "Enum" in item[4]:
+                group.add(self._choice(key, item))
+                continue
             toggle = key == "ToggleKey"
             shown = self.model.shown_toggle_key(key) if toggle else self._first(key)
             row = Adw.ActionRow(title=_(item[2]), use_markup=False)
@@ -71,6 +74,20 @@ class ShortcutsPage:
             if toggle:
                 group.add(self._offer(key))
         return group
+
+    def _choice(self, key, item):
+        enum = item[4]["Enum"]
+        values = [str(enum[k]) for k in sorted(enum, key=int)]
+        row = Adw.ComboRow(title=_(item[2]), use_markup=False)
+        if key in HINTS:
+            row.set_subtitle(_(HINTS[key]))
+        row.set_model(Gtk.StringList.new([_(v) for v in values]))
+        current = str(self.model.current.get(key, self.model.default(key)))
+        if current in values:
+            row.set_selected(values.index(current))
+        row.connect("notify::selected", lambda r, _p: self._changed(key, values[r.get_selected()]))
+        self.hotkeys[key] = row
+        return row
 
     def _offer(self, key):
         # Upgrades kept Ctrl+Space; UniKey's key is one click away.

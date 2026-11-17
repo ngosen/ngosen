@@ -113,6 +113,7 @@ add_ngosen_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule"
 # Waits out the menu's 5-second timeout on the real clock.
 set_tests_properties(mode_menu_keys PROPERTIES TIMEOUT 60)
 add_ngosen_headless_test(toggle_key toggle-key.cpp "integration;apprule")
+add_ngosen_headless_test(toggle_scope toggle-scope.cpp "integration;apprule")
 add_ngosen_headless_test(hidden_input hidden-input.cpp "integration;terminal")
 target_link_libraries(hidden_input PRIVATE util)
 # Its prompt is seen by every test that types into a terminal, since the engine scans all of the user's ptys.

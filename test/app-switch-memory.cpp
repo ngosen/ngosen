@@ -47,7 +47,7 @@ int main() {
     // The engine reads both files when it starts.
     const auto confDir = std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf";
     std::filesystem::create_directories(confDir);
-    std::ofstream(confDir / "ngosen.conf", std::ios::trunc) << "Mode=Sen\nVietnameseOn=True\nInputMethod=Telex\n";
+    std::ofstream(confDir / "ngosen.conf", std::ios::trunc) << "Mode=Sen\nVietnameseOn=True\nInputMethod=Telex\nToggleScope=Each app\n";
     std::ofstream(confDir / "ngosen-app-switch.conf", std::ios::trunc) << "[Switches]\n[Switches/0]\nApp=kate\nVietnamese=False\n";
 
     TestInstance        testInstance;

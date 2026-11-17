@@ -78,7 +78,7 @@ SETTINGS_MAP = {
         ],
     },
     SettingsCategory.SHORTCUTS: {
-        N_("Hotkeys"): ["ToggleKey", "ModeMenuKey", "CycleModeKey"],
+        N_("Hotkeys"): ["ToggleKey", "ToggleScope", "ModeMenuKey", "CycleModeKey"],
         MODE_SWITCHING: [
             "ShortcutSen",
             "ShortcutPreedit",
@@ -106,6 +106,9 @@ GROUPS_WITH_NAME_LINE = {TYPING_KEYS}
 # One line under a setting, saying what the user sees.
 HINTS = {
     "ToggleKey": N_("Tap it alone to switch. The tray icon shows V while typing Vietnamese."),
+    "ToggleScope": N_(
+        "All apps switches English/Vietnamese everywhere except apps set to OFF; Each app remembers a separate choice for each app."
+    ),
     "SpellCheck": N_("Words that are not Vietnamese get no tone marks."),
     "CapitalizeMacro": N_("kg gives khô gà, Kg gives Khô gà, KG gives KHÔ GÀ."),
     "EnableMacroInOffMode": N_("Abbreviations also expand while the mode is Off."),
@@ -172,11 +175,13 @@ HINTS = {
     "ConvertFrom": N_("Old documents are often TCVN3."),
     "ConvertStripDiacritics": N_("Tiếng Việt becomes Tieng Viet."),
     "CycleModeKey": N_(
-        "Moves the app in use to the next mode in the list below, and remembers it for that app."
+        "Moves the app in use to the next mode in the list below, and remembers it for that app. "
+        "With All apps, choosing Sen or Preedit while in English turns Vietnamese on for all apps."
     ),
     "ModeOrder": N_(
         "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) "
-        "to follow the global setting and switch key again; OFF stays set for the app."
+        "to follow the global setting and switch key again; OFF stays set for the app and keeps it in English even when other apps type Vietnamese. "
+        "With All apps, the switch key in an OFF app opens the mode menu; pick Sen or Preedit there to type Vietnamese in that app."
     ),
     "UseLotusIcons": N_("Off: plain one-colour icons, in the colour picked below."),
     "TrayIconSize": N_(

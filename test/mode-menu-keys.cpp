@@ -76,6 +76,7 @@ int main() {
     config.setValueByPath("VietnameseOn", "True");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("CycleModeKey/0", "F12");
+    config.setValueByPath("ToggleScope", "Each app");
     // Saved before Default Typing left the menu.
     config.setValueByPath("ModeOrder", "Sen,Preedit,Emoji,Off,Default");
     config.setValueByPath("ShowModeDefault", "True");

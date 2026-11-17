@@ -15,6 +15,18 @@ from i18n import N_
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
     {
+        "version": "1.13",
+        "title": N_("One switch for every app"),
+        "how": N_(
+            "New installs start in Vietnamese, and the switch key now changes all apps at once, "
+            "as in UniKey. Apps set to OFF stay in English; the switch key there opens the ` menu "
+            "to pick Sen or Preedit. For the old behavior, choose Each app under Switch Applies "
+            "To on the Shortcuts page."
+        ),
+        "example": "",
+        "target": ("setting", "ToggleScope"),
+    },
+    {
         "version": "1.12",
         "title": N_("Emoji while typing"),
         "how": N_(
@@ -72,7 +84,7 @@ FEATURES = [
         "title": N_("Vietnamese in the tray menu"),
         "how": N_(
             "The tray menu starts with an item that turns Vietnamese on or off, for when "
-            "Ctrl + Shift does not work. Each app keeps its choice."
+            "Ctrl + Shift does not work."
         ),
         "example": "",
         "target": None,

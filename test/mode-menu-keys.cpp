@@ -364,6 +364,65 @@ int main() {
     check(realMode.load() == ngosen::Mode::Preedit, "with English everywhere, the cycle key's Preedit holds for the app", modeName(realMode.load()));
     check(hasRule(engine, "notes"), "with English everywhere, Preedit is kept for the app", "no rule");
 
+    // A key the menu does not use closes it and is typed; a modifier on its own leaves it open.
+    notes->setCapabilityFlags(fcitx::CapabilityFlag::Preedit);
+    press(engine, entry, *notes, FcitxKey_grave);
+    press(engine, entry, *notes, FcitxKey_Shift_L);
+    check(menu(*notes) != nullptr, "a modifier on its own keeps the menu", "menu closed");
+    press(engine, entry, *notes, FcitxKey_b);
+    check(!menu(*notes), "a key the menu does not use closes it", "menu still open");
+    const auto typed = notes->inputPanel().clientPreedit().toString();
+    check(typed == "b", "the key that closed the menu is typed", typed);
+
+    // A hotkey with a modifier types nothing, so pressing it again is the way to close the menu.
+    {
+        fcitx::RawConfig ctrlGrave;
+        ctrlGrave.setValueByPath("ModeMenuKey/0", "Control+grave");
+        engine.setConfig(ctrlGrave);
+        const auto pressCtrlGrave = [&] {
+            const fcitx::Key key(FcitxKey_grave, fcitx::KeyState::Ctrl);
+            fcitx::KeyEvent  down(notes.get(), key, false);
+            engine.keyEvent(entry, down);
+            fcitx::KeyEvent up(notes.get(), key, true);
+            engine.keyEvent(entry, up);
+        };
+        pressCtrlGrave();
+        check(menu(*notes) != nullptr, "Ctrl+` opens the menu", "no menu");
+        pressCtrlGrave();
+        check(!menu(*notes), "Ctrl+` again closes the menu", "menu still open");
+        ctrlGrave.setValueByPath("ModeMenuKey/0", "grave");
+        engine.setConfig(ctrlGrave);
+    }
+
+    // The notice of a mode change must not clear a menu opened while it shows.
+    press(engine, entry, *notes, FcitxKey_grave);
+    press(engine, entry, *notes, FcitxKey_q);
+    press(engine, entry, *notes, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 1000);
+    check(menu(*notes) != nullptr, "a menu opened right after a mode change stays", "menu closed");
+    press(engine, entry, *notes, FcitxKey_Escape);
+
+    // The wait of a menu already closed leaves what is typed after it alone.
+    press(engine, entry, *notes, FcitxKey_grave);
+    press(engine, entry, *notes, FcitxKey_Escape);
+    press(engine, entry, *notes, FcitxKey_b);
+    pumpEventLoop(testInstance.instance, 5300);
+    const auto kept = notes->inputPanel().clientPreedit().toString();
+    check(kept == "b", "the wait of a closed menu keeps the text typed after it", kept);
+
+    // A menu nobody uses closes by itself; moving in it starts the wait again.
+    press(engine, entry, *notes, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 5300);
+    check(!menu(*notes), "a menu left alone closes by itself", "menu still open");
+    press(engine, entry, *notes, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 3000);
+    press(engine, entry, *notes, FcitxKey_Down);
+    pumpEventLoop(testInstance.instance, 3000);
+    check(menu(*notes) != nullptr, "moving in the menu keeps it open", "menu closed");
+    pumpEventLoop(testInstance.instance, 2500);
+    check(!menu(*notes), "an unused menu closes by itself", "menu still open");
+    check(realMode.load() == ngosen::Mode::Preedit, "closing by itself keeps the mode", modeName(realMode.load()));
+
     check(!fcitx::modeMenuCanDraw("classicui", "ibus", "wayland:", false), "a field relayed on Wayland has no panel", "true");
     check(fcitx::modeMenuCanDraw("classicui", "ibus", "x11::0", false), "a relayed field on X11 can draw", "false");
     check(fcitx::modeMenuCanDraw("classicui", "dbus", "wayland:", false), "another frontend can draw", "false");

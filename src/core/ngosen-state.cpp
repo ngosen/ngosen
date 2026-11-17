@@ -272,6 +272,11 @@ namespace ngosen {
     bool TypingState::typedBeforeCommitArrived(const ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (keyEvent.isRelease() || commitNotSeen_.empty())
             return false;
+        // There the key reaches the app after the composition the commit ends.
+        if (keepsOnlyCommits()) {
+            commitNotSeen_.clear();
+            return false;
+        }
         // A report of our deletion can come after the commit, so only the committed text itself shows it arrived.
         if (!ngosen::appliesEarlyKeysFirst(host_->field()) || !typesText(keyEvent, currentSym) || typedBeforeCursor(commitNotSeen_)) {
             commitNotSeen_.clear();
@@ -612,6 +617,8 @@ namespace ngosen {
         if (dropped.empty())
             length = static_cast<int>(ngosen::utf8::length(word)) + 1;
         keyEvent.accept();
+        flushComposedCommit();
+        sinceFocus_.erasedSinceReport = -1;
         host_->deleteSurrounding(-length, static_cast<unsigned int>(length));
         EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
         ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
@@ -799,6 +806,9 @@ namespace ngosen {
     }
 
     void TypingState::keyEvent(ngosen::KeyPress& keyEvent) {
+        // A press reaches the app after anything sent before it; a release types nothing.
+        if (!keyEvent.isRelease() && !keepsOnlyCommits())
+            flushComposedCommit();
         if (!keyEvent.isRelease() && !keyEvent.isModifier() && !isOwnBackspace(keyEvent.sym()))
             lockedWord_.reset();
         if (!keyEvent.isModifier())
@@ -818,7 +828,10 @@ namespace ngosen {
             emojiTailAtReset_.clear();
         const std::string wordBefore = typedKey ? openWord() : std::string();
         emojiTookPress_              = false;
+        const uint64_t commitsBefore = commitCount_;
         handleKey(keyEvent);
+        if (typedKey)
+            notePassedLetter(keyEvent, commitsBefore);
         if (typedKey && !emojiTookPress_) {
             noteTypedForEmoji(keyEvent, wordBefore);
             updateEmojiOffer();
@@ -1036,6 +1049,7 @@ namespace ngosen {
     }
 
     void TypingState::forwardKeyTap(const KeyEntry& key) {
+        flushComposedCommit();
         const uint32_t time = lastPressTime_ + ++forwardsSincePress_;
         host_->forwardKeyPress(key.sym, key.state, key.code, false, time);
         host_->forwardKeyPress(key.sym, key.state, key.code, true, time);
@@ -1052,6 +1066,7 @@ namespace ngosen {
 
     void TypingState::forwardTap(ngosen::EditKey key) {
         // GLFW under XIM (Minecraft) drops a key press that is not newer than the last press of that key.
+        flushComposedCommit();
         const uint32_t time = lastPressTime_ + ++forwardsSincePress_;
         host_->forwardKey(key, false, time);
         host_->forwardKey(key, true, time);
@@ -1062,7 +1077,7 @@ namespace ngosen {
         jumpedFrom_.reset();
         // This safety valve silently clears the flag on the next key. Skip it while a wait is pending,
         // otherwise the pending commit is thrown away.
-        if (!surr_wait_pending_ && !overtype_pending_ && current_backspace_count_ >= expected_backspaces_ && is_deleting_.load()) {
+        if (!surr_wait_pending_ && !overtype_pending_ && composedCommit_.empty() && current_backspace_count_ >= expected_backspaces_ && is_deleting_.load()) {
             is_deleting_.store(false);
             current_backspace_count_ = 0;
             expected_backspaces_     = 0;
@@ -1288,6 +1303,13 @@ namespace ngosen {
         }
         if (!is_deleting_.load(std::memory_order_acquire))
             return false;
+        // A Backspace waits too: it is the user's, and would otherwise reach the app before the commit.
+        if (composedWait_ && !isOwnBackspace(currentSym)) {
+            if (buffered_keys_.size() < MAX_BUFFERED_KEYS)
+                buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code(), .actsOnField = actsOnField(keyEvent, currentSym)});
+            keyEvent.accept();
+            return true;
+        }
         if (ngosen::key::isBackspace(currentSym)) {
             if (realtextLen.load(std::memory_order_acquire) > 0)
                 realtextLen.fetch_sub(1, std::memory_order_acq_rel);
@@ -1343,6 +1365,7 @@ namespace ngosen {
     }
 
     void TypingState::reset(bool isFocusOut) {
+        flushComposedCommit();
         resetField(isFocusOut, true);
     }
 

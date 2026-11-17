@@ -128,6 +128,11 @@ namespace ngosen {
         enter_after_replacement_ = false; // an Enter would land in the next field
         echoKeyAtUs_             = 0;
         flushPendingReplacement(); // commit pending text into the field we are leaving
+        if (composedWait_) {
+            // Its keys stay held, as a replacement's do.
+            flushComposedCommit();
+            composedWait_ = false;
+        }
         if (isFocusOut) {
             rememberLeftField();
             keysAtFocusOut_ = keyCount_;

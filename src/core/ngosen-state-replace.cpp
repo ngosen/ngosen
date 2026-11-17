@@ -821,6 +821,11 @@ namespace ngosen {
     }
 
     bool TypingState::deletesThroughSurrounding(const ngosen::Surrounding& surrounding) {
+        // The field there is a hidden copy of what xterm.js sent; backspaces reach the terminal.
+        if (keepsOnlyCommits()) {
+            notePath("backspaces", "the field keeps only commits");
+            return false;
+        }
         if (deletesOnlyThroughSurrounding()) {
             notePath("surrounding", "the field takes no keys");
             return true;
@@ -993,6 +998,10 @@ namespace ngosen {
     // A page slow enough to leave Firefox's cursor past a commit can take this long over a deletion.
     constexpr uint64_t SplitEditMaxWaitUs = 120000;
     constexpr size_t   EchoesKept         = 6;
+    // Enough that one stale report does not mark the whole app.
+    constexpr int LettersHiddenForApp = 3;
+    // A field that never shows our commits at the cursor is not xterm.js; stop collecting them.
+    constexpr size_t MaxCommitsChecked = 64;
     // As long as a focus bounce lasts; the deletion is out, so giving up loses the word's letters.
     constexpr int SplitEditFocusRetries = 50;
 
@@ -1010,6 +1019,8 @@ namespace ngosen {
         unreportedDeleteKey_    = keyCount_;
         if (ngosen::keepsLastEditPerTurn(host_->field()) && extraBeforeCursor == 0)
             noteEditLeft(surrounding, count, retype + pending_commit_string_);
+        flushComposedCommit();
+        sinceFocus_.erasedSinceReport = -1;
         host_->deleteSurrounding(-(count + extraBeforeCursor), static_cast<unsigned int>(count + extraBeforeCursor));
         NGOSEN_INFO("Delete using surrounding text");
         // Firefox's cursor stays one past the real one when a deletion and a commit of the same length
@@ -1070,6 +1081,7 @@ namespace ngosen {
         surr_wait_focus_retries_ = 0;
         tail_clear_copy_         = Surrounding(textBeforeCursor(surrounding), surrounding.cursor(), surrounding.cursor());
         committing_              = true;
+        flushComposedCommit();
         host_->commitText(" ");
         committing_ = false;
         NGOSEN_INFO("Commit a space over the selected text after the cursor");
@@ -1137,6 +1149,96 @@ namespace ngosen {
         echoKeyAtUs_ = 0;
         if (echoes.size() > EchoesKept)
             echoes.erase(echoes.begin());
+    }
+
+    // xterm.js sends typed letters and backspaces to its terminal and keeps only our commits in the field
+    // it reports, so the letters left after the backspaces are missing in front of the commit.
+    void TypingState::checkLettersInReport(const Surrounding& report) {
+        auto&       h   = sinceFocus_;
+        std::string now = textBeforeCursor(report);
+        // WebKitGTK reports a space it shows at the end as a no-break space.
+        for (size_t at = now.find("\u00a0"); at != std::string::npos; at = now.find("\u00a0", at + 1))
+            now.replace(at, 2, " ");
+        const bool changed = now != std::exchange(h.lastReportText, now);
+        if (h.committedSinceReport.empty()) {
+            // A letter or deletion that shows in the field changes it; xterm.js shows only spaces.
+            if (changed) {
+                const std::string passed = std::exchange(h.passedSinceReport, std::string());
+                h.letterShown            = h.letterShown || (passed.find_first_not_of(' ') != std::string::npos && isEndsWith(now, passed));
+                h.erasedSinceReport      = 0;
+            }
+            return;
+        }
+        // xterm.js leaves a space typed after the commit in the field.
+        const bool laterShown = !h.passedAfterCommit.empty() && isEndsWith(now, h.committedSinceReport + h.passedAfterCommit);
+        // GNOME Shell repeats its last report until the commit comes out.
+        if (!laterShown && !isEndsWith(now, h.committedSinceReport) && h.committedSinceReport.size() < MaxCommitsChecked)
+            return;
+        if (laterShown)
+            now.resize(now.size() - std::exchange(h.passedAfterCommit, std::string()).size());
+        std::string       kept    = std::exchange(h.passedSinceReport, std::exchange(h.passedAfterCommit, std::string()));
+        const std::string commits = std::exchange(h.committedSinceReport, std::string());
+        const int         erased  = std::exchange(h.erasedSinceReport, 0);
+        if (erased < 0 || ngosen::utf8::length(kept) <= static_cast<size_t>(erased) || !isEndsWith(now, commits))
+            return;
+        for (int i = 0; i < erased; ++i)
+            ngosen::utf8::eraseLastCodepoint(kept);
+        if (isEndsWith(now, kept + commits)) {
+            h.letterShown = true;
+            return;
+        }
+        if (h.letterShown)
+            return;
+        const Field field = host_->field();
+        if (++h.lettersHidden == 1)
+            NGOSEN_INFO("Typed letters do not show in the copy" + loggedField(field) + ": commit through a composition");
+        // Under one shared name a mark would spread to every app.
+        if (h.lettersHidden == LettersHiddenForApp && !ngosen::namesNoApp(field))
+            engine_->noteKeepsOnlyCommits(field.frontend, field.program);
+    }
+
+    void TypingState::notePassedLetter(const ngosen::KeyPress& keyEvent, uint64_t commitsBefore) {
+        const std::string key = host_->keyText(keyEvent.sym());
+        if (keyEvent.accepted() || commitCount_ != commitsBefore || is_deleting_.load(std::memory_order_acquire) || !buffered_keys_.empty())
+            return;
+        if (mode() != ngosen::Mode::Sen || !host_->field().surroundingText)
+            return;
+        std::string& passed = sinceFocus_.committedSinceReport.empty() ? sinceFocus_.passedSinceReport : sinceFocus_.passedAfterCommit;
+        if (ngosen::key::isBackspace(keyEvent.sym())) {
+            // Taking back part of a commit leaves nothing to compare.
+            if (passed.empty())
+                sinceFocus_.erasedSinceReport = -1;
+            else
+                passed.pop_back();
+            return;
+        }
+        if ((keyEvent.states() & ~ngosen::modifier::Shift) != 0 || key.size() != 1 || static_cast<unsigned char>(key[0]) < ' ')
+            return;
+        // A late report may not show a letter typed after our commit yet, so it counts for the next one.
+        if (passed.size() >= MaxCommitsChecked)
+            passed.erase(0, 1);
+        passed += key;
+    }
+
+    void TypingState::noteCommitForCheck(const std::string& text) {
+        if (mode() != ngosen::Mode::Sen || !host_->field().surroundingText)
+            return;
+        auto& h = sinceFocus_;
+        // A field that stopped reporting leaves nothing to compare.
+        if (h.committedSinceReport.size() > 4 * MaxCommitsChecked) {
+            h.committedSinceReport.clear();
+            h.erasedSinceReport = -1;
+        }
+        h.committedSinceReport += text;
+    }
+
+    // WebKitGTK ends a commit made outside a composition as a composition that never started, and xterm.js
+    // then sends it again with the text before it (#816). Firefox inserts it after xterm.js has looked.
+    bool TypingState::keepsOnlyCommits() const {
+        if (sinceFocus_.letterShown || !host_->field().preedit)
+            return false;
+        const Field field = host_->field();
+        return sinceFocus_.lettersHidden > 0 || (!ngosen::namesNoApp(field) && engine_->keepsOnlyCommits(field.frontend, field.program));
     }
 
     // A busy page shows typed letters late and takes as long over a deletion, which the commit must not overtake.
@@ -1236,7 +1338,8 @@ namespace ngosen {
             return;
         // mutter keeps one commit per turn and a busy shell can hold a turn open, so asking before the
         // edit has come out could replace its commit.
-        if (split_edit_pending_ || tail_clear_pending_ || (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs)) {
+        if (split_edit_pending_ || tail_clear_pending_ || !composedCommit_.empty() ||
+            (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs)) {
             report_request_waits_ = true;
             startReportRequestTimer();
             return;

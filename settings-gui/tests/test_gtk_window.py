@@ -497,9 +497,9 @@ class GtkShortcutsPageTest(unittest.TestCase):
 
     def test_dropping_a_mode_saves_the_order(self):
         self.assertTrue(self.page.move("Off", "Sen"))
-        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Sen,Preedit,Emoji,Vim")
+        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Sen,Preedit,Emoji,Teencode,Vim")
         self.page.move("Sen", "Emoji")
-        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Preedit,Emoji,Sen,Vim")
+        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Preedit,Emoji,Sen,Teencode,Vim")
 
     def test_show_page_opens_the_shortcuts_tab(self):
         self.window.show_page("keymap")

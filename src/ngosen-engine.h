@@ -253,6 +253,7 @@ namespace fcitx {
         ngosenAppRules                              appRulesTables_;
         ngosenAppSwitches                           appSwitchesTables_;
         mutable ngosenAppNames                      emojiOffAppsTable_; ///< emojiOffApps_ as the settings window reads it
+        mutable ngosenAppNames                      teencodeAppsTable_; ///< teencodeApps_ as the settings window reads it
         ngosenEmojiWords                            emojiWordsTable_;
 
         FactoryFor<TypingStateProperty>             factory_;
@@ -289,6 +290,7 @@ namespace fcitx {
         std::string                                 appRulesPath_;
         std::string                                 vimAppsPath_;
         std::string                                 emojiOffAppsPath_;
+        std::string                                 teencodeAppsPath_;
         std::weak_ptr<CandidateList>                modeMenuList_;
         // A modifier-only toggle key fires on release, unless another key came in between.
         bool                             toggleTapArmed_  = false;
@@ -318,6 +320,8 @@ namespace fcitx {
         KeySym                                 vimMenuKey_ = FcitxKey_None;
         std::unordered_set<std::string>        emojiOffApps_; ///< Apps where the user turned emoji suggestions off
         KeySym                                 emojiMenuKey_ = FcitxKey_None;
+        std::unordered_set<std::string>        teencodeApps_; ///< Apps where the user turned teencode on
+        KeySym                                 teencodeMenuKey_ = FcitxKey_None;
         // A Wayland click reaches the IM only as a surrounding text update.
         std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> commitWatcher_;
@@ -430,6 +434,10 @@ namespace fcitx {
         void                       enlargePanelFont();
         void                       saveEmojiOffApps() const;
         void                       toggleEmoji(InputContext* ic);
+        bool                       teencodeOnFor(const std::string& appName) const;
+        void                       loadTeencodeApps();
+        void                       saveTeencodeApps() const;
+        void                       toggleTeencode(InputContext* ic);
         std::optional<NgoSenMode>  findAppRule(const std::string& appName) const;
         // The mode Vietnamese typing uses: the configured one, unless that is Off.
         NgoSenMode vietnameseMode() const;
@@ -477,8 +485,9 @@ namespace fcitx {
             std::string label;
             KeySym      key;
             bool        visible;
-            bool        vim   = false; // the Vim mode switch rather than a typing mode
-            bool        emoji = false; // the emoji suggestions switch
+            bool        vim      = false; // the Vim mode switch rather than a typing mode
+            bool        emoji    = false; // the emoji suggestions switch
+            bool        teencode = false; // the teencode switch
         };
         // Every mode in the configured order, then the ones the order leaves out.
         std::vector<ModeMenuItem> modeMenuItems();

@@ -543,6 +543,32 @@ namespace {
         check(text == "chào. ", "ibus: a space held during a timed wait still counts for double space", text);
     }
 
+    std::string typedWithTeencode(bool on) {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        state.activate(ngosen::Mode::Sen, false);
+        state.setTeencodeOn(on);
+        for (const char c : std::string("zaayj ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(30);
+        }
+        loop.pump(300);
+        return app->text();
+    }
+
+    void testTeencodePerApp() {
+        std::string text = typedWithTeencode(true);
+        check(text == "zậy ", "teencode on for the app keeps zậy", text);
+        text = typedWithTeencode(false);
+        check(text == "zaayj ", "teencode off restores the keys", text);
+    }
+
     std::string typedHyphens(const Field& field) {
         realMode = ngosen::Mode::Preedit;
         realtextLen.store(0);
@@ -5456,6 +5482,7 @@ int main() {
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();
     testUnansweredChecksLeaveNoMark();
+    testTeencodePerApp();
     check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

@@ -29,8 +29,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Tuỳ chọn "Gợi ý emoji": "Sau mỗi từ" (như trước) hoặc "Ở cuối câu". Ở cuối câu, gõ `.` `!` `?` hay dừng tay một
   chút thì danh sách hiện emoji của mọi từ khoá trong câu, emoji chọn được thêm sau dấu câu (`vui quá! 😂`). Gợi ý
   trong ô gõ nay cũng nhận từ đứng trước dấu chấm (`con mèo.` gợi ý 🐈) (#110, #834).
-- Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
-  giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
+- Teencode, bật riêng cho từng app bằng phím `t` trong menu `` ` ``, mặc định tắt: chữ viết kiểu teencode như `zậy`,
+  `fải`, `đag`, `nhưg` giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
   vẫn giữ nguyên (#701, #829).
 - Teencode giữ thêm chữ kéo dài (`nhaaa`, `chàiii` gõ `chaiiif`) và viết tắt ghép (`cgái`, `bthường`,
   `đthoại`) (#701, #833).

@@ -175,7 +175,7 @@ namespace fcitx {
     // to FcitxKey_f.
     static bool isAppModeMenuReservedKey(KeySym sym, const ngosenConfig& config) {
         if (sym == Key(*config.shortcutSen).sym() || sym == Key(*config.shortcutPreedit).sym() || sym == Key(*config.shortcutEmoji).sym() ||
-            sym == Key(*config.shortcutOff).sym()) {
+            sym == Key(*config.shortcutTeencode).sym() || sym == Key(*config.shortcutOff).sym()) {
             return true;
         }
 
@@ -347,6 +347,7 @@ namespace fcitx {
                 clearAppSwitch(appName);
                 std::lock_guard<std::mutex> lock(appRulesMutex_);
                 emojiOffApps_.erase(appName);
+                teencodeApps_.erase(appName);
             }
         });
 
@@ -462,6 +463,8 @@ namespace fcitx {
         loadVimApps();
         emojiOffAppsPath_ = configDir + "/ngosen-emoji-off-apps.conf";
         loadEmojiOffApps();
+        teencodeAppsPath_ = configDir + "/ngosen-teencode-apps.conf";
+        loadTeencodeApps();
         enlargePanelFont();
         menuEntries_ = {{vietnameseAction_.get(), nullptr},
                         {inputMethodAction_.get(), &config_.showMenuInputMethod},
@@ -587,6 +590,7 @@ namespace fcitx {
         loadAppRules();
         loadVimApps();
         loadEmojiOffApps();
+        loadTeencodeApps();
         populateConfig();
     }
 
@@ -653,6 +657,19 @@ namespace fcitx {
             emojiOffAppsTable_.apps.setValue(std::move(apps));
             return &emojiOffAppsTable_;
         }
+        if (path == "teencode_apps") {
+            std::vector<ngosenAppName> apps;
+            {
+                std::lock_guard<std::mutex> lock(appRulesMutex_);
+                for (const auto& app : teencodeApps_) {
+                    if (!isStartsWith(app, "ctx_"))
+                        apps.emplace_back().app.setValue(app);
+                }
+            }
+            std::sort(apps.begin(), apps.end(), [](const auto& a, const auto& b) { return *a.app < *b.app; });
+            teencodeAppsTable_.apps.setValue(std::move(apps));
+            return &teencodeAppsTable_;
+        }
         if (path == "emoji_words")
             return &emojiWordsTable_;
         return nullptr;
@@ -675,7 +692,6 @@ namespace fcitx {
         o.convertCase                    = static_cast<int>(config_.convertCase.value());
         o.convertStripDiacritics         = config_.convertStripDiacritics.value();
         o.spellCheck                     = config_.spellCheck.value();
-        o.teencode                       = config_.teencode.value();
         o.modernStyle                    = config_.modernStyle.value();
         o.freeMarking                    = config_.freeMarking.value();
         o.w2u                            = static_cast<int>(config_.w2u.value());
@@ -795,6 +811,17 @@ namespace fcitx {
             }
             saveEmojiOffApps();
             refreshEngine();
+        } else if (path == "teencode_apps") {
+            teencodeAppsTable_.load(config, true);
+            {
+                std::lock_guard<std::mutex> lock(appRulesMutex_);
+                for (auto it = teencodeApps_.begin(); it != teencodeApps_.end();)
+                    it = isStartsWith(*it, "ctx_") ? std::next(it) : teencodeApps_.erase(it);
+                for (const auto& entry : *teencodeAppsTable_.apps)
+                    teencodeApps_.insert(*entry.app);
+            }
+            saveTeencodeApps();
+            refreshEngine();
         } else if (path == "emoji_words") {
             emojiWordsTable_.load(config, true);
             safeSaveAsIni(emojiWordsTable_, EmojiWordsFile);
@@ -847,6 +874,7 @@ namespace fcitx {
         activeContext_ = ic;
         stateFor(ic)->setVimKeys(vimModeFor(appName));
         stateFor(ic)->setEmojiOn(emojiOnFor(appName));
+        stateFor(ic)->setTeencodeOn(teencodeOnFor(appName));
         showMode(ic, targetMode, event.type() == EventType::InputContextFocusIn);
         stateFor(ic)->offerRetype();
     }
@@ -954,6 +982,8 @@ namespace fcitx {
             toggleVimMode(ic);
         } else if (emojiMenuKey_ != FcitxKey_None && keySym == emojiMenuKey_) {
             toggleEmoji(ic);
+        } else if (teencodeMenuKey_ != FcitxKey_None && keySym == teencodeMenuKey_) {
+            toggleTeencode(ic);
         } else if (auto it = modeMenuMapping_.find(keySym); it != modeMenuMapping_.end()) {
             NGOSEN_INFO("Selected mode: " + ngosen::ModeI18NAnnotation::toString(it->second));
             pickMenuMode(ic, it->second);
@@ -1150,6 +1180,7 @@ namespace fcitx {
             auto* state = stateFor(ic);
             state->setEngine();
             state->setEmojiOn(emojiOnFor(getProgramName(ic)));
+            state->setTeencodeOn(teencodeOnFor(getProgramName(ic)));
             if (ic->hasFocus()) {
                 // Re-resolve the focused window's rule; setEngine() must not
                 // reset it to the global mode.
@@ -1718,6 +1749,32 @@ namespace fcitx {
         stateFor(ic)->setEmojiOn(!off);
     }
 
+    bool NgoSenEngine::teencodeOnFor(const std::string& appName) const {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        return listsApp(teencodeApps_, appName);
+    }
+
+    void NgoSenEngine::loadTeencodeApps() {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        readAppList(teencodeAppsPath_, teencodeApps_);
+    }
+
+    void NgoSenEngine::saveTeencodeApps() const {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        writeAppList(teencodeAppsPath_, "# Apps where Ngó Sen keeps teencode, one per line", teencodeApps_);
+    }
+
+    void NgoSenEngine::toggleTeencode(InputContext* ic) {
+        bool on = false;
+        {
+            std::lock_guard<std::mutex> lock(appRulesMutex_);
+            on = flipApp(teencodeApps_, currentConfigureApp_);
+        }
+        saveTeencodeApps();
+        closeModeMenuPanel(ic, true);
+        stateFor(ic)->setTeencodeOn(on);
+    }
+
     std::vector<NgoSenEngine::ModeMenuItem> NgoSenEngine::modeMenuItems() {
         auto                                          getShortcut = [](const std::string& shortcut) { return Key(shortcut).sym(); };
 
@@ -1725,6 +1782,8 @@ namespace fcitx {
             {"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
             {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
             {"Emoji", {NgoSenMode::Sen, _("Emoji suggestions"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji && *config_.emojiSuggestions, false, true}},
+            // Teencode only changes which words restore to their keys.
+            {"Teencode", {NgoSenMode::Sen, _("Teencode"), getShortcut(*config_.shortcutTeencode), *config_.showModeTeencode && *config_.autoNonVnRestore, false, false, true}},
             {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
             {"Vim", {NgoSenMode::Sen, _("Vim mode"), getShortcut(*config_.shortcutVim), *config_.showModeVim, true}}};
 
@@ -1737,11 +1796,10 @@ namespace fcitx {
             }
         }
 
-        // Fallback for missing modes
-        for (const auto& [name, info] : modeMap) {
-            if (std::find(order.begin(), order.end(), name) == order.end()) {
-                allModes.push_back(info);
-            }
+        // Modes a saved order leaves out go last, in the default order, so the menu keeps one layout.
+        for (const auto& name : stringutils::split(config_.modeOrder.defaultValue(), ",")) {
+            if (std::find(order.begin(), order.end(), name) == order.end())
+                allModes.push_back(modeMap.at(name));
         }
         return allModes;
     }
@@ -1764,8 +1822,9 @@ namespace fcitx {
         std::unordered_set<KeySym> usedModeKeys;
 
         modeMenuMapping_.clear();
-        vimMenuKey_   = FcitxKey_None;
-        emojiMenuKey_ = FcitxKey_None;
+        vimMenuKey_      = FcitxKey_None;
+        emojiMenuKey_    = FcitxKey_None;
+        teencodeMenuKey_ = FcitxKey_None;
 
         // A switch for the app keeps the typing mode; its key flips it.
         auto appendSwitch = [&](const ModeMenuItem& info, KeySym& menuKey, const std::string& label, void (NgoSenEngine::*toggle)(InputContext*)) {
@@ -1787,6 +1846,10 @@ namespace fcitx {
             }
             if (info.emoji) {
                 appendSwitch(info, emojiMenuKey_, emojiOnFor(currentConfigureApp_) ? _("Emoji suggestions: on") : _("Emoji suggestions: off"), &NgoSenEngine::toggleEmoji);
+                continue;
+            }
+            if (info.teencode) {
+                appendSwitch(info, teencodeMenuKey_, teencodeOnFor(currentConfigureApp_) ? _("Teencode: on") : _("Teencode: off"), &NgoSenEngine::toggleTeencode);
                 continue;
             }
             if (hasShortcut && usedModeKeys.insert(info.key).second) {
@@ -2013,8 +2076,10 @@ namespace fcitx {
             // The menu's label and items were built for the app it opened in.
             if (isModeMenuOpen(ic) && appName != currentConfigureApp_)
                 closeModeMenuPanel(ic, false);
-            if (ic == activeContext_)
+            if (ic == activeContext_) {
                 stateFor(ic)->setEmojiOn(emojiOnFor(appName));
+                stateFor(ic)->setTeencodeOn(teencodeOnFor(appName));
+            }
             const NgoSenMode mode = modeFor(appName);
             if (ic == activeContext_ && mode != realMode) {
                 // The word belongs to the app being left.

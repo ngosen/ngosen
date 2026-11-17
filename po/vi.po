@@ -327,7 +327,7 @@ msgstr "Backspace xoá dấu thanh"
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
 msgstr "Vẫn gõ dd ra đ khi tự khôi phục"
 
-#: src/ngosen-config.h
+#: src/ngosen-engine.cpp
 msgid "Teencode"
 msgstr "Teencode"
 
@@ -1607,10 +1607,6 @@ msgstr "Cứ để Unicode, trừ khi văn bản hay app cũ cần bảng mã kh
 msgid "dd and Space stays đ instead of going back to dd."
 msgstr "Gõ dd rồi dấu cách vẫn ra đ, không bị trả về dd."
 
-#: settings-gui/core/catalog.py
-msgid "zaayj → zậy, ddag → đag, nhuwgx → nhữg. Most English words stay as typed."
-msgstr "zaayj → zậy, ddag → đag, nhuwgx → nhữg. Phần lớn từ tiếng Anh vẫn giữ nguyên như đã gõ."
-
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "hoà, khoẻ, thuý, tuỳ. Off: hòa, khỏe, thúy, tùy."
 msgstr "hoà, khoẻ, thuý, tuỳ. Tắt: hòa, khỏe, thúy, tùy."
@@ -2365,6 +2361,22 @@ msgstr "Gợi ý emoji: bật"
 #: src/ngosen-engine.cpp
 msgid "Emoji suggestions: off"
 msgstr "Gợi ý emoji: tắt"
+
+#: src/ngosen-config.h
+msgid "Show teencode"
+msgstr "Hiển thị Teencode"
+
+#: src/ngosen-config.h
+msgid "Shortcut for teencode"
+msgstr "Phím tắt cho Teencode"
+
+#: src/ngosen-engine.cpp
+msgid "Teencode: on"
+msgstr "Teencode: bật"
+
+#: src/ngosen-engine.cpp
+msgid "Teencode: off"
+msgstr "Teencode: tắt"
 
 #: settings-gui/core/whats_new_content.py
 msgid "Press ` to pick Sen, Preedit or OFF for the app in use, or to turn emoji or Vim keys on or off for it."

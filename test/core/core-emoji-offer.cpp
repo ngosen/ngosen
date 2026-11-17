@@ -540,6 +540,22 @@ namespace {
         };
         r = type(keysOf("con meo2 cu7o7i2") + std::vector<uint32_t>{Pause, Hint, '1'}, Mode::Sen, makeField(), vni);
         check(r.hints[0].rfind("Tab: ", 0) == 0 && r.text.find("😂") == std::string::npos, "VNI: digits keep their marks", r.hints[0] + " / " + r.text);
+
+        const std::vector<ngosen::KeymapEntry> telexKeys = {{"z", "XoaDauThanh"}, {"s", "DauSac"}, {"f", "DauHuyen"}, {"r", "DauHoi"},    {"x", "DauNga"}, {"j", "DauNang"},
+                                                            {"a", "A_Â"},         {"e", "E_Ê"},    {"o", "O_Ô"},      {"w", "UOAÔ_ƯƠĂƠ"}, {"d", "D_Đ"}};
+        const auto                             custom    = [](std::vector<ngosen::KeymapEntry> keys) {
+            return [keys](FakeResources& r) {
+                r.mutableOptions().emojiAtSentenceEnd = true;
+                r.mutableOptions().inputMethod        = "Custom";
+                r.setCustomKeymap(keys);
+            };
+        };
+        r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '2'}, Mode::Sen, makeField(), custom(telexKeys));
+        check(r.hints[0] == "1.😂 2.🤣 3.😄 4.🐈 5.🐱" && r.text == "con mèo cười 🤣", "custom keys without digits: digits pick", r.hints[0] + " / " + r.text);
+        auto digitKeys = telexKeys;
+        digitKeys.push_back({"2", "DauHuyen"});
+        r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '1'}, Mode::Sen, makeField(), custom(digitKeys));
+        check(r.hints[0].rfind("Tab: ", 0) == 0 && r.text.find("😂") == std::string::npos, "custom keys with a digit: digits keep their marks", r.hints[0] + " / " + r.text);
     }
 
     // The release of a key the list took stays away from the app as well.

@@ -402,26 +402,89 @@ int main() {
     check(menu(*notes) != nullptr, "a menu opened right after a mode change stays", "menu closed");
     press(engine, entry, *notes, FcitxKey_Escape);
 
-    // The wait of a menu already closed leaves what is typed after it alone.
+    // A menu left alone stays until a key or a click.
     press(engine, entry, *notes, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 5300);
+    check(menu(*notes) != nullptr, "a menu left alone stays open", "menu closed");
     press(engine, entry, *notes, FcitxKey_Escape);
-    press(engine, entry, *notes, FcitxKey_b);
-    pumpEventLoop(testInstance.instance, 5300);
-    const auto kept = notes->inputPanel().clientPreedit().toString();
-    check(kept == "b", "the wait of a closed menu keeps the text typed after it", kept);
 
-    // A menu nobody uses closes by itself; moving in it starts the wait again.
-    press(engine, entry, *notes, FcitxKey_grave);
-    pumpEventLoop(testInstance.instance, 5300);
-    check(!menu(*notes), "a menu left alone closes by itself", "menu still open");
-    press(engine, entry, *notes, FcitxKey_grave);
-    pumpEventLoop(testInstance.instance, 3000);
-    press(engine, entry, *notes, FcitxKey_Down);
-    pumpEventLoop(testInstance.instance, 3000);
-    check(menu(*notes) != nullptr, "moving in the menu keeps it open", "menu closed");
-    pumpEventLoop(testInstance.instance, 2500);
-    check(!menu(*notes), "an unused menu closes by itself", "menu still open");
-    check(realMode.load() == ngosen::Mode::Preedit, "closing by itself keeps the mode", modeName(realMode.load()));
+    // Each click case gets its own field, so one failing leaves the next alone.
+    engine.setConfig(config);
+    auto openField = [&](const std::string& app) {
+        auto field = std::make_unique<TestInputContext>(&testInstance.instance, app);
+        field->setCapabilityFlags(fcitx::CapabilityFlags{fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::SurroundingText});
+        field->focusIn();
+        fcitx::InputContextEvent fieldFocus(field.get(), fcitx::EventType::InputContextFocusIn);
+        engine.activate(entry, fieldFocus);
+        return field;
+    };
+
+    // A click in the field: the caret moves with no edit.
+    auto clickedField = openField("clickedfield");
+    clickedField->surroundingText().setText("abc def", 7, 7);
+    clickedField->updateSurroundingText();
+    pumpEventLoop(testInstance.instance, 1);
+    press(engine, entry, *clickedField, FcitxKey_grave);
+    check(menu(*clickedField) != nullptr, "the menu opens in clickedField", "no menu");
+    clickedField->surroundingText().setText("abc def", 2, 2);
+    clickedField->updateSurroundingText();
+    pumpEventLoop(testInstance.instance, 1);
+    check(!menu(*clickedField), "a click in the field closes the menu", "menu still open");
+    clickedField.reset();
+
+    // A click X11 reports elsewhere, such as in another field of the same window.
+    auto clickedAway = openField("clickedaway");
+    press(engine, entry, *clickedAway, FcitxKey_grave);
+    check(menu(*clickedAway) != nullptr, "the menu opens in clickedAway", "no menu");
+    engine.pointerClicked();
+    pumpEventLoop(testInstance.instance, 200);
+    check(!menu(*clickedAway), "a click outside the field closes the menu", "menu still open");
+    clickedAway.reset();
+
+    // A click just before the menu opens is not a click away from it.
+    auto clickedBefore = openField("clickedbefore");
+    engine.pointerClicked();
+    press(engine, entry, *clickedBefore, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 200);
+    check(menu(*clickedBefore) != nullptr, "an earlier click leaves a menu opened after it", "menu closed");
+    press(engine, entry, *clickedBefore, FcitxKey_Escape);
+    press(engine, entry, *clickedBefore, FcitxKey_grave);
+    engine.pointerClicked();
+    press(engine, entry, *clickedBefore, FcitxKey_Escape);
+    press(engine, entry, *clickedBefore, FcitxKey_grave);
+    pumpEventLoop(testInstance.instance, 200);
+    check(menu(*clickedBefore) != nullptr, "a click before reopening leaves the new menu", "menu closed");
+    clickedBefore.reset();
+
+    // A click in some apps comes as a reset of the field; in Sen the menu must not stay drawn.
+    auto resetField = openField("resetfield");
+    press(engine, entry, *resetField, FcitxKey_grave);
+    press(engine, entry, *resetField, FcitxKey_1);
+    press(engine, entry, *resetField, FcitxKey_grave);
+    check(menu(*resetField) != nullptr, "the menu opens in resetField", "no menu");
+    int                      panelRedraws = 0;
+    auto                     redrawWatch  = testInstance.instance.watchEvent(fcitx::EventType::InputContextUpdateUI, fcitx::EventWatcherPhase::Default, [&](fcitx::Event& event) {
+        auto& update = static_cast<fcitx::InputContextUpdateUIEvent&>(event);
+        if (update.inputContext() == resetField.get() && update.component() == fcitx::UserInterfaceComponent::InputPanel)
+            ++panelRedraws;
+    });
+    fcitx::InputContextEvent appReset(resetField.get(), fcitx::EventType::InputContextReset);
+    engine.reset(entry, appReset);
+    check(!menu(*resetField), "an app reset closes the menu", "menu still open");
+    check(panelRedraws > 0, "an app reset redraws the closed menu", "no redraw");
+    redrawWatch.reset();
+    resetField.reset();
+
+    // The panel picks from the menu it shows when the button goes down.
+    auto clickedMenu = openField("clickedmenu");
+    press(engine, entry, *clickedMenu, FcitxKey_grave);
+    check(menu(*clickedMenu) != nullptr, "the menu opens in clickedMenu", "no menu");
+    engine.pointerClicked();
+    if (auto shown = menu(*clickedMenu))
+        shown->candidateFromAll(0).select(clickedMenu.get());
+    pumpEventLoop(testInstance.instance, 200);
+    check(realMode.load() == ngosen::Mode::Sen, "a click on a menu item picks it", modeName(realMode.load()));
+    clickedMenu.reset();
 
     check(!fcitx::modeMenuCanDraw("classicui", "ibus", "wayland:", false), "a field relayed on Wayland has no panel", "true");
     check(fcitx::modeMenuCanDraw("classicui", "ibus", "x11::0", false), "a relayed field on X11 can draw", "false");

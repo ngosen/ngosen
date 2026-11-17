@@ -16,6 +16,7 @@
 
 #include "ngosen-pointer.h"
 
+#include <functional>
 #include <thread>
 
 extern std::thread          mouse_thread;
@@ -30,7 +31,8 @@ void mousePressResetThread();
 
 /**
  * @brief Starts the mouse reset monitoring.
+ * @param onClick Called on the monitor thread after each click.
  */
-void startMouseReset();
+void startMouseReset(std::function<void()> onClick);
 
 #endif // _FCITX5_NGOSEN_MONITOR_H_

@@ -290,6 +290,7 @@ namespace fcitx {
         std::string                                 vimAppsPath_;
         std::string                                 emojiOffAppsPath_;
         std::weak_ptr<CandidateList>                modeMenuList_;
+        Rect                                        modeMenuCaret_;
         // A modifier-only toggle key fires on release, unless another key came in between.
         bool                             toggleTapArmed_  = false;
         uint64_t                         toggleTapTime_   = 0;
@@ -321,8 +322,9 @@ namespace fcitx {
         KeySym                                 vimMenuKey_ = FcitxKey_None;
         std::unordered_set<std::string>        emojiOffApps_; ///< Apps where the user turned emoji suggestions off
         KeySym                                 emojiMenuKey_ = FcitxKey_None;
-        // A Wayland click reaches the IM only as a surrounding text update.
+        // A Wayland click reaches the IM only as a surrounding text update or a new caret position.
         std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
+        std::unique_ptr<HandlerTableEntry<EventHandler>> caretMoveWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> commitWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> contextDestroyedWatcher_;
 

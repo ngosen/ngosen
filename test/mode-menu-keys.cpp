@@ -431,6 +431,17 @@ int main() {
     check(!menu(*clickedField), "a click in the field closes the menu", "menu still open");
     clickedField.reset();
 
+    // Some apps report only the new caret position after a click.
+    auto caretField = openField("caretfield");
+    caretField->setCursorRect(fcitx::Rect(100, 50, 101, 70));
+    press(engine, entry, *caretField, FcitxKey_grave);
+    check(menu(*caretField) != nullptr, "the menu opens in caretField", "no menu");
+    caretField->setCursorRect(fcitx::Rect(100, 50, 101, 70), 2.0);
+    check(menu(*caretField) != nullptr, "the same caret reported again keeps the menu", "menu closed");
+    caretField->setCursorRect(fcitx::Rect(20, 50, 21, 70));
+    check(!menu(*caretField), "a caret moved by a click closes the menu", "menu still open");
+    caretField.reset();
+
     // A click X11 reports elsewhere, such as in another field of the same window.
     auto clickedAway = openField("clickedaway");
     press(engine, entry, *clickedAway, FcitxKey_grave);

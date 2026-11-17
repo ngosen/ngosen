@@ -110,7 +110,7 @@ add_test(NAME default_app_mode_override COMMAND default_app_mode override)
 set_tests_properties(default_app_mode_override PROPERTIES LABELS "integration;apprule" TIMEOUT 20 ENVIRONMENT "DISPLAY=")
 add_ngosen_headless_test(ctx_rule_cleanup ctx-rule-cleanup.cpp "integration;apprule")
 add_ngosen_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule")
-# Waits out the menu's 5-second timeout on the real clock.
+# Checks on the real clock that a menu left alone stays open.
 set_tests_properties(mode_menu_keys PROPERTIES TIMEOUT 60)
 add_ngosen_headless_test(toggle_key toggle-key.cpp "integration;apprule")
 add_ngosen_headless_test(hidden_input hidden-input.cpp "integration;terminal")

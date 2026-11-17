@@ -37,6 +37,7 @@ namespace ngosen::test {
         bool resendsKeysWithoutText = false; // sends a key that types no text back once more, marked as repeated, as gnome-text-editor does
         bool takesXTest             = false; // gets backspaces as XTEST presses, which come back to the input method first
         int  redrawAfterEditMs      = 0;     // bounces focus this long after each edit and drops commits until then, as TikTok in Chrome does
+        int  bounceOnEditMs         = 0;     // bounces focus this long after a forwarded Backspace or a commit arrives, keeping both, as Brave on GNOME 51 does
         bool redrawsOnlyOnDeletion  = false; // redraws after deletions but not insertions, as a plain Draft.js box in Chrome on GNOME does
         bool dropsOldKeyPresses     = false; // drops a Backspace press not newer than the last one, as GLFW does under XIM
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
@@ -267,6 +268,7 @@ namespace ngosen::test {
         size_t                              reportedBytesBefore(unsigned int size) const;
         unsigned int                        charsForBytesBefore(size_t bytes) const;
         void                                changed();
+        void                                bounceAfterEdit();
         void                                redrawAfterEdit();
         void                                later(int ms, std::function<void()> action);
         void                                startTurn();

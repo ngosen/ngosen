@@ -859,6 +859,20 @@ namespace {
         check(slowest < 60, "redrawing editor: commit once the redraws are done", std::to_string(slowest) + " ms");
     }
 
+    // Brave on GNOME 51 bounces focus as soon as it gets our Backspace and applies it only after the
+    // commit we send once the wait gives up, so its first report after the bounce lacks the word.
+    void testLateBackspaceAfterBounce() {
+        const Field             field = makeField("ibus", true, "brave-browser.desktop");
+        ngosen::test::AppQuirks quirks;
+        quirks.lagMs                      = 50;
+        quirks.backspaceLagMs             = 60;
+        quirks.bounceOnEditMs             = 30;
+        const std::string           typed = "oonr thuwowngf taamf ";
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 150));
+        check(text == "ổn thường tầm ", "late Backspace after a bounce keeps the word", text);
+    }
+
     // Switching fields quickly is not a redraw, so a field that never redraws commits as fast as before.
     void testQuickSwitchesNoRedrawWait() {
         for (const auto& [frontend, surrounding] : std::vector<std::pair<std::string, bool>>{{"xim", false}, {"wayland", true}}) {
@@ -5408,6 +5422,7 @@ int main() {
     testDoubleHyphen();
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
+    testLateBackspaceAfterBounce();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();

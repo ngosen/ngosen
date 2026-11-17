@@ -19,7 +19,8 @@ use bamboo_core::{
 use crate::macro_table::MacroTable;
 use crate::text::{
     grows_into, has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol,
-    vowel_count, without_diacritics, without_marks, without_tone_position, without_tones,
+    vowel_count, with_tone, without_diacritics, without_marks, without_tone_position,
+    without_tones,
 };
 use crate::time_format::format_time;
 use packed::Packed;
@@ -1202,10 +1203,46 @@ impl BambooEngine {
             && !is_all_caps(self.raw_text().chars().filter(|c| c.is_alphabetic()))
             && self.shown_as_typed()
             && self.dictionary.contains(&old_text.to_lowercase())
+            && !self.retones_into_word(old_text)
             && {
                 let keys = self.raw_text().to_lowercase();
                 !self.keep_guard.starts_word(&keys) && !self.english_words.starts_word(&keys)
             }
+    }
+
+    /// Whether the keys look like a tone being retyped rather than a stray key: after mỗ, `t`
+    /// gives mỗt, which the tone key typed next makes một; after đac, a rejected `x` is followed
+    /// by the tone the user meant.
+    fn retones_into_word(&self, old_text: &str) -> bool {
+        let text = self.preeditor.get_processed_str(OutputOptions::NONE);
+        let last_is_tone = self.raw_text().chars().last().is_some_and(|key| {
+            self.preeditor
+                .input_method()
+                .tone_keys()
+                .contains(&key.to_ascii_lowercase())
+        });
+        self.another_tone_starts_word(&text)
+            || (last_is_tone && self.another_tone_starts_word(old_text))
+    }
+
+    /// Whether `text` with a tone other than its own starts a dictionary word.
+    fn another_tone_starts_word(&self, text: &str) -> bool {
+        let (letters, _) = without_tones(text);
+        let own = without_tone_position(text)
+            .chars()
+            .last()
+            .and_then(|c| c.to_digit(10));
+        let chars: Vec<char> = letters.chars().collect();
+        (0..chars.len()).any(|at| {
+            (1..=5).filter(|&tone| Some(tone) != own).any(|tone| {
+                with_tone(chars[at], tone).is_some_and(|toned| {
+                    let mut word = chars.clone();
+                    word[at] = toned;
+                    self.dictionary
+                        .starts_word(&word.iter().collect::<String>())
+                })
+            })
+        })
     }
 
     pub fn pull_commit(&mut self) -> String {

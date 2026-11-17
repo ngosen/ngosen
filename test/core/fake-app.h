@@ -37,6 +37,7 @@ namespace ngosen::test {
         bool resendsKeysWithoutText = false; // sends a key that types no text back once more, marked as repeated, as gnome-text-editor does
         bool takesXTest             = false; // gets backspaces as XTEST presses, which come back to the input method first
         int  redrawAfterEditMs      = 0;     // bounces focus this long after each edit and drops commits until then, as TikTok in Chrome does
+        int  bounceOnEditMs         = 0;     // bounces focus this long after a forwarded Backspace or a commit arrives, keeping both, as Brave on GNOME 51 does
         bool redrawsOnlyOnDeletion  = false; // redraws after deletions but not insertions, as a plain Draft.js box in Chrome on GNOME does
         bool dropsOldKeyPresses     = false; // drops a Backspace press not newer than the last one, as GLFW does under XIM
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
@@ -98,6 +99,10 @@ namespace ngosen::test {
         // Reports the cursor moving over a deletion and its commit on the old text before the new text, as
         // Slate in Firefox on Plasma does.
         bool movesCursorBeforeText = false;
+        // Sends typed keys to a terminal it draws and keeps only commits in the field it reports, and sends a
+        // commit made outside a composition once more with the text since the last composition started, as
+        // xterm.js does in WebKitGTK. A commit sent before WebKitGTK has taken its preedit starts none.
+        bool keepsOnlyCommits = false;
         // With movesCursorBeforeText, shows the deletion first with the cursor still past the commit, as
         // CKEditor in Firefox on Plasma does.
         bool        showsDeletionWithCursorPast = false;
@@ -218,11 +223,8 @@ namespace ngosen::test {
             return announced_.value_or("");
         }
 
-        void showPreedit(const std::string& text, bool /*underline*/) override {
-            if (!text.empty())
-                ++sent_.preedits;
-        }
-        void clearPreedit() override {}
+        void showPreedit(const std::string& text, bool /*underline*/) override;
+        void clearPreedit() override;
         void resetPanel() override {}
         void refreshPreedit() override {}
         void refreshPanel() override {}
@@ -266,6 +268,7 @@ namespace ngosen::test {
         size_t                              reportedBytesBefore(unsigned int size) const;
         unsigned int                        charsForBytesBefore(size_t bytes) const;
         void                                changed();
+        void                                bounceAfterEdit();
         void                                redrawAfterEdit();
         void                                later(int ms, std::function<void()> action);
         void                                startTurn();
@@ -322,6 +325,14 @@ namespace ngosen::test {
         int                                 deletions_        = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};
         std::vector<std::unique_ptr<Timer>> timers_;
+
+        // With keepsOnlyCommits: the composition xterm.js tracks, and a preedit that has not started one yet.
+        bool        composing_        = false;
+        size_t      compositionStart_ = 0;
+        std::string shownPreedit_;
+        bool        preeditWaits_           = false;
+        bool        clearsPreeditAtTurnEnd_ = false;
+        void        startComposition();
     };
 
     // The text the keys give in Preedit mode, where the app only ever gets finished text.

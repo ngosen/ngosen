@@ -859,6 +859,20 @@ namespace {
         check(slowest < 60, "redrawing editor: commit once the redraws are done", std::to_string(slowest) + " ms");
     }
 
+    // Brave on GNOME 51 bounces focus as soon as it gets our Backspace and applies it only after the
+    // commit we send once the wait gives up, so its first report after the bounce lacks the word.
+    void testLateBackspaceAfterBounce() {
+        const Field             field = makeField("ibus", true, "brave-browser.desktop");
+        ngosen::test::AppQuirks quirks;
+        quirks.lagMs                      = 50;
+        quirks.backspaceLagMs             = 60;
+        quirks.bounceOnEditMs             = 30;
+        const std::string           typed = "oonr thuwowngf taamf ";
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 150));
+        check(text == "ổn thường tầm ", "late Backspace after a bounce keeps the word", text);
+    }
+
     // Switching fields quickly is not a redraw, so a field that never redraws commits as fast as before.
     void testQuickSwitchesNoRedrawWait() {
         for (const auto& [frontend, surrounding] : std::vector<std::pair<std::string, bool>>{{"xim", false}, {"wayland", true}}) {
@@ -3259,6 +3273,101 @@ namespace {
               app->text() + " " + join(lines));
     }
 
+    // xterm.js keeps only commits in the field it reports and sends a commit WebKitGTK ends without a
+    // started composition again with the text before it (#816).
+    std::string typeInXterm(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, int* preedits = nullptr) {
+        FakeResources resources;
+        const auto    keys = keysOf(typed);
+        const auto    out  = ngosen::test::typeInAppTraced(resources, field, quirks, keys, std::vector<int>(keys.size(), 60));
+        if (preedits != nullptr)
+            *preedits = out.sent.preedits;
+        return out.text;
+    }
+
+    void testXtermKeepsOnlyCommits() {
+        // The first word with more typed letters than deletions shows how the field behaves, and itself
+        // still comes out wrong.
+        const std::string warmUp   = "laf ";
+        const std::string sentence = "ddaay laf tieengs vieetj ";
+        const std::string expected = "đây là tiếng việt ";
+        Field             dbus     = makeField("dbus", true, "vaultid_desktop");
+        dbus.keyEventOrderFix      = true;
+        std::string text           = typeInXterm(dbus, {.keepsOnlyCommits = true}, warmUp + sentence);
+        check(isEndsWith(text, expected), "xterm.js in WebKitGTK over D-Bus: Sen types the sentence", text);
+
+        Field gnome           = makeField("ibus", true, "window:13");
+        gnome.reportedProgram = "gnome-shell";
+        text                  = typeInXterm(gnome, {.keepsLastEditPerTurn = true, .turnMs = 3, .keepsOnlyCommits = true}, warmUp + sentence);
+        check(isEndsWith(text, expected), "xterm.js in WebKitGTK behind GNOME Shell: Sen types the sentence", text);
+
+        int preedits = -1;
+        text         = typeInXterm(dbus, {}, sentence, &preedits);
+        check(text == expected && preedits == 0, "a field that shows typed letters gets no preedit", text + " preedits=" + std::to_string(preedits));
+    }
+
+    // A click back into the terminal finds the composition start xterm.js kept from before.
+    void testXtermRememberedAfterFocus() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField("dbus", true, "vaultid_desktop");
+        field.keyEventOrderFix    = true;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.keepsOnlyCommits = true});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        const auto typeText = [&](const std::string& typed) {
+            for (const char c : typed) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(60);
+            }
+            loop.pump(600);
+        };
+        // The first words can come out wrong: until a word shows more typed letters than deletions, the
+        // field reports what any field would.
+        typeText("ddaay laf tieengs vieetj ");
+        const std::string beforeClick = app->text();
+        app->leaveFocus(100);
+        loop.pump(300);
+        typeText("ddaay ");
+        check(app->text() == beforeClick + "đây ", "xterm.js: the first word after a click comes out right", app->text());
+
+        // Another field of that app that shows typed letters soon types as any field does.
+        auto                textBox = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{});
+        auto*               box     = textBox.get();
+        ngosen::TypingState boxState(&resources, std::move(textBox));
+        box->attach(&boxState);
+        for (const char c : std::string("ddaay laf tieengs vieetj ")) {
+            box->type(static_cast<uint32_t>(c));
+            loop.pump(60);
+        }
+        loop.pump(600);
+        const int preedits = box->sent().preedits;
+        check(box->text() == "đây là tiếng việt " && preedits <= 2, "xterm.js: a text box of the same app stops using preedits",
+              box->text() + " preedits=" + std::to_string(preedits));
+
+        // The Backspace lands while the commit waits for its turn.
+        const std::string beforeErase = app->text();
+        app->type('d');
+        loop.pump(60);
+        app->type('d');
+        loop.pump(18);
+        app->type(ngosen::key::BackSpace);
+        loop.pump(600);
+        check(app->text() == beforeErase, "xterm.js: a Backspace right after a commit erases it", app->text());
+    }
+
+    // A busy page shows a letter and the Backspace that takes it back in one late report.
+    void testTypedBackspaceIsNotHiddenLetter() {
+        FakeResources               resources;
+        Field                       field = makeField("wayland", true, "firefox");
+        const std::vector<uint32_t> keys{'l', 'a', ngosen::key::BackSpace, 'a', 'f', ' ', 't', 'i', 'e', 'e', 'n', 'g', 's', ' '};
+        const auto                  out = ngosen::test::typeInAppTraced(resources, field, {.reportDelayMs = 200, .lagMs = 100}, keys, std::vector<int>(keys.size(), 60));
+        check(out.text == "là tiếng " && out.sent.preedits == 0, "a typed Backspace does not make a field look like xterm.js",
+              out.text + " preedits=" + std::to_string(out.sent.preedits));
+    }
+
     // The user's own edits while a long check is open say nothing about the app.
     void testEditsDuringLongCheck() {
         const Field              gnome = makeField("ibus", true);
@@ -5333,6 +5442,7 @@ int main() {
     testDoubleHyphen();
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
+    testLateBackspaceAfterBounce();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();
@@ -5466,6 +5576,9 @@ int main() {
     testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
     testDroppedDeletionKeptAcrossFocus();
+    testXtermKeepsOnlyCommits();
+    testXtermRememberedAfterFocus();
+    testTypedBackspaceIsNotHiddenLetter();
     testShortDeletion();
     testCheckAcrossLateAppName();
     testEditsDuringLongCheck();

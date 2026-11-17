@@ -68,6 +68,14 @@ namespace ngosen {
         void noteCopyFitted(const std::string& frontend, const std::string& program) {
             apps_[{frontend, program}].copyFitted = true;
         }
+        // Apps whose field kept our commits but never a letter typed into it, as xterm.js does.
+        bool keepsOnlyCommits(const std::string& frontend, const std::string& program) const {
+            const auto app = apps_.find({frontend, program});
+            return app != apps_.end() && app->second.keepsOnlyCommits;
+        }
+        void noteKeepsOnlyCommits(const std::string& frontend, const std::string& program) {
+            apps_[{frontend, program}].keepsOnlyCommits = true;
+        }
 
       private:
         // What an app showed in this session. The same app can delete differently over IBus and over
@@ -75,6 +83,7 @@ namespace ngosen {
         struct AppHistory {
             bool surroundingUntrusted = false;
             bool copyFitted           = false;
+            bool keepsOnlyCommits     = false;
         };
         std::map<std::pair<std::string, std::string>, AppHistory> apps_;
     };

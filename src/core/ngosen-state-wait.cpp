@@ -25,6 +25,8 @@ namespace ngosen {
         constexpr int LaggingReportWaitMs = 100;
         // A busy app over IBus can send its copy late, and backspaces sent instead overtake the commit (#362).
         constexpr int SlowCopyWaitMs = 700;
+        // Long enough for WebKitGTK, and GNOME Shell before it, to take a preedit in a turn of its own.
+        constexpr uint64_t ComposedCommitTurnUs = 15000;
     } // namespace
 
     bool TypingState::sendBackspaceKeys(int count) const {
@@ -271,6 +273,8 @@ namespace ngosen {
     void TypingState::forwardBackspaces(int count) {
         if (count > 0)
             unconfirmedBackspacesUs_ = ngosen::monotonicUs();
+        if (sinceFocus_.erasedSinceReport >= 0)
+            sinceFocus_.erasedSinceReport += count;
         for (int i = 0; i < count; ++i) {
             forwardTap(ngosen::EditKey::BackSpace);
         }
@@ -297,6 +301,8 @@ namespace ngosen {
         const std::string report     = host_->field().hidesText() ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
         sinceFocus_.reported         = sinceFocus_.reported || host_->surrounding().isValid();
         reportSinceEdit_             = true;
+        if (host_->hasFocus() && host_->surrounding().isValid() && !host_->field().hidesText())
+            checkLettersInReport(host_->surrounding());
         if (ngosen::keepsLastEditPerTurn(host_->field())) {
             noteCursorPast(host_->surrounding());
             noteEcho(host_->surrounding());
@@ -702,16 +708,70 @@ namespace ngosen {
     }
 
     void TypingState::commit(const std::string& text) {
+        flushComposedCommit();
         ++commitCount_;
+        noteCommitForCheck(text);
         noteCommit(text);
         // A field that rewrites what we commit never shows it; keep only the latest commits.
         if (mode() == ngosen::Mode::Sen && ngosen::appliesEarlyKeysFirst(host_->field()))
             commitNotSeen_ = commitNotSeen_.size() + text.size() > 64 ? text : commitNotSeen_ + text;
         // mutter keeps one commit per turn, so a request's empty commit could replace this one.
         report_requests_left_ = 0;
-        committing_           = true;
+        if (keepsOnlyCommits() && !text.empty()) {
+            // The preedit starts the composition and the commit ends it, a turn later: WebKitGTK and GNOME
+            // Shell take both together otherwise.
+            host_->showPreedit(text, false);
+            host_->refreshPreedit();
+            composedCommit_ = text;
+            // Keys typed meanwhile wait, as during a replacement, so that nothing sent for them shares
+            // the preedit's turn.
+            is_deleting_.store(true, std::memory_order_release);
+            composedWait_ = true;
+            // Replaying held keys can commit again from inside the callback, which must not destroy it.
+            if (composedCommitTimer_)
+                composedCommitTimer_->rearm(monotonicUs() + ComposedCommitTurnUs);
+            else
+                composedCommitTimer_ = host_->startTimer(monotonicUs() + ComposedCommitTurnUs, 0, [this](Timer&) { return composedCommitStep(); });
+            return;
+        }
+        committing_ = true;
         host_->commitText(text);
         committing_ = false;
+    }
+
+    // Sends the commit, then a turn later the keys held meanwhile, whose own preedit would otherwise
+    // share the commit's turn.
+    bool TypingState::composedCommitStep() {
+        // Focus left meanwhile and settled it.
+        if (!composedWait_)
+            return false;
+        if (!composedCommit_.empty()) {
+            flushComposedCommit();
+            if (buffered_keys_.empty()) {
+                composedWait_ = false;
+                return false;
+            }
+            is_deleting_.store(true, std::memory_order_release);
+            composedCommitTimer_->rearm(monotonicUs() + ComposedCommitTurnUs);
+            return true;
+        }
+        composedWait_ = false;
+        is_deleting_.store(false, std::memory_order_release);
+        if (!buffered_keys_.empty())
+            replayBufferedKeys(std::string());
+        return !composedCommit_.empty();
+    }
+
+    void TypingState::flushComposedCommit() {
+        if (composedCommit_.empty())
+            return;
+        const std::string text = std::exchange(composedCommit_, std::string());
+        committing_            = true;
+        host_->commitText(text);
+        committing_ = false;
+        host_->clearPreedit();
+        host_->refreshPreedit();
+        is_deleting_.store(false, std::memory_order_release);
     }
 
 } // namespace ngosen

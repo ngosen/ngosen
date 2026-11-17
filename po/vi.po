@@ -1600,8 +1600,8 @@ msgid "fcitx5 has other input methods too; its own key still switches to them."
 msgstr "fcitx5 còn bộ gõ khác; phím chuyển của fcitx5 vẫn đưa sang các bộ gõ đó."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
-msgstr "Cứ để Unicode, trừ khi văn bản hay app cũ cần bảng mã khác như TCVN3 (ABC). Cứu dấu chỉ chạy với Unicode."
+msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Unicode tổ hợp sends tone marks apart from their letters, which terminals and many apps handle badly. Cứu dấu works only with Unicode."
+msgstr "Cứ để Unicode, trừ khi văn bản hay app cũ cần bảng mã khác như TCVN3 (ABC). Unicode tổ hợp gửi dấu thanh tách khỏi chữ, nên terminal và nhiều app hiện sai. Cứu dấu chỉ chạy với Unicode."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "dd and Space stays đ instead of going back to dd."
@@ -2561,3 +2561,11 @@ msgstr "Các từ gợi ý emoji trong file bị hỏng."
 #: settings-gui/core/backup.py
 msgid "this file holds emoji words; import it on the Emoji page"
 msgstr "file này chứa từ gợi ý emoji; hãy nhập nó ở trang Emoji"
+
+#: settings-gui/core/system_check.py
+msgid "Output charset is {charset}, not Unicode"
+msgstr "Bảng mã đang là {charset}, không phải Unicode"
+
+#: settings-gui/core/system_check.py
+msgid "Most apps expect Unicode. With another charset, terminals and web pages can show stray tone marks or lose letters. Keep it only for an old document or app that needs it; otherwise choose Unicode under Typing › Output Charset."
+msgstr "Hầu hết app cần Unicode. Với bảng mã khác, terminal và trang web có thể hiện dấu lạc hoặc mất chữ. Chỉ giữ bảng mã này cho văn bản hay app cũ cần nó; còn lại hãy chọn Unicode ở Gõ chữ › Bảng mã."

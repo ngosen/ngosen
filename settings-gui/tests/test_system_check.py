@@ -82,6 +82,25 @@ class InputPanelTest(unittest.TestCase):
         self.assertEqual(fix("", returncode=1), (False, None))
 
 
+class CharsetTest(unittest.TestCase):
+    def test_another_charset_is_a_tip_that_leaves_the_machine_ready(self):
+        found = system_check.steps(
+            facts("wayland", "ubuntu:GNOME", output_charset="Unicode tổ hợp")
+        )
+        tips = [f for f in found if f.title == "Output charset is Unicode tổ hợp, not Unicode"]
+        self.assertEqual([f.level for f in tips], [system_check.TIP])
+        self.assertFalse(tips[0].stops_typing)
+        self.assertEqual(system_check.problems(found), [])
+
+    def test_unicode_adds_nothing(self):
+        found = system_check.steps(facts("wayland", "ubuntu:GNOME"))
+        self.assertFalse([f for f in found if "charset" in f.title])
+
+    def test_the_charset_comes_from_the_ngosen_config(self):
+        handler = FakeDBusHandler(values={"OutputCharset": "TCVN3 (ABC)"})
+        self.assertEqual(system_check.collect(handler, env={}).output_charset, "TCVN3 (ABC)")
+
+
 class EvaluateTest(unittest.TestCase):
     def test_gnome_with_install_sh_variables_is_clean(self):
         self.assertEqual(system_check.evaluate(facts("wayland", "ubuntu:GNOME")), [])

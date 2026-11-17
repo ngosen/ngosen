@@ -72,6 +72,7 @@ class Facts:
     # This login, and for each step waiting for a login, the login that first saw it waiting.
     login: str = ""
     login_waits: dict = field(default_factory=dict)
+    output_charset: str = "Unicode"
 
     @property
     def session(self):
@@ -265,6 +266,7 @@ def steps(facts):
         )
     )
     found += _desktop_findings(facts)
+    found += _charset_findings(facts)
     if facts.ibus_owns_session:
         found.append(
             Finding(
@@ -382,6 +384,19 @@ def _input_panel_findings(facts):
         "Turn on Input Method Panel: gnome-extensions enable {}. If it still does not show, log out and back in."
     ).format(INPUT_PANEL)
     return [Finding(WARN, title, fix)]
+
+
+# Users pick another charset by mistake and then report broken typing in terminals and browsers.
+def _charset_findings(facts):
+    if not facts.output_charset or facts.output_charset == "Unicode":
+        return []
+    title = _("Output charset is {charset}, not Unicode").format(charset=facts.output_charset)
+    fix = _(
+        "Most apps expect Unicode. With another charset, terminals and web pages can show stray "
+        "tone marks or lose letters. Keep it only for an old document or app that needs it; "
+        "otherwise choose Unicode under Typing › Output Charset."
+    )
+    return [Finding(TIP, title, fix)]
 
 
 def _desktop_findings(facts):
@@ -764,6 +779,9 @@ def collect(dbus_handler, ngosen_version="", env=None):
     facts.ngosen_in_group = "ngosen" in (names or [])
     facts.ngosen_loaded = dbus_handler.has_input_method("ngosen") is not False
     facts.apps = parse_debug_info(dbus_handler.debug_info())
+    facts.output_charset = (dbus_handler.get_config().get("values") or {}).get(
+        "OutputCharset", "Unicode"
+    )
     return facts
 
 

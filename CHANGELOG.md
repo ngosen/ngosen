@@ -41,6 +41,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   chuyển mọi app cùng lúc như UniKey, kể cả khi cập nhật. App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh;
   bấm phím chuyển tại đó mở menu để chọn Gõ Sen hoặc Gạch chân. Muốn mỗi app nhớ riêng như trước, chọn
   “Từng app” ở “Phím chuyển áp dụng cho”, ngay dưới phím chuyển trên trang Phím tắt (#825).
+- Trang Kiểm tra máy nhắc khi Bảng mã không phải Unicode, kèm cách đổi lại; bản báo lỗi copy ra cũng ghi bảng mã. Lời
+  giải thích dưới Bảng mã nói rõ "Unicode tổ hợp" gửi dấu thanh tách khỏi chữ, nên terminal và nhiều app gõ sai (#839).
 
 ## [1.12.1-1] — 17/11/2026
 

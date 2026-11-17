@@ -286,6 +286,7 @@ namespace ngosen::test {
             later(47, [this, text] { applyHeldEdit(text); });
             return;
         }
+        bounceAfterEdit();
         later(quirks_.lagMs + quirks_.commitLagMs, [this, text] {
             if (focused_ && redraws_ == 0)
                 insert(utf8::decode(text));
@@ -352,6 +353,7 @@ namespace ngosen::test {
         }
         if (forwardedAt_ == 0)
             forwardedAt_ = monotonicUs();
+        bounceAfterEdit();
         if (quirks_.keyStepMs > 0) {
             later(quirks_.keyStepMs * ++queuedKeys_, [this] {
                 --queuedKeys_;
@@ -661,6 +663,16 @@ namespace ngosen::test {
         silentAfterDelete_ = (quirks_.reportsNothingAfterDelete && deletions_ != quirks_.reportsOnEdit) || quirks_.repeatsOldTextAfterDelete || quirks_.silentFromFirstDeletion;
         keysSinceDelete_   = 0;
         emptyCommits_      = 0;
+    }
+
+    void FakeApp::bounceAfterEdit() {
+        if (quirks_.bounceOnEditMs <= 0)
+            return;
+        later(quirks_.bounceOnEditMs, [this] {
+            state_->deactivate(true);
+            state_->activate(Mode::Sen, true);
+            changed();
+        });
     }
 
     void FakeApp::redrawAfterEdit() {

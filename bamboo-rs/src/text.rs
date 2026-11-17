@@ -40,6 +40,12 @@ pub fn has_any_vietnamese_rune(word: &str) -> bool {
     word.chars().any(|c| is_vietnamese_rune(lower(c)))
 }
 
+/// A plain vowel with the tone `split_tones` numbers as `tone`: `with_tone('a', 2)` is á.
+pub fn with_tone(vowel: char, tone: u32) -> Option<char> {
+    let pos = vowel_position(vowel).filter(|pos| pos % 6 == 0)?;
+    VOWELS.chars().nth(pos + tone as usize)
+}
+
 pub fn has_any_vietnamese_vowel(word: &str) -> bool {
     word.chars().any(|c| vowel_position(lower(c)).is_some())
 }

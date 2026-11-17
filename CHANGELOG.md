@@ -10,6 +10,14 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
+  giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
+  vẫn giữ nguyên (#701, #829).
+- Teencode giữ thêm chữ kéo dài (`nhaaa`, `chàiii` gõ `chaiiif`) và viết tắt ghép (`cgái`, `bthường`,
+  `đthoại`) (#701, #833).
+
 ## [1.12.1-1] — 17/11/2026
 
 Trong Firefox, gõ mã Yahoo như `:)`, `=))` nay hiện gợi ý emoji (#819). Trên GNOME, hai lần Backspace liền ngay sau khi mở Firefox không còn mất một lần (#815), và với fcitx5 5.1.23 chỉ còn hỏng chữ đầu tiên của phiên thay vì chữ đầu sau mỗi lần bấm sang ô khác (#816, #818). Menu chọn chế độ gõ đóng lại khi bấm phím không có trong menu hoặc sau 5 giây (#814, #817). Trong Firefox, Backspace ngay sau Space đã sửa `nhưg` thành `nhưng` trả lại `nhưg` (#813). Khôi phục tệp sao lưu sửa tay không còn bỏ qua giá trị `true`, `false` hay số (#805).
@@ -36,7 +44,7 @@ Tải ở [ngosen-1.12.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
   chữ. Chữ thường giữ lại và emoji thêm vào sau; `haha` và `:)` được thay bằng emoji. Gõ không dấu như
   `cuoi` vẫn ra, còn `cho`, `meo` thì không, vì đó đã là chữ tiếng Việt. Cờ hiện khi tên nước viết hoa
   (`Việt Nam`, `Pháp`). Hiện với giao diện fcitx5 mặc định và extension Input Method Panel trên GNOME;
-  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trên trang Emoji, mặc định bật (#110, #788).
+  không hiện ở ô mật khẩu, terminal, thanh địa chỉ. Tuỳ chọn "Gợi ý emoji khi gõ" nằm trong nhóm Gõ nhanh, mặc định bật (#110, #788).
 - Phím `w` trong menu `` ` `` nay bật/tắt gợi ý emoji cho app đang dùng, giống Vim mode; chế độ gõ của app
   giữ nguyên (#110, #791).
 - Gợi ý emoji thêm khoảng 460 từ lấy theo tên emoji, như `máy bay` ✈️, `xe máy` 🏍️, `cơm` 🍚, `bóng đá` ⚽, và 86 mã
@@ -57,11 +65,6 @@ Tải ở [ngosen-1.12.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
   còn sau khi đã đăng xuất rồi đăng nhập lại (hoặc khởi động lại máy), và tự mở trang để nhắc gửi kết quả cho Ngó Sen (#801).
 - Lần cài đầu bằng lệnh cài một dòng, cửa sổ cài đặt tự mở trang Kiểm tra máy để xem còn bước nào chưa xong:
   mở ngay nếu fcitx5 đang chạy, không thì mở một lần ở lần đăng nhập sau. Cập nhật thì không mở (#802).
-- Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
-  giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
-  vẫn giữ nguyên (#701, #829).
-- Teencode giữ thêm chữ kéo dài (`nhaaa`, `chàiii` gõ `chaiiif`) và viết tắt ghép (`cgái`, `bthường`,
-  `đthoại`) (#701, #833).
 
 ### Thay đổi
 

@@ -455,6 +455,25 @@ int main() {
     check(menu(*clickedBefore) != nullptr, "a click before reopening leaves the new menu", "menu closed");
     clickedBefore.reset();
 
+    // A click in some apps comes as a reset of the field; in Sen the menu must not stay drawn.
+    auto resetField = openField("resetfield");
+    press(engine, entry, *resetField, FcitxKey_grave);
+    press(engine, entry, *resetField, FcitxKey_1);
+    press(engine, entry, *resetField, FcitxKey_grave);
+    check(menu(*resetField) != nullptr, "the menu opens in resetField", "no menu");
+    int                      panelRedraws = 0;
+    auto                     redrawWatch  = testInstance.instance.watchEvent(fcitx::EventType::InputContextUpdateUI, fcitx::EventWatcherPhase::Default, [&](fcitx::Event& event) {
+        auto& update = static_cast<fcitx::InputContextUpdateUIEvent&>(event);
+        if (update.inputContext() == resetField.get() && update.component() == fcitx::UserInterfaceComponent::InputPanel)
+            ++panelRedraws;
+    });
+    fcitx::InputContextEvent appReset(resetField.get(), fcitx::EventType::InputContextReset);
+    engine.reset(entry, appReset);
+    check(!menu(*resetField), "an app reset closes the menu", "menu still open");
+    check(panelRedraws > 0, "an app reset redraws the closed menu", "no redraw");
+    redrawWatch.reset();
+    resetField.reset();
+
     // The panel picks from the menu it shows when the button goes down.
     auto clickedMenu = openField("clickedmenu");
     press(engine, entry, *clickedMenu, FcitxKey_grave);

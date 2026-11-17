@@ -1114,6 +1114,9 @@ namespace fcitx {
 
     void NgoSenEngine::reset(const InputMethodEntry& /*entry*/, InputContextEvent& event) {
         NGOSEN_INFO("Reset engine");
+        // In Sen the typing state clears the panel without redrawing it, which would leave the menu on screen.
+        if (isModeMenuOpen(event.inputContext()))
+            closeModeMenuPanel(event.inputContext(), false);
         auto* state = stateFor(event.inputContext());
         if (!state->isEmptyHistory() && event.type() != EventType::InputContextFocusOut) {
             return;

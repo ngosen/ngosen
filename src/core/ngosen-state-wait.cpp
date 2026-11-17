@@ -318,7 +318,8 @@ namespace ngosen {
                 sinceFocus_.seenEmpty = true;
         }
         noteAutofill(host_->surrounding());
-        if (!emojiTailAtReset_.empty()) {
+        // Chromium on Wayland reports an empty field right after a bounce; the next report shows the text.
+        if (!emojiTailAtReset_.empty() && !host_->surrounding().text().empty()) {
             std::string tail = std::move(emojiTailAtReset_);
             emojiTailAtReset_.clear();
             restoreEmojiTail(tail);

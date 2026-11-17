@@ -70,6 +70,7 @@ SETTINGS_MAP = {
     SettingsCategory.EMOJI: {
         EMOJI_GROUP: [
             "EmojiSuggestions",
+            "EmojiOfferAt",
             "EmojiPlacement",
             "YahooEmoticons",
             "EnglishEmojiKeywords",
@@ -149,6 +150,10 @@ HINTS = {
     "EnglishEmojiKeywords": N_(
         "cat and thumbs up also offer 🐈 and 👍, from the Unicode list of English words. Words that"
         " are also Vietnamese, like can, are left out."
+    ),
+    "EmojiOfferAt": N_(
+        "At the end of a sentence: after . ! ? or a short pause, the list holds the emoji of every"
+        " keyword in the sentence, and the one picked goes at the cursor."
     ),
     "EmojiPlacement": N_(
         "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
@@ -236,6 +241,7 @@ DEPENDS = {
     "TimeFormat": ("EnableMacro", "True"),
     "YahooEmoticons": ("EmojiSuggestions", "True"),
     "EmojiPlacement": ("EmojiSuggestions", "True"),
+    "EmojiOfferAt": ("EmojiSuggestions", "True"),
     "EnglishEmojiKeywords": ("EmojiSuggestions", "True"),
     "DateFormat": ("EnableMacro", "True"),
     **{shortcut: (shown, "True") for shortcut, shown in MODE_SHORTCUT_TO_VISIBILITY.items()},

@@ -701,6 +701,7 @@ namespace fcitx {
         o.yahooEmoticons                 = config_.yahooEmoticons.value();
         o.englishEmojiKeywords           = config_.englishEmojiKeywords.value();
         o.emojiReplacesWord              = config_.emojiPlacement.value() == EmojiPlacement::InsteadOfWord;
+        o.emojiAtSentenceEnd             = config_.emojiOfferAt.value() == EmojiOfferAt::SentenceEnd;
         o.emojiWordEdits.clear();
         for (const auto& word : *emojiWordsTable_.words)
             o.emojiWordEdits.push_back({*word.keyword, *word.emoji, *word.on});

@@ -211,6 +211,18 @@ msgid "After the word"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "Offer emoji"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "After each word"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "At the end of a sentence"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Instead of the word"
 msgstr ""
 
@@ -1443,6 +1455,10 @@ msgstr ""
 
 #: settings-gui/core/catalog.py
 msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "At the end of a sentence: after . ! ? or a short pause, the list holds the emoji of every keyword in the sentence, and the one picked goes at the cursor."
 msgstr ""
 
 #: settings-gui/core/catalog.py

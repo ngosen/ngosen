@@ -292,7 +292,8 @@ namespace ngosen {
         void                           noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore);
         void                           updateEmojiOffer();
         void                           offerForTypedText();
-        void                           offerForSentence();
+        bool                           offersForSentence() const;
+        void                           offerForSentence(bool settled);
         std::vector<std::string>       offeredEmoji() const;
         void                           showEmojiOffer();
         void                           dropEmojiOffer();

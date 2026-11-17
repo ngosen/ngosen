@@ -39,6 +39,15 @@ jobs:
       - name: No lotus in new names
         run: misc/check-new-names.sh origin/main
 
+  license-records:
+    name: Check license records
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install python3-debian
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends python3-debian
+      - run: /usr/bin/python3 misc/check-license-records.py
+
   release-files:
     name: Check release file selection
     runs-on: ubuntu-latest

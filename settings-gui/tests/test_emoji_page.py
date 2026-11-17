@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Ngó Sen contributors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import os
+import tempfile
 import unittest
 from unittest import mock
 
@@ -160,6 +162,16 @@ class EmojiPageTest(unittest.TestCase):
 
     def shown_texts(self):
         return [label.text() for label in self.page._apps.findChildren(QLabel) if label.isVisible()]
+
+    def test_export_then_import_on_another_machine(self):
+        page = self.open()
+        page.words.add("👔", "sếp lớn")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "words.json")
+            page.export_to(path)
+            self.open()
+            self.page.import_from(path)
+        self.assertEqual(self.saved_words(), [{"Keyword": "sếp lớn", "Emoji": "👔", "On": "True"}])
 
     def test_the_filters_change_the_count(self):
         self.open()

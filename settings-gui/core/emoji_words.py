@@ -7,6 +7,7 @@ fcitx5 keeps only the user's changes to the default words, so words added to a l
 still reach the user.
 """
 
+import json
 import unicodedata
 
 from i18n import _
@@ -17,11 +18,49 @@ from core.hotkeys import pretty_format_hotkey_parts
 WORDS = ("emoji_words", "Words")
 OFF_APPS = ("emoji_off_apps", "Apps")
 _BY_EMOJI = {row[0]: row for row in EMOJI}
+# A shared file is not a backup: importing it adds words, restoring a backup replaces them.
+SHARE_KIND = "ngosen-emoji-words"
+MOST_SHARED = 5000
+LONGEST_WORD = 40
 
 
 def clean(word):
     """A word as the engine compares it: lower case, composed, single spaces."""
     return " ".join(unicodedata.normalize("NFC", word).lower().split())
+
+
+def export_words(words, path):
+    """Writes the words the user turned on to path, for others to import. Returns how many."""
+    items = [{"Keyword": w, "Emoji": e} for (e, w), on in sorted(words.edits.items()) if on]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(
+            {"meta": {"kind": SHARE_KIND, "version": 1}, "emoji_words": items},
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
+    return len(items)
+
+
+def read_shared(path):
+    """The (emoji, word) pairs in a shared file; raises OSError or ValueError when it is not one."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    meta = data.get("meta") if isinstance(data, dict) else None
+    if not isinstance(meta, dict) or meta.get("kind") != SHARE_KIND:
+        raise ValueError(_("This is not a file of emoji words exported from Ngó Sen."))
+    items = data.get("emoji_words")
+    if not isinstance(items, list) or len(items) > MOST_SHARED:
+        raise ValueError(_("The emoji words in the file are damaged."))
+    pairs = []
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError(_("The emoji words in the file are damaged."))
+        emoji, word = item.get("Emoji"), clean(str(item.get("Keyword", "")))
+        # An emoji this version does not list, or a long text, is skipped rather than refused.
+        if emoji in _BY_EMOJI and word and len(word) <= LONGEST_WORD:
+            pairs.append((emoji, word))
+    return pairs
 
 
 def toggle_hint(menu_keys, emoji_key):
@@ -89,6 +128,16 @@ class EmojiWords:
             return False
         self.edits[(emoji, word)] = True
         return True
+
+    def merge(self, pairs):
+        """Turns on the words in pairs, except ones the user turned off. Returns how many."""
+        added = 0
+        for emoji, word in pairs:
+            if (emoji, word) in self.edits or self.is_on(emoji, word):
+                continue
+            self.edits[(emoji, word)] = True
+            added += 1
+        return added
 
     def changed(self, emoji):
         return any(e == emoji for e, _w in self.edits)

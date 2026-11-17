@@ -431,16 +431,26 @@ int main() {
     check(!menu(*clickedField), "a click in the field closes the menu", "menu still open");
     clickedField.reset();
 
-    // Some apps report only the new caret position after a click.
-    auto caretField = openField("caretfield");
-    caretField->setCursorRect(fcitx::Rect(100, 50, 101, 70));
-    press(engine, entry, *caretField, FcitxKey_grave);
-    check(menu(*caretField) != nullptr, "the menu opens in caretField", "no menu");
-    caretField->setCursorRect(fcitx::Rect(100, 50, 101, 70), 2.0);
-    check(menu(*caretField) != nullptr, "the same caret reported again keeps the menu", "menu closed");
-    caretField->setCursorRect(fcitx::Rect(20, 50, 21, 70));
-    check(!menu(*caretField), "a caret moved by a click closes the menu", "menu still open");
-    caretField.reset();
+    // Some apps answer a click with a report that still has the old caret.
+    auto reportField = openField("reportfield");
+    reportField->surroundingText().setText("abc", 3, 3);
+    reportField->updateSurroundingText();
+    pumpEventLoop(testInstance.instance, 1);
+    press(engine, entry, *reportField, FcitxKey_grave);
+    check(menu(*reportField) != nullptr, "the menu opens in reportField", "no menu");
+    reportField->updateSurroundingText();
+    pumpEventLoop(testInstance.instance, 1);
+    check(menu(*reportField) != nullptr, "a report right after the menu opens keeps it", "menu closed");
+    pumpEventLoop(testInstance.instance, 300);
+    press(engine, entry, *reportField, FcitxKey_Down);
+    reportField->updateSurroundingText();
+    pumpEventLoop(testInstance.instance, 1);
+    check(menu(*reportField) != nullptr, "a report right after a key in the menu keeps it", "menu closed");
+    pumpEventLoop(testInstance.instance, 300);
+    reportField->updateSurroundingText();
+    pumpEventLoop(testInstance.instance, 1);
+    check(!menu(*reportField), "a report long after the menu opened closes it", "menu still open");
+    reportField.reset();
 
     // A click X11 reports elsewhere, such as in another field of the same window.
     auto clickedAway = openField("clickedaway");

@@ -290,7 +290,7 @@ namespace fcitx {
         std::string                                 vimAppsPath_;
         std::string                                 emojiOffAppsPath_;
         std::weak_ptr<CandidateList>                modeMenuList_;
-        Rect                                        modeMenuCaret_;
+        uint64_t                                    modeMenuQuietSince_ = 0;
         // A modifier-only toggle key fires on release, unless another key came in between.
         bool                             toggleTapArmed_  = false;
         uint64_t                         toggleTapTime_   = 0;
@@ -308,6 +308,8 @@ namespace fcitx {
         static constexpr uint64_t CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
         // The panel picks an item on button press, so a click on the menu itself is handled first.
         static constexpr uint64_t MODE_MENU_CLICK_DELAY_USEC = 100000;
+        // A report this soon after the menu opens or a key answers the commit or the key, not a click.
+        static constexpr uint64_t MODE_MENU_ECHO_USEC = 250000;
 #ifdef NGOSEN_HAS_DBUS
         FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
         std::unique_ptr<NgoSenDBusObject>          dbusObject_;
@@ -322,9 +324,8 @@ namespace fcitx {
         KeySym                                 vimMenuKey_ = FcitxKey_None;
         std::unordered_set<std::string>        emojiOffApps_; ///< Apps where the user turned emoji suggestions off
         KeySym                                 emojiMenuKey_ = FcitxKey_None;
-        // A Wayland click reaches the IM only as a surrounding text update or a new caret position.
+        // A Wayland click reaches the IM only as a surrounding text update.
         std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
-        std::unique_ptr<HandlerTableEntry<EventHandler>> caretMoveWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> commitWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> contextDestroyedWatcher_;
 

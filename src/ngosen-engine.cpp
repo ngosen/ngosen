@@ -319,18 +319,14 @@ namespace fcitx {
         cursorJumpWatcher_ = instance_->watchEvent(EventType::InputContextSurroundingTextUpdated, EventWatcherPhase::Default, [this](Event& event) {
             auto*      ic        = static_cast<InputContextEvent&>(event).inputContext();
             const bool seenClick = g_mouse_clicked.load(std::memory_order_acquire);
+            // Firefox and GTK4 on KWin report again after a click in the field, sometimes with the old caret.
+            const bool quietMenu = isModeMenuOpen(ic) && ngosen::monotonicUs() - modeMenuQuietSince_ >= MODE_MENU_ECHO_USEC;
             stateFor(ic)->surroundingUpdated();
             // The caret moving with no edit is the only sign of a click the app gives on Wayland.
-            if (!seenClick && g_mouse_clicked.load(std::memory_order_acquire) && isModeMenuOpen(ic))
+            if ((quietMenu || (!seenClick && g_mouse_clicked.load(std::memory_order_acquire))) && isModeMenuOpen(ic))
                 closeModeMenuPanel(ic, true);
         });
-        // Firefox and GTK4 on KWin report the caret after a click but not the text until the next key.
-        caretMoveWatcher_ = instance_->watchEvent(EventType::InputContextCursorRectChanged, EventWatcherPhase::Default, [this](Event& event) {
-            auto* ic = static_cast<InputContextEvent&>(event).inputContext();
-            if (isModeMenuOpen(ic) && !(ic->cursorRect() == modeMenuCaret_))
-                closeModeMenuPanel(ic, true);
-        });
-        commitWatcher_    = instance_->watchEvent(EventType::InputContextCommitString, EventWatcherPhase::Default, [this](Event& event) {
+        commitWatcher_     = instance_->watchEvent(EventType::InputContextCommitString, EventWatcherPhase::Default, [this](Event& event) {
             auto& commit = static_cast<CommitStringEvent&>(event);
             stateFor(commit.inputContext())->noteCommit(commit.text());
         });
@@ -875,6 +871,8 @@ namespace fcitx {
     void NgoSenEngine::keyEvent(const InputMethodEntry& /*entry*/, KeyEvent& keyEvent) {
         auto* ic = keyEvent.inputContext();
         dropStaleSurroundingText(ic);
+        if (isModeMenuOpen(ic))
+            modeMenuQuietSince_ = ngosen::monotonicUs();
 
         if (isModeMenuOpen(ic) && g_mouse_clicked.load(std::memory_order_acquire)) {
             closeModeMenuPanel(ic, true);
@@ -1717,7 +1715,7 @@ namespace fcitx {
         ic->inputPanel().reset();
         ic->inputPanel().setCandidateList(std::move(candidateList));
         modeMenuList_        = ic->inputPanel().candidateList();
-        modeMenuCaret_       = ic->cursorRect();
+        modeMenuQuietSince_  = ngosen::monotonicUs();
         std::string appLabel = currentConfigureApp_;
         if (isStartsWith(currentConfigureApp_, "ctx_")) {
             // GNOME Shell relays every app through one field, so a rule without a name holds for all of them.

@@ -79,6 +79,7 @@ namespace ngosen {
             .bracketTransform    = static_cast<int>(engine_->options().bracketTransform),
             .timeFormat          = engine_->options().timeFormat.data(),
             .dateFormat          = engine_->options().dateFormat.data(),
+            .teencode            = engine_->options().teencode,
         };
 
         EngineSetOption(engine, &option);
@@ -656,8 +657,9 @@ namespace ngosen {
     }
 
     void TypingState::rememberWord(const std::string& committed, const char* dropped) {
-        lastWord_    = rebuildable(committed) ? committed : std::string();
-        droppedWord_ = !lastWord_.empty() && dropped != nullptr ? dropped : "";
+        lastWord_     = rebuildable(committed) ? committed : std::string();
+        droppedWord_  = !lastWord_.empty() && dropped != nullptr ? dropped : "";
+        lastWordAtUs_ = ngosen::monotonicUs();
     }
 
     bool TypingState::mayFixKeptWord(bool inPreedit) const {
@@ -812,7 +814,9 @@ namespace ngosen {
                 backspaceInWord_ = false;
             startEchoTimer(keyEvent);
         }
-        const bool        typedKey   = !keyEvent.isRelease() && !keyEvent.isModifier();
+        const bool typedKey = !keyEvent.isRelease() && !keyEvent.isModifier();
+        if (typedKey)
+            emojiTailAtReset_.clear();
         const std::string wordBefore = typedKey ? openWord() : std::string();
         emojiTookPress_              = false;
         handleKey(keyEvent);
@@ -878,11 +882,13 @@ namespace ngosen {
     void TypingState::handleKey(ngosen::KeyPress& keyEvent) {
         chooseWordMode(keyEvent);
         recordKey(keyEvent);
+        const bool pressedAgain = waitsForHeldKeyRelease(keyEvent);
         if (heldKeyIs(keyEvent.sym())) {
             const bool heldRelease = keyEvent.isRelease() && held_enter_release_;
             held_enter_release_    = false;
             if (heldRelease) {
                 keyEvent.accept();
+                noteBufferedRelease(keyEvent.sym());
                 if (ngosen::monotonicUs() >= held_enter_due_us_)
                     sendHeldEnter();
                 return;
@@ -890,6 +896,8 @@ namespace ngosen {
         }
         if (keyEvent.isRelease())
             noteBufferedRelease(keyEvent.sym());
+        else if (pressedAgain)
+            held_enter_release_ = true;
         else
             sendHeldEnter();
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
@@ -1018,6 +1026,14 @@ namespace ngosen {
         if (held_field_key_)
             return sym == held_field_key_->sym;
         return held_key_ == ngosen::EditKey::BackSpace ? ngosen::key::isBackspace(sym) : ngosen::key::isEnter(sym);
+    }
+
+    // GNOME Shell drops a key forwarded while the user holds that key down, so the held one waits for this
+    // press to come up and the press queues behind it.
+    bool TypingState::waitsForHeldKeyRelease(const ngosen::KeyPress& keyEvent) const {
+        const uint32_t sym = keyEvent.sym();
+        return held_enter_pending_ && !held_field_key_ && !keyEvent.isRelease() && heldKeyIs(sym) && ngosen::surroundingTextLags(host_->field()) &&
+            buffered_keys_.size() < MAX_BUFFERED_KEYS && (holdsBackspace(keyEvent, sym) || replayedEditKey(sym, keyEvent.states()));
     }
 
     void TypingState::forwardKeyTap(const KeyEntry& key) {
@@ -1350,8 +1366,31 @@ namespace ngosen {
         std::optional<LockedWord> locked;
         if (lockedWord_ && ngosen::monotonicUs() - lockedWord_->editedAtUs < OwnEditResetUs)
             locked = lockedWord_;
+        // A Firefox that just opened resets well after our commit; Backspace still checks the field first.
+        constexpr uint64_t SpaceFixResetUs = 250000;
+        const bool         ownCommit       = !lastWord_.empty() && ngosen::monotonicUs() - lastWordAtUs_ < SpaceFixResetUs;
+        std::string        committed       = ownCommit ? lastWord_ : std::string();
+        std::string        dropped         = ownCommit ? droppedWord_ : std::string();
+        std::string        emojiTail       = emojiTail_;
         resetField(false, true, keep);
         lockedWord_ = std::move(locked);
+        if (ownCommit) {
+            lastWord_    = std::move(committed);
+            droppedWord_ = std::move(dropped);
+        }
+        // Firefox resets after each key it types itself, as the : of :), before it reports that key.
+        if (!restoreEmojiTail(emojiTail))
+            emojiTailAtReset_ = std::move(emojiTail);
+    }
+
+    // The cursor stayed if the field still ends with what was typed outside a word.
+    bool TypingState::restoreEmojiTail(std::string& tail) {
+        const Surrounding s = host_->surrounding();
+        if (tail.empty() || !s.isValid() || s.cursor() != s.anchor() || !endsBeforeCursor(s, tail, false))
+            return false;
+        emojiTail_ = std::move(tail);
+        updateEmojiOffer();
+        return true;
     }
 
     // Qt reports the field unchanged after dropping the word; GTK, Firefox and Chromium commit it themselves.
@@ -1537,6 +1576,7 @@ namespace ngosen {
             pending_commit_string_.clear();
         }
         emojiTail_.clear();
+        emojiTailAtReset_.clear();
         dropEmojiOffer();
         buffered_keys_.clear();
         edit_hold_            = false;

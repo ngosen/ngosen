@@ -318,6 +318,11 @@ namespace ngosen {
                 sinceFocus_.seenEmpty = true;
         }
         noteAutofill(host_->surrounding());
+        if (!emojiTailAtReset_.empty()) {
+            std::string tail = std::move(emojiTailAtReset_);
+            emojiTailAtReset_.clear();
+            restoreEmojiTail(tail);
+        }
         checkSurroundingReport();
         surr_silent_        = false;
         surr_silent_streak_ = 0;

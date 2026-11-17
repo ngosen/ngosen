@@ -12,6 +12,33 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
+  giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
+  vẫn giữ nguyên (#701, #829).
+- Teencode giữ thêm chữ kéo dài (`nhaaa`, `chàiii` gõ `chaiiif`) và viết tắt ghép (`cgái`, `bthường`,
+  `đthoại`) (#701, #833).
+
+## [1.12.1-1] — 17/11/2026
+
+Trong Firefox, gõ mã Yahoo như `:)`, `=))` nay hiện gợi ý emoji (#819). Trên GNOME, hai lần Backspace liền ngay sau khi mở Firefox không còn mất một lần (#815), và với fcitx5 5.1.23 chỉ còn hỏng chữ đầu tiên của phiên thay vì chữ đầu sau mỗi lần bấm sang ô khác (#816, #818). Menu chọn chế độ gõ đóng lại khi bấm phím không có trong menu hoặc sau 5 giây (#814, #817). Trong Firefox, Backspace ngay sau Space đã sửa `nhưg` thành `nhưng` trả lại `nhưg` (#813). Khôi phục tệp sao lưu sửa tay không còn bỏ qua giá trị `true`, `false` hay số (#805).
+Tải ở [ngosen-1.12.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.12.1-1).
+
+### Sửa
+
+- Trong Firefox, gõ mặt cười kiểu Yahoo như `:)`, `:))`, `=))`, `:x` nay hiện gợi ý emoji như khi gõ chữ, thay vì không ra gì (#819).
+- Trên GNOME, gõ nhanh ngay sau khi mở Firefox, nhấn Backspace hai lần liền không còn mất một lần (`nam tieesng`, xoá `ng` rồi gõ lại ra `nam tiiếng`) (#815).
+- Khi menu chọn chế độ gõ (mở bằng `` ` ``) đang hiện, bấm một phím không có trong menu nay đóng menu và gõ ra phím đó, thay vì menu đứng yên và phím bị nuốt. Không bấm gì thì menu tự tắt sau 5 giây (#814, #817).
+- Trên GNOME với fcitx5 5.1.23, Ngó Sen nay nhớ cách xoá bằng BackSpace tới hết phiên, nên chỉ hỏng chữ đầu tiên thay vì hỏng chữ đầu sau mỗi lần bấm chuột sang ô khác trong app như VaultID (#816, #818).
+- Trong Firefox trên GNOME, gõ `nhưg` rồi Space ra `nhưng`, nhấn Backspace ngay sau đó nay trả lại đúng `nhưg` thay vì chỉ xoá dấu cách (#813).
+- Khôi phục từ tệp sao lưu sửa tay có giá trị viết `true`, `false` hay số không còn báo xong mà bỏ qua các mục đó: nay các giá trị này được khôi phục, còn giá trị là danh sách thì cửa sổ báo tệp hỏng trước khi ghi gì. Tệp do Ngó Sen tự xuất vẫn khôi phục như trước. Chỉ thử bằng unit test, chưa thử với fcitx5 thật (#805).
+
+## [1.12.0-1] — 16/11/2026
+
+Gợi ý emoji khi gõ: gõ xong `cười`, `con mèo`, `haha` hay mã Yahoo Messenger như `=))` là emoji hiện cạnh con trỏ, bấm Tab để chọn; trang Emoji mới trong cửa sổ cài đặt liệt kê mọi emoji kèm từ gợi ý, và chế độ Chọn Emoji cũ được thay bằng tính năng này (#788, #791, #792, #793, #795). Cửa sổ cài đặt tự mở trang Kiểm tra máy khi còn bước làm không gõ được tiếng Việt, khi đã đăng nhập lại mà thiết lập vẫn chưa có tác dụng, và sau lần cài đầu bằng lệnh cài một dòng (#798, #801, #802, #806).
+Tải ở [ngosen-1.12.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.12.0-1).
+
+### Thêm
+
 - Gợi ý emoji khi gõ: gõ xong `cười`, `con mèo`, `cảm ơn`, `haha` hay `:)` là hiện `Tab: 😂 …` cạnh con
   trỏ. Bấm Tab để đánh số (kèm dòng nhắc phím), rồi 1–5 chọn một emoji; Tab, Space hoặc Enter lấy emoji đầu, Esc giữ nguyên
   chữ. Chữ thường giữ lại và emoji thêm vào sau; `haha` và `:)` được thay bằng emoji. Gõ không dấu như

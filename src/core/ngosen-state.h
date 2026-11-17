@@ -192,8 +192,9 @@ namespace ngosen {
         ngosen::EngineResources* engine_;
         CGoObject                bambooEngine_;
         std::string              oldPreBuffer_;
-        std::string              lastWord_;    ///< The word and break we last committed, while only backspaces follow
-        std::string              droppedWord_; ///< lastWord_ as typed, before Space split it or dropped keys after it
+        std::string              lastWord_;                    ///< The word and break we last committed, while only backspaces follow
+        std::string              droppedWord_;                 ///< lastWord_ as typed, before Space split it or dropped keys after it
+        uint64_t                 lastWordAtUs_            = 0; ///< When lastWord_ was committed
         bool                     hasHistory_              = false;
         bool                     preeditWord_             = false; ///< Sen is on, but this word goes into the preedit
         int                      expected_backspaces_     = 0;     ///< backspaces the key paths still send; XTEST adds one that comes back
@@ -278,6 +279,7 @@ namespace ngosen {
         };
         std::optional<EmojiOffer>      emojiOffer_;
         std::string                    emojiTail_;              ///< text typed before the open word since the cursor last moved
+        std::string                    emojiTailAtReset_;       ///< emojiTail_ at an app reset, until the app reports its text
         bool                           emojiTookPress_ = false; ///< the offer took the key being handled
         std::vector<uint32_t>          emojiTakenSyms_;         ///< keys the offer took, whose releases it takes too
         std::unique_ptr<ngosen::Timer> emojiRecheck_;           ///< looks again once the word is in the app
@@ -290,6 +292,7 @@ namespace ngosen {
         bool                           replacementPending() const;
         bool                           inAddressBar() const;
         void                           noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore);
+        bool                           restoreEmojiTail(std::string& tail);
         void                           updateEmojiOffer();
         void                           offerForTypedText();
         bool                           offersForSentence() const;
@@ -608,6 +611,7 @@ namespace ngosen {
         ngosen::EditKey                held_key_           = ngosen::EditKey::Return;
         std::optional<KeyEntry>        held_field_key_; ///< held in place of held_key_
         bool                           heldKeyIs(uint32_t sym) const;
+        bool                           waitsForHeldKeyRelease(const ngosen::KeyPress& keyEvent) const;
 
         void                           commitPulledText();
 
@@ -729,7 +733,7 @@ namespace ngosen {
         SurroundingVerdict judgeOpenCheck(const Surrounding& report) const;
         void               closeSurroundingCheck(SurroundingVerdict verdict, const Surrounding* report, bool beforeNext = false);
         void               fixDroppedDeletion(const SurroundingCheck& check, const Surrounding& report);
-        void               markSurroundingUntrusted(const std::string& why);
+        void               markSurroundingUntrusted(const std::string& why, bool dropped = false);
         // The field takes no keys or applies them out of order, so surrounding text is its only way to delete.
         bool deletesOnlyThroughSurrounding() const;
         void askForReportAfterEdit();
@@ -758,6 +762,7 @@ namespace ngosen {
         bool                            pageHidesBackspaces() const;
         bool                            cellKeepsOwnText() const;
         bool                            marksFieldOnly() const;
+        bool                            keepsDropForSharedName() const;
         bool                            appMarkedUntrusted() const;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;

@@ -54,6 +54,7 @@ SETTINGS_MAP = {
             "AutoNonVnRestore",
             "SpellCheck",
             "DdFreeStyle",
+            "TeenCode",
             "RetypeAfterSwitch",
             "RetoneSelection",
         ],
@@ -124,6 +125,7 @@ HINTS = {
         "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
     ),
     "DdFreeStyle": N_("dd and Space stays đ instead of going back to dd."),
+    "TeenCode": N_("zaayj → zậy, ddag → đag, nhuwgx → nhữg. Most English words stay as typed."),
     "ModernStyle": N_("hoà, khoẻ, thuý, tuỳ. Off: hòa, khỏe, thúy, tùy."),
     "W2U": N_(
         "Non-Start: nhw → như, but w alone stays w. Everywhere: w alone gives ư too. uw always gives ư."
@@ -234,6 +236,7 @@ MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
 DEPENDS = {
     "SpellCheck": ("AutoNonVnRestore", "True"),
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
+    "TeenCode": ("AutoNonVnRestore", "True"),
     "IconTheme": ("UseLotusIcons", "False"),
     "TrayIconSize": ("UseLotusIcons", "True"),
     "CapitalizeMacro": ("EnableMacro", "True"),

@@ -3230,6 +3230,35 @@ namespace {
         }
     }
 
+    // An app relayed under GNOME Shell's name can drop every deletion, and each click opens a new
+    // field, which must not lose its first word again (#816).
+    void testDroppedDeletionKeptAcrossFocus() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "gnome-shell"), ngosen::test::AppQuirks{.ignoresSurroundingDel = true});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        ngosen::test::captureLog(true);
+        const auto typeWord = [&] {
+            for (const char c : std::string("ddi ")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(150);
+            }
+            loop.pump(600);
+        };
+        typeWord();
+        app->focusNewEmptyField(ngosen::Mode::Sen, 100);
+        loop.pump(300);
+        typeWord();
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(app->text() == "đi " && countHaving(lines, "Surrounding text untrusted") == 1, "shared GNOME Shell name: a dropped deletion is remembered after a click",
+              app->text() + " " + join(lines));
+    }
+
     // The user's own edits while a long check is open say nothing about the app.
     void testEditsDuringLongCheck() {
         const Field              gnome = makeField("ibus", true);
@@ -3702,6 +3731,14 @@ namespace {
         firefox.reportDelayMs = 90;
         const auto slow       = ngosen::test::typeInAppTraced(slowResources, field, firefox, keys, std::vector<int>(keys.size(), 60));
         check(slow.text == "nam tiếng ", "split edit on GNOME: a key typed while a replayed Backspace is held waits behind the keys before it", slow.text);
+
+        // GNOME Shell drops a key forwarded while the user holds that key down.
+        FakeResources heldResources;
+        firefox.reportDelayMs         = 120;
+        firefox.keyHoldMs             = 30;
+        firefox.dropsForwardedHeldKey = true;
+        const auto held               = ngosen::test::typeInAppTraced(heldResources, field, firefox, keys, std::vector<int>(keys.size(), 100));
+        check(held.text == "nam tiếng ", "split edit on GNOME: a held Backspace waits for the next Backspace to come up", held.text);
     }
 
     // The cursor moving over our own edit is not a click, so the word goes on.
@@ -3961,6 +3998,39 @@ namespace {
                 loop.pump(120);
             }
             check(app->text() == "t ", std::string(frontend) + ": a key in another cell well after our edit starts a new word", app->text());
+        }
+    }
+
+    // Firefox resets the context right after our commit; Backspace still undoes what Space did to the word.
+    void testFirefoxResetAfterSpaceFix() {
+        struct Case {
+            int         resetMs;
+            bool        click;
+            std::string want;
+            const char* step;
+        };
+        const Case cases[] = {{10, false, "nhưg", "fcitx4: a reset right after Space keeps the word for Backspace"},
+                              {100, false, "nhưg", "fcitx4: a reset from a Firefox that just opened keeps the word for Backspace"},
+                              {10, true, "nhưng ", "fcitx4: a click before the reset leaves the word alone"}};
+        for (const auto& c : cases) {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       plain;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("fcitx4", true, "firefox"), ngosen::test::AppQuirks{});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&plain, std::move(owned));
+            app->attach(&state);
+            for (const uint32_t key : keysOf("nhuwg ")) {
+                app->type(key);
+                loop.pump(key == ' ' ? c.resetMs : 150);
+            }
+            if (c.click)
+                app->moveCursor(0);
+            state.appReset();
+            loop.pump(150);
+            app->type(ngosen::key::BackSpace);
+            loop.pump(300);
+            check(app->text() == c.want, c.step, app->text());
         }
     }
 
@@ -5277,6 +5347,7 @@ int main() {
     testSlowBackspaceOnWlroots();
     testFieldDroppingSurroundingAfterDelete();
     testSnapFirefoxReportingLate();
+    testFirefoxResetAfterSpaceFix();
     testUndeclaredFieldAfterFocusChange();
     testLateCopiesRecoverOnWlroots();
     testLockWordNotOnChord();
@@ -5379,6 +5450,7 @@ int main() {
     testBackspacePathDuringLongCheck();
     testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
+    testDroppedDeletionKeptAcrossFocus();
     testShortDeletion();
     testCheckAcrossLateAppName();
     testEditsDuringLongCheck();

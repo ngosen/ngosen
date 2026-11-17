@@ -299,6 +299,7 @@ namespace fcitx {
         std::string               iconCacheName_;
         std::string               iconCachePath_;
         static constexpr uint64_t CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
+        static constexpr uint64_t MODE_MENU_TIMEOUT_USEC               = 5000000;
 #ifdef NGOSEN_HAS_DBUS
         FCITX_ADDON_DEPENDENCY_LOADER(dbus, instance_->addonManager());
         std::unique_ptr<NgoSenDBusObject>          dbusObject_;
@@ -484,8 +485,10 @@ namespace fcitx {
         void          showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn);
         void          clearPanelLater(InputContext* ic, uint64_t delayUs);
 
-        void          handleModeMenuKey(KeyEvent& keyEvent);
+        bool          handleModeMenuKey(KeyEvent& keyEvent);
+        bool          handleModeMenuPick(KeyEvent& keyEvent);
         void          moveModeMenuCursor(InputContext* ic, CommonCandidateList* menuList, int delta);
+        void          closeModeMenuLater(InputContext* ic);
         // Hides the menu; resetState also commits and clears what the field was typing.
         void closeModeMenuPanel(InputContext* ic, bool resetState);
         // Applies a mode picked from the menu and remembers it for the app.

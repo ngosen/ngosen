@@ -43,6 +43,39 @@ class LoadTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.load(data)
 
+    def test_switches_and_numbers_written_by_hand_load_as_fcitx5_text(self):
+        data = {
+            "config": {
+                "SpellCheck": False,
+                "WaitSurroundingTimeoutMs": 5,
+                "ToggleKey": {"0": "Control+space"},
+            },
+            "switches": [{"App": "kate", "Vietnamese": True}],
+        }
+        loaded = self.load(data)
+        self.assertEqual(
+            loaded["config"],
+            {
+                "SpellCheck": "False",
+                "WaitSurroundingTimeoutMs": "5",
+                "ToggleKey": {"0": "Control+space"},
+            },
+        )
+        self.assertEqual(loaded["switches"], [{"App": "kate", "Vietnamese": "True"}])
+
+    def test_null_still_clears_a_value(self):
+        loaded = self.load({"macros": [{"Key": "vn", "Value": None}]})
+        self.assertEqual(loaded["macros"], [{"Key": "vn", "Value": ""}])
+
+    def test_lists_fcitx5_cannot_hold_are_refused(self):
+        for data in (
+            {"config": {"ToggleKey": ["Control+space"]}},
+            {"macros": [{"Key": "vn", "Value": ["Việt Nam"]}]},
+        ):
+            with self.subTest(data):
+                with self.assertRaises(ValueError):
+                    self.load(data)
+
     def test_a_file_of_shared_emoji_words_is_not_restored(self):
         shared = {
             "meta": {"kind": "ngosen-emoji-words", "version": 1},

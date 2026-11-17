@@ -1421,7 +1421,7 @@ msgid "No desktop session bus. Run this as your own user in a desktop terminal."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
+msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Unicode tổ hợp sends tone marks apart from their letters, which terminals and many apps handle badly. Cứu dấu works only with Unicode."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
@@ -2187,4 +2187,12 @@ msgstr ""
 
 #: settings-gui/core/backup.py
 msgid "this file holds emoji words; import it on the Emoji page"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Output charset is {charset}, not Unicode"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Most apps expect Unicode. With another charset, terminals and web pages can show stray tone marks or lose letters. Keep it only for an old document or app that needs it; otherwise choose Unicode under Typing › Output Charset."
 msgstr ""

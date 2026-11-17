@@ -125,7 +125,9 @@ HINTS = {
         "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
     ),
     "OutputCharset": N_(
-        "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
+        "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). "
+        "Unicode tổ hợp sends tone marks apart from their letters, which terminals and many apps "
+        "handle badly. Cứu dấu works only with Unicode."
     ),
     "DdFreeStyle": N_("dd and Space stays đ instead of going back to dd."),
     "TeenCode": N_("zaayj → zậy, ddag → đag, nhuwgx → nhữg. Most English words stay as typed."),

@@ -15,7 +15,7 @@ from i18n import N_
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
     {
-        "version": "1.12",
+        "version": "1.13",
         "title": N_("One switch for every app"),
         "how": N_(
             "New installs start in Vietnamese, and the switch key now changes all apps at once, "

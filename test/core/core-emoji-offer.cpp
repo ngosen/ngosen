@@ -54,6 +54,7 @@ namespace {
     // Firefox resets right after the key and reports the text it typed only after that.
     constexpr uint32_t EarlyReset = 12;
     constexpr uint32_t Chosen     = 13; // records the highlighted item of the panel
+    constexpr uint32_t Pick       = 14; // a click on the first item of the panel
     constexpr uint32_t Left       = ngosen::key::Left;
     constexpr uint32_t Right      = ngosen::key::Right;
     constexpr uint32_t Down       = ngosen::key::Down;
@@ -123,6 +124,9 @@ namespace {
                 loop.pump(1000);
             } else if (key == InField) {
                 result.inField.push_back(app->hint());
+            } else if (key == Pick) {
+                app->pickCandidate(0);
+                loop.pump(20);
             } else if (key == Chosen) {
                 result.chosen.push_back(app->highlighted());
             } else if (key == Status) {
@@ -380,6 +384,15 @@ namespace {
         check(r.inField.front() == " Tab: 🐈 🐱" && r.text == "con mèo. 🐈", "a word before a full stop counts in the field", r.inField.front() + " / " + r.text);
     }
 
+    // A list left from before the cursor moved would put the emoji, or replace a word, at the new cursor.
+    void testPickAfterCursorMoved() {
+        auto r = type(keysOf("cuwowif") + std::vector<uint32_t>{Pause, Hint, Home, Pause, Pick});
+        check(r.hints.front() != "(none)" && r.text == "cười", "a click on the list after the cursor moved puts nothing", r.hints.front() + " / " + r.text);
+        const auto atEnd = [](FakeResources& res) { res.mutableOptions().emojiAtSentenceEnd = true; };
+        r                = type(keysOf("con meof cuwowif.") + std::vector<uint32_t>{Pause, Hint, Home, Pause, Pick}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() != "(none)" && r.text == "con mèo cười.", "sentence end: a click after the cursor moved puts nothing", r.hints.front() + " / " + r.text);
+    }
+
     // The release of a key the list took stays away from the app as well.
     void testRelease() {
         FakeResources resources;
@@ -421,6 +434,7 @@ int main() {
     testReplacingWords();
     testSlowApp();
     testSentenceEnd();
+    testPickAfterCursorMoved();
     testRelease();
     if (failures)
         std::cerr << failures << " failure(s)\n";

@@ -660,6 +660,10 @@ namespace ngosen {
         if (!jumped || is_deleting_.load(std::memory_order_acquire))
             return;
         NGOSEN_INFO("Cursor moved without an edit");
+        // The list was for the text at the old cursor.
+        dropEmojiOffer();
+        // The list was for the text at the old cursor.
+        dropEmojiOffer();
         // Only a move on text that stood at the old cursor can come back.
         if ((sameText || keepsTextBeforeCursor) && !needEngineReset.load())
             jumpedFrom_ = std::make_pair(s.text(), previousCursor);

@@ -287,6 +287,10 @@ msgstr "Backspace xoá dấu thanh"
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
 msgstr "Vẫn gõ dd ra đ khi tự khôi phục"
 
+#: src/ngosen-config.h
+msgid "Teencode"
+msgstr "Teencode"
+
 #: src/ngosen-config.h:244
 msgid "Use Ngó Sen Status Icons"
 msgstr "Sử dụng biểu tượng trạng thái Ngó Sen"
@@ -1550,6 +1554,10 @@ msgstr "Cứ để Unicode, trừ khi văn bản hay app cũ cần bảng mã kh
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "dd and Space stays đ instead of going back to dd."
 msgstr "Gõ dd rồi dấu cách vẫn ra đ, không bị trả về dd."
+
+#: settings-gui/core/catalog.py
+msgid "zaayj → zậy, ddag → đag, nhuwgx → nhữg. Most English words stay as typed."
+msgstr "zaayj → zậy, ddag → đag, nhuwgx → nhữg. Phần lớn từ tiếng Anh vẫn giữ nguyên như đã gõ."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "hoà, khoẻ, thuý, tuỳ. Off: hòa, khỏe, thúy, tùy."

@@ -230,6 +230,10 @@ msgstr ""
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
 msgstr ""
 
+#: src/ngosen-config.h
+msgid "Teencode"
+msgstr ""
+
 #: src/ngosen-config.h:244
 msgid "Use Ngó Sen Status Icons"
 msgstr ""
@@ -1386,6 +1390,10 @@ msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "dd and Space stays đ instead of going back to dd."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "zaayj → zậy, ddag → đag, nhuwgx → nhữg. Most English words stay as typed."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py

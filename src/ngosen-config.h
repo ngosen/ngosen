@@ -305,7 +305,6 @@ namespace fcitx {
                                                                                                         static_cast<BracketTransformMode>(ngosen::defaultOptions.bracketTransform)};
 
         Option<bool> spellCheck{this, "SpellCheck", _("Enable Spell Check Using Dictionary"), ngosen::defaultOptions.spellCheck};
-        Option<bool> teencode{this, "TeenCode", _("Teencode"), ngosen::defaultOptions.teencode};
         Option<bool> enableMacro{this, "EnableMacro", _("Enable Macro"), ngosen::defaultOptions.enableMacro};
         Option<bool> capitalizeMacro{this, "CapitalizeMacro", _("Capitalize Macro"), ngosen::defaultOptions.capitalizeMacro};
         OptionWithAnnotation<LockWordModifier, LockWordModifierI18NAnnotation> lockWordModifier{this, "LockWordModifier", _("Key to Keep the Word as Typed"),
@@ -325,6 +324,7 @@ namespace fcitx {
         Option<bool> modernStyle{this, "ModernStyle", _("Use oà, uý (Instead Of òa, úy)"), ngosen::defaultOptions.modernStyle};
         Option<bool> freeMarking{this, "FreeMarking", _("Allow Type With More Freedom"), ngosen::defaultOptions.freeMarking};
         Option<bool> ddFreeStyle{this, "DdFreeStyle", _("Allow dd To Produce đ When Auto Restore Invalid Words Is On"), ngosen::defaultOptions.ddFreeStyle};
+        Option<bool> teencode{this, "TeenCode", _("Teencode"), ngosen::defaultOptions.teencode};
         Option<bool> backspaceRemovesTone{this, "BackspaceRemovesTone", _("Backspace Removes the Tone Mark"), ngosen::defaultOptions.backspaceRemovesTone};
         // Timing for deleting through the app. Hidden from the config window; tests and bug reports
         // still set them in ngosen.conf.

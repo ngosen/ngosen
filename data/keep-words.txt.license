@@ -15,3 +15,5 @@ The words taken from misc/keep-words-written.txt are
 Copyright 2026 Ngó Sen contributors
 and licensed under the GNU General Public License, version 3 or later
 (LICENSES/GPL-3.0-or-later.txt).
+
+SPDX-License-Identifier: LicenseRef-SCOWL AND GPL-3.0-or-later

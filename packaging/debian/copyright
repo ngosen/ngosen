@@ -23,6 +23,12 @@ Copyright: 2018 Luong Thanh Lam <ltlam93@gmail.com>
            2026 Ngó Sen contributors
 License: LGPL-2.1-or-later
 
+Files: misc/check-word-endings.py
+       misc/gen-english-words.py
+       misc/gen-keep-words.py
+Copyright: 2026 Ngó Sen contributors
+License: LGPL-2.1-or-later
+
 Files: bamboo-rs/src/engine/english-*
        data/english-common.txt
 Copyright: 2000-2026 Kevin Atkinson

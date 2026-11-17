@@ -33,7 +33,10 @@ namespace ngosen::test {
             return options_;
         }
         std::vector<KeymapEntry> customKeymap() const override {
-            return {};
+            return customKeymap_;
+        }
+        void setCustomKeymap(std::vector<KeymapEntry> keymap) {
+            customKeymap_ = std::move(keymap);
         }
         uintptr_t dictionary() const override {
             return dictionary_;
@@ -58,12 +61,13 @@ namespace ngosen::test {
         }
 
       private:
-        Options   options_;
-        uintptr_t dictionary_   = 0;
-        uintptr_t macroTable_   = 0;
-        uintptr_t englishWords_ = 0;
-        uintptr_t keepWords_    = 0;
-        Recorder  recorder_;
+        Options                  options_;
+        std::vector<KeymapEntry> customKeymap_;
+        uintptr_t                dictionary_   = 0;
+        uintptr_t                macroTable_   = 0;
+        uintptr_t                englishWords_ = 0;
+        uintptr_t                keepWords_    = 0;
+        Recorder                 recorder_;
     };
 
     class FakeKey final : public KeyPress {

@@ -23,6 +23,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trang Emoji có nút "Xuất…" và "Nhập…" để chia sẻ từ gợi ý emoji: Xuất lưu các từ mình đã bật ra một file nhỏ,
   Nhập thêm từ của file vào mà giữ nguyên từ của mình (từ mình đã tắt vẫn tắt). "Khôi phục bản sao lưu" không nhận
   file này để khỏi xoá mất từ đang có (#110, #832).
+- Tuỳ chọn "Gợi ý emoji": "Sau mỗi từ" (như trước) hoặc "Ở cuối câu". Ở cuối câu, gõ `.` `!` `?` hay dừng tay một
+  chút thì danh sách hiện emoji của mọi từ khoá trong câu, emoji chọn được thêm sau dấu câu (`vui quá! 😂`). Gợi ý
+  trong ô gõ nay cũng nhận từ đứng trước dấu chấm (`con mèo.` gợi ý 🐈) (#110, #834).
 - Tuỳ chọn "Teencode" trong nhóm sửa từ, mặc định tắt: chữ viết kiểu teencode như `zậy`, `fải`, `đag`, `nhưg`
   giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra `nhữg`). Từ tiếng Anh phần lớn
   vẫn giữ nguyên (#701, #829).

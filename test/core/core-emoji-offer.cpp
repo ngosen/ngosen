@@ -356,6 +356,30 @@ namespace {
         check(later == "Tab: 😂 🤣 😄 😆 😁", "the hint comes once the app shows the word", later + ", text " + app->text());
     }
 
+    // With emoji offered at the end of a sentence, after . ! ? or a pause, for every keyword in it.
+    void testSentenceEnd() {
+        const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
+        auto       r     = type(keysOf("cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() == "(none)", "sentence end: nothing after each word", r.hints.front());
+        r = type(keysOf("cuwowif.") + std::vector<uint32_t>{Hint, Tab, Tab}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() == "Tab: 😂 🤣 😄 😆 😁" && r.text == "cười. 😂", "sentence end: a full stop offers the emoji, put after it", r.hints.front() + " / " + r.text);
+        r = type(keysOf("con meof cuwowif quas") + std::vector<uint32_t>{Pause, Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() == "Tab: 😂 🤣 😄 🐈 🐱", "sentence end: a pause offers the emoji of the sentence", r.hints.front());
+        r = type(keysOf("con meof cuwowif quas!") + std::vector<uint32_t>{Tab, '4'}, Mode::Sen, makeField(), atEnd);
+        check(r.text == "con mèo cười quá! 🐈", "sentence end: an emoji of an earlier word", r.text);
+        r = type(keysOf("hahaha!") + std::vector<uint32_t>{Tab, Tab}, Mode::Sen, makeField(), atEnd);
+        check(r.text.rfind("hahaha! ", 0) == 0 && r.text.size() > 8, "sentence end: a sound before the stop stays", r.text);
+        r = type(keysOf("cuwowif. ") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() == "(none)" && r.text == "cười. ", "sentence end: typing on takes the offer away", r.hints.front() + " / " + r.text);
+        r = type(keysOf("gias 3.5") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints.front() == "(none)", "sentence end: a decimal point ends nothing", r.hints.front());
+
+        Field noPanel           = makeField();
+        noPanel.drawsCandidates = false;
+        r                       = type(keysOf("con meof.") + std::vector<uint32_t>{Pause, InField, Tab, Tab}, Mode::Sen, noPanel);
+        check(r.inField.front() == " Tab: 🐈 🐱" && r.text == "con mèo. 🐈", "a word before a full stop counts in the field", r.inField.front() + " / " + r.text);
+    }
+
     // The release of a key the list took stays away from the app as well.
     void testRelease() {
         FakeResources resources;
@@ -396,6 +420,7 @@ int main() {
     testReplacing();
     testReplacingWords();
     testSlowApp();
+    testSentenceEnd();
     testRelease();
     if (failures)
         std::cerr << failures << " failure(s)\n";

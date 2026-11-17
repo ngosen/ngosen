@@ -377,6 +377,22 @@
     }
    ],
    [
+    "EmojiOfferAt",
+    "Enum",
+    "Offer emoji",
+    "After each word",
+    {
+     "EnumI18n": {
+      "0": "After each word",
+      "1": "At the end of a sentence"
+     },
+     "Enum": {
+      "0": "After each word",
+      "1": "At the end of a sentence"
+     }
+    }
+   ],
+   [
     "AutoNonVnRestore",
     "Boolean",
     "Auto Restore Invalid Words",

@@ -295,7 +295,8 @@ namespace ngosen {
         bool                           restoreEmojiTail(std::string& tail);
         void                           updateEmojiOffer();
         void                           offerForTypedText();
-        void                           offerForSentence();
+        bool                           offersForSentence() const;
+        void                           offerForSentence(bool settled);
         std::vector<std::string>       offeredEmoji() const;
         void                           showEmojiOffer();
         void                           dropEmojiOffer();

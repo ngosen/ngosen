@@ -268,6 +268,18 @@ msgid "After the word"
 msgstr "Đặt sau từ"
 
 #: src/ngosen-config.h
+msgid "Offer emoji"
+msgstr "Gợi ý emoji"
+
+#: src/ngosen-config.h
+msgid "After each word"
+msgstr "Sau mỗi từ"
+
+#: src/ngosen-config.h
+msgid "At the end of a sentence"
+msgstr "Ở cuối câu"
+
+#: src/ngosen-config.h
 msgid "Instead of the word"
 msgstr "Thay luôn từ"
 
@@ -1616,6 +1628,10 @@ msgstr "Gõ cat hay thumbs up cũng gợi ý 🐈 hay 👍, theo danh sách từ
 #: settings-gui/core/catalog.py
 msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
 msgstr "Đặt sau từ: cười 😂. Thay luôn từ: 😂. Còn haha và :) thì luôn được thay."
+
+#: settings-gui/core/catalog.py
+msgid "At the end of a sentence: after . ! ? or a short pause, the list holds the emoji of every keyword in the sentence, and the one picked goes at the cursor."
+msgstr "Cuối câu: sau dấu . ! ? hoặc khi dừng tay một chút, danh sách gồm emoji của mọi từ khoá trong câu, emoji chọn được thêm vào chỗ con trỏ."
 
 #: settings-gui/core/catalog.py
 msgid "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."

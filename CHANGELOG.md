@@ -33,6 +33,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   (`con mèo cười quá` → `Tab: 😂 🤣 😄 🐈 🐱`); Tab rồi số để chọn, emoji thêm vào chỗ con trỏ (#110, #821).
 - Khi danh sách emoji đã đánh số, phím mũi tên dời ô đang chọn và Enter, Space hoặc Tab lấy emoji đang chọn. Ô nổi
   của fcitx5 mặc định vẽ chữ to hơn (Sans 13 thay Sans 10) cho dễ nhìn emoji; ai đã tự đặt font thì giữ nguyên (#110, #827).
+- Gợi ý emoji nhận cả từ tiếng Anh theo danh sách của Unicode: `cat` 🐈, `star` ⭐, `thumbs up` 👍. Từ quá chung
+  (`man`, `hand`, `face`) và từ trùng chữ Việt như `can`, `me` thì không gợi ý. Trang Emoji hiện từ tiếng Anh cạnh
+  từ tiếng Việt; tuỳ chọn "Từ khoá tiếng Anh" mặc định bật, tắt đi là gỡ hết (#110, #830).
 - Cửa sổ cài đặt mở thẳng trang Kiểm tra máy lần đầu mở, và khi còn bước làm không gõ được tiếng Việt (fcitx5
   không chạy, chưa thêm Ngó Sen, fcitx5 chạy từ trước lúc cài Ngó Sen, app chưa nhận bộ gõ…): báo ngay lần phát
   hiện, rồi nhắc lại sau 3, 6, 12… lần mở cho tới khi sửa xong. Cảnh báo vàng khác thì không tự mở (#798).

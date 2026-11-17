@@ -203,7 +203,8 @@ class GtkEmojiPageTest(unittest.TestCase):
         self.assertIn("hài quá", [c.word for c in self.row("😂").chips if c.get_visible()])
 
     def test_english_switch_hides_english_words(self):
-        shown = lambda: [c.word for c in self.row("😂").chips if c.get_visible()]  # noqa: E731
+        # libadwaita 1.5 hides the FlowBoxChild around a chip, not the chip.
+        shown = lambda: [c.word for c in self.row("😂").chips if c.is_visible()]  # noqa: E731
         self.assertIn("laugh", shown())
         self.page.rows["EnglishEmojiKeywords"].set_active(False)
         self.assertTrue(_settle(lambda: "laugh" not in shown()))

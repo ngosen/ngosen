@@ -36,6 +36,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gợi ý emoji nhận cả từ tiếng Anh theo danh sách của Unicode: `cat` 🐈, `star` ⭐, `thumbs up` 👍. Từ quá chung
   (`man`, `hand`, `face`) và từ trùng chữ Việt như `can`, `me` thì không gợi ý. Trang Emoji hiện từ tiếng Anh cạnh
   từ tiếng Việt; tuỳ chọn "Từ khoá tiếng Anh" mặc định bật, tắt đi là gỡ hết (#110, #830).
+- Trang Emoji có nút "Xuất…" và "Nhập…" để chia sẻ từ gợi ý emoji: Xuất lưu các từ mình đã bật ra một file nhỏ,
+  Nhập thêm từ của file vào mà giữ nguyên từ của mình (từ mình đã tắt vẫn tắt). "Khôi phục bản sao lưu" không nhận
+  file này để khỏi xoá mất từ đang có (#110, #832).
 - Cửa sổ cài đặt mở thẳng trang Kiểm tra máy lần đầu mở, và khi còn bước làm không gõ được tiếng Việt (fcitx5
   không chạy, chưa thêm Ngó Sen, fcitx5 chạy từ trước lúc cài Ngó Sen, app chưa nhận bộ gõ…): báo ngay lần phát
   hiện, rồi nhắc lại sau 3, 6, 12… lần mở cho tới khi sửa xong. Cảnh báo vàng khác thì không tự mở (#798).

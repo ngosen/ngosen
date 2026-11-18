@@ -1675,3 +1675,22 @@ fn test_space_keeps_stretched_words() {
     e.process_key_event(KEY_SPACE, 0);
     assert_eq!(e.pull_commit(), "ừaaa ");
 }
+
+#[test]
+fn test_retyped_tone_after_a_final_is_not_kept() {
+    let mut e = engine_keeping_words("Telex", &["axit"]);
+    for (keys, word) in [
+        ("mooxtj", "một"),
+        ("toorts", "tốt"),
+        ("ddaafts", "đất"),
+        ("gheefchs", "ghếch"),
+        ("ddacxs", "đác"),
+    ] {
+        assert_eq!(commit_of(&mut e, keys), format!("{word} "), "{keys}");
+        assert_eq!(
+            commit_dropping(&mut e, keys).0,
+            format!("{word} "),
+            "{keys}"
+        );
+    }
+}

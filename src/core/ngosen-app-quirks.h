@@ -57,6 +57,11 @@ namespace ngosen {
     // presses (Lark Sheets): a deletion through the surrounding text then changes only the copy reported.
     bool pageMayKeepOwnText(const Field& field);
 
+    // True for apps whose page can hold an xterm.js terminal that never reports what it shows: Firefox and
+    // WebKitGTK browsers, VaultID (a Tauri app), and any app GNOME Shell does not name, as it often leaves
+    // VaultID. Other apps that report nothing look the same at first.
+    bool mayShowWebTerminal(const Field& field);
+
     // Under GNOME, apps reach fcitx5 through GNOME Shell's IBus bridge, which can relay the client's
     // surrounding text tens of milliseconds late, one edit at a time.
     bool surroundingTextLags(const Field& field);

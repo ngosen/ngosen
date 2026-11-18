@@ -160,8 +160,11 @@ namespace ngosen {
                 performReplacement(oldPreBuffer_, commitStr);
             } else if (host_->surrounding().isValid()) {
                 const size_t oldLen = ngosen::utf8::length(oldPreBuffer_);
-                if (oldLen > 0)
+                if (oldLen > 0) {
+                    flushComposedCommit();
+                    sinceFocus_.erasedSinceReport = -1;
                     host_->deleteSurrounding(-static_cast<int>(oldLen), static_cast<int>(oldLen));
+                }
                 commit(commitStr);
             } else {
                 // The abbreviation stays in the field, so the expansion would land after it.

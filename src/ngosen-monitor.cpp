@@ -13,9 +13,14 @@ std::thread          mouse_thread = std::thread();
 ngosen::X11Selection x11_selection;
 
 namespace {
+    std::function<void()> on_click;
+
+    // Runs on the monitor thread, so on_click must hand its work to the event loop.
     void markMouseClick() {
         needEngineReset.store(true, std::memory_order_release);
         g_mouse_clicked.store(true, std::memory_order_release);
+        if (on_click)
+            on_click();
     }
 } // namespace
 
@@ -26,6 +31,7 @@ void mousePressResetThread() {
     ngosen::watchX11PointerClicks(stop_flag_monitor, markMouseClick, getEnv("WAYLAND_DISPLAY").empty() ? &x11_selection : nullptr);
 }
 
-void startMouseReset() {
+void startMouseReset(std::function<void()> onClick) {
+    on_click     = std::move(onClick);
     mouse_thread = std::thread(mousePressResetThread);
 }

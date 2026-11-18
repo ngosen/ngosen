@@ -1,0 +1,6 @@
+The emoji, their groups and their Vietnamese names in this file come from Unicode's emoji-test.txt
+and CLDR (annotations and annotationsDerived), under the Unicode License v3
+(LICENSES/Unicode-3.0.txt). The keywords on by default are GPL-3.0-or-later, from
+data/emoji-keywords.tsv.
+
+SPDX-License-Identifier: GPL-3.0-or-later AND Unicode-3.0

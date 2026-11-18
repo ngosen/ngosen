@@ -14,6 +14,7 @@ import sys
 import tempfile
 import unittest
 
+import window_display
 from fcitx5_service import AVAILABLE, GUI_DIR, PrivateFcitx5
 
 ADDON = "fcitx://config/addon/ngosen"
@@ -89,7 +90,7 @@ def has_gtk():
     try:
         import ui_gtk
 
-        return ui_gtk.available() and bool(os.environ.get("DISPLAY"))
+        return ui_gtk.available() and window_display.can_show()
     finally:
         sys.path.remove(GUI_DIR)
 
@@ -134,7 +135,9 @@ class QtSaveJourneyTest(SaveJourney, unittest.TestCase):
         self.env.update(NGOSEN_SETTINGS_TOOLKIT="qt", QT_QPA_PLATFORM="offscreen")
 
 
-@unittest.skipUnless(REQUIRED or (AVAILABLE and has_gtk()), "needs dbus-daemon, GTK and a display")
+@unittest.skipUnless(
+    REQUIRED or (AVAILABLE and has_gtk()), "needs dbus-daemon, GTK and NGOSEN_WINDOW_TESTS"
+)
 class GtkSaveJourneyTest(SaveJourney, unittest.TestCase):
     script = GTK_FLIP_AND_CLOSE
 

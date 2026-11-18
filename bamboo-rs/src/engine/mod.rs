@@ -26,6 +26,7 @@ use crate::text::{
 use crate::time_format::format_time;
 use packed::Packed;
 
+mod elongated;
 mod packed;
 mod teencode;
 
@@ -520,7 +521,7 @@ impl BambooEngine {
             || self.starts_no_dictionary_word()
             || self.word_before_digits_is_english()
         {
-            return self.raw_text();
+            return self.elongated_word().unwrap_or_else(|| self.raw_text());
         }
         self.shown_as_composed()
     }
@@ -927,11 +928,13 @@ impl BambooEngine {
         let marked = || ends_sentence.then(|| self.auto_marked_word()).flatten();
         let late = || ends_sentence.then(|| self.late_tone_word()).flatten();
         let teencode = || self.teencode_word();
+        let elongated = || self.elongated_word().filter(|word| word == old_text);
         if let Some(word) = self
             .retoned_word()
             .or_else(marked)
             .or_else(late)
             .or_else(teencode)
+            .or_else(elongated)
         {
             self.preeditor.reset();
             return (format!("{word}{key}"), true);

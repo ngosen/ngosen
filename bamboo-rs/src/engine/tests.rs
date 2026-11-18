@@ -1831,3 +1831,39 @@ fn only_input_methods_with_digit_keys_compose_with_digits() {
         assert!(e.composes_with('a' as u32), "{name}");
     }
 }
+
+fn finished_word(keys: &str) -> (String, String) {
+    let mut e = engine_with_default_settings("Telex");
+    e.english_words = shipped_english_words();
+    type_keys(&mut e, keys);
+    let shown = e.preedit_text.clone();
+    e.process_key_event(KEY_SPACE, 0);
+    (shown, e.commit_text.clone())
+}
+
+#[test]
+fn test_held_last_letter_repeats_with_its_marks() {
+    for (keys, word) in [
+        ("afaaa", "àààà"),
+        ("ooiiiii", "ôiiiii"),
+        ("ddusngggg", "đúngggg"),
+        ("quasaaa", "quáááá"),
+        ("chafooo", "chàooo"),
+        ("AFAAA", "ÀÀÀÀ"),
+        ("Owsoo", "Ớớớ"),
+    ] {
+        let (shown, committed) = finished_word(keys);
+        assert_eq!(shown, word, "{keys} while typing");
+        assert_eq!(committed, format!("{word} "), "{keys}");
+    }
+}
+
+#[test]
+fn test_english_words_with_doubled_ends_stay_english() {
+    for keys in [
+        "all", "add", "free", "coffee", "kiss", "boss", "buzz", "jazz", "wee", "fee", "www",
+        "besttt", "thereee", "cheeseee", "afrooo", "boommm",
+    ] {
+        assert_eq!(finished_word(keys).1, format!("{keys} "), "{keys}");
+    }
+}

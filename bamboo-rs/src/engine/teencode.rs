@@ -127,7 +127,7 @@ fn is_teencode_shaped(word: &str) -> bool {
 
 /// Whether the word spends every key: each letter comes from a key, in order, and no key is left
 /// over beyond those the marks and the tone take. A tangle such as `caras` for cấ loses the `r`.
-fn spends_every_key(keys: &str, word: &str) -> bool {
+pub(super) fn spends_every_key(keys: &str, word: &str) -> bool {
     let (letters, tones) = without_tones(word);
     let plain = without_diacritics(&letters);
     let marks = letters

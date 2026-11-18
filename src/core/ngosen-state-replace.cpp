@@ -461,6 +461,7 @@ namespace ngosen {
 
     void TypingState::performReplacement(const std::string& deletedPart, const std::string& addedPart) {
         NGOSEN_INFO("Perform replacement: " + logged(deletedPart) + " -> " + logged(addedPart)); //NOLINT
+        checkFirstLetters();
         // The deletion changes text we committed; the replacement's own commit is what to look for.
         commitNotSeen_.clear();
         current_backspace_count_ = 0;
@@ -821,6 +822,11 @@ namespace ngosen {
     }
 
     bool TypingState::deletesThroughSurrounding(const ngosen::Surrounding& surrounding) {
+        // The field there is a hidden copy of what xterm.js sent; backspaces reach the terminal.
+        if (keepsOnlyCommits()) {
+            notePath("backspaces", "the field keeps only commits");
+            return false;
+        }
         if (deletesOnlyThroughSurrounding()) {
             notePath("surrounding", "the field takes no keys");
             return true;
@@ -993,6 +999,11 @@ namespace ngosen {
     // A page slow enough to leave Firefox's cursor past a commit can take this long over a deletion.
     constexpr uint64_t SplitEditMaxWaitUs = 120000;
     constexpr size_t   EchoesKept         = 6;
+    // Enough that one stale report does not mark the whole app.
+    constexpr int      LettersHiddenForApp = 3;
+    constexpr uint64_t FirstLetterShownUs  = 60000;
+    // A field that never shows our commits at the cursor is not xterm.js; stop collecting them.
+    constexpr size_t MaxCommitsChecked = 64;
     // As long as a focus bounce lasts; the deletion is out, so giving up loses the word's letters.
     constexpr int SplitEditFocusRetries = 50;
 
@@ -1010,6 +1021,8 @@ namespace ngosen {
         unreportedDeleteKey_    = keyCount_;
         if (ngosen::keepsLastEditPerTurn(host_->field()) && extraBeforeCursor == 0)
             noteEditLeft(surrounding, count, retype + pending_commit_string_);
+        flushComposedCommit();
+        sinceFocus_.erasedSinceReport = -1;
         host_->deleteSurrounding(-(count + extraBeforeCursor), static_cast<unsigned int>(count + extraBeforeCursor));
         NGOSEN_INFO("Delete using surrounding text");
         // Firefox's cursor stays one past the real one when a deletion and a commit of the same length
@@ -1070,6 +1083,7 @@ namespace ngosen {
         surr_wait_focus_retries_ = 0;
         tail_clear_copy_         = Surrounding(textBeforeCursor(surrounding), surrounding.cursor(), surrounding.cursor());
         committing_              = true;
+        flushComposedCommit();
         host_->commitText(" ");
         committing_ = false;
         NGOSEN_INFO("Commit a space over the selected text after the cursor");
@@ -1137,6 +1151,124 @@ namespace ngosen {
         echoKeyAtUs_ = 0;
         if (echoes.size() > EchoesKept)
             echoes.erase(echoes.begin());
+    }
+
+    // xterm.js sends typed letters and backspaces to its terminal and keeps only our commits in the field
+    // it reports, so the letters left after the backspaces are missing in front of the commit.
+    void TypingState::checkLettersInReport(const Surrounding& report) {
+        auto&       h   = sinceFocus_;
+        std::string now = textBeforeCursor(report);
+        // WebKitGTK reports a space it shows at the end as a no-break space.
+        for (size_t at = now.find("\u00a0"); at != std::string::npos; at = now.find("\u00a0", at + 1))
+            now.replace(at, 2, " ");
+        if (h.firstLetter != 0 && now.find(h.firstLetter) != std::string::npos)
+            h.firstLetterShown = true;
+        const bool changed = now != std::exchange(h.lastReportText, now);
+        if (h.committedSinceReport.empty()) {
+            // A letter or deletion that shows in the field changes it; xterm.js shows only spaces.
+            if (changed) {
+                const std::string passed = std::exchange(h.passedSinceReport, std::string());
+                h.letterShown            = h.letterShown || (passed.find_first_not_of(' ') != std::string::npos && isEndsWith(now, passed));
+                h.erasedSinceReport      = 0;
+            }
+            return;
+        }
+        // xterm.js leaves a space typed after the commit in the field.
+        const bool laterShown = !h.passedAfterCommit.empty() && isEndsWith(now, h.committedSinceReport + h.passedAfterCommit);
+        // GNOME Shell repeats its last report until the commit comes out.
+        if (!laterShown && !isEndsWith(now, h.committedSinceReport) && h.committedSinceReport.size() < MaxCommitsChecked)
+            return;
+        if (laterShown)
+            now.resize(now.size() - std::exchange(h.passedAfterCommit, std::string()).size());
+        std::string       kept    = std::exchange(h.passedSinceReport, std::exchange(h.passedAfterCommit, std::string()));
+        const std::string commits = std::exchange(h.committedSinceReport, std::string());
+        const int         erased  = std::exchange(h.erasedSinceReport, 0);
+        if (erased < 0 || ngosen::utf8::length(kept) <= static_cast<size_t>(erased) || !isEndsWith(now, commits))
+            return;
+        for (int i = 0; i < erased; ++i)
+            ngosen::utf8::eraseLastCodepoint(kept);
+        if (isEndsWith(now, kept + commits)) {
+            h.letterShown = true;
+            return;
+        }
+        if (h.letterShown)
+            return;
+        const Field field = host_->field();
+        if (++h.lettersHidden == 1)
+            NGOSEN_INFO("Typed letters do not show in the copy" + loggedField(field) + ": commit through a composition");
+        // Under one shared name a mark would spread to every app.
+        if (h.lettersHidden == LettersHiddenForApp && !ngosen::namesNoApp(field))
+            engine_->noteKeepsOnlyCommits(field.frontend, field.program);
+    }
+
+    void TypingState::notePassedLetter(const ngosen::KeyPress& keyEvent, uint64_t commitsBefore) {
+        const std::string key = host_->keyText(keyEvent.sym());
+        if (keyEvent.accepted() || commitCount_ != commitsBefore || is_deleting_.load(std::memory_order_acquire) || !buffered_keys_.empty())
+            return;
+        if (mode() != ngosen::Mode::Sen || !host_->field().surroundingText)
+            return;
+        std::string& passed = sinceFocus_.committedSinceReport.empty() ? sinceFocus_.passedSinceReport : sinceFocus_.passedAfterCommit;
+        if (ngosen::key::isBackspace(keyEvent.sym())) {
+            // Taking back part of a commit leaves nothing to compare.
+            if (passed.empty())
+                sinceFocus_.erasedSinceReport = -1;
+            else
+                passed.pop_back();
+            return;
+        }
+        if ((keyEvent.states() & ~ngosen::modifier::Shift) != 0 || key.size() != 1 || static_cast<unsigned char>(key[0]) < ' ')
+            return;
+        // A late report may not show a letter typed after our commit yet, so it counts for the next one.
+        if (passed.size() >= MaxCommitsChecked)
+            passed.erase(0, 1);
+        passed += key;
+        if (sinceFocus_.firstLetter == 0 && key != " ") {
+            sinceFocus_.firstLetter       = key[0];
+            sinceFocus_.firstPassedAtUs   = monotonicUs();
+            sinceFocus_.textBeforeLetters = sinceFocus_.seenText;
+        }
+    }
+
+    void TypingState::noteCommitForCheck(const std::string& text) {
+        if (mode() != ngosen::Mode::Sen || !host_->field().surroundingText)
+            return;
+        auto& h = sinceFocus_;
+        // A field that stopped reporting leaves nothing to compare.
+        if (h.committedSinceReport.size() > 4 * MaxCommitsChecked) {
+            h.committedSinceReport.clear();
+            h.erasedSinceReport = -1;
+        }
+        h.committedSinceReport += text;
+    }
+
+    // WebKitGTK ends a commit made outside a composition as a composition that never started, and xterm.js
+    // then sends it again with the text before it (#816). Firefox inserts it after xterm.js has looked.
+    bool TypingState::keepsOnlyCommits() const {
+        if (sinceFocus_.letterShown || !host_->field().preedit)
+            return false;
+        const Field field = host_->field();
+        return sinceFocus_.lettersHidden > 0 || sinceFocus_.firstLettersHidden || (!ngosen::namesNoApp(field) && engine_->keepsOnlyCommits(field.frontend, field.program));
+    }
+
+    // A browser shows a typed letter within tens of milliseconds, while xterm.js never reports one; without this
+    // the first words after fcitx5 starts go wrong until the app is remembered.
+    void TypingState::checkFirstLetters() {
+        auto&       h     = sinceFocus_;
+        const Field field = host_->field();
+        // xterm.js keeps our commits but never a typed letter, so text that is only our commits does not count.
+        if (h.firstLettersChecked || h.textBeforeLetters || h.firstLetterShown || h.letterShown || h.firstLetter == 0 || mode() != ngosen::Mode::Sen)
+            return;
+        // Too soon to tell; the next replacement asks again.
+        if (monotonicUs() - h.firstPassedAtUs < FirstLetterShownUs)
+            return;
+        h.firstLettersChecked = true;
+        const Surrounding s   = host_->surrounding();
+        // Such a field is deleted with backspaces, which some fields drop; and no report of a field that hides its
+        // text is read for letters, so nothing would undo the mark there.
+        if (!field.preedit || !field.surroundingText || field.sendsNoKeys || dropsForwardedKeys() || field.hidesText() || !ngosen::mayShowWebTerminal(field) || !s.isValid())
+            return;
+        h.firstLettersHidden = true;
+        NGOSEN_INFO("No report shows the first letters" + loggedField(field) + ": commit through a composition");
     }
 
     // A busy page shows typed letters late and takes as long over a deletion, which the commit must not overtake.
@@ -1236,11 +1368,15 @@ namespace ngosen {
             return;
         // mutter keeps one commit per turn and a busy shell can hold a turn open, so asking before the
         // edit has come out could replace its commit.
-        if (split_edit_pending_ || tail_clear_pending_ || (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs)) {
+        if (split_edit_pending_ || tail_clear_pending_ || !composedCommit_.empty() ||
+            (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs)) {
             report_request_waits_ = true;
             startReportRequestTimer();
             return;
         }
+        // xterm.js sends its last commit to the terminal again on an empty one, and never reports typed letters.
+        if (keepsOnlyCommits())
+            return;
         --report_requests_left_;
         // Not input: it must not look like a key to the checks timed from the last one.
         committing_ = true;
@@ -1303,6 +1439,9 @@ namespace ngosen {
     void TypingState::replaceThroughForwardedKeys() {
         // The XTEST count includes a sentinel that comes back to us; forwarded keys never do.
         const int count = expected_backspaces_ - 1;
+        // A slow app can show these backspaces only after our commit; that report is our edit, not a click.
+        unreportedDeleteLength_ = static_cast<unsigned int>(count);
+        unreportedDeleteKey_    = keyCount_;
         if (host_->field().frontend == "xim") {
             // We are inside the client's synchronous XIM request for the key that triggered this
             // replacement. Keys forwarded now reach the client before its reply, and libX11 may

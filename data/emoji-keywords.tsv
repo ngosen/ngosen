@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Ngó Sen contributors
+# SPDX-FileCopyrightText: 2004-2026 Unicode, Inc.
 #
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: GPL-3.0-or-later AND Unicode-3.0
 #
 # Words that offer an emoji while typing: keyword, emoji (best first, at most five), kind.
 # Kinds: word keeps the word and adds the emoji after it; sound (haha, huhu), emoticon (:)) and

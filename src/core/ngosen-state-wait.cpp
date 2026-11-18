@@ -762,6 +762,19 @@ namespace ngosen {
         return !composedCommit_.empty();
     }
 
+    // The app committed the preedit itself, as IBus does on reset and focus out.
+    void TypingState::dropComposedCommit() {
+        if (composedCommit_.empty())
+            return;
+        composedCommit_.clear();
+        host_->clearPreedit();
+        // Keys held for the commit still wait for their turn.
+        if (!buffered_keys_.empty())
+            return;
+        composedWait_ = false;
+        is_deleting_.store(false, std::memory_order_release);
+    }
+
     void TypingState::flushComposedCommit() {
         if (composedCommit_.empty())
             return;

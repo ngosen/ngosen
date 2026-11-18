@@ -851,6 +851,7 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> composedCommitTimer_;
         bool                           composedWait_ = false; ///< the composed commit or keys held for it wait for their turn
         void                           flushComposedCommit();
+        void                           dropComposedCommit();
         bool                           composedCommitStep();
         uint64_t                       splitEditWaitUs() const;
 

@@ -1458,6 +1458,8 @@ namespace ngosen {
             held_enter_timer_.reset();
         }
         sendHeldEnter();
+        if (!commitPreedit)
+            dropComposedCommit();
         const auto  surrounding = host_->surrounding();
         const auto& text        = surrounding.text();
         size_t      textLen     = ngosen::utf8::length(text);
@@ -1538,6 +1540,8 @@ namespace ngosen {
                 break;
             }
             case ngosen::Mode::Sen: {
+                // A reset that follows takes the app for having committed the preedit itself.
+                flushComposedCommit();
                 if (bambooEngine_) {
                     ResetEngine(bambooEngine_.handle());
                 }

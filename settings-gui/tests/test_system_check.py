@@ -43,7 +43,7 @@ def titles(found, level=None):
 
 
 class InputPanelTest(unittest.TestCase):
-    TITLE = "Menu and hints do not show in GNOME's search box"
+    TITLE = "Emoji lists can cover the text being typed; menus do not show in GNOME's search box"
 
     def found(self, state, desktop="ubuntu:GNOME"):
         return system_check.evaluate(facts("wayland", desktop, input_panel_state=state))

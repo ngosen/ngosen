@@ -45,6 +45,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thay đổi
 
+- Kiểm tra máy trên GNOME nói rõ thiếu extension Input Method Panel thì bảng emoji có thể che chữ đang gõ
+  (app Wayland như Firefox); README hướng dẫn cài nó cả khi cài từ package (#PR).
 - Cài mới bật sẵn tiếng Việt; người dùng cũ giữ trạng thái đang dùng. Phím chuyển Anh/Việt nay mặc định
   chuyển mọi app cùng lúc như UniKey, kể cả khi cập nhật. App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh;
   bấm phím chuyển tại đó mở menu để chọn Gõ Sen hoặc Gạch chân. Muốn mỗi app nhớ riêng như trước, chọn

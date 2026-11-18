@@ -368,7 +368,7 @@ def _input_panel_findings(facts):
     state = facts.input_panel_state
     if state == "ACTIVE":
         return [Finding(OK, _("Menu and hints show in GNOME's search box"))]
-    title = _("Menu and hints do not show in GNOME's search box")
+    title = _("Emoji lists can cover the text being typed; menus do not show in GNOME's search box")
     # Only this extension draws fcitx5's popups inside GNOME Shell.
     if not state:
         fix = _("Install Input Method Panel from {}, then log out and back in.").format(

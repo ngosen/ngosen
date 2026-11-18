@@ -14,7 +14,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Gợi ý emoji cuối câu nay hiện suốt lúc gõ trên ô nổi của fcitx5, từ từ khoá đầu tiên tới hết câu, thay vì chỉ
   loé lên lúc dừng tay. Dừng tay hoặc gõ `. ! ?` thì bấm Tab để chọn như trước; Esc ẩn emoji tới hết câu;
-  xoá hết câu đó rồi gõ câu mới thì emoji hiện lại (#849, #854, #859, #862).
+  xoá hết câu đó rồi gõ câu mới thì emoji hiện lại (#849, #854, #859, #862, #863).
 - Gõ Telex: khi bảng emoji cuối câu chọn được, bảng đánh số `1.😂 2.🤣` và bấm số là chèn luôn, không cần Tab. Kiểu gõ
   dùng phím số để bỏ dấu (VNI, Telex + VNI) vẫn bấm Tab trước. `giá 3.5` hay `bước 1.` không còn bị coi là hết câu (#851).
 - Lệnh `ngosen-toggle` để gán cho phím tắt của desktop: chuyển Anh/Việt như Ctrl + Shift, kể cả khi không có

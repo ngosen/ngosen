@@ -420,7 +420,7 @@ namespace ngosen {
     }
 
     void TypingState::hideEmojiOffer() {
-        if (!emojiOffer_)
+        if (!emojiOffer_ || (holdEmojiPreview_ && emojiOffer_->preview))
             return;
         if (emojiOffer_->inField) {
             emojiOffer_.reset();

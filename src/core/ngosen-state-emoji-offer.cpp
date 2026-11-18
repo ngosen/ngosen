@@ -308,6 +308,9 @@ namespace ngosen {
             if (!found)
                 continue;
             if (n == words.size() && !afterSpace && !ended) {
+                // A word just started matches one-letter keywords ("c", "m") that the next letter drops.
+                if (preview && ngosen::utf8::length(words.back()) == 1)
+                    continue;
                 if (replacesTyped(*found) && !canReplaceInApp())
                     continue;
                 offer.covered    = words.back();

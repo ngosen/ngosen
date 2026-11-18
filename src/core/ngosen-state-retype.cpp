@@ -199,6 +199,8 @@ namespace ngosen {
             performReplacement(from, to);
         } else {
             const auto length = static_cast<int>(ngosen::utf8::length(from));
+            flushComposedCommit();
+            sinceFocus_.erasedSinceReport = -1;
             host_->deleteSurrounding(-length, static_cast<unsigned int>(length));
             commit(to);
         }

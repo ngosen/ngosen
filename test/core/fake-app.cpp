@@ -40,6 +40,8 @@ namespace ngosen::test {
             return out;
         }
 
+        constexpr int PreeditTurnMs = 2;
+
     } // namespace
 
     std::string telexOutput(const std::vector<uint32_t>& keys, bool reportsText) {
@@ -235,7 +237,43 @@ namespace ngosen::test {
     }
 
     std::string FakeApp::text() const {
-        return encode(quirks_.keepsOwnText ? ownText_ : text_);
+        return encode(quirks_.keepsOwnText || quirks_.keepsOnlyCommits ? ownText_ : text_);
+    }
+
+    void FakeApp::showPreedit(const std::string& text, bool /*underline*/) {
+        if (text.empty())
+            return;
+        ++sent_.preedits;
+        shownPreedit_ = text;
+        if (!quirks_.keepsOnlyCommits || composing_)
+            return;
+        preeditWaits_ = true;
+        if (quirks_.keepsLastEditPerTurn)
+            startTurn();
+        else
+            // WebKitGTK handles the preedit on a later main loop turn; a commit before then starts nothing.
+            later(PreeditTurnMs, [this] {
+                if (preeditWaits_)
+                    startComposition();
+            });
+    }
+
+    void FakeApp::clearPreedit() {
+        // mutter sends the commit of a turn before its preedit.
+        if (quirks_.keepsOnlyCommits && quirks_.keepsLastEditPerTurn && turnPending_) {
+            clearsPreeditAtTurnEnd_ = true;
+            return;
+        }
+        // An empty preedit ends the composition with nothing in it.
+        shownPreedit_.clear();
+        preeditWaits_ = false;
+        composing_    = false;
+    }
+
+    void FakeApp::startComposition() {
+        preeditWaits_     = false;
+        composing_        = true;
+        compositionStart_ = text_.size();
     }
 
     void FakeApp::commitText(const std::string& text) {
@@ -259,8 +297,14 @@ namespace ngosen::test {
             turnCommit_ = text;
             return;
         }
-        if (text.empty())
+        if (text.empty()) {
+            if (quirks_.resendsOnEmptyCommit && !lastCommit_.empty())
+                later(quirks_.lagMs, [this] {
+                    if (focused_)
+                        ownText_ += lastCommit_;
+                });
             return;
+        }
         // Focus and redraws are checked again when the app gets to the commit, which can be after a
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
@@ -288,9 +332,12 @@ namespace ngosen::test {
             later(47, [this, text] { applyHeldEdit(text); });
             return;
         }
+        bounceAfterEdit();
         later(quirks_.lagMs + quirks_.commitLagMs, [this, text] {
-            if (focused_ && redraws_ == 0)
-                insert(utf8::decode(text));
+            if (focused_ && redraws_ == 0) {
+                lastCommit_ = utf8::decode(text);
+                insert(lastCommit_);
+            }
         });
     }
 
@@ -356,6 +403,7 @@ namespace ngosen::test {
         }
         if (forwardedAt_ == 0)
             forwardedAt_ = monotonicUs();
+        bounceAfterEdit();
         if (quirks_.keyStepMs > 0) {
             later(quirks_.keyStepMs * ++queuedKeys_, [this] {
                 --queuedKeys_;
@@ -604,6 +652,12 @@ namespace ngosen::test {
             return {};
         if (quirks_.reportsEmptyText || reportsEmptyOnce_)
             return Surrounding("", 0, 0);
+        if (quirks_.keepsOnlyCommits && !text_.empty() && text_.back() == U' ') {
+            // WebKitGTK reports a space at the end as a no-break space.
+            std::u32string shown = text_;
+            shown.back()         = U'\u00a0';
+            return Surrounding(encode(shown), static_cast<unsigned int>(cursor_), static_cast<unsigned int>(anchor_));
+        }
         if (silentAfterDelete_ || quirks_.reportsTextAtChange || showsMovedCursor_ || holdsUnreported_)
             return Surrounding(encode(reportedText_), static_cast<unsigned int>(reportedCursor_), static_cast<unsigned int>(reportedAnchor_));
         if (quirks_.staleReport)
@@ -642,6 +696,20 @@ namespace ngosen::test {
             noteTypedKey();
             surroundingDropped_ = false;
         }
+        if (quirks_.keepsOnlyCommits && typed) {
+            // A key reaching xterm.js during a composition sends the composition first.
+            if (composing_)
+                ownText_ += utf8::decode(shownPreedit_);
+            composing_ = false;
+            ownText_ += text;
+            // xterm.js leaves a space in the field; other keys it takes, and WebKitGTK sends no report.
+            if (text != U" ")
+                return;
+            text_.insert(cursor_, text);
+            cursor_ = anchor_ = cursor_ + 1;
+            changed();
+            return;
+        }
         if (quirks_.erasesOnDel && !text.empty() && text[0] == U'\x7f') {
             const size_t dels = text.find_first_not_of(U'\x7f');
             eraseBefore(dels == std::u32string::npos ? text.size() : dels);
@@ -658,7 +726,12 @@ namespace ngosen::test {
         }
         text_.insert(cursor_, text);
         cursor_ += text.size();
-        ownText_ += text;
+        if (quirks_.keepsOnlyCommits && !typed && !composing_)
+            ownText_ += text_.substr(std::min(compositionStart_, text_.size()));
+        else
+            ownText_ += text;
+        if (!typed)
+            composing_ = false;
         if (quirks_.keepsLineBreakAfterCommit && !typed && text_.back() != U'\n') {
             text_.push_back(U'\n');
             ++cursor_;
@@ -686,6 +759,16 @@ namespace ngosen::test {
         emptyCommits_      = 0;
     }
 
+    void FakeApp::bounceAfterEdit() {
+        if (quirks_.bounceOnEditMs <= 0)
+            return;
+        later(quirks_.bounceOnEditMs, [this] {
+            state_->deactivate(true);
+            state_->activate(Mode::Sen, true);
+            changed();
+        });
+    }
+
     void FakeApp::redrawAfterEdit() {
         if (quirks_.redrawAfterEditMs <= 0)
             return;
@@ -699,6 +782,10 @@ namespace ngosen::test {
     }
 
     void FakeApp::eraseBefore(size_t count) {
+        if (quirks_.keepsOnlyCommits) {
+            ownText_.erase(ownText_.size() - std::min(count, ownText_.size()));
+            return;
+        }
         if (quirks_.keepsOwnText) {
             ownText_.erase(ownText_.size() - std::min(count, ownText_.size()));
             if (!quirks_.backspacesShowInReport)
@@ -807,8 +894,17 @@ namespace ngosen::test {
             cursorPastBy_     = deletionTurnChars_;
             deletionTurnAtUs_ = 0;
         }
-        if (turnCommit_ && focused_)
+        // mutter sends a preedit and a commit of one turn together, which starts no composition.
+        if (preeditWaits_ && !turnCommit_)
+            startComposition();
+        preeditWaits_ = false;
+        if (turnCommit_ && focused_) {
+            if (!turnCommit_->empty())
+                lastCommit_ = utf8::decode(*turnCommit_);
             insert(utf8::decode(*turnCommit_));
+        }
+        if (std::exchange(clearsPreeditAtTurnEnd_, false))
+            clearPreedit();
         if (oneTurnEdit)
             cursorPastBy_ = utf8::decode(*turnCommit_).size();
         turnDeleteBytes_.reset();

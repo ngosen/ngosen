@@ -267,6 +267,12 @@ namespace ngosen {
             (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc"));
     }
 
+    bool mayShowWebTerminal(const Field& field) {
+        const std::string program = appName(field);
+        return isFirefoxFamily(program) || program == "epiphany" || program == "org.gnome.Epiphany" || isStartsWith(program, "vaultid") ||
+            (field.frontend == "ibus" && program == "gnome-shell");
+    }
+
     // The forks share Firefox's address bar.
     bool hidesAddressBarFlag(const Field& field) {
         return isFirefoxFamily(appName(field));

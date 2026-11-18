@@ -58,10 +58,21 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Bấm chuột sang chỗ khác trong ô gõ thì danh sách emoji của từ cũ đóng lại, không còn bấm vào nó mà chèn emoji (hay thay
   chữ) ở chỗ con trỏ mới (#848).
+
+## [1.12.2-1] — 18/11/2026
+
+Gõ lại dấu thanh sau phụ âm cuối nay ra đúng chữ, một số từ tiếng Anh như `aface` không còn bị cắt (#835). Trên GNOME, gõ nhanh ngay sau khi mở Firefox, xoá bằng Backspace rồi gõ tiếp không còn lộn chữ (#831). Brave trên Fedora GNOME không còn mất dấu hay lộn chữ (#842). Gõ Sen trong terminal dùng xterm.js nay đúng từ đầu sau khi fcitx5 khởi động, kể cả VaultID trên GNOME; trên KDE, hai phím đầu quá nhanh vẫn có thể làm mất chữ đầu (#846, #853, #864). Menu chọn chế độ gõ đóng ngay khi click ra ngoài, kể cả click vào ô đang gõ trên KDE; nơi click không đóng được menu vẫn tự tắt sau 5 giây (#836, #840, #850).
+Tải ở [ngosen-1.12.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.12.2-1).
+
+### Sửa
+
 - Gõ lại dấu thanh sau phụ âm cuối nay ra đúng chữ: `mooxtj` ra `một`, `toorts` ra `tốt`, `ddacxs` ra `đác`, thay vì
   `mỗ`, `tổ`, `đac` như từ bản 1.11.0. Một số từ tiếng Anh ít gặp như `aface` cũng không còn bị cắt thành `ầ` (#835).
 - Trên GNOME, gõ nhanh ngay sau khi mở Firefox, xoá vài chữ bằng Backspace rồi gõ tiếp không còn thỉnh thoảng ra chữ lộn (`nam tiếig` thay vì `nam tiếng`) (#831).
-- Menu chọn chế độ gõ (mở bằng `` ` ``) nay đóng ngay khi click chuột ra ngoài, thay vì chờ tới phím kế tiếp. Click lên một mục trong menu vẫn chọn mục đó. Menu không còn tự tắt sau 5 giây (#836).
+- Menu chọn chế độ gõ (mở bằng `` ` ``) nay đóng ngay khi click chuột ra ngoài, thay vì chờ tới phím kế tiếp. Click lên một mục trong menu vẫn chọn mục đó. (#836).
+- Trên Fedora GNOME, gõ trong Brave (như ô bình luận voz) không còn mất dấu hay lộn chữ: `oonr` ra `ổn` thay vì `ônr`, `thuwowngf` ra `thường` thay vì `thươngf` (#842).
+- Trong terminal dùng xterm.js, chế độ Gõ Sen gõ `ddaay laf tieengs vieetj` → `đây là tiếng việt` đúng từ từ đầu sau khi fcitx5 khởi động; đã test trên Firefox và Epiphany ở GNOME, VaultID ở Fedora 45 GNOME 51, Firefox ở KDE Wayland khi gõ bình thường. Trên KDE, gõ hai phím đầu quá nhanh (cách nhau khoảng 50 ms, như `dd`) vẫn có thể mất chữ đầu của từ đầu tiên (#816, #846, #853, #864).
+- Trên KDE, click vào ô đang gõ trong Firefox, gnome-text-editor hay Dolphin nay cũng đóng menu chọn chế độ gõ, thay vì menu đứng yên tới phím kế tiếp. (#840). Ở nơi click không đóng được menu, như Konsole, menu để yên vẫn tự tắt sau 5 giây như trước (#850).
 
 ## [1.12.1-1] — 17/11/2026
 

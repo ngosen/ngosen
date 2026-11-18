@@ -10,6 +10,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+- Arch và các distro dựa trên Arch cài được từ AUR: `yay -S fcitx5-ngosen`, bản IBus `yay -S ibus-ngosen`.
+  Mỗi version mới tự lên AUR khi phát hành ([#873](https://github.com/ngosen/ngosen/pull/873)).
+
 ## [1.12.2-1] — 18/11/2026
 
 Gõ lại dấu thanh sau phụ âm cuối nay ra đúng chữ, một số từ tiếng Anh như `aface` không còn bị cắt (#835). Trên GNOME, gõ nhanh ngay sau khi mở Firefox, xoá bằng Backspace rồi gõ tiếp không còn lộn chữ (#831). Brave trên Fedora GNOME không còn mất dấu hay lộn chữ (#842). Gõ Sen trong terminal dùng xterm.js nay đúng từ đầu sau khi fcitx5 khởi động, kể cả VaultID trên GNOME; trên KDE, hai phím đầu quá nhanh vẫn có thể làm mất chữ đầu (#846, #853, #864). Menu chọn chế độ gõ đóng ngay khi click ra ngoài, kể cả click vào ô đang gõ trên KDE; nơi click không đóng được menu vẫn tự tắt sau 5 giây (#836, #840, #850).

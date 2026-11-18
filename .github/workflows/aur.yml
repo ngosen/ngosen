@@ -1,0 +1,55 @@
+name: AUR
+
+# Pushed on publish, like COPR, so AUR users get a release only after its draft was checked.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  aur:
+    name: Push fcitx5-ngosen
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'ngosen-')
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    environment: release
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install tools
+        run: pacman -Syu --noconfirm --needed git openssh pacman-contrib jq
+
+      # A manual run carries no release event, so ask GitHub; drafts are not visible here.
+      - name: Refuse a tag that is not a published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME") || {
+            echo "::error::$GITHUB_REF_NAME has no published release"
+            exit 1
+          }
+          if [ "$(echo "$release" | jq -r '.draft or .prerelease')" != false ]; then
+            echo "::error::$GITHUB_REF_NAME is a draft or a pre-release"
+            exit 1
+          fi
+          packaging/check-version.sh "${GITHUB_REF_NAME#ngosen-}"
+
+      # makepkg refuses to run as root.
+      - name: Push the package
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+        run: |
+          useradd -m builder
+          install -d -m 700 -o builder /home/builder/.ssh
+          printf '%s\n' "$AUR_SSH_KEY" > /home/builder/.ssh/aur
+          chown builder /home/builder/.ssh/aur
+          chmod 600 /home/builder/.ssh/aur
+          cp -r packaging /home/builder/packaging
+          chown -R builder /home/builder/packaging
+          su builder -c 'AUR_SSH_KEY_FILE=/home/builder/.ssh/aur /home/builder/packaging/aur/publish.sh'

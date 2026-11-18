@@ -10,12 +10,13 @@ from unittest import mock
 from urllib.parse import unquote
 
 # isort: off
+import window_display
 from fake_fcitx import DEFAULTS, FakeDBusHandler, OlderFcitx, lock_groups
 import ui_gtk
 
 # isort: on
 
-CAN_RUN = ui_gtk.available() and bool(os.environ.get("DISPLAY"))
+CAN_RUN = ui_gtk.available() and window_display.can_show()
 # The GTK CI job sets this, so a missing package fails the run instead of skipping these tests.
 REQUIRED = os.environ.get("NGOSEN_WINDOW_TESTS") == "required"
 # The smallest width libadwaita's adaptive windows are meant to fit.
@@ -94,7 +95,7 @@ class Restarting(FakeDBusHandler):
         return not self.down and super().set_sub_config_list(path, root_key, data_list)
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkWindowTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -227,7 +228,7 @@ class GtkWindowTest(unittest.TestCase):
         )
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkMacroPageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -289,7 +290,7 @@ class GtkMacroPageTest(unittest.TestCase):
         self.assertEqual(self.dbus.values["TimeFormat"], "%H:%M:%S")
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkDictionaryPageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -355,7 +356,7 @@ class GtkDictionaryPageTest(unittest.TestCase):
         self.assertEqual(self.window.tabs["dictionary"].get_visible_child_name(), "dictionary")
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkKeymapPageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -429,7 +430,7 @@ class GtkKeymapPageTest(unittest.TestCase):
         self.assertEqual([e["Key"] for e in dbus.sub_configs["custom_keymap"]], ["s", "f"])
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkShortcutsPageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -501,7 +502,7 @@ class GtkShortcutsPageTest(unittest.TestCase):
         self.assertEqual(self.window.tabs["shortcuts"].get_visible_child_name(), "shortcuts")
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkAppearancePageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -562,7 +563,7 @@ class GtkAppearancePageTest(unittest.TestCase):
         self.assertFalse(self.page.preview.has_css_class("tray-dark"))
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkConvertPageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -619,7 +620,7 @@ class GtkConvertPageTest(unittest.TestCase):
         self.assertIs(self.page.control_for("ConvertKey"), self.page.hotkey)
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkTypingPageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -639,7 +640,7 @@ class GtkTypingPageTest(unittest.TestCase):
         self.assertEqual([k for k in self.page.rows if k in keys], keys)
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkLocksTest(unittest.TestCase):
     def setUp(self):
         isolate(self)
@@ -738,7 +739,7 @@ class GtkLocksTest(unittest.TestCase):
         self.assertTrue(w.macros.formats["TimeFormat"].get_sensitive())
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkStatusLinesTest(unittest.TestCase):
     def setUp(self):
         isolate(self)
@@ -842,7 +843,7 @@ class GtkStatusLinesTest(unittest.TestCase):
         self.assertFalse(hasattr(w.results.get_row_at_index(0), "found"))
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkUndoTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -907,7 +908,7 @@ class RefusesAppRules(FakeDBusHandler):
         return path != "app_rules" and super().set_sub_config_list(path, root_key, data_list)
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkDefaultsTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -999,7 +1000,7 @@ class GtkDefaultsTest(unittest.TestCase):
         self.assertEqual(self.changed(), ("False", "True", [1, 1, 1, 1]))
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkBackupTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -1052,15 +1053,17 @@ class GtkBackupTest(unittest.TestCase):
         use.assert_called_once_with(self.path)
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkCheckPageTest(unittest.TestCase):
     NO_IM = {"XDG_SESSION_TYPE": "x11", "XDG_CURRENT_DESKTOP": "XFCE"}
 
     def setUp(self):
         Adw.init()
-        # The fcitx5 and IBus of the machine running the tests must not add a row.
-        for name in ("runs_replaced_addon", "ibus_owns_session"):
-            patcher = mock.patch.object(system_check, name, return_value=False)
+        # The fcitx5 and IBus of the machine running the tests must not add a row; its fcitx5 also
+        # aborts when run with HOME cleared below.
+        machine = {"runs_replaced_addon": False, "ibus_owns_session": False, "_fcitx_version": ""}
+        for name, value in machine.items():
+            patcher = mock.patch.object(system_check, name, return_value=value)
             patcher.start()
             self.addCleanup(patcher.stop)
         # The login setup of the machine running the tests must not add a row.
@@ -1299,7 +1302,7 @@ class GtkCheckPageTest(unittest.TestCase):
         run.assert_called_once()
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkSearchTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -1359,7 +1362,7 @@ class GtkSearchTest(unittest.TestCase):
         self.assertEqual(self.window.side_stack.get_visible_child_name(), "pages")
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkWhatsNewPageTest(unittest.TestCase):
     def setUp(self):
         Adw.init()
@@ -1502,7 +1505,7 @@ class GtkWhatsNewPageTest(unittest.TestCase):
         self.assertFalse(other.open_setting("RetypeAfterSwitch"))
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class HotkeyButtonTest(unittest.TestCase):
     def setUp(self):
         self.button = HotkeyButton("F12")
@@ -1548,7 +1551,7 @@ def _children(widget):
         child = child.get_next_sibling()
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkMenuIconTest(unittest.TestCase):
     def test_missing_theme_icon_falls_back_to_own(self):
         from ui_gtk import appearance

@@ -12,7 +12,7 @@ permissions:
 jobs:
   aur:
     name: Push fcitx5-ngosen
-    if: startsWith(github.ref, 'refs/tags/ngosen-') && !github.event.release.prerelease
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'ngosen-')
     runs-on: ubuntu-latest
     container: archlinux:base-devel
     environment: release
@@ -22,7 +22,23 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Install tools
-        run: pacman -Syu --noconfirm --needed git openssh pacman-contrib
+        run: pacman -Syu --noconfirm --needed git openssh pacman-contrib jq
+
+      # A manual run carries no release event, so ask GitHub; drafts are not visible here.
+      - name: Refuse a tag that is not a published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME") || {
+            echo "::error::$GITHUB_REF_NAME has no published release"
+            exit 1
+          }
+          if [ "$(echo "$release" | jq -r '.draft or .prerelease')" != false ]; then
+            echo "::error::$GITHUB_REF_NAME is a draft or a pre-release"
+            exit 1
+          fi
+          packaging/check-version.sh "${GITHUB_REF_NAME#ngosen-}"
 
       # makepkg refuses to run as root.
       - name: Push the package

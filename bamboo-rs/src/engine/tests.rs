@@ -1850,7 +1850,7 @@ fn test_held_last_letter_repeats_with_its_marks() {
         ("quasaaa", "quáááá"),
         ("chafooo", "chàooo"),
         ("AFAAA", "ÀÀÀÀ"),
-        ("Owsoo", "Ớớớ"),
+        ("Owsooo", "Ớớớớ"),
         ("aaaaaaaf", "ààààààà"),
         ("chaooof", "chàooo"),
         ("quaaaas", "quáááá"),
@@ -1866,7 +1866,7 @@ fn test_held_last_letter_repeats_with_its_marks() {
 fn test_english_words_with_doubled_ends_stay_english() {
     for keys in [
         "all", "add", "free", "coffee", "kiss", "boss", "buzz", "jazz", "wee", "fee", "www",
-        "besttt", "thereee", "cheeseee", "afrooo", "boommm",
+        "besttt", "thereee", "cheeseee", "afrooo", "boommm", "resee", "gooroo",
     ] {
         assert_eq!(finished_word(keys).1, format!("{keys} "), "{keys}");
     }

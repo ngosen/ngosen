@@ -38,6 +38,10 @@ impl BambooEngine {
             .rev()
             .take_while(|c| c.to_ascii_lowercase() == held)
             .count();
+        // Two of a letter end rare English words too (`resee`, `gooroo`).
+        if run < 3 {
+            return None;
+        }
         // `thereee` stretches there, not thẻ, and `treeees` stretches trees.
         let lowered = |keys: &[char]| keys.iter().collect::<String>().to_lowercase();
         if (keys.len() - run + 1..=keys.len()).any(|end| {

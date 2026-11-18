@@ -13,8 +13,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Thêm
 
 - Gõ kéo dài chữ: giữ phím chữ cái cuối của một từ có dấu thì chữ đó lặp lại cùng dấu, `afaaa` ra `àààà`,
-  `ooiiii` ra `ôiiii`, `ddusngggg` ra `đúngggg`, thay vì hiện lại các phím đã gõ. Từ tiếng Anh gõ kéo dài như
-  `besttt` hay `thereee` vẫn giữ nguyên (#852, #871).
+  `ooiiii` ra `ôiiii`, `ddusngggg` ra `đúngggg`, thay vì hiện lại các phím đã gõ. Gõ dấu sau cùng cũng được:
+  `aaaaf` ra `àààà`, `chaooof` ra `chàooo`. Từ tiếng Anh gõ kéo dài như `besttt` hay `thereee` vẫn giữ nguyên
+  (#852, #871).
 - Gợi ý emoji cuối câu nay hiện suốt lúc gõ trên ô nổi của fcitx5, từ từ khoá đầu tiên tới hết câu, thay vì chỉ
   loé lên lúc dừng tay. Dừng tay hoặc gõ `. ! ?` thì bấm Tab để chọn như trước; Esc ẩn emoji tới hết câu;
   xoá hết câu đó rồi gõ câu mới thì emoji hiện lại (#849, #854, #859, #862, #863).

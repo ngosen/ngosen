@@ -3319,6 +3319,10 @@ namespace {
         text                  = typeInXterm(gnome, {.keepsLastEditPerTurn = true, .turnMs = 3, .keepsOnlyCommits = true}, sentence);
         check(text == expected, "xterm.js behind GNOME Shell: the first words come out right", text);
 
+        // GNOME Shell often names no app for VaultID's field.
+        text = typeInXterm(makeField("ibus", true, "gnome-shell"), {.keepsLastEditPerTurn = true, .turnMs = 3, .keepsOnlyCommits = true, .resendsOnEmptyCommit = true}, sentence);
+        check(text == expected, "unnamed xterm.js behind GNOME Shell: the first words come out right", text);
+
         // Konsole reports no letters either, yet takes forwarded backspaces as usual.
         FakeResources               resources;
         const std::vector<uint32_t> keys = keysOf("ddaay laf ");

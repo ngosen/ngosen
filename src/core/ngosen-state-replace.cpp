@@ -1374,6 +1374,9 @@ namespace ngosen {
             startReportRequestTimer();
             return;
         }
+        // xterm.js sends its last commit to the terminal again on an empty one, and never reports typed letters.
+        if (keepsOnlyCommits())
+            return;
         --report_requests_left_;
         // Not input: it must not look like a key to the checks timed from the last one.
         committing_ = true;

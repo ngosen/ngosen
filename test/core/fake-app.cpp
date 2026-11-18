@@ -295,8 +295,14 @@ namespace ngosen::test {
             turnCommit_ = text;
             return;
         }
-        if (text.empty())
+        if (text.empty()) {
+            if (quirks_.resendsOnEmptyCommit && !lastCommit_.empty())
+                later(quirks_.lagMs, [this] {
+                    if (focused_)
+                        ownText_ += lastCommit_;
+                });
             return;
+        }
         // Focus and redraws are checked again when the app gets to the commit, which can be after a
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
@@ -326,8 +332,10 @@ namespace ngosen::test {
         }
         bounceAfterEdit();
         later(quirks_.lagMs + quirks_.commitLagMs, [this, text] {
-            if (focused_ && redraws_ == 0)
-                insert(utf8::decode(text));
+            if (focused_ && redraws_ == 0) {
+                lastCommit_ = utf8::decode(text);
+                insert(lastCommit_);
+            }
         });
     }
 
@@ -867,8 +875,11 @@ namespace ngosen::test {
         if (preeditWaits_ && !turnCommit_)
             startComposition();
         preeditWaits_ = false;
-        if (turnCommit_ && focused_)
+        if (turnCommit_ && focused_) {
+            if (!turnCommit_->empty())
+                lastCommit_ = utf8::decode(*turnCommit_);
             insert(utf8::decode(*turnCommit_));
+        }
         if (std::exchange(clearsPreeditAtTurnEnd_, false))
             clearPreedit();
         if (oneTurnEdit)

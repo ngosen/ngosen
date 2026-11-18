@@ -495,6 +495,50 @@ class FixTest(unittest.TestCase):
         self.assertEqual(system_check.run_fix(system_check.RESTART_FCITX, dbus), (True, None))
         self.assertEqual(dbus.restarts, 1)
 
+    def test_removing_keyboards_keeps_the_layout_typed_on(self):
+        items = [("keyboard-fr", ""), ("pinyin", ""), ("keyboard-us", ""), ("ngosen", "")]
+        self.assertEqual(
+            system_check.without_keyboards("us", items), ("fr", [("pinyin", ""), ("ngosen", "")])
+        )
+
+    def test_removing_keyboards_can_be_undone(self):
+        dbus = FakeDBusHandler()
+        dbus.group = ("Default", "us", [("keyboard-us", ""), ("ngosen", "")])
+        done, undo = system_check.run_fix(system_check.REMOVE_KEYBOARDS, dbus)
+        self.assertTrue(done)
+        self.assertEqual(dbus.group, ("Default", "us", [("ngosen", "")]))
+        undo()
+        self.assertEqual(dbus.group, ("Default", "us", [("keyboard-us", ""), ("ngosen", "")]))
+
+    def test_keyboards_stay_when_ngosen_is_gone(self):
+        dbus = FakeDBusHandler()
+        dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.assertEqual(system_check.run_fix(system_check.REMOVE_KEYBOARDS, dbus), (False, None))
+        self.assertEqual(dbus.group, ("Default", "us", [("keyboard-us", "")]))
+
+
+class KeyboardFirstTest(unittest.TestCase):
+    TITLE = "New windows open on another keyboard, not on Ngó Sen"
+
+    def found(self, input_methods):
+        return system_check.evaluate(facts("x11", "KDE", input_methods=input_methods))
+
+    def test_keyboard_before_ngosen_offers_to_remove_it(self):
+        finding = next(f for f in self.found(["keyboard-us", "ngosen"]) if f.title == self.TITLE)
+        self.assertEqual(finding.level, WARN)
+        self.assertEqual(finding.action, system_check.REMOVE_KEYBOARDS)
+        self.assertIn("keyboard-us", finding.fix)
+
+    def test_ngosen_first_or_alone_is_fine(self):
+        for input_methods in (["ngosen"], ["ngosen", "keyboard-us"], ["pinyin", "ngosen"]):
+            self.assertNotIn(self.TITLE, titles(self.found(input_methods)), input_methods)
+
+    def test_report_lists_the_input_methods(self):
+        f = facts("x11", "KDE", input_methods=["keyboard-us", "ngosen"])
+        text = system_check.report(f, system_check.evaluate(f))
+        self.assertIn("Input methods: keyboard-us, ngosen", text)
+        self.assertIn("[!] " + self.TITLE, text)
+
 
 class FixReviewTest(unittest.TestCase):
     def test_ngosen_dropped_by_fcitx5_is_not_reported_added(self):

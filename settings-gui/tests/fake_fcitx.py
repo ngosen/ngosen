@@ -59,7 +59,8 @@ class FakeDBusHandler:
         self.values.update(values or {})
         self.sub_configs = copy.deepcopy(sub_configs or {})
         self.reloads = []
-        self.group = ("Default", "us", [("keyboard-us", ""), ("ngosen", "")])
+        # As install.sh leaves it: Ngó Sen in place of the only keyboard.
+        self.group = ("Default", "us", [("ngosen", "")])
         self.restarts = 0
         self.available = {"keyboard-us", "ngosen"}
 

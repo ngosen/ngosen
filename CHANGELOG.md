@@ -58,6 +58,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Bấm chuột sang chỗ khác trong ô gõ thì danh sách emoji của từ cũ đóng lại, không còn bấm vào nó mà chèn emoji (hay thay
   chữ) ở chỗ con trỏ mới (#848).
+- Trang Kiểm tra máy nay báo khi danh sách bộ gõ của fcitx5 còn một bàn phím khác đứng trước Ngó Sen. Khi đó
+  cửa sổ mới mở ra ở bàn phím kia nên Ctrl+Shift không đổi Anh/Việt. Nút "Xoá" bỏ bàn phím thừa và có thể hoàn
+  tác. Kết quả kiểm tra gửi kèm báo lỗi nay cũng liệt kê các bộ gõ trong danh sách (#872, #875).
 
 ## [1.12.2-1] — 18/11/2026
 

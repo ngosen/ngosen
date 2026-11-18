@@ -49,6 +49,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thay đổi
 
+- Nâng thư viện gõ Rust bamboo-core từ 0.5.2 lên 0.6.0. Cách gõ không đổi; đổi thiết lập giữa lúc đang gõ một
+  từ thì phím kế tiếp gõ lại cả từ theo thiết lập mới. Gói do distro đóng gói vẫn build được với bamboo-core
+  0.5.2 trở lên (#876).
 - Kiểm tra máy trên GNOME nói rõ thiếu extension Input Method Panel thì bảng emoji có thể che chữ đang gõ
   (app Wayland như Firefox); README hướng dẫn cài nó cả khi cài từ package (#866).
 - Cài mới bật sẵn tiếng Việt; người dùng cũ giữ trạng thái đang dùng. Phím chuyển Anh/Việt nay mặc định

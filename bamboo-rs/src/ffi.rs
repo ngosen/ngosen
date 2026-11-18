@@ -14,7 +14,7 @@ use std::io::{BufRead, BufReader};
 use std::os::fd::FromRawFd;
 use std::sync::Arc;
 
-use bamboo_core::advanced::get_charset_names;
+use bamboo_core::advanced::charset_names;
 use bamboo_core::{BracketMode, Config, InputMethod, ToneStyle, W2uMode};
 
 use crate::convert::{LetterCase, convert};
@@ -301,7 +301,7 @@ pub unsafe extern "C" fn ConvertText(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn GetCharsetNames() -> *mut *mut c_char {
-    let mut names = get_charset_names();
+    let mut names: Vec<String> = charset_names().map(String::from).collect();
     // "Unicode" comes first, the rest by name.
     names[1..].sort();
     c_string_array(&names)

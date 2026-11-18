@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.88"
 name = "bamboo-core"
-version = "0.5.2"
+version = "0.6.0"
 build = false
 include = [
     "src/**",
@@ -23,6 +23,7 @@ include = [
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
+    "include/bamboo_core.h",
 ]
 autolib = false
 autobins = false
@@ -57,6 +58,11 @@ wasm = ["wasm-bindgen"]
 
 [lib]
 name = "bamboo_core"
+crate-type = [
+    "rlib",
+    "staticlib",
+    "cdylib",
+]
 path = "src/lib.rs"
 
 [[test]]
@@ -70,6 +76,10 @@ path = "tests/api_migration.rs"
 [[test]]
 name = "auto_correct_camelcase"
 path = "tests/auto_correct_camelcase.rs"
+
+[[test]]
+name = "auto_correct_refused_mark"
+path = "tests/auto_correct_refused_mark.rs"
 
 [[test]]
 name = "backspace_after_undo"
@@ -96,12 +106,28 @@ name = "comprehensive_typing"
 path = "tests/comprehensive_typing.rs"
 
 [[test]]
+name = "config_change_brute"
+path = "tests/config_change_brute.rs"
+
+[[test]]
 name = "custom_input_method"
 path = "tests/custom_input_method.rs"
 
 [[test]]
 name = "dict_word_composition"
 path = "tests/dict_word_composition.rs"
+
+[[test]]
+name = "english_telex_corpus"
+path = "tests/english_telex_corpus.rs"
+
+[[test]]
+name = "extended_finals"
+path = "tests/extended_finals.rs"
+
+[[test]]
+name = "extended_onsets"
+path = "tests/extended_onsets.rs"
 
 [[test]]
 name = "free_onset_spelling"
@@ -114,6 +140,10 @@ path = "tests/horn_placement.rs"
 [[test]]
 name = "keystroke_verification"
 path = "tests/keystroke_verification.rs"
+
+[[test]]
+name = "overflow_word_boundary"
+path = "tests/overflow_word_boundary.rs"
 
 [[test]]
 name = "preedit_overflow"
@@ -182,6 +212,12 @@ test = false
 harness = false
 
 [[bench]]
+name = "four_engine_scale"
+path = "benches/four_engine_scale.rs"
+test = false
+harness = false
+
+[[bench]]
 name = "memory_profile"
 path = "benches/memory_profile.rs"
 test = false
@@ -222,7 +258,7 @@ version = "0.8.2"
 features = ["html_reports"]
 
 [dev-dependencies.proptest]
-version = "1.11.0"
+version = "1.12.0"
 
 [dev-dependencies.serial_test]
 version = "4.0.1"
@@ -231,7 +267,7 @@ version = "4.0.1"
 version = "0.1.23"
 
 [dev-dependencies.uvie]
-version = "2.7.0"
+version = "2.8.1"
 
 [dev-dependencies.vi]
 version = "0.8.0"

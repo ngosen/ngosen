@@ -38,6 +38,8 @@ class Facts:
     env: dict
     fcitx_running: bool = False
     ngosen_in_group: bool = False
+    # The current fcitx5 group in order; fcitx5 opens every new window on the first one.
+    input_methods: list = field(default_factory=list)
     # False when fcitx5 started before Ngó Sen was installed, so it cannot add it yet.
     ngosen_loaded: bool = True
     # IBus took this session's address file, so apps and GNOME Shell talk to it, not fcitx5.
@@ -112,6 +114,7 @@ ENABLE_AUTOSTART, SET_ENVIRONMENT, USE_IM_CONFIG, SET_KWIN_INPUT_METHOD = (
     "use-im-config",
     "set-kwin-input-method",
 )
+REMOVE_KEYBOARDS = "remove-keyboards"
 
 
 def parse_debug_info(text):
@@ -240,6 +243,7 @@ def steps(facts):
         found.append(_replaced_addon_finding(facts))
     if facts.ngosen_in_group:
         found.append(Finding(OK, _("Ngó Sen is in the fcitx5 input method list")))
+        found += _keyboard_first_findings(facts)
     elif not facts.ngosen_loaded and not facts.addon_replaced:
         finding = _restart_finding(facts, _("fcitx5 started before Ngó Sen was installed"))
         finding.stops_typing = True
@@ -278,6 +282,37 @@ def steps(facts):
             )
         )
     return _with_one_login_notice(found, facts)
+
+
+def _is_keyboard(input_method):
+    return input_method.startswith("keyboard-")
+
+
+def _keyboard_first_findings(facts):
+    # A window that opens on a plain keyboard never reaches Ngó Sen, so its switch key does nothing.
+    if not facts.input_methods or not _is_keyboard(facts.input_methods[0]):
+        return []
+    keyboards = ", ".join(im for im in facts.input_methods if _is_keyboard(im))
+    return [
+        Finding(
+            WARN,
+            _("New windows open on another keyboard, not on Ngó Sen"),
+            _(
+                "fcitx5 also has {}, so switching between English and Vietnamese does nothing "
+                "there. Ngó Sen has its own English mode: remove the extra keyboard."
+            ).format(keyboards),
+            REMOVE_KEYBOARDS,
+            "fcitx5-configtool",
+        )
+    ]
+
+
+def without_keyboards(layout, items):
+    """The group's layout and items once the plain keyboards next to Ngó Sen are gone."""
+    if items and _is_keyboard(items[0][0]):
+        # Ngó Sen types on the group's layout, so it keeps the one the user typed on.
+        layout = items[0][0].removeprefix("keyboard-")
+    return layout, [item for item in items if not _is_keyboard(item[0])]
 
 
 def _replaced_addon_finding(facts):
@@ -485,6 +520,7 @@ def fix_label(action):
         SET_ENVIRONMENT: _("Set for this account"),
         USE_IM_CONFIG: _("Choose fcitx5"),
         SET_KWIN_INPUT_METHOD: _("Choose Fcitx 5"),
+        REMOVE_KEYBOARDS: _("Remove"),
     }[action]
 
 
@@ -499,6 +535,7 @@ def fixed_message(action):
         SET_ENVIRONMENT: _("Saved the settings. Log out and back in to use them."),
         USE_IM_CONFIG: _("Chose fcitx5. Log out and back in to use it."),
         SET_KWIN_INPUT_METHOD: _("Chose Fcitx 5. Log out and back in to use it."),
+        REMOVE_KEYBOARDS: _("Removed the extra keyboard. New windows open on Ngó Sen."),
     }[action]
 
 
@@ -578,6 +615,8 @@ def run_fix(action, dbus_handler):
             dbus_handler.set_input_method_group(name, layout, items)
             return False, None
         return True, lambda: dbus_handler.set_input_method_group(name, layout, items)
+    if action == REMOVE_KEYBOARDS:
+        return _remove_keyboards(dbus_handler)
     if action == RESTART_FCITX:
         return dbus_handler.restart(), None
     if action == START_FCITX:
@@ -597,6 +636,17 @@ def run_fix(action, dbus_handler):
     if action == SET_KWIN_INPUT_METHOD:
         return session_setup.set_kwin_input_method(_kwin_input_method(os.environ))
     return False, None
+
+
+def _remove_keyboards(dbus_handler):
+    group = dbus_handler.input_method_group()
+    # Without Ngó Sen the group would be left empty.
+    if group is None or "ngosen" not in (im for im, _im_layout in group[2]):
+        return False, None
+    name, layout, items = group
+    if not dbus_handler.set_input_method_group(name, *without_keyboards(layout, items)):
+        return False, None
+    return True, lambda: dbus_handler.set_input_method_group(name, layout, items)
 
 
 def _install_input_panel():
@@ -635,6 +685,7 @@ def _succeeds(cmd):
 FIX_ORDER = (
     START_FCITX,
     ADD_NGOSEN,
+    REMOVE_KEYBOARDS,
     ENABLE_AUTOSTART,
     SET_ENVIRONMENT,
     USE_IM_CONFIG,
@@ -712,6 +763,8 @@ def report(facts, findings, app_test=None):
         f"{facts.distro or '?'}, {desktop}, {facts.session or '?'}",
         " ".join(f"{v}={facts.env.get(v) or '(unset)'}" for v in IM_VARIABLES),
     ]
+    if facts.input_methods:
+        lines.append("Input methods: " + ", ".join(facts.input_methods))
     saved = [f"{v}={facts.saved_env[v]}" for v in IM_VARIABLES if v in facts.saved_env]
     if saved:
         lines.append("environment.d: " + " ".join(saved))
@@ -777,6 +830,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
     names = dbus_handler.input_method_names()
     facts.fcitx_running = names is not None
     facts.ngosen_in_group = "ngosen" in (names or [])
+    facts.input_methods = names or []
     facts.ngosen_loaded = dbus_handler.has_input_method("ngosen") is not False
     facts.apps = parse_debug_info(dbus_handler.debug_info())
     facts.output_charset = (dbus_handler.get_config().get("values") or {}).get(

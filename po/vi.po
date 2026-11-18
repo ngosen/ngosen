@@ -1421,6 +1421,22 @@ msgid "Ngó Sen is in the fcitx5 input method list"
 msgstr "Ngó Sen đã có trong danh sách bộ gõ của fcitx5"
 
 #: settings-gui/core/system_check.py
+msgid "New windows open on another keyboard, not on Ngó Sen"
+msgstr "Cửa sổ mới mở ra ở một bàn phím khác, không phải Ngó Sen"
+
+#: settings-gui/core/system_check.py
+msgid ""
+"fcitx5 also has {}, so switching between English and Vietnamese does "
+"nothing there. Ngó Sen has its own English mode: remove the extra keyboard."
+msgstr ""
+"fcitx5 còn có {}, nên ở đó phím chuyển Anh/Việt không có tác dụng. Ngó Sen "
+"đã có sẵn chế độ tiếng Anh: hãy xoá bàn phím thừa."
+
+#: settings-gui/core/system_check.py
+msgid "Removed the extra keyboard. New windows open on Ngó Sen."
+msgstr "Đã xoá bàn phím thừa. Cửa sổ mới sẽ mở ra ở Ngó Sen."
+
+#: settings-gui/core/system_check.py
 msgid "Older X11 apps use fcitx5"
 msgstr "App X11 cũ gõ qua fcitx5"
 

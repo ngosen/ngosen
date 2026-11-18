@@ -26,6 +26,7 @@ use crate::text::{
 use crate::time_format::format_time;
 use packed::Packed;
 
+mod elongated;
 mod packed;
 mod teencode;
 
@@ -514,12 +515,18 @@ impl BambooEngine {
         if let Some(word) = self.teencode_word() {
             return word;
         }
-        if self.keep_keys_until_next_key
+        let as_typed = self.keep_keys_until_next_key
             || self.should_fallback_to_english(true)
             || self.keys_start_english_over_name()
             || self.starts_no_dictionary_word()
-            || self.word_before_digits_is_english()
+            || self.word_before_digits_is_english();
+        // Keys such as `aaaf` compose no mark to restore, yet still stretch à.
+        if (as_typed || (self.auto_non_vn_restore && !self.preeditor.is_vietnamese_prefix()))
+            && let Some(word) = self.elongated_word()
         {
+            return word;
+        }
+        if as_typed {
             return self.raw_text();
         }
         self.shown_as_composed()
@@ -927,11 +934,13 @@ impl BambooEngine {
         let marked = || ends_sentence.then(|| self.auto_marked_word()).flatten();
         let late = || ends_sentence.then(|| self.late_tone_word()).flatten();
         let teencode = || self.teencode_word();
+        let elongated = || self.elongated_word().filter(|word| word == old_text);
         if let Some(word) = self
             .retoned_word()
             .or_else(marked)
             .or_else(late)
             .or_else(teencode)
+            .or_else(elongated)
         {
             self.preeditor.reset();
             return (format!("{word}{key}"), true);

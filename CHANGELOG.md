@@ -12,6 +12,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Gõ kéo dài chữ: giữ phím chữ cái cuối của một từ có dấu thì chữ đó lặp lại cùng dấu, `afaaa` ra `àààà`,
+  `ooiiii` ra `ôiiii`, `ddusngggg` ra `đúngggg`, thay vì hiện lại các phím đã gõ. Gõ dấu sau cùng cũng được:
+  `aaaaf` ra `àààà`, `chaooof` ra `chàooo`. Từ tiếng Anh gõ kéo dài như `besttt` hay `thereee` vẫn giữ nguyên
+  (#852, #871).
 - Gợi ý emoji cuối câu nay hiện suốt lúc gõ trên ô nổi của fcitx5, từ từ khoá đầu tiên tới hết câu, thay vì chỉ
   loé lên lúc dừng tay. Dừng tay hoặc gõ `. ! ?` thì bấm Tab để chọn như trước; Esc ẩn emoji tới hết câu;
   xoá hết câu đó rồi gõ câu mới thì emoji hiện lại (#849, #854, #859, #862, #863).
@@ -61,6 +65,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Bấm chuột sang chỗ khác trong ô gõ thì danh sách emoji của từ cũ đóng lại, không còn bấm vào nó mà chèn emoji (hay thay
   chữ) ở chỗ con trỏ mới (#848).
+- Trang Kiểm tra máy nay báo khi danh sách bộ gõ của fcitx5 còn một bàn phím khác đứng trước Ngó Sen. Khi đó
+  cửa sổ mới mở ra ở bàn phím kia nên Ctrl+Shift không đổi Anh/Việt. Nút "Xoá" bỏ bàn phím thừa và có thể hoàn
+  tác. Kết quả kiểm tra gửi kèm báo lỗi nay cũng liệt kê các bộ gõ trong danh sách (#872, #875).
 
 ## [1.12.2-1] — 18/11/2026
 

@@ -308,11 +308,11 @@ class ToggleKeyTest(unittest.TestCase):
 
     def test_other_input_methods_get_a_hint(self):
         hint = "fcitx5 has other input methods too; its own key still switches to them."
-        page = self.page(FakeDBusHandler())
+        others = FakeDBusHandler()
+        others.group = ("Default", "us", [("keyboard-us", ""), ("ngosen", "")])
+        page = self.page(others)
         self.assertIn(hint, [label.text() for label in page.findChildren(QLabel)])
-        alone = FakeDBusHandler()
-        alone.input_method_names = lambda: ["ngosen"]
-        page = self.page(alone)
+        page = self.page(FakeDBusHandler())
         self.assertNotIn(hint, [label.text() for label in page.findChildren(QLabel)])
 
 

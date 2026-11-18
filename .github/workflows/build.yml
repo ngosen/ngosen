@@ -258,10 +258,19 @@ jobs:
           rustup toolchain install 1.88 --profile minimal
           cargo +1.88 test --offline --locked
 
-  # Cargo.lock pins bamboo-core; this shows whether the next 0.5.x release changes typing.
-  rust-newest-core:
-    name: Rust core tests with the newest bamboo-core
+  # Cargo.lock pins bamboo-core; distros build with their own release, anywhere in the range in
+  # Cargo.toml, so test both ends of it.
+  rust-other-core:
+    name: Rust core tests with the ${{ matrix.core }} bamboo-core
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - core: newest
+            update: cargo update -p bamboo-core
+          - core: oldest
+            update: cargo update -p bamboo-core --precise 0.5.2
     defaults:
       run:
         working-directory: bamboo-rs
@@ -271,7 +280,7 @@ jobs:
         run: rm -r .cargo/config.toml vendor
       - name: Update bamboo-core
         run: |
-          cargo update -p bamboo-core
+          ${{ matrix.update }}
           cargo tree -i bamboo-core --depth 0
       - name: Test
         run: cargo test

@@ -10,6 +10,7 @@ mod engine;
 mod ffi;
 mod handles;
 mod macro_table;
+mod spelling;
 mod text;
 mod time_format;
 

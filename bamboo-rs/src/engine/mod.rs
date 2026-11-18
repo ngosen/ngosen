@@ -17,6 +17,7 @@ use bamboo_core::{
 };
 
 use crate::macro_table::MacroTable;
+use crate::spelling::VietnameseSpelling;
 use crate::text::{
     grows_into, has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol,
     vowel_count, with_tone, without_diacritics, without_marks, without_tone_position,
@@ -413,7 +414,7 @@ impl BambooEngine {
         if check_vn_rune && !has_any_vietnamese_rune(&vn_seq) {
             return false;
         }
-        !self.preeditor.is_valid_prefix() && !self.starts_dictionary_name(&vn_seq)
+        !self.preeditor.is_vietnamese_prefix() && !self.starts_dictionary_name(&vn_seq)
     }
 
     /// Names such as plông and xtiêng start with letters no Vietnamese rule allows, so only the
@@ -434,7 +435,7 @@ impl BambooEngine {
         // from the next key.
         self.auto_non_vn_restore
             && !self.keep_marks_until_next_key
-            && !self.preeditor.is_valid_prefix()
+            && !self.preeditor.is_vietnamese_prefix()
             && has_any_vietnamese_vowel(&vn_seq)
             && self.starts_dictionary_name(&vn_seq)
             && self
@@ -450,7 +451,7 @@ impl BambooEngine {
             && !self.keep_marks_until_next_key
             && self.spell_check_with_dicts
             && !self.dictionary.is_empty()
-            && self.preeditor.is_valid_prefix()
+            && self.preeditor.is_vietnamese_prefix()
             && !(self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some())
             && !(self.dd_free_style && vn_seq.contains('đ'))
             && has_any_vietnamese_rune(&vn_seq)
@@ -484,7 +485,7 @@ impl BambooEngine {
     /// The word the keys compose, even while it shows as typed; empty when the spelling rules
     /// reject it.
     pub(crate) fn composed_text(&self) -> String {
-        if !self.preeditor.is_valid_prefix() {
+        if !self.preeditor.is_vietnamese_prefix() {
             return String::new();
         }
         self.encode_text(&self.get_processed_string(OutputOptions::FULL_TEXT))
@@ -578,7 +579,7 @@ impl BambooEngine {
         if self.spell_check_with_dicts {
             return !self.dictionary.contains(&vn_seq);
         }
-        !syllable.is_valid_word()
+        !syllable.is_vietnamese_word()
     }
 
     /// With macros on, digits stay in the word, but the crate has already committed the syllable
@@ -665,7 +666,7 @@ impl BambooEngine {
         // and English words like `ports` would turn into one.
         let word = self.typed_alone(word_keys);
         let text = word.get_processed_str(OutputOptions::NONE);
-        (word.is_valid_word() && self.dictionary.contains(&text)).then_some(text)
+        (word.is_vietnamese_word() && self.dictionary.contains(&text)).then_some(text)
     }
 
     /// Unlike `syllable_must_fallback`, a word with đ is checked too.
@@ -674,7 +675,7 @@ impl BambooEngine {
             self.dictionary
                 .contains(&word.get_processed_str(OutputOptions::LOWER_CASE))
         } else {
-            word.is_valid_word()
+            word.is_vietnamese_word()
         }
     }
 
@@ -1212,7 +1213,7 @@ impl BambooEngine {
             && self.auto_non_vn_restore
             && self.spell_check_with_dicts
             && !self.keep_guard.is_empty()
-            && !self.preeditor.is_valid_prefix()
+            && !self.preeditor.is_vietnamese_prefix()
             && old_text != old_keys
             && !is_all_caps(old_text.chars())
             && !is_all_caps(old_keys.chars().filter(|c| c.is_alphabetic()))
@@ -1282,7 +1283,7 @@ impl BambooEngine {
         let text = typed.get_processed_str(OutputOptions::NONE);
         // After a digit the engine reads only the last syllable; the whole tail must be one word.
         let whole = typed.get_processed_str(OutputOptions::FULL_TEXT) == text;
-        (whole && typed.is_valid_word() && self.dictionary.contains(&text.to_lowercase()))
+        (whole && typed.is_vietnamese_word() && self.dictionary.contains(&text.to_lowercase()))
             .then_some(text)
     }
 
@@ -1307,7 +1308,7 @@ impl BambooEngine {
         [from_shown, from_keys].into_iter().find_map(|typed| {
             let text = typed.get_processed_str(OutputOptions::NONE);
             let whole = typed.get_processed_str(OutputOptions::FULL_TEXT) == text;
-            (whole && typed.is_valid_word() && self.dictionary.contains(&text.to_lowercase()))
+            (whole && typed.is_vietnamese_word() && self.dictionary.contains(&text.to_lowercase()))
                 .then_some(text)
         })
     }

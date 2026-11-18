@@ -144,9 +144,10 @@ phím chuyển trong app đó mở menu để chọn Gõ Sen hoặc Gạch chân
 <details>
 <summary>Lệnh cài làm gì trên từng desktop</summary>
 
-- **GNOME:** đặt fcitx5 thay IBus, bật extension sửa lỗi gõ khi cần. Nếu không có khay hệ thống (như
-  Fedora), thêm extension [Input Method Panel](https://extensions.gnome.org/extension/261/) để icon và
-  menu bộ gõ hiện trên thanh trên cùng.
+- **GNOME:** đặt fcitx5 thay IBus, bật extension sửa lỗi gõ khi cần, thêm extension
+  [Input Method Panel](https://extensions.gnome.org/extension/261/) để bảng emoji nằm dưới dòng chữ
+  (không có nó, app Wayland như Firefox thấy bảng che lên chữ đang gõ) và icon, menu bộ gõ hiện trên
+  thanh trên cùng.
 - **KDE Plasma (Wayland):** chọn fcitx5 ở System Settings → Virtual Keyboard để app Qt như Kate, Dolphin
   cũng gõ được.
 - **Xfce, Cinnamon, MATE** (X11, Debian và Ubuntu): dùng im-config đặt fcitx5 làm bộ gõ.
@@ -335,8 +336,9 @@ bước sau (hoặc chạy lệnh cài một dòng ở trên để nó làm giú
   printf 'GTK_IM_MODULE=fcitx\nQT_IM_MODULE=fcitx\nXMODIFIERS=@im=fcitx\nSDL_IM_MODULE=fcitx\n' > ~/.config/environment.d/90-ngosen.conf
   ```
 
-  Thanh trên cùng không có icon bộ gõ thì cài extension
-  [Input Method Panel](https://extensions.gnome.org/extension/261/). Xem thêm
+  Cài thêm extension [Input Method Panel](https://extensions.gnome.org/extension/261/) rồi đăng xuất,
+  đăng nhập lại: không có nó, bảng emoji che lên chữ đang gõ trong app Wayland như Firefox, và thanh
+  trên cùng có thể không có icon bộ gõ. Xem thêm
   [extension sửa lỗi gõ](#gnome-extension).
 - **KDE Plasma (Wayland):** chọn **Fcitx 5** ở *System Settings → Virtual Keyboard*, rồi đăng xuất và đăng
   nhập lại. App X11 chạy qua XWayland (như Minecraft bản cũ) cần thêm

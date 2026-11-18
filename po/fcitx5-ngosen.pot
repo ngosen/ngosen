@@ -1251,7 +1251,7 @@ msgid "GNOME {} drops the keys Ngó Sen sends to apps"
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Menu and hints do not show in GNOME's search box"
+msgid "Emoji lists can cover the text being typed; menus do not show in GNOME's search box"
 msgstr ""
 
 #: settings-gui/core/system_check.py

@@ -1760,7 +1760,7 @@ fn test_teencode_keeps_held_letters() {
         assert_eq!(commit_of(&mut e, keys), format!("{word} "), "{keys}");
     }
     let mut off = teencode_engine(false);
-    assert_eq!(commit_of(&mut off, "chaiiif"), "chaiiif ");
+    assert_eq!(commit_of(&mut off, "chaiiif"), "chàiii ");
     // An acronym in capitals takes no tone from its last letter.
     assert_eq!(commit_of(&mut e, "WAAAF"), commit_of(&mut off, "WAAAF"));
 }
@@ -1851,6 +1851,10 @@ fn test_held_last_letter_repeats_with_its_marks() {
         ("chafooo", "chàooo"),
         ("AFAAA", "ÀÀÀÀ"),
         ("Owsoo", "Ớớớ"),
+        ("aaaaaaaf", "ààààààà"),
+        ("chaooof", "chàooo"),
+        ("quaaaas", "quáááá"),
+        ("ddungggggs", "đúnggggg"),
     ] {
         let (shown, committed) = finished_word(keys);
         assert_eq!(shown, word, "{keys} while typing");

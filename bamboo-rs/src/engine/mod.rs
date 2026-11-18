@@ -515,13 +515,19 @@ impl BambooEngine {
         if let Some(word) = self.teencode_word() {
             return word;
         }
-        if self.keep_keys_until_next_key
+        let as_typed = self.keep_keys_until_next_key
             || self.should_fallback_to_english(true)
             || self.keys_start_english_over_name()
             || self.starts_no_dictionary_word()
-            || self.word_before_digits_is_english()
+            || self.word_before_digits_is_english();
+        // Keys such as `aaaf` compose no mark to restore, yet still stretch à.
+        if (as_typed || (self.auto_non_vn_restore && !self.preeditor.is_vietnamese_prefix()))
+            && let Some(word) = self.elongated_word()
         {
-            return self.elongated_word().unwrap_or_else(|| self.raw_text());
+            return word;
+        }
+        if as_typed {
+            return self.raw_text();
         }
         self.shown_as_composed()
     }

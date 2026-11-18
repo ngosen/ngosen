@@ -258,6 +258,24 @@ jobs:
           rustup toolchain install 1.88 --profile minimal
           cargo +1.88 test --offline --locked
 
+  # Cargo.lock pins bamboo-core; this shows whether the next 0.5.x release changes typing.
+  rust-newest-core:
+    name: Rust core tests with the newest bamboo-core
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bamboo-rs
+    steps:
+      - uses: actions/checkout@v7
+      - name: Use crates.io instead of the vendored crates
+        run: rm -r .cargo/config.toml vendor
+      - name: Update bamboo-core
+        run: |
+          cargo update -p bamboo-core
+          cargo tree -i bamboo-core --depth 0
+      - name: Test
+        run: cargo test
+
   # The packages prefer Qt6 but still accept PyQt5, so the window must run on both.
   settings-gui:
     name: Settings window tests (${{ matrix.qt }})

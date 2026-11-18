@@ -21,6 +21,7 @@ use crate::convert::{LetterCase, convert};
 use crate::engine::{BambooEngine, Dictionary, INPUT_METHOD_NAMES, WordList, input_method_by_name};
 use crate::handles::{self, Object};
 use crate::macro_table::MacroTable;
+use crate::spelling::VietnameseSpelling;
 
 /// `FcitxBambooEngineOption` in the header.
 #[repr(C)]
@@ -409,7 +410,10 @@ pub unsafe extern "C" fn IsVietnameseSyllable(text: *const c_char) -> u8 {
     engine.rebuild_from_text(&text);
     let rebuilt = engine.get_processed_str(bamboo_core::OutputOptions::NONE);
     u8::from(
-        rebuilt == text && has_vowel(&text) && engine.is_valid_word() && stop_final_has_tone(&text),
+        rebuilt == text
+            && has_vowel(&text)
+            && engine.is_vietnamese_word()
+            && stop_final_has_tone(&text),
     )
 }
 

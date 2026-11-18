@@ -34,7 +34,7 @@ The release is `X.Y.Z-N` (`N` is the packaging revision) with epoch 1, tagged `n
 1. On a `release/X.Y.Z` branch made from `next` (feature release) or `patch` (bug-fix release), set the
    version everywhere:
    - `CMakeLists.txt` (`project(... VERSION X.Y.Z)`)
-   - `packaging/arch/PKGBUILD` (`pkgver`, `pkgrel`)
+   - `packaging/arch/PKGBUILD` and `packaging/aur/PKGBUILD` (`pkgver`, `pkgrel`)
    - `packaging/rpm/fedora/fcitx5-ngosen.spec` and `packaging/rpm/opensuse/fcitx5-ngosen.spec` (`Version`,
      `Release`, a new `%changelog` entry)
    - `packaging/debian/changelog` (new entry `fcitx5-ngosen (1:X.Y.Z-N)`)
@@ -71,9 +71,11 @@ The release is `X.Y.Z-N` (`N` is the packaging revision) with epoch 1, tagged `n
    - each pattern `install.sh` looks for matches exactly one line of `SHA256SUMS`.
 6. The maintainer publishes it:
    `gh release edit ngosen-X.Y.Z-N --repo ngosen/ngosen --draft=false --latest`.
-   Publishing starts two workflows; check that both pass. If one fails, rerun it from the Actions tab,
+   Publishing starts three workflows; check that all pass. If one fails, rerun it from the Actions tab,
    or with `gh workflow run <file> --ref <tag>`:
    - `Fedora COPR` (`copr.yml`) builds the tag in `nguyenphi/ngosen`;
+   - `AUR` (`aur.yml`) pushes `packaging/aur/PKGBUILD` to the AUR package `fcitx5-ngosen`, with the
+     checksum of the tag's tarball, using the `AUR_SSH_KEY` secret of the `release` environment;
    - `Package repositories` (`package-repos.yml`) rebuilds the APT repository
      (`https://ngosen.github.io/ngosen/apt`, two newest releases), the pacman repository
      (`https://ngosen.github.io/ngosen/arch`, newest release) and the openSUSE repository

@@ -1,0 +1,39 @@
+name: AUR
+
+# Pushed on publish, like COPR, so AUR users get a release only after its draft was checked.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  aur:
+    name: Push fcitx5-ngosen
+    if: startsWith(github.ref, 'refs/tags/ngosen-') && !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    environment: release
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install tools
+        run: pacman -Syu --noconfirm --needed git openssh pacman-contrib
+
+      # makepkg refuses to run as root.
+      - name: Push the package
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+        run: |
+          useradd -m builder
+          install -d -m 700 -o builder /home/builder/.ssh
+          printf '%s\n' "$AUR_SSH_KEY" > /home/builder/.ssh/aur
+          chown builder /home/builder/.ssh/aur
+          chmod 600 /home/builder/.ssh/aur
+          cp -r packaging /home/builder/packaging
+          chown -R builder /home/builder/packaging
+          su builder -c 'AUR_SSH_KEY_FILE=/home/builder/.ssh/aur /home/builder/packaging/aur/publish.sh'

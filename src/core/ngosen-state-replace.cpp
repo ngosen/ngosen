@@ -268,6 +268,7 @@ namespace ngosen {
     void TypingState::noteWaitOutcome(const char* reason) {
         const auto elapsedMs = (ngosen::monotonicUs() - surr_wait_started_at_) / 1000;
         NGOSEN_INFO("Surr wait " + std::string(reason) + " after " + std::to_string(elapsedMs) + " ms");
+        engine_->recorder().add("wait", std::string(reason) + " after " + std::to_string(elapsedMs) + " ms");
         if (std::string(reason) == "timeout") {
             surr_snapshot_trusted_ = false;
             ++surr_timeout_streak_;
@@ -803,6 +804,7 @@ namespace ngosen {
         if (sinceFocus_.lastPath != path)
             NGOSEN_INFO(std::string("Path changed to ") + path + loggedField(host_->field()) + ": " + why);
         sinceFocus_.lastPath = path;
+        engine_->recorder().add("path", std::string(path) + ": " + why);
     }
 
     void TypingState::startReplaceLog(const char* wait) {
@@ -816,9 +818,11 @@ namespace ngosen {
     void TypingState::logReplaceEnd(const char* ended) {
         if (!replace_logging_)
             return;
-        replace_logging_ = false;
-        NGOSEN_DEBUG(std::string("Replace: method=") + replace_method_ + " wait=" + replace_wait_ + " ended=" + ended + " after " +
-                     std::to_string((monotonicUs() - replace_started_us_) / 1000) + " ms");
+        replace_logging_      = false;
+        const std::string how = std::string("method=") + replace_method_ + " wait=" + replace_wait_ + " ended=" + ended + " after " +
+            std::to_string((monotonicUs() - replace_started_us_) / 1000) + " ms";
+        NGOSEN_DEBUG("Replace: " + how);
+        engine_->recorder().add("edit", how);
     }
 
     bool TypingState::deletesThroughSurrounding(const ngosen::Surrounding& surrounding) {
@@ -1035,15 +1039,17 @@ namespace ngosen {
             const bool  messengerFirst   = looksLikeMessengerComposer(surrounding) && isFirstWordOfMessage(surrounding);
             const bool  clearsCompletion = extraBeforeCursor != 0;
             const bool  joins            = ngosen::takesJoinedEdit(field) && !clearsCompletion && !messengerFirst;
-            if (ngosen::keepsLastEditPerTurn(field) && joins)
+            if (ngosen::keepsLastEditPerTurn(field) && joins) {
                 NGOSEN_INFO("Join the deletion and the commit for " + field.program);
-            else if (ngosen::keepsLastEditPerTurn(field) && !cursorIsBeforeAutofill(surrounding))
+                engine_->recorder().add("join", "");
+            } else if (ngosen::keepsLastEditPerTurn(field) && !cursorIsBeforeAutofill(surrounding))
                 holdUs = splitEditWaitUs();
             // A just-emptied Messenger composer reloads its placeholder and drops a commit sent with the deletion.
             else if (messengerFirst)
                 holdUs = static_cast<uint64_t>(std::max(engine_->options().waitSurroundingSettleFirstWordMs, 0)) * 1000ULL;
         }
         if (holdUs > 0) {
+            engine_->recorder().add("hold", std::to_string(holdUs / 1000) + " ms");
             split_edit_pending_      = true;
             surr_wait_focus_retries_ = 0;
             split_edit_surrounding_  = surrounding;

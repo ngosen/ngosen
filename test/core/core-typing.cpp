@@ -1929,6 +1929,25 @@ namespace {
         check(has(log, " terminal=1 "), "recorder: marks a terminal field", log);
     }
 
+    // An address bar deletes with BackSpace, so a log without the flag cannot tell why.
+    void testRecorderMarksAddressBar() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField("wayland_v2", true, "firefox");
+        field.url                 = true;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        typeTie(state, *host, loop, true);
+        press(state, static_cast<uint32_t>('e'));
+        loop.pump(300);
+        const std::string log = resources.recorder().dump();
+        check(has(log, " url=1 "), "recorder: marks an address bar", log);
+        check(has(log, "\tpath\tbackspaces: ") && has(log, "\twait\t"), "recorder: notes the wait after the backspaces", log);
+    }
+
     // Types `keys`, a word and a macro, keeping every log line; returns them.
     std::string logWhileTyping(ngosen::Mode mode, bool password, const std::string& keys) {
         realMode = mode;
@@ -3668,6 +3687,19 @@ namespace {
             press(*state, 'e');
         }
     };
+
+    // A saved log is often all a slow report has; it must say which path each edit took and how long it waited.
+    void testRecorderNotesHowEditsWent() {
+        TailRun           shell("tie", 3);
+        const std::string held = shell.resources.recorder().dump();
+        check(has(held, "\tpath\tsurrounding: "), "recorder: notes the path of every edit", held);
+        check(has(held, "\thold\t30 ms\n"), "recorder: notes how long a split edit holds the commit", held);
+        shell.loop.pump(100);
+        check(has(shell.resources.recorder().dump(), "\tedit\tmethod=surrounding "), "recorder: notes how the edit ended", shell.resources.recorder().dump());
+        TailRun           chrome("tie", 3, "google-chrome.desktop");
+        const std::string joined = chrome.resources.recorder().dump();
+        check(has(joined, "\tjoin\t\n") && !has(joined, "\thold\t"), "recorder: notes a joined edit", joined);
+    }
 
     // Firefox's address bar drops its autocompletion only for a commit in the deletion's own turn.
     void testAutofillTailCommitsWithDeletion() {
@@ -5583,6 +5615,7 @@ int main() {
     testRecorderNotesFieldSwitch();
     testRecorderHidesPasswords();
     testRecorderMarksTerminal();
+    testRecorderMarksAddressBar();
     testRecorderKeepsOneEventPerLine();
     testRecorderLimits();
     testRecorderSkipsRepeatedReports();
@@ -5615,6 +5648,7 @@ int main() {
     testCursorPastOnBusyPage();
     testSplitWaitFollowsEchoes();
     testAutofillTailCommitsWithDeletion();
+    testRecorderNotesHowEditsWent();
     testSelectedTailGoesFirst();
     testReportRequestIsNotInput();
     testNoCopyWaitForBackspaceField();

@@ -3366,11 +3366,15 @@ namespace {
             state.surroundingUpdated();
             // Clicking inside the same terminal keeps composition commits even when the next keys arrive under 50 ms.
             g_mouse_clicked.store(true);
-            press(state, 'd');
+            press(state, 'a');
             loop.pump(20);
-            press(state, 'd');
+            press(state, 's');
+            loop.pump(20);
+            press(state, 's');
             loop.pump(60);
-            check(host->deletes().empty() && host->commits().size() == 2, "Electron terminal: a click inside the terminal keeps composition commits", join(host->commits()));
+            host->setSurrounding("đ as ", 5);
+            state.surroundingUpdated();
+            check(host->deletes().empty() && host->commits().back() == "as", "Electron terminal: a click inside the terminal keeps composition commits", join(host->commits()));
 
             // Switching to a chat box deletes through surrounding text without composition flicker.
             state.reset(false);
@@ -3389,18 +3393,24 @@ namespace {
             check(host->deletes().size() == 1 && host->preedit().empty() && host->commits().back() == "ó", "Electron chat box: commits directly after switching from the terminal",
                   join(host->commits()));
 
-            // Switching back to the terminal whose hidden textarea still holds earlier commits detects xterm.js again.
+            // Switching back to the terminal whose hidden textarea still holds earlier commits detects xterm.js again,
+            // even when the first typed letter also appears in that retained commit text.
             state.reset(false);
-            host->setSurrounding("đ ", 2);
+            host->setSurrounding("đ as ", 5);
             state.surroundingUpdated();
             const size_t deletesBefore = host->deletes().size();
-            press(state, 'l');
-            loop.pump(65);
             press(state, 'a');
             loop.pump(65);
             press(state, 'f');
             loop.pump(60);
-            check(host->deletes().size() == deletesBefore && host->commits().back() == "à", "Electron terminal: switching back from chat detects xterm.js despite earlier commits",
+            press(state, ' ');
+            host->setSurrounding("đ as à ", 7);
+            state.surroundingUpdated();
+            press(state, 'd');
+            loop.pump(65);
+            press(state, 'd');
+            loop.pump(60);
+            check(host->deletes().size() == deletesBefore && host->commits().back() == "đ", "Electron terminal: switching back from chat detects xterm.js despite earlier commits",
                   join(host->commits()));
         }
 

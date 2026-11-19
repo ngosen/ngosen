@@ -320,9 +320,10 @@ namespace ngosen {
         if (host_->hasFocus() && host_->surrounding().isValid()) {
             if (keepsOnlyCommits() && showsText(host_->surrounding()))
                 xtermText_ = host_->surrounding().text();
-            if (!xtermText_.empty() && host_->surrounding().text() == xtermText_ && sinceFocus_.firstLetter == 0)
-                sinceFocus_.seenText = false;
-            else if (showsText(host_->surrounding()))
+            if (!xtermText_.empty() && host_->surrounding().text() == xtermText_ && sinceFocus_.firstLetter == 0) {
+                sinceFocus_.seenText     = false;
+                sinceFocus_.commitsShown = xtermText_;
+            } else if (showsText(host_->surrounding()))
                 sinceFocus_.seenText = true;
             else if (keyCount_ == sinceFocus_.keysAtFocus)
                 sinceFocus_.seenEmpty = true;

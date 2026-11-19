@@ -1292,7 +1292,7 @@ namespace ngosen {
         h.passedSinceReport.clear();
         h.passedAfterCommit.clear();
         h.committedSinceReport.clear();
-        h.commitsShown.clear();
+        h.commitsShown        = s.isValid() && s.text() == xtermText_ ? xtermText_ : std::string();
         h.erasedSinceReport   = 0;
         h.lettersHidden       = 0;
         h.letterShown         = false;

@@ -10,8 +10,16 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
 - Arch và các distro dựa trên Arch cài được từ AUR: `yay -S fcitx5-ngosen`, bản IBus `yay -S ibus-ngosen`.
   Mỗi version mới tự lên AUR khi phát hành ([#873](https://github.com/ngosen/ngosen/pull/873)).
+
+### Sửa
+
+- Trong terminal dùng xterm.js của các trình soạn code Electron (như Antigravity, VS Code, Cursor), chế độ Gõ Sen không
+  còn khựng chờ hay nuốt chữ khi gõ nhanh (`xin chaof nhieefu` ra `xin chào nhiều` thay vì `xin chàoiều`), và khung chat
+  hay ô soạn code cùng cửa sổ không còn nháy preedit ở cuối từ; mới thử trên Antigravity ở KDE Wayland (#867, #880).
 
 ## [1.12.2-1] — 18/11/2026
 

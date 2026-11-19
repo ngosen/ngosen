@@ -68,6 +68,7 @@ namespace ngosen::test {
         // Turns a deletion of characters into bytes on the text it reported last, as mutter does for
         // text-input-v3 and fcitx5 does on Wayland.
         bool             convertsDeleteOnReportedCopy = false;
+        bool             silentOnBackSpace            = false; // sends no report for a forwarded Backspace, as Chrome's address bar on GNOME
         bool             reportsNothingAfterDelete    = false; // reports nothing after a deletion until a typed key, as Qt 6 over text-input-v3 does
         bool             repeatsOldTextAfterDelete    = false; // reports its text from before a deletion until a typed key, as Firefox on GNOME does
         int              keysBeforeNewReport          = 1;     // typed keys it takes to end repeatsOldTextAfterDelete
@@ -364,6 +365,7 @@ namespace ngosen::test {
         uint64_t                            oldTextUntilUs_     = 0;
         size_t                              reportedAnchor_     = 0;
         bool                                silentAfterDelete_  = false;
+        bool                                inBackSpace_        = false;
         bool                                surroundingDropped_ = false;
         int                                 keysSinceDelete_    = 0;
         bool                                turnPending_        = false;

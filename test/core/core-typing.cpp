@@ -3977,6 +3977,22 @@ namespace {
         check(run.text == "nam tiếng nam tiếng nam tiếng ", "GNOME: a late backspace is not overtaken once the waits get short", run.text);
     }
 
+    // Chrome's and Edge's address bars on GNOME never report a deletion, and the floor kept for slow pages
+    // made every edit there wait 100 ms.
+    void testAddressBarSkipsGnomeFloor() {
+        realMode              = ngosen::Mode::Sen;
+        Field field           = makeField("ibus", true, "google-chrome.desktop");
+        field.reportedProgram = "gnome-shell";
+        field.appNameCurrent  = true;
+        field.url             = true;
+        FakeResources resources;
+        const auto    keys = keysOf("vieetj tieesng ");
+        const auto    text = ngosen::test::typeInApp(resources, field, {.silentOnBackSpace = true}, keys, std::vector<int>(keys.size(), 150));
+        check(text == "việt tiếng ", "address bar over GNOME: text", text);
+        const std::string log = resources.recorder().dump();
+        check(has(log, "\tedit\tmethod=forwarded backspaces") && !has(log, "after 100 ms") && !has(log, "after 101 ms"), "address bar over GNOME: no 100 ms floor", log);
+    }
+
     // The cursor moving over our own edit is not a click, so the word goes on.
     void testCursorMovesBeforeEditText() {
         realMode = ngosen::Mode::Sen;
@@ -5676,6 +5692,7 @@ int main() {
     testLongTurnKeepsTheEdit();
     testBackspaceBetweenSplitEdits();
     testShortWaitOverGnome();
+    testAddressBarSkipsGnomeFloor();
     testCopyWaitEndsAfterTheReport();
     testEditBeforeOtherText();
     testCursorMovesBeforeEditText();

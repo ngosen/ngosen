@@ -414,7 +414,9 @@ namespace ngosen::test {
         else
             later((quirks_.backspacesSkipLag ? 0 : quirks_.lagMs) + quirks_.backspaceLagMs, [this] {
                 noteTypedKey();
+                inBackSpace_ = quirks_.silentOnBackSpace;
                 eraseBefore(1);
+                inBackSpace_ = false;
             });
     }
 
@@ -658,7 +660,7 @@ namespace ngosen::test {
             shown.back()         = U'\u00a0';
             return Surrounding(encode(shown), static_cast<unsigned int>(cursor_), static_cast<unsigned int>(anchor_));
         }
-        if (silentAfterDelete_ || quirks_.reportsTextAtChange || showsMovedCursor_ || holdsUnreported_)
+        if (silentAfterDelete_ || quirks_.silentOnBackSpace || quirks_.reportsTextAtChange || showsMovedCursor_ || holdsUnreported_)
             return Surrounding(encode(reportedText_), static_cast<unsigned int>(reportedCursor_), static_cast<unsigned int>(reportedAnchor_));
         if (quirks_.staleReport)
             return Surrounding(encode(previousText_), static_cast<unsigned int>(previousCursor_), static_cast<unsigned int>(previousCursor_));
@@ -817,7 +819,7 @@ namespace ngosen::test {
         holdsUnreported_ = false;
         shownCursor_     = cursor_;
         shownAnchor_     = anchor_;
-        if (silentAfterDelete_ && !quirks_.repeatsOldTextAfterDelete)
+        if ((silentAfterDelete_ && !quirks_.repeatsOldTextAfterDelete) || inBackSpace_)
             return;
         // A field that stopped declaring its text sends no report either.
         if (field_.surroundingText && !surroundingDropped_ && quirks_.reports)

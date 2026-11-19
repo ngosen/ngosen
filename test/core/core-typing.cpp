@@ -3331,6 +3331,50 @@ namespace {
               out.text + " preedits=" + std::to_string(out.sent.preedits));
     }
 
+    // IBus commits a preedit shown with the commit focus mode itself on reset, so the commit the core
+    // holds back for a composition must not follow it.
+    void testXtermResetCommitsPreedit() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "firefox"), ngosen::test::AppQuirks{.keepsOnlyCommits = true});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (const char c : std::string("ddaay laf ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(60);
+        }
+        loop.pump(600);
+        const std::string before = app->text();
+        app->type('d');
+        loop.pump(60);
+        app->type('d');
+        for (int ms = 0; ms < 400 && !app->composesPreedit(); ++ms)
+            loop.pump(1);
+        const bool shown = app->composesPreedit();
+        app->resetCommittingPreedit();
+        loop.pump(600);
+        check(shown && app->text() == before + "đ", "xterm.js: a reset that commits the preedit leaves one đ", app->text() + " before=" + before + (shown ? "" : " (no preedit)"));
+
+        // The IBus edition ends the word itself before a reset of its own, as when the mode menu opens.
+        const std::string beforeMenu = app->text();
+        app->type(' ');
+        loop.pump(600);
+        app->type('d');
+        loop.pump(60);
+        app->type('d');
+        for (int ms = 0; ms < 400 && !app->composesPreedit(); ++ms)
+            loop.pump(1);
+        const bool shownAtMenu = app->composesPreedit();
+        state.commitBuffer();
+        state.resetAfterAppCommit(false);
+        loop.pump(600);
+        check(shownAtMenu && app->text() == beforeMenu + " đ", "xterm.js: ending the word before a reset keeps its đ",
+              app->text() + " before=" + beforeMenu + (shownAtMenu ? "" : " (no preedit)"));
+    }
+
     // A click back into the terminal finds the composition start xterm.js kept from before.
     void testXtermRememberedAfterFocus() {
         realMode = ngosen::Mode::Sen;
@@ -5632,6 +5676,7 @@ int main() {
     testXtermKeepsOnlyCommits();
     testXtermFirstWords();
     testXtermRememberedAfterFocus();
+    testXtermResetCommitsPreedit();
     testTypedBackspaceIsNotHiddenLetter();
     testFirstLettersSkipDroppedKeys();
     testShortDeletion();

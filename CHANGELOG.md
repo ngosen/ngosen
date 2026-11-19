@@ -65,6 +65,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Trên GNOME, đặt dấu ở thanh địa chỉ Chrome và Edge nhanh hơn: mỗi lần chờ khoảng 40–50 ms thay vì 100 ms,
+  vì hai trình duyệt này không báo lại sau khi xoá chữ. Thanh địa chỉ Firefox giữ như cũ (#885).
 - Bấm chuột sang chỗ khác trong ô gõ thì danh sách emoji của từ cũ đóng lại, không còn bấm vào nó mà chèn emoji (hay thay
   chữ) ở chỗ con trỏ mới (#848).
 - Trang Kiểm tra máy nay báo khi danh sách bộ gõ của fcitx5 còn một bàn phím khác đứng trước Ngó Sen. Khi đó

@@ -3339,6 +3339,29 @@ namespace {
             check(revertOut.text == "as đ ", std::string("xterm.js in ") + program + ": reverting a tone on the first letter keeps composition commits", revertOut.text);
         }
 
+        // A click inside the terminal moves no focus, so fast words after it still need composition commits.
+        {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeResources clickResources;
+            FakeLoop      loop;
+            auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "antigravity-ide"), ngosen::test::AppQuirks{.keepsOnlyCommits = true});
+            ngosen::test::FakeApp* app = owned.get();
+            ngosen::TypingState    state(&clickResources, std::move(owned));
+            app->attach(&state);
+            for (const uint32_t key : keysOf("ddaay laf ")) {
+                app->type(key);
+                loop.pump(100);
+            }
+            g_mouse_clicked.store(true);
+            for (const uint32_t key : keysOf("ass dd ")) {
+                app->type(key);
+                loop.pump(20);
+            }
+            loop.pump(300);
+            check(app->text() == "đây là as đ ", "Electron terminal: fast words after a click inside the terminal come out right", app->text());
+        }
+
         // Typing in the Electron terminal must not make normal fields in the same app flicker through a composition.
         FakeResources sharedEditor;
         const Field   editorField = makeField("wayland", true, "antigravity-ide");

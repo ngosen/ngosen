@@ -20,9 +20,8 @@ use bamboo_core::{
 use crate::macro_table::MacroTable;
 use crate::spelling::VietnameseSpelling;
 use crate::text::{
-    grows_into, has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol,
-    vowel_count, with_tone, without_diacritics, without_marks, without_tone_position,
-    without_tones,
+    Typed, has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol, vowel_count,
+    with_tone, without_diacritics, without_marks, without_tone_position, without_tones,
 };
 use crate::time_format::format_time;
 use packed::Packed;
@@ -84,9 +83,15 @@ impl Dictionary {
     pub fn starts_word(&self, typed: &str) -> bool {
         let key = without_marks(&without_tones(typed).0);
         let first = self.bare.partition_point(|w| w < key.as_str());
-        (first..self.bare.len())
+        let mut candidates = (first..self.bare.len())
             .take_while(|&i| self.bare.get(i).starts_with(&*key))
-            .any(|i| grows_into(typed, self.lower.get(i)))
+            .peekable();
+        // Most keys match no word, so the typed keys are read only when one does.
+        if candidates.peek().is_none() {
+            return false;
+        }
+        let typed = Typed::new(typed);
+        candidates.any(|i| typed.grows_into(self.lower.get(i)))
     }
 
     pub fn is_empty(&self) -> bool {

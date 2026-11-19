@@ -152,30 +152,49 @@ fn tones(word: &str) -> impl Iterator<Item = usize> + '_ {
         .filter(|&t| t != 0)
 }
 
-/// Whether more keys can turn `typed` into the start of `word`: each letter is the same or lacks a
-/// mark the word's letter has, and any tone typed matches the word's tone even if more letters move
-/// it (`khủy` to khuỷu), while `cró` never grows into crông.
-pub fn grows_into(typed: &str, word: &str) -> bool {
-    let covers = |t: char, w: char| {
-        if t == w {
-            return true;
+/// Keys typed so far, read once to compare with many words that may start with them.
+pub struct Typed<'a> {
+    text: &'a str,
+    len: usize,
+    tones: Vec<usize>,
+}
+
+impl<'a> Typed<'a> {
+    pub fn new(text: &'a str) -> Self {
+        Self {
+            text,
+            len: text.chars().count(),
+            tones: tones(text).collect(),
         }
-        if t == 'd' {
-            return w == 'đ';
-        }
-        let (Some(t), Some(w)) = (vowel_position(t), vowel_position(w)) else {
-            return false;
-        };
-        let (t_row, w_row) = (t / 6, w / 6);
-        t_row == w_row || t_row == UNMARKED_ROW[w_row]
+    }
+
+    /// Whether more keys can turn the typed keys into the start of `word`: each letter is the same
+    /// or lacks a mark the word's letter has, and any tone typed matches the word's tone even if
+    /// more letters move it (`khủy` to khuỷu), while `cró` never grows into crông.
+    pub fn grows_into(&self, word: &str) -> bool {
+        (self.tones.is_empty() || tones(word).eq(self.tones.iter().copied()))
+            && self.len <= word.chars().count()
+            && self
+                .text
+                .chars()
+                .map(lower)
+                .zip(word.chars().map(lower))
+                .all(|(t, w)| covers(t, w))
+    }
+}
+
+fn covers(t: char, w: char) -> bool {
+    if t == w {
+        return true;
+    }
+    if t == 'd' {
+        return w == 'đ';
+    }
+    let (Some(t), Some(w)) = (vowel_position(t), vowel_position(w)) else {
+        return false;
     };
-    (tones(typed).next().is_none() || tones(typed).eq(tones(word)))
-        && typed.chars().count() <= word.chars().count()
-        && typed
-            .chars()
-            .map(lower)
-            .zip(word.chars().map(lower))
-            .all(|(t, w)| covers(t, w))
+    let (t_row, w_row) = (t / 6, w / 6);
+    t_row == w_row || t_row == UNMARKED_ROW[w_row]
 }
 
 #[cfg(test)]
@@ -195,6 +214,64 @@ mod tests {
         }
         for pos in (0..200).chain([usize::MAX]) {
             assert_eq!(vowel_at(pos), VOWEL_TEXT.chars().nth(pos), "{pos}");
+        }
+    }
+
+    // grows_into as it was before Typed, the reference the new one must match.
+    fn grows_into_by_scan(typed: &str, word: &str) -> bool {
+        (tones(typed).next().is_none() || tones(typed).eq(tones(word)))
+            && typed.chars().count() <= word.chars().count()
+            && typed
+                .chars()
+                .map(lower)
+                .zip(word.chars().map(lower))
+                .all(|(t, w)| covers(t, w))
+    }
+
+    #[test]
+    fn typed_grows_into_as_a_scan_does() {
+        let words = [
+            "khuỷu",
+            "crông",
+            "đường",
+            "Được",
+            "tiếng",
+            "plông",
+            "hoà",
+            "hòa",
+            "a",
+            "ă",
+            "",
+        ];
+        let typed = [
+            "khủy",
+            "cró",
+            "cro",
+            "duong",
+            "dươ",
+            "Đ",
+            "tieng",
+            "tiéng",
+            "tiềng",
+            "plo",
+            "hoa",
+            "hòa",
+            "hoà",
+            "ă",
+            "â",
+            "",
+            "x",
+            "đườngg",
+            "KHUY",
+        ];
+        for t in typed {
+            for w in words {
+                assert_eq!(
+                    Typed::new(t).grows_into(w),
+                    grows_into_by_scan(t, w),
+                    "{t} {w}"
+                );
+            }
         }
     }
 

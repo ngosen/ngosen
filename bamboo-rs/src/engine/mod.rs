@@ -8,6 +8,7 @@
 //! What one key press does to the word being typed: Vietnamese composition, falling back to
 //! the typed keys for English words, macros and the output charset.
 
+use std::cell::OnceCell;
 use std::sync::Arc;
 
 use bamboo_core::advanced::encode;
@@ -304,6 +305,27 @@ struct KeptWord {
     keys: usize,
 }
 
+/// What the rules read about the word being composed, worked out once for one look at it. Keys
+/// change the word, so it lives only until the next key is processed.
+struct WordFacts<'a> {
+    engine: &'a Engine,
+    lower: OnceCell<String>,
+    vietnamese_prefix: OnceCell<bool>,
+}
+
+impl WordFacts<'_> {
+    fn lower(&self) -> &str {
+        self.lower
+            .get_or_init(|| self.engine.get_processed_str(OutputOptions::LOWER_CASE))
+    }
+
+    fn is_vietnamese_prefix(&self) -> bool {
+        *self
+            .vietnamese_prefix
+            .get_or_init(|| self.engine.is_vietnamese_prefix())
+    }
+}
+
 pub struct BambooEngine {
     pub(crate) preeditor: Engine,
     pub(crate) macro_table: Arc<MacroTable>,
@@ -394,11 +416,19 @@ impl BambooEngine {
         Some(self.expand_macro(&text, macro_val))
     }
 
-    fn should_fallback_to_english(&self, check_vn_rune: bool) -> bool {
+    fn word_facts(&self) -> WordFacts<'_> {
+        WordFacts {
+            engine: &self.preeditor,
+            lower: OnceCell::new(),
+            vietnamese_prefix: OnceCell::new(),
+        }
+    }
+
+    fn should_fallback_to_english(&self, check_vn_rune: bool, word: &WordFacts) -> bool {
         if !self.auto_non_vn_restore {
             return false;
         }
-        let vn_seq = self.get_processed_string(OutputOptions::LOWER_CASE);
+        let vn_seq = word.lower();
         if vn_seq.is_empty() {
             return false;
         }
@@ -407,15 +437,15 @@ impl BambooEngine {
         }
         // dd stays đ even outside Vietnamese words, since abbreviations use it a lot.
         if self.dd_free_style
-            && !has_any_vietnamese_vowel(&vn_seq)
+            && !has_any_vietnamese_vowel(vn_seq)
             && (vn_seq.ends_with('d') || vn_seq.contains('đ'))
         {
             return false;
         }
-        if check_vn_rune && !has_any_vietnamese_rune(&vn_seq) {
+        if check_vn_rune && !has_any_vietnamese_rune(vn_seq) {
             return false;
         }
-        !self.preeditor.is_vietnamese_prefix() && !self.starts_dictionary_name(&vn_seq)
+        !word.is_vietnamese_prefix() && !self.starts_dictionary_name(vn_seq)
     }
 
     /// Names such as plông and xtiêng start with letters no Vietnamese rule allows, so only the
@@ -430,15 +460,15 @@ impl BambooEngine {
     /// Keys that start both an English word and such a name show as typed, so draw stays draw
     /// until drawng makes drăng; the keys are still composed to get there.
     /// Abbreviations such as đs have no vowel and keep their đ, as dd_free_style does.
-    fn keys_start_english_over_name(&self) -> bool {
-        let vn_seq = self.get_processed_string(OutputOptions::LOWER_CASE);
+    fn keys_start_english_over_name(&self, word: &WordFacts) -> bool {
+        let vn_seq = word.lower();
         // After a Backspace the app still shows the name, so the keys show as typed again only
         // from the next key.
         self.auto_non_vn_restore
             && !self.keep_marks_until_next_key
-            && !self.preeditor.is_vietnamese_prefix()
-            && has_any_vietnamese_vowel(&vn_seq)
-            && self.starts_dictionary_name(&vn_seq)
+            && !word.is_vietnamese_prefix()
+            && has_any_vietnamese_vowel(vn_seq)
+            && self.starts_dictionary_name(vn_seq)
             && self
                 .english_words
                 .starts_word(&self.raw_text().to_lowercase())
@@ -446,17 +476,17 @@ impl BambooEngine {
 
     /// A syllable valid by the spelling rules alone, such as `roé` from `rose`, still shows as
     /// typed once no dictionary word can start with it (#613).
-    fn starts_no_dictionary_word(&self) -> bool {
-        let vn_seq = self.get_processed_string(OutputOptions::LOWER_CASE);
+    fn starts_no_dictionary_word(&self, word: &WordFacts) -> bool {
+        let vn_seq = word.lower();
         self.auto_non_vn_restore
             && !self.keep_marks_until_next_key
             && self.spell_check_with_dicts
             && !self.dictionary.is_empty()
-            && self.preeditor.is_vietnamese_prefix()
+            && word.is_vietnamese_prefix()
             && !(self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some())
             && !(self.dd_free_style && vn_seq.contains('đ'))
-            && has_any_vietnamese_rune(&vn_seq)
-            && !self.dictionary.starts_word(&vn_seq)
+            && has_any_vietnamese_rune(vn_seq)
+            && !self.dictionary.starts_word(vn_seq)
             && self.keys_compose_word()
     }
 
@@ -515,13 +545,14 @@ impl BambooEngine {
         if let Some(word) = self.teencode_word() {
             return word;
         }
+        let word = self.word_facts();
         let as_typed = self.keep_keys_until_next_key
-            || self.should_fallback_to_english(true)
-            || self.keys_start_english_over_name()
-            || self.starts_no_dictionary_word()
+            || self.should_fallback_to_english(true, &word)
+            || self.keys_start_english_over_name(&word)
+            || self.starts_no_dictionary_word(&word)
             || self.word_before_digits_is_english();
         // Keys such as `aaaf` compose no mark to restore, yet still stretch à.
-        if (as_typed || (self.auto_non_vn_restore && !self.preeditor.is_vietnamese_prefix()))
+        if (as_typed || (self.auto_non_vn_restore && !word.is_vietnamese_prefix()))
             && let Some(word) = self.elongated_word()
         {
             return word;
@@ -537,7 +568,7 @@ impl BambooEngine {
     }
 
     fn get_bamboo_input_mode(&self) -> Mode {
-        if self.should_fallback_to_english(false) {
+        if self.should_fallback_to_english(false, &self.word_facts()) {
             Mode::English
         } else {
             Mode::Vietnamese
@@ -815,7 +846,7 @@ impl BambooEngine {
 
     /// Keys shown as typed only because they start an English word end as the name they spell.
     fn finished_name(&self) -> Option<String> {
-        if !self.keys_start_english_over_name()
+        if !self.keys_start_english_over_name(&self.word_facts())
             || self.english_words.contains(&self.raw_text().to_lowercase())
         {
             return None;
@@ -844,9 +875,10 @@ impl BambooEngine {
 
     fn appending_key_text(&mut self, key: char, old_text: &str) -> (String, bool) {
         let full_seq = self.get_processed_string(OutputOptions::NONE);
-        let new_text = if self.should_fallback_to_english(true)
-            || self.keys_start_english_over_name()
-            || self.starts_no_dictionary_word()
+        let word = self.word_facts();
+        let new_text = if self.should_fallback_to_english(true, &word)
+            || self.keys_start_english_over_name(&word)
+            || self.starts_no_dictionary_word(&word)
         {
             self.raw_text()
         } else {
@@ -875,7 +907,9 @@ impl BambooEngine {
 
     /// A key that ends the syllable, such as a digit, keeps a non-Vietnamese syllable as typed.
     fn restore_syllable_before(&mut self, key: char) {
-        if !self.preeditor.can_process_key(key) && self.should_fallback_to_english(true) {
+        if !self.preeditor.can_process_key(key)
+            && self.should_fallback_to_english(true, &self.word_facts())
+        {
             self.preeditor
                 .restore_last_word_as(LastWordForm::RawKeystrokes);
         }
@@ -889,7 +923,9 @@ impl BambooEngine {
         let mode = self.get_bamboo_input_mode();
         // A second s after grá or roé would undo its tone and drop a letter of grass or roses,
         // while z typed to remove the tone has not been typed before.
-        let repeated = (self.keys_start_english_over_name() || self.starts_no_dictionary_word())
+        let word = self.word_facts();
+        let repeated = (self.keys_start_english_over_name(&word)
+            || self.starts_no_dictionary_word(&word))
             && self
                 .raw_text()
                 .chars()
@@ -1113,7 +1149,7 @@ impl BambooEngine {
         let shown_as_typed = self.shown_as_typed();
         // A prefix no dictionary word starts with goes the same way.
         let english = shown_as_typed
-            && (self.starts_no_dictionary_word()
+            && (self.starts_no_dictionary_word(&self.word_facts())
                 || self
                     .english_words
                     .starts_word(&self.raw_text().to_lowercase()));

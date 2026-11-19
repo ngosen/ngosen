@@ -10,8 +10,15 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
 - Arch và các distro dựa trên Arch cài được từ AUR: `yay -S fcitx5-ngosen`, bản IBus `yay -S ibus-ngosen`.
   Mỗi version mới tự lên AUR khi phát hành ([#873](https://github.com/ngosen/ngosen/pull/873)).
+
+### Sửa
+
+- Bản IBus: trong terminal dùng xterm.js, app reset ô đúng lúc vừa gõ một chữ không còn làm chữ đó ra đôi (`dd` ra
+  `đđ`) (#878).
 
 ## [1.12.2-1] — 18/11/2026
 

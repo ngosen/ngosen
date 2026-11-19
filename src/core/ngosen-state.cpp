@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <string>
+#include <utility>
 
 namespace ngosen {
 
@@ -1460,6 +1461,9 @@ namespace ngosen {
             held_enter_pending_ = false;
             held_enter_timer_.reset();
         }
+        // A held Enter sends what waits before it, which the app may have committed already.
+        if (!commitPreedit && !std::exchange(composedEndedByUs_, false))
+            dropComposedCommit();
         sendHeldEnter();
         const auto  surrounding = host_->surrounding();
         const auto& text        = surrounding.text();
@@ -1543,6 +1547,8 @@ namespace ngosen {
                 break;
             }
             case ngosen::Mode::Sen: {
+                // The app never committed this preedit, so the reset that follows leaves it to its turn.
+                composedEndedByUs_ = !composedCommit_.empty();
                 if (bambooEngine_) {
                     ResetEngine(bambooEngine_.handle());
                 }

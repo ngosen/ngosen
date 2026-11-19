@@ -3422,6 +3422,75 @@ namespace {
               out.text + " preedits=" + std::to_string(out.sent.preedits));
     }
 
+    enum class XtermWordEnd {
+        AppReset,
+        Menu,
+        MenuWithKeyHeld,
+        MenuBeforeComposition,
+        AppResetWithEnterHeld
+    };
+
+    // Types "dd" in a fake xterm.js field, ends the word as named while its commit waits, and returns what the
+    // field got from then on.
+    std::string endXtermWord(XtermWordEnd end) {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        const bool    enter = end == XtermWordEnd::AppResetWithEnterHeld;
+        auto  owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "firefox"), ngosen::test::AppQuirks{.showsEnter = enter, .keepsOnlyCommits = true});
+        auto* app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (const char c : std::string("ddaay laf ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(60);
+        }
+        loop.pump(600);
+        const std::string before = app->text();
+        const int         sent   = app->sent().preedits;
+        app->type('d');
+        loop.pump(60);
+        app->type('d');
+        const auto waitFor = [&](const auto& ready) {
+            for (int ms = 0; ms < 400 && !ready(); ++ms)
+                loop.pump(1);
+            return ready();
+        };
+        bool ready = end == XtermWordEnd::MenuBeforeComposition ? waitFor([&] { return app->sent().preedits > sent && !app->composesPreedit(); }) :
+                                                                  waitFor([&] { return app->composesPreedit(); });
+        if (enter) {
+            app->type('i');
+            app->type(ngosen::key::Return);
+            ready = waitFor([&] { return app->composesPreedit() && app->shownPreedit() == "i"; });
+        }
+        if (end == XtermWordEnd::AppReset || enter) {
+            app->resetCommittingPreedit();
+        } else {
+            state.commitBuffer();
+            state.resetAfterAppCommit(false);
+        }
+        loop.pump(600);
+        const std::string text = app->text();
+        if (!ready)
+            return "(not ready) " + text;
+        return isStartsWith(text, before) ? text.substr(before.size()) : "(lost text) " + text;
+    }
+
+    // IBus commits a preedit shown with the commit focus mode itself on reset, so the commit the core holds back
+    // for a composition must not follow it. The IBus edition also ends a word itself before resets of its own, as
+    // when the mode menu opens, and then no app has committed it.
+    void testXtermResetCommitsPreedit() {
+        std::string got = endXtermWord(XtermWordEnd::AppReset);
+        check(got == "đ", "xterm.js: a reset that commits the preedit leaves one đ", got);
+        got = endXtermWord(XtermWordEnd::Menu);
+        check(got == "đ", "xterm.js: ending the word before a reset keeps its đ", got);
+        got = endXtermWord(XtermWordEnd::MenuBeforeComposition);
+        check(got == "đ", "xterm.js: ending the word before the composition starts keeps the commit for its turn", got);
+        got = endXtermWord(XtermWordEnd::AppResetWithEnterHeld);
+        check(got == "đi\n", "xterm.js: a reset with Enter held sends the committed preedit once", got);
+    }
+
     // A click back into the terminal finds the composition start xterm.js kept from before.
     void testXtermRememberedAfterFocus() {
         realMode = ngosen::Mode::Sen;
@@ -5723,6 +5792,7 @@ int main() {
     testXtermKeepsOnlyCommits();
     testXtermFirstWords();
     testXtermRememberedAfterFocus();
+    testXtermResetCommitsPreedit();
     testTypedBackspaceIsNotHiddenLetter();
     testFirstLettersSkipDroppedKeys();
     testShortDeletion();

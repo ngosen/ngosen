@@ -69,7 +69,20 @@ namespace ngosen {
             const std::string name = appName(field);
             return name == "org.gnome.Ptyxis" || name == "org.gnome.Console" || name == "org.gnome.Terminal";
         }
+
+        // Electron editors whose integrated terminal runs xterm.js without setting the terminal flag.
+        bool isElectronCodeEditorName(const std::string& program) {
+            for (const char* editor : {"antigravity", "code", "codium", "vscodium", "cursor", "windsurf"}) {
+                if (program == editor || isStartsWith(program, std::string(editor) + "-"))
+                    return true;
+            }
+            return false;
+        }
     } // namespace
+
+    bool isElectronCodeEditor(const Field& field) {
+        return isElectronCodeEditorName(appName(field));
+    }
 
     bool forwardsBackspaces(const Field& field) {
         if (field.sendsNoKeys)
@@ -269,7 +282,7 @@ namespace ngosen {
 
     bool mayShowWebTerminal(const Field& field) {
         const std::string program = appName(field);
-        return isFirefoxFamily(program) || program == "epiphany" || program == "org.gnome.Epiphany" || isStartsWith(program, "vaultid") ||
+        return isFirefoxFamily(program) || program == "epiphany" || program == "org.gnome.Epiphany" || isStartsWith(program, "vaultid") || isElectronCodeEditorName(program) ||
             (field.frontend == "ibus" && program == "gnome-shell");
     }
 

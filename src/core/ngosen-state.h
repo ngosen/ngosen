@@ -846,6 +846,8 @@ namespace ngosen {
         void         noteCommitForCheck(const std::string& text);
         bool         keepsOnlyCommits() const;
         void         checkFirstLetters();
+        void         resetLetterCheckOnFieldChange();
+        std::string  xtermText_; ///< surrounding text last reported while keepsOnlyCommits() held
         // A commit waiting for the app to start a composition on its preedit.
         std::string                    composedCommit_;
         std::unique_ptr<ngosen::Timer> composedCommitTimer_;

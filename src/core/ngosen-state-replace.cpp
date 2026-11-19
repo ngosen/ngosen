@@ -916,7 +916,8 @@ namespace ngosen {
             return deletion.wrongBytes || deletion.behind || (deletion.match == SurroundingDeletion::Match::OldTail && reportsItsEdits()) ? CopyWait::Yes : CopyWait::No;
         // These go to backspaces whatever the copy shows, so waiting for it gains nothing.
         const Field field = host_->field();
-        if (surroundingUntrusted() || fieldBounces_ > 0 || pageHidesBackspaces() || field.url || (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))
+        if (keepsOnlyCommits() || surroundingUntrusted() || fieldBounces_ > 0 || pageHidesBackspaces() || field.url ||
+            (ngosen::hidesAddressBarFlag(field) && textAfterCursorLooksLikeUrl(surrounding)))
             return CopyWait::No;
         // Backspaces are there to fall back on, and a field that leaves checks unanswered would only
         // make every replacement late. Over IBus a backspace can reach the app ahead of the commit before
@@ -1196,8 +1197,8 @@ namespace ngosen {
         const Field field = host_->field();
         if (++h.lettersHidden == 1)
             NGOSEN_INFO("Typed letters do not show in the copy" + loggedField(field) + ": commit through a composition");
-        // Under one shared name a mark would spread to every app.
-        if (h.lettersHidden == LettersHiddenForApp && !ngosen::namesNoApp(field))
+        // Under one shared name, or in an editor whose window also holds normal fields, a mark would spread past the terminal.
+        if (h.lettersHidden == LettersHiddenForApp && !ngosen::namesNoApp(field) && !ngosen::isElectronCodeEditor(field))
             engine_->noteKeepsOnlyCommits(field.frontend, field.program);
     }
 
@@ -1247,7 +1248,8 @@ namespace ngosen {
         if (sinceFocus_.letterShown || !host_->field().preedit)
             return false;
         const Field field = host_->field();
-        return sinceFocus_.lettersHidden > 0 || sinceFocus_.firstLettersHidden || (!ngosen::namesNoApp(field) && engine_->keepsOnlyCommits(field.frontend, field.program));
+        return sinceFocus_.lettersHidden > 0 || (sinceFocus_.firstLettersHidden && !sinceFocus_.firstLetterShown) ||
+            (!ngosen::namesNoApp(field) && engine_->keepsOnlyCommits(field.frontend, field.program));
     }
 
     // A browser shows a typed letter within tens of milliseconds, while xterm.js never reports one; without this
@@ -1269,6 +1271,23 @@ namespace ngosen {
             return;
         h.firstLettersHidden = true;
         NGOSEN_INFO("No report shows the first letters" + loggedField(field) + ": commit through a composition");
+    }
+
+    void TypingState::resetLetterCheckOnFieldChange() {
+        auto&             h = sinceFocus_;
+        const Surrounding s = host_->surrounding();
+        h.passedSinceReport.clear();
+        h.passedAfterCommit.clear();
+        h.committedSinceReport.clear();
+        h.erasedSinceReport   = 0;
+        h.lettersHidden       = 0;
+        h.letterShown         = false;
+        h.firstLettersHidden  = false;
+        h.firstLettersChecked = false;
+        h.firstLetterShown    = false;
+        h.firstLetter         = 0;
+        h.firstPassedAtUs     = 0;
+        h.seenText            = s.isValid() && showsText(s) && s.text() != xtermText_;
     }
 
     // A busy page shows typed letters late and takes as long over a deletion, which the commit must not overtake.
@@ -1548,6 +1567,24 @@ namespace ngosen {
             if (buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 buffered_keys_.push_back(keys[j]);
             }
+        }
+        // In xterm.js out would start a composed commit that has not reached the terminal yet; drop the unsent
+        // tail instead of sending it only to backspace over it before it lands.
+        if (!out.empty() && keepsOnlyCommits() && isEndsWith(deletedPart, out)) {
+            const std::string unsent  = std::exchange(out, std::string());
+            const std::string onField = deletedPart.substr(0, deletedPart.size() - unsent.size());
+            if (isEndsWith(oldPreBuffer_, unsent))
+                oldPreBuffer_.resize(oldPreBuffer_.size() - unsent.size());
+            if (!wordAfterReplacement_.empty() && isStartsWith(oldPreBuffer_ + unsent, wordAfterReplacement_)) {
+                wordAfterReplacement_ = oldPreBuffer_;
+            } else {
+                earlierWords_.clear();
+                wordBeforeReplacement_.clear();
+                wordAfterReplacement_.clear();
+            }
+            replayed_key_ = keys[i];
+            performReplacement(onField, addedPart);
+            return;
         }
         commitReplayed(out);
         replayed_key_ = keys[i];

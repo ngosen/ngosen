@@ -1077,7 +1077,7 @@ namespace ngosen {
         jumpedFrom_.reset();
         // This safety valve silently clears the flag on the next key. Skip it while a wait is pending,
         // otherwise the pending commit is thrown away.
-        if (!surr_wait_pending_ && !overtype_pending_ && composedCommit_.empty() && current_backspace_count_ >= expected_backspaces_ && is_deleting_.load()) {
+        if (!surr_wait_pending_ && !overtype_pending_ && !composedWait_ && current_backspace_count_ >= expected_backspaces_ && is_deleting_.load()) {
             is_deleting_.store(false);
             current_backspace_count_ = 0;
             expected_backspaces_     = 0;
@@ -1113,6 +1113,9 @@ namespace ngosen {
         if (g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire)) {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
+            const Field field = host_->field();
+            if ((ngosen::isElectronCodeEditor(field) || ngosen::namesNoApp(field)) && (!keepsOnlyCommits() || !(host_->surrounding() == reportAtKey_)))
+                resetLetterCheckOnFieldChange();
             forgetKeysWhileOff();
             clickBeforeKey_ = true;
             slashWord_      = false;
@@ -1501,6 +1504,8 @@ namespace ngosen {
         }
         if (host_->field().frontend != "dbus")
             clearAllBuffers(keepOpenWord);
+        if (!isFocusOut && !keepOpenWord && host_->field().frontend == "wayland" && ngosen::isElectronCodeEditor(host_->field()))
+            resetLetterCheckOnFieldChange();
         shouldCapitalize_ = keepCapitalize;
 
         switch (mode()) {

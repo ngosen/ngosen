@@ -101,9 +101,9 @@ namespace ngosen {
     // Waits until the app has applied the backspaces, then commits. `event` is the returning sentinel
     // backspace on the XTEST path, or null when the backspaces were forwarded.
     bool TypingState::waitForDeletion(ngosen::KeyPress* event, int sleepTime) {
-        // Some apps (Konsole) declare surrounding text but always send it empty; nothing can match,
-        // so use the sleeping path.
-        const bool emptySnapshot = host_->surrounding().text().empty() || surr_silent_;
+        // Some apps (Konsole) declare surrounding text but always send it empty, and xterm.js never shows
+        // backspaces in its copy; nothing can match, so use the timed wait.
+        const bool emptySnapshot = host_->surrounding().text().empty() || surr_silent_ || keepsOnlyCommits();
         const bool waitEvent     = engine_->options().waitSurroundingEvent;
         if (waitEvent && emptySnapshot) {
             NGOSEN_INFO(surr_silent_ ? "Surr wait skip: silent app" : "Surr wait skip: empty snapshot");
@@ -318,7 +318,11 @@ namespace ngosen {
             checkRetoneReport();
         }
         if (host_->hasFocus() && host_->surrounding().isValid()) {
-            if (showsText(host_->surrounding()))
+            if (keepsOnlyCommits() && showsText(host_->surrounding()))
+                xtermText_ = host_->surrounding().text();
+            if (!xtermText_.empty() && host_->surrounding().text() == xtermText_ && sinceFocus_.firstLetter == 0)
+                sinceFocus_.seenText = false;
+            else if (showsText(host_->surrounding()))
                 sinceFocus_.seenText = true;
             else if (keyCount_ == sinceFocus_.keysAtFocus)
                 sinceFocus_.seenEmpty = true;

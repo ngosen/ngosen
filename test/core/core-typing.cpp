@@ -3323,6 +3323,78 @@ namespace {
         text = typeInXterm(makeField("ibus", true, "gnome-shell"), {.keepsLastEditPerTurn = true, .turnMs = 3, .keepsOnlyCommits = true, .resendsOnEmptyCommit = true}, sentence);
         check(text == expected, "unnamed xterm.js behind GNOME Shell: the first words come out right", text);
 
+        ngosen::test::Typed editorRun;
+        const auto          editorLines = logLinesWhileTyping(makeField("wayland", true, "antigravity-ide"), {.keepsOnlyCommits = true},
+                                                              "ddaay laf tieengs vieetj xin chaof nhieefu nhieeuf ", "", &editorRun, 25);
+        check(editorRun.text == "đây là tiếng việt xin chào nhiều nhiều " && countHaving(editorLines, "Copy of the text still short") == 0 &&
+                  countHaving(editorLines, "Surr wait timeout") == 0,
+              "xterm.js in an Electron editor: fast words and nhieefu right without copy or surr waits", editorRun.text + " " + join(editorLines));
+
+        // Typing in the Electron terminal must not make normal fields in the same app flicker through a composition.
+        FakeResources sharedEditor;
+        const Field   editorField = makeField("wayland", true, "antigravity-ide");
+        const auto    termKeys    = keysOf(sentence);
+        (void)ngosen::test::typeInAppTraced(sharedEditor, editorField, {.keepsOnlyCommits = true}, termKeys, std::vector<int>(termKeys.size(), 60));
+        const auto chatOut = ngosen::test::typeInAppTraced(sharedEditor, editorField, {}, termKeys, std::vector<int>(termKeys.size(), 60));
+        check(chatOut.text == expected && chatOut.sent.preedits == 0, "normal field in an Electron editor commits directly after its terminal was used",
+              chatOut.text + " preedits=" + std::to_string(chatOut.sent.preedits));
+
+        // One shared Wayland context switching from an Electron terminal to a chat box and back.
+        {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       editorResources;
+            auto                owned = std::make_unique<FakeHost>(loop, editorField);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&editorResources, std::move(owned));
+            host->setSurrounding("", 0);
+            state.surroundingUpdated();
+            press(state, 'd');
+            loop.pump(65);
+            press(state, 'd');
+            loop.pump(60);
+            host->setSurrounding("đ ", 2);
+            state.surroundingUpdated();
+            // Clicking inside the same terminal keeps composition commits.
+            g_mouse_clicked.store(true);
+            press(state, 'd');
+            loop.pump(65);
+            press(state, 'd');
+            loop.pump(60);
+            check(host->deletes().empty() && host->commits().size() == 2, "Electron terminal: a click inside the terminal keeps composition commits", join(host->commits()));
+
+            // Switching to a chat box deletes through surrounding text without composition flicker.
+            state.reset(false);
+            host->setSurrounding("tôi ", 4);
+            state.surroundingUpdated();
+            press(state, 'c');
+            host->setSurrounding("tôi c", 5);
+            state.surroundingUpdated();
+            press(state, 'o');
+            host->setSurrounding("tôi co", 6);
+            state.surroundingUpdated();
+            press(state, 's');
+            host->setSurrounding("tôi có", 6);
+            state.surroundingUpdated();
+            loop.pump(100);
+            check(host->deletes().size() == 1 && host->preedit().empty() && host->commits().back() == "ó", "Electron chat box: commits directly after switching from the terminal",
+                  join(host->commits()));
+
+            // Switching back to the terminal whose hidden textarea still holds earlier commits detects xterm.js again.
+            state.reset(false);
+            host->setSurrounding("đ ", 2);
+            state.surroundingUpdated();
+            const size_t deletesBefore = host->deletes().size();
+            press(state, 'l');
+            loop.pump(65);
+            press(state, 'a');
+            loop.pump(65);
+            press(state, 'f');
+            loop.pump(60);
+            check(host->deletes().size() == deletesBefore && host->commits().back() == "à", "Electron terminal: switching back from chat detects xterm.js despite earlier commits",
+                  join(host->commits()));
+        }
+
         // Konsole reports no letters either, yet takes forwarded backspaces as usual.
         FakeResources               resources;
         const std::vector<uint32_t> keys = keysOf("ddaay laf ");

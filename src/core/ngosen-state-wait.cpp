@@ -779,6 +779,7 @@ namespace ngosen {
         if (composedCommit_.empty())
             return;
         const std::string text = std::exchange(composedCommit_, std::string());
+        composedEndedByUs_     = false;
         committing_            = true;
         host_->commitText(text);
         committing_ = false;

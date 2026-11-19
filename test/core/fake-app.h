@@ -162,6 +162,9 @@ namespace ngosen::test {
         bool composesPreedit() const {
             return composing_ && !shownPreedit_.empty();
         }
+        const std::string& shownPreedit() const {
+            return shownPreedit_;
+        }
         // Leaves focus and comes back after ms with text put at the cursor meanwhile, as a key typed right
         // after Alt+Tab does when both its press and release reach the window before focus-in.
         void returnWithText(const std::string& typed, int ms);

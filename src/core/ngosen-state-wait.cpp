@@ -199,7 +199,10 @@ namespace ngosen {
         if (event != nullptr) {
             event->accept(); // filter out the returning sentinel backspace
         }
+        surr_wait_started_at_ = ngosen::monotonicUs();
         if (waitMs <= 0) {
+            if (deferLaggingCommit("immediate"))
+                return true;
             finishReplacement("immediate", false);
             return true;
         }
@@ -208,7 +211,6 @@ namespace ngosen {
         surr_wait_pending_       = true;
         surr_wait_timer_only_    = true;
         surr_wait_focus_retries_ = 0;
-        surr_wait_started_at_    = ngosen::monotonicUs();
         surr_wait_deliver_at_    = surr_wait_started_at_ + (static_cast<uint64_t>(waitMs) * 1000ULL);
         replaceTimer(surr_wait_timer_, startWaitTimer(surr_wait_deliver_at_, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); }));
         return true;
@@ -245,6 +247,8 @@ namespace ngosen {
             pending_commit_string_.clear();
             return false;
         }
+        if (deferLaggingCommit("timer"))
+            return false;
         finishReplacement("timer", true);
         return false;
     }
@@ -771,6 +775,7 @@ namespace ngosen {
     void TypingState::dropComposedCommit() {
         if (composedCommit_.empty())
             return;
+        noteCommitForCheck(composedCommit_);
         composedCommit_.clear();
         host_->clearPreedit();
         // Keys held for the commit still wait for their turn.

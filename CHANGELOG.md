@@ -49,6 +49,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thay đổi
 
+- "Lưu nhật ký gõ" nay ghi thêm mỗi lần sửa chữ đi đường nào và vì sao, chờ app bao lâu, và trên GNOME có gửi
+  xoá cùng chữ mới một lần hay không, để báo lỗi gõ chậm hoặc sai chỉ cần gửi nhật ký gõ (#883).
 - Nâng thư viện gõ Rust bamboo-core từ 0.5.2 lên 0.6.0. Cách gõ không đổi; đổi thiết lập giữa lúc đang gõ một
   từ thì phím kế tiếp gõ lại cả từ theo thiết lập mới. Gói do distro đóng gói vẫn build được với bamboo-core
   0.5.2 trở lên (#876).

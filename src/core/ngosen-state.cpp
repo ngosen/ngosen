@@ -1114,7 +1114,7 @@ namespace ngosen {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
             const Field field = host_->field();
-            if ((ngosen::isElectronCodeEditor(field) || ngosen::namesNoApp(field)) && (!keepsOnlyCommits() || !(host_->surrounding() == reportAtKey_)))
+            if ((ngosen::isElectronCodeEditor(field) || ngosen::namesNoApp(field)) && (!keepsOnlyCommits() || host_->surrounding().text() != xtermText_))
                 resetLetterCheckOnFieldChange();
             forgetKeysWhileOff();
             clickBeforeKey_ = true;

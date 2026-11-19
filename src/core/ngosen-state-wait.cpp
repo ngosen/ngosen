@@ -714,7 +714,6 @@ namespace ngosen {
     void TypingState::commit(const std::string& text) {
         flushComposedCommit();
         ++commitCount_;
-        noteCommitForCheck(text);
         noteCommit(text);
         // A field that rewrites what we commit never shows it; keep only the latest commits.
         if (mode() == ngosen::Mode::Sen && ngosen::appliesEarlyKeysFirst(host_->field()))
@@ -738,6 +737,7 @@ namespace ngosen {
                 composedCommitTimer_ = host_->startTimer(monotonicUs() + ComposedCommitTurnUs, 0, [this](Timer&) { return composedCommitStep(); });
             return;
         }
+        noteCommitForCheck(text);
         committing_ = true;
         host_->commitText(text);
         committing_ = false;
@@ -770,7 +770,8 @@ namespace ngosen {
         if (composedCommit_.empty())
             return;
         const std::string text = std::exchange(composedCommit_, std::string());
-        committing_            = true;
+        noteCommitForCheck(text);
+        committing_ = true;
         host_->commitText(text);
         committing_ = false;
         host_->clearPreedit();

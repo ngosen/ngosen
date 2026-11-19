@@ -1162,23 +1162,36 @@ namespace ngosen {
         // WebKitGTK reports a space it shows at the end as a no-break space.
         for (size_t at = now.find("\u00a0"); at != std::string::npos; at = now.find("\u00a0", at + 1))
             now.replace(at, 2, " ");
-        if (h.firstLetter != 0 && now.find(h.firstLetter) != std::string::npos)
-            h.firstLetterShown = true;
+        // xterm.js leaves a space typed after the commit in the field.
+        const bool laterShown = !h.committedSinceReport.empty() && !h.passedAfterCommit.empty() && isEndsWith(now, h.committedSinceReport + h.passedAfterCommit);
+        if (h.firstLetter != 0) {
+            std::string typed = now;
+            if (laterShown)
+                typed.resize(typed.size() - h.committedSinceReport.size() - h.passedAfterCommit.size());
+            else if (!h.committedSinceReport.empty() && isEndsWith(typed, h.committedSinceReport))
+                typed.resize(typed.size() - h.committedSinceReport.size());
+            if (!h.commitsShown.empty() && isStartsWith(typed, h.commitsShown))
+                typed.erase(0, h.commitsShown.size());
+            if (typed.find(h.firstLetter) != std::string::npos)
+                h.firstLetterShown = true;
+        }
         const bool changed = now != std::exchange(h.lastReportText, now);
         if (h.committedSinceReport.empty()) {
             // A letter or deletion that shows in the field changes it; xterm.js shows only spaces.
             if (changed) {
+                if (now == h.commitsShown + " ")
+                    h.commitsShown = now;
                 const std::string passed = std::exchange(h.passedSinceReport, std::string());
                 h.letterShown            = h.letterShown || (passed.find_first_not_of(' ') != std::string::npos && isEndsWith(now, passed));
                 h.erasedSinceReport      = 0;
             }
             return;
         }
-        // xterm.js leaves a space typed after the commit in the field.
-        const bool laterShown = !h.passedAfterCommit.empty() && isEndsWith(now, h.committedSinceReport + h.passedAfterCommit);
         // GNOME Shell repeats its last report until the commit comes out.
         if (!laterShown && !isEndsWith(now, h.committedSinceReport) && h.committedSinceReport.size() < MaxCommitsChecked)
             return;
+        if (now == h.commitsShown + h.committedSinceReport || (laterShown && now == h.commitsShown + h.committedSinceReport + h.passedAfterCommit))
+            h.commitsShown = now;
         if (laterShown)
             now.resize(now.size() - std::exchange(h.passedAfterCommit, std::string()).size());
         std::string       kept    = std::exchange(h.passedSinceReport, std::exchange(h.passedAfterCommit, std::string()));
@@ -1279,6 +1292,7 @@ namespace ngosen {
         h.passedSinceReport.clear();
         h.passedAfterCommit.clear();
         h.committedSinceReport.clear();
+        h.commitsShown.clear();
         h.erasedSinceReport   = 0;
         h.lettersHidden       = 0;
         h.letterShown         = false;

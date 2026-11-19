@@ -3330,6 +3330,15 @@ namespace {
                   countHaving(editorLines, "Surr wait timeout") == 0,
               "xterm.js in an Electron editor: fast words and nhieefu right without copy or surr waits", editorRun.text + " " + join(editorLines));
 
+        // Reverting a tone commits the first letter again, which must not look like the field showing typed letters.
+        for (const char* program : {"firefox", "antigravity-ide"}) {
+            FakeResources revertResources;
+            const auto    revertKeys = keysOf("ass dd ");
+            const auto    revertOut  = ngosen::test::typeInAppTraced(revertResources, makeField("wayland", true, program), {.keepsOnlyCommits = true}, revertKeys,
+                                                                     std::vector<int>(revertKeys.size(), 100));
+            check(revertOut.text == "as đ ", std::string("xterm.js in ") + program + ": reverting a tone on the first letter keeps composition commits", revertOut.text);
+        }
+
         // Typing in the Electron terminal must not make normal fields in the same app flicker through a composition.
         FakeResources sharedEditor;
         const Field   editorField = makeField("wayland", true, "antigravity-ide");
@@ -3355,10 +3364,10 @@ namespace {
             loop.pump(60);
             host->setSurrounding("đ ", 2);
             state.surroundingUpdated();
-            // Clicking inside the same terminal keeps composition commits.
+            // Clicking inside the same terminal keeps composition commits even when the next keys arrive under 50 ms.
             g_mouse_clicked.store(true);
             press(state, 'd');
-            loop.pump(65);
+            loop.pump(20);
             press(state, 'd');
             loop.pump(60);
             check(host->deletes().empty() && host->commits().size() == 2, "Electron terminal: a click inside the terminal keeps composition commits", join(host->commits()));

@@ -810,6 +810,7 @@ namespace ngosen {
             std::string               passedSinceReport;         ///< letters let through to the app before our first commit since the last report
             std::string               passedAfterCommit;         ///< letters let through after that commit
             std::string               committedSinceReport;      ///< our commits since the last report
+            std::string               commitsShown;              ///< text our commits and spaces left in the last report
             int                       erasedSinceReport = 0;     ///< backspaces sent since the last report, -1 after any other deletion
             int                       lettersHidden     = 0;     ///< reports that left out letters typed into the field
             bool                      letterShown       = false; ///< a report showed letters typed into the field

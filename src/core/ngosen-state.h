@@ -555,6 +555,7 @@ namespace ngosen {
         void                           deleteAndCommit(const std::string& deletedPart, const std::string& addedPart);
         std::unique_ptr<ngosen::Timer> key_report_timer_;
         bool                           key_report_pending_         = false;
+        uint64_t                       key_report_started_us_      = 0;
         bool                           key_report_until_copy_fits_ = false;
         std::optional<KeyEntry>        live_key_;   ///< key being handled, replayed if it landed in another field
         std::optional<KeyEntry>        passed_key_; ///< last key let through to the app as typed

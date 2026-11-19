@@ -268,7 +268,8 @@ namespace ngosen {
     void TypingState::noteWaitOutcome(const char* reason) {
         const auto elapsedMs = (ngosen::monotonicUs() - surr_wait_started_at_) / 1000;
         NGOSEN_INFO("Surr wait " + std::string(reason) + " after " + std::to_string(elapsedMs) + " ms");
-        engine_->recorder().add("wait", std::string(reason) + " after " + std::to_string(elapsedMs) + " ms");
+        // A send that failed started no wait, and the start time left belongs to an earlier edit.
+        engine_->recorder().add("wait", surr_wait_pending_ ? std::string(reason) + " after " + std::to_string(elapsedMs) + " ms" : std::string(reason));
         if (std::string(reason) == "timeout") {
             surr_snapshot_trusted_ = false;
             ++surr_timeout_streak_;
@@ -837,6 +838,7 @@ namespace ngosen {
         }
         if (!host_->field().surroundingText && sinceFocus_.lastPath == "surrounding" && ngosen::takesDeletionWhileUndeclared(host_->field())) {
             NGOSEN_INFO("Delete through the surrounding text the field stopped declaring after our edit");
+            notePath("surrounding", "the field stopped declaring its text after our edit");
             return true;
         }
         if (host_->field().surroundingText) {
@@ -849,6 +851,7 @@ namespace ngosen {
                 }
                 if (sinceFocus_.lastPath == "surrounding" && ngosen::takesDeletionOnStaleCopy(host_->field()) && onlyStaleCopy(fails)) {
                     NGOSEN_INFO("Delete through the surrounding text again though the copy lags: " + joined(fails));
+                    notePath("surrounding", "again though the copy lags: " + joined(fails));
                     return true;
                 }
                 notePath("backspaces", joined(fails));

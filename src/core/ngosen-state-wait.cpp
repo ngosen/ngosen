@@ -375,6 +375,7 @@ namespace ngosen {
         key_report_deleted_         = deletedPart;
         key_report_added_           = addedPart;
         key_report_pending_         = true;
+        key_report_started_us_      = ngosen::monotonicUs();
         surr_wait_focus_retries_    = 0;
         is_deleting_.store(true, std::memory_order_release);
         if (ngosen::reportsFieldOnlyOnKey(host_->field())) {
@@ -416,7 +417,9 @@ namespace ngosen {
                     NGOSEN_INFO("Longer copy wait ran out: short waits in this field");
                 }
                 copyWaitTimedOut_ = !key_report_copy_fits_;
-                copyWaitsRunOut_  = copyWaitTimedOut_ ? copyWaitsRunOut_ + 1 : 0;
+                engine_->recorder().add(
+                    "copy", std::string(key_report_copy_fits_ ? "fits" : "timeout") + " after " + std::to_string((ngosen::monotonicUs() - key_report_started_us_) / 1000) + " ms");
+                copyWaitsRunOut_ = copyWaitTimedOut_ ? copyWaitsRunOut_ + 1 : 0;
                 if (copyWaitRetry_)
                     sinceFocus_.retriesRunOut = copyWaitTimedOut_ ? sinceFocus_.retriesRunOut + 1 : 0;
             }

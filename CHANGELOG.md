@@ -19,6 +19,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Bản IBus: trong terminal dùng xterm.js, app reset ô đúng lúc vừa gõ một chữ không còn làm chữ đó ra đôi (`dd` ra
   `đđ`) (#878).
+- Trong terminal dùng xterm.js của các trình soạn code Electron (như Antigravity, VS Code, Cursor), chế độ Gõ Sen không
+  còn khựng chờ hay nuốt chữ khi gõ nhanh (`xin chaof nhieefu` ra `xin chào nhiều` thay vì `xin chàoiều`), và khung chat
+  hay ô soạn code cùng cửa sổ không còn nháy preedit ở cuối từ; mới thử trên Antigravity ở KDE Wayland (#867, #880).
 
 ## [1.12.2-1] — 18/11/2026
 

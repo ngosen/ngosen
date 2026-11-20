@@ -16,6 +16,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   bản Flatpak lẫn bản cài từ package; các app khác giữ nguyên. Ai đã cài thì chạy lại lệnh cài rồi mở lại WPS (#897).
 - Bấm Backspace khi đang gõ dở chữ kéo dài có dấu gõ sau cùng, như `chaiiif` ra `chàiii`, nay chỉ xoá một chữ i, không
   còn mất luôn dấu thành `chaiii`. Chữ teencode cũng vậy: `fải` xoá còn `fả` (#898, #902, #906).
+- Lark Sheets trên trình duyệt Chromium (Wayland): chế độ Preedit gõ được ngay sau khi bấm một lần vào ô, không cần
+  nhấn đúp để mở ô nữa (#910).
 
 ## [1.13.0-1] — 20/11/2026
 

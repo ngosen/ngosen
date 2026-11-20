@@ -461,7 +461,7 @@ namespace ngosen {
         replayBufferedKeys(std::move(text));
     }
 
-    void TypingState::performReplacement(const std::string& deletedPart, const std::string& addedPart) {
+    void TypingState::performReplacement(const std::string& word, const std::string& deletedPart, const std::string& addedPart) {
         NGOSEN_INFO("Perform replacement: " + logged(deletedPart) + " -> " + logged(addedPart)); //NOLINT
         checkFirstLetters();
         // The deletion changes text we committed; the replacement's own commit is what to look for.
@@ -470,8 +470,8 @@ namespace ngosen {
         pending_commit_string_   = addedPart;
         expected_backspaces_     = static_cast<int>(ngosen::utf8::length(deletedPart));
         deletedChars_            = expected_backspaces_;
-        recordSendSnapshot(deletedPart);
-        trackEarlierWords(addedPart);
+        recordSendSnapshot(word, deletedPart);
+        trackEarlierWords(word, addedPart);
         startReplaceLog("none");
         sinceFocus_.copyWaitsHeldBack = checksGetAnswered() ? 0 : sinceFocus_.copyWaitsHeldBack + 1;
         if (live_key_) {
@@ -581,11 +581,11 @@ namespace ngosen {
         runSystemBackspaces(request);
     }
 
-    void TypingState::recordSendSnapshot(const std::string& deletedPart) {
+    void TypingState::recordSendSnapshot(const std::string& word, const std::string& deletedPart) {
         surr_wait_deleted_       = deletedPart;
         const auto snapshot      = host_->surrounding();
         surr_wait_sent_snapshot_ = reportKey(snapshot);
-        surr_wait_prefix_        = (oldPreBuffer_.size() >= deletedPart.size()) ? oldPreBuffer_.substr(0, oldPreBuffer_.size() - deletedPart.size()) : std::string();
+        surr_wait_prefix_        = (word.size() >= deletedPart.size()) ? word.substr(0, word.size() - deletedPart.size()) : std::string();
         // Only a fresh send-time snapshot (text before the cursor ends with prefix + deleted) may
         // count towards "frozen"; a lagging app sends a stale one.
         surr_wait_sent_snapshot_fresh_ = false;
@@ -890,12 +890,12 @@ namespace ngosen {
         return words;
     }
 
-    void TypingState::trackEarlierWords(const std::string& addedPart) {
-        if (!wordAfterReplacement_.empty() && isStartsWith(oldPreBuffer_, wordAfterReplacement_))
+    void TypingState::trackEarlierWords(const std::string& word, const std::string& addedPart) {
+        if (!wordAfterReplacement_.empty() && isStartsWith(word, wordAfterReplacement_))
             earlierWords_.push_back(wordBeforeReplacement_);
         else
             earlierWords_.clear();
-        wordBeforeReplacement_ = oldPreBuffer_;
+        wordBeforeReplacement_ = word;
         wordAfterReplacement_  = surr_wait_prefix_ + addedPart;
     }
 
@@ -1562,7 +1562,7 @@ namespace ngosen {
         }
         commitReplayed(out);
         replayed_key_ = keys[i];
-        performReplacement(deletedPart, addedPart);
+        performReplacement(oldPreBuffer_, deletedPart, addedPart);
     }
 
     // Text the replay has not sent yet can change in place: nothing to delete, so nothing to wait for.

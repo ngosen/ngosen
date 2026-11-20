@@ -196,7 +196,7 @@ namespace ngosen {
             return false;
         }
         if (canSendBackspaces()) {
-            performReplacement(from, to);
+            performReplacement(oldPreBuffer_, from, to);
         } else {
             const auto length = static_cast<int>(ngosen::utf8::length(from));
             flushComposedCommit();

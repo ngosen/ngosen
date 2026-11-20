@@ -461,15 +461,19 @@ namespace ngosen {
         replayBufferedKeys(std::move(text));
     }
 
-    void TypingState::performReplacement(const std::string& word, const std::string& deletedPart, const std::string& addedPart) {
-        NGOSEN_INFO("Perform replacement: " + logged(deletedPart) + " -> " + logged(addedPart)); //NOLINT
-        checkFirstLetters();
+    void TypingState::beginReplacement(const std::string& deletedPart, const std::string& addedPart) {
         // The deletion changes text we committed; the replacement's own commit is what to look for.
         commitNotSeen_.clear();
         current_backspace_count_ = 0;
         pending_commit_string_   = addedPart;
         expected_backspaces_     = static_cast<int>(ngosen::utf8::length(deletedPart));
         deletedChars_            = expected_backspaces_;
+    }
+
+    void TypingState::performReplacement(const std::string& word, const std::string& deletedPart, const std::string& addedPart) {
+        NGOSEN_INFO("Perform replacement: " + logged(deletedPart) + " -> " + logged(addedPart)); //NOLINT
+        checkFirstLetters();
+        beginReplacement(deletedPart, addedPart);
         recordSendSnapshot(word, deletedPart);
         trackEarlierWords(word, addedPart);
         startReplaceLog("none");

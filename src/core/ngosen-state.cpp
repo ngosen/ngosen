@@ -1263,50 +1263,68 @@ namespace ngosen {
     }
 
     bool TypingState::handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
-        if (holdKeyDuringEditHold(keyEvent, currentSym))
+        if (holdKeyDuringEditHold(keyEvent, currentSym) || holdKeyDuringSplitEdit(keyEvent, currentSym) || handleKeyDuringTimedWait(keyEvent, currentSym) ||
+            handleKeyDuringCopyWait(keyEvent, currentSym))
             return true;
-        if (split_edit_.pending && holdsBackspace(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
-            // Sent now, it would reach the app between the deletion and its commit and take the letter before the word.
-            buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code()});
-            keyEvent.accept();
-            return true;
-        }
-        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_.timerOnly && ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" &&
-            ngosen::forwardsBackspaces(host_->field())) {
+        finishSurroundingWaitOnBackspace(currentSym);
+        return handleKeyDuringDeletion(keyEvent, currentSym);
+    }
+
+    bool TypingState::holdKeyDuringSplitEdit(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (!split_edit_.pending || !holdsBackspace(keyEvent, currentSym) || buffered_keys_.size() >= MAX_BUFFERED_KEYS)
+            return false;
+        // Sent now, it would reach the app between the deletion and its commit and take the letter before the word.
+        buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code()});
+        keyEvent.accept();
+        return true;
+    }
+
+    bool TypingState::handleKeyDuringTimedWait(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (!is_deleting_.load(std::memory_order_acquire) || !surr_wait_.timerOnly)
+            return false;
+        if (ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" && ngosen::forwardsBackspaces(host_->field())) {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
             NGOSEN_INFO("XIM handed back a forwarded backspace");
             deferTimedCommit(ngosen::monotonicUs() + forwardWaitUs());
             return true;
         }
-        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_.timerOnly) {
-            // A key arrived during a timer-only wait: finish the wait and commit. Where a key let
-            // through can overtake that commit it goes out inside it; elsewhere it is handled normally
-            // afterwards, since replaying it via commitString loses text on Chromium X11 outside IBus.
-            const uint64_t nowUs = ngosen::monotonicUs();
-            if (surr_wait_.deliverAt > nowUs) {
-                ngosen::sleepUs(surr_wait_.deliverAt - nowUs);
-            }
-            if (holdsKeyDuringTimedWait(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
-                noteHeldKeyForDoubling(keyEvent, currentSym);
-                buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code(), .actsOnField = actsOnField(keyEvent, currentSym)});
-                keyEvent.accept();
-                finishReplacement("key arrived", false);
-                return true;
-            }
+        // A key arrived during a timer-only wait: finish the wait and commit. Where a key let
+        // through can overtake that commit it goes out inside it; elsewhere it is handled normally
+        // afterwards, since replaying it via commitString loses text on Chromium X11 outside IBus.
+        const uint64_t nowUs = ngosen::monotonicUs();
+        if (surr_wait_.deliverAt > nowUs) {
+            ngosen::sleepUs(surr_wait_.deliverAt - nowUs);
+        }
+        if (holdsKeyDuringTimedWait(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
+            noteHeldKeyForDoubling(keyEvent, currentSym);
+            buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code(), .actsOnField = actsOnField(keyEvent, currentSym)});
+            keyEvent.accept();
             finishReplacement("key arrived", false);
+            return true;
         }
-        if (key_report_.pending && key_report_.untilCopyFits && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field())) {
-            if (holdBackspaceForCopy(keyEvent, currentSym))
-                return true;
-            // The user's Backspace would be counted as one of the replacement's, so the edit goes out now.
-            finishKeyReportWait(true, false);
-        }
-        if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_.pending) {
-            // Forwarded backspaces never come back, so this one is the user's: finish the replacement
-            // first, then handle it normally.
+        finishReplacement("key arrived", false);
+        return false;
+    }
+
+    bool TypingState::handleKeyDuringCopyWait(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
+        if (!key_report_.pending || !key_report_.untilCopyFits || !ngosen::key::isBackspace(currentSym) || !ngosen::forwardsBackspaces(host_->field()))
+            return false;
+        if (holdBackspaceForCopy(keyEvent, currentSym))
+            return true;
+        // The user's Backspace would be counted as one of the replacement's, so the edit goes out now.
+        finishKeyReportWait(true, false);
+        return false;
+    }
+
+    // Forwarded backspaces never come back, so this one is the user's: finish the replacement first,
+    // then handle it normally.
+    void TypingState::finishSurroundingWaitOnBackspace(uint32_t currentSym) {
+        if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_.pending)
             finishReplacement("backspace arrived", false);
-        }
+    }
+
+    bool TypingState::handleKeyDuringDeletion(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (!is_deleting_.load(std::memory_order_acquire))
             return false;
         // A Backspace waits too: it is the user's, and would otherwise reach the app before the commit.

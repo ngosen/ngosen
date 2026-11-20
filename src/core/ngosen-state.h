@@ -421,10 +421,16 @@ namespace ngosen {
         void     forwardKeyTap(const KeyEntry& key);
         bool     actsOnField(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
         bool     handleKeyDuringReplacement(ngosen::KeyPress& keyEvent, uint32_t currentSym);
-        bool     holdsKeyDuringTimedWait(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
-        void     noteHeldKeyForDoubling(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
-        bool     handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
-        void     dropLetterForBackspace();
+        // Each kind of wait a key can arrive in, in the order handleKeyDuringReplacement asks them.
+        bool holdKeyDuringSplitEdit(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool handleKeyDuringTimedWait(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool handleKeyDuringCopyWait(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        void finishSurroundingWaitOnBackspace(uint32_t currentSym);
+        bool handleKeyDuringDeletion(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool holdsKeyDuringTimedWait(const ngosen::KeyPress& keyEvent, uint32_t currentSym) const;
+        void noteHeldKeyForDoubling(const ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        bool handleDoubledKey(ngosen::KeyPress& keyEvent, uint32_t currentSym);
+        void dropLetterForBackspace();
 
         // Presses real keys through XTEST, for frontends that cannot forward them.
         bool sendBackspaceKeys(int count) const;

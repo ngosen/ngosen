@@ -138,12 +138,6 @@ namespace {
         }
         {
             Setup s;
-            s.host().forgetSurrounding();
-            s.host().setPrimary("ViÖt");
-            expect(s, "primary selection without surrounding text", ConvertResult::Converted, {"Việt"}, {});
-        }
-        {
-            Setup s;
             s.host().setSurrounding("abc", 9, 0);
             s.host().setPrimary("ViÖt");
             expect(s, "a selection past the text is not trusted", ConvertResult::Converted, {"Việt"}, {});
@@ -169,6 +163,13 @@ namespace {
             s.host().setSurrounding("abc", 0);
             s.host().setPrimary("ViÖt");
             expect(s, "primary selection from another field", ConvertResult::NoSelection, {}, {});
+        }
+        {
+            // The primary selection may belong to another app, and nothing tells where it is.
+            Setup s;
+            s.host().forgetSurrounding();
+            s.host().setPrimary("ViÖt");
+            expect(s, "primary selection in a field without surrounding text", ConvertResult::NoSelection, {}, {});
         }
         {
             Setup s;

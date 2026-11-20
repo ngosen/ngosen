@@ -2050,14 +2050,14 @@ namespace fcitx {
     }
 
     std::string NgoSenEngine::subModeIconImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
-        std::string baseIconName;
-        switch (realMode) {
-            case NgoSenMode::Off: baseIconName = "fcitx-ngosen-off"; break;
-            default: baseIconName = "fcitx-ngosen"; break;
-        }
+        const auto        kind       = *config_.trayIconKind;
+        const bool        vietnamese = realMode != NgoSenMode::Off;
+        const std::string baseIconName =
+            kind == TrayIconKind::Icon ? (vietnamese ? "fcitx-ngosen" : "fcitx-ngosen-off") : trayTextIconName(vietnamese, kind == TrayIconKind::LanguageCode);
 
+        // The letters have no tile, only the plain colours.
         auto style = TrayIconStyle::Tile;
-        if (!*config_.useNgoSenIcons) {
+        if (kind != TrayIconKind::Icon || !*config_.useNgoSenIcons) {
             const auto& iconTheme = config_.iconTheme.value();
             const bool  darkPanel = iconTheme == IconTheme::Dark || (iconTheme == IconTheme::Auto && isDarkMode());
             style                 = darkPanel ? TrayIconStyle::PlainWhite : TrayIconStyle::PlainBlack;

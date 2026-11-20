@@ -11,6 +11,9 @@ set(NGOSEN_STATUS_ICONS
     ${NGOSEN_TILE_ICONS}
     fcitx-ngosen-default fcitx-ngosen-default-black
     fcitx-ngosen-off-default fcitx-ngosen-off-default-black)
+foreach(TEXT v e vi en)
+    list(APPEND NGOSEN_STATUS_ICONS fcitx-ngosen-text-${TEXT}-default fcitx-ngosen-text-${TEXT}-default-black)
+endforeach()
 
 foreach(ICON ${NGOSEN_STATUS_ICONS})
     # status/ — system tray (SVG, renderable by most compositors)

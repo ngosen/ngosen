@@ -130,6 +130,11 @@ namespace fcitx {
     std::string trayIconName(const std::string& baseIconName, TrayIconStyle style, bool large, bool gnomeShell);
 
     /**
+     * @brief Base name of the tray letters for a language, such as "fcitx-ngosen-text-vi".
+     */
+    std::string trayTextIconName(bool vietnamese, bool languageCode);
+
+    /**
      * @brief Icon names to try for the tray, best first.
      *
      * GNOME Shell gets the copies drawn with less margin, so the tile matches its own icons.

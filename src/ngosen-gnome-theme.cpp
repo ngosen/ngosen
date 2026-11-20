@@ -329,6 +329,12 @@ namespace fcitx {
         return large && !gnomeShell ? baseIconName + "-large" : baseIconName;
     }
 
+    std::string trayTextIconName(bool vietnamese, bool languageCode) {
+        if (languageCode)
+            return vietnamese ? "fcitx-ngosen-text-vi" : "fcitx-ngosen-text-en";
+        return vietnamese ? "fcitx-ngosen-text-v" : "fcitx-ngosen-text-e";
+    }
+
     std::vector<std::string> trayIconNames(const std::string& iconName, const std::string& baseIconName, const std::string& xdgCurrentDesktop) {
         if (isGnomeShellSession(xdgCurrentDesktop))
             return {iconName + "-gnome", iconName, baseIconName};

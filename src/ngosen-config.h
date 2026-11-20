@@ -118,9 +118,10 @@ namespace fcitx {
         ColourIcon,
         Letter,
         LanguageCode,
+        Image,
     };
 
-    FCITX_CONFIG_ENUM_NAME_WITH_I18N(TrayIconKind, N_("Colour icon"), N_("V / E"), N_("vi / en"));
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(TrayIconKind, N_("Colour icon"), N_("V / E"), N_("vi / en"), N_("Custom image"));
 
     enum class EmojiPlacement : std::uint8_t {
         AfterWord,
@@ -381,6 +382,9 @@ namespace fcitx {
                                                       ngosen::defaultOptions.waitSurroundingMinPerKeyMs};
         OptionWithAnnotation<TrayIconSize, TrayIconSizeI18NAnnotation> trayIconSize{this, "TrayIconSize", _("Tray Icon Size"), TrayIconSize::Normal};
         OptionWithAnnotation<TrayIconKind, TrayIconKindI18NAnnotation> trayIconKind{this, "TrayIconKind", _("Tray Icon Shows"), TrayIconKind::ColourIcon};
+        // The settings window copies the picked images into the user's icon theme and stores the copies here.
+        Option<std::string> trayImageVietnamese{this, "TrayImageVietnamese", _("Tray image for Vietnamese"), ""};
+        Option<std::string> trayImageEnglish{this, "TrayImageEnglish", _("Tray image for English"), ""};
 
         // Settings and Save typing log have no option: without them the menu could not lead back.
         Option<bool> showMenuInputMethod{this, "ShowMenuInputMethod", _("Show Input Method in the tray menu"), true};

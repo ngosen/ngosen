@@ -453,6 +453,18 @@ msgid "Colour icon"
 msgstr "Biểu tượng màu"
 
 #: src/ngosen-config.h
+msgid "Custom image"
+msgstr "Ảnh tự chọn"
+
+#: src/ngosen-config.h
+msgid "Tray image for Vietnamese"
+msgstr "Ảnh khay khi gõ tiếng Việt"
+
+#: src/ngosen-config.h
+msgid "Tray image for English"
+msgstr "Ảnh khay khi gõ tiếng Anh"
+
+#: src/ngosen-config.h
 msgid "Interface Language"
 msgstr "Ngôn ngữ giao diện"
 

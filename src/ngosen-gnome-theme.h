@@ -135,6 +135,12 @@ namespace fcitx {
     std::string trayTextIconName(bool vietnamese);
 
     /**
+     * @brief What to send the tray for a custom image: its path, or its file name without the
+     * extension where the tray wants a name. Empty when the image cannot be read.
+     */
+    std::string customTrayIcon(const std::string& imagePath, bool wantsName);
+
+    /**
      * @brief Icon names to try for the tray, best first.
      *
      * GNOME Shell gets the copies drawn with less margin, so the tile matches its own icons.

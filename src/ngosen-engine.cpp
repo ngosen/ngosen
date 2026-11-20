@@ -2050,13 +2050,20 @@ namespace fcitx {
     }
 
     std::string NgoSenEngine::subModeIconImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
-        const auto        kind         = *config_.trayIconKind;
-        const bool        vietnamese   = realMode != NgoSenMode::Off;
+        static const bool kTrayWantsIconName = trayWantsIconName(getEnv("XDG_CURRENT_DESKTOP"), getEnv("DESKTOP_SESSION"), getEnv("SWAYSOCK"));
+        const auto        kind               = *config_.trayIconKind;
+        const bool        vietnamese         = realMode != NgoSenMode::Off;
+        if (kind == TrayIconKind::Image) {
+            // A language without a readable image keeps the colour icon.
+            auto custom = customTrayIcon(vietnamese ? *config_.trayImageVietnamese : *config_.trayImageEnglish, kTrayWantsIconName);
+            if (!custom.empty())
+                return custom;
+        }
         const std::string baseIconName = kind == TrayIconKind::LanguageCode ? trayTextIconName(vietnamese) : (vietnamese ? "fcitx-ngosen" : "fcitx-ngosen-off");
 
         // Only the colour icon has a tile; V / E is the plain form of the same icon.
         auto style = TrayIconStyle::Tile;
-        if (kind != TrayIconKind::ColourIcon) {
+        if (kind == TrayIconKind::Letter || kind == TrayIconKind::LanguageCode) {
             const auto& iconTheme = config_.iconTheme.value();
             const bool  darkPanel = iconTheme == IconTheme::Dark || (iconTheme == IconTheme::Auto && isDarkMode());
             style                 = darkPanel ? TrayIconStyle::PlainWhite : TrayIconStyle::PlainBlack;
@@ -2064,7 +2071,6 @@ namespace fcitx {
         static const bool gnomeShell = isGnomeShellSession(getEnv("XDG_CURRENT_DESKTOP"));
         const std::string iconName   = trayIconName(baseIconName, style, *config_.trayIconSize == TrayIconSize::Large, gnomeShell);
 
-        static const bool kTrayWantsIconName = trayWantsIconName(getEnv("XDG_CURRENT_DESKTOP"), getEnv("DESKTOP_SESSION"), getEnv("SWAYSOCK"));
         if (kTrayWantsIconName) {
             return iconName;
         }

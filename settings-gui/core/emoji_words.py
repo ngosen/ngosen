@@ -100,7 +100,8 @@ class EmojiWords:
     def load(self):
         self.edits = {}
         for item in self.dbus.get_sub_config_list(*WORDS) or []:
-            key = (item.get("Emoji", ""), clean(item.get("Keyword", "")))
+            # Kept as written: the engine compares keywords literally, so cleaning could merge two.
+            key = (item.get("Emoji", ""), item.get("Keyword", "").strip())
             if all(key):
                 self.edits[key] = str(item.get("On", "True")).lower() == "true"
         self._saved = dict(self.edits)

@@ -110,6 +110,18 @@ class ChipsTest(unittest.TestCase):
         self.assertTrue(dict(table.chips("👔"))["sếp"])
         self.assertFalse(table.is_modified())
 
+    def test_words_differing_in_case_stay_apart(self):
+        # The engine compares keywords as written, so Cười must not overwrite cười.
+        items = [
+            {"Keyword": "cười", "Emoji": "😂", "On": "False"},
+            {"Keyword": "Cười", "Emoji": "😂", "On": "True"},
+        ]
+        fake = FakeDBusHandler(sub_configs={"emoji_words": [dict(i) for i in items]})
+        table = words(fake)
+        self.assertFalse(table.is_on("😂", "cười"))
+        self.assertTrue(table.save())
+        self.assertEqual(saved(fake), items)
+
     def test_a_refused_save_keeps_the_change_unsaved(self):
         fake = FakeDBusHandler()
         table = words(fake)

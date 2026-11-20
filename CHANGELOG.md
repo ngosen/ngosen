@@ -12,6 +12,30 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Khay có thể hiện chữ `vi` / `en` thay cho biểu tượng, theo màu đã chọn trong "Màu biểu tượng". Chọn ở mục
+  "Khay hiện", mục này thay cho ô "Sử dụng biểu tượng trạng thái Ngó Sen"; chữ `V` / `E` một màu cũ nay là
+  lựa chọn "V / E", chữ `E` có thêm một lỗ ngó. Ai đã tắt ô đó thì chọn lại "V / E" sau khi cập nhật (#908).
+
+## [1.13.1-1] — 20/11/2026
+
+Trên KDE Plasma Wayland, WPS Office gõ được tiếng Việt (#897). Bấm Backspace khi đang gõ dở chữ kéo dài hay chữ teencode không còn mất dấu (#898, #902, #906). Nhập từ gợi ý emoji không còn hỏng cả tệp vì một từ có ký tự lạ (#899, #903).
+Tải ở [ngosen-1.13.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.13.1-1).
+
+### Sửa
+
+- KDE Plasma (Wayland): WPS Office gõ được tiếng Việt. Lệnh cài đặt `QT_IM_MODULE=fcitx` riêng cho WPS, cả
+  bản Flatpak lẫn bản cài từ package; các app khác giữ nguyên. Ai đã cài thì chạy lại lệnh cài rồi mở lại WPS (#897).
+- Bấm Backspace khi đang gõ dở chữ kéo dài có dấu gõ sau cùng, như `chaiiif` ra `chàiii`, nay chỉ xoá một chữ i, không
+  còn mất luôn dấu thành `chaiii`. Chữ teencode cũng vậy: `fải` xoá còn `fả` (#898, #902, #906).
+- Nhập tệp từ gợi ý emoji có một từ chứa ký tự NUL nay bỏ qua từ đó, không còn hỏng cả lần nhập (#899, #903).
+
+## [1.13.0-1] — 20/11/2026
+
+Phím chuyển Anh/Việt nay chuyển mọi app cùng lúc như UniKey, cài mới bật sẵn tiếng Việt (#825). Gợi ý emoji mặc định hiện ở cuối câu, bấm số để chọn khi gõ Telex, hiện ngay trong ô trên GNOME không có extension Input Method Panel, nhận cả từ tiếng Anh, và trang Emoji xuất, nhập được từ gợi ý (#110, #821, #827, #830, #832, #834, #845, #848, #849, #851, #854, #859, #862, #863). Gõ kéo dài chữ: `afaaa` ra `àààà` (#852, #871). Teencode bật riêng cho từng app (#701, #829, #833, #843, #844). Lệnh `ngosen-toggle` để gán phím tắt của desktop (#828). Cài được từ AUR (#873). Bản IBus không còn ra chữ đôi trong terminal dùng xterm.js (#878); Gõ Sen không còn nuốt chữ khi gõ nhanh trong terminal xterm.js của các trình soạn code Electron (#867, #880). Kiểm tra máy báo thêm bảng mã không phải Unicode và bàn phím đứng trước Ngó Sen (#839, #872, #875).
+Tải ở [ngosen-1.13.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.13.0-1).
+
+### Thêm
+
 - Gõ kéo dài chữ: giữ phím chữ cái cuối của một từ có dấu thì chữ đó lặp lại cùng dấu, `afaaa` ra `àààà`,
   `ooiiii` ra `ôiiii`, `ddusngggg` ra `đúngggg`, thay vì hiện lại các phím đã gõ. Gõ dấu sau cùng cũng được:
   `aaaaf` ra `àààà`, `chaooof` ra `chàooo`. Từ tiếng Anh gõ kéo dài như `besttt` hay `thereee` vẫn giữ nguyên
@@ -48,9 +72,6 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   lưu cài đặt nay giữ cả danh sách này (#701, #844).
 - Arch và các distro dựa trên Arch cài được từ AUR: `yay -S fcitx5-ngosen`, bản IBus `yay -S ibus-ngosen`.
   Mỗi version mới tự lên AUR khi phát hành ([#873](https://github.com/ngosen/ngosen/pull/873)).
-- Khay có thể hiện chữ `vi` / `en` thay cho biểu tượng, theo màu đã chọn trong "Màu biểu tượng". Chọn ở mục
-  "Khay hiện", mục này thay cho ô "Sử dụng biểu tượng trạng thái Ngó Sen"; chữ `V` / `E` một màu cũ nay là
-  lựa chọn "V / E", chữ `E` có thêm một lỗ ngó. Ai đã tắt ô đó thì chọn lại "V / E" sau khi cập nhật (#908).
 
 ### Thay đổi
 

@@ -218,7 +218,7 @@ class ShareTest(unittest.TestCase):
         self.assertEqual(table.merge(read_shared(self.path)), 0)
         self.assertFalse(table.is_on("😂", "cười"))
 
-    def test_unknown_emoji_and_long_words_are_skipped(self):
+    def test_unknown_emoji_and_unusable_words_are_skipped(self):
         self.write(
             {
                 "meta": {"kind": "ngosen-emoji-words", "version": 1},
@@ -226,6 +226,8 @@ class ShareTest(unittest.TestCase):
                     {"Keyword": "Sếp  Lớn", "Emoji": "👔"},
                     {"Keyword": "x", "Emoji": "not an emoji"},
                     {"Keyword": "y" * 41, "Emoji": "👔"},
+                    # D-Bus strings cannot carry NUL, so saving it would fail the whole import.
+                    {"Keyword": "a\u0000b", "Emoji": "👔"},
                 ],
             }
         )

@@ -1003,6 +1003,36 @@ set_xim_environment() {
     session_changes+=("app X11 chạy qua XWayland (như Minecraft bản cũ) dùng fcitx5")
 }
 
+WPS_FLATPAK=com.wps.Office
+
+# The launcher with QT_IM_MODULE added; TryExec hides it once WPS is removed.
+wps_launcher_entry() {
+    local source="/usr/share/applications/$1" program
+    program=$(sed -n 's/^Exec=\([^ ]*\).*/\1/p' "$source" | head -n 1)
+    [ -n "$program" ] || return 1
+    sed -e "s|^Exec=|Exec=env QT_IM_MODULE=fcitx |" -e "s|^\[Desktop Entry\]$|&\nTryExec=$program|" "$source"
+}
+
+# WPS bundles its own Qt 5, which has neither KDE's Wayland input protocol nor XIM, so it types
+# through fcitx5 only with QT_IM_MODULE set. Only WPS gets it; other apps keep what fcitx5 asks for.
+set_wps_input_method() {
+    local dir source id entry fixed=0
+    dir=$(applications_dir)
+    for source in /usr/share/applications/wps-office-*.desktop; do
+        id=$(basename "$source")
+        [ -e "$source" ] && [ ! -e "$dir/$id" ] || continue
+        entry=$(wps_launcher_entry "$id") || continue
+        mkdir -p "$dir"
+        printf '%s\n' "$entry" >"$dir/$id"
+        fixed=1
+    done
+    if command -v flatpak >/dev/null 2>&1 && flatpak info "$WPS_FLATPAK" >/dev/null 2>&1 &&
+        ! flatpak override --user --show "$WPS_FLATPAK" 2>/dev/null | grep -q '^QT_IM_MODULE='; then
+        flatpak override --user --env=QT_IM_MODULE=fcitx "$WPS_FLATPAK" && fixed=1
+    fi
+    [ "$fixed" -eq 0 ] || session_changes+=("WPS Office gõ được tiếng Việt (mở lại WPS nếu đang mở)")
+}
+
 # Prints the fcitx5 name of the first GNOME keyboard layout, e.g. "us" or "fr-azerty".
 gnome_layout() {
     local sources layout
@@ -1383,6 +1413,7 @@ setup_kde_session() {
         session_changes+=("KDE tự chạy fcitx5 làm bộ gõ (Virtual Keyboard: Fcitx 5)")
     fi
     set_xim_environment
+    set_wps_input_method
     configure_fcitx5
     if [ "${#session_changes[@]}" -eq 0 ] && [ "$fcitx5_reloaded" -eq 0 ] && [ "$fcitx5_current" -eq 0 ]; then
         say "Xong. Đăng xuất rồi đăng nhập lại để dùng bản mới."

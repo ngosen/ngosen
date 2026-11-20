@@ -30,10 +30,12 @@ class LockedByTest(unittest.TestCase):
             locked_by("SpellCheck", {"AutoNonVnRestore": "False"}.get), "AutoNonVnRestore"
         )
         self.assertIsNone(locked_by("SpellCheck", {"AutoNonVnRestore": "True"}.get))
-        self.assertEqual(locked_by("IconTheme", {"UseLotusIcons": "True"}.get), "UseLotusIcons")
-        self.assertIsNone(locked_by("IconTheme", {"UseLotusIcons": "False"}.get))
-        self.assertEqual(locked_by("TrayIconSize", {"UseLotusIcons": "False"}.get), "UseLotusIcons")
-        self.assertIsNone(locked_by("TrayIconSize", {"UseLotusIcons": "True"}.get))
+        self.assertEqual(
+            locked_by("IconTheme", {"TrayIconKind": "Colour icon"}.get), "TrayIconKind"
+        )
+        self.assertIsNone(locked_by("IconTheme", {"TrayIconKind": "V / E"}.get))
+        self.assertEqual(locked_by("TrayIconSize", {"TrayIconKind": "V / E"}.get), "TrayIconKind")
+        self.assertIsNone(locked_by("TrayIconSize", {"TrayIconKind": "Colour icon"}.get))
 
     def test_the_macro_table_reads_its_switches_as_booleans(self):
         self.assertEqual(locked_by("TimeFormat", {"EnableMacro": False}.get), "EnableMacro")
@@ -128,7 +130,7 @@ class QtWindowLocksTest(unittest.TestCase):
         label = page.form.labelForField(page._fields["IconTheme"])
         window.search_field.setText(label.text().rstrip(":"))
         window.open_search_result(window.search_results.item(0))
-        self.assertIs(window.focusWidget(), page.control_for("UseLotusIcons"))
+        self.assertIs(window.focusWidget(), page.control_for("TrayIconKind"))
 
 
 class QtPageLocksTest(unittest.TestCase):

@@ -94,14 +94,20 @@ SETTINGS_MAP = {
     },
     SettingsCategory.APPEARANCE: {
         N_("Language"): ["UiLanguage"],
-        TRAY_ICON: ["UseLotusIcons", "TrayIconSize", "IconTheme"],
+        TRAY_ICON: [
+            "TrayIconKind",
+            "TrayImageVietnamese",
+            "TrayImageEnglish",
+            "TrayIconSize",
+            "IconTheme",
+        ],
         N_("Show in the tray menu"): list(MENU_ENTRIES),
         N_("Settings Window"): ["SettingsToolkit"],
     },
 }
 
 # These groups have no checkbox to carry their name, so the Qt window gives it a line of its own.
-GROUPS_WITH_NAME_LINE = {TYPING_KEYS}
+GROUPS_WITH_NAME_LINE = {TYPING_KEYS, TRAY_ICON}
 
 # One line under a setting, saying what the user sees.
 HINTS = {
@@ -186,12 +192,13 @@ HINTS = {
         "to follow the global setting and switch key again; OFF stays set for the app and keeps it in English even when other apps type Vietnamese. "
         "With All apps, the switch key in an OFF app opens the mode menu; pick Sen or Preedit there to type Vietnamese in that app."
     ),
-    "UseLotusIcons": N_("Off: plain one-colour icons, in the colour picked below."),
+    "TrayIconKind": N_("V / E and vi / en take the colour picked below."),
+    "TrayImageVietnamese": N_("Square SVG, or PNG from 64×64, on a transparent background."),
     "TrayIconSize": N_(
         "Large draws the Ngó Sen icon bigger in its tray slot. No change on GNOME, where it already fills the slot."
     ),
     "IconTheme": N_(
-        "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
+        "Light suits a light panel, Dark a dark one; Auto follows the light or dark setting of the desktop."
     ),
 }
 
@@ -246,8 +253,10 @@ MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
 DEPENDS = {
     "SpellCheck": ("AutoNonVnRestore", "True"),
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
-    "IconTheme": ("UseLotusIcons", "False"),
-    "TrayIconSize": ("UseLotusIcons", "True"),
+    "IconTheme": ("TrayIconKind", ("V / E", "vi / en")),
+    "TrayIconSize": ("TrayIconKind", "Colour icon"),
+    "TrayImageVietnamese": ("TrayIconKind", "Custom image"),
+    "TrayImageEnglish": ("TrayIconKind", "Custom image"),
     "CapitalizeMacro": ("EnableMacro", "True"),
     "EnableMacroInOffMode": ("EnableMacro", "True"),
     "TimeFormat": ("EnableMacro", "True"),
@@ -260,11 +269,40 @@ DEPENDS = {
 }
 
 
+# A second value that also makes a setting count, next to the one in DEPENDS.
+# fcitx5 stores TrayIconKind by the name it shows; these name the letters each one draws.
+TRAY_LETTERS = {
+    "V / E": ("fcitx-ngosen", "fcitx-ngosen-off"),
+    "vi / en": ("fcitx-ngosen-text-vi", "fcitx-ngosen-text-en"),
+}
+
+TRAY_IMAGE_KEYS = {"TrayImageVietnamese": "vi", "TrayImageEnglish": "en"}
+# Screen readers hear these, as both rows have the same two buttons.
+TRAY_IMAGE_BUTTONS = {
+    "TrayImageVietnamese": (
+        N_("Choose the tray image for Vietnamese"),
+        N_("Remove the tray image for Vietnamese"),
+    ),
+    "TrayImageEnglish": (
+        N_("Choose the tray image for English"),
+        N_("Remove the tray image for English"),
+    ),
+}
+TRAY_KEYS = ("TrayIconKind", *TRAY_IMAGE_KEYS, "TrayIconSize", "IconTheme")
+
+
+def _holds(controller, needed, value_of):
+    value = value_of(controller)
+    if value is None:
+        return True
+    allowed = (needed,) if isinstance(needed, str) else needed
+    return str(value).lower() in (v.lower() for v in allowed)
+
+
 def locked_by(key, value_of):
     """The setting that keeps key from doing anything right now, or None.
 
     value_of(name) gives a setting's value, or None when fcitx5 does not report that setting.
     """
     controller, needed = DEPENDS.get(key, (None, None))
-    value = value_of(controller) if controller else None
-    return None if value is None or str(value).lower() == needed.lower() else controller
+    return controller if controller and not _holds(controller, needed, value_of) else None

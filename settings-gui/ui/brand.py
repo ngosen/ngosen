@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The Ngó Sen marks for the Qt window: enamel as the accent."""
 
+import os
+
 from core.brand import ENAMEL, LOGO, ON_ENAMEL  # noqa: F401
 from core.catalog import TRAY_PANEL
 from qtpy.QtCore import QEvent, QObject, QStandardPaths, Qt
@@ -116,6 +118,8 @@ def theme_icon(name, fallback=None):
 
 def installed_icon(name):
     """The theme's icon, or the installed hicolor file if the theme lacks it."""
+    if os.path.isabs(name):
+        return QIcon(name)
     # Icon loaders shorten a missing name, so themes with an "fcitx" icon (Papirus, Colloid) would
     # show that instead.
     icon = QIcon.fromTheme(name)

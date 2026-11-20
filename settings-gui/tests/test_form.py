@@ -269,7 +269,7 @@ class AppearancePageTest(unittest.TestCase):
         )
         self.assertNotEqual(preview.pixmap().cacheKey(), drawn)
         drawn = preview.pixmap().cacheKey()
-        self.page.update_config("UseLotusIcons", "False")
+        self.page.update_config("TrayIconKind", "V / E")
         self.assertNotEqual(preview.pixmap().cacheKey(), drawn)
         self.page.update_config("IconTheme", "Light")
         self.assertEqual(
@@ -391,7 +391,8 @@ class ModeHintTest(unittest.TestCase):
 class HintTest(unittest.TestCase):
     # The input method shows a typing example, the mode line follows the picked mode, the mode keys
     # share one line under their list, and the menu entries are named by their checkboxes.
-    NO_HINT = {"InputMethod", "Mode", *MENU_ENTRIES}
+    # The Vietnamese image's hint covers the English one below it.
+    NO_HINT = {"InputMethod", "Mode", "TrayImageEnglish", *MENU_ENTRIES}
 
     def test_every_option_explains_itself(self):
         for category in (

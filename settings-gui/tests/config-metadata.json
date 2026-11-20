@@ -500,13 +500,6 @@
     {}
    ],
    [
-    "UseLotusIcons",
-    "Boolean",
-    "Use Ngó Sen Status Icons",
-    "True",
-    {}
-   ],
-   [
     "TrayIconSize",
     "Enum",
     "Tray Icon Size",
@@ -521,6 +514,40 @@
       "1": "Large"
      }
     }
+   ],
+   [
+    "TrayIconKind",
+    "Enum",
+    "Tray Icon Shows",
+    "Colour icon",
+    {
+     "EnumI18n": {
+      "0": "Colour icon",
+      "1": "V / E",
+      "2": "vi / en",
+      "3": "Custom image"
+     },
+     "Enum": {
+      "0": "Colour icon",
+      "1": "V / E",
+      "2": "vi / en",
+      "3": "Custom image"
+     }
+    }
+   ],
+   [
+    "TrayImageVietnamese",
+    "String",
+    "Tray image for Vietnamese",
+    "",
+    {}
+   ],
+   [
+    "TrayImageEnglish",
+    "String",
+    "Tray image for English",
+    "",
+    {}
    ],
    [
     "ShowMenuInputMethod",

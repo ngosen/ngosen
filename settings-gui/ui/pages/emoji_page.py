@@ -527,6 +527,9 @@ class EmojiPage(DynamicSettingsPage):
         if self._example is not None:
             on = str(self.model.value_of("EmojiSuggestions")).lower() == "true"
             self._example.setEnabled(on)
+            sentence = self.model.value_of("EmojiOfferAt") == "At the end of a sentence"
+            self._word_steps.setVisible(not sentence)
+            self._sentence_steps.setVisible(sentence)
         english = str(self.model.value_of("EnglishEmojiKeywords")).lower() == "true"
         if english != self.words.english:
             self.words.english = english
@@ -535,17 +538,14 @@ class EmojiPage(DynamicSettingsPage):
 
     def _how_it_works(self):
         example = QWidget()
-        layout = QHBoxLayout(example)
+        layout = QVBoxLayout(example)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
-        steps = [_pill("cười"), _pill("Tab: 😂 …"), _keys_pill(), _pill("cười 🤣")]
-        for index, step in enumerate(steps):
-            if index:
-                arrow = QLabel("→")
-                arrow.searchable = False
-                layout.addWidget(arrow)
-            layout.addWidget(step)
-        layout.addStretch()
+        self._word_steps = _steps(
+            [_pill("cười"), _pill("Tab: 😂 …"), _keys_pill("Tab"), _pill("cười 🤣")]
+        )
+        self._sentence_steps = _steps([_pill("cười."), _keys_pill(), _pill("cười. 🤣")])
+        layout.addWidget(self._word_steps)
+        layout.addWidget(self._sentence_steps)
         return example
 
     def _apps_section(self):
@@ -832,12 +832,28 @@ def _pill(text):
     return label
 
 
-def _keys_pill():
+def _steps(steps):
+    row = QWidget()
+    layout = QHBoxLayout(row)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(8)
+    for index, step in enumerate(steps):
+        if index:
+            arrow = QLabel("→")
+            arrow.searchable = False
+            layout.addWidget(arrow)
+        layout.addWidget(step)
+    layout.addStretch()
+    return row
+
+
+def _keys_pill(key=None):
     pill = _step_frame(QFrame())
     layout = QHBoxLayout(pill)
     layout.setContentsMargins(6, 2, 8, 2)
     layout.setSpacing(6)
-    layout.addWidget(KeyCap("Tab"))
+    if key:
+        layout.addWidget(KeyCap(key))
     choices = QLabel("1😂 2🤣 3😄 4😆 5😁")
     choices.searchable = False
     layout.addWidget(choices)

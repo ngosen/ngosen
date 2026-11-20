@@ -139,6 +139,53 @@ def _wrap_insert_before(box, child, sibling, index):
         box.insert_child_after(child, sibling.get_prev_sibling())
 
 
+def _offer():
+    """The candidate list as it pops up next to the cursor."""
+    candidates = "  ".join(f"<b>{i}</b>\u00a0{e}" for i, e in enumerate(EXAMPLE_CANDIDATES, 1))
+    numbers = f"1–{len(EXAMPLE_CANDIDATES)}: "
+    offer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+    offer.append(_small(numbers + _("pick, or arrows then Enter, Esc: keep the word")))
+    offer.append(
+        Gtk.Label(label=candidates, use_markup=True, xalign=0, wrap=True, max_width_chars=16)
+    )
+    return offer
+
+
+def _steps(spec):
+    """Captioned fields showing what the user types, in order."""
+    # Side by side, or one under another on a narrow window.
+    steps = Gtk.FlowBox(
+        homogeneous=True,
+        max_children_per_line=3,
+        selection_mode=Gtk.SelectionMode.NONE,
+        column_spacing=12,
+        row_spacing=12,
+    )
+    for side in ("top", "bottom", "start", "end"):
+        getattr(steps, f"set_margin_{side}")(12)
+    for caption, typed, hint in spec:
+        field = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, vexpand=True)
+        field.add_css_class("emoji-example-field")
+        if isinstance(typed, Gtk.Widget):
+            field.append(typed)
+        else:
+            field.append(
+                Gtk.Label(
+                    label=typed, xalign=0, wrap=True, max_width_chars=16, css_classes=["typed"]
+                )
+            )
+        if hint is not None:
+            bubble = Gtk.Box(halign=Gtk.Align.START, css_classes=["emoji-example-hint"])
+            bubble.append(hint)
+            field.append(bubble)
+        step = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        step.append(_small(caption, "heading"))
+        step.append(field)
+        steps.append(step)
+        step.get_parent().set_focusable(False)
+    return steps
+
+
 class EmojiPage(SettingsPage):
     """on_save(write, label) saves each word change with Undo; show_message(text, undo) a toast."""
 
@@ -185,6 +232,9 @@ class EmojiPage(SettingsPage):
         replaced = self.value("EmojiPlacement") == "Instead of the word"
         kept = EXAMPLE_TEXT[:1] if replaced else EXAMPLE_TEXT
         self.picked.set_text(" ".join((*kept, EXAMPLE_CANDIDATES[1])))
+        sentence = self.value("EmojiOfferAt") == "At the end of a sentence"
+        self.word_steps.set_visible(not sentence)
+        self.sentence_steps.set_visible(sentence)
         english = self.value("EnglishEmojiKeywords").lower() == "true"
         if english != self.words.english:
             self.words.english = english
@@ -192,54 +242,31 @@ class EmojiPage(SettingsPage):
                 self.refilter()
 
     def _example(self):
-        """What typing a word does, in three steps."""
-        candidates = "  ".join(f"<b>{i}</b>\u00a0{e}" for i, e in enumerate(EXAMPLE_CANDIDATES, 1))
-        numbers = f"1–{len(EXAMPLE_CANDIDATES)}: "
-        offer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-        offer.append(_small(numbers + _("pick, or arrows then Enter, Esc: keep the word")))
-        offer.append(
-            Gtk.Label(label=candidates, use_markup=True, xalign=0, wrap=True, max_width_chars=16)
-        )
+        """What typing does, as the steps of the timing the user picked."""
         self.picked = Gtk.Label(xalign=0, wrap=True, max_width_chars=16, css_classes=["typed"])
-        # Side by side, or one under another on a narrow window.
-        steps = Gtk.FlowBox(
-            homogeneous=True,
-            max_children_per_line=3,
-            selection_mode=Gtk.SelectionMode.NONE,
-            column_spacing=12,
-            row_spacing=12,
-        )
-        for side in ("top", "bottom", "start", "end"):
-            getattr(steps, f"set_margin_{side}")(12)
-        for caption, typed, hint in (
+        typed = " ".join(EXAMPLE_TEXT)
+        self.word_steps = _steps(
             (
-                _("1. Type a word"),
-                " ".join(EXAMPLE_TEXT),
-                Gtk.Label(label=f"Tab: {EXAMPLE_CANDIDATES[0]} …"),
-            ),
-            (_("2. Press Tab"), " ".join(EXAMPLE_TEXT), offer),
-            (_("3. Press 2"), None, None),
-        ):
-            field = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, vexpand=True)
-            field.add_css_class("emoji-example-field")
-            if typed is None:
-                field.append(self.picked)
-            else:
-                field.append(
-                    Gtk.Label(
-                        label=typed, xalign=0, wrap=True, max_width_chars=16, css_classes=["typed"]
-                    )
-                )
-            if hint is not None:
-                bubble = Gtk.Box(halign=Gtk.Align.START, css_classes=["emoji-example-hint"])
-                bubble.append(hint)
-                field.append(bubble)
-            step = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-            step.append(_small(caption, "heading"))
-            step.append(field)
-            steps.append(step)
-            step.get_parent().set_focusable(False)
-        self.example = Adw.PreferencesRow(activatable=False, focusable=False, child=steps)
+                (_("1. Type a word"), typed, Gtk.Label(label=f"Tab: {EXAMPLE_CANDIDATES[0]} …")),
+                (_("2. Press Tab"), typed, _offer()),
+                (_("3. Press 2"), self.picked, None),
+            )
+        )
+        sentence = typed + "."
+        picked = Gtk.Label(
+            label=f"{sentence} {EXAMPLE_CANDIDATES[1]}",
+            xalign=0,
+            wrap=True,
+            max_width_chars=16,
+            css_classes=["typed"],
+        )
+        self.sentence_steps = _steps(
+            ((_("1. End a sentence"), sentence, _offer()), (_("2. Press 2"), picked, None))
+        )
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box.append(self.word_steps)
+        box.append(self.sentence_steps)
+        self.example = Adw.PreferencesRow(activatable=False, focusable=False, child=box)
         self.example.searchable = False
         return self.example
 

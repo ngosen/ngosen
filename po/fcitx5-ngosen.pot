@@ -2165,6 +2165,14 @@ msgstr ""
 msgid "3. Press 2"
 msgstr ""
 
+#: settings-gui/ui_gtk/emoji.py
+msgid "1. End a sentence"
+msgstr ""
+
+#: settings-gui/ui_gtk/emoji.py
+msgid "2. Press 2"
+msgstr ""
+
 #: settings-gui/core/emoji_words.py
 msgid "Set a mode menu key and an emoji key on the Keys page to turn suggestions off for one app."
 msgstr ""

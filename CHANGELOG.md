@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Chuyển mã: ở ô không báo chữ quanh con trỏ (như VS Code), phím chuyển mã không còn lấy chữ đang bôi đen ở app
+  khác rồi gõ vào ô (#916).
+
 ## [1.13.1-1] — 20/11/2026
 
 Trên KDE Plasma Wayland, WPS Office gõ được tiếng Việt (#897). Bấm Backspace khi đang gõ dở chữ kéo dài hay chữ teencode không còn mất dấu (#898, #902, #906). Nhập từ gợi ý emoji không còn hỏng cả tệp vì một từ có ký tự lạ (#899, #903).

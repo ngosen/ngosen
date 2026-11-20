@@ -143,7 +143,7 @@ fcitx5, để chuyển ngôn ngữ như `Ctrl + Shift` cho app đang gõ và gi�
   Fedora), thêm extension [Input Method Panel](https://extensions.gnome.org/extension/261/) để icon và
   menu bộ gõ hiện trên thanh trên cùng.
 - **KDE Plasma (Wayland):** chọn fcitx5 ở System Settings → Virtual Keyboard để app Qt như Kate, Dolphin
-  cũng gõ được.
+  cũng gõ được. Máy có WPS Office thì đặt `QT_IM_MODULE=fcitx` riêng cho WPS.
 - **Xfce, Cinnamon, MATE** (X11, Debian và Ubuntu): dùng im-config đặt fcitx5 làm bộ gõ.
 - **Sway, Hyprland, niri:** chạy lệnh từ terminal trong phiên desktop để thêm Ngó Sen và bật fcitx5, không
   cần đăng xuất. Lệnh không sửa file config của desktop; để fcitx5 tự chạy ở lần đăng nhập sau, dán dòng lệnh được in ra.
@@ -337,7 +337,9 @@ bước sau (hoặc chạy lệnh cài một dòng ở trên để nó làm giú
   [extension sửa lỗi gõ](#gnome-extension).
 - **KDE Plasma (Wayland):** chọn **Fcitx 5** ở *System Settings → Virtual Keyboard*, rồi đăng xuất và đăng
   nhập lại. App X11 chạy qua XWayland (như Minecraft bản cũ) cần thêm
-  `echo 'XMODIFIERS=@im=fcitx' > ~/.config/environment.d/90-ngosen.conf` trước khi đăng xuất.
+  `echo 'XMODIFIERS=@im=fcitx' > ~/.config/environment.d/90-ngosen.conf` trước khi đăng xuất. WPS Office
+  bản Flatpak cần `flatpak override --user --env=QT_IM_MODULE=fcitx com.wps.Office`; bản cài từ package thì
+  sửa lối tắt WPS cho chạy `env QT_IM_MODULE=fcitx /usr/bin/wps`.
 - **Xfce, Cinnamon, MATE** (Debian, Ubuntu, Mint): chạy `im-config -n fcitx5`, rồi đăng xuất và đăng nhập lại.
 - **Sway, Hyprland, niri:** chạy lệnh cài một dòng từ terminal trong phiên desktop để được thiết lập sẵn.
 - **Kiểm tra lại:** sau khi đăng nhập lại, mở cửa sổ cài đặt Ngó Sen (`fcitx5-ngosen-settings`). Lần mở đầu

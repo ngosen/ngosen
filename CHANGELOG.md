@@ -17,6 +17,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- KDE Plasma (Wayland): WPS Office gõ được tiếng Việt. Lệnh cài đặt `QT_IM_MODULE=fcitx` riêng cho WPS, cả
+  bản Flatpak lẫn bản cài từ package; các app khác giữ nguyên. Ai đã cài thì chạy lại lệnh cài rồi mở lại WPS.
 - Bản IBus: trong terminal dùng xterm.js, app reset ô đúng lúc vừa gõ một chữ không còn làm chữ đó ra đôi (`dd` ra
   `đđ`) (#878).
 - Trong terminal dùng xterm.js của các trình soạn code Electron (như Antigravity, VS Code, Cursor), chế độ Gõ Sen không

@@ -368,7 +368,7 @@ jobs:
         run: >-
           xvfb-run -a python3 -m unittest -v test_gtk_*.py
           test_launcher test_core_toolkit_free test_hotkey_recorder test_save_journey
-          test_lists_reach_fcitx5
+          test_lists_reach_fcitx5 test_window_display
 
   python-lint:
     name: Python lint

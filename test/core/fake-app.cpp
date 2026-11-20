@@ -552,6 +552,16 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::resetCommittingPreedit() {
+        // xterm.js takes a composition as typed text when it ends.
+        if (composing_)
+            ownText_ += utf8::decode(shownPreedit_);
+        shownPreedit_.clear();
+        preeditWaits_ = false;
+        composing_    = false;
+        state_->resetAfterAppCommit(false);
+    }
+
     void FakeApp::clickCellOpenedByKey(int ms) {
         cellOpensOnKey_ = true;
         leaveFocus(ms);

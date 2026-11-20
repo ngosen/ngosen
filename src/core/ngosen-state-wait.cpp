@@ -101,9 +101,9 @@ namespace ngosen {
     // Waits until the app has applied the backspaces, then commits. `event` is the returning sentinel
     // backspace on the XTEST path, or null when the backspaces were forwarded.
     bool TypingState::waitForDeletion(ngosen::KeyPress* event, int sleepTime) {
-        // Some apps (Konsole) declare surrounding text but always send it empty; nothing can match,
-        // so use the sleeping path.
-        const bool emptySnapshot = host_->surrounding().text().empty() || surr_silent_;
+        // Some apps (Konsole) declare surrounding text but always send it empty, and xterm.js never shows
+        // backspaces in its copy; nothing can match, so use the timed wait.
+        const bool emptySnapshot = host_->surrounding().text().empty() || surr_silent_ || keepsOnlyCommits();
         const bool waitEvent     = engine_->options().waitSurroundingEvent;
         if (waitEvent && emptySnapshot) {
             NGOSEN_INFO(surr_silent_ ? "Surr wait skip: silent app" : "Surr wait skip: empty snapshot");
@@ -318,7 +318,12 @@ namespace ngosen {
             checkRetoneReport();
         }
         if (host_->hasFocus() && host_->surrounding().isValid()) {
-            if (showsText(host_->surrounding()))
+            if (keepsOnlyCommits() && showsText(host_->surrounding()))
+                xtermText_ = host_->surrounding().text();
+            if (!xtermText_.empty() && host_->surrounding().text() == xtermText_ && sinceFocus_.firstLetter == 0) {
+                sinceFocus_.seenText     = false;
+                sinceFocus_.commitsShown = xtermText_;
+            } else if (showsText(host_->surrounding()))
                 sinceFocus_.seenText = true;
             else if (keyCount_ == sinceFocus_.keysAtFocus)
                 sinceFocus_.seenEmpty = true;
@@ -719,7 +724,6 @@ namespace ngosen {
     void TypingState::commit(const std::string& text) {
         flushComposedCommit();
         ++commitCount_;
-        noteCommitForCheck(text);
         noteCommit(text);
         // A field that rewrites what we commit never shows it; keep only the latest commits.
         if (mode() == ngosen::Mode::Sen && ngosen::appliesEarlyKeysFirst(host_->field()))
@@ -743,6 +747,7 @@ namespace ngosen {
                 composedCommitTimer_ = host_->startTimer(monotonicUs() + ComposedCommitTurnUs, 0, [this](Timer&) { return composedCommitStep(); });
             return;
         }
+        noteCommitForCheck(text);
         committing_ = true;
         host_->commitText(text);
         committing_ = false;
@@ -771,11 +776,27 @@ namespace ngosen {
         return !composedCommit_.empty();
     }
 
+    // The app committed the preedit itself, as IBus does on reset and focus out.
+    void TypingState::dropComposedCommit() {
+        if (composedCommit_.empty())
+            return;
+        noteCommitForCheck(composedCommit_);
+        composedCommit_.clear();
+        host_->clearPreedit();
+        // Keys held for the commit still wait for their turn.
+        if (!buffered_keys_.empty())
+            return;
+        composedWait_ = false;
+        is_deleting_.store(false, std::memory_order_release);
+    }
+
     void TypingState::flushComposedCommit() {
         if (composedCommit_.empty())
             return;
         const std::string text = std::exchange(composedCommit_, std::string());
-        committing_            = true;
+        composedEndedByUs_     = false;
+        noteCommitForCheck(text);
+        committing_ = true;
         host_->commitText(text);
         committing_ = false;
         host_->clearPreedit();

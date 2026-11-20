@@ -57,8 +57,9 @@ def read_shared(path):
         if not isinstance(item, dict):
             raise ValueError(_("The emoji words in the file are damaged."))
         emoji, word = item.get("Emoji"), clean(str(item.get("Keyword", "")))
-        # An emoji this version does not list, or a long text, is skipped rather than refused.
-        if emoji in _BY_EMOJI and word and len(word) <= LONGEST_WORD:
+        # An emoji this version does not list, a long text, or a NUL D-Bus cannot carry is skipped
+        # rather than refused.
+        if emoji in _BY_EMOJI and word and len(word) <= LONGEST_WORD and "\0" not in word:
             pairs.append((emoji, word))
     return pairs
 

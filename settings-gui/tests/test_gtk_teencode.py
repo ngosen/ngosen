@@ -1,16 +1,16 @@
 # SPDX-FileCopyrightText: 2026 Ngó Sen contributors
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import os
 import unittest
 
 # isort: off
+import window_display
 from fake_fcitx import FakeDBusHandler
 import ui_gtk
 
 # isort: on
 
-CAN_RUN = ui_gtk.available() and bool(os.environ.get("DISPLAY"))
+CAN_RUN = ui_gtk.available() and window_display.can_show()
 
 if CAN_RUN:
     from gi.repository import Adw, Gtk
@@ -19,7 +19,7 @@ if CAN_RUN:
     from ui_gtk import window
 
 
-@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and a display")
+@unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
 class GtkTeencodeAppsTest(unittest.TestCase):
     def setUp(self):
         Adw.init()

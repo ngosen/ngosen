@@ -1766,6 +1766,32 @@ fn test_teencode_keeps_held_letters() {
 }
 
 #[test]
+fn test_backspace_keeps_the_tone_of_a_stretched_or_teencode_word() {
+    for (teencode, keys, after) in [
+        (false, "chaiiif", "chàii"),
+        (false, "aaaf", "àà"),
+        (true, "chaiiif", "chàii"),
+        (true, "fair", "fả"),
+        (true, "nhuwgx", "nhữ"),
+    ] {
+        let mut e = teencode_engine(teencode);
+        type_keys(&mut e, keys);
+        e.process_key_event(KEY_BACKSPACE, 0);
+        assert_eq!(e.preedit_text, after, "{keys}");
+        e.process_key_event(KEY_SPACE, 0);
+        assert_eq!(e.pull_commit(), format!("{after} "), "{keys}");
+    }
+    let mut e = teencode_engine(false);
+    type_keys(&mut e, "chaiiif");
+    e.process_key_event(KEY_BACKSPACE, 0);
+    type_keys(&mut e, "i");
+    assert_eq!(e.preedit_text, "chàiii");
+    e.drop_kept_tail = true;
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.pull_commit(), "chàiii ");
+}
+
+#[test]
 fn test_teencode_keeps_abbreviated_phrases() {
     let mut e = teencode_engine(true);
     for (keys, word) in [

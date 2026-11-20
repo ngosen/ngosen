@@ -11,20 +11,23 @@ from core.catalog import (
     MENU_ENTRIES,
     MENU_ICON_FALLBACKS,
     TRAY_ICON,
+    TRAY_IMAGE_BUTTONS,
+    TRAY_IMAGE_KEYS,
+    TRAY_KEYS,
     SettingsCategory,
 )
-from gi.repository import Adw, Gdk, GLib, Gtk
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from i18n import _
 
+from core import tray_image
 from ui_gtk.pages import SettingsPage
 from ui_gtk.toolkit_switch import toolkit_row
-
-TRAY_KEYS = ("UseLotusIcons", "TrayIconSize", "IconTheme")
 
 
 class AppearancePage(SettingsPage):
     def __init__(self, model, on_change):
         self.preview = None
+        self.image_shown = {}
 
         def changed(key, value):
             on_change(key, value)
@@ -49,7 +52,80 @@ class AppearancePage(SettingsPage):
         if item[0] == "SettingsToolkit":
             self.rows[item[0]] = toolkit_row(self.model, HINTS[item[0]])
             return [self.rows[item[0]]]
+        if item[0] in TRAY_IMAGE_KEYS:
+            return [self._image_row(item[0], item[2])]
         return super()._rows_for(item)
+
+    def _image_row(self, key, label):
+        row = Adw.ActionRow(title=_(label), use_markup=False)
+        if key in HINTS:
+            row.set_subtitle(_(HINTS[key]))
+        shown = Gtk.Box(valign=Gtk.Align.CENTER)
+        # Icon buttons keep the row inside the narrowest window.
+        pick = Gtk.Button(
+            icon_name="document-open-symbolic",
+            tooltip_text=_("Choose…"),
+            valign=Gtk.Align.CENTER,
+            css_classes=["flat"],
+        )
+        clear = Gtk.Button(
+            icon_name="edit-clear-symbolic",
+            tooltip_text=_("Remove"),
+            valign=Gtk.Align.CENTER,
+            css_classes=["flat"],
+        )
+        pick.connect("clicked", lambda _b: self._choose_image(key, label))
+        clear.connect("clicked", lambda _b: self._changed(key, ""))
+        for button, name in zip((pick, clear), TRAY_IMAGE_BUTTONS[key]):
+            button.update_property([Gtk.AccessibleProperty.LABEL], [_(name)])
+        for widget in (shown, pick, clear):
+            row.add_suffix(widget)
+        self.image_shown[key] = (shown, clear)
+        self.rows[key] = row
+        return row
+
+    def _choose_image(self, key, label):
+        images = Gtk.FileFilter(name=_("Images"))
+        images.add_suffix("svg")
+        images.add_suffix("png")
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(images)
+        dialog = Gtk.FileDialog(title=_(label), modal=True, filters=filters, default_filter=images)
+
+        def done(_dialog, result):
+            try:
+                file = dialog.open_finish(result)
+            except GLib.Error:
+                return  # Cancelled.
+            if file is not None and file.get_path():
+                self.use_image(key, file.get_path())
+
+        dialog.open(self.page.get_root(), None, done)
+
+    def use_image(self, key, path):
+        """Copies the picked image where trays find it and points the setting at the copy."""
+        try:
+            saved = str(self.model.saved.get(key, ""))
+            copy = tray_image.install(path, TRAY_IMAGE_KEYS[key], keep={saved})
+        except (OSError, ValueError) as e:
+            self.rows[key].set_subtitle(_("Could not use this image: {}").format(e))
+            return
+        self._changed(key, copy)
+
+    def _show_images(self):
+        for key, (shown, clear) in self.image_shown.items():
+            path = str(self.model.value_of(key) or "")
+            while child := shown.get_first_child():
+                shown.remove(child)
+            if path:
+                shown.append(_tray_icon(path))
+            else:
+                shown.append(Gtk.Label(label=_("Default"), css_classes=["dim-label"]))
+            clear.set_sensitive(bool(path))
+
+    def _show_values(self):
+        super()._show_values()
+        self.update_preview()
 
     def _switch_title(self, key, label):
         return _(MENU_ENTRIES[key][0]) if key in MENU_ENTRIES else _(label)
@@ -74,6 +150,7 @@ class AppearancePage(SettingsPage):
         group.add(row)
 
     def update_preview(self):
+        self._show_images()
         if self.preview is None:
             return
         names, dark = self.model.tray_icons(Adw.StyleManager.get_default().get_dark())
@@ -102,6 +179,8 @@ def _menu_icon(name):
 
 def _tray_icon(name, size=22):
     """The theme's icon, or the installed hicolor file if the theme lacks it."""
+    if os.path.isabs(name):
+        return Gtk.Image(file=name, pixel_size=size)
     # Checked first: a missing name would be shortened, and themes with an "fcitx" icon show that.
     if _theme().has_icon(name):
         return Gtk.Image(icon_name=name, pixel_size=size)

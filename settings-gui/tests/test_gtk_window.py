@@ -561,13 +561,35 @@ class GtkAppearancePageTest(unittest.TestCase):
         self.assertEqual(names, ("fcitx-ngosen-large", "fcitx-ngosen-off-large"))
 
     def test_tray_preview_follows_the_icon_settings(self):
-        self.page.rows["UseLotusIcons"].set_active(False)
+        kind = self.page.rows["TrayIconKind"]
+        kind.set_selected(kind.values.index("V / E"))
         theme = self.page.rows["IconTheme"]
         theme.set_selected(theme.values.index("Dark"))
         self.assertTrue(self.page.preview.has_css_class("tray-dark"))
         theme.set_selected(theme.values.index("Light"))
         self.assertTrue(self.page.preview.has_css_class("tray-light"))
         self.assertFalse(self.page.preview.has_css_class("tray-dark"))
+
+    def test_letters_unlock_the_icon_colour(self):
+        theme = self.page.rows["IconTheme"]
+        self.assertFalse(theme.get_sensitive())
+        kind = self.page.rows["TrayIconKind"]
+        kind.set_selected(kind.values.index("vi / en"))
+        self.assertTrue(theme.get_sensitive())
+        names, _dark = self.page.model.tray_icons(True)
+        self.assertTrue(names[0].startswith("fcitx-ngosen-text-vi-"))
+
+    def test_picked_image_goes_where_trays_find_it(self):
+        kind = self.page.rows["TrayIconKind"]
+        kind.set_selected(kind.values.index("Custom image"))
+        self.assertTrue(self.page.rows["TrayImageVietnamese"].get_sensitive())
+        source = os.path.join(os.environ["XDG_DATA_HOME"], "flag.svg")
+        with open(source, "w", encoding="utf-8") as f:
+            f.write('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"/>')
+        self.page.use_image("TrayImageVietnamese", source)
+        copy = self.dbus.values["TrayImageVietnamese"]
+        self.assertIn("/icons/hicolor/scalable/apps/ngosen-tray-vi-", copy)
+        self.assertEqual(self.page.model.tray_icons(False)[0][0], copy)
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")
@@ -703,12 +725,9 @@ class GtkLocksTest(unittest.TestCase):
                 self.assertIs(w.get_focus(), page.control_for(DEPENDS[key][0]), key)
 
     def test_a_controller_locks_and_unlocks_at_once(self):
-        w = self.window(
-            {"AutoNonVnRestore": "True", "UseLotusIcons": "False", "EnableMacro": "True"}
-        )
+        w = self.window({"AutoNonVnRestore": "True", "EnableMacro": "True"})
         for controller, locked, switch in (
             (w.typing.rows["AutoNonVnRestore"], w.typing.rows["DdFreeStyle"], True),
-            (w.appearance.rows["UseLotusIcons"], w.appearance.rows["IconTheme"], False),
             (w.macros.switches["EnableMacro"], w.macros.formats["DateFormat"], True),
         ):
             self.assertTrue(locked.get_sensitive())

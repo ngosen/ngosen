@@ -60,11 +60,11 @@ msgstr "Tự động"
 
 #: src/ngosen-config.h:92
 msgid "Light"
-msgstr "Sáng"
+msgstr "Hợp panel sáng"
 
 #: src/ngosen-config.h:92
 msgid "Dark"
-msgstr "Tối"
+msgstr "Hợp panel tối"
 
 #: src/ngosen-config.h:199
 msgid "Key"
@@ -330,10 +330,6 @@ msgstr "Vẫn gõ dd ra đ khi tự khôi phục"
 #: src/ngosen-engine.cpp
 msgid "Teencode"
 msgstr "Teencode"
-
-#: src/ngosen-config.h:244
-msgid "Use Ngó Sen Status Icons"
-msgstr "Sử dụng biểu tượng trạng thái Ngó Sen"
 
 #: src/ngosen-config.h
 msgid "Show Input Method in the tray menu"
@@ -1229,7 +1225,7 @@ msgstr "Biểu tượng khay khi gõ tiếng Việt và tiếng Anh"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Vietnamese, English"
-msgstr "Tiếng Việt, tiếng Anh"
+msgstr "tiếng Việt, tiếng Anh"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Show in the tray menu"
@@ -1717,17 +1713,57 @@ msgstr "Chuyển app đang dùng sang chế độ kế tiếp trong danh sách b
 msgid "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) to follow the global setting and switch key again; OFF stays set for the app and keeps it in English even when other apps type Vietnamese. With All apps, the switch key in an OFF app opens the mode menu; pick Sen or Preedit there to type Vietnamese in that app."
 msgstr "Khi menu chế độ đang mở, bấm phím của một chế độ để chọn cho app đang dùng. Chọn chế độ mặc định của app (thường là Gõ Sen, đôi khi là Gạch chân) để app lại theo thiết lập chung và phím chuyển; Tắt vẫn được nhớ riêng cho app và giữ app gõ tiếng Anh ngay cả khi các app khác gõ tiếng Việt. Khi chọn Mọi app, bấm phím chuyển trong app đặt Tắt sẽ mở menu chế độ; chọn Gõ Sen hoặc Gạch chân tại đó để app gõ tiếng Việt."
 
+#: settings-gui/core/catalog.py
+msgid "V / E and vi / en take the colour picked below."
+msgstr "V / E và vi / en có màu theo ô chọn màu bên dưới."
+
+#: settings-gui/core/catalog.py
+msgid "Square SVG, or PNG from 64×64, on a transparent background."
+msgstr "Ảnh vuông SVG, hoặc PNG từ 64×64, nền trong suốt."
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/appearance.py
+msgid "Choose…"
+msgstr "Chọn…"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/appearance.py
+msgid "Default"
+msgstr "Mặc định"
+
+#: settings-gui/core/catalog.py
+msgid "Choose the tray image for Vietnamese"
+msgstr "Chọn ảnh khay khi gõ tiếng Việt"
+
+#: settings-gui/core/catalog.py
+msgid "Remove the tray image for Vietnamese"
+msgstr "Xoá ảnh khay khi gõ tiếng Việt"
+
+#: settings-gui/core/catalog.py
+msgid "Choose the tray image for English"
+msgstr "Chọn ảnh khay khi gõ tiếng Anh"
+
+#: settings-gui/core/catalog.py
+msgid "Remove the tray image for English"
+msgstr "Xoá ảnh khay khi gõ tiếng Anh"
+
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Off: plain one-colour icons, in the colour picked below."
-msgstr "Tắt: dùng biểu tượng một màu, theo màu chọn bên dưới."
+msgid "Images (*.svg *.png)"
+msgstr "Ảnh (*.svg *.png)"
+
+#: settings-gui/ui_gtk/appearance.py
+msgid "Images"
+msgstr "Ảnh"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/appearance.py
+msgid "Could not use this image: {}"
+msgstr "Không dùng được ảnh này: {}"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Large draws the Ngó Sen icon bigger in its tray slot. No change on GNOME, where it already fills the slot."
 msgstr "Lớn: biểu tượng Ngó Sen to hơn trong ô của nó trên khay. Trên GNOME không đổi, vì biểu tượng đã đầy ô."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
-msgstr "Chỉ dùng cho biểu tượng một màu. Sáng hợp panel sáng, Tối hợp panel tối, Tự động theo chế độ sáng/tối của máy."
+msgid "Light suits a light panel, Dark a dark one; Auto follows the light or dark setting of the desktop."
+msgstr "Tự động theo chế độ sáng/tối của máy."
 
 #: settings-gui/ui/main_window.py
 msgid "What's new & tips"

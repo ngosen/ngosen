@@ -558,7 +558,7 @@ namespace ngosen {
     // A quick switch to another field on the same context comes back like a bounce. The first settled
     // report after it tells which: the same field still has the word before the cursor.
     bool TypingState::lostWordAfterBounce(const Surrounding& s, bool settling) {
-        if (!checkWordAfterBounce_ || is_deleting_.load(std::memory_order_acquire) || deferred_commit_pending_ || unreportedCommitLength_ > 0)
+        if (!checkWordAfterBounce_ || is_deleting_.load(std::memory_order_acquire) || deferred_commit_.pending || unreportedCommitLength_ > 0)
             return false;
         if (reportTrailsFirstWord(s))
             return false;

@@ -331,9 +331,9 @@ namespace ngosen {
         // Focus loss is not inside a key event, and the field is going away, so it commits at once.
         const bool defer = (host_->field().frontend == "dbus" || std::string(reason) == "event") && std::string(reason) != "focus lost";
         if (defer) {
-            deferred_commit_text_    = pending_commit_string_;
-            deferred_commit_pending_ = true;
-            deferred_commit_timer_   = host_->startTimer(ngosen::monotonicUs(), 0, [this](ngosen::Timer&) {
+            deferred_commit_.text    = pending_commit_string_;
+            deferred_commit_.pending = true;
+            deferred_commit_.timer   = host_->startTimer(ngosen::monotonicUs(), 0, [this](ngosen::Timer&) {
                 flushDeferredCommit();
                 return false; // never reset a timer from inside its own callback
             });
@@ -349,12 +349,12 @@ namespace ngosen {
     }
 
     void TypingState::flushDeferredCommit() {
-        if (!deferred_commit_pending_) {
+        if (!deferred_commit_.pending) {
             return;
         }
-        deferred_commit_pending_ = false;
-        std::string text         = std::move(deferred_commit_text_);
-        deferred_commit_text_.clear();
+        deferred_commit_.pending = false;
+        std::string text         = std::move(deferred_commit_.text);
+        deferred_commit_.text.clear();
         replayBufferedKeys(std::move(text));
     }
 
@@ -1061,32 +1061,32 @@ namespace ngosen {
         }
         if (holdUs > 0) {
             engine_->recorder().add("hold", std::to_string(holdUs / 1000) + " ms");
-            split_edit_pending_      = true;
+            split_edit_.pending      = true;
             surr_wait_focus_retries_ = 0;
-            split_edit_surrounding_  = surrounding;
-            split_edit_retype_       = retype;
+            split_edit_.surrounding  = surrounding;
+            split_edit_.retype       = retype;
             const uint64_t until     = monotonicUs() + holdUs;
             // A replay from the timer can start the next split, so the timer is rearmed rather than replaced.
-            if (split_edit_timer_) {
-                split_edit_timer_->rearm(until);
+            if (split_edit_.timer) {
+                split_edit_.timer->rearm(until);
                 return;
             }
-            split_edit_timer_ = host_->startTimer(until, 1000, [this](Timer& t) {
+            split_edit_.timer = host_->startTimer(until, 1000, [this](Timer& t) {
                 if (!host_->hasFocus()) {
                     if (++surr_wait_focus_retries_ <= SplitEditFocusRetries) {
                         t.rearm(monotonicUs() + 2000);
                         return true;
                     }
-                    split_edit_pending_ = false;
+                    split_edit_.pending = false;
                     dropReplacementAfterFocusLoss();
                     is_deleting_.store(false);
                     return false;
                 }
-                split_edit_pending_    = false;
-                const Surrounding copy = split_edit_surrounding_;
-                const std::string text = split_edit_retype_;
+                split_edit_.pending    = false;
+                const Surrounding copy = split_edit_.surrounding;
+                const std::string text = split_edit_.retype;
                 finishSurroundingEdit(copy, text);
-                return split_edit_pending_;
+                return split_edit_.pending;
             });
             return;
         }
@@ -1096,9 +1096,9 @@ namespace ngosen {
     // Chromium's address bar ignores deletions while its autocompletion is selected, and only a commit
     // removes that. The space cannot complete to anything, and goes with the word's old letters.
     void TypingState::clearSelectedTailThenReplace(const Surrounding& surrounding) {
-        tail_clear_pending_      = true;
+        tail_clear_.pending      = true;
         surr_wait_focus_retries_ = 0;
-        tail_clear_copy_         = Surrounding(textBeforeCursor(surrounding), surrounding.cursor(), surrounding.cursor());
+        tail_clear_.copy         = Surrounding(textBeforeCursor(surrounding), surrounding.cursor(), surrounding.cursor());
         committing_              = true;
         flushComposedCommit();
         host_->commitText(" ");
@@ -1106,25 +1106,25 @@ namespace ngosen {
         NGOSEN_INFO("Commit a space over the selected text after the cursor");
         const uint64_t until = monotonicUs() + SplitEditWaitUs;
         // A replay from the timer can select again, so the timer is rearmed rather than replaced.
-        if (tail_clear_timer_) {
-            tail_clear_timer_->rearm(until);
+        if (tail_clear_.timer) {
+            tail_clear_.timer->rearm(until);
             return;
         }
-        tail_clear_timer_ = host_->startTimer(until, 1000, [this](Timer& t) {
+        tail_clear_.timer = host_->startTimer(until, 1000, [this](Timer& t) {
             if (!host_->hasFocus()) {
                 if (++surr_wait_focus_retries_ <= SplitEditFocusRetries) {
                     t.rearm(monotonicUs() + 2000);
                     return true;
                 }
-                tail_clear_pending_ = false;
+                tail_clear_.pending = false;
                 dropReplacementAfterFocusLoss();
                 is_deleting_.store(false);
                 return false;
             }
-            tail_clear_pending_    = false;
-            const Surrounding copy = tail_clear_copy_;
+            tail_clear_.pending    = false;
+            const Surrounding copy = tail_clear_.copy;
             replaceThroughSurrounding(copy, 1);
-            return tail_clear_pending_;
+            return tail_clear_.pending;
         });
     }
 
@@ -1149,7 +1149,7 @@ namespace ngosen {
         echoKeyAtUs_               = 0;
         const Surrounding& copy    = host_->surrounding();
         const std::string  key     = host_->keyText(keyEvent.sym());
-        const bool         editing = is_deleting_.load(std::memory_order_acquire) || split_edit_pending_ || key_report_.pending || !buffered_keys_.empty();
+        const bool         editing = is_deleting_.load(std::memory_order_acquire) || split_edit_.pending || key_report_.pending || !buffered_keys_.empty();
         if (!ngosen::keepsLastEditPerTurn(host_->field()) || !paused || keySinceReport_ || editing || !copy.isValid() || copy.cursor() != copy.anchor())
             return;
         if ((keyEvent.states() & ~ngosen::modifier::Shift) != 0 || key.size() != 1)
@@ -1385,7 +1385,7 @@ namespace ngosen {
             return;
         // mutter keeps one commit per turn and a busy shell can hold a turn open, so asking before the
         // edit has come out could replace its commit.
-        if (split_edit_pending_ || tail_clear_pending_ || !composedCommit_.empty() ||
+        if (split_edit_.pending || tail_clear_.pending || !composedCommit_.empty() ||
             (ngosen::keepsLastEditPerTurn(host_->field()) && !reportSinceEdit_ && monotonicUs() < editSentAtUs_ + EditOutWaitUs)) {
             report_request_waits_ = true;
             startReportRequestTimer();

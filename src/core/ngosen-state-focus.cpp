@@ -35,14 +35,14 @@ namespace ngosen {
             key_report_.timer.reset();
             dropReplacementAfterFocusLoss();
         }
-        if (split_edit_pending_ && !resume) {
-            split_edit_pending_ = false;
-            split_edit_timer_.reset();
+        if (split_edit_.pending && !resume) {
+            split_edit_.pending = false;
+            split_edit_.timer.reset();
             dropReplacementAfterFocusLoss();
         }
-        if (tail_clear_pending_ && !resume) {
-            tail_clear_pending_ = false;
-            tail_clear_timer_.reset();
+        if (tail_clear_.pending && !resume) {
+            tail_clear_.pending = false;
+            tail_clear_.timer.reset();
             dropReplacementAfterFocusLoss();
         }
         // A page may move focus into its text field after the user selected text elsewhere on it.

@@ -484,10 +484,14 @@ namespace ngosen {
         // fcitx5-gtk sends text committed while it processes a key event in the reply to that key.
         // The sentinel Backspace is consumed, and some clients (ghostty, foot) then drop the text.
         // Commit on the next event loop turn instead. Upstream fcitx5-lotus 2ca89a5.
-        void                           flushDeferredCommit();
-        std::unique_ptr<ngosen::Timer> deferred_commit_timer_;
-        std::string                    deferred_commit_text_;
-        bool                           deferred_commit_pending_ = false;
+        void flushDeferredCommit();
+        // A commit put off to the next turn of the event loop.
+        struct DeferredCommit {
+            std::unique_ptr<ngosen::Timer> timer;
+            std::string                    text;
+            bool                           pending = false;
+        };
+        DeferredCommit deferred_commit_;
 
         // Last surrounding text the app reported, to tell a click from an edit.
         std::string  lastSurroundingText_;
@@ -593,19 +597,27 @@ namespace ngosen {
             const CopyWait need = copyWaitNeed();
             return need == CopyWait::No || need == CopyWait::Fits;
         }
-        bool                           waitsForCopy();
-        bool                           checksGetAnswered() const;
-        bool                           copyWaitRetry_         = false; ///< this wait is the one tried again in a held-back field
-        static constexpr int           RecentChecks           = 8;
-        static constexpr int           CopyWaitsHeldBackLimit = 4;
+        bool                 waitsForCopy();
+        bool                 checksGetAnswered() const;
+        bool                 copyWaitRetry_         = false; ///< this wait is the one tried again in a held-back field
+        static constexpr int RecentChecks           = 8;
+        static constexpr int CopyWaitsHeldBackLimit = 4;
 
-        std::unique_ptr<ngosen::Timer> split_edit_timer_;
-        bool                           split_edit_pending_ = false;
-        Surrounding                    split_edit_surrounding_;
-        std::string                    split_edit_retype_;
-        std::unique_ptr<ngosen::Timer> tail_clear_timer_;
-        bool                           tail_clear_pending_ = false;
-        Surrounding                    tail_clear_copy_;
+        // A deletion already sent whose new text waits for the app to show it.
+        struct SplitEdit {
+            std::unique_ptr<ngosen::Timer> timer;
+            bool                           pending = false;
+            Surrounding                    surrounding;
+            std::string                    retype;
+        };
+        SplitEdit split_edit_;
+        // A space committed over a selected autocompletion, with the replacement to follow.
+        struct TailClear {
+            std::unique_ptr<ngosen::Timer> timer;
+            bool                           pending = false;
+            Surrounding                    copy;
+        };
+        TailClear tail_clear_;
 
         /**
          * @brief Checks if autofill is certain for surrounding text.

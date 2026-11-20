@@ -543,23 +543,39 @@ namespace {
         check(text == "chào. ", "ibus: a space held during a timed wait still counts for double space", text);
     }
 
-    std::string typedWithTeencode(bool on) {
+    // \b in typed is Backspace.
+    std::string typedWithTeencode(bool on, const Field& field = makeField("wayland", true), const std::string& typed = "zaayj ") {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
         FakeLoop            loop;
         FakeResources       resources;
-        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{});
         auto*               app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
         state.activate(ngosen::Mode::Sen, false);
         state.setTeencodeOn(on);
-        for (const char c : std::string("zaayj ")) {
-            app->type(static_cast<uint32_t>(c));
+        for (const char c : typed) {
+            app->type(c == '\b' ? ngosen::key::BackSpace : static_cast<uint32_t>(c));
             loop.pump(30);
         }
         loop.pump(300);
         return app->text();
+    }
+
+    // In Sen the app deletes the letter itself, so the engine has to keep the tone it shows (#898).
+    void testBackspaceInStretchedWordSen() {
+        const std::vector<std::tuple<bool, std::string, std::string>> cases = {
+            {false, "chaiiif\b ", "chàii "}, {false, "chaiiif\bi ", "chàiii "}, {false, "aaaf\b ", "àà "}, {true, "fair\b ", "fả "}, {true, "nhuwgx\b ", "nhữ "},
+        };
+        for (const auto& [teencode, typed, want] : cases) {
+            std::string printable = typed;
+            std::replace(printable.begin(), printable.end(), '\b', '<');
+            for (const auto& [frontend, surroundingText] : {std::pair<const char*, bool>{"wayland", true}, {"ibus", false}}) {
+                const std::string text = typedWithTeencode(teencode, makeField(frontend, surroundingText), typed);
+                check(text == want, std::string("backspace in a stretched word, Sen (") + frontend + "): " + printable, text);
+            }
+        }
     }
 
     void testTeencodePerApp() {
@@ -5888,6 +5904,7 @@ int main() {
     testLongCheckLeavesFocus();
     testUnansweredChecksLeaveNoMark();
     testTeencodePerApp();
+    testBackspaceInStretchedWordSen();
     check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

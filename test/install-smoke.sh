@@ -1103,6 +1103,39 @@ check_restart_through_kwin() {
     bus=
 }
 
+check_wps_input_method() {
+    local saved_path=$stub_path dir=$work/flatpak-stub launchers=$home/.local/share/applications
+    local overrides=$home/.stub-flatpak-overrides
+    mkdir -p "$dir"
+    # Records what an override sets, which --show prints back.
+    cat >"$dir/flatpak" <<STUB
+#!/bin/bash
+case "\$*" in
+    "info com.wps.Office") exit 0 ;;
+    "override --user --show com.wps.Office") cat "$overrides" 2>/dev/null ;;
+    "override --user --env="*" com.wps.Office") echo "\${3#--env=}" >>"$overrides" ;;
+    *) exit 1 ;;
+esac
+STUB
+    chmod a+rx "$dir/flatpak"
+    printf '[Desktop Entry]\nName=WPS Writer\nExec=/usr/bin/wps %%U\nType=Application\n' >/usr/share/applications/wps-office-wps.desktop
+    printf '[Desktop Entry]\nName=WPS Spreadsheets\nExec=/usr/bin/et %%F\nType=Application\n' >/usr/share/applications/wps-office-et.desktop
+    as_user mkdir -p "$launchers"
+    printf '[Desktop Entry]\nName=My Spreadsheets\nExec=/usr/bin/et %%F\n' | as_user tee "$launchers/wps-office-et.desktop" >/dev/null
+    stub_path=$dir:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+    check "a run with WPS installed succeeds" install_logged
+    check "the WPS launcher sets QT_IM_MODULE" has_line "$launchers/wps-office-wps.desktop" 'Exec=env QT_IM_MODULE=fcitx /usr/bin/wps %U'
+    check "the WPS launcher hides once WPS is removed" has_line "$launchers/wps-office-wps.desktop" 'TryExec=/usr/bin/wps'
+    check "a WPS launcher the user made stays theirs" has_line "$launchers/wps-office-et.desktop" 'Name=My Spreadsheets'
+    check "the WPS Flatpak gets QT_IM_MODULE" has_line "$overrides" 'QT_IM_MODULE=fcitx'
+    check "a second run succeeds" install_logged
+    check "it sets the Flatpak variable once" test "$(grep -c . "$overrides")" -eq 1
+
+    rm -f /usr/share/applications/wps-office-{wps,et}.desktop "$launchers"/wps-office-{wps,et}.desktop "$overrides"
+    stub_path=$saved_path
+}
+
 remove_repo_files() {
     rm -f "$apt_list" "$apt_keyring" "$repo_record" /etc/apt/sources.list.d/user.sources /etc/apt/keyrings/user.gpg
 }
@@ -1412,6 +1445,8 @@ main() {
     if [ "$session" = kde ]; then
         echo "== fcitx5 that KWin started"
         check_restart_through_kwin
+        echo "== WPS Office on KDE"
+        check_wps_input_method
     fi
 
     if [ "$session" = gnome ] && command -v im-config >/dev/null 2>&1; then

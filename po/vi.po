@@ -505,8 +505,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.12: emoji suggestions while typing, and the settings window opens Check my machine when a setup step is left. See What's new for more."
-msgstr "Version 1.12: gợi ý emoji khi gõ, và cửa sổ cài đặt tự mở trang Kiểm tra máy khi còn bước thiết lập chưa xong. Xem thêm ở trang Có gì mới."
+msgid "Version 1.13: one switch key for every app, emoji at the end of a sentence, drawn-out letters and teencode. See What's new for more."
+msgstr "Version 1.13: một phím chuyển cho mọi app, gợi ý emoji ở cuối câu, gõ kéo dài chữ và teencode. Xem thêm ở trang Có gì mới."
 
 #: src/ngosen-engine.cpp
 msgid "Show"
@@ -1917,6 +1917,38 @@ msgstr "Không đổi được"
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
 msgstr "Hãy xem fcitx5 có đang chạy không."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji at the end of a sentence"
+msgstr "Gợi ý emoji ở cuối câu"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab, or a number in Telex, to pick one. On GNOME without the Input Method Panel extension they show right in the field. English words such as cat or thumbs up count too, and the Emoji page can export and import your words."
+msgstr "Emoji nay chờ tới cuối câu: gõ . ! ? hoặc dừng tay, rồi bấm Tab, hay bấm số khi gõ Telex, để chọn. Trên GNOME không có extension Input Method Panel, gợi ý hiện ngay trong ô. Từ tiếng Anh như cat hay thumbs up cũng có emoji, và trang Emoji xuất, nhập được từ gợi ý của bạn."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Drawn-out letters"
+msgstr "Gõ kéo dài chữ"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Repeat the last letter of a marked word and it repeats with its mark, instead of bringing back the keys you typed. English words such as besttt stay as typed."
+msgstr "Gõ lặp chữ cái cuối của một từ có dấu thì chữ đó lặp lại cùng dấu, thay vì hiện lại các phím đã gõ. Từ tiếng Anh như besttt vẫn giữ nguyên."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Teencode for chosen apps"
+msgstr "Teencode cho từng app"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Turn teencode on for one app with the teencode key in the ` menu. Words like zậy, đag and nhưg then keep their marks. It is off by default."
+msgstr "Bật teencode riêng cho một app bằng phím teencode trong menu `. Khi đó chữ như zậy, đag, nhưg giữ dấu. Mặc định tắt."
+
+#: settings-gui/core/whats_new_content.py
+msgid "A command for your own shortcut"
+msgstr "Lệnh chuyển Anh/Việt cho phím tắt riêng"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Bind the ngosen-toggle command to a desktop shortcut to switch between English and Vietnamese, even when no text field has focus."
+msgstr "Gán lệnh ngosen-toggle cho một phím tắt của desktop để chuyển Anh/Việt, kể cả khi không có ô nhập nào đang focus."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Emoji while typing"

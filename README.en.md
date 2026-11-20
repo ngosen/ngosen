@@ -116,7 +116,7 @@ The command adds Ngó Sen to the input method list and sets it up for your deskt
   [Input Method Panel](https://extensions.gnome.org/extension/261/) extension so the input method icon
   and menu appear in the top bar.
 - KDE Plasma (Wayland): selects fcitx5 in System Settings → Virtual Keyboard so Qt apps such as Kate
-  and Dolphin can also use it.
+  and Dolphin can also use it. If WPS Office is installed, sets `QT_IM_MODULE=fcitx` for WPS only.
 - Xfce, Cinnamon, MATE (X11, Debian and Ubuntu): uses im-config to set fcitx5 as the input method.
 - Sway, Hyprland: run the one-line installer from a terminal in your desktop session to add Ngó Sen to
   the input method list and start fcitx5. No logout is needed; just press the toggle key to start typing.
@@ -271,6 +271,10 @@ If Ngó Sen has never been set up on your machine, installing from a repo, a dow
   mkdir -p ~/.config/environment.d
   echo 'XMODIFIERS=@im=fcitx' > ~/.config/environment.d/90-ngosen.conf
   ```
+
+  WPS Office needs `QT_IM_MODULE=fcitx`: for the Flatpak run
+  `flatpak override --user --env=QT_IM_MODULE=fcitx com.wps.Office`; for the package, put
+  `env QT_IM_MODULE=fcitx ` in front of the command on each WPS launcher's `Exec=` line.
 
 - On Xfce, Cinnamon and MATE on Debian/Ubuntu/Mint, run `im-config -n fcitx5`, then log out and back in.
   If IBus is installed, this step makes fcitx5 start at login and work in XIM apps such as PlanMaker.

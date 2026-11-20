@@ -27,6 +27,48 @@ FEATURES = [
         "target": ("setting", "ToggleScope"),
     },
     {
+        "version": "1.13",
+        "title": N_("Emoji at the end of a sentence"),
+        "how": N_(
+            "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab, or a "
+            "number in Telex, to pick one. On GNOME without the Input Method Panel extension they "
+            "show right in the field. English words such as cat or thumbs up count too, and the Emoji "
+            "page can export and import your words."
+        ),
+        "example": "",
+        "target": ("page", "emoji"),
+    },
+    {
+        "version": "1.13",
+        "title": N_("Drawn-out letters"),
+        "how": N_(
+            "Repeat the last letter of a marked word and it repeats with its mark, instead of "
+            "bringing back the keys you typed. English words such as besttt stay as typed."
+        ),
+        "example": "afaaa → àààà, ddusngggg → đúngggg",
+        "target": None,
+    },
+    {
+        "version": "1.13",
+        "title": N_("Teencode for chosen apps"),
+        "how": N_(
+            "Turn teencode on for one app with the teencode key in the ` menu. Words like zậy, đag "
+            "and nhưg then keep their marks. It is off by default."
+        ),
+        "example": "nhuwgx → nhữg",
+        "target": ("setting", "ShortcutTeencode"),
+    },
+    {
+        "version": "1.13",
+        "title": N_("A command for your own shortcut"),
+        "how": N_(
+            "Bind the ngosen-toggle command to a desktop shortcut to switch between English and "
+            "Vietnamese, even when no text field has focus."
+        ),
+        "example": "",
+        "target": None,
+    },
+    {
         "version": "1.12",
         "title": N_("Emoji while typing"),
         "how": N_(

@@ -461,6 +461,12 @@ namespace ngosen {
         replayBufferedKeys(std::move(text));
     }
 
+    void TypingState::deleteBeforeCursor(size_t chars) {
+        flushComposedCommit();
+        sinceFocus_.erasedSinceReport = -1;
+        host_->deleteSurrounding(-static_cast<int>(chars), static_cast<unsigned int>(chars));
+    }
+
     bool TypingState::editInFlight() const {
         return is_deleting_.load(std::memory_order_acquire) || edit_hold_;
     }

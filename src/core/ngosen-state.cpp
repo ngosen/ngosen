@@ -625,9 +625,7 @@ namespace ngosen {
         if (dropped.empty())
             length = static_cast<int>(ngosen::utf8::length(word)) + 1;
         keyEvent.accept();
-        flushComposedCommit();
-        sinceFocus_.erasedSinceReport = -1;
-        host_->deleteSurrounding(-length, static_cast<unsigned int>(length));
+        deleteBeforeCursor(length);
         EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
         ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         host_->showPreedit(preedit ? preedit.get() : "", false);

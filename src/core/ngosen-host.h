@@ -24,6 +24,7 @@ namespace ngosen {
         ShiftReturn,
         Tab,
         ShiftTab,
+        F2,
     };
 
     // The text around the cursor as the app last reported it. Positions count characters.

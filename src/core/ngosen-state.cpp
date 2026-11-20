@@ -112,6 +112,11 @@ namespace ngosen {
         }
         if (currentSym == ngosen::key::space)
             EngineSetDropKeptTail(bambooEngine_.handle(), mayFixKeptWord(true) ? 1 : 0);
+        const auto hasPreedit = [this] {
+            ngosen::UniqueCPtr<char> shown(EnginePullPreedit(bambooEngine_.handle()));
+            return shown && *shown.get() != 0;
+        };
+        const bool startsWord = !hasPreedit();
         const bool engineTook = EngineProcessKeyEvent(bambooEngine_.handle(), currentSym, keyEvent.states()) != 0U;
         if (engineTook)
             keyEvent.accept();
@@ -127,6 +132,9 @@ namespace ngosen {
                     holdEnterAfterCommit(keyEvent);
             }
         }
+        // F2 opens the cell, and leaves an open one as it is.
+        if (startsWord && hasPreedit() && ngosen::opensCellOnKeyOnly(host_->field()))
+            forwardTap(ngosen::EditKey::F2);
         host_->resetPanel();
         ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         if (preedit && (*preedit.get() != 0)) {

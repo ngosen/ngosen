@@ -280,6 +280,10 @@ namespace ngosen {
             (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc"));
     }
 
+    bool opensCellOnKeyOnly(const Field& field) {
+        return pageMayKeepOwnText(field) && field.caretHeight > 0 && field.caretHeight < 4;
+    }
+
     bool mayShowWebTerminal(const Field& field) {
         const std::string program = appName(field);
         return isFirefoxFamily(program) || program == "epiphany" || program == "org.gnome.Epiphany" || isStartsWith(program, "vaultid") || isElectronCodeEditorName(program) ||

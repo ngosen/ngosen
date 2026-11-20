@@ -151,6 +151,8 @@ namespace ngosen::test {
             FakeKey again(sym, false, modifier::Repeat, time);
             state_->keyEvent(again);
         }
+        if (!down.accepted() && quirks_.opensCellOnKeyOnly)
+            cellOpen_ = sym != key::Return && (cellOpen_ || !keyText(sym).empty());
         if (!down.accepted()) {
             if (sym == key::Return && quirks_.showsEnter)
                 later(quirks_.lagMs, [this, soft = state == modifier::Shift] { insert(soft ? U"\u2028" : U"\n", true); });
@@ -334,7 +336,7 @@ namespace ngosen::test {
         }
         bounceAfterEdit();
         later(quirks_.lagMs + quirks_.commitLagMs, [this, text] {
-            if (focused_ && redraws_ == 0) {
+            if (focused_ && redraws_ == 0 && (cellOpen_ || !quirks_.opensCellOnKeyOnly)) {
                 lastCommit_ = utf8::decode(text);
                 insert(lastCommit_);
             }
@@ -376,6 +378,10 @@ namespace ngosen::test {
         }
         if ((key == EditKey::Return || key == EditKey::ShiftReturn) && !release && quirks_.showsEnter && !quirks_.dropsForwardedKeys) {
             later(quirks_.lagMs, [this, key] { insert(key == EditKey::ShiftReturn ? U"\u2028" : U"\n", true); });
+            return;
+        }
+        if (key == EditKey::F2 && !release && !quirks_.dropsForwardedKeys) {
+            later(quirks_.lagMs, [this] { cellOpen_ = true; });
             return;
         }
         if (key == EditKey::Right && !release && !quirks_.dropsForwardedKeys) {

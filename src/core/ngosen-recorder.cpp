@@ -50,6 +50,7 @@ namespace ngosen {
                 case EditKey::ShiftReturn: return "Shift+Return";
                 case EditKey::Tab: return "Tab";
                 case EditKey::ShiftTab: return "Shift+Tab";
+                case EditKey::F2: return "F2";
             }
             return "?";
         }

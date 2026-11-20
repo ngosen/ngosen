@@ -2102,6 +2102,33 @@ namespace {
         }
     }
 
+    // Lark Sheets edits a cell through a hidden input with a 2 px caret and opens the cell only on a key.
+    void testPreeditOpensCellByKey() {
+        const auto typeInCell = [](int caretHeight) {
+            realMode = ngosen::Mode::Preedit;
+            realtextLen.store(0);
+            FakeResources resources;
+            FakeLoop      loop;
+            auto          field       = makeField("wayland", true, "microsoft-edge");
+            field.caretHeight         = caretHeight;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.opensCellOnKeyOnly = true});
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("tieengs vieetj ")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(100);
+            }
+            loop.pump(500);
+            return app->text();
+        };
+        const std::string cell = typeInCell(2);
+        check(cell == "tiếng việt ", "preedit in a cell that opens on a key only: the words reach the cell", cell);
+        // A field with a normal caret gets no F2.
+        const std::string plain = typeInCell(17);
+        check(plain.empty(), "preedit in a field with a normal caret: no F2 is sent", plain);
+    }
+
     // Luckysheet keeps one editor for every cell: a click on another cell bounces focus and the editor
     // still shows the last cell until the next key replaces it.
     void testClickCellOpenedByKey() {
@@ -5823,6 +5850,7 @@ int main() {
     testRecorderLimits();
     testRecorderSkipsRepeatedReports();
     testFocusBounce();
+    testPreeditOpensCellByKey();
     testClickCellOpenedByKey();
     testTypingIntoSuggestion();
     testClickAfterTypingIsNotSuggestion();

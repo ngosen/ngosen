@@ -109,7 +109,10 @@ namespace ngosen::test {
         bool resendsOnEmptyCommit = false;
         // With movesCursorBeforeText, shows the deletion first with the cursor still past the commit, as
         // CKEditor in Firefox on Plasma does.
-        bool        showsDeletionWithCursorPast = false;
+        bool showsDeletionWithCursorPast = false;
+        // Drops commits until a key press opens the cell and closes it on Enter, as Lark Sheets does,
+        // which ignores a composition.
+        bool        opensCellOnKeyOnly = false;
         std::string textAfterCursor; // text the field starts with, after the cursor
     };
 
@@ -386,6 +389,7 @@ namespace ngosen::test {
         bool                                showsMovedCursor_ = false;
         bool                                holdsUnreported_  = false;
         bool                                cellOpensOnKey_   = false;
+        bool                                cellOpen_         = false;
         bool                                ctrlDown_         = false;
         int                                 emptyCommits_     = 0;
         int                                 deletions_        = 0;

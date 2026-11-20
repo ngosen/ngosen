@@ -464,7 +464,7 @@ namespace ngosen {
     void TypingState::deleteBeforeCursor(size_t chars) {
         flushComposedCommit();
         sinceFocus_.erasedSinceReport = -1;
-        host_->deleteSurrounding(-static_cast<int>(chars),static_cast<unsigned int>(chars));
+        host_->deleteSurrounding(-static_cast<int>(chars), static_cast<unsigned int>(chars));
     }
 
     bool TypingState::editInFlight() const {

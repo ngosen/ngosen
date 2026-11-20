@@ -446,11 +446,15 @@ msgstr "Lớn"
 
 #: src/ngosen-config.h
 msgid "Tray Icon Shows"
-msgstr "Khay hiển thị"
+msgstr "Khay hiện"
 
 #: src/ngosen-config.h
-msgid "Icon"
-msgstr "Biểu tượng"
+msgid "Colour icon"
+msgstr "Biểu tượng màu"
+
+#: src/ngosen-config.h
+msgid "One-colour icon"
+msgstr "Biểu tượng một màu"
 
 #: src/ngosen-config.h
 msgid "Interface Language"

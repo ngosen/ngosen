@@ -2050,14 +2050,14 @@ namespace fcitx {
     }
 
     std::string NgoSenEngine::subModeIconImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
-        const auto        kind       = *config_.trayIconKind;
-        const bool        vietnamese = realMode != NgoSenMode::Off;
-        const std::string baseIconName =
-            kind == TrayIconKind::Icon ? (vietnamese ? "fcitx-ngosen" : "fcitx-ngosen-off") : trayTextIconName(vietnamese, kind == TrayIconKind::LanguageCode);
+        const auto        kind         = *config_.trayIconKind;
+        const bool        vietnamese   = realMode != NgoSenMode::Off;
+        const bool        letters      = kind == TrayIconKind::Letter || kind == TrayIconKind::LanguageCode;
+        const std::string baseIconName = letters ? trayTextIconName(vietnamese, kind == TrayIconKind::LanguageCode) : (vietnamese ? "fcitx-ngosen" : "fcitx-ngosen-off");
 
-        // The letters have no tile, only the plain colours.
+        // Only the colour icon has a tile; the rest take the plain colours.
         auto style = TrayIconStyle::Tile;
-        if (kind != TrayIconKind::Icon || !*config_.useNgoSenIcons) {
+        if (kind != TrayIconKind::ColourIcon) {
             const auto& iconTheme = config_.iconTheme.value();
             const bool  darkPanel = iconTheme == IconTheme::Dark || (iconTheme == IconTheme::Auto && isDarkMode());
             style                 = darkPanel ? TrayIconStyle::PlainWhite : TrayIconStyle::PlainBlack;

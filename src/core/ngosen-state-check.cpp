@@ -211,11 +211,7 @@ namespace ngosen {
         }
         const std::string extra = leftOver + check.added;
         NGOSEN_INFO("Fix the dropped deletion with " + std::to_string(utf8::length(extra)) + " backspaces");
-        commitNotSeen_.clear();
-        pending_commit_string_         = check.added;
-        expected_backspaces_           = static_cast<int>(utf8::length(extra));
-        deletedChars_                  = expected_backspaces_;
-        current_backspace_count_       = 0;
+        beginReplacement(extra, check.added);
         surr_wait_prefix_              = check.prefix;
         surr_wait_deleted_             = extra;
         surr_wait_sent_snapshot_       = reportKey(report);

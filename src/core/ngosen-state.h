@@ -680,6 +680,8 @@ namespace ngosen {
 
         // Replaces deletedPart, the end of word, with addedPart. word is what the app shows of the word being edited.
         void performReplacement(const std::string& word, const std::string& deletedPart, const std::string& addedPart);
+        // Resets the counts a replacement is checked against.
+        void beginReplacement(const std::string& deletedPart, const std::string& addedPart);
         // Remembers what the app showed when the replacement started, to tell when it is done.
         void recordSendSnapshot(const std::string& word, const std::string& deletedPart);
         bool deletesThroughSurrounding(const ngosen::Surrounding& surrounding);

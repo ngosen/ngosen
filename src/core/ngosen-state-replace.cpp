@@ -461,6 +461,10 @@ namespace ngosen {
         replayBufferedKeys(std::move(text));
     }
 
+    bool TypingState::editInFlight() const {
+        return is_deleting_.load(std::memory_order_acquire) || edit_hold_;
+    }
+
     void TypingState::beginReplacement(const std::string& deletedPart, const std::string& addedPart) {
         // The deletion changes text we committed; the replacement's own commit is what to look for.
         commitNotSeen_.clear();

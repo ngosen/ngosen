@@ -224,6 +224,9 @@ namespace fcitx {
         std::filesystem::path writeTypingLog();
         // Whether GNOME's portal has told which app is focused, for apps GNOME Shell relays.
         bool gnomePortalAnswered() const;
+        // For a desktop shortcut, which reaches the engine while no field may be focused. Returns whether
+        // Vietnamese is on, or nothing when fcitx5 would not switch the field to Ngó Sen.
+        std::optional<bool> toggleFromShortcut();
 
         // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
         std::string getProgramName(InputContext* ic) const;
@@ -253,6 +256,7 @@ namespace fcitx {
         ngosenAppRules                              appRulesTables_;
         ngosenAppSwitches                           appSwitchesTables_;
         mutable ngosenAppNames                      emojiOffAppsTable_; ///< emojiOffApps_ as the settings window reads it
+        mutable ngosenAppNames                      teencodeAppsTable_; ///< teencodeApps_ as the settings window reads it
         ngosenEmojiWords                            emojiWordsTable_;
 
         FactoryFor<TypingStateProperty>             factory_;
@@ -289,6 +293,7 @@ namespace fcitx {
         std::string                                 appRulesPath_;
         std::string                                 vimAppsPath_;
         std::string                                 emojiOffAppsPath_;
+        std::string                                 teencodeAppsPath_;
         std::weak_ptr<CandidateList>                modeMenuList_;
         uint64_t                                    modeMenuQuietSince_ = 0;
         // A modifier-only toggle key fires on release, unless another key came in between.
@@ -302,7 +307,8 @@ namespace fcitx {
         // Instance::eventDispatcher() needs fcitx5 newer than Ubuntu 24.04 and Debian 12 ship.
         EventDispatcher clickDispatcher_;
         // Replaced by the next tip, so pressing the key repeatedly shows one.
-        uint32_t                  convertNotificationId_ = 0;
+        uint32_t                  convertNotificationId_   = 0;
+        uint32_t                  pinnedOffNotificationId_ = 0;
         std::string               iconCacheName_;
         std::string               iconCachePath_;
         static constexpr uint64_t CYCLE_MODE_NOTIFICATION_TIMEOUT_USEC = 800000; // 800ms in microseconds
@@ -326,6 +332,8 @@ namespace fcitx {
         KeySym                                 vimMenuKey_ = FcitxKey_None;
         std::unordered_set<std::string>        emojiOffApps_; ///< Apps where the user turned emoji suggestions off
         KeySym                                 emojiMenuKey_ = FcitxKey_None;
+        std::unordered_set<std::string>        teencodeApps_; ///< Apps where the user turned teencode on
+        KeySym                                 teencodeMenuKey_ = FcitxKey_None;
         // A Wayland click reaches the IM only as a surrounding text update.
         std::unique_ptr<HandlerTableEntry<EventHandler>> cursorJumpWatcher_;
         std::unique_ptr<HandlerTableEntry<EventHandler>> commitWatcher_;
@@ -435,8 +443,13 @@ namespace fcitx {
         void                       toggleVimMode(InputContext* ic);
         bool                       emojiOnFor(const std::string& appName) const;
         void                       loadEmojiOffApps();
+        void                       enlargePanelFont();
         void                       saveEmojiOffApps() const;
         void                       toggleEmoji(InputContext* ic);
+        bool                       teencodeOnFor(const std::string& appName) const;
+        void                       loadTeencodeApps();
+        void                       saveTeencodeApps() const;
+        void                       toggleTeencode(InputContext* ic);
         std::optional<NgoSenMode>  findAppRule(const std::string& appName) const;
         // The mode Vietnamese typing uses: the configured one, unless that is Off.
         NgoSenMode vietnameseMode() const;
@@ -450,6 +463,13 @@ namespace fcitx {
         // Handles the toggle key; returns whether the key was it.
         bool handleToggleKey(KeyEvent& keyEvent);
         void toggleVietnamese(InputContext* ic, bool offerRetype = true);
+        // Per-app switches are only read and written when the toggle key switches each app on its own.
+        bool switchesEachApp() const;
+        // A Vietnamese mode picked for an app turns Vietnamese on for all apps when they switch together.
+        void turnOnForPickedMode(NgoSenMode mode);
+        void toggleWithoutField();
+        // The toggle key in an app the menu keeps in English.
+        void explainPinnedOff(InputContext* ic, const std::string& app);
 
         /**
          * @brief Set application-specific mode rules
@@ -477,8 +497,9 @@ namespace fcitx {
             std::string label;
             KeySym      key;
             bool        visible;
-            bool        vim   = false; // the Vim mode switch rather than a typing mode
-            bool        emoji = false; // the emoji suggestions switch
+            bool        vim      = false; // the Vim mode switch rather than a typing mode
+            bool        emoji    = false; // the emoji suggestions switch
+            bool        teencode = false; // the teencode switch
         };
         // Every mode in the configured order, then the ones the order leaves out.
         std::vector<ModeMenuItem> modeMenuItems();

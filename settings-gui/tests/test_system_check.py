@@ -43,7 +43,7 @@ def titles(found, level=None):
 
 
 class InputPanelTest(unittest.TestCase):
-    TITLE = "Menu and hints do not show in GNOME's search box"
+    TITLE = "Emoji lists can cover the text being typed; menus do not show in GNOME's search box"
 
     def found(self, state, desktop="ubuntu:GNOME"):
         return system_check.evaluate(facts("wayland", desktop, input_panel_state=state))
@@ -80,6 +80,25 @@ class InputPanelTest(unittest.TestCase):
         self.assertEqual(fix("('successful',)\n"), (True, None))
         self.assertEqual(fix("('cancelled',)\n"), (False, None))
         self.assertEqual(fix("", returncode=1), (False, None))
+
+
+class CharsetTest(unittest.TestCase):
+    def test_another_charset_is_a_tip_that_leaves_the_machine_ready(self):
+        found = system_check.steps(
+            facts("wayland", "ubuntu:GNOME", output_charset="Unicode tổ hợp")
+        )
+        tips = [f for f in found if f.title == "Output charset is Unicode tổ hợp, not Unicode"]
+        self.assertEqual([f.level for f in tips], [system_check.TIP])
+        self.assertFalse(tips[0].stops_typing)
+        self.assertEqual(system_check.problems(found), [])
+
+    def test_unicode_adds_nothing(self):
+        found = system_check.steps(facts("wayland", "ubuntu:GNOME"))
+        self.assertFalse([f for f in found if "charset" in f.title])
+
+    def test_the_charset_comes_from_the_ngosen_config(self):
+        handler = FakeDBusHandler(values={"OutputCharset": "TCVN3 (ABC)"})
+        self.assertEqual(system_check.collect(handler, env={}).output_charset, "TCVN3 (ABC)")
 
 
 class EvaluateTest(unittest.TestCase):
@@ -475,6 +494,50 @@ class FixTest(unittest.TestCase):
         dbus = FakeDBusHandler()
         self.assertEqual(system_check.run_fix(system_check.RESTART_FCITX, dbus), (True, None))
         self.assertEqual(dbus.restarts, 1)
+
+    def test_removing_keyboards_keeps_the_layout_typed_on(self):
+        items = [("keyboard-fr", ""), ("pinyin", ""), ("keyboard-us", ""), ("ngosen", "")]
+        self.assertEqual(
+            system_check.without_keyboards("us", items), ("fr", [("pinyin", ""), ("ngosen", "")])
+        )
+
+    def test_removing_keyboards_can_be_undone(self):
+        dbus = FakeDBusHandler()
+        dbus.group = ("Default", "us", [("keyboard-us", ""), ("ngosen", "")])
+        done, undo = system_check.run_fix(system_check.REMOVE_KEYBOARDS, dbus)
+        self.assertTrue(done)
+        self.assertEqual(dbus.group, ("Default", "us", [("ngosen", "")]))
+        undo()
+        self.assertEqual(dbus.group, ("Default", "us", [("keyboard-us", ""), ("ngosen", "")]))
+
+    def test_keyboards_stay_when_ngosen_is_gone(self):
+        dbus = FakeDBusHandler()
+        dbus.group = ("Default", "us", [("keyboard-us", "")])
+        self.assertEqual(system_check.run_fix(system_check.REMOVE_KEYBOARDS, dbus), (False, None))
+        self.assertEqual(dbus.group, ("Default", "us", [("keyboard-us", "")]))
+
+
+class KeyboardFirstTest(unittest.TestCase):
+    TITLE = "New windows open on another keyboard, not on Ngó Sen"
+
+    def found(self, input_methods):
+        return system_check.evaluate(facts("x11", "KDE", input_methods=input_methods))
+
+    def test_keyboard_before_ngosen_offers_to_remove_it(self):
+        finding = next(f for f in self.found(["keyboard-us", "ngosen"]) if f.title == self.TITLE)
+        self.assertEqual(finding.level, WARN)
+        self.assertEqual(finding.action, system_check.REMOVE_KEYBOARDS)
+        self.assertIn("keyboard-us", finding.fix)
+
+    def test_ngosen_first_or_alone_is_fine(self):
+        for input_methods in (["ngosen"], ["ngosen", "keyboard-us"], ["pinyin", "ngosen"]):
+            self.assertNotIn(self.TITLE, titles(self.found(input_methods)), input_methods)
+
+    def test_report_lists_the_input_methods(self):
+        f = facts("x11", "KDE", input_methods=["keyboard-us", "ngosen"])
+        text = system_check.report(f, system_check.evaluate(f))
+        self.assertIn("Input methods: keyboard-us, ngosen", text)
+        self.assertIn("[!] " + self.TITLE, text)
 
 
 class FixReviewTest(unittest.TestCase):
@@ -1151,6 +1214,29 @@ class CheckPageWindowTest(unittest.TestCase):
         self.assertEqual(dbus.input_method_names(), ["keyboard-us"])
         self.assertEqual(window.message_label.text(), "Change undone.")
         self.assertTrue(window.btn_undo.isHidden())
+
+
+class LeavesMachineAloneTest(unittest.TestCase):
+    def test_check_page_tests_leave_fcitx5_alone(self):
+        # Those tests clear the environment, and fcitx5 aborts when HOME is not set.
+        from test_typing_log import CheckPageAppTestTest
+
+        run = subprocess.run
+        started = []
+
+        def spy(cmd, *args, **kwargs):
+            if cmd[:1] == ["fcitx5"]:
+                started.append(cmd)
+                return subprocess.CompletedProcess(cmd, 0, "", "")
+            return run(cmd, *args, **kwargs)
+
+        load = unittest.defaultTestLoader.loadTestsFromTestCase
+        suite = unittest.TestSuite(
+            map(load, (CheckPageTest, CheckPageWindowTest, CheckPageAppTestTest))
+        )
+        with mock.patch.object(subprocess, "run", spy):
+            suite.run(unittest.TestResult())
+        self.assertEqual(started, [])
 
 
 if __name__ == "__main__":

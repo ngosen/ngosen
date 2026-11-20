@@ -85,7 +85,7 @@ fn capitalize(text: &str, starts: impl Fn(char) -> bool) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bamboo_core::advanced::get_charset_names;
+    use bamboo_core::advanced::charset_names;
 
     fn unicode(text: &str, from: Charset) -> String {
         convert(text, from, Charset::Unicode, LetterCase::Keep, false)
@@ -111,7 +111,7 @@ mod tests {
         // Capitals do not: TCVN3, VPS and VISCII share codes between cases, and the charsets that
         // write letters in ASCII decode ASCII text that looks like them.
         let text = "người việt nam yêu tiếng mẹ đẻ, ở đâu cũng nhớ quê hương";
-        for name in get_charset_names() {
+        for name in charset_names() {
             let cs: Charset = name.parse().unwrap();
             let there = convert(text, Charset::Unicode, cs, LetterCase::Keep, false);
             assert_eq!(unicode(&there, cs), text, "{name}");

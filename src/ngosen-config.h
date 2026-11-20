@@ -75,6 +75,16 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(LockWordModifier, N_("Disabled"), N_("Shift"), N_("Ctrl"), N_("Alt"));
 
+    /**
+     * @brief Which apps the toggle key switches.
+     */
+    enum class ToggleScope : std::uint8_t {
+        AllApps = 0,
+        EachApp = 1,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(ToggleScope, N_("All apps"), N_("Each app"));
+
     // In the order of ConvertText's letterCase.
     enum class ConvertCase : std::uint8_t {
         Keep     = 0,
@@ -110,6 +120,13 @@ namespace fcitx {
     };
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(EmojiPlacement, N_("After the word"), N_("Instead of the word"));
+
+    enum class EmojiOfferAt : std::uint8_t {
+        EachWord,
+        SentenceEnd,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(EmojiOfferAt, N_("After each word"), N_("At the end of a sentence"));
 
     enum class UiLanguage : std::uint8_t {
         Vietnamese,
@@ -283,6 +300,8 @@ namespace fcitx {
                                 _("Switch Between English and Vietnamese"),
                                 {Key("Control+Shift_L"), Key("Control+Shift_R"), Key("Shift+Control_L"), Key("Shift+Control_R")},
                                 KeyListConstrain({KeyConstrainFlag::AllowModifierLess, KeyConstrainFlag::AllowModifierOnly})};
+        // All apps switch together, as in UniKey.
+        OptionWithAnnotation<ToggleScope, ToggleScopeI18NAnnotation> toggleScope{this, "ToggleScope", _("Switch Applies To"), ToggleScope::AllApps};
         // What the toggle key last chose, for apps without a rule of their own.
         HiddenOption<bool> vietnameseOn{this, "VietnameseOn", _("Vietnamese On"), false};
         // Set once the settings were upgraded; fcitx5 leaves defaults out of the file, so nothing else tells.
@@ -319,7 +338,9 @@ namespace fcitx {
         Option<bool> rawWordAfterSlash{this, "RawWordAfterSlash", _("Type a word that starts with / as is"), ngosen::defaultOptions.rawWordAfterSlash};
         Option<bool> emojiSuggestions{this, "EmojiSuggestions", _("Suggest emoji while typing"), ngosen::defaultOptions.emojiSuggestions};
         Option<bool> yahooEmoticons{this, "YahooEmoticons", _("Yahoo Messenger emoticons"), ngosen::defaultOptions.yahooEmoticons};
+        Option<bool> englishEmojiKeywords{this, "EnglishEmojiKeywords", _("English keywords"), ngosen::defaultOptions.englishEmojiKeywords};
         OptionWithAnnotation<EmojiPlacement, EmojiPlacementI18NAnnotation> emojiPlacement{this, "EmojiPlacement", _("Put a picked emoji"), EmojiPlacement::AfterWord};
+        OptionWithAnnotation<EmojiOfferAt, EmojiOfferAtI18NAnnotation>     emojiOfferAt{this, "EmojiOfferAt", _("Offer emoji"), EmojiOfferAt::SentenceEnd};
         Option<bool> autoNonVnRestore{this, "AutoNonVnRestore", _("Auto Restore Invalid Words"), ngosen::defaultOptions.autoNonVnRestore};
         Option<bool> modernStyle{this, "ModernStyle", _("Use oà, uý (Instead Of òa, úy)"), ngosen::defaultOptions.modernStyle};
         Option<bool> freeMarking{this, "FreeMarking", _("Allow Type With More Freedom"), ngosen::defaultOptions.freeMarking};
@@ -371,12 +392,14 @@ namespace fcitx {
         Option<bool>                                                                            showModePreedit{this, "ShowModePreedit", _("Show Preedit"), true};
         Option<std::string>                                                                     shortcutPreedit{this, "ShortcutPreedit", _("Shortcut for Preedit"), "q"};
         Option<bool>                                                                            showModeEmoji{this, "ShowModeEmoji", _("Show emoji suggestions"), true};
-        Option<std::string> shortcutEmoji{this, "ShortcutEmoji", _("Shortcut for emoji suggestions"), "w"}; Option<bool> showModeOff{this, "ShowModeOff", _("Show OFF"), true};
+        Option<std::string>                                                                     shortcutEmoji{this, "ShortcutEmoji", _("Shortcut for emoji suggestions"), "w"};
+        Option<bool>                                                                            showModeTeencode{this, "ShowModeTeencode", _("Show teencode"), true};
+        Option<std::string> shortcutTeencode{this, "ShortcutTeencode", _("Shortcut for teencode"), "t"}; Option<bool> showModeOff{this, "ShowModeOff", _("Show OFF"), true};
         Option<std::string> shortcutOff{this, "ShortcutOff", _("Shortcut for OFF"), "e"}; Option<bool> showModeVim{this, "ShowModeVim", _("Show Vim mode"), true};
         Option<std::string>                                                                            shortcutVim{this, "ShortcutVim", _("Shortcut for Vim mode"), "v"};
         Option<bool>        enableMacroInOffMode{this, "EnableMacroInOffMode", _("Allow Macro in Off Mode"), ngosen::defaultOptions.enableMacroInOffMode};
 
-        Option<std::string> modeOrder{this, "ModeOrder", _("Mode Order"), "Sen,Preedit,Emoji,Off,Vim"};
+        Option<std::string> modeOrder{this, "ModeOrder", _("Mode Order"), "Sen,Preedit,Emoji,Teencode,Off,Vim"};
 
         OptionWithAnnotation<std::string, TimeFormatAnnotation> timeFormat{
             this, "TimeFormat", _("Time Format ($TIME in macro)"), ngosen::defaultOptions.timeFormat, {}, {}, TimeFormatAnnotation()};

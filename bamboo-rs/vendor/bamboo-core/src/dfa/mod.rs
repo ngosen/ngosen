@@ -153,7 +153,7 @@ impl State {
 ///
 /// Stores all unique composition states and provides fast $O(1)$ lookups
 /// without heap allocation during state transitions.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Dfa {
     /// Array of all DFA states. State 0 is always the initial (empty) state.
     pub states: Vec<State>,
@@ -166,18 +166,6 @@ pub struct Dfa {
     pub flat_arena: Vec<u8>,
     /// Maps composition hash to `state_id` for $O(1)$ deduplication and lookup.
     pub hash_to_state: FxHashMap<u64, u32>,
-}
-
-impl Clone for Dfa {
-    fn clone(&self) -> Self {
-        Self {
-            states: self.states.clone(),
-            comp_hashes: self.comp_hashes.clone(),
-            arena: self.arena.clone(),
-            flat_arena: self.flat_arena.clone(),
-            hash_to_state: self.hash_to_state.clone(),
-        }
-    }
 }
 
 impl Default for Dfa {
@@ -286,9 +274,12 @@ impl Dfa {
     /// hits still return their existing ID, but misses return `0` without
     /// allocating. Callers must skip `set_transition` on `0` and fall back to
     /// `find_state(...).unwrap_or(0)` (rule-engine slow path stays correct).
+    /// Compositions longer than [`crate::engine::MAX_ACTIVE_TRANS`] are refused
+    /// because the flattener's compact canvas cannot represent them.
     pub fn add_state(&mut self, composition: &[Transformation]) -> u32 {
-        // Arena-bounded: `comp_len`/`flat_len` below truncate into `u8`.
-        debug_assert!(composition.len() <= u8::MAX as usize);
+        if composition.len() > crate::engine::MAX_ACTIVE_TRANS {
+            return 0;
+        }
         let hash = hash_composition(composition);
 
         // Fast path: hash match -> verify arena equality (no heap allocation).
@@ -326,14 +317,18 @@ impl Dfa {
             crate::mode::OutputOptions::LOWER_CASE,
             &mut self.flat_arena,
         );
-        let flat_len = (self.flat_arena.len() - flat_offset as usize) as u8;
+        let flat_len = self.flat_arena.len() - flat_offset as usize;
+        if flat_len > u8::MAX as usize {
+            self.flat_arena.truncate(flat_offset as usize);
+            return 0;
+        }
 
         self.arena.extend_from_slice(composition);
         self.states.push(State {
             comp_offset,
             comp_len,
             flat_offset,
-            flat_len,
+            flat_len: flat_len as u8,
             ..State::default()
         });
         self.comp_hashes.push(hash);
@@ -569,6 +564,16 @@ mod tests {
         let id2 = dfa.add_state(&comp);
         assert_eq!(id1, id2);
         assert_eq!(dfa.states.len(), 2); // state 0 (empty) + one real
+    }
+
+    #[test]
+    fn add_state_rejects_compositions_larger_than_engine_window() {
+        let mut dfa = Dfa::new();
+        let composition = vec![appending('a'); crate::engine::MAX_ACTIVE_TRANS + 1];
+
+        assert_eq!(dfa.add_state(&composition), 0);
+        assert_eq!(dfa.states.len(), 1);
+        assert_eq!(dfa.find_state(&composition), None);
     }
 
     #[test]

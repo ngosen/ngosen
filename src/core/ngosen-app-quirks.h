@@ -58,9 +58,12 @@ namespace ngosen {
     bool pageMayKeepOwnText(const Field& field);
 
     // True for apps whose page can hold an xterm.js terminal that never reports what it shows: Firefox and
-    // WebKitGTK browsers, VaultID (a Tauri app), and any app GNOME Shell does not name, as it often leaves
-    // VaultID. Other apps that report nothing look the same at first.
+    // WebKitGTK browsers, Electron code editors, VaultID (a Tauri app), and any app GNOME Shell does not name,
+    // as it often leaves VaultID. Other apps that report nothing look the same at first.
     bool mayShowWebTerminal(const Field& field);
+
+    // Electron code editors share one input context across normal text fields and an integrated xterm.js terminal.
+    bool isElectronCodeEditor(const Field& field);
 
     // Under GNOME, apps reach fcitx5 through GNOME Shell's IBus bridge, which can relay the client's
     // surrounding text tens of milliseconds late, one edit at a time.

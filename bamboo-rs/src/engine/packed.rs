@@ -68,7 +68,7 @@ impl<'a> FromIterator<&'a str> for Packed {
 #[cfg(test)]
 mod tests {
     use super::super::{Dictionary, WordList};
-    use crate::text::{grows_into, without_marks, without_tone_position, without_tones};
+    use crate::text::{Typed, without_marks, without_tone_position, without_tones};
     use std::collections::HashSet;
 
     // The lists as they were stored before packing, to check the packed ones answer the same.
@@ -129,7 +129,7 @@ mod tests {
             self.prefixes[first..]
                 .iter()
                 .take_while(|(w, _)| w.starts_with(&*key))
-                .any(|(_, word)| grows_into(typed, word))
+                .any(|(_, word)| Typed::new(typed).grows_into(word))
         }
     }
 

@@ -277,6 +277,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::commitText(const std::string& text) {
+        if (!hint_.empty() && !text.empty())
+            ++editsUnderHint_;
         if (forwardedAt_ > 0) {
             slowestCommitMs_ = std::max(slowestCommitMs_, static_cast<int>((monotonicUs() - forwardedAt_) / 1000));
             forwardedAt_     = 0;
@@ -366,6 +368,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::forwardKey(EditKey key, bool release, uint32_t time) {
+        if (!hint_.empty() && !release)
+            ++editsUnderHint_;
         if ((key == EditKey::Tab || key == EditKey::ShiftTab) && !release && quirks_.showsTab && !quirks_.dropsForwardedKeys) {
             later(quirks_.lagMs, [this, key] { insert(key == EditKey::ShiftTab ? U"⇤" : U"⇥", true); });
             return;
@@ -434,6 +438,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::deleteSurrounding(int offset, unsigned int size) {
+        if (!hint_.empty())
+            ++editsUnderHint_;
         ++sent_.surroundingDeletes;
         ++deletions_;
         surroundingDropped_ = quirks_.dropsSurroundingOnDelete;
@@ -527,6 +533,33 @@ namespace ngosen::test {
             state_->activate(Mode::Sen, true);
             changed();
         });
+    }
+
+    // Chromium on Wayland resets the context after taking focus back and first reports an empty field.
+    void FakeApp::bounceReportingEmpty(int ms) {
+        focused_ = false;
+        state_->deactivate(true);
+        later(ms, [this] {
+            focused_ = true;
+            state_->activate(Mode::Sen, true);
+            reportsEmptyOnce_ = true;
+            state_->appReset();
+            changed();
+            later(5, [this] {
+                reportsEmptyOnce_ = false;
+                changed();
+            });
+        });
+    }
+
+    void FakeApp::resetCommittingPreedit() {
+        // xterm.js takes a composition as typed text when it ends.
+        if (composing_)
+            ownText_ += utf8::decode(shownPreedit_);
+        shownPreedit_.clear();
+        preeditWaits_ = false;
+        composing_    = false;
+        state_->resetAfterAppCommit(false);
     }
 
     void FakeApp::clickCellOpenedByKey(int ms) {
@@ -627,7 +660,7 @@ namespace ngosen::test {
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};
-        if (quirks_.reportsEmptyText)
+        if (quirks_.reportsEmptyText || reportsEmptyOnce_)
             return Surrounding("", 0, 0);
         if (quirks_.keepsOnlyCommits && !text_.empty() && text_.back() == U' ') {
             // WebKitGTK reports a space at the end as a no-break space.

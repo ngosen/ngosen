@@ -2,6 +2,7 @@ build*/
 .*
 !.git*
 !.copr/
+!.formatignore
 .git/
 *.tar.*
 *.kdev4

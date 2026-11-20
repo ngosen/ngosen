@@ -15,6 +15,60 @@ from i18n import N_
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
     {
+        "version": "1.13",
+        "title": N_("One switch for every app"),
+        "how": N_(
+            "New installs start in Vietnamese, and the switch key now changes all apps at once, "
+            "as in UniKey. Apps set to OFF stay in English; the switch key there opens the ` menu "
+            "to pick Sen or Preedit. For the old behavior, choose Each app under Switch Applies "
+            "To on the Shortcuts page."
+        ),
+        "example": "",
+        "target": ("setting", "ToggleScope"),
+    },
+    {
+        "version": "1.13",
+        "title": N_("Emoji at the end of a sentence"),
+        "how": N_(
+            "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab, or a "
+            "number in Telex, to pick one. On GNOME without the Input Method Panel extension they "
+            "show right in the field. English words such as cat or thumbs up count too, and the Emoji "
+            "page can export and import your words."
+        ),
+        "example": "",
+        "target": ("page", "emoji"),
+    },
+    {
+        "version": "1.13",
+        "title": N_("Drawn-out letters"),
+        "how": N_(
+            "Repeat the last letter of a marked word and it repeats with its mark, instead of "
+            "bringing back the keys you typed. English words such as besttt stay as typed."
+        ),
+        "example": "afaaa → àààà, ddusngggg → đúngggg",
+        "target": None,
+    },
+    {
+        "version": "1.13",
+        "title": N_("Teencode for chosen apps"),
+        "how": N_(
+            "Turn teencode on for one app with the teencode key in the ` menu. Words like zậy, đag "
+            "and nhưg then keep their marks. It is off by default."
+        ),
+        "example": "nhuwgx → nhữg",
+        "target": ("setting", "ShortcutTeencode"),
+    },
+    {
+        "version": "1.13",
+        "title": N_("A command for your own shortcut"),
+        "how": N_(
+            "Bind the ngosen-toggle command to a desktop shortcut to switch between English and "
+            "Vietnamese, even when no text field has focus."
+        ),
+        "example": "",
+        "target": None,
+    },
+    {
         "version": "1.12",
         "title": N_("Emoji while typing"),
         "how": N_(
@@ -72,7 +126,7 @@ FEATURES = [
         "title": N_("Vietnamese in the tray menu"),
         "how": N_(
             "The tray menu starts with an item that turns Vietnamese on or off, for when "
-            "Ctrl + Shift does not work. Each app keeps its choice."
+            "Ctrl + Shift does not work."
         ),
         "example": "",
         "target": None,

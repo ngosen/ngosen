@@ -4,6 +4,126 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-18
+
+### Added
+
+- `Config::extended_onsets` (builder: `extended_onsets`) turns the `f`, `j`, and `w` onsets from
+  0.5.5 on or off as a group. It defaults to `true`, so behavior is unchanged; `z` stays valid
+  either way. Turning it off keeps English words such as `just` and `ferry` as typed when
+  auto-correct is on.
+- Config flag bit `0x80` (`BAMBOO_CONFIG_NO_EXTENDED_ONSETS` in the C header) turns it off. Flags
+  saved before this release lack the bit and keep the 0.5.5 behavior.
+- `Config::extended_finals` (builder: `extended_finals`) accepts `g`, `k`, `nk`, and `h` as
+  finals, checked as `ng`, `c`, `nh`, and `nh` (`nhữg`, `khók`, `mìnk`), so a tone lands whether
+  it is typed before or after them. It defaults to `false`; flag bit `0x100`
+  (`BAMBOO_CONFIG_EXTENDED_FINALS`) turns it on. With it on, English words ending in these finals
+  may change, e.g. `book` -> `bôk`.
+- `EditDelta::committed` and `Engine::just_committed()` signal a forced word boundary to hosts,
+  plus `bamboo_engine_just_committed` in the C API and `BambooWasmEngine::just_committed` for WASM.
+  When the transformation buffer fills up mid-word (32 slots, counted in transformation slots — a
+  mark or tone key spends more than one), the engine now finishes the composition as a word and
+  starts a new composition with the current key, telling the host to commit the previous preedit
+  instead of silently resetting it. Delta-based hosts previously rendered the reset as a mass
+  deletion of already-committed text (issue #41).
+
+### Changed
+
+- After `set_config` changes the config mid-word, the next key, undo, backspace or restore works
+  as if an engine with the new config had typed the keys of the active composition in Vietnamese
+  mode; the output does not change before that. A composition that cannot be replayed faithfully
+  — built by `rebuild_from_text`, containing English-mode keys, or whose replay would commit
+  mid-word — stays as it is instead, and so does one whose next key ends the word (word break or
+  forced boundary), because the host builds that text from the preedit it shows. Undo right
+  after a config change used to do nothing, and a word that had entered English bypass stayed
+  in it.
+- The engine now attempts the key before committing. The boundary happens only when the key's
+  transformations do not fit the remaining slots (e.g. a two-slot key at 31 slots); the old code
+  committed as soon as the buffer already held 32 slots.
+
+### Breaking
+
+- `Config` has new public fields, so code that builds it with a struct literal listing every
+  field no longer compiles. Add `..Default::default()` or use `Config::builder()`. Planned for
+  0.6.0.
+- `EditDelta` gained the `committed` field: code constructing `EditDelta` literally must add it.
+
+### Fixed
+
+- A key needing more transformation slots than remain in the buffer (e.g. a two-slot mark key at
+  31 slots) no longer drops transformations silently; it triggers the same word boundary.
+- `process_key_edit` deltas after `commit`, `undo_last_key`, `remove_last_output_char`,
+  `restore_last_word_as`, or `rebuild_from_text` now diff against the current preedit instead of a
+  stale one, so hosts no longer delete text they should keep.
+- `reset()` now clears the `just_committed` signal.
+
+### Notes
+
+- `process_key_edit_into`, the deprecated `process_key_delta_into`, and the deprecated
+  `process_key_delta` tuple API cannot express the forced-word-boundary signal; hosts on those
+  APIs must query `Engine::just_committed()` after each call or migrate to `process_key_edit`.
+
+## [0.5.5] - 2026-11-12
+
+### Added
+
+- Accept `f`, `j`, and `w` as extended initial consonants in the same onset class as `z` for
+  phonetic/typing spellings.
+
+### Fixed
+
+- Preserve a completed Vietnamese syllable when a Telex/VNI mark key is refused instead of
+  restoring consumed mark keys as raw text; the refused key remains literal.
+
+## [0.5.4] - 2026-11-08
+
+### Added
+
+- Added optional full-text history tracking controls to the Rust engine and C API. Tracking remains
+  enabled by default; disabling it releases retained committed-text buffers.
+
+### Changed
+
+- Deprecated `get_charset_name` and `get_charset_names` in favor of `charset_names`.
+
+### Fixed
+
+- Hardened FFI pointer and output-buffer validation. A too-small `bamboo_engine_process_key_buf`
+  buffer now reports a safe retry capacity without consuming the key.
+- Full-text tracking disabled mode no longer retains word-break characters.
+
+### Performance
+
+- Word breaks now commit the active word and append the break character directly instead of
+  committing a one-character composition, halving commits and DFA lookups per space/punctuation.
+- `process_key_edit` no longer counts common-prefix characters it discards, and rule-engine
+  scratch compositions use `TransformationStack` instead of zero-filling 512-byte arrays.
+- `encode_charset` allocates lazily in one pass for non-VIQR charsets, and preset-backed engines
+  are created without cloning the full input-method rule table.
+
+### Testing
+
+- Added scale benchmarks for cold start, incremental and batch paragraphs, and million-character
+  sessions across Bamboo Core and three comparison engines.
+
+## [0.5.3] - 2026-10-23
+
+### Added
+
+- Added a documented instance-based C API for the current engine operations: explicit input mode,
+  reset, commit, configuration and input-method changes, processed output options, key handling,
+  validity checks, named undo policies, and last-word restoration.
+- Added the distributable `include/bamboo_core.h` C header, including stable constants for input
+  methods, modes, configuration flags, output options, and named policies.
+- The crate now emits `staticlib` and `cdylib` artifacts in addition to `rlib`, so C and C++
+  consumers can link the exported ABI directly.
+
+### Deprecated
+
+- Deprecated the process-wide FFI entrypoints in favor of independent `BambooEngine` instances.
+  Deprecated `bamboo_engine_process`, whose implicit Vietnamese mode and allocating result are
+  superseded by `bamboo_engine_process_key_mode` and `bamboo_engine_process_key_buf`.
+
 ## [0.5.2] - 2026-10-23
 
 ### Build
@@ -183,7 +303,7 @@ All notable changes to this project will be documented in this file.
 - **Zero-Allocation Output:** Cached preedit buffer enables `output_str(&self) -> &str` and `output(&self) -> Cow<'_, str>` without heap allocations.
 - **Counting Sort Rule Partitioning:** Precomputed `EngineRules` with Counting Sort into direct-indexed ASCII slices (`[(u16, u16); 128]`) and partitioned non-ASCII rules, eliminating hot-path linear rule scans.
 - **Zero-Copy Engine Preset Sharing:** Built-in presets (`Telex`, `VNI`, `VIQR`, etc.) now share rule tables via `Arc<EngineRules>` and `Arc<InputMethod>` stored in `LazyLock`, reducing `Engine` stack size from 6,176 B to 5,360 B (5.2 KB) and making `Engine::from_preset()` instantaneous with zero heap copying.
-- **Sub-Microsecond Keystroke Latency:** Measured single-word latency down to ~140 ns ('vietj' -> 'việt') and full 27-character sentence streams at ~1.3 µs (8.7x faster than skey, up to 16x faster on paragraphs).
+- **Sub-Microsecond Keystroke Latency:** Measured single-word latency down to ~140 ns ('vieetj' -> 'việt') and full 27-character sentence streams at ~1.3 µs (8.7x faster than skey, up to 16x faster on paragraphs).
 
 ### Safety & FFI Invariants
 - **Strict Safe FFI Boundaries:** Enforced `#![deny(unsafe_op_in_unsafe_fn)]` across `ffi.rs`.

@@ -113,6 +113,7 @@ add_ngosen_headless_test(mode_menu_keys mode-menu-keys.cpp "integration;apprule"
 # Checks on the real clock that a menu left alone stays open.
 set_tests_properties(mode_menu_keys PROPERTIES TIMEOUT 60)
 add_ngosen_headless_test(toggle_key toggle-key.cpp "integration;apprule")
+add_ngosen_headless_test(toggle_scope toggle-scope.cpp "integration;apprule")
 add_ngosen_headless_test(hidden_input hidden-input.cpp "integration;terminal")
 target_link_libraries(hidden_input PRIVATE util)
 # Its prompt is seen by every test that types into a terminal, since the engine scans all of the user's ptys.
@@ -126,6 +127,7 @@ add_ngosen_headless_test(options_sync options-sync.cpp "integration;config")
 add_ngosen_headless_test(emoji_settings emoji-settings.cpp "integration;config")
 if (Fcitx5ModuleDBus_FOUND)
     add_ngosen_headless_test(dbus_convert_text dbus-convert-text.cpp "unit;dbus")
+    add_ngosen_headless_test(dbus_toggle_vietnamese dbus-toggle-vietnamese.cpp "integration;dbus;apprule")
 endif()
 add_ngosen_headless_test(tray_menu_items tray-menu-items.cpp "integration;config")
 add_ngosen_headless_test(ui_language ui-language.cpp "integration;config")

@@ -35,12 +35,13 @@ namespace ngosen {
             return convert(text, 2, false);
         }
 
-        std::string fold(const std::string& text) {
-            return convert(text, 0, true);
-        }
-
         bool isAscii(const std::string& text) {
             return std::all_of(text.begin(), text.end(), [](char c) { return static_cast<unsigned char>(c) < 0x80; });
+        }
+
+        // Most keywords are English, and a call into the engine for each made the first key slow.
+        std::string fold(const std::string& text) {
+            return isAscii(text) ? text : convert(text, 0, true);
         }
 
         // Nobody counts the k in "kkkk" or the ha in "hahaha".
@@ -133,8 +134,9 @@ namespace ngosen {
 
     } // namespace
 
-    std::optional<EmojiSuggestion> suggestEmoji(const std::vector<std::string>& words, bool yahooEmoticons, const std::vector<EmojiWordEdit>& edits) {
-        size_t most = index().maxWords;
+    std::optional<EmojiSuggestion> suggestEmoji(const std::vector<std::string>& words, const Options& options) {
+        const auto& edits = options.emojiWordEdits;
+        size_t      most  = index().maxWords;
         for (const auto& edit : edits)
             most = std::max<size_t>(most, std::count(edit.keyword.begin(), edit.keyword.end(), ' ') + 1);
         most = std::min(words.size(), most);
@@ -147,7 +149,10 @@ namespace ngosen {
             for (const Entry* entry : lookup(typed, lowered)) {
                 if (entry->kind == EmojiKind::Country && !startsCapitalized(typed.front()))
                     continue;
-                if (entry->kind == EmojiKind::Yahoo && !yahooEmoticons)
+                if (entry->kind == EmojiKind::Yahoo && !options.yahooEmoticons)
+                    continue;
+                // can, me or no typed in Vietnamese is not English.
+                if (entry->kind == EmojiKind::English && (!options.englishEmojiKeywords || std::all_of(typed.begin(), typed.end(), isVietnamese)))
                     continue;
                 found.push_back(entry);
             }
@@ -157,7 +162,7 @@ namespace ngosen {
             EmojiSuggestion suggestion;
             suggestion.keyword = found.empty() ? phrase : found.front()->keyword;
             if (!found.empty())
-                suggestion.kind = found.front()->kind == EmojiKind::Yahoo ? EmojiKind::Emoticon : found.front()->kind;
+                suggestion.kind = found.front()->kind == EmojiKind::Yahoo ? EmojiKind::Emoticon : found.front()->kind == EmojiKind::English ? EmojiKind::Word : found.front()->kind;
             // An edit names the keyword as typed, or a default one it matched, as haha for hahaha.
             const auto names = [&](const EmojiWordEdit& edit, const Entry* entry) { return edit.keyword == phrase || (entry && edit.keyword == entry->keyword); };
             const auto add   = [&](const std::string& emoji) {

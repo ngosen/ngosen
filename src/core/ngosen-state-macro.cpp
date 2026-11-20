@@ -21,7 +21,7 @@
 namespace ngosen {
 
     void TypingState::handleDoubleSpaceReplacement() {
-        performReplacement(" ", ". ");
+        performReplacement(oldPreBuffer_, " ", ". ");
         NGOSEN_INFO("Commit: . ");
         if (engine_->options().autoCapitalizeAfterPunctuation) {
             isPrevPunctuation_ = true;
@@ -32,7 +32,7 @@ namespace ngosen {
     void TypingState::handleDoubleHyphenReplacement() {
         // Em-dash (U+2014)
         std::string emDash = "—";
-        performReplacement("-", emDash);
+        performReplacement(oldPreBuffer_, "-", emDash);
         NGOSEN_INFO("Commit: — (em-dash)");
     }
 
@@ -66,7 +66,7 @@ namespace ngosen {
         enter_after_replacement_ = true;
         enter_after_key_         = ngosen::EditKey::Return;
         enter_key_live_          = true;
-        performReplacement(deletedPart, addedPart);
+        performReplacement(oldPreBuffer_, deletedPart, addedPart);
         enter_key_live_ = false;
         // Done already, so the Enter can go to the app as typed.
         if (!enter_after_replacement_)
@@ -157,14 +157,11 @@ namespace ngosen {
                 return;
             }
             if (canSendBackspaces() && !oldPreBuffer_.empty()) {
-                performReplacement(oldPreBuffer_, commitStr);
+                performReplacement(oldPreBuffer_, oldPreBuffer_, commitStr);
             } else if (host_->surrounding().isValid()) {
                 const size_t oldLen = ngosen::utf8::length(oldPreBuffer_);
-                if (oldLen > 0) {
-                    flushComposedCommit();
-                    sinceFocus_.erasedSinceReport = -1;
-                    host_->deleteSurrounding(-static_cast<int>(oldLen), static_cast<int>(oldLen));
-                }
+                if (oldLen > 0)
+                    deleteBeforeCursor(oldLen);
                 commit(commitStr);
             } else {
                 // The abbreviation stays in the field, so the expansion would land after it.
@@ -314,7 +311,7 @@ namespace ngosen {
         word.showsComposed = !word.showsComposed;
         word.editedAtUs    = ngosen::monotonicUs();
         NGOSEN_INFO(std::string("Locked word swapped to its ") + (word.showsComposed ? "marks" : "keys"));
-        performReplacement(deletedPart, addedPart);
+        performReplacement(oldPreBuffer_, deletedPart, addedPart);
     }
 
 } // namespace ngosen

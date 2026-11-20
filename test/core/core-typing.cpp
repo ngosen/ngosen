@@ -543,6 +543,32 @@ namespace {
         check(text == "chào. ", "ibus: a space held during a timed wait still counts for double space", text);
     }
 
+    std::string typedWithTeencode(bool on) {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        state.activate(ngosen::Mode::Sen, false);
+        state.setTeencodeOn(on);
+        for (const char c : std::string("zaayj ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(30);
+        }
+        loop.pump(300);
+        return app->text();
+    }
+
+    void testTeencodePerApp() {
+        std::string text = typedWithTeencode(true);
+        check(text == "zậy ", "teencode on for the app keeps zậy", text);
+        text = typedWithTeencode(false);
+        check(text == "zaayj ", "teencode off restores the keys", text);
+    }
+
     std::string typedHyphens(const Field& field) {
         realMode = ngosen::Mode::Preedit;
         realtextLen.store(0);
@@ -1901,6 +1927,25 @@ namespace {
         typeTie(state, *host, loop, true);
         const std::string log = resources.recorder().dump();
         check(has(log, " terminal=1 "), "recorder: marks a terminal field", log);
+    }
+
+    // An address bar deletes with BackSpace, so a log without the flag cannot tell why.
+    void testRecorderMarksAddressBar() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField("wayland_v2", true, "firefox");
+        field.url                 = true;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        typeTie(state, *host, loop, true);
+        press(state, static_cast<uint32_t>('e'));
+        loop.pump(300);
+        const std::string log = resources.recorder().dump();
+        check(has(log, " url=1 "), "recorder: marks an address bar", log);
+        check(has(log, "\tpath\tbackspaces: ") && has(log, "\twait\t"), "recorder: notes the wait after the backspaces", log);
     }
 
     // Types `keys`, a word and a macro, keeping every log line; returns them.
@@ -3323,12 +3368,195 @@ namespace {
         text = typeInXterm(makeField("ibus", true, "gnome-shell"), {.keepsLastEditPerTurn = true, .turnMs = 3, .keepsOnlyCommits = true, .resendsOnEmptyCommit = true}, sentence);
         check(text == expected, "unnamed xterm.js behind GNOME Shell: the first words come out right", text);
 
+        ngosen::test::Typed editorRun;
+        const auto          editorLines = logLinesWhileTyping(makeField("wayland", true, "antigravity-ide"), {.keepsOnlyCommits = true},
+                                                              "ddaay laf tieengs vieetj xin chaof nhieefu nhieeuf ", "", &editorRun, 25);
+        check(editorRun.text == "đây là tiếng việt xin chào nhiều nhiều " && countHaving(editorLines, "Copy of the text still short") == 0 &&
+                  countHaving(editorLines, "Surr wait timeout") == 0,
+              "xterm.js in an Electron editor: fast words and nhieefu right without copy or surr waits", editorRun.text + " " + join(editorLines));
+
+        // Reverting a tone commits the first letter again, which must not look like the field showing typed letters.
+        for (const char* program : {"firefox", "antigravity-ide"}) {
+            FakeResources revertResources;
+            const auto    revertKeys = keysOf("ass dd ");
+            const auto    revertOut  = ngosen::test::typeInAppTraced(revertResources, makeField("wayland", true, program), {.keepsOnlyCommits = true}, revertKeys,
+                                                                     std::vector<int>(revertKeys.size(), 100));
+            check(revertOut.text == "as đ ", std::string("xterm.js in ") + program + ": reverting a tone on the first letter keeps composition commits", revertOut.text);
+        }
+
+        // A click inside the terminal moves no focus, so fast words after it still need composition commits.
+        {
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeResources clickResources;
+            FakeLoop      loop;
+            auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "antigravity-ide"), ngosen::test::AppQuirks{.keepsOnlyCommits = true});
+            ngosen::test::FakeApp* app = owned.get();
+            ngosen::TypingState    state(&clickResources, std::move(owned));
+            app->attach(&state);
+            for (const uint32_t key : keysOf("ddaay laf ")) {
+                app->type(key);
+                loop.pump(100);
+            }
+            g_mouse_clicked.store(true);
+            for (const uint32_t key : keysOf("ass dd ")) {
+                app->type(key);
+                loop.pump(20);
+            }
+            loop.pump(300);
+            check(app->text() == "đây là as đ ", "Electron terminal: fast words after a click inside the terminal come out right", app->text());
+        }
+
+        // Typing in the Electron terminal must not make normal fields in the same app flicker through a composition.
+        FakeResources sharedEditor;
+        const Field   editorField = makeField("wayland", true, "antigravity-ide");
+        const auto    termKeys    = keysOf(sentence);
+        (void)ngosen::test::typeInAppTraced(sharedEditor, editorField, {.keepsOnlyCommits = true}, termKeys, std::vector<int>(termKeys.size(), 60));
+        const auto chatOut = ngosen::test::typeInAppTraced(sharedEditor, editorField, {}, termKeys, std::vector<int>(termKeys.size(), 60));
+        check(chatOut.text == expected && chatOut.sent.preedits == 0, "normal field in an Electron editor commits directly after its terminal was used",
+              chatOut.text + " preedits=" + std::to_string(chatOut.sent.preedits));
+
+        // One shared Wayland context switching from an Electron terminal to a chat box and back.
+        {
+            realMode = ngosen::Mode::Sen;
+            FakeLoop            loop;
+            FakeResources       editorResources;
+            auto                owned = std::make_unique<FakeHost>(loop, editorField);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&editorResources, std::move(owned));
+            host->setSurrounding("", 0);
+            state.surroundingUpdated();
+            press(state, 'd');
+            loop.pump(65);
+            press(state, 'd');
+            loop.pump(60);
+            host->setSurrounding("đ ", 2);
+            state.surroundingUpdated();
+            // Clicking inside the same terminal keeps composition commits even when the next keys arrive under 50 ms.
+            g_mouse_clicked.store(true);
+            press(state, 'a');
+            loop.pump(20);
+            press(state, 's');
+            loop.pump(20);
+            press(state, 's');
+            loop.pump(60);
+            host->setSurrounding("đ as ", 5);
+            state.surroundingUpdated();
+            check(host->deletes().empty() && host->commits().back() == "as", "Electron terminal: a click inside the terminal keeps composition commits", join(host->commits()));
+
+            // Switching to a chat box deletes through surrounding text without composition flicker.
+            state.reset(false);
+            host->setSurrounding("tôi ", 4);
+            state.surroundingUpdated();
+            press(state, 'c');
+            host->setSurrounding("tôi c", 5);
+            state.surroundingUpdated();
+            press(state, 'o');
+            host->setSurrounding("tôi co", 6);
+            state.surroundingUpdated();
+            press(state, 's');
+            host->setSurrounding("tôi có", 6);
+            state.surroundingUpdated();
+            loop.pump(100);
+            check(host->deletes().size() == 1 && host->preedit().empty() && host->commits().back() == "ó", "Electron chat box: commits directly after switching from the terminal",
+                  join(host->commits()));
+
+            // Switching back to the terminal whose hidden textarea still holds earlier commits detects xterm.js again,
+            // even when the first typed letter also appears in that retained commit text.
+            state.reset(false);
+            host->setSurrounding("đ as ", 5);
+            state.surroundingUpdated();
+            const size_t deletesBefore = host->deletes().size();
+            press(state, 'a');
+            loop.pump(65);
+            press(state, 'f');
+            loop.pump(60);
+            press(state, ' ');
+            host->setSurrounding("đ as à ", 7);
+            state.surroundingUpdated();
+            press(state, 'd');
+            loop.pump(65);
+            press(state, 'd');
+            loop.pump(60);
+            check(host->deletes().size() == deletesBefore && host->commits().back() == "đ", "Electron terminal: switching back from chat detects xterm.js despite earlier commits",
+                  join(host->commits()));
+        }
+
         // Konsole reports no letters either, yet takes forwarded backspaces as usual.
         FakeResources               resources;
         const std::vector<uint32_t> keys = keysOf("ddaay laf ");
         const auto out = ngosen::test::typeInAppTraced(resources, makeField("ibus", true, "konsole"), {.reportsEmptyText = true}, keys, std::vector<int>(keys.size(), 100));
         check(out.text == "đây là " && out.sent.preedits == 0, "a terminal app that reports no letters keeps committing directly",
               out.text + " preedits=" + std::to_string(out.sent.preedits));
+    }
+
+    enum class XtermWordEnd {
+        AppReset,
+        Menu,
+        MenuWithKeyHeld,
+        MenuBeforeComposition,
+        AppResetWithEnterHeld
+    };
+
+    // Types "dd" in a fake xterm.js field, ends the word as named while its commit waits, and returns what the
+    // field got from then on.
+    std::string endXtermWord(XtermWordEnd end) {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        const bool    enter = end == XtermWordEnd::AppResetWithEnterHeld;
+        auto  owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "firefox"), ngosen::test::AppQuirks{.showsEnter = enter, .keepsOnlyCommits = true});
+        auto* app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (const char c : std::string("ddaay laf ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(60);
+        }
+        loop.pump(600);
+        const std::string before = app->text();
+        const int         sent   = app->sent().preedits;
+        app->type('d');
+        loop.pump(60);
+        app->type('d');
+        const auto waitFor = [&](const auto& ready) {
+            for (int ms = 0; ms < 400 && !ready(); ++ms)
+                loop.pump(1);
+            return ready();
+        };
+        bool ready = end == XtermWordEnd::MenuBeforeComposition ? waitFor([&] { return app->sent().preedits > sent && !app->composesPreedit(); }) :
+                                                                  waitFor([&] { return app->composesPreedit(); });
+        if (enter) {
+            app->type('i');
+            app->type(ngosen::key::Return);
+            ready = waitFor([&] { return app->composesPreedit() && app->shownPreedit() == "i"; });
+        }
+        if (end == XtermWordEnd::AppReset || enter) {
+            app->resetCommittingPreedit();
+        } else {
+            state.commitBuffer();
+            state.resetAfterAppCommit(false);
+        }
+        loop.pump(600);
+        const std::string text = app->text();
+        if (!ready)
+            return "(not ready) " + text;
+        return isStartsWith(text, before) ? text.substr(before.size()) : "(lost text) " + text;
+    }
+
+    // IBus commits a preedit shown with the commit focus mode itself on reset, so the commit the core holds back
+    // for a composition must not follow it. The IBus edition also ends a word itself before resets of its own, as
+    // when the mode menu opens, and then no app has committed it.
+    void testXtermResetCommitsPreedit() {
+        std::string got = endXtermWord(XtermWordEnd::AppReset);
+        check(got == "đ", "xterm.js: a reset that commits the preedit leaves one đ", got);
+        got = endXtermWord(XtermWordEnd::Menu);
+        check(got == "đ", "xterm.js: ending the word before a reset keeps its đ", got);
+        got = endXtermWord(XtermWordEnd::MenuBeforeComposition);
+        check(got == "đ", "xterm.js: ending the word before the composition starts keeps the commit for its turn", got);
+        got = endXtermWord(XtermWordEnd::AppResetWithEnterHeld);
+        check(got == "đi\n", "xterm.js: a reset with Enter held sends the committed preedit once", got);
     }
 
     // A click back into the terminal finds the composition start xterm.js kept from before.
@@ -3527,6 +3755,8 @@ namespace {
             FakeResources resources;
             const auto    lines = replaceLines(resources, makeField("ibus", false, "SDL_app"), {}, "vieetj ", run);
             check(run.text == "vieeettjjệt " && countHaving(lines, "ended=backspaces not sent") == 1, "backspaces that cannot be sent", escaped(run.text) + " " + join(lines));
+            const std::string log = resources.recorder().dump();
+            check(has(log, "\twait\tbackspaces not sent\n"), "recorder: a send that failed notes no wait time", log);
         }
         {
             // The fake app takes no selection keys, so the selection never shows.
@@ -3642,6 +3872,19 @@ namespace {
             press(*state, 'e');
         }
     };
+
+    // A saved log is often all a slow report has; it must say which path each edit took and how long it waited.
+    void testRecorderNotesHowEditsWent() {
+        TailRun           shell("tie", 3);
+        const std::string held = shell.resources.recorder().dump();
+        check(has(held, "\tpath\tsurrounding: "), "recorder: notes the path of every edit", held);
+        check(has(held, "\thold\t30 ms\n"), "recorder: notes how long a split edit holds the commit", held);
+        shell.loop.pump(100);
+        check(has(shell.resources.recorder().dump(), "\tedit\tmethod=surrounding "), "recorder: notes how the edit ended", shell.resources.recorder().dump());
+        TailRun           chrome("tie", 3, "google-chrome.desktop");
+        const std::string joined = chrome.resources.recorder().dump();
+        check(has(joined, "\tjoin\t\n") && !has(joined, "\thold\t"), "recorder: notes a joined edit", joined);
+    }
 
     // Firefox's address bar drops its autocompletion only for a commit in the deletion's own turn.
     void testAutofillTailCommitsWithDeletion() {
@@ -4122,6 +4365,7 @@ namespace {
                                                        {.reportDelayMs = 30, .dropsCommitsInReport = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
                                                        std::vector<int>(keys.size(), 20));
         check(run.text == "tiếng việt nam ", "sway: an edit waiting for the copy goes out after the report", run.text);
+        check(has(resources.recorder().dump(), "\tcopy\tfits after "), "recorder: notes how the wait for the copy ended", resources.recorder().dump());
     }
 
     // On Sway and Hyprland forwarded backspaces go through a virtual keyboard, apart from the commit. When Firefox
@@ -4148,6 +4392,7 @@ namespace {
         const auto run = ngosen::test::typeInAppTraced(resources, field, {.backspaceLagMs = 60, .dropsSurroundingOnDelete = true}, keys, std::vector<int>(keys.size(), 120));
         check(run.text == "tiền nguyễn luận ", "dbus: a field that stopped declaring its text still deletes through it", run.text);
         check(run.sent.forwardedBackSpaces == 0, "dbus: no backspace for a field that stopped declaring its text", std::to_string(run.sent.forwardedBackSpaces));
+        check(has(resources.recorder().dump(), "\tpath\tsurrounding: the field stopped declaring"), "recorder: notes the path of an undeclared field", resources.recorder().dump());
         // The key after the deletion arrives while the field declares no text, which is not a field that lost the word.
         const auto ngKeys = keysOf("cuxg nhuwg ");
         const auto ng     = ngosen::test::typeInAppTraced(resources, field, {.dropsSurroundingOnDelete = true}, ngKeys, std::vector<int>(ngKeys.size(), 120));
@@ -5557,6 +5802,7 @@ int main() {
     testRecorderNotesFieldSwitch();
     testRecorderHidesPasswords();
     testRecorderMarksTerminal();
+    testRecorderMarksAddressBar();
     testRecorderKeepsOneEventPerLine();
     testRecorderLimits();
     testRecorderSkipsRepeatedReports();
@@ -5589,6 +5835,7 @@ int main() {
     testCursorPastOnBusyPage();
     testSplitWaitFollowsEchoes();
     testAutofillTailCommitsWithDeletion();
+    testRecorderNotesHowEditsWent();
     testSelectedTailGoesFirst();
     testReportRequestIsNotInput();
     testNoCopyWaitForBackspaceField();
@@ -5632,6 +5879,7 @@ int main() {
     testXtermKeepsOnlyCommits();
     testXtermFirstWords();
     testXtermRememberedAfterFocus();
+    testXtermResetCommitsPreedit();
     testTypedBackspaceIsNotHiddenLetter();
     testFirstLettersSkipDroppedKeys();
     testShortDeletion();
@@ -5639,6 +5887,7 @@ int main() {
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();
     testUnansweredChecksLeaveNoMark();
+    testTeencodePerApp();
     check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

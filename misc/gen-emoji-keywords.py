@@ -9,6 +9,7 @@ window shows from Unicode's emoji-test.txt (Fedora: unicode-emoji; Debian: unico
 A flag has only the keyword "flag" in CLDR; its country name is in the spoken name, "flag: Vietnam".
 """
 
+import re
 import sys
 import unicodedata
 import xml.etree.ElementTree as ET
@@ -22,6 +23,10 @@ TABLE = ROOT / "settings-gui/core/emoji_table.py"
 # Newer emoji show as boxes with the emoji fonts most users have.
 NEWEST = 16.0
 SKIN_TONES = {chr(c) for c in range(0x1F3FB, 0x1F400)}
+# An English keyword shared by more emoji than this names none of them, as man, hand or face do.
+MOST_EMOJI = 20
+# The list shows five; the rest of a keyword's emoji would never be offered.
+SHOWN = 5
 
 
 def is_flag(cp):
@@ -50,6 +55,7 @@ def main():
             if name not in seen:
                 seen.add(name)
                 rows.append((name, cp, "country"))
+    rows += english_rows(seen)
     rows.sort()
     # The settings window turns a pair off by the emoji as written, so each needs the one spelling.
     used = {e for _k, emoji, _kind in rows for e in emoji.split()}
@@ -80,6 +86,50 @@ def versions():
     return _versions
 
 
+def english_rows(seen):
+    """CLDR's English keywords and names, for emoji the settings window lists.
+
+    An emoji whose name is the keyword, or ends with it, comes first, then Unicode's order.
+    """
+    order = {bare(e): i for i, e in enumerate(versions())}
+    full = {bare(e): e for e in versions()}
+    names, emoji_of = {}, {}
+    for folder in ("annotations", "annotationsDerived"):
+        for node in ET.parse(CLDR / folder / "en.xml").iter("annotation"):
+            key = bare(node.get("cp"))
+            if key not in full or versions()[full[key]] > NEWEST or SKIN_TONES & set(key):
+                continue
+            text = node.text.strip().lower()
+            words = [text] if node.get("type") == "tts" else text.split("|")
+            if node.get("type") == "tts":
+                names[key] = text
+            for word in (w.strip() for w in words):
+                if is_english(word):
+                    emoji_of.setdefault(word, set()).add(key)
+    rows = []
+    for word, keys in emoji_of.items():
+        # hahaha or zzz is a sound, and those are picked by hand.
+        if word in seen or len(keys) > MOST_EMOJI or re.fullmatch(r"(..?)\1+", word):
+            continue
+        best = sorted(keys, key=lambda k: (rank(names.get(k, ""), word), order[k]))[:SHOWN]
+        rows.append((word, " ".join(full[k] for k in best), "english"))
+    return rows
+
+
+def rank(name, word):
+    # moon offers the new moon before the moon cake.
+    if name == word:
+        return 0
+    if name.endswith(" " + word):
+        return 1
+    return 2 if word in name.split() else 3
+
+
+def is_english(text):
+    # Only what a keyboard types as is; a name like "flag: Vietnam" or "piñata" is not.
+    return is_word(text) and all(c.isascii() and (c.isalnum() or c in " -'") for c in text)
+
+
 def is_word(text):
     # A spoken name such as "mặt cười miệng há với mắt to" or "cờ: việt nam" is nothing anyone types.
     return bool(text) and ":" not in text and len(text.split()) <= 3
@@ -93,12 +143,12 @@ def write_table(rows):
     """The settings window's list: every emoji, its group, spoken name and keywords.
 
     "on" are the keywords that offer it by default; "off" are other words of its CLDR name the user
-    can turn on with one click.
+    can turn on with one click; "english" are the English keywords, behind their own switch.
     """
-    on = {}
-    for keyword, emoji, _kind in rows:
+    on, english = {}, {}
+    for keyword, emoji, kind in rows:
         for e in emoji.split():
-            on.setdefault(bare(e), []).append(keyword)
+            (english if kind == "english" else on).setdefault(bare(e), []).append(keyword)
     names, words = {}, {}
     for folder in ("annotations", "annotationsDerived"):
         for node in ET.parse(CLDR / folder / "vi.xml").iter("annotation"):
@@ -129,7 +179,14 @@ def write_table(rows):
             if is_word(w) and w not in defaults
         ]
         table.append(
-            (emoji, groups.index(group), names.get(key, ""), tuple(defaults), tuple(others))
+            (
+                emoji,
+                groups.index(group),
+                names.get(key, ""),
+                tuple(defaults),
+                tuple(others),
+                tuple(sorted(set(english.get(key, [])))),
+            )
         )
     with TABLE.open("w", encoding="utf-8") as f:
         f.write(
@@ -137,7 +194,9 @@ def write_table(rows):
         )
         f.write("# fmt: off\n")
         f.write(f"GROUPS = {tuple(groups)!r}\n")
-        f.write("# (emoji, group, name, keywords on by default, other words of its name)\n")
+        f.write(
+            "# (emoji, group, name, keywords on by default, other words of its name, English keywords)\n"
+        )
         f.write("EMOJI = (\n")
         for row in table:
             f.write(f"    {row!r},\n")

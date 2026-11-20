@@ -30,6 +30,7 @@ Copyright: 2026 Ngó Sen contributors
 License: LGPL-2.1-or-later
 
 Files: bamboo-rs/src/engine/english-*
+       bamboo-rs/src/engine/teencode-over-english.txt*
        data/english-common.txt
 Copyright: 2000-2026 Kevin Atkinson
 License: SCOWL

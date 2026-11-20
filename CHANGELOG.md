@@ -10,6 +10,79 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.13.0-1] — 20/11/2026
+
+Phím chuyển Anh/Việt nay chuyển mọi app cùng lúc như UniKey, cài mới bật sẵn tiếng Việt (#825). Gợi ý emoji mặc định hiện ở cuối câu, bấm số để chọn khi gõ Telex, hiện ngay trong ô trên GNOME không có extension Input Method Panel, nhận cả từ tiếng Anh, và trang Emoji xuất, nhập được từ gợi ý (#110, #821, #827, #830, #832, #834, #845, #848, #849, #851, #854, #859, #862, #863). Gõ kéo dài chữ: `afaaa` ra `àààà` (#852, #871). Teencode bật riêng cho từng app (#701, #829, #833, #843, #844). Lệnh `ngosen-toggle` để gán phím tắt của desktop (#828). Cài được từ AUR (#873). Bản IBus không còn ra chữ đôi trong terminal dùng xterm.js (#878); Gõ Sen không còn nuốt chữ khi gõ nhanh trong terminal xterm.js của các trình soạn code Electron (#867, #880). Kiểm tra máy báo thêm bảng mã không phải Unicode và bàn phím đứng trước Ngó Sen (#839, #872, #875).
+Tải ở [ngosen-1.13.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.13.0-1).
+
+### Thêm
+
+- Gõ kéo dài chữ: giữ phím chữ cái cuối của một từ có dấu thì chữ đó lặp lại cùng dấu, `afaaa` ra `àààà`,
+  `ooiiii` ra `ôiiii`, `ddusngggg` ra `đúngggg`, thay vì hiện lại các phím đã gõ. Gõ dấu sau cùng cũng được:
+  `aaaaf` ra `àààà`, `chaooof` ra `chàooo`. Từ tiếng Anh gõ kéo dài như `besttt` hay `thereee` vẫn giữ nguyên
+  (#852, #871).
+- Gợi ý emoji cuối câu nay hiện suốt lúc gõ trên ô nổi của fcitx5, từ từ khoá đầu tiên tới hết câu, thay vì chỉ
+  loé lên lúc dừng tay. Dừng tay hoặc gõ `. ! ?` thì bấm Tab để chọn như trước; Esc ẩn emoji tới hết câu;
+  xoá hết câu đó rồi gõ câu mới thì emoji hiện lại (#849, #854, #859, #862, #863).
+- Gõ Telex: khi bảng emoji cuối câu chọn được, bảng đánh số `1.😂 2.🤣` và bấm số là chèn luôn, không cần Tab. Kiểu gõ
+  dùng phím số để bỏ dấu (VNI, Telex + VNI) vẫn bấm Tab trước. `giá 3.5` hay `bước 1.` không còn bị coi là hết câu (#851).
+- Lệnh `ngosen-toggle` để gán cho phím tắt của desktop: chuyển Anh/Việt như Ctrl + Shift, kể cả khi không có
+  ô nhập nào đang focus. Nếu ô đang focus dùng bộ gõ fcitx5 khác thì chuyển sang Ngó Sen; lỗi thì hiện thông báo
+  desktop. Chưa tự gán phím tắt; bản sau sẽ cho thiết lập trong cửa sổ cài đặt (#828).
+- Trên GNOME không có extension Input Method Panel, Chrome và các app GNOME chuyển phím hộ trước đây không hiện
+  gợi ý emoji. Nay dừng gõ chừng nửa giây là gợi ý hiện ngay trong ô, gạch chân, lấy emoji của mọi từ trong câu
+  (`con mèo cười quá` → `Tab: 😂 🤣 😄 🐈 🐱`); Tab rồi số để chọn, emoji thêm vào chỗ con trỏ (#110, #821).
+- Khi danh sách emoji đã đánh số, phím mũi tên dời ô đang chọn và Enter, Space hoặc Tab lấy emoji đang chọn. Ô nổi
+  của fcitx5 mặc định vẽ chữ to hơn (Sans 13 thay Sans 10) cho dễ nhìn emoji; ai đã tự đặt font thì giữ nguyên (#110, #827).
+- Gợi ý emoji nhận cả từ tiếng Anh theo danh sách của Unicode: `cat` 🐈, `star` ⭐, `thumbs up` 👍. Từ quá chung
+  (`man`, `hand`, `face`) và từ trùng chữ Việt như `can`, `me` thì không gợi ý. Trang Emoji hiện từ tiếng Anh cạnh
+  từ tiếng Việt; tuỳ chọn "Từ khoá tiếng Anh" mặc định bật, tắt đi là gỡ hết (#110, #830).
+- Trang Emoji có nút "Xuất…" và "Nhập…" để chia sẻ từ gợi ý emoji: Xuất lưu các từ mình đã bật ra một file nhỏ,
+  Nhập thêm từ của file vào mà giữ nguyên từ của mình (từ mình đã tắt vẫn tắt). "Khôi phục bản sao lưu" không nhận
+  file này để khỏi xoá mất từ đang có (#110, #832).
+- Gợi ý emoji nay mặc định hiện "Ở cuối câu", vì lúc đang gõ nhanh ít ai nhìn lên danh sách; muốn như trước thì
+  chọn "Sau mỗi từ" ở tuỳ chọn "Gợi ý emoji". Ở cuối câu, gõ `.` `!` `?` hay dừng tay một
+  chút thì danh sách hiện emoji của mọi từ khoá trong câu, emoji chọn được thêm sau dấu câu (`vui quá! 😂`). Gợi ý
+  trong ô gõ nay cũng nhận từ đứng trước dấu chấm (`con mèo.` gợi ý 🐈) (#110, #834, #845).
+- Teencode, bật riêng cho từng app bằng phím `t` trong menu `` ` ``, mặc định tắt: chữ viết kiểu teencode như `zậy`,
+  `fải`, `đag`, `nhưg` giữ dấu thay vì trả về phím đã gõ; gõ thanh sau `g`, `k`, `h` vẫn được (`nhuwgx` ra
+  `nhữg`). Từ tiếng Anh phần lớn vẫn giữ nguyên (#701, #829, #843).
+- Teencode giữ thêm chữ kéo dài (`nhaaa`, `chàiii` gõ `chaiiif`) và viết tắt ghép (`cgái`, `bthường`,
+  `đthoại`) (#701, #833).
+- Trang Gõ trong cửa sổ cài đặt có mục Teencode: cách bật và danh sách app đang bật, mỗi app có nút tắt. Bản sao
+  lưu cài đặt nay giữ cả danh sách này (#701, #844).
+- Arch và các distro dựa trên Arch cài được từ AUR: `yay -S fcitx5-ngosen`, bản IBus `yay -S ibus-ngosen`.
+  Mỗi version mới tự lên AUR khi phát hành ([#873](https://github.com/ngosen/ngosen/pull/873)).
+
+### Thay đổi
+
+- "Lưu nhật ký gõ" nay ghi thêm mỗi lần sửa chữ đi đường nào và vì sao, chờ app bao lâu, và trên GNOME có gửi
+  xoá cùng chữ mới một lần hay không, để báo lỗi gõ chậm hoặc sai chỉ cần gửi nhật ký gõ (#883).
+- Nâng thư viện gõ Rust bamboo-core từ 0.5.2 lên 0.6.0. Cách gõ không đổi; đổi thiết lập giữa lúc đang gõ một
+  từ thì phím kế tiếp gõ lại cả từ theo thiết lập mới. Gói do distro đóng gói vẫn build được với bamboo-core
+  0.5.2 trở lên (#876).
+- Kiểm tra máy trên GNOME nói rõ thiếu extension Input Method Panel thì bảng emoji có thể che chữ đang gõ
+  (app Wayland như Firefox); README hướng dẫn cài nó cả khi cài từ package (#866).
+- Cài mới bật sẵn tiếng Việt; người dùng cũ giữ trạng thái đang dùng. Phím chuyển Anh/Việt nay mặc định
+  chuyển mọi app cùng lúc như UniKey, kể cả khi cập nhật. App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh;
+  bấm phím chuyển tại đó mở menu để chọn Gõ Sen hoặc Gạch chân. Muốn mỗi app nhớ riêng như trước, chọn
+  “Từng app” ở “Phím chuyển áp dụng cho”, ngay dưới phím chuyển trên trang Phím tắt (#825).
+- Trang Kiểm tra máy nhắc khi Bảng mã không phải Unicode, kèm cách đổi lại; bản báo lỗi copy ra cũng ghi bảng mã. Lời
+  giải thích dưới Bảng mã nói rõ "Unicode tổ hợp" gửi dấu thanh tách khỏi chữ, nên terminal và nhiều app gõ sai (#839).
+
+### Sửa
+
+- Bấm chuột sang chỗ khác trong ô gõ thì danh sách emoji của từ cũ đóng lại, không còn bấm vào nó mà chèn emoji (hay thay
+  chữ) ở chỗ con trỏ mới (#848).
+- Trang Kiểm tra máy nay báo khi danh sách bộ gõ của fcitx5 còn một bàn phím khác đứng trước Ngó Sen. Khi đó
+  cửa sổ mới mở ra ở bàn phím kia nên Ctrl+Shift không đổi Anh/Việt. Nút "Xoá" bỏ bàn phím thừa và có thể hoàn
+  tác. Kết quả kiểm tra gửi kèm báo lỗi nay cũng liệt kê các bộ gõ trong danh sách (#872, #875).
+- Bản IBus: trong terminal dùng xterm.js, app reset ô đúng lúc vừa gõ một chữ không còn làm chữ đó ra đôi (`dd` ra
+  `đđ`) (#878).
+- Trong terminal dùng xterm.js của các trình soạn code Electron (như Antigravity, VS Code, Cursor), chế độ Gõ Sen không
+  còn khựng chờ hay nuốt chữ khi gõ nhanh (`xin chaof nhieefu` ra `xin chào nhiều` thay vì `xin chàoiều`), và khung chat
+  hay ô soạn code cùng cửa sổ không còn nháy preedit ở cuối từ; mới thử trên Antigravity ở KDE Wayland (#867, #880).
+
 ## [1.12.2-1] — 18/11/2026
 
 Gõ lại dấu thanh sau phụ âm cuối nay ra đúng chữ, một số từ tiếng Anh như `aface` không còn bị cắt (#835). Trên GNOME, gõ nhanh ngay sau khi mở Firefox, xoá bằng Backspace rồi gõ tiếp không còn lộn chữ (#831). Brave trên Fedora GNOME không còn mất dấu hay lộn chữ (#842). Gõ Sen trong terminal dùng xterm.js nay đúng từ đầu sau khi fcitx5 khởi động, kể cả VaultID trên GNOME; trên KDE, hai phím đầu quá nhanh vẫn có thể làm mất chữ đầu (#846, #853, #864). Menu chọn chế độ gõ đóng ngay khi click ra ngoài, kể cả click vào ô đang gõ trên KDE; nơi click không đóng được menu vẫn tự tắt sau 5 giây (#836, #840, #850).

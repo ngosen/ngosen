@@ -47,10 +47,11 @@ Qt version on KDE Plasma:
   The menu only opens while Vietnamese is enabled.
 - Emoji suggestions: after a word such as `cười`, `con mèo` or `haha`, `Tab: 😂 …` appears next to the
   cursor. Tab numbers the emoji, a number picks one, Esc keeps the text.
-- Separate English/Vietnamese toggle: new installations use Ctrl+Shift, as in UniKey; existing installations keep
-  Ctrl+Space. In English mode, typing works as if no input method were active. Each app remembers its
-  English or Vietnamese choice across logouts; apps where you have not used the toggle follow its most
-  recent setting.
+- Separate English/Vietnamese toggle: new installations start in Vietnamese and use Ctrl+Shift, as in UniKey;
+  existing installations keep their switch key and current language setting. By default, the switch changes
+  all apps at once, and the choice survives logouts. In English mode, typing works as if no input method were
+  active. Choose Each app under Switch Applies To on the Shortcuts page to keep a separate choice for each
+  app, as before. Apps set to OFF in the ` menu stay in English.
 - Typing English while Vietnamese is enabled: words that cannot become Vietnamese revert to the exact
   keys you typed, usually as you type and at the latest when you press Space. Measured with Telex and
   default settings on 9,884 common English words: 92.9% are correct before Space and 96.9% after Space.

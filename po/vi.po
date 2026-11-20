@@ -453,10 +453,6 @@ msgid "Colour icon"
 msgstr "Biểu tượng màu"
 
 #: src/ngosen-config.h
-msgid "One-colour icon"
-msgstr "Biểu tượng một màu"
-
-#: src/ngosen-config.h
 msgid "Interface Language"
 msgstr "Ngôn ngữ giao diện"
 

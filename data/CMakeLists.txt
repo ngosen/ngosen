@@ -11,7 +11,7 @@ set(NGOSEN_STATUS_ICONS
     ${NGOSEN_TILE_ICONS}
     fcitx-ngosen-default fcitx-ngosen-default-black
     fcitx-ngosen-off-default fcitx-ngosen-off-default-black)
-foreach(TEXT v e vi en)
+foreach(TEXT vi en)
     list(APPEND NGOSEN_STATUS_ICONS fcitx-ngosen-text-${TEXT}-default fcitx-ngosen-text-${TEXT}-default-black)
 endforeach()
 
@@ -64,7 +64,12 @@ endfunction()
 # matches other trays leaves Ngó Sen's tile smaller there.
 foreach(ICON ${NGOSEN_STATUS_ICONS})
     set(OUT "${CMAKE_CURRENT_BINARY_DIR}/icons/gnome/${ICON}-gnome.svg")
-    ngosen_scaled_icon("${CMAKE_CURRENT_SOURCE_DIR}/icons/hicolor/scalable/apps/${ICON}.svg" 1.3 ${OUT})
+    # The language codes are already wider than the tile, so they can grow less before clipping.
+    set(SCALE 1.3)
+    if(ICON MATCHES "-text-")
+        set(SCALE 1.1)
+    endif()
+    ngosen_scaled_icon("${CMAKE_CURRENT_SOURCE_DIR}/icons/hicolor/scalable/apps/${ICON}.svg" ${SCALE} ${OUT})
     install(FILES ${OUT} DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/status")
 endforeach()
 

@@ -116,12 +116,11 @@ namespace fcitx {
 
     enum class TrayIconKind : std::uint8_t {
         ColourIcon,
-        OneColourIcon,
         Letter,
         LanguageCode,
     };
 
-    FCITX_CONFIG_ENUM_NAME_WITH_I18N(TrayIconKind, N_("Colour icon"), N_("One-colour icon"), N_("V / E"), N_("vi / en"));
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(TrayIconKind, N_("Colour icon"), N_("V / E"), N_("vi / en"));
 
     enum class EmojiPlacement : std::uint8_t {
         AfterWord,

@@ -48,9 +48,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   lưu cài đặt nay giữ cả danh sách này (#701, #844).
 - Arch và các distro dựa trên Arch cài được từ AUR: `yay -S fcitx5-ngosen`, bản IBus `yay -S ibus-ngosen`.
   Mỗi version mới tự lên AUR khi phát hành ([#873](https://github.com/ngosen/ngosen/pull/873)).
-- Khay có thể hiện chữ thay cho biểu tượng: `V` / `E` hoặc `vi` / `en`, theo màu đã chọn trong "Màu biểu
-  tượng". Chọn ở mục "Khay hiện", mục này thay cho ô "Sử dụng biểu tượng trạng thái Ngó Sen". Ai đã tắt ô
-  đó thì chọn lại "Biểu tượng một màu" sau khi cập nhật (#908).
+- Khay có thể hiện chữ `vi` / `en` thay cho biểu tượng, theo màu đã chọn trong "Màu biểu tượng". Chọn ở mục
+  "Khay hiện", mục này thay cho ô "Sử dụng biểu tượng trạng thái Ngó Sen"; chữ `V` / `E` một màu cũ nay là
+  lựa chọn "V / E", chữ `E` có thêm một lỗ ngó. Ai đã tắt ô đó thì chọn lại "V / E" sau khi cập nhật (#908).
 
 ### Thay đổi
 

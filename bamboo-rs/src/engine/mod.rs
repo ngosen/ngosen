@@ -1383,14 +1383,14 @@ impl BambooEngine {
     }
 
     /// Whether the word is stretched by repeating a letter (`ừaaa`, `ờaaa`, `trờiii`), rather
-    /// than followed by stray keys or a second word (`cáioo`).
+    /// than followed by stray keys or a second word (`cáioo`). One key is enough when the kept
+    /// word already ends stretched, as after Backspace in `chàiii`.
     fn has_stretched_tail(&self, kept: &KeptWord, shown: &str) -> bool {
         let tail: Vec<char> = self.raw_text().chars().skip(kept.keys).collect();
         let Some(&first) = tail.first().filter(|c| c.is_ascii_alphabetic()) else {
             return false;
         };
-        tail.len() >= 2
-            && tail.iter().all(|c| c.eq_ignore_ascii_case(&first))
+        tail.iter().all(|c| c.eq_ignore_ascii_case(&first))
             && without_diacritics(shown)
                 .chars()
                 .rev()

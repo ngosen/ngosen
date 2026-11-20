@@ -15,7 +15,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - KDE Plasma (Wayland): WPS Office gõ được tiếng Việt. Lệnh cài đặt `QT_IM_MODULE=fcitx` riêng cho WPS, cả
   bản Flatpak lẫn bản cài từ package; các app khác giữ nguyên. Ai đã cài thì chạy lại lệnh cài rồi mở lại WPS (#897).
 - Bấm Backspace khi đang gõ dở chữ kéo dài có dấu gõ sau cùng, như `chaiiif` ra `chàiii`, nay chỉ xoá một chữ i, không
-  còn mất luôn dấu thành `chaiii`. Chữ teencode cũng vậy: `fải` xoá còn `fả` (#898, #902).
+  còn mất luôn dấu thành `chaiii`. Chữ teencode cũng vậy: `fải` xoá còn `fả` (#898, #902, #906).
 
 ## [1.13.0-1] — 20/11/2026
 

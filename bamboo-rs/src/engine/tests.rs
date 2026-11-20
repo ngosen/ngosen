@@ -1786,6 +1786,9 @@ fn test_backspace_keeps_the_tone_of_a_stretched_or_teencode_word() {
     e.process_key_event(KEY_BACKSPACE, 0);
     type_keys(&mut e, "i");
     assert_eq!(e.preedit_text, "chàiii");
+    e.drop_kept_tail = true;
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.pull_commit(), "chàiii ");
 }
 
 #[test]

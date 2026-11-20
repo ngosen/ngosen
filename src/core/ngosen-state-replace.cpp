@@ -1149,7 +1149,7 @@ namespace ngosen {
         echoKeyAtUs_               = 0;
         const Surrounding& copy    = host_->surrounding();
         const std::string  key     = host_->keyText(keyEvent.sym());
-        const bool         editing = is_deleting_.load(std::memory_order_acquire) || split_edit_pending_ || key_report_pending_ || !buffered_keys_.empty();
+        const bool         editing = is_deleting_.load(std::memory_order_acquire) || split_edit_pending_ || key_report_.pending || !buffered_keys_.empty();
         if (!ngosen::keepsLastEditPerTurn(host_->field()) || !paused || keySinceReport_ || editing || !copy.isValid() || copy.cursor() != copy.anchor())
             return;
         if ((keyEvent.states() & ~ngosen::modifier::Shift) != 0 || key.size() != 1)
@@ -1381,7 +1381,7 @@ namespace ngosen {
     }
 
     void TypingState::requestReportWhileUnanswered() {
-        if ((!surrCheck_ && !(key_report_pending_ && key_report_until_copy_fits_)) || report_requests_left_ == 0 || !host_->hasFocus())
+        if ((!surrCheck_ && !(key_report_.pending && key_report_.untilCopyFits)) || report_requests_left_ == 0 || !host_->hasFocus())
             return;
         // mutter keeps one commit per turn and a busy shell can hold a turn open, so asking before the
         // edit has come out could replace its commit.

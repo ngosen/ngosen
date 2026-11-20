@@ -308,7 +308,7 @@ namespace ngosen {
             noteEcho(host_->surrounding());
         }
         // A repeat that a wait acts on stays in the log for its timing.
-        if (waiting || overtyping || key_report_pending_)
+        if (waiting || overtyping || key_report_.pending)
             engine_->recorder().add("app", report);
         else
             engine_->recorder().addSurrounding(report);
@@ -338,16 +338,16 @@ namespace ngosen {
             keySinceReport_ = false;
         // A report with focus away may be another app's; the next report or the timer ends the wait.
         // wlroots drops an edit sent before the done event that follows this report, so the timer sends it.
-        if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && !host_->surrounding().isValid()) {
+        if (key_report_.pending && key_report_.untilCopyFits && host_->hasFocus() && !host_->surrounding().isValid()) {
             // A field that stops reporting is not the one the word was typed in.
             finishKeyReportWait(false, false);
-        } else if (key_report_pending_ && key_report_until_copy_fits_ && host_->hasFocus() && copyWaitDone()) {
-            key_report_copy_fits_  = true;
+        } else if (key_report_.pending && key_report_.untilCopyFits && host_->hasFocus() && copyWaitDone()) {
+            key_report_.copyFits   = true;
             sinceFocus_.copyFitted = true;
             if (!ngosen::namesNoApp(host_->field()))
                 engine_->noteCopyFitted(host_->field().frontend, host_->field().program);
-            key_report_timer_->rearm(ngosen::monotonicUs());
-        } else if (key_report_pending_ && !key_report_until_copy_fits_ && host_->hasFocus()) {
+            key_report_.timer->rearm(ngosen::monotonicUs());
+        } else if (key_report_.pending && !key_report_.untilCopyFits && host_->hasFocus()) {
             // Calc answers our Shift with an empty field when the key went to a cell not being edited.
             const auto s = host_->surrounding();
             finishKeyReportWait(s.isValid() && !(ngosen::reportsFieldOnlyOnKey(host_->field()) && s.text().empty()), false);
@@ -369,14 +369,14 @@ namespace ngosen {
     }
 
     void TypingState::startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits) {
-        key_report_until_copy_fits_ = untilCopyFits;
-        key_report_copy_fits_       = false;
-        key_report_key_             = live_key_ ? *live_key_ : replayed_key_;
-        key_report_deleted_         = deletedPart;
-        key_report_added_           = addedPart;
-        key_report_pending_         = true;
-        key_report_started_us_      = ngosen::monotonicUs();
-        surr_wait_focus_retries_    = 0;
+        key_report_.untilCopyFits = untilCopyFits;
+        key_report_.copyFits      = false;
+        key_report_.key           = live_key_ ? *live_key_ : replayed_key_;
+        key_report_.deleted       = deletedPart;
+        key_report_.added         = addedPart;
+        key_report_.pending       = true;
+        key_report_.startedUs     = ngosen::monotonicUs();
+        surr_wait_focus_retries_  = 0;
         is_deleting_.store(true, std::memory_order_release);
         if (ngosen::reportsFieldOnlyOnKey(host_->field())) {
             // The key itself never reaches the app, so give it one that types nothing.
@@ -394,11 +394,11 @@ namespace ngosen {
         const int      copyWaitMs = waitsLonger ? SlowCopyWaitMs : 2 * LaggingReportWaitMs;
         const uint64_t waitUs     = untilCopyFits ? static_cast<uint64_t>(copyWaitMs) * 1000ULL : KeyReportWaitUs;
         // A replay from the timer can start the next wait, so the timer is rearmed rather than replaced.
-        if (key_report_timer_) {
-            key_report_timer_->rearm(ngosen::monotonicUs() + waitUs);
+        if (key_report_.timer) {
+            key_report_.timer->rearm(ngosen::monotonicUs() + waitUs);
             return;
         }
-        key_report_timer_ = host_->startTimer(ngosen::monotonicUs() + waitUs, 1000, [this](ngosen::Timer& t) {
+        key_report_.timer = host_->startTimer(ngosen::monotonicUs() + waitUs, 1000, [this](ngosen::Timer& t) {
             if (!host_->hasFocus()) {
                 // A bounce can span the deadline, so give it a moment to come back.
                 if (++surr_wait_focus_retries_ <= 5) {
@@ -408,46 +408,46 @@ namespace ngosen {
                 dropReplacementAfterFocusLoss();
                 return false;
             }
-            if (key_report_until_copy_fits_) {
-                if (!key_report_copy_fits_)
+            if (key_report_.untilCopyFits) {
+                if (!key_report_.copyFits)
                     NGOSEN_INFO("Copy of the text still short, deleting anyway");
                 // One field of an app can lack what another reports; it should stall once, not on every word.
-                if (!key_report_copy_fits_ && copyWaitLong_) {
+                if (!key_report_.copyFits && copyWaitLong_) {
                     sinceFocus_.longWaitRanOut = true;
                     NGOSEN_INFO("Longer copy wait ran out: short waits in this field");
                 }
-                copyWaitTimedOut_ = !key_report_copy_fits_;
+                copyWaitTimedOut_ = !key_report_.copyFits;
                 engine_->recorder().add(
-                    "copy", std::string(key_report_copy_fits_ ? "fits" : "timeout") + " after " + std::to_string((ngosen::monotonicUs() - key_report_started_us_) / 1000) + " ms");
+                    "copy", std::string(key_report_.copyFits ? "fits" : "timeout") + " after " + std::to_string((ngosen::monotonicUs() - key_report_.startedUs) / 1000) + " ms");
                 copyWaitsRunOut_ = copyWaitTimedOut_ ? copyWaitsRunOut_ + 1 : 0;
                 if (copyWaitRetry_)
                     sinceFocus_.retriesRunOut = copyWaitTimedOut_ ? sinceFocus_.retriesRunOut + 1 : 0;
             }
             finishKeyReportWait(true, true);
-            return key_report_pending_;
+            return key_report_.pending;
         });
     }
 
     // A field with no text to edit means the key went to a cell that is not being edited, so the word
     // before it is gone.
     void TypingState::finishKeyReportWait(bool sameField, bool fromTimer) {
-        if (!key_report_pending_)
+        if (!key_report_.pending)
             return;
-        key_report_pending_ = false;
+        key_report_.pending = false;
         copyWaitRetry_      = false;
         if (!fromTimer) {
-            key_report_timer_.reset(); // never reset a timer from inside its own callback
+            key_report_.timer.reset(); // never reset a timer from inside its own callback
             copyWaitTimedOut_ = false;
         }
         if (sameField) {
-            deleteAndCommit(key_report_deleted_, key_report_added_);
+            deleteAndCommit(key_report_.deleted, key_report_.added);
             return;
         }
         NGOSEN_INFO("Key went to another field, starting a new word");
         logReplaceEnd("key went to another field");
         forgetWaitingReplacement();
         is_deleting_.store(false, std::memory_order_release);
-        buffered_keys_.insert(buffered_keys_.begin(), key_report_key_);
+        buffered_keys_.insert(buffered_keys_.begin(), key_report_.key);
         replayBufferedKeys();
     }
 
@@ -466,7 +466,7 @@ namespace ngosen {
         // Only the count: the keys are text the user typed.
         NGOSEN_INFO("Focus left during the wait, dropping the replacement and " + std::to_string(buffered_keys_.size()) + " held keys");
         logReplaceEnd("focus lost, text dropped");
-        key_report_pending_ = false;
+        key_report_.pending = false;
         copyWaitRetry_      = false;
         forgetWaitingReplacement();
         buffered_keys_.clear();

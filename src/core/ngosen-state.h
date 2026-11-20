@@ -549,30 +549,36 @@ namespace ngosen {
         // and reports the field right after it; over Wayland it reports only when a key reaches it. A
         // click on another cell shows only in that report. A frontend that counts the deletion on its copy
         // of the text (mutter) waits until that copy holds what the deletion needs.
-        bool                           waitsForKeyReport() const;
-        bool                           reportsItsEdits() const;
-        void                           startReportRequestTimer();
-        void                           startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);
-        void                           finishKeyReportWait(bool sameField, bool fromTimer);
-        void                           forgetWaitingReplacement();
-        void                           dropReplacementAfterFocusLoss();
-        void                           deleteAndCommit(const std::string& deletedPart, const std::string& addedPart);
-        std::unique_ptr<ngosen::Timer> key_report_timer_;
-        bool                           key_report_pending_         = false;
-        uint64_t                       key_report_started_us_      = 0;
-        bool                           key_report_until_copy_fits_ = false;
-        std::optional<KeyEntry>        live_key_;   ///< key being handled, replayed if it landed in another field
-        std::optional<KeyEntry>        passed_key_; ///< last key let through to the app as typed
-        void                           startWordWithKey(const KeyEntry& key);
-        std::optional<std::string>     keysTakenOverCell(const Surrounding& s, const std::u32string& shownBefore) const;
-        KeyEntry                       key_report_key_{};
-        KeyEntry                       replayed_key_{};
-        bool                           key_report_copy_fits_    = false;
-        bool                           copyWaitLong_            = false; ///< the copy wait running now has the longer cap
-        bool                           copyWaitTimedOut_        = false; ///< keeps replayed keys from each waiting out a copy that never fits
-        int                            copyWaitsRunOut_         = 0;     ///< copy waits in a row that ran out in this field
-        uint64_t                       unconfirmedBackspacesUs_ = 0;     ///< when backspaces went out that no report has shown yet, 0 if none
-        static constexpr int           MaxCopyWaitsRunOut       = 2;
+        bool waitsForKeyReport() const;
+        bool reportsItsEdits() const;
+        void startReportRequestTimer();
+        void startKeyReportWait(const std::string& deletedPart, const std::string& addedPart, bool untilCopyFits = false);
+        void finishKeyReportWait(bool sameField, bool fromTimer);
+        void forgetWaitingReplacement();
+        void dropReplacementAfterFocusLoss();
+        void deleteAndCommit(const std::string& deletedPart, const std::string& addedPart);
+        // A replacement held until the app reports the key, or until its copy fits the deletion.
+        struct KeyReportWait {
+            std::unique_ptr<ngosen::Timer> timer;
+            bool                           pending       = false;
+            uint64_t                       startedUs     = 0;
+            bool                           untilCopyFits = false;
+            KeyEntry                       key{};
+            bool                           copyFits = false;
+            std::string                    deleted;
+            std::string                    added;
+        };
+        KeyReportWait              key_report_;
+        std::optional<KeyEntry>    live_key_;   ///< key being handled, replayed if it landed in another field
+        std::optional<KeyEntry>    passed_key_; ///< last key let through to the app as typed
+        void                       startWordWithKey(const KeyEntry& key);
+        std::optional<std::string> keysTakenOverCell(const Surrounding& s, const std::u32string& shownBefore) const;
+        KeyEntry                   replayed_key_{};
+        bool                       copyWaitLong_            = false; ///< the copy wait running now has the longer cap
+        bool                       copyWaitTimedOut_        = false; ///< keeps replayed keys from each waiting out a copy that never fits
+        int                        copyWaitsRunOut_         = 0;     ///< copy waits in a row that ran out in this field
+        uint64_t                   unconfirmedBackspacesUs_ = 0;     ///< when backspaces went out that no report has shown yet, 0 if none
+        static constexpr int       MaxCopyWaitsRunOut       = 2;
 
         // HeldBack: the copy would give a wrong deletion, but this field's checks go unanswered.
         // Fits: no wait, as the copy already ends with the word as we know it.
@@ -600,8 +606,6 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> tail_clear_timer_;
         bool                           tail_clear_pending_ = false;
         Surrounding                    tail_clear_copy_;
-        std::string                    key_report_deleted_;
-        std::string                    key_report_added_;
 
         /**
          * @brief Checks if autofill is certain for surrounding text.

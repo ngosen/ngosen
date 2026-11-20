@@ -31,8 +31,8 @@ namespace ngosen {
         const bool        resume = bounce && deletionInterruptedAt_ > 0 && is_deleting_.load();
         deletionInterruptedAt_   = 0;
         echoKeyAtUs_             = 0; // a report of another field would end it
-        if (key_report_pending_ && !resume) {
-            key_report_timer_.reset();
+        if (key_report_.pending && !resume) {
+            key_report_.timer.reset();
             dropReplacementAfterFocusLoss();
         }
         if (split_edit_pending_ && !resume) {

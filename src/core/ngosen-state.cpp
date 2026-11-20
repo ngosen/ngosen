@@ -850,7 +850,7 @@ namespace ngosen {
             // A backspace that leaves no word being typed can end right after an older word.
             backspaceBeforeKey_ = ngosen::key::isBackspace(keyEvent.sym()) && oldPreBuffer_.empty();
             // A held Backspace is counted when it replays, after the keys typed before it.
-            const bool held = key_report_pending_ && !buffered_keys_.empty() && buffered_keys_.back().heldForCopy;
+            const bool held = key_report_.pending && !buffered_keys_.empty() && buffered_keys_.back().heldForCopy;
             if (ngosen::key::isBackspace(keyEvent.sym()) && !oldPreBuffer_.empty() && !held)
                 backspaceInWord_ = true;
             reportAtKey_ = host_->surrounding();
@@ -1116,7 +1116,7 @@ namespace ngosen {
         // A key that beats the deferred commit must not land before it.
         flushDeferredCommit();
         // Nothing is being replaced any more, so an Enter still owed belongs to a dropped replacement.
-        if (!is_deleting_.load(std::memory_order_acquire) && !surr_wait_pending_ && !overtype_.pending && !key_report_pending_)
+        if (!is_deleting_.load(std::memory_order_acquire) && !surr_wait_pending_ && !overtype_.pending && !key_report_.pending)
             enter_after_replacement_ = false;
         if (g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire)) {
             g_mouse_clicked.store(false, std::memory_order_release);
@@ -1298,7 +1298,7 @@ namespace ngosen {
             }
             finishReplacement("key arrived", false);
         }
-        if (key_report_pending_ && key_report_until_copy_fits_ && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field())) {
+        if (key_report_.pending && key_report_.untilCopyFits && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field())) {
             if (holdBackspaceForCopy(keyEvent, currentSym))
                 return true;
             // The user's Backspace would be counted as one of the replacement's, so the edit goes out now.

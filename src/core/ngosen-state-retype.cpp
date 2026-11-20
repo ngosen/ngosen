@@ -198,10 +198,7 @@ namespace ngosen {
         if (canSendBackspaces()) {
             performReplacement(oldPreBuffer_, from, to);
         } else {
-            const auto length = static_cast<int>(ngosen::utf8::length(from));
-            flushComposedCommit();
-            sinceFocus_.erasedSinceReport = -1;
-            host_->deleteSurrounding(-length, static_cast<unsigned int>(length));
+            deleteBeforeCursor(ngosen::utf8::length(from));
             commit(to);
         }
         return true;

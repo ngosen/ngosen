@@ -704,6 +704,8 @@ namespace ngosen {
 
         // Replaces deletedPart, the end of word, with addedPart. word is what the app shows of the word being edited.
         void performReplacement(const std::string& word, const std::string& deletedPart, const std::string& addedPart);
+        // Deletes through the surrounding text with no wait or check, for edits outside a replacement.
+        void deleteBeforeCursor(size_t chars);
         // A deletion is out, or keys are held back right after an edit.
         bool editInFlight() const;
         // Ends the waits a focus move leaves nothing to finish for.

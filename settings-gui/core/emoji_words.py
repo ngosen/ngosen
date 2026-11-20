@@ -45,7 +45,10 @@ def export_words(words, path):
 def read_shared(path):
     """The (emoji, word) pairs in a shared file; raises OSError or ValueError when it is not one."""
     with open(path, encoding="utf-8") as f:
-        data = json.load(f)
+        try:
+            data = json.load(f)
+        except RecursionError:
+            raise ValueError(_("The emoji words in the file are damaged.")) from None
     meta = data.get("meta") if isinstance(data, dict) else None
     if not isinstance(meta, dict) or meta.get("kind") != SHARE_KIND:
         raise ValueError(_("This is not a file of emoji words exported from Ngó Sen."))
@@ -57,11 +60,19 @@ def read_shared(path):
         if not isinstance(item, dict):
             raise ValueError(_("The emoji words in the file are damaged."))
         emoji, word = item.get("Emoji"), clean(str(item.get("Keyword", "")))
-        # An emoji this version does not list, a long text, or a NUL D-Bus cannot carry is skipped
-        # rather than refused.
-        if emoji in _BY_EMOJI and word and len(word) <= LONGEST_WORD and "\0" not in word:
+        # An emoji this version does not list, a long text, or one D-Bus or the settings file
+        # cannot carry is skipped rather than refused.
+        if isinstance(emoji, str) and emoji in _BY_EMOJI and _fits(word):
             pairs.append((emoji, word))
     return pairs
+
+
+def _fits(word):
+    try:
+        word.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return 0 < len(word) <= LONGEST_WORD and "\0" not in word
 
 
 def toggle_hint(menu_keys, emoji_key):

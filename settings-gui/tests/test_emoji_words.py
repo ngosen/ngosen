@@ -228,10 +228,18 @@ class ShareTest(unittest.TestCase):
                     {"Keyword": "y" * 41, "Emoji": "👔"},
                     # D-Bus strings cannot carry NUL, so saving it would fail the whole import.
                     {"Keyword": "a\u0000b", "Emoji": "👔"},
+                    {"Keyword": "x", "Emoji": ["👔"]},
+                    {"Keyword": "a\ud800b", "Emoji": "👔"},
                 ],
             }
         )
         self.assertEqual(read_shared(self.path), [("👔", "sếp lớn")])
+
+    def test_a_file_nested_too_deep_is_refused(self):
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write("[" * 100000 + "]" * 100000)
+        with self.assertRaises(ValueError):
+            read_shared(self.path)
 
     def test_other_files_are_refused(self):
         for data in (

@@ -42,6 +42,15 @@ class ChipsTest(unittest.TestCase):
         self.assertIn(("cat", True), words().chips("🐈"))
         self.assertLess(words_of_cat.index("mèo"), words_of_cat.index("cat"))
 
+    def test_an_english_word_typed_as_vietnamese_starts_off_and_turns_on(self):
+        # The engine never offers 🥫 for can on its own, so the page must not show it on.
+        fake = FakeDBusHandler()
+        table = words(fake)
+        self.assertIn(("can", False), table.chips("🥫"))
+        table.toggle("🥫", "can")
+        self.assertTrue(table.save())
+        self.assertEqual(saved(fake), [{"Keyword": "can", "Emoji": "🥫", "On": "True"}])
+
     def test_english_off_hides_english_words(self):
         table = words()
         table.english = False

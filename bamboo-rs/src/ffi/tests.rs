@@ -319,3 +319,16 @@ fn plain_words_that_are_already_vietnamese() {
         assert!(!is_syllable(word), "{word}");
     }
 }
+
+// Prints the phrases in NGOSEN_WORDS whose every word is a Vietnamese syllable, for
+// misc/gen-emoji-keywords.py: the engine does not offer those as English keywords.
+#[test]
+#[ignore = "generator input, not a check"]
+fn print_vietnamese_phrases() {
+    let path = std::env::var("NGOSEN_WORDS").unwrap();
+    for phrase in std::fs::read_to_string(path).unwrap().lines() {
+        if !phrase.is_empty() && phrase.split(' ').all(is_syllable) {
+            println!("VIETNAMESE\t{phrase}");
+        }
+    }
+}

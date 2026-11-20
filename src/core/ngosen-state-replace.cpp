@@ -177,12 +177,12 @@ namespace ngosen {
     // clears is_deleting_ and a later timer would drop the text, so commit now.
     void TypingState::flushPendingReplacement() {
         // Held keys stay too: focus bouncing after the edit comes back, and the keys land then.
-        if (!surr_wait_pending_) {
+        if (!surr_wait_.pending) {
             return;
         }
         // Committing before a timer-only wait ends would land before the backspaces. The focus loss is
         // usually Chromium X11 bouncing focus, so let the timer commit.
-        if (surr_wait_timer_only_) {
+        if (surr_wait_.timerOnly) {
             return;
         }
         // Committing now would be lost; a field that empties itself refocuses within a few ms (#93),
@@ -251,13 +251,13 @@ namespace ngosen {
         }
         // Reuse the timer-only wait state: a key arriving mid-wait finishes the wait first, focus loss
         // leaves the commit to the timer, and the snapshot watcher and timeout stay quiet.
-        surr_wait_pending_       = true; // the immediate path gets here without the flag set
-        surr_wait_timer_only_    = true;
-        surr_wait_focus_retries_ = 0;
-        settle_reason_           = reason;
-        surr_wait_deliver_at_    = ngosen::monotonicUs() + (static_cast<uint64_t>(settleMs) * 1000ULL);
-        replaceTimer(settle_timer_, startWaitTimer(surr_wait_deliver_at_, [this](ngosen::Timer&) {
-                         if (!surr_wait_pending_ || !surr_wait_timer_only_ || !is_deleting_.load()) {
+        surr_wait_.pending      = true; // the immediate path gets here without the flag set
+        surr_wait_.timerOnly    = true;
+        surr_wait_.focusRetries = 0;
+        settle_reason_          = reason;
+        surr_wait_.deliverAt    = ngosen::monotonicUs() + (static_cast<uint64_t>(settleMs) * 1000ULL);
+        replaceTimer(settle_timer_, startWaitTimer(surr_wait_.deliverAt, [this](ngosen::Timer&) {
+                         if (!surr_wait_.pending || !surr_wait_.timerOnly || !is_deleting_.load()) {
                              return false;
                          }
                          finishReplacement(settle_reason_, false);
@@ -266,20 +266,20 @@ namespace ngosen {
     }
 
     void TypingState::noteWaitOutcome(const char* reason) {
-        const auto elapsedMs = (ngosen::monotonicUs() - surr_wait_started_at_) / 1000;
+        const auto elapsedMs = (ngosen::monotonicUs() - surr_wait_.startedAt) / 1000;
         NGOSEN_INFO("Surr wait " + std::string(reason) + " after " + std::to_string(elapsedMs) + " ms");
         // A send that failed started no wait, and the start time left belongs to an earlier edit.
-        engine_->recorder().add("wait", surr_wait_pending_ ? std::string(reason) + " after " + std::to_string(elapsedMs) + " ms" : std::string(reason));
+        engine_->recorder().add("wait", surr_wait_.pending ? std::string(reason) + " after " + std::to_string(elapsedMs) + " ms" : std::string(reason));
         if (std::string(reason) == "timeout") {
             surr_snapshot_trusted_ = false;
             ++surr_timeout_streak_;
-            if (surr_wait_event_count_ == 0 && ngosen::surroundingTextLags(host_->field()) && ++surr_silent_streak_ >= 2 && !surr_silent_) {
+            if (surr_wait_.eventCount == 0 && ngosen::surroundingTextLags(host_->field()) && ++surr_silent_streak_ >= 2 && !surr_silent_) {
                 surr_silent_ = true;
                 NGOSEN_INFO("Surr silent: use the timed wait");
             }
             // Frozen means at least two events, all identical to the send-time snapshot. A Firefox that
             // is merely lagging usually sends nothing or a snapshot that is still moving.
-            if (surr_wait_event_count_ >= 2 && !surr_wait_saw_other_snapshot_ && surr_wait_sent_snapshot_fresh_) {
+            if (surr_wait_.eventCount >= 2 && !surr_wait_.sawOtherSnapshot && surr_wait_.sentSnapshotFresh) {
                 if (++surr_frozen_streak_ >= 2 && !surr_frozen_) {
                     surr_frozen_             = true;
                     surr_frozen_probe_count_ = 0;
@@ -321,10 +321,10 @@ namespace ngosen {
     void TypingState::finishReplacement(const char* reason, bool fromTimer) {
         noteWaitOutcome(reason);
         logReplaceEnd(reason);
-        surr_wait_pending_    = false;
-        surr_wait_timer_only_ = false;
+        surr_wait_.pending   = false;
+        surr_wait_.timerOnly = false;
         if (!fromTimer)
-            replaceTimer(surr_wait_timer_);
+            replaceTimer(surr_wait_.timer);
         // A previous replacement still waiting for its turn goes out first, keeping the text in order.
         flushDeferredCommit();
         // wlroots drops a commit sent while the app's report is still arriving, as answering an old state.
@@ -590,17 +590,17 @@ namespace ngosen {
     }
 
     void TypingState::recordSendSnapshot(const std::string& word, const std::string& deletedPart) {
-        surr_wait_deleted_       = deletedPart;
-        const auto snapshot      = host_->surrounding();
-        surr_wait_sent_snapshot_ = reportKey(snapshot);
-        surr_wait_prefix_        = (word.size() >= deletedPart.size()) ? word.substr(0, word.size() - deletedPart.size()) : std::string();
+        surr_wait_.deleted      = deletedPart;
+        const auto snapshot     = host_->surrounding();
+        surr_wait_.sentSnapshot = reportKey(snapshot);
+        surr_wait_.prefix       = (word.size() >= deletedPart.size()) ? word.substr(0, word.size() - deletedPart.size()) : std::string();
         // Only a fresh send-time snapshot (text before the cursor ends with prefix + deleted) may
         // count towards "frozen"; a lagging app sends a stale one.
-        surr_wait_sent_snapshot_fresh_ = false;
+        surr_wait_.sentSnapshotFresh = false;
         if (snapshot.isValid()) {
-            const std::string before       = textBeforeCursor(snapshot);
-            const std::string expected     = surr_wait_prefix_ + surr_wait_deleted_;
-            surr_wait_sent_snapshot_fresh_ = before.size() >= expected.size() && before.compare(before.size() - expected.size(), expected.size(), expected) == 0;
+            const std::string before     = textBeforeCursor(snapshot);
+            const std::string expected   = surr_wait_.prefix + surr_wait_.deleted;
+            surr_wait_.sentSnapshotFresh = before.size() >= expected.size() && before.compare(before.size() - expected.size(), expected.size(), expected) == 0;
         }
     }
 
@@ -647,7 +647,7 @@ namespace ngosen {
         if (!surrounding.isValid()) {
             fails.emplace_back("no copy");
         } else {
-            const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+            const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_.prefix, surr_wait_.deleted, earlierWords_);
             if (ngosen::countsDeletionOnCopy(field))
                 chars = deletion.chars;
             if (surrounding.cursor() < chars)
@@ -904,7 +904,7 @@ namespace ngosen {
         else
             earlierWords_.clear();
         wordBeforeReplacement_ = word;
-        wordAfterReplacement_  = surr_wait_prefix_ + addedPart;
+        wordAfterReplacement_  = surr_wait_.prefix + addedPart;
     }
 
     bool TypingState::inAddressBar() const {
@@ -918,7 +918,7 @@ namespace ngosen {
         const auto surrounding = host_->surrounding();
         if (!surrounding.isValid())
             return CopyWait::No;
-        const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_.prefix, surr_wait_.deleted, earlierWords_);
         // The deletion would go ahead of keys and commits the copy does not show yet. Backspaces gain
         // nothing from waiting.
         if (ngosen::appliesDeletionsEarly(host_->field()) && sinceFocus_.seenText && !surroundingUntrusted())
@@ -995,7 +995,7 @@ namespace ngosen {
     int TypingState::surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const {
         if (!ngosen::countsDeletionOnCopy(host_->field()) || !surrounding.isValid())
             return deletedChars_;
-        const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_prefix_, surr_wait_deleted_, earlierWords_);
+        const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_.prefix, surr_wait_.deleted, earlierWords_);
         // An app that reports its edits unasked turns the bytes back into characters on the same old
         // copy, so the count it needs is the plain one. Qt applies the bytes to its real text, answers rarely
         // and reports no copy until the field has text.
@@ -1061,11 +1061,11 @@ namespace ngosen {
         }
         if (holdUs > 0) {
             engine_->recorder().add("hold", std::to_string(holdUs / 1000) + " ms");
-            split_edit_.pending      = true;
-            surr_wait_focus_retries_ = 0;
-            split_edit_.surrounding  = surrounding;
-            split_edit_.retype       = retype;
-            const uint64_t until     = monotonicUs() + holdUs;
+            split_edit_.pending     = true;
+            surr_wait_.focusRetries = 0;
+            split_edit_.surrounding = surrounding;
+            split_edit_.retype      = retype;
+            const uint64_t until    = monotonicUs() + holdUs;
             // A replay from the timer can start the next split, so the timer is rearmed rather than replaced.
             if (split_edit_.timer) {
                 split_edit_.timer->rearm(until);
@@ -1073,7 +1073,7 @@ namespace ngosen {
             }
             split_edit_.timer = host_->startTimer(until, 1000, [this](Timer& t) {
                 if (!host_->hasFocus()) {
-                    if (++surr_wait_focus_retries_ <= SplitEditFocusRetries) {
+                    if (++surr_wait_.focusRetries <= SplitEditFocusRetries) {
                         t.rearm(monotonicUs() + 2000);
                         return true;
                     }
@@ -1096,10 +1096,10 @@ namespace ngosen {
     // Chromium's address bar ignores deletions while its autocompletion is selected, and only a commit
     // removes that. The space cannot complete to anything, and goes with the word's old letters.
     void TypingState::clearSelectedTailThenReplace(const Surrounding& surrounding) {
-        tail_clear_.pending      = true;
-        surr_wait_focus_retries_ = 0;
-        tail_clear_.copy         = Surrounding(textBeforeCursor(surrounding), surrounding.cursor(), surrounding.cursor());
-        committing_              = true;
+        tail_clear_.pending     = true;
+        surr_wait_.focusRetries = 0;
+        tail_clear_.copy        = Surrounding(textBeforeCursor(surrounding), surrounding.cursor(), surrounding.cursor());
+        committing_             = true;
         flushComposedCommit();
         host_->commitText(" ");
         committing_ = false;
@@ -1112,7 +1112,7 @@ namespace ngosen {
         }
         tail_clear_.timer = host_->startTimer(until, 1000, [this](Timer& t) {
             if (!host_->hasFocus()) {
-                if (++surr_wait_focus_retries_ <= SplitEditFocusRetries) {
+                if (++surr_wait_.focusRetries <= SplitEditFocusRetries) {
                     t.rearm(monotonicUs() + 2000);
                     return true;
                 }
@@ -1475,13 +1475,13 @@ namespace ngosen {
         NGOSEN_INFO("Forward " + std::to_string(count) + " backspaces");
         // If the copy never showed the word, a report from before its last key looks like one after the backspaces.
         backspacesForUnseenWord_ = host_->field().frontend == "wayland_v2" && sinceFocus_.seenText && host_->surrounding().isValid() &&
-            !isEndsWith(textBeforeCursor(host_->surrounding()), surr_wait_prefix_ + surr_wait_deleted_);
+            !isEndsWith(textBeforeCursor(host_->surrounding()), surr_wait_.prefix + surr_wait_.deleted);
         unseenWordShown_ = false;
         waitForDeletion(nullptr, 4);
         // XIM, IBus and D-Bus clients queue forwarded keys, and on wayland_v2 they travel apart from the
         // commit, so the commit can overtake them.
-        if (host_->field().frontend != "wayland" && surr_wait_timer_only_ && surr_wait_timer_) {
-            deferTimedCommit(surr_wait_started_at_ + forwardWaitUs());
+        if (host_->field().frontend != "wayland" && surr_wait_.timerOnly && surr_wait_.timer) {
+            deferTimedCommit(surr_wait_.startedAt + forwardWaitUs());
         }
     }
 

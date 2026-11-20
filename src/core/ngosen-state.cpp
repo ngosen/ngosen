@@ -1085,7 +1085,7 @@ namespace ngosen {
         jumpedFrom_.reset();
         // This safety valve silently clears the flag on the next key. Skip it while a wait is pending,
         // otherwise the pending commit is thrown away.
-        if (!surr_wait_pending_ && !overtype_.pending && composedCommit_.empty() && current_backspace_count_ >= expected_backspaces_ && is_deleting_.load()) {
+        if (!surr_wait_.pending && !overtype_.pending && composedCommit_.empty() && current_backspace_count_ >= expected_backspaces_ && is_deleting_.load()) {
             is_deleting_.store(false);
             current_backspace_count_ = 0;
             expected_backspaces_     = 0;
@@ -1116,7 +1116,7 @@ namespace ngosen {
         // A key that beats the deferred commit must not land before it.
         flushDeferredCommit();
         // Nothing is being replaced any more, so an Enter still owed belongs to a dropped replacement.
-        if (!is_deleting_.load(std::memory_order_acquire) && !surr_wait_pending_ && !overtype_.pending && !key_report_.pending)
+        if (!is_deleting_.load(std::memory_order_acquire) && !surr_wait_.pending && !overtype_.pending && !key_report_.pending)
             enter_after_replacement_ = false;
         if (g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire)) {
             g_mouse_clicked.store(false, std::memory_order_release);
@@ -1273,7 +1273,7 @@ namespace ngosen {
             keyEvent.accept();
             return true;
         }
-        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_ && ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" &&
+        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_.timerOnly && ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" &&
             ngosen::forwardsBackspaces(host_->field())) {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
@@ -1281,13 +1281,13 @@ namespace ngosen {
             deferTimedCommit(ngosen::monotonicUs() + forwardWaitUs());
             return true;
         }
-        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_timer_only_) {
+        if (is_deleting_.load(std::memory_order_acquire) && surr_wait_.timerOnly) {
             // A key arrived during a timer-only wait: finish the wait and commit. Where a key let
             // through can overtake that commit it goes out inside it; elsewhere it is handled normally
             // afterwards, since replaying it via commitString loses text on Chromium X11 outside IBus.
             const uint64_t nowUs = ngosen::monotonicUs();
-            if (surr_wait_deliver_at_ > nowUs) {
-                ngosen::sleepUs(surr_wait_deliver_at_ - nowUs);
+            if (surr_wait_.deliverAt > nowUs) {
+                ngosen::sleepUs(surr_wait_.deliverAt - nowUs);
             }
             if (holdsKeyDuringTimedWait(keyEvent, currentSym) && buffered_keys_.size() < MAX_BUFFERED_KEYS) {
                 noteHeldKeyForDoubling(keyEvent, currentSym);
@@ -1304,7 +1304,7 @@ namespace ngosen {
             // The user's Backspace would be counted as one of the replacement's, so the edit goes out now.
             finishKeyReportWait(true, false);
         }
-        if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_pending_) {
+        if (is_deleting_.load(std::memory_order_acquire) && ngosen::key::isBackspace(currentSym) && ngosen::forwardsBackspaces(host_->field()) && surr_wait_.pending) {
             // Forwarded backspaces never come back, so this one is the user's: finish the replacement
             // first, then handle it normally.
             finishReplacement("backspace arrived", false);

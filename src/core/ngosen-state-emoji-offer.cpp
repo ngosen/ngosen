@@ -153,7 +153,7 @@ namespace ngosen {
     }
 
     bool TypingState::replacementPending() const {
-        return editInFlight() || key_report_.pending || split_edit_.pending || surr_wait_pending_ || overtype_.pending;
+        return editInFlight() || key_report_.pending || split_edit_.pending || surr_wait_.pending || overtype_.pending;
     }
 
     void TypingState::panelWasCleared(bool rebuild) {

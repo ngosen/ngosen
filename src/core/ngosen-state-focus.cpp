@@ -58,15 +58,15 @@ namespace ngosen {
             checkWordAfterBounce_ = true;
             wordAtBounce_         = oldPreBuffer_;
             // Only a bounce right after a key or our own edit tells that the field redraws.
-            const bool inWait = now - static_cast<int64_t>(surr_wait_started_at_ / 1000) < RedrawWaitMs;
+            const bool inWait = now - static_cast<int64_t>(surr_wait_.startedAt / 1000) < RedrawWaitMs;
             if (inWait || now - static_cast<int64_t>(lastInputAtUs_ / 1000) < RedrawWaitMs) {
                 ++fieldBounces_;
                 if (!lastKeyLeftText_)
                     ++redrawBounces_;
             }
             if (inWait) {
-                waitBounces_   = bouncedInWait_ == surr_wait_started_at_ ? waitBounces_ + 1 : 1;
-                bouncedInWait_ = surr_wait_started_at_;
+                waitBounces_   = bouncedInWait_ == surr_wait_.startedAt ? waitBounces_ + 1 : 1;
+                bouncedInWait_ = surr_wait_.startedAt;
             }
             lastBounceAt_ = now;
         } else {
@@ -172,11 +172,11 @@ namespace ngosen {
 
     bool TypingState::waitsForRedraw() const {
         const int64_t now     = nowMs();
-        const auto    started = static_cast<int64_t>(surr_wait_started_at_ / 1000);
+        const auto    started = static_cast<int64_t>(surr_wait_.startedAt / 1000);
         if (redrawBounces_ < 2 || now - started >= RedrawWaitMs)
             return false;
         // Each deleted character brings its own redraw.
-        const int bounces = bouncedInWait_ == surr_wait_started_at_ ? waitBounces_ : 0;
+        const int bounces = bouncedInWait_ == surr_wait_.startedAt ? waitBounces_ : 0;
         return bounces < deletedChars_ || now - lastBounceAt_ < RedrawSettleMs || !host_->hasFocus();
     }
 

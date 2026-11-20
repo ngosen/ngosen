@@ -218,7 +218,7 @@ namespace ngosen {
         int                      fieldBounces_          = 0;     ///< bounces since focus came in
         int                      redrawBounces_         = 0;     ///< those not after a key that edits no text
         int                      waitBounces_           = 0;     ///< bounces during the wait that started at bouncedInWait_
-        uint64_t                 bouncedInWait_         = 0;     ///< surr_wait_started_at_ of the wait those bounces came in
+        uint64_t                 bouncedInWait_         = 0;     ///< surr_wait_.startedAt of the wait those bounces came in
         int                      deletedChars_          = 0;     ///< characters the app holds to delete
         std::vector<std::string> earlierWords_;                  ///< the current word before each of its earlier replacements
         std::string              wordBeforeReplacement_;         ///< the word the last replacement started from
@@ -443,22 +443,26 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> retired_timer_;
 
         // --- Sen mode: wait for the app instead of sleeping (see handleReplacementBackspace) ---
-        std::unique_ptr<ngosen::Timer> surr_wait_timer_;
-        bool                           surr_wait_watching_ = false; ///< reports go to onWaitSurroundingUpdated once a wait has started
-        std::unique_ptr<ngosen::Timer> xim_forward_timer_;          ///< forwards after the XIM sync reply
-        uint64_t                       surr_wait_started_at_    = 0;
-        uint64_t                       surr_wait_deliver_at_    = 0; ///< planned commit time, CLOCK_MONOTONIC us
-        bool                           surr_wait_pending_       = false;
-        bool                           surr_wait_timer_only_    = false; ///< waiting on a plain timer that replaces sleep_for
-        int                            surr_wait_focus_retries_ = 0;     ///< timer fired while the field had lost focus
-        std::string                    surr_wait_prefix_;                ///< part of the word kept after deletion
-        std::string                    surr_wait_deleted_;               ///< part that must disappear
-        std::string                    surr_wait_sent_snapshot_;         ///< "text\x1fcursor" when the backspaces were sent
-        int                            surr_wait_event_count_         = 0;
-        bool                           surr_wait_saw_other_snapshot_  = false; ///< an event differed from the send-time snapshot
-        bool                           backspacesForUnseenWord_       = false;
-        bool                           unseenWordShown_               = false;
-        bool                           surr_wait_sent_snapshot_fresh_ = false; ///< send-time snapshot still showed the text to delete
+        // A deletion sent, waiting for the app's report to show it done.
+        struct SurroundingWait {
+            std::unique_ptr<ngosen::Timer> timer;
+            bool                           watching     = false; ///< reports go to onWaitSurroundingUpdated once a wait has started
+            uint64_t                       startedAt    = 0;
+            uint64_t                       deliverAt    = 0; ///< planned commit time, CLOCK_MONOTONIC us
+            bool                           pending      = false;
+            bool                           timerOnly    = false; ///< waiting on a plain timer that replaces sleep_for
+            int                            focusRetries = 0;     ///< timer fired while the field had lost focus
+            std::string                    prefix;               ///< part of the word kept after deletion
+            std::string                    deleted;              ///< part that must disappear
+            std::string                    sentSnapshot;         ///< "text\x1fcursor" when the backspaces were sent
+            int                            eventCount        = 0;
+            bool                           sawOtherSnapshot  = false; ///< an event differed from the send-time snapshot
+            bool                           sentSnapshotFresh = false; ///< send-time snapshot still showed the text to delete
+        };
+        SurroundingWait                surr_wait_;
+        std::unique_ptr<ngosen::Timer> xim_forward_timer_; ///< forwards after the XIM sync reply
+        bool                           backspacesForUnseenWord_ = false;
+        bool                           unseenWordShown_         = false;
 
         // "Frozen": a wait timed out and every event matched the send-time snapshot. After two in a
         // row, sleep instead and probe again every WaitSurroundingProbeEvery replacements.

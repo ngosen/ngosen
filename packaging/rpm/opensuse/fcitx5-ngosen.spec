@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.13.0
+Version:        1.13.1
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -101,6 +101,9 @@ else
 fi
 
 %changelog
+* Fri Nov 20 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.13.1-1
+- WPS Office types Vietnamese on KDE Plasma Wayland (#897); Backspace in a word with drawn-out letters or teencode keeps its tone mark (#898); importing emoji words skips a word with a NUL character instead of failing (#899).
+
 * Fri Nov 20 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.13.0-1
 - The switch key changes all apps at once and new installs start in Vietnamese (#825); emoji suggestions wait for the end of a sentence, are picked with number keys, show in the field on GNOME without the Input Method Panel extension, know English words and can be exported and imported (#110); held last letters repeat with their mark (#852); teencode can be turned on per app (#701); a ngosen-toggle command for desktop shortcuts (#828); AUR packages (#873); no doubled letter in xterm.js over IBus (#878) and no lost letters when typing fast in Electron xterm.js terminals (#880).
 

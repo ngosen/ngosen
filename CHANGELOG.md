@@ -48,6 +48,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   lưu cài đặt nay giữ cả danh sách này (#701, #844).
 - Arch và các distro dựa trên Arch cài được từ AUR: `yay -S fcitx5-ngosen`, bản IBus `yay -S ibus-ngosen`.
   Mỗi version mới tự lên AUR khi phát hành ([#873](https://github.com/ngosen/ngosen/pull/873)).
+- Khay có thể hiện chữ thay cho biểu tượng: `V` / `E` hoặc `vi` / `en`, theo màu đã chọn trong "Màu biểu
+  tượng". Tạm thời chọn trong cấu hình fcitx5, mục "Khay hiển thị" (#908).
 
 ### Thay đổi
 

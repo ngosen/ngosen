@@ -219,6 +219,17 @@ namespace ngosen {
         ic_->inputPanel().setPreedit(fcitx::Text());
     }
 
+    void FcitxHost::showHint(const std::string& text) {
+        fcitx::Text hint;
+        // DontCommit makes the IBus frontend ask GNOME Shell to drop the hint on focus out rather than commit it.
+        if (!text.empty())
+            hint.append(text, fcitx::TextFormatFlags{fcitx::TextFormatFlag::Underline, fcitx::TextFormatFlag::DontCommit});
+        // The cursor stays at the end of the word, before the hint.
+        hint.setCursor(0);
+        ic_->inputPanel().setClientPreedit(hint);
+        ic_->updatePreedit();
+    }
+
     void FcitxHost::resetPanel() {
         ic_->inputPanel().reset();
     }
@@ -231,16 +242,17 @@ namespace ngosen {
         ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
     }
 
-    void FcitxHost::showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick) {
-        auto list = std::make_unique<fcitx::CommonCandidateList>();
-        list->setLayoutHint(fcitx::CandidateLayoutHint::Vertical);
+    void FcitxHost::showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick, CandidateLayout layout) {
+        const bool row  = layout == ngosen::CandidateLayout::Row;
+        auto       list = std::make_unique<fcitx::CommonCandidateList>();
+        list->setLayoutHint(row ? fcitx::CandidateLayoutHint::Horizontal : fcitx::CandidateLayoutHint::Vertical);
         list->setPageSize(pageSize);
         for (size_t i = 0; i < labels.size(); ++i) {
             fcitx::Text label;
             label.append(labels[i], fcitx::TextFormatFlag::NoFlag);
             list->append(std::make_unique<PickableCandidate>(std::move(label), onPick, i));
         }
-        list->setGlobalCursorIndex(0);
+        list->setGlobalCursorIndex(row ? -1 : 0);
         ic_->inputPanel().setCandidateList(std::move(list));
     }
 

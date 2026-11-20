@@ -79,6 +79,7 @@ BACKUP = """{
   "switches": [{"App": "kate", "Vietnamese": "True"}],
   "emoji_words": [{"Keyword": "vui", "Emoji": "😀", "On": "True"}],
   "emoji_off_apps": [{"App": "firefox"}],
+  "teencode_apps": [{"App": "discord"}],
   "dictionary": "ngosen\\n",
   "meta": {"version": 1, "edition": "ibus"}
 }
@@ -150,6 +151,7 @@ class ListsReachFcitx5Test(unittest.TestCase):
             "app_switches": {"Switches": {"0": {"App": "kate", "Vietnamese": "True"}}},
             "emoji_words": {"Words": {"0": {"Keyword": "vui", "Emoji": "😀", "On": "True"}}},
             "emoji_off_apps": {"Apps": {"0": {"App": "firefox"}}},
+            "teencode_apps": {"Apps": {"0": {"App": "discord"}}},
         }
         for uri, values in expected.items():
             self.assertEqual(saved[uri], values, uri)

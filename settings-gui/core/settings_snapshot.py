@@ -12,6 +12,7 @@ SUB_CONFIGS = (
     ("custom_keymap", "CustomKeymap"),
     ("emoji_words", "Words"),
     ("emoji_off_apps", "Apps"),
+    ("teencode_apps", "Apps"),
 )
 
 

@@ -163,6 +163,22 @@ namespace {
         check("a fresh install keeps the built-in default", value(fresh, "RetypeAfterSwitch") == "<missing>");
     }
 
+    void testNewInstallTypesVietnamese() {
+        fcitx::RawConfig fresh;
+        ngosen::upgradeSettings(fresh, false);
+        check("a fresh install starts in Vietnamese", value(fresh, "VietnameseOn") == "True");
+        check("an account added in the configtool starts in Vietnamese", value(ngosen::newAccountSettings("1.12.0"), "VietnameseOn") == "True");
+
+        // fcitx5 5.1.23 leaves a False equal to the default out of the file.
+        auto english = parse("SettingsVersion=2\n");
+        ngosen::upgradeSettings(english, true);
+        check("a user left in English stays in English", value(english, "VietnameseOn") == "<missing>");
+
+        auto oldOff = parse("Mode=OFF\n");
+        ngosen::upgradeSettings(oldOff, true);
+        check("a user from before SettingsVersion in OFF stays in English", value(oldOff, "VietnameseOn") == "False");
+    }
+
     void testReleaseAnnouncedOnce() {
         auto upgraded = parse("SettingsVersion=1\n");
         check("an upgrade to a feature release is announced", ngosen::releaseToAnnounce(upgraded, true, "1.7.0") == "1.7");
@@ -256,6 +272,7 @@ int main() {
     testListsInputMethod();
     testCopySwitchKeys();
     testUpgradeTurnsRetypeOn();
+    testNewInstallTypesVietnamese();
     testReleaseAnnouncedOnce();
     testCopyFiles();
     testProcessesNamed();

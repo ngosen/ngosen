@@ -14,13 +14,14 @@ use std::io::{BufRead, BufReader};
 use std::os::fd::FromRawFd;
 use std::sync::Arc;
 
-use bamboo_core::advanced::get_charset_names;
+use bamboo_core::advanced::charset_names;
 use bamboo_core::{BracketMode, Config, InputMethod, ToneStyle, W2uMode};
 
 use crate::convert::{LetterCase, convert};
 use crate::engine::{BambooEngine, Dictionary, INPUT_METHOD_NAMES, WordList, input_method_by_name};
 use crate::handles::{self, Object};
 use crate::macro_table::MacroTable;
+use crate::spelling::VietnameseSpelling;
 
 /// `FcitxBambooEngineOption` in the header.
 #[repr(C)]
@@ -37,6 +38,7 @@ pub struct EngineOption {
     pub bracket_transform: c_int,
     pub time_format: *const c_char,
     pub date_format: *const c_char,
+    pub teencode: bool,
 }
 
 /// # Safety
@@ -191,6 +193,7 @@ pub unsafe extern "C" fn EngineSetOption(engine: usize, option: *const EngineOpt
         e.macro_enabled = o.macro_enabled;
         e.auto_capitalize_macro = o.auto_capitalize_macro;
         e.spell_check_with_dicts = o.spell_check_with_dicts;
+        e.teencode = o.teencode;
         e.output_charset = charset;
         e.preeditor.set_config(config);
         e.time_format = time_format;
@@ -298,7 +301,7 @@ pub unsafe extern "C" fn ConvertText(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn GetCharsetNames() -> *mut *mut c_char {
-    let mut names = get_charset_names();
+    let mut names: Vec<String> = charset_names().map(String::from).collect();
     // "Unicode" comes first, the rest by name.
     names[1..].sort();
     c_string_array(&names)
@@ -382,6 +385,12 @@ pub extern "C" fn EngineKeptAtLastKey(engine: usize) -> u8 {
     handles::with_engine(engine, |e| e.kept_at_last_key()).unwrap_or(false) as u8
 }
 
+/// 1 when the input method can compose a word with the key, as VNI does with digits.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineComposesWith(engine: usize, key_val: u32) -> u8 {
+    handles::with_engine(engine, |e| e.composes_with(key_val)).unwrap_or(false) as u8
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn EngineShownAsTyped(engine: usize) -> u8 {
     handles::with_engine(engine, |e| e.shown_as_typed()).unwrap_or(false) as u8
@@ -401,7 +410,10 @@ pub unsafe extern "C" fn IsVietnameseSyllable(text: *const c_char) -> u8 {
     engine.rebuild_from_text(&text);
     let rebuilt = engine.get_processed_str(bamboo_core::OutputOptions::NONE);
     u8::from(
-        rebuilt == text && has_vowel(&text) && engine.is_valid_word() && stop_final_has_tone(&text),
+        rebuilt == text
+            && has_vowel(&text)
+            && engine.is_vietnamese_word()
+            && stop_final_has_tone(&text),
     )
 }
 

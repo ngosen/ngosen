@@ -97,6 +97,8 @@ else go into `next`; a fix for a bug in the current release goes into `patch`, w
 X.Y.Z+1 and is then merged into `next`. Never merge into `main` directly: `install.sh` is downloaded from
 there, so whatever lands on `main` runs on users' machines. What to update
 after a merge and for a release is listed in [RELEASING.md](RELEASING.md).
+Once a PR is merged or closed, remove its worktree with `git worktree remove`: a forgotten one keeps
+its build directory on the SSD and holds its branch, so no other worktree can check that branch out.
 A PR that changes what `install.sh` sets up for a desktop also updates "Thiết lập sau khi cài package" in
 the README: people who install from a repository or a package file only get those steps from there.
 Each such PR adds a line under `## [Chưa phát hành]` in [CHANGELOG.md](CHANGELOG.md): what

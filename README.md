@@ -91,8 +91,10 @@ Hoàn tác.
   ra `nhưng`; bấm Backspace ngay sau đó thì trả lại đúng chữ đã gõ.
 - **Gợi ý emoji khi gõ:** gõ xong `cười`, `con mèo` hay `haha` là hiện `Tab: 😂 …` cạnh con trỏ; Tab để
   đánh số rồi chọn bằng số, Esc giữ nguyên chữ.
-- **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey, người dùng cũ giữ
-  `Ctrl + Space`. Mỗi app nhớ riêng đang gõ Anh hay Việt.
+- **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey và bật sẵn tiếng Việt;
+  người dùng cũ giữ phím chuyển và trạng thái đang dùng. Mặc định, phím chuyển đổi mọi app cùng lúc.
+  Muốn mỗi app nhớ riêng như trước, chọn “Từng app” ở “Phím chuyển áp dụng cho” trên trang Phím tắt.
+  App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh.
 - **Phím chốt chữ (Ctrl):** bấm rồi thả `Ctrl` để giữ nguyên từ đang gõ, không thêm dấu hay bung gõ tắt.
 - **Gõ tắt (macro):** tự theo chữ hoa: `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
@@ -132,16 +134,20 @@ Lệnh tải gói đúng distro từ [release mới nhất](https://github.com/n
 SHA-256, hỏi lại trước khi cài và tự thiết lập theo desktop đang dùng. Chạy lại lệnh này để cập nhật version
 mới; cấu hình cũ giữ nguyên. Thiết lập chỉ áp dụng cho tài khoản chạy lệnh.
 
-Sau khi cài, nhấn rồi thả `Ctrl + Shift` để chuyển giữa tiếng Anh và tiếng Việt; biểu tượng khay hiện chữ V
-khi đang gõ tiếng Việt. Bạn cũng có thể bấm “✔ Tiếng Việt” / “✖ Tiếng Việt”, mục luôn hiện ở đầu menu khay
-fcitx5, để chuyển ngôn ngữ như `Ctrl + Shift` cho app đang gõ và giữ lựa chọn sau khi khởi động lại.
+Cài mới bật sẵn tiếng Việt. Nhấn rồi thả `Ctrl + Shift` để chuyển giữa tiếng Anh và tiếng Việt; biểu
+tượng khay hiện chữ V khi đang gõ tiếng Việt. Bạn cũng có thể bấm “✔ Tiếng Việt” / “✖ Tiếng Việt”,
+mục luôn hiện ở đầu menu khay fcitx5, để chuyển ngôn ngữ như phím chuyển và giữ lựa chọn sau khi
+khởi động lại. Mặc định, cả hai cách chuyển mọi app cùng lúc; chọn “Từng app” ở “Phím chuyển áp dụng
+cho” trên trang Phím tắt để mỗi app nhớ riêng. App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh; bấm
+phím chuyển trong app đó mở menu để chọn Gõ Sen hoặc Gạch chân và gõ tiếng Việt trở lại.
 
 <details>
 <summary>Lệnh cài làm gì trên từng desktop</summary>
 
-- **GNOME:** đặt fcitx5 thay IBus, bật extension sửa lỗi gõ khi cần. Nếu không có khay hệ thống (như
-  Fedora), thêm extension [Input Method Panel](https://extensions.gnome.org/extension/261/) để icon và
-  menu bộ gõ hiện trên thanh trên cùng.
+- **GNOME:** đặt fcitx5 thay IBus, bật extension sửa lỗi gõ khi cần, thêm extension
+  [Input Method Panel](https://extensions.gnome.org/extension/261/) để bảng emoji nằm dưới dòng chữ
+  (không có nó, app Wayland như Firefox thấy bảng che lên chữ đang gõ) và icon, menu bộ gõ hiện trên
+  thanh trên cùng.
 - **KDE Plasma (Wayland):** chọn fcitx5 ở System Settings → Virtual Keyboard để app Qt như Kate, Dolphin
   cũng gõ được. Máy có WPS Office thì đặt `QT_IM_MODULE=fcitx` riêng cho WPS.
 - **Xfce, Cinnamon, MATE** (X11, Debian và Ubuntu): dùng im-config đặt fcitx5 làm bộ gõ.
@@ -332,8 +338,9 @@ bước sau (hoặc chạy lệnh cài một dòng ở trên để nó làm giú
   printf 'GTK_IM_MODULE=fcitx\nQT_IM_MODULE=fcitx\nXMODIFIERS=@im=fcitx\nSDL_IM_MODULE=fcitx\n' > ~/.config/environment.d/90-ngosen.conf
   ```
 
-  Thanh trên cùng không có icon bộ gõ thì cài extension
-  [Input Method Panel](https://extensions.gnome.org/extension/261/). Xem thêm
+  Cài thêm extension [Input Method Panel](https://extensions.gnome.org/extension/261/) rồi đăng xuất,
+  đăng nhập lại: không có nó, bảng emoji che lên chữ đang gõ trong app Wayland như Firefox, và thanh
+  trên cùng có thể không có icon bộ gõ. Xem thêm
   [extension sửa lỗi gõ](#gnome-extension).
 - **KDE Plasma (Wayland):** chọn **Fcitx 5** ở *System Settings → Virtual Keyboard*, rồi đăng xuất và đăng
   nhập lại. App X11 chạy qua XWayland (như Minecraft bản cũ) cần thêm

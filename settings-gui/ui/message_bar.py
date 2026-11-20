@@ -69,6 +69,11 @@ class MessageBar(QFrame):
         self.timer.setSingleShot(True)
         self.timer.setInterval(SHOWN_MS)
         self.timer.timeout.connect(self._expire)
+        # A wrapped label above the control can settle its height only after the first scroll.
+        self.recheck = QTimer(self)
+        self.recheck.setSingleShot(True)
+        self.recheck.setInterval(0)
+        self.recheck.timeout.connect(self._keep_focus_clear)
         self.hide()
         host.installEventFilter(self)
         QApplication.instance().focusChanged.connect(self._keep_focus_clear)
@@ -123,6 +128,7 @@ class MessageBar(QFrame):
         y = corner.y() + self.host.height() - height - GAP
         self.setGeometry(corner.x() + SIDE_MARGIN, y, width, height)
         self._keep_focus_clear()
+        self.recheck.start()
 
     def eventFilter(self, watched, event):
         if watched is self.host and event.type() == QEvent.Resize:

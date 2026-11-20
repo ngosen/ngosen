@@ -86,6 +86,22 @@
     }
    ],
    [
+    "ToggleScope",
+    "Enum",
+    "Switch Applies To",
+    "All apps",
+    {
+     "EnumI18n": {
+      "0": "All apps",
+      "1": "Each app"
+     },
+     "Enum": {
+      "0": "All apps",
+      "1": "Each app"
+     }
+    }
+   ],
+   [
     "ModeMenuKey",
     "List|Key",
     "Mode Menu Hotkey",
@@ -354,6 +370,13 @@
     {}
    ],
    [
+    "EnglishEmojiKeywords",
+    "Boolean",
+    "English keywords",
+    "True",
+    {}
+   ],
+   [
     "EmojiPlacement",
     "Enum",
     "Put a picked emoji",
@@ -366,6 +389,22 @@
      "Enum": {
       "0": "After the word",
       "1": "Instead of the word"
+     }
+    }
+   ],
+   [
+    "EmojiOfferAt",
+    "Enum",
+    "Offer emoji",
+    "At the end of a sentence",
+    {
+     "EnumI18n": {
+      "0": "After each word",
+      "1": "At the end of a sentence"
+     },
+     "Enum": {
+      "0": "After each word",
+      "1": "At the end of a sentence"
      }
     }
    ],
@@ -596,6 +635,20 @@
     {}
    ],
    [
+    "ShowModeTeencode",
+    "Boolean",
+    "Show teencode",
+    "True",
+    {}
+   ],
+   [
+    "ShortcutTeencode",
+    "String",
+    "Shortcut for teencode",
+    "t",
+    {}
+   ],
+   [
     "ShowModeOff",
     "Boolean",
     "Show OFF",
@@ -641,7 +694,7 @@
     "ModeOrder",
     "String",
     "Mode Order",
-    "Sen,Preedit,Emoji,Off,Vim",
+    "Sen,Preedit,Emoji,Teencode,Off,Vim",
     {}
    ],
    [

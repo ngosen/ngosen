@@ -1,6 +1,6 @@
 [package]
 name = "bamboo-core"
-version = "0.5.2"
+version = "0.6.0"
 edition = "2024"
 rust-version = "1.88"
 
@@ -20,8 +20,14 @@ include = [
     "Cargo.toml",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "include/bamboo_core.h"
 ]
+
+[lib]
+# Keep the Rust library for Rust callers while producing linkable artifacts for
+# the C ABI declared in `ffi`.
+crate-type = ["rlib", "staticlib", "cdylib"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -69,12 +75,17 @@ name = "criterion_bench"
 harness = false
 test = false
 
+[[bench]]
+name = "four_engine_scale"
+harness = false
+test = false
+
 [dev-dependencies]
 criterion = { version = "0.8.2", features = ["html_reports"] }
-proptest = "1.11.0"
+proptest = "1.12.0"
 serial_test = "4.0.1"
 skey-engine = "0.1.23"
-uvie = "2.7.0"
+uvie = "2.8.1"
 vi = "0.8.0"
 
 [profile.release]

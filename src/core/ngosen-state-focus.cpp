@@ -31,18 +31,18 @@ namespace ngosen {
         const bool        resume = bounce && deletionInterruptedAt_ > 0 && is_deleting_.load();
         deletionInterruptedAt_   = 0;
         echoKeyAtUs_             = 0; // a report of another field would end it
-        if (key_report_pending_ && !resume) {
-            key_report_timer_.reset();
+        if (key_report_.pending && !resume) {
+            key_report_.timer.reset();
             dropReplacementAfterFocusLoss();
         }
-        if (split_edit_pending_ && !resume) {
-            split_edit_pending_ = false;
-            split_edit_timer_.reset();
+        if (split_edit_.pending && !resume) {
+            split_edit_.pending = false;
+            split_edit_.timer.reset();
             dropReplacementAfterFocusLoss();
         }
-        if (tail_clear_pending_ && !resume) {
-            tail_clear_pending_ = false;
-            tail_clear_timer_.reset();
+        if (tail_clear_.pending && !resume) {
+            tail_clear_.pending = false;
+            tail_clear_.timer.reset();
             dropReplacementAfterFocusLoss();
         }
         // A page may move focus into its text field after the user selected text elsewhere on it.
@@ -58,15 +58,15 @@ namespace ngosen {
             checkWordAfterBounce_ = true;
             wordAtBounce_         = oldPreBuffer_;
             // Only a bounce right after a key or our own edit tells that the field redraws.
-            const bool inWait = now - static_cast<int64_t>(surr_wait_started_at_ / 1000) < RedrawWaitMs;
+            const bool inWait = now - static_cast<int64_t>(surr_wait_.startedAt / 1000) < RedrawWaitMs;
             if (inWait || now - static_cast<int64_t>(lastInputAtUs_ / 1000) < RedrawWaitMs) {
                 ++fieldBounces_;
                 if (!lastKeyLeftText_)
                     ++redrawBounces_;
             }
             if (inWait) {
-                waitBounces_   = bouncedInWait_ == surr_wait_started_at_ ? waitBounces_ + 1 : 1;
-                bouncedInWait_ = surr_wait_started_at_;
+                waitBounces_   = bouncedInWait_ == surr_wait_.startedAt ? waitBounces_ + 1 : 1;
+                bouncedInWait_ = surr_wait_.startedAt;
             }
             lastBounceAt_ = now;
         } else {
@@ -138,7 +138,7 @@ namespace ngosen {
             rememberLeftField();
             keysAtFocusOut_ = keyCount_;
             commitNotSeen_.clear();
-            overtype_focus_bounced_         = overtype_pending_;
+            overtype_.focusBounced          = overtype_.pending;
             field_keeps_focus_on_selection_ = false;
         }
         lastDeactivateTime_ = nowMs();
@@ -148,7 +148,7 @@ namespace ngosen {
         }
         // The word stays until activate() knows whether focus only bounced.
         // A selection waiting to be typed over has no backspaces left, but is just as unfinished.
-        if (mode() == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_pending_)) {
+        if (mode() == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_.pending)) {
             deletionInterruptedAt_ = nowMs();
             NGOSEN_INFO("Replacement interrupted by focus out");
         } else {
@@ -172,11 +172,11 @@ namespace ngosen {
 
     bool TypingState::waitsForRedraw() const {
         const int64_t now     = nowMs();
-        const auto    started = static_cast<int64_t>(surr_wait_started_at_ / 1000);
+        const auto    started = static_cast<int64_t>(surr_wait_.startedAt / 1000);
         if (redrawBounces_ < 2 || now - started >= RedrawWaitMs)
             return false;
         // Each deleted character brings its own redraw.
-        const int bounces = bouncedInWait_ == surr_wait_started_at_ ? waitBounces_ : 0;
+        const int bounces = bouncedInWait_ == surr_wait_.startedAt ? waitBounces_ : 0;
         return bounces < deletedChars_ || now - lastBounceAt_ < RedrawSettleMs || !host_->hasFocus();
     }
 

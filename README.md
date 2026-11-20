@@ -246,6 +246,8 @@ printf '\n[ngosen]\nServer = https://ngosen.github.io/ngosen/arch/$arch\n' | sud
 sudo pacman -Syu fcitx5-ngosen
 ```
 
+Hoặc cài từ AUR, tự build trên máy: `yay -S fcitx5-ngosen` (bản IBus: `yay -S ibus-ngosen`).
+
 **openSUSE Tumbleweed (zypper, x86_64):**
 
 ```bash

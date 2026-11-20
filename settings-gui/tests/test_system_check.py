@@ -1216,5 +1216,28 @@ class CheckPageWindowTest(unittest.TestCase):
         self.assertTrue(window.btn_undo.isHidden())
 
 
+class LeavesMachineAloneTest(unittest.TestCase):
+    def test_check_page_tests_leave_fcitx5_alone(self):
+        # Those tests clear the environment, and fcitx5 aborts when HOME is not set.
+        from test_typing_log import CheckPageAppTestTest
+
+        run = subprocess.run
+        started = []
+
+        def spy(cmd, *args, **kwargs):
+            if cmd[:1] == ["fcitx5"]:
+                started.append(cmd)
+                return subprocess.CompletedProcess(cmd, 0, "", "")
+            return run(cmd, *args, **kwargs)
+
+        load = unittest.defaultTestLoader.loadTestsFromTestCase
+        suite = unittest.TestSuite(
+            map(load, (CheckPageTest, CheckPageWindowTest, CheckPageAppTestTest))
+        )
+        with mock.patch.object(subprocess, "run", spy):
+            suite.run(unittest.TestResult())
+        self.assertEqual(started, [])
+
+
 if __name__ == "__main__":
     unittest.main()

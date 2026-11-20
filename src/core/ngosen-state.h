@@ -882,6 +882,7 @@ namespace ngosen {
             std::string               passedSinceReport;         ///< letters let through to the app before our first commit since the last report
             std::string               passedAfterCommit;         ///< letters let through after that commit
             std::string               committedSinceReport;      ///< our commits since the last report
+            std::string               commitsShown;              ///< text our commits and spaces left in the last report
             int                       erasedSinceReport = 0;     ///< backspaces sent since the last report, -1 after any other deletion
             int                       lettersHidden     = 0;     ///< reports that left out letters typed into the field
             bool                      letterShown       = false; ///< a report showed letters typed into the field
@@ -918,11 +919,15 @@ namespace ngosen {
         void         noteCommitForCheck(const std::string& text);
         bool         keepsOnlyCommits() const;
         void         checkFirstLetters();
+        void         resetLetterCheckOnFieldChange();
+        std::string  xtermText_; ///< surrounding text last reported while keepsOnlyCommits() held
         // A commit waiting for the app to start a composition on its preedit.
         std::string                    composedCommit_;
         std::unique_ptr<ngosen::Timer> composedCommitTimer_;
         bool                           composedWait_ = false; ///< the composed commit or keys held for it wait for their turn
         void                           flushComposedCommit();
+        void                           dropComposedCommit();
+        bool                           composedEndedByUs_ = false; ///< commitBuffer ended the word while its commit waited
         bool                           composedCommitStep();
         uint64_t                       splitEditWaitUs() const;
 

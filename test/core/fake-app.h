@@ -161,6 +161,16 @@ namespace ngosen::test {
         // Leaves focus for ms and takes it back, as WPS does when it opens a window on a double click.
         void leaveFocus(int ms);
         void bounceReportingEmpty(int ms);
+        // Commits the preedit itself and resets, as an IBus client does with a preedit sent to be committed;
+        // this models xterm.js only.
+        void resetCommittingPreedit();
+        // True once xterm.js has taken the preedit into a composition.
+        bool composesPreedit() const {
+            return composing_ && !shownPreedit_.empty();
+        }
+        const std::string& shownPreedit() const {
+            return shownPreedit_;
+        }
         // Leaves focus and comes back after ms with text put at the cursor meanwhile, as a key typed right
         // after Alt+Tab does when both its press and release reach the window before focus-in.
         void returnWithText(const std::string& typed, int ms);

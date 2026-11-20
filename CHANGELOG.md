@@ -46,6 +46,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   `đthoại`) (#701, #833).
 - Trang Gõ trong cửa sổ cài đặt có mục Teencode: cách bật và danh sách app đang bật, mỗi app có nút tắt. Bản sao
   lưu cài đặt nay giữ cả danh sách này (#701, #844).
+- Arch và các distro dựa trên Arch cài được từ AUR: `yay -S fcitx5-ngosen`, bản IBus `yay -S ibus-ngosen`.
+  Mỗi version mới tự lên AUR khi phát hành ([#873](https://github.com/ngosen/ngosen/pull/873)).
 
 ### Thay đổi
 
@@ -70,6 +72,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trang Kiểm tra máy nay báo khi danh sách bộ gõ của fcitx5 còn một bàn phím khác đứng trước Ngó Sen. Khi đó
   cửa sổ mới mở ra ở bàn phím kia nên Ctrl+Shift không đổi Anh/Việt. Nút "Xoá" bỏ bàn phím thừa và có thể hoàn
   tác. Kết quả kiểm tra gửi kèm báo lỗi nay cũng liệt kê các bộ gõ trong danh sách (#872, #875).
+- Bản IBus: trong terminal dùng xterm.js, app reset ô đúng lúc vừa gõ một chữ không còn làm chữ đó ra đôi (`dd` ra
+  `đđ`) (#878).
+- Trong terminal dùng xterm.js của các trình soạn code Electron (như Antigravity, VS Code, Cursor), chế độ Gõ Sen không
+  còn khựng chờ hay nuốt chữ khi gõ nhanh (`xin chaof nhieefu` ra `xin chào nhiều` thay vì `xin chàoiều`), và khung chat
+  hay ô soạn code cùng cửa sổ không còn nháy preedit ở cuối từ; mới thử trên Antigravity ở KDE Wayland (#867, #880).
 
 ## [1.12.2-1] — 18/11/2026
 

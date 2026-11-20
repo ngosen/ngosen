@@ -333,6 +333,17 @@ namespace fcitx {
         return vietnamese ? "fcitx-ngosen-text-vi" : "fcitx-ngosen-text-en";
     }
 
+    std::string customTrayIcon(const std::string& imagePath, bool wantsName) {
+        if (imagePath.empty() || access(imagePath.c_str(), R_OK) != 0)
+            return {};
+        if (!wantsName)
+            return imagePath;
+        const auto slash = imagePath.rfind('/');
+        auto       name  = imagePath.substr(slash == std::string::npos ? 0 : slash + 1);
+        const auto dot   = name.rfind('.');
+        return dot == std::string::npos || dot == 0 ? name : name.substr(0, dot);
+    }
+
     std::vector<std::string> trayIconNames(const std::string& iconName, const std::string& baseIconName, const std::string& xdgCurrentDesktop) {
         if (isGnomeShellSession(xdgCurrentDesktop))
             return {iconName + "-gnome", iconName, baseIconName};

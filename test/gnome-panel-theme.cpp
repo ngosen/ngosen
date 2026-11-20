@@ -177,6 +177,12 @@ int main() {
             check("X3 text_icon_shipped", std::filesystem::exists(std::filesystem::path(NGOSEN_SOURCE_ICON_DIR) / (name + ".svg")), name.c_str());
         }
     }
+    const auto image = root / "home/.local/share/icons/hicolor/256x256/apps/ngosen-tray-vi-1a2b.png";
+    writeFile(image, "png");
+    check("U1 image_path", fcitx::customTrayIcon(image.string(), false) == image.string(), "path tray not given the path");
+    check("U2 image_name", fcitx::customTrayIcon(image.string(), true) == "ngosen-tray-vi-1a2b", "name tray not given the file name");
+    check("U3 image_missing", fcitx::customTrayIcon((root / "gone.png").string(), false).empty(), "missing image sent to the tray");
+    check("U4 image_unset", fcitx::customTrayIcon("", true).empty(), "unset image sent to the tray");
     check("T5 kde_tray_usual_icon", fcitx::trayIconNames("fcitx-ngosen-off", "fcitx-ngosen-off", "KDE").front() == "fcitx-ngosen-off", "KDE given the GNOME icon");
 
     writeFile(root / "usr/share/themes/Mint-Y-Dark-Aqua/cinnamon/cinnamon.css",

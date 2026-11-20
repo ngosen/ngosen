@@ -379,7 +379,7 @@ namespace ngosen {
         if (edited) {
             is_deleting_.store(false, std::memory_order_release);
             keyEvent.accept();
-            performReplacement(deletedPart, addedPart);
+            performReplacement(oldPreBuffer_, deletedPart, addedPart);
             oldPreBuffer_ = *edited;
             return true;
         }
@@ -424,7 +424,7 @@ namespace ngosen {
         is_deleting_.store(false, std::memory_order_release);
         hasHistory_ = true;
         keyEvent.accept();
-        performReplacement(deletedPart, addedPart);
+        performReplacement(oldPreBuffer_, deletedPart, addedPart);
         oldPreBuffer_ = untoned;
         return true;
     }
@@ -650,7 +650,7 @@ namespace ngosen {
             return;
         }
         if (!deletedPart.empty()) {
-            performReplacement(deletedPart, addedPart);
+            performReplacement(oldPreBuffer_, deletedPart, addedPart);
             keyEvent.accept();
         } else {
             bool wasAutoCapitalized = (currentSym != keyEvent.sym());
@@ -698,7 +698,7 @@ namespace ngosen {
         }
         is_deleting_.store(false, std::memory_order_release);
         keyEvent.accept();
-        performReplacement(deletedPart, addedPart);
+        performReplacement(oldPreBuffer_, deletedPart, addedPart);
         oldPreBuffer_ = restored;
         return true;
     }
@@ -782,7 +782,7 @@ namespace ngosen {
                 }
 
                 keyEvent.accept();
-                performReplacement(deletedPart, addedPart);
+                performReplacement(oldPreBuffer_, deletedPart, addedPart);
                 oldPreBuffer_ = preeditStr;
             }
         }

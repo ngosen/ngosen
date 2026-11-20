@@ -678,14 +678,10 @@ namespace ngosen {
         // Moves the commit of a timer-only wait later, never earlier.
         void deferTimedCommit(uint64_t deliverAtUs);
 
-        /**
-         * @brief Replaces text by sending backspaces, then committing.
-         * @param deletedPart Text to delete.
-         * @param addedPart Text to insert.
-         */
-        void performReplacement(const std::string& deletedPart, const std::string& addedPart);
+        // Replaces deletedPart, the end of word, with addedPart. word is what the app shows of the word being edited.
+        void performReplacement(const std::string& word, const std::string& deletedPart, const std::string& addedPart);
         // Remembers what the app showed when the replacement started, to tell when it is done.
-        void recordSendSnapshot(const std::string& deletedPart);
+        void recordSendSnapshot(const std::string& word, const std::string& deletedPart);
         bool deletesThroughSurrounding(const ngosen::Surrounding& surrounding);
         // What one replacement deletes and adds, and the app's text as read after any wait for it. The
         // strings are copies: callers pass members that a way may overwrite while it runs.
@@ -715,7 +711,7 @@ namespace ngosen {
         void                     releaseKeysAfterSurroundingEdit();
         int                      surroundingDeletionCount(const Surrounding& surrounding, std::string& retype) const;
         std::vector<std::string> earlierWordsBeforeReplacement() const;
-        void                     trackEarlierWords(const std::string& addedPart);
+        void                     trackEarlierWords(const std::string& word, const std::string& addedPart);
         void                     replaceThroughForwardedKeys();
         void                     replaceThroughCommittedDel();
 

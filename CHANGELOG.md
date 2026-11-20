@@ -14,6 +14,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Chuyển mã: ở ô không báo chữ quanh con trỏ (như VS Code), phím chuyển mã không còn lấy chữ đang bôi đen ở app
   khác rồi gõ vào ô (#916).
+- Trang Emoji: từ tiếng Anh trùng chữ Việt như `can`, `me`, `pho` nay hiện tắt, đúng như khi gõ, và bật lên thì
+  gợi ý được. Từ khoá chỉ khác chữ hoa, chữ thường không còn bị gộp làm một. Tệp từ emoji hỏng không còn làm đóng cửa
+  sổ cài đặt. Ví dụ cách dùng nay theo lúc gợi ý đang chọn: cuối câu hay sau mỗi từ (#915).
 
 ## [1.13.1-1] — 20/11/2026
 

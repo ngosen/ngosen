@@ -53,7 +53,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   lựa chọn "V / E", chữ `E` có thêm một lỗ ngó. Ai đã tắt ô đó thì chọn lại "V / E" sau khi cập nhật (#908).
 - Khay có thể hiện ảnh tự chọn, một ảnh khi gõ tiếng Việt và một ảnh khi gõ tiếng Anh: chọn "Ảnh tự chọn"
   ở mục "Khay hiện" rồi chọn ảnh SVG hoặc PNG. Ngôn ngữ chưa có ảnh vẫn hiện biểu tượng màu. Các mức của
-  "Màu biểu tượng" nay ghi rõ "Hợp panel sáng" và "Hợp panel tối".
+  "Màu biểu tượng" nay ghi rõ "Hợp panel sáng" và "Hợp panel tối" (#911, #912).
 
 ### Thay đổi
 

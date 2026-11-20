@@ -1151,6 +1151,16 @@ impl BambooEngine {
             self.update_preedit(&preedit);
             return true;
         }
+        // A stretched or teencode word shows a tone its last key may not have typed (`chaiiif`
+        // shows chàiii), so dropping that key would take the tone along.
+        let shown = self.get_preedit_string();
+        let shown_by_rule = (self.teencode_word().or_else(|| self.elongated_word())
+            == Some(shown.clone()))
+        .then(|| {
+            let mut left = shown;
+            left.pop();
+            left
+        });
         let shown_as_typed = self.shown_as_typed();
         // A prefix no dictionary word starts with goes the same way.
         let english = shown_as_typed
@@ -1179,6 +1189,15 @@ impl BambooEngine {
         }
         self.keep_marks_until_next_key = !shown_as_typed;
         self.keep_keys_until_next_key = english;
+        // The keys left may no longer stretch the word (`chaiif` shows as typed), so it is kept as shown.
+        if let Some(left) = shown_by_rule
+            && self.get_preedit_string() != left
+        {
+            self.kept = Some(KeptWord {
+                shown: left,
+                keys: self.raw_text().chars().count(),
+            });
+        }
         let preedit = self.get_preedit_string();
         self.update_preedit(&preedit);
         true

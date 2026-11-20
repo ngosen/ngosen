@@ -50,21 +50,20 @@ matches a program name only when nothing reported tells the app apart. The check
 `src/core/ngosen-app-quirks.cpp`; the tests in `test/host-field-mapping.cpp`,
 `test/ibus-dbus-forward-backspaces.cpp` and `test/x11-xtest-replacement.cpp` pin each case.
 
-The default is not the standard path. Ngó Sen forwards Backspace key events, because every
-frontend except XIM can deliver them and clients apply them in order with the commits that follow;
-`deleteSurroundingText` is used only where forwarded keys are known to be dropped or reordered.
-Surrounding text, where a client reports it, is read to check what is before the cursor, not to
-delete.
+The default is the standard path. Where a field reports surrounding text, on every frontend except
+XIM, Ngó Sen checks that the copy shows the word being corrected and deletes it with
+`deleteSurroundingText`. When that check fails or the field reports no text, it takes one of the
+other paths below, most often forwarded Backspace key events.
 
 | Path | Used for | Where it breaks |
 | --- | --- | --- |
-| Forwarded Backspace key events | The default: GTK 3 and Qt apps through the fcitx5 modules, Chromium and Electron apps, snap apps with the fcitx4 GTK module, clients of the Wayland frontends (KDE Plasma text-input; Sway and Hyprland input-method-v2), XIM clients under Xwayland. | Fields with inline autocompletion: a Backspace removes the suggested text first, so `cowf` in an address bar comes out as `coờ`. GTK 4 IM modules drop forwarded keys. GTK apps on Wayland text-input often apply a commit before the Backspace forwarded just ahead of it. LibreOffice runs Backspace asynchronously, so the next commit overtakes it. |
-| `deleteSurroundingText` | Clients where forwarded keys fail: GTK 4 apps through fcitx5-gtk4 or IBus, and LibreOffice. | Needs the client to report surrounding text. |
+| `deleteSurroundingText` | The default for fields that report surrounding text and whose copy shows the word: GTK and Qt apps, Chromium pages over IBus and Wayland text-input, LibreOffice. Firefox through the fcitx5 module stays on it after such a deletion even while its copy lags one step. | The copy can lag behind the app, and a deletion counted on an old copy takes the wrong characters; Ngó Sen then waits for a newer copy or forwards Backspace. |
+| Forwarded Backspace key events | Fields that report no surrounding text (Chromium and Electron through the GTK IM module, XIM clients under Xwayland), and fields where the check fails: no copy since focus, a selection, a Backspace already typed in the word, an address bar, a page that may keep its own text. | Fields with inline autocompletion: a Backspace removes the suggested text first, so `cowf` in an address bar comes out as `coờ`. GTK 4 IM modules drop forwarded keys. GTK apps on Wayland text-input often apply a commit before the Backspace forwarded just ahead of it. LibreOffice runs Backspace asynchronously, so the next commit overtakes it. |
 | Select and overtype (Shift+Left, then commit) | Chromium-based browsers over D-Bus, whose address bar selects an inline autocompletion after the typed text; optionally Facebook's composers. | Terminals that match the same flags print the Shift+Left instead of selecting. |
 | Synthetic keys through XTEST | XIM clients on an X11 session: Wine, WordCraft, SDL games. | Needs X11. Under Xwayland, XTEST asks the user for permission first, so Wine gets key events sent to its window instead. |
 | A committed DEL character | GTK 4 VTE terminals (Ptyxis, GNOME Console), which take neither forwarded keys nor surrounding text but pass committed text to the shell, where DEL erases like Backspace. | Only terminals. |
 
-Every row is a workaround for the same gap: an input method cannot yet rely on
+Every row after the first is a workaround for the same gap: an input method cannot yet rely on
 `delete_surrounding_text` being implemented, and implemented in order with commits, across Linux
 clients. When it can, the fake key presses go away.
 
@@ -90,10 +89,11 @@ request. "Fix" is what the client could change; none of these need a protocol ch
   commit before a key event that arrived just before it, so a forwarded Backspace followed by a
   commit often deletes the new text instead of the old. Fix: apply key events and text-input
   events in the order they arrive.
-- **GTK 4 IM modules** (fcitx5-gtk4 and IBus's GTK 4 module) drop forwarded key events and do not
-  pass on the terminal input purpose that VTE sets, so GTK 4 terminals get neither deletion path.
-  Fix: deliver forwarded keys to the widget as the GTK 3 modules do, and pass the input purpose
-  through.
+- **GTK 4 IM modules** (fcitx5-gtk4 and IBus's GTK 4 module) drop forwarded key events. The
+  terminal input purpose that VTE sets does not reach fcitx5 either: fcitx5-gtk has no case for it,
+  and fcitx5's IBus frontend ignores it although IBus's module passes it on. So GTK 4 terminals get
+  neither deletion path. Fix: deliver forwarded keys to the widget as the GTK 3 modules do, and map
+  the terminal purpose in fcitx5-gtk and in fcitx5's IBus frontend.
 - **SDL** takes only commits and preedit from the input method, so there is no way to delete text
   in an SDL game except real key presses, which only XTEST on X11 can send. Fix: implement
   `delete_surrounding_text` in SDL's Wayland and IBus text-input code.

@@ -53,7 +53,7 @@ namespace ngosen {
             return program == "wps" || program == "et" || program == "wpp";
         }
 
-        // Neither GTK4 IM module passes on the terminal input purpose VTE sets; these are the GTK4 VTE terminals.
+        // GTK4 VTE terminals reach fcitx5 without the terminal purpose: fcitx5-gtk4 and fcitx5's IBus frontend drop it.
         bool isGtk4VteTerminal(const Field& field) {
             const bool gtk4Module = (field.frontend == "dbus" && !field.keyEventOrderFix) || (field.frontend == "ibus" && isStartsWith(field.program, "gtk4-im:"));
             if (!gtk4Module)
@@ -62,7 +62,7 @@ namespace ngosen {
             return name == "ptyxis" || name == "kgx";
         }
 
-        // GNOME Shell relays apps under their GNOME app id and without their input purpose.
+        // Behind GNOME Shell the app is known by its app id, and fcitx5's IBus frontend drops the terminal purpose.
         bool isShellRelayedTerminal(const Field& field) {
             if (field.frontend != "ibus")
                 return false;

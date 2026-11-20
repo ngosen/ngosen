@@ -12,6 +12,7 @@ from support import FakeDBusHandler, app  # noqa: F401
 from core import tray_image
 from core.catalog import locked_by
 from core.settings_model import SettingsModel
+from qtpy.QtGui import QColor, QImage
 from qtpy.QtWidgets import QLabel, QPushButton
 from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
 
@@ -110,7 +111,11 @@ class QtTrayImageTest(unittest.TestCase):
         self.page = DynamicSettingsPage(FakeDBusHandler(), category=SettingsCategory.APPEARANCE)
 
     def test_picking_an_image_shows_it_in_the_tray_preview(self):
-        source, data = picked(self)
+        source, data = picked(self, "flag.png")
+        # PNG, since not every Qt build has the SVG image plugin.
+        image = QImage(8, 8, QImage.Format_ARGB32)
+        image.fill(QColor("red"))
+        image.save(str(source))
         self.page.update_config("TrayIconKind", "Custom image")
         self.page.use_tray_image("TrayImageEnglish", str(source))
         copy = self.page.model.value_of("TrayImageEnglish")

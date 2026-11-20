@@ -2050,14 +2050,13 @@ namespace fcitx {
     }
 
     std::string NgoSenEngine::subModeIconImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
-        std::string baseIconName;
-        switch (realMode) {
-            case NgoSenMode::Off: baseIconName = "fcitx-ngosen-off"; break;
-            default: baseIconName = "fcitx-ngosen"; break;
-        }
+        const auto        kind         = *config_.trayIconKind;
+        const bool        vietnamese   = realMode != NgoSenMode::Off;
+        const std::string baseIconName = kind == TrayIconKind::LanguageCode ? trayTextIconName(vietnamese) : (vietnamese ? "fcitx-ngosen" : "fcitx-ngosen-off");
 
+        // Only the colour icon has a tile; V / E is the plain form of the same icon.
         auto style = TrayIconStyle::Tile;
-        if (!*config_.useNgoSenIcons) {
+        if (kind != TrayIconKind::ColourIcon) {
             const auto& iconTheme = config_.iconTheme.value();
             const bool  darkPanel = iconTheme == IconTheme::Dark || (iconTheme == IconTheme::Auto && isDarkMode());
             style                 = darkPanel ? TrayIconStyle::PlainWhite : TrayIconStyle::PlainBlack;

@@ -169,6 +169,14 @@ int main() {
     check("I3 gnome_keeps_normal", fcitx::trayIconName("fcitx-ngosen", TrayIconStyle::Tile, true, true) == "fcitx-ngosen", "GNOME given the large tile");
     check("I4 plain_ignores_size", fcitx::trayIconName("fcitx-ngosen-off", TrayIconStyle::PlainWhite, true, false) == "fcitx-ngosen-off-default", "plain icon given a large name");
     check("I5 plain_black", fcitx::trayIconName("fcitx-ngosen", TrayIconStyle::PlainBlack, false, false) == "fcitx-ngosen-default-black", "black plain icon not chosen");
+    check("X1 code_vietnamese", fcitx::trayTextIconName(true) == "fcitx-ngosen-text-vi", "Vietnamese code not vi");
+    check("X2 code_english", fcitx::trayTextIconName(false) == "fcitx-ngosen-text-en", "English code not en");
+    for (const bool vietnamese : {true, false}) {
+        for (const auto style : {TrayIconStyle::PlainWhite, TrayIconStyle::PlainBlack}) {
+            const auto name = fcitx::trayIconName(fcitx::trayTextIconName(vietnamese), style, true, false);
+            check("X3 text_icon_shipped", std::filesystem::exists(std::filesystem::path(NGOSEN_SOURCE_ICON_DIR) / (name + ".svg")), name.c_str());
+        }
+    }
     check("T5 kde_tray_usual_icon", fcitx::trayIconNames("fcitx-ngosen-off", "fcitx-ngosen-off", "KDE").front() == "fcitx-ngosen-off", "KDE given the GNOME icon");
 
     writeFile(root / "usr/share/themes/Mint-Y-Dark-Aqua/cinnamon/cinnamon.css",

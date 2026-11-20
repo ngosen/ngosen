@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Check the tray icon sizes: plain glyphs as tall as the tile, large tiles 1.25 times the
-normal one, and no icon clipped.
+"""Check the tray icon sizes: plain glyphs as tall as the tile, language codes centred like
+it, large tiles 1.25 times the normal one, and no icon clipped.
 
 usage: tray-icon-heights.py RSVG_CONVERT SOURCE_ICON_DIR GNOME_ICON_DIR LARGE_ICON_DIR
 """
@@ -19,6 +19,13 @@ PLAIN = (
     "fcitx-ngosen-default-black",
     "fcitx-ngosen-off-default",
     "fcitx-ngosen-off-default-black",
+)
+# Lower-case letters have no reason to be as tall as the tile, only centred and unclipped.
+TEXT = (
+    "fcitx-ngosen-text-vi-default",
+    "fcitx-ngosen-text-vi-default-black",
+    "fcitx-ngosen-text-en-default",
+    "fcitx-ngosen-text-en-default-black",
 )
 
 
@@ -92,7 +99,7 @@ def main():
             for size in SIZES:
                 tile_rows = glyph_rows(rsvg, path("fcitx-ngosen"), size, tmp)
                 tile = height(tile_rows)
-                for name in TILES + PLAIN:
+                for name in TILES + PLAIN + TEXT:
                     rows = glyph_rows(rsvg, path(name), size, tmp)
                     if touches_edge(rows):
                         failures.append(f"{name}{suffix} at {size} px is clipped at the edge")
@@ -100,7 +107,7 @@ def main():
                         failures.append(
                             f"{name}{suffix} at {size} px: glyph {height(rows)} px, tile {tile} px"
                         )
-                    if name in PLAIN and abs(middle(rows) - middle(tile_rows)) > 1:
+                    if name not in TILES and abs(middle(rows) - middle(tile_rows)) > 1:
                         failures.append(f"{name}{suffix} at {size} px is not centred like the tile")
         for size in SIZES:
             tile = height(glyph_rows(rsvg, os.path.join(source_dir, "fcitx-ngosen.svg"), size, tmp))

@@ -34,8 +34,8 @@ a careful human wrote it, and the person sending it must be able to explain ever
   naming (`camelCase` functions, `snake_case_` members). Functions under ~50 lines.
 - **No "lotus" in names.** The project is Ngó Sen; a file, class, function, constant, macro or
   environment variable uses `ngosen`/`NgoSen`/`NGOSEN_` or a plain descriptive name. The lotus
-  names left are the ones users' machines still have: the `UseLotusIcons` config key and the files
-  `src/ngosen-migration.cpp` carries over.
+  names left are the ones users' machines still have: the files `src/ngosen-migration.cpp` carries
+  over.
   Runtime names users already have change only together with a migration step.
   `misc/check-new-names.sh` enforces this in CI.
 - **Run clang-format before pushing.** CI fails on any formatting diff, including alignment of

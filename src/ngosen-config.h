@@ -114,6 +114,14 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(TrayIconSize, N_("Normal"), N_("Large"));
 
+    enum class TrayIconKind : std::uint8_t {
+        ColourIcon,
+        Letter,
+        LanguageCode,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(TrayIconKind, N_("Colour icon"), N_("V / E"), N_("vi / en"));
+
     enum class EmojiPlacement : std::uint8_t {
         AfterWord,
         InsteadOfWord,
@@ -371,9 +379,8 @@ namespace fcitx {
         HiddenOption<int>  waitSurroundingMinPerKeyMs{this, "WaitSurroundingMinPerKeyMs",
                                                       _("Experiment: a snapshot identical to the one at send time counts as done only after this many ms per backspace"),
                                                       ngosen::defaultOptions.waitSurroundingMinPerKeyMs};
-        // The key keeps its old name so saved settings still load.
-        Option<bool>                                                   useNgoSenIcons{this, "UseLotusIcons", _("Use Ngó Sen Status Icons"), true};
         OptionWithAnnotation<TrayIconSize, TrayIconSizeI18NAnnotation> trayIconSize{this, "TrayIconSize", _("Tray Icon Size"), TrayIconSize::Normal};
+        OptionWithAnnotation<TrayIconKind, TrayIconKindI18NAnnotation> trayIconKind{this, "TrayIconKind", _("Tray Icon Shows"), TrayIconKind::ColourIcon};
 
         // Settings and Save typing log have no option: without them the menu could not lead back.
         Option<bool> showMenuInputMethod{this, "ShowMenuInputMethod", _("Show Input Method in the tray menu"), true};

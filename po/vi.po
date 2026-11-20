@@ -445,6 +445,14 @@ msgid "Large"
 msgstr "Lớn"
 
 #: src/ngosen-config.h
+msgid "Tray Icon Shows"
+msgstr "Khay hiện"
+
+#: src/ngosen-config.h
+msgid "Colour icon"
+msgstr "Biểu tượng màu"
+
+#: src/ngosen-config.h
 msgid "Interface Language"
 msgstr "Ngôn ngữ giao diện"
 

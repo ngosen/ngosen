@@ -52,12 +52,12 @@ matches a program name only when nothing reported tells the app apart. The check
 
 The default is the standard path. Where a field reports surrounding text, on every frontend except
 XIM, Ngó Sen checks that the copy shows the word being corrected and deletes it with
-`deleteSurroundingText`. It forwards Backspace key events when that check fails or the field
-reports no text.
+`deleteSurroundingText`. When that check fails or the field reports no text, it takes one of the
+other paths below, most often forwarded Backspace key events.
 
 | Path | Used for | Where it breaks |
 | --- | --- | --- |
-| `deleteSurroundingText` | The default for fields that report surrounding text and whose copy shows the word: GTK and Qt apps, Chromium pages over IBus and Wayland text-input, LibreOffice. | The copy can lag behind the app, and a deletion counted on an old copy takes the wrong characters; Ngó Sen then waits for a newer copy or forwards Backspace. |
+| `deleteSurroundingText` | The default for fields that report surrounding text and whose copy shows the word: GTK and Qt apps, Chromium pages over IBus and Wayland text-input, LibreOffice. Firefox through the fcitx5 module stays on it after such a deletion even while its copy lags one step. | The copy can lag behind the app, and a deletion counted on an old copy takes the wrong characters; Ngó Sen then waits for a newer copy or forwards Backspace. |
 | Forwarded Backspace key events | Fields that report no surrounding text (Chromium and Electron through the GTK IM module, XIM clients under Xwayland), and fields where the check fails: no copy since focus, a selection, a Backspace already typed in the word, an address bar, a page that may keep its own text. | Fields with inline autocompletion: a Backspace removes the suggested text first, so `cowf` in an address bar comes out as `coờ`. GTK 4 IM modules drop forwarded keys. GTK apps on Wayland text-input often apply a commit before the Backspace forwarded just ahead of it. LibreOffice runs Backspace asynchronously, so the next commit overtakes it. |
 | Select and overtype (Shift+Left, then commit) | Chromium-based browsers over D-Bus, whose address bar selects an inline autocompletion after the typed text; optionally Facebook's composers. | Terminals that match the same flags print the Shift+Left instead of selecting. |
 | Synthetic keys through XTEST | XIM clients on an X11 session: Wine, WordCraft, SDL games. | Needs X11. Under Xwayland, XTEST asks the user for permission first, so Wine gets key events sent to its window instead. |

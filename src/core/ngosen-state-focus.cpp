@@ -31,20 +31,8 @@ namespace ngosen {
         const bool        resume = bounce && deletionInterruptedAt_ > 0 && is_deleting_.load();
         deletionInterruptedAt_   = 0;
         echoKeyAtUs_             = 0; // a report of another field would end it
-        if (key_report_.pending && !resume) {
-            key_report_.timer.reset();
-            dropReplacementAfterFocusLoss();
-        }
-        if (split_edit_.pending && !resume) {
-            split_edit_.pending = false;
-            split_edit_.timer.reset();
-            dropReplacementAfterFocusLoss();
-        }
-        if (tail_clear_.pending && !resume) {
-            tail_clear_.pending = false;
-            tail_clear_.timer.reset();
-            dropReplacementAfterFocusLoss();
-        }
+        if (!resume)
+            dropWaitsAfterFocusMove();
         // A page may move focus into its text field after the user selected text elsewhere on it.
         // A bounce keeps it: WPS opens a window on a double click and takes focus straight back.
         if (isFocusIn && !bounce)
@@ -147,13 +135,7 @@ namespace ngosen {
             return;
         }
         // The word stays until activate() knows whether focus only bounced.
-        // A selection waiting to be typed over has no backspaces left, but is just as unfinished.
-        if (mode() == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_.pending)) {
-            deletionInterruptedAt_ = nowMs();
-            NGOSEN_INFO("Replacement interrupted by focus out");
-        } else {
-            is_deleting_.store(false);
-        }
+        noteReplacementAtFocusOut();
         needEngineReset.store(false);
         jumpedFrom_.reset();
         retype_.reset();
@@ -168,6 +150,33 @@ namespace ngosen {
         host_->refreshPanel();
         if (mode() == ngosen::Mode::Preedit)
             host_->refreshPreedit();
+    }
+
+    void TypingState::dropWaitsAfterFocusMove() {
+        if (key_report_.pending) {
+            key_report_.timer.reset();
+            dropReplacementAfterFocusLoss();
+        }
+        if (split_edit_.pending) {
+            split_edit_.pending = false;
+            split_edit_.timer.reset();
+            dropReplacementAfterFocusLoss();
+        }
+        if (tail_clear_.pending) {
+            tail_clear_.pending = false;
+            tail_clear_.timer.reset();
+            dropReplacementAfterFocusLoss();
+        }
+    }
+
+    // A selection waiting to be typed over has no backspaces left, but is just as unfinished.
+    void TypingState::noteReplacementAtFocusOut() {
+        if (mode() == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_.pending)) {
+            deletionInterruptedAt_ = nowMs();
+            NGOSEN_INFO("Replacement interrupted by focus out");
+        } else {
+            is_deleting_.store(false);
+        }
     }
 
     bool TypingState::waitsForRedraw() const {

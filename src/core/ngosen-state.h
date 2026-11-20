@@ -706,6 +706,10 @@ namespace ngosen {
         void performReplacement(const std::string& word, const std::string& deletedPart, const std::string& addedPart);
         // A deletion is out, or keys are held back right after an edit.
         bool editInFlight() const;
+        // Ends the waits a focus move leaves nothing to finish for.
+        void dropWaitsAfterFocusMove();
+        // Keeps an unfinished replacement for a focus that may only bounce.
+        void noteReplacementAtFocusOut();
         // Resets the counts a replacement is checked against.
         void beginReplacement(const std::string& deletedPart, const std::string& addedPart);
         // Remembers what the app showed when the replacement started, to tell when it is done.

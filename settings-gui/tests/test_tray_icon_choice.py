@@ -2,10 +2,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import struct
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
+from xml.etree import ElementTree
 
 # isort: off
 from support import FakeDBusHandler, app  # noqa: F401
@@ -19,6 +21,24 @@ from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
 # isort: on
 
 SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8"/></svg>'
+WIDE_SVG = '<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="20" height="30"><rect/></svg>'
+
+
+def png_header(width, height):
+    """Enough of a PNG for its size to be read: signature and IHDR."""
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + ihdr + b"\0\0\0\0"
+
+
+def svg_box(path):
+    root = ElementTree.parse(path).getroot()
+    box = tuple(float(v) for v in root.get("viewBox").split())
+    if root.get("width") is not None:
+        assert float(root.get("width")) == float(root.get("height")), (
+            root.get("width"),
+            root.get("height"),
+        )
+    return box
 
 
 def picked(test, name="flag.svg", content=SVG):
@@ -73,6 +93,26 @@ class TrayImageInstallTest(unittest.TestCase):
         english = tray_image.install(source, "en")
         tray_image.install(source, "vi")
         self.assertTrue(os.path.exists(english))
+
+    def test_a_wide_svg_is_made_square(self):
+        source, _data = picked(self, "flag.svg", WIDE_SVG)
+        copy = Path(tray_image.install(source, "vi"))
+        self.assertEqual(svg_box(copy), (-5.0, 0.0, 30.0, 30.0))
+
+    def test_a_tall_png_is_centred_in_a_square_svg(self):
+        source, _data = picked(self, "flag.png")
+        source.write_bytes(png_header(20, 40))
+        copy = Path(tray_image.install(source, "vi"))
+        self.assertEqual(copy.suffix, ".svg")
+        self.assertEqual(svg_box(copy), (0.0, 0.0, 40.0, 40.0))
+        self.assertIn('x="10"', copy.read_text())
+
+    def test_a_square_png_is_copied_as_it_is(self):
+        source, data = picked(self, "flag.png")
+        source.write_bytes(png_header(64, 64))
+        copy = Path(tray_image.install(source, "vi"))
+        self.assertEqual(copy.parent, data / "icons/hicolor/256x256/apps")
+        self.assertEqual(copy.read_bytes(), png_header(64, 64))
 
     def test_formats_trays_cannot_show_are_refused(self):
         source, _data = picked(self, "photo.jpg", "jpeg")

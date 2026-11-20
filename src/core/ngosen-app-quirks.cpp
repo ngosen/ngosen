@@ -12,9 +12,14 @@
 namespace ngosen {
 
     namespace {
+        // KWin can name a Flatpak browser by its app ID.
         bool isChromiumBrowser(const std::string& program) {
             for (const char* browser : {"chromium", "chrome", "google-chrome", "microsoft-edge", "msedge", "brave", "opera"}) {
                 if (isStartsWith(program, browser))
+                    return true;
+            }
+            for (const char* flatpak : {"com.microsoft.Edge", "com.google.Chrome", "org.chromium.Chromium", "com.brave.Browser"}) {
+                if (program == flatpak)
                     return true;
             }
             return false;

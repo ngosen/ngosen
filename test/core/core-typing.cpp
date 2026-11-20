@@ -1332,6 +1332,11 @@ namespace {
         const auto kdePlain = ngosen::test::typeInAppTraced(resources, kdeChromium, ngosen::test::AppQuirks{}, keys, std::vector<int>(keys.size(), 100));
         check(kdePlain.text == "tiếng việt " && kdePlain.sent.surroundingDeletes > 0, "plain page on KDE: back to the surrounding text",
               kdePlain.text + ", " + std::to_string(kdePlain.sent.surroundingDeletes) + " surrounding deletions");
+        // KWin can name a Flatpak browser by its app ID.
+        for (const char* flatpak : {"com.microsoft.Edge", "com.google.Chrome", "org.chromium.Chromium", "com.brave.Browser"}) {
+            const auto flatpakSheet = ngosen::test::typeInAppTraced(resources, makeField("wayland", true, flatpak), quirks, keys, std::vector<int>(keys.size(), 100));
+            check(flatpakSheet.text == "tiếng việt ", std::string("page with its own text in Flatpak ") + flatpak + ": delete with backspaces", flatpakSheet.text);
+        }
 
         {
             // The Enter was released while the replacement waited, so it goes out with no wait for a release.

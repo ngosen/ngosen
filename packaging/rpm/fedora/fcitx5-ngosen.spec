@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.12.2
+Version:        1.12.3
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -100,6 +100,9 @@ else
 fi
 
 %changelog
+* Fri Nov 20 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.12.3-1
+- With the IBus edition, an xterm.js terminal that resets the field just as a letter is typed no longer doubles it (dd gives đđ) (#878); in xterm.js terminals of Electron code editors such as Antigravity, VS Code and Cursor, Sen no longer stalls or swallows letters when typing fast, and the chat or editor in the same window no longer flashes a preedit at the end of a word (#867, #880). Arch users can install from the AUR (#873).
+
 * Wed Nov 18 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.12.2-1
 - Retyping a tone after a final consonant produces the right word, and English words such as aface are no longer truncated (#835); on GNOME, typing quickly right after Firefox opens, deleting with Backspace and continuing no longer scrambles text (#831); Brave on Fedora GNOME no longer loses marks or scrambles letters (#842); Sen gets the first word right in xterm.js terminals after fcitx5 starts, including VaultID on GNOME, though two very fast initial keys can still lose the first letter on KDE (#846, #853, #864); clicking outside the mode menu closes it immediately, including in the active field on KDE, and where clicking cannot close it, it still closes after 5 seconds (#836, #840, #850).
 

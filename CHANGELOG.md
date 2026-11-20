@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.12.3-1] — 20/11/2026
+
+Bản IBus: trong terminal dùng xterm.js, chữ vừa gõ không còn ra đôi khi app reset ô (#878). Gõ Sen trong terminal của trình soạn code Electron như Antigravity, VS Code, Cursor không còn khựng hay nuốt chữ khi gõ nhanh (#867, #880). Arch cài được từ AUR (#873).
+Tải ở [ngosen-1.12.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.12.3-1).
+
 ### Thêm
 
 - Arch và các distro dựa trên Arch cài được từ AUR: `yay -S fcitx5-ngosen`, bản IBus `yay -S ibus-ngosen`.

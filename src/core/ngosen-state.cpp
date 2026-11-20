@@ -1480,7 +1480,7 @@ namespace ngosen {
         const auto& text        = surrounding.text();
         size_t      textLen     = ngosen::utf8::length(text);
         realtextLen.store(textLen, std::memory_order_release);
-        if (is_deleting_.load(std::memory_order_acquire) || edit_hold_) {
+        if (editInFlight()) {
             return;
         }
         // The cursor may have moved, so Enter or Esc must not replace text before it.
@@ -1639,7 +1639,7 @@ namespace ngosen {
             NGOSEN_INFO(hidden ? "Terminal hides input: keys go to the app as typed" : "Terminal shows input again");
         }
         // A replacement in flight finishes on its own; what it leaves is cleared at a later key.
-        if (hiddenInputSettled_ || is_deleting_.load(std::memory_order_acquire) || edit_hold_)
+        if (hiddenInputSettled_ || editInFlight())
             return hidden;
         hiddenInputSettled_ = true;
         if (hidden)

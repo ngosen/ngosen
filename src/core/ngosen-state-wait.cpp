@@ -297,7 +297,7 @@ namespace ngosen {
     void TypingState::surroundingUpdated() {
         // A wait that starts while this report is handled sees only the next report.
         const bool        waiting    = surr_wait_watching_;
-        const bool        overtyping = overtype_watching_;
+        const bool        overtyping = overtype_.watching;
         const std::string report     = host_->field().hidesText() ? "hidden" : ngosen::describeSurrounding(host_->surrounding());
         sinceFocus_.reported         = sinceFocus_.reported || host_->surrounding().isValid();
         reportSinceEdit_             = true;
@@ -499,7 +499,7 @@ namespace ngosen {
     }
 
     void TypingState::onOvertypeSurroundingUpdated() {
-        if (!overtype_pending_ || !is_deleting_.load()) {
+        if (!overtype_.pending || !is_deleting_.load()) {
             return;
         }
         const auto s = host_->surrounding();
@@ -507,7 +507,7 @@ namespace ngosen {
             return;
         }
         const int selected = static_cast<int>(s.anchor()) - static_cast<int>(s.cursor());
-        if (selected != overtype_char_count_ && selected != -overtype_char_count_) {
+        if (selected != overtype_.charCount && selected != -overtype_.charCount) {
             return;
         }
         finishOvertype("selected", false);

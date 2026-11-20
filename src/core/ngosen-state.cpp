@@ -988,12 +988,12 @@ namespace ngosen {
     }
 
     bool TypingState::skipsKey(ngosen::KeyPress& keyEvent) {
-        if (overtype_pending_ && overtype_via_xtest_ && keyEvent.sym() == ngosen::key::Shift_R) {
+        if (overtype_.pending && overtype_.viaXTest && keyEvent.sym() == ngosen::key::Shift_R) {
             keyEvent.passToApp();
-            if (keyEvent.isRelease() && !overtype_shift_released_ && overtype_timer_) {
-                overtype_shift_released_ = true;
-                overtype_released_at_    = ngosen::monotonicUs();
-                overtype_timer_->rearm(overtype_released_at_ + XTestSelectSettleUs);
+            if (keyEvent.isRelease() && !overtype_.shiftReleased && overtype_.timer) {
+                overtype_.shiftReleased = true;
+                overtype_.releasedAt    = ngosen::monotonicUs();
+                overtype_.timer->rearm(overtype_.releasedAt + XTestSelectSettleUs);
             }
             return true;
         }
@@ -1024,7 +1024,7 @@ namespace ngosen {
         lastPressCode_      = keyEvent.code();
         lastPressTime_      = keyEvent.time();
         forwardsSincePress_ = 0;
-        if (const uint32_t rawSym = keyEvent.sym(); overtype_pending_ && (rawSym == ngosen::key::Left || rawSym == ngosen::key::Shift_L || rawSym == ngosen::key::Shift_R)) {
+        if (const uint32_t rawSym = keyEvent.sym(); overtype_.pending && (rawSym == ngosen::key::Left || rawSym == ngosen::key::Shift_L || rawSym == ngosen::key::Shift_R)) {
             // Our own Shift+Left selection: it must reach the app and must not be treated as the user
             // moving the cursor (that would discard the pending commit).
             keyEvent.passToApp();
@@ -1085,7 +1085,7 @@ namespace ngosen {
         jumpedFrom_.reset();
         // This safety valve silently clears the flag on the next key. Skip it while a wait is pending,
         // otherwise the pending commit is thrown away.
-        if (!surr_wait_pending_ && !overtype_pending_ && composedCommit_.empty() && current_backspace_count_ >= expected_backspaces_ && is_deleting_.load()) {
+        if (!surr_wait_pending_ && !overtype_.pending && composedCommit_.empty() && current_backspace_count_ >= expected_backspaces_ && is_deleting_.load()) {
             is_deleting_.store(false);
             current_backspace_count_ = 0;
             expected_backspaces_     = 0;
@@ -1116,7 +1116,7 @@ namespace ngosen {
         // A key that beats the deferred commit must not land before it.
         flushDeferredCommit();
         // Nothing is being replaced any more, so an Enter still owed belongs to a dropped replacement.
-        if (!is_deleting_.load(std::memory_order_acquire) && !surr_wait_pending_ && !overtype_pending_ && !key_report_pending_)
+        if (!is_deleting_.load(std::memory_order_acquire) && !surr_wait_pending_ && !overtype_.pending && !key_report_pending_)
             enter_after_replacement_ = false;
         if (g_mouse_clicked.load(std::memory_order_acquire) && !is_deleting_.load(std::memory_order_acquire)) {
             g_mouse_clicked.store(false, std::memory_order_release);

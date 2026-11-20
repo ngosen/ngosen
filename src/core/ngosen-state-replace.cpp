@@ -364,31 +364,31 @@ namespace ngosen {
 
     void TypingState::selectAndOvertype(const std::string& addedPart, int charCount, bool viaXTest) {
         is_deleting_.store(true, std::memory_order_release);
-        overtype_via_xtest_      = viaXTest;
-        overtype_shift_released_ = false;
-        overtype_focus_bounced_  = false;
+        overtype_.viaXTest       = viaXTest;
+        overtype_.shiftReleased  = false;
+        overtype_.focusBounced   = false;
         pending_commit_string_   = addedPart;
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
-        overtype_char_count_     = charCount;
-        overtype_pending_        = true;
+        overtype_.charCount      = charCount;
+        overtype_.pending        = true;
         {
-            const auto snapshot     = host_->surrounding();
-            overtype_had_snapshot_  = snapshot.isValid();
-            overtype_cursor_before_ = overtype_had_snapshot_ ? snapshot.cursor() : 0;
+            const auto snapshot    = host_->surrounding();
+            overtype_.hadSnapshot  = snapshot.isValid();
+            overtype_.cursorBefore = overtype_.hadSnapshot ? snapshot.cursor() : 0;
         }
-        overtype_started_at_     = ngosen::monotonicUs();
-        overtype_watching_       = true;
+        overtype_.startedAt      = ngosen::monotonicUs();
+        overtype_.watching       = true;
         const uint64_t timeoutUs = viaXTest ? XTestSelectTimeoutUs : 150000ULL;
-        overtype_timer_          = host_->startTimer(overtype_started_at_ + timeoutUs, 1000, [this](ngosen::Timer& timer) {
-            if (!overtype_pending_ || !is_deleting_.load()) {
+        overtype_.timer          = host_->startTimer(overtype_.startedAt + timeoutUs, 1000, [this](ngosen::Timer& timer) {
+            if (!overtype_.pending || !is_deleting_.load()) {
                 return false;
             }
-            if (!overtype_shift_released_) {
+            if (!overtype_.shiftReleased) {
                 abandonOvertype();
-            } else if (overtype_focus_bounced_ || !ngosen::focusChangeShowsBrowserField(host_->field())) {
+            } else if (overtype_.focusBounced || !ngosen::focusChangeShowsBrowserField(host_->field())) {
                 finishOvertype("selection settled", true);
-            } else if (const uint64_t deadline = overtype_released_at_ + SelectionBounceWaitUs; ngosen::monotonicUs() < deadline) {
+            } else if (const uint64_t deadline = overtype_.releasedAt + SelectionBounceWaitUs; ngosen::monotonicUs() < deadline) {
                 timer.rearm(deadline);
                 return true;
             } else {
@@ -407,17 +407,17 @@ namespace ngosen {
     void TypingState::abandonOvertype() {
         const auto snapshot     = host_->surrounding();
         int        rightPresses = 1; // a real but unreported selection collapses with one Right
-        if (overtype_had_snapshot_ && snapshot.isValid() && snapshot.cursor() == snapshot.anchor() &&
-            snapshot.cursor() + static_cast<unsigned int>(overtype_char_count_) == overtype_cursor_before_) {
-            rightPresses = overtype_char_count_; // the field only moved the cursor, nothing selected
+        if (overtype_.hadSnapshot && snapshot.isValid() && snapshot.cursor() == snapshot.anchor() &&
+            snapshot.cursor() + static_cast<unsigned int>(overtype_.charCount) == overtype_.cursorBefore) {
+            rightPresses = overtype_.charCount; // the field only moved the cursor, nothing selected
         }
         for (int i = 0; i < rightPresses; ++i) {
             forwardTap(ngosen::EditKey::Right);
         }
-        NGOSEN_INFO("Overtype gave up after " + std::to_string((ngosen::monotonicUs() - overtype_started_at_) / 1000) + " ms, moved cursor right " + std::to_string(rightPresses));
+        NGOSEN_INFO("Overtype gave up after " + std::to_string((ngosen::monotonicUs() - overtype_.startedAt) / 1000) + " ms, moved cursor right " + std::to_string(rightPresses));
         logReplaceEnd("overtype gave up");
-        overtype_pending_   = false;
-        overtype_via_xtest_ = false;
+        overtype_.pending  = false;
+        overtype_.viaXTest = false;
         pending_commit_string_.clear();
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
@@ -434,24 +434,24 @@ namespace ngosen {
         NGOSEN_INFO("No focus change after selecting, deleting with backspaces");
         replace_wait_                   = "selection";
         field_keeps_focus_on_selection_ = true;
-        overtype_pending_               = false;
-        overtype_via_xtest_             = false;
+        overtype_.pending               = false;
+        overtype_.viaXTest              = false;
         forwardTap(ngosen::EditKey::Right);
-        expected_backspaces_     = static_cast<int>(ngosen::utf8::length(overtype_deleted_));
+        expected_backspaces_     = static_cast<int>(ngosen::utf8::length(overtype_.deleted));
         deletedChars_            = expected_backspaces_;
         current_backspace_count_ = 0;
         const std::string added  = pending_commit_string_;
-        deleteAndCommit(overtype_deleted_, added);
+        deleteAndCommit(overtype_.deleted, added);
     }
 
     void TypingState::finishOvertype(const char* reason, bool fromTimer) {
-        const auto elapsedMs = (ngosen::monotonicUs() - overtype_started_at_) / 1000;
+        const auto elapsedMs = (ngosen::monotonicUs() - overtype_.startedAt) / 1000;
         NGOSEN_INFO("Overtype " + std::string(reason) + " after " + std::to_string(elapsedMs) + " ms");
         logReplaceEnd(reason);
-        overtype_pending_   = false;
-        overtype_via_xtest_ = false;
-        if (!fromTimer && overtype_timer_) {
-            overtype_timer_.reset(); // never reset a timer from inside its own callback
+        overtype_.pending  = false;
+        overtype_.viaXTest = false;
+        if (!fromTimer && overtype_.timer) {
+            overtype_.timer.reset(); // never reset a timer from inside its own callback
         }
         std::string text = std::move(pending_commit_string_);
         pending_commit_string_.clear();
@@ -505,7 +505,7 @@ namespace ngosen {
     }
 
     void TypingState::runOvertypeXTest(const ReplaceRequest& request) {
-        overtype_deleted_ = request.deleted;
+        overtype_.deleted = request.deleted;
         selectAndOvertype(request.added, static_cast<int>(ngosen::utf8::length(request.deleted)), true);
     }
 

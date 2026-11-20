@@ -138,7 +138,7 @@ namespace ngosen {
             rememberLeftField();
             keysAtFocusOut_ = keyCount_;
             commitNotSeen_.clear();
-            overtype_focus_bounced_         = overtype_pending_;
+            overtype_.focusBounced          = overtype_.pending;
             field_keeps_focus_on_selection_ = false;
         }
         lastDeactivateTime_ = nowMs();
@@ -148,7 +148,7 @@ namespace ngosen {
         }
         // The word stays until activate() knows whether focus only bounced.
         // A selection waiting to be typed over has no backspaces left, but is just as unfinished.
-        if (mode() == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_pending_)) {
+        if (mode() == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_.pending)) {
             deletionInterruptedAt_ = nowMs();
             NGOSEN_INFO("Replacement interrupted by focus out");
         } else {

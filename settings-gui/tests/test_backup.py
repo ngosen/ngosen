@@ -76,6 +76,14 @@ class LoadTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.load(data)
 
+    def test_a_file_of_shared_emoji_words_is_not_restored(self):
+        shared = {
+            "meta": {"kind": "ngosen-emoji-words", "version": 1},
+            "emoji_words": [{"Keyword": "sếp", "Emoji": "👔"}],
+        }
+        with self.assertRaises(ValueError):
+            self.load(shared)
+
 
 class RoundTripTest(unittest.TestCase):
     def test_the_toggle_key_switches_come_back_with_the_rules(self):
@@ -91,6 +99,16 @@ class RoundTripTest(unittest.TestCase):
             self.assertTrue(backup.apply(target, backup.load(path)))
         self.assertEqual(target.sub_configs["app_rules"], rules)
         self.assertEqual(target.sub_configs["app_switches"], switches)
+
+    def test_teencode_apps_come_back(self):
+        apps = [{"App": "discord"}]
+        source = fake_fcitx.FakeDBusHandler(sub_configs={"teencode_apps": apps})
+        target = fake_fcitx.FakeDBusHandler()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "b.json")
+            backup.export(source, path)
+            self.assertTrue(backup.apply(target, backup.load(path)))
+        self.assertEqual(target.sub_configs["teencode_apps"], apps)
 
     def test_an_older_backup_brings_its_rules_back_without_todays_switches(self):
         rules = [{"App": "kate", "Mode": "0"}]

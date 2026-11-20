@@ -142,6 +142,30 @@ msgstr ""
 msgid "Capitalize Macro"
 msgstr ""
 
+#: src/ngosen-dbus-object.cpp
+msgid "Ngó Sen is not in the current input method group. Add it to this group in fcitx5 settings."
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "This app is set to English"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "To use the toggle key here, go to Settings → Shortcuts → Switch Applies To and choose Each app."
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Switch Applies To"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "All apps"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Each app"
+msgstr ""
+
 #: src/ngosen-config.h:235
 msgid "Key to Keep the Word as Typed"
 msgstr ""
@@ -179,6 +203,10 @@ msgid "Yahoo Messenger emoticons"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "English keywords"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Apps"
 msgstr ""
 
@@ -207,6 +235,18 @@ msgid "After the word"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "Offer emoji"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "After each word"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "At the end of a sentence"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Instead of the word"
 msgstr ""
 
@@ -228,6 +268,10 @@ msgstr ""
 
 #: src/ngosen-config.h:242
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Teencode"
 msgstr ""
 
 #: src/ngosen-config.h:244
@@ -372,7 +416,7 @@ msgid "What's new in Ngó Sen?"
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.12: emoji suggestions while typing, and the settings window opens Check my machine when a setup step is left. See What's new for more."
+msgid "Version 1.13: one switch key for every app, emoji at the end of a sentence, drawn-out letters and teencode. See What's new for more."
 msgstr ""
 
 #: src/ngosen-engine.cpp
@@ -403,7 +447,7 @@ msgid "Ngó Sen - Off"
 msgstr ""
 
 #: src/core/ngosen-state-emoji-offer.cpp
-msgid "pick, Space or Enter: the first, Esc: keep the word"
+msgid "pick, or arrows then Enter, Esc: keep the word"
 msgstr ""
 
 #: src/core/ngosen-state-retype.cpp
@@ -1207,7 +1251,7 @@ msgid "GNOME {} drops the keys Ngó Sen sends to apps"
 msgstr ""
 
 #: settings-gui/core/system_check.py
-msgid "Menu and hints do not show in GNOME's search box"
+msgid "Emoji lists can cover the text being typed; menus do not show in GNOME's search box"
 msgstr ""
 
 #: settings-gui/core/system_check.py
@@ -1381,7 +1425,7 @@ msgid "No desktop session bus. Run this as your own user in a desktop terminal."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
+msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Unicode tổ hợp sends tone marks apart from their letters, which terminals and many apps handle badly. Cứu dấu works only with Unicode."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
@@ -1434,7 +1478,15 @@ msgid "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the co
 msgstr ""
 
 #: settings-gui/core/catalog.py
+msgid "cat and thumbs up also offer 🐈 and 👍, from the Unicode list of English words. Words that are also Vietnamese, like can, are left out."
+msgstr ""
+
+#: settings-gui/core/catalog.py
 msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "At the end of a sentence: the emoji of the sentence show while you type. After . ! ? or a short pause, 1–9 picks one, or Tab first where digits type tones, as in VNI; it goes at the cursor. Esc hides them until the next sentence. After each word: the list shows as soon as a keyword is typed."
 msgstr ""
 
 #: settings-gui/core/catalog.py
@@ -1648,6 +1700,38 @@ msgstr ""
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji at the end of a sentence"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab, or a number in Telex, to pick one. On GNOME without the Input Method Panel extension they show right in the field. English words such as cat or thumbs up count too, and the Emoji page can export and import your words."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Drawn-out letters"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Repeat the last letter of a marked word and it repeats with its mark, instead of bringing back the keys you typed. English words such as besttt stay as typed."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Teencode for chosen apps"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Turn teencode on for one app with the teencode key in the ` menu. Words like zậy, đag and nhưg then keep their marks. It is off by default."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "A command for your own shortcut"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Bind the ngosen-toggle command to a desktop shortcut to switch between English and Vietnamese, even when no text field has focus."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
@@ -1941,6 +2025,22 @@ msgstr ""
 msgid "Emoji suggestions: off"
 msgstr ""
 
+#: src/ngosen-config.h
+msgid "Show teencode"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Shortcut for teencode"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Teencode: on"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "Teencode: off"
+msgstr ""
+
 #: settings-gui/core/whats_new_content.py
 msgid "Press ` to pick Sen, Preedit or OFF for the app in use, or to turn emoji or Vim keys on or off for it."
 msgstr ""
@@ -2071,4 +2171,96 @@ msgstr ""
 
 #: settings-gui/core/emoji_words.py
 msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
+msgstr ""
+
+#: settings-gui/core/teencode_apps.py
+msgid "Set a mode menu key and a teencode key on the Keys page to turn teencode on."
+msgstr ""
+
+#: settings-gui/core/teencode_apps.py
+msgid "Teencode keeps words like zậy, đag and nhữg instead of restoring the keys typed. In the app you are typing in, press {menu} then {key} to turn it on or off for that app."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Not on in any app."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Turn off"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Turn teencode off in {}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Export…"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Import…"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Save the words you turned on, to share them"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Add the words from a file someone shared"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Export Emoji Words"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Import Emoji Words"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Could not export: {}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Saved {} words to {}."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Could not import: {}"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "You already have every word in that file."
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "{} words from the file"
+msgstr ""
+
+#: settings-gui/ui_gtk/emoji.py
+msgid "Emoji words"
+msgstr ""
+
+#: settings-gui/ui/pages/emoji_page.py
+msgid "Emoji words (*.json);;All Files (*)"
+msgstr ""
+
+#: settings-gui/core/emoji_words.py
+msgid "This is not a file of emoji words exported from Ngó Sen."
+msgstr ""
+
+#: settings-gui/core/emoji_words.py
+msgid "The emoji words in the file are damaged."
+msgstr ""
+
+#: settings-gui/core/backup.py
+msgid "this file holds emoji words; import it on the Emoji page"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Output charset is {charset}, not Unicode"
+msgstr ""
+
+#: settings-gui/core/system_check.py
+msgid "Most apps expect Unicode. With another charset, terminals and web pages can show stray tone marks or lose letters. Keep it only for an old document or app that needs it; otherwise choose Unicode under Typing › Output Charset."
 msgstr ""

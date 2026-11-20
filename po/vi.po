@@ -199,6 +199,30 @@ msgstr "Bật gõ tắt"
 msgid "Capitalize Macro"
 msgstr "Gõ tắt chữ hoa"
 
+#: src/ngosen-dbus-object.cpp
+msgid "Ngó Sen is not in the current input method group. Add it to this group in fcitx5 settings."
+msgstr "Ngó Sen chưa có trong nhóm bộ gõ đang dùng. Thêm Ngó Sen vào nhóm này trong cài đặt fcitx5."
+
+#: src/ngosen-engine.cpp
+msgid "This app is set to English"
+msgstr "App này đang ở chế độ tiếng Anh"
+
+#: src/ngosen-engine.cpp
+msgid "To use the toggle key here, go to Settings → Shortcuts → Switch Applies To and choose Each app."
+msgstr "Để dùng phím chuyển trong app này, vào Cài đặt → Phím tắt → Phím chuyển áp dụng cho và chọn Từng app."
+
+#: src/ngosen-config.h
+msgid "Switch Applies To"
+msgstr "Phím chuyển áp dụng cho"
+
+#: src/ngosen-config.h
+msgid "All apps"
+msgstr "Mọi app"
+
+#: src/ngosen-config.h
+msgid "Each app"
+msgstr "Từng app"
+
 #: src/ngosen-config.h:235
 msgid "Key to Keep the Word as Typed"
 msgstr "Phím chốt chữ"
@@ -236,6 +260,10 @@ msgid "Yahoo Messenger emoticons"
 msgstr "Mã emoji Yahoo Messenger"
 
 #: src/ngosen-config.h
+msgid "English keywords"
+msgstr "Từ khoá tiếng Anh"
+
+#: src/ngosen-config.h
 msgid "Apps"
 msgstr "App tắt emoji"
 
@@ -264,6 +292,18 @@ msgid "After the word"
 msgstr "Đặt sau từ"
 
 #: src/ngosen-config.h
+msgid "Offer emoji"
+msgstr "Gợi ý emoji"
+
+#: src/ngosen-config.h
+msgid "After each word"
+msgstr "Sau mỗi từ"
+
+#: src/ngosen-config.h
+msgid "At the end of a sentence"
+msgstr "Ở cuối câu"
+
+#: src/ngosen-config.h
 msgid "Instead of the word"
 msgstr "Thay luôn từ"
 
@@ -286,6 +326,10 @@ msgstr "Backspace xoá dấu thanh"
 #: src/ngosen-config.h:242
 msgid "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
 msgstr "Vẫn gõ dd ra đ khi tự khôi phục"
+
+#: src/ngosen-engine.cpp
+msgid "Teencode"
+msgstr "Teencode"
 
 #: src/ngosen-config.h:244
 msgid "Use Ngó Sen Status Icons"
@@ -441,8 +485,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.12: emoji suggestions while typing, and the settings window opens Check my machine when a setup step is left. See What's new for more."
-msgstr "Version 1.12: gợi ý emoji khi gõ, và cửa sổ cài đặt tự mở trang Kiểm tra máy khi còn bước thiết lập chưa xong. Xem thêm ở trang Có gì mới."
+msgid "Version 1.13: one switch key for every app, emoji at the end of a sentence, drawn-out letters and teencode. See What's new for more."
+msgstr "Version 1.13: một phím chuyển cho mọi app, gợi ý emoji ở cuối câu, gõ kéo dài chữ và teencode. Xem thêm ở trang Có gì mới."
 
 #: src/ngosen-engine.cpp
 msgid "Show"
@@ -472,8 +516,8 @@ msgid "Ngó Sen - Off"
 msgstr "Ngó Sen - Tắt"
 
 #: src/core/ngosen-state-emoji-offer.cpp
-msgid "pick, Space or Enter: the first, Esc: keep the word"
-msgstr "chọn · Space, Enter: lấy cái đầu · Esc: giữ chữ"
+msgid "pick, or arrows then Enter, Esc: keep the word"
+msgstr "chọn · hoặc mũi tên rồi Enter · Esc: giữ chữ"
 
 #: src/core/ngosen-state-retype.cpp
 msgid "Enter: retype in Vietnamese, Tab or Esc: keep"
@@ -1329,8 +1373,8 @@ msgid "GNOME {} drops the keys Ngó Sen sends to apps"
 msgstr "GNOME {} làm rơi phím Ngó Sen gửi cho app"
 
 #: settings-gui/core/system_check.py
-msgid "Menu and hints do not show in GNOME's search box"
-msgstr "Menu và gợi ý không hiện trong ô tìm kiếm của GNOME"
+msgid "Emoji lists can cover the text being typed; menus do not show in GNOME's search box"
+msgstr "Bảng emoji có thể che chữ đang gõ; menu không hiện trong ô tìm kiếm của GNOME"
 
 #: settings-gui/core/system_check.py
 msgid "Menu and hints show in GNOME's search box"
@@ -1375,6 +1419,22 @@ msgstr "fcitx5 đang chạy"
 #: settings-gui/core/system_check.py
 msgid "Ngó Sen is in the fcitx5 input method list"
 msgstr "Ngó Sen đã có trong danh sách bộ gõ của fcitx5"
+
+#: settings-gui/core/system_check.py
+msgid "New windows open on another keyboard, not on Ngó Sen"
+msgstr "Cửa sổ mới mở ra ở một bàn phím khác, không phải Ngó Sen"
+
+#: settings-gui/core/system_check.py
+msgid ""
+"fcitx5 also has {}, so switching between English and Vietnamese does "
+"nothing there. Ngó Sen has its own English mode: remove the extra keyboard."
+msgstr ""
+"fcitx5 còn có {}, nên ở đó phím chuyển Anh/Việt không có tác dụng. Ngó Sen "
+"đã có sẵn chế độ tiếng Anh: hãy xoá bàn phím thừa."
+
+#: settings-gui/core/system_check.py
+msgid "Removed the extra keyboard. New windows open on Ngó Sen."
+msgstr "Đã xoá bàn phím thừa. Cửa sổ mới sẽ mở ra ở Ngó Sen."
 
 #: settings-gui/core/system_check.py
 msgid "Older X11 apps use fcitx5"
@@ -1511,6 +1571,14 @@ msgstr "Nhật ký chưa ghi lần gõ nào. Gõ câu mẫu rồi lưu lại nh�
 msgid "fcitx5 is not running."
 msgstr "fcitx5 không chạy."
 
+#: settings-gui/toggle.py
+msgid "Could not switch English/Vietnamese"
+msgstr "Không chuyển được Anh/Việt"
+
+#: settings-gui/toggle.py
+msgid "Ngó Sen was updated. Log out and back in, then try again."
+msgstr "Ngó Sen đã được cập nhật. Hãy đăng xuất rồi đăng nhập lại, sau đó thử lại."
+
 #: settings-gui/save_log.py
 msgid "Ngó Sen is not loaded. Switch to Ngó Sen once, then run this again."
 msgstr "Ngó Sen chưa chạy. Hãy chuyển sang Ngó Sen một lần rồi chạy lại lệnh này."
@@ -1532,6 +1600,10 @@ msgid "Tap it alone to switch. The tray icon shows V while typing Vietnamese."
 msgstr "Nhấp riêng phím này để chuyển. Biểu tượng khay hiện chữ V khi đang gõ tiếng Việt."
 
 #: settings-gui/ui/pages/dynamic_settings.py
+msgid "All apps switches English/Vietnamese everywhere except apps set to OFF; Each app remembers a separate choice for each app."
+msgstr "Mọi app chuyển Anh/Việt cùng lúc, trừ app đặt Tắt; Từng app nhớ lựa chọn riêng cho mỗi app."
+
+#: settings-gui/ui/pages/dynamic_settings.py
 msgid "Switch with Ctrl+Shift, as in UniKey?"
 msgstr "Chuyển bằng Ctrl+Shift như UniKey?"
 
@@ -1544,8 +1616,8 @@ msgid "fcitx5 has other input methods too; its own key still switches to them."
 msgstr "fcitx5 còn bộ gõ khác; phím chuyển của fcitx5 vẫn đưa sang các bộ gõ đó."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
-msgstr "Cứ để Unicode, trừ khi văn bản hay app cũ cần bảng mã khác như TCVN3 (ABC). Cứu dấu chỉ chạy với Unicode."
+msgid "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Unicode tổ hợp sends tone marks apart from their letters, which terminals and many apps handle badly. Cứu dấu works only with Unicode."
+msgstr "Cứ để Unicode, trừ khi văn bản hay app cũ cần bảng mã khác như TCVN3 (ABC). Unicode tổ hợp gửi dấu thanh tách khỏi chữ, nên terminal và nhiều app hiện sai. Cứu dấu chỉ chạy với Unicode."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "dd and Space stays đ instead of going back to dd."
@@ -1598,8 +1670,16 @@ msgid "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the co
 msgstr "Gõ =)) hay :x là gợi ý 🤣 hay 😍 như hồi Yahoo Messenger; bấm Tab để thay mã bằng emoji."
 
 #: settings-gui/core/catalog.py
+msgid "cat and thumbs up also offer 🐈 and 👍, from the Unicode list of English words. Words that are also Vietnamese, like can, are left out."
+msgstr "Gõ cat hay thumbs up cũng gợi ý 🐈 hay 👍, theo danh sách từ tiếng Anh của Unicode. Từ trùng chữ Việt như can thì bỏ qua."
+
+#: settings-gui/core/catalog.py
 msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
 msgstr "Đặt sau từ: cười 😂. Thay luôn từ: 😂. Còn haha và :) thì luôn được thay."
+
+#: settings-gui/core/catalog.py
+msgid "At the end of a sentence: the emoji of the sentence show while you type. After . ! ? or a short pause, 1–9 picks one, or Tab first where digits type tones, as in VNI; it goes at the cursor. Esc hides them until the next sentence. After each word: the list shows as soon as a keyword is typed."
+msgstr "Cuối câu: emoji của câu hiện suốt lúc gõ. Sau dấu . ! ? hoặc khi dừng tay một chút, bấm 1–9 để chọn, hoặc bấm Tab trước nếu phím số dùng để bỏ dấu như VNI; emoji thêm vào chỗ con trỏ. Esc ẩn chúng tới hết câu. Sau mỗi từ: danh sách hiện ngay khi gõ xong một từ khoá."
 
 #: settings-gui/core/catalog.py
 msgid "cười shows Tab: 😂 … next to the cursor. Tab numbers them: 1–5 picks one, Tab, Space or Enter the first, Esc keeps the word. haha and :) are replaced. Only where the hint is known to show."
@@ -1610,12 +1690,12 @@ msgid "Opens a menu to pick a mode for the app in use. Only while typing Vietnam
 msgstr "Mở menu chọn chế độ gõ cho app đang dùng. Chỉ khi đang gõ tiếng Việt; lúc gõ tiếng Anh phím gõ ra như thường."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Moves the app in use to the next mode in the list below, and remembers it for that app."
-msgstr "Chuyển app đang dùng sang chế độ kế tiếp trong danh sách bên dưới và nhớ cho app đó."
+msgid "Moves the app in use to the next mode in the list below, and remembers it for that app. With All apps, choosing Sen or Preedit while in English turns Vietnamese on for all apps."
+msgstr "Chuyển app đang dùng sang chế độ kế tiếp trong danh sách bên dưới và nhớ cho app đó. Khi chọn Mọi app, chuyển sang Gõ Sen hoặc Gạch chân lúc đang gõ tiếng Anh sẽ bật tiếng Việt cho mọi app."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) to follow the global setting and switch key again; OFF stays set for the app."
-msgstr "Khi menu chế độ đang mở, bấm phím của một chế độ để chọn cho app đang dùng. Chọn chế độ mặc định của app (thường là Gõ Sen, đôi khi là Gạch chân) để app lại theo thiết lập chung và phím chuyển; Tắt vẫn được nhớ riêng cho app."
+msgid "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) to follow the global setting and switch key again; OFF stays set for the app and keeps it in English even when other apps type Vietnamese. With All apps, the switch key in an OFF app opens the mode menu; pick Sen or Preedit there to type Vietnamese in that app."
+msgstr "Khi menu chế độ đang mở, bấm phím của một chế độ để chọn cho app đang dùng. Chọn chế độ mặc định của app (thường là Gõ Sen, đôi khi là Gạch chân) để app lại theo thiết lập chung và phím chuyển; Tắt vẫn được nhớ riêng cho app và giữ app gõ tiếng Anh ngay cả khi các app khác gõ tiếng Việt. Khi chọn Mọi app, bấm phím chuyển trong app đặt Tắt sẽ mở menu chế độ; chọn Gõ Sen hoặc Gạch chân tại đó để app gõ tiếng Việt."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Off: plain one-colour icons, in the colour picked below."
@@ -1819,6 +1899,38 @@ msgid "Check that fcitx5 is running."
 msgstr "Hãy xem fcitx5 có đang chạy không."
 
 #: settings-gui/core/whats_new_content.py
+msgid "Emoji at the end of a sentence"
+msgstr "Gợi ý emoji ở cuối câu"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab, or a number in Telex, to pick one. On GNOME without the Input Method Panel extension they show right in the field. English words such as cat or thumbs up count too, and the Emoji page can export and import your words."
+msgstr "Emoji nay chờ tới cuối câu: gõ . ! ? hoặc dừng tay, rồi bấm Tab, hay bấm số khi gõ Telex, để chọn. Trên GNOME không có extension Input Method Panel, gợi ý hiện ngay trong ô. Từ tiếng Anh như cat hay thumbs up cũng có emoji, và trang Emoji xuất, nhập được từ gợi ý của bạn."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Drawn-out letters"
+msgstr "Gõ kéo dài chữ"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Repeat the last letter of a marked word and it repeats with its mark, instead of bringing back the keys you typed. English words such as besttt stay as typed."
+msgstr "Gõ lặp chữ cái cuối của một từ có dấu thì chữ đó lặp lại cùng dấu, thay vì hiện lại các phím đã gõ. Từ tiếng Anh như besttt vẫn giữ nguyên."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Teencode for chosen apps"
+msgstr "Teencode cho từng app"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Turn teencode on for one app with the teencode key in the ` menu. Words like zậy, đag and nhưg then keep their marks. It is off by default."
+msgstr "Bật teencode riêng cho một app bằng phím teencode trong menu `. Khi đó chữ như zậy, đag, nhưg giữ dấu. Mặc định tắt."
+
+#: settings-gui/core/whats_new_content.py
+msgid "A command for your own shortcut"
+msgstr "Lệnh chuyển Anh/Việt cho phím tắt riêng"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Bind the ngosen-toggle command to a desktop shortcut to switch between English and Vietnamese, even when no text field has focus."
+msgstr "Gán lệnh ngosen-toggle cho một phím tắt của desktop để chuyển Anh/Việt, kể cả khi không có ô nhập nào đang focus."
+
+#: settings-gui/core/whats_new_content.py
 msgid "Emoji while typing"
 msgstr "Gợi ý emoji khi gõ"
 
@@ -1863,8 +1975,16 @@ msgid "Vietnamese in the tray menu"
 msgstr "Tiếng Việt trong menu khay"
 
 #: settings-gui/core/whats_new_content.py
-msgid "The tray menu starts with an item that turns Vietnamese on or off, for when Ctrl + Shift does not work. Each app keeps its choice."
-msgstr "Đầu menu khay có mục bật hoặc tắt tiếng Việt, dùng khi Ctrl + Shift không chạy. Mỗi app nhớ lựa chọn riêng."
+msgid "The tray menu starts with an item that turns Vietnamese on or off, for when Ctrl + Shift does not work."
+msgstr "Đầu menu khay có mục bật hoặc tắt tiếng Việt, dùng khi Ctrl + Shift không chạy."
+
+#: settings-gui/core/whats_new_content.py
+msgid "One switch for every app"
+msgstr "Một phím chuyển cho mọi app"
+
+#: settings-gui/core/whats_new_content.py
+msgid "New installs start in Vietnamese, and the switch key now changes all apps at once, as in UniKey. Apps set to OFF stay in English; the switch key there opens the ` menu to pick Sen or Preedit. For the old behavior, choose Each app under Switch Applies To on the Shortcuts page."
+msgstr "Cài mới bật sẵn tiếng Việt, và phím chuyển nay đổi mọi app cùng lúc như UniKey. App đặt Tắt vẫn gõ tiếng Anh; bấm phím chuyển tại đó mở menu ` để chọn Gõ Sen hoặc Gạch chân. Muốn dùng như trước, chọn “Từng app” ở “Phím chuyển áp dụng cho” trên trang Phím tắt."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Commands and paths"
@@ -2214,6 +2334,7 @@ msgid "No desktop session bus, so Ngó Sen cannot be reached."
 msgstr "Không có session bus của desktop nên không gọi được Ngó Sen."
 
 #: settings-gui/core/convert.py
+#: settings-gui/toggle.py
 msgid "Ngó Sen is not loaded. Switch to Ngó Sen once, then try again."
 msgstr "Ngó Sen chưa được nạp. Chuyển sang Ngó Sen một lần rồi thử lại."
 
@@ -2288,6 +2409,22 @@ msgstr "Gợi ý emoji: bật"
 #: src/ngosen-engine.cpp
 msgid "Emoji suggestions: off"
 msgstr "Gợi ý emoji: tắt"
+
+#: src/ngosen-config.h
+msgid "Show teencode"
+msgstr "Hiển thị Teencode"
+
+#: src/ngosen-config.h
+msgid "Shortcut for teencode"
+msgstr "Phím tắt cho Teencode"
+
+#: src/ngosen-engine.cpp
+msgid "Teencode: on"
+msgstr "Teencode: bật"
+
+#: src/ngosen-engine.cpp
+msgid "Teencode: off"
+msgstr "Teencode: tắt"
 
 #: settings-gui/core/whats_new_content.py
 msgid "Press ` to pick Sen, Preedit or OFF for the app in use, or to turn emoji or Vim keys on or off for it."
@@ -2420,3 +2557,95 @@ msgstr "Đặt phím mở menu chế độ và phím emoji ở trang Phím để
 #: settings-gui/core/emoji_words.py
 msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
 msgstr "Ở app đang gõ, bấm {menu} rồi {key} để tắt hay bật lại gợi ý cho riêng app đó. Kiểu gõ của app vẫn giữ nguyên."
+
+#: settings-gui/core/teencode_apps.py
+msgid "Set a mode menu key and a teencode key on the Keys page to turn teencode on."
+msgstr "Đặt phím mở menu chế độ và phím teencode ở trang Phím để bật teencode."
+
+#: settings-gui/core/teencode_apps.py
+msgid "Teencode keeps words like zậy, đag and nhữg instead of restoring the keys typed. In the app you are typing in, press {menu} then {key} to turn it on or off for that app."
+msgstr "Teencode giữ các chữ như zậy, đag, nhữg thay vì trả về phím đã gõ. Ở app đang gõ, bấm {menu} rồi {key} để bật hay tắt teencode cho riêng app đó."
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Not on in any app."
+msgstr "Chưa bật ở app nào."
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Turn off"
+msgstr "Tắt"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Turn teencode off in {}"
+msgstr "Tắt teencode trong {}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Export…"
+msgstr "Xuất…"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Import…"
+msgstr "Nhập…"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Save the words you turned on, to share them"
+msgstr "Lưu các từ mình đã bật ra file để chia sẻ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Add the words from a file someone shared"
+msgstr "Thêm các từ trong file người khác chia sẻ"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Export Emoji Words"
+msgstr "Xuất từ gợi ý emoji"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Import Emoji Words"
+msgstr "Nhập từ gợi ý emoji"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Could not export: {}"
+msgstr "Không xuất được: {}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Saved {} words to {}."
+msgstr "Đã lưu {} từ vào {}."
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "Could not import: {}"
+msgstr "Không nhập được: {}"
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "You already have every word in that file."
+msgstr "Mọi từ trong file đó mình đã có rồi."
+
+#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
+msgid "{} words from the file"
+msgstr "{} từ trong file"
+
+#: settings-gui/ui_gtk/emoji.py
+msgid "Emoji words"
+msgstr "Từ gợi ý emoji"
+
+#: settings-gui/ui/pages/emoji_page.py
+msgid "Emoji words (*.json);;All Files (*)"
+msgstr "Từ gợi ý emoji (*.json);;Mọi file (*)"
+
+#: settings-gui/core/emoji_words.py
+msgid "This is not a file of emoji words exported from Ngó Sen."
+msgstr "Đây không phải file từ gợi ý emoji xuất từ Ngó Sen."
+
+#: settings-gui/core/emoji_words.py
+msgid "The emoji words in the file are damaged."
+msgstr "Các từ gợi ý emoji trong file bị hỏng."
+
+#: settings-gui/core/backup.py
+msgid "this file holds emoji words; import it on the Emoji page"
+msgstr "file này chứa từ gợi ý emoji; hãy nhập nó ở trang Emoji"
+
+#: settings-gui/core/system_check.py
+msgid "Output charset is {charset}, not Unicode"
+msgstr "Bảng mã đang là {charset}, không phải Unicode"
+
+#: settings-gui/core/system_check.py
+msgid "Most apps expect Unicode. With another charset, terminals and web pages can show stray tone marks or lose letters. Keep it only for an old document or app that needs it; otherwise choose Unicode under Typing › Output Charset."
+msgstr "Hầu hết app cần Unicode. Với bảng mã khác, terminal và trang web có thể hiện dấu lạc hoặc mất chữ. Chỉ giữ bảng mã này cho văn bản hay app cũ cần nó; còn lại hãy chọn Unicode ở Gõ chữ › Bảng mã."

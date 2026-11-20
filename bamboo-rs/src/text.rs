@@ -4,7 +4,22 @@
 
 //! Character classes the per-key logic needs; `bamboo-core` keeps its own copies private.
 
-const VOWELS: &str = "aàáảãạăằắẳẵặâầấẩẫậeèéẻẽẹêềếểễệiìíỉĩịoòóỏõọôồốổỗộơờớởỡợuùúủũụưừứửữựyỳýỷỹỵ";
+// Rows of six: a vowel without a tone, then the same vowel with each tone in order.
+#[rustfmt::skip]
+const VOWELS: [char; 72] = [
+    'a', 'à', 'á', 'ả', 'ã', 'ạ',
+    'ă', 'ằ', 'ắ', 'ẳ', 'ẵ', 'ặ',
+    'â', 'ầ', 'ấ', 'ẩ', 'ẫ', 'ậ',
+    'e', 'è', 'é', 'ẻ', 'ẽ', 'ẹ',
+    'ê', 'ề', 'ế', 'ể', 'ễ', 'ệ',
+    'i', 'ì', 'í', 'ỉ', 'ĩ', 'ị',
+    'o', 'ò', 'ó', 'ỏ', 'õ', 'ọ',
+    'ô', 'ồ', 'ố', 'ổ', 'ỗ', 'ộ',
+    'ơ', 'ờ', 'ớ', 'ở', 'ỡ', 'ợ',
+    'u', 'ù', 'ú', 'ủ', 'ũ', 'ụ',
+    'ư', 'ừ', 'ứ', 'ử', 'ữ', 'ự',
+    'y', 'ỳ', 'ý', 'ỷ', 'ỹ', 'ỵ',
+];
 
 const PUNCTUATION_MARKS: &[char] = &[
     ',', ';', ':', '.', '"', '\'', '!', '?', ' ', '<', '>', '=', '+', '-', '*', '/', '\\', '_',
@@ -25,7 +40,19 @@ fn lower(c: char) -> char {
 }
 
 fn vowel_position(c: char) -> Option<usize> {
-    VOWELS.chars().position(|v| v == c)
+    // Most letters looked up are ASCII, and the only ASCII vowels start a row.
+    if c.is_ascii() {
+        return VOWELS
+            .iter()
+            .step_by(6)
+            .position(|&v| v == c)
+            .map(|row| row * 6);
+    }
+    VOWELS.iter().position(|&v| v == c)
+}
+
+fn vowel_at(pos: usize) -> Option<char> {
+    VOWELS.get(pos).copied()
 }
 
 /// A letter carrying a tone or a mark, which only Vietnamese text has.
@@ -43,7 +70,7 @@ pub fn has_any_vietnamese_rune(word: &str) -> bool {
 /// A plain vowel with the tone `split_tones` numbers as `tone`: `with_tone('a', 2)` is á.
 pub fn with_tone(vowel: char, tone: u32) -> Option<char> {
     let pos = vowel_position(vowel).filter(|pos| pos % 6 == 0)?;
-    VOWELS.chars().nth(pos + tone as usize)
+    vowel_at(pos + tone as usize)
 }
 
 pub fn has_any_vietnamese_vowel(word: &str) -> bool {
@@ -64,7 +91,7 @@ fn split_tones(word: &str) -> (String, String) {
         let lower_c = lower(c);
         match vowel_position(lower_c) {
             Some(pos) if pos % 6 != 0 => {
-                letters.extend(VOWELS.chars().nth(pos - pos % 6));
+                letters.extend(vowel_at(pos - pos % 6));
                 tones.extend(char::from_digit((pos % 6) as u32, 10));
             }
             _ => letters.push(lower_c),
@@ -92,7 +119,7 @@ pub fn without_marks(word: &str) -> String {
         .map(|c| match lower(c) {
             'đ' => 'd',
             c => vowel_position(c)
-                .and_then(|pos| VOWELS.chars().nth(UNMARKED_ROW[pos / 6] * 6 + pos % 6))
+                .and_then(|pos| vowel_at(UNMARKED_ROW[pos / 6] * 6 + pos % 6))
                 .unwrap_or(c),
         })
         .collect()
@@ -106,7 +133,7 @@ pub fn without_diacritics(text: &str) -> String {
             let plain = match lower(c) {
                 'đ' => 'd',
                 l => vowel_position(l)
-                    .and_then(|pos| VOWELS.chars().nth(UNMARKED_ROW[pos / 6] * 6))
+                    .and_then(|pos| vowel_at(UNMARKED_ROW[pos / 6] * 6))
                     .unwrap_or(c),
             };
             if plain != c && c.is_uppercase() {
@@ -125,35 +152,128 @@ fn tones(word: &str) -> impl Iterator<Item = usize> + '_ {
         .filter(|&t| t != 0)
 }
 
-/// Whether more keys can turn `typed` into the start of `word`: each letter is the same or lacks a
-/// mark the word's letter has, and any tone typed matches the word's tone even if more letters move
-/// it (`khủy` to khuỷu), while `cró` never grows into crông.
-pub fn grows_into(typed: &str, word: &str) -> bool {
-    let covers = |t: char, w: char| {
-        if t == w {
-            return true;
+/// Keys typed so far, read once to compare with many words that may start with them.
+pub struct Typed<'a> {
+    text: &'a str,
+    len: usize,
+    tones: Vec<usize>,
+}
+
+impl<'a> Typed<'a> {
+    pub fn new(text: &'a str) -> Self {
+        Self {
+            text,
+            len: text.chars().count(),
+            tones: tones(text).collect(),
         }
-        if t == 'd' {
-            return w == 'đ';
-        }
-        let (Some(t), Some(w)) = (vowel_position(t), vowel_position(w)) else {
-            return false;
-        };
-        let (t_row, w_row) = (t / 6, w / 6);
-        t_row == w_row || t_row == UNMARKED_ROW[w_row]
+    }
+
+    /// Whether more keys can turn the typed keys into the start of `word`: each letter is the same
+    /// or lacks a mark the word's letter has, and any tone typed matches the word's tone even if
+    /// more letters move it (`khủy` to khuỷu), while `cró` never grows into crông.
+    pub fn grows_into(&self, word: &str) -> bool {
+        (self.tones.is_empty() || tones(word).eq(self.tones.iter().copied()))
+            && self.len <= word.chars().count()
+            && self
+                .text
+                .chars()
+                .map(lower)
+                .zip(word.chars().map(lower))
+                .all(|(t, w)| covers(t, w))
+    }
+}
+
+fn covers(t: char, w: char) -> bool {
+    if t == w {
+        return true;
+    }
+    if t == 'd' {
+        return w == 'đ';
+    }
+    let (Some(t), Some(w)) = (vowel_position(t), vowel_position(w)) else {
+        return false;
     };
-    (tones(typed).next().is_none() || tones(typed).eq(tones(word)))
-        && typed.chars().count() <= word.chars().count()
-        && typed
-            .chars()
-            .map(lower)
-            .zip(word.chars().map(lower))
-            .all(|(t, w)| covers(t, w))
+    let (t_row, w_row) = (t / 6, w / 6);
+    t_row == w_row || t_row == UNMARKED_ROW[w_row]
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // The vowels as text, scanned one by one: the reference the lookups must match.
+    const VOWEL_TEXT: &str =
+        "aàáảãạăằắẳẵặâầấẩẫậeèéẻẽẹêềếểễệiìíỉĩịoòóỏõọôồốổỗộơờớởỡợuùúủũụưừứửữựyỳýỷỹỵ";
+
+    #[test]
+    fn vowel_lookups_match_a_scan_of_the_text() {
+        assert_eq!(VOWELS.iter().collect::<String>(), VOWEL_TEXT);
+        for c in (0..=u32::from(char::MAX)).filter_map(char::from_u32) {
+            let scanned = VOWEL_TEXT.chars().position(|v| v == c);
+            assert_eq!(vowel_position(c), scanned, "{c:?}");
+        }
+        for pos in (0..200).chain([usize::MAX]) {
+            assert_eq!(vowel_at(pos), VOWEL_TEXT.chars().nth(pos), "{pos}");
+        }
+    }
+
+    // grows_into as it was before Typed, the reference the new one must match.
+    fn grows_into_by_scan(typed: &str, word: &str) -> bool {
+        (tones(typed).next().is_none() || tones(typed).eq(tones(word)))
+            && typed.chars().count() <= word.chars().count()
+            && typed
+                .chars()
+                .map(lower)
+                .zip(word.chars().map(lower))
+                .all(|(t, w)| covers(t, w))
+    }
+
+    #[test]
+    fn typed_grows_into_as_a_scan_does() {
+        let words = [
+            "khuỷu",
+            "crông",
+            "đường",
+            "Được",
+            "tiếng",
+            "plông",
+            "hoà",
+            "hòa",
+            "a",
+            "ă",
+            "",
+        ];
+        let typed = [
+            "khủy",
+            "cró",
+            "cro",
+            "duong",
+            "dươ",
+            "Đ",
+            "tieng",
+            "tiéng",
+            "tiềng",
+            "plo",
+            "hoa",
+            "hòa",
+            "hoà",
+            "ă",
+            "â",
+            "",
+            "x",
+            "đườngg",
+            "KHUY",
+        ];
+        for t in typed {
+            for w in words {
+                assert_eq!(
+                    Typed::new(t).grows_into(w),
+                    grows_into_by_scan(t, w),
+                    "{t} {w}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn vietnamese_runes() {

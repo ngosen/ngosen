@@ -175,7 +175,7 @@ namespace fcitx {
     // to FcitxKey_f.
     static bool isAppModeMenuReservedKey(KeySym sym, const ngosenConfig& config) {
         if (sym == Key(*config.shortcutSen).sym() || sym == Key(*config.shortcutPreedit).sym() || sym == Key(*config.shortcutEmoji).sym() ||
-            sym == Key(*config.shortcutOff).sym()) {
+            sym == Key(*config.shortcutTeencode).sym() || sym == Key(*config.shortcutOff).sym()) {
             return true;
         }
 
@@ -357,6 +357,7 @@ namespace fcitx {
                 clearAppSwitch(appName);
                 std::lock_guard<std::mutex> lock(appRulesMutex_);
                 emojiOffApps_.erase(appName);
+                teencodeApps_.erase(appName);
             }
         });
 
@@ -422,13 +423,10 @@ namespace fcitx {
         vietnameseAction_ = std::make_unique<SimpleAction>();
         vietnameseAction_->setIcon("fcitx-ngosen");
         connections_.emplace_back(vietnameseAction_->connect<SimpleAction::Activated>([this](InputContext* ic) {
-            if (ic != nullptr) {
+            if (ic != nullptr)
                 toggleVietnamese(ic, false);
-                return;
-            }
-            config_.vietnameseOn.setValue(!*config_.vietnameseOn);
-            saveConfig();
-            setMode(globalMode(), nullptr);
+            else
+                toggleWithoutField();
         }));
         uiManager.registerAction("ngosen-vietnamese", vietnameseAction_.get());
 
@@ -475,6 +473,9 @@ namespace fcitx {
         loadVimApps();
         emojiOffAppsPath_ = configDir + "/ngosen-emoji-off-apps.conf";
         loadEmojiOffApps();
+        teencodeAppsPath_ = configDir + "/ngosen-teencode-apps.conf";
+        loadTeencodeApps();
+        enlargePanelFont();
         menuEntries_ = {{vietnameseAction_.get(), nullptr},
                         {inputMethodAction_.get(), &config_.showMenuInputMethod},
                         {charsetAction_.get(), &config_.showMenuCharset},
@@ -599,6 +600,7 @@ namespace fcitx {
         loadAppRules();
         loadVimApps();
         loadEmojiOffApps();
+        loadTeencodeApps();
         populateConfig();
     }
 
@@ -633,7 +635,7 @@ namespace fcitx {
             constexpr int32_t neverExpire = 0;
             addon->call<INotifications::sendNotification>(
                 "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
-                _("Version 1.12: emoji suggestions while typing, and the settings window opens Check my machine when a setup step is left. See What's new for "
+                _("Version 1.13: one switch key for every app, emoji at the end of a sentence, drawn-out letters and teencode. See What's new for "
                   "more."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;
@@ -664,6 +666,19 @@ namespace fcitx {
             std::sort(apps.begin(), apps.end(), [](const auto& a, const auto& b) { return *a.app < *b.app; });
             emojiOffAppsTable_.apps.setValue(std::move(apps));
             return &emojiOffAppsTable_;
+        }
+        if (path == "teencode_apps") {
+            std::vector<ngosenAppName> apps;
+            {
+                std::lock_guard<std::mutex> lock(appRulesMutex_);
+                for (const auto& app : teencodeApps_) {
+                    if (!isStartsWith(app, "ctx_"))
+                        apps.emplace_back().app.setValue(app);
+                }
+            }
+            std::sort(apps.begin(), apps.end(), [](const auto& a, const auto& b) { return *a.app < *b.app; });
+            teencodeAppsTable_.apps.setValue(std::move(apps));
+            return &teencodeAppsTable_;
         }
         if (path == "emoji_words")
             return &emojiWordsTable_;
@@ -708,7 +723,9 @@ namespace fcitx {
         o.rawWordAfterSlash              = config_.rawWordAfterSlash.value();
         o.emojiSuggestions               = config_.emojiSuggestions.value();
         o.yahooEmoticons                 = config_.yahooEmoticons.value();
+        o.englishEmojiKeywords           = config_.englishEmojiKeywords.value();
         o.emojiReplacesWord              = config_.emojiPlacement.value() == EmojiPlacement::InsteadOfWord;
+        o.emojiAtSentenceEnd             = config_.emojiOfferAt.value() == EmojiOfferAt::SentenceEnd;
         o.emojiWordEdits.clear();
         for (const auto& word : *emojiWordsTable_.words)
             o.emojiWordEdits.push_back({*word.keyword, *word.emoji, *word.on});
@@ -804,6 +821,17 @@ namespace fcitx {
             }
             saveEmojiOffApps();
             refreshEngine();
+        } else if (path == "teencode_apps") {
+            teencodeAppsTable_.load(config, true);
+            {
+                std::lock_guard<std::mutex> lock(appRulesMutex_);
+                for (auto it = teencodeApps_.begin(); it != teencodeApps_.end();)
+                    it = isStartsWith(*it, "ctx_") ? std::next(it) : teencodeApps_.erase(it);
+                for (const auto& entry : *teencodeAppsTable_.apps)
+                    teencodeApps_.insert(*entry.app);
+            }
+            saveTeencodeApps();
+            refreshEngine();
         } else if (path == "emoji_words") {
             emojiWordsTable_.load(config, true);
             safeSaveAsIni(emojiWordsTable_, EmojiWordsFile);
@@ -839,7 +867,7 @@ namespace fcitx {
         if (event.type() == EventType::InputContextSwitchInputMethod && instance_->inputMethodManager().currentGroup().inputMethodList().size() > 1 &&
             switchPickedByUser(static_cast<InputContextSwitchInputMethodEvent&>(event).reason())) {
             // An Off picked from the menu stays, as it did before apps had switches.
-            if (findAppRule(appName) != NgoSenMode::Off)
+            if (switchesEachApp() && findAppRule(appName) != NgoSenMode::Off)
                 setAppSwitch(appName, true);
             if (!*config_.vietnameseOn) {
                 config_.vietnameseOn.setValue(true);
@@ -856,15 +884,18 @@ namespace fcitx {
         activeContext_ = ic;
         stateFor(ic)->setVimKeys(vimModeFor(appName));
         stateFor(ic)->setEmojiOn(emojiOnFor(appName));
+        stateFor(ic)->setTeencodeOn(teencodeOnFor(appName));
         showMode(ic, targetMode, event.type() == EventType::InputContextFocusIn);
         stateFor(ic)->offerRetype();
     }
 
     void NgoSenEngine::showMode(InputContext* ic, NgoSenMode mode, bool isFocusIn) {
-        auto* state = stateFor(ic);
-        state->activate(mode, isFocusIn);
+        auto*      state  = stateFor(ic);
+        const bool bounce = state->activate(mode, isFocusIn);
         ic->updateUserInterface(UserInterfaceComponent::StatusArea);
         ic->inputPanel().reset();
+        // After a focus bounce the emoji of the sentence come back.
+        state->panelWasCleared(bounce);
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
         if (realMode == NgoSenMode::Preedit)
             ic->updatePreedit();
@@ -968,6 +999,8 @@ namespace fcitx {
             toggleVimMode(ic);
         } else if (emojiMenuKey_ != FcitxKey_None && keySym == emojiMenuKey_) {
             toggleEmoji(ic);
+        } else if (teencodeMenuKey_ != FcitxKey_None && keySym == teencodeMenuKey_) {
+            toggleTeencode(ic);
         } else if (auto it = modeMenuMapping_.find(keySym); it != modeMenuMapping_.end()) {
             NGOSEN_INFO("Selected mode: " + ngosen::ModeI18NAnnotation::toString(it->second));
             pickMenuMode(ic, it->second);
@@ -1021,6 +1054,7 @@ namespace fcitx {
 
     void NgoSenEngine::closeModeMenuPanel(InputContext* ic, bool resetState) {
         ic->inputPanel().reset();
+        stateFor(ic)->panelWasCleared(false);
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
         if (resetState) {
             auto* state = stateFor(ic);
@@ -1030,16 +1064,29 @@ namespace fcitx {
     }
 
     void NgoSenEngine::pickMenuMode(InputContext* ic, NgoSenMode mode) {
+        turnOnForPickedMode(mode);
         keepAppMode(currentConfigureApp_, mode);
         if (!isStartsWith(currentConfigureApp_, "ctx_")) {
             saveAppRules();
         }
         // A mode picked for the app wins over where the toggle key last left it.
-        clearAppSwitch(currentConfigureApp_);
+        if (switchesEachApp())
+            clearAppSwitch(currentConfigureApp_);
 
         closeModeMenuPanel(ic, true);
         setMode(mode, ic);
         showCycleModeNotification(mode, ic);
+    }
+
+    bool NgoSenEngine::switchesEachApp() const {
+        return *config_.toggleScope == ToggleScope::EachApp;
+    }
+
+    void NgoSenEngine::turnOnForPickedMode(NgoSenMode mode) {
+        if (switchesEachApp() || mode == NgoSenMode::Off || *config_.vietnameseOn)
+            return;
+        config_.vietnameseOn.setValue(true);
+        saveConfig();
     }
 
     std::vector<NgoSenMode> NgoSenEngine::cycleModes(const std::string& appName) {
@@ -1104,9 +1151,11 @@ namespace fcitx {
 
         auto       it       = std::find(enabledModes.begin(), enabledModes.end(), current);
         NgoSenMode nextMode = it == enabledModes.end() ? enabledModes[0] : enabledModes[(static_cast<size_t>(it - enabledModes.begin()) + 1) % enabledModes.size()];
+        turnOnForPickedMode(nextMode);
         setMode(nextMode, ic);
         keepAppMode(appName, nextMode);
-        clearAppSwitch(appName);
+        if (switchesEachApp())
+            clearAppSwitch(appName);
         showCycleModeNotification(nextMode, ic);
     }
 
@@ -1152,6 +1201,7 @@ namespace fcitx {
             auto* state = stateFor(ic);
             state->setEngine();
             state->setEmojiOn(emojiOnFor(getProgramName(ic)));
+            state->setTeencodeOn(teencodeOnFor(getProgramName(ic)));
             if (ic->hasFocus()) {
                 // Re-resolve the focused window's rule; setEngine() must not
                 // reset it to the global mode.
@@ -1318,6 +1368,12 @@ namespace fcitx {
 
     NgoSenMode NgoSenEngine::modeFor(const std::string& appName) const {
         const auto rule = findAppRule(appName);
+        if (!switchesEachApp()) {
+            // OFF from the menu keeps the app in English; Sen and Preedit only pick how Vietnamese is typed.
+            if (rule == NgoSenMode::Off || !*config_.vietnameseOn)
+                return NgoSenMode::Off;
+            return rule ? *rule : vietnameseModeFor(appName);
+        }
         // Until the toggle key is pressed in the app, its rule says whether it types Vietnamese.
         const bool on = findAppSwitch(appName).value_or(rule ? *rule != NgoSenMode::Off : *config_.vietnameseOn);
         if (!on)
@@ -1481,16 +1537,24 @@ namespace fcitx {
     }
 
     void NgoSenEngine::toggleVietnamese(InputContext* ic, bool offerRetype) {
-        if (isModeMenuOpen(ic)) {
+        const std::string app         = getProgramName(ic);
+        const bool        pinnedOff   = !switchesEachApp() && findAppRule(app) == NgoSenMode::Off;
+        const bool        menuWasOpen = isModeMenuOpen(ic);
+        if (menuWasOpen) {
             closeModeMenuPanel(ic, true);
         } else if (auto* state = stateFor(ic)) {
             // Finish the word being typed in the mode it was typed in.
             state->commitBuffer();
             state->reset();
         }
-        const bool        turnOn = realMode == NgoSenMode::Off;
-        const std::string app    = getProgramName(ic);
-        setAppSwitch(app, turnOn);
+        if (pinnedOff) {
+            if (!menuWasOpen)
+                explainPinnedOff(ic, app);
+            return;
+        }
+        const bool turnOn = switchesEachApp() ? realMode == NgoSenMode::Off : !*config_.vietnameseOn;
+        if (switchesEachApp())
+            setAppSwitch(app, turnOn);
         // Apps never switched in follow the last switch.
         config_.vietnameseOn.setValue(turnOn);
         saveConfig();
@@ -1505,6 +1569,69 @@ namespace fcitx {
 #endif
         if (turnOn && offerRetype)
             stateFor(ic)->offerRetype();
+    }
+
+    // Switching every app from here would leave this one in English anyway; the menu can change its OFF.
+    void NgoSenEngine::explainPinnedOff(InputContext* ic, const std::string& app) {
+        NGOSEN_INFO("Toggle key in " + app + ", which the menu keeps in English");
+        if (modeMenuCanDraw(instance_->currentUI(), ic->frontend(), ic->display(), ic->capabilityFlags().test(CapabilityFlag::ClientSideInputPanel))) {
+            openModeMenu(ic);
+            return;
+        }
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        // The panel the menu would use cannot draw here either.
+        if (auto* addon = notifications()) {
+            constexpr int32_t timeoutMs = 6000;
+            pinnedOffNotificationId_    = addon->call<INotifications::sendNotification>(
+                "fcitx", pinnedOffNotificationId_, "fcitx-ngosen", _("This app is set to English"),
+                _("To use the toggle key here, go to Settings → Shortcuts → Switch Applies To and choose Each app."), std::vector<std::string>{}, timeoutMs, nullptr, nullptr);
+        }
+#endif
+    }
+
+    std::optional<bool> NgoSenEngine::toggleFromShortcut() {
+        // Modifiers still held come up after this, and their release must not count as a tap of the toggle key.
+        toggleTapArmed_       = false;
+        retypeOnRelease_      = false;
+        InputContext* focused = nullptr;
+        instance_->inputContextManager().foreachFocused([&focused](InputContext* ic) {
+            focused = ic;
+            return false;
+        });
+        if (focused == nullptr) {
+            toggleWithoutField();
+            return *config_.vietnameseOn;
+        }
+        const std::string inputMethod = instance_->inputMethod(focused);
+        if (!inputMethod.empty() && inputMethod != "ngosen") {
+            // Typed before this field left Ngó Sen; activating it would offer to retype that.
+            stateFor(focused)->forgetKeysWhileOff();
+            // As picking Ngó Sen in the tray, which turns Vietnamese on; fcitx5 refuses it outside the group.
+            instance_->setCurrentInputMethod(focused, "ngosen", true);
+            if (instance_->inputMethod(focused) != "ngosen")
+                return std::nullopt;
+            return realMode != NgoSenMode::Off;
+        }
+        // No retype: XTEST backspaces sent while the shortcut is held reach the app as Alt+BackSpace.
+        toggleVietnamese(focused, false);
+        return realMode != NgoSenMode::Off;
+    }
+
+    void NgoSenEngine::toggleWithoutField() {
+        config_.vietnameseOn.setValue(!*config_.vietnameseOn);
+        saveConfig();
+        setMode(globalMode(), nullptr);
+        // The tray redraws only for a field, which setMode lacks here; once the most recent one is
+        // closed, any open field (the panel's own on Plasma) still makes it redraw.
+        auto&         fields = instance_->inputContextManager();
+        InputContext* recent = fields.mostRecentInputContext();
+        if (recent == nullptr)
+            fields.foreach ([&recent](InputContext* ic) {
+                recent = ic;
+                return false;
+            });
+        if (recent != nullptr)
+            recent->updateUserInterface(UserInterfaceComponent::StatusArea);
     }
 
     void NgoSenEngine::setAppRule(const std::string& appName, NgoSenMode mode) {
@@ -1604,6 +1731,23 @@ namespace fcitx {
         return stateFor(ic)->emojiOn();
     }
 
+    // At fcitx5's default "Sans 10" the emoji in the list are too small to tell apart. A font the
+    // user has set, even to that default, stays.
+    void NgoSenEngine::enlargePanelFont() {
+        const std::string file = "conf/classicui.conf";
+        RawConfig         raw;
+        readAsIni(raw, file);
+        if (!*config_.emojiSuggestions || raw.valueByPath("Font"))
+            return;
+        raw.setValueByPath("Font", "Sans 13");
+        if (!safeSaveAsIni(raw, file)) {
+            NGOSEN_WARN("Could not save " + file);
+            return;
+        }
+        if (auto* classicUi = instance_->addonManager().addon("classicui"))
+            classicUi->reloadConfig();
+    }
+
     void NgoSenEngine::loadEmojiOffApps() {
         std::lock_guard<std::mutex> lock(appRulesMutex_);
         readAppList(emojiOffAppsPath_, emojiOffApps_);
@@ -1626,6 +1770,32 @@ namespace fcitx {
         stateFor(ic)->setEmojiOn(!off);
     }
 
+    bool NgoSenEngine::teencodeOnFor(const std::string& appName) const {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        return listsApp(teencodeApps_, appName);
+    }
+
+    void NgoSenEngine::loadTeencodeApps() {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        readAppList(teencodeAppsPath_, teencodeApps_);
+    }
+
+    void NgoSenEngine::saveTeencodeApps() const {
+        std::lock_guard<std::mutex> lock(appRulesMutex_);
+        writeAppList(teencodeAppsPath_, "# Apps where Ngó Sen keeps teencode, one per line", teencodeApps_);
+    }
+
+    void NgoSenEngine::toggleTeencode(InputContext* ic) {
+        bool on = false;
+        {
+            std::lock_guard<std::mutex> lock(appRulesMutex_);
+            on = flipApp(teencodeApps_, currentConfigureApp_);
+        }
+        saveTeencodeApps();
+        closeModeMenuPanel(ic, true);
+        stateFor(ic)->setTeencodeOn(on);
+    }
+
     std::vector<NgoSenEngine::ModeMenuItem> NgoSenEngine::modeMenuItems() {
         auto                                          getShortcut = [](const std::string& shortcut) { return Key(shortcut).sym(); };
 
@@ -1633,6 +1803,8 @@ namespace fcitx {
             {"Sen", {NgoSenMode::Sen, _("Sen"), getShortcut(*config_.shortcutSen), *config_.showModeSen}},
             {"Preedit", {NgoSenMode::Preedit, _("Preedit"), getShortcut(*config_.shortcutPreedit), *config_.showModePreedit}},
             {"Emoji", {NgoSenMode::Sen, _("Emoji suggestions"), getShortcut(*config_.shortcutEmoji), *config_.showModeEmoji && *config_.emojiSuggestions, false, true}},
+            // Teencode only changes which words restore to their keys.
+            {"Teencode", {NgoSenMode::Sen, _("Teencode"), getShortcut(*config_.shortcutTeencode), *config_.showModeTeencode && *config_.autoNonVnRestore, false, false, true}},
             {"Off", {NgoSenMode::Off, _("OFF"), getShortcut(*config_.shortcutOff), *config_.showModeOff}},
             {"Vim", {NgoSenMode::Sen, _("Vim mode"), getShortcut(*config_.shortcutVim), *config_.showModeVim, true}}};
 
@@ -1645,11 +1817,10 @@ namespace fcitx {
             }
         }
 
-        // Fallback for missing modes
-        for (const auto& [name, info] : modeMap) {
-            if (std::find(order.begin(), order.end(), name) == order.end()) {
-                allModes.push_back(info);
-            }
+        // Modes a saved order leaves out go last, in the default order, so the menu keeps one layout.
+        for (const auto& name : stringutils::split(config_.modeOrder.defaultValue(), ",")) {
+            if (std::find(order.begin(), order.end(), name) == order.end())
+                allModes.push_back(modeMap.at(name));
         }
         return allModes;
     }
@@ -1672,8 +1843,9 @@ namespace fcitx {
         std::unordered_set<KeySym> usedModeKeys;
 
         modeMenuMapping_.clear();
-        vimMenuKey_   = FcitxKey_None;
-        emojiMenuKey_ = FcitxKey_None;
+        vimMenuKey_      = FcitxKey_None;
+        emojiMenuKey_    = FcitxKey_None;
+        teencodeMenuKey_ = FcitxKey_None;
 
         // A switch for the app keeps the typing mode; its key flips it.
         auto appendSwitch = [&](const ModeMenuItem& info, KeySym& menuKey, const std::string& label, void (NgoSenEngine::*toggle)(InputContext*)) {
@@ -1695,6 +1867,10 @@ namespace fcitx {
             }
             if (info.emoji) {
                 appendSwitch(info, emojiMenuKey_, emojiOnFor(currentConfigureApp_) ? _("Emoji suggestions: on") : _("Emoji suggestions: off"), &NgoSenEngine::toggleEmoji);
+                continue;
+            }
+            if (info.teencode) {
+                appendSwitch(info, teencodeMenuKey_, teencodeOnFor(currentConfigureApp_) ? _("Teencode: on") : _("Teencode: off"), &NgoSenEngine::toggleTeencode);
                 continue;
             }
             if (hasShortcut && usedModeKeys.insert(info.key).second) {
@@ -1720,6 +1896,7 @@ namespace fcitx {
         }
 
         ic->inputPanel().reset();
+        stateFor(ic)->panelWasCleared(false);
         ic->inputPanel().setCandidateList(std::move(candidateList));
         modeMenuList_        = ic->inputPanel().candidateList();
         modeMenuQuietSince_  = ngosen::monotonicUs();
@@ -1798,6 +1975,7 @@ namespace fcitx {
         candidateList->setGlobalCursorIndex(0);
 
         ic->inputPanel().reset();
+        stateFor(ic)->panelWasCleared(false);
         ic->inputPanel().setCandidateList(std::move(candidateList));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
 
@@ -1807,9 +1985,10 @@ namespace fcitx {
     void NgoSenEngine::clearPanelLater(InputContext* ic, uint64_t delayUs) {
         cycleModeNotificationTimer_.reset();
         cycleModeNotificationTimer_ =
-            instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [icRef = ic->watch()](EventSourceTime*, uint64_t) {
+            instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [this, icRef = ic->watch()](EventSourceTime*, uint64_t) {
                 if (auto* ic = icRef.get(); ic && ic->hasFocus()) {
                     ic->inputPanel().reset();
+                    stateFor(ic)->panelWasCleared(false);
                     ic->updateUserInterface(UserInterfaceComponent::InputPanel);
                 }
                 return false;
@@ -1853,6 +2032,7 @@ namespace fcitx {
         if (ic == nullptr)
             return;
         ic->inputPanel().reset();
+        stateFor(ic)->panelWasCleared(false);
         ic->inputPanel().setAuxUp(Text(message));
         ic->updateUserInterface(UserInterfaceComponent::InputPanel);
         clearPanelLater(ic, 5000000);
@@ -1935,8 +2115,10 @@ namespace fcitx {
             // The menu's label and items were built for the app it opened in.
             if (isModeMenuOpen(ic) && appName != currentConfigureApp_)
                 closeModeMenuPanel(ic, false);
-            if (ic == activeContext_)
+            if (ic == activeContext_) {
                 stateFor(ic)->setEmojiOn(emojiOnFor(appName));
+                stateFor(ic)->setTeencodeOn(teencodeOnFor(appName));
+            }
             const NgoSenMode mode = modeFor(appName);
             if (ic == activeContext_ && mode != realMode) {
                 // The word belongs to the app being left.

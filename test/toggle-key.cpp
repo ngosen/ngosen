@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// The toggle key switches between English and Vietnamese in the app it is pressed in, which remembers
-// that; an app it was never pressed in follows the last press. English lets keys through untouched.
+// With each app keeping its switch, the toggle key switches between English and Vietnamese in the app it
+// is pressed in, which remembers that; an app it was never pressed in follows the last press. English
+// lets keys through untouched.
 #include "ngosen-engine.h"
 #include "ngosen-utils.h"
 #include "test-input-context.h"
@@ -131,6 +132,8 @@ namespace {
 
 int main() {
     configureTestPaths("fcitx5-ngosen-toggle-key");
+    // A user left in English, with each app keeping its own switch.
+    std::ofstream(std::string(getenv("XDG_CONFIG_HOME")) + "/fcitx5/conf/ngosen.conf") << "SettingsVersion=2\nToggleScope=Each app\n";
     TestInstance            testInstance;
     fcitx::NgoSenEngine     engine(&testInstance.instance);
     fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
@@ -139,7 +142,7 @@ int main() {
     auto                    gedit = std::make_unique<TestInputContext>(&testInstance.instance, "gedit");
     auto                    kate  = std::make_unique<TestInputContext>(&testInstance.instance, "kate");
     keys.focus(*gedit);
-    check(realMode.load() == ngosen::Mode::Off, "a new install starts in English", modeName(realMode.load()));
+    check(realMode.load() == ngosen::Mode::Off, "a user left in English starts in English", modeName(realMode.load()));
 
     // English is as if no input method were there.
     check(!keys.tap(*gedit, "a"), "English lets letters through", "kept");
@@ -300,7 +303,7 @@ int main() {
     // Settings saved before the toggle key existed keep the key fcitx5 used to switch with.
     {
         std::ofstream file(std::string(getenv("XDG_CONFIG_HOME")) + "/fcitx5/conf/ngosen.conf");
-        file << "Mode=Sen\nInputMethod=Telex\n";
+        file << "Mode=Sen\nInputMethod=Telex\nToggleScope=Each app\n";
     }
     engine.reloadConfig();
     keys.focus(*kate);
@@ -313,7 +316,7 @@ int main() {
 
     {
         std::ofstream file(std::string(getenv("XDG_CONFIG_HOME")) + "/fcitx5/conf/ngosen.conf");
-        file << "Mode=OFF\n";
+        file << "Mode=OFF\nToggleScope=Each app\n";
     }
     engine.reloadConfig();
     auto mail = std::make_unique<TestInputContext>(&testInstance.instance, "mail");

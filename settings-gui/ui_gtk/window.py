@@ -103,7 +103,11 @@ class Window(Adw.ApplicationWindow):
         self.tab_parents = {}
         if self.model.load():
             self.typing = pages.TypingPage(
-                self.model, self.save, tip=random_tip(), on_tip=self.show_tips
+                self.model,
+                self.save,
+                tip=random_tip(),
+                on_tip=self.show_tips,
+                show_message=self.show_check_message,
             )
             self.appearance = AppearancePage(self.model, self.save)
             self.convert = ConvertPage(self.model, self.save, self.dbus)

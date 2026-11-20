@@ -19,6 +19,7 @@ Chưa có số version, xếp theo thứ tự định làm:
 5. Bảng các app gõ được, lấy từ kết quả test người dùng gửi về. Tự mở trang Kiểm tra máy đã xong ở 1.12.
 6. Đưa Ngó Sen vào repo của các distro: từ 1.5.3 đã có repo riêng có chữ ký cho Fedora (COPR),
    Debian và Ubuntu (APT), Arch (pacman) và openSUSE Tumbleweed. nixpkgs đang chờ review
-   ([NixOS/nixpkgs#575620](https://github.com/NixOS/nixpkgs/pull/575620)). Còn AUR, rồi Debian.
+   ([NixOS/nixpkgs#575620](https://github.com/NixOS/nixpkgs/pull/575620)). Từ 1.13 có gói AUR;
+   kho Debian đã nhận bản 1.9.2 vào testing.
 7. Gộp "Kiểm tra chính tả" vào "Tự khôi phục từ gõ sai", vì nó chỉ có tác dụng khi Tự khôi phục
    đang bật (#112).

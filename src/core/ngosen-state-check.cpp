@@ -93,8 +93,8 @@ namespace ngosen {
             closeSurroundingCheck(SurroundingVerdict::NoAnswer, nullptr, true);
         }
         const std::string& text = sent.text();
-        surrCheck_              = SurroundingCheck{.prefix        = surr_wait_prefix_,
-                                                   .deleted       = surr_wait_deleted_,
+        surrCheck_              = SurroundingCheck{.prefix        = surr_wait_.prefix,
+                                                   .deleted       = surr_wait_.deleted,
                                                    .added         = pending_commit_string_,
                                                    .retype        = retype,
                                                    .sentReport    = reportKey(sent),
@@ -211,15 +211,11 @@ namespace ngosen {
         }
         const std::string extra = leftOver + check.added;
         NGOSEN_INFO("Fix the dropped deletion with " + std::to_string(utf8::length(extra)) + " backspaces");
-        commitNotSeen_.clear();
-        pending_commit_string_         = check.added;
-        expected_backspaces_           = static_cast<int>(utf8::length(extra));
-        deletedChars_                  = expected_backspaces_;
-        current_backspace_count_       = 0;
-        surr_wait_prefix_              = check.prefix;
-        surr_wait_deleted_             = extra;
-        surr_wait_sent_snapshot_       = reportKey(report);
-        surr_wait_sent_snapshot_fresh_ = true;
+        beginReplacement(extra, check.added);
+        surr_wait_.prefix            = check.prefix;
+        surr_wait_.deleted           = extra;
+        surr_wait_.sentSnapshot      = reportKey(report);
+        surr_wait_.sentSnapshotFresh = true;
         startReplaceLog("none");
         deleteAndCommit(extra, check.added);
     }

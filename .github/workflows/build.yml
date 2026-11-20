@@ -39,6 +39,15 @@ jobs:
       - name: No lotus in new names
         run: misc/check-new-names.sh origin/main
 
+  license-records:
+    name: Check license records
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install python3-debian
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends python3-debian
+      - run: /usr/bin/python3 misc/check-license-records.py
+
   release-files:
     name: Check release file selection
     runs-on: ubuntu-latest
@@ -248,6 +257,33 @@ jobs:
         run: |
           rustup toolchain install 1.88 --profile minimal
           cargo +1.88 test --offline --locked
+
+  # Cargo.lock pins bamboo-core; distros build with their own release, anywhere in the range in
+  # Cargo.toml, so test both ends of it.
+  rust-other-core:
+    name: Rust core tests with the ${{ matrix.core }} bamboo-core
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - core: newest
+            update: cargo update -p bamboo-core
+          - core: oldest
+            update: cargo update -p bamboo-core --precise 0.5.2
+    defaults:
+      run:
+        working-directory: bamboo-rs
+    steps:
+      - uses: actions/checkout@v7
+      - name: Use crates.io instead of the vendored crates
+        run: rm -r .cargo/config.toml vendor
+      - name: Update bamboo-core
+        run: |
+          ${{ matrix.update }}
+          cargo tree -i bamboo-core --depth 0
+      - name: Test
+        run: cargo test
 
   # The packages prefer Qt6 but still accept PyQt5, so the window must run on both.
   settings-gui:

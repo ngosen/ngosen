@@ -68,14 +68,21 @@ SETTINGS_MAP = {
         ],
     },
     SettingsCategory.EMOJI: {
-        EMOJI_GROUP: ["EmojiSuggestions", "EmojiPlacement", "YahooEmoticons"],
+        EMOJI_GROUP: [
+            "EmojiSuggestions",
+            "EmojiOfferAt",
+            "EmojiPlacement",
+            "YahooEmoticons",
+            "EnglishEmojiKeywords",
+        ],
     },
     SettingsCategory.SHORTCUTS: {
-        N_("Hotkeys"): ["ToggleKey", "ModeMenuKey", "CycleModeKey"],
+        N_("Hotkeys"): ["ToggleKey", "ToggleScope", "ModeMenuKey", "CycleModeKey"],
         MODE_SWITCHING: [
             "ShortcutSen",
             "ShortcutPreedit",
             "ShortcutEmoji",
+            "ShortcutTeencode",
             "ShortcutOff",
             "ShortcutVim",
         ],
@@ -99,6 +106,9 @@ GROUPS_WITH_NAME_LINE = {TYPING_KEYS}
 # One line under a setting, saying what the user sees.
 HINTS = {
     "ToggleKey": N_("Tap it alone to switch. The tray icon shows V while typing Vietnamese."),
+    "ToggleScope": N_(
+        "All apps switches English/Vietnamese everywhere except apps set to OFF; Each app remembers a separate choice for each app."
+    ),
     "SpellCheck": N_("Words that are not Vietnamese get no tone marks."),
     "CapitalizeMacro": N_("kg gives khô gà, Kg gives Khô gà, KG gives KHÔ GÀ."),
     "EnableMacroInOffMode": N_("Abbreviations also expand while the mode is Off."),
@@ -115,7 +125,9 @@ HINTS = {
         "z in Telex (0 in VNI) removes the tone mark even with this off. On a word without one, Backspace deletes as usual."
     ),
     "OutputCharset": N_(
-        "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). Cứu dấu works only with Unicode."
+        "Keep Unicode unless an old document or app needs another one, such as TCVN3 (ABC). "
+        "Unicode tổ hợp sends tone marks apart from their letters, which terminals and many apps "
+        "handle badly. Cứu dấu works only with Unicode."
     ),
     "DdFreeStyle": N_("dd and Space stays đ instead of going back to dd."),
     "ModernStyle": N_("hoà, khoẻ, thuý, tuỳ. Off: hòa, khỏe, thúy, tùy."),
@@ -141,6 +153,16 @@ HINTS = {
     "YahooEmoticons": N_(
         "=)) and :x offer 🤣 and 😍, like on Yahoo Messenger; Tab swaps the code for the emoji."
     ),
+    "EnglishEmojiKeywords": N_(
+        "cat and thumbs up also offer 🐈 and 👍, from the Unicode list of English words. Words that"
+        " are also Vietnamese, like can, are left out."
+    ),
+    "EmojiOfferAt": N_(
+        "At the end of a sentence: the emoji of the sentence show while you type. After . ! ? or a"
+        " short pause, 1–9 picks one, or Tab first where digits type tones, as in VNI; it goes at the"
+        " cursor. Esc hides them until the next sentence."
+        " After each word: the list shows as soon as a keyword is typed."
+    ),
     "EmojiPlacement": N_(
         "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
     ),
@@ -156,11 +178,13 @@ HINTS = {
     "ConvertFrom": N_("Old documents are often TCVN3."),
     "ConvertStripDiacritics": N_("Tiếng Việt becomes Tieng Viet."),
     "CycleModeKey": N_(
-        "Moves the app in use to the next mode in the list below, and remembers it for that app."
+        "Moves the app in use to the next mode in the list below, and remembers it for that app. "
+        "With All apps, choosing Sen or Preedit while in English turns Vietnamese on for all apps."
     ),
     "ModeOrder": N_(
         "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) "
-        "to follow the global setting and switch key again; OFF stays set for the app."
+        "to follow the global setting and switch key again; OFF stays set for the app and keeps it in English even when other apps type Vietnamese. "
+        "With All apps, the switch key in an OFF app opens the mode menu; pick Sen or Preedit there to type Vietnamese in that app."
     ),
     "UseLotusIcons": N_("Off: plain one-colour icons, in the colour picked below."),
     "TrayIconSize": N_(
@@ -202,6 +226,7 @@ MODE_SHORTCUT_TO_VISIBILITY = {
     "ShortcutSen": "ShowModeSen",
     "ShortcutPreedit": "ShowModePreedit",
     "ShortcutEmoji": "ShowModeEmoji",
+    "ShortcutTeencode": "ShowModeTeencode",
     "ShortcutOff": "ShowModeOff",
     "ShortcutVim": "ShowModeVim",
 }
@@ -210,6 +235,7 @@ MODE_KEY_TO_INTERNAL_NAME = {
     "ShortcutSen": "Sen",
     "ShortcutPreedit": "Preedit",
     "ShortcutEmoji": "Emoji",
+    "ShortcutTeencode": "Teencode",
     "ShortcutOff": "Off",
     "ShortcutVim": "Vim",
 }
@@ -227,6 +253,8 @@ DEPENDS = {
     "TimeFormat": ("EnableMacro", "True"),
     "YahooEmoticons": ("EmojiSuggestions", "True"),
     "EmojiPlacement": ("EmojiSuggestions", "True"),
+    "EmojiOfferAt": ("EmojiSuggestions", "True"),
+    "EnglishEmojiKeywords": ("EmojiSuggestions", "True"),
     "DateFormat": ("EnableMacro", "True"),
     **{shortcut: (shown, "True") for shortcut, shown in MODE_SHORTCUT_TO_VISIBILITY.items()},
 }

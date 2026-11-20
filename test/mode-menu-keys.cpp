@@ -76,6 +76,7 @@ int main() {
     config.setValueByPath("VietnameseOn", "True");
     config.setValueByPath("InputMethod", "Telex");
     config.setValueByPath("CycleModeKey/0", "F12");
+    config.setValueByPath("ToggleScope", "Each app");
     // Saved before Default Typing left the menu.
     config.setValueByPath("ModeOrder", "Sen,Preedit,Emoji,Off,Default");
     config.setValueByPath("ShowModeDefault", "True");
@@ -89,12 +90,14 @@ int main() {
     fcitx::InputContextEvent focus(context.get(), fcitx::EventType::InputContextFocusIn);
     engine.activate(entry, focus);
 
-    // Sen, Preedit, the emoji switch, Off, the Vim mode switch (missing from the saved order, so last), and "type `".
+    // Sen, Preedit, the emoji switch, Off, then the teencode and Vim mode switches (missing from the saved order, so last,
+    // in the default order), and "type `".
     press(engine, entry, *context, FcitxKey_grave);
     auto list = menu(*context);
-    check(list && list->totalSize() == 6, "menu opens with six items", list ? std::to_string(list->totalSize()) : "no menu");
+    check(list && list->totalSize() == 7, "menu opens with seven items", list ? std::to_string(list->totalSize()) : "no menu");
     check(list && label(*list, 2) == "   [w] Emoji suggestions: on", "the emoji switch starts on", list ? label(*list, 2) : "no menu");
-    check(list && label(*list, 4) == "   [v] Vim mode: off", "the Vim mode switch starts off", list ? label(*list, 4) : "no menu");
+    check(list && label(*list, 4) == "   [t] Teencode: off", "the teencode switch starts off", list ? label(*list, 4) : "no menu");
+    check(list && label(*list, 5) == "   [v] Vim mode: off", "the Vim mode switch starts off", list ? label(*list, 5) : "no menu");
     // gedit has no rule of its own, so it follows the global Preedit.
     check(list && list->globalCursorIndex() == 1, "the app's mode is highlighted", list ? std::to_string(list->globalCursorIndex()) : "no menu");
     press(engine, entry, *context, FcitxKey_Down);
@@ -146,7 +149,7 @@ int main() {
     check(context->commits().size() == 1, "v types nothing", std::to_string(context->commits().size()) + " commits");
     press(engine, entry, *context, FcitxKey_grave);
     list = menu(*context);
-    check(list && label(*list, 4) == "   [v] Vim mode: on", "the menu shows Vim mode on", list ? label(*list, 4) : "no menu");
+    check(list && label(*list, 5) == "   [v] Vim mode: on", "the menu shows Vim mode on", list ? label(*list, 5) : "no menu");
     press(engine, entry, *context, FcitxKey_v);
     check(vimApps().empty(), "v again turns Vim mode off", vimApps());
 
@@ -178,9 +181,43 @@ int main() {
         engine.setConfig(off);
         press(engine, entry, *context, FcitxKey_grave);
         list = menu(*context);
-        check(list && list->totalSize() == 5, "with emoji off everywhere the switch leaves the menu", list ? std::to_string(list->totalSize()) : "no menu");
+        check(list && list->totalSize() == 6, "with emoji off everywhere the switch leaves the menu", list ? std::to_string(list->totalSize()) : "no menu");
         press(engine, entry, *context, FcitxKey_Escape);
         off.setValueByPath("EmojiSuggestions", "True");
+        engine.setConfig(off);
+    }
+
+    // t turns teencode on for the app and keeps the typing mode.
+    const auto teencodeApps = [] {
+        std::ifstream file(std::filesystem::temp_directory_path() / "fcitx5-ngosen-mode-menu-keys/config/fcitx5/conf/ngosen-teencode-apps.conf");
+        std::string   line;
+        std::string   apps;
+        while (std::getline(file, line)) {
+            if (!line.empty() && line[0] != '#')
+                apps += line + ";";
+        }
+        return apps;
+    };
+    press(engine, entry, *context, FcitxKey_grave);
+    press(engine, entry, *context, FcitxKey_t);
+    check(!menu(*context), "t closes the menu", "menu still open");
+    check(realMode.load() == ngosen::Mode::Preedit, "t keeps the typing mode", modeName(realMode.load()));
+    check(teencodeApps() == "gedit;", "t saves teencode on for gedit", teencodeApps());
+    check(context->commits().size() == 1, "t types nothing", std::to_string(context->commits().size()) + " commits");
+    press(engine, entry, *context, FcitxKey_grave);
+    list = menu(*context);
+    check(list && label(*list, 4) == "   [t] Teencode: on", "the menu shows teencode on", list ? label(*list, 4) : "no menu");
+    press(engine, entry, *context, FcitxKey_t);
+    check(teencodeApps().empty(), "t again turns teencode off", teencodeApps());
+    {
+        fcitx::RawConfig off;
+        off.setValueByPath("AutoNonVnRestore", "False");
+        engine.setConfig(off);
+        press(engine, entry, *context, FcitxKey_grave);
+        list = menu(*context);
+        check(list && list->totalSize() == 6, "without auto restore the teencode switch leaves the menu", list ? std::to_string(list->totalSize()) : "no menu");
+        press(engine, entry, *context, FcitxKey_Escape);
+        off.setValueByPath("AutoNonVnRestore", "True");
         engine.setConfig(off);
     }
 

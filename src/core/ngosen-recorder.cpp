@@ -103,6 +103,10 @@ namespace ngosen {
             void clearPreedit() override {
                 host_->clearPreedit();
             }
+            void showHint(const std::string& text) override {
+                recorder_.add("hint", quoted(text));
+                host_->showHint(text);
+            }
             void resetPanel() override {
                 host_->resetPanel();
             }
@@ -113,8 +117,8 @@ namespace ngosen {
                 host_->refreshPanel();
             }
 
-            void showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick) override {
-                host_->showCandidates(labels, pageSize, std::move(onPick));
+            void showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick, CandidateLayout layout) override {
+                host_->showCandidates(labels, pageSize, std::move(onPick), layout);
             }
             void hideCandidates() override {
                 host_->hideCandidates();

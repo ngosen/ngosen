@@ -3,6 +3,7 @@
 // While a terminal hides input, as at a password prompt, its keys reach it as typed and stay out of the
 // typing log; the toggle key still works. A pty of this test with echo turned off plays the prompt.
 #include "ngosen-engine.h"
+#include <fstream>
 #include "ngosen-pty.h"
 #include "ngosen-utils.h"
 #include "test-input-context.h"
@@ -110,6 +111,7 @@ int main() {
     const Prompt prompt{slave};
 
     configureTestPaths("fcitx5-ngosen-hidden-input");
+    std::ofstream(std::string(getenv("XDG_CONFIG_HOME")) + "/fcitx5/conf/ngosen.conf") << "SettingsVersion=2\n";
     TestInstance            testInstance;
     fcitx::NgoSenEngine     engine(&testInstance.instance);
     fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");

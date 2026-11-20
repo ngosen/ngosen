@@ -184,6 +184,9 @@ namespace ngosen {
             // Retyping was a hidden option, so a saved False is fcitx5's default, not the user's choice.
             settings.setValueByPath("RetypeAfterSwitch", "True");
         }
+        // Written rather than made the default: a saved False equals the default and is not in the file.
+        if (!saved && from == 0 && settings.valueByPath("VietnameseOn") == nullptr)
+            settings.setValueByPath("VietnameseOn", "True");
         settings.setValueByPath("SettingsVersion", std::to_string(Version));
         return true;
     }

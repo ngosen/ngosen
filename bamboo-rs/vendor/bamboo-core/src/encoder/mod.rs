@@ -154,22 +154,26 @@ pub fn encode_charset<'a>(charset: Charset, input: &'a str) -> Cow<'a, str> {
     match get_charset_definition(charset.as_str()) {
         Some(charset_def) if charset == Charset::Viqr => encode_viqr(charset_def, input),
         Some(charset_def) => {
-            if !input.chars().any(|c| !c.is_ascii() && charset_def.contains_key(&c)) {
-                return Cow::Borrowed(input);
-            }
-
-            let mut output = String::with_capacity(input.len());
-            for char in input.chars() {
+            let mut output: Option<String> = None;
+            for (i, char) in input.char_indices() {
                 if char.is_ascii() {
-                    output.push(char);
-                } else {
-                    match charset_def.get(&char) {
-                        Some(encoded) => output.push_str(encoded),
-                        None => output.push(char),
+                    if let Some(out) = output.as_mut() {
+                        out.push(char);
                     }
+                } else if let Some(encoded) = charset_def.get(&char) {
+                    // Reserve the full input length once, like the eager version
+                    // did, so long inputs keep one allocation instead of growing.
+                    let out = output.get_or_insert_with(|| {
+                        let mut out = String::with_capacity(input.len());
+                        out.push_str(&input[..i]);
+                        out
+                    });
+                    out.push_str(encoded);
+                } else if let Some(out) = output.as_mut() {
+                    out.push(char);
                 }
             }
-            Cow::Owned(output)
+            output.map_or(Cow::Borrowed(input), Cow::Owned)
         }
         None => Cow::Borrowed(input),
     }
@@ -403,12 +407,15 @@ pub fn charset_names() -> impl Iterator<Item = &'static str> {
 }
 
 /// Returns a newly allocated list of all supported character set names.
+#[deprecated(since = "0.5.4", note = "use charset_names(); planned removal in 1.0.0")]
 pub fn get_charset_name() -> Vec<String> {
     charset_names().map(String::from).collect()
 }
 
 /// Alias for [`get_charset_name`].
+#[deprecated(since = "0.5.4", note = "use charset_names(); planned removal in 1.0.0")]
 pub fn get_charset_names() -> Vec<String> {
+    #[allow(deprecated)]
     get_charset_name()
 }
 

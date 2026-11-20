@@ -101,6 +101,11 @@ namespace ngosen {
 
     // What the typing logic needs from the input method framework for one text field, so that the
     // logic does not depend on fcitx5 and can be reused by another framework.
+    enum class CandidateLayout {
+        Column,
+        Row
+    };
+
     class Host {
       public:
         virtual ~Host() = default;
@@ -130,16 +135,19 @@ namespace ngosen {
         // Shows text not committed yet: in the app when it can draw it, otherwise in the panel.
         virtual void showPreedit(const std::string& text, bool underline) = 0;
         virtual void clearPreedit()                                       = 0;
+        // Shows text after the cursor in the field that the app never commits, not even when focus
+        // leaves; empty takes it away. Reaches the app at once.
+        virtual void showHint(const std::string& text) = 0;
         // Clears the preedit, the candidates and the status line of the panel.
         virtual void resetPanel() = 0;
         // Changes above reach the app and the panel only when refreshed.
         virtual void refreshPreedit() = 0;
         virtual void refreshPanel()   = 0;
 
-        // Shows labels as a vertical list, pageSize per page, with the first highlighted. Picking one,
-        // by key or by mouse, calls onPick with its index.
-        virtual void showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick) = 0;
-        virtual void hideCandidates()                                                                                         = 0;
+        // Shows labels pageSize per page: a column with the first highlighted, or a row with none, as
+        // its labels carry their own keys. Picking one, by key or by mouse, calls onPick with its index.
+        virtual void showCandidates(const std::vector<std::string>& labels, int pageSize, std::function<void(size_t)> onPick, CandidateLayout layout) = 0;
+        virtual void hideCandidates()                                                                                                                 = 0;
         // Empty when the panel shows no candidate list.
         virtual std::optional<CandidatePage> candidates() const            = 0;
         virtual void                         highlightCandidate(int index) = 0;

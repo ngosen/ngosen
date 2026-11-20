@@ -543,6 +543,32 @@ namespace {
         check(text == "chào. ", "ibus: a space held during a timed wait still counts for double space", text);
     }
 
+    std::string typedWithTeencode(bool on) {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true), ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        state.activate(ngosen::Mode::Sen, false);
+        state.setTeencodeOn(on);
+        for (const char c : std::string("zaayj ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(30);
+        }
+        loop.pump(300);
+        return app->text();
+    }
+
+    void testTeencodePerApp() {
+        std::string text = typedWithTeencode(true);
+        check(text == "zậy ", "teencode on for the app keeps zậy", text);
+        text = typedWithTeencode(false);
+        check(text == "zaayj ", "teencode off restores the keys", text);
+    }
+
     std::string typedHyphens(const Field& field) {
         realMode = ngosen::Mode::Preedit;
         realtextLen.store(0);
@@ -1901,6 +1927,25 @@ namespace {
         typeTie(state, *host, loop, true);
         const std::string log = resources.recorder().dump();
         check(has(log, " terminal=1 "), "recorder: marks a terminal field", log);
+    }
+
+    // An address bar deletes with BackSpace, so a log without the flag cannot tell why.
+    void testRecorderMarksAddressBar() {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField("wayland_v2", true, "firefox");
+        field.url                 = true;
+        auto                owned = std::make_unique<FakeHost>(loop, field);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+
+        typeTie(state, *host, loop, true);
+        press(state, static_cast<uint32_t>('e'));
+        loop.pump(300);
+        const std::string log = resources.recorder().dump();
+        check(has(log, " url=1 "), "recorder: marks an address bar", log);
+        check(has(log, "\tpath\tbackspaces: ") && has(log, "\twait\t"), "recorder: notes the wait after the backspaces", log);
     }
 
     // Types `keys`, a word and a macro, keeping every log line; returns them.
@@ -3710,6 +3755,8 @@ namespace {
             FakeResources resources;
             const auto    lines = replaceLines(resources, makeField("ibus", false, "SDL_app"), {}, "vieetj ", run);
             check(run.text == "vieeettjjệt " && countHaving(lines, "ended=backspaces not sent") == 1, "backspaces that cannot be sent", escaped(run.text) + " " + join(lines));
+            const std::string log = resources.recorder().dump();
+            check(has(log, "\twait\tbackspaces not sent\n"), "recorder: a send that failed notes no wait time", log);
         }
         {
             // The fake app takes no selection keys, so the selection never shows.
@@ -3825,6 +3872,19 @@ namespace {
             press(*state, 'e');
         }
     };
+
+    // A saved log is often all a slow report has; it must say which path each edit took and how long it waited.
+    void testRecorderNotesHowEditsWent() {
+        TailRun           shell("tie", 3);
+        const std::string held = shell.resources.recorder().dump();
+        check(has(held, "\tpath\tsurrounding: "), "recorder: notes the path of every edit", held);
+        check(has(held, "\thold\t30 ms\n"), "recorder: notes how long a split edit holds the commit", held);
+        shell.loop.pump(100);
+        check(has(shell.resources.recorder().dump(), "\tedit\tmethod=surrounding "), "recorder: notes how the edit ended", shell.resources.recorder().dump());
+        TailRun           chrome("tie", 3, "google-chrome.desktop");
+        const std::string joined = chrome.resources.recorder().dump();
+        check(has(joined, "\tjoin\t\n") && !has(joined, "\thold\t"), "recorder: notes a joined edit", joined);
+    }
 
     // Firefox's address bar drops its autocompletion only for a commit in the deletion's own turn.
     void testAutofillTailCommitsWithDeletion() {
@@ -4305,6 +4365,7 @@ namespace {
                                                        {.reportDelayMs = 30, .dropsCommitsInReport = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
                                                        std::vector<int>(keys.size(), 20));
         check(run.text == "tiếng việt nam ", "sway: an edit waiting for the copy goes out after the report", run.text);
+        check(has(resources.recorder().dump(), "\tcopy\tfits after "), "recorder: notes how the wait for the copy ended", resources.recorder().dump());
     }
 
     // On Sway and Hyprland forwarded backspaces go through a virtual keyboard, apart from the commit. When Firefox
@@ -4331,6 +4392,7 @@ namespace {
         const auto run = ngosen::test::typeInAppTraced(resources, field, {.backspaceLagMs = 60, .dropsSurroundingOnDelete = true}, keys, std::vector<int>(keys.size(), 120));
         check(run.text == "tiền nguyễn luận ", "dbus: a field that stopped declaring its text still deletes through it", run.text);
         check(run.sent.forwardedBackSpaces == 0, "dbus: no backspace for a field that stopped declaring its text", std::to_string(run.sent.forwardedBackSpaces));
+        check(has(resources.recorder().dump(), "\tpath\tsurrounding: the field stopped declaring"), "recorder: notes the path of an undeclared field", resources.recorder().dump());
         // The key after the deletion arrives while the field declares no text, which is not a field that lost the word.
         const auto ngKeys = keysOf("cuxg nhuwg ");
         const auto ng     = ngosen::test::typeInAppTraced(resources, field, {.dropsSurroundingOnDelete = true}, ngKeys, std::vector<int>(ngKeys.size(), 120));
@@ -5740,6 +5802,7 @@ int main() {
     testRecorderNotesFieldSwitch();
     testRecorderHidesPasswords();
     testRecorderMarksTerminal();
+    testRecorderMarksAddressBar();
     testRecorderKeepsOneEventPerLine();
     testRecorderLimits();
     testRecorderSkipsRepeatedReports();
@@ -5772,6 +5835,7 @@ int main() {
     testCursorPastOnBusyPage();
     testSplitWaitFollowsEchoes();
     testAutofillTailCommitsWithDeletion();
+    testRecorderNotesHowEditsWent();
     testSelectedTailGoesFirst();
     testReportRequestIsNotInput();
     testNoCopyWaitForBackspaceField();
@@ -5823,6 +5887,7 @@ int main() {
     testEditsDuringLongCheck();
     testLongCheckLeavesFocus();
     testUnansweredChecksLeaveNoMark();
+    testTeencodePerApp();
     check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all core typing checks passed\n";

@@ -10,6 +10,7 @@
 #include "ngosen-mode.h"
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -135,6 +136,10 @@ namespace ngosen::test {
         void setReportDelay(int ms) {
             quirks_.reportDelayMs = ms;
         }
+        // Shows a changed hint this late, after keys sent at the same time, as GNOME Shell does for Chrome.
+        void setHintLag(int ms) {
+            hintLagMs_ = ms;
+        }
         // Lets a test slow down how fast the app applies edits for a stretch, as a starved app does.
         void setLag(int ms) {
             quirks_.lagMs = ms;
@@ -155,6 +160,7 @@ namespace ngosen::test {
         void select(size_t anchor, size_t cursor);
         // Leaves focus for ms and takes it back, as WPS does when it opens a window on a double click.
         void leaveFocus(int ms);
+        void bounceReportingEmpty(int ms);
         // Commits the preedit itself and resets, as an IBus client does with a preedit sent to be committed;
         // this models xterm.js only.
         void resetCommittingPreedit();
@@ -203,6 +209,14 @@ namespace ngosen::test {
         const std::string& status() const {
             return status_;
         }
+        // The text shown after the cursor that is never committed.
+        const std::string& hint() const {
+            return hint_;
+        }
+        // Commits, deletions and forwarded keys sent while the hint showed.
+        int editsUnderHint() const {
+            return editsUnderHint_;
+        }
         // The longest time from forwarding a replacement's first backspace to its commit.
         int slowestCommitMs() const {
             return slowestCommitMs_;
@@ -238,25 +252,56 @@ namespace ngosen::test {
 
         void showPreedit(const std::string& text, bool /*underline*/) override;
         void clearPreedit() override;
-        void resetPanel() override {}
+        void showHint(const std::string& text) override {
+            if (hintLagMs_ > 0)
+                later(hintLagMs_, [this, text] { hint_ = text; });
+            else
+                hint_ = text;
+        }
+        // fcitx5 drops the candidate list along with the rest of the panel.
+        void resetPanel() override {
+            hideCandidates();
+        }
         void refreshPreedit() override {}
         void refreshPanel() override {}
 
-        void showCandidates(const std::vector<std::string>& labels, int /*pageSize*/, std::function<void(size_t)> /*onPick*/) override {
-            labels_ = labels;
+        void showCandidates(const std::vector<std::string>& labels, int /*pageSize*/, std::function<void(size_t)> onPick, CandidateLayout layout) override {
+            labels_      = labels;
+            onPick_      = std::move(onPick);
+            inRow_       = layout == CandidateLayout::Row;
+            highlighted_ = inRow_ ? -1 : 0;
+        }
+        bool labelsInRow() const {
+            return inRow_;
         }
         void hideCandidates() override {
+            if (!labels_.empty())
+                ++candidatesHidden_;
             labels_.clear();
+            onPick_ = nullptr;
         }
         std::optional<CandidatePage> candidates() const override {
             if (labels_.empty())
                 return std::nullopt;
             return CandidatePage{.total = static_cast<int>(labels_.size())};
         }
-        void highlightCandidate(int /*index*/) override {}
+        void highlightCandidate(int index) override {
+            highlighted_ = index;
+        }
+        int highlighted() const {
+            return highlighted_;
+        }
         void nextCandidatePage() override {}
         void prevCandidatePage() override {}
-        void pickCandidate(int /*index*/) override {}
+        // A click on an item of the list.
+        void pickCandidate(int index) override {
+            if (onPick_ && index >= 0 && static_cast<size_t>(index) < labels_.size())
+                onPick_(static_cast<size_t>(index));
+        }
+        // How many times a shown candidate list was taken away.
+        int candidatesHidden() const {
+            return candidatesHidden_;
+        }
         void setStatus(const std::string& text) override {
             status_ = text;
         }
@@ -271,6 +316,11 @@ namespace ngosen::test {
         std::string keyText(uint32_t sym) const override;
 
       private:
+        int                                 highlighted_      = 0;
+        int                                 candidatesHidden_ = 0;
+        bool                                reportsEmptyOnce_ = false;
+        bool                                inRow_            = false;
+        std::function<void(size_t)>         onPick_;
         void                                insert(const std::u32string& text, bool typed = false);
         void                                noteTypedKey();
         void                                goSilentAfterDelete();
@@ -312,6 +362,9 @@ namespace ngosen::test {
         size_t                              shownAnchor_ = 0;
         std::vector<std::string>            labels_;
         std::string                         status_;
+        std::string                         hint_;
+        int                                 editsUnderHint_ = 0;
+        int                                 hintLagMs_      = 0;
         std::u32string                      previousText_;
         size_t                              previousCursor_ = 0;
         std::u32string                      reportedText_;

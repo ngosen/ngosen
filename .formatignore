@@ -1,0 +1,3 @@
+# Read by the clang-format CI check. Vendored crates keep their upstream formatting.
+bamboo-rs/vendor/**/*.h
+bamboo-rs/vendor/**/*.c

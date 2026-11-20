@@ -449,6 +449,13 @@ class GtkShortcutsPageTest(unittest.TestCase):
         self.assertFalse(self.page.offer.get_visible())
         self.assertEqual(self.page.hotkeys["ToggleKey"].key, "Control+Shift")
 
+    def test_the_switch_scope_is_picked_from_a_list(self):
+        row = self.page.hotkeys["ToggleScope"]
+        self.assertIsInstance(row, Adw.ComboRow)
+        self.assertEqual(row.get_selected(), 0)
+        row.set_selected(1)
+        self.assertEqual(self.dbus.values["ToggleScope"], "Each app")
+
     def test_a_new_menu_key_keeps_the_keys_after_it(self):
         dbus = FakeDBusHandler({"ModeMenuKey": {"0": "grave", "1": "Control+space"}})
         page = window.Window(None, dbus).shortcuts
@@ -491,9 +498,9 @@ class GtkShortcutsPageTest(unittest.TestCase):
 
     def test_dropping_a_mode_saves_the_order(self):
         self.assertTrue(self.page.move("Off", "Sen"))
-        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Sen,Preedit,Emoji,Vim")
+        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Sen,Preedit,Emoji,Teencode,Vim")
         self.page.move("Sen", "Emoji")
-        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Preedit,Emoji,Sen,Vim")
+        self.assertEqual(self.dbus.values["ModeOrder"], "Off,Preedit,Emoji,Sen,Teencode,Vim")
 
     def test_show_page_opens_the_shortcuts_tab(self):
         self.window.show_page("keymap")
@@ -630,7 +637,9 @@ class GtkTypingPageTest(unittest.TestCase):
     def test_only_the_first_group_has_no_title(self):
         groups = [w for w in _children(self.page.page) if isinstance(w, Adw.PreferencesGroup)]
         titled = [group.get_title() for group in groups if group.get_title()]
-        self.assertEqual(titled, ["Fixing words", "Tone marks", "Typing keys", "Quick typing"])
+        self.assertEqual(
+            titled, ["Fixing words", "Tone marks", "Typing keys", "Quick typing", "Teencode"]
+        )
         mode_row = self.page.rows["InputMethod"]
         first = next(g for g in groups if mode_row in _children(g))
         self.assertEqual(first.get_title(), "")

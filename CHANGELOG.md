@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.13.0-1] — 20/11/2026
+
+Phím chuyển Anh/Việt nay chuyển mọi app cùng lúc như UniKey, cài mới bật sẵn tiếng Việt (#825). Gợi ý emoji mặc định hiện ở cuối câu, bấm số để chọn khi gõ Telex, hiện ngay trong ô trên GNOME không có extension Input Method Panel, nhận cả từ tiếng Anh, và trang Emoji xuất, nhập được từ gợi ý (#110, #821, #827, #830, #832, #834, #845, #848, #849, #851, #854, #859, #862, #863). Gõ kéo dài chữ: `afaaa` ra `àààà` (#852, #871). Teencode bật riêng cho từng app (#701, #829, #833, #843, #844). Lệnh `ngosen-toggle` để gán phím tắt của desktop (#828). Cài được từ AUR (#873). Bản IBus không còn ra chữ đôi trong terminal dùng xterm.js (#878); Gõ Sen không còn nuốt chữ khi gõ nhanh trong terminal xterm.js của các trình soạn code Electron (#867, #880). Kiểm tra máy báo thêm bảng mã không phải Unicode và bàn phím đứng trước Ngó Sen (#839, #872, #875).
+Tải ở [ngosen-1.13.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.13.0-1).
+
 ### Thêm
 
 - Gõ kéo dài chữ: giữ phím chữ cái cuối của một từ có dấu thì chữ đó lặp lại cùng dấu, `afaaa` ra `àààà`,

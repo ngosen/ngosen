@@ -17,7 +17,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Bấm Backspace khi đang gõ dở chữ kéo dài có dấu gõ sau cùng, như `chaiiif` ra `chàiii`, nay chỉ xoá một chữ i, không
   còn mất luôn dấu thành `chaiii`. Chữ teencode cũng vậy: `fải` xoá còn `fả` (#898, #902).
 - KDE Plasma (Wayland): Edge, Chrome, Chromium và Brave bản Flatpak được nhận ra là trình duyệt Chromium, nên các
-  bản sửa cho bảng tính Lark cũng áp cho chúng. Gõ Sen trong Lark Sheets không còn ra `tieêngếng` khi gõ `tieengs`.
+  bản sửa cho bảng tính Lark cũng áp cho chúng. Gõ Sen trong Lark Sheets không còn ra `tieêngếng` khi gõ `tieengs` (#907).
 
 ## [1.13.0-1] — 20/11/2026
 

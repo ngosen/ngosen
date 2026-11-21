@@ -26,7 +26,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Bỏ ô "Kiểm tra chính tả" khỏi cửa sổ cài đặt và menu khay, vì nó chỉ có tác dụng khi "Tự khôi phục từ gõ sai"
   đang bật: nay Tự khôi phục luôn so với từ điển. Ai từng tắt ô này để giữ dấu cho chữ kiểu chat như `zậy`,
-  `kạ`, hãy bật chế độ Teencode cho app đó (phím `` ` ``), hoặc thêm chữ muốn giữ vào Từ điển tuỳ chỉnh (#112).
+  `kạ`, hãy bật chế độ Teencode cho app đó (phím `` ` ``), hoặc thêm chữ muốn giữ vào Từ điển tuỳ chỉnh (#112, #925).
 
 ## [1.13.1-1] — 20/11/2026
 

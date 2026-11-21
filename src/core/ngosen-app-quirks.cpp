@@ -72,7 +72,7 @@ namespace ngosen {
 
         // Electron editors whose integrated terminal runs xterm.js without setting the terminal flag.
         bool isElectronCodeEditorName(const std::string& program) {
-            for (const char* editor : {"antigravity", "code", "codium", "vscodium", "cursor", "windsurf"}) {
+            for (const char* editor : {"antigravity", "code", "codium", "vscodium", "cursor", "windsurf", "orca-ide"}) {
                 if (program == editor || isStartsWith(program, std::string(editor) + "-"))
                     return true;
             }

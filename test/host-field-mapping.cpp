@@ -106,6 +106,18 @@ namespace {
         check("fcitx5's own GTK module keeps its name", field("gnome-shell", "dbus", &focused).program == "gnome-shell");
     }
 
+    void checkShellAppIds(TestInstance& testInstance) {
+        auto limited = [&](const char* program, const char* frontend, bool fcitxNamesShellApps) {
+            TestInputContext context(&testInstance.instance, program, frontend);
+            return ngosen::keepsLastEditPerTurn(ngosen::FcitxHost(&context, &testInstance.instance, nullptr, nullptr, nullptr, fcitxNamesShellApps).field());
+        };
+        check("an app GNOME Shell relays by its desktop file gets the edit limits", limited("org.mozilla.firefox.desktop", "ibus", true));
+        check("a window without a desktop file gets the edit limits", limited("window:183", "ibus", true));
+        check("an IBus client with its own name has no edit limits", !limited("kitty", "ibus", true));
+        check("fcitx5's own GTK module has no edit limits", !limited("org.mozilla.firefox.desktop", "dbus", true));
+        check("before fcitx5 names GNOME's apps, a desktop-like name is the client's own", !limited("org.telegram.desktop", "ibus", false));
+    }
+
     void checkJoinedEdit(TestInstance& testInstance) {
         TestInputContext context(&testInstance.instance, "chromium", "ibus");
         ngosen::fakeClockUs      = 1000000;
@@ -331,6 +343,7 @@ int main() {
     checkFlags(testInstance);
     checkShellDropsKeys(testInstance);
     checkShellFocusedApp(testInstance);
+    checkShellAppIds(testInstance);
     checkJoinedEdit(testInstance);
     checkSurrounding(testInstance);
     checkFocus(testInstance);

@@ -8,6 +8,7 @@
 #include "ngosen-clock.h"
 #include "ngosen-engine.h"
 
+#include "ngosen-gnome-apps.h"
 #include "ngosen-gnome-shell.h"
 #include "ngosen-keysym.h"
 #include "ngosen-monitor.h"
@@ -180,6 +181,8 @@ namespace ngosen {
             (ui == "classicui" || ui == "kimpanel") && fcitx::modeMenuCanDraw(ui, f.frontend, ic_->display(), caps.test(fcitx::CapabilityFlag::ClientSideInputPanel));
         if (f.program != ic_->program())
             f.reportedProgram = ic_->program();
+        // A client of fcitx5's own IBus server names itself; one GNOME Shell relays gets GNOME's id for the app.
+        f.relayedByShell = f.frontend == "ibus" && (ic_->program() == "gnome-shell" || (fcitx_names_shell_apps_ && isGnomeAppId(ic_->program())));
         // GNOME Shell tells which app has focus a moment after the focus moves.
         f.appNameCurrent = focus_in_us_ != nullptr && monotonicUs() > *focus_in_us_ + 50000;
         // fcitx5 before 5.1.22 names every app GNOME Shell relays after the shell; fixed GNOME versions come with newer fcitx5.

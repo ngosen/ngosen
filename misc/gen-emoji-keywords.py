@@ -9,8 +9,11 @@ window shows from Unicode's emoji-test.txt (Fedora: unicode-emoji; Debian: unico
 A flag has only the keyword "flag" in CLDR; its country name is in the spoken name, "flag: Vietnam".
 """
 
+import os
 import re
+import subprocess
 import sys
+import tempfile
 import unicodedata
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -139,16 +142,51 @@ def bare(emoji):
     return emoji.replace("\ufe0f", "")
 
 
+def vietnamese_phrases(phrases):
+    """The phrases the engine reads as Vietnamese, asked of the engine itself."""
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", encoding="utf-8") as file:
+        file.write("\n".join(sorted(set(phrases))) + "\n")
+        file.flush()
+        result = subprocess.run(
+            [
+                "cargo",
+                "test",
+                "--lib",
+                "print_vietnamese_phrases",
+                "--",
+                "--ignored",
+                "--nocapture",
+            ],
+            cwd=ROOT / "bamboo-rs",
+            env={**os.environ, "NGOSEN_WORDS": file.name},
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+    return {
+        line.split("\t", 1)[1]
+        for line in result.stdout.splitlines()
+        if line.startswith("VIETNAMESE\t")
+    }
+
+
 def write_table(rows):
     """The settings window's list: every emoji, its group, spoken name and keywords.
 
     "on" are the keywords that offer it by default; "off" are other words of its CLDR name the user
     can turn on with one click; "english" are the English keywords, behind their own switch.
     """
-    on, english = {}, {}
+    on, english, english_off = {}, {}, {}
+    # The engine skips an English keyword typed as Vietnamese (can, me, no), so it starts off and
+    # turns on as the user's own word.
+    vietnamese = vietnamese_phrases(k for k, _e, kind in rows if kind == "english")
     for keyword, emoji, kind in rows:
         for e in emoji.split():
-            (english if kind == "english" else on).setdefault(bare(e), []).append(keyword)
+            if kind != "english":
+                target = on
+            else:
+                target = english_off if keyword in vietnamese else english
+            target.setdefault(bare(e), []).append(keyword)
     names, words = {}, {}
     for folder in ("annotations", "annotationsDerived"):
         for node in ET.parse(CLDR / folder / "vi.xml").iter("annotation"):
@@ -175,7 +213,9 @@ def write_table(rows):
         defaults = sorted(set(on.get(key, [])))
         others = [
             w
-            for w in dict.fromkeys([names.get(key, ""), *words.get(key, [])])
+            for w in dict.fromkeys(
+                [names.get(key, ""), *words.get(key, []), *sorted(english_off.get(key, []))]
+            )
             if is_word(w) and w not in defaults
         ]
         table.append(

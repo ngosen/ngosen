@@ -10,6 +10,41 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.13.2-1] — 22/11/2026
+
+Trên GNOME với fcitx5 từ 5.1.22 (Fedora 44, 45, Arch, Debian testing), Firefox không còn khựng khi sửa dấu, máy bận ít mất phần chữ vừa sửa hơn hẳn, và một lần sửa sai không còn làm cả app chuyển sang xoá bằng Backspace (#920, #922). Firefox bản snap không còn xoá mất chữ khi bấm chuột về một từ đã gõ rồi gõ phím dấu (#919). Terminal của Orca IDE không còn lặp chữ (#927); terminal trong các app khác chưa có tên trong danh sách (như các IDE mới) được tự nhận ra sau vài từ đầu và nhớ cả sau khi khởi động lại (#930), còn quay lại terminal của VS Code hay các app đó từ cửa sổ khác không còn ra chữ sai (#936). Chuyển mã trong ô như VS Code không còn lấy chữ đang bôi đen ở app khác (#916); trang Emoji sửa vài lỗi với từ tiếng Anh trùng chữ Việt (#915).
+Tải ở [ngosen-1.13.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.13.2-1).
+
+### Thay đổi
+
+- Lệnh cài và README không còn giới thiệu bản IBus là bản chỉ cho GNOME: hai bản dùng chung lõi gõ nên tính năng
+  như nhau, chọn bản nào là tuỳ thích; tính năng mới đến bản IBus chậm hơn một chút (#926, #929).
+- Gõ Sen tự nhận ra terminal xterm.js trong app chưa có tên trong danh sách (như các IDE mới, trừ trình duyệt): lần
+  đầu có thể sai vài từ, từ đó về sau gõ đúng ngay cả sau khi khởi động lại, và ô chat cùng cửa sổ không bị ảnh
+  hưởng. Danh sách app đã nhận ra nằm trong `~/.config/fcitx5/conf/ngosen-web-terminal-apps.conf`; xoá tệp này để
+  Ngó Sen học lại (#928, #930, #938).
+
+### Sửa
+
+- Bản IBus trên X11: gõ trong xterm và app XIM khác không còn thừa chữ (như "tiiisng") khi app trả lại phím Backspace
+  mà bộ gõ vừa gửi để xoá (#923).
+- Chuyển mã: ở ô không báo chữ quanh con trỏ (như VS Code), phím chuyển mã không còn lấy chữ đang bôi đen ở app
+  khác rồi gõ vào ô (#916).
+- Trang Emoji: từ tiếng Anh trùng chữ Việt như `can`, `me`, `pho` nay hiện tắt, đúng như khi gõ, và bật lên thì
+  gợi ý được. Từ khoá chỉ khác chữ hoa, chữ thường không còn bị gộp làm một. Tệp từ emoji hỏng không còn làm đóng cửa
+  sổ cài đặt. Ví dụ cách dùng nay theo lúc gợi ý đang chọn: cuối câu hay sau mỗi từ (#915).
+- Gõ Sen: trong Firefox bản snap, bấm chuột về một từ đã gõ rồi gõ phím dấu không còn xoá mất chữ ở chỗ bấm; phím
+  được giữ nguyên như đã gõ (#919).
+- Gõ Sen trên GNOME với fcitx5 từ 5.1.22 (Fedora 44, 45, Arch, Debian testing): Firefox không còn khựng khi sửa
+  dấu hai lần trong một chữ, và khi máy bận, Chrome cùng các app khác ít bị mất phần chữ vừa sửa hơn hẳn (kiểu
+  `người` thành `ngưi`) (#920).
+- Gõ Sen trên GNOME với fcitx5 từ 5.1.22: một lần sửa sai lúc máy bận không còn làm cả app chuyển sang xoá bằng
+  Backspace tới khi đăng xuất; chỉ ô đang gõ bị ảnh hưởng, như trước đây (#922).
+- Gõ Sen trong terminal của Orca IDE không còn lặp chữ (kiểu `ddaay laf` ra "đđây lđây là"), không cần chuyển app
+  sang Preedit nữa (#927).
+- Gõ Sen trong terminal của VS Code, Cursor, Antigravity và các IDE Electron khác: chuyển sang cửa sổ khác rồi quay
+  lại terminal, gõ nhanh không còn ra chữ sai (kiểu `tieengs` ra "tià ếng") (#936).
+
 ## [1.13.1-1] — 20/11/2026
 
 Trên KDE Plasma Wayland, WPS Office gõ được tiếng Việt (#897). Bấm Backspace khi đang gõ dở chữ kéo dài hay chữ teencode không còn mất dấu (#898, #902, #906). Nhập từ gợi ý emoji không còn hỏng cả tệp vì một từ có ký tự lạ (#899, #903).

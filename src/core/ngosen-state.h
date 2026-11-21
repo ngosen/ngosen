@@ -808,6 +808,7 @@ namespace ngosen {
         // The first letters are already in the field and its copy does not show them: leave the word raw.
         bool keepsWordRaw(const std::string& deletedPart);
         bool keepsWordRawWhileCursorPast();
+        bool copyShowsWordAfterCursor(const std::string& deletedPart) const;
         bool passesKeyWhileCursorPast(ngosen::KeyPress& keyEvent, uint32_t sym);
         bool belongsToRawWord(uint32_t sym, uint32_t states) const;
         void noteAutofill(const Surrounding& report);
@@ -918,6 +919,8 @@ namespace ngosen {
         void         notePassedLetter(const ngosen::KeyPress& keyEvent, uint64_t commitsBefore);
         void         noteCommitForCheck(const std::string& text);
         bool         keepsOnlyCommits() const;
+        bool         mayShowWebTerminal() const;
+        bool         marksEachField() const;
         void         checkFirstLetters();
         void         resetLetterCheckOnFieldChange();
         std::string  xtermText_; ///< surrounding text last reported while keepsOnlyCommits() held

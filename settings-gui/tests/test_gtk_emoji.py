@@ -188,6 +188,13 @@ class GtkEmojiPageTest(unittest.TestCase):
         self.page.rows["EmojiSuggestions"].set_active(False)
         self.assertFalse(self.page.example.get_visible())
 
+    def test_the_example_shows_the_steps_of_the_offer_timing(self):
+        timing = self.page.rows["EmojiOfferAt"]
+        for value, sentence in (("At the end of a sentence", True), ("After each word", False)):
+            timing.set_selected(timing.values.index(value))
+            self.assertEqual(self.page.sentence_steps.get_visible(), sentence, value)
+            self.assertEqual(self.page.word_steps.get_visible(), not sentence, value)
+
     def test_import_saves_the_shared_words(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "words.json")

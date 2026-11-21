@@ -216,7 +216,7 @@ namespace {
     // GNOME Shell passes the app's reports back to us one edit at a time, and a backspace sent before the
     // report would land ahead of the commit it follows (#362). The edit waits for the copy instead.
     bool gnomeIbusWaitsForLaggingCopy(Harness& h) {
-        auto context = h.open("window:1", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
+        auto context = h.open("ibus-app1", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
         if (!h.typeTie(*context, true))
             return false;
         pumpEventLoop(h.testInstance.instance, 1);
@@ -240,7 +240,7 @@ namespace {
     // A copy that never catches up ends in backspaces, and the commit still waits until the app reports
     // the deletion.
     bool gnomeIbusBackspacesWaitForReportedDeletion(Harness& h) {
-        auto context = h.open("window:6", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
+        auto context = h.open("ibus-app6", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
         if (!h.typeTie(*context, true))
             return false;
         pumpEventLoop(h.testInstance.instance, 1);
@@ -268,7 +268,7 @@ namespace {
     // A report can arrive from before the forwarded keys were applied, so a commit never goes out
     // sooner than the fixed wait would have sent it.
     bool gnomeIbusCommitsNoSoonerThanForwardWait(Harness& h) {
-        auto context = h.open("window:3", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
+        auto context = h.open("ibus-app3", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
         if (!h.typeTie(*context, true))
             return false;
         pumpEventLoop(h.testInstance.instance, 1);
@@ -291,7 +291,7 @@ namespace {
     // A chat composer drops a commit that lands right after the deletion (#362), so an early report
     // there still waits out the composer settle, not just the fixed wait.
     bool gnomeIbusComposerWaitsForSettle(Harness& h) {
-        auto context = h.open("window:4", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
+        auto context = h.open("ibus-app4", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
         Harness::setSnapshot(*context, "ok \n\n", 3);
         const std::string word = "tie";
         for (size_t i = 0; i < word.size(); ++i) {
@@ -321,7 +321,7 @@ namespace {
     // GNOME Shell 46 declares surrounding text for every app, so a terminal that never reports any
     // would wait out every timeout. After two silent waits the fixed wait takes over until a report.
     bool gnomeIbusStopsWaitingForSilentApp(Harness& h) {
-        auto context = h.open("window:2", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
+        auto context = h.open("ibus-app2", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText});
         Harness::setSnapshot(*context, "ls -l", 5);
         // Types `word`, then `key` that changes it; returns how long the commit took.
         auto replace = [&](const std::string& word, char key) -> uint64_t {
@@ -448,7 +448,7 @@ int main() {
         return 1;
     if (!deletesThroughSurroundingText(h, "gtk4-im:gtk4app", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
         return 1;
-    if (!deletesThroughSurroundingText(h, "window:5", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
+    if (!deletesThroughSurroundingText(h, "ibus-app5", "ibus", fcitx::CapabilityFlags{fcitx::CapabilityFlag::SurroundingText}))
         return 1;
     if (!gnomeIbusWaitsForLaggingCopy(h))
         return 1;

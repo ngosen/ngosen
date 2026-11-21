@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace ngosen {
@@ -1121,7 +1122,7 @@ namespace ngosen {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
             const Field field = host_->field();
-            if ((ngosen::isElectronCodeEditor(field) || ngosen::namesNoApp(field)) && (!keepsOnlyCommits() || host_->surrounding().text() != xtermText_))
+            if ((marksEachField() || ngosen::namesNoApp(field)) && (!keepsOnlyCommits() || host_->surrounding().text() != xtermText_))
                 resetLetterCheckOnFieldChange();
             forgetKeysWhileOff();
             clickBeforeKey_ = true;
@@ -1286,7 +1287,9 @@ namespace ngosen {
     bool TypingState::handleKeyDuringTimedWait(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (!is_deleting_.load(std::memory_order_acquire) || !surr_wait_.timerOnly)
             return false;
-        if (ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" && ngosen::forwardsBackspaces(host_->field())) {
+        // XTEST backspaces let through reach the client as XIM forwards too, and IBus's XIM server can get one back.
+        const bool letThrough = ngosen::forwardsBackspaces(host_->field()) || std::string_view(replace_method_) == "system backspaces";
+        if (ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" && letThrough) {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
             NGOSEN_INFO("XIM handed back a forwarded backspace");
@@ -1543,7 +1546,7 @@ namespace ngosen {
         }
         if (host_->field().frontend != "dbus")
             clearAllBuffers(keepOpenWord);
-        if (!isFocusOut && !keepOpenWord && host_->field().frontend == "wayland" && ngosen::isElectronCodeEditor(host_->field()))
+        if (!isFocusOut && !keepOpenWord && host_->field().frontend == "wayland" && marksEachField())
             resetLetterCheckOnFieldChange();
         shouldCapitalize_ = keepCapitalize;
 

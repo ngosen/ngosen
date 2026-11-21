@@ -42,6 +42,15 @@ class ChipsTest(unittest.TestCase):
         self.assertIn(("cat", True), words().chips("🐈"))
         self.assertLess(words_of_cat.index("mèo"), words_of_cat.index("cat"))
 
+    def test_an_english_word_typed_as_vietnamese_starts_off_and_turns_on(self):
+        # The engine never offers 🥫 for can on its own, so the page must not show it on.
+        fake = FakeDBusHandler()
+        table = words(fake)
+        self.assertIn(("can", False), table.chips("🥫"))
+        table.toggle("🥫", "can")
+        self.assertTrue(table.save())
+        self.assertEqual(saved(fake), [{"Keyword": "can", "Emoji": "🥫", "On": "True"}])
+
     def test_english_off_hides_english_words(self):
         table = words()
         table.english = False
@@ -109,6 +118,18 @@ class ChipsTest(unittest.TestCase):
         self.assertFalse(dict(table.chips("😂"))["cười"])
         self.assertTrue(dict(table.chips("👔"))["sếp"])
         self.assertFalse(table.is_modified())
+
+    def test_words_differing_in_case_stay_apart(self):
+        # The engine compares keywords as written, so Cười must not overwrite cười.
+        items = [
+            {"Keyword": "cười", "Emoji": "😂", "On": "False"},
+            {"Keyword": "Cười", "Emoji": "😂", "On": "True"},
+        ]
+        fake = FakeDBusHandler(sub_configs={"emoji_words": [dict(i) for i in items]})
+        table = words(fake)
+        self.assertFalse(table.is_on("😂", "cười"))
+        self.assertTrue(table.save())
+        self.assertEqual(saved(fake), items)
 
     def test_a_refused_save_keeps_the_change_unsaved(self):
         fake = FakeDBusHandler()
@@ -228,10 +249,18 @@ class ShareTest(unittest.TestCase):
                     {"Keyword": "y" * 41, "Emoji": "👔"},
                     # D-Bus strings cannot carry NUL, so saving it would fail the whole import.
                     {"Keyword": "a\u0000b", "Emoji": "👔"},
+                    {"Keyword": "x", "Emoji": ["👔"]},
+                    {"Keyword": "a\ud800b", "Emoji": "👔"},
                 ],
             }
         )
         self.assertEqual(read_shared(self.path), [("👔", "sếp lớn")])
+
+    def test_a_file_nested_too_deep_is_refused(self):
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write("[" * 100000 + "]" * 100000)
+        with self.assertRaises(ValueError):
+            read_shared(self.path)
 
     def test_other_files_are_refused(self):
         for data in (

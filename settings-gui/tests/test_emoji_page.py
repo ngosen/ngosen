@@ -66,6 +66,12 @@ class EmojiPageTest(unittest.TestCase):
         titles = [self.window.sidebar.item(r).text() for r in range(self.window.sidebar.count())]
         self.assertEqual(titles.index("Emoji"), titles.index("Macros & Dictionary") + 1)
 
+    def test_the_example_shows_the_steps_of_the_offer_timing(self):
+        for value, sentence in (("At the end of a sentence", True), ("After each word", False)):
+            page = self.open(FakeDBusHandler({"EmojiOfferAt": value}))
+            self.assertEqual(page._sentence_steps.isVisible(), sentence, value)
+            self.assertEqual(page._word_steps.isVisible(), not sentence, value)
+
     def test_clicking_a_word_saves_it_off(self):
         self.open()
         chip = self.chip(self.row("😂"), "cười")

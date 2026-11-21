@@ -733,9 +733,30 @@ namespace ngosen {
         return true;
     }
 
+    // The field shows the word after the cursor: the user clicked back before it, and the app told us only
+    // in a report that also carried our last edit, as Firefox's snap does.
+    bool TypingState::copyShowsWordAfterCursor(const std::string& deletedPart) const {
+        const Surrounding s = host_->surrounding();
+        if (!host_->field().surroundingText || !s.isValid() || s.cursor() != s.anchor() || oldPreBuffer_.empty())
+            return false;
+        const std::string before = textBeforeCursor(s);
+        if (s.text().find(oldPreBuffer_, before.size()) == std::string::npos)
+            return false;
+        const std::string prefix = oldPreBuffer_.substr(0, oldPreBuffer_.size() - deletedPart.size());
+        return countSurroundingDeletion(before, prefix, deletedPart, earlierWordsBeforeReplacement()).match == SurroundingDeletion::Match::None;
+    }
+
     bool TypingState::keepsWordRaw(const std::string& deletedPart) {
         if (keepsWordRawWhileCursorPast())
             return true;
+        if (copyShowsWordAfterCursor(deletedPart)) {
+            NGOSEN_INFO("Keep the word as typed" + loggedField(host_->field()) + ": the field shows it after the cursor");
+            rawWord_    = true;
+            hasHistory_ = false;
+            ResetEngine(bambooEngine_.handle());
+            oldPreBuffer_.clear();
+            return true;
+        }
         const Field field = host_->field();
         if (!field.preeditFallback || !deletesOnlyThroughSurrounding())
             return false;
@@ -1233,8 +1254,14 @@ namespace ngosen {
         const Field field = host_->field();
         if (++h.lettersHidden == 1)
             NGOSEN_INFO("Typed letters do not show in the copy" + loggedField(field) + ": commit through a composition");
-        // Under one shared name, or in an editor whose window also holds normal fields, a mark would spread past the terminal.
-        if (h.lettersHidden == LettersHiddenForApp && !ngosen::namesNoApp(field) && !ngosen::isElectronCodeEditor(field))
+        if (ngosen::namesNoApp(field))
+            return;
+        // Learning an app only turns on the check for each of its fields, so one sign is enough; an app may hold
+        // normal fields too, and a mark on the whole app would reach them. One page's terminal says nothing about
+        // a browser's other pages.
+        if (!field.program.empty() && !ngosen::mayShowWebTerminal(field) && !ngosen::isWebBrowser(field))
+            engine_->noteWebTerminal(field.program);
+        else if (h.lettersHidden == LettersHiddenForApp && !ngosen::isElectronCodeEditor(field))
             engine_->noteKeepsOnlyCommits(field.frontend, field.program);
     }
 
@@ -1288,6 +1315,17 @@ namespace ngosen {
             (!ngosen::namesNoApp(field) && engine_->keepsOnlyCommits(field.frontend, field.program));
     }
 
+    bool TypingState::mayShowWebTerminal() const {
+        const Field field = host_->field();
+        return ngosen::mayShowWebTerminal(field) || engine_->showedWebTerminal(field.program);
+    }
+
+    // In an editor the terminal shares its window with normal fields, which a mark on the whole app would reach.
+    bool TypingState::marksEachField() const {
+        const Field field = host_->field();
+        return ngosen::isElectronCodeEditor(field) || engine_->showedWebTerminal(field.program);
+    }
+
     // A browser shows a typed letter within tens of milliseconds, while xterm.js never reports one; without this
     // the first words after fcitx5 starts go wrong until the app is remembered.
     void TypingState::checkFirstLetters() {
@@ -1303,7 +1341,7 @@ namespace ngosen {
         const Surrounding s   = host_->surrounding();
         // Such a field is deleted with backspaces, which some fields drop; and no report of a field that hides its
         // text is read for letters, so nothing would undo the mark there.
-        if (!field.preedit || !field.surroundingText || field.sendsNoKeys || dropsForwardedKeys() || field.hidesText() || !ngosen::mayShowWebTerminal(field) || !s.isValid())
+        if (!field.preedit || !field.surroundingText || field.sendsNoKeys || dropsForwardedKeys() || field.hidesText() || !mayShowWebTerminal() || !s.isValid())
             return;
         h.firstLettersHidden = true;
         NGOSEN_INFO("No report shows the first letters" + loggedField(field) + ": commit through a composition");

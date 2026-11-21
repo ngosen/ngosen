@@ -257,6 +257,50 @@ namespace {
         return true;
     }
 
+    enum class Outcome {
+        Pass,
+        Fail,
+        Stalled
+    };
+
+    // A handed-back backspace can arrive a few ms after the sentinel, so the commit waits for it.
+    Outcome waitsForALateHandBack(Harness& h) {
+        auto context = h.open("xim", "xim", fcitx::CapabilityFlags{});
+        if (!h.typeTieE(*context))
+            return Outcome::Fail;
+        const auto backSpace = fcitx::Key(FcitxKey_BackSpace);
+        if (!h.key(*context, backSpace, false, false) || !h.key(*context, backSpace, false, true))
+            return Outcome::Fail;
+        const uint64_t     sentinelAt = nowUs();
+        constexpr uint64_t LateUs     = 10000;
+        h.pumpUntil([] { return false; }, sentinelAt + LateUs);
+        if (nowUs() - sentinelAt > LateUs + 4000)
+            return Outcome::Stalled;
+        if (!context->commits().empty()) {
+            reportFailure("xim: no commit before a late hand-back", "(none)", joinCommits(*context));
+            return Outcome::Fail;
+        }
+        if (!h.key(*context, backSpace, false, false))
+            return Outcome::Fail;
+        h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 500000);
+        if (context->commits() != std::vector<std::string>{"ê"}) {
+            reportFailure("xim: commit after a late hand-back", "['ê']", joinCommits(*context));
+            return Outcome::Fail;
+        }
+        return Outcome::Pass;
+    }
+
+    bool waitsForALateHandBackOnce(Harness& h) {
+        // A machine that stalls past the wait proves nothing; try again.
+        for (int attempt = 0; attempt < 5; ++attempt) {
+            const Outcome outcome = waitsForALateHandBack(h);
+            if (outcome != Outcome::Stalled)
+                return outcome == Outcome::Pass;
+        }
+        reportFailure("xim: hand a backspace back late", "one of 5 attempts", "machine stalled every time");
+        return false;
+    }
+
     bool commitsWhenBackspacesFail(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
         auto context = h.open(program, frontend, caps);
         if (!h.typeTieE(*context))
@@ -353,7 +397,7 @@ int main() {
     if (!pressesBackSpaceThroughXTest(h, "wordcraft", "xim", fcitx::CapabilityFlags{}, fcitx::KeyStates(fcitx::KeyState::Repeat)))
         return 1;
     // ibus-x11 names no program.
-    if (!takesBackAHandedBackBackSpace(h))
+    if (!takesBackAHandedBackBackSpace(h) || !waitsForALateHandBackOnce(h))
         return 1;
     // Fields inside a web page have no autocompletion, and Google Sheets moves the text under a Shift+Left selection.
     if (!keepsForwarding(h, "microsoft-edge", "dbus", chromeCaps))

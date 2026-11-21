@@ -3425,8 +3425,10 @@ namespace {
         check(editorRun.text == "đây là tiếng việt xin chào nhiều nhiều " && countHaving(editorLines, "Copy of the text still short") == 0 &&
                   countHaving(editorLines, "Surr wait timeout") == 0,
               "xterm.js in an Electron editor: fast words and nhieefu right without copy or surr waits", editorRun.text + " " + join(editorLines));
-        const std::string orcaText = typeInXterm(makeField("wayland", true, "orca-ide"), {.keepsOnlyCommits = true}, sentence);
-        check(orcaText == expected, "xterm.js in Orca: the first words come out right", orcaText);
+        for (const std::string orca : {"orca", "orca-ide"}) {
+            const std::string orcaText = typeInXterm(makeField("wayland", true, orca), {.keepsOnlyCommits = true}, sentence);
+            check(orcaText == expected, "xterm.js in Orca (" + orca + "): the first words come out right", orcaText);
+        }
 
         // Reverting a tone commits the first letter again, which must not look like the field showing typed letters.
         for (const char* program : {"firefox", "antigravity-ide"}) {

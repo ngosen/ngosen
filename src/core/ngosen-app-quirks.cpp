@@ -70,9 +70,10 @@ namespace ngosen {
             return name == "org.gnome.Ptyxis" || name == "org.gnome.Console" || name == "org.gnome.Terminal";
         }
 
-        // Electron editors whose integrated terminal runs xterm.js without setting the terminal flag.
+        // Electron editors whose integrated terminal runs xterm.js without setting the terminal flag. Orca's window is
+        // named "orca" and its program "orca-ide"; GNOME's screen reader shares the name but has only normal fields.
         bool isElectronCodeEditorName(const std::string& program) {
-            for (const char* editor : {"antigravity", "code", "codium", "vscodium", "cursor", "windsurf", "orca-ide"}) {
+            for (const char* editor : {"antigravity", "code", "codium", "vscodium", "cursor", "windsurf", "orca"}) {
                 if (program == editor || isStartsWith(program, std::string(editor) + "-"))
                     return true;
             }

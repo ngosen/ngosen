@@ -3545,6 +3545,22 @@ namespace {
         const auto termOut = ngosen::test::typeInAppTraced(restarted, field, {.keepsOnlyCommits = true}, keys, std::vector<int>(keys.size(), 60));
         check(termOut.text == expected, "xterm.js in a learned app: the first words come out right after a restart", termOut.text);
 
+        FakeResources reloading;
+        reloading.noteWebTerminal("window:13");
+        reloading.noteWebTerminal("old-app");
+        reloading.loadWebTerminalApps({"saved-app"});
+        check(reloading.showedWebTerminal("window:13") && reloading.showedWebTerminal("saved-app") && !reloading.showedWebTerminal("old-app"),
+              "loading saved apps keeps this session's window:N names", "");
+
+        // GNOME Shell repeats its last report, which takes a few words to show the field keeps only commits.
+        FakeResources unnamed;
+        Field         noName   = makeField("ibus", true, "");
+        noName.reportedProgram = "gnome-shell";
+        const auto longKeys    = keysOf("laf " + sentence);
+        (void)ngosen::test::typeInAppTraced(unnamed, noName, {.keepsLastEditPerTurn = true, .turnMs = 3, .keepsOnlyCommits = true}, longKeys,
+                                            std::vector<int>(longKeys.size(), 60));
+        check(unnamed.keepsOnlyCommits("ibus", ""), "a field without a program name keeps the app-wide mark", "");
+
         // Like an editor's, a learned app's mark stays on the terminal field.
         FakeResources sharedContext;
         sharedContext.noteWebTerminal("some-new-ide");

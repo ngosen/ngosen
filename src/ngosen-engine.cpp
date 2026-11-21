@@ -1470,7 +1470,9 @@ namespace fcitx {
     }
 
     void NgoSenEngine::loadWebTerminalApps() {
-        readAppList(webTerminalAppsPath_, webTerminalApps_);
+        std::unordered_set<std::string> saved;
+        readAppList(webTerminalAppsPath_, saved);
+        ngosen::EngineResources::loadWebTerminalApps(saved);
     }
 
     // Deleting the file makes Ngó Sen learn these apps again. GNOME Shell's "window:N" names last one session.

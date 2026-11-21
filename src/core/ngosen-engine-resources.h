@@ -8,6 +8,7 @@
 #include "ngosen-options.h"
 #include "ngosen-pty.h"
 #include "ngosen-recorder.h"
+#include "ngosen-strings.h"
 
 #include <cstdint>
 #include <map>
@@ -85,6 +86,12 @@ namespace ngosen {
         void noteWebTerminal(const std::string& program) {
             if (!program.empty() && webTerminalApps_.insert(program).second)
                 webTerminalAppsChanged();
+        }
+        // GNOME Shell's "window:N" names are never saved, so they stay until the session ends.
+        void loadWebTerminalApps(const std::unordered_set<std::string>& saved) {
+            for (auto it = webTerminalApps_.begin(); it != webTerminalApps_.end();)
+                it = isStartsWith(*it, "window:") ? std::next(it) : webTerminalApps_.erase(it);
+            webTerminalApps_.insert(saved.begin(), saved.end());
         }
 
       protected:

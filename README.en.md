@@ -371,20 +371,24 @@ Until then, use Gõ Sen, or finish the word with Space before clicking.
 
 ### KDE Wayland: LibreOffice repeats text after a click
 
-In Preedit mode on KDE Plasma Wayland, clicking in LibreOffice Writer while a word is still underlined makes
-the word appear twice (type "tiếng", click, type `a`, and you get "tiếngtiếnga"). Writer inserts the
-underlined text itself without telling the input method; Chinese input methods are affected too. Use Gõ Sen,
-finish the word with Space before clicking, or let Writer reach fcitx5 through its Qt module (this needs the
-fcitx5 Qt 6 package, such as `fcitx5-frontend-qt6` on Debian/Ubuntu or `fcitx5-qt6` on Fedora):
+In Preedit mode on KDE Plasma Wayland, clicking in LibreOffice Writer or Calc while a word is still
+underlined makes the word appear twice (type "tiếng", click, type `a`, and you get "tiếngtiếnga").
+LibreOffice inserts the underlined text itself without telling the input method; Chinese input methods are
+affected too. Use Gõ Sen, finish the word with Space before clicking, or let LibreOffice reach fcitx5 through
+its Qt module (this needs the fcitx5 Qt 6 package, such as `fcitx5-frontend-qt6` on Debian/Ubuntu or
+`fcitx5-qt6` on Fedora):
 
 ```bash
-cp /usr/share/applications/libreoffice-writer.desktop ~/.local/share/applications/
-sed -i 's|^Exec=libreoffice|Exec=env QT_IM_MODULE=fcitx libreoffice|' \
-  ~/.local/share/applications/libreoffice-writer.desktop
+for app in writer calc; do
+  cp /usr/share/applications/libreoffice-$app.desktop ~/.local/share/applications/
+  sed -i 's|^Exec=libreoffice|Exec=env QT_IM_MODULE=fcitx libreoffice|' \
+    ~/.local/share/applications/libreoffice-$app.desktop
+done
 ```
 
-Quit LibreOffice completely (Calc and Impress too), then reopen Writer from the menu. To undo this, delete
-`~/.local/share/applications/libreoffice-writer.desktop`.
+Quit LibreOffice completely, then reopen it from the menu. All LibreOffice windows share one process, so
+the first one opened decides for the whole session; Impress is untested. To undo this, delete
+`libreoffice-writer.desktop` and `libreoffice-calc.desktop` from `~/.local/share/applications/`.
 
 ### Ubuntu: VS Code
 

@@ -383,20 +383,23 @@ chưa có bản mới, dùng chế độ **Gõ Sen**, hoặc gõ xong chữ bằ
 
 ### LibreOffice trên KDE Wayland lặp chữ khi bấm chuột
 
-Ở chế độ Preedit trên KDE Plasma Wayland, đang có chữ gạch chân mà bấm chuột trong LibreOffice Writer thì chữ
-đó hiện hai lần (gõ "tiếng", bấm chuột, gõ `a` ra "tiếngtiếnga"). Writer tự đưa chữ gạch chân vào văn bản mà
-không báo cho bộ gõ; bộ gõ tiếng Trung cũng bị. Dùng chế độ **Gõ Sen**, gõ xong chữ bằng phím cách rồi mới bấm
-chuột, hoặc cho Writer nối với fcitx5 qua module Qt (cần gói fcitx5 cho Qt 6, như `fcitx5-frontend-qt6` trên
-Debian/Ubuntu hay `fcitx5-qt6` trên Fedora):
+Ở chế độ Preedit trên KDE Plasma Wayland, đang có chữ gạch chân mà bấm chuột trong LibreOffice Writer hay Calc
+thì chữ đó hiện hai lần (gõ "tiếng", bấm chuột, gõ `a` ra "tiếngtiếnga"). LibreOffice tự đưa chữ gạch chân vào
+văn bản mà không báo cho bộ gõ; bộ gõ tiếng Trung cũng bị. Dùng chế độ **Gõ Sen**, gõ xong chữ bằng phím cách
+rồi mới bấm chuột, hoặc cho LibreOffice nối với fcitx5 qua module Qt (cần gói fcitx5 cho Qt 6, như
+`fcitx5-frontend-qt6` trên Debian/Ubuntu hay `fcitx5-qt6` trên Fedora):
 
 ```bash
-cp /usr/share/applications/libreoffice-writer.desktop ~/.local/share/applications/
-sed -i 's|^Exec=libreoffice|Exec=env QT_IM_MODULE=fcitx libreoffice|' \
-  ~/.local/share/applications/libreoffice-writer.desktop
+for app in writer calc; do
+  cp /usr/share/applications/libreoffice-$app.desktop ~/.local/share/applications/
+  sed -i 's|^Exec=libreoffice|Exec=env QT_IM_MODULE=fcitx libreoffice|' \
+    ~/.local/share/applications/libreoffice-$app.desktop
+done
 ```
 
-Tắt hẳn LibreOffice (cả Calc, Impress) rồi mở lại Writer từ menu. Muốn bỏ cách này thì xoá file
-`~/.local/share/applications/libreoffice-writer.desktop`.
+Tắt hẳn LibreOffice rồi mở lại từ menu. Các cửa sổ LibreOffice dùng chung một tiến trình, nên app mở đầu tiên
+quyết định cho cả phiên; Impress chưa được thử. Muốn bỏ cách này thì xoá hai file
+`~/.local/share/applications/libreoffice-writer.desktop` và `libreoffice-calc.desktop` cùng thư mục.
 
 ### VS Code trên Ubuntu
 

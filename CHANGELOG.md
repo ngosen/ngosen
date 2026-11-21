@@ -31,6 +31,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   `người` thành `ngưi`) (#920).
 - Gõ Sen trên GNOME với fcitx5 từ 5.1.22: một lần sửa sai lúc máy bận không còn làm cả app chuyển sang xoá bằng
   Backspace tới khi đăng xuất; chỉ ô đang gõ bị ảnh hưởng, như trước đây (#922).
+- Gõ Sen trong terminal của Orca IDE không còn lặp chữ (kiểu `ddaay laf` ra "đđây lđây là"), không cần chuyển app
+  sang Preedit nữa (#927).
 
 ## [1.13.1-1] — 20/11/2026
 

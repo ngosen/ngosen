@@ -76,7 +76,8 @@ namespace ngosen {
                 if (program == editor || isStartsWith(program, std::string(editor) + "-"))
                     return true;
             }
-            return false;
+            // Orca's window is named "orca" and its program "orca-ide"; other orca-* programs (OrcaSlicer) are not editors.
+            return program == "orca" || program == "orca-ide";
         }
     } // namespace
 

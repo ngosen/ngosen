@@ -1130,7 +1130,7 @@ namespace ngosen {
             g_mouse_clicked.store(false, std::memory_order_release);
             clearAllBuffers();
             const Field field = host_->field();
-            if ((ngosen::isElectronCodeEditor(field) || ngosen::namesNoApp(field)) && (!keepsOnlyCommits() || host_->surrounding().text() != xtermText_))
+            if ((marksEachField() || ngosen::namesNoApp(field)) && (!keepsOnlyCommits() || host_->surrounding().text() != xtermText_))
                 resetLetterCheckOnFieldChange();
             forgetKeysWhileOff();
             clickBeforeKey_ = true;
@@ -1552,7 +1552,7 @@ namespace ngosen {
         }
         if (host_->field().frontend != "dbus")
             clearAllBuffers(keepOpenWord);
-        if (!isFocusOut && !keepOpenWord && host_->field().frontend == "wayland" && ngosen::isElectronCodeEditor(host_->field()))
+        if (!isFocusOut && !keepOpenWord && host_->field().frontend == "wayland" && marksEachField())
             resetLetterCheckOnFieldChange();
         shouldCapitalize_ = keepCapitalize;
 

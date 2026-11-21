@@ -291,6 +291,7 @@ namespace fcitx {
         std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
         std::string                                 vimAppsPath_;
+        std::string                                 webTerminalAppsPath_;
         std::string                                 emojiOffAppsPath_;
         std::string                                 teencodeAppsPath_;
         std::weak_ptr<CandidateList>                modeMenuList_;
@@ -439,6 +440,8 @@ namespace fcitx {
         bool                       vimModeFor(const std::string& appName) const;
         void                       loadVimApps();
         void                       saveVimApps() const;
+        void                       loadWebTerminalApps();
+        void                       webTerminalAppsChanged() override;
         void                       toggleVimMode(InputContext* ic);
         bool                       emojiOnFor(const std::string& appName) const;
         void                       loadEmojiOffApps();

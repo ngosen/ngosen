@@ -1233,8 +1233,13 @@ namespace ngosen {
         const Field field = host_->field();
         if (++h.lettersHidden == 1)
             NGOSEN_INFO("Typed letters do not show in the copy" + loggedField(field) + ": commit through a composition");
-        // Under one shared name, or in an editor whose window also holds normal fields, a mark would spread past the terminal.
-        if (h.lettersHidden == LettersHiddenForApp && !ngosen::namesNoApp(field) && !ngosen::isElectronCodeEditor(field))
+        if (ngosen::namesNoApp(field))
+            return;
+        // Learning an app only turns on the check for each of its fields, so one sign is enough; an app may hold
+        // normal fields too, and a mark on the whole app would reach them.
+        if (!ngosen::mayShowWebTerminal(field))
+            engine_->noteWebTerminal(field.program);
+        else if (h.lettersHidden == LettersHiddenForApp && !ngosen::isElectronCodeEditor(field))
             engine_->noteKeepsOnlyCommits(field.frontend, field.program);
     }
 
@@ -1288,6 +1293,17 @@ namespace ngosen {
             (!ngosen::namesNoApp(field) && engine_->keepsOnlyCommits(field.frontend, field.program));
     }
 
+    bool TypingState::mayShowWebTerminal() const {
+        const Field field = host_->field();
+        return ngosen::mayShowWebTerminal(field) || engine_->showedWebTerminal(field.program);
+    }
+
+    // In an editor the terminal shares its window with normal fields, which a mark on the whole app would reach.
+    bool TypingState::marksEachField() const {
+        const Field field = host_->field();
+        return ngosen::isElectronCodeEditor(field) || engine_->showedWebTerminal(field.program);
+    }
+
     // A browser shows a typed letter within tens of milliseconds, while xterm.js never reports one; without this
     // the first words after fcitx5 starts go wrong until the app is remembered.
     void TypingState::checkFirstLetters() {
@@ -1303,7 +1319,7 @@ namespace ngosen {
         const Surrounding s   = host_->surrounding();
         // Such a field is deleted with backspaces, which some fields drop; and no report of a field that hides its
         // text is read for letters, so nothing would undo the mark there.
-        if (!field.preedit || !field.surroundingText || field.sendsNoKeys || dropsForwardedKeys() || field.hidesText() || !ngosen::mayShowWebTerminal(field) || !s.isValid())
+        if (!field.preedit || !field.surroundingText || field.sendsNoKeys || dropsForwardedKeys() || field.hidesText() || !mayShowWebTerminal() || !s.isValid())
             return;
         h.firstLettersHidden = true;
         NGOSEN_INFO("No report shows the first letters" + loggedField(field) + ": commit through a composition");

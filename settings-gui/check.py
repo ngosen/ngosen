@@ -40,13 +40,28 @@ class RunningFcitxHandler(NgoSenDBusHandler):
         return dbus.Interface(proxy, "org.fcitx.Fcitx.Controller1")
 
 
+NO_BUS, NOT_RUNNING, NOT_LOADED = 1, 2, 3
+
+
+def exit_code(bus, facts):
+    """Lets a script tell why fcitx5 could not answer; the report is printed either way."""
+    if bus is None:
+        return NO_BUS
+    if not facts.fcitx_running:
+        return NOT_RUNNING
+    if not facts.ngosen_loaded:
+        return NOT_LOADED
+    return 0
+
+
 def check(bus, include_apps=False, env=None):
+    """Returns the report and the exit code."""
     handler = RunningFcitxHandler(bus)
     # The handler reports D-Bus errors with print(); stdout carries only the report.
     with contextlib.redirect_stdout(sys.stderr):
         facts = system_check.collect(handler, __version__, env)
         found = system_check.steps(facts)
-    return system_check.terminal_report(facts, found, include_apps)
+    return system_check.terminal_report(facts, found, include_apps), exit_code(bus, facts)
 
 
 def main(argv=None):
@@ -64,8 +79,9 @@ def main(argv=None):
         # Under sudo or ssh; the rest of the check still says something.
         print("No desktop session bus: fcitx5 cannot be asked.", file=sys.stderr)
         bus = None
-    print(check(bus, args.include_apps))
-    return 0
+    report, code = check(bus, args.include_apps)
+    print(report)
+    return code
 
 
 if __name__ == "__main__":

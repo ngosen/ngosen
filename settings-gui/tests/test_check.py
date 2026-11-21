@@ -104,13 +104,34 @@ class CheckTest(unittest.TestCase):
         # The language picked on this machine would leak into later tests.
         with (
             mock.patch.object(check, "setup_i18n"),
+            mock.patch.object(check.dbus, "SessionBus", return_value=FakeBus()),
             mock.patch.object(system_check, "collect", side_effect=collect),
         ):
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-                self.assertEqual(check.main([]), 0)
+                self.assertEqual(check.main([]), check.NOT_RUNNING)
         self.assertTrue(out.getvalue().startswith("# Ngó Sen check."))
         self.assertNotIn("noise", out.getvalue())
         self.assertIn("noise", err.getvalue())
+
+    def test_exit_codes(self):
+        running = Facts(env={}, fcitx_running=True)
+        not_loaded = Facts(env={}, fcitx_running=True, ngosen_loaded=False)
+        self.assertEqual(check.exit_code(FakeBus(), running), 0)
+        self.assertEqual(check.exit_code(None, Facts(env={})), check.NO_BUS)
+        self.assertEqual(check.exit_code(FakeBus(), Facts(env={})), check.NOT_RUNNING)
+        self.assertEqual(check.exit_code(FakeBus(), not_loaded), check.NOT_LOADED)
+
+    def test_no_session_bus_still_prints_the_report(self):
+        out, err = io.StringIO(), io.StringIO()
+        with (
+            mock.patch.object(check, "setup_i18n"),
+            mock.patch.object(check.dbus, "SessionBus", side_effect=dbus.DBusException("none")),
+            mock.patch.object(system_check, "collect", return_value=sample_facts()),
+        ):
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                self.assertEqual(check.main([]), check.NO_BUS)
+        self.assertTrue(out.getvalue().startswith("# Ngó Sen check."))
+        self.assertIn("No desktop session bus", err.getvalue())
 
 
 if __name__ == "__main__":

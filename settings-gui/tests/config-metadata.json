@@ -266,13 +266,6 @@
     }
    ],
    [
-    "SpellCheck",
-    "Boolean",
-    "Enable Spell Check Using Dictionary",
-    "True",
-    {}
-   ],
-   [
     "EnableMacro",
     "Boolean",
     "Enable Macro",
@@ -560,13 +553,6 @@
     "ShowMenuCharset",
     "Boolean",
     "Show Charset in the tray menu",
-    "True",
-    {}
-   ],
-   [
-    "ShowMenuSpellCheck",
-    "Boolean",
-    "Show Spell Check in the tray menu",
     "True",
     {}
    ],

@@ -51,7 +51,7 @@
  * a normal one-scenario regression test.
  *
  * Configuration:
- * Macro expansion, the dictionary, spell check and auto non-Vietnamese restore
+ * Macro expansion, the dictionary and auto non-Vietnamese restore
  * are switched OFF. Each of those may legitimately rewrite or lengthen the
  * composition, which would make P2 and P3 false for reasons that are not bugs.
  * They deserve their own properties and are out of scope here.
@@ -219,7 +219,6 @@ int main() {
     // for legitimate reasons, which is not what these properties are about.
     config.setValueByPath("EnableMacro", "False");
     config.setValueByPath("EnableDictionary", "False");
-    config.setValueByPath("SpellCheck", "False");
     config.setValueByPath("AutoNonVnRestore", "False");
     engine.setConfig(config);
     if (engine.config().mode.value() != fcitx::NgoSenMode::Preedit || engine.config().inputMethod.value() != "Telex") {

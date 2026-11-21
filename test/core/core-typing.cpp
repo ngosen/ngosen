@@ -585,6 +585,19 @@ namespace {
         check(text == "zaayj ", "teencode off restores the keys", text);
     }
 
+    // A word that follows the spelling rules but is in no dictionary still goes back to its keys (#112).
+    void testAutoRestoreChecksTheDictionary() {
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        for (char c : std::string("boawjm "))
+            press(state, static_cast<uint32_t>(c == ' ' ? ngosen::key::space : c));
+        check(join(host->commits()) == "['boawjm ']", "auto restore checks the dictionary: boawjm", join(host->commits()));
+    }
+
     std::string typedHyphens(const Field& field) {
         realMode = ngosen::Mode::Preedit;
         realtextLen.store(0);
@@ -5904,6 +5917,7 @@ int main() {
     testLongCheckLeavesFocus();
     testUnansweredChecksLeaveNoMark();
     testTeencodePerApp();
+    testAutoRestoreChecksTheDictionary();
     testBackspaceInStretchedWordSen();
     check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)

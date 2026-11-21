@@ -40,7 +40,7 @@ def hint_shown(page, name):
 
 
 class LinesTest(unittest.TestCase):
-    ALL_ON = {"EnableDictionary": "True", "AutoNonVnRestore": "True", "SpellCheck": "True"}
+    ALL_ON = {"EnableDictionary": "True", "AutoNonVnRestore": "True"}
 
     def test_the_dictionary_line_names_each_switch_in_the_way(self):
         self.assertEqual(page_status.dictionary_line(model_of(self.ALL_ON)), "")

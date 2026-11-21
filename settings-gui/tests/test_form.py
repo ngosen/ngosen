@@ -90,7 +90,7 @@ class TypingPageTest(unittest.TestCase):
             if label.text()
             in (
                 "Typing windows still gives windows.",
-                "Words that are not Vietnamese get no tone marks.",
+                "Tone marks can also go at the end of the word.",
             )
         ]
         self.assertEqual(len(hints), 2)

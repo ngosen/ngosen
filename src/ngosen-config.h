@@ -332,8 +332,7 @@ namespace fcitx {
         OptionWithAnnotation<BracketTransformMode, BracketTransformModeI18NAnnotation> bracketTransform{this, "BracketTransform", _("Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"),
                                                                                                         static_cast<BracketTransformMode>(ngosen::defaultOptions.bracketTransform)};
 
-        Option<bool> spellCheck{this, "SpellCheck", _("Enable Spell Check Using Dictionary"), ngosen::defaultOptions.spellCheck};
-        Option<bool> enableMacro{this, "EnableMacro", _("Enable Macro"), ngosen::defaultOptions.enableMacro};
+        Option<bool>                                                                   enableMacro{this, "EnableMacro", _("Enable Macro"), ngosen::defaultOptions.enableMacro};
         Option<bool> capitalizeMacro{this, "CapitalizeMacro", _("Capitalize Macro"), ngosen::defaultOptions.capitalizeMacro};
         OptionWithAnnotation<LockWordModifier, LockWordModifierI18NAnnotation> lockWordModifier{this, "LockWordModifier", _("Key to Keep the Word as Typed"),
                                                                                                 static_cast<LockWordModifier>(ngosen::defaultOptions.lockWordKey)};
@@ -389,7 +388,6 @@ namespace fcitx {
         // Settings and Save typing log have no option: without them the menu could not lead back.
         Option<bool> showMenuInputMethod{this, "ShowMenuInputMethod", _("Show Input Method in the tray menu"), true};
         Option<bool> showMenuCharset{this, "ShowMenuCharset", _("Show Charset in the tray menu"), true};
-        Option<bool> showMenuSpellCheck{this, "ShowMenuSpellCheck", _("Show Spell Check in the tray menu"), true};
         Option<bool> showMenuMacro{this, "ShowMenuMacro", _("Show Macro in the tray menu"), true};
         Option<bool> showMenuCapitalizeMacro{this, "ShowMenuCapitalizeMacro", _("Show Capitalize Macro in the tray menu"), true};
         Option<bool> showMenuAutoCapitalize{this, "ShowMenuAutoCapitalize", _("Show Auto Capitalize in the tray menu"), true};

@@ -270,7 +270,6 @@ namespace fcitx {
         std::vector<std::unique_ptr<SimpleAction>>  charsetSubAction_;
         std::unique_ptr<Menu>                       charsetMenu_;
 
-        std::unique_ptr<SimpleAction>               spellCheckAction_;
         std::unique_ptr<SimpleAction>               macroAction_;
         std::unique_ptr<SimpleAction>               capitalizeMacroAction_;
         std::unique_ptr<SimpleAction>               autoCapitalizeAction_;

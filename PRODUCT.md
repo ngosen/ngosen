@@ -36,7 +36,7 @@ The settings window must not look or read like the Lotus original.
 
 ## Capabilities and Constraints
 
-- Settings: input method, typing mode, output charset, w→ư, bracket keys, spelling and auto-restore,
+- Settings: input method, typing mode, output charset, w→ư, bracket keys, auto-restore,
   typing extras, mode hotkeys and mode order, status icons, per-app modes, macros with time/date
   formats, custom dictionary, custom keymap, backup and restore.
 - No new runtime dependencies beyond qtpy with PyQt6, PySide6 or PyQt5 for the Qt window, and PyGObject

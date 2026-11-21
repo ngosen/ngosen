@@ -30,7 +30,6 @@ namespace ngosen {
     struct Options {
         std::string                inputMethod                    = "Telex";
         std::string                outputCharset                  = "Unicode";
-        bool                       spellCheck                     = true;
         bool                       modernStyle                    = true;
         bool                       freeMarking                    = true;
         int                        w2u                            = 1;

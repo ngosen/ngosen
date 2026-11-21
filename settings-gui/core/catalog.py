@@ -30,7 +30,6 @@ TRAY_PANEL = ("#e6e6e6", "#2d2d2d")
 MENU_ENTRIES = {
     "ShowMenuInputMethod": (N_("Input Method"), "input-keyboard"),
     "ShowMenuCharset": (N_("Charset"), "character-set"),
-    "ShowMenuSpellCheck": (N_("Spell Check"), "tools-check-spelling"),
     "ShowMenuMacro": (N_("Macro"), "document-edit"),
     "ShowMenuCapitalizeMacro": (N_("Capitalize Macro"), "format-text-uppercase"),
     "ShowMenuAutoCapitalize": (N_("Auto Capitalize"), "format-text-capitalize"),
@@ -52,7 +51,6 @@ SETTINGS_MAP = {
         # The switch others depend on comes first.
         N_("Fixing words"): [
             "AutoNonVnRestore",
-            "SpellCheck",
             "DdFreeStyle",
             "RetypeAfterSwitch",
             "RetoneSelection",
@@ -115,7 +113,6 @@ HINTS = {
     "ToggleScope": N_(
         "All apps switches English/Vietnamese everywhere except apps set to OFF; Each app remembers a separate choice for each app."
     ),
-    "SpellCheck": N_("Words that are not Vietnamese get no tone marks."),
     "CapitalizeMacro": N_("kg gives khô gà, Kg gives Khô gà, KG gives KHÔ GÀ."),
     "EnableMacroInOffMode": N_("Abbreviations also expand while the mode is Off."),
     "AutoNonVnRestore": N_("Typing windows still gives windows."),
@@ -251,7 +248,6 @@ MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
 
 # Settings that do nothing unless another one, shown next to them, holds this value.
 DEPENDS = {
-    "SpellCheck": ("AutoNonVnRestore", "True"),
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
     "IconTheme": ("TrayIconKind", ("V / E", "vi / en")),
     "TrayIconSize": ("TrayIconKind", "Colour icon"),

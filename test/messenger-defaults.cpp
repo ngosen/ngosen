@@ -47,7 +47,8 @@ int main() {
         }
     };
     collect(description);
-    check("SpellCheck shows in the config window", names.find("SpellCheck\n") != std::string::npos);
+    check("AutoNonVnRestore shows in the config window", names.find("AutoNonVnRestore\n") != std::string::npos);
+    check("Spell Check and its tray entry are gone from the config window", names.find("SpellCheck\n") == std::string::npos);
     check("WaitSurroundingEvent is hidden from the config window", names.find("WaitSurroundingEvent\n") == std::string::npos);
 
     return failures == 0 ? 0 : 1;

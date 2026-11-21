@@ -104,6 +104,8 @@ the README: people who install from a repository or a package file only get thos
 Each such PR adds a line under `## [Chưa phát hành]` in [CHANGELOG.md](CHANGELOG.md): what
 changed for the user, with the PR number. The changelog is written in Vietnamese, since most of its
 readers are Vietnamese users; keep English tech terms as in "Writing issues and PR text" below.
+A PR that adds, changes or removes an entry under "Khắc phục sự cố thường gặp" in the README updates
+[docs/ai-help.md](docs/ai-help.md) too: users hand that page to an AI assistant.
 Refer to issues in other repositories as `owner/repo#123`, since a bare `#123` links to this one.
 Ngó Sen does not take patches from fcitx5-lotus; learn from other input methods and write the code here.
 

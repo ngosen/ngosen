@@ -3401,6 +3401,29 @@ namespace {
         check(text == expected && preedits == 0, "a field that shows typed letters gets no preedit", text + " preedits=" + std::to_string(preedits));
     }
 
+    // Coming back to a terminal from another window: its hidden textarea still holds what we committed before.
+    void checkTerminalRefocus(FakeResources& resources, const Field& field, const std::string& app) {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop               loop;
+        auto                   owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.keepsOnlyCommits = true});
+        ngosen::test::FakeApp* fake  = owned.get();
+        ngosen::TypingState    state(&resources, std::move(owned));
+        fake->attach(&state);
+        for (const uint32_t key : keysOf("ddaay laf ")) {
+            fake->type(key);
+            loop.pump(60);
+        }
+        loop.pump(300);
+        fake->leaveFocus(2000);
+        loop.pump(2100);
+        for (const uint32_t key : keysOf("tieengs vieetj ")) {
+            fake->type(key);
+            loop.pump(60);
+        }
+        loop.pump(300);
+        check(fake->text() == "đây là tiếng việt ", app + " terminal: after a focus change the retained commits do not hide xterm.js", fake->text());
+    }
+
     // A terminal reports nothing for the first letter, which a text box shows before the next key.
     void testXtermFirstWords() {
         const std::string sentence = "ddaay laf tieengs vieetj ";
@@ -3537,6 +3560,9 @@ namespace {
             check(host->deletes().size() == deletesBefore && host->commits().back() == "đ", "Electron terminal: switching back from chat detects xterm.js despite earlier commits",
                   join(host->commits()));
         }
+
+        FakeResources refocused;
+        checkTerminalRefocus(refocused, editorField, "Electron");
 
         // Konsole reports no letters either, yet takes forwarded backspaces as usual.
         FakeResources               resources;

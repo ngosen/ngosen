@@ -191,6 +191,8 @@ namespace ngosen::test {
         cursor_         = to < text_.size() ? to : text_.size();
         anchor_         = cursor_;
         announced_.reset();
+        // A click makes Firefox declare its text again.
+        surroundingDropped_ = false;
         if (!quirks_.hidesCursorMoves)
             changed();
     }

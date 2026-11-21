@@ -733,9 +733,30 @@ namespace ngosen {
         return true;
     }
 
+    // The field shows the word after the cursor: the user clicked back before it, and the app told us only
+    // in a report that also carried our last edit, as Firefox's snap does.
+    bool TypingState::copyShowsWordAfterCursor(const std::string& deletedPart) const {
+        const Surrounding s = host_->surrounding();
+        if (!host_->field().surroundingText || !s.isValid() || s.cursor() != s.anchor() || oldPreBuffer_.empty())
+            return false;
+        const std::string before = textBeforeCursor(s);
+        if (s.text().find(oldPreBuffer_, before.size()) == std::string::npos)
+            return false;
+        const std::string prefix = oldPreBuffer_.substr(0, oldPreBuffer_.size() - deletedPart.size());
+        return countSurroundingDeletion(before, prefix, deletedPart, earlierWordsBeforeReplacement()).match == SurroundingDeletion::Match::None;
+    }
+
     bool TypingState::keepsWordRaw(const std::string& deletedPart) {
         if (keepsWordRawWhileCursorPast())
             return true;
+        if (copyShowsWordAfterCursor(deletedPart)) {
+            NGOSEN_INFO("Keep the word as typed" + loggedField(host_->field()) + ": the field shows it after the cursor");
+            rawWord_    = true;
+            hasHistory_ = false;
+            ResetEngine(bambooEngine_.handle());
+            oldPreBuffer_.clear();
+            return true;
+        }
         const Field field = host_->field();
         if (!field.preeditFallback || !deletesOnlyThroughSurrounding())
             return false;

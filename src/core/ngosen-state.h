@@ -808,6 +808,7 @@ namespace ngosen {
         // The first letters are already in the field and its copy does not show them: leave the word raw.
         bool keepsWordRaw(const std::string& deletedPart);
         bool keepsWordRawWhileCursorPast();
+        bool copyShowsWordAfterCursor(const std::string& deletedPart) const;
         bool passesKeyWhileCursorPast(ngosen::KeyPress& keyEvent, uint32_t sym);
         bool belongsToRawWord(uint32_t sym, uint32_t states) const;
         void noteAutofill(const Surrounding& report);

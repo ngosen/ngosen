@@ -2930,6 +2930,7 @@ namespace {
         ngosen::test::AppQuirks silent;
         silent.reports            = false;
         silent.dropsForwardedKeys = true;
+        silent.hidesCursorMoves   = true;
         auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(), silent);
         auto*               app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));

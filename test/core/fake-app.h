@@ -81,7 +81,7 @@ namespace ngosen::test {
         bool             keepsLineBreakAfterCommit = false;    // keeps a line break after a commit with the cursor past it until a typed key, as Ace in Firefox does
         bool             reportsOnFocus            = false;    // reports its field, empty or not, when it gets focus, as Firefox over GTK does
         bool             deletesAtReportedCursor   = false;    // deletes at the cursor of its last report and leaves the cursor there, as Firefox over GTK does
-        bool             dropsSurroundingOnDelete  = false;    // stops declaring surrounding text after a deletion through it until a typed key, as Firefox over fcitx5-gtk does
+        bool             dropsSurroundingOnDelete  = false;    // stops declaring surrounding after a deletion through it until a key or click, as Firefox over fcitx5-gtk does
         int              reportsOnEdit             = 0;        // the nth deletion is reported anyway, as Qt now and then
         bool             showsEnter                = false;    // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
         bool             ctrlBackSpaceDeletesWord  = false;    // a BackSpace forwarded before the app saw Ctrl go up deletes the word, as in Chrome

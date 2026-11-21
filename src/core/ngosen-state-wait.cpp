@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 
 namespace ngosen {
 
@@ -182,6 +183,9 @@ namespace ngosen {
         // top of, the normal sleep.
         const int perKeyMs = skipFrozenWait ? std::max(sleepTime, engine_->options().waitSurroundingMinPerKeyMs) : sleepTime;
         int       waitMs   = perKeyMs * (expected_backspaces_ - 1);
+        // A backspace the XIM client hands back can come a few ms after the sentinel.
+        if (host_->field().frontend == "xim" && std::string_view(replace_method_) == "system backspaces")
+            waitMs = std::max(waitMs, static_cast<int>(ForwardWaitUs / 1000));
         // Validate surr cursor pos should match realtextLen after all BS applied
         const auto surr = host_->surrounding();
         if (skipFrozenWait) {

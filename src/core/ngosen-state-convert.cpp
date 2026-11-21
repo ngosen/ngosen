@@ -37,9 +37,11 @@ namespace ngosen {
         }
 
         // Apps that report no selection put their cursor at its start, so a primary selection
-        // anywhere else is one the app has let go of.
+        // anywhere else is one the app has let go of. Without surrounding text it may be another app's.
         bool primaryAtCursor(const Surrounding& s, const std::string& primary) {
-            if (!s.isValid() || !utf8::validate(s.text()) || s.cursor() > utf8::length(s.text()))
+            if (!s.isValid())
+                return false;
+            if (!utf8::validate(s.text()) || s.cursor() > utf8::length(s.text()))
                 return true;
             const std::string after = s.text().substr(byteOffset(s.text(), s.cursor()));
             // A long selection can run past the part of the text the app sends.

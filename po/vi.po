@@ -2594,6 +2594,14 @@ msgstr "2. Bấm Tab"
 msgid "3. Press 2"
 msgstr "3. Bấm 2"
 
+#: settings-gui/ui_gtk/emoji.py
+msgid "1. End a sentence"
+msgstr "1. Kết thúc câu"
+
+#: settings-gui/ui_gtk/emoji.py
+msgid "2. Press 2"
+msgstr "2. Bấm 2"
+
 #: settings-gui/core/emoji_words.py
 msgid "Set a mode menu key and an emoji key on the Keys page to turn suggestions off for one app."
 msgstr "Đặt phím mở menu chế độ và phím emoji ở trang Phím để tắt gợi ý cho riêng một app."

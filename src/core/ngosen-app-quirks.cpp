@@ -76,7 +76,8 @@ namespace ngosen {
                 if (program == editor || isStartsWith(program, std::string(editor) + "-"))
                     return true;
             }
-            return false;
+            // Orca's window is named "orca" and its program "orca-ide"; other orca-* programs (OrcaSlicer) are not editors.
+            return program == "orca" || program == "orca-ide";
         }
     } // namespace
 
@@ -209,7 +210,7 @@ namespace ngosen {
 
     // Only GNOME Shell sends edits through mutter; nothing else the field reports tells it apart.
     bool keepsLastEditPerTurn(const Field& field) {
-        return field.frontend == "ibus" && (appName(field) == "gnome-shell" || field.reportedProgram == "gnome-shell");
+        return field.relayedByShell || (field.frontend == "ibus" && (appName(field) == "gnome-shell" || field.reportedProgram == "gnome-shell"));
     }
 
     // An app with no name of its own could be Firefox, as could a name left over from the window before.

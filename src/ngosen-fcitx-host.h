@@ -24,10 +24,11 @@ namespace ngosen {
       public:
         // shellDropsKeys, when set, says whether GNOME Shell currently loses the keys we forward;
         // shellFocusedApp, when set, names the app GNOME Shell has focused; focusInUs, when set, is when the
-        // engine last saw a field take focus.
+        // engine last saw a field take focus; fcitxNamesShellApps says fcitx5 names the apps GNOME Shell relays.
         FcitxHost(fcitx::InputContext* ic, fcitx::Instance* instance, const bool* shellDropsKeys = nullptr, const std::string* shellFocusedApp = nullptr,
-                  const uint64_t* focusInUs = nullptr) :
-            ic_(ic), instance_(instance), shell_drops_keys_(shellDropsKeys), shell_focused_app_(shellFocusedApp), focus_in_us_(focusInUs) {}
+                  const uint64_t* focusInUs = nullptr, bool fcitxNamesShellApps = false) :
+            ic_(ic), instance_(instance), shell_drops_keys_(shellDropsKeys), shell_focused_app_(shellFocusedApp), focus_in_us_(focusInUs),
+            fcitx_names_shell_apps_(fcitxNamesShellApps) {}
 
         void                         commitText(const std::string& text) override;
         void                         forwardKey(EditKey key, bool release, uint32_t time) override;
@@ -70,6 +71,7 @@ namespace ngosen {
         const bool*                                 shell_drops_keys_;
         const std::string*                          shell_focused_app_;
         const uint64_t*                             focus_in_us_;
+        bool                                        fcitx_names_shell_apps_;
     };
 
     class FcitxKeyPress final : public KeyPress {

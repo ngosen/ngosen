@@ -57,7 +57,10 @@ def export(dbus, path):
 def load(path):
     """Reads a backup file; raises OSError or ValueError when it is not one."""
     with open(path, encoding="utf-8") as f:
-        backup = json.load(f)
+        try:
+            backup = json.load(f)
+        except RecursionError:
+            raise ValueError("the file is nested too deep") from None
     if not isinstance(backup, dict) or not any(k in backup for k in COMPONENTS):
         raise ValueError("no settings found in the file")
     # Restoring it would replace all of the user's emoji words with the shared ones.

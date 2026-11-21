@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace ngosen {
@@ -1286,7 +1287,9 @@ namespace ngosen {
     bool TypingState::handleKeyDuringTimedWait(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (!is_deleting_.load(std::memory_order_acquire) || !surr_wait_.timerOnly)
             return false;
-        if (ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" && ngosen::forwardsBackspaces(host_->field())) {
+        // XTEST backspaces let through reach the client as XIM forwards too, and IBus's XIM server can get one back.
+        const bool letThrough = ngosen::forwardsBackspaces(host_->field()) || std::string_view(replace_method_) == "system backspaces";
+        if (ngosen::key::isBackspace(currentSym) && host_->field().frontend == "xim" && letThrough) {
             // The XIM client handed a forwarded backspace back unprocessed. Let it through so the
             // client applies it, and commit after it.
             NGOSEN_INFO("XIM handed back a forwarded backspace");

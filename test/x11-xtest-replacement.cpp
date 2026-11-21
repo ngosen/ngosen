@@ -220,6 +220,43 @@ namespace {
         return true;
     }
 
+    // An XTEST backspace let through reaches the client as an XIM forward too, and IBus's XIM server
+    // sometimes gets it back unprocessed. It is ours: the client must get it again before the commit,
+    // and the word must keep its letters.
+    bool takesBackAHandedBackBackSpace(Harness& h) {
+        auto context = h.open("xim", "xim", fcitx::CapabilityFlags{});
+        if (!h.typeTieE(*context))
+            return false;
+        const auto backSpace = fcitx::Key(FcitxKey_BackSpace);
+        if (!h.key(*context, backSpace, false, false) || !h.key(*context, backSpace, false, true))
+            return false;
+        if (!h.key(*context, backSpace, false, false))
+            return false;
+        if (!context->commits().empty()) {
+            reportFailure("xim: no commit when the backspace comes back", "(none)", joinCommits(*context));
+            return false;
+        }
+        h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 500000);
+        pumpEventLoop(h.testInstance.instance, 1);
+        if (!h.key(*context, fcitx::Key(FcitxKey_s), false, true) || h.sent.size() != 2) {
+            reportFailure("xim: press backspaces for s", "2 bursts", joinCounts(h.sent));
+            return false;
+        }
+        for (int i = 1; i < h.sent.back(); ++i) {
+            if (!h.key(*context, backSpace, false, false))
+                return false;
+        }
+        if (!h.key(*context, backSpace, false, true))
+            return false;
+        h.pumpUntil([&] { return context->commits().size() > 1; }, nowUs() + 500000);
+        // The core rewrites "iê" for the tone; a lost "ê" leaves only "í".
+        if (context->commits() != std::vector<std::string>{"ê", "íê"}) {
+            reportFailure("xim: keep the word after a handed-back backspace", "['ê']['íê']", joinCommits(*context) + " after " + joinCounts(h.sent));
+            return false;
+        }
+        return true;
+    }
+
     bool commitsWhenBackspacesFail(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps) {
         auto context = h.open(program, frontend, caps);
         if (!h.typeTieE(*context))
@@ -314,6 +351,9 @@ int main() {
         return 1;
     // fcitx5's XIM frontend marks a press as a repeat when the same key was released at the same time.
     if (!pressesBackSpaceThroughXTest(h, "wordcraft", "xim", fcitx::CapabilityFlags{}, fcitx::KeyStates(fcitx::KeyState::Repeat)))
+        return 1;
+    // ibus-x11 names no program.
+    if (!takesBackAHandedBackBackSpace(h))
         return 1;
     // Fields inside a web page have no autocompletion, and Google Sheets moves the text under a Shift+Left selection.
     if (!keepsForwarding(h, "microsoft-edge", "dbus", chromeCaps))

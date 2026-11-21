@@ -17,10 +17,10 @@ class SettingsModelTest(unittest.TestCase):
         self.assertTrue(self.model.load())
 
     def test_save_keeps_settings_changed_elsewhere(self):
-        self.model.set("SpellCheck", "False")
+        self.model.set("DdFreeStyle", "False")
         self.fake.values["InputMethod"] = "VNI"
         self.assertTrue(self.model.save())
-        self.assertEqual(self.fake.values["SpellCheck"], "False")
+        self.assertEqual(self.fake.values["DdFreeStyle"], "False")
         self.assertEqual(self.fake.values["InputMethod"], "VNI")
         self.assertFalse(self.model.is_modified())
 
@@ -60,7 +60,7 @@ class SettingsModelTest(unittest.TestCase):
         self.fake.get_config = lambda: {}
         self.assertFalse(self.model.load())
         self.assertIsNone(SettingsModel(self.fake).defaults())
-        self.model.set("SpellCheck", "False")
+        self.model.set("DdFreeStyle", "False")
         self.fake.iface = None
         self.assertFalse(self.model.save())
 

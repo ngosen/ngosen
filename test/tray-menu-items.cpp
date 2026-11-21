@@ -136,9 +136,9 @@ int main() {
 
     // The tray keeps showing the last field's menu while the settings window has focus.
     context.focusOut();
-    hidden.setValueByPath("ShowMenuSpellCheck", "False");
+    hidden.setValueByPath("ShowMenuMacro", "False");
     engine.setConfig(hidden);
-    check("the menu left in the tray changes at once", !has(menu(context), "ngosen-spellcheck"));
+    check("the menu left in the tray changes at once", !has(menu(context), "ngosen-macro"));
     context.focusIn();
     engine.activate(entry, in);
 

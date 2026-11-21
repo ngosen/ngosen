@@ -71,7 +71,6 @@ class TypingPageTest(unittest.TestCase):
 
     def test_auto_restore_comes_before_what_depends_on_it(self):
         shown = list(self.page._controls)
-        self.assertLess(shown.index("AutoNonVnRestore"), shown.index("SpellCheck"))
         self.assertLess(shown.index("AutoNonVnRestore"), shown.index("DdFreeStyle"))
 
     def test_hint_sits_under_its_setting(self):

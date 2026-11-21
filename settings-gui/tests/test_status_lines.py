@@ -245,27 +245,27 @@ class TypingPageTest(unittest.TestCase):
         written.update(AutoNonVnRestore="False", OutputCharset="VIQR")
         page.refresh_status()
         self.assertFalse(page.control_for("AutoNonVnRestore").isChecked())
-        self.assertFalse(page.control_for("SpellCheck").isEnabled())
+        self.assertFalse(page.control_for("DdFreeStyle").isEnabled())
         self.assertEqual(page.control_for("OutputCharset").currentData(), "VIQR")
         self.assertFalse(page.modified_values)
         self.assertEqual(fake.values, written)
 
     def test_a_choice_waiting_to_be_saved_is_not_overwritten(self):
-        fake = FakeDBusHandler({"OutputCharset": "Unicode", "SpellCheck": "True"})
+        fake = FakeDBusHandler({"OutputCharset": "Unicode", "DdFreeStyle": "True"})
         page = self.page(fake)
         page.control_for("OutputCharset").setCurrentIndex(
             page.control_for("OutputCharset").findData("VIQR")
         )
-        fake.values["SpellCheck"] = "False"
+        fake.values["DdFreeStyle"] = "False"
         page.refresh_status()
         self.assertEqual(page.control_for("OutputCharset").currentData(), "VIQR")
-        self.assertTrue(page.control_for("SpellCheck").isChecked())
+        self.assertTrue(page.control_for("DdFreeStyle").isChecked())
 
     def test_refreshing_keeps_the_page_widgets(self):
         page = self.page(FakeDBusHandler())
-        control = page.control_for("SpellCheck")
+        control = page.control_for("DdFreeStyle")
         page.refresh_status()
-        self.assertIs(page.control_for("SpellCheck"), control)
+        self.assertIs(page.control_for("DdFreeStyle"), control)
 
 
 class WindowStatusTest(unittest.TestCase):
@@ -301,18 +301,16 @@ class WindowStatusTest(unittest.TestCase):
         self.assertFalse(hint_shown(page, "CustomKeymapHint"))
 
     def test_changing_page_saves_first_so_the_next_page_reads_the_change(self):
-        fake = FakeDBusHandler(
-            {"AutoNonVnRestore": "True", "SpellCheck": "True", "EnableDictionary": "True"}
-        )
+        fake = FakeDBusHandler({"AutoNonVnRestore": "True", "EnableDictionary": "True"})
         window = self.window(fake)
         typing = window.show_page("typing")
-        typing.control_for("SpellCheck").setChecked(False)
+        typing.control_for("AutoNonVnRestore").setChecked(False)
         self.assertTrue(window._save_timer.isActive())
         window.show_page("macros")
-        self.assertEqual(fake.values["SpellCheck"], "False")
+        self.assertEqual(fake.values["AutoNonVnRestore"], "False")
         words = next(p for p in window._pages if isinstance(p, DictEditorPage))
         words.load_data()
-        self.assertIn(page_status.read(fake).label("SpellCheck"), words.status_line.text())
+        self.assertIn(page_status.read(fake).label("AutoNonVnRestore"), words.status_line.text())
 
     def test_coming_back_to_the_window_reads_the_tray_change(self):
         fake = FakeDBusHandler({"EnableMacro": "True"})

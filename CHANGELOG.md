@@ -13,7 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Thay đổi
 
 - Lệnh cài và README không còn giới thiệu bản IBus là bản chỉ cho GNOME: hai bản dùng chung lõi gõ nên tính năng
-  như nhau, chọn bản nào là tuỳ thích; tính năng mới đến bản IBus chậm hơn một chút (#926).
+  như nhau, chọn bản nào là tuỳ thích; tính năng mới đến bản IBus chậm hơn một chút (#926, #929).
 
 ### Sửa
 

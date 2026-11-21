@@ -373,10 +373,11 @@ trường hợp đầu. Bật bằng tay: đăng xuất, đăng nhập lại r�
 gnome-extensions enable forward-keys@ngosen.github.io
 ```
 
-### Chromium trên Wayland mất chữ khi bấm chuột
+### Preedit mất chữ khi bấm chuột
 
-Ở chế độ Preedit trên GNOME Wayland, Chrome, Chromium và app Electron mất chữ đang gõ dở khi bấm chuột. Lỗi
-ở fcitx5 5.1.19 trở về trước, đã sửa ở 5.1.20
+Ở chế độ Preedit, chữ đang gõ dở (còn gạch chân) mất khi bấm chuột, ở những app nối với fcitx5 qua IBus:
+Chrome, Chromium và app Electron trên GNOME Wayland, và app GTK dùng module ibus trên X11 (ví dụ xed và GNOME
+Text Editor trên Linux Mint 22). Lỗi ở fcitx5 5.1.19 trở về trước, đã sửa ở 5.1.20
 ([báo lỗi trên Launchpad](https://bugs.launchpad.net/ubuntu/+source/fcitx5/+bug/2172006)). Trong lúc distro
 chưa có bản mới, dùng chế độ **Gõ Sen**, hoặc gõ xong chữ bằng phím cách rồi mới bấm chuột.
 

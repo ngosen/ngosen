@@ -3618,6 +3618,10 @@ namespace {
         FakeResources sharedContext;
         sharedContext.noteWebTerminal("some-new-ide");
         checkTerminalChatSwitch(sharedContext, field, "learned app");
+
+        FakeResources refocusedLearned;
+        refocusedLearned.noteWebTerminal("some-new-ide");
+        checkTerminalRefocus(refocusedLearned, field, "learned app");
     }
 
     enum class XtermWordEnd {

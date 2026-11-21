@@ -40,6 +40,9 @@ Ask the user to open the settings window ("Cài đặt Ngó Sen" in the app menu
 remove anything they do not want to share, and paste it to you. The first line gives the Ngó Sen and fcitx5
 versions, the second the distro, desktop and session.
 
+If you can run commands and the fcitx5 edition is installed, run `ngosen-check` instead. It prints the same
+check with each step's fix, changes nothing, and leaves out app names and typed text.
+
 ### 2. Old version
 
 Compare the version with the
@@ -59,7 +62,7 @@ wrong, go back to step 3. If it is right, the problem is in one app:
 
 - **fcitx5 edition:** ask the user to open the app, click into its text field, return to the page and press
   "Kiểm tra lại" (Check again). The list "App đang kết nối với fcitx5" (Apps connected to fcitx5) is only
-  updated then.
+  updated then. In a terminal, ask the user first, then run `ngosen-check --include-apps`.
   - The app is missing from the list: it has not connected to the input method. This is usually how it was
     installed (snap, Flatpak) or its toolkit. Look it up in the known problems below; changing the typing mode
     will not help.

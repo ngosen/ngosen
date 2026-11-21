@@ -23,6 +23,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Chromium; app khác vẫn thay từ bằng phím như trước (#921).
 - Trang hướng dẫn cho AI (`docs/ai-help.md`): nhờ AI tìm lỗi gõ thì gửi nó trang này. AI làm theo trang Kiểm tra
   máy và nhật ký gõ, để bạn tự bấm nút sửa, và nhắc bạn đọc kỹ trước khi dán thông tin máy (#931).
+- Lệnh `ngosen-check` in kết quả Kiểm tra máy ra terminal, kèm cách sửa từng bước, để AI chạy lệnh được đọc. Lệnh
+  không đổi gì trên máy, không ghi tên app (trừ khi thêm `--include-apps`) và không ghi chữ đã gõ (#933).
 
 ### Bỏ
 

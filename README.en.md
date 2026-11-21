@@ -3,10 +3,10 @@
 # Ngó Sen
 
 Ngó Sen is a Vietnamese input method for fcitx5 on Linux that types like UniKey on Windows.
-fcitx5 runs on GNOME, KDE, Xfce, Sway and Hyprland, has many features and uses little RAM.
-[Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in IBus and shares the same
-typing core as the fcitx5 version, so their features are almost identical. New features may reach the IBus
-version later than the fcitx5 version.
+fcitx5 runs on GNOME, KDE, Xfce, Sway and Hyprland and uses little RAM.
+[The IBus version](https://github.com/ngosen/ibus-ngosen) runs on IBus, GNOME's built-in input method, and on
+Cinnamon, Xfce and KDE Plasma set up with IBus. Both versions share the same typing core, so they currently
+have the same features; pick whichever you prefer. New features reach the IBus version a little later.
 
 The settings window comes in two versions: Qt and GTK (styled like GNOME apps). GNOME, Linux Mint
 (Cinnamon) and Xfce open the GTK version; other desktops open Qt. On KDE and GNOME, the window follows the system's
@@ -136,19 +136,18 @@ log in and run the installer again.
 On the first installation on GNOME, or on Xfce, Cinnamon and MATE using X11 on Debian, Ubuntu and Linux
 Mint, the installer asks which version to use if the distro has an IBus package:
 
-1. fcitx5 (recommended): all features; press Enter to select it.
-2. IBus: uses the built-in IBus, with almost identical features thanks to the shared typing core.
-   New features may arrive later than in the fcitx5 version.
+1. fcitx5: new features arrive here first; press Enter to select it.
+2. IBus: uses IBus instead of fcitx5. The shared typing core gives it the same features; new ones arrive a
+   little later.
 
 With `--yes`, the installer skips the question and installs the fcitx5 version. Both versions use
 Ctrl+Shift to switch between English and Vietnamese.
 
-The [IBus version](https://github.com/ngosen/ibus-ngosen) (package `ibus-ngosen`) shares the fcitx5
-version's typing core: Gõ Sen, input styles, macros, custom dictionary and custom keymap. It also lets
-you choose Gõ Sen or "Gạch chân" per app (press `` ` `` to choose). Remaining differences: no
-emoji suggestions yet. Cứu dấu works in fields using Gõ Sen (click just after a word and type a tone key);
-changing the tone of selected text only works in X11 apps. Cứu chữ is currently only available on X11.
-In some apps, the word being typed is underlined.
+The [IBus version](https://github.com/ngosen/ibus-ngosen) (package `ibus-ngosen`) has the fcitx5
+version's features: Gõ Sen, emoji suggestions, Teencode, Vim mode, Cứu chữ, text conversion, macros, custom
+dictionary, custom keymap and per-app typing modes (press `` ` `` to choose). New features reach it a little
+later. Two small things only the fcitx5 version has: Cứu dấu on selected text in every app (the IBus version
+does it in X11 apps only), and converting selected text in LibreOffice.
 
 To select the IBus version directly:
 
@@ -233,7 +232,7 @@ sudo zypper install fcitx5-ngosen
 
 zypper asks once whether to trust the key; compare the fingerprint, then choose to trust it.
 
-[Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) is also in the APT, pacman and zypper repos
+[The IBus version](https://github.com/ngosen/ibus-ngosen) is also in the APT, pacman and zypper repos
 above: replace `fcitx5-ngosen` with `ibus-ngosen` in the installation command.
 
 After updating, restart fcitx5 as described in "Restart after installing or updating".

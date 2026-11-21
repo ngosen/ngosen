@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Lệnh cài và README không còn giới thiệu bản IBus là bản chỉ cho GNOME: hai bản dùng chung lõi gõ nên tính năng
+  như nhau, chọn bản nào là tuỳ thích; tính năng mới đến bản IBus chậm hơn một chút (#926).
+
 ### Sửa
 
 - Bản IBus trên X11: gõ trong xterm và app XIM khác không còn thừa chữ (như "tiiisng") khi app trả lại phím Backspace

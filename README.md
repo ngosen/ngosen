@@ -16,13 +16,12 @@
 
 ---
 
-Ngó Sen hỗ trợ đầy đủ hai nền tảng:
+Ngó Sen có hai bản, dùng chung lõi gõ nên tính năng hiện tương đương 1:1. Chọn bản nào là tuỳ thích:
 
-- **fcitx5** (khuyên dùng): chạy mượt mà trên GNOME, KDE Plasma, Xfce, Sway, Hyprland và niri; giàu tính năng
-  và nhẹ RAM.
-- **IBus** ([ibus-ngosen](https://github.com/ngosen/ibus-ngosen)): tích hợp trực tiếp vào IBus mặc định
-  của GNOME, dùng chung lõi gõ với bản fcitx5 nên có hầu hết tính năng tương đương. Tính năng mới có thể
-  đến bản IBus muộn hơn.
+- **fcitx5**: chạy trên GNOME, KDE Plasma, Xfce, Sway, Hyprland và niri, nhẹ RAM. Tính năng mới có ở bản này
+  trước.
+- **IBus** ([ibus-ngosen](https://github.com/ngosen/ibus-ngosen)): chạy trên IBus, bộ gõ có sẵn của GNOME, và
+  trên Cinnamon, Xfce, KDE Plasma khi dùng IBus. Tính năng mới đến bản IBus chậm hơn một chút.
 
 Cửa sổ cài đặt có hai giao diện: **GTK** (tự mở trên GNOME, Linux Mint Cinnamon và Xfce) và **Qt** (mở
 trên KDE Plasma và các desktop khác). Cửa sổ theo giao diện sáng/tối của máy, lưu thay đổi ngay và có nút
@@ -179,10 +178,10 @@ curl -fsSL https://raw.githubusercontent.com/ngosen/ngosen/main/install.sh | bas
 <details>
 <summary>Bản IBus khác gì, và khi chuyển bản thì sao</summary>
 
-Bản IBus có Gõ Sen, kiểu gõ, gõ tắt, từ điển riêng, bảng phím tùy chỉnh và chọn Gõ Sen hay Gạch chân riêng
-cho từng app (phím `` ` ``). Các điểm còn khác: chưa có emoji và Vim mode. Cứu dấu dùng được ở ô gõ bằng Gõ
-Sen (bấm ngay sau một chữ rồi gõ phím dấu); đổi dấu chữ đang bôi đen chỉ được ở app X11. Cứu chữ hiện chỉ có
-trên X11. Trong một số app, từ đang gõ có gạch chân.
+Bản IBus có đủ tính năng của bản fcitx5: Gõ Sen, gợi ý emoji, Teencode, Vim mode, Cứu chữ, Chuyển mã, gõ tắt,
+từ điển riêng, bảng phím tùy chỉnh và chế độ gõ riêng cho từng app (phím `` ` ``). Tính năng mới đến bản IBus
+chậm hơn một chút. Hai điểm nhỏ chỉ bản fcitx5 có: Cứu dấu trên chữ đang bôi đen ở mọi app (bản IBus chỉ ở app
+X11) và Chuyển mã trong LibreOffice.
 
 Chạy lại lệnh cài để cập nhật thì giữ bản đang có, không hỏi lại. Muốn chuyển sang bản kia, chạy lệnh với
 `--ibus` hoặc `--fcitx5`. Dùng `--yes` thì lệnh không hỏi và cài bản fcitx5.
@@ -493,7 +492,7 @@ ported from the original Go [bamboo-core](https://github.com/BambooEngine/bamboo
 
 It includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to change the tone
 mark of a selected word. A convert hotkey turns selected TCVN3 or VNI text into Unicode.
-[Ngó Sen for GNOME](https://github.com/ngosen/ibus-ngosen) runs on GNOME's built-in IBus and shares the same
-typing core. If you reuse Ngó Sen's code, keep the GPL and its notices, including when
+[The IBus version](https://github.com/ngosen/ibus-ngosen) shares the same typing core and has the same
+features; new features reach it a little later. If you reuse Ngó Sen's code, keep the GPL and its notices, including when
 an AI tool rewrites it. If you port its approaches to another input method, credit this repository with a link.
 The rest of this page is in Vietnamese.

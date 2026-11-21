@@ -12,6 +12,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Bản IBus trên X11: gõ trong xterm và app XIM khác không còn thừa chữ (như "tiiisng") khi app trả lại phím Backspace
+  mà bộ gõ vừa gửi để xoá (#923).
 - Chuyển mã: ở ô không báo chữ quanh con trỏ (như VS Code), phím chuyển mã không còn lấy chữ đang bôi đen ở app
   khác rồi gõ vào ô (#916).
 - Trang Emoji: từ tiếng Anh trùng chữ Việt như `can`, `me`, `pho` nay hiện tắt, đúng như khi gõ, và bật lên thì

@@ -9,6 +9,10 @@
 
 namespace ngosen {
 
+    bool isGnomeAppId(const std::string& name) {
+        return isEndsWith(name, ".desktop") || isStartsWith(name, "window:");
+    }
+
     std::string focusedGnomeApp(const std::vector<RunningApp>& apps, bool overviewActive) {
         if (overviewActive)
             return gnomeOverviewApp;

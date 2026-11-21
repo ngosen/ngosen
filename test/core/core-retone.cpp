@@ -651,6 +651,44 @@ namespace {
         check(text == "khạ", "backspacing over the end of a word changes what is left", text);
     }
 
+    // Types a word left open in Firefox's snap, clicks at cursor and types tone. Firefox stops declaring its
+    // text after a deletion through it, so the click is reported only as the field declares it again.
+    std::string toneAfterClickInFirefox(const std::string& typed, size_t cursor, uint32_t tone) {
+        realMode = Mode::Sen;
+        realtextLen.store(0);
+        g_mouse_clicked.store(false);
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field = makeField("fcitx4", true);
+        field.program       = "firefox";
+        AppQuirks quirks;
+        quirks.dropsSurroundingOnDelete = true;
+        auto                owned       = std::make_unique<FakeApp>(loop, field, quirks);
+        FakeApp*            app         = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        state.activate(Mode::Sen, false);
+        for (const char c : typed) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        loop.pump(300);
+        app->moveCursor(cursor);
+        // The click also resets, which NgoSenEngine::reset ignores while a word is open.
+        if (state.isEmptyHistory())
+            state.appReset();
+        loop.pump(600);
+        app->type(tone);
+        // Long enough for the wait on a lagging copy.
+        loop.pump(1500);
+        return app->text();
+    }
+
+    void testClickKeepsText() {
+        const std::string text = toneAfterClickInFirefox("xin tieengf nuwax", 9, 's');
+        check(text == "xin tiếng nữa" || text == "xin tiềngs nữa", "a tone key after a click leaves the text before the cursor alone", text);
+    }
+
 } // namespace
 
 int main() {
@@ -664,6 +702,7 @@ int main() {
     testClickKeepsTone();
     testToneAtCursor();
     testToneAfterBackspace();
+    testClickKeepsText();
     check(ngosen::test::timersDestroyedInCallback == 0, "no timer is destroyed from its own callback", std::to_string(ngosen::test::timersDestroyedInCallback));
     if (failures == 0)
         std::cout << "all retone checks passed\n";

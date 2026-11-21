@@ -21,6 +21,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ Preedit: bôi đen một từ đã gõ rồi gõ phím dấu thì từ hiện lại trong chữ tạm với dấu mới (bôi đen "tiềng",
   gõ `s` ra "tiếng"), như Gõ Sen đã làm. Gõ lại phím dấu đó để giữ phím như đã gõ. Chạy ở app GTK 4 và
   Chromium; app khác vẫn thay từ bằng phím như trước (#921).
+- Trang hướng dẫn cho AI (`docs/ai-help.md`): nhờ AI tìm lỗi gõ thì gửi nó trang này. AI làm theo trang Kiểm tra
+  máy và nhật ký gõ, để bạn tự bấm nút sửa, và nhắc bạn đọc kỹ trước khi dán thông tin máy (#931).
+- Lệnh `ngosen-check` in kết quả Kiểm tra máy ra terminal, kèm cách sửa từng bước, để AI chạy lệnh được đọc. Lệnh
+  không đổi gì trên máy, không ghi tên app (trừ khi thêm `--include-apps`) và không ghi chữ đã gõ (#933).
 - Gõ Sen tự nhận ra terminal xterm.js trong app chưa có tên trong danh sách (như các IDE mới, trừ trình duyệt): lần
   đầu có thể sai vài từ, từ đó về sau gõ đúng ngay cả sau khi khởi động lại, và ô chat cùng cửa sổ không bị ảnh
   hưởng. Danh sách app đã nhận ra nằm trong `~/.config/fcitx5/conf/ngosen-web-terminal-apps.conf`; xoá tệp này để

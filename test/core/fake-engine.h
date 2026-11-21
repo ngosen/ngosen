@@ -59,6 +59,12 @@ namespace ngosen::test {
         Recorder& recorder() override {
             return recorder_;
         }
+        int webTerminalSaves = 0;
+
+      protected:
+        void webTerminalAppsChanged() override {
+            ++webTerminalSaves;
+        }
 
       private:
         Options                  options_;

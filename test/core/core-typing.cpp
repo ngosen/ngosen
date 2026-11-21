@@ -3429,6 +3429,7 @@ namespace {
             const std::string orcaText = typeInXterm(makeField("wayland", true, orca), {.keepsOnlyCommits = true}, sentence);
             check(orcaText == expected, "xterm.js in Orca (" + orca + "): the first words come out right", orcaText);
         }
+        check(!ngosen::isElectronCodeEditor(makeField("wayland", true, "orca-slicer")), "OrcaSlicer is not taken for an Electron editor", "");
 
         // Reverting a tone commits the first letter again, which must not look like the field showing typed letters.
         for (const char* program : {"firefox", "antigravity-ide"}) {

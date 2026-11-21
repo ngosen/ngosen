@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.13.1
+Version:        1.13.2
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -101,6 +101,9 @@ else
 fi
 
 %changelog
+* Sat Nov 21 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.13.2-1
+- On GNOME with fcitx5 5.1.22 or later, Sen keeps its edit protection: Firefox no longer stalls on a second tone change, busy machines lose fewer corrected letters, and one failed correction no longer switches the whole app to Backspace deletion (#920, #922); Firefox snap keeps the word when clicking back into it (#919); Orca IDE's terminal no longer repeats words (#927); charset conversion no longer takes another app's selection (#916); emoji page fixes for English words that are also Vietnamese (#915).
+
 * Fri Nov 20 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.13.1-1
 - WPS Office types Vietnamese on KDE Plasma Wayland (#897); Backspace in a word with drawn-out letters or teencode keeps its tone mark (#898); importing emoji words skips a word with a NUL character instead of failing (#899).
 

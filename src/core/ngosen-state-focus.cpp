@@ -69,7 +69,7 @@ namespace ngosen {
                 // A GNOME app's new context gets a copy of the previous window's text before focus-in, so
                 // that copy is not text this field showed.
                 sinceFocus_ = FieldHistory{};
-                xtermText_.clear();
+                // xtermText_ stays: an xterm.js terminal still holds our earlier commits when focus comes back.
                 // GTK sends its text again only when it changes, so the copy at focus-in counts as a report.
                 sinceFocus_.reported    = s.isValid();
                 sinceFocus_.keysAtFocus = keyCount_;

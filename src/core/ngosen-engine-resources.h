@@ -8,10 +8,12 @@
 #include "ngosen-options.h"
 #include "ngosen-pty.h"
 #include "ngosen-recorder.h"
+#include "ngosen-strings.h"
 
 #include <cstdint>
 #include <map>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -76,6 +78,25 @@ namespace ngosen {
         void noteKeepsOnlyCommits(const std::string& frontend, const std::string& program) {
             apps_[{frontend, program}].keepsOnlyCommits = true;
         }
+        // Apps not named in the quirks that turned out to hold an xterm.js terminal. Kept across sessions,
+        // so their first words come out right after a restart too.
+        bool showedWebTerminal(const std::string& program) const {
+            return webTerminalApps_.count(program) > 0;
+        }
+        void noteWebTerminal(const std::string& program) {
+            if (!program.empty() && webTerminalApps_.insert(program).second)
+                webTerminalAppsChanged();
+        }
+        // GNOME Shell's "window:N" names are never saved, so they stay until the session ends.
+        void loadWebTerminalApps(const std::unordered_set<std::string>& saved) {
+            for (auto it = webTerminalApps_.begin(); it != webTerminalApps_.end();)
+                it = isStartsWith(*it, "window:") ? std::next(it) : webTerminalApps_.erase(it);
+            webTerminalApps_.insert(saved.begin(), saved.end());
+        }
+
+      protected:
+        virtual void                    webTerminalAppsChanged() {}
+        std::unordered_set<std::string> webTerminalApps_;
 
       private:
         // What an app showed in this session. The same app can delete differently over IBus and over

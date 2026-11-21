@@ -3401,6 +3401,94 @@ namespace {
         check(text == expected && preedits == 0, "a field that shows typed letters gets no preedit", text + " preedits=" + std::to_string(preedits));
     }
 
+    // Coming back to a terminal from another window: its hidden textarea still holds what we committed before.
+    void checkTerminalRefocus(FakeResources& resources, const Field& field, const std::string& app) {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop               loop;
+        auto                   owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.keepsOnlyCommits = true});
+        ngosen::test::FakeApp* fake  = owned.get();
+        ngosen::TypingState    state(&resources, std::move(owned));
+        fake->attach(&state);
+        for (const uint32_t key : keysOf("ddaay laf ")) {
+            fake->type(key);
+            loop.pump(60);
+        }
+        loop.pump(300);
+        fake->leaveFocus(2000);
+        loop.pump(2100);
+        for (const uint32_t key : keysOf("tieengs vieetj ")) {
+            fake->type(key);
+            loop.pump(60);
+        }
+        loop.pump(300);
+        check(fake->text() == "đây là tiếng việt ", app + " terminal: after a focus change the retained commits do not hide xterm.js", fake->text());
+    }
+
+    // One shared Wayland context switching from an xterm.js terminal to a chat box and back, as in an Electron editor.
+    void checkTerminalChatSwitch(FakeResources& editorResources, const Field& editorField, const std::string& app) {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop            loop;
+        auto                owned = std::make_unique<FakeHost>(loop, editorField);
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&editorResources, std::move(owned));
+        host->setSurrounding("", 0);
+        state.surroundingUpdated();
+        press(state, 'd');
+        loop.pump(65);
+        press(state, 'd');
+        loop.pump(60);
+        host->setSurrounding("đ ", 2);
+        state.surroundingUpdated();
+        // Clicking inside the same terminal keeps composition commits even when the next keys arrive under 50 ms.
+        g_mouse_clicked.store(true);
+        press(state, 'a');
+        loop.pump(20);
+        press(state, 's');
+        loop.pump(20);
+        press(state, 's');
+        loop.pump(60);
+        host->setSurrounding("đ as ", 5);
+        state.surroundingUpdated();
+        check(host->deletes().empty() && host->commits().back() == "as", app + " terminal: a click inside the terminal keeps composition commits", join(host->commits()));
+
+        // Switching to a chat box deletes through surrounding text without composition flicker.
+        state.reset(false);
+        host->setSurrounding("tôi ", 4);
+        state.surroundingUpdated();
+        press(state, 'c');
+        host->setSurrounding("tôi c", 5);
+        state.surroundingUpdated();
+        press(state, 'o');
+        host->setSurrounding("tôi co", 6);
+        state.surroundingUpdated();
+        press(state, 's');
+        host->setSurrounding("tôi có", 6);
+        state.surroundingUpdated();
+        loop.pump(100);
+        check(host->deletes().size() == 1 && host->preedit().empty() && host->commits().back() == "ó", app + " chat box: commits directly after switching from the terminal",
+              join(host->commits()));
+
+        // Switching back to the terminal whose hidden textarea still holds earlier commits detects xterm.js again,
+        // even when the first typed letter also appears in that retained commit text.
+        state.reset(false);
+        host->setSurrounding("đ as ", 5);
+        state.surroundingUpdated();
+        const size_t deletesBefore = host->deletes().size();
+        press(state, 'a');
+        loop.pump(65);
+        press(state, 'f');
+        loop.pump(60);
+        press(state, ' ');
+        host->setSurrounding("đ as à ", 7);
+        state.surroundingUpdated();
+        press(state, 'd');
+        loop.pump(65);
+        press(state, 'd');
+        loop.pump(60);
+        check(host->deletes().size() == deletesBefore && host->commits().back() == "đ", app + " terminal: switching back from chat detects xterm.js despite earlier commits",
+              join(host->commits()));
+    }
+
     // A terminal reports nothing for the first letter, which a text box shows before the next key.
     void testXtermFirstWords() {
         const std::string sentence = "ddaay laf tieengs vieetj ";
@@ -3472,71 +3560,13 @@ namespace {
         check(chatOut.text == expected && chatOut.sent.preedits == 0, "normal field in an Electron editor commits directly after its terminal was used",
               chatOut.text + " preedits=" + std::to_string(chatOut.sent.preedits));
 
-        // One shared Wayland context switching from an Electron terminal to a chat box and back.
         {
-            realMode = ngosen::Mode::Sen;
-            FakeLoop            loop;
-            FakeResources       editorResources;
-            auto                owned = std::make_unique<FakeHost>(loop, editorField);
-            FakeHost*           host  = owned.get();
-            ngosen::TypingState state(&editorResources, std::move(owned));
-            host->setSurrounding("", 0);
-            state.surroundingUpdated();
-            press(state, 'd');
-            loop.pump(65);
-            press(state, 'd');
-            loop.pump(60);
-            host->setSurrounding("đ ", 2);
-            state.surroundingUpdated();
-            // Clicking inside the same terminal keeps composition commits even when the next keys arrive under 50 ms.
-            g_mouse_clicked.store(true);
-            press(state, 'a');
-            loop.pump(20);
-            press(state, 's');
-            loop.pump(20);
-            press(state, 's');
-            loop.pump(60);
-            host->setSurrounding("đ as ", 5);
-            state.surroundingUpdated();
-            check(host->deletes().empty() && host->commits().back() == "as", "Electron terminal: a click inside the terminal keeps composition commits", join(host->commits()));
-
-            // Switching to a chat box deletes through surrounding text without composition flicker.
-            state.reset(false);
-            host->setSurrounding("tôi ", 4);
-            state.surroundingUpdated();
-            press(state, 'c');
-            host->setSurrounding("tôi c", 5);
-            state.surroundingUpdated();
-            press(state, 'o');
-            host->setSurrounding("tôi co", 6);
-            state.surroundingUpdated();
-            press(state, 's');
-            host->setSurrounding("tôi có", 6);
-            state.surroundingUpdated();
-            loop.pump(100);
-            check(host->deletes().size() == 1 && host->preedit().empty() && host->commits().back() == "ó", "Electron chat box: commits directly after switching from the terminal",
-                  join(host->commits()));
-
-            // Switching back to the terminal whose hidden textarea still holds earlier commits detects xterm.js again,
-            // even when the first typed letter also appears in that retained commit text.
-            state.reset(false);
-            host->setSurrounding("đ as ", 5);
-            state.surroundingUpdated();
-            const size_t deletesBefore = host->deletes().size();
-            press(state, 'a');
-            loop.pump(65);
-            press(state, 'f');
-            loop.pump(60);
-            press(state, ' ');
-            host->setSurrounding("đ as à ", 7);
-            state.surroundingUpdated();
-            press(state, 'd');
-            loop.pump(65);
-            press(state, 'd');
-            loop.pump(60);
-            check(host->deletes().size() == deletesBefore && host->commits().back() == "đ", "Electron terminal: switching back from chat detects xterm.js despite earlier commits",
-                  join(host->commits()));
+            FakeResources editorResources;
+            checkTerminalChatSwitch(editorResources, editorField, "Electron");
         }
+
+        FakeResources refocused;
+        checkTerminalRefocus(refocused, editorField, "Electron");
 
         // Konsole reports no letters either, yet takes forwarded backspaces as usual.
         FakeResources               resources;
@@ -3544,6 +3574,54 @@ namespace {
         const auto out = ngosen::test::typeInAppTraced(resources, makeField("ibus", true, "konsole"), {.reportsEmptyText = true}, keys, std::vector<int>(keys.size(), 100));
         check(out.text == "đây là " && out.sent.preedits == 0, "a terminal app that reports no letters keeps committing directly",
               out.text + " preedits=" + std::to_string(out.sent.preedits));
+        check(!resources.showedWebTerminal("konsole") && resources.webTerminalSaves == 0, "a terminal app that reports no letters is not learned as xterm.js", "");
+    }
+
+    // An app missing from the quirks is learned once its terminal shows itself, and the next session checks its fields from the first word.
+    void testXtermLearnedApp() {
+        const std::string sentence = "ddaay laf tieengs vieetj ";
+        const std::string expected = "đây là tiếng việt ";
+        const Field       field    = makeField("wayland", true, "some-new-ide");
+        const auto        keys     = keysOf(sentence);
+
+        FakeResources     learning;
+        (void)ngosen::test::typeInAppTraced(learning, field, {.keepsOnlyCommits = true}, keys, std::vector<int>(keys.size(), 60));
+        check(learning.showedWebTerminal("some-new-ide") && learning.webTerminalSaves == 1, "an unnamed app with an xterm.js terminal is learned and saved once",
+              std::to_string(learning.webTerminalSaves));
+
+        FakeResources browsing;
+        (void)ngosen::test::typeInAppTraced(browsing, makeField("wayland", true, "brave-browser"), {.keepsOnlyCommits = true}, keys, std::vector<int>(keys.size(), 60));
+        check(!browsing.showedWebTerminal("brave-browser") && browsing.webTerminalSaves == 0, "a browser is not learned from one page's xterm.js terminal", "");
+
+        FakeResources restarted;
+        restarted.noteWebTerminal("some-new-ide");
+        const auto termOut = ngosen::test::typeInAppTraced(restarted, field, {.keepsOnlyCommits = true}, keys, std::vector<int>(keys.size(), 60));
+        check(termOut.text == expected, "xterm.js in a learned app: the first words come out right after a restart", termOut.text);
+
+        FakeResources reloading;
+        reloading.noteWebTerminal("window:13");
+        reloading.noteWebTerminal("old-app");
+        reloading.loadWebTerminalApps({"saved-app"});
+        check(reloading.showedWebTerminal("window:13") && reloading.showedWebTerminal("saved-app") && !reloading.showedWebTerminal("old-app"),
+              "loading saved apps keeps this session's window:N names", "");
+
+        // GNOME Shell repeats its last report, which takes a few words to show the field keeps only commits.
+        FakeResources unnamed;
+        Field         noName   = makeField("ibus", true, "");
+        noName.reportedProgram = "gnome-shell";
+        const auto longKeys    = keysOf("laf " + sentence);
+        (void)ngosen::test::typeInAppTraced(unnamed, noName, {.keepsLastEditPerTurn = true, .turnMs = 3, .keepsOnlyCommits = true}, longKeys,
+                                            std::vector<int>(longKeys.size(), 60));
+        check(unnamed.keepsOnlyCommits("ibus", ""), "a field without a program name keeps the app-wide mark", "");
+
+        // Like an editor's, a learned app's mark stays on the terminal field.
+        FakeResources sharedContext;
+        sharedContext.noteWebTerminal("some-new-ide");
+        checkTerminalChatSwitch(sharedContext, field, "learned app");
+
+        FakeResources refocusedLearned;
+        refocusedLearned.noteWebTerminal("some-new-ide");
+        checkTerminalRefocus(refocusedLearned, field, "learned app");
     }
 
     enum class XtermWordEnd {
@@ -5934,6 +6012,7 @@ int main() {
     testDroppedDeletionKeptAcrossFocus();
     testRelayedAppMarkEndsWithField();
     testXtermKeepsOnlyCommits();
+    testXtermLearnedApp();
     testXtermFirstWords();
     testXtermRememberedAfterFocus();
     testXtermResetCommitsPreedit();

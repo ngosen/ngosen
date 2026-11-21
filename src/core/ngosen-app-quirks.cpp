@@ -281,6 +281,12 @@ namespace ngosen {
             (isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc"));
     }
 
+    bool isWebBrowser(const Field& field) {
+        const std::string program = appName(field);
+        return isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || isFirefoxFamily(program) || program == "epiphany" ||
+            program == "org.gnome.Epiphany";
+    }
+
     bool mayShowWebTerminal(const Field& field) {
         const std::string program = appName(field);
         return isFirefoxFamily(program) || program == "epiphany" || program == "org.gnome.Epiphany" || isStartsWith(program, "vaultid") || isElectronCodeEditorName(program) ||

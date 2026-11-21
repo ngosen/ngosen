@@ -19,6 +19,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   sổ cài đặt. Ví dụ cách dùng nay theo lúc gợi ý đang chọn: cuối câu hay sau mỗi từ (#915).
 - Gõ Sen: trong Firefox bản snap, bấm chuột về một từ đã gõ rồi gõ phím dấu không còn xoá mất chữ ở chỗ bấm; phím
   được giữ nguyên như đã gõ (#919).
+- Gõ Sen trên GNOME với fcitx5 từ 5.1.22 (Fedora 44, 45, Arch, Debian testing): Firefox không còn khựng khi sửa
+  dấu hai lần trong một chữ, và khi máy bận, Chrome cùng các app khác ít bị mất phần chữ vừa sửa hơn hẳn (kiểu
+  `người` thành `ngưi`) (#920).
 
 ## [1.13.1-1] — 20/11/2026
 

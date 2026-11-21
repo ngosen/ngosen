@@ -305,8 +305,8 @@ namespace fcitx {
 
     NgoSenEngine::NgoSenEngine(Instance* instance) :
         instance_(instance), factory_([this](InputContext& ic) {
-            return new TypingStateProperty(
-                std::make_unique<ngosen::TypingState>(this, std::make_unique<ngosen::FcitxHost>(&ic, instance_, shellDropsKeys(), &shellFocusedApp_, &focusInUs_)));
+            return new TypingStateProperty(std::make_unique<ngosen::TypingState>(
+                this, std::make_unique<ngosen::FcitxHost>(&ic, instance_, shellDropsKeys(), &shellFocusedApp_, &focusInUs_, ngosen::fcitxNamesGnomeApps(Instance::version()))));
         }) { //NOLINT
         Init();
         {

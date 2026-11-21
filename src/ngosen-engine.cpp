@@ -471,6 +471,8 @@ namespace fcitx {
         loadAppRules();
         vimAppsPath_ = configDir + "/ngosen-vim-apps.conf";
         loadVimApps();
+        webTerminalAppsPath_ = configDir + "/ngosen-web-terminal-apps.conf";
+        loadWebTerminalApps();
         emojiOffAppsPath_ = configDir + "/ngosen-emoji-off-apps.conf";
         loadEmojiOffApps();
         teencodeAppsPath_ = configDir + "/ngosen-teencode-apps.conf";
@@ -599,6 +601,7 @@ namespace fcitx {
         loadWordList(keepWords_, "ngosen/keep-words.txt");
         loadAppRules();
         loadVimApps();
+        loadWebTerminalApps();
         loadEmojiOffApps();
         loadTeencodeApps();
         populateConfig();
@@ -1468,6 +1471,22 @@ namespace fcitx {
     void NgoSenEngine::saveVimApps() const {
         std::lock_guard<std::mutex> lock(appRulesMutex_);
         writeAppList(vimAppsPath_, "# Apps where Ngó Sen follows Vim's normal-mode keys, one per line", vimApps_);
+    }
+
+    void NgoSenEngine::loadWebTerminalApps() {
+        std::unordered_set<std::string> saved;
+        readAppList(webTerminalAppsPath_, saved);
+        ngosen::EngineResources::loadWebTerminalApps(saved);
+    }
+
+    // Deleting the file makes Ngó Sen learn these apps again. GNOME Shell's "window:N" names last one session.
+    void NgoSenEngine::webTerminalAppsChanged() {
+        std::unordered_set<std::string> apps;
+        for (const auto& app : webTerminalApps_) {
+            if (!isStartsWith(app, "window:"))
+                apps.insert(app);
+        }
+        writeAppList(webTerminalAppsPath_, "# Apps where Ngó Sen found an xterm.js terminal, one per line", apps);
     }
 
     void NgoSenEngine::toggleVimMode(InputContext* ic) {

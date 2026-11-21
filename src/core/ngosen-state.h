@@ -928,6 +928,8 @@ namespace ngosen {
         void         notePassedLetter(const ngosen::KeyPress& keyEvent, uint64_t commitsBefore);
         void         noteCommitForCheck(const std::string& text);
         bool         keepsOnlyCommits() const;
+        bool         mayShowWebTerminal() const;
+        bool         marksEachField() const;
         void         checkFirstLetters();
         void         resetLetterCheckOnFieldChange();
         std::string  xtermText_; ///< surrounding text last reported while keepsOnlyCommits() held

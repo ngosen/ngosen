@@ -14,6 +14,9 @@ namespace ngosen {
     // The name the GNOME Shell extension and fcitx5 give the overview's search box.
     inline constexpr const char* gnomeOverviewApp = "gnome-shell-overview";
 
+    // Whether a name is one GNOME gives an app: its .desktop file, or "window:NNN" for a window without one.
+    bool isGnomeAppId(const std::string& name);
+
     // One entry of org.gnome.Shell.Introspect.GetRunningApplications.
     struct RunningApp {
         std::string id;                   // GNOME's app id, such as "org.gnome.Nautilus.desktop"

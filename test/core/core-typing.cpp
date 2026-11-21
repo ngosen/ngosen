@@ -3536,6 +3536,10 @@ namespace {
         check(learning.showedWebTerminal("some-new-ide") && learning.webTerminalSaves == 1, "an unnamed app with an xterm.js terminal is learned and saved once",
               std::to_string(learning.webTerminalSaves));
 
+        FakeResources browsing;
+        (void)ngosen::test::typeInAppTraced(browsing, makeField("wayland", true, "brave-browser"), {.keepsOnlyCommits = true}, keys, std::vector<int>(keys.size(), 60));
+        check(!browsing.showedWebTerminal("brave-browser") && browsing.webTerminalSaves == 0, "a browser is not learned from one page's xterm.js terminal", "");
+
         FakeResources restarted;
         restarted.noteWebTerminal("some-new-ide");
         const auto termOut = ngosen::test::typeInAppTraced(restarted, field, {.keepsOnlyCommits = true}, keys, std::vector<int>(keys.size(), 60));

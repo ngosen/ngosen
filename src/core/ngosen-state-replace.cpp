@@ -1236,8 +1236,9 @@ namespace ngosen {
         if (ngosen::namesNoApp(field))
             return;
         // Learning an app only turns on the check for each of its fields, so one sign is enough; an app may hold
-        // normal fields too, and a mark on the whole app would reach them.
-        if (!ngosen::mayShowWebTerminal(field))
+        // normal fields too, and a mark on the whole app would reach them. One page's terminal says nothing about
+        // a browser's other pages.
+        if (!ngosen::mayShowWebTerminal(field) && !ngosen::isWebBrowser(field))
             engine_->noteWebTerminal(field.program);
         else if (h.lettersHidden == LettersHiddenForApp && !ngosen::isElectronCodeEditor(field))
             engine_->noteKeepsOnlyCommits(field.frontend, field.program);

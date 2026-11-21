@@ -16,7 +16,7 @@ from urllib.parse import urlencode
 from i18n import _
 
 from core import session_setup, update_repo
-from core.brand import ISSUE_URL, UPDATE_GUIDE_URL
+from core.brand import AI_HELP_URL, ISSUE_URL, UPDATE_GUIDE_URL
 
 IM_VARIABLES = ("GTK_IM_MODULE", "QT_IM_MODULE", "XMODIFIERS", "SDL_IM_MODULE")
 
@@ -754,9 +754,10 @@ class Fixes:
         return undo
 
 
-def report(facts, findings, app_test=None):
-    """Plain text for the bug report; it lists app names, so the user reviews it before sending."""
-    marks = {OK: "OK", TIP: "i", WARN: "!", FAIL: "X"}
+MARKS = {OK: "OK", TIP: "i", WARN: "!", FAIL: "X"}
+
+
+def _report_header(facts):
     desktop = ":".join(facts.desktops) or "?"
     lines = [
         f"Ngó Sen {facts.ngosen_version or '?'}, fcitx5 {facts.fcitx_version or '?'}",
@@ -782,12 +783,36 @@ def report(facts, findings, app_test=None):
         lines.append(line)
     repo = {update_repo.ON: "ngosen repo on", update_repo.OFF: "no ngosen repo"}
     lines.append("Updates: " + repo.get(facts.update_repo, "unknown"))
-    lines.append("")
-    lines += [f"[{marks[f.level]}] {f.title}" for f in findings] or ["[OK] no setup problem found"]
+    return lines
+
+
+def report(facts, findings, app_test=None):
+    """Plain text for the bug report; it lists app names, so the user reviews it before sending."""
+    lines = _report_header(facts) + [""]
+    lines += [f"[{MARKS[f.level]}] {f.title}" for f in findings] or ["[OK] no setup problem found"]
     if facts.apps:
         lines += ["", "Apps: " + ", ".join(f"{p} ({fe})" for p, fe in facts.apps)]
     if app_test:
         lines += ["", "App test: " + app_test.summary()]
+    return "\n".join(lines)
+
+
+def terminal_report(facts, found, include_apps=False):
+    """The report with each step's fix, for a terminal or an AI assistant.
+
+    It never holds typed text, and app names only when asked for.
+    """
+    lines = [f"# Ngó Sen check. Guide for AI assistants: {AI_HELP_URL}"] + _report_header(facts)
+    lines.append("")
+    for f in found:
+        lines.append(f"[{MARKS[f.level]}] {f.title}")
+        if f.fix and f.level != OK:
+            lines.append(f"    {f.fix}")
+    if include_apps:
+        apps = ", ".join(f"{p} ({fe})" for p, fe in facts.apps) or "none"
+        lines += ["", "Apps: " + apps]
+    else:
+        lines += ["", "Apps: not shown (add --include-apps to list them)"]
     return "\n".join(lines)
 
 
@@ -818,17 +843,18 @@ def collect(dbus_handler, ngosen_version="", env=None):
         facts.started_by_kwin = _fcitx5_started_by_kwin()
     facts.addon_replaced = runs_replaced_addon()
     facts.update_repo = update_repo.state()
+    names = dbus_handler.input_method_names()
+    facts.fcitx_running = names is not None
     if "GNOME" in facts.desktops:
         facts.gnome_shell_version = _gnome_shell_version()
         facts.forward_keys_state = _extension_state(FORWARD_KEYS)
         facts.app_names_running = _shell_names_apps()
         facts.has_gnome_portal = _has_gnome_portal(env)
-        # Asking would start fcitx5's on-demand addon for nothing elsewhere.
-        if facts.has_gnome_portal and _watches_portal(facts):
+        # Asking would start fcitx5's on-demand addon for nothing elsewhere, and fcitx5 itself when
+        # it is not running.
+        if facts.fcitx_running and facts.has_gnome_portal and _watches_portal(facts):
             facts.portal_answered = _portal_answered()
         facts.input_panel_state = _extension_state(INPUT_PANEL)
-    names = dbus_handler.input_method_names()
-    facts.fcitx_running = names is not None
     facts.ngosen_in_group = "ngosen" in (names or [])
     facts.input_methods = names or []
     facts.ngosen_loaded = dbus_handler.has_input_method("ngosen") is not False

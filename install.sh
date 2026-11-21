@@ -277,7 +277,7 @@ pick_edition() {
     fi
     say ""
     say "  2) Bản IBus"
-    say "     Dùng IBus thay cho fcitx5. Tính năng mới đến bản này chậm hơn một chút."
+    say "     Dùng IBus, không cần fcitx5; tính năng mới đến chậm hơn một chút."
     say ""
     local answer
     printf 'Chọn 1 hay 2? [Enter = 1]: '

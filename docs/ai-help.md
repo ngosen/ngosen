@@ -40,6 +40,9 @@ Ask the user to open the settings window ("Cài đặt Ngó Sen" in the app menu
 remove anything they do not want to share, and paste it to you. The first line gives the Ngó Sen and fcitx5
 versions, the second the distro, desktop and session.
 
+If you can run commands, run `ngosen-check` instead. It prints the same check with each step's fix, changes
+nothing, and leaves out app names and typed text. If the command is missing, the installed version is older.
+
 ### 2. Old version
 
 Compare the version with the
@@ -59,7 +62,7 @@ wrong, go back to step 3. If it is right, the problem is in one app:
 
 - **fcitx5 edition:** ask the user to open the app, click into its text field, return to the page and press
   "Kiểm tra lại" (Check again). The list "App đang kết nối với fcitx5" (Apps connected to fcitx5) is only
-  updated then.
+  updated then. In a terminal, ask the user first, then run `ngosen-check --include-apps`.
   - The app is missing from the list: it has not connected to the input method. This is usually how it was
     installed (snap, Flatpak) or its toolkit. Look it up in the known problems below; changing the typing mode
     will not help.
@@ -81,7 +84,7 @@ avoids the known click problems.
 ### 6. Still wrong: report it
 
 Ask the user to type until the mistake happens, then save the typing log at once: "Lưu nhật ký gõ" (Save
-typing log) in the Ngó Sen tray menu, or `ngosen-save-log` in a terminal (fcitx5 edition only). The log keeps
+typing log) in the Ngó Sen menu (the tray, or the top bar on GNOME), or `ngosen-save-log` in a terminal. The log keeps
 only the last few hundred events, so typing on after the mistake pushes it out. Wait a second between two
 saves, since a save in the same second replaces the previous file. The file is
 `~/.local/state/ngosen/typing-<date>-<time>.log`.

@@ -24,7 +24,7 @@ install(DIRECTORY core ui ui_gtk
 install(FILES i18n.py qt_api.py "${CMAKE_CURRENT_BINARY_DIR}/version.py"
         DESTINATION "${SETTINGS_GUI_INSTALL_DIR}")
 
-install(FILES main.py save_log.py toggle.py
+install(FILES main.py check.py save_log.py toggle.py
         DESTINATION "${SETTINGS_GUI_INSTALL_DIR}"
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
@@ -46,6 +46,16 @@ exec \"${SETTINGS_GUI_FULL_PATH}/save_log.py\" \"$@\"
 ")
 
 install(PROGRAMS "${SAVE_LOG_SCRIPT}"
+        DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+set(CHECK_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/ngosen-check")
+
+file(WRITE "${CHECK_SCRIPT}"
+"#!/bin/sh
+exec \"${SETTINGS_GUI_FULL_PATH}/check.py\" \"$@\"
+")
+
+install(PROGRAMS "${CHECK_SCRIPT}"
         DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
 set(TOGGLE_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/ngosen-toggle")

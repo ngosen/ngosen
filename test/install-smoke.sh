@@ -1109,7 +1109,8 @@ check_kde_layout() {
     printf '[Layout]\nLayoutList=jp,us\nUse=true\nVariantList=,\n' | as_user tee "$kxkbrc" >/dev/null
     check "an install with a Japanese KDE layout succeeds" install_fresh
     check "the profile keeps KDE's first layout" has_line "$profile" 'Default Layout=jp'
-    printf '[Layout]\nLayoutList=fr\nUse=true\nVariantList=azerty\n' | as_user tee "$kxkbrc" >/dev/null
+    # KWin reads the list whatever Use says.
+    printf '[Layout]\nLayoutList=fr\nVariantList=azerty\n' | as_user tee "$kxkbrc" >/dev/null
     check "an install with a KDE layout variant succeeds" install_fresh
     check "the profile names the variant as fcitx5 does" has_line "$profile" 'Default Layout=fr-azerty'
     stop_fcitx5

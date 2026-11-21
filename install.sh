@@ -1038,25 +1038,25 @@ default_layout() {
     local sources layout='' variant=''
     case ":${XDG_CURRENT_DESKTOP:-}:" in
         *:GNOME:*)
+            # GNOME Shell types on "us" when its list is empty, not on the system layout.
             sources=$(gsettings get org.gnome.desktop.input-sources sources 2>/dev/null || true)
             layout=$(printf '%s' "$sources" | grep -o "('xkb', '[^']*')" | head -n 1 | cut -d"'" -f4 || true)
-            layout=${layout/+/-}
+            layout=${layout:-us}
+            printf '%s' "${layout/+/-}"
+            return
             ;;
         *:KDE:*)
-            # Without Use=true Plasma types on the system layout.
-            if [ "$(kreadconfig6 --file kxkbrc --group Layout --key Use 2>/dev/null)" = true ]; then
-                layout=$(kreadconfig6 --file kxkbrc --group Layout --key LayoutList 2>/dev/null | cut -d, -f1)
-                variant=$(kreadconfig6 --file kxkbrc --group Layout --key VariantList 2>/dev/null | cut -d, -f1)
-            fi
+            layout=$(kreadconfig6 --file kxkbrc --group Layout --key LayoutList 2>/dev/null | cut -d, -f1)
+            variant=$(kreadconfig6 --file kxkbrc --group Layout --key VariantList 2>/dev/null | cut -d, -f1)
             ;;
     esac
     if [ -z "$layout" ]; then
         layout=$(localectl status 2>/dev/null | sed -n 's/^ *X11 Layout: *//p' | cut -d, -f1)
         variant=$(localectl status 2>/dev/null | sed -n 's/^ *X11 Variant: *//p' | cut -d, -f1)
     fi
-    if [ -z "$layout" ]; then
-        layout=us variant=
-    fi
+    # localectl prints "(unset)" for a value it does not have.
+    case "$layout" in "" | "("*) layout=us variant='' ;; esac
+    case "$variant" in "("*) variant='' ;; esac
     printf '%s' "$layout${variant:+-$variant}"
 }
 

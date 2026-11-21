@@ -76,6 +76,14 @@ class LoadTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.load(data)
 
+    def test_a_file_nested_too_deep_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "b.json")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("[" * 100000 + "]" * 100000)
+            with self.assertRaises(ValueError):
+                backup.load(path)
+
     def test_a_file_of_shared_emoji_words_is_not_restored(self):
         shared = {
             "meta": {"kind": "ngosen-emoji-words", "version": 1},

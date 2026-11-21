@@ -25,7 +25,7 @@ APT_KEYRING=/usr/share/keyrings/ngosen.gpg
 REPO_RECORD=/var/lib/ngosen/installer-repo
 APT_LIST_MARK="# Added by the Ngó Sen installer; install.sh --uninstall removes it."
 
-# fcitx5 or ibus; the IBus edition is for GNOME and has its own releases.
+# fcitx5 or ibus; the IBus edition has its own releases.
 edition=fcitx5
 package_name=fcitx5-ngosen
 edition_given=0
@@ -82,7 +82,7 @@ usage() {
     say "Cách dùng: install.sh [--yes] [--fcitx5 | --ibus] [--no-repo] [--no-setup | --uninstall]"
     say "  --yes        không hỏi lại trước khi cài hay gỡ; máy chưa có bản nào thì cài bản fcitx5"
     say "  --fcitx5     cài bản fcitx5, không hỏi chọn bản"
-    say "  --ibus       Ngó Sen cho GNOME: gõ qua IBus có sẵn của GNOME, không cần fcitx5"
+    say "  --ibus       cài bản IBus: gõ qua IBus, không cần fcitx5, không hỏi chọn bản"
     say "  --no-repo    không thêm repo Ngó Sen (cần có repo để nhận version mới khi cập nhật hệ thống)"
     say "  --no-setup   chỉ cài gói, không tự đặt bộ gõ cho tài khoản này"
     say "  --uninstall  gỡ Ngó Sen và trả lại những gì lệnh cài đã đổi"
@@ -90,7 +90,7 @@ usage() {
 
 ibus_unsupported() {
     [ "$edition" = ibus ] || return 0
-    die "chưa có Ngó Sen cho GNOME (bản IBus) trên $1. Bỏ --ibus để cài bản fcitx5."
+    die "chưa có bản IBus trên $1. Bỏ --ibus để cài bản fcitx5."
 }
 
 # Image-based Fedora (Silverblue, Kinoite, Bazzite) layers packages with rpm-ostree; dnf cannot install.
@@ -264,10 +264,11 @@ pick_edition() {
     [ "$assume_yes" -eq 0 ] && ibus_edition_fits && has_ibus_package || return 0
     { exec 3</dev/tty; } 2>/dev/null || return 0
     say ""
-    say "Ngó Sen có hai bản cho máy này. Cả hai đổi Anh/Việt bằng Ctrl+Shift."
+    say "Ngó Sen có hai bản cho máy này, chung lõi gõ nên tính năng như nhau; chọn bản nào là tuỳ thích."
+    say "Cả hai đổi Anh/Việt bằng Ctrl+Shift."
     say ""
-    say "  1) Bản fcitx5 (nên chọn)"
-    say "     Đủ tính năng, gồm cả emoji, Vim mode và chế độ riêng cho từng app."
+    say "  1) Bản fcitx5"
+    say "     Tính năng mới có ở bản này trước."
     if wants_gnome_setup; then
         say "     Lệnh đặt fcitx5 thay bộ gõ IBus và cài extension Input Method Panel để hiện"
         say "     biểu tượng và menu bộ gõ trên thanh trên cùng."
@@ -276,8 +277,7 @@ pick_edition() {
     fi
     say ""
     say "  2) Bản IBus"
-    say "     Dùng IBus có sẵn, chung lõi gõ nên tính năng gần như bản fcitx5."
-    say "     Tính năng mới có thể đến muộn hơn bản fcitx5."
+    say "     Dùng IBus, không cần fcitx5; tính năng mới đến chậm hơn một chút."
     say ""
     local answer
     printf 'Chọn 1 hay 2? [Enter = 1]: '
@@ -1774,7 +1774,7 @@ setup_ibus_session() {
     add_ibus_source
     [ "$switched_from_fcitx5" -eq 1 ] && make_ngosen_current
     if [ "${#session_changes[@]}" -gt 0 ]; then
-        say "Đã đặt Ngó Sen cho GNOME:"
+        say "Đã đặt bản IBus trên GNOME:"
         for change in "${session_changes[@]}"; do
             say "  - $change"
         done
@@ -1859,7 +1859,7 @@ is_package_installed() {
 pick_uninstall_edition() {
     [ "$edition_given" -eq 0 ] && is_package_installed ibus-ngosen || return 0
     if ! is_package_installed fcitx5-ngosen ||
-        { [ "$assume_yes" -eq 0 ] && confirm "Máy có cả Ngó Sen cho fcitx5 và cho GNOME (IBus). Gỡ bản cho GNOME?"; }; then
+        { [ "$assume_yes" -eq 0 ] && confirm "Máy có cả bản fcitx5 và bản IBus. Gỡ bản IBus?"; }; then
         edition=ibus
         package_name=ibus-ngosen
     fi
@@ -2048,7 +2048,7 @@ main() {
             setup_ibus_x11_session
         else
             say ""
-            say "Xong. Bản này làm cho GNOME; trên desktop khác thì tự đặt:"
+            say "Xong. Lệnh cài chưa tự đặt được bản IBus trên desktop này; tự đặt như sau:"
             command -v im-config >/dev/null 2>&1 &&
                 say "  - chạy im-config -n ibus để app dùng IBus thay bộ gõ đang dùng"
             say "  - mở IBus Preferences (ibus-setup) và thêm Tiếng Việt (Ngó Sen) vào danh sách bộ gõ"

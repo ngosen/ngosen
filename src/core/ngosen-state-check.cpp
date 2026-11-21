@@ -37,13 +37,14 @@ namespace ngosen {
     }
 
     // Under one shared name a mark would spread to every app. Firefox's snap goes wrong only while it is
-    // busy after opening, so a mark for the app would outlast that.
+    // busy after opening, and GNOME Shell drops an app's edits only while the machine is busy, so a mark
+    // for the app would outlast that.
     bool TypingState::marksFieldOnly() const {
         const Field field = host_->field();
-        return ngosen::namesNoApp(field) || ngosen::appliesDeletionsEarly(field);
+        return ngosen::namesNoApp(field) || field.relayedByShell || ngosen::appliesDeletionsEarly(field);
     }
 
-    // An app GNOME Shell relays under its own name may drop every deletion, as VaultID does (#816).
+    // Right after login GNOME Shell can relay every app under its own name and drop every deletion (#816).
     // Backspaces work for all of them, so remembering the drop for the shared name costs nothing.
     bool TypingState::keepsDropForSharedName() const {
         const Field field = host_->field();

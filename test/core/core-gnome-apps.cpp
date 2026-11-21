@@ -31,6 +31,13 @@ namespace {
         expect("no apps at all has no name", focusedGnomeApp({}, false), "");
     }
 
+    void testAppIds() {
+        expectTrue("a desktop file is GNOME's id", ngosen::isGnomeAppId("org.gnome.TextEditor.desktop"));
+        expectTrue("a window without a .desktop file has GNOME's id", ngosen::isGnomeAppId("window:617"));
+        expectTrue("a program name is not", !ngosen::isGnomeAppId("chromium"));
+        expectTrue("gnome-shell is not", !ngosen::isGnomeAppId("gnome-shell"));
+    }
+
     void testReply() {
         const auto apps = ngosen::runningApps({{"org.gnome.TextEditor.desktop", {}}, {"org.gnome.Nautilus.desktop", {"seat0"}}});
         expect("reply: an app without active-on-seats", ngosen::focusedGnomeApp(apps, false), "org.gnome.Nautilus.desktop");
@@ -116,6 +123,7 @@ namespace {
 
 int main() {
     testFocusedApp();
+    testAppIds();
     testReply();
     testMatcher();
     testNames();

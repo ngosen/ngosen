@@ -2943,6 +2943,7 @@ namespace {
         ngosen::test::AppQuirks silent;
         silent.reports            = false;
         silent.dropsForwardedKeys = true;
+        silent.hidesCursorMoves   = true;
         auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(), silent);
         auto*               app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
@@ -3347,6 +3348,40 @@ namespace {
               app->text() + " " + join(lines));
     }
 
+    // GNOME Shell drops an app's deletions only while the machine is busy, so a mark under the app's own
+    // name would slow every later edit in it until logout.
+    void testRelayedAppMarkEndsWithField() {
+        const std::string editor = "org.gnome.TextEditor.desktop";
+        realMode                 = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField("ibus", true, editor);
+        field.relayedByShell      = true;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.ignoresSurroundingDel = true});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        ngosen::test::captureLog(true);
+        const auto typeWord = [&] {
+            for (const char c : std::string("ddi ")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(150);
+            }
+            loop.pump(600);
+        };
+        typeWord();
+        app->setIgnoresSurroundingDel(false);
+        app->focusNewEmptyField(ngosen::Mode::Sen, 100);
+        loop.pump(300);
+        typeWord();
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(app->text() == "đi " && !resources.surroundingUntrusted("ibus", editor) && countHaving(lines, "Surrounding text untrusted") == 1 &&
+                  countHaving(lines, "marked untrusted") == 0,
+              "app relayed by GNOME Shell under its own name: a mark ends with the field", app->text() + " " + join(lines));
+    }
+
     // xterm.js keeps only commits in the field it reports and sends a commit WebKitGTK ends without a
     // started composition again with the text before it (#816).
     std::string typeInXterm(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, int* preedits = nullptr) {
@@ -3377,6 +3412,29 @@ namespace {
         int preedits = -1;
         text         = typeInXterm(dbus, {}, sentence, &preedits);
         check(text == expected && preedits == 0, "a field that shows typed letters gets no preedit", text + " preedits=" + std::to_string(preedits));
+    }
+
+    // Coming back to a terminal from another window: its hidden textarea still holds what we committed before.
+    void checkTerminalRefocus(FakeResources& resources, const Field& field, const std::string& app) {
+        realMode = ngosen::Mode::Sen;
+        FakeLoop               loop;
+        auto                   owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.keepsOnlyCommits = true});
+        ngosen::test::FakeApp* fake  = owned.get();
+        ngosen::TypingState    state(&resources, std::move(owned));
+        fake->attach(&state);
+        for (const uint32_t key : keysOf("ddaay laf ")) {
+            fake->type(key);
+            loop.pump(60);
+        }
+        loop.pump(300);
+        fake->leaveFocus(2000);
+        loop.pump(2100);
+        for (const uint32_t key : keysOf("tieengs vieetj ")) {
+            fake->type(key);
+            loop.pump(60);
+        }
+        loop.pump(300);
+        check(fake->text() == "đây là tiếng việt ", app + " terminal: after a focus change the retained commits do not hide xterm.js", fake->text());
     }
 
     // One shared Wayland context switching from an xterm.js terminal to a chat box and back, as in an Electron editor.
@@ -3468,6 +3526,11 @@ namespace {
         check(editorRun.text == "đây là tiếng việt xin chào nhiều nhiều " && countHaving(editorLines, "Copy of the text still short") == 0 &&
                   countHaving(editorLines, "Surr wait timeout") == 0,
               "xterm.js in an Electron editor: fast words and nhieefu right without copy or surr waits", editorRun.text + " " + join(editorLines));
+        for (const std::string orca : {"orca", "orca-ide"}) {
+            const std::string orcaText = typeInXterm(makeField("wayland", true, orca), {.keepsOnlyCommits = true}, sentence);
+            check(orcaText == expected, "xterm.js in Orca (" + orca + "): the first words come out right", orcaText);
+        }
+        check(!ngosen::isElectronCodeEditor(makeField("wayland", true, "orca-slicer")), "OrcaSlicer is not taken for an Electron editor", "");
 
         // Reverting a tone commits the first letter again, which must not look like the field showing typed letters.
         for (const char* program : {"firefox", "antigravity-ide"}) {
@@ -3514,6 +3577,9 @@ namespace {
             FakeResources editorResources;
             checkTerminalChatSwitch(editorResources, editorField, "Electron");
         }
+
+        FakeResources refocused;
+        checkTerminalRefocus(refocused, editorField, "Electron");
 
         // Konsole reports no letters either, yet takes forwarded backspaces as usual.
         FakeResources               resources;
@@ -3565,6 +3631,10 @@ namespace {
         FakeResources sharedContext;
         sharedContext.noteWebTerminal("some-new-ide");
         checkTerminalChatSwitch(sharedContext, field, "learned app");
+
+        FakeResources refocusedLearned;
+        refocusedLearned.noteWebTerminal("some-new-ide");
+        checkTerminalRefocus(refocusedLearned, field, "learned app");
     }
 
     enum class XtermWordEnd {
@@ -5953,6 +6023,7 @@ int main() {
     testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
     testDroppedDeletionKeptAcrossFocus();
+    testRelayedAppMarkEndsWithField();
     testXtermKeepsOnlyCommits();
     testXtermLearnedApp();
     testXtermFirstWords();

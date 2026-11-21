@@ -245,6 +245,8 @@ namespace ngosen::test {
             return;
         ++sent_.preedits;
         shownPreedit_ = text;
+        if (quirks_.erasesOnPreedit && eraseSelection())
+            changed();
         if (!quirks_.keepsOnlyCommits || composing_)
             return;
         preeditWaits_ = true;

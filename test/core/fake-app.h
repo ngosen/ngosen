@@ -42,6 +42,7 @@ namespace ngosen::test {
         bool redrawsOnlyOnDeletion  = false; // redraws after deletions but not insertions, as a plain Draft.js box in Chrome on GNOME does
         bool dropsOldKeyPresses     = false; // drops a Backspace press not newer than the last one, as GLFW does under XIM
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
+        bool erasesOnPreedit        = false; // erases a selection when a preedit shows, as GTK 4 does, not on the commit
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
         int  backspaceLagMs         = 0;     // applies forwarded backspaces this late but commits at once, as Antigravity's editor on GNOME sometimes does
         bool backspacesSkipLag      = false; // applies forwarded backspaces ahead of what lagMs holds back, as GNOME Shell's IBus bridge with forward-keys@ngosen.github.io does

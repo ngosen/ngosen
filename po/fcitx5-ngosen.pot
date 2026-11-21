@@ -458,6 +458,10 @@ msgstr ""
 msgid "Tab or Esc: put back the key"
 msgstr ""
 
+#: src/core/ngosen-state-retone.cpp
+msgid "The tone key again: put back the key"
+msgstr ""
+
 #: src/core/ngosen-state-retype.cpp
 msgid "Tab or Esc: put back what was typed"
 msgstr ""

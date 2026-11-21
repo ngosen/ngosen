@@ -358,6 +358,7 @@ namespace ngosen {
             bool        afterClick       = false;
             bool        afterBackspace   = false;
             bool        reportedSinceKey = false; ///< a changed report arrived after the previous key
+            bool        inPreedit        = false; ///< the key went to the preedit, not to the app
         };
         // A retone inside a word waits for the cursor to reach the word's end.
         struct RetoneMove {
@@ -372,13 +373,14 @@ namespace ngosen {
         bool                           backspaceInWord_    = false; ///< the user pressed Backspace in the word being typed
         std::optional<std::string>     selectedBeforeKey_;          ///< what the X server announced as selected right before this key
         void                           retoneAtWordEnd(size_t tail, Retype retype);
-        void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8);
+        void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8, const std::optional<Surrounding>& preeditBefore = std::nullopt);
         void                           retoneAnnounced(uint32_t sym, uint32_t states, const std::string& keyUtf8);
         void                           forgetSelection();
         void        offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key, std::string after = {});
         void        dropRetoneKey();
         void        settleForHiddenInput();
         void        checkRetoneReport();
+        void        retonePreedit(const Surrounding& after);
         bool        handleKeyAfterRetone(ngosen::KeyPress& keyEvent);
         std::string retoned(const std::string& word, uint32_t sym, uint32_t states) const;
 

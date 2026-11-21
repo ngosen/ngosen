@@ -100,7 +100,7 @@ namespace ngosen {
         }
     } // namespace
 
-    void TypingState::noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8) {
+    void TypingState::noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8, const std::optional<Surrounding>& preeditBefore) {
         // A lagging report is fine here: only the text is compared, and the wait allows for it.
         const Field field = host_->field();
         if (!engine_->options().retoneSelection || engine_->options().outputCharset != "Unicode" || field.password || ngosen::isGnomeSearch(field))
@@ -110,9 +110,10 @@ namespace ngosen {
         if (!preedit || keyUtf8 != preedit.get())
             return;
         // WPS's own fcitx4 module declares surrounding text but never sends any.
-        const Surrounding before = field.surroundingText ? host_->surrounding() : Surrounding();
+        const bool        inPreedit = preeditBefore.has_value();
+        const Surrounding before    = !field.surroundingText ? Surrounding() : inPreedit ? *preeditBefore : host_->surrounding();
         if (!before.isValid() || before.text().empty()) {
-            if (ngosen::typesOverPrimarySelection(field))
+            if (!inPreedit && ngosen::typesOverPrimarySelection(field))
                 retoneAnnounced(sym, states, keyUtf8);
             return;
         }
@@ -122,7 +123,8 @@ namespace ngosen {
                                   .states           = states,
                                   .afterClick       = clickBeforeKey_,
                                   .afterBackspace   = backspaceBeforeKey_,
-                                  .reportedSinceKey = !keySinceReport_};
+                                  .reportedSinceKey = !keySinceReport_,
+                                  .inPreedit        = inPreedit};
         retone_timer_ = host_->startTimer(monotonicUs() + RetoneReportUs, 0, [this](Timer&) {
             retoneKey_.reset();
             return false;
@@ -198,6 +200,10 @@ namespace ngosen {
             return;
         if (retype_)
             return;
+        if (retoneKey_->inPreedit) {
+            retonePreedit(after);
+            return;
+        }
         // The replaced word is at least two bytes and the key one, so the text has to get shorter.
         // An app may report the deletion and the key separately.
         std::string word  = after.text().size() < retoneKey_->before.text().size() ? replacedWord(retoneKey_->before, after, retoneKey_->text) : std::string();
@@ -215,6 +221,37 @@ namespace ngosen {
         const RetoneKey key = std::move(*retoneKey_);
         dropRetoneKey();
         offerRetone(word, typed, tail, key.sym, key.states, key.text);
+    }
+
+    // GTK 4 erases a selection once the preedit shows, so the report tells which word the key went over,
+    // whatever the report before the key showed.
+    void TypingState::retonePreedit(const Surrounding& after) {
+        const std::string word = replacedWord(retoneKey_->before, after, "");
+        if (word.empty())
+            return;
+        const RetoneKey key = std::move(*retoneKey_);
+        dropRetoneKey();
+        const std::string toned = retoned(word, key.sym, key.states);
+        if (toned.empty() || toned == word || withoutToneMark(toned) != withoutToneMark(word))
+            return;
+        // Not from inside the report being handled, which the app may still be waiting on.
+        // Any key, reset or focus change drops the timer, so the preedit still shows the key alone.
+        retone_timer_ = host_->startTimer(monotonicUs(), 0, [this, key, word, toned](Timer&) {
+            // Typed again over the word, so the tone key once more undoes it as it would have.
+            EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
+            EngineProcessKeyEvent(bambooEngine_.handle(), key.sym, key.states);
+            UniqueCPtr<char> shown(EnginePullPreedit(bambooEngine_.handle()));
+            if (!shown || toned != shown.get()) {
+                EngineRebuildFromText(bambooEngine_.handle(), key.text.c_str());
+                return false;
+            }
+            NGOSEN_INFO("Retone in the preedit: " + logged(word) + " -> " + logged(toned));
+            host_->showPreedit(toned, false);
+            host_->refreshPreedit();
+            host_->setStatus(host_->translate("The tone key again: put back the key"));
+            host_->refreshPanel();
+            return false;
+        });
     }
 
     bool TypingState::handleKeyAfterRetone(ngosen::KeyPress& keyEvent) {

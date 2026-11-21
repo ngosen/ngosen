@@ -63,6 +63,7 @@ namespace {
 
     struct Result {
         std::string hint; // the status line once the word has changed, empty when it did not
+        std::string preedit;
         std::string text;
     };
 
@@ -96,7 +97,8 @@ namespace {
             state.surroundingUpdated();
         loop.pump(run.settleMs);
         Result result;
-        result.hint = app->status();
+        result.hint    = app->status();
+        result.preedit = app->shownPreedit();
         if (run.beforeAfter)
             run.beforeAfter(*app, loop);
         for (const uint32_t sym : run.after) {
@@ -251,6 +253,92 @@ namespace {
         check(r.hint.empty() && r.text == "s xyz", "two words", r.text);
         r = retoneOf("abc nhanh xyz", 6, 9, 's');
         check(r.hint.empty() && r.text == "abc nhs xyz", "part of a word", r.text);
+    }
+
+    // "abc nhanh xyz " typed in Preedit with nhanh selected, in an app that erases the selection once the
+    // preedit shows.
+    Run nhanhInPreedit(size_t anchor = 4, size_t cursor = 9) {
+        Run run                    = nhanh(anchor, cursor);
+        run.mode                   = Mode::Preedit;
+        run.typed                  = "abc nhanh xyz ";
+        run.quirks.erasesOnPreedit = true;
+        return run;
+    }
+
+    void testPreeditRetone() {
+        Run run   = nhanhInPreedit();
+        run.after = {' '};
+        Result r  = retone(run);
+        check(r.preedit == "nhánh" && !r.hint.empty() && r.text == "abc nhánh  xyz ", "preedit: a tone key over a selected word puts it back retoned", r.preedit + " | " + r.text);
+
+        // GNOME Shell may not report the selection before the key.
+        run                         = nhanhInPreedit();
+        run.quirks.hidesCursorMoves = true;
+        r                           = retone(run);
+        check(r.preedit == "nhánh", "preedit: a selection never reported is still retoned", r.preedit);
+
+        run                        = nhanhInPreedit();
+        run.quirks.erasesOnPreedit = false;
+        run.after                  = {' '};
+        r                          = retone(run);
+        check(r.preedit == "s" && r.hint.empty() && r.text == "abc s  xyz ", "preedit: an app that keeps the selection until the commit gets the key", r.preedit + " | " + r.text);
+
+        run       = nhanhInPreedit();
+        run.after = {'s', ' '};
+        r         = retone(run);
+        check(r.text == "abc nhanhs  xyz ", "preedit: the tone key again puts it back", r.text);
+
+        run       = nhanhInPreedit(2, 5);
+        run.typed = "a cat b ";
+        run.after = {'s', ' '};
+        r         = retone(run);
+        check(r.preedit == "cát" && r.text == "a cats  b ", "preedit: an English word gets its key back", r.preedit + " | " + r.text);
+
+        run                      = nhanhInPreedit();
+        run.quirks.reportDelayMs = 100;
+        run.settleMs             = 20;
+        run.after                = {'a', ' '};
+        r                        = retone(run);
+        check(r.text == "abc sa  xyz ", "preedit: a key typed before the report keeps the preedit", r.text);
+
+        run                      = nhanhInPreedit();
+        run.quirks.reportDelayMs = 400;
+        run.beforeTone           = [](FakeApp&, FakeLoop& loop) { loop.pump(400); };
+        run.settleMs             = 600;
+        r                        = retone(run);
+        check(r.preedit == "s", "preedit: a report later than the wait keeps the key", r.preedit);
+
+        run      = nhanhInPreedit();
+        run.tone = 'a';
+        r        = retone(run);
+        check(r.preedit == "a", "preedit: a letter that is no tone replaces the word", r.preedit);
+
+        r = retone(nhanhInPreedit(0, 9));
+        check(r.preedit == "s", "preedit: two words", r.preedit);
+        r = retone(nhanhInPreedit(6, 9));
+        check(r.preedit == "s", "preedit: part of a word", r.preedit);
+        r = retone(nhanhInPreedit(4, 10));
+        check(r.preedit == "s", "preedit: a word with the space after it", r.preedit);
+
+        run           = nhanhInPreedit();
+        run.configure = [](FakeResources& res) { res.mutableOptions().retoneSelection = false; };
+        r             = retone(run);
+        check(r.preedit == "s", "preedit: the option off", r.preedit);
+
+        // Sen types a word in the preedit where the field takes deletions only through its text and
+        // shows a selection.
+        run                       = nhanhInPreedit();
+        run.mode                  = Mode::Sen;
+        run.field                 = makeField("ibus", true);
+        run.field.sendsNoKeys     = true;
+        run.field.preeditFallback = true;
+        r                         = retone(run);
+        check(r.preedit != "nhánh", "preedit: Sen showing a word in the preedit", r.preedit);
+
+        run                = nhanhInPreedit();
+        run.field.password = true;
+        r                  = retone(run);
+        check(r.preedit != "nhánh", "preedit: a password field", r.preedit);
     }
 
     void testWhereNotOffered() {
@@ -554,6 +642,7 @@ int main() {
     testNoRetoneInGnomeSearch();
     testWords();
     testWhereNotOffered();
+    testPreeditRetone();
     testAnnouncedSelection();
     testAnnouncedSelectionWithSpace();
     testClickKeepsTone();

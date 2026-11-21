@@ -1033,13 +1033,31 @@ set_wps_input_method() {
     [ "$fixed" -eq 0 ] || session_changes+=("WPS Office gõ được tiếng Việt (mở lại WPS nếu đang mở)")
 }
 
-# Prints the fcitx5 name of the first GNOME keyboard layout, e.g. "us" or "fr-azerty".
-gnome_layout() {
-    local sources layout
-    sources=$(gsettings get org.gnome.desktop.input-sources sources 2>/dev/null || true)
-    layout=$(printf '%s' "$sources" | grep -o "('xkb', '[^']*')" | head -n 1 | cut -d"'" -f4 || true)
-    layout=${layout:-us}
-    printf '%s' "${layout/+/-}"
+# Prints the fcitx5 name of the desktop's first keyboard layout, e.g. "us" or "fr-azerty".
+default_layout() {
+    local sources layout='' variant=''
+    case ":${XDG_CURRENT_DESKTOP:-}:" in
+        *:GNOME:*)
+            sources=$(gsettings get org.gnome.desktop.input-sources sources 2>/dev/null || true)
+            layout=$(printf '%s' "$sources" | grep -o "('xkb', '[^']*')" | head -n 1 | cut -d"'" -f4 || true)
+            layout=${layout/+/-}
+            ;;
+        *:KDE:*)
+            # Without Use=true Plasma types on the system layout.
+            if [ "$(kreadconfig6 --file kxkbrc --group Layout --key Use 2>/dev/null)" = true ]; then
+                layout=$(kreadconfig6 --file kxkbrc --group Layout --key LayoutList 2>/dev/null | cut -d, -f1)
+                variant=$(kreadconfig6 --file kxkbrc --group Layout --key VariantList 2>/dev/null | cut -d, -f1)
+            fi
+            ;;
+    esac
+    if [ -z "$layout" ]; then
+        layout=$(localectl status 2>/dev/null | sed -n 's/^ *X11 Layout: *//p' | cut -d, -f1)
+        variant=$(localectl status 2>/dev/null | sed -n 's/^ *X11 Variant: *//p' | cut -d, -f1)
+    fi
+    if [ -z "$layout" ]; then
+        layout=us variant=
+    fi
+    printf '%s' "$layout${variant:+-$variant}"
 }
 
 stop_fcitx5() {
@@ -1232,7 +1250,7 @@ add_ngosen_to_profile() {
     profile="$(config_home)/fcitx5/profile"
     has_ngosen_in_profile && return 0
     if [ ! -f "$profile" ]; then
-        write_ngosen_profile "$profile" "$(gnome_layout)"
+        write_ngosen_profile "$profile" "$(default_layout)"
     else
         items=$(grep -c '^\[Groups/0/Items/' "$profile" || true)
         # fcitx5's first profile holds one keyboard; Ngó Sen switches English itself, so it takes

@@ -33,6 +33,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Backspace tới khi đăng xuất; chỉ ô đang gõ bị ảnh hưởng, như trước đây (#922).
 - Gõ Sen trong terminal của Orca IDE không còn lặp chữ (kiểu `ddaay laf` ra "đđây lđây là"), không cần chuyển app
   sang Preedit nữa (#927).
+- Gõ Sen trong terminal của VS Code, Cursor, Antigravity và các IDE Electron khác: chuyển sang cửa sổ khác rồi quay
+  lại terminal, gõ nhanh không còn ra chữ sai (kiểu `tieengs` ra "tià ếng") (#936).
 
 ## [1.13.1-1] — 20/11/2026
 

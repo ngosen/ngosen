@@ -269,14 +269,18 @@ namespace {
         if (!h.typeTieE(*context))
             return Outcome::Fail;
         const auto backSpace = fcitx::Key(FcitxKey_BackSpace);
-        if (!h.key(*context, backSpace, false, false) || !h.key(*context, backSpace, false, true))
+        if (!h.key(*context, backSpace, false, false))
             return Outcome::Fail;
-        const uint64_t     sentinelAt = nowUs();
-        constexpr uint64_t LateUs     = 10000;
+        // Timed before the sentinel starts the wait, so a stall anywhere after counts.
+        const uint64_t sentinelAt = nowUs();
+        if (!h.key(*context, backSpace, false, true))
+            return Outcome::Fail;
+        constexpr uint64_t LateUs = 10000;
         h.pumpUntil([] { return false; }, sentinelAt + LateUs);
-        if (nowUs() - sentinelAt > LateUs + 4000)
-            return Outcome::Stalled;
+        const bool stalled = nowUs() - sentinelAt > LateUs + 4000;
         if (!context->commits().empty()) {
+            if (stalled)
+                return Outcome::Stalled;
             reportFailure("xim: no commit before a late hand-back", "(none)", joinCommits(*context));
             return Outcome::Fail;
         }

@@ -136,6 +136,10 @@ namespace ngosen::test {
         void setReportDelay(int ms) {
             quirks_.reportDelayMs = ms;
         }
+        // Lets a test end a stretch of dropped deletions, as GNOME Shell does once the machine is idle again.
+        void setIgnoresSurroundingDel(bool ignores) {
+            quirks_.ignoresSurroundingDel = ignores;
+        }
         // Shows a changed hint this late, after keys sent at the same time, as GNOME Shell does for Chrome.
         void setHintLag(int ms) {
             hintLagMs_ = ms;

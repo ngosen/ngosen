@@ -3335,6 +3335,40 @@ namespace {
               app->text() + " " + join(lines));
     }
 
+    // GNOME Shell drops an app's deletions only while the machine is busy, so a mark under the app's own
+    // name would slow every later edit in it until logout.
+    void testRelayedAppMarkEndsWithField() {
+        const std::string editor = "org.gnome.TextEditor.desktop";
+        realMode                 = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        Field         field       = makeField("ibus", true, editor);
+        field.relayedByShell      = true;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.ignoresSurroundingDel = true});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        ngosen::test::captureLog(true);
+        const auto typeWord = [&] {
+            for (const char c : std::string("ddi ")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(150);
+            }
+            loop.pump(600);
+        };
+        typeWord();
+        app->setIgnoresSurroundingDel(false);
+        app->focusNewEmptyField(ngosen::Mode::Sen, 100);
+        loop.pump(300);
+        typeWord();
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(app->text() == "đi " && !resources.surroundingUntrusted("ibus", editor) && countHaving(lines, "Surrounding text untrusted") == 1 &&
+                  countHaving(lines, "marked untrusted") == 0,
+              "app relayed by GNOME Shell under its own name: a mark ends with the field", app->text() + " " + join(lines));
+    }
+
     // xterm.js keeps only commits in the field it reports and sends a commit WebKitGTK ends without a
     // started composition again with the text before it (#816).
     std::string typeInXterm(const Field& field, ngosen::test::AppQuirks quirks, const std::string& typed, int* preedits = nullptr) {
@@ -5893,6 +5927,7 @@ int main() {
     testLateReportAfterBackspace();
     testDroppedDeletionInLongCheck();
     testDroppedDeletionKeptAcrossFocus();
+    testRelayedAppMarkEndsWithField();
     testXtermKeepsOnlyCommits();
     testXtermFirstWords();
     testXtermRememberedAfterFocus();

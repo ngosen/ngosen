@@ -96,6 +96,8 @@ namespace ngosen {
     void TypingState::handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (vimOn() && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
             return;
+        if (putBackPreeditKey(keyEvent, currentSym))
+            return;
         ngosen::UniqueCPtr<char> shownBefore(EnginePullPreedit(bambooEngine_.handle()));
         const bool               startsWord = !shownBefore || *shownBefore.get() == 0;
         // The app may change its text as soon as the preedit shows.

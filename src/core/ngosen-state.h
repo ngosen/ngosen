@@ -366,7 +366,14 @@ namespace ngosen {
             size_t      cursor = 0;
             Retype      retype;
         };
-        std::optional<RetoneKey>       retoneKey_;
+        std::optional<RetoneKey> retoneKey_;
+        // A word retoned in the preedit, until the next key.
+        struct PreeditRetone {
+            uint32_t    sym = 0;
+            std::string key;
+            std::string toned;
+        };
+        std::optional<PreeditRetone>   preeditRetone_;
         std::optional<RetoneMove>      retoneMove_;
         std::unique_ptr<ngosen::Timer> retone_timer_;
         bool                           backspaceBeforeKey_ = false; ///< the last key was a backspace that left no word being typed
@@ -381,6 +388,7 @@ namespace ngosen {
         void        settleForHiddenInput();
         void        checkRetoneReport();
         void        retonePreedit(const Surrounding& after);
+        bool        putBackPreeditKey(ngosen::KeyPress& keyEvent, uint32_t sym);
         bool        handleKeyAfterRetone(ngosen::KeyPress& keyEvent);
         std::string retoned(const std::string& word, uint32_t sym, uint32_t states) const;
 

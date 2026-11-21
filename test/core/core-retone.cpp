@@ -286,13 +286,29 @@ namespace {
         run       = nhanhInPreedit();
         run.after = {'s', ' '};
         r         = retone(run);
-        check(r.text == "abc nhanhs  xyz ", "preedit: the tone key again puts it back", r.text);
+        check(r.text == "abc s  xyz ", "preedit: the tone key again puts back the key", r.text);
+
+        run       = nhanhInPreedit();
+        run.typed = "abc tieengf xyz ";
+        run.after = {'s', ' '};
+        r         = retone(run);
+        check(r.preedit == "tiếng" && r.text == "abc s  xyz ", "preedit: the tone key again puts back the key over a toned word", r.preedit + " | " + r.text);
+
+        run       = nhanhInPreedit();
+        run.after = {'s', 'a', ' '};
+        r         = retone(run);
+        check(r.text == "abc sa  xyz ", "preedit: after the tone key again, typing goes on", r.text);
+
+        run       = nhanhInPreedit();
+        run.after = {'f', ' '};
+        r         = retone(run);
+        check(r.text == "abc nhành  xyz ", "preedit: another tone key changes the tone again", r.text);
 
         run       = nhanhInPreedit(2, 5);
         run.typed = "a cat b ";
-        run.after = {'s', ' '};
+        run.after = {' '};
         r         = retone(run);
-        check(r.preedit == "cát" && r.text == "a cats  b ", "preedit: an English word gets its key back", r.preedit + " | " + r.text);
+        check(r.text == "a cát  b ", "preedit: an English word is retoned too", r.text);
 
         run                      = nhanhInPreedit();
         run.quirks.reportDelayMs = 100;

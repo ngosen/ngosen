@@ -246,12 +246,33 @@ namespace ngosen {
                 return false;
             }
             NGOSEN_INFO("Retone in the preedit: " + logged(word) + " -> " + logged(toned));
+            preeditRetone_ = PreeditRetone{.sym = key.sym, .key = key.text, .toned = toned};
             host_->showPreedit(toned, false);
             host_->refreshPreedit();
             host_->setStatus(host_->translate("The tone key again: put back the key"));
             host_->refreshPanel();
             return false;
         });
+    }
+
+    // As after a retone in Sen; the engine would instead undo the tone and keep the key after the word.
+    bool TypingState::putBackPreeditKey(ngosen::KeyPress& keyEvent, uint32_t sym) {
+        if (keyEvent.isRelease() || keyEvent.isModifier())
+            return false;
+        const std::optional<PreeditRetone> retone = std::exchange(preeditRetone_, std::nullopt);
+        if (!retone || sym != retone->sym)
+            return false;
+        UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+        if (!preedit || retone->toned != preedit.get())
+            return false;
+        NGOSEN_INFO("Put back the key in the preedit");
+        EngineRebuildFromText(bambooEngine_.handle(), retone->key.c_str());
+        keyEvent.accept();
+        host_->resetPanel();
+        host_->showPreedit(retone->key, false);
+        host_->refreshPreedit();
+        host_->refreshPanel();
+        return true;
     }
 
     bool TypingState::handleKeyAfterRetone(ngosen::KeyPress& keyEvent) {

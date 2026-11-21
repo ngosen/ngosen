@@ -27,7 +27,6 @@ namespace {
     fcitx::RawConfig changedConfig() {
         fcitx::RawConfig c;
         c.setValueByPath("InputMethod", "VNI");
-        c.setValueByPath("SpellCheck", "False");
         c.setValueByPath("ConvertFrom", "VNI Windows");
         c.setValueByPath("ConvertTo", "VIQR");
         c.setValueByPath("ConvertCase", "Title Case");
@@ -67,7 +66,6 @@ namespace {
         const auto& o = engine.options();
         check(step + ": InputMethod", o.inputMethod == c.inputMethod.value());
         check(step + ": OutputCharset", o.outputCharset == c.outputCharset.value());
-        check(step + ": SpellCheck", o.spellCheck == c.spellCheck.value());
         check(step + ": ConvertFrom", o.convertFrom == c.convertFrom.value());
         check(step + ": ConvertTo", o.convertTo == c.convertTo.value());
         check(step + ": ConvertCase", o.convertCase == static_cast<int>(c.convertCase.value()));
@@ -112,7 +110,6 @@ namespace {
         const ngosen::Options d;
         check("default InputMethod", o.inputMethod == d.inputMethod);
         check("default OutputCharset", o.outputCharset == d.outputCharset);
-        check("default SpellCheck", o.spellCheck == d.spellCheck);
         check("default ConvertFrom", o.convertFrom == d.convertFrom);
         check("default ConvertTo", o.convertTo == d.convertTo);
         check("default ConvertCase", o.convertCase == d.convertCase);

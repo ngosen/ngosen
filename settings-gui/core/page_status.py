@@ -34,8 +34,8 @@ def _turn_on(model, keys):
 
 
 def dictionary_line(model):
-    # The engine reads the words only while restoring a word that fails the spell check.
-    return _turn_on(model, ("EnableDictionary", "AutoNonVnRestore", "SpellCheck"))
+    # The engine reads the words only while Auto Restore checks a word.
+    return _turn_on(model, ("EnableDictionary", "AutoNonVnRestore"))
 
 
 def macro_line(model):

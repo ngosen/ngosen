@@ -72,7 +72,7 @@ elif case == "backup":
 
 # A backup as the IBus edition writes it, with every list the fcitx5 edition restores.
 BACKUP = """{
-  "config": {"SpellCheck": "False", "ToggleKey": {"0": "Control+space"}},
+  "config": {"DdFreeStyle": "False", "ToggleKey": {"0": "Control+space"}},
   "macros": [{"Key": "vn", "Value": "Việt Nam"}],
   "keymaps": [{"Key": "z", "Value": "D_Đ"}],
   "rules": [{"App": "kate", "Mode": "Preedit"}],
@@ -142,7 +142,7 @@ class ListsReachFcitx5Test(unittest.TestCase):
         with open(path, "w", encoding="utf-8") as f:
             f.write(BACKUP)
         saved = self.save("backup", path)
-        self.assertEqual(saved[ADDON]["SpellCheck"], "False")
+        self.assertEqual(saved[ADDON]["DdFreeStyle"], "False")
         self.assertEqual(saved[ADDON]["ToggleKey"], {"0": "Control+space"})
         expected = {
             "ngosen-macro": {"Macro": {"0": {"Key": "vn", "Value": "Việt Nam"}}},

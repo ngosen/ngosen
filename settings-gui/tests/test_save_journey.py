@@ -38,9 +38,9 @@ class Window(ui.main_window.NgoSenSettingsWindow):
 
     def flip_and_close(self):
         try:
-            self.open_setting("SpellCheck")
+            self.open_setting("DdFreeStyle")
             pages = (p for p in self._pages if hasattr(p, "control_for"))
-            next(c for c in (p.control_for("SpellCheck") for p in pages) if c).click()
+            next(c for c in (p.control_for("DdFreeStyle") for p in pages) if c).click()
             self.close()
         except Exception:
             traceback.print_exc()
@@ -67,7 +67,7 @@ class Window(window.Window):
 
     def flip_and_close(self):
         try:
-            row = self.typing.rows["SpellCheck"]
+            row = self.typing.rows["DdFreeStyle"]
             row.set_active(not row.get_active())
             self.close()
         except Exception:
@@ -123,7 +123,7 @@ class SaveJourney:
         self.assertEqual(result.returncode, 0, result.stderr[-2000:])
         saved = [c["values"] for c in self.fcitx5.set_config_calls() if c["uri"] == ADDON]
         self.assertTrue(saved, "no SetConfig reached fcitx5: " + result.stdout[-2000:])
-        self.assertEqual(saved[-1].get("SpellCheck"), "False", saved[-1])
+        self.assertEqual(saved[-1].get("DdFreeStyle"), "False", saved[-1])
 
 
 @unittest.skipUnless(AVAILABLE and has_qt(), "needs dbus-daemon, gi and PyQt")

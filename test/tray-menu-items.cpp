@@ -123,7 +123,7 @@ int main() {
     check("no menu text has a colon", colonFree);
 
     auto names = menu(context);
-    check("every entry shows by default", names.size() == 11 && has(names, "ngosen-input-method") && has(names, "ngosen-charset"));
+    check("every entry shows by default", names.size() == 10 && has(names, "ngosen-input-method") && has(names, "ngosen-charset"));
 
     fcitx::RawConfig hidden;
     hidden.setValueByPath("ShowMenuCharset", "False");
@@ -131,14 +131,14 @@ int main() {
     check("the focused field's menu changes at once", !has(menu(context), "ngosen-charset"));
     engine.activate(entry, in);
     names = menu(context);
-    check("a hidden entry leaves the menu", !has(names, "ngosen-charset") && names.size() == 10);
+    check("a hidden entry leaves the menu", !has(names, "ngosen-charset") && names.size() == 9);
     check("Settings, Save typing log and Vietnamese stay", has(names, "ngosen-settings") && has(names, "ngosen-save-log") && has(names, "ngosen-vietnamese"));
 
     // The tray keeps showing the last field's menu while the settings window has focus.
     context.focusOut();
-    hidden.setValueByPath("ShowMenuSpellCheck", "False");
+    hidden.setValueByPath("ShowMenuMacro", "False");
     engine.setConfig(hidden);
-    check("the menu left in the tray changes at once", !has(menu(context), "ngosen-spellcheck"));
+    check("the menu left in the tray changes at once", !has(menu(context), "ngosen-macro"));
     context.focusIn();
     engine.activate(entry, in);
 

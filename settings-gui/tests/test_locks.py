@@ -27,9 +27,9 @@ class LockedByTest(unittest.TestCase):
 
     def test_locked_only_while_the_controller_holds_another_value(self):
         self.assertEqual(
-            locked_by("SpellCheck", {"AutoNonVnRestore": "False"}.get), "AutoNonVnRestore"
+            locked_by("DdFreeStyle", {"AutoNonVnRestore": "False"}.get), "AutoNonVnRestore"
         )
-        self.assertIsNone(locked_by("SpellCheck", {"AutoNonVnRestore": "True"}.get))
+        self.assertIsNone(locked_by("DdFreeStyle", {"AutoNonVnRestore": "True"}.get))
         self.assertEqual(
             locked_by("IconTheme", {"TrayIconKind": "Colour icon"}.get), "TrayIconKind"
         )
@@ -42,7 +42,7 @@ class LockedByTest(unittest.TestCase):
         self.assertIsNone(locked_by("TimeFormat", {"EnableMacro": True}.get))
 
     def test_a_controller_fcitx5_does_not_report_locks_nothing(self):
-        self.assertIsNone(locked_by("SpellCheck", {}.get))
+        self.assertIsNone(locked_by("DdFreeStyle", {}.get))
 
     def test_every_key_is_a_setting_fcitx5_reports(self):
         model = SettingsModel(FakeDBusHandler())
@@ -137,28 +137,28 @@ class QtPageLocksTest(unittest.TestCase):
     def test_a_controller_locks_and_unlocks_at_once(self):
         fake = FakeDBusHandler({"AutoNonVnRestore": "True"})
         page = DynamicSettingsPage(fake, category=SettingsCategory.TYPING)
-        controller, spell = page.control_for("AutoNonVnRestore"), page.control_for("SpellCheck")
-        self.assertTrue(spell.isEnabled())
+        controller, dd = page.control_for("AutoNonVnRestore"), page.control_for("DdFreeStyle")
+        self.assertTrue(dd.isEnabled())
         controller.setChecked(False)
-        self.assertFalse(spell.isEnabled())
+        self.assertFalse(dd.isEnabled())
         controller.setChecked(True)
-        self.assertTrue(spell.isEnabled())
+        self.assertTrue(dd.isEnabled())
 
     def test_a_locked_setting_keeps_its_value(self):
-        fake = FakeDBusHandler({"AutoNonVnRestore": "True", "SpellCheck": "True"})
+        fake = FakeDBusHandler({"AutoNonVnRestore": "True", "DdFreeStyle": "True"})
         page = DynamicSettingsPage(fake, category=SettingsCategory.TYPING)
         page.control_for("AutoNonVnRestore").setChecked(False)
-        self.assertTrue(page.control_for("SpellCheck").isChecked())
-        self.assertNotIn("SpellCheck", page.modified_values)
+        self.assertTrue(page.control_for("DdFreeStyle").isChecked())
+        self.assertNotIn("DdFreeStyle", page.modified_values)
 
     def test_locks_follow_a_reload_and_the_defaults(self):
         fake = FakeDBusHandler({"AutoNonVnRestore": "False"})
         page = DynamicSettingsPage(fake, category=SettingsCategory.TYPING)
-        self.assertFalse(page.control_for("SpellCheck").isEnabled())
+        self.assertFalse(page.control_for("DdFreeStyle").isEnabled())
         page.restore_defaults()
-        self.assertTrue(page.control_for("SpellCheck").isEnabled())
+        self.assertTrue(page.control_for("DdFreeStyle").isEnabled())
         page.load_data()
-        self.assertFalse(page.control_for("SpellCheck").isEnabled())
+        self.assertFalse(page.control_for("DdFreeStyle").isEnabled())
 
     def test_a_mode_key_and_its_label_lock_with_the_mode(self):
         fake = FakeDBusHandler({"ShowModeEmoji": "True"})

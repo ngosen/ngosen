@@ -79,7 +79,7 @@ namespace ngosen {
             .ddFreeStyle         = engine_->options().ddFreeStyle,
             .macroEnabled        = engine_->options().enableMacro,
             .autoCapitalizeMacro = engine_->options().capitalizeMacro,
-            .spellCheckWithDicts = engine_->options().spellCheck,
+            .spellCheckWithDicts = true,
             .outputCharset       = engine_->options().outputCharset.data(),
             .modernStyle         = engine_->options().modernStyle,
             .freeMarking         = engine_->options().freeMarking,

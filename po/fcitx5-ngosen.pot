@@ -131,10 +131,6 @@ msgid "Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"
 msgstr ""
 
 #: src/ngosen-config.h:232
-msgid "Enable Spell Check Using Dictionary"
-msgstr ""
-
-#: src/ngosen-config.h:232
 msgid "Enable Macro"
 msgstr ""
 
@@ -287,10 +283,6 @@ msgid "Show Charset in the tray menu"
 msgstr ""
 
 #: src/ngosen-config.h
-msgid "Show Spell Check in the tray menu"
-msgstr ""
-
-#: src/ngosen-config.h
 msgid "Show Macro in the tray menu"
 msgstr ""
 
@@ -385,10 +377,6 @@ msgstr ""
 
 #: src/ngosen-engine.cpp:215
 msgid "Charset"
-msgstr ""
-
-#: src/ngosen-engine.cpp:242 src/ngosen-engine.cpp:382
-msgid "Spell Check"
 msgstr ""
 
 #: src/ngosen-engine.cpp:246 src/ngosen-engine.cpp:385
@@ -1109,10 +1097,6 @@ msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Type here to test"
-msgstr ""
-
-#: settings-gui/ui/pages/dynamic_settings.py
-msgid "Words that are not Vietnamese get no tone marks."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py

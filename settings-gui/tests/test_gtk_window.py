@@ -104,9 +104,9 @@ class GtkWindowTest(unittest.TestCase):
         self.window = window.Window(None, self.dbus)
 
     def test_a_switch_saves_at_once(self):
-        row = self.window.typing.rows["SpellCheck"]
+        row = self.window.typing.rows["DdFreeStyle"]
         row.set_active(not row.get_active())
-        self.assertEqual(self.dbus.values["SpellCheck"], str(row.get_active()))
+        self.assertEqual(self.dbus.values["DdFreeStyle"], str(row.get_active()))
         self.assertIsNotNone(self.window.toast)
 
     def test_a_combo_saves_the_value_not_the_label(self):
@@ -492,8 +492,8 @@ class GtkShortcutsPageTest(unittest.TestCase):
             if isinstance(w, HotkeyButton)
         )
         button.emit("recorded", "w")
-        self.window.typing.rows["SpellCheck"].set_active(False)
-        self.assertEqual(self.dbus.values["SpellCheck"], "False")
+        self.window.typing.rows["DdFreeStyle"].set_active(False)
+        self.assertEqual(self.dbus.values["DdFreeStyle"], "False")
         self.assertEqual(self.dbus.values["ShortcutPreedit"], "q")
 
     def test_dropping_a_mode_saves_the_order(self):
@@ -752,12 +752,12 @@ class GtkLocksTest(unittest.TestCase):
     def test_locks_follow_undo_and_the_defaults(self):
         w = self.window({"AutoNonVnRestore": "True"})
         w.typing.rows["AutoNonVnRestore"].set_active(False)
-        self.assertFalse(w.typing.rows["SpellCheck"].get_sensitive())
+        self.assertFalse(w.typing.rows["DdFreeStyle"].get_sensitive())
         w.undo()
-        self.assertTrue(w.typing.rows["SpellCheck"].get_sensitive())
+        self.assertTrue(w.typing.rows["DdFreeStyle"].get_sensitive())
         w.typing.rows["AutoNonVnRestore"].set_active(False)
         w.restore_defaults()
-        self.assertTrue(w.typing.rows["SpellCheck"].get_sensitive())
+        self.assertTrue(w.typing.rows["DdFreeStyle"].get_sensitive())
 
     def test_the_macro_locks_follow_undo(self):
         w = self.window({"EnableMacro": "True"})
@@ -799,12 +799,10 @@ class GtkStatusLinesTest(unittest.TestCase):
         self.assertFalse(w.macros.status.get_visible())
 
     def test_a_setting_on_another_page_changes_the_line(self):
-        fake = FakeDBusHandler(
-            {"EnableDictionary": "True", "AutoNonVnRestore": "True", "SpellCheck": "True"}
-        )
+        fake = FakeDBusHandler({"EnableDictionary": "True", "AutoNonVnRestore": "True"})
         w = self.window(fake)
         self.assertFalse(w.dictionary.status.get_visible())
-        w.typing.rows["SpellCheck"].set_active(False)
+        w.typing.rows["AutoNonVnRestore"].set_active(False)
         self.assertTrue(w.dictionary.status.get_visible())
 
     def test_the_switch_follows_a_change_from_the_tray(self):
@@ -857,7 +855,7 @@ class GtkStatusLinesTest(unittest.TestCase):
         written = dict(fake.values)
         w._refresh_statuses()
         self.assertFalse(w.typing.rows["AutoNonVnRestore"].get_active())
-        self.assertFalse(w.typing.rows["SpellCheck"].get_sensitive())
+        self.assertFalse(w.typing.rows["DdFreeStyle"].get_sensitive())
         row = w.typing.rows["OutputCharset"]
         self.assertEqual(row.values[row.get_selected()], "VIQR")
         self.assertEqual(fake.values, written)
@@ -877,7 +875,7 @@ class GtkUndoTest(unittest.TestCase):
         Adw.init()
         isolate(self)
         self.dbus = FakeDBusHandler(
-            {"SpellCheck": "True"}, sub_configs={"ngosen-macro": [{"Key": "kg", "Value": "khô"}]}
+            {"DdFreeStyle": "True"}, sub_configs={"ngosen-macro": [{"Key": "kg", "Value": "khô"}]}
         )
         self.window = window.Window(None, self.dbus)
         self.addCleanup(self.window.destroy)
@@ -893,11 +891,11 @@ class GtkUndoTest(unittest.TestCase):
         self.assertEqual(self.window.toast.get_timeout(), 5)
 
     def test_undo_puts_a_setting_back_and_shows_it(self):
-        self.window.typing.rows["SpellCheck"].set_active(False)
-        self.assertEqual(self.dbus.values["SpellCheck"], "False")
+        self.window.typing.rows["DdFreeStyle"].set_active(False)
+        self.assertEqual(self.dbus.values["DdFreeStyle"], "False")
         self.undo()
-        self.assertEqual(self.dbus.values["SpellCheck"], "True")
-        self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
+        self.assertEqual(self.dbus.values["DdFreeStyle"], "True")
+        self.assertTrue(self.window.typing.rows["DdFreeStyle"].get_active())
         self.assertIsNone(self.window.toast.get_button_label())
 
     def test_undo_brings_back_a_removed_macro(self):
@@ -918,7 +916,7 @@ class GtkUndoTest(unittest.TestCase):
     def test_undo_keeps_what_fcitx5_remembered_since_the_window_opened(self):
         kate = [{"App": "kate", "Mode": "3"}]
         self.dbus.sub_configs["app_rules"] = kate
-        self.window.typing.rows["SpellCheck"].set_active(False)
+        self.window.typing.rows["DdFreeStyle"].set_active(False)
         self.undo()
         self.assertEqual(self.dbus.sub_configs["app_rules"], kate)
         self.window.macros._remove("kg")
@@ -927,7 +925,7 @@ class GtkUndoTest(unittest.TestCase):
 
     def test_no_undo_when_fcitx5_could_not_be_read(self):
         with mock.patch.object(window.settings_snapshot, "take", return_value=None):
-            self.window.typing.rows["SpellCheck"].set_active(False)
+            self.window.typing.rows["DdFreeStyle"].set_active(False)
         self.assertIsNone(self.window.toast.get_button_label())
 
 
@@ -947,7 +945,7 @@ class GtkDefaultsTest(unittest.TestCase):
 
     def fcitx(self, cls=FakeDBusHandler):
         return cls(
-            {"SpellCheck": "False", "EnableCustomKeymap": "True"},
+            {"DdFreeStyle": "False", "EnableCustomKeymap": "True"},
             sub_configs={
                 "ngosen-macro": [{"Key": "kg", "Value": "khô"}],
                 "custom_keymap": [{"Key": "s", "Value": "DauSac"}],
@@ -959,7 +957,7 @@ class GtkDefaultsTest(unittest.TestCase):
     def changed(self):
         lists = ("ngosen-macro", "custom_keymap", "app_rules", "app_switches")
         return (
-            self.dbus.values["SpellCheck"],
+            self.dbus.values["DdFreeStyle"],
             self.dbus.values["EnableCustomKeymap"],
             [len(self.dbus.sub_configs[k]) for k in lists],
         )
@@ -974,7 +972,7 @@ class GtkDefaultsTest(unittest.TestCase):
         self.window.restore_defaults()
         self.assertEqual(self.changed(), ("True", "False", [0, 0, 0, 0]))
         self.assertFalse(os.path.exists(self.local))
-        self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
+        self.assertTrue(self.window.typing.rows["DdFreeStyle"].get_active())
         self.assertEqual(self.window.macros.table.entries, [])
         self.assertEqual(self.window.toast.get_title(), "Defaults restored.")
         self.assertEqual(self.window.toast.get_timeout(), 0)
@@ -1022,7 +1020,7 @@ class GtkDefaultsTest(unittest.TestCase):
         self.addCleanup(self.window.destroy)
         self.window.restore_defaults()
         self.assertEqual(self.changed(), ("True", "False", [0, 0, 1, 0]))
-        self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
+        self.assertTrue(self.window.typing.rows["DdFreeStyle"].get_active())
         self.assertEqual(self.window.toast.get_timeout(), 0)
         self.window.toast.emit("button-clicked")
         self.assertEqual(self.changed(), ("False", "True", [1, 1, 1, 1]))
@@ -1035,7 +1033,7 @@ class GtkBackupTest(unittest.TestCase):
         isolate(self)
         self.path = os.path.join(os.environ["XDG_DATA_HOME"], "b.json")
         self.dbus = FakeDBusHandler(
-            {"SpellCheck": "True"}, sub_configs={"ngosen-macro": [{"Key": "kg", "Value": "khô"}]}
+            {"DdFreeStyle": "True"}, sub_configs={"ngosen-macro": [{"Key": "kg", "Value": "khô"}]}
         )
         self.window = window.Window(None, self.dbus)
         self.addCleanup(self.window.destroy)
@@ -1043,15 +1041,15 @@ class GtkBackupTest(unittest.TestCase):
     def test_restoring_a_backup_puts_it_back_and_can_be_undone(self):
         self.window.export_backup(self.path)
         self.assertTrue(self.window.toast.get_title().startswith("Backed up to "))
-        self.window.typing.rows["SpellCheck"].set_active(False)
+        self.window.typing.rows["DdFreeStyle"].set_active(False)
         self.window.macros._remove("kg")
         self.window.restore_backup(self.path)
         self.assertEqual(self.window.toast.get_title(), "Restored from b.json.")
-        self.assertEqual(self.dbus.values["SpellCheck"], "True")
-        self.assertTrue(self.window.typing.rows["SpellCheck"].get_active())
+        self.assertEqual(self.dbus.values["DdFreeStyle"], "True")
+        self.assertTrue(self.window.typing.rows["DdFreeStyle"].get_active())
         self.assertEqual([e["Key"] for e in self.window.macros.table.entries], ["kg"])
         self.window.toast.emit("button-clicked")
-        self.assertEqual(self.dbus.values["SpellCheck"], "False")
+        self.assertEqual(self.dbus.values["DdFreeStyle"], "False")
         self.assertEqual(self.dbus.sub_configs["ngosen-macro"], [])
 
     def test_a_file_that_is_not_a_backup_changes_nothing(self):
@@ -1344,8 +1342,8 @@ class GtkSearchTest(unittest.TestCase):
         return [r for r in _children(self.window.results) if hasattr(r, "found")]
 
     def test_a_found_setting_opens_on_its_page_with_the_focus(self):
-        results = self.search("spell check")
-        self.assertIn(self.window.typing.rows["SpellCheck"], [r.found[0] for r in results])
+        results = self.search("dd to produce")
+        self.assertIn(self.window.typing.rows["DdFreeStyle"], [r.found[0] for r in results])
         self.window.show_page("about")
         self.window.search_entry.emit("activate")
         self.assertEqual(self.window.stack.get_visible_child_name(), "typing")
@@ -1354,9 +1352,9 @@ class GtkSearchTest(unittest.TestCase):
 
     def test_enter_right_after_typing_opens_what_was_typed(self):
         self.search("about")
-        self.window.search_entry.set_text("spell check")
+        self.window.search_entry.set_text("dd to produce")
         self.window.search_entry.emit("activate")
-        self.assertIs(self.window.get_focus(), self.window.typing.rows["SpellCheck"])
+        self.assertIs(self.window.get_focus(), self.window.typing.rows["DdFreeStyle"])
 
     def test_find_shows_the_sidebar_of_a_narrow_window(self):
         self.window.split.set_collapsed(True)

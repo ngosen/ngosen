@@ -188,10 +188,6 @@ msgid "Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"
 msgstr "Phím [ ] ra ơ ư"
 
 #: src/ngosen-config.h:232
-msgid "Enable Spell Check Using Dictionary"
-msgstr "Kiểm tra chính tả"
-
-#: src/ngosen-config.h:232
 msgid "Enable Macro"
 msgstr "Bật gõ tắt"
 
@@ -340,10 +336,6 @@ msgid "Show Charset in the tray menu"
 msgstr "Hiện Bảng mã trong menu khay"
 
 #: src/ngosen-config.h
-msgid "Show Spell Check in the tray menu"
-msgstr "Hiện Kiểm tra chính tả trong menu khay"
-
-#: src/ngosen-config.h
 msgid "Show Macro in the tray menu"
 msgstr "Hiện Gõ tắt trong menu khay"
 
@@ -471,10 +463,6 @@ msgstr "Cửa sổ cài đặt"
 #: src/ngosen-engine.cpp:215
 msgid "Charset"
 msgstr "Bảng mã"
-
-#: src/ngosen-engine.cpp:242 src/ngosen-engine.cpp:382
-msgid "Spell Check"
-msgstr "Kiểm tra chính tả"
 
 #: src/ngosen-engine.cpp:246 src/ngosen-engine.cpp:385
 msgid "Auto Non-VN Restore"
@@ -1246,10 +1234,6 @@ msgstr "Gõ thử:"
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Type here to test"
 msgstr "Gõ vào đây để thử"
-
-#: settings-gui/ui/pages/dynamic_settings.py
-msgid "Words that are not Vietnamese get no tone marks."
-msgstr "Từ không phải tiếng Việt thì không thêm dấu."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Typing windows still gives windows."

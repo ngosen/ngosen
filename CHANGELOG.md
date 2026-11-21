@@ -22,6 +22,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   gõ `s` ra "tiếng"), như Gõ Sen đã làm. Gõ lại phím dấu đó để giữ phím như đã gõ. Chạy ở app GTK 4 và
   Chromium; app khác vẫn thay từ bằng phím như trước (#921).
 
+### Bỏ
+
+- Bỏ ô "Kiểm tra chính tả" khỏi cửa sổ cài đặt và menu khay, vì nó chỉ có tác dụng khi "Tự khôi phục từ gõ sai"
+  đang bật: nay Tự khôi phục luôn so với từ điển. Ai từng tắt ô này để giữ dấu cho chữ kiểu chat như `zậy`,
+  `kạ`, hãy bật chế độ Teencode cho app đó (phím `` ` ``), hoặc thêm chữ muốn giữ vào Từ điển tuỳ chỉnh (#112, #925).
+
 ## [1.13.1-1] — 20/11/2026
 
 Trên KDE Plasma Wayland, WPS Office gõ được tiếng Việt (#897). Bấm Backspace khi đang gõ dở chữ kéo dài hay chữ teencode không còn mất dấu (#898, #902, #906). Nhập từ gợi ý emoji không còn hỏng cả tệp vì một từ có ký tự lạ (#899, #903).

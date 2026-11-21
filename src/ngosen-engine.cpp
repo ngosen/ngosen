@@ -399,7 +399,6 @@ namespace fcitx {
         config_.convertFrom.annotation().setList(charsets);
         config_.convertTo.annotation().setList(charsets);
 
-        initToggleAction(spellCheckAction_, config_.spellCheck, "ngosen-spellcheck", "tools-check-spelling", _("Spell Check"), N_("Spell Check"), uiManager);
         initToggleAction(macroAction_, config_.enableMacro, "ngosen-macro", "document-edit", _("Macro"), N_("Macro"), uiManager);
         initToggleAction(capitalizeMacroAction_, config_.capitalizeMacro, "ngosen-capitalizemacro", menuIconName("format-text-uppercase", "ngosen-capitalize-macro"),
                          _("Capitalize Macro"), N_("Capitalize Macro"), uiManager);
@@ -479,7 +478,6 @@ namespace fcitx {
         menuEntries_ = {{vietnameseAction_.get(), nullptr},
                         {inputMethodAction_.get(), &config_.showMenuInputMethod},
                         {charsetAction_.get(), &config_.showMenuCharset},
-                        {spellCheckAction_.get(), &config_.showMenuSpellCheck},
                         {macroAction_.get(), &config_.showMenuMacro},
                         {capitalizeMacroAction_.get(), &config_.showMenuCapitalizeMacro},
                         {autoCapitalizeAction_.get(), &config_.showMenuAutoCapitalize},
@@ -701,7 +699,6 @@ namespace fcitx {
         o.convertTo                      = config_.convertTo.value();
         o.convertCase                    = static_cast<int>(config_.convertCase.value());
         o.convertStripDiacritics         = config_.convertStripDiacritics.value();
-        o.spellCheck                     = config_.spellCheck.value();
         o.modernStyle                    = config_.modernStyle.value();
         o.freeMarking                    = config_.freeMarking.value();
         o.w2u                            = static_cast<int>(config_.w2u.value());
@@ -755,7 +752,6 @@ namespace fcitx {
         refreshOption();
         updateInputMethodAction(nullptr);
         updateCharsetAction(nullptr);
-        updateAction(nullptr, spellCheckAction_, config_.spellCheck, _("Spell Check"));
         updateAction(nullptr, macroAction_, config_.enableMacro, _("Macro"));
         updateAction(nullptr, capitalizeMacroAction_, config_.capitalizeMacro, _("Capitalize Macro"));
         updateAction(nullptr, capitalizeSentencesAction_, config_.autoCapitalizeAfterPunctuation, _("After . ! ? and Enter"));

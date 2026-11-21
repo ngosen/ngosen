@@ -22,6 +22,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ Sen trên GNOME với fcitx5 từ 5.1.22 (Fedora 44, 45, Arch, Debian testing): Firefox không còn khựng khi sửa
   dấu hai lần trong một chữ, và khi máy bận, Chrome cùng các app khác ít bị mất phần chữ vừa sửa hơn hẳn (kiểu
   `người` thành `ngưi`) (#920).
+- Gõ Sen trên GNOME với fcitx5 từ 5.1.22: một lần sửa sai lúc máy bận không còn làm cả app chuyển sang xoá bằng
+  Backspace tới khi đăng xuất; chỉ ô đang gõ bị ảnh hưởng, như trước đây (#922).
 
 ## [1.13.1-1] — 20/11/2026
 

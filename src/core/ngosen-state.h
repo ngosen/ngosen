@@ -358,6 +358,7 @@ namespace ngosen {
             bool        afterClick       = false;
             bool        afterBackspace   = false;
             bool        reportedSinceKey = false; ///< a changed report arrived after the previous key
+            bool        inPreedit        = false; ///< the key went to the preedit, not to the app
         };
         // A retone inside a word waits for the cursor to reach the word's end.
         struct RetoneMove {
@@ -365,20 +366,29 @@ namespace ngosen {
             size_t      cursor = 0;
             Retype      retype;
         };
-        std::optional<RetoneKey>       retoneKey_;
+        std::optional<RetoneKey> retoneKey_;
+        // A word retoned in the preedit, until the next key.
+        struct PreeditRetone {
+            uint32_t    sym = 0;
+            std::string key;
+            std::string toned;
+        };
+        std::optional<PreeditRetone>   preeditRetone_;
         std::optional<RetoneMove>      retoneMove_;
         std::unique_ptr<ngosen::Timer> retone_timer_;
         bool                           backspaceBeforeKey_ = false; ///< the last key was a backspace that left no word being typed
         bool                           backspaceInWord_    = false; ///< the user pressed Backspace in the word being typed
         std::optional<std::string>     selectedBeforeKey_;          ///< what the X server announced as selected right before this key
         void                           retoneAtWordEnd(size_t tail, Retype retype);
-        void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8);
+        void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8, const std::optional<Surrounding>& preeditBefore = std::nullopt);
         void                           retoneAnnounced(uint32_t sym, uint32_t states, const std::string& keyUtf8);
         void                           forgetSelection();
         void        offerRetone(const std::string& word, std::string typed, size_t tail, uint32_t sym, uint32_t states, const std::string& key, std::string after = {});
         void        dropRetoneKey();
         void        settleForHiddenInput();
         void        checkRetoneReport();
+        void        retonePreedit(const Surrounding& after);
+        bool        putBackPreeditKey(ngosen::KeyPress& keyEvent, uint32_t sym);
         bool        handleKeyAfterRetone(ngosen::KeyPress& keyEvent);
         std::string retoned(const std::string& word, uint32_t sym, uint32_t states) const;
 

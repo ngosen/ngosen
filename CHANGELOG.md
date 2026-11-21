@@ -18,6 +18,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Khay có thể hiện ảnh tự chọn, một ảnh khi gõ tiếng Việt và một ảnh khi gõ tiếng Anh: chọn "Ảnh tự chọn"
   ở mục "Khay hiện" rồi chọn ảnh SVG hoặc PNG. Ngôn ngữ chưa có ảnh vẫn hiện biểu tượng màu. Các mức của
   "Màu biểu tượng" nay ghi rõ "Hợp panel sáng" và "Hợp panel tối" (#911, #912, #917).
+- Gõ Preedit: bôi đen một từ đã gõ rồi gõ phím dấu thì từ hiện lại trong chữ tạm với dấu mới (bôi đen "tiềng",
+  gõ `s` ra "tiếng"), như Gõ Sen đã làm. Gõ lại phím dấu đó để giữ phím như đã gõ. Chạy ở app GTK 4 và
+  Chromium; app khác vẫn thay từ bằng phím như trước (#921).
 
 ## [1.13.1-1] — 20/11/2026
 

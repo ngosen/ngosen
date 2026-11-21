@@ -543,6 +543,10 @@ msgstr "Cứu chữ: Enter để đổi, Tab hoặc Esc để giữ nguyên"
 msgid "Tab or Esc: put back the key"
 msgstr "Cứu dấu: Tab hoặc Esc để trả lại phím vừa gõ"
 
+#: src/core/ngosen-state-retone.cpp
+msgid "The tone key again: put back the key"
+msgstr "Cứu dấu: gõ lại phím dấu để trả lại phím vừa gõ"
+
 #: src/core/ngosen-state-retype.cpp
 msgid "Tab or Esc: put back what was typed"
 msgstr "Cứu chữ: Tab hoặc Esc để trả lại chữ đã gõ"

@@ -260,7 +260,8 @@ namespace ngosen {
         if (keyEvent.isRelease() || keyEvent.isModifier())
             return false;
         const std::optional<PreeditRetone> retone = std::exchange(preeditRetone_, std::nullopt);
-        if (!retone || sym != retone->sym)
+        // Ctrl+S is Save, not the tone key again.
+        if (!retone || sym != retone->sym || keyEvent.hasModifier())
             return false;
         UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         if (!preedit || retone->toned != preedit.get())

@@ -1454,7 +1454,7 @@ msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid ""
-"Select nhanh and type s: nhánh. Tab, Esc or s again gives back s. Only the tone mark changes: nguoi does not become người."
+"Select nhanh and type s: nhánh. s again gives back s, as do Tab and Esc in Sen. Only the tone mark changes: nguoi does not become người."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py

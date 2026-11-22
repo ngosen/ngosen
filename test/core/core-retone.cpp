@@ -24,6 +24,7 @@ using ngosen::test::AppQuirks;
 using ngosen::test::FakeApp;
 using ngosen::test::FakeLoop;
 using ngosen::test::FakeResources;
+using ngosen::test::WithCtrl;
 
 namespace {
 
@@ -65,6 +66,7 @@ namespace {
         std::string hint; // the status line once the word has changed, empty when it did not
         std::string preedit;
         std::string text;
+        int         shortcuts = 0; // Ctrl or Alt keys that reached the app
     };
 
     Result retone(const Run& run) {
@@ -106,7 +108,8 @@ namespace {
             loop.pump(run.gapMs);
         }
         loop.pump(300);
-        result.text = app->text();
+        result.text      = app->text();
+        result.shortcuts = app->shortcuts();
         g_mouse_clicked.store(false);
         return result;
     }
@@ -293,6 +296,11 @@ namespace {
         run.after = {'s', ' '};
         r         = retone(run);
         check(r.preedit == "tiếng" && r.text == "abc s  xyz ", "preedit: the tone key again puts back the key over a toned word", r.preedit + " | " + r.text);
+
+        run       = nhanhInPreedit();
+        run.after = {'s' | WithCtrl, ' '};
+        r         = retone(run);
+        check(r.shortcuts == 1 && r.text == "abc nhánh  xyz ", "preedit: Ctrl with the tone key goes to the app", r.text + " | shortcuts " + std::to_string(r.shortcuts));
 
         run       = nhanhInPreedit();
         run.after = {'s', 'a', ' '};

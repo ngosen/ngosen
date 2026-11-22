@@ -1,6 +1,6 @@
 fcitx5-ngosen (1:1.14.0-1) unstable; urgency=medium
 
-  * The tray can show vi / en or a picture of your own instead of the icon (#908, #911); in Preedit, a selected word can be retoned with the tone key, as in Sen (#921); a guide for AI assistants and the ngosen-check command (#931, #933); the Spell Check option is gone and Auto Restore always checks the dictionary (#925); a first install on KDE keeps the keyboard layout (#942).
+  * The tray can show vi / en or a picture of your own instead of the icon (#908, #911); in Preedit, a selected word can be retoned with the tone key, as in Sen (#921); a guide for AI assistants and the ngosen-check command (#931, #933); the Spell Check option is gone and Auto Restore always checks the dictionary (#925); a first install on KDE keeps the keyboard layout (#942); letters, numbers and chat shorthand no longer offer emoji (#945); the KDE tray letters are drawn on the pixel grid (#946).
 
  -- Nguyen Phi <nguyenphidt@gmail.com>  Sun, 22 Nov 2026 12:00:00 +0700
 

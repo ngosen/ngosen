@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [1.14.0-1] — 22/11/2026
 
-Khay có thể hiện chữ `vi` / `en` hoặc ảnh tự chọn thay cho biểu tượng (#908, #911). Gõ Preedit: bôi đen một từ đã gõ rồi gõ phím dấu thì đổi được dấu, như Gõ Sen (#921). Nhờ AI tìm lỗi gõ nay có trang hướng dẫn riêng cho AI và lệnh `ngosen-check` (#931, #933). Bỏ ô "Kiểm tra chính tả" (#925), và cài lần đầu trên KDE không còn đổi bàn phím về English (#942).
+Khay có thể hiện chữ `vi` / `en` hoặc ảnh tự chọn thay cho biểu tượng (#908, #911). Gõ Preedit: bôi đen một từ đã gõ rồi gõ phím dấu thì đổi được dấu, như Gõ Sen (#921). Nhờ AI tìm lỗi gõ nay có trang hướng dẫn riêng cho AI và lệnh `ngosen-check` (#931, #933). Bỏ ô "Kiểm tra chính tả" (#925), và cài lần đầu trên KDE không còn đổi bàn phím về English (#942). Gợi ý emoji không còn bật lên khi gõ chữ cái đơn, con số hay chữ tắt như `t`, `ng`, `vs` (#945).
 Tải ở [ngosen-1.14.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.0-1).
 
 ### Thêm

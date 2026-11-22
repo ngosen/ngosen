@@ -358,6 +358,7 @@ namespace fcitx {
                 std::lock_guard<std::mutex> lock(appRulesMutex_);
                 emojiOffApps_.erase(appName);
                 teencodeApps_.erase(appName);
+                vimApps_.erase(appName);
             }
         });
 

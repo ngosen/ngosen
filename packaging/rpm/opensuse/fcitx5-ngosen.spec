@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.13.2
+Version:        1.14.0
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -102,6 +102,9 @@ else
 fi
 
 %changelog
+* Sun Nov 22 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.14.0-1
+- The tray can show vi / en or a picture of your own instead of the icon (#908, #911); in Preedit, a selected word can be retoned with the tone key, as in Sen (#921); a guide for AI assistants and the ngosen-check command (#931, #933); the Spell Check option is gone and Auto Restore always checks the dictionary (#925); a first install on KDE keeps the keyboard layout (#942); letters, numbers and chat shorthand no longer offer emoji (#945); the KDE tray letters are drawn on the pixel grid (#946); Vim mode switched on in an unnamed window no longer carries over to a later window (#949).
+
 * Sun Nov 22 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.13.2-1
 - On GNOME with fcitx5 5.1.22 or later, Sen keeps its edit protection: Firefox no longer stalls on a second tone change, busy machines lose fewer corrected letters, and one failed correction no longer switches the whole app to Backspace deletion (#920, #922); Firefox snap keeps the word when clicking back into it (#919); Orca IDE's terminal no longer repeats words (#927); xterm.js terminals in other apps are learned after the first words and remembered across restarts (#930), and coming back to one from another window no longer garbles the next word (#936); charset conversion no longer takes another app's selection (#916); emoji page fixes for English words that are also Vietnamese (#915).
 

@@ -36,6 +36,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Cài lần đầu trên KDE không còn đổi bàn phím về English sau mỗi lần khởi động lại: lệnh cài giữ layout đang đặt
   trong System Settings (như bàn phím Nhật), hoặc layout của hệ thống nếu chưa đặt (#942).
+- Gợi ý emoji: chữ cái đơn, con số và chữ tắt khi chat không còn gợi ý emoji theo từ khoá tiếng Anh, như gõ `t`
+  không còn hiện 🦖, `2` không còn hiện 2️⃣, `ng`, `vs` không còn hiện 🆖, 🆚 (#945).
 
 ## [1.13.2-1] — 22/11/2026
 

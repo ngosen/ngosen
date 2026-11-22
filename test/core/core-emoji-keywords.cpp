@@ -152,7 +152,15 @@ int main() {
     check(suggestEmoji({"cat"}, options)->kind == EmojiKind::Word, "an English keyword goes after the word");
     offersNothing({"face"}); // shared by too many emoji to name one
     offersNothing({"can"});  // also Vietnamese, so not English when typed
-    offers({"cười"}, "😂");  // a Vietnamese keyword is unchanged
+    // Letters, numbers and chat shorthand are typed all the time; none of them should bring up an emoji.
+    offersNothing({"t"}); // t-rex
+    offersNothing({"r"});
+    offersNothing({"2"});
+    offersNothing({"18"});
+    offersNothing({"ng"}); // người
+    offersNothing({"vs"}); // với
+    offers({"t-rex"}, "🦖");
+    offers({"cười"}, "😂"); // a Vietnamese keyword is unchanged
     options.englishEmojiKeywords = false;
     offersNothing({"cat"});
     offers({"love"}, "❤️"); // picked by hand, not one of the English ones

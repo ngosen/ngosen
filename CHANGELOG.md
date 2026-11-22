@@ -34,6 +34,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Bật Vim mode trong một cửa sổ không báo tên app rồi đóng nó thì cửa sổ mở sau không còn có thể bị bật Vim mode
+  theo (#949).
 - Trên KDE, chữ `vi` / `en` và `V` / `E` ở khay được vẽ lại theo đúng lưới điểm ảnh của khay: nét mảnh và
   sắc như các biểu tượng bên cạnh, thay vì đậm và nhoè (#946).
 - Cài lần đầu trên KDE không còn đổi bàn phím về English sau mỗi lần khởi động lại: lệnh cài giữ layout đang đặt

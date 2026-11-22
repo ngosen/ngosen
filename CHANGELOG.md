@@ -34,6 +34,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Sửa
 
+- Trên KDE, chữ `vi` / `en` và `V` / `E` ở khay được vẽ lại theo đúng lưới điểm ảnh của khay: nét mảnh và
+  sắc như các biểu tượng bên cạnh, thay vì đậm và nhoè (#946).
 - Cài lần đầu trên KDE không còn đổi bàn phím về English sau mỗi lần khởi động lại: lệnh cài giữ layout đang đặt
   trong System Settings (như bàn phím Nhật), hoặc layout của hệ thống nếu chưa đặt (#942).
 - Gợi ý emoji: chữ cái đơn, con số và chữ tắt khi chat không còn gợi ý emoji theo từ khoá tiếng Anh, như gõ `t`

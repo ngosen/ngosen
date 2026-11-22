@@ -32,6 +32,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   đang bật: nay Tự khôi phục luôn so với từ điển. Ai từng tắt ô này để giữ dấu cho chữ kiểu chat như `zậy`,
   `kạ`, hãy bật chế độ Teencode cho app đó (phím `` ` ``), hoặc thêm chữ muốn giữ vào Từ điển tuỳ chỉnh (#112, #925).
 
+### Sửa
+
+- Cài lần đầu trên KDE không còn đổi bàn phím về English sau mỗi lần khởi động lại: lệnh cài giữ layout đang đặt
+  trong System Settings (như bàn phím Nhật), hoặc layout của hệ thống nếu chưa đặt (#942).
+
 ## [1.13.2-1] — 22/11/2026
 
 Trên GNOME với fcitx5 từ 5.1.22 (Fedora 44, 45, Arch, Debian testing), Firefox không còn khựng khi sửa dấu, máy bận ít mất phần chữ vừa sửa hơn hẳn, và một lần sửa sai không còn làm cả app chuyển sang xoá bằng Backspace (#920, #922). Firefox bản snap không còn xoá mất chữ khi bấm chuột về một từ đã gõ rồi gõ phím dấu (#919). Terminal của Orca IDE không còn lặp chữ (#927); terminal trong các app khác chưa có tên trong danh sách (như các IDE mới) được tự nhận ra sau vài từ đầu và nhớ cả sau khi khởi động lại (#930), còn quay lại terminal của VS Code hay các app đó từ cửa sổ khác không còn ra chữ sai (#936). Chuyển mã trong ô như VS Code không còn lấy chữ đang bôi đen ở app khác (#916); trang Emoji sửa vài lỗi với từ tiếng Anh trùng chữ Việt (#915).

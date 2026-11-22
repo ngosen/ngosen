@@ -1103,6 +1103,20 @@ check_restart_through_kwin() {
     bus=
 }
 
+# fcitx5 copies its group layout into kxkbrc at every start, so a wrong one replaces the user's.
+check_kde_layout() {
+    local kxkbrc=$home/.config/kxkbrc
+    printf '[Layout]\nLayoutList=jp,us\nUse=true\nVariantList=,\n' | as_user tee "$kxkbrc" >/dev/null
+    check "an install with a Japanese KDE layout succeeds" install_fresh
+    check "the profile keeps KDE's first layout" has_line "$profile" 'Default Layout=jp'
+    # KWin reads the list whatever Use says.
+    printf '[Layout]\nLayoutList=fr\nVariantList=azerty\n' | as_user tee "$kxkbrc" >/dev/null
+    check "an install with a KDE layout variant succeeds" install_fresh
+    check "the profile names the variant as fcitx5 does" has_line "$profile" 'Default Layout=fr-azerty'
+    stop_fcitx5
+    as_user rm -f "$kxkbrc"
+}
+
 check_wps_input_method() {
     local saved_path=$stub_path dir=$work/flatpak-stub launchers=$home/.local/share/applications
     local overrides=$home/.stub-flatpak-overrides
@@ -1447,6 +1461,8 @@ main() {
         check_restart_through_kwin
         echo "== WPS Office on KDE"
         check_wps_input_method
+        echo "== KDE keyboard layout"
+        check_kde_layout
     fi
 
     if [ "$session" = gnome ] && command -v im-config >/dev/null 2>&1; then

@@ -404,7 +404,7 @@ msgid "What's new in Ngó Sen?"
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.13: one switch key for every app, emoji at the end of a sentence, drawn-out letters and teencode. See What's new for more."
+msgid "Version 1.14: pick what the tray shows, change a tone in Preedit, and a guide for AI assistants. See What's new for more."
 msgstr ""
 
 #: src/ngosen-engine.cpp
@@ -1688,6 +1688,34 @@ msgstr ""
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Pick what the tray shows"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "The tray can show vi / en instead of the icon, or a picture of your own for each language. Pick one under Tray Icon Shows. If you had turned the Ngó Sen status icon off, pick V / E again."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Change a tone in Preedit"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "In Preedit, select a typed word and press a tone key: the word comes back underlined with the new tone, as in Sen. Press the key again to keep it as typed. This works in GTK 4 apps and Chromium."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Help from an AI assistant"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "When typing goes wrong, send an AI assistant the guide below with what you see. It reads Check my machine and the typing log with you and leaves the fixes to you. The ngosen-check command prints Check my machine in a terminal."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Guide for AI assistants"
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py

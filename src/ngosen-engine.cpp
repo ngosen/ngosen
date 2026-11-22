@@ -636,7 +636,7 @@ namespace fcitx {
             constexpr int32_t neverExpire = 0;
             addon->call<INotifications::sendNotification>(
                 "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
-                _("Version 1.13: one switch key for every app, emoji at the end of a sentence, drawn-out letters and teencode. See What's new for "
+                _("Version 1.14: pick what the tray shows, change a tone in Preedit, and a guide for AI assistants. See What's new for "
                   "more."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;

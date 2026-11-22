@@ -12,8 +12,44 @@ import random
 
 from i18n import N_
 
+from core.brand import AI_HELP_URL
+
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
+    {
+        "version": "1.14",
+        "title": N_("Pick what the tray shows"),
+        "how": N_(
+            "The tray can show vi / en instead of the icon, or a picture of your own for each "
+            "language. Pick one under Tray Icon Shows. If you had turned the Ngó Sen status icon "
+            "off, pick V / E again."
+        ),
+        "example": "",
+        "target": ("setting", "TrayIconKind"),
+    },
+    {
+        "version": "1.14",
+        "title": N_("Change a tone in Preedit"),
+        "how": N_(
+            "In Preedit, select a typed word and press a tone key: the word comes back underlined "
+            "with the new tone, as in Sen. Press the key again to keep it as typed. This works in "
+            "GTK 4 apps and Chromium."
+        ),
+        "example": "tiềng + s → tiếng",
+        "target": ("setting", "RetoneSelection"),
+    },
+    {
+        "version": "1.14",
+        "title": N_("Help from an AI assistant"),
+        "how": N_(
+            "When typing goes wrong, send an AI assistant the guide below with what you see. It "
+            "reads Check my machine and the typing log with you and leaves the fixes to you. The "
+            "ngosen-check command prints Check my machine in a terminal."
+        ),
+        "example": "",
+        "target": ("page", "check"),
+        "link": (N_("Guide for AI assistants"), AI_HELP_URL),
+    },
     {
         "version": "1.13",
         "title": N_("One switch for every app"),

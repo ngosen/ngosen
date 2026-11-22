@@ -266,13 +266,6 @@
     }
    ],
    [
-    "SpellCheck",
-    "Boolean",
-    "Enable Spell Check Using Dictionary",
-    "True",
-    {}
-   ],
-   [
     "EnableMacro",
     "Boolean",
     "Enable Macro",
@@ -500,13 +493,6 @@
     {}
    ],
    [
-    "UseLotusIcons",
-    "Boolean",
-    "Use Ngó Sen Status Icons",
-    "True",
-    {}
-   ],
-   [
     "TrayIconSize",
     "Enum",
     "Tray Icon Size",
@@ -523,6 +509,40 @@
     }
    ],
    [
+    "TrayIconKind",
+    "Enum",
+    "Tray Icon Shows",
+    "Colour icon",
+    {
+     "EnumI18n": {
+      "0": "Colour icon",
+      "1": "V / E",
+      "2": "vi / en",
+      "3": "Custom image"
+     },
+     "Enum": {
+      "0": "Colour icon",
+      "1": "V / E",
+      "2": "vi / en",
+      "3": "Custom image"
+     }
+    }
+   ],
+   [
+    "TrayImageVietnamese",
+    "String",
+    "Tray image for Vietnamese",
+    "",
+    {}
+   ],
+   [
+    "TrayImageEnglish",
+    "String",
+    "Tray image for English",
+    "",
+    {}
+   ],
+   [
     "ShowMenuInputMethod",
     "Boolean",
     "Show Input Method in the tray menu",
@@ -533,13 +553,6 @@
     "ShowMenuCharset",
     "Boolean",
     "Show Charset in the tray menu",
-    "True",
-    {}
-   ],
-   [
-    "ShowMenuSpellCheck",
-    "Boolean",
-    "Show Spell Check in the tray menu",
     "True",
     {}
    ],

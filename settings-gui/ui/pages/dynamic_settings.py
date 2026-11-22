@@ -5,6 +5,8 @@
 Dynamic Settings Page with Card-based Layout matching modern guidelines.
 """
 
+import os
+
 from core.catalog import (
     CONVERT_CHARSETS,
     DEPENDS,
@@ -21,6 +23,9 @@ from core.catalog import (
     MODE_SWITCHING,
     SETTINGS_MAP,
     TRAY_ICON,
+    TRAY_IMAGE_BUTTONS,
+    TRAY_IMAGE_KEYS,
+    TRAY_KEYS,
     TYPING_EXAMPLES,
     SettingsCategory,
     shown_mode,
@@ -36,11 +41,13 @@ from qtpy.QtWidgets import (
     QButtonGroup,
     QCheckBox,
     QComboBox,
+    QFileDialog,
     QFormLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -50,7 +57,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import convert, page_status
+from core import convert, page_status, tray_image
 from ui import brand
 from ui.components import (
     HotkeyEditorWidget,
@@ -198,6 +205,7 @@ class DynamicSettingsPage(QWidget):
         self.list_widgets = []  # Track list widgets for layout refresh
         self._controls = {}
         self._fields = {}
+        self._tray_image_shows = []
         self._custom_hint = None
         self._retone_note = None
         self._convert_box = None
@@ -337,6 +345,8 @@ class DynamicSettingsPage(QWidget):
                         self._render_hotkey(item)
                     elif k == "Mode":
                         self._render_mode_buttons(item)
+                    elif k in TRAY_IMAGE_KEYS:
+                        self._render_tray_image(item)
                     elif "Enum" in item[4]:
                         self._render_combobox(item)
                     elif item[1] == "Boolean":
@@ -518,6 +528,8 @@ class DynamicSettingsPage(QWidget):
             elif isinstance(control, QComboBox) and control.findData(str(value)) >= 0:
                 control.setCurrentIndex(control.findData(str(value)))
         self._show_mode()
+        for show in self._tray_image_shows:
+            show()
         self._following = False
         self._apply_locks()
 
@@ -764,6 +776,54 @@ class DynamicSettingsPage(QWidget):
         names, dark = self._tray_icon_names()
         preview.setPixmap(brand.tray_preview(names, dark))
 
+    def _render_tray_image(self, item):
+        key, _type, label, _default, _annotations = item
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        pick = QPushButton(_("Choose…"))
+        clear = QPushButton(_("Remove"))
+        for button, name in zip((pick, clear), TRAY_IMAGE_BUTTONS[key]):
+            button.setAccessibleName(_(name))
+        shown = QLabel()
+        shown.setObjectName("TrayImage")
+        for widget in (pick, clear, shown):
+            layout.addWidget(widget)
+        layout.addStretch()
+        self._controls[key] = pick
+
+        def show():
+            path = str(self.model.value_of(key) or "")
+            if path:
+                shown.setPixmap(QIcon(path).pixmap(22, 22))
+            else:
+                shown.setText(_("Default"))
+            clear.setEnabled(bool(path))
+
+        def choose():
+            path, _filter = QFileDialog.getOpenFileName(
+                self, _(label), os.path.expanduser("~"), _("Images (*.svg *.png)")
+            )
+            if path:
+                self.use_tray_image(key, path)
+
+        pick.clicked.connect(choose)
+        clear.clicked.connect(lambda: self.update_config(key, ""))
+        self._tray_image_shows.append(show)
+        show()
+        self.form.addRow(_(label) + ":", self._with_hint(row, key))
+
+    def use_tray_image(self, key, path):
+        """Copies the picked image where trays find it and points the setting at the copy."""
+        try:
+            saved = str(self.model.saved.get(key, ""))
+            copy = tray_image.install(path, TRAY_IMAGE_KEYS[key], keep={saved})
+        except (OSError, ValueError) as e:
+            QMessageBox.warning(self, _("Tray icon"), _("Could not use this image: {}").format(e))
+            return
+        self.update_config(key, copy)
+
     def _render_string(self, item, layout):
         key, type_str, label, default, annotations = item
         val = str(self.current_values.get(key, default))
@@ -998,8 +1058,10 @@ class DynamicSettingsPage(QWidget):
             self._show_mode()
         if key in ("InputMethod", "OutputCharset", "RetoneSelection"):
             self.refresh_status()
-        if key in ("UseLotusIcons", "TrayIconSize", "IconTheme"):
+        if key in TRAY_KEYS:
             self._update_tray_preview()
+            for show in self._tray_image_shows:
+                show()
         if key in convert.SETTING_KEYS and self._convert_box is not None:
             self._convert_box.refresh()
 

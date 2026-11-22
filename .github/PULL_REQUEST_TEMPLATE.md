@@ -20,7 +20,7 @@
 
 # Checklist
 
-- [ ] Nhánh đích là `main`
+- [ ] Nhánh đích là `next`, hoặc `patch` nếu sửa lỗi của bản đang phát hành (xem `AGENTS.md`)
 - [ ] Đã chạy `clang-format` (tuân thủ `.clang-format`)
 - [ ] Đã kiểm tra `ruff check` và `ruff format` (nếu sửa `settings-gui`)
 - [ ] Build và test pass (`cmake -B build -DBUILD_TESTING=ON && cmake --build build && ctest --test-dir build`)

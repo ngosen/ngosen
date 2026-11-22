@@ -28,14 +28,17 @@ DEFAULTS = {item[0]: item[3] for group in METADATA for item in group[1]}
 
 
 def lock_groups():
-    """Split DEPENDS into groups whose controllers can all lock, or all unlock, at once.
+    """Split the settings DEPENDS ties to a switch into groups whose switches can all lock, or all
+    unlock, at once.
 
-    One controller can unlock one setting when on and another when off.
+    One switch can unlock one setting when on and another when off.
     """
     from core.catalog import DEPENDS
 
     groups = []
     for key, (controller, needed) in DEPENDS.items():
+        if needed not in ("True", "False"):
+            continue
         group = next((g for g in groups if g[0].get(controller, needed) == needed), None)
         if group is None:
             group = ({}, [])

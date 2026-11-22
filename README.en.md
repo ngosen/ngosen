@@ -409,6 +409,10 @@ Quit VS Code completely, then reopen it from the menu. Through XIM, about one se
 word with an incorrect tone mark. To undo this workaround, delete
 `~/.local/share/applications/code_code.desktop`.
 
+If you ask an AI assistant for help, send it this along with the problem: "Read
+https://github.com/ngosen/ngosen/blob/main/docs/ai-help.md, then help me fix typing with Ngó Sen". The page
+tells it to diagnose and leave the fixes to you, and to have you read anything before you paste it.
+
 Report other problems in [Issues](https://github.com/ngosen/ngosen/issues) on GitHub.
 If you do not have a GitHub account, message the
 [Facebook page](https://www.facebook.com/profile.php?id=61595753582618). In settings, open "Kiểm tra máy"

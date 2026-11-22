@@ -71,7 +71,6 @@ class TypingPageTest(unittest.TestCase):
 
     def test_auto_restore_comes_before_what_depends_on_it(self):
         shown = list(self.page._controls)
-        self.assertLess(shown.index("AutoNonVnRestore"), shown.index("SpellCheck"))
         self.assertLess(shown.index("AutoNonVnRestore"), shown.index("DdFreeStyle"))
 
     def test_hint_sits_under_its_setting(self):
@@ -91,7 +90,7 @@ class TypingPageTest(unittest.TestCase):
             if label.text()
             in (
                 "Typing windows still gives windows.",
-                "Words that are not Vietnamese get no tone marks.",
+                "Tone marks can also go at the end of the word.",
             )
         ]
         self.assertEqual(len(hints), 2)
@@ -269,7 +268,7 @@ class AppearancePageTest(unittest.TestCase):
         )
         self.assertNotEqual(preview.pixmap().cacheKey(), drawn)
         drawn = preview.pixmap().cacheKey()
-        self.page.update_config("UseLotusIcons", "False")
+        self.page.update_config("TrayIconKind", "V / E")
         self.assertNotEqual(preview.pixmap().cacheKey(), drawn)
         self.page.update_config("IconTheme", "Light")
         self.assertEqual(
@@ -391,7 +390,8 @@ class ModeHintTest(unittest.TestCase):
 class HintTest(unittest.TestCase):
     # The input method shows a typing example, the mode line follows the picked mode, the mode keys
     # share one line under their list, and the menu entries are named by their checkboxes.
-    NO_HINT = {"InputMethod", "Mode", *MENU_ENTRIES}
+    # The Vietnamese image's hint covers the English one below it.
+    NO_HINT = {"InputMethod", "Mode", "TrayImageEnglish", *MENU_ENTRIES}
 
     def test_every_option_explains_itself(self):
         for category in (

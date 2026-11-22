@@ -772,6 +772,11 @@ class CollectTest(unittest.TestCase):
         f, asked = collect(XDG_SESSION_TYPE="x11")
         self.assertFalse(asked)
         self.assertNotIn("portal:", system_check.report(f, []))
+        # Asking by name would start an fcitx5 that is not running.
+        with mock.patch.object(FakeDBusHandler, "input_method_names", return_value=None):
+            f, asked = collect()
+        self.assertFalse(asked)
+        self.assertFalse(f.fcitx_running)
         os.remove(service)
         f, asked = collect()
         self.assertFalse(asked)

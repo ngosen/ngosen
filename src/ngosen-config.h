@@ -114,6 +114,15 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(TrayIconSize, N_("Normal"), N_("Large"));
 
+    enum class TrayIconKind : std::uint8_t {
+        ColourIcon,
+        Letter,
+        LanguageCode,
+        Image,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(TrayIconKind, N_("Colour icon"), N_("V / E"), N_("vi / en"), N_("Custom image"));
+
     enum class EmojiPlacement : std::uint8_t {
         AfterWord,
         InsteadOfWord,
@@ -323,8 +332,7 @@ namespace fcitx {
         OptionWithAnnotation<BracketTransformMode, BracketTransformModeI18NAnnotation> bracketTransform{this, "BracketTransform", _("Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"),
                                                                                                         static_cast<BracketTransformMode>(ngosen::defaultOptions.bracketTransform)};
 
-        Option<bool> spellCheck{this, "SpellCheck", _("Enable Spell Check Using Dictionary"), ngosen::defaultOptions.spellCheck};
-        Option<bool> enableMacro{this, "EnableMacro", _("Enable Macro"), ngosen::defaultOptions.enableMacro};
+        Option<bool>                                                                   enableMacro{this, "EnableMacro", _("Enable Macro"), ngosen::defaultOptions.enableMacro};
         Option<bool> capitalizeMacro{this, "CapitalizeMacro", _("Capitalize Macro"), ngosen::defaultOptions.capitalizeMacro};
         OptionWithAnnotation<LockWordModifier, LockWordModifierI18NAnnotation> lockWordModifier{this, "LockWordModifier", _("Key to Keep the Word as Typed"),
                                                                                                 static_cast<LockWordModifier>(ngosen::defaultOptions.lockWordKey)};
@@ -371,14 +379,15 @@ namespace fcitx {
         HiddenOption<int>  waitSurroundingMinPerKeyMs{this, "WaitSurroundingMinPerKeyMs",
                                                       _("Experiment: a snapshot identical to the one at send time counts as done only after this many ms per backspace"),
                                                       ngosen::defaultOptions.waitSurroundingMinPerKeyMs};
-        // The key keeps its old name so saved settings still load.
-        Option<bool>                                                   useNgoSenIcons{this, "UseLotusIcons", _("Use Ngó Sen Status Icons"), true};
         OptionWithAnnotation<TrayIconSize, TrayIconSizeI18NAnnotation> trayIconSize{this, "TrayIconSize", _("Tray Icon Size"), TrayIconSize::Normal};
+        OptionWithAnnotation<TrayIconKind, TrayIconKindI18NAnnotation> trayIconKind{this, "TrayIconKind", _("Tray Icon Shows"), TrayIconKind::ColourIcon};
+        // The settings window copies the picked images into the user's icon theme and stores the copies here.
+        Option<std::string> trayImageVietnamese{this, "TrayImageVietnamese", _("Tray image for Vietnamese"), ""};
+        Option<std::string> trayImageEnglish{this, "TrayImageEnglish", _("Tray image for English"), ""};
 
         // Settings and Save typing log have no option: without them the menu could not lead back.
         Option<bool> showMenuInputMethod{this, "ShowMenuInputMethod", _("Show Input Method in the tray menu"), true};
         Option<bool> showMenuCharset{this, "ShowMenuCharset", _("Show Charset in the tray menu"), true};
-        Option<bool> showMenuSpellCheck{this, "ShowMenuSpellCheck", _("Show Spell Check in the tray menu"), true};
         Option<bool> showMenuMacro{this, "ShowMenuMacro", _("Show Macro in the tray menu"), true};
         Option<bool> showMenuCapitalizeMacro{this, "ShowMenuCapitalizeMacro", _("Show Capitalize Macro in the tray menu"), true};
         Option<bool> showMenuAutoCapitalize{this, "ShowMenuAutoCapitalize", _("Show Auto Capitalize in the tray menu"), true};

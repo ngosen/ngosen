@@ -11,7 +11,7 @@ from qtpy.QtWidgets import QCheckBox, QLabel, QMessageBox, QPushButton
 from support import FakeDBusHandler, app
 from ui.main_window import NgoSenSettingsWindow
 
-SPELL_CHECK = "Enable Spell Check Using Dictionary"
+DD_FREE_STYLE = "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
 
 
 class FcitxDown(FakeDBusHandler):
@@ -51,43 +51,43 @@ class AutosaveTest(unittest.TestCase):
         return next(cb for cb in window.findChildren(QCheckBox) if cb.text() == text)
 
     def test_change_is_saved_without_a_button(self):
-        fake = FakeDBusHandler({"SpellCheck": "True"})
+        fake = FakeDBusHandler({"DdFreeStyle": "True"})
         window = self.open_window(fake, "Typing")
-        self.checkbox(window, SPELL_CHECK).click()
+        self.checkbox(window, DD_FREE_STYLE).click()
         window.save_pending()
-        self.assertEqual(fake.values["SpellCheck"], "False")
+        self.assertEqual(fake.values["DdFreeStyle"], "False")
         self.assertTrue(window.message_bar.isVisible())
-        self.assertIn(SPELL_CHECK, window.message_label.text())
+        self.assertIn(DD_FREE_STYLE, window.message_label.text())
         self.assertTrue(window.btn_undo.isVisible())
 
     def test_change_is_saved_after_a_pause(self):
-        fake = FakeDBusHandler({"SpellCheck": "True"})
+        fake = FakeDBusHandler({"DdFreeStyle": "True"})
         window = self.open_window(fake, "Typing")
-        self.checkbox(window, SPELL_CHECK).click()
-        self.assertEqual(fake.values["SpellCheck"], "True")
+        self.checkbox(window, DD_FREE_STYLE).click()
+        self.assertEqual(fake.values["DdFreeStyle"], "True")
         loop = QEventLoop()
         QTimer.singleShot(1000, loop.quit)
         loop.exec()
-        self.assertEqual(fake.values["SpellCheck"], "False")
+        self.assertEqual(fake.values["DdFreeStyle"], "False")
 
     def test_undo_puts_the_setting_back(self):
-        fake = FakeDBusHandler({"SpellCheck": "True"})
+        fake = FakeDBusHandler({"DdFreeStyle": "True"})
         window = self.open_window(fake, "Typing")
-        self.checkbox(window, SPELL_CHECK).click()
+        self.checkbox(window, DD_FREE_STYLE).click()
         window.save_pending()
         window.btn_undo.click()
-        self.assertEqual(fake.values["SpellCheck"], "True")
-        self.assertTrue(self.checkbox(window, SPELL_CHECK).isChecked())
+        self.assertEqual(fake.values["DdFreeStyle"], "True")
+        self.assertTrue(self.checkbox(window, DD_FREE_STYLE).isChecked())
         self.assertFalse(window.btn_undo.isVisible())
 
     def test_undo_keeps_what_fcitx5_remembered_since_the_window_opened(self):
-        fake = FakeDBusHandler({"SpellCheck": "True"})
+        fake = FakeDBusHandler({"DdFreeStyle": "True"})
         window = self.open_window(fake, "Typing")
         fake.sub_configs["app_rules"] = [{"App": "kate", "Mode": "3"}]
-        self.checkbox(window, SPELL_CHECK).click()
+        self.checkbox(window, DD_FREE_STYLE).click()
         window.save_pending()
         window.btn_undo.click()
-        self.assertEqual(fake.values["SpellCheck"], "True")
+        self.assertEqual(fake.values["DdFreeStyle"], "True")
         self.assertEqual(fake.sub_configs["app_rules"], [{"App": "kate", "Mode": "3"}])
 
     def test_undo_after_restoring_a_backup_keeps_what_fcitx5_remembered(self):
@@ -131,15 +131,15 @@ class AutosaveTest(unittest.TestCase):
         os.makedirs(os.path.dirname(dict_path))
         with open(dict_path, "wb") as f:
             f.write(b"an\n\xff\n")
-        fake = FakeDBusHandler({"SpellCheck": "True"})
+        fake = FakeDBusHandler({"DdFreeStyle": "True"})
         with mock.patch.object(QMessageBox, "warning") as warning:
             window = self.open_window(fake, "Typing")
             app.processEvents()
-            self.checkbox(window, SPELL_CHECK).click()
+            self.checkbox(window, DD_FREE_STYLE).click()
             window.save_pending()
             window.btn_undo.click()
         warning.assert_called()
-        self.assertEqual(fake.values["SpellCheck"], "True")
+        self.assertEqual(fake.values["DdFreeStyle"], "True")
         with open(dict_path, "rb") as f:
             self.assertEqual(f.read(), b"an\n\xff\n")
 
@@ -148,32 +148,32 @@ class AutosaveTest(unittest.TestCase):
         os.makedirs(os.path.dirname(dict_path))
         with open(dict_path, "w", encoding="utf-8") as f:
             f.write("an\nanh\n")
-        fake = FakeDBusHandler({"SpellCheck": "True", "EnableDictionary": "True"})
+        fake = FakeDBusHandler({"DdFreeStyle": "True", "EnableDictionary": "True"})
         # Its first tab shows; the dictionary tab behind it is built but never shown.
         window = self.open_window(fake, "Macros & Dictionary")
         window.sidebar.setCurrentRow(0)
-        self.checkbox(window, SPELL_CHECK).click()
+        self.checkbox(window, DD_FREE_STYLE).click()
         window.save_pending()
-        self.assertIn(SPELL_CHECK, window.message_label.text())
+        self.assertIn(DD_FREE_STYLE, window.message_label.text())
         self.assertEqual(fake.values["EnableDictionary"], "True")
         with open(dict_path, encoding="utf-8") as f:
             self.assertEqual(f.read(), "an\nanh\n")
 
     def test_failed_save_shows_what_fcitx5_kept(self):
-        fake = FakeDBusHandler({"SpellCheck": "True"})
+        fake = FakeDBusHandler({"DdFreeStyle": "True"})
         fake.set_config = lambda values: False
         window = self.open_window(fake, "Typing")
-        self.checkbox(window, SPELL_CHECK).click()
+        self.checkbox(window, DD_FREE_STYLE).click()
         window.save_pending()
         self.assertIn("fcitx5", window.message_label.text())
-        self.assertTrue(self.checkbox(window, SPELL_CHECK).isChecked())
+        self.assertTrue(self.checkbox(window, DD_FREE_STYLE).isChecked())
 
     def test_closing_saves_a_pending_change(self):
-        fake = FakeDBusHandler({"SpellCheck": "True"})
+        fake = FakeDBusHandler({"DdFreeStyle": "True"})
         window = self.open_window(fake, "Typing")
-        self.checkbox(window, SPELL_CHECK).click()
+        self.checkbox(window, DD_FREE_STYLE).click()
         window.close()
-        self.assertEqual(fake.values["SpellCheck"], "False")
+        self.assertEqual(fake.values["DdFreeStyle"], "False")
 
     def test_no_ok_apply_or_cancel(self):
         window = self.open_window(FakeDBusHandler())

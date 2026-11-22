@@ -118,7 +118,7 @@ class LayoutTest(unittest.TestCase):
 
     def test_restore_can_be_undone(self):
         fake = FakeDBusHandler(
-            {"SpellCheck": "True"}, {"ngosen-macro": [{"Key": "kg", "Value": "khô gà"}]}
+            {"DdFreeStyle": "True"}, {"ngosen-macro": [{"Key": "kg", "Value": "khô gà"}]}
         )
         window = NgoSenSettingsWindow(dbus_handler=fake)
         path = os.path.join(self.tmp, "backup.json")
@@ -126,16 +126,16 @@ class LayoutTest(unittest.TestCase):
         with open(path, encoding="utf-8") as f:
             self.assertEqual(json.load(f)["macros"], [{"Key": "kg", "Value": "khô gà"}])
 
-        fake.values["SpellCheck"] = "False"
+        fake.values["DdFreeStyle"] = "False"
         fake.sub_configs["ngosen-macro"] = []
         window.reload_pages()
         window.restore_backup(path)
-        self.assertEqual(fake.values["SpellCheck"], "True")
+        self.assertEqual(fake.values["DdFreeStyle"], "True")
         self.assertEqual(fake.sub_configs["ngosen-macro"], [{"Key": "kg", "Value": "khô gà"}])
         self.assertIn("ngosen", fake.reloads)
 
         window.btn_undo.click()
-        self.assertEqual(fake.values["SpellCheck"], "False")
+        self.assertEqual(fake.values["DdFreeStyle"], "False")
         self.assertEqual(fake.sub_configs["ngosen-macro"], [])
 
 

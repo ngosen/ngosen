@@ -22,4 +22,18 @@ for f in "$src"/settings-gui/*.py; do
         fail=1
     }
 done
+# Each command in bin runs a script from the settings window's directory.
+for cmd in fcitx5-ngosen-settings ngosen-check ngosen-save-log ngosen-toggle; do
+    launcher=$(find "$dest" -path "*/bin/$cmd" | head -1)
+    if [ ! -x "$launcher" ]; then
+        echo "not installed: bin/$cmd" >&2
+        fail=1
+        continue
+    fi
+    script=$(sed -n 's/^exec "\([^"]*\)".*/\1/p' "$launcher")
+    [ -x "$dest$script" ] || {
+        echo "bin/$cmd runs a missing script: $script" >&2
+        fail=1
+    }
+done
 exit $fail

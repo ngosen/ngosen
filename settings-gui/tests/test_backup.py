@@ -24,7 +24,7 @@ class LoadTest(unittest.TestCase):
 
     def test_a_backup_loads(self):
         data = {
-            "config": {"SpellCheck": "True"},
+            "config": {"DdFreeStyle": "True"},
             "macros": [{"Key": "kg", "Value": "khô"}],
             "dictionary": "hello\n",
         }
@@ -46,7 +46,7 @@ class LoadTest(unittest.TestCase):
     def test_switches_and_numbers_written_by_hand_load_as_fcitx5_text(self):
         data = {
             "config": {
-                "SpellCheck": False,
+                "DdFreeStyle": False,
                 "WaitSurroundingTimeoutMs": 5,
                 "ToggleKey": {"0": "Control+space"},
             },
@@ -56,7 +56,7 @@ class LoadTest(unittest.TestCase):
         self.assertEqual(
             loaded["config"],
             {
-                "SpellCheck": "False",
+                "DdFreeStyle": "False",
                 "WaitSurroundingTimeoutMs": "5",
                 "ToggleKey": {"0": "Control+space"},
             },

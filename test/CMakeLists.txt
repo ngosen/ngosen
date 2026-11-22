@@ -238,6 +238,7 @@ target_link_libraries(gnome_panel_theme PRIVATE
     Fcitx5::Core
     Fcitx5::Utils
 )
+target_compile_definitions(gnome_panel_theme PRIVATE NGOSEN_SOURCE_ICON_DIR="${PROJECT_SOURCE_DIR}/data/icons/hicolor/scalable/apps")
 add_test(NAME gnome_panel_theme COMMAND gnome_panel_theme)
 set_tests_properties(gnome_panel_theme PROPERTIES
     LABELS "unit;icon"

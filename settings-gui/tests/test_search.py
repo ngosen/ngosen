@@ -37,8 +37,10 @@ class SearchTest(unittest.TestCase):
         self.window.open_search_result(box.item(row))
 
     def test_finds_a_setting_and_names_its_page(self):
-        self.window.search_field.setText("spell")
-        self.assertIn("Enable Spell Check Using Dictionary — Typing", self.results())
+        self.window.search_field.setText("produce")
+        self.assertIn(
+            "Allow dd To Produce đ When Auto Restore Invalid Words Is On — Typing", self.results()
+        )
         self.assertTrue(self.window.search_results.isVisible())
         self.assertFalse(self.window.sidebar.isVisible())
 

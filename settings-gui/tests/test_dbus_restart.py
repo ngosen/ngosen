@@ -27,7 +27,7 @@ class Fcitx5RestartTest(unittest.TestCase):
             "from core.dbus_handler import NgoSenDBusHandler;"
             "h = NgoSenDBusHandler(); print(bool(h.get_config()), flush=True);"
             "sys.stdin.readline();"
-            "print(h.set_config({'SpellCheck': 'False'}), flush=True);"
+            "print(h.set_config({'DdFreeStyle': 'False'}), flush=True);"
             "print(h.set_sub_config_list('ngosen-macro', 'Macro', [{'Key': 'vn'}]), flush=True)"
         )
         window = subprocess.Popen(
@@ -42,7 +42,7 @@ class Fcitx5RestartTest(unittest.TestCase):
         out, _ = window.communicate("go\n", timeout=10)
         self.assertEqual(out.split(), ["True", "True"])
         keys = [sorted(call["values"]) for call in self.fcitx5.set_config_calls(second)]
-        self.assertEqual(keys, [["SpellCheck"], ["Macro"]])
+        self.assertEqual(keys, [["DdFreeStyle"], ["Macro"]])
         self.assertEqual(self.fcitx5.set_config_calls(first), [])
 
 

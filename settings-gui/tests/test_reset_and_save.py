@@ -25,12 +25,16 @@ def checkbox(page, text):
 
 class ResetTest(unittest.TestCase):
     def test_reset_shows_and_saves_defaults(self):
-        fake = FakeDBusHandler({"SpellCheck": "False"})
+        fake = FakeDBusHandler({"DdFreeStyle": "False"})
         page = DynamicSettingsPage(fake, category=SettingsCategory.TYPING)
         page.restore_defaults()
-        self.assertTrue(checkbox(page, "Enable Spell Check Using Dictionary").isChecked())
+        self.assertTrue(
+            checkbox(
+                page, "Allow dd To Produce đ When Auto Restore Invalid Words Is On"
+            ).isChecked()
+        )
         self.assertTrue(page.save_data())
-        self.assertEqual(fake.values["SpellCheck"], "True")
+        self.assertEqual(fake.values["DdFreeStyle"], "True")
 
     def test_reset_covers_a_switch_changed_outside_the_window(self):
         fake = FakeDBusHandler({"EnableMacro": "True", "EnableDictionary": "False"})
@@ -76,7 +80,7 @@ class ResetTest(unittest.TestCase):
 
     def test_reset_covers_pages_not_opened(self):
         fake = FakeDBusHandler(
-            {"SpellCheck": "False"},
+            {"DdFreeStyle": "False"},
             {
                 "app_rules": [{"App": "firefox", "Mode": "5"}],
                 "ngosen-macro": [{"Key": "kg", "Value": "khô gà"}],
@@ -86,7 +90,7 @@ class ResetTest(unittest.TestCase):
         with mock.patch("ui.main_window.confirm", return_value=True):
             window.on_restore_defaults()
         window.save_pending()
-        self.assertEqual(fake.values["SpellCheck"], "True")
+        self.assertEqual(fake.values["DdFreeStyle"], "True")
         self.assertEqual(fake.sub_configs["app_rules"], [])
         self.assertEqual(fake.sub_configs["ngosen-macro"], [])
 

@@ -60,11 +60,11 @@ msgstr "Tự động"
 
 #: src/ngosen-config.h:92
 msgid "Light"
-msgstr "Sáng"
+msgstr "Hợp panel sáng"
 
 #: src/ngosen-config.h:92
 msgid "Dark"
-msgstr "Tối"
+msgstr "Hợp panel tối"
 
 #: src/ngosen-config.h:199
 msgid "Key"
@@ -186,10 +186,6 @@ msgstr "Gõ w ra ư"
 #: src/ngosen-config.h:229
 msgid "Type [ -> ơ, ] -> ư, { -> Ơ, } -> Ư"
 msgstr "Phím [ ] ra ơ ư"
-
-#: src/ngosen-config.h:232
-msgid "Enable Spell Check Using Dictionary"
-msgstr "Kiểm tra chính tả"
 
 #: src/ngosen-config.h:232
 msgid "Enable Macro"
@@ -331,10 +327,6 @@ msgstr "Vẫn gõ dd ra đ khi tự khôi phục"
 msgid "Teencode"
 msgstr "Teencode"
 
-#: src/ngosen-config.h:244
-msgid "Use Ngó Sen Status Icons"
-msgstr "Sử dụng biểu tượng trạng thái Ngó Sen"
-
 #: src/ngosen-config.h
 msgid "Show Input Method in the tray menu"
 msgstr "Hiện Kiểu gõ trong menu khay"
@@ -342,10 +334,6 @@ msgstr "Hiện Kiểu gõ trong menu khay"
 #: src/ngosen-config.h
 msgid "Show Charset in the tray menu"
 msgstr "Hiện Bảng mã trong menu khay"
-
-#: src/ngosen-config.h
-msgid "Show Spell Check in the tray menu"
-msgstr "Hiện Kiểm tra chính tả trong menu khay"
 
 #: src/ngosen-config.h
 msgid "Show Macro in the tray menu"
@@ -445,6 +433,26 @@ msgid "Large"
 msgstr "Lớn"
 
 #: src/ngosen-config.h
+msgid "Tray Icon Shows"
+msgstr "Khay hiện"
+
+#: src/ngosen-config.h
+msgid "Colour icon"
+msgstr "Biểu tượng màu"
+
+#: src/ngosen-config.h
+msgid "Custom image"
+msgstr "Ảnh tự chọn"
+
+#: src/ngosen-config.h
+msgid "Tray image for Vietnamese"
+msgstr "Ảnh khay khi gõ tiếng Việt"
+
+#: src/ngosen-config.h
+msgid "Tray image for English"
+msgstr "Ảnh khay khi gõ tiếng Anh"
+
+#: src/ngosen-config.h
 msgid "Interface Language"
 msgstr "Ngôn ngữ giao diện"
 
@@ -455,10 +463,6 @@ msgstr "Cửa sổ cài đặt"
 #: src/ngosen-engine.cpp:215
 msgid "Charset"
 msgstr "Bảng mã"
-
-#: src/ngosen-engine.cpp:242 src/ngosen-engine.cpp:382
-msgid "Spell Check"
-msgstr "Kiểm tra chính tả"
 
 #: src/ngosen-engine.cpp:246 src/ngosen-engine.cpp:385
 msgid "Auto Non-VN Restore"
@@ -485,8 +489,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.13: one switch key for every app, emoji at the end of a sentence, drawn-out letters and teencode. See What's new for more."
-msgstr "Version 1.13: một phím chuyển cho mọi app, gợi ý emoji ở cuối câu, gõ kéo dài chữ và teencode. Xem thêm ở trang Có gì mới."
+msgid "Version 1.14: pick what the tray shows, change a tone in Preedit, and a guide for AI assistants. See What's new for more."
+msgstr "Version 1.14: chọn thứ hiện trên khay, đổi dấu trong Gạch chân, và trang hướng dẫn cho AI. Xem thêm ở trang Có gì mới."
 
 #: src/ngosen-engine.cpp
 msgid "Show"
@@ -526,6 +530,10 @@ msgstr "Cứu chữ: Enter để đổi, Tab hoặc Esc để giữ nguyên"
 #: src/core/ngosen-state-retone.cpp
 msgid "Tab or Esc: put back the key"
 msgstr "Cứu dấu: Tab hoặc Esc để trả lại phím vừa gõ"
+
+#: src/core/ngosen-state-retone.cpp
+msgid "The tone key again: put back the key"
+msgstr "Cứu dấu: gõ lại phím dấu để trả lại phím vừa gõ"
 
 #: src/core/ngosen-state-retype.cpp
 msgid "Tab or Esc: put back what was typed"
@@ -1209,7 +1217,7 @@ msgstr "Biểu tượng khay khi gõ tiếng Việt và tiếng Anh"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Vietnamese, English"
-msgstr "Tiếng Việt, tiếng Anh"
+msgstr "tiếng Việt, tiếng Anh"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Show in the tray menu"
@@ -1226,10 +1234,6 @@ msgstr "Gõ thử:"
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Type here to test"
 msgstr "Gõ vào đây để thử"
-
-#: settings-gui/ui/pages/dynamic_settings.py
-msgid "Words that are not Vietnamese get no tone marks."
-msgstr "Từ không phải tiếng Việt thì không thêm dấu."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Typing windows still gives windows."
@@ -1657,9 +1661,9 @@ msgstr "Lỡ gõ tieengs vieetj khi chưa bật? Bật tiếng Việt là thành
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid ""
-"Select nhanh and type s: nhánh. Tab, Esc or s again gives back s. Only the tone mark changes: nguoi does not become người."
+"Select nhanh and type s: nhánh. s again gives back s, as do Tab and Esc in Sen. Only the tone mark changes: nguoi does not become người."
 msgstr ""
-"Bôi đen nhanh rồi gõ s: nhánh. Tab, Esc hoặc gõ s lần nữa để trả lại s. Chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng): nguoi không thành người được."
+"Bôi đen nhanh rồi gõ s: nhánh. Gõ s lần nữa để trả lại s; ở Gõ Sen, Tab hoặc Esc cũng trả lại. Chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng): nguoi không thành người được."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
@@ -1697,17 +1701,57 @@ msgstr "Chuyển app đang dùng sang chế độ kế tiếp trong danh sách b
 msgid "With the mode menu open, press a mode's key to pick it for the app in use. Pick the app's default mode (usually Sen, sometimes Preedit) to follow the global setting and switch key again; OFF stays set for the app and keeps it in English even when other apps type Vietnamese. With All apps, the switch key in an OFF app opens the mode menu; pick Sen or Preedit there to type Vietnamese in that app."
 msgstr "Khi menu chế độ đang mở, bấm phím của một chế độ để chọn cho app đang dùng. Chọn chế độ mặc định của app (thường là Gõ Sen, đôi khi là Gạch chân) để app lại theo thiết lập chung và phím chuyển; Tắt vẫn được nhớ riêng cho app và giữ app gõ tiếng Anh ngay cả khi các app khác gõ tiếng Việt. Khi chọn Mọi app, bấm phím chuyển trong app đặt Tắt sẽ mở menu chế độ; chọn Gõ Sen hoặc Gạch chân tại đó để app gõ tiếng Việt."
 
+#: settings-gui/core/catalog.py
+msgid "V / E and vi / en take the colour picked below."
+msgstr "V / E và vi / en có màu theo ô chọn màu bên dưới."
+
+#: settings-gui/core/catalog.py
+msgid "Square SVG, or PNG from 64×64, on a transparent background."
+msgstr "Ảnh vuông SVG, hoặc PNG từ 64×64, nền trong suốt."
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/appearance.py
+msgid "Choose…"
+msgstr "Chọn…"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/appearance.py
+msgid "Default"
+msgstr "Mặc định"
+
+#: settings-gui/core/catalog.py
+msgid "Choose the tray image for Vietnamese"
+msgstr "Chọn ảnh khay khi gõ tiếng Việt"
+
+#: settings-gui/core/catalog.py
+msgid "Remove the tray image for Vietnamese"
+msgstr "Xoá ảnh khay khi gõ tiếng Việt"
+
+#: settings-gui/core/catalog.py
+msgid "Choose the tray image for English"
+msgstr "Chọn ảnh khay khi gõ tiếng Anh"
+
+#: settings-gui/core/catalog.py
+msgid "Remove the tray image for English"
+msgstr "Xoá ảnh khay khi gõ tiếng Anh"
+
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Off: plain one-colour icons, in the colour picked below."
-msgstr "Tắt: dùng biểu tượng một màu, theo màu chọn bên dưới."
+msgid "Images (*.svg *.png)"
+msgstr "Ảnh (*.svg *.png)"
+
+#: settings-gui/ui_gtk/appearance.py
+msgid "Images"
+msgstr "Ảnh"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/appearance.py
+msgid "Could not use this image: {}"
+msgstr "Không dùng được ảnh này: {}"
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "Large draws the Ngó Sen icon bigger in its tray slot. No change on GNOME, where it already fills the slot."
 msgstr "Lớn: biểu tượng Ngó Sen to hơn trong ô của nó trên khay. Trên GNOME không đổi, vì biểu tượng đã đầy ô."
 
 #: settings-gui/ui/pages/dynamic_settings.py
-msgid "Only for one-colour icons. Light suits a light panel, Dark a dark one, and Auto follows the light or dark setting of the desktop."
-msgstr "Chỉ dùng cho biểu tượng một màu. Sáng hợp panel sáng, Tối hợp panel tối, Tự động theo chế độ sáng/tối của máy."
+msgid "Light suits a light panel, Dark a dark one; Auto follows the light or dark setting of the desktop."
+msgstr "Tự động theo chế độ sáng/tối của máy."
 
 #: settings-gui/ui/main_window.py
 msgid "What's new & tips"
@@ -1977,6 +2021,34 @@ msgstr "Tiếng Việt trong menu khay"
 #: settings-gui/core/whats_new_content.py
 msgid "The tray menu starts with an item that turns Vietnamese on or off, for when Ctrl + Shift does not work."
 msgstr "Đầu menu khay có mục bật hoặc tắt tiếng Việt, dùng khi Ctrl + Shift không chạy."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Pick what the tray shows"
+msgstr "Chọn thứ hiện trên khay"
+
+#: settings-gui/core/whats_new_content.py
+msgid "The tray can show vi / en instead of the icon, or a picture of your own for each language. Pick one under Tray Icon Shows. If you had turned the Ngó Sen status icon off, pick V / E again."
+msgstr "Khay có thể hiện chữ vi / en thay cho biểu tượng, hoặc ảnh tự chọn cho từng ngôn ngữ. Chọn ở mục Khay hiện. Ai đã tắt biểu tượng trạng thái Ngó Sen thì chọn lại V / E."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Change a tone in Preedit"
+msgstr "Đổi dấu trong Gạch chân"
+
+#: settings-gui/core/whats_new_content.py
+msgid "In Preedit, select a typed word and press a tone key: the word comes back underlined with the new tone, as in Sen. Press the key again to keep it as typed. This works in GTK 4 apps and Chromium."
+msgstr "Ở chế độ Gạch chân, bôi đen một từ đã gõ rồi gõ phím dấu: từ hiện lại trong chữ gạch chân với dấu mới, như Gõ Sen. Gõ lại phím đó để giữ phím như đã gõ. Chạy ở app GTK 4 và Chromium."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Help from an AI assistant"
+msgstr "Nhờ AI giúp"
+
+#: settings-gui/core/whats_new_content.py
+msgid "When typing goes wrong, send an AI assistant the guide below with what you see. It reads Check my machine and the typing log with you and leaves the fixes to you. The ngosen-check command prints Check my machine in a terminal."
+msgstr "Gõ sai mà muốn nhờ AI, hãy gửi nó trang hướng dẫn bên dưới kèm mô tả lỗi. AI đọc trang Kiểm tra máy và nhật ký gõ cùng bạn, còn sửa thì để bạn tự bấm. Lệnh ngosen-check in kết quả Kiểm tra máy ra terminal."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Guide for AI assistants"
+msgstr "Hướng dẫn cho AI"
 
 #: settings-gui/core/whats_new_content.py
 msgid "One switch for every app"

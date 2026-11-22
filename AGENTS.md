@@ -34,8 +34,8 @@ a careful human wrote it, and the person sending it must be able to explain ever
   naming (`camelCase` functions, `snake_case_` members). Functions under ~50 lines.
 - **No "lotus" in names.** The project is Ngó Sen; a file, class, function, constant, macro or
   environment variable uses `ngosen`/`NgoSen`/`NGOSEN_` or a plain descriptive name. The lotus
-  names left are the ones users' machines still have: the `UseLotusIcons` config key and the files
-  `src/ngosen-migration.cpp` carries over.
+  names left are the ones users' machines still have: the files `src/ngosen-migration.cpp` carries
+  over.
   Runtime names users already have change only together with a migration step.
   `misc/check-new-names.sh` enforces this in CI.
 - **Run clang-format before pushing.** CI fails on any formatting diff, including alignment of
@@ -104,6 +104,8 @@ the README: people who install from a repository or a package file only get thos
 Each such PR adds a line under `## [Chưa phát hành]` in [CHANGELOG.md](CHANGELOG.md): what
 changed for the user, with the PR number. The changelog is written in Vietnamese, since most of its
 readers are Vietnamese users; keep English tech terms as in "Writing issues and PR text" below.
+A PR that adds, changes or removes an entry under "Khắc phục sự cố thường gặp" in the README updates
+[docs/ai-help.md](docs/ai-help.md) too: users hand that page to an AI assistant.
 Refer to issues in other repositories as `owner/repo#123`, since a bare `#123` links to this one.
 Ngó Sen does not take patches from fcitx5-lotus; learn from other input methods and write the code here.
 

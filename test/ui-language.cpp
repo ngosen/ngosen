@@ -62,15 +62,14 @@ int main() {
     check("picking English changes the menu at once", label(context, "ngosen-settings") == "Settings" && label(context, "ngosen-input-method") == "Input Method (Telex)");
     check("picking English changes the hint", hint() == "Tab or Esc: put back what was typed");
 
-    const bool spellCheck = label(context, "ngosen-spellcheck").find("✔") == 0;
-    action(context, "ngosen-spellcheck")->activate(&context);
-    check("a toggled entry keeps the picked language", label(context, "ngosen-spellcheck") == std::string(spellCheck ? "✖ " : "✔ ") + "Spell Check");
+    const bool macro = label(context, "ngosen-macro").find("✔") == 0;
+    action(context, "ngosen-macro")->activate(&context);
+    check("a toggled entry keeps the picked language", label(context, "ngosen-macro") == std::string(macro ? "✖ " : "✔ ") + "Macro");
 
     fcitx::RawConfig vietnamese;
     vietnamese.setValueByPath("UiLanguage", "Vietnamese");
     engine.setConfig(vietnamese);
-    check("picking Vietnamese changes it back",
-          label(context, "ngosen-charset") == "Bảng mã (Unicode)" && label(context, "ngosen-spellcheck").find("Kiểm tra chính tả") != std::string::npos);
+    check("picking Vietnamese changes it back", label(context, "ngosen-charset") == "Bảng mã (Unicode)" && label(context, "ngosen-macro").find("Gõ tắt") != std::string::npos);
 
     return failures == 0 ? 0 : 1;
 }

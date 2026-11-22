@@ -421,6 +421,10 @@ Báo ở [Issues](https://github.com/ngosen/ngosen/issues). Không có tài kho�
 [Facebook](https://www.facebook.com/profile.php?id=61595753582618): trong cửa sổ cài đặt, vào trang
 “Kiểm tra máy”, bấm “Nhắn qua Facebook…” để chép sẵn thông tin máy rồi dán vào tin nhắn.
 
+Nhờ AI tìm lỗi thì gửi nó câu này kèm mô tả lỗi: “Đọc https://github.com/ngosen/ngosen/blob/main/docs/ai-help.md
+rồi giúp tôi sửa lỗi gõ Ngó Sen”. Trang đó dặn AI chỉ chẩn đoán, để bạn tự bấm nút sửa, và nhắc bạn đọc kỹ thông
+tin trước khi dán cho AI.
+
 <a id="go-cai-dat"></a>
 
 ## 🗑️ Gỡ cài đặt

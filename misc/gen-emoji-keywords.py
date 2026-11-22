@@ -30,6 +30,8 @@ SKIN_TONES = {chr(c) for c in range(0x1F3FB, 0x1F400)}
 MOST_EMOJI = 20
 # The list shows five; the rest of a keyword's emoji would never be offered.
 SHOWN = 5
+# Vietnamese chat shorthand (ng for người, vs for với) that CLDR also lists as English keywords.
+CHAT_SHORTHAND = {"bs", "cl", "ng", "ny", "vs"}
 
 
 def is_flag(cp):
@@ -112,11 +114,21 @@ def english_rows(seen):
     rows = []
     for word, keys in emoji_of.items():
         # hahaha or zzz is a sound, and those are picked by hand.
-        if word in seen or len(keys) > MOST_EMOJI or re.fullmatch(r"(..?)\1+", word):
+        if (
+            word in seen
+            or len(keys) > MOST_EMOJI
+            or re.fullmatch(r"(..?)\1+", word)
+            or too_common(word)
+        ):
             continue
         best = sorted(keys, key=lambda k: (rank(names.get(k, ""), word), order[k]))[:SHOWN]
         rows.append((word, " ".join(full[k] for k in best), "english"))
     return rows
+
+
+def too_common(word):
+    # A letter (t from t-rex), a number or chat shorthand is typed all the time.
+    return len(word) < 2 or re.fullmatch(r"-?\d+", word) or word in CHAT_SHORTHAND
 
 
 def rank(name, word):

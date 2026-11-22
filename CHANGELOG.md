@@ -10,6 +10,44 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.14.0-1] — 22/11/2026
+
+Khay có thể hiện chữ `vi` / `en` hoặc ảnh tự chọn thay cho biểu tượng (#908, #911). Gõ Preedit: bôi đen một từ đã gõ rồi gõ phím dấu thì đổi được dấu, như Gõ Sen (#921). Nhờ AI tìm lỗi gõ nay có trang hướng dẫn riêng cho AI và lệnh `ngosen-check` (#931, #933). Bỏ ô "Kiểm tra chính tả" (#925), và cài lần đầu trên KDE không còn đổi bàn phím về English (#942). Gợi ý emoji không còn bật lên khi gõ chữ cái đơn, con số hay chữ tắt như `t`, `ng`, `vs` (#945).
+Tải ở [ngosen-1.14.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.0-1).
+
+### Thêm
+
+- Khay có thể hiện chữ `vi` / `en` thay cho biểu tượng, theo màu đã chọn trong "Màu biểu tượng". Chọn ở mục
+  "Khay hiện", mục này thay cho ô "Sử dụng biểu tượng trạng thái Ngó Sen"; chữ `V` / `E` một màu cũ nay là
+  lựa chọn "V / E", chữ `E` có thêm một lỗ ngó. Ai đã tắt ô đó thì chọn lại "V / E" sau khi cập nhật (#908).
+- Khay có thể hiện ảnh tự chọn, một ảnh khi gõ tiếng Việt và một ảnh khi gõ tiếng Anh: chọn "Ảnh tự chọn"
+  ở mục "Khay hiện" rồi chọn ảnh SVG hoặc PNG. Ngôn ngữ chưa có ảnh vẫn hiện biểu tượng màu. Các mức của
+  "Màu biểu tượng" nay ghi rõ "Hợp panel sáng" và "Hợp panel tối" (#911, #912, #917).
+- Gõ Preedit: bôi đen một từ đã gõ rồi gõ phím dấu thì từ hiện lại trong chữ tạm với dấu mới (bôi đen "tiềng",
+  gõ `s` ra "tiếng"), như Gõ Sen đã làm. Gõ lại phím dấu đó để giữ phím như đã gõ. Chạy ở app GTK 4 và
+  Chromium; app khác vẫn thay từ bằng phím như trước (#921).
+- Trang hướng dẫn cho AI (`docs/ai-help.md`): nhờ AI tìm lỗi gõ thì gửi nó trang này. AI làm theo trang Kiểm tra
+  máy và nhật ký gõ, để bạn tự bấm nút sửa, và nhắc bạn đọc kỹ trước khi dán thông tin máy (#931).
+- Lệnh `ngosen-check` in kết quả Kiểm tra máy ra terminal, kèm cách sửa từng bước, để AI chạy lệnh được đọc. Lệnh
+  không đổi gì trên máy, không ghi tên app (trừ khi thêm `--include-apps`) và không ghi chữ đã gõ (#933).
+
+### Bỏ
+
+- Bỏ ô "Kiểm tra chính tả" khỏi cửa sổ cài đặt và menu khay, vì nó chỉ có tác dụng khi "Tự khôi phục từ gõ sai"
+  đang bật: nay Tự khôi phục luôn so với từ điển. Ai từng tắt ô này để giữ dấu cho chữ kiểu chat như `zậy`,
+  `kạ`, hãy bật chế độ Teencode cho app đó (phím `` ` ``), hoặc thêm chữ muốn giữ vào Từ điển tuỳ chỉnh (#112, #925).
+
+### Sửa
+
+- Bật Vim mode trong một cửa sổ không báo tên app rồi đóng nó thì cửa sổ mở sau không còn có thể bị bật Vim mode
+  theo (#949).
+- Trên KDE, chữ `vi` / `en` và `V` / `E` ở khay được vẽ lại theo đúng lưới điểm ảnh của khay: nét mảnh và
+  sắc như các biểu tượng bên cạnh, thay vì đậm và nhoè (#946).
+- Cài lần đầu trên KDE không còn đổi bàn phím về English sau mỗi lần khởi động lại: lệnh cài giữ layout đang đặt
+  trong System Settings (như bàn phím Nhật), hoặc layout của hệ thống nếu chưa đặt (#942).
+- Gợi ý emoji: chữ cái đơn, con số và chữ tắt khi chat không còn gợi ý emoji theo từ khoá tiếng Anh, như gõ `t`
+  không còn hiện 🦖, `2` không còn hiện 2️⃣, `ng`, `vs` không còn hiện 🆖, 🆚 (#945).
+
 ## [1.13.2-1] — 22/11/2026
 
 Trên GNOME với fcitx5 từ 5.1.22 (Fedora 44, 45, Arch, Debian testing), Firefox không còn khựng khi sửa dấu, máy bận ít mất phần chữ vừa sửa hơn hẳn, và một lần sửa sai không còn làm cả app chuyển sang xoá bằng Backspace (#920, #922). Firefox bản snap không còn xoá mất chữ khi bấm chuột về một từ đã gõ rồi gõ phím dấu (#919). Terminal của Orca IDE không còn lặp chữ (#927); terminal trong các app khác chưa có tên trong danh sách (như các IDE mới) được tự nhận ra sau vài từ đầu và nhớ cả sau khi khởi động lại (#930), còn quay lại terminal của VS Code hay các app đó từ cửa sổ khác không còn ra chữ sai (#936). Chuyển mã trong ô như VS Code không còn lấy chữ đang bôi đen ở app khác (#916); trang Emoji sửa vài lỗi với từ tiếng Anh trùng chữ Việt (#915).

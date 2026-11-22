@@ -80,7 +80,7 @@ namespace ngosen {
             .ddFreeStyle         = engine_->options().ddFreeStyle,
             .macroEnabled        = engine_->options().enableMacro,
             .autoCapitalizeMacro = engine_->options().capitalizeMacro,
-            .spellCheckWithDicts = engine_->options().spellCheck,
+            .spellCheckWithDicts = true,
             .outputCharset       = engine_->options().outputCharset.data(),
             .modernStyle         = engine_->options().modernStyle,
             .freeMarking         = engine_->options().freeMarking,
@@ -97,6 +97,12 @@ namespace ngosen {
     void TypingState::handlePreeditMode(ngosen::KeyPress& keyEvent, uint32_t currentSym) {
         if (vimOn() && vimState_ != VimState::Insert && readVimKey(keyEvent, currentSym))
             return;
+        if (putBackPreeditKey(keyEvent, currentSym))
+            return;
+        ngosen::UniqueCPtr<char> shownBefore(EnginePullPreedit(bambooEngine_.handle()));
+        const bool               startsWord = !shownBefore || *shownBefore.get() == 0;
+        // The app may change its text as soon as the preedit shows.
+        const Surrounding beforeKey = startsWord ? host_->surrounding() : Surrounding();
         if (ngosen::key::isBackspace(currentSym) && reopenWordInPreedit(keyEvent))
             return;
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone) {
@@ -136,6 +142,9 @@ namespace ngosen {
         }
         host_->refreshPreedit();
         host_->refreshPanel();
+        // A word the user's own Preedit mode starts, not one Sen shows in a preedit.
+        if (startsWord && realMode == ngosen::Mode::Preedit && currentSym == keyEvent.sym())
+            noteRetoneKey(currentSym, keyEvent.states(), host_->keyText(currentSym), beforeKey);
         // Escape has committed the word; the letters typed next are Vim commands.
         if (!typesText(keyEvent, currentSym))
             noteVimSpecialKey(keyEvent, currentSym);

@@ -21,5 +21,3 @@ Chưa có số version, xếp theo thứ tự định làm:
    Debian và Ubuntu (APT), Arch (pacman) và openSUSE Tumbleweed. nixpkgs đang chờ review
    ([NixOS/nixpkgs#575620](https://github.com/NixOS/nixpkgs/pull/575620)). Từ 1.13 có gói AUR;
    kho Debian đã nhận bản 1.9.2 vào testing.
-7. Gộp "Kiểm tra chính tả" vào "Tự khôi phục từ gõ sai", vì nó chỉ có tác dụng khi Tự khôi phục
-   đang bật (#112).

@@ -358,6 +358,7 @@ namespace fcitx {
                 std::lock_guard<std::mutex> lock(appRulesMutex_);
                 emojiOffApps_.erase(appName);
                 teencodeApps_.erase(appName);
+                vimApps_.erase(appName);
             }
         });
 
@@ -399,7 +400,6 @@ namespace fcitx {
         config_.convertFrom.annotation().setList(charsets);
         config_.convertTo.annotation().setList(charsets);
 
-        initToggleAction(spellCheckAction_, config_.spellCheck, "ngosen-spellcheck", "tools-check-spelling", _("Spell Check"), N_("Spell Check"), uiManager);
         initToggleAction(macroAction_, config_.enableMacro, "ngosen-macro", "document-edit", _("Macro"), N_("Macro"), uiManager);
         initToggleAction(capitalizeMacroAction_, config_.capitalizeMacro, "ngosen-capitalizemacro", menuIconName("format-text-uppercase", "ngosen-capitalize-macro"),
                          _("Capitalize Macro"), N_("Capitalize Macro"), uiManager);
@@ -481,7 +481,6 @@ namespace fcitx {
         menuEntries_ = {{vietnameseAction_.get(), nullptr},
                         {inputMethodAction_.get(), &config_.showMenuInputMethod},
                         {charsetAction_.get(), &config_.showMenuCharset},
-                        {spellCheckAction_.get(), &config_.showMenuSpellCheck},
                         {macroAction_.get(), &config_.showMenuMacro},
                         {capitalizeMacroAction_.get(), &config_.showMenuCapitalizeMacro},
                         {autoCapitalizeAction_.get(), &config_.showMenuAutoCapitalize},
@@ -638,7 +637,7 @@ namespace fcitx {
             constexpr int32_t neverExpire = 0;
             addon->call<INotifications::sendNotification>(
                 "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
-                _("Version 1.13: one switch key for every app, emoji at the end of a sentence, drawn-out letters and teencode. See What's new for "
+                _("Version 1.14: pick what the tray shows, change a tone in Preedit, and a guide for AI assistants. See What's new for "
                   "more."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;
@@ -704,7 +703,6 @@ namespace fcitx {
         o.convertTo                      = config_.convertTo.value();
         o.convertCase                    = static_cast<int>(config_.convertCase.value());
         o.convertStripDiacritics         = config_.convertStripDiacritics.value();
-        o.spellCheck                     = config_.spellCheck.value();
         o.modernStyle                    = config_.modernStyle.value();
         o.freeMarking                    = config_.freeMarking.value();
         o.w2u                            = static_cast<int>(config_.w2u.value());
@@ -758,7 +756,6 @@ namespace fcitx {
         refreshOption();
         updateInputMethodAction(nullptr);
         updateCharsetAction(nullptr);
-        updateAction(nullptr, spellCheckAction_, config_.spellCheck, _("Spell Check"));
         updateAction(nullptr, macroAction_, config_.enableMacro, _("Macro"));
         updateAction(nullptr, capitalizeMacroAction_, config_.capitalizeMacro, _("Capitalize Macro"));
         updateAction(nullptr, capitalizeSentencesAction_, config_.autoCapitalizeAfterPunctuation, _("After . ! ? and Enter"));
@@ -2069,14 +2066,20 @@ namespace fcitx {
     }
 
     std::string NgoSenEngine::subModeIconImpl(const InputMethodEntry& /*entry*/, InputContext& /*inputContext*/) {
-        std::string baseIconName;
-        switch (realMode) {
-            case NgoSenMode::Off: baseIconName = "fcitx-ngosen-off"; break;
-            default: baseIconName = "fcitx-ngosen"; break;
+        static const bool kTrayWantsIconName = trayWantsIconName(getEnv("XDG_CURRENT_DESKTOP"), getEnv("DESKTOP_SESSION"), getEnv("SWAYSOCK"));
+        const auto        kind               = *config_.trayIconKind;
+        const bool        vietnamese         = realMode != NgoSenMode::Off;
+        if (kind == TrayIconKind::Image) {
+            // A language without a readable image keeps the colour icon.
+            auto custom = customTrayIcon(vietnamese ? *config_.trayImageVietnamese : *config_.trayImageEnglish, kTrayWantsIconName);
+            if (!custom.empty())
+                return custom;
         }
+        const std::string baseIconName = kind == TrayIconKind::LanguageCode ? trayTextIconName(vietnamese) : (vietnamese ? "fcitx-ngosen" : "fcitx-ngosen-off");
 
+        // Only the colour icon has a tile; V / E is the plain form of the same icon.
         auto style = TrayIconStyle::Tile;
-        if (!*config_.useNgoSenIcons) {
+        if (kind == TrayIconKind::Letter || kind == TrayIconKind::LanguageCode) {
             const auto& iconTheme = config_.iconTheme.value();
             const bool  darkPanel = iconTheme == IconTheme::Dark || (iconTheme == IconTheme::Auto && isDarkMode());
             style                 = darkPanel ? TrayIconStyle::PlainWhite : TrayIconStyle::PlainBlack;
@@ -2084,7 +2087,6 @@ namespace fcitx {
         static const bool gnomeShell = isGnomeShellSession(getEnv("XDG_CURRENT_DESKTOP"));
         const std::string iconName   = trayIconName(baseIconName, style, *config_.trayIconSize == TrayIconSize::Large, gnomeShell);
 
-        static const bool kTrayWantsIconName = trayWantsIconName(getEnv("XDG_CURRENT_DESKTOP"), getEnv("DESKTOP_SESSION"), getEnv("SWAYSOCK"));
         if (kTrayWantsIconName) {
             return iconName;
         }

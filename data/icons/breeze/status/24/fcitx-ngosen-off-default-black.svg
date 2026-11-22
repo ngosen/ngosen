@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="22" height="22" version="1.1" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient>
-      <stop offset="0"/>
-    </linearGradient>
-  </defs>
-  <path d="m5 3h12v2h-10v5h8v2h-8v5h10v2h-12z" stroke-opacity="0"/>
+<svg width="24" height="24" version="1.1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+ <g fill="none" stroke="#000" transform="translate(1 1)">
+  <path d="M 17 3.5 H 5.5 V 18.5 H 17 M 6 10.5 H 13 M 14 8.5 H 17 M 14 12.5 H 17 M 13.5 9 V 12 M 17.5 9 V 12"/>
+ </g>
 </svg>

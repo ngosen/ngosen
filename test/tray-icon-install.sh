@@ -3,6 +3,7 @@
 #
 # Every tray icon name the engine can ask for must be installed where trays look: hicolor for the
 # path and name lookups, Breeze for Plasma, which takes the icon from its theme by name.
+# Plasma scales a Breeze icon drawn for another size, which blurs its one-dot lines.
 set -u
 build=${1:?usage: tray-icon-install.sh <build dir>}
 dest=$(mktemp -d)
@@ -20,6 +21,13 @@ need() {
         fail=1
     }
 }
+grid() {
+    [ -f "$icons/$1" ] || return
+    grep -q "viewBox=\"0 0 $2 $2\"" "$icons/$1" || {
+        echo "not drawn on the $2 px grid: $1" >&2
+        fail=1
+    }
+}
 for base in fcitx-ngosen fcitx-ngosen-off; do
     for name in "$base" "$base-large" "$base-default" "$base-default-black"; do
         need "hicolor/scalable/status/$name.svg"
@@ -34,6 +42,20 @@ for base in fcitx-ngosen fcitx-ngosen-off; do
         for size in 22 24; do
             need "$theme/status/$size/$base.svg"
             need "$theme/status/$size/$base-large.svg"
+        done
+    done
+done
+for name in fcitx-ngosen-default fcitx-ngosen-off-default fcitx-ngosen-text-vi-default fcitx-ngosen-text-en-default; do
+    for colour in "" -black; do
+        need "hicolor/scalable/status/$name$colour.svg"
+        need "hicolor/scalable/status/$name$colour-gnome.svg"
+        need "hicolor/22x22/status/$name$colour.png"
+        need "hicolor/24x24/status/$name$colour.png"
+        for theme in breeze breeze-dark; do
+            for size in 22 24; do
+                need "$theme/status/$size/$name$colour.svg"
+                grid "$theme/status/$size/$name$colour.svg" "$size"
+            done
         done
     done
 done

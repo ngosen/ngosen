@@ -17,10 +17,13 @@
 #include "ngosen-utils.h"
 #include "test-input-context.h"
 
+#include <fcitx/candidatelist.h>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <new>
 #include <string>
 
 namespace {
@@ -196,9 +199,71 @@ namespace {
         return failures;
     }
 
+    std::string vimLabel(TestInputContext& context) {
+        auto list = std::dynamic_pointer_cast<fcitx::CommonCandidateList>(context.inputPanel().candidateList());
+        for (int i = 0; list && i < list->totalSize(); ++i) {
+            const auto text = list->candidateFromAll(i).text().toString();
+            if (text.find("Vim mode") != std::string::npos)
+                return text;
+        }
+        return "no Vim mode item";
+    }
+
+    // Vim mode switched on in an unnamed window must not carry over to a later window at the same address.
+    int vimModeClosed(const char* testName) {
+        configureTestPaths(testName);
+        TestInstance        testInstance;
+        fcitx::NgoSenEngine engine(&testInstance.instance);
+        fcitx::RawConfig    config;
+        config.setValueByPath("Mode", "Preedit");
+        config.setValueByPath("VietnameseOn", "True");
+        config.setValueByPath("InputMethod", "Telex");
+        engine.setConfig(config);
+        fcitx::InputMethodEntry entry("ngosen", "Ngó Sen", "vi", "ngosen");
+
+        const auto              press = [&](TestInputContext& context, fcitx::KeySym sym) {
+            fcitx::KeyEvent down(&context, fcitx::Key(sym), false);
+            engine.keyEvent(entry, down);
+            fcitx::KeyEvent up(&context, fcitx::Key(sym), true);
+            engine.keyEvent(entry, up);
+        };
+        // Both windows are built in one buffer, so the second gets the first one's address.
+        alignas(TestInputContext) unsigned char storage[sizeof(TestInputContext)];
+        const auto                              open = [&]() {
+            auto* context = new (storage) TestInputContext(&testInstance.instance, "");
+            context->focusIn();
+            fcitx::InputContextEvent focus(context, fcitx::EventType::InputContextFocusIn);
+            engine.activate(entry, focus);
+            return context;
+        };
+
+        auto* first = open();
+        press(*first, FcitxKey_grave);
+        press(*first, FcitxKey_v);
+        press(*first, FcitxKey_grave);
+        const auto shown = vimLabel(*first);
+        press(*first, FcitxKey_Escape);
+        first->~TestInputContext();
+        if (shown.find("on") == std::string::npos) {
+            std::cerr << "[vim] Expected Vim mode on in the first window, got " << shown << '\n';
+            return 1;
+        }
+
+        auto* second = open();
+        press(*second, FcitxKey_grave);
+        const auto later = vimLabel(*second);
+        press(*second, FcitxKey_Escape);
+        second->~TestInputContext();
+        if (later.find("off") == std::string::npos) {
+            std::cerr << "[vim] Expected Vim mode off in a new window at the same address, got " << later << '\n';
+            return 1;
+        }
+        return 0;
+    }
+
 } // namespace
 
 int main() {
     return cycleAndClose("fcitx5-ngosen-ctx-rule-cleanup", "") + cycleAndClose("fcitx5-ngosen-ctx-rule-cleanup", "gnome-shell") +
-        shellAppRules("fcitx5-ngosen-ctx-rule-cleanup-shell");
+        shellAppRules("fcitx5-ngosen-ctx-rule-cleanup-shell") + vimModeClosed("fcitx5-ngosen-ctx-rule-cleanup-vim");
 }

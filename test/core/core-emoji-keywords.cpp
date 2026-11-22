@@ -160,7 +160,7 @@ int main() {
     offersNothing({"ng"}); // người
     offersNothing({"vs"}); // với
     offers({"t-rex"}, "🦖");
-    offers({"cười"}, "😂");  // a Vietnamese keyword is unchanged
+    offers({"cười"}, "😂"); // a Vietnamese keyword is unchanged
     options.englishEmojiKeywords = false;
     offersNothing({"cat"});
     offers({"love"}, "❤️"); // picked by hand, not one of the English ones

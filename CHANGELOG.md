@@ -13,7 +13,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 ### Thêm
 
 - Gõ Sen: khi sửa từ bằng Backspace, kiểm tra app đã hiện từ mới chưa và ghi vào log (Lưu nhật ký gõ),
-  giúp báo lỗi chỉ ra chỗ mất chữ; không đổi cách gõ (#957).
+  giúp báo lỗi chỉ ra chỗ mất chữ; không đổi cách gõ (#962).
 
 ### Sửa
 

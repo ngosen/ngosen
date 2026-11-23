@@ -60,6 +60,7 @@ namespace {
     constexpr uint32_t Bounce        = 16; // the field loses focus and gets it back 30 ms later
     constexpr uint32_t PanelReset    = 17; // the engine clears the panel, as for a mode notice
     constexpr uint32_t BrowserBounce = 18; // a bounce, a reset and an empty first report, as Brave on Wayland
+    constexpr uint32_t HintAskedAway = 19; // waits until the hint is asked away while the app still shows it
     constexpr uint32_t Backspace     = ngosen::key::BackSpace;
     constexpr uint32_t Left          = ngosen::key::Left;
     constexpr uint32_t Right         = ngosen::key::Right;
@@ -137,6 +138,9 @@ namespace {
                 loop.pump(1000);
             } else if (key == InField) {
                 result.inField.push_back(app->hint());
+            } else if (key == HintAskedAway) {
+                for (int ms = 0; ms < 6000 && !(app->askedHint().empty() && !app->hint().empty()); ++ms)
+                    loop.pump(1);
             } else if (key == Gap) {
                 loop.pump(600);
             } else if (key == Bounce) {
@@ -603,6 +607,12 @@ namespace {
         const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
         r                = type(keysOf("cuwowif.") + std::vector<uint32_t>{Hint} + threeSeconds + twoSeconds + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints == std::vector<std::string>{"Tab: 😂 🤣 😄 😆 😁", "(none)"}, "a sentence's list is hidden after 4 s", joined(r.hints));
+
+        Field noPanel           = makeField();
+        noPanel.drawsCandidates = false;
+        r                       = type(std::vector<uint32_t>{SlowHint} + keysOf("cuwowif") + std::vector<uint32_t>{Pause, HintAskedAway, 's', Pause, InField}, Mode::Sen, noPanel);
+        check(r.text == "cưới" && r.inField.front().empty() && r.editsUnderHint == 0, "no panel: a key right after the hint hid waits for it to go",
+              r.text + " / " + std::to_string(r.editsUnderHint));
     }
 
     // The release of a key the list took stays away from the app as well.

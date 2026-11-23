@@ -402,7 +402,7 @@ namespace ngosen {
                 timer.rearm(ngosen::monotonicUs() + RecheckUs);
                 return true;
             }
-            hideEmojiOffer();
+            dropHintBeforeKey();
             return false;
         });
     }

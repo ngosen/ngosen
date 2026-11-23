@@ -31,6 +31,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   "ngày", "ngfươi" ra "người") (#964).
 - Gõ Sen trên voz.vn (Brave, KDE Wayland): gõ đè lên chữ đang bôi đen (Ctrl+A rồi gõ) không còn ra phím thô
   ("nguowfi" ra "người") (#967).
+- Gõ Sen trên voz.vn (Brave, KDE Wayland): từ đầu bài mà sửa dấu phải xoá hết chữ trong ô không còn mất chữ
+  ("đồng" ra "òng") (#971).
 - Gõ Sen với bảng mã "Unicode tổ hợp": gõ trong terminal chạy bash hay fish không còn mất chữ trước dấu thanh
   ("nhiều" ra "nhều"). Trong terminal, từ đang gõ hiện ở dạng dựng sẵn, gõ xong từ mới đổi sang dạng tổ hợp;
   trình soạn thảo vẫn giữ dạng tổ hợp như trước (#952).

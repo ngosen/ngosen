@@ -100,5 +100,15 @@ int main() {
     const std::string savedWords = readFile(confDir / "ngosen-emoji-words.conf");
     check(savedWords.find("Keyword=cười") != std::string::npos && savedWords.find("sếp") == std::string::npos, "the words are saved, got " + savedWords);
 
+    // The panel font grows only once some app has emoji, including an app added to the file by hand.
+    std::filesystem::remove(confDir / "classicui.conf");
+    std::ofstream(confDir / "ngosen-emoji-apps.conf", std::ios::trunc) << "";
+    engine.reloadConfig();
+    check(readFile(confDir / "classicui.conf").find("Font=") == std::string::npos, "no app with emoji leaves the font alone");
+    std::ofstream(confDir / "ngosen-emoji-apps.conf", std::ios::trunc) << "kate\n";
+    engine.reloadConfig();
+    const std::string panel = readFile(confDir / "classicui.conf");
+    check(panel.find("Sans 13") != std::string::npos, "a reloaded app with emoji enlarges the font, got " + panel);
+
     return failures == 0 ? 0 : 1;
 }

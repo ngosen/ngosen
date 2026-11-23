@@ -881,6 +881,18 @@ namespace ngosen {
         std::optional<std::pair<uint32_t, uint32_t>>    keyAfterUnseen_; ///< sym and states of the next key
         std::optional<std::pair<uint64_t, std::string>> cellMove_;       ///< keyCount_ after Enter, and the text then
 
+        // A field that refocuses after our backspaces can hand a letter pressed meanwhile to the page.
+        struct StrayWatch {
+            std::string    before; ///< the text before the word being replaced
+            std::u32string after;  ///< the text after the cursor
+            uint64_t       keys = 0;
+        };
+        std::optional<StrayWatch> strayWatch_;
+        std::optional<uint32_t>   strayKey_;
+        void                      watchForStrayKey(const ReplaceRequest& request);
+        bool                      takesStrayKey(uint32_t sym);
+        void                      retypeStrayKey(uint32_t sym, uint32_t states);
+
         // What each app's field held when it lost focus, to see a key typed there before focus came back.
         struct LeftField {
             std::string    program;

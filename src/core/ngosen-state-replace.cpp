@@ -558,6 +558,7 @@ namespace ngosen {
         is_deleting_.store(true, std::memory_order_release);
         closeCheckBeforeOtherEdit();
         openBackspaceCheck(request);
+        watchForStrayKey(request);
     }
 
     void TypingState::runForwardedBackspaces(const ReplaceRequest& request) {

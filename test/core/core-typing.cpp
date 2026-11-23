@@ -933,6 +933,65 @@ namespace {
         }
     }
 
+    // A letter pressed while the field refocuses after an edit goes to the page, and only its release
+    // reaches us. The word must come out as if it had been typed through the input method.
+    void testStrayKeyDuringBounce() {
+        const Field             field = makeField("wayland", true, "brave-origin");
+        ngosen::test::AppQuirks bouncing;
+        bouncing.keyStepMs                 = 28;
+        bouncing.bouncesEmptyAfterEdit     = true;
+        bouncing.losesCommitAmidBackspaces = true;
+        struct Run {
+            std::string text;
+            int         backspaces = 0;
+        };
+        // Types before; the page takes stray after the nth of our edits that its last key starts, and
+        // the release comes once the edit has settled, before after is typed.
+        const auto runIn = [&](const Field& in, const ngosen::test::AppQuirks& quirks, const std::string& before, char stray, int nth, const std::string& after, bool releaseLast) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, in, quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : before) {
+                app->type(static_cast<uint32_t>(c));
+                if (c == before.back())
+                    app->typeAfterEdit(std::string(1, stray), nth);
+                loop.pump(150);
+            }
+            if (!releaseLast) {
+                app->releaseKey(static_cast<uint32_t>(stray));
+                loop.pump(150);
+            }
+            for (const char c : after) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(150);
+            }
+            if (releaseLast)
+                app->releaseKey(static_cast<uint32_t>(stray));
+            loop.pump(300);
+            return Run{app->text(), app->sent().forwardedBackSpaces};
+        };
+        const auto run    = [&](const std::string& before, char stray, int nth, const std::string& after) { return runIn(field, bouncing, before, stray, nth, after, false); };
+        const auto expect = [&](const std::string& name, const Run& got, const std::string& want) { check(got.text == want, "stray key: " + name, got.text); };
+        expect("y after the tone key", run("ngaf", 'y', 1, " "), "ngày ");
+        expect("u after the circumflex", run("naa", 'u', 1, "s "), "nấu ");
+        expect("tone key before the commit", run("nguoiw", 'f', 3, " "), "người ");
+        expect("tone key after the commit", run("nguoiw", 'f', 4, " "), "người ");
+        const Run plain = run("dd", 'i', 2, " ");
+        expect("letter that changes nothing", plain, "đi ");
+        check(plain.backspaces == 1, "stray key: a letter that changes nothing sends no edit", std::to_string(plain.backspaces));
+        // With a key in between, which of the two came first is unknown.
+        expect("release after the next key", runIn(field, bouncing, "ngaf", 'y', 1, "n", true), "ngyàn");
+        ngosen::test::AppQuirks steady = bouncing;
+        steady.bouncesEmptyAfterEdit   = false;
+        steady.bounceOnEditMs          = 0;
+        expect("field that does not refocus", runIn(makeField("ibus", true, "brave-browser.desktop"), steady, "ngaf", 'y', 1, " ", false), "ngyà ");
+    }
+
     // Brave on GNOME 51 bounces focus as soon as it gets our Backspace and applies it only after the
     // commit we send once the wait gives up, so its first report after the bounce lacks the word.
     void testLateBackspaceAfterBounce() {
@@ -5935,6 +5994,7 @@ int main() {
     testLateBackspaceAfterBounce();
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();
+    testStrayKeyDuringBounce();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();

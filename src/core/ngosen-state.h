@@ -885,13 +885,15 @@ namespace ngosen {
         struct StrayWatch {
             std::string    before; ///< the text before the word being replaced
             std::u32string after;  ///< the text after the cursor
+            std::string    added;  ///< what we put in place of the deleted part
             uint64_t       keys = 0;
         };
-        std::optional<StrayWatch> strayWatch_;
-        std::optional<uint32_t>   strayKey_;
-        void                      watchForStrayKey(const ReplaceRequest& request);
-        bool                      takesStrayKey(uint32_t sym);
-        void                      retypeStrayKey(uint32_t sym, uint32_t states);
+        std::optional<StrayWatch>  strayWatch_;
+        std::optional<std::string> strayWord_; ///< the word the field shows with the stray letter in it
+        void                       watchForStrayKey(const ReplaceRequest& request);
+        bool                       takesStrayKey(uint32_t sym);
+        std::optional<std::string> wordWithStrayKey(uint32_t sym);
+        void                       retypeStrayKey(uint32_t sym, uint32_t states);
 
         // What each app's field held when it lost focus, to see a key typed there before focus came back.
         struct LeftField {

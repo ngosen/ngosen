@@ -986,6 +986,32 @@ namespace {
         check(plain.backspaces == 1, "stray key: a letter that changes nothing sends no edit", std::to_string(plain.backspaces));
         // With a key in between, which of the two came first is unknown.
         expect("release after the next key", runIn(field, bouncing, "ngaf", 'y', 1, "n", true), "ngyàn");
+        // The commit was lost, so the field does not hold the word we sent and nothing is retyped.
+        ngosen::test::AppQuirks dropping = bouncing;
+        dropping.dropsCommitNumber       = 1;
+        expect("stray key after a lost commit", runIn(field, dropping, "nguoiw", 'f', 3, " ", false), "ngf ");
+        // A release that is not a stray key still opens the next cell with its letter.
+        {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, bouncing);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("ngaf")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(150);
+            }
+            app->focusNewFieldWith("", 5);
+            loop.pump(50);
+            app->pageTakesKey('a', "a", "");
+            loop.pump(100);
+            app->type('s');
+            loop.pump(300);
+            check(app->text() == "á", "stray key: a cell opened by its key keeps the letter", app->text());
+        }
         ngosen::test::AppQuirks steady = bouncing;
         steady.bouncesEmptyAfterEdit   = false;
         steady.bounceOnEditMs          = 0;

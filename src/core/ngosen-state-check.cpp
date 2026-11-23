@@ -317,50 +317,55 @@ namespace ngosen {
             request.deleted.empty() || !isEndsWith(before, request.deleted))
             return;
         const std::u32string text = utf8::decode(request.copy.text());
-        strayWatch_               = StrayWatch{
-                          .before = before.substr(0, before.size() - request.deleted.size()), .after = text.substr(std::min<size_t>(request.copy.cursor(), text.size())), .keys = keyCount_};
+        strayWatch_               = StrayWatch{.before = before.substr(0, before.size() - request.deleted.size()),
+                                               .after  = text.substr(std::min<size_t>(request.copy.cursor(), text.size())),
+                                               .added  = request.added,
+                                               .keys   = keyCount_};
     }
 
     bool TypingState::takesStrayKey(uint32_t sym) {
         constexpr int64_t StrayAfterBounceMs = 300;
         const int64_t     sinceBounce        = static_cast<int64_t>(monotonicUs() / 1000) - lastBounceAt_;
         // Another key in between would leave the order of the two unknown.
-        if (!strayWatch_ || strayWatch_->keys != keyCount_ || fieldBounces_ == 0 || sinceBounce > StrayAfterBounceMs) {
+        if (strayWatch_ && (strayWatch_->keys != keyCount_ || fieldBounces_ == 0 || sinceBounce > StrayAfterBounceMs))
             strayWatch_.reset();
+        if (!strayWatch_)
             return false;
-        }
-        strayKey_ = sym;
-        return true;
+        strayWord_ = wordWithStrayKey(sym);
+        strayWatch_.reset();
+        return strayWord_.has_value();
     }
 
-    void TypingState::retypeStrayKey(uint32_t sym, uint32_t states) {
-        const StrayWatch     watch  = *strayWatch_;
-        const std::string    letter = host_->keyText(sym);
-        const Surrounding    s      = host_->surrounding();
-        const std::u32string text   = s.isValid() ? utf8::decode(s.text()) : std::u32string();
-        const std::string    before = textBeforeCursor(s);
-        strayWatch_.reset();
-        const auto notRetyped = [&](const std::string& why) {
+    // The word as the field shows it, if that is the word we sent with this one letter added where our
+    // backspaces deleted or after our commit.
+    std::optional<std::string> TypingState::wordWithStrayKey(uint32_t sym) {
+        const StrayWatch     watch      = *strayWatch_;
+        const std::string    letter     = host_->keyText(sym);
+        const Surrounding    s          = host_->surrounding();
+        const std::u32string text       = s.isValid() ? utf8::decode(s.text()) : std::u32string();
+        const std::string    before     = textBeforeCursor(s);
+        const auto           notRetyped = [&](const std::string& why) {
             engine_->recorder().add("stray", "not retyped: " + why);
             NGOSEN_INFO("Stray key " + logged(letter) + " not retyped" + loggedField(host_->field()) + ": " + why);
+            return std::nullopt;
         };
         if (!s.isValid() || s.cursor() != s.anchor() || editInFlight() || deferred_commit_.pending)
             return notRetyped("no settled report");
-        if (!isStartsWith(before, watch.before) || text.substr(std::min<size_t>(s.cursor(), text.size())) != watch.after)
+        if (!isStartsWith(before, watch.before) || text.substr(std::min<size_t>(s.cursor(), text.size())) != watch.after || !isEndsWith(oldPreBuffer_, watch.added))
             return notRetyped("field changed");
-        // The letter can only have landed where our backspaces had deleted, or after our commit. It is
-        // ASCII, so taking out one byte leaves valid UTF-8.
+        // The letter is ASCII, so taking out one byte leaves valid UTF-8.
         const std::string tail  = before.substr(watch.before.size());
         bool              holds = false;
-        size_t            kept  = 0;
-        for (size_t at = 0; letter.size() == 1 && at < tail.size() && !holds; ++at) {
-            const std::string rest = tail.substr(0, at) + tail.substr(at + 1);
-            holds                  = tail[at] == letter[0] && isEndsWith(oldPreBuffer_, rest);
-            kept                   = oldPreBuffer_.size() - rest.size();
-        }
+        for (size_t at = 0; letter.size() == 1 && at < tail.size() && !holds; ++at)
+            holds = tail[at] == letter[0] && tail.substr(0, at) + tail.substr(at + 1) == watch.added;
         if (!holds)
             return notRetyped("word is " + logged(tail));
-        const std::string shown = oldPreBuffer_.substr(0, kept) + tail;
+        return oldPreBuffer_.substr(0, oldPreBuffer_.size() - watch.added.size()) + tail;
+    }
+
+    void TypingState::retypeStrayKey(uint32_t sym, uint32_t states) {
+        const std::string shown  = *std::exchange(strayWord_, std::nullopt);
+        const std::string letter = host_->keyText(sym);
         // The field changes as after a typed key, so its reports are not a cursor moved by a click.
         lastInputAtUs_ = monotonicUs();
         EngineProcessKeyEvent(bambooEngine_.handle(), sym, states);

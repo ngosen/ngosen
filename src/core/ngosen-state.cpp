@@ -849,8 +849,8 @@ namespace ngosen {
         emojiTookPress_              = false;
         const uint64_t commitsBefore = commitCount_;
         handleKey(keyEvent);
-        if (const auto stray = std::exchange(strayKey_, std::nullopt))
-            retypeStrayKey(*stray, keyEvent.states());
+        if (strayWord_)
+            retypeStrayKey(keyEvent.sym(), keyEvent.states());
         if (typedKey)
             notePassedLetter(keyEvent, commitsBefore);
         if (typedKey && !emojiTookPress_) {

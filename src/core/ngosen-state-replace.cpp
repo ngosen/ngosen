@@ -325,7 +325,8 @@ namespace ngosen {
     }
 
     void TypingState::finishReplacement(const char* reason, bool fromTimer) {
-        if (waitsForFieldToDeclare(reason)) {
+        waitsForDeclaredText_ = waitsForFieldToDeclare(reason);
+        if (waitsForDeclaredText_) {
             surr_wait_.pending      = true;
             surr_wait_.timerOnly    = true;
             surr_wait_.focusRetries = 0;

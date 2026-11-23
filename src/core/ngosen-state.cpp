@@ -1382,7 +1382,7 @@ namespace ngosen {
         if (!is_deleting_.load(std::memory_order_acquire))
             return false;
         // A Backspace waits too: it is the user's, and would otherwise reach the app before the commit.
-        if (composedWait_ && !isOwnBackspace(currentSym)) {
+        if ((composedWait_ || waitsForDeclaredText_) && !isOwnBackspace(currentSym)) {
             if (buffered_keys_.size() < MAX_BUFFERED_KEYS)
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code(), .actsOnField = actsOnField(keyEvent, currentSym)});
             keyEvent.accept();

@@ -4927,6 +4927,15 @@ namespace {
         const auto duoc =
             ngosen::test::typeInAppTraced(resources, field, {.dropsSurroundingOnDelete = true, .dropsUndeclaredCommits = true}, duocKeys, std::vector<int>(duocKeys.size(), 100));
         check(duoc.text == "được ", "dbus: a tone mark while the field declares no text is not lost", duoc.text);
+        // Keys typed while the commit waits for the field to declare its text keep their order, a Backspace too.
+        std::vector<std::string> heldLines;
+        std::vector<int>         heldGaps(8, 120);
+        heldGaps[5] = 20;
+        heldGaps[6] = 10;
+        heldGaps[7] = 400;
+        const std::string held =
+            typedWithBackspaces(field, {.backspaceLagMs = 60, .dropsSurroundingOnDelete = true, .dropsUndeclaredCommits = true}, "dduowjc<", heldGaps, heldLines);
+        check(held == "đượ", "dbus: a Backspace typed while the commit waits comes after it", held);
         // Over IBus the check of our edit stays open for a second, long enough for a click into another cell.
         for (const char* frontend : {"dbus", "ibus"}) {
             realMode                   = ngosen::Mode::Sen;

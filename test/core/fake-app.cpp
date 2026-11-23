@@ -703,12 +703,21 @@ namespace ngosen::test {
 
     void FakeApp::typeOverSelection(const std::u32string& letter) {
         const std::u32string rest = text_.substr(std::max(anchor_, cursor_));
-        later(20, [this] {
+        // Each step follows a focus bounce.
+        const auto refocus = [this] {
+            focused_ = false;
+            state_->deactivate(true);
+            focused_ = true;
+            state_->activate(Mode::Sen, true);
+        };
+        later(20, [this, refocus] {
+            refocus();
             text_.clear();
             cursor_ = anchor_ = 0;
             changed();
         });
-        later(33, [this] {
+        later(33, [this, refocus] {
+            refocus();
             text_ = U"\n";
             changed();
         });

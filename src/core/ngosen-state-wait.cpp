@@ -645,8 +645,8 @@ namespace ngosen {
         // Our unreported commits do not matter here: in the same cell the key would follow them.
         // A sheet can report the new cell empty only after the first letter typed there, and before it shows.
         const bool firstLetterPending = passed_key_ && sinceInputUs < SuggestionStepUs && oldPreBuffer_ == host_->keyText(passed_key_->sym);
-        // An editor replacing a selection can show an empty line before the letter (voz.vn).
-        const bool letterNotShown = firstLetterPending && s.text().find_first_not_of('\n') == std::string::npos;
+        // An editor replacing a selection can show an empty line after the empty field, before the letter (voz.vn).
+        const bool letterNotShown = firstLetterPending && cellStartedAtKey_ == keyCount_ && s.text().find_first_not_of('\n') == std::string::npos;
         const bool newField       = (hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() && !letterNotShown &&
                                      (unreportedCommitLength_ == 0 || textAfterCursorChanged(s)) && !reportTrailsFirstWord(s)) ||
             (lostWord && !letterNotShown);
@@ -723,6 +723,7 @@ namespace ngosen {
     void TypingState::startWordWithKey(const KeyEntry& key) {
         NGOSEN_INFO("Key went to another cell, starting a new word");
         clearAllBuffers();
+        cellStartedAtKey_ = keyCount_;
         if (EngineProcessKeyEvent(bambooEngine_.handle(), key.sym, key.state) == 0U)
             return;
         ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));

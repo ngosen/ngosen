@@ -1690,6 +1690,31 @@ namespace {
         check(host->commits().empty(), "repeated clicks from one-letter cells: still clicks", join(host->commits()));
     }
 
+    // A quick switch, right after a first letter, to a field holding only a line break is still a click.
+    void testQuickSwitchToBlankField() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "brave-origin"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("là ", 3);
+        state.surroundingUpdated();
+        loop.pump(300);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(40);
+        state.deactivate(true);
+        loop.pump(3);
+        state.activate(ngosen::Mode::Sen, true);
+        host->setSurrounding("\n", 0);
+        state.surroundingUpdated();
+        loop.pump(50);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(200);
+        check(host->commits().empty(), "quick switch to a blank field after a first letter: still a click", join(host->commits()));
+    }
+
     // A cell with text reported soon after the first letter, before that letter shows, is still a click.
     void testCellWithTextBeforeFirstLetterShows() {
         realMode = ngosen::Mode::Sen;
@@ -6158,6 +6183,7 @@ int main() {
     testLateEmptyCellAfterFirstLetter();
     testLateEmptyFieldStillClick();
     testCellWithTextBeforeFirstLetterShows();
+    testQuickSwitchToBlankField();
     testCellOpenedByFirstKey();
     testFirstKeyBeforeFocusMidText();
     testFirstKeyTypedWhileAway();

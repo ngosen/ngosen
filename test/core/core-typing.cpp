@@ -483,6 +483,26 @@ namespace {
         check(text == "đơn", "emptied field: commit after focus comes back", text);
     }
 
+    // Some apps erase a combining tone mark on its own, others with the letter before it, and a
+    // terminal does whichever its shell does, so the word must not be decomposed while it is edited.
+    void testDecomposedToneInAnyApp() {
+        Field field    = makeField("wayland_v2", false, "Alacritty");
+        field.terminal = true;
+        for (const bool withLetter : {false, true}) {
+            const std::string       how = withLetter ? "erasing a mark with its letter" : "erasing one code point";
+            ngosen::test::AppQuirks quirks;
+            quirks.erasesMarksWithLetter = withLetter;
+            quirks.showsEnter            = true;
+            FakeResources resources;
+            resources.mutableOptions().outputCharset = "Unicode tổ hợp";
+            const std::string     typed              = "nhieefu tieengs vieetj";
+            std::vector<uint32_t> keys(typed.begin(), typed.end());
+            keys.push_back(ngosen::key::Return);
+            const std::string text = ngosen::test::typeInApp(resources, field, quirks, keys, std::vector<int>(keys.size(), 50));
+            check(text == "nhi\u00ea\u0300u ti\u00ea\u0301ng vi\u00ea\u0323t\n", "Unicode tổ hợp, " + how, text);
+        }
+    }
+
     // Firefox over D-Bus applies a key it sent before our commit reached it ahead of that commit.
     void testKeyTypedBeforeCommitArrived() {
         ngosen::test::AppQuirks quirks;
@@ -5879,6 +5899,7 @@ int main() {
     testKeyDuringReplacement();
     testCommitAfterTheReport();
     testCommitAfterFieldRefocus();
+    testDecomposedToneInAnyApp();
     testKeyTypedBeforeCommitArrived();
     testGnomeKeyDuringTimedWaitJoinsCommit();
     testEnterDuringTimedWaitFollowsCommit();

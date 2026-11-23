@@ -41,11 +41,13 @@ namespace ngosen {
             return false;
         EngineProcessKeyEvent(bambooEngine_.handle(), ngosen::key::Return, keyEvent.states());
         const auto pulled = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
-        if (!pulled || *pulled.get() == 0 || oldPreBuffer_ == pulled.get())
+        if (!pulled || *pulled.get() == 0)
             return false;
-        const std::string expansion = pulled.get();
-        std::string       deletedPart;
-        std::string       addedPart;
+        const std::string expansion = spelledAtWordEnd(pulled.get());
+        if (oldPreBuffer_ == expansion)
+            return false;
+        std::string deletedPart;
+        std::string addedPart;
         ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, expansion, deletedPart, addedPart);
         // Same limits as a word a space ends: a field that cannot take the edit keeps the typed word.
         if (!deletedPart.empty() && (!canSendBackspaces() || keepsWordRaw(deletedPart))) {

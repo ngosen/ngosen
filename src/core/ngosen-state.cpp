@@ -26,7 +26,8 @@ namespace ngosen {
 
     // Chromium asks the input method about each key before it handles the key, so our Shift release
     // coming back does not mean the Left presses before it have moved the selection yet.
-    constexpr uint64_t XTestSelectSettleUs = 50000;
+    constexpr uint64_t    XTestSelectSettleUs = 50000;
+    constexpr const char* DecomposedCharset   = "Unicode tổ hợp";
 
     TypingState::TypingState(ngosen::EngineResources* engine, std::unique_ptr<ngosen::Host> host) :
         engine_(engine), host_(ngosen::recordingHost(std::move(host), engine->recorder())) {
@@ -63,8 +64,25 @@ namespace ngosen {
     }
 
     void TypingState::setOption() {
+        engineSpellsPrecomposed_ = decomposesAtWordEnd();
         if (bambooEngine_)
             setOption(bambooEngine_.handle());
+    }
+
+    bool TypingState::decomposesAtWordEnd() const {
+        return mode() == ngosen::Mode::Sen && engine_->options().outputCharset == DecomposedCharset;
+    }
+
+    std::string TypingState::spelledAtWordEnd(const std::string& word) const {
+        if (!decomposesAtWordEnd())
+            return word;
+        ngosen::UniqueCPtr<char> out(ConvertText(word.c_str(), "Unicode", DecomposedCharset, 0, false));
+        return out ? out.get() : word;
+    }
+
+    void TypingState::syncEngineCharset() {
+        if (decomposesAtWordEnd() != engineSpellsPrecomposed_)
+            setOption();
     }
 
     void TypingState::setTeencodeOn(bool on) {
@@ -81,7 +99,7 @@ namespace ngosen {
             .macroEnabled        = engine_->options().enableMacro,
             .autoCapitalizeMacro = engine_->options().capitalizeMacro,
             .spellCheckWithDicts = true,
-            .outputCharset       = engine_->options().outputCharset.data(),
+            .outputCharset       = decomposesAtWordEnd() ? "Unicode" : engine_->options().outputCharset.data(),
             .modernStyle         = engine_->options().modernStyle,
             .freeMarking         = engine_->options().freeMarking,
             .w2u                 = static_cast<int>(engine_->options().w2u),
@@ -644,7 +662,8 @@ namespace ngosen {
         return true;
     }
 
-    void TypingState::commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr) {
+    void TypingState::commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& engineCommit) {
+        const std::string        commitStr = spelledAtWordEnd(engineCommit);
         ngosen::UniqueCPtr<char> dropped(EnginePullDroppedWord(bambooEngine_.handle()));
         std::string              deletedPart;
         std::string              addedPart;
@@ -963,6 +982,7 @@ namespace ngosen {
         // Vietnamese typed since then, so the English noted is no longer right before the cursor.
         if (mode() != ngosen::Mode::Off)
             forgetKeysWhileOff();
+        syncEngineCharset();
         switch (mode()) {
             case ngosen::Mode::Sen: {
                 if (typesRaw(keyEvent, currentSym))

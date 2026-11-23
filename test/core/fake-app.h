@@ -50,6 +50,7 @@ namespace ngosen::test {
         bool hidesCursorMoves       = false; // reports no click and shows the cursor where the last edit left it, as GTK 3 on Plasma does
         bool dropsForwardedKeys     = false; // never gets keys the input method sends, as under GNOME Shell's IBus bridge
         bool erasesOnDel            = false; // erases the character before the cursor for each DEL committed, as a terminal does
+        bool erasesMarksWithLetter  = false; // a Backspace erases a letter together with the combining marks after it, as bash's readline and GTK 4 do
         bool reportsTextOnceFilled  = false; // reports surrounding text only once the field has text, as Qt over IBus does
         bool announcesSelection     = false; // makes a selection the X11 primary selection, as Chromium on X11 does
         bool ignoresSurroundingDel  = false; // takes no deletion through its surrounding text, as WPS over D-Bus does
@@ -331,6 +332,7 @@ namespace ngosen::test {
         void                                goSilentAfterDelete();
         bool                                eraseSelection();
         void                                eraseBefore(size_t count);
+        size_t                              backspaceSpan() const;
         void                                eraseAround(int offset, unsigned int size);
         bool                                leaveIfEmptied();
         size_t                              reportedBytesBefore(unsigned int size) const;

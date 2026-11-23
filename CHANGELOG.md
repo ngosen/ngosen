@@ -23,6 +23,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   "chaà"); bảng xem trước emoji nay hiện sau khi chữ đã vào app (#960).
 - Gõ Sen trên voz.vn (Brave, KDE Wayland): chữ gõ nhanh ngay sau phím dấu không còn chen vào giữa từ ("ngyà" ra
   "ngày", "ngfươi" ra "người") (#964).
+- Bấm Ctrl+Shift chậm vẫn đổi được Anh/Việt: giữ tới một giây vẫn tính. Trước đây trên fcitx5 bản mới, nhả
+  phím sau quá 1/4 giây là Ctrl+Shift không có tác dụng (#966).
 
 ### Test
 

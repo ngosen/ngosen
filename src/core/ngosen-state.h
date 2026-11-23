@@ -896,8 +896,10 @@ namespace ngosen {
         struct StrayLetter {
             uint32_t    sym = 0;
             std::string shown; ///< the word as the field shows it, stray letter included
+            std::string word;  ///< the word the engine held when the letter showed
             bool        beforeCommit = false;
             bool        fixed        = false;
+            bool        released     = false;
             uint64_t    keys         = 0;
             uint64_t    seenAtUs     = 0;
         };
@@ -911,7 +913,8 @@ namespace ngosen {
         bool                       fixStrayBeforeCommit();
         void                       fixStrayBeforeKey();
         bool                       takesStrayKey(uint32_t sym);
-        void                       retypeStrayKey();
+        bool                       retypeStrayKey();
+        void                       dropStrayKey();
 
         // What each app's field held when it lost focus, to see a key typed there before focus came back.
         struct LeftField {

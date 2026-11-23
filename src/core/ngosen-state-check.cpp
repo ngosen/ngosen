@@ -376,10 +376,14 @@ namespace ngosen {
             letter = rest[0];
         else if (watch.commitSeen && isStartsWith(rest, watch.sent))
             letter = rest.back();
-        if (letter < 'a' || letter > 'z')
+        if (letter < 'a' || letter > 'z' || oldPreBuffer_.empty())
             return;
-        strayLetter_ =
-            StrayLetter{.sym = static_cast<uint32_t>(letter), .shown = watch.head + rest, .beforeCommit = watch.sent.empty(), .keys = keyCount_, .seenAtUs = monotonicUs()};
+        strayLetter_ = StrayLetter{.sym          = static_cast<uint32_t>(letter),
+                                   .shown        = watch.head + rest,
+                                   .word         = oldPreBuffer_,
+                                   .beforeCommit = watch.sent.empty(),
+                                   .keys         = keyCount_,
+                                   .seenAtUs     = monotonicUs()};
         engine_->recorder().add("stray", "seen " + logged(strayLetter_->shown));
         NGOSEN_INFO("Stray key seen" + loggedField(host_->field()) + ": " + logged(strayLetter_->shown));
     }
@@ -409,9 +413,10 @@ namespace ngosen {
             strayLetter_.reset();
             return false;
         }
+        if (!retypeStrayKey())
+            return false;
         // Our commit is replaced, so its check would compare the field with text never sent.
         dropBackspaceCheck();
-        retypeStrayKey();
         return true;
     }
 
@@ -427,18 +432,39 @@ namespace ngosen {
     bool TypingState::takesStrayKey(uint32_t sym) {
         if (!strayLetter_ || strayLetter_->sym != sym)
             return false;
+        // A second release, or one this late, belongs to another key.
+        if (strayLetter_->released || monotonicUs() - strayLetter_->seenAtUs >= StrayLifetimeUs) {
+            strayLetter_.reset();
+            return false;
+        }
         engine_->recorder().add("stray", std::string("released ") + static_cast<char>(sym));
-        // Fixed already, or still waiting for the commit it will join.
-        if (strayLetter_->fixed || strayLetter_->beforeCommit || editInFlight())
+        strayLetter_->released = true;
+        if (strayLetter_->fixed)
+            return true;
+        // Still waiting for the commit it will join.
+        if (strayLetter_->beforeCommit || editInFlight())
             return true;
         retypeAtRelease_ = strayStillShown();
         return true;
     }
 
-    void TypingState::retypeStrayKey() {
-        StrayLetter& stray = *strayLetter_;
-        stray.fixed        = true;
+    void TypingState::dropStrayKey() {
         strayWatch_.reset();
+        strayLetter_.reset();
+        retypeAtRelease_ = false;
+    }
+
+    bool TypingState::retypeStrayKey() {
+        StrayLetter& stray = *strayLetter_;
+        strayWatch_.reset();
+        const ngosen::UniqueCPtr<char> heldC(EnginePullPreedit(bambooEngine_.handle()));
+        // The engine let go of the word, as after a macro or a reset, so the letter cannot join it.
+        if (oldPreBuffer_ != stray.word || !heldC || stray.word != heldC.get()) {
+            engine_->recorder().add("stray", "not retyped: word changed");
+            strayLetter_.reset();
+            return false;
+        }
+        stray.fixed = true;
         // The field changes as after a typed key, so its reports are not a cursor moved by a click.
         lastInputAtUs_ = monotonicUs();
         EngineProcessKeyEvent(bambooEngine_.handle(), stray.sym, 0);
@@ -450,11 +476,12 @@ namespace ngosen {
         NGOSEN_INFO("Retype stray key" + loggedField(host_->field()) + ": " + logged(stray.shown) + " -> " + logged(target));
         oldPreBuffer_ = target;
         if (utf8::compareAndSplitStrings(stray.shown, target, deletedPart, addedPart) == 0)
-            return;
+            return true;
         if (deletedPart.empty())
             commit(addedPart);
         else
             performReplacement(stray.shown, deletedPart, addedPart);
+        return true;
     }
 
 } // namespace ngosen

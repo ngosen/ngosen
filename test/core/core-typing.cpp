@@ -1039,6 +1039,57 @@ namespace {
             loop.pump(300);
             check(app->text() == "á", "stray key: a cell opened by its key keeps the letter", app->text());
         }
+        // A word the engine has already let go of, as a macro, is not retyped and its commit still goes out.
+        {
+            FakeResources resources;
+            resources.setMacros({{"q", "hello"}});
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, atChange);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            app->type('q');
+            loop.pump(150);
+            app->type(' ');
+            app->typeAfterEdit("a", 1, 0);
+            loop.pump(300);
+            check(app->text().find("hello") != std::string::npos, "stray key: a macro keeps its expansion", app->text());
+        }
+        // After a reset the letter is no longer ours to retype, and a repaired one does not hide the next
+        // cell's letter.
+        for (const bool resetFirst : {true, false}) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, bouncing);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            app->type('d');
+            loop.pump(150);
+            app->type('d');
+            app->typeAfterEdit("i", 2);
+            loop.pump(150);
+            if (resetFirst) {
+                state.reset();
+                app->releaseKey('i');
+                loop.pump(300);
+                check(app->text() == "đi", "stray key: a reset drops the letter seen", app->text());
+                continue;
+            }
+            app->releaseKey('i');
+            loop.pump(150);
+            app->focusNewFieldWith("", 5);
+            loop.pump(50);
+            app->pageTakesKey('i', "i", "");
+            loop.pump(100);
+            app->type('s');
+            loop.pump(300);
+            check(app->text() == "í", "stray key: a repaired letter does not take the next cell's release", app->text());
+        }
         ngosen::test::AppQuirks steady = bouncing;
         steady.bouncesEmptyAfterEdit   = false;
         steady.bounceOnEditMs          = 0;

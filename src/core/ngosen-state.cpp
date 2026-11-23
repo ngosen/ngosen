@@ -1651,6 +1651,7 @@ namespace ngosen {
         if (!keepOpenWord) {
             oldPreBuffer_.clear();
             hasHistory_ = false;
+            dropStrayKey();
         }
         lastWord_.clear();
         earlierWords_.clear();

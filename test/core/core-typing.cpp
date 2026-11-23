@@ -4917,13 +4917,16 @@ namespace {
         field.keyEventOrderFix = true;
         const auto keys        = keysOf("tienf nguyenx luanj ");
         const auto run = ngosen::test::typeInAppTraced(resources, field, {.backspaceLagMs = 60, .dropsSurroundingOnDelete = true}, keys, std::vector<int>(keys.size(), 120));
-        check(run.text == "tiền nguyễn luận ", "dbus: a field that stopped declaring its text still deletes through it", run.text);
-        check(run.sent.forwardedBackSpaces == 0, "dbus: no backspace for a field that stopped declaring its text", std::to_string(run.sent.forwardedBackSpaces));
-        check(has(resources.recorder().dump(), "\tpath\tsurrounding: the field stopped declaring"), "recorder: notes the path of an undeclared field", resources.recorder().dump());
+        check(run.text == "tiền nguyễn luận ", "dbus: a backspace for a field that stopped declaring its text lands before the commit", run.text);
         // The key after the deletion arrives while the field declares no text, which is not a field that lost the word.
         const auto ngKeys = keysOf("cuxg nhuwg ");
         const auto ng     = ngosen::test::typeInAppTraced(resources, field, {.dropsSurroundingOnDelete = true}, ngKeys, std::vector<int>(ngKeys.size(), 120));
         check(ng.text == "cũng nhưng ", "dbus: a key while the field declares no text stays in the word", ng.text);
+        // The Firefox Flatpak on GNOME Wayland takes the deletion in that state but drops the commit (#951).
+        const auto duocKeys = keysOf("dduowjc ");
+        const auto duoc =
+            ngosen::test::typeInAppTraced(resources, field, {.dropsSurroundingOnDelete = true, .dropsUndeclaredCommits = true}, duocKeys, std::vector<int>(duocKeys.size(), 100));
+        check(duoc.text == "được ", "dbus: a tone mark while the field declares no text is not lost", duoc.text);
         // Over IBus the check of our edit stays open for a second, long enough for a click into another cell.
         for (const char* frontend : {"dbus", "ibus"}) {
             realMode                   = ngosen::Mode::Sen;
@@ -5040,29 +5043,6 @@ namespace {
         const auto silentRun = ngosen::test::typeInAppTraced(silentResources, makeField("fcitx4", true, "firefox"),
                                                              {.lagMs = 250, .deletionsSkipLag = true, .silentFromFirstDeletion = true}, silentKeys, silentGaps);
         check(silentRun.text == "a tiếng việt ", "fcitx4: waits that run out do not let a deletion overtake the commit before it", silentRun.text);
-    }
-
-    // A quick focus change can land in another widget of the same context that never had surrounding text.
-    void testUndeclaredFieldAfterFocusChange() {
-        realMode = ngosen::Mode::Sen;
-        realtextLen.store(0);
-        FakeLoop      loop;
-        FakeResources resources;
-        Field         field       = makeField("dbus", true, "firefox");
-        field.keyEventOrderFix    = true;
-        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.dropsSurroundingOnDelete = true});
-        auto*               app   = owned.get();
-        ngosen::TypingState state(&resources, std::move(owned));
-        app->attach(&state);
-        for (const uint32_t key : keysOf("tienf")) {
-            app->type(key);
-            loop.pump(120);
-        }
-        app->leaveFocus(10);
-        loop.pump(120);
-        app->type(' ');
-        loop.pump(400);
-        check(app->sent().forwardedBackSpaces > 0, "dbus: a focus change ends deleting through undeclared text", std::to_string(app->sent().forwardedBackSpaces));
     }
 
     // Firefox on Hyprland answers after the next key when typing fast, and a report held up past the check
@@ -6305,7 +6285,6 @@ int main() {
     testFieldDroppingSurroundingAfterDelete();
     testSnapFirefoxReportingLate();
     testFirefoxResetAfterSpaceFix();
-    testUndeclaredFieldAfterFocusChange();
     testLateCopiesRecoverOnWlroots();
     testLockWordNotOnChord();
     testMacroCapitalized();

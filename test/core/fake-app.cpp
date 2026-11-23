@@ -285,6 +285,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::commitText(const std::string& text) {
+        if (quirks_.dropsUndeclaredCommits && surroundingDropped_ && !text.empty() && !std::exchange(commitOfDeletion_, false))
+            return;
         if (!hint_.empty() && !text.empty())
             ++editsUnderHint_;
         if (forwardedAt_ > 0) {
@@ -440,6 +442,7 @@ namespace ngosen::test {
         else
             later((quirks_.backspacesSkipLag ? 0 : quirks_.lagMs) + quirks_.backspaceLagMs, [this] {
                 noteTypedKey();
+                surroundingDropped_ = false;
                 eraseBefore(backspaceSpan());
             });
     }
@@ -468,6 +471,7 @@ namespace ngosen::test {
             ++editsUnderHint_;
         ++sent_.surroundingDeletes;
         ++deletions_;
+        commitOfDeletion_   = !surroundingDropped_;
         surroundingDropped_ = quirks_.dropsSurroundingOnDelete;
         if (quirks_.oldTextAfterDeleteMs > 0) {
             oldText_        = text_;

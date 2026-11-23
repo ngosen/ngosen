@@ -318,7 +318,21 @@ namespace ngosen {
         slot = std::move(next);
     }
 
+    bool TypingState::waitsForFieldToDeclare(const char* reason) const {
+        const std::string why = reason;
+        return backspacesToUndeclaredAt_ != 0 && why != "focus lost" && why != "backspaces not sent" && !host_->field().surroundingText && host_->hasFocus() &&
+            ngosen::monotonicUs() - backspacesToUndeclaredAt_ < UndeclaredFieldWaitUs;
+    }
+
     void TypingState::finishReplacement(const char* reason, bool fromTimer) {
+        if (waitsForFieldToDeclare(reason)) {
+            surr_wait_.pending      = true;
+            surr_wait_.timerOnly    = true;
+            surr_wait_.focusRetries = 0;
+            replaceTimer(settle_timer_, startWaitTimer(ngosen::monotonicUs() + 2000, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); }));
+            return;
+        }
+        backspacesToUndeclaredAt_ = 0;
         noteWaitOutcome(reason);
         logReplaceEnd(reason);
         if (backspaceCheck_ && backspaceCheck_->stage == BackspaceCheck::Stage::Deleting) {
@@ -555,6 +569,8 @@ namespace ngosen {
 
     void TypingState::startBackspaces(const ReplaceRequest& request) {
         countBackspaces(request.copy);
+        const bool undeclared     = !host_->field().surroundingText && sinceFocus_.lastPath == "surrounding";
+        backspacesToUndeclaredAt_ = undeclared ? ngosen::monotonicUs() : 0;
         is_deleting_.store(true, std::memory_order_release);
         closeCheckBeforeOtherEdit();
         openBackspaceCheck(request);
@@ -894,8 +910,9 @@ namespace ngosen {
             notePath("surrounding", "the field takes no keys");
             return true;
         }
-        if (!host_->field().surroundingText && sinceFocus_.lastPath == "surrounding" && ngosen::takesDeletionWhileUndeclared(host_->field())) {
-            NGOSEN_INFO("Delete through the surrounding text the field stopped declaring after our edit");
+        // Firefox takes the deletion in that state but can drop the commit, so a field that takes
+        // backspaces gets them instead (#951).
+        if (!host_->field().surroundingText && sinceFocus_.lastPath == "surrounding" && !ngosen::forwardsBackspaces(host_->field())) {
             notePath("surrounding", "the field stopped declaring its text after our edit");
             return true;
         }

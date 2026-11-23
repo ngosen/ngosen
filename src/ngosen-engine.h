@@ -255,7 +255,7 @@ namespace fcitx {
         ngosen::CGoObject                           macroTableObject_;
         ngosenAppRules                              appRulesTables_;
         ngosenAppSwitches                           appSwitchesTables_;
-        mutable ngosenAppNames                      emojiOffAppsTable_; ///< emojiOffApps_ as the settings window reads it
+        mutable ngosenAppNames                      emojiAppsTable_;    ///< emojiApps_ as the settings window reads it
         mutable ngosenAppNames                      teencodeAppsTable_; ///< teencodeApps_ as the settings window reads it
         ngosenEmojiWords                            emojiWordsTable_;
 
@@ -292,7 +292,7 @@ namespace fcitx {
         std::string                                 appRulesPath_;
         std::string                                 vimAppsPath_;
         std::string                                 webTerminalAppsPath_;
-        std::string                                 emojiOffAppsPath_;
+        std::string                                 emojiAppsPath_;
         std::string                                 teencodeAppsPath_;
         std::weak_ptr<CandidateList>                modeMenuList_;
         uint64_t                                    modeMenuQuietSince_ = 0;
@@ -330,7 +330,7 @@ namespace fcitx {
         std::unordered_map<KeySym, NgoSenMode> modeMenuMapping_;
         std::unordered_set<std::string>        vimApps_; ///< Apps whose fields follow Vim's normal-mode keys
         KeySym                                 vimMenuKey_ = FcitxKey_None;
-        std::unordered_set<std::string>        emojiOffApps_; ///< Apps where the user turned emoji suggestions off
+        std::unordered_set<std::string>        emojiApps_; ///< Apps where the user turned emoji suggestions on
         KeySym                                 emojiMenuKey_ = FcitxKey_None;
         std::unordered_set<std::string>        teencodeApps_; ///< Apps where the user turned teencode on
         KeySym                                 teencodeMenuKey_ = FcitxKey_None;
@@ -444,9 +444,9 @@ namespace fcitx {
         void                       webTerminalAppsChanged() override;
         void                       toggleVimMode(InputContext* ic);
         bool                       emojiOnFor(const std::string& appName) const;
-        void                       loadEmojiOffApps();
+        void                       loadEmojiApps();
         void                       enlargePanelFont();
-        void                       saveEmojiOffApps() const;
+        void                       saveEmojiApps() const;
         void                       toggleEmoji(InputContext* ic);
         bool                       teencodeOnFor(const std::string& appName) const;
         void                       loadTeencodeApps();

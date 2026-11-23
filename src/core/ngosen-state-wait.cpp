@@ -44,6 +44,10 @@ namespace ngosen {
         if (!s.isValid() || (backspacesForUnseenWord_ && !unseenWordShown_)) {
             return false;
         }
+        // A field that refocuses after edits reports itself empty for a moment each time (voz.vn in
+        // Brave). With no prefix that empty report would pass the checks below.
+        if (fieldBounces_ > 0 && surr_wait_.leavesText && !showsText(s))
+            return false;
         const std::string& t = s.text();
         // A snapshot identical to the one taken when the backspaces were sent cannot mean "done" by
         // content alone: when the app lags by a couple of keys, the stale snapshot looks exactly like
@@ -168,6 +172,12 @@ namespace ngosen {
                          if (backspacesForUnseenWord_ && waited + 1000 < UnseenWordForwardWaitUs) {
                              NGOSEN_INFO("Copy has not shown the word, wait longer before the commit");
                              t.rearm(surr_wait_.startedAt + UnseenWordForwardWaitUs);
+                             return true;
+                         }
+                         // Behind IBus the lagging-report wait below already covers this.
+                         if (fieldBounces_ > 0 && !ngosen::surroundingTextLags(host_->field()) && waited + 1000 < BouncingFieldWaitUs && !deletionLooksDone()) {
+                             NGOSEN_INFO("Field refocuses after edits, wait longer before the commit");
+                             t.rearm(surr_wait_.startedAt + BouncingFieldWaitUs);
                              return true;
                          }
                          if (deferLaggingCommit("timeout"))

@@ -914,6 +914,25 @@ namespace {
         check(slowest < 60, "redrawing editor: commit once the redraws are done", std::to_string(slowest) + " ms");
     }
 
+    // The voz.vn composer in Brave on Plasma Wayland bounces focus and reports an empty field after each
+    // Backspace and edit, and loses a commit sent before two Backspaces are applied. A one-Backspace edit
+    // survives an early commit, so only edits that delete two characters went wrong.
+    void testBouncingComposerTwoCharEdits() {
+        const Field             field = makeField("wayland", true, "brave-origin");
+        ngosen::test::AppQuirks quirks;
+        quirks.keyStepMs                 = 28;
+        quirks.bouncesEmptyAfterEdit     = true;
+        quirks.losesCommitAmidBackspaces = true;
+        const std::vector<std::pair<std::string, std::string>> cases{
+            {"em did ", "em đi "}, {"em kiaf ", "em kìa "}, {"em oo ", "em ô "}, {"em chowj ", "em chợ "}, {"em cas ", "em cá "},
+        };
+        for (const auto& [typed, want] : cases) {
+            const std::vector<uint32_t> keys(typed.begin(), typed.end());
+            const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 150));
+            check(text == want, "bouncing composer keeps the edit: " + typed, text);
+        }
+    }
+
     // Brave on GNOME 51 bounces focus as soon as it gets our Backspace and applies it only after the
     // commit we send once the wait gives up, so its first report after the bounce lacks the word.
     void testLateBackspaceAfterBounce() {
@@ -5913,6 +5932,7 @@ int main() {
     testCommitAfterEditorRedraw();
     testLateBackspaceAfterBounce();
     testBackspaceCommitCheck();
+    testBouncingComposerTwoCharEdits();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();

@@ -165,12 +165,10 @@ namespace ngosen {
 
     void TypingState::updateEmojiOffer() {
         emojiRecheck_.reset();
-        // The hint waits for the word to reach the app, so the emoji cannot land inside it.
-        // A preview stays meanwhile, as nothing can be picked from it.
+        // The hint waits for the word to reach the app, so the emoji cannot land inside it. A preview
+        // shown stays but is not redrawn: fcitx5 sends our forwarded keys only after drawing the panel.
         if (replacementPending()) {
-            if (previewsSentence())
-                previewSentence();
-            else
+            if (!previewsSentence())
                 dropEmojiOffer();
             emojiRecheck_ = host_->startTimer(ngosen::monotonicUs() + RecheckUs, RecheckUs, [this](ngosen::Timer& timer) {
                 if (!replacementPending()) {

@@ -614,6 +614,7 @@ namespace ngosen {
         // Only a fresh send-time snapshot (text before the cursor ends with prefix + deleted) may
         // count towards "frozen"; a lagging app sends a stale one.
         surr_wait_.sentSnapshotFresh = false;
+        surr_wait_.leavesText        = snapshot.isValid() && showsTextAfterDeleting(snapshot, static_cast<unsigned int>(utf8::length(deletedPart)));
         if (snapshot.isValid()) {
             const std::string before     = textBeforeCursor(snapshot);
             const std::string expected   = surr_wait_.prefix + surr_wait_.deleted;

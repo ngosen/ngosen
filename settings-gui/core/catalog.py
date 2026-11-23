@@ -162,8 +162,8 @@ HINTS = {
     ),
     "EmojiOfferAt": N_(
         "At the end of a sentence: the emoji of the sentence show while you type. After . ! ? or a"
-        " short pause, 1–9 picks one, or Tab first where digits type tones, as in VNI; it goes at the"
-        " cursor. Esc hides them until the next sentence."
+        " short pause, press Tab, then 1–9 to pick one; it goes at the cursor. Esc hides them until"
+        " the next sentence."
         " After each word: the list shows as soon as a keyword is typed."
     ),
     "EmojiPlacement": N_(

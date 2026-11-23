@@ -90,7 +90,7 @@ Hoàn tác.
   ra `nhưng`; bấm Backspace ngay sau đó thì trả lại đúng chữ đã gõ.
 - **Gợi ý emoji khi gõ:** tắt sẵn; bật cho từng app bằng **Gợi ý emoji (w)** trong menu `` ` ``. Khi bật, gõ xong
   `cười`, `con mèo` hay `haha` là hiện `Tab: 😂 …` cạnh con trỏ; Tab để đánh số rồi chọn bằng số, Esc giữ
-  nguyên chữ.
+  nguyên chữ. Để yên 4 giây thì danh sách tự ẩn.
 - **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey và bật sẵn tiếng Việt;
   người dùng cũ giữ phím chuyển và trạng thái đang dùng. Mặc định, phím chuyển đổi mọi app cùng lúc.
   Muốn mỗi app nhớ riêng như trước, chọn “Từng app” ở “Phím chuyển áp dụng cho” trên trang Phím tắt.

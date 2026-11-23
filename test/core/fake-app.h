@@ -232,6 +232,10 @@ namespace ngosen::test {
         const std::string& hint() const {
             return hint_;
         }
+        // The hint the input method last asked for, which a lagging app may not show yet.
+        const std::string& askedHint() const {
+            return askedHint_;
+        }
         // Commits, deletions and forwarded keys sent while the hint showed.
         int editsUnderHint() const {
             return editsUnderHint_;
@@ -276,6 +280,7 @@ namespace ngosen::test {
         void showPreedit(const std::string& text, bool /*underline*/) override;
         void clearPreedit() override;
         void showHint(const std::string& text) override {
+            askedHint_ = text;
             if (hintLagMs_ > 0)
                 later(hintLagMs_, [this, text] { hint_ = text; });
             else
@@ -402,6 +407,8 @@ namespace ngosen::test {
         std::string                         hint_;
         int                                 editsUnderHint_ = 0;
         int                                 hintLagMs_      = 0;
+
+        std::string                         askedHint_;
         std::u32string                      previousText_;
         size_t                              previousCursor_ = 0;
         std::u32string                      reportedText_;

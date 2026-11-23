@@ -293,6 +293,7 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> emojiRecheck_;             ///< looks again once the word is in the app
         std::function<void()>          emojiAfterHint_;           ///< the emoji picked, put in once the field drops the hint
         std::unique_ptr<ngosen::Timer> emojiPause_;               ///< offers the sentence's emoji in the field once typing stops
+        std::unique_ptr<ngosen::Timer> emojiIdle_;                ///< hides a list left alone
         bool                           emojiOn_          = true;  ///< false when the user turned emoji off for the app
         bool                           emojiMuted_       = false; ///< Esc hid the emoji for the rest of the sentence
         bool                           holdEmojiPreview_ = false; ///< an app reset keeps the preview until the field is checked
@@ -321,6 +322,7 @@ namespace ngosen {
         void                     previewSentence();
         std::vector<std::string> offeredEmoji() const;
         void                     showEmojiOffer();
+        void                     hideEmojiWhenIdle();
         void                     dropEmojiOffer();
         void                     hideEmojiOffer(); // keeps the pause timer, which may be the caller
         bool                     handleEmojiOfferKey(ngosen::KeyPress& keyEvent);

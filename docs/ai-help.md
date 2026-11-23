@@ -85,9 +85,9 @@ avoids the known click problems.
 
 Ask the user to type until the mistake happens, then save the typing log at once: "Lưu nhật ký gõ" (Save
 typing log) in the Ngó Sen menu (the tray, or the top bar on GNOME), or `ngosen-save-log` in a terminal. The log keeps
-only the last few hundred events, so typing on after the mistake pushes it out. Wait a second between two
-saves, since a save in the same second replaces the previous file. The file is
-`~/.local/state/ngosen/typing-<date>-<time>.log`.
+only the last two thousand events, about half a minute of typing in a browser, so typing on after the
+mistake pushes it out. Wait a second between two saves, since a save in the same second replaces the
+previous file. The file is `~/.local/state/ngosen/typing-<date>-<time>.log`.
 
 Help the user fill in the [bug report form](https://github.com/ngosen/ngosen/issues/new?template=bug_report.yml):
 keys typed, what appeared, what was expected, the app and how it was installed, the typing mode, and the

@@ -76,6 +76,7 @@ namespace ngosen {
                 // These also start over at other times, so they stay out of FieldHistory.
                 surrCheck_.reset();
                 surr_check_timer_.reset();
+                dropBackspaceCheck();
                 editLeft_.reset();
                 surrUnanswered_  = 0;
                 copyWaitsRunOut_ = 0;

@@ -638,7 +638,7 @@ namespace fcitx {
             addon->call<INotifications::sendNotification>(
                 "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
                 _("Version 1.14: pick what the tray shows, change a tone in Preedit, and a guide for AI assistants. See What's new for "
-                  "more."),
+                                          "more."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;
         });
@@ -1525,8 +1525,10 @@ namespace fcitx {
                 return false;
             toggleTapArmed_ = false;
 #if NGOSEN_USE_MODERN_FCITX_API
-            // A long hold, such as Ctrl+Shift+click, is not a tap.
-            if (!instance_->globalConfig().checkModifierOnlyKeyTimeout(toggleTapTime_))
+            // A long hold, such as Ctrl+Shift+click, is not a tap. fcitx5's own limit for modifier-only
+            // keys is too short for people who tap Ctrl+Shift slowly (#951).
+            constexpr uint64_t holdLimitUs = 1000000;
+            if (now(CLOCK_MONOTONIC) - toggleTapTime_ > holdLimitUs)
                 return false;
 #endif
             toggleVietnamese(keyEvent.inputContext());

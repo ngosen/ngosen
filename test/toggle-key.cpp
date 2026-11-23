@@ -341,17 +341,23 @@ int main() {
     check(committed == "việt", "switching to English commits the word in preedit", committed);
 
 #if NGOSEN_USE_MODERN_FCITX_API
-    // Held past fcitx5's limit for modifier-only keys, as around a Ctrl+Shift+click.
-    fcitx::RawConfig limit;
-    limit.setValueByPath("Hotkey/ModifierOnlyKeyTimeout", "100");
-    testInstance.instance.globalConfig().load(limit, true);
+    // A slow tap, as #951's reporter types it: longer than fcitx5's limit for modifier-only keys.
     keys.send(*notes, fcitx::Key(FcitxKey_Control_L), false);
-    keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, fcitx::KeyStates{fcitx::KeyState::Ctrl}), false);
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, ctrl), false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(400));
+    keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, both), true);
+    keys.send(*notes, fcitx::Key(FcitxKey_Control_L, ctrl), true);
+    check(realMode.load() == ngosen::Mode::Preedit, "a slow Ctrl+Shift tap switches", modeName(realMode.load()));
+
+    // Held past a second, as around a Ctrl+Shift+click.
+    keys.send(*notes, fcitx::Key(FcitxKey_Control_L), false);
+    keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, ctrl), false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1100));
     // A held key repeats, and the repeat must not restart the hold.
-    keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, fcitx::KeyStates{fcitx::KeyState::Ctrl}), false);
-    keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, fcitx::KeyStates{fcitx::KeyState::Ctrl, fcitx::KeyState::Shift}), true);
-    check(realMode.load() == ngosen::Mode::Off, "a long Ctrl+Shift hold does not switch", modeName(realMode.load()));
+    keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, ctrl), false);
+    keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, both), true);
+    keys.send(*notes, fcitx::Key(FcitxKey_Control_L, ctrl), true);
+    check(realMode.load() == ngosen::Mode::Preedit, "a Ctrl+Shift hold past a second does not switch", modeName(realMode.load()));
 #endif
 
     // Leaving a password field or changing the group is not a pick of Vietnamese.

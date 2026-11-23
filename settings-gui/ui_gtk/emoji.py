@@ -261,7 +261,15 @@ class EmojiPage(SettingsPage):
             css_classes=["typed"],
         )
         self.sentence_steps = _steps(
-            ((_("1. End a sentence"), sentence, _offer()), (_("2. Press 2"), picked, None))
+            (
+                (
+                    _("1. End a sentence"),
+                    sentence,
+                    Gtk.Label(label=f"Tab: {EXAMPLE_CANDIDATES[0]} …"),
+                ),
+                (_("2. Press Tab"), sentence, _offer()),
+                (_("3. Press 2"), picked, None),
+            )
         )
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         box.append(self.word_steps)

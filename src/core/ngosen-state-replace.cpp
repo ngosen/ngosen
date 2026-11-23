@@ -616,6 +616,7 @@ namespace ngosen {
         // count towards "frozen"; a lagging app sends a stale one.
         surr_wait_.sentSnapshotFresh = false;
         surr_wait_.leavesText        = snapshot.isValid() && showsTextAfterDeleting(snapshot, static_cast<unsigned int>(utf8::length(deletedPart)));
+        surr_wait_.textAfterCursor   = snapshot.isValid() && utf8::length(snapshot.text()) > snapshot.cursor();
         if (snapshot.isValid()) {
             const std::string before     = textBeforeCursor(snapshot);
             const std::string expected   = surr_wait_.prefix + surr_wait_.deleted;

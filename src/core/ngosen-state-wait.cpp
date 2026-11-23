@@ -48,6 +48,9 @@ namespace ngosen {
         // Brave). With no prefix that empty report would pass the checks below.
         if (fieldBounces_ > 0 && surr_wait_.leavesText && !showsText(s))
             return false;
+        // Deleting before the cursor keeps what follows it, so a wholly empty report is that refocus too.
+        if (fieldBounces_ > 0 && surr_wait_.textAfterCursor && s.text().empty())
+            return false;
         const std::string& t = s.text();
         // A snapshot identical to the one taken when the backspaces were sent cannot mean "done" by
         // content alone: when the app lags by a couple of keys, the stale snapshot looks exactly like

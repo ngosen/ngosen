@@ -479,6 +479,7 @@ namespace ngosen {
             bool                           sawOtherSnapshot  = false; ///< an event differed from the send-time snapshot
             bool                           sentSnapshotFresh = false; ///< send-time snapshot still showed the text to delete
             bool                           leavesText        = false; ///< send-time snapshot keeps text once the deletion is done
+            bool                           textAfterCursor   = false; ///< send-time snapshot has text after the cursor
         };
         SurroundingWait                surr_wait_;
         std::unique_ptr<ngosen::Timer> xim_forward_timer_; ///< forwards after the XIM sync reply

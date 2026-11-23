@@ -1002,6 +1002,32 @@ namespace {
         check(app->text() == "người \n\n", "type over a selection redrawn in steps", app->text());
     }
 
+    // voz.vn's editor reports itself wholly empty while it refocuses, which looks like an edit that empties
+    // it; the commit has to wait for a report that still holds the line breaks after the cursor.
+    void testFirstWordEmptiesBouncingField() {
+        ngosen::test::AppQuirks composer;
+        composer.keyStepMs                 = 28;
+        composer.bouncesEmptyAfterEdit     = true;
+        composer.losesCommitAmidBackspaces = true;
+        composer.textAfterCursor           = "\n\n";
+        for (const int gapMs : {60, 100, 150}) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "brave-origin"), composer);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("dodofng ")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(gapMs);
+            }
+            loop.pump(300);
+            check(app->text() == "đồng \n\n", "first word emptying a bouncing field (" + std::to_string(gapMs) + " ms)", app->text());
+        }
+    }
+
     void testStrayKeyDuringBounce() {
         const Field             field = makeField("wayland", true, "brave-origin");
         ngosen::test::AppQuirks bouncing;
@@ -6217,6 +6243,7 @@ int main() {
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();
     testStrayKeyDuringBounce();
+    testFirstWordEmptiesBouncingField();
     testTypeOverSelectionInSteps();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();

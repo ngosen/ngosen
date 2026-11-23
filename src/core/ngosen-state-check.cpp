@@ -218,6 +218,7 @@ namespace ngosen {
         surr_wait_.sentSnapshot      = reportKey(report);
         surr_wait_.sentSnapshotFresh = true;
         surr_wait_.leavesText        = showsTextAfterDeleting(report, static_cast<unsigned int>(utf8::length(extra)));
+        surr_wait_.textAfterCursor   = utf8::length(report.text()) > report.cursor();
         startReplaceLog("none");
         deleteAndCommit(extra, check.added);
     }

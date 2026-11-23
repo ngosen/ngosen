@@ -660,7 +660,7 @@ namespace ngosen {
         // An editor replacing a selection can show an empty line after the empty field, before the letter (voz.vn).
         const bool letterNotShown = firstLetterPending && cellStartedAtKey_ == keyCount_ && s.text().find_first_not_of('\n') == std::string::npos;
         const bool newField       = (hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() && !letterNotShown &&
-                               (unreportedCommitLength_ == 0 || textAfterCursorChanged(s)) && !reportTrailsFirstWord(s)) ||
+                                     (unreportedCommitLength_ == 0 || textAfterCursorChanged(s)) && !reportTrailsFirstWord(s)) ||
             (lostWord && !letterNotShown);
         // Firefox repeats the old state before the echo, so only a change ends the wait.
         const std::optional<size_t> deletedTo = !jumped && !sameText ? ownDeletionCursor(s) : std::nullopt;

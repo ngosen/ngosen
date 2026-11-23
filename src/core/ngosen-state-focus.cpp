@@ -77,6 +77,7 @@ namespace ngosen {
                 surrCheck_.reset();
                 surr_check_timer_.reset();
                 dropBackspaceCheck();
+                dropStrayKey();
                 editLeft_.reset();
                 surrUnanswered_  = 0;
                 copyWaitsRunOut_ = 0;

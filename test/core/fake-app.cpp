@@ -537,6 +537,7 @@ namespace ngosen::test {
         if (leaveIfEmptied())
             return;
         changed();
+        landStrayLetter();
         bounceEmptyAfterEdit();
         redrawAfterEdit();
     }
@@ -680,6 +681,27 @@ namespace ngosen::test {
         state_->keyEvent(up);
     }
 
+    void FakeApp::typeAfterEdit(const std::string& letter, int nth, int delayMs) {
+        strayLetter_      = letter;
+        editsBeforeStray_ = nth;
+        strayDelayMs_     = delayMs;
+    }
+
+    void FakeApp::landStrayLetter() {
+        if (strayLetter_.empty() || --editsBeforeStray_ > 0)
+            return;
+        later(strayDelayMs_, [this, letter = utf8::decode(std::exchange(strayLetter_, std::string()))] {
+            text_.insert(cursor_, letter);
+            cursor_ = anchor_ = cursor_ + letter.size();
+            changed();
+        });
+    }
+
+    void FakeApp::releaseKey(uint32_t sym) {
+        FakeKey up(sym, true, 0, static_cast<uint32_t>(monotonicUs() / 1000));
+        state_->keyEvent(up);
+    }
+
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};
@@ -771,6 +793,8 @@ namespace ngosen::test {
         }
         anchor_ = cursor_;
         changed();
+        if (!typed)
+            landStrayLetter();
         bounceEmptyAfterEdit();
         if (!quirks_.redrawsOnlyOnDeletion)
             redrawAfterEdit();
@@ -866,6 +890,7 @@ namespace ngosen::test {
         if (leaveIfEmptied())
             return;
         changed();
+        landStrayLetter();
         bounceEmptyAfterEdit();
         redrawAfterEdit();
     }

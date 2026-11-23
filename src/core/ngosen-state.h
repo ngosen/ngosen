@@ -881,6 +881,41 @@ namespace ngosen {
         std::optional<std::pair<uint32_t, uint32_t>>    keyAfterUnseen_; ///< sym and states of the next key
         std::optional<std::pair<uint64_t, std::string>> cellMove_;       ///< keyCount_ after Enter, and the text then
 
+        // A field that refocuses after our backspaces can hand a letter pressed meanwhile to the page.
+        struct StrayWatch {
+            std::string    head; ///< the start of the word our backspaces keep
+            std::string    deleted;
+            std::string    sent;  ///< our commit, once it went out
+            std::string    base;  ///< the reported text before the cursor once the deletion is done
+            std::u32string after; ///< the reported text after the cursor at base
+            bool           hasBase    = false;
+            bool           baseSeen   = false; ///< a report showed the deletion done
+            bool           commitSeen = false; ///< a report showed our commit
+            uint64_t       keys       = 0;
+        };
+        struct StrayLetter {
+            uint32_t    sym = 0;
+            std::string shown; ///< the word as the field shows it, stray letter included
+            std::string word;  ///< the word the engine held when the letter showed
+            bool        beforeCommit = false;
+            bool        fixed        = false;
+            bool        released     = false;
+            uint64_t    keys         = 0;
+            uint64_t    seenAtUs     = 0;
+        };
+        std::optional<StrayWatch>  strayWatch_;
+        std::optional<StrayLetter> strayLetter_;
+        bool                       retypeAtRelease_ = false;
+        void                       watchForStrayKey(const ReplaceRequest& request);
+        void                       noteStrayReport();
+        void                       noteStrayCommit(const std::string& text);
+        bool                       strayStillShown() const;
+        bool                       fixStrayBeforeCommit();
+        void                       fixStrayBeforeKey();
+        bool                       takesStrayKey(uint32_t sym);
+        bool                       retypeStrayKey();
+        void                       dropStrayKey();
+
         // What each app's field held when it lost focus, to see a key typed there before focus came back.
         struct LeftField {
             std::string    program;

@@ -209,6 +209,11 @@ namespace ngosen::test {
         void pageTakesKey(uint32_t sym, const std::string& before, const std::string& after);
         // Like pageTakesKey, but the field reports the letter only with its next change, as AG Grid does.
         void pageTakesKeyUnreported(uint32_t sym, const std::string& letter);
+        // The page takes this letter right after it applies the nth of our edits from now, as voz.vn's
+        // editor in Brave does with a key pressed while it refocuses. The letter lands delayMs after that edit.
+        void typeAfterEdit(const std::string& letter, int nth, int delayMs = 2);
+        // Only the release of a key whose press the page took while the field was refocusing.
+        void releaseKey(uint32_t sym);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.
@@ -368,6 +373,10 @@ namespace ngosen::test {
         int                                 backspaceBurst_ = 0; // forwarded Backspaces queued since the queue was last empty
         std::u32string                      heldCommit_;         // commits waiting for queued Backspaces
         bool                                emptyBouncePending_ = false;
+        std::string                         strayLetter_;
+        int                                 editsBeforeStray_ = 0;
+        int                                 strayDelayMs_     = 0;
+        void                                landStrayLetter();
         std::u32string                      ownText_;
         bool                                inReport_        = false;
         bool                                focused_         = true;

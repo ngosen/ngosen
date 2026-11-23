@@ -510,6 +510,15 @@ namespace {
         const std::vector<uint32_t> keys{'v', 'i', 'e', 'e', 't', 'j', ' '};
         const std::string           text = ngosen::test::typeInApp(resources, makeField("ibus", true), quirks, keys, {100, 100, 100, 100, 100, 2, 100});
         check(text == "vi\u00ea\u0323t ", "Unicode tổ hợp, Space typed during the replacement", text);
+
+        // An editor deletes through its text, so a word that Tab ends is already decomposed.
+        ngosen::test::AppQuirks editor;
+        editor.showsTab = true;
+        FakeResources writer;
+        writer.mutableOptions().outputCharset = "Unicode tổ hợp";
+        const std::vector<uint32_t> tabbed{'v', 'i', 'e', 'e', 't', 'j', ngosen::key::Tab};
+        const std::string           cell = ngosen::test::typeInApp(writer, makeField("wayland", true), editor, tabbed, std::vector<int>(tabbed.size(), 50));
+        check(cell == "vi\u00ea\u0323t\u21e5", "Unicode tổ hợp, editor word ended by Tab", cell);
     }
 
     // Firefox over D-Bus applies a key it sent before our commit reached it ahead of that commit.

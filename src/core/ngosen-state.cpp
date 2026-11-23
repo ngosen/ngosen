@@ -64,25 +64,35 @@ namespace ngosen {
     }
 
     void TypingState::setOption() {
-        engineSpellsPrecomposed_ = decomposesAtWordEnd();
         if (bambooEngine_)
             setOption(bambooEngine_.handle());
     }
 
+    // An editor deletes exactly through its text, but in a terminal the shell decides what a Backspace
+    // erases: bash takes a combining mark with its letter, zsh takes the mark alone.
     bool TypingState::decomposesAtWordEnd() const {
-        return mode() == ngosen::Mode::Sen && engine_->options().outputCharset == DecomposedCharset;
+        if (mode() != ngosen::Mode::Sen || engine_->options().outputCharset != DecomposedCharset)
+            return false;
+        const Field field = host_->field();
+        return field.terminal || ngosen::runsShellOnPty(field) || mayShowWebTerminal();
     }
 
     std::string TypingState::spelledAtWordEnd(const std::string& word) const {
-        if (!decomposesAtWordEnd())
+        if (!engineSpellsPrecomposed_)
             return word;
         ngosen::UniqueCPtr<char> out(ConvertText(word.c_str(), "Unicode", DecomposedCharset, 0, false));
         return out ? out.get() : word;
     }
 
+    // Only between words: a word must end in the spelling it started with.
     void TypingState::syncEngineCharset() {
-        if (decomposesAtWordEnd() != engineSpellsPrecomposed_)
-            setOption();
+        if (decomposesAtWordEnd() == engineSpellsPrecomposed_ || !oldPreBuffer_.empty())
+            return;
+        ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+        if (preedit && *preedit.get() != 0)
+            return;
+        engineSpellsPrecomposed_ = !engineSpellsPrecomposed_;
+        setOption();
     }
 
     void TypingState::setTeencodeOn(bool on) {
@@ -99,7 +109,7 @@ namespace ngosen {
             .macroEnabled        = engine_->options().enableMacro,
             .autoCapitalizeMacro = engine_->options().capitalizeMacro,
             .spellCheckWithDicts = true,
-            .outputCharset       = decomposesAtWordEnd() ? "Unicode" : engine_->options().outputCharset.data(),
+            .outputCharset       = engineSpellsPrecomposed_ ? "Unicode" : engine_->options().outputCharset.data(),
             .modernStyle         = engine_->options().modernStyle,
             .freeMarking         = engine_->options().freeMarking,
             .w2u                 = static_cast<int>(engine_->options().w2u),

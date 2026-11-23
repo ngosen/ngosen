@@ -222,6 +222,10 @@ namespace ngosen::test {
         int editsUnderHint() const {
             return editsUnderHint_;
         }
+        // Candidate lists shown between a replacement's first forwarded backspace and its commit.
+        int panelsMidReplacement() const {
+            return panelsMidReplacement_;
+        }
         // The longest time from forwarding a replacement's first backspace to its commit.
         int slowestCommitMs() const {
             return slowestCommitMs_;
@@ -271,6 +275,8 @@ namespace ngosen::test {
         void refreshPanel() override {}
 
         void showCandidates(const std::vector<std::string>& labels, int /*pageSize*/, std::function<void(size_t)> onPick, CandidateLayout layout) override {
+            if (forwardedAt_ > 0)
+                ++panelsMidReplacement_;
             labels_      = labels;
             onPick_      = std::move(onPick);
             inRow_       = layout == CandidateLayout::Row;
@@ -359,6 +365,8 @@ namespace ngosen::test {
         uint32_t                            heldSym_         = 0;
         int                                 slowestCommitMs_ = 0;
         int                                 shortcuts_       = 0;
+
+        int                                 panelsMidReplacement_ = 0;
         std::u32string                      text_;
         std::optional<std::string>          announced_;
         size_t                              cursor_      = 0;

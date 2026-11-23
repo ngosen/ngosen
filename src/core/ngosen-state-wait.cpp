@@ -640,8 +640,17 @@ namespace ngosen {
             ngosen::utf8::decode(s.text())[lastSurroundingCursor_] == passed_key_->sym &&
             ((s.anchor() == s.cursor() && sinceInputUs < SuggestionStepUs) || (s.anchor() == lastSurroundingAnchor_ && s.anchor() > s.cursor()));
         const bool settling = sinceInputUs < CaretSettleUs;
-        // Antigravity's editor on GNOME moves the caret one step back well after the key (#362).
-        const bool caretSettling = jumped && s.cursor() == s.anchor() && sinceInputUs < SuggestionStepUs && s.cursor() + 1 == lastSurroundingCursor_;
+        // Antigravity's editor moves the caret one step back after each change to the text (#362), and may
+        // repeat that until the next key. A busy app shows the letter itself late, so the step back can
+        // come well after the key but still right after the letter.
+        const uint64_t now = ngosen::monotonicUs();
+        if (hasLastSurrounding_ && !sameText) {
+            textShownAtUs_    = now;
+            caretSteppedBack_ = false;
+        }
+        const bool caretSettling = jumped && s.cursor() == s.anchor() && s.cursor() + 1 == lastSurroundingCursor_ &&
+            (sinceInputUs < SuggestionStepUs || now - textShownAtUs_ < SuggestionStepUs || caretSteppedBack_);
+        caretSteppedBack_ = caretSettling;
         // A spreadsheet reports a click on another cell only as that cell's text with the cursor at its start.
         const bool lostWord = lostWordAfterBounce(s, settling);
         // Calc reports the new cell empty just before the key we let through lands in it.
@@ -651,7 +660,7 @@ namespace ngosen {
         // An editor replacing a selection can show an empty line after the empty field, before the letter (voz.vn).
         const bool letterNotShown = firstLetterPending && cellStartedAtKey_ == keyCount_ && s.text().find_first_not_of('\n') == std::string::npos;
         const bool newField       = (hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() && !letterNotShown &&
-                                     (unreportedCommitLength_ == 0 || textAfterCursorChanged(s)) && !reportTrailsFirstWord(s)) ||
+                               (unreportedCommitLength_ == 0 || textAfterCursorChanged(s)) && !reportTrailsFirstWord(s)) ||
             (lostWord && !letterNotShown);
         // Firefox repeats the old state before the echo, so only a change ends the wait.
         const std::optional<size_t> deletedTo = !jumped && !sameText ? ownDeletionCursor(s) : std::nullopt;

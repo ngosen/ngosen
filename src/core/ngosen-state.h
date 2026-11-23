@@ -535,7 +535,9 @@ namespace ngosen {
         unsigned int unreportedDeleteLength_ = 0;
         uint64_t     unreportedDeleteKey_    = 0; ///< keyCount_ when that deletion was sent
         bool         committing_             = false;
-        uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
+        uint64_t     lastInputAtUs_          = 0;     ///< last key or commit, CLOCK_MONOTONIC us
+        uint64_t     textShownAtUs_          = 0;     ///< when a report last showed the text changed
+        bool         caretSteppedBack_       = false; ///< the app reports the caret one step back since then
         // A bounce after such a key is the app moving on, as a sheet does to the next cell, not a redraw.
         bool lastKeyLeftText_ = false;
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.

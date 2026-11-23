@@ -10,6 +10,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thay đổi
+
+- Gợi ý emoji nay tắt sẵn ở mọi app; bấm `` ` `` rồi `w` để bật cho từng app muốn dùng, như Teencode. Danh
+  sách app đã tắt emoji trước đây không còn dùng; trong cửa sổ cài đặt, mục Emoji nay liệt kê "App đã bật
+  emoji" (#961).
+
 ## [1.14.0-1] — 22/11/2026
 
 Khay có thể hiện chữ `vi` / `en` hoặc ảnh tự chọn thay cho biểu tượng (#908, #911). Gõ Preedit: bôi đen một từ đã gõ rồi gõ phím dấu thì đổi được dấu, như Gõ Sen (#921). Nhờ AI tìm lỗi gõ nay có trang hướng dẫn riêng cho AI và lệnh `ngosen-check` (#931, #933). Bỏ ô "Kiểm tra chính tả" (#925), và cài lần đầu trên KDE không còn đổi bàn phím về English (#942). Gợi ý emoji không còn bật lên khi gõ chữ cái đơn, con số hay chữ tắt như `t`, `ng`, `vs` (#945).

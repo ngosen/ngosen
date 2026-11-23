@@ -121,7 +121,7 @@ namespace ngosen::test {
         // Applies a commit only after the forwarded Backspaces sent before it, and loses it when there were
         // two or more, as the voz.vn composer does in Brave on Plasma Wayland. Needs keyStepMs.
         bool losesCommitAmidBackspaces = false;
-        // Puts a U+200B at the start of the line a deletion empties, as the voz.vn composer does.
+        // Puts a U+200B in the field a deletion empties, as the voz.vn composer does.
         bool marksEmptiedLine = false;
     };
 

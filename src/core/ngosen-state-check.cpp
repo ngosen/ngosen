@@ -342,7 +342,7 @@ namespace ngosen {
             return;
         }
         std::string before = textBeforeCursor(s);
-        // An editor can mark the line our deletion empties with a U+200B (voz.vn); nobody typed it.
+        // An editor can mark the field our deletion empties with a U+200B (voz.vn); nobody typed it.
         if (isStartsWith(before, "\u200b"))
             before.erase(0, std::string("\u200b").size());
         const std::u32string text  = utf8::decode(s.text());

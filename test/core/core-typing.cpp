@@ -1048,7 +1048,7 @@ namespace {
         const auto run    = [&](const std::string& before, char stray, int nth, const std::string& after) { return runIn(field, bouncing, before, stray, nth, after, false); };
         const auto expect = [&](const std::string& name, const Run& got, const std::string& want) { check(got.text == want, "stray key: " + name, got.text); };
         expect("y after the tone key", run("ngaf", 'y', 1, " "), "ngày ");
-        // The deletion empties the line, which voz.vn then marks with a U+200B before the stray letter lands.
+        // The deletion empties the field, which voz.vn then marks with a U+200B before the stray letter lands.
         ngosen::test::AppQuirks marking = bouncing;
         marking.marksEmptiedLine        = true;
         marking.textAfterCursor         = "\n\n";

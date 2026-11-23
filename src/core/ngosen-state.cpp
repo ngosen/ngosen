@@ -867,8 +867,10 @@ namespace ngosen {
             fieldAtKeptReset_.reset();
             if (ngosen::key::isBackspace(keyEvent.sym()))
                 closeCheckBeforeOtherEdit();
-            if (oldPreBuffer_.empty())
+            if (oldPreBuffer_.empty()) {
                 backspaceInWord_ = false;
+                tailAtWordStart_ = textAfterCursor(host_->surrounding());
+            }
             startEchoTimer(keyEvent);
         }
         const bool typedKey = !keyEvent.isRelease() && !keyEvent.isModifier();

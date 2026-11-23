@@ -636,6 +636,10 @@ namespace ngosen {
         return std::string(t.begin(), it);
     }
 
+    std::string TypingState::textAfterCursor(const Surrounding& s) {
+        return s.isValid() ? s.text().substr(textBeforeCursor(s).size()) : std::string();
+    }
+
     bool TypingState::showsTextAfterDeleting(const Surrounding& s, unsigned int chars) {
         std::u32string text = utf8::decode(s.text());
         const size_t   end  = std::min<size_t>(s.cursor(), text.size());
@@ -914,8 +918,10 @@ namespace ngosen {
         ++expected_backspaces_;
         // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
         // the autofill shape on Firefox.
-        const bool isFirefoxAddressBar = ngosen::hidesAddressBarFlag(host_->field()) && textAfterCursorLooksLikeUrl(surrounding);
-        const bool checkAutofill       = mode() != ngosen::Mode::Sen || host_->field().url || isFirefoxAddressBar;
+        // A suggestion appears as the word is typed; text already there, like a link, is not one.
+        const bool isFirefoxAddressBar =
+            ngosen::hidesAddressBarFlag(host_->field()) && textAfterCursorLooksLikeUrl(surrounding) && textAfterCursor(surrounding) != tailAtWordStart_;
+        const bool checkAutofill = mode() != ngosen::Mode::Sen || host_->field().url || isFirefoxAddressBar;
         if (checkAutofill) {
             // Enable Autofill detection for all frontends (Wayland/IBus).
             // This fixes the "toôi" duplication bug in Chromium-based search bars.

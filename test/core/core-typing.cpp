@@ -4358,6 +4358,17 @@ namespace {
         check(has(joined, "\tjoin\t\n") && !has(joined, "\thold\t"), "recorder: notes a joined edit", joined);
     }
 
+    // A link already in the field reads like an address but is not one being filled in.
+    void testFirefoxLinkAfterCursorIsNoAutofill() {
+        realMode                = ngosen::Mode::Sen;
+        const std::string link  = "[typing.log](https://github.com/user-attachments/files/1/typing.log)";
+        const Field       field = makeField("wayland", true, "firefox");
+        for (const auto& [typed, want] : std::vector<std::pair<std::string, std::string>>{{"Gox", "Gõ"}, {"tieesng", "tiếng"}}) {
+            const std::string text = ngosen::test::typeInApp(field, {.textAfterCursor = link}, keysOf(typed), std::vector<int>(typed.size(), 100));
+            check(text == want + link, "Firefox: a link after the cursor keeps the letter before the edit", text);
+        }
+    }
+
     // Firefox's address bar drops its autocompletion only for a commit in the deletion's own turn.
     void testAutofillTailCommitsWithDeletion() {
         TailRun url("tieng.lan:8765/", 3);
@@ -6314,6 +6325,7 @@ int main() {
     testCursorPastOnBusyPage();
     testSplitWaitFollowsEchoes();
     testAutofillTailCommitsWithDeletion();
+    testFirefoxLinkAfterCursorIsNoAutofill();
     testRecorderNotesHowEditsWent();
     testSelectedTailGoesFirst();
     testReportRequestIsNotInput();

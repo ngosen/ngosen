@@ -171,30 +171,28 @@ class FilterTest(unittest.TestCase):
 
 class OffAppsTest(unittest.TestCase):
     def test_turning_emoji_back_on_and_undo(self):
-        fake = FakeDBusHandler(
-            sub_configs={"emoji_off_apps": [{"App": "firefox"}, {"App": "kate"}]}
-        )
+        fake = FakeDBusHandler(sub_configs={"emoji_apps": [{"App": "firefox"}, {"App": "kate"}]})
         table = words(fake)
-        self.assertEqual(table.off_apps, ["firefox", "kate"])
-        undo = table.enable_app("firefox")
-        self.assertEqual(fake.sub_configs["emoji_off_apps"], [{"App": "kate"}])
+        self.assertEqual(table.on_apps, ["firefox", "kate"])
+        undo = table.disable_app("firefox")
+        self.assertEqual(fake.sub_configs["emoji_apps"], [{"App": "kate"}])
         self.assertTrue(undo())
-        self.assertEqual(fake.sub_configs["emoji_off_apps"], [{"App": "firefox"}, {"App": "kate"}])
+        self.assertEqual(fake.sub_configs["emoji_apps"], [{"App": "firefox"}, {"App": "kate"}])
 
     def test_turning_back_on_keeps_an_app_turned_off_since(self):
-        fake = FakeDBusHandler(sub_configs={"emoji_off_apps": [{"App": "firefox"}]})
+        fake = FakeDBusHandler(sub_configs={"emoji_apps": [{"App": "firefox"}]})
         table = words(fake)
-        fake.sub_configs["emoji_off_apps"].append({"App": "kate"})
-        table.enable_app("firefox")
-        self.assertEqual(fake.sub_configs["emoji_off_apps"], [{"App": "kate"}])
-        self.assertEqual(table.off_apps, ["kate"])
+        fake.sub_configs["emoji_apps"].append({"App": "kate"})
+        table.disable_app("firefox")
+        self.assertEqual(fake.sub_configs["emoji_apps"], [{"App": "kate"}])
+        self.assertEqual(table.on_apps, ["kate"])
 
     def test_undo_keeps_an_app_turned_off_since(self):
-        fake = FakeDBusHandler(sub_configs={"emoji_off_apps": [{"App": "firefox"}]})
-        undo = words(fake).enable_app("firefox")
-        fake.sub_configs["emoji_off_apps"].append({"App": "kate"})
+        fake = FakeDBusHandler(sub_configs={"emoji_apps": [{"App": "firefox"}]})
+        undo = words(fake).disable_app("firefox")
+        fake.sub_configs["emoji_apps"].append({"App": "kate"})
         self.assertTrue(undo())
-        self.assertEqual(fake.sub_configs["emoji_off_apps"], [{"App": "firefox"}, {"App": "kate"}])
+        self.assertEqual(fake.sub_configs["emoji_apps"], [{"App": "firefox"}, {"App": "kate"}])
 
 
 class ToggleHintTest(unittest.TestCase):
@@ -279,7 +277,7 @@ class DefaultsTest(unittest.TestCase):
         fake = FakeDBusHandler(
             sub_configs={
                 "emoji_words": [{"Keyword": "sếp", "Emoji": "👔", "On": "True"}],
-                "emoji_off_apps": [{"App": "kate"}],
+                "emoji_apps": [{"App": "kate"}],
             }
         )
         table = words(fake)
@@ -287,7 +285,7 @@ class DefaultsTest(unittest.TestCase):
         table.restore_defaults()
         self.assertTrue(table.save() and table.save_apps())
         self.assertEqual(saved(fake), [])
-        self.assertEqual(fake.sub_configs["emoji_off_apps"], [])
+        self.assertEqual(fake.sub_configs["emoji_apps"], [])
 
 
 if __name__ == "__main__":

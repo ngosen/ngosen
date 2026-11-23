@@ -279,7 +279,7 @@ class EmojiPage(SettingsPage):
         return self.example
 
     def _apps_group(self):
-        group = Adw.PreferencesGroup(title=_("Apps without emoji"), description=self._toggle_hint())
+        group = Adw.PreferencesGroup(title=_("Apps with emoji"), description=self._toggle_hint())
         self.apps_group = group
         self.apps = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE, css_classes=["boxed-list"])
         # App names are the user's own entries, not settings to find.
@@ -289,22 +289,22 @@ class EmojiPage(SettingsPage):
 
     def _show_apps(self):
         self.apps.remove_all()
-        for app in self.words.off_apps:
+        for app in self.words.on_apps:
             row = Adw.ActionRow(title=app, use_markup=False)
-            button = Gtk.Button(label=_("Turn back on"), valign=Gtk.Align.CENTER)
+            button = Gtk.Button(label=_("Turn off"), valign=Gtk.Align.CENTER)
             button.update_property(
-                [Gtk.AccessibleProperty.LABEL], [_("Turn emoji back on in {}").format(app)]
+                [Gtk.AccessibleProperty.LABEL], [_("Turn emoji off in {}").format(app)]
             )
-            button.connect("clicked", lambda _b, app=app: self.enable_app(app))
+            button.connect("clicked", lambda _b, app=app: self.disable_app(app))
             row.add_suffix(button)
             self.apps.append(row)
-        if not self.words.off_apps:
-            empty = Adw.ActionRow(title=_("Not turned off in any app."), css_classes=["dim-label"])
+        if not self.words.on_apps:
+            empty = Adw.ActionRow(title=_("Not on in any app."), css_classes=["dim-label"])
             empty.set_activatable(False)
             self.apps.append(empty)
 
-    def enable_app(self, app):
-        undo = self.words.enable_app(app)
+    def disable_app(self, app):
+        undo = self.words.disable_app(app)
         self._show_apps()
         if undo is None:
             self.show_message(_("Could not save. Check that fcitx5 is running."), None)
@@ -315,13 +315,13 @@ class EmojiPage(SettingsPage):
             self._show_apps()
             return ok
 
-        self.show_message(_("Emoji are back on in {}.").format(app), undo_and_show)
+        self.show_message(_("Emoji are off in {}.").format(app), undo_and_show)
 
     def _toggle_hint(self):
         return toggle_hint(self.value_of("ModeMenuKey"), self.value_of("ShortcutEmoji"))
 
     def refresh_status(self):
-        """Shows the apps turned off from the keyboard while the window was open."""
+        """Shows the apps turned on from the keyboard while the window was open."""
         self.apps_group.set_description(self._toggle_hint())
         if not self.words.is_modified():
             self.words.load()

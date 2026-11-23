@@ -2563,28 +2563,20 @@ msgid "Put back the words {} came with"
 msgstr "Trả {} về các từ có sẵn"
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
-msgid "Apps without emoji"
-msgstr "App đã tắt emoji"
+msgid "Apps with emoji"
+msgstr "App đã bật emoji"
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
 msgid "Emoji and their words"
 msgstr "Emoji và từ gợi ý"
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
-msgid "Not turned off in any app."
-msgstr "Chưa tắt ở app nào."
+msgid "Turn emoji off in {}"
+msgstr "Tắt emoji trong {}"
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
-msgid "Turn back on"
-msgstr "Bật lại"
-
-#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
-msgid "Turn emoji back on in {}"
-msgstr "Bật lại emoji trong {}"
-
-#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
-msgid "Emoji are back on in {}."
-msgstr "Đã bật lại emoji trong {}."
+msgid "Emoji are off in {}."
+msgstr "Đã tắt emoji trong {}."
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
 msgid "Click a word to turn it off or on. Dashed words are off; type a new word in the box next to them to add it. A word on for several emoji offers all of them."
@@ -2631,12 +2623,12 @@ msgid "2. Press 2"
 msgstr "2. Bấm 2"
 
 #: settings-gui/core/emoji_words.py
-msgid "Set a mode menu key and an emoji key on the Keys page to turn suggestions off for one app."
-msgstr "Đặt phím mở menu chế độ và phím emoji ở trang Phím để tắt gợi ý cho riêng một app."
+msgid "Set a mode menu key and an emoji key on the Keys page to turn suggestions on for one app."
+msgstr "Đặt phím mở menu chế độ và phím emoji ở trang Phím để bật gợi ý cho riêng một app."
 
 #: settings-gui/core/emoji_words.py
-msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
-msgstr "Ở app đang gõ, bấm {menu} rồi {key} để tắt hay bật lại gợi ý cho riêng app đó. Kiểu gõ của app vẫn giữ nguyên."
+msgid "Suggestions are off until you turn them on. In the app you are typing in, press {menu} then {key} to turn them on or off for that app. The app keeps its typing mode."
+msgstr "Gợi ý tắt sẵn cho tới khi bạn bật. Ở app đang gõ, bấm {menu} rồi {key} để bật hay tắt gợi ý cho riêng app đó. Kiểu gõ của app vẫn giữ nguyên."
 
 #: settings-gui/core/teencode_apps.py
 msgid "Set a mode menu key and a teencode key on the Keys page to turn teencode on."
@@ -2646,11 +2638,13 @@ msgstr "Đặt phím mở menu chế độ và phím teencode ở trang Phím đ
 msgid "Teencode keeps words like zậy, đag and nhữg instead of restoring the keys typed. In the app you are typing in, press {menu} then {key} to turn it on or off for that app."
 msgstr "Teencode giữ các chữ như zậy, đag, nhữg thay vì trả về phím đã gõ. Ở app đang gõ, bấm {menu} rồi {key} để bật hay tắt teencode cho riêng app đó."
 
-#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py settings-gui/ui/pages/emoji_page.py
+#: settings-gui/ui_gtk/emoji.py
 msgid "Not on in any app."
 msgstr "Chưa bật ở app nào."
 
-#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py settings-gui/ui/pages/emoji_page.py
+#: settings-gui/ui_gtk/emoji.py
 msgid "Turn off"
 msgstr "Tắt"
 

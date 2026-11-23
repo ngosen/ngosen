@@ -44,6 +44,7 @@ namespace ngosen::test {
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
         bool erasesOnPreedit        = false; // erases a selection when a preedit shows, as GTK 4 does, not on the commit
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
+        int  dropsCommitNumber      = 0;     // drops the nth non-empty commit, as voz.vn's editor in Brave drops one amid backspaces
         int  backspaceLagMs         = 0;     // applies forwarded backspaces this late but commits at once, as Antigravity's editor on GNOME sometimes does
         bool backspacesSkipLag      = false; // applies forwarded backspaces ahead of what lagMs holds back, as GNOME Shell's IBus bridge with forward-keys@ngosen.github.io does
         bool deletionsSkipLag       = false; // applies deletions through the text ahead of what lagMs holds back, as Firefox's snap does right after it opens
@@ -411,6 +412,7 @@ namespace ngosen::test {
         bool                                cellOpensOnKey_   = false;
         bool                                ctrlDown_         = false;
         int                                 emptyCommits_     = 0;
+        int                                 commits_          = 0; ///< non-empty commits that reached the app
         int                                 deletions_        = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};
         std::vector<std::unique_ptr<Timer>> timers_;

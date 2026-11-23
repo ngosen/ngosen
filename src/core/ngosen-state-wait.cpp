@@ -351,6 +351,7 @@ namespace ngosen {
                 dropEmojiOffer();
         }
         checkSurroundingReport();
+        checkBackspaceReport();
         surr_silent_        = false;
         surr_silent_streak_ = 0;
         if (!(host_->surrounding() == reportAtKey_))
@@ -744,6 +745,7 @@ namespace ngosen {
             commitNotSeen_ = commitNotSeen_.size() + text.size() > 64 ? text : commitNotSeen_ + text;
         // mutter keeps one commit per turn, so a request's empty commit could replace this one.
         report_requests_left_ = 0;
+        noteBackspaceCommit(text);
         if (keepsOnlyCommits() && !text.empty()) {
             // The preedit starts the composition and the commit ends it, a turn later: WebKitGTK and GNOME
             // Shell take both together otherwise.

@@ -222,4 +222,91 @@ namespace ngosen {
         deleteAndCommit(extra, check.added);
     }
 
+    void TypingState::openBackspaceCheck(const ReplaceRequest& request) {
+        const Field       field  = host_->field();
+        const std::string before = textBeforeCursor(request.copy);
+        // A later report proves something only against a copy that showed the word being replaced.
+        if (mode() != ngosen::Mode::Sen || !field.surroundingText || field.hidesText() || !request.copy.isValid() || keepsOnlyCommits() || deferred_commit_.pending ||
+            request.deleted.empty() || !isEndsWith(before, request.deleted))
+            return;
+        backspaceCheck_ = BackspaceCheck{.before = before.substr(0, before.size() - request.deleted.size()), .deleted = request.deleted, .keysAtStart = keyCount_};
+    }
+
+    void TypingState::noteBackspaceCommit(const std::string& text) {
+        if (!backspaceCheck_ || backspaceCheck_->stage != BackspaceCheck::Stage::Finished || text.empty())
+            return;
+        backspaceCheck_->added         = text;
+        backspaceCheck_->stage         = BackspaceCheck::Stage::Committed;
+        backspaceCheck_->committedAtUs = monotonicUs();
+        backspace_check_timer_         = host_->startTimer(monotonicUs() + static_cast<uint64_t>(SurroundingCheckWaitMs) * 1000ULL, 0, [this](Timer& t) {
+            if (!backspaceCheck_)
+                return false;
+            // A commit that shows after the usual wait is late, not lost; the log should tell the two apart.
+            const uint64_t lastUs = backspaceCheck_->committedAtUs + static_cast<uint64_t>(LaterKeyCheckWaitMs) * 1000ULL;
+            if (monotonicUs() + 1000 < lastUs) {
+                t.rearm(lastUs);
+                return true;
+            }
+            // The timer is still running here, so closing must not reset it.
+            closeBackspaceCheck(false);
+            return false;
+        });
+        // A lost commit changes nothing, so no report may follow it; start from the one that showed the deletion.
+        checkBackspaceReport();
+    }
+
+    void TypingState::checkBackspaceReport() {
+        if (!backspaceCheck_ || backspaceCheck_->stage != BackspaceCheck::Stage::Committed || !host_->hasFocus())
+            return;
+        auto&             check  = *backspaceCheck_;
+        const Surrounding report = host_->surrounding();
+        const std::string now    = textBeforeCursor(report);
+        // A field that refocuses after edits reports itself empty for a moment (voz.vn in Brave).
+        if (!report.isValid() || (now.empty() && !check.before.empty()))
+            return;
+        const auto keysAfter = static_cast<unsigned int>(keyCount_ - check.keysAtStart);
+        check.shown          = judgeSurroundingReport(now, check.before, check.deleted, check.added, keysAfter);
+        if (check.shown == SurroundingVerdict::Correct) {
+            backspace_check_timer_.reset();
+            closeBackspaceCheck(false);
+            return;
+        }
+        // Keys typed since the backspaces may already show after the text.
+        check.commitMissing = false;
+        std::string shown   = now;
+        for (unsigned int dropped = 0; check.shown == SurroundingVerdict::NoAnswer && dropped <= keysAfter; ++dropped) {
+            if (check.before.empty() ? shown.empty() : isEndsWith(shown, check.before)) {
+                check.commitMissing = true;
+                break;
+            }
+            if (shown.empty())
+                break;
+            utf8::eraseLastCodepoint(shown);
+        }
+    }
+
+    void TypingState::closeBackspaceCheck(bool beforeNext) {
+        const BackspaceCheck check = *backspaceCheck_;
+        backspaceCheck_.reset();
+        if (check.stage != BackspaceCheck::Stage::Committed)
+            return;
+        std::string verdict = "no answer";
+        if (check.shown == SurroundingVerdict::Correct)
+            verdict = "correct";
+        else if (check.commitMissing && !beforeNext)
+            // Without text before the word, the deleted state looks like a field that is still redrawing.
+            verdict = check.before.empty() ? "unclear" : "missing commit";
+        else if (check.shown == SurroundingVerdict::DroppedDeletion || check.shown == SurroundingVerdict::ShortDeletion)
+            verdict = "deletion not shown";
+        const std::string when = std::to_string((monotonicUs() - check.committedAtUs) / 1000) + " ms";
+        engine_->recorder().add("check", verdict + " after " + when);
+        NGOSEN_INFO("Backspace check: " + verdict + (beforeNext ? " before the next replacement" : "") + " after " + when + loggedField(host_->field()) + ", replaced " +
+                    check.deleted + " -> " + check.added);
+    }
+
+    void TypingState::dropBackspaceCheck() {
+        backspace_check_timer_.reset();
+        backspaceCheck_.reset();
+    }
+
 } // namespace ngosen

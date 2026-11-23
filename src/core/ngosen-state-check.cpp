@@ -341,9 +341,12 @@ namespace ngosen {
             strayWatch_.reset();
             return;
         }
-        const std::string    before = textBeforeCursor(s);
-        const std::u32string text   = utf8::decode(s.text());
-        const std::u32string after  = text.substr(std::min<size_t>(s.cursor(), text.size()));
+        std::string before = textBeforeCursor(s);
+        // An editor can mark the line our deletion empties with a U+200B (voz.vn); nobody typed it.
+        if (isStartsWith(before, "\u200b"))
+            before.erase(0, std::string("\u200b").size());
+        const std::u32string text  = utf8::decode(s.text());
+        const std::u32string after = text.substr(std::min<size_t>(s.cursor(), text.size()));
         // The whole word before our deletion anchors the text before it, without guessing where it starts.
         if (watch.sent.empty() && isEndsWith(before, watch.head + watch.deleted)) {
             watch.base    = before.substr(0, before.size() - watch.deleted.size());

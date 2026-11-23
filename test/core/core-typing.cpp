@@ -1048,6 +1048,12 @@ namespace {
         const auto run    = [&](const std::string& before, char stray, int nth, const std::string& after) { return runIn(field, bouncing, before, stray, nth, after, false); };
         const auto expect = [&](const std::string& name, const Run& got, const std::string& want) { check(got.text == want, "stray key: " + name, got.text); };
         expect("y after the tone key", run("ngaf", 'y', 1, " "), "ngày ");
+        // The deletion empties the line, which voz.vn then marks with a U+200B before the stray letter lands.
+        ngosen::test::AppQuirks marking = bouncing;
+        marking.marksEmptiedLine        = true;
+        marking.textAfterCursor         = "\n\n";
+        for (const int delayMs : {2, 20, 40})
+            expect("after a U+200B (" + std::to_string(delayMs) + " ms)", runIn(field, marking, "dd", 'o', 1, "fng ", false, 150, 150, delayMs), "\u200bđòng \n\n");
         expect("u after the circumflex", run("naa", 'u', 1, "s "), "nấu ");
         expect("tone key before the commit", run("nguoiw", 'f', 3, " "), "người ");
         expect("tone key after the commit", run("nguoiw", 'f', 4, " "), "người ");

@@ -935,6 +935,34 @@ namespace {
 
     // A letter pressed while the field refocuses after an edit goes to the page, and only its release
     // reaches us. The word must come out as if it had been typed through the input method.
+    // voz.vn's editor shows a word typed over a selection only after an empty line, which can come more
+    // than 30 ms after the key; that line is not a click, so the key still starts the word.
+    void testTypeOverSelectionInSteps() {
+        ngosen::test::AppQuirks quirks;
+        quirks.textAfterCursor         = "\n\n";
+        quirks.redrawsSelectionInSteps = true;
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "brave-origin"), quirks);
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (const char c : std::string("xin ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        app->select(0, 4);
+        loop.pump(300);
+        for (const char c : std::string("nguoiwf ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        loop.pump(300);
+        check(app->text() == "người \n\n", "type over a selection redrawn in steps", app->text());
+    }
+
     void testStrayKeyDuringBounce() {
         const Field             field = makeField("wayland", true, "brave-origin");
         ngosen::test::AppQuirks bouncing;
@@ -6101,6 +6129,7 @@ int main() {
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();
     testStrayKeyDuringBounce();
+    testTypeOverSelectionInSteps();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();

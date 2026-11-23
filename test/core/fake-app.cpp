@@ -170,6 +170,10 @@ namespace ngosen::test {
                         text_.clear();
                         cursor_ = anchor_ = 0;
                     }
+                    if (quirks_.redrawsSelectionInSteps && anchor_ != cursor_) {
+                        typeOverSelection(utf8::decode(text));
+                        return;
+                    }
                     insert(utf8::decode(text), true);
                 });
         }
@@ -693,6 +697,25 @@ namespace ngosen::test {
         later(strayDelayMs_, [this, letter = utf8::decode(std::exchange(strayLetter_, std::string()))] {
             text_.insert(cursor_, letter);
             cursor_ = anchor_ = cursor_ + letter.size();
+            changed();
+        });
+    }
+
+    void FakeApp::typeOverSelection(const std::u32string& letter) {
+        const std::u32string rest = text_.substr(std::max(anchor_, cursor_));
+        later(20, [this] {
+            text_.clear();
+            cursor_ = anchor_ = 0;
+            changed();
+        });
+        later(33, [this] {
+            text_ = U"\n";
+            changed();
+        });
+        later(50, [this, letter, rest] {
+            noteTypedKey();
+            text_   = letter + rest;
+            cursor_ = anchor_ = letter.size();
             changed();
         });
     }

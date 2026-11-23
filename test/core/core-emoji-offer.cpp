@@ -89,8 +89,9 @@ namespace {
         std::vector<std::string> statuses;
         std::vector<std::string> inField;
         std::vector<int>         chosen;
-        int                      editsUnderHint = 0;
-        int                      listsHidden    = 0;
+        int                      editsUnderHint       = 0;
+        int                      listsHidden          = 0;
+        int                      panelsMidReplacement = 0;
     };
 
     AppQuirks chatQuirks() {
@@ -171,9 +172,10 @@ namespace {
             }
         }
         loop.pump(200);
-        result.text           = app->text();
-        result.editsUnderHint = app->editsUnderHint();
-        result.listsHidden    = app->candidatesHidden();
+        result.text                 = app->text();
+        result.editsUnderHint       = app->editsUnderHint();
+        result.listsHidden          = app->candidatesHidden();
+        result.panelsMidReplacement = app->panelsMidReplacement();
         return result;
     }
 
@@ -457,7 +459,10 @@ namespace {
         AppQuirks slow = chatQuirks();
         slow.lagMs     = 60;
         r              = type(watched("con meof cuwowif", 7) + std::vector<uint32_t>{Gap, Hint}, Mode::Sen, makeField(), atEnd, slow);
-        check(allShown(r.hints) && r.hints.back() == "😂 🤣 😄 🐈 🐱", "preview: stays while a slow app takes a tone", joined(r.hints));
+        // The first preview waits for mèo to reach the app, then stays through the later tones.
+        const auto shown = std::find_if(r.hints.begin(), r.hints.end(), [](const std::string& h) { return h != "(none)"; });
+        check(shown != r.hints.end() && *shown == "🐈 🐱" && allShown({shown, r.hints.end()}) && r.hints.back() == "😂 🤣 😄 🐈 🐱", "preview: stays while a slow app takes a tone",
+              joined(r.hints));
 
         std::vector<uint32_t> firefox;
         for (const uint32_t key : watched("con meof cuwowif", 7)) {
@@ -494,6 +499,20 @@ namespace {
 
         r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Pick, Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints[0] == "🐈 🐱" && r.text == "con mèo", "preview: a click on it puts nothing", joined(r.hints) + " / " + r.text);
+    }
+
+    // fcitx5 sends forwarded keys only after it draws the panel, and its first panel loads every font,
+    // which held a Chromium field's backspaces past the next key: "chào" came out "chaà".
+    void testPreviewAfterReplacement() {
+        Field field            = makeField();
+        field.frontend         = "dbus";
+        field.program          = "electron";
+        field.surroundingText  = false;
+        field.keyEventOrderFix = true;
+        const auto atEnd       = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
+        const auto r           = type(keysOf("xin chaof") + std::vector<uint32_t>{Hint}, Mode::Sen, field, atEnd);
+        check(r.panelsMidReplacement == 0 && r.hints.front() != "(none)" && r.text == "xin chào", "preview: drawn only once the replacement is in",
+              std::to_string(r.panelsMidReplacement) + " mid-replacement, " + r.hints.front() + " / " + r.text);
     }
 
     // The preview holds no key: everything typed mid-sentence reaches the app.
@@ -611,6 +630,7 @@ int main() {
     testPickAfterCursorMoved();
     testSentencePreview();
     testPreviewKeys();
+    testPreviewAfterReplacement();
     testDigitsPick();
     testRelease();
     if (failures)

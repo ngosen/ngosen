@@ -638,7 +638,7 @@ namespace fcitx {
             addon->call<INotifications::sendNotification>(
                 "fcitx", 0, "fcitx-ngosen", _("What's new in Ngó Sen?"),
                 _("Version 1.14: pick what the tray shows, change a tone in Preedit, and a guide for AI assistants. See What's new for "
-                                          "more."),
+                  "more."),
                 std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "whats-new"}); }, [](uint32_t) {});
             return false;
         });

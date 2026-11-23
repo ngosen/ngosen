@@ -16,7 +16,7 @@ from core.emoji_table import EMOJI, GROUPS
 from core.hotkeys import pretty_format_hotkey_parts
 
 WORDS = ("emoji_words", "Words")
-OFF_APPS = ("emoji_off_apps", "Apps")
+ON_APPS = ("emoji_apps", "Apps")
 _BY_EMOJI = {row[0]: row for row in EMOJI}
 # A shared file is not a backup: importing it adds words, restoring a backup replaces them.
 SHARE_KIND = "ngosen-emoji-words"
@@ -76,17 +76,17 @@ def _fits(word):
 
 
 def toggle_hint(menu_keys, emoji_key):
-    """How to turn emoji off for one app, with the keys the user set (ModeMenuKey, ShortcutEmoji)."""
+    """How to turn emoji on for one app, with the keys the user set (ModeMenuKey, ShortcutEmoji)."""
     keys = list(menu_keys.values()) if isinstance(menu_keys, dict) else list(menu_keys or [])
     menu = "+".join(pretty_format_hotkey_parts(keys[0])) if keys else ""
     if not menu or not emoji_key:
         return _(
-            "Set a mode menu key and an emoji key on the Keys page to turn suggestions off"
+            "Set a mode menu key and an emoji key on the Keys page to turn suggestions on"
             " for one app."
         )
     return _(
-        "In the app you are typing in, press {menu} then {key} to turn suggestions off or back"
-        " on for that app. The app keeps its typing mode."
+        "Suggestions are off until you turn them on. In the app you are typing in, press {menu}"
+        " then {key} to turn them on or off for that app. The app keeps its typing mode."
     ).format(menu=menu, key=emoji_key)
 
 
@@ -105,7 +105,7 @@ class EmojiWords:
             if all(key):
                 self.edits[key] = str(item.get("On", "True")).lower() == "true"
         self._saved = dict(self.edits)
-        self.off_apps = self._read_apps()
+        self.on_apps = self._read_apps()
 
     # The words of an emoji, as (word, on): its defaults, the user's own, English, then its name's.
     def chips(self, emoji):
@@ -174,17 +174,17 @@ class EmojiWords:
         return shown
 
     def _read_apps(self):
-        apps = [item.get("App", "") for item in self.dbus.get_sub_config_list(*OFF_APPS) or []]
+        apps = [item.get("App", "") for item in self.dbus.get_sub_config_list(*ON_APPS) or []]
         return [app for app in apps if app]
 
     def _write_apps(self, apps):
-        if not self.dbus.set_sub_config_list(*OFF_APPS, [{"App": app} for app in apps]):
+        if not self.dbus.set_sub_config_list(*ON_APPS, [{"App": app} for app in apps]):
             return False
-        self.off_apps = apps
+        self.on_apps = apps
         return True
 
-    def enable_app(self, app):
-        """Offers emoji in the app again; returns an undo that puts it back, or None if not saved.
+    def disable_app(self, app):
+        """Stops offering emoji in the app; returns an undo that puts it back, or None if not saved.
 
         Both start from fcitx5's list, which the keyboard may have changed since the page loaded.
         """
@@ -196,24 +196,24 @@ class EmojiWords:
         def undo():
             current = self._read_apps()
             if app in current:
-                self.off_apps = current
+                self.on_apps = current
                 return True
             return self._write_apps([*current[:place], app, *current[place:]])
 
         return undo
 
     def save_apps(self):
-        return self._write_apps(list(self.off_apps))
+        return self._write_apps(list(self.on_apps))
 
     def is_modified(self):
         return self.edits != self._saved
 
     def is_modified_from_default(self):
-        return bool(self.edits or self.off_apps)
+        return bool(self.edits or self.on_apps)
 
     def restore_defaults(self):
         self.edits = {}
-        self.off_apps = []
+        self.on_apps = []
 
     def save(self):
         items = [

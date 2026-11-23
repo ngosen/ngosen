@@ -160,7 +160,7 @@ namespace ngosen::test {
                 lastBackSpaceAt_ = time;
                 later(quirks_.lagMs, [this] {
                     noteTypedKey();
-                    eraseBefore(1);
+                    eraseBefore(backspaceSpan());
                 });
             } else if ((state & modifier::Ctrl) != 0U || keyText(sym).empty() || sym == key::Delete || sym == key::Escape) {
                 later(quirks_.lagMs, [this, sym, state] { applyFieldKey(sym, state); });
@@ -423,7 +423,7 @@ namespace ngosen::test {
             ++backspaceBurst_;
             later(quirks_.keyStepMs * ++queuedKeys_, [this] {
                 --queuedKeys_;
-                eraseBefore(1);
+                eraseBefore(backspaceSpan());
                 if (queuedKeys_ > 0)
                     return;
                 const bool lost = backspaceBurst_ >= 2;
@@ -440,7 +440,7 @@ namespace ngosen::test {
         else
             later((quirks_.backspacesSkipLag ? 0 : quirks_.lagMs) + quirks_.backspaceLagMs, [this] {
                 noteTypedKey();
-                eraseBefore(1);
+                eraseBefore(backspaceSpan());
             });
     }
 
@@ -455,7 +455,7 @@ namespace ngosen::test {
                 FakeKey down(key::BackSpace, false, i == 0 ? 0 : modifier::Repeat, time);
                 state_->keyEvent(down);
                 if (!down.accepted())
-                    eraseBefore(1);
+                    eraseBefore(backspaceSpan());
                 FakeKey up(key::BackSpace, true, 0, time);
                 state_->keyEvent(up);
             }
@@ -891,6 +891,15 @@ namespace ngosen::test {
             --redraws_;
             changed();
         });
+    }
+
+    size_t FakeApp::backspaceSpan() const {
+        if (!quirks_.erasesMarksWithLetter || anchor_ != cursor_)
+            return 1;
+        size_t marks = 0;
+        while (marks < cursor_ && text_[cursor_ - marks - 1] >= 0x0300 && text_[cursor_ - marks - 1] <= 0x036F)
+            ++marks;
+        return marks < cursor_ ? marks + 1 : std::max<size_t>(marks, 1);
     }
 
     void FakeApp::eraseBefore(size_t count) {

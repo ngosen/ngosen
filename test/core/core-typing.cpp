@@ -483,6 +483,45 @@ namespace {
         check(text == "đơn", "emptied field: commit after focus comes back", text);
     }
 
+    // Some apps erase a combining tone mark on its own, others with the letter before it, and a
+    // terminal does whichever its shell does, so the word must not be decomposed while it is edited.
+    void testDecomposedToneInAnyApp() {
+        Field field    = makeField("wayland_v2", false, "Alacritty");
+        field.terminal = true;
+        for (const bool withLetter : {false, true}) {
+            const std::string       how = withLetter ? "erasing a mark with its letter" : "erasing one code point";
+            ngosen::test::AppQuirks quirks;
+            quirks.erasesMarksWithLetter = withLetter;
+            quirks.showsEnter            = true;
+            FakeResources resources;
+            resources.mutableOptions().outputCharset = "Unicode tổ hợp";
+            const std::string     typed              = "nhieefu tieengs vieetj";
+            std::vector<uint32_t> keys(typed.begin(), typed.end());
+            keys.push_back(ngosen::key::Return);
+            const std::string text = ngosen::test::typeInApp(resources, field, quirks, keys, std::vector<int>(keys.size(), 50));
+            check(text == "nhi\u00ea\u0300u ti\u00ea\u0301ng vi\u00ea\u0323t\n", "Unicode tổ hợp, " + how, text);
+        }
+        // A Space typed while the tone is still going out ends the word when it replays. Firefox may show a
+        // web terminal, so its fields type the word precomposed too.
+        ngosen::test::AppQuirks quirks;
+        quirks.reportsEmptyText = true;
+        quirks.commitLagMs      = 5;
+        FakeResources resources;
+        resources.mutableOptions().outputCharset = "Unicode tổ hợp";
+        const std::vector<uint32_t> keys{'v', 'i', 'e', 'e', 't', 'j', ' '};
+        const std::string           text = ngosen::test::typeInApp(resources, makeField("ibus", true, "firefox"), quirks, keys, {100, 100, 100, 100, 100, 2, 100});
+        check(text == "vi\u00ea\u0323t ", "Unicode tổ hợp, Space typed during the replacement", text);
+
+        // An editor deletes through its text, so a word that Tab ends is already decomposed.
+        ngosen::test::AppQuirks editor;
+        editor.showsTab = true;
+        FakeResources writer;
+        writer.mutableOptions().outputCharset = "Unicode tổ hợp";
+        const std::vector<uint32_t> tabbed{'v', 'i', 'e', 'e', 't', 'j', ngosen::key::Tab};
+        const std::string           cell = ngosen::test::typeInApp(writer, makeField("wayland", true), editor, tabbed, std::vector<int>(tabbed.size(), 50));
+        check(cell == "vi\u00ea\u0323t\u21e5", "Unicode tổ hợp, editor word ended by Tab", cell);
+    }
+
     // Firefox over D-Bus applies a key it sent before our commit reached it ahead of that commit.
     void testKeyTypedBeforeCommitArrived() {
         ngosen::test::AppQuirks quirks;
@@ -6165,6 +6204,7 @@ int main() {
     testKeyDuringReplacement();
     testCommitAfterTheReport();
     testCommitAfterFieldRefocus();
+    testDecomposedToneInAnyApp();
     testKeyTypedBeforeCommitArrived();
     testGnomeKeyDuringTimedWaitJoinsCommit();
     testEnterDuringTimedWaitFollowsCommit();

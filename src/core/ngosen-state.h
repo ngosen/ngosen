@@ -280,7 +280,6 @@ namespace ngosen {
             std::string              keyword; // the typed words the keyword covers, as they are in the app
             bool                     picking = false;
             bool                     preview = false; // shown while the sentence goes on, for a look only
-            bool                     digits  = false; // numbered, so a digit picks without Tab
             bool                     inField = false; // shown in the field, as no panel can show the list here
             std::vector<std::string> earlier;         // emoji of keywords before the last word, added at the cursor
             bool                     afterSpace = false;
@@ -298,6 +297,9 @@ namespace ngosen {
         bool                           emojiMuted_       = false; ///< Esc hid the emoji for the rest of the sentence
         bool                           holdEmojiPreview_ = false; ///< an app reset keeps the preview until the field is checked
         bool                           teencodeOn_       = false; ///< true when the user turned teencode on for the app
+
+        bool                           engineSpellsPrecomposed_ = false; ///< the engine types Unicode while Sen mode will decompose the word
+
         std::string                    openWord();
         bool                           offersEmojiHere() const;
         bool                           hintsInField(const ngosen::Field& field) const;
@@ -316,7 +318,6 @@ namespace ngosen {
         SentenceOffer            offerForSentence(bool settled, bool preview);
         void                     startEmojiPause();
         bool                     previewsSentence() const;
-        bool                     digitsPickEmoji();
         void                     previewSentence();
         std::vector<std::string> offeredEmoji() const;
         void                     showEmojiOffer();
@@ -1084,8 +1085,13 @@ namespace ngosen {
         // Backspace right after a commit in Preedit: take the word back from the app as preedit.
         bool reopenWordInPreedit(ngosen::KeyPress& keyEvent);
         bool rebuildable(const std::string& committed) const;
+        // Apps erase a combining tone mark either alone or with its letter, so Sen mode types a
+        // decomposed word precomposed and decomposes it once the word ends.
+        bool        decomposesAtWordEnd() const;
+        std::string spelledAtWordEnd(const std::string& word) const;
+        void        syncEngineCharset();
         // The engine finished a word: send what differs from the text already typed.
-        void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& commitStr);
+        void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& engineCommit);
         // The field reports no text where the word stood, as after a click on another cell.
         bool fieldLostWord() const;
         // Whether Space may split a kept word or drop the keys after it: Backspace must be able to undo it.

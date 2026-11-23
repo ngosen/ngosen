@@ -352,6 +352,7 @@ namespace ngosen {
         }
         checkSurroundingReport();
         checkBackspaceReport();
+        noteStrayReport();
         surr_silent_        = false;
         surr_silent_streak_ = 0;
         if (!(host_->surrounding() == reportAtKey_))
@@ -746,6 +747,7 @@ namespace ngosen {
         // mutter keeps one commit per turn, so a request's empty commit could replace this one.
         report_requests_left_ = 0;
         noteBackspaceCommit(text);
+        noteStrayCommit(text);
         if (keepsOnlyCommits() && !text.empty()) {
             // The preedit starts the composition and the commit ends it, a turn later: WebKitGTK and GNOME
             // Shell take both together otherwise.

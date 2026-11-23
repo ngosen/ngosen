@@ -309,4 +309,179 @@ namespace ngosen {
         backspaceCheck_.reset();
     }
 
+    namespace {
+        constexpr int64_t  StrayAfterBounceMs = 300;
+        constexpr uint64_t StrayLifetimeUs    = 1000000;
+    } // namespace
+
+    void TypingState::watchForStrayKey(const ReplaceRequest& request) {
+        const Field field = host_->field();
+        strayWatch_.reset();
+        strayLetter_.reset();
+        // The word before this replacement, or the one it makes when a replay has moved on already.
+        const bool old = isEndsWith(oldPreBuffer_, request.deleted);
+        if (mode() != ngosen::Mode::Sen || !field.surroundingText || field.hidesText() || request.deleted.empty() || (!old && !isEndsWith(oldPreBuffer_, request.added)))
+            return;
+        const size_t kept = oldPreBuffer_.size() - (old ? request.deleted.size() : request.added.size());
+        strayWatch_       = StrayWatch{.head = oldPreBuffer_.substr(0, kept), .deleted = request.deleted, .keys = keyCount_};
+        // The copy may show the word already; a bouncing field shows it again after the bounce anyway.
+        noteStrayReport();
+    }
+
+    // Reads the order from the reports: a letter shown once our deletion has shown, before any key reached us.
+    void TypingState::noteStrayReport() {
+        if (!strayWatch_)
+            return;
+        StrayWatch&       watch = *strayWatch_;
+        const Surrounding s     = host_->surrounding();
+        // Mid bounce the field may report while out of focus; a real focus change drops the watch.
+        if (!s.isValid())
+            return;
+        if (keyCount_ != watch.keys || s.cursor() != s.anchor()) {
+            strayWatch_.reset();
+            return;
+        }
+        const std::string    before = textBeforeCursor(s);
+        const std::u32string text   = utf8::decode(s.text());
+        const std::u32string after  = text.substr(std::min<size_t>(s.cursor(), text.size()));
+        // The whole word before our deletion anchors the text before it, without guessing where it starts.
+        if (watch.sent.empty() && isEndsWith(before, watch.head + watch.deleted)) {
+            watch.base    = before.substr(0, before.size() - watch.deleted.size());
+            watch.hasBase = true;
+            watch.after   = after;
+            return;
+        }
+        if (!watch.sent.empty() && !watch.hasBase && isEndsWith(before, watch.head + watch.sent)) {
+            watch.base    = before.substr(0, before.size() - watch.sent.size());
+            watch.hasBase = true;
+            watch.after   = after;
+        }
+        if (!watch.hasBase || after != watch.after)
+            return;
+        if (before == watch.base) {
+            watch.baseSeen = true;
+            return;
+        }
+        if (!watch.sent.empty() && before == watch.base + watch.sent) {
+            watch.commitSeen = true;
+            return;
+        }
+        const int64_t sinceBounce = static_cast<int64_t>(monotonicUs() / 1000) - lastBounceAt_;
+        if (strayLetter_ || before.size() != watch.base.size() + watch.sent.size() + 1 || !isStartsWith(before, watch.base) || sinceBounce > StrayAfterBounceMs)
+            return;
+        const std::string rest = before.substr(watch.base.size());
+        // Before our commit, or after it with a late report, the letter follows the deletion; else our commit.
+        char letter = 0;
+        if (watch.baseSeen && isEndsWith(rest, watch.sent))
+            letter = rest[0];
+        else if (watch.commitSeen && isStartsWith(rest, watch.sent))
+            letter = rest.back();
+        if (letter < 'a' || letter > 'z' || oldPreBuffer_.empty())
+            return;
+        strayLetter_ = StrayLetter{.sym          = static_cast<uint32_t>(letter),
+                                   .shown        = watch.head + rest,
+                                   .word         = oldPreBuffer_,
+                                   .beforeCommit = watch.sent.empty(),
+                                   .keys         = keyCount_,
+                                   .seenAtUs     = monotonicUs()};
+        engine_->recorder().add("stray", "seen " + logged(strayLetter_->shown));
+        NGOSEN_INFO("Stray key seen" + loggedField(host_->field()) + ": " + logged(strayLetter_->shown));
+    }
+
+    void TypingState::noteStrayCommit(const std::string& text) {
+        if (strayWatch_ && strayWatch_->sent.empty() && !is_deleting_.load(std::memory_order_acquire) && !text.empty())
+            strayWatch_->sent = text;
+        // A stray letter shown before a commit that went out anyway now stands before that commit.
+        if (strayLetter_ && strayLetter_->beforeCommit && !strayLetter_->fixed) {
+            strayLetter_->shown += text;
+            strayLetter_->beforeCommit = false;
+        }
+    }
+
+    bool TypingState::strayStillShown() const {
+        const Surrounding s = host_->surrounding();
+        return strayLetter_ && !strayLetter_->fixed && host_->hasFocus() && s.isValid() && s.cursor() == s.anchor() && monotonicUs() - strayLetter_->seenAtUs < StrayLifetimeUs &&
+            isEndsWith(textBeforeCursor(s), strayLetter_->shown);
+    }
+
+    // Runs before the commit of a replacement goes out, so the stray letter joins the word ahead of any key
+    // typed during the wait.
+    bool TypingState::fixStrayBeforeCommit() {
+        if (!strayLetter_ || !strayLetter_->beforeCommit || strayLetter_->fixed)
+            return false;
+        if (!strayStillShown()) {
+            strayLetter_.reset();
+            return false;
+        }
+        if (!retypeStrayKey())
+            return false;
+        // Our commit is replaced, so its check would compare the field with text never sent.
+        dropBackspaceCheck();
+        return true;
+    }
+
+    void TypingState::fixStrayBeforeKey() {
+        if (!strayLetter_ || strayLetter_->beforeCommit || strayLetter_->fixed || keyCount_ != strayLetter_->keys + 1 || editInFlight())
+            return;
+        if (strayStillShown())
+            retypeStrayKey();
+        else
+            strayLetter_.reset();
+    }
+
+    bool TypingState::takesStrayKey(uint32_t sym) {
+        if (!strayLetter_ || strayLetter_->sym != sym)
+            return false;
+        // A second release, or one this late, belongs to another key.
+        if (strayLetter_->released || monotonicUs() - strayLetter_->seenAtUs >= StrayLifetimeUs) {
+            strayLetter_.reset();
+            return false;
+        }
+        engine_->recorder().add("stray", std::string("released ") + static_cast<char>(sym));
+        strayLetter_->released = true;
+        if (strayLetter_->fixed)
+            return true;
+        // Still waiting for the commit it will join.
+        if (strayLetter_->beforeCommit || editInFlight())
+            return true;
+        retypeAtRelease_ = strayStillShown();
+        return true;
+    }
+
+    void TypingState::dropStrayKey() {
+        strayWatch_.reset();
+        strayLetter_.reset();
+        retypeAtRelease_ = false;
+    }
+
+    bool TypingState::retypeStrayKey() {
+        StrayLetter& stray = *strayLetter_;
+        strayWatch_.reset();
+        const ngosen::UniqueCPtr<char> heldC(EnginePullPreedit(bambooEngine_.handle()));
+        // The engine let go of the word, as after a macro or a reset, so the letter cannot join it.
+        if (oldPreBuffer_ != stray.word || !heldC || stray.word != heldC.get()) {
+            engine_->recorder().add("stray", "not retyped: word changed");
+            strayLetter_.reset();
+            return false;
+        }
+        stray.fixed = true;
+        // The field changes as after a typed key, so its reports are not a cursor moved by a click.
+        lastInputAtUs_ = monotonicUs();
+        EngineProcessKeyEvent(bambooEngine_.handle(), stray.sym, 0);
+        const ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
+        const std::string              target = preeditC ? preeditC.get() : "";
+        std::string                    deletedPart;
+        std::string                    addedPart;
+        engine_->recorder().add("stray", stray.shown + " -> " + target);
+        NGOSEN_INFO("Retype stray key" + loggedField(host_->field()) + ": " + logged(stray.shown) + " -> " + logged(target));
+        oldPreBuffer_ = target;
+        if (utf8::compareAndSplitStrings(stray.shown, target, deletedPart, addedPart) == 0)
+            return true;
+        if (deletedPart.empty())
+            commit(addedPart);
+        else
+            performReplacement(stray.shown, deletedPart, addedPart);
+        return true;
+    }
+
 } // namespace ngosen

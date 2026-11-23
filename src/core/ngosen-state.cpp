@@ -515,6 +515,8 @@ namespace ngosen {
         } else if (at != pressedKeys_.end()) {
             pressedKeys_.erase(at);
         } else if (sym >= 'a' && sym <= 'z' && (keyEvent.states() & (ngosen::modifier::Ctrl | ngosen::modifier::Alt | ngosen::modifier::Super)) == 0U) {
+            if (takesStrayKey(keyEvent.sym()))
+                return;
             // A shortcut such as Ctrl+F moves focus while held, and its letter never reached the new field.
             unseenPress_ = std::make_pair(keyEvent.sym(), keyCount_);
             keyAfterUnseen_.reset();
@@ -875,7 +877,11 @@ namespace ngosen {
         const std::string wordBefore = typedKey ? openWord() : std::string();
         emojiTookPress_              = false;
         const uint64_t commitsBefore = commitCount_;
+        if (typedKey)
+            fixStrayBeforeKey();
         handleKey(keyEvent);
+        if (std::exchange(retypeAtRelease_, false))
+            retypeStrayKey();
         if (typedKey)
             notePassedLetter(keyEvent, commitsBefore);
         if (typedKey && !emojiTookPress_) {
@@ -1675,6 +1681,7 @@ namespace ngosen {
         if (!keepOpenWord) {
             oldPreBuffer_.clear();
             hasHistory_ = false;
+            dropStrayKey();
         }
         lastWord_.clear();
         earlierWords_.clear();

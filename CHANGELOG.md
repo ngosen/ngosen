@@ -41,6 +41,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   emoji bằng số, như sau một từ (#968).
 - Bấm Ctrl+Shift chậm vẫn đổi được Anh/Việt: giữ tới một giây vẫn tính. Trước đây trên fcitx5 bản mới, nhả
   phím sau quá 1/4 giây là Ctrl+Shift không có tác dụng (#966).
+- Gõ Sen trong Firefox: gõ ngay trước một đường link (như link file đính kèm khi sửa comment trên GitHub) không
+  còn mất chữ trước dấu ("Gõ" ra "õ", "tiếng" ra "tếng") (#970).
 
 ### Test
 

@@ -410,6 +410,9 @@ namespace ngosen {
         // On wayland_v2 the backspaces go through a virtual keyboard, as typed keys, and a Firefox that has
         // not yet shown the word applies commits ahead of them once it catches up.
         static constexpr uint64_t UnseenWordForwardWaitUs = 300000;
+        // A field that refocuses after each Backspace (voz.vn in Brave) applies them about 22 ms apart and
+        // loses a commit that comes before the last one.
+        static constexpr uint64_t BouncingFieldWaitUs = 150000;
         uint64_t                  forwardWaitUs() const;
         // A key sent back arrives at once; a held key repeats tens of milliseconds apart.
         static constexpr uint64_t SentBackWithinUs = 10000;
@@ -474,6 +477,7 @@ namespace ngosen {
             int                            eventCount        = 0;
             bool                           sawOtherSnapshot  = false; ///< an event differed from the send-time snapshot
             bool                           sentSnapshotFresh = false; ///< send-time snapshot still showed the text to delete
+            bool                           leavesText        = false; ///< send-time snapshot keeps text once the deletion is done
         };
         SurroundingWait                surr_wait_;
         std::unique_ptr<ngosen::Timer> xim_forward_timer_; ///< forwards after the XIM sync reply
@@ -845,6 +849,31 @@ namespace ngosen {
         bool                            replaying_ = false; ///< replayBufferedKeys is on the stack
         std::unique_ptr<ngosen::Timer>  replay_timer_;
         bool                            rawWord_ = false; ///< the rest of this word goes to the app as typed
+
+        // What the app showed after a replacement through backspaces. Only logged: a commit that has not
+        // shown yet may still be on its way, so nothing is sent again.
+        struct BackspaceCheck {
+            enum class Stage : std::uint8_t {
+                Deleting,
+                Finished,
+                Committed
+            };
+            std::string        before; ///< the text before the deleted part when the backspaces went out
+            std::string        deleted;
+            std::string        added; ///< the commit that followed, keys replayed into it included
+            Stage              stage         = Stage::Deleting;
+            SurroundingVerdict shown         = SurroundingVerdict::NoAnswer; ///< what the last report looked like
+            bool               commitMissing = false;                        ///< the last report showed the deletion but not the commit
+            uint64_t           keysAtStart   = 0;
+            uint64_t           committedAtUs = 0;
+        };
+        std::optional<BackspaceCheck>  backspaceCheck_;
+        std::unique_ptr<ngosen::Timer> backspace_check_timer_;
+        void                           openBackspaceCheck(const ReplaceRequest& request);
+        void                           noteBackspaceCommit(const std::string& text);
+        void                           checkBackspaceReport();
+        void                           closeBackspaceCheck(bool beforeNext);
+        void                           dropBackspaceCheck();
 
         // A key whose release we got with no press: its press went to the app before the field had focus.
         std::vector<uint32_t>                           pressedKeys_;

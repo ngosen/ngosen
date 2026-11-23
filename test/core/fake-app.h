@@ -44,6 +44,7 @@ namespace ngosen::test {
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
         bool erasesOnPreedit        = false; // erases a selection when a preedit shows, as GTK 4 does, not on the commit
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
+        int  dropsCommitNumber      = 0;     // drops the nth non-empty commit, as voz.vn's editor in Brave drops one amid backspaces
         int  backspaceLagMs         = 0;     // applies forwarded backspaces this late but commits at once, as Antigravity's editor on GNOME sometimes does
         bool backspacesSkipLag      = false; // applies forwarded backspaces ahead of what lagMs holds back, as GNOME Shell's IBus bridge with forward-keys@ngosen.github.io does
         bool deletionsSkipLag       = false; // applies deletions through the text ahead of what lagMs holds back, as Firefox's snap does right after it opens
@@ -112,6 +113,12 @@ namespace ngosen::test {
         // CKEditor in Firefox on Plasma does.
         bool        showsDeletionWithCursorPast = false;
         std::string textAfterCursor; // text the field starts with, after the cursor
+        // Leaves focus and comes back reporting an empty field for a moment after each forwarded Backspace
+        // and each edit, as the voz.vn composer does in Brave on Plasma Wayland.
+        bool bouncesEmptyAfterEdit = false;
+        // Applies a commit only after the forwarded Backspaces sent before it, and loses it when there were
+        // two or more, as the voz.vn composer does in Brave on Plasma Wayland. Needs keyStepMs.
+        bool losesCommitAmidBackspaces = false;
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -222,6 +229,10 @@ namespace ngosen::test {
         int editsUnderHint() const {
             return editsUnderHint_;
         }
+        // Candidate lists shown between a replacement's first forwarded backspace and its commit.
+        int panelsMidReplacement() const {
+            return panelsMidReplacement_;
+        }
         // The longest time from forwarding a replacement's first backspace to its commit.
         int slowestCommitMs() const {
             return slowestCommitMs_;
@@ -271,6 +282,8 @@ namespace ngosen::test {
         void refreshPanel() override {}
 
         void showCandidates(const std::vector<std::string>& labels, int /*pageSize*/, std::function<void(size_t)> onPick, CandidateLayout layout) override {
+            if (forwardedAt_ > 0)
+                ++panelsMidReplacement_;
             labels_      = labels;
             onPick_      = std::move(onPick);
             inRow_       = layout == CandidateLayout::Row;
@@ -338,6 +351,7 @@ namespace ngosen::test {
         void                                changed();
         void                                bounceAfterEdit();
         void                                redrawAfterEdit();
+        void                                bounceEmptyAfterEdit();
         void                                later(int ms, std::function<void()> action);
         void                                startTurn();
         void                                endTurn();
@@ -348,9 +362,12 @@ namespace ngosen::test {
         FakeLoop&                           loop_;
         Field                               field_;
         AppQuirks                           quirks_;
-        TypingState*                        state_      = nullptr;
-        int                                 queuedKeys_ = 0;
-        int                                 redraws_    = 0;
+        TypingState*                        state_          = nullptr;
+        int                                 queuedKeys_     = 0;
+        int                                 redraws_        = 0;
+        int                                 backspaceBurst_ = 0; // forwarded Backspaces queued since the queue was last empty
+        std::u32string                      heldCommit_;         // commits waiting for queued Backspaces
+        bool                                emptyBouncePending_ = false;
         std::u32string                      ownText_;
         bool                                inReport_        = false;
         bool                                focused_         = true;
@@ -359,6 +376,8 @@ namespace ngosen::test {
         uint32_t                            heldSym_         = 0;
         int                                 slowestCommitMs_ = 0;
         int                                 shortcuts_       = 0;
+
+        int                                 panelsMidReplacement_ = 0;
         std::u32string                      text_;
         std::optional<std::string>          announced_;
         size_t                              cursor_      = 0;
@@ -393,6 +412,7 @@ namespace ngosen::test {
         bool                                cellOpensOnKey_   = false;
         bool                                ctrlDown_         = false;
         int                                 emptyCommits_     = 0;
+        int                                 commits_          = 0; ///< non-empty commits that reached the app
         int                                 deletions_        = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};
         std::vector<std::unique_ptr<Timer>> timers_;

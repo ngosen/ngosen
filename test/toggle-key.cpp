@@ -358,6 +358,17 @@ int main() {
     keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, both), true);
     keys.send(*notes, fcitx::Key(FcitxKey_Control_L, ctrl), true);
     check(realMode.load() == ngosen::Mode::Preedit, "a Ctrl+Shift hold past a second does not switch", modeName(realMode.load()));
+
+    // Someone who lifted fcitx5's limit keeps no limit here either.
+    fcitx::RawConfig noLimit;
+    noLimit.setValueByPath("Hotkey/ModifierOnlyKeyTimeout", "-1");
+    testInstance.instance.globalConfig().load(noLimit, true);
+    keys.send(*notes, fcitx::Key(FcitxKey_Control_L), false);
+    keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, ctrl), false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+    keys.send(*notes, fcitx::Key(FcitxKey_Shift_L, both), true);
+    keys.send(*notes, fcitx::Key(FcitxKey_Control_L, ctrl), true);
+    check(realMode.load() == ngosen::Mode::Off, "with fcitx5's limit lifted, a long Ctrl+Shift hold switches", modeName(realMode.load()));
 #endif
 
     // Leaving a password field or changing the group is not a pick of Vietnamese.

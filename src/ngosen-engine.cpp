@@ -1525,10 +1525,10 @@ namespace fcitx {
                 return false;
             toggleTapArmed_ = false;
 #if NGOSEN_USE_MODERN_FCITX_API
-            // A long hold, such as Ctrl+Shift+click, is not a tap. fcitx5's own limit for modifier-only
-            // keys is too short for people who tap Ctrl+Shift slowly (#951).
+            // A long hold, such as Ctrl+Shift+click, is not a tap. fcitx5's default limit for modifier-only
+            // keys is too short for people who tap Ctrl+Shift slowly (#951); a longer one set there still counts.
             constexpr uint64_t holdLimitUs = 1000000;
-            if (now(CLOCK_MONOTONIC) - toggleTapTime_ > holdLimitUs)
+            if (now(CLOCK_MONOTONIC) - toggleTapTime_ > holdLimitUs && !instance_->globalConfig().checkModifierOnlyKeyTimeout(toggleTapTime_))
                 return false;
 #endif
             toggleVietnamese(keyEvent.inputContext());

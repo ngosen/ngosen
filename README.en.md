@@ -47,7 +47,7 @@ Qt version on KDE Plasma:
   The menu only opens while Vietnamese is enabled.
 - Emoji suggestions: off until turned on for an app with "Gợi ý emoji" (w). Then after a word such as
   `cười`, `con mèo` or `haha`, `Tab: 😂 …` appears next to the cursor. Tab numbers the emoji, a number
-  picks one, Esc keeps the text.
+  picks one, Esc keeps the text. Left alone for 4 seconds, the list goes away.
 - Separate English/Vietnamese toggle: new installations start in Vietnamese and use Ctrl+Shift, as in UniKey;
   existing installations keep their switch key and current language setting. By default, the switch changes
   all apps at once, and the choice survives logouts. In English mode, typing works as if no input method were

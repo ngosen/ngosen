@@ -646,7 +646,7 @@ namespace ngosen {
         // A sheet can report the new cell empty only after the first letter typed there, and before it shows.
         const bool firstLetterPending = passed_key_ && sinceInputUs < SuggestionStepUs && oldPreBuffer_ == host_->keyText(passed_key_->sym);
         // An editor replacing a selection can show an empty line before the letter (voz.vn).
-        const bool letterNotShown = firstLetterPending && !isStartsWith(s.text(), oldPreBuffer_);
+        const bool letterNotShown = firstLetterPending && s.text().find_first_not_of('\n') == std::string::npos;
         const bool newField       = (hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() && !letterNotShown &&
                                (unreportedCommitLength_ == 0 || textAfterCursorChanged(s)) && !reportTrailsFirstWord(s)) ||
             lostWord;

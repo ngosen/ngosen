@@ -1690,6 +1690,29 @@ namespace {
         check(host->commits().empty(), "repeated clicks from one-letter cells: still clicks", join(host->commits()));
     }
 
+    // A cell with text reported soon after the first letter, before that letter shows, is still a click.
+    void testCellWithTextBeforeFirstLetterShows() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true, "google-chrome"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("là", 2);
+        state.surroundingUpdated();
+        press(state, ngosen::key::Down);
+        loop.pump(60);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(80);
+        host->setSurrounding("other", 0);
+        state.surroundingUpdated();
+        loop.pump(50);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(200);
+        check(host->commits().empty(), "cell with text before the first letter shows: still a click", join(host->commits()));
+    }
+
     // After a cell move a sheet can report the new cell empty only after the first letter typed there,
     // before that letter shows: not a click, the letter still starts the word.
     void testLateEmptyCellAfterFirstLetter() {
@@ -6134,6 +6157,7 @@ int main() {
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();
     testLateEmptyFieldStillClick();
+    testCellWithTextBeforeFirstLetterShows();
     testCellOpenedByFirstKey();
     testFirstKeyBeforeFocusMidText();
     testFirstKeyTypedWhileAway();

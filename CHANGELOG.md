@@ -20,6 +20,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gợi ý emoji nay tắt sẵn ở mọi app; bấm `` ` `` rồi `w` để bật cho từng app muốn dùng, như Teencode. Danh
   sách app đã tắt emoji trước đây không còn dùng; trong cửa sổ cài đặt, mục Emoji nay liệt kê "App đã bật
   emoji" (#969).
+- Danh sách gợi ý emoji tự ẩn khi để yên 4 giây không bấm phím nào (#973).
 
 ### Sửa
 

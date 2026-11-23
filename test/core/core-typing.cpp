@@ -914,6 +914,25 @@ namespace {
         check(slowest < 60, "redrawing editor: commit once the redraws are done", std::to_string(slowest) + " ms");
     }
 
+    // The voz.vn composer in Brave on Plasma Wayland bounces focus and reports an empty field after each
+    // Backspace and edit, and loses a commit sent before two Backspaces are applied. A one-Backspace edit
+    // survives an early commit, so only edits that delete two characters went wrong.
+    void testBouncingComposerTwoCharEdits() {
+        const Field             field = makeField("wayland", true, "brave-origin");
+        ngosen::test::AppQuirks quirks;
+        quirks.keyStepMs                 = 28;
+        quirks.bouncesEmptyAfterEdit     = true;
+        quirks.losesCommitAmidBackspaces = true;
+        const std::vector<std::pair<std::string, std::string>> cases{
+            {"em did ", "em đi "}, {"em kiaf ", "em kìa "}, {"em oo ", "em ô "}, {"em chowj ", "em chợ "}, {"em cas ", "em cá "},
+        };
+        for (const auto& [typed, want] : cases) {
+            const std::vector<uint32_t> keys(typed.begin(), typed.end());
+            const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 150));
+            check(text == want, "bouncing composer keeps the edit: " + typed, text);
+        }
+    }
+
     // Brave on GNOME 51 bounces focus as soon as it gets our Backspace and applies it only after the
     // commit we send once the wait gives up, so its first report after the bounce lacks the word.
     void testLateBackspaceAfterBounce() {
@@ -3033,6 +3052,32 @@ namespace {
 
     size_t countHaving(const std::vector<std::string>& lines, const std::string& part) {
         return static_cast<size_t>(std::count_if(lines.begin(), lines.end(), [&](const std::string& line) { return has(line, part); }));
+    }
+
+    // A lost commit must show in the log, and a slow one must not look lost.
+    void testBackspaceCommitCheck() {
+        realMode            = ngosen::Mode::Sen;
+        const auto field    = makeField("wayland", true, "brave-origin");
+        const auto runCheck = [&](const std::string& name, ngosen::test::AppQuirks quirks, const std::string& typed, const std::string& expected, size_t missing, size_t unclear,
+                                  int gapMs) {
+            ngosen::test::Typed run;
+            const auto          lines = logLinesWhileTyping(field, quirks, typed, "Backspace check", &run, gapMs);
+            check(run.sent.forwardedBackSpaces > 0, "backspace check: " + name + " deletes with backspaces", std::to_string(run.sent.forwardedBackSpaces));
+            check(run.text == expected, "backspace check: " + name + " text", run.text);
+            check(!lines.empty(), "backspace check: " + name + " is checked", run.text);
+            check(countHaving(lines, "missing commit") == missing && countHaving(lines, "unclear") == unclear, "backspace check: " + name + " verdicts", join(lines));
+            return lines;
+        };
+        const auto plain = runCheck("plain", {}, "em did ", "em đi ", 0, 0, 100);
+        check(countHaving(plain, ": correct") >= 1, "backspace check: plain shows the commit", join(plain));
+        runCheck("dropped commit", {.dropsCommitNumber = 1}, "em did ", "em  ", 1, 0, 1100);
+        runCheck("dropped commit at the start", {.dropsCommitNumber = 1}, "did ", " ", 0, 1, 1100);
+        runCheck("late commit", {.commitLagMs = 120}, "em did ", "em đi ", 0, 0, 300);
+        const auto late = runCheck("commit later than the first wait", {.commitLagMs = 300}, "em did ", "em đi ", 0, 0, 600);
+        check(countHaving(late, ": correct") == 1, "backspace check: a late commit is logged as shown", join(late));
+        runCheck("keys during the wait", {}, "em did ", "em đi ", 0, 0, 20);
+        // The space overtakes the late commit, as in Firefox; the commit still shows after the next edit starts.
+        runCheck("next replacement before the commit shows", {.commitLagMs = 200}, "em did aa ", "em  đi â", 0, 0, 50);
     }
 
     // Leaves the field while the replacement for the second "e" waits for the app's copy of the text,
@@ -5888,6 +5933,8 @@ int main() {
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
     testLateBackspaceAfterBounce();
+    testBackspaceCommitCheck();
+    testBouncingComposerTwoCharEdits();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();

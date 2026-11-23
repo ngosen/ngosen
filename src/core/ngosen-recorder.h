@@ -16,11 +16,13 @@
 
 namespace ngosen {
 
-    // The last few hundred typing events, kept in memory only, so a user who just saw a wrong word
+    // The last couple of thousand typing events, kept in memory only, so a user who just saw a wrong word
     // can save what led to it instead of trying to reproduce it.
     class Recorder {
       public:
-        explicit Recorder(size_t capacity = 400) : capacity_(capacity) {}
+        // Browsers report the text several times per key: 400 events held only about 7 seconds of
+        // typing in a forum composer in Brave, too short to catch the mistake.
+        explicit Recorder(size_t capacity = 2000) : capacity_(capacity) {}
 
         void add(const std::string& kind, const std::string& detail);
         // Adds a field event unless it is the field of the last one.

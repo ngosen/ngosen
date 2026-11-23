@@ -309,6 +309,8 @@ namespace ngosen::test {
                 });
             return;
         }
+        if (++commits_ == quirks_.dropsCommitNumber)
+            return;
         // Focus and redraws are checked again when the app gets to the commit, which can be after a
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
@@ -334,6 +336,10 @@ namespace ngosen::test {
             }
             later(35, [this, back] { reportMovedCursor(text_, back); });
             later(47, [this, text] { applyHeldEdit(text); });
+            return;
+        }
+        if (quirks_.losesCommitAmidBackspaces && queuedKeys_ > 0) {
+            heldCommit_ += utf8::decode(text);
             return;
         }
         bounceAfterEdit();
@@ -408,10 +414,22 @@ namespace ngosen::test {
         if (forwardedAt_ == 0)
             forwardedAt_ = monotonicUs();
         bounceAfterEdit();
+        bounceEmptyAfterEdit();
         if (quirks_.keyStepMs > 0) {
+            ++backspaceBurst_;
             later(quirks_.keyStepMs * ++queuedKeys_, [this] {
                 --queuedKeys_;
                 eraseBefore(1);
+                if (queuedKeys_ > 0)
+                    return;
+                const bool lost = backspaceBurst_ >= 2;
+                backspaceBurst_ = 0;
+                if (heldCommit_.empty())
+                    return;
+                const std::u32string held = std::move(heldCommit_);
+                heldCommit_.clear();
+                if (!lost)
+                    insert(held);
             });
         } else if (quirks_.handsBackKeys)
             later(quirks_.lagMs, [this] { type(key::BackSpace); });
@@ -519,6 +537,7 @@ namespace ngosen::test {
         if (leaveIfEmptied())
             return;
         changed();
+        bounceEmptyAfterEdit();
         redrawAfterEdit();
     }
 
@@ -752,6 +771,7 @@ namespace ngosen::test {
         }
         anchor_ = cursor_;
         changed();
+        bounceEmptyAfterEdit();
         if (!quirks_.redrawsOnlyOnDeletion)
             redrawAfterEdit();
         if (quirks_.emptiesAfterEditMs > 0)
@@ -780,6 +800,28 @@ namespace ngosen::test {
             state_->deactivate(true);
             state_->activate(Mode::Sen, true);
             changed();
+        });
+    }
+
+    void FakeApp::bounceEmptyAfterEdit() {
+        // Edits that come together share one bounce, as in the app's own log; nested ones never happen there.
+        if (!quirks_.bouncesEmptyAfterEdit || emptyBouncePending_)
+            return;
+        emptyBouncePending_ = true;
+        later(1, [this] {
+            emptyBouncePending_ = false;
+            focused_            = false;
+            state_->deactivate(true);
+            later(1, [this] {
+                focused_ = true;
+                state_->activate(Mode::Sen, true);
+                reportsEmptyOnce_ = true;
+                changed();
+                later(1, [this] {
+                    reportsEmptyOnce_ = false;
+                    changed();
+                });
+            });
         });
     }
 
@@ -824,6 +866,7 @@ namespace ngosen::test {
         if (leaveIfEmptied())
             return;
         changed();
+        bounceEmptyAfterEdit();
         redrawAfterEdit();
     }
 

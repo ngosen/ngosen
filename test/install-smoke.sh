@@ -209,7 +209,12 @@ check_packages() {
     fi
 }
 
-apt_uses_test_repo() { LC_ALL=C apt-cache policy fcitx5-ngosen | grep -qF "file:$repo/apt"; }
+# Read in full first: with pipefail, grep -q quitting early makes apt-cache die of SIGPIPE.
+apt_uses_test_repo() {
+    local policy
+    policy=$(LC_ALL=C apt-cache policy fcitx5-ngosen) || return
+    grep -qF "file:$repo/apt" <<<"$policy"
+}
 no_repo_files() { [ ! -e "$apt_list" ] && [ ! -e "$apt_keyring" ] && [ ! -e "$repo_record" ]; }
 
 check_session_files() {

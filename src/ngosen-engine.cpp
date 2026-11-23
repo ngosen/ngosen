@@ -603,6 +603,7 @@ namespace fcitx {
         loadWebTerminalApps();
         loadEmojiApps();
         loadTeencodeApps();
+        enlargePanelFont();
         populateConfig();
     }
 

@@ -32,6 +32,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ Sen với bảng mã "Unicode tổ hợp": gõ trong terminal chạy bash hay fish không còn mất chữ trước dấu thanh
   ("nhiều" ra "nhều"). Trong terminal, từ đang gõ hiện ở dạng dựng sẵn, gõ xong từ mới đổi sang dạng tổ hợp;
   trình soạn thảo vẫn giữ dạng tổ hợp như trước (#952).
+- Gợi ý emoji: số gõ ngay sau khi danh sách emoji hiện ra nay được gõ ra như thường; bấm Tab trước rồi mới chọn
+  emoji bằng số, như sau một từ (#968).
 
 ### Test
 

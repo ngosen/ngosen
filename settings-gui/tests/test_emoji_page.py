@@ -158,17 +158,17 @@ class EmojiPageTest(unittest.TestCase):
         self.assertFalse(self.page.is_modified())
 
     def test_turn_back_on_and_undo(self):
-        self.open(FakeDBusHandler(sub_configs={"emoji_off_apps": [{"App": "firefox"}]}))
-        buttons = [b for b in self.page.findChildren(QPushButton) if b.text() == "Turn back on"]
+        self.open(FakeDBusHandler(sub_configs={"emoji_apps": [{"App": "firefox"}]}))
+        buttons = [b for b in self.page.findChildren(QPushButton) if b.text() == "Turn off"]
         self.assertEqual(len(buttons), 1)
         buttons[0].click()
         app.processEvents()
-        self.assertEqual(self.fake.sub_configs["emoji_off_apps"], [])
-        self.assertEqual(self.window.message_label.text(), "Emoji are back on in firefox.")
-        self.assertIn("Not turned off in any app.", self.shown_texts())
+        self.assertEqual(self.fake.sub_configs["emoji_apps"], [])
+        self.assertEqual(self.window.message_label.text(), "Emoji are off in firefox.")
+        self.assertIn("Not on in any app.", self.shown_texts())
         self.window.undo()
         app.processEvents()
-        self.assertEqual(self.fake.sub_configs["emoji_off_apps"], [{"App": "firefox"}])
+        self.assertEqual(self.fake.sub_configs["emoji_apps"], [{"App": "firefox"}])
         self.assertIn("firefox", self.shown_texts())
         self.assertFalse(self.page.is_modified())
 
@@ -220,7 +220,7 @@ class EmojiPageTest(unittest.TestCase):
             self.assertIs(self.window.focusWidget(), self.page.control_for(key), key)
 
     def test_defaults_bring_back_words_and_apps(self):
-        self.open(FakeDBusHandler(sub_configs={"emoji_off_apps": [{"App": "firefox"}]}))
+        self.open(FakeDBusHandler(sub_configs={"emoji_apps": [{"App": "firefox"}]}))
         self.chip(self.row("😂"), "cười").click()
         self.window.save_pending()
         self.assertTrue(self.page.is_modified_from_default())
@@ -228,15 +228,15 @@ class EmojiPageTest(unittest.TestCase):
             self.window.on_restore_defaults()
         self.window.save_pending()
         self.assertEqual(self.fake.sub_configs["emoji_words"], [])
-        self.assertEqual(self.fake.sub_configs["emoji_off_apps"], [])
+        self.assertEqual(self.fake.sub_configs["emoji_apps"], [])
 
     def test_defaults_turn_on_an_app_turned_off_after_opening(self):
         self.open()
-        self.fake.sub_configs["emoji_off_apps"] = [{"App": "kate"}]
+        self.fake.sub_configs["emoji_apps"] = [{"App": "kate"}]
         with mock.patch("ui.main_window.confirm", return_value=True):
             self.window.on_restore_defaults()
         self.window.save_pending()
-        self.assertEqual(self.fake.sub_configs["emoji_off_apps"], [])
+        self.assertEqual(self.fake.sub_configs["emoji_apps"], [])
 
     def test_the_hint_names_keys_saved_on_another_page(self):
         self.open()

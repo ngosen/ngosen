@@ -356,7 +356,7 @@ namespace fcitx {
                 clearAppRule(appName);
                 clearAppSwitch(appName);
                 std::lock_guard<std::mutex> lock(appRulesMutex_);
-                emojiOffApps_.erase(appName);
+                emojiApps_.erase(appName);
                 teencodeApps_.erase(appName);
                 vimApps_.erase(appName);
             }
@@ -473,8 +473,8 @@ namespace fcitx {
         loadVimApps();
         webTerminalAppsPath_ = configDir + "/ngosen-web-terminal-apps.conf";
         loadWebTerminalApps();
-        emojiOffAppsPath_ = configDir + "/ngosen-emoji-off-apps.conf";
-        loadEmojiOffApps();
+        emojiAppsPath_ = configDir + "/ngosen-emoji-apps.conf";
+        loadEmojiApps();
         teencodeAppsPath_ = configDir + "/ngosen-teencode-apps.conf";
         loadTeencodeApps();
         enlargePanelFont();
@@ -601,8 +601,9 @@ namespace fcitx {
         loadAppRules();
         loadVimApps();
         loadWebTerminalApps();
-        loadEmojiOffApps();
+        loadEmojiApps();
         loadTeencodeApps();
+        enlargePanelFont();
         populateConfig();
     }
 
@@ -656,18 +657,18 @@ namespace fcitx {
         }
         if (path == "app_switches")
             return &appSwitchesTables_;
-        if (path == "emoji_off_apps") {
+        if (path == "emoji_apps") {
             std::vector<ngosenAppName> apps;
             {
                 std::lock_guard<std::mutex> lock(appRulesMutex_);
-                for (const auto& app : emojiOffApps_) {
+                for (const auto& app : emojiApps_) {
                     if (!isStartsWith(app, "ctx_"))
                         apps.emplace_back().app.setValue(app);
                 }
             }
             std::sort(apps.begin(), apps.end(), [](const auto& a, const auto& b) { return *a.app < *b.app; });
-            emojiOffAppsTable_.apps.setValue(std::move(apps));
-            return &emojiOffAppsTable_;
+            emojiAppsTable_.apps.setValue(std::move(apps));
+            return &emojiAppsTable_;
         }
         if (path == "teencode_apps") {
             std::vector<ngosenAppName> apps;
@@ -810,16 +811,17 @@ namespace fcitx {
                 ctxSwitches_.clear();
             safeSaveAsIni(appSwitchesTables_, AppSwitchFile);
             refreshEngine();
-        } else if (path == "emoji_off_apps") {
-            emojiOffAppsTable_.load(config, true);
+        } else if (path == "emoji_apps") {
+            emojiAppsTable_.load(config, true);
             {
                 std::lock_guard<std::mutex> lock(appRulesMutex_);
-                for (auto it = emojiOffApps_.begin(); it != emojiOffApps_.end();)
-                    it = isStartsWith(*it, "ctx_") ? std::next(it) : emojiOffApps_.erase(it);
-                for (const auto& entry : *emojiOffAppsTable_.apps)
-                    emojiOffApps_.insert(*entry.app);
+                for (auto it = emojiApps_.begin(); it != emojiApps_.end();)
+                    it = isStartsWith(*it, "ctx_") ? std::next(it) : emojiApps_.erase(it);
+                for (const auto& entry : *emojiAppsTable_.apps)
+                    emojiApps_.insert(*entry.app);
             }
-            saveEmojiOffApps();
+            saveEmojiApps();
+            enlargePanelFont();
             refreshEngine();
         } else if (path == "teencode_apps") {
             teencodeAppsTable_.load(config, true);
@@ -1740,16 +1742,21 @@ namespace fcitx {
 
     bool NgoSenEngine::emojiOnFor(const std::string& appName) const {
         std::lock_guard<std::mutex> lock(appRulesMutex_);
-        return !listsApp(emojiOffApps_, appName);
+        return listsApp(emojiApps_, appName);
     }
 
     bool NgoSenEngine::emojiOnIn(InputContext* ic) {
         return stateFor(ic)->emojiOn();
     }
 
-    // At fcitx5's default "Sans 10" the emoji in the list are too small to tell apart. A font the
-    // user has set, even to that default, stays.
+    // At fcitx5's default "Sans 10" the emoji in the list are too small to tell apart. The font grows once
+    // emoji are on in some app; a font the user has set, even to that default, stays.
     void NgoSenEngine::enlargePanelFont() {
+        {
+            std::lock_guard<std::mutex> lock(appRulesMutex_);
+            if (emojiApps_.empty())
+                return;
+        }
         const std::string file = "conf/classicui.conf";
         RawConfig         raw;
         readAsIni(raw, file);
@@ -1764,26 +1771,27 @@ namespace fcitx {
             classicUi->reloadConfig();
     }
 
-    void NgoSenEngine::loadEmojiOffApps() {
+    void NgoSenEngine::loadEmojiApps() {
         std::lock_guard<std::mutex> lock(appRulesMutex_);
-        readAppList(emojiOffAppsPath_, emojiOffApps_);
+        readAppList(emojiAppsPath_, emojiApps_);
     }
 
-    // Lists the apps turned off, so a new app gets emoji like the global setting says.
-    void NgoSenEngine::saveEmojiOffApps() const {
+    void NgoSenEngine::saveEmojiApps() const {
         std::lock_guard<std::mutex> lock(appRulesMutex_);
-        writeAppList(emojiOffAppsPath_, "# Apps where Ngó Sen offers no emoji, one per line", emojiOffApps_);
+        writeAppList(emojiAppsPath_, "# Apps where Ngó Sen offers emoji, one per line", emojiApps_);
     }
 
     void NgoSenEngine::toggleEmoji(InputContext* ic) {
-        bool off = false;
+        bool on = false;
         {
             std::lock_guard<std::mutex> lock(appRulesMutex_);
-            off = flipApp(emojiOffApps_, currentConfigureApp_);
+            on = flipApp(emojiApps_, currentConfigureApp_);
         }
-        saveEmojiOffApps();
+        saveEmojiApps();
+        if (on)
+            enlargePanelFont();
         closeModeMenuPanel(ic, true);
-        stateFor(ic)->setEmojiOn(!off);
+        stateFor(ic)->setEmojiOn(on);
     }
 
     bool NgoSenEngine::teencodeOnFor(const std::string& appName) const {

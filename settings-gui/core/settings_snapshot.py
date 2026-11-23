@@ -11,7 +11,7 @@ SUB_CONFIGS = (
     ("ngosen-macro", "Macro"),
     ("custom_keymap", "CustomKeymap"),
     ("emoji_words", "Words"),
-    ("emoji_off_apps", "Apps"),
+    ("emoji_apps", "Apps"),
     ("teencode_apps", "Apps"),
 )
 

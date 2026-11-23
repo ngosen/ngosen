@@ -95,7 +95,7 @@ int main() {
     press(engine, entry, *context, FcitxKey_grave);
     auto list = menu(*context);
     check(list && list->totalSize() == 7, "menu opens with seven items", list ? std::to_string(list->totalSize()) : "no menu");
-    check(list && label(*list, 2) == "   [w] Emoji suggestions: on", "the emoji switch starts on", list ? label(*list, 2) : "no menu");
+    check(list && label(*list, 2) == "   [w] Emoji suggestions: off", "the emoji switch starts off", list ? label(*list, 2) : "no menu");
     check(list && label(*list, 4) == "   [t] Teencode: off", "the teencode switch starts off", list ? label(*list, 4) : "no menu");
     check(list && label(*list, 5) == "   [v] Vim mode: off", "the Vim mode switch starts off", list ? label(*list, 5) : "no menu");
     // gedit has no rule of its own, so it follows the global Preedit.
@@ -153,9 +153,9 @@ int main() {
     press(engine, entry, *context, FcitxKey_v);
     check(vimApps().empty(), "v again turns Vim mode off", vimApps());
 
-    // w turns emoji suggestions off for the app and keeps the typing mode.
-    const auto emojiOffApps = [] {
-        std::ifstream file(std::filesystem::temp_directory_path() / "fcitx5-ngosen-mode-menu-keys/config/fcitx5/conf/ngosen-emoji-off-apps.conf");
+    // w turns emoji suggestions on for the app and keeps the typing mode.
+    const auto emojiApps = [] {
+        std::ifstream file(std::filesystem::temp_directory_path() / "fcitx5-ngosen-mode-menu-keys/config/fcitx5/conf/ngosen-emoji-apps.conf");
         std::string   line;
         std::string   apps;
         while (std::getline(file, line)) {
@@ -168,13 +168,13 @@ int main() {
     press(engine, entry, *context, FcitxKey_w);
     check(!menu(*context), "w closes the menu", "menu still open");
     check(realMode.load() == ngosen::Mode::Preedit, "w keeps the typing mode", modeName(realMode.load()));
-    check(emojiOffApps() == "gedit;", "w saves emoji off for gedit", emojiOffApps());
+    check(emojiApps() == "gedit;", "w saves emoji on for gedit", emojiApps());
     check(context->commits().size() == 1, "w types nothing", std::to_string(context->commits().size()) + " commits");
     press(engine, entry, *context, FcitxKey_grave);
     list = menu(*context);
-    check(list && label(*list, 2) == "   [w] Emoji suggestions: off", "the menu shows emoji off", list ? label(*list, 2) : "no menu");
+    check(list && label(*list, 2) == "   [w] Emoji suggestions: on", "the menu shows emoji on", list ? label(*list, 2) : "no menu");
     press(engine, entry, *context, FcitxKey_w);
-    check(emojiOffApps().empty(), "w again turns emoji back on", emojiOffApps());
+    check(emojiApps().empty(), "w again turns emoji off", emojiApps());
     {
         fcitx::RawConfig off;
         off.setValueByPath("EmojiSuggestions", "False");
@@ -232,7 +232,7 @@ int main() {
     engine.reloadConfig();
     press(engine, entry, *unnamed, FcitxKey_grave);
     list = menu(*unnamed);
-    check(list && label(*list, 2) == "   [w] Emoji suggestions: off", "a reload keeps emoji off for a window without a name", list ? label(*list, 2) : "no menu");
+    check(list && label(*list, 2) == "   [w] Emoji suggestions: on", "a reload keeps emoji on for a window without a name", list ? label(*list, 2) : "no menu");
     press(engine, entry, *unnamed, FcitxKey_Escape);
     const void* closed = unnamed.get();
     unnamed->focusOut();
@@ -244,7 +244,7 @@ int main() {
         engine.activate(entry, reopenedFocus);
         press(engine, entry, *reopened, FcitxKey_grave);
         list = menu(*reopened);
-        check(list && label(*list, 2) == "   [w] Emoji suggestions: on", "a new window at a closed one's address starts with emoji on", list ? label(*list, 2) : "no menu");
+        check(list && label(*list, 2) == "   [w] Emoji suggestions: off", "a new window at a closed one's address starts with emoji off", list ? label(*list, 2) : "no menu");
         press(engine, entry, *reopened, FcitxKey_Escape);
     } else {
         std::cerr << "note: the new window got another address, so window was not checked\n";

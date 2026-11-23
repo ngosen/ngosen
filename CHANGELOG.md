@@ -15,6 +15,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ Sen: khi sửa từ bằng Backspace, kiểm tra app đã hiện từ mới chưa và ghi vào log (Lưu nhật ký gõ),
   giúp báo lỗi chỉ ra chỗ mất chữ; không đổi cách gõ (#962).
 
+### Thay đổi
+
+- Gợi ý emoji nay tắt sẵn ở mọi app; bấm `` ` `` rồi `w` để bật cho từng app muốn dùng, như Teencode. Danh
+  sách app đã tắt emoji trước đây không còn dùng; trong cửa sổ cài đặt, mục Emoji nay liệt kê "App đã bật
+  emoji" (#961).
+
 ### Sửa
 
 - "Lưu nhật ký gõ" nay giữ khoảng nửa phút gõ gần nhất trong trình duyệt thay vì 7 giây, để lỗi vẫn còn trong

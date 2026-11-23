@@ -3076,6 +3076,8 @@ namespace {
         const auto late = runCheck("commit later than the first wait", {.commitLagMs = 300}, "em did ", "em đi ", 0, 0, 600);
         check(countHaving(late, ": correct") == 1, "backspace check: a late commit is logged as shown", join(late));
         runCheck("keys during the wait", {}, "em did ", "em đi ", 0, 0, 20);
+        // The space overtakes the late commit, as in Firefox; the commit still shows after the next edit starts.
+        runCheck("next replacement before the commit shows", {.commitLagMs = 200}, "em did aa ", "em  đi â", 0, 0, 50);
     }
 
     // Leaves the field while the replacement for the second "e" waits for the app's copy of the text,

@@ -293,7 +293,7 @@ namespace ngosen {
         std::string verdict = "no answer";
         if (check.shown == SurroundingVerdict::Correct)
             verdict = "correct";
-        else if (check.commitMissing)
+        else if (check.commitMissing && !beforeNext)
             // Without text before the word, the deleted state looks like a field that is still redrawing.
             verdict = check.before.empty() ? "unclear" : "missing commit";
         else if (check.shown == SurroundingVerdict::DroppedDeletion || check.shown == SurroundingVerdict::ShortDeletion)

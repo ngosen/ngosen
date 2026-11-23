@@ -410,6 +410,9 @@ namespace ngosen {
         // On wayland_v2 the backspaces go through a virtual keyboard, as typed keys, and a Firefox that has
         // not yet shown the word applies commits ahead of them once it catches up.
         static constexpr uint64_t UnseenWordForwardWaitUs = 300000;
+        // A field that refocuses after each Backspace (voz.vn in Brave) applies them about 22 ms apart and
+        // loses a commit that comes before the last one.
+        static constexpr uint64_t BouncingFieldWaitUs = 150000;
         uint64_t                  forwardWaitUs() const;
         // A key sent back arrives at once; a held key repeats tens of milliseconds apart.
         static constexpr uint64_t SentBackWithinUs = 10000;
@@ -474,6 +477,7 @@ namespace ngosen {
             int                            eventCount        = 0;
             bool                           sawOtherSnapshot  = false; ///< an event differed from the send-time snapshot
             bool                           sentSnapshotFresh = false; ///< send-time snapshot still showed the text to delete
+            bool                           leavesText        = false; ///< send-time snapshot keeps text once the deletion is done
         };
         SurroundingWait                surr_wait_;
         std::unique_ptr<ngosen::Timer> xim_forward_timer_; ///< forwards after the XIM sync reply

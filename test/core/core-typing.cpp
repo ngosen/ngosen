@@ -501,6 +501,15 @@ namespace {
             const std::string text = ngosen::test::typeInApp(resources, field, quirks, keys, std::vector<int>(keys.size(), 50));
             check(text == "nhi\u00ea\u0300u ti\u00ea\u0301ng vi\u00ea\u0323t\n", "Unicode tổ hợp, " + how, text);
         }
+        // A Space typed while the tone is still going out ends the word when it replays.
+        ngosen::test::AppQuirks quirks;
+        quirks.reportsEmptyText = true;
+        quirks.commitLagMs      = 5;
+        FakeResources resources;
+        resources.mutableOptions().outputCharset = "Unicode tổ hợp";
+        const std::vector<uint32_t> keys{'v', 'i', 'e', 'e', 't', 'j', ' '};
+        const std::string           text = ngosen::test::typeInApp(resources, makeField("ibus", true), quirks, keys, {100, 100, 100, 100, 100, 2, 100});
+        check(text == "vi\u00ea\u0323t ", "Unicode tổ hợp, Space typed during the replacement", text);
     }
 
     // Firefox over D-Bus applies a key it sent before our commit reached it ahead of that commit.

@@ -1762,9 +1762,10 @@ namespace ngosen {
 
         auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
         if (commitF && (*commitF.get() != 0)) {
-            std::string deletedPart;
-            std::string addedPart;
-            ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitF.get(), deletedPart, addedPart);
+            const std::string committed = spelledAtWordEnd(commitF.get());
+            std::string       deletedPart;
+            std::string       addedPart;
+            ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, committed, deletedPart, addedPart);
             const bool replacing = !deletedPart.empty();
             // The engine ends the word on Enter without taking it, so the Enter still has to go out.
             const std::string owed   = !processed && !sent && ngosen::key::isEnter(sym) ? keyUtf8 : std::string();
@@ -1791,7 +1792,7 @@ namespace ngosen {
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             ngosen::UniqueCPtr<char> dropped(EnginePullDroppedWord(bambooEngine_.handle()));
-            rememberWord(commitF.get(), dropped.get());
+            rememberWord(committed, dropped.get());
             if (sent && !replacing)
                 return holdReplayedKey(keys, i, out, *sent);
             if (!replacing)

@@ -867,10 +867,8 @@ namespace ngosen {
             fieldAtKeptReset_.reset();
             if (ngosen::key::isBackspace(keyEvent.sym()))
                 closeCheckBeforeOtherEdit();
-            if (oldPreBuffer_.empty()) {
+            if (oldPreBuffer_.empty())
                 backspaceInWord_ = false;
-                tailAtWordStart_ = textAfterCursor(host_->surrounding());
-            }
             startEchoTimer(keyEvent);
         }
         const bool typedKey = !keyEvent.isRelease() && !keyEvent.isModifier();
@@ -974,6 +972,8 @@ namespace ngosen {
         if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || handleEmojiOfferKey(keyEvent) || skipsKey(keyEvent))
             return;
         settleBeforeKey();
+        if (!keyEvent.isRelease() && !keyEvent.isModifier() && oldPreBuffer_.empty())
+            noteTailAtWordStart();
         const uint32_t currentSym = trackCapitalization(keyEvent);
         // Only plain backspaces typed after a finished commit may reopen the word; anything else changes the text after it.
         // Backspaces we press through XTEST come back here while we delete; they belong to the commit.

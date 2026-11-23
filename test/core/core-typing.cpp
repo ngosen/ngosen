@@ -4367,6 +4367,24 @@ namespace {
             const std::string text = ngosen::test::typeInApp(field, {.textAfterCursor = link}, keysOf(typed), std::vector<int>(typed.size(), 100));
             check(text == want + link, "Firefox: a link after the cursor keeps the letter before the edit", text);
         }
+
+        // A click ends the word left open elsewhere; the next word starts at the click.
+        FakeResources       resources;
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.textAfterCursor = link});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        app->type('a');
+        loop.pump(100);
+        app->moveCursor(0);
+        g_mouse_clicked.store(true);
+        loop.pump(100);
+        for (const char c : std::string("Gox")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(100);
+        }
+        check(app->text() == "Gõa" + link, "Firefox: a word typed after a click keeps its letters before a link", app->text());
     }
 
     // Firefox's address bar drops its autocompletion only for a commit in the deletion's own turn.

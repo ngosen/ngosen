@@ -380,8 +380,9 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> retone_timer_;
         bool                           backspaceBeforeKey_ = false; ///< the last key was a backspace that left no word being typed
         bool                           backspaceInWord_    = false; ///< the user pressed Backspace in the word being typed
-        std::string                    tailAtWordStart_;            ///< the text after the cursor when the word being typed began
+        std::optional<std::string>     tailAtWordStart_;            ///< the text after the cursor when the word being typed began, if reported
         std::optional<std::string>     selectedBeforeKey_;          ///< what the X server announced as selected right before this key
+        void                           noteTailAtWordStart();
         void                           retoneAtWordEnd(size_t tail, Retype retype);
         void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8, const std::optional<Surrounding>& preeditBefore = std::nullopt);
         void                           retoneAnnounced(uint32_t sym, uint32_t states, const std::string& keyUtf8);

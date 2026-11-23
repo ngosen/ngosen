@@ -400,9 +400,9 @@ namespace {
         auto       r     = type(keysOf("cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints.front() == "😂 🤣 😄 😆 😁", "sentence end: a preview while the sentence goes on", r.hints.front());
         r = type(keysOf("cuwowif.") + std::vector<uint32_t>{Hint, Tab, Tab}, Mode::Sen, makeField(), atEnd);
-        check(r.hints.front() == "1.😂 2.🤣 3.😄 4.😆 5.😁" && r.text == "cười. 😂", "sentence end: a full stop offers the emoji, put after it", r.hints.front() + " / " + r.text);
+        check(r.hints.front() == "Tab: 😂 🤣 😄 😆 😁" && r.text == "cười. 😂", "sentence end: a full stop offers the emoji, put after it", r.hints.front() + " / " + r.text);
         r = type(keysOf("con meof cuwowif quas") + std::vector<uint32_t>{Pause, Hint}, Mode::Sen, makeField(), atEnd);
-        check(r.hints.front() == "1.😂 2.🤣 3.😄 4.🐈 5.🐱", "sentence end: a pause offers the emoji of the sentence", r.hints.front());
+        check(r.hints.front() == "Tab: 😂 🤣 😄 🐈 🐱", "sentence end: a pause offers the emoji of the sentence", r.hints.front());
         r = type(keysOf("con meof cuwowif quas!") + std::vector<uint32_t>{Tab, '4'}, Mode::Sen, makeField(), atEnd);
         check(r.text == "con mèo cười quá! 🐈", "sentence end: an emoji of an earlier word", r.text);
         r = type(keysOf("hahaha!") + std::vector<uint32_t>{Tab, Tab}, Mode::Sen, makeField(), atEnd);
@@ -525,7 +525,7 @@ namespace {
         r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Enter, Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints[0] == "🐈 🐱" && r.hints[1] == "(none)" && r.text == "con mèo\n", "preview: Enter goes to the app and closes it", joined(r.hints) + " / " + r.text);
         r = type(keysOf("con meof") + std::vector<uint32_t>{Pause, Hint, Enter}, Mode::Sen, makeField(), atEnd);
-        check(r.hints[0] == "1.🐈 2.🐱" && r.text == "con mèo\n", "after a pause Enter still sends", r.hints[0] + " / " + r.text);
+        check(r.hints[0] == "Tab: 🐈 🐱" && r.text == "con mèo\n", "after a pause Enter still sends", r.hints[0] + " / " + r.text);
         r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Esc, Pause, Hint} + keysOf(". cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints[0] == "🐈 🐱" && r.hints[1] == "(none)" && r.hints[2] == "😂 🤣 😄 😆 😁", "Esc: no emoji for the rest of the sentence", joined(r.hints));
         const std::vector<uint32_t> eraseAll(7, Backspace);
@@ -540,11 +540,13 @@ namespace {
         check(r.text == "con mèo⇥", "a list the engine cleared holds no key", r.text);
     }
 
-    // Where digits type nothing but digits, a digit picks from the list once it can be picked.
+    // A digit picks an emoji only after Tab numbers the list; before that it is typed.
     void testDigitsPick() {
         const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
         auto       r     = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '2'}, Mode::Sen, makeField(), atEnd);
-        check(r.hints[0] == "1.😂 2.🤣 3.😄 4.🐈 5.🐱" && r.text == "con mèo cười 🤣", "a digit picks the emoji", r.hints[0] + " / " + r.text);
+        check(r.hints[0] == "Tab: 😂 🤣 😄 🐈 🐱" && r.text == "con mèo cười2", "a digit before Tab is typed", r.hints[0] + " / " + r.text);
+        r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Tab, '2'}, Mode::Sen, makeField(), atEnd);
+        check(r.text == "con mèo cười 🤣", "Tab then a digit picks the emoji", r.text);
         r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, '7'}, Mode::Sen, makeField(), atEnd);
         check(r.text == "con mèo cười7", "a digit past the list is typed", r.text);
         r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, ngosen::key::KP_0 + 1}, Mode::Sen, makeField(), atEnd);
@@ -552,15 +554,15 @@ namespace {
         r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, PanelReset, '1'}, Mode::Sen, makeField(), atEnd);
         check(r.text == "con mèo cười1", "a list the engine cleared takes no digit", r.text);
         r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Pick}, Mode::Sen, makeField(), atEnd);
-        check(r.text == "con mèo cười 😂", "a click on a numbered emoji picks it", r.text);
+        check(r.text == "con mèo cười 😂", "a click on the list picks the first emoji", r.text);
         r = type(keysOf("con meof gias 3.") + std::vector<uint32_t>{Hint, '5'}, Mode::Sen, makeField(), atEnd);
         check(r.hints[0].rfind("1.", 0) != 0 && r.hints[0].rfind("Tab:", 0) != 0 && r.text == "con mèo giá 3.5", "a dot after a digit ends no sentence",
               r.hints[0] + " / " + r.text);
 
         AppQuirks oldText                 = chatQuirks();
         oldText.repeatsOldTextAfterDelete = true;
-        r                                 = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '2'}, Mode::Sen, makeField(), atEnd, oldText);
-        check(r.hints[0] == "1.😂 2.🤣 3.😄 4.🐈 5.🐱" && r.text == "con mèo cười 🤣", "a field showing its text from before the tone keeps the word", r.hints[0] + " / " + r.text);
+        r                                 = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, Tab, '2'}, Mode::Sen, makeField(), atEnd, oldText);
+        check(r.hints[0] == "Tab: 😂 🤣 😄 🐈 🐱" && r.text == "con mèo cười 🤣", "a field showing its text from before the tone keeps the word", r.hints[0] + " / " + r.text);
 
         const auto vni = [](FakeResources& r) {
             r.mutableOptions().emojiAtSentenceEnd = true;
@@ -578,8 +580,8 @@ namespace {
                 r.setCustomKeymap(keys);
             };
         };
-        r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '2'}, Mode::Sen, makeField(), custom(telexKeys));
-        check(r.hints[0] == "1.😂 2.🤣 3.😄 4.🐈 5.🐱" && r.text == "con mèo cười 🤣", "custom keys without digits: digits pick", r.hints[0] + " / " + r.text);
+        r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, Tab, '2'}, Mode::Sen, makeField(), custom(telexKeys));
+        check(r.hints[0] == "Tab: 😂 🤣 😄 🐈 🐱" && r.text == "con mèo cười 🤣", "custom keys without digits: Tab then a digit picks", r.hints[0] + " / " + r.text);
         auto digitKeys = telexKeys;
         digitKeys.push_back({"2", "DauHuyen"});
         r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '1'}, Mode::Sen, makeField(), custom(digitKeys));

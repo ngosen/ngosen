@@ -112,6 +112,12 @@ namespace ngosen::test {
         // CKEditor in Firefox on Plasma does.
         bool        showsDeletionWithCursorPast = false;
         std::string textAfterCursor; // text the field starts with, after the cursor
+        // Leaves focus and comes back reporting an empty field for a moment after each forwarded Backspace
+        // and each edit, as the voz.vn composer does in Brave on Plasma Wayland.
+        bool bouncesEmptyAfterEdit = false;
+        // Applies a commit only after the forwarded Backspaces sent before it, and loses it when there were
+        // two or more, as the voz.vn composer does in Brave on Plasma Wayland. Needs keyStepMs.
+        bool losesCommitAmidBackspaces = false;
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -338,6 +344,7 @@ namespace ngosen::test {
         void                                changed();
         void                                bounceAfterEdit();
         void                                redrawAfterEdit();
+        void                                bounceEmptyAfterEdit();
         void                                later(int ms, std::function<void()> action);
         void                                startTurn();
         void                                endTurn();
@@ -348,9 +355,12 @@ namespace ngosen::test {
         FakeLoop&                           loop_;
         Field                               field_;
         AppQuirks                           quirks_;
-        TypingState*                        state_      = nullptr;
-        int                                 queuedKeys_ = 0;
-        int                                 redraws_    = 0;
+        TypingState*                        state_          = nullptr;
+        int                                 queuedKeys_     = 0;
+        int                                 redraws_        = 0;
+        int                                 backspaceBurst_ = 0; // forwarded Backspaces queued since the queue was last empty
+        std::u32string                      heldCommit_;         // commits waiting for queued Backspaces
+        bool                                emptyBouncePending_ = false;
         std::u32string                      ownText_;
         bool                                inReport_        = false;
         bool                                focused_         = true;

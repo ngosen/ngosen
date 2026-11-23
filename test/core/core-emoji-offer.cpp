@@ -588,6 +588,23 @@ namespace {
         check(r.hints[0].rfind("Tab: ", 0) == 0 && r.text.find("😂") == std::string::npos, "custom keys with a digit: digits keep their marks", r.hints[0] + " / " + r.text);
     }
 
+    // A list left alone for 4 seconds goes away; a key in the meantime keeps it.
+    void testIdleHides() {
+        const std::vector<uint32_t> threeSeconds(3, Pause);
+        const std::vector<uint32_t> twoSeconds(2, Pause);
+        auto                        r = type(keysOf("cuwowif") + threeSeconds + std::vector<uint32_t>{Hint} + twoSeconds + std::vector<uint32_t>{Hint}, Mode::Sen, makeField());
+        check(r.hints == std::vector<std::string>{"Tab: 😂 🤣 😄 😆 😁", "(none)"}, "a list left alone is hidden after 4 s", joined(r.hints));
+        r = type(keysOf("cuwowif") + std::vector<uint32_t>{Tab} + threeSeconds + std::vector<uint32_t>{Right} + threeSeconds + std::vector<uint32_t>{Hint, Status}, Mode::Sen,
+                 makeField());
+        check(r.hints[0] == "1. 😂" && !r.statuses[0].empty(), "a key restarts the wait", r.hints[0] + " / " + r.statuses[0]);
+        r = type(keysOf("cuwowif") + std::vector<uint32_t>{Tab} + threeSeconds + twoSeconds + std::vector<uint32_t>{Hint, Status, '2'}, Mode::Sen, makeField());
+        check(r.hints[0] == "(none)" && r.statuses[0].empty() && r.text == "cười2", "a numbered list is hidden too, and a digit after it is typed",
+              r.hints[0] + " / " + r.statuses[0] + " / " + r.text);
+        const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
+        r                = type(keysOf("cuwowif.") + std::vector<uint32_t>{Hint} + threeSeconds + twoSeconds + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints == std::vector<std::string>{"Tab: 😂 🤣 😄 😆 😁", "(none)"}, "a sentence's list is hidden after 4 s", joined(r.hints));
+    }
+
     // The release of a key the list took stays away from the app as well.
     void testRelease() {
         FakeResources resources;
@@ -634,6 +651,7 @@ int main() {
     testPreviewKeys();
     testPreviewAfterReplacement();
     testDigitsPick();
+    testIdleHides();
     testRelease();
     if (failures)
         std::cerr << failures << " failure(s)\n";

@@ -309,6 +309,8 @@ namespace ngosen::test {
                 });
             return;
         }
+        if (++commits_ == quirks_.dropsCommitNumber)
+            return;
         // Focus and redraws are checked again when the app gets to the commit, which can be after a
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)

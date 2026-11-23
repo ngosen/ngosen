@@ -321,6 +321,12 @@ namespace ngosen {
     void TypingState::finishReplacement(const char* reason, bool fromTimer) {
         noteWaitOutcome(reason);
         logReplaceEnd(reason);
+        if (backspaceCheck_ && backspaceCheck_->stage == BackspaceCheck::Stage::Deleting) {
+            if (std::string(reason) == "focus lost" || std::string(reason) == "backspaces not sent")
+                dropBackspaceCheck();
+            else
+                backspaceCheck_->stage = BackspaceCheck::Stage::Finished;
+        }
         surr_wait_.pending   = false;
         surr_wait_.timerOnly = false;
         if (!fromTimer)
@@ -551,6 +557,7 @@ namespace ngosen {
         countBackspaces(request.copy);
         is_deleting_.store(true, std::memory_order_release);
         closeCheckBeforeOtherEdit();
+        openBackspaceCheck(request);
     }
 
     void TypingState::runForwardedBackspaces(const ReplaceRequest& request) {
@@ -584,6 +591,10 @@ namespace ngosen {
         };
         const ReplaceRequest request{.deleted = deletedPart, .added = addedPart, .copy = host_->surrounding()};
         backspacesForUnseenWord_ = false;
+        if (backspaceCheck_) {
+            backspace_check_timer_.reset();
+            closeBackspaceCheck(true);
+        }
         for (const Method& method : methods) {
             if ((this->*method.usable)(request)) {
                 replace_method_ = method.name;
@@ -1569,6 +1580,8 @@ namespace ngosen {
         std::string out = std::move(committed);
         if (enter_after_replacement_) {
             commitReplayed(out);
+            // A key that edits the field after the commit leaves later reports nothing to compare.
+            dropBackspaceCheck();
             sendEnterAfterReplacement();
         }
         // The keys typed during the swap end the word.
@@ -1607,6 +1620,7 @@ namespace ngosen {
         for (size_t j = i + 1; j < keys.size() && buffered_keys_.size() < MAX_BUFFERED_KEYS; ++j)
             buffered_keys_.push_back(keys[j]);
         commitReplayed(out);
+        dropBackspaceCheck();
         // A Backspace held for the copy is never one GNOME Shell drops while it is down: its fields drop all forwarded keys.
         holdEnter(ngosen::surroundingTextLags(host_->field()) && !keys[i].heldForCopy && !keys[i].released, key);
         return true;
@@ -1621,6 +1635,7 @@ namespace ngosen {
         for (size_t j = i + 1; j < keys.size() && buffered_keys_.size() < MAX_BUFFERED_KEYS; ++j)
             buffered_keys_.push_back(keys[j]);
         commitReplayed(out);
+        dropBackspaceCheck();
         // The key was released during the wait, so waiting for its release would only add delay.
         holdEnter(false);
         held_field_key_ = keys[i];

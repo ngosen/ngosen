@@ -17,6 +17,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ Sen: chữ đầu tiên có gợi ý emoji sau khi bật máy không còn sai trong terminal VS Code chạy X11 ("chào" ra
   "chaà"); bảng xem trước emoji nay hiện sau khi chữ đã vào app (#960).
 
+### Test
+
+- Test cài đặt trên Kali không còn báo sai "apt không lấy gói từ repo Ngó Sen" khi Kali có sẵn gói
+  `fcitx5-ngosen` của riêng nó (#963).
+
 ## [1.14.0-1] — 22/11/2026
 
 Khay có thể hiện chữ `vi` / `en` hoặc ảnh tự chọn thay cho biểu tượng (#908, #911). Gõ Preedit: bôi đen một từ đã gõ rồi gõ phím dấu thì đổi được dấu, như Gõ Sen (#921). Nhờ AI tìm lỗi gõ nay có trang hướng dẫn riêng cho AI và lệnh `ngosen-check` (#931, #933). Bỏ ô "Kiểm tra chính tả" (#925), và cài lần đầu trên KDE không còn đổi bàn phím về English (#942). Gợi ý emoji không còn bật lên khi gõ chữ cái đơn, con số hay chữ tắt như `t`, `ng`, `vs` (#945).

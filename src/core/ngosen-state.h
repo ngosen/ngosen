@@ -846,6 +846,31 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer>  replay_timer_;
         bool                            rawWord_ = false; ///< the rest of this word goes to the app as typed
 
+        // What the app showed after a replacement through backspaces. Only logged: a commit that has not
+        // shown yet may still be on its way, so nothing is sent again.
+        struct BackspaceCheck {
+            enum class Stage : std::uint8_t {
+                Deleting,
+                Finished,
+                Committed
+            };
+            std::string        before; ///< the text before the deleted part when the backspaces went out
+            std::string        deleted;
+            std::string        added; ///< the commit that followed, keys replayed into it included
+            Stage              stage         = Stage::Deleting;
+            SurroundingVerdict shown         = SurroundingVerdict::NoAnswer; ///< what the last report looked like
+            bool               commitMissing = false;                        ///< the last report showed the deletion but not the commit
+            uint64_t           keysAtStart   = 0;
+            uint64_t           committedAtUs = 0;
+        };
+        std::optional<BackspaceCheck>  backspaceCheck_;
+        std::unique_ptr<ngosen::Timer> backspace_check_timer_;
+        void                           openBackspaceCheck(const ReplaceRequest& request);
+        void                           noteBackspaceCommit(const std::string& text);
+        void                           checkBackspaceReport();
+        void                           closeBackspaceCheck(bool beforeNext);
+        void                           dropBackspaceCheck();
+
         // A key whose release we got with no press: its press went to the app before the field had focus.
         std::vector<uint32_t>                           pressedKeys_;
         std::optional<std::pair<uint32_t, uint64_t>>    unseenPress_;    ///< the letter and keyCount_ at its release

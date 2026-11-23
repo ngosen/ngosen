@@ -974,6 +974,34 @@ namespace {
 
     // A letter pressed while the field refocuses after an edit goes to the page, and only its release
     // reaches us. The word must come out as if it had been typed through the input method.
+    // voz.vn's editor shows a word typed over a selection only after an empty line, which can come more
+    // than 30 ms after the key; that line is not a click, so the key still starts the word.
+    void testTypeOverSelectionInSteps() {
+        ngosen::test::AppQuirks quirks;
+        quirks.textAfterCursor         = "\n\n";
+        quirks.redrawsSelectionInSteps = true;
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "brave-origin"), quirks);
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (const char c : std::string("xin ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        app->select(0, 4);
+        loop.pump(300);
+        for (const char c : std::string("nguoiwf ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        loop.pump(300);
+        check(app->text() == "người \n\n", "type over a selection redrawn in steps", app->text());
+    }
+
     void testStrayKeyDuringBounce() {
         const Field             field = makeField("wayland", true, "brave-origin");
         ngosen::test::AppQuirks bouncing;
@@ -1699,6 +1727,54 @@ namespace {
             loop.pump(200);
         }
         check(host->commits().empty(), "repeated clicks from one-letter cells: still clicks", join(host->commits()));
+    }
+
+    // A quick switch, right after a first letter, to a field holding only a line break is still a click.
+    void testQuickSwitchToBlankField() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "brave-origin"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("là ", 3);
+        state.surroundingUpdated();
+        loop.pump(300);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(40);
+        state.deactivate(true);
+        loop.pump(3);
+        state.activate(ngosen::Mode::Sen, true);
+        host->setSurrounding("\n", 0);
+        state.surroundingUpdated();
+        loop.pump(50);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(200);
+        check(host->commits().empty(), "quick switch to a blank field after a first letter: still a click", join(host->commits()));
+    }
+
+    // A cell with text reported soon after the first letter, before that letter shows, is still a click.
+    void testCellWithTextBeforeFirstLetterShows() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true, "google-chrome"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("là", 2);
+        state.surroundingUpdated();
+        press(state, ngosen::key::Down);
+        loop.pump(60);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(80);
+        host->setSurrounding("other", 0);
+        state.surroundingUpdated();
+        loop.pump(50);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(200);
+        check(host->commits().empty(), "cell with text before the first letter shows: still a click", join(host->commits()));
     }
 
     // After a cell move a sheet can report the new cell empty only after the first letter typed there,
@@ -6141,10 +6217,13 @@ int main() {
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();
     testStrayKeyDuringBounce();
+    testTypeOverSelectionInSteps();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();
     testLateEmptyFieldStillClick();
+    testCellWithTextBeforeFirstLetterShows();
+    testQuickSwitchToBlankField();
     testCellOpenedByFirstKey();
     testFirstKeyBeforeFocusMidText();
     testFirstKeyTypedWhileAway();

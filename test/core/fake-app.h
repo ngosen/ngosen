@@ -81,6 +81,7 @@ namespace ngosen::test {
         int              emptyCommitsBeforeReport     = 0;     // empty commits it takes to end repeatsOldTextAfterDelete, as Firefox on GNOME
         std::vector<int> ignoresRequestsOnEdits;               // these deletions get no report for empty commits, as Firefox on GNOME now and then
         bool             reportsOnlyWhenAsked      = false;    // after a deletion, reports typed keys only for an empty commit, as Firefox on Plasma now and then
+        bool             redrawsSelectionInSteps   = false;    // replaces a selection in steps after bounces: empty, an empty line, the letter, as voz.vn's editor does
         bool             keepsLineBreakAfterCommit = false;    // keeps a line break after a commit with the cursor past it until a typed key, as Ace in Firefox does
         bool             reportsOnFocus            = false;    // reports its field, empty or not, when it gets focus, as Firefox over GTK does
         bool             deletesAtReportedCursor   = false;    // deletes at the cursor of its last report and leaves the cursor there, as Firefox over GTK does
@@ -379,6 +380,7 @@ namespace ngosen::test {
         int                                 editsBeforeStray_ = 0;
         int                                 strayDelayMs_     = 0;
         void                                landStrayLetter();
+        void                                typeOverSelection(const std::u32string& letter);
         std::u32string                      ownText_;
         bool                                inReport_        = false;
         bool                                focused_         = true;

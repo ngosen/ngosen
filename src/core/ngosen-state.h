@@ -841,9 +841,10 @@ namespace ngosen {
         bool                            appMarkedUntrusted() const;
         std::optional<SurroundingCheck> surrCheck_;
         std::unique_ptr<ngosen::Timer>  surr_check_timer_;
-        uint64_t                        keyCount_               = 0; ///< key presses other than modifiers
-        uint64_t                        keysAtLastSurrounding_  = 0; ///< keyCount_ at the last report checkCursorJump saw
-        int                             surrUnanswered_         = 0; ///< checks in a row left unanswered in this field
+        uint64_t                        keyCount_               = 0;            ///< key presses other than modifiers
+        uint64_t                        keysAtLastSurrounding_  = 0;            ///< keyCount_ at the last report checkCursorJump saw
+        std::optional<uint64_t>         cellStartedAtKey_       = std::nullopt; ///< keyCount_ when an empty report started a word with the key
+        int                             surrUnanswered_         = 0;            ///< checks in a row left unanswered in this field
         static constexpr int            MinAnswersForPlainCount = 2;
         uint64_t                        commitCount_            = 0;
         Surrounding                     lastReport_;

@@ -681,18 +681,20 @@ namespace ngosen::test {
         state_->keyEvent(up);
     }
 
-    void FakeApp::typeAfterEdit(const std::string& letter, int nth) {
+    void FakeApp::typeAfterEdit(const std::string& letter, int nth, int delayMs) {
         strayLetter_      = letter;
         editsBeforeStray_ = nth;
+        strayDelayMs_     = delayMs;
     }
 
     void FakeApp::landStrayLetter() {
         if (strayLetter_.empty() || --editsBeforeStray_ > 0)
             return;
-        const std::u32string letter = utf8::decode(std::exchange(strayLetter_, std::string()));
-        text_.insert(cursor_, letter);
-        cursor_ = anchor_ = cursor_ + letter.size();
-        changed();
+        later(strayDelayMs_, [this, letter = utf8::decode(std::exchange(strayLetter_, std::string()))] {
+            text_.insert(cursor_, letter);
+            cursor_ = anchor_ = cursor_ + letter.size();
+            changed();
+        });
     }
 
     void FakeApp::releaseKey(uint32_t sym) {

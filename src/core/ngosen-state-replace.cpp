@@ -1576,6 +1576,8 @@ namespace ngosen {
     }
 
     void TypingState::replayBufferedKeys(std::string committed) {
+        if (fixStrayBeforeCommit())
+            return;
         // Under GNOME, mutter sends one text-input "done" per main-loop turn and clients keep only the
         // last commit_string before it, so back-to-back commits lose all but the last ("đ" then "i"
         // shows "i"). Send the replacement and the replayed keys as one commit.

@@ -947,7 +947,9 @@ namespace {
         };
         // Types before; the page takes stray after the nth of our edits that its last key starts, and
         // the release comes once the edit has settled, before after is typed.
-        const auto runIn = [&](const Field& in, const ngosen::test::AppQuirks& quirks, const std::string& before, char stray, int nth, const std::string& after, bool releaseLast) {
+        // settleMs is the pause after the last key of before, gapMs the one before it.
+        const auto runIn = [&](const Field& in, const ngosen::test::AppQuirks& quirks, const std::string& before, char stray, int nth, const std::string& after, bool releaseLast,
+                               int settleMs = 150, int gapMs = 150, int strayDelayMs = 2) {
             FakeResources resources;
             realMode = ngosen::Mode::Sen;
             realtextLen.store(0);
@@ -956,11 +958,12 @@ namespace {
             auto*               app   = owned.get();
             ngosen::TypingState state(&resources, std::move(owned));
             app->attach(&state);
-            for (const char c : before) {
-                app->type(static_cast<uint32_t>(c));
-                if (c == before.back())
-                    app->typeAfterEdit(std::string(1, stray), nth);
-                loop.pump(150);
+            for (size_t i = 0; i < before.size(); ++i) {
+                app->type(static_cast<uint32_t>(before[i]));
+                const bool last = i + 1 == before.size();
+                if (last)
+                    app->typeAfterEdit(std::string(1, stray), nth, strayDelayMs);
+                loop.pump(last ? settleMs : i + 2 == before.size() ? gapMs : 150);
             }
             if (!releaseLast) {
                 app->releaseKey(static_cast<uint32_t>(stray));
@@ -984,8 +987,32 @@ namespace {
         const Run plain = run("dd", 'i', 2, " ");
         expect("letter that changes nothing", plain, "đi ");
         check(plain.backspaces == 1, "stray key: a letter that changes nothing sends no edit", std::to_string(plain.backspaces));
+        // The next key comes while the edit still waits and before the stray key's release.
+        expect("next key before the release", runIn(field, bouncing, "nguow", 'i', 2, "f ", true, 60), "người ");
+        // The letter shows before our commit goes out, and the next key comes before its release.
+        ngosen::test::AppQuirks atChange = bouncing;
+        atChange.reportsTextAtChange     = true;
+        atChange.reportDelayMs           = 5;
+        expect("letter shown before the commit", runIn(field, atChange, "nguow", 'i', 2, "f ", true, 80, 150, 0), "người ");
+        // voz.vn keeps two line breaks after the cursor, so the commit waits for the editor to settle and
+        // the next key arrives during that wait.
+        ngosen::test::AppQuirks composer = bouncing;
+        composer.textAfterCursor         = "\n\n";
+        expect("next key during the settle wait", runIn(field, composer, "nguow", 'i', 2, "f ", true, 85, 150, 4), "người \n\n");
+        // The next key reached us before any report showed the letter, so their order is unknown.
+        expect("letter shown after the next key", runIn(field, atChange, "nguow", 'i', 2, "f ", true, 60, 150, 0), "ngiuowf ");
+        // A late report from the middle of our deletion holds one letter more than what stays.
+        ngosen::test::AppQuirks slow = bouncing;
+        slow.reportsTextAtChange     = true;
+        slow.reportDelayMs           = 80;
+        expect("deletion half shown", runIn(field, slow, "nguoiw", 'z', 99, " ", true), "ngươi ");
+        // The field's copy when the edit starts still lacks the last letter typed.
+        ngosen::test::AppQuirks lagging = bouncing;
+        lagging.reportsTextAtChange     = true;
+        lagging.reportDelayMs           = 20;
+        expect("copy behind when the edit starts", runIn(field, lagging, "nguoiw", 'f', 3, " ", false, 150, 10), "người ");
         // With a key in between, which of the two came first is unknown.
-        expect("release after the next key", runIn(field, bouncing, "ngaf", 'y', 1, "n", true), "ngyàn");
+        expect("release after the next key", runIn(field, bouncing, "ngaf", 'y', 1, "n", true), "ngàyn");
         // The commit was lost, so the field does not hold the word we sent and nothing is retyped.
         ngosen::test::AppQuirks dropping = bouncing;
         dropping.dropsCommitNumber       = 1;
@@ -1015,7 +1042,9 @@ namespace {
         ngosen::test::AppQuirks steady = bouncing;
         steady.bouncesEmptyAfterEdit   = false;
         steady.bounceOnEditMs          = 0;
-        expect("field that does not refocus", runIn(makeField("ibus", true, "brave-browser.desktop"), steady, "ngaf", 'y', 1, " ", false), "ngyà ");
+        steady.reportsTextAtChange     = true;
+        steady.reportDelayMs           = 5;
+        expect("field that does not refocus", runIn(field, steady, "ngaf", 'y', 1, " ", false, 150, 150, 0), "ngyà ");
     }
 
     // Brave on GNOME 51 bounces focus as soon as it gets our Backspace and applies it only after the

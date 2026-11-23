@@ -459,10 +459,10 @@ namespace {
         AppQuirks slow = chatQuirks();
         slow.lagMs     = 60;
         r              = type(watched("con meof cuwowif", 7) + std::vector<uint32_t>{Gap, Hint}, Mode::Sen, makeField(), atEnd, slow);
-        // The first preview waits for mèo to reach the app, then stays through the later tones.
+        // The first preview waits for mèo to reach the app, by the c of the next word, then stays through its tones.
         const auto shown = std::find_if(r.hints.begin(), r.hints.end(), [](const std::string& h) { return h != "(none)"; });
-        check(shown != r.hints.end() && *shown == "🐈 🐱" && allShown({shown, r.hints.end()}) && r.hints.back() == "😂 🤣 😄 🐈 🐱", "preview: stays while a slow app takes a tone",
-              joined(r.hints));
+        check(shown - r.hints.begin() <= 2 && *shown == "🐈 🐱" && allShown({shown, r.hints.end()}) && r.hints.back() == "😂 🤣 😄 🐈 🐱",
+              "preview: stays while a slow app takes a tone", joined(r.hints));
 
         std::vector<uint32_t> firefox;
         for (const uint32_t key : watched("con meof cuwowif", 7)) {

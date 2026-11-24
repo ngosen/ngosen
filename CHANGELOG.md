@@ -36,6 +36,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   ("nguowfi" ra "người") (#967).
 - Gõ Sen trên voz.vn (Brave, KDE Wayland): từ đầu bài mà sửa dấu phải xoá hết chữ trong ô không còn mất chữ
   ("đồng" ra "òng") (#971).
+- Gõ Sen trên voz.vn (Brave, KDE Wayland): phím bấm đúng lúc ô vừa bị xoá trống không còn chạy lên trước chữ
+  ("đồng" ra "ođòng") (#972).
 - Gõ Sen trên voz.vn (Brave, KDE Wayland): khi trang làm rơi một chữ gõ lúc phím trước chưa nhả, lần sửa dấu
   sau không còn xoá lố thêm một chữ ("đi đâu" ra "đi âu", "học" ra "ọc") (#977).
 - Gõ Sen trong Antigravity khi máy bận (màn hình 4K, CPU nặng): từ đang gõ không còn bị bắt đầu lại giữa chừng

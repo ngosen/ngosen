@@ -566,7 +566,7 @@ namespace {
     // In Sen the app deletes the letter itself, so the engine has to keep the tone it shows (#898).
     void testBackspaceInStretchedWordSen() {
         const std::vector<std::tuple<bool, std::string, std::string>> cases = {
-            {false, "chaiiif\b ", "chàii "}, {false, "chaiiif\bi ", "chàiii "}, {false, "aaaf\b ", "àà "}, {true, "fair\b ", "fả "}, {true, "nhuwgx\b ", "nhữ "},
+            {false, "chaiiif\b ", "chàii "}, {false, "chaiiif\bi ", "chàiii "}, {false, "aaaf\b ", "àa "}, {true, "fair\b ", "fả "}, {true, "nhuwgx\b ", "nhữ "},
         };
         for (const auto& [teencode, typed, want] : cases) {
             std::string printable = typed;

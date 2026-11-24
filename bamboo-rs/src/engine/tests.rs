@@ -1902,7 +1902,14 @@ fn test_english_words_with_doubled_ends_stay_english() {
 #[test]
 fn test_tone_key_after_undone_mark_adds_one_letter() {
     // The third o took the circumflex off, so the s after boot must not bring that o back (#959).
-    for (keys, word) in [("booots", "boots"), ("roooms", "rooms"), ("rooomf", "roomf")] {
+    for (keys, word) in [
+        ("booots", "boots"),
+        ("roooms", "rooms"),
+        ("rooomf", "roomf"),
+        ("Booots", "Boots"),
+        // A word that still composes after a removed tone keeps its marks.
+        ("asznhs", "ánh"),
+    ] {
         assert_eq!(finished_word(keys), (word.into(), format!("{word} ")), "{keys}");
     }
 }

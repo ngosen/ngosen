@@ -40,6 +40,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   ("đồng" ra "ođòng") (#972).
 - Gõ Sen trong Antigravity khi máy bận (màn hình 4K, CPU nặng): từ đang gõ không còn bị bắt đầu lại giữa chừng
   ("tiếng" ra "tieengs") (#974).
+- Gõ Sen trong Gnumeric (KDE Wayland): bỏ dấu cho chữ đầu tiên của ô không còn sai ("oo" ra "oô" hoặc "o",
+  "ee" ra "eê") và ít phải chờ hơn (#978).
 - Gõ Sen với bảng mã "Unicode tổ hợp": gõ trong terminal chạy bash hay fish không còn mất chữ trước dấu thanh
   ("nhiều" ra "nhều"). Trong terminal, từ đang gõ hiện ở dạng dựng sẵn, gõ xong từ mới đổi sang dạng tổ hợp;
   trình soạn thảo vẫn giữ dạng tổ hợp như trước (#952).

@@ -231,6 +231,13 @@ namespace ngosen {
         return field.frontend == "wayland" || field.frontend == "wayland_v2";
     }
 
+    bool keepsFocusWhenEmptied(const Field& field) {
+        // Gnumeric's cell editor drops a forwarded Backspace while it starts, and reports nothing that
+        // sets it apart. Newer builds name themselves by their app ID.
+        const std::string program = appName(field);
+        return program == "gnumeric" || program == "org.gnumeric.gnumeric";
+    }
+
     bool appliesBackspacesLate(const Field& field) {
         return appName(field) == "soffice";
     }

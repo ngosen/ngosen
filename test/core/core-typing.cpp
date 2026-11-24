@@ -522,6 +522,21 @@ namespace {
         check(cell == "vi\u00ea\u0323t\u21e5", "Unicode tổ hợp, editor word ended by Tab", cell);
     }
 
+    // Gnumeric drops a forwarded Backspace while its cell editor starts, so a one-letter cell turned "oô".
+    void testEmptiedCellDeletesThroughSurrounding() {
+        ngosen::test::AppQuirks quirks;
+        quirks.dropsForwardedKeys = true;
+        const std::vector<std::pair<std::string, std::string>> cells{{"oo", "ô"}, {"ee", "ê"}, {"dd", "đ"}, {"as", "á"}};
+        for (const std::string program : {"gnumeric", "org.gnumeric.gnumeric"}) {
+            const Field field = makeField("wayland", true, program);
+            for (const auto& [typed, expected] : cells) {
+                const std::vector<uint32_t> keys(typed.begin(), typed.end());
+                const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 100));
+                check(text == expected, "gnumeric: a one-letter cell deletes through the surrounding text", program + ": " + typed + " -> " + text);
+            }
+        }
+    }
+
     // Firefox over D-Bus applies a key it sent before our commit reached it ahead of that commit.
     void testKeyTypedBeforeCommitArrived() {
         ngosen::test::AppQuirks quirks;
@@ -6254,6 +6269,7 @@ int main() {
     testKeyDuringReplacement();
     testCommitAfterTheReport();
     testCommitAfterFieldRefocus();
+    testEmptiedCellDeletesThroughSurrounding();
     testDecomposedToneInAnyApp();
     testKeyTypedBeforeCommitArrived();
     testGnomeKeyDuringTimedWaitJoinsCommit();

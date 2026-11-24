@@ -93,6 +93,9 @@ namespace ngosen {
     // Wayland text input delivers a commit only to the field that has focus.
     bool dropsCommitsWithoutFocus(const Field& field);
 
+    // A field that keeps focus when a deletion empties it, so the commit after that deletion is safe.
+    bool keepsFocusWhenEmptied(const Field& field);
+
     // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it.
     bool appliesBackspacesLate(const Field& field);
 

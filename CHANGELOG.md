@@ -20,6 +20,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gợi ý emoji nay tắt sẵn ở mọi app; bấm `` ` `` rồi `w` để bật cho từng app muốn dùng, như Teencode. Danh
   sách app đã tắt emoji trước đây không còn dùng; trong cửa sổ cài đặt, mục Emoji nay liệt kê "App đã bật
   emoji" (#961).
+- Gõ kéo dài chữ nay chỉ giữ dấu ở chữ đầu, các chữ lặp sau để trơn cho dễ đọc: `afaaa` ra `àaaa` thay vì
+  `àààà`, như UniKey (#852, #979).
 
 ### Sửa
 

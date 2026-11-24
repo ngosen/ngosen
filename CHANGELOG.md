@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.14.1-1] — 24/11/2026
+
+Trên voz.vn với Brave, KDE Wayland, gõ nhanh và sửa dấu không còn làm chữ chen giữa từ, mất chữ hoặc xoá lố; gõ đè chữ bôi đen không còn ra phím thô, và phím gõ lúc ô vừa xoá trống không còn chạy lên trước (#964, #967, #971, #972, #977). Firefox không còn mất chữ khi gõ ngay trước một link; bản Flatpak trên GNOME Wayland không còn mất dấu thanh khi gõ nhanh sau một lần sửa (#970, #975). Với bảng mã Unicode tổ hợp, terminal bash/fish không còn mất chữ trước dấu thanh như "nhiều" thành "nhều" (#952). Telex gõ "booots" ra đúng "boots"; gõ kéo dài nay chỉ giữ dấu ở chữ đầu, như "afaaa" ra "àaaa" thay vì "àààà", giống UniKey (#976, #852, #980). Emoji nay tắt sẵn ở mọi app, bật từng app bằng `` ` `` rồi `w`; cửa sổ cài đặt có danh sách "App đã bật emoji" (#969). Danh sách emoji tự ẩn sau 4 giây để yên, và số gõ khi danh sách vừa hiện được nhập như thường, phải bấm Tab trước mới chọn bằng số (#973, #968). "Lưu nhật ký gõ" nay giữ khoảng nửa phút gõ gần nhất trong trình duyệt thay vì 7 giây, giúp giữ đủ log khi báo lỗi (#953). Có thêm trang hướng dẫn để hỏi AI cách dùng Ngó Sen, từ menu phím `` ` `` đến các tính năng và cài đặt (#983).
+Tải ở [ngosen-1.14.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.1-1).
+
 ### Thêm
 
 - Thêm `ngosen-check --settings` để in mọi cài đặt như trong cửa sổ cài đặt, chế độ gõ và các công tắc emoji,
@@ -33,8 +38,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Telex: phím dấu gõ ngay sau một phím lặp để bỏ dấu không còn làm hiện lại chữ đã bỏ ("booots" ra "boots" thay
   vì "booots", "roooms" ra "rooms") (#976).
+- Kiểm tra máy trên KDE Wayland nay báo khi bàn phím ảo của KDE bị tắt (vd. bằng công tắc bàn phím trên màn hình
+  của WildOS), thay vì khuyên chạy `fcitx5 -d`, và có nút bật lại; bật lại thì gõ được ngay, kể cả khi đang
+  không gõ được chữ nào (#982).
 - "Lưu nhật ký gõ" nay giữ khoảng nửa phút gõ gần nhất trong trình duyệt thay vì 7 giây, để lỗi vẫn còn trong
-  nhật ký gõ khi lưu ngay sau đó.
+  nhật ký gõ khi lưu ngay sau đó (#953).
 - Gõ Sen: chữ đầu tiên có gợi ý emoji sau khi bật máy không còn sai trong terminal VS Code chạy X11 ("chào" ra
   "chaà"); bảng xem trước emoji nay hiện sau khi chữ đã vào app (#960).
 - Gõ Sen trên voz.vn (Brave, KDE Wayland): chữ gõ nhanh ngay sau phím dấu không còn chen vào giữa từ ("ngyà" ra

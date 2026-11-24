@@ -9,6 +9,7 @@ The rules follow install.sh and https://fcitx-im.org/wiki/Using_Fcitx_5_on_Wayla
 import configparser
 import os
 import re
+import shlex
 import subprocess
 from dataclasses import dataclass, field
 from urllib.parse import urlencode
@@ -69,6 +70,8 @@ class Facts:
     has_kwriteconfig: bool = False
     # False when fcitx5 runs but KWin did not start it, so Qt apps cannot type through it yet.
     started_by_kwin: bool = True
+    # KWin's switch for the virtual keyboard it starts; None when KWin could not be asked.
+    kwin_keyboard_on: bool | None = None
     # One of update_repo's states: whether new Ngó Sen versions reach this machine.
     update_repo: str = update_repo.NONE
     # This login, and for each step waiting for a login, the login that first saw it waiting.
@@ -114,7 +117,25 @@ ENABLE_AUTOSTART, SET_ENVIRONMENT, USE_IM_CONFIG, SET_KWIN_INPUT_METHOD = (
     "use-im-config",
     "set-kwin-input-method",
 )
-REMOVE_KEYBOARDS = "remove-keyboards"
+REMOVE_KEYBOARDS, ENABLE_KWIN_KEYBOARD = "remove-keyboards", "enable-kwin-keyboard"
+
+KWIN_KEYBOARD_CALL = [
+    "gdbus",
+    "call",
+    "--session",
+    "--dest",
+    "org.kde.KWin",
+    "--object-path",
+    "/VirtualKeyboard",
+    "--method",
+]
+KWIN_KEYBOARD_ON = [
+    *KWIN_KEYBOARD_CALL,
+    "org.freedesktop.DBus.Properties.Set",
+    "org.kde.kwin.VirtualKeyboard",
+    "enabled",
+    "<true>",
+]
 
 
 def parse_debug_info(text):
@@ -226,8 +247,28 @@ def _left_by_a_login(facts, waiting):
     )
 
 
+def _kwin_keyboard_off(facts):
+    return facts.kwin_keyboard_on is False and "fcitx" in facts.kwin_input_method.lower()
+
+
+def _kwin_keyboard_off_finding():
+    # An on-screen keyboard switch turns this off, and KWin then stops fcitx5 until it is back on.
+    return Finding(
+        FAIL,
+        _("KDE's virtual keyboard is switched off"),
+        _(
+            "KDE stops fcitx5 while it is off. A switch for the on-screen keyboard can turn it "
+            "off; turn it back on."
+        ),
+        ENABLE_KWIN_KEYBOARD,
+        shlex.join(KWIN_KEYBOARD_ON),
+    )
+
+
 def steps(facts):
     """Every check that applies to this machine, passed or not, in the order to fix them."""
+    if not facts.fcitx_running and _kwin_keyboard_off(facts):
+        return [_kwin_keyboard_off_finding()]
     if not facts.fcitx_running:
         return [
             Finding(
@@ -477,6 +518,8 @@ def _desktop_findings(facts):
                 found.append(Finding(FAIL, title, fix, action, command))
             else:
                 found.append(Finding(FAIL, title, fix))
+        elif _kwin_keyboard_off(facts):
+            found.append(_kwin_keyboard_off_finding())
         elif facts.started_by_kwin:
             found.append(Finding(OK, _("KDE starts fcitx5 as its virtual keyboard")))
         else:
@@ -521,6 +564,7 @@ def fix_label(action):
         USE_IM_CONFIG: _("Choose fcitx5"),
         SET_KWIN_INPUT_METHOD: _("Choose Fcitx 5"),
         REMOVE_KEYBOARDS: _("Remove"),
+        ENABLE_KWIN_KEYBOARD: _("Turn on"),
     }[action]
 
 
@@ -536,6 +580,7 @@ def fixed_message(action):
         USE_IM_CONFIG: _("Chose fcitx5. Log out and back in to use it."),
         SET_KWIN_INPUT_METHOD: _("Chose Fcitx 5. Log out and back in to use it."),
         REMOVE_KEYBOARDS: _("Removed the extra keyboard. New windows open on Ngó Sen."),
+        ENABLE_KWIN_KEYBOARD: _("Turned KDE's virtual keyboard back on."),
     }[action]
 
 
@@ -543,6 +588,7 @@ def fixed_message(action):
 SETTLE_MS = {
     START_FCITX: 1500,
     RESTART_FCITX: 1500,
+    ENABLE_KWIN_KEYBOARD: 1500,
     ENABLE_FORWARD_KEYS: 500,
     INSTALL_INPUT_PANEL: 500,
 }
@@ -635,6 +681,8 @@ def run_fix(action, dbus_handler):
         return session_setup.use_im_config(os.environ)
     if action == SET_KWIN_INPUT_METHOD:
         return session_setup.set_kwin_input_method(_kwin_input_method(os.environ))
+    if action == ENABLE_KWIN_KEYBOARD:
+        return _succeeds(KWIN_KEYBOARD_ON), None
     return False, None
 
 
@@ -690,6 +738,7 @@ FIX_ORDER = (
     SET_ENVIRONMENT,
     USE_IM_CONFIG,
     SET_KWIN_INPUT_METHOD,
+    ENABLE_KWIN_KEYBOARD,
     ENABLE_FORWARD_KEYS,
     INSTALL_INPUT_PANEL,
     RESTART_FCITX,
@@ -771,6 +820,8 @@ def _report_header(facts):
         lines.append("environment.d: " + " ".join(saved))
     if facts.kwin_input_method:
         lines.append(f"KWin InputMethod={facts.kwin_input_method}")
+    if facts.kwin_keyboard_on is not None:
+        lines.append(f"KWin virtual keyboard: {'on' if facts.kwin_keyboard_on else 'off'}")
     if facts.gnome_shell_version:
         state = facts.forward_keys_state or "not installed"
         panel = facts.input_panel_state or "not installed"
@@ -841,6 +892,7 @@ def collect(dbus_handler, ngosen_version="", env=None):
         facts.starts_at_login = session_setup.starts_at_login(env)
     if _is_kde_wayland(facts):
         facts.started_by_kwin = _fcitx5_started_by_kwin()
+        facts.kwin_keyboard_on = _kwin_keyboard_on()
     facts.addon_replaced = runs_replaced_addon()
     facts.update_repo = update_repo.state()
     names = dbus_handler.input_method_names()
@@ -1014,6 +1066,12 @@ def runs_replaced_addon(proc="/proc"):
         except OSError:
             continue
     return False
+
+
+def _kwin_keyboard_on():
+    call = [*KWIN_KEYBOARD_CALL, "org.freedesktop.DBus.Properties.Get"]
+    out = _output([*call, "org.kde.kwin.VirtualKeyboard", "enabled"]).strip()
+    return {"(<true>,)": True, "(<false>,)": False}.get(out)
 
 
 def _kwin_input_method(env):

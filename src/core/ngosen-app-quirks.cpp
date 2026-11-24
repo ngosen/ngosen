@@ -240,10 +240,6 @@ namespace ngosen {
         return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2" || field.frontend == "dbus" || field.frontend == "fcitx4";
     }
 
-    bool takesDeletionWhileUndeclared(const Field& field) {
-        return field.frontend == "dbus";
-    }
-
     bool takesDeletionOnStaleCopy(const Field& field) {
         // The name stands for a GTK client: Qt ones convert the count on their own cached copy.
         return (field.frontend == "dbus" || field.frontend == "fcitx4") && isFirefoxFamily(appName(field));

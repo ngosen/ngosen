@@ -45,6 +45,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   phím sau quá 1/4 giây là Ctrl+Shift không có tác dụng (#966).
 - Gõ Sen trong Firefox: gõ ngay trước một đường link (như link file đính kèm khi sửa comment trên GitHub) không
   còn mất chữ trước dấu ("Gõ" ra "õ", "tiếng" ra "tếng") (#970).
+- Gõ Sen trong Firefox Flatpak trên GNOME Wayland: gõ nhanh không còn mất dấu thanh ngay sau một lần sửa chữ
+  ("được" ra "đưc") (#975).
 
 ### Test
 

@@ -101,11 +101,6 @@ namespace ngosen {
     // forwarded backspaces can land after the commit that follows them.
     bool deletesThroughSurroundingFirst(const Field& field);
 
-    // fcitx5-gtk stops declaring surrounding text while Firefox's selection is invalid after a deletion,
-    // though the next deletion still works; a forwarded backspace there waits behind GDK events and can
-    // land after the commit that follows it.
-    bool takesDeletionWhileUndeclared(const Field& field);
-
     // Firefox's GTK modules count a deletion on the page's own text, so a lagging copy cannot make it
     // wrong, while a backspace sent instead can land after the next commit (#770).
     bool takesDeletionOnStaleCopy(const Field& field);

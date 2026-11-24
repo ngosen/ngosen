@@ -419,6 +419,12 @@ namespace ngosen {
         // A field that refocuses after each Backspace (voz.vn in Brave) applies them about 22 ms apart and
         // loses a commit that comes before the last one.
         static constexpr uint64_t BouncingFieldWaitUs = 150000;
+        // Firefox declares its text again once a forwarded key reaches it; a commit before that can land
+        // ahead of the backspaces.
+        static constexpr uint64_t UndeclaredFieldWaitUs     = 100000;
+        uint64_t                  backspacesToUndeclaredAt_ = 0;     ///< when backspaces went to a field that stopped declaring its text after our edit
+        bool                      waitsForDeclaredText_     = false; ///< the commit is held until that field declares its text again
+        bool                      waitsForFieldToDeclare(const char* reason) const;
         uint64_t                  forwardWaitUs() const;
         // A key sent back arrives at once; a held key repeats tens of milliseconds apart.
         static constexpr uint64_t SentBackWithinUs = 10000;

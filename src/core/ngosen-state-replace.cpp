@@ -716,7 +716,7 @@ namespace ngosen {
             fails.emplace_back("address bar");
         // A field the deletion empties can leave focus before the commit lands, and fcitx5 drops commits
         // without focus (Zed, #93); the backspace path waits for focus to come back.
-        if (ngosen::dropsCommitsWithoutFocus(field) && surrounding.isValid() && !showsTextAfterDeleting(surrounding, chars))
+        if (ngosen::dropsCommitsWithoutFocus(field) && !ngosen::keepsFocusWhenEmptied(field) && surrounding.isValid() && !showsTextAfterDeleting(surrounding, chars))
             fails.emplace_back("deletion empties the field");
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)

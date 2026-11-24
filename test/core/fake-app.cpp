@@ -931,6 +931,10 @@ namespace ngosen::test {
         previousCursor_ = cursor_;
         text_.erase(cursor_ - count, count);
         cursor_ -= count;
+        if (quirks_.marksEmptiedLine && cursor_ == 0) {
+            text_.insert(0, 1, U'\u200b');
+            cursor_ = 1;
+        }
         anchor_ = cursor_;
         if (leaveIfEmptied())
             return;

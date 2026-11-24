@@ -44,6 +44,8 @@ versions, the second the distro, desktop and session.
 
 If you can run commands, run `ngosen-check` instead. It prints the same check with each step's fix, changes
 nothing, and leaves out app names and typed text. If the command is missing, the installed version is older.
+`ngosen-check --settings` also prints the settings as the settings window shows them and what is set for
+each app, by name; use it before asking the user which options are on.
 
 ### 2. Old version
 

@@ -19,6 +19,9 @@ METADATA = [
             ["AutoNonVnRestore", "Boolean", "Auto Restore Invalid Words", "True", {}],
             ["ToggleKey", "List|Key", "Switch Between English and Vietnamese", {}, {}],
             ["HiddenWaitMs", "Integer", "Hidden wait", "30", {}],
+            ["TimeFormat", "String", "Time Format", "%H:%M", {}],
+            ["ModeOrder", "String", "Mode Order", "Sen,Preedit", {}],
+            ["ShowModeEmoji", "Boolean", "Show Emoji", "True", {}],
         ],
     ]
 ]
@@ -28,6 +31,9 @@ VALUES = {
     "AutoNonVnRestore": "False",
     "ToggleKey": {"0": "Control+Shift_L", "1": "Control+Shift_R"},
     "HiddenWaitMs": "77",
+    "TimeFormat": "%H:%M:%S",
+    "ModeOrder": "Preedit,Sen",
+    "ShowModeEmoji": "False",
 }
 
 LISTS = {
@@ -40,11 +46,20 @@ LISTS = {
     "app_switches": [
         {"App": "kitty", "Vietnamese": "False"},
         {"App": "zalo", "Vietnamese": "True"},
+        {"App": "kitty", "Vietnamese": "True"},
     ],
     "emoji_apps": [{"App": "zalo"}],
     "teencode_apps": [],
-    "ngosen-macro": [{"Key": "ko", "Value": "mật khẩu ngân hàng"}],
-    "emoji_words": [],
+    "ngosen-macro": [
+        {"Key": "ko", "Value": "mật khẩu ngân hàng"},
+        {"Key": "KO", "Value": "không"},
+        {"Key": "", "Value": "trống"},
+    ],
+    "emoji_words": [
+        {"Emoji": "😂", "Keyword": "cười"},
+        {"Emoji": "😂", "Keyword": "cười"},
+        {"Emoji": "😂", "Keyword": ""},
+    ],
 }
 
 
@@ -66,6 +81,7 @@ class SettingsReportTest(unittest.TestCase):
         os.makedirs(conf)
         with open(os.path.join(conf, "ngosen-vim-apps.conf"), "w", encoding="utf-8") as f:
             f.write("# Apps where Ngó Sen follows Vim's normal-mode keys, one per line\nkitty\n")
+        self.vim_conf = os.path.join(conf, "ngosen-vim-apps.conf")
         patch = mock.patch.object(settings_report, "local_dict_path", return_value="/nonexistent")
         patch.start()
         self.addCleanup(patch.stop)
@@ -90,7 +106,7 @@ class SettingsReportTest(unittest.TestCase):
             "Mode: firefox: Sen, libreoffice-calc: Preedit, org.kde.plasmashell: OFF", text
         )
         self.assertNotIn("ctx_", text)
-        self.assertIn("English by the switch key: kitty", text)
+        self.assertIn("Language by the switch key: kitty: English, zalo: Vietnamese", text)
         self.assertIn("Emoji suggestions on: zalo", text)
         self.assertIn("Teencode on: (none)", text)
         self.assertIn("Vim mode on: kitty", text)
@@ -98,7 +114,29 @@ class SettingsReportTest(unittest.TestCase):
     def test_counts_macros_without_their_text(self):
         text = self.report()
         self.assertIn("Macros: 1", text)
+        self.assertIn("Emoji keyword changes: 1", text)
         self.assertNotIn("mật khẩu", text)
+
+    def test_prints_mode_switching_and_macro_format_settings(self):
+        text = self.report()
+        self.assertIn("(TimeFormat): %H:%M:%S", text)
+        self.assertIn("(ModeOrder): Preedit,Sen,Emoji,Teencode,Off,Vim", text)
+        self.assertIn("(ShowModeEmoji): off", text)
+
+    def test_shows_a_saved_global_off_as_sen_like_the_window(self):
+        handler = FakeHandler({"values": {**VALUES, "Mode": "OFF"}, "metadata": METADATA})
+        self.assertIn("(Mode): Sen", self.report(handler))
+
+    def test_shows_what_the_window_shows_for_odd_saved_values(self):
+        values = {**VALUES, "TimeFormat": "%k:%M", "ModeOrder": "Vim,Bogus,Sen"}
+        text = self.report(FakeHandler({"values": values, "metadata": METADATA}))
+        self.assertIn("(TimeFormat): %H:%M", text)
+        self.assertIn("(ModeOrder): Vim,Sen,Preedit,Emoji,Teencode,Off", text)
+
+    def test_keeps_the_good_lines_of_a_vim_list_that_is_not_utf8(self):
+        with open(self.vim_conf, "wb") as f:
+            f.write(b"kitty\n\xff\n")
+        self.assertIn("Vim mode on: kitty", self.report())
 
     def test_says_so_when_fcitx5_does_not_answer(self):
         self.assertIn("cannot be shown", self.report(FakeHandler(config={})))

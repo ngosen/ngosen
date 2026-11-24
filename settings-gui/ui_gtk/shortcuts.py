@@ -10,6 +10,7 @@ from core.catalog import (
     MODE_SWITCHING,
     SETTINGS_MAP,
     SettingsCategory,
+    mode_order,
 )
 from gi.repository import Adw, Gdk, GLib, GObject, Gtk
 from i18n import _
@@ -157,12 +158,8 @@ class ShortcutsPage:
         return group
 
     def order(self):
-        saved = str(self.model.current.get("ModeOrder", DEFAULT_ORDER))
         # The addon renames old mode names before it hands the config out.
-        known = list(MODE_KEY_TO_INTERNAL_NAME.values())
-        # An order saved before a mode was dropped still names it.
-        order = [n for n in dict.fromkeys(saved.split(",")) if n in known]
-        return order + [n for n in known if n not in order]
+        return mode_order(self.model.current.get("ModeOrder", DEFAULT_ORDER))
 
     def _fill_modes(self):
         self.modes.remove_all()

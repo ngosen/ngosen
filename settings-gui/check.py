@@ -13,7 +13,7 @@ from core.dbus_handler import NgoSenDBusHandler
 from i18n import setup_i18n
 from save_log import SERVICE
 
-from core import system_check
+from core import settings_report, system_check
 
 try:
     from version import __version__
@@ -54,14 +54,18 @@ def exit_code(bus, facts):
     return 0
 
 
-def check(bus, include_apps=False, env=None):
+def check(bus, include_apps=False, env=None, settings=False):
     """Returns the report and the exit code."""
     handler = RunningFcitxHandler(bus)
     # The handler reports D-Bus errors with print(); stdout carries only the report.
     with contextlib.redirect_stdout(sys.stderr):
         facts = system_check.collect(handler, __version__, env)
         found = system_check.steps(facts)
-    return system_check.terminal_report(facts, found, include_apps), exit_code(bus, facts)
+        extra = settings_report.settings_report(handler) if settings else ""
+    report = system_check.terminal_report(facts, found, include_apps)
+    if extra:
+        report += "\n\n" + extra
+    return report, exit_code(bus, facts)
 
 
 def main(argv=None):
@@ -72,6 +76,11 @@ def main(argv=None):
         action="store_true",
         help="list the apps connected to fcitx5; read the list before sharing it",
     )
+    parser.add_argument(
+        "--settings",
+        action="store_true",
+        help="also print the settings and what is set for each app",
+    )
     args = parser.parse_args(argv)
     try:
         bus = dbus.SessionBus()
@@ -79,7 +88,7 @@ def main(argv=None):
         # Under sudo or ssh; the rest of the check still says something.
         print("No desktop session bus: fcitx5 cannot be asked.", file=sys.stderr)
         bus = None
-    report, code = check(bus, args.include_apps)
+    report, code = check(bus, args.include_apps, settings=args.settings)
     print(report)
     return code
 

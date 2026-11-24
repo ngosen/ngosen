@@ -119,5 +119,7 @@ them can answer a question; the settings window writes them and tells Ngó Sen t
 ## Commands
 
 - `ngosen-check`: the "Kiểm tra máy" check in a terminal; changes nothing.
+- `ngosen-check --settings`: also prints every setting of the settings window, the mode and switches set for
+  each app, and how many macros and dictionary words there are. Read it instead of guessing what is on.
 - `ngosen-save-log`: saves the typing log for a bug report, like "Lưu nhật ký gõ" in the tray menu.
 - `fcitx5-ngosen-settings --page check`: opens the settings window on "Kiểm tra máy".

@@ -1898,3 +1898,11 @@ fn test_english_words_with_doubled_ends_stay_english() {
         assert_eq!(finished_word(keys).1, format!("{keys} "), "{keys}");
     }
 }
+
+#[test]
+fn test_tone_key_after_undone_mark_adds_one_letter() {
+    // The third o took the circumflex off, so the s after boot must not bring that o back (#959).
+    for (keys, word) in [("booots", "boots"), ("roooms", "rooms"), ("rooomf", "roomf")] {
+        assert_eq!(finished_word(keys), (word.into(), format!("{word} ")), "{keys}");
+    }
+}

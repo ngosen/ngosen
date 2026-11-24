@@ -19,6 +19,8 @@ Tải ở [ngosen-1.14.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
 
 - Gõ Sen: khi sửa từ bằng Backspace, kiểm tra app đã hiện từ mới chưa và ghi vào log (Lưu nhật ký gõ),
   giúp báo lỗi chỉ ra chỗ mất chữ; không đổi cách gõ (#962).
+- Thêm trang hướng dẫn để hỏi AI cách dùng Ngó Sen, từ menu phím `` ` `` đến các tính năng và cài đặt;
+  trang tìm lỗi gõ cũng dặn AI không đọc mã nguồn để tìm cách sửa và có link sang hướng dẫn mới (#983).
 
 ### Thay đổi
 

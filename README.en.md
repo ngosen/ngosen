@@ -412,7 +412,8 @@ word with an incorrect tone mark. To undo this workaround, delete
 
 If you ask an AI assistant for help, send it this along with the problem: "Read
 https://github.com/ngosen/ngosen/blob/main/docs/ai-help.md, then help me fix typing with Ngó Sen". The page
-tells it to diagnose and leave the fixes to you, and to have you read anything before you paste it.
+tells it to diagnose and leave the fixes to you, and to have you read anything before you paste it. To ask an AI assistant how to use Ngó Sen, such as the `` ` `` menu,
+give it this link: https://github.com/ngosen/ngosen/blob/main/docs/ai-guide.md.
 
 Report other problems in [Issues](https://github.com/ngosen/ngosen/issues) on GitHub.
 If you do not have a GitHub account, message the

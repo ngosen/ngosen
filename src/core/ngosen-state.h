@@ -293,6 +293,7 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> emojiRecheck_;             ///< looks again once the word is in the app
         std::function<void()>          emojiAfterHint_;           ///< the emoji picked, put in once the field drops the hint
         std::unique_ptr<ngosen::Timer> emojiPause_;               ///< offers the sentence's emoji in the field once typing stops
+        std::unique_ptr<ngosen::Timer> emojiIdle_;                ///< hides a list left alone
         bool                           emojiOn_          = true;  ///< false when the user turned emoji off for the app
         bool                           emojiMuted_       = false; ///< Esc hid the emoji for the rest of the sentence
         bool                           holdEmojiPreview_ = false; ///< an app reset keeps the preview until the field is checked
@@ -321,6 +322,7 @@ namespace ngosen {
         void                     previewSentence();
         std::vector<std::string> offeredEmoji() const;
         void                     showEmojiOffer();
+        void                     hideEmojiWhenIdle();
         void                     dropEmojiOffer();
         void                     hideEmojiOffer(); // keeps the pause timer, which may be the caller
         bool                     handleEmojiOfferKey(ngosen::KeyPress& keyEvent);
@@ -343,6 +345,7 @@ namespace ngosen {
         bool               typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
         static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
         static std::string textBeforeCursor(const Surrounding& s);
+        static std::string textAfterCursor(const Surrounding& s);
         static bool        cursorIsBeforeAutofill(const Surrounding& s);
         static bool        showsText(const Surrounding& s);
         static bool        showsTextAfterDeleting(const Surrounding& s, unsigned int chars);
@@ -379,7 +382,9 @@ namespace ngosen {
         std::unique_ptr<ngosen::Timer> retone_timer_;
         bool                           backspaceBeforeKey_ = false; ///< the last key was a backspace that left no word being typed
         bool                           backspaceInWord_    = false; ///< the user pressed Backspace in the word being typed
+        std::optional<std::string>     tailAtWordStart_;            ///< the text after the cursor when the word being typed began, if reported
         std::optional<std::string>     selectedBeforeKey_;          ///< what the X server announced as selected right before this key
+        void                           noteTailAtWordStart();
         void                           retoneAtWordEnd(size_t tail, Retype retype);
         void                           noteRetoneKey(uint32_t sym, uint32_t states, const std::string& keyUtf8, const std::optional<Surrounding>& preeditBefore = std::nullopt);
         void                           retoneAnnounced(uint32_t sym, uint32_t states, const std::string& keyUtf8);
@@ -414,6 +419,12 @@ namespace ngosen {
         // A field that refocuses after each Backspace (voz.vn in Brave) applies them about 22 ms apart and
         // loses a commit that comes before the last one.
         static constexpr uint64_t BouncingFieldWaitUs = 150000;
+        // Firefox declares its text again once a forwarded key reaches it; a commit before that can land
+        // ahead of the backspaces.
+        static constexpr uint64_t UndeclaredFieldWaitUs     = 100000;
+        uint64_t                  backspacesToUndeclaredAt_ = 0;     ///< when backspaces went to a field that stopped declaring its text after our edit
+        bool                      waitsForDeclaredText_     = false; ///< the commit is held until that field declares its text again
+        bool                      waitsForFieldToDeclare(const char* reason) const;
         uint64_t                  forwardWaitUs() const;
         // A key sent back arrives at once; a held key repeats tens of milliseconds apart.
         static constexpr uint64_t SentBackWithinUs = 10000;
@@ -530,7 +541,9 @@ namespace ngosen {
         unsigned int unreportedDeleteLength_ = 0;
         uint64_t     unreportedDeleteKey_    = 0; ///< keyCount_ when that deletion was sent
         bool         committing_             = false;
-        uint64_t     lastInputAtUs_          = 0; ///< last key or commit, CLOCK_MONOTONIC us
+        uint64_t     lastInputAtUs_          = 0;     ///< last key or commit, CLOCK_MONOTONIC us
+        uint64_t     textShownAtUs_          = 0;     ///< when a report last showed the text changed
+        bool         caretSteppedBack_       = false; ///< the app reports the caret one step back since then
         // A bounce after such a key is the app moving on, as a sheet does to the next cell, not a redraw.
         bool lastKeyLeftText_ = false;
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.

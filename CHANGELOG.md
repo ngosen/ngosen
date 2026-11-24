@@ -20,9 +20,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gợi ý emoji nay tắt sẵn ở mọi app; bấm `` ` `` rồi `w` để bật cho từng app muốn dùng, như Teencode. Danh
   sách app đã tắt emoji trước đây không còn dùng; trong cửa sổ cài đặt, mục Emoji nay liệt kê "App đã bật
   emoji" (#969).
+- Danh sách gợi ý emoji tự ẩn khi để yên 4 giây không bấm phím nào (#973).
 
 ### Sửa
 
+- Telex: phím dấu gõ ngay sau một phím lặp để bỏ dấu không còn làm hiện lại chữ đã bỏ ("booots" ra "boots" thay
+  vì "booots", "roooms" ra "rooms") (#976).
 - "Lưu nhật ký gõ" nay giữ khoảng nửa phút gõ gần nhất trong trình duyệt thay vì 7 giây, để lỗi vẫn còn trong
   nhật ký gõ khi lưu ngay sau đó.
 - Gõ Sen: chữ đầu tiên có gợi ý emoji sau khi bật máy không còn sai trong terminal VS Code chạy X11 ("chào" ra
@@ -35,6 +38,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   ("đồng" ra "òng") (#971).
 - Gõ Sen trên voz.vn (Brave, KDE Wayland): phím bấm đúng lúc ô vừa bị xoá trống không còn chạy lên trước chữ
   ("đồng" ra "ođòng") (#972).
+- Gõ Sen trong Antigravity khi máy bận (màn hình 4K, CPU nặng): từ đang gõ không còn bị bắt đầu lại giữa chừng
+  ("tiếng" ra "tieengs") (#974).
 - Gõ Sen với bảng mã "Unicode tổ hợp": gõ trong terminal chạy bash hay fish không còn mất chữ trước dấu thanh
   ("nhiều" ra "nhều"). Trong terminal, từ đang gõ hiện ở dạng dựng sẵn, gõ xong từ mới đổi sang dạng tổ hợp;
   trình soạn thảo vẫn giữ dạng tổ hợp như trước (#952).
@@ -42,6 +47,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   emoji bằng số, như sau một từ (#968).
 - Bấm Ctrl+Shift chậm vẫn đổi được Anh/Việt: giữ tới một giây vẫn tính. Trước đây trên fcitx5 bản mới, nhả
   phím sau quá 1/4 giây là Ctrl+Shift không có tác dụng (#966).
+- Gõ Sen trong Firefox: gõ ngay trước một đường link (như link file đính kèm khi sửa comment trên GitHub) không
+  còn mất chữ trước dấu ("Gõ" ra "õ", "tiếng" ra "tếng") (#970).
+- Gõ Sen trong Firefox Flatpak trên GNOME Wayland: gõ nhanh không còn mất dấu thanh ngay sau một lần sửa chữ
+  ("được" ra "đưc") (#975).
 
 ### Test
 

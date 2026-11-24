@@ -27,6 +27,8 @@ namespace ngosen {
         // The field shows the hint only once typing stops, as a hint that changes under typed keys
         // can reach the app after them.
         constexpr uint64_t PauseUs = 700000;
+        // A list nobody uses goes away instead of covering the text.
+        constexpr uint64_t IdleHideUs = 4000000;
         // Emoji per keyword when a sentence has more than one, and in all, as digits pick them.
         constexpr size_t PerKeyword = 3;
         constexpr size_t MaxOffered = 9;
@@ -349,6 +351,7 @@ namespace ngosen {
                     i == emojiOffer_->chosen  ? " [" + std::to_string(i + 1) + "." + all[i] + "]" :
                                                 " " + std::to_string(i + 1) + "." + all[i];
             host_->showHint(emojiOffer_->afterSpace ? hint.substr(1) : hint);
+            hideEmojiWhenIdle();
             return;
         }
         if (emojiOffer_->preview) {
@@ -390,6 +393,18 @@ namespace ngosen {
             host_->setStatus(numbers + ": " + host_->translate("pick, or arrows then Enter, Esc: keep the word"));
         }
         host_->refreshPanel();
+        hideEmojiWhenIdle();
+    }
+
+    void TypingState::hideEmojiWhenIdle() {
+        emojiIdle_ = host_->startTimer(ngosen::monotonicUs() + IdleHideUs, RecheckUs, [this](ngosen::Timer& timer) {
+            if (replacementPending()) {
+                timer.rearm(ngosen::monotonicUs() + RecheckUs);
+                return true;
+            }
+            dropHintBeforeKey();
+            return false;
+        });
     }
 
     void TypingState::dropEmojiOffer() {

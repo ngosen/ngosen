@@ -86,6 +86,7 @@ namespace ngosen::test {
         bool             reportsOnFocus            = false;    // reports its field, empty or not, when it gets focus, as Firefox over GTK does
         bool             deletesAtReportedCursor   = false;    // deletes at the cursor of its last report and leaves the cursor there, as Firefox over GTK does
         bool             dropsSurroundingOnDelete  = false;    // stops declaring surrounding after a deletion through it until a key or click, as Firefox over fcitx5-gtk does
+        bool             dropsUndeclaredCommits    = false;    // drops the commit after a deletion sent while it declares no surrounding, as Firefox's Flatpak on GNOME does
         int              reportsOnEdit             = 0;        // the nth deletion is reported anyway, as Qt now and then
         bool             showsEnter                = false;    // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
         bool             ctrlBackSpaceDeletesWord  = false;    // a BackSpace forwarded before the app saw Ctrl go up deletes the word, as in Chrome
@@ -234,6 +235,10 @@ namespace ngosen::test {
         const std::string& hint() const {
             return hint_;
         }
+        // The hint the input method last asked for, which a lagging app may not show yet.
+        const std::string& askedHint() const {
+            return askedHint_;
+        }
         // Commits, deletions and forwarded keys sent while the hint showed.
         int editsUnderHint() const {
             return editsUnderHint_;
@@ -278,6 +283,7 @@ namespace ngosen::test {
         void showPreedit(const std::string& text, bool /*underline*/) override;
         void clearPreedit() override;
         void showHint(const std::string& text) override {
+            askedHint_ = text;
             if (hintLagMs_ > 0)
                 later(hintLagMs_, [this, text] { hint_ = text; });
             else
@@ -404,6 +410,8 @@ namespace ngosen::test {
         std::string                         hint_;
         int                                 editsUnderHint_ = 0;
         int                                 hintLagMs_      = 0;
+
+        std::string                         askedHint_;
         std::u32string                      previousText_;
         size_t                              previousCursor_ = 0;
         std::u32string                      reportedText_;
@@ -414,6 +422,7 @@ namespace ngosen::test {
         size_t                              reportedAnchor_     = 0;
         bool                                silentAfterDelete_  = false;
         bool                                surroundingDropped_ = false;
+        bool                                commitOfDeletion_   = false; // the next commit goes with the last deletion
         int                                 keysSinceDelete_    = 0;
         bool                                turnPending_        = false;
         std::optional<size_t>               turnDeleteBytes_;

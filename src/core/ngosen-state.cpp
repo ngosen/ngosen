@@ -972,6 +972,8 @@ namespace ngosen {
         if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || handleEmojiOfferKey(keyEvent) || skipsKey(keyEvent))
             return;
         settleBeforeKey();
+        if (!keyEvent.isRelease() && !keyEvent.isModifier() && oldPreBuffer_.empty())
+            noteTailAtWordStart();
         const uint32_t currentSym = trackCapitalization(keyEvent);
         // Only plain backspaces typed after a finished commit may reopen the word; anything else changes the text after it.
         // Backspaces we press through XTEST come back here while we delete; they belong to the commit.
@@ -1380,7 +1382,7 @@ namespace ngosen {
         if (!is_deleting_.load(std::memory_order_acquire))
             return false;
         // A Backspace waits too: it is the user's, and would otherwise reach the app before the commit.
-        if (composedWait_ && !isOwnBackspace(currentSym)) {
+        if ((composedWait_ || waitsForDeclaredText_) && !isOwnBackspace(currentSym)) {
             if (buffered_keys_.size() < MAX_BUFFERED_KEYS)
                 buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code(), .actsOnField = actsOnField(keyEvent, currentSym)});
             keyEvent.accept();

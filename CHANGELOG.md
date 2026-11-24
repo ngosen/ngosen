@@ -20,6 +20,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Gõ Sen trong editor của Antigravity: phím sửa chữ không còn khựng khoảng 0,2 giây khi máy đang bận, và chữ
   có một chữ cái đứng đầu từ không còn bị để nguyên phím thô ("ddaay" ra "đây", "dduowcj" ra "được") (#987).
+- Gõ Sen trong editor của Antigravity trên GNOME: khi máy đang bận, chữ không còn bị dính cả phần cũ lẫn phần
+  mới ("tiêngếng", "viêtệt", "đuoược") (#990).
 
 ## [1.14.1-1] — 24/11/2026
 

@@ -718,6 +718,9 @@ namespace ngosen {
         // without focus (Zed, #93); the backspace path waits for focus to come back.
         if (ngosen::dropsCommitsWithoutFocus(field) && !ngosen::keepsFocusWhenEmptied(field) && surrounding.isValid() && !showsTextAfterDeleting(surrounding, chars))
             fails.emplace_back("deletion empties the field");
+        // Antigravity's editor drops a deletion through its text that reaches it before its own caret step back (#362).
+        if (caretStepBackDue())
+            fails.emplace_back("caret step back due");
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");

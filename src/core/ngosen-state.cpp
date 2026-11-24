@@ -765,6 +765,14 @@ namespace ngosen {
         return hasLastSurrounding_ && !lastSurroundingText_.empty() && !reportDue && (!s.isValid() || s.text().empty());
     }
 
+    // The copy shows the word as it stood before this key, so it is keeping up with the app.
+    bool TypingState::copyEndsWith(const std::string& word, const std::string& key) const {
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || !isEndsWith(word, key))
+            return false;
+        return isEndsWith(textBeforeCursor(s), word.substr(0, word.size() - key.size()));
+    }
+
     void TypingState::replaceFromPreedit(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8) {
         hasHistory_ = true;
         realtextLen.fetch_add(1, std::memory_order_acq_rel);
@@ -800,7 +808,7 @@ namespace ngosen {
                 }
                 if (!isCommit) {
                     passed_key_   = live_key_;
-                    passedLetter_ = PassedLetter{.text = keyUtf8, .key = keyCount_, .pressedUs = monotonicUs()};
+                    passedLetter_ = PassedLetter{.text = keyUtf8, .key = keyCount_, .pressedUs = monotonicUs(), .freshAtPress = copyEndsWith(preeditStr, keyUtf8)};
                     keyEvent.passToApp();
                 }
             } else {

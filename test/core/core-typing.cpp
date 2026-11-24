@@ -1065,6 +1065,33 @@ namespace {
         composer                     = {};
         composer.reportsTextAtChange = true;
         expect("stalled report, plain field", run("hojc ", 0, 120, 0, 2), "học ");
+
+        // A copy that falls behind while two letters go in must not pass for a lost one either.
+        {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop                loop;
+            ngosen::test::AppQuirks quirks{.reportsTextAtChange = true};
+            quirks.stallsTypedTextNumber = 5;
+            auto                owned    = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "brave-origin"), quirks);
+            auto*               app      = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            const auto type = [&](char c, int gapMs) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(gapMs);
+            };
+            for (const char c : std::string("di "))
+                type(c, 120);
+            app->setReportDelay(50);
+            type('h', 20);
+            type('o', 140);
+            type('j', 120);
+            type('c', 120);
+            type(' ', 300);
+            expect("copy behind", app->text(), "di học ");
+        }
     }
 
     void testStrayKeyDuringBounce() {

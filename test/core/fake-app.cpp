@@ -176,8 +176,14 @@ namespace ngosen::test {
                     }
                     if (++typedTexts_ == quirks_.dropsTypedTextNumber) {
                         changed();
-                        later(80, [this] { changed(); });
+                        later(110, [this] { changed(); });
                         return;
+                    }
+                    if (typedTexts_ == quirks_.stallsTypedTextNumber) {
+                        oldText_        = text_;
+                        oldCursor_      = cursor_;
+                        oldTextUntilUs_ = monotonicUs() + 150000;
+                        later(50, [this] { changed(); });
                     }
                     insert(utf8::decode(text), true);
                 });

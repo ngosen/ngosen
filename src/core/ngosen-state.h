@@ -629,13 +629,12 @@ namespace ngosen {
             uint64_t    pressedUs    = 0;
             bool        released     = false;
             bool        shown        = false;
+            int         staleReports = 0;     ///< reports without it since its release
             bool        lostLate     = false; ///< reported without it after its release, too late for a slow report
-            bool        freshAtPress = false; ///< the copy showed the word up to this letter when it was pressed
         };
         std::optional<PassedLetter> passedLetter_;            ///< last letter let through to the app as typed
         bool                        letterShownFast_ = false; ///< the field showed the last letter it showed right away
         void                        notePassedLetterReport();
-        bool                        copyEndsWith(const std::string& word, const std::string& key) const;
 
         // HeldBack: the copy would give a wrong deletion, but this field's checks go unanswered.
         // Fits: no wait, as the copy already ends with the word as we know it.

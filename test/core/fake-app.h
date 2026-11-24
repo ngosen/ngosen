@@ -125,6 +125,8 @@ namespace ngosen::test {
         // Never shows the nth text key it gets, though it reports its text then and again a moment later,
         // as voz.vn's editor in Brave did with a key pressed before the last one was up.
         int dropsTypedTextNumber = 0;
+        // Shows the nth text key it gets but keeps reporting the text before it for a while.
+        int stallsTypedTextNumber = 0;
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what

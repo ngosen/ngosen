@@ -311,10 +311,11 @@ namespace ngosen {
         }
     }
 
-    // A field that shows letters within a few ms and still reports the word without one after its release lost
-    // it; a field whose reports lag is only late.
+    // A field that shows letters within a few ms and, as Brave does at every key event, still reports the word
+    // without one twice after its release lost it; a single late report may only be held up.
     void TypingState::notePassedLetterReport() {
         constexpr uint64_t LetterShownUs = 40000;
+        constexpr uint64_t LetterLostUs  = 100000;
         if (!passedLetter_ || passedLetter_->shown)
             return;
         const Surrounding s          = host_->surrounding();
@@ -322,8 +323,9 @@ namespace ngosen {
         if (s.isValid() && isEndsWith(oldPreBuffer_, passedLetter_->text) && isEndsWith(textBeforeCursor(s), oldPreBuffer_)) {
             passedLetter_->shown = true;
             letterShownFast_     = sincePress < LetterShownUs;
-        } else if (passedLetter_->released && sincePress >= LetterShownUs) {
-            passedLetter_->lostLate = true;
+        } else if (passedLetter_->released) {
+            ++passedLetter_->staleReports;
+            passedLetter_->lostLate = passedLetter_->staleReports >= 2 && sincePress >= LetterLostUs;
         }
     }
 

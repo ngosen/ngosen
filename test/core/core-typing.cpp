@@ -1036,7 +1036,7 @@ namespace {
         composer.bouncesEmptyAfterEdit     = true;
         composer.losesCommitAmidBackspaces = true;
         composer.textAfterCursor           = "\n\n";
-        const auto run                     = [&](const std::string& keys, int dropped, int gapMs, int reportDelayMs = 0) {
+        const auto run                     = [&](const std::string& keys, int dropped, int gapMs, int reportDelayMs = 0, int stalled = 0) {
             FakeResources resources;
             realMode = ngosen::Mode::Sen;
             realtextLen.store(0);
@@ -1044,6 +1044,7 @@ namespace {
             ngosen::test::AppQuirks quirks = composer;
             quirks.dropsTypedTextNumber    = dropped;
             quirks.reportDelayMs           = reportDelayMs;
+            quirks.stallsTypedTextNumber   = stalled;
             auto                owned      = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "brave-origin"), quirks);
             auto*               app        = owned.get();
             ngosen::TypingState state(&resources, std::move(owned));
@@ -1060,6 +1061,10 @@ namespace {
         expect("o of hoc", run("hojc ", 2, 120), "học \n\n");
         // A report that only comes late must not pass for a lost key.
         expect("late report", run("di ddaua ", 0, 120, 60), "di đâu \n\n");
+        // A field that shows the key but holds up one report must not pass for one that lost it.
+        composer                     = {};
+        composer.reportsTextAtChange = true;
+        expect("stalled report, plain field", run("hojc ", 0, 120, 0, 2), "học ");
     }
 
     void testStrayKeyDuringBounce() {

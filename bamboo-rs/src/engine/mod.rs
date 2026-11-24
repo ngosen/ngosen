@@ -942,11 +942,10 @@ impl BambooEngine {
         let undid_mark = shown_before != self.raw_text() && !has_any_vietnamese_rune(&shown_before);
         self.preeditor.process_key(key, mode);
         // Undoing the tone can reach a macro, as it does for a Vietnamese word.
-        if repeated && self.tone_count() < tones && self.get_macro_text().is_none() {
-            self.drop_last_key(false);
-            self.preeditor.process_key(key, Mode::English);
-        } else if undid_mark && self.kept.is_none() && self.get_preedit_string() == self.raw_text()
-        {
+        let undid_tone = repeated && self.tone_count() < tones && self.get_macro_text().is_none();
+        let shows_dropped_letter =
+            undid_mark && self.kept.is_none() && self.get_preedit_string() == self.raw_text();
+        if undid_tone || shows_dropped_letter {
             self.drop_last_key(false);
             self.preeditor.process_key(key, Mode::English);
         }

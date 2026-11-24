@@ -22,7 +22,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   emoji" (#969).
 - Danh sách gợi ý emoji tự ẩn khi để yên 4 giây không bấm phím nào (#973).
 - Gõ kéo dài chữ nay chỉ giữ dấu ở chữ đầu, các chữ lặp sau để trơn cho dễ đọc: `afaaa` ra `àaaa` thay vì
-  `àààà`, như UniKey (#852, #979).
+  `àààà`, như UniKey (#852, #980).
 
 ### Sửa
 

@@ -493,7 +493,7 @@ namespace ngosen::test {
         if (quirks_.ignoresSurroundingDel)
             goSilentAfterDelete();
         // A module whose copy of the text is empty finds every deletion out of range.
-        if (quirks_.ignoresSurroundingDel || quirks_.reportsEmptyText)
+        if (quirks_.ignoresSurroundingDel || quirks_.reportsEmptyText || caretBackDue_ || caretOneBack_)
             return;
         if (quirks_.keepsLastEditPerTurn && offset == -static_cast<int>(size)) {
             turnDeleteBytes_ = reportedBytesBefore(size);
@@ -841,13 +841,15 @@ namespace ngosen::test {
         }
         anchor_ = cursor_;
         changed();
-        if (typed && quirks_.leavesCaretOneBack)
-            later(1, [this, shown = text_] {
+        if (quirks_.leavesCaretOneBack) {
+            caretBackDue_ = true;
+            later(quirks_.caretBackAfterMs, [this, shown = text_] {
                 if (text_ != shown)
                     return;
                 changed();
                 caretOneBack_ = true;
             });
+        }
         if (!typed)
             landStrayLetter();
         bounceEmptyAfterEdit();
@@ -965,6 +967,7 @@ namespace ngosen::test {
 
     void FakeApp::changed() {
         caretOneBack_    = false;
+        caretBackDue_    = false;
         holdsUnreported_ = false;
         shownCursor_     = cursor_;
         shownAnchor_     = anchor_;

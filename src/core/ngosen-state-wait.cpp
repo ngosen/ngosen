@@ -560,6 +560,8 @@ namespace ngosen {
     constexpr uint64_t CaretSettleUs = 30000;
     // A browser reports the step into its suggestion right after the key; a click takes longer.
     constexpr uint64_t SuggestionStepUs = 100000;
+    // Longer than a busy app takes to report a cursor key.
+    constexpr uint64_t CaretKeyReportUs = 1000000;
 
     // Our own edits only touch the text before the cursor, even while their report is still on the way.
     bool TypingState::textAfterCursorChanged(const Surrounding& s) const {
@@ -626,6 +628,10 @@ namespace ngosen {
         return emptied && sinceFocus_.emptiedItself >= 2;
     }
 
+    bool TypingState::caretStepBackDue() const {
+        return caretStepBackDue_ && ngosen::monotonicUs() - textShownAtUs_ < SuggestionStepUs;
+    }
+
     // Wayland apps report a click only as a cursor move; the IM gets no reset or mouse event.
     void TypingState::checkCursorJump() {
         const auto s = host_->surrounding();
@@ -666,10 +672,16 @@ namespace ngosen {
         if (hasLastSurrounding_ && !sameText) {
             textShownAtUs_    = now;
             caretSteppedBack_ = false;
+            caretStepBackDue_ = sinceFocus_.stepsCaretBack;
         }
         const bool caretSettling = jumped && s.cursor() == s.anchor() && s.cursor() + 1 == lastSurroundingCursor_ &&
             (sinceInputUs < SuggestionStepUs || now - textShownAtUs_ < SuggestionStepUs || caretSteppedBack_);
         caretSteppedBack_ = caretSettling;
+        if (caretSettling) {
+            // A busy app reports a Left key late, so only a step back long after one is the app's own.
+            sinceFocus_.stepsCaretBack = sinceFocus_.stepsCaretBack || now - caretKeyAtUs_ > CaretKeyReportUs;
+            caretStepBackDue_          = false;
+        }
         // A spreadsheet reports a click on another cell only as that cell's text with the cursor at its start.
         const bool lostWord = lostWordAfterBounce(s, settling);
         // Calc reports the new cell empty just before the key we let through lands in it.

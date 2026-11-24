@@ -5334,6 +5334,23 @@ namespace {
         check(countHaving(lines, "still short") == 0, "no copy wait for a caret report left one step back", join(lines));
     }
 
+    // The app drops a deletion through its text sent before the caret step back it reports after a letter.
+    void testCaretStepBackDueTakesBackspaces() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        const std::string typed = "a tieengs ";
+        std::vector<int>  gaps(typed.size(), 100);
+        // The second e comes before the step back of the first.
+        gaps[4] = 20;
+        FakeResources resources;
+        ngosen::test::captureLog(true);
+        const auto run = ngosen::test::typeInAppTraced(resources, makeField("wayland", true, "editor"), {.leavesCaretOneBack = true, .caretBackAfterMs = 40}, keysOf(typed), gaps);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(run.text == "a tiếng ", "a key before the caret step back of the last letter keeps the word", run.text);
+        check(countHaving(lines, "app dropped the deletion") == 0, "that key's deletion is not one the app drops", join(lines));
+    }
+
     // A field whose copy never catches up stops waiting after two waits in a row run out, until focus moves on.
     void testCopyWaitsRunOutPerField() {
         realMode = ngosen::Mode::Sen;
@@ -6470,6 +6487,7 @@ int main() {
     testLateCopyKeepsSurroundingPath();
     testRolledKeysWaitForIbusCopy();
     testCaretLeftOneBackNeedsNoCopyWait();
+    testCaretStepBackDueTakesBackspaces();
     testCopyWaitsRunOutPerField();
     testFocusLossLogsDroppedKeys();
     testStarvedStretchKeepsCopyWait();

@@ -1361,6 +1361,8 @@ Replace: method=forwarded backspaces wait=none ended=event after 0 ms
 Replace: method=forwarded backspaces wait=none ended=event after 0 ms
 Replace: method=forwarded backspaces wait=none ended=event after 0 ms
 Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
 Replace: method=forwarded backspaces wait=copy ended=timeout after 300 ms
 Replace: method=forwarded backspaces wait=copy ended=timeout after 300 ms
 Replace: method=forwarded backspaces wait=none ended=timeout after 100 ms

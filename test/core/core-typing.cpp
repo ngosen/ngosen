@@ -483,6 +483,60 @@ namespace {
         check(text == "đơn", "emptied field: commit after focus comes back", text);
     }
 
+    // Some apps erase a combining tone mark on its own, others with the letter before it, and a
+    // terminal does whichever its shell does, so the word must not be decomposed while it is edited.
+    void testDecomposedToneInAnyApp() {
+        Field field    = makeField("wayland_v2", false, "Alacritty");
+        field.terminal = true;
+        for (const bool withLetter : {false, true}) {
+            const std::string       how = withLetter ? "erasing a mark with its letter" : "erasing one code point";
+            ngosen::test::AppQuirks quirks;
+            quirks.erasesMarksWithLetter = withLetter;
+            quirks.showsEnter            = true;
+            FakeResources resources;
+            resources.mutableOptions().outputCharset = "Unicode tổ hợp";
+            const std::string     typed              = "nhieefu tieengs vieetj";
+            std::vector<uint32_t> keys(typed.begin(), typed.end());
+            keys.push_back(ngosen::key::Return);
+            const std::string text = ngosen::test::typeInApp(resources, field, quirks, keys, std::vector<int>(keys.size(), 50));
+            check(text == "nhi\u00ea\u0300u ti\u00ea\u0301ng vi\u00ea\u0323t\n", "Unicode tổ hợp, " + how, text);
+        }
+        // A Space typed while the tone is still going out ends the word when it replays. Firefox may show a
+        // web terminal, so its fields type the word precomposed too.
+        ngosen::test::AppQuirks quirks;
+        quirks.reportsEmptyText = true;
+        quirks.commitLagMs      = 5;
+        FakeResources resources;
+        resources.mutableOptions().outputCharset = "Unicode tổ hợp";
+        const std::vector<uint32_t> keys{'v', 'i', 'e', 'e', 't', 'j', ' '};
+        const std::string           text = ngosen::test::typeInApp(resources, makeField("ibus", true, "firefox"), quirks, keys, {100, 100, 100, 100, 100, 2, 100});
+        check(text == "vi\u00ea\u0323t ", "Unicode tổ hợp, Space typed during the replacement", text);
+
+        // An editor deletes through its text, so a word that Tab ends is already decomposed.
+        ngosen::test::AppQuirks editor;
+        editor.showsTab = true;
+        FakeResources writer;
+        writer.mutableOptions().outputCharset = "Unicode tổ hợp";
+        const std::vector<uint32_t> tabbed{'v', 'i', 'e', 'e', 't', 'j', ngosen::key::Tab};
+        const std::string           cell = ngosen::test::typeInApp(writer, makeField("wayland", true), editor, tabbed, std::vector<int>(tabbed.size(), 50));
+        check(cell == "vi\u00ea\u0323t\u21e5", "Unicode tổ hợp, editor word ended by Tab", cell);
+    }
+
+    // Gnumeric drops a forwarded Backspace while its cell editor starts, so a one-letter cell turned "oô".
+    void testEmptiedCellDeletesThroughSurrounding() {
+        ngosen::test::AppQuirks quirks;
+        quirks.dropsForwardedKeys = true;
+        const std::vector<std::pair<std::string, std::string>> cells{{"oo", "ô"}, {"ee", "ê"}, {"dd", "đ"}, {"as", "á"}};
+        for (const std::string program : {"gnumeric", "org.gnumeric.gnumeric"}) {
+            const Field field = makeField("wayland", true, program);
+            for (const auto& [typed, expected] : cells) {
+                const std::vector<uint32_t> keys(typed.begin(), typed.end());
+                const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 100));
+                check(text == expected, "gnumeric: a one-letter cell deletes through the surrounding text", program + ": " + typed + " -> " + text);
+            }
+        }
+    }
+
     // Firefox over D-Bus applies a key it sent before our commit reached it ahead of that commit.
     void testKeyTypedBeforeCommitArrived() {
         ngosen::test::AppQuirks quirks;
@@ -566,7 +620,7 @@ namespace {
     // In Sen the app deletes the letter itself, so the engine has to keep the tone it shows (#898).
     void testBackspaceInStretchedWordSen() {
         const std::vector<std::tuple<bool, std::string, std::string>> cases = {
-            {false, "chaiiif\b ", "chàii "}, {false, "chaiiif\bi ", "chàiii "}, {false, "aaaf\b ", "àà "}, {true, "fair\b ", "fả "}, {true, "nhuwgx\b ", "nhữ "},
+            {false, "chaiiif\b ", "chàii "}, {false, "chaiiif\bi ", "chàiii "}, {false, "aaaf\b ", "àa "}, {true, "fair\b ", "fả "}, {true, "nhuwgx\b ", "nhữ "},
         };
         for (const auto& [teencode, typed, want] : cases) {
             std::string printable = typed;
@@ -931,6 +985,298 @@ namespace {
             const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 150));
             check(text == want, "bouncing composer keeps the edit: " + typed, text);
         }
+    }
+
+    // A letter pressed while the field refocuses after an edit goes to the page, and only its release
+    // reaches us. The word must come out as if it had been typed through the input method.
+    // voz.vn's editor shows a word typed over a selection only after an empty line, which can come more
+    // than 30 ms after the key; that line is not a click, so the key still starts the word.
+    void testTypeOverSelectionInSteps() {
+        ngosen::test::AppQuirks quirks;
+        quirks.textAfterCursor         = "\n\n";
+        quirks.redrawsSelectionInSteps = true;
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "brave-origin"), quirks);
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (const char c : std::string("xin ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        app->select(0, 4);
+        loop.pump(300);
+        for (const char c : std::string("nguoiwf ")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        loop.pump(300);
+        check(app->text() == "người \n\n", "type over a selection redrawn in steps", app->text());
+    }
+
+    // voz.vn's editor reports itself wholly empty while it refocuses, which looks like an edit that empties
+    // it; the commit has to wait for a report that still holds the line breaks after the cursor.
+    void testFirstWordEmptiesBouncingField() {
+        ngosen::test::AppQuirks composer;
+        composer.keyStepMs                 = 28;
+        composer.bouncesEmptyAfterEdit     = true;
+        composer.losesCommitAmidBackspaces = true;
+        composer.textAfterCursor           = "\n\n";
+        for (const int gapMs : {60, 100, 150}) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "brave-origin"), composer);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("dodofng ")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(gapMs);
+            }
+            loop.pump(300);
+            check(app->text() == "đồng \n\n", "first word emptying a bouncing field (" + std::to_string(gapMs) + " ms)", app->text());
+        }
+    }
+
+    // voz.vn's editor in Brave can take a key we let through and never show it; the next edit has to start from
+    // the word the field shows, or its Backspaces take a letter too many.
+    void testKeyNeverShown() {
+        ngosen::test::AppQuirks composer;
+        composer.keyStepMs                 = 28;
+        composer.bouncesEmptyAfterEdit     = true;
+        composer.losesCommitAmidBackspaces = true;
+        composer.textAfterCursor           = "\n\n";
+        const auto run                     = [&](const std::string& keys, int dropped, int gapMs, int reportDelayMs = 0, int stalled = 0) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop                loop;
+            ngosen::test::AppQuirks quirks = composer;
+            quirks.dropsTypedTextNumber    = dropped;
+            quirks.reportDelayMs           = reportDelayMs;
+            quirks.stallsTypedTextNumber   = stalled;
+            auto                owned      = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "brave-origin"), quirks);
+            auto*               app        = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : keys) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(gapMs);
+            }
+            loop.pump(300);
+            return app->text();
+        };
+        const auto expect = [&](const std::string& name, const std::string& got, const std::string& want) { check(got == want, "key never shown: " + name, got); };
+        expect("u of dau", run("di ddaua ", 6, 120), "di đâu \n\n");
+        expect("o of hoc", run("hojc ", 2, 120), "học \n\n");
+        // A report that only comes late must not pass for a lost key.
+        expect("late report", run("di ddaua ", 0, 120, 60), "di đâu \n\n");
+        // A field that shows the key but holds up one report must not pass for one that lost it.
+        composer                     = {};
+        composer.reportsTextAtChange = true;
+        expect("stalled report, plain field", run("hojc ", 0, 120, 0, 2), "học ");
+        expect("stalled slow report, plain field", run("hojc ", 0, 120, 60, 2), "học ");
+
+        // A copy that falls behind while two letters go in must not pass for a lost one either.
+        {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop                loop;
+            ngosen::test::AppQuirks quirks{.reportsTextAtChange = true};
+            quirks.stallsTypedTextNumber = 5;
+            auto                owned    = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "brave-origin"), quirks);
+            auto*               app      = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            const auto type = [&](char c, int gapMs) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(gapMs);
+            };
+            for (const char c : std::string("di "))
+                type(c, 120);
+            app->setReportDelay(50);
+            type('h', 20);
+            type('o', 140);
+            type('j', 120);
+            type('c', 120);
+            type(' ', 300);
+            expect("copy behind", app->text(), "di học ");
+        }
+    }
+
+    void testStrayKeyDuringBounce() {
+        const Field             field = makeField("wayland", true, "brave-origin");
+        ngosen::test::AppQuirks bouncing;
+        bouncing.keyStepMs                 = 28;
+        bouncing.bouncesEmptyAfterEdit     = true;
+        bouncing.losesCommitAmidBackspaces = true;
+        struct Run {
+            std::string text;
+            int         backspaces = 0;
+        };
+        // Types before; the page takes stray after the nth of our edits that its last key starts, and
+        // the release comes once the edit has settled, before after is typed.
+        // settleMs is the pause after the last key of before, gapMs the one before it.
+        const auto runIn = [&](const Field& in, const ngosen::test::AppQuirks& quirks, const std::string& before, char stray, int nth, const std::string& after, bool releaseLast,
+                               int settleMs = 150, int gapMs = 150, int strayDelayMs = 2) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, in, quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (size_t i = 0; i < before.size(); ++i) {
+                app->type(static_cast<uint32_t>(before[i]));
+                const bool last = i + 1 == before.size();
+                if (last)
+                    app->typeAfterEdit(std::string(1, stray), nth, strayDelayMs);
+                loop.pump(last ? settleMs : i + 2 == before.size() ? gapMs : 150);
+            }
+            if (!releaseLast) {
+                app->releaseKey(static_cast<uint32_t>(stray));
+                loop.pump(150);
+            }
+            for (const char c : after) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(150);
+            }
+            if (releaseLast)
+                app->releaseKey(static_cast<uint32_t>(stray));
+            loop.pump(300);
+            return Run{app->text(), app->sent().forwardedBackSpaces};
+        };
+        const auto run    = [&](const std::string& before, char stray, int nth, const std::string& after) { return runIn(field, bouncing, before, stray, nth, after, false); };
+        const auto expect = [&](const std::string& name, const Run& got, const std::string& want) { check(got.text == want, "stray key: " + name, got.text); };
+        expect("y after the tone key", run("ngaf", 'y', 1, " "), "ngày ");
+        // The deletion empties the field, which voz.vn then marks with a U+200B before the stray letter lands.
+        ngosen::test::AppQuirks marking = bouncing;
+        marking.marksEmptiedLine        = true;
+        marking.textAfterCursor         = "\n\n";
+        for (const int delayMs : {2, 20, 40})
+            expect("after a U+200B (" + std::to_string(delayMs) + " ms)", runIn(field, marking, "dd", 'o', 1, "fng ", false, 150, 150, delayMs), "\u200bđòng \n\n");
+        expect("u after the circumflex", run("naa", 'u', 1, "s "), "nấu ");
+        expect("tone key before the commit", run("nguoiw", 'f', 3, " "), "người ");
+        expect("tone key after the commit", run("nguoiw", 'f', 4, " "), "người ");
+        const Run plain = run("dd", 'i', 2, " ");
+        expect("letter that changes nothing", plain, "đi ");
+        check(plain.backspaces == 1, "stray key: a letter that changes nothing sends no edit", std::to_string(plain.backspaces));
+        // The next key comes while the edit still waits and before the stray key's release.
+        expect("next key before the release", runIn(field, bouncing, "nguow", 'i', 2, "f ", true, 60), "người ");
+        // The letter shows before our commit goes out, and the next key comes before its release.
+        ngosen::test::AppQuirks atChange = bouncing;
+        atChange.reportsTextAtChange     = true;
+        atChange.reportDelayMs           = 5;
+        expect("letter shown before the commit", runIn(field, atChange, "nguow", 'i', 2, "f ", true, 80, 150, 0), "người ");
+        // voz.vn keeps two line breaks after the cursor, so the commit waits for the editor to settle and
+        // the next key arrives during that wait.
+        ngosen::test::AppQuirks composer = bouncing;
+        composer.textAfterCursor         = "\n\n";
+        expect("next key during the settle wait", runIn(field, composer, "nguow", 'i', 2, "f ", true, 85, 150, 4), "người \n\n");
+        // The next key reached us before any report showed the letter, so their order is unknown.
+        expect("letter shown after the next key", runIn(field, atChange, "nguow", 'i', 2, "f ", true, 60, 150, 0), "ngiuowf ");
+        // A late report from the middle of our deletion holds one letter more than what stays.
+        ngosen::test::AppQuirks slow = bouncing;
+        slow.reportsTextAtChange     = true;
+        slow.reportDelayMs           = 80;
+        expect("deletion half shown", runIn(field, slow, "nguoiw", 'z', 99, " ", true), "ngươi ");
+        // The field's copy when the edit starts still lacks the last letter typed.
+        ngosen::test::AppQuirks lagging = bouncing;
+        lagging.reportsTextAtChange     = true;
+        lagging.reportDelayMs           = 20;
+        expect("copy behind when the edit starts", runIn(field, lagging, "nguoiw", 'f', 3, " ", false, 150, 10), "người ");
+        // With a key in between, which of the two came first is unknown.
+        expect("release after the next key", runIn(field, bouncing, "ngaf", 'y', 1, "n", true), "ngàyn");
+        // The commit was lost, so the field does not hold the word we sent and nothing is retyped.
+        ngosen::test::AppQuirks dropping = bouncing;
+        dropping.dropsCommitNumber       = 1;
+        expect("stray key after a lost commit", runIn(field, dropping, "nguoiw", 'f', 3, " ", false), "ngf ");
+        // A release that is not a stray key still opens the next cell with its letter.
+        {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, bouncing);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : std::string("ngaf")) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(150);
+            }
+            app->focusNewFieldWith("", 5);
+            loop.pump(50);
+            app->pageTakesKey('a', "a", "");
+            loop.pump(100);
+            app->type('s');
+            loop.pump(300);
+            check(app->text() == "á", "stray key: a cell opened by its key keeps the letter", app->text());
+        }
+        // A word the engine has already let go of, as a macro, is not retyped and its commit still goes out.
+        {
+            FakeResources resources;
+            resources.setMacros({{"q", "hello"}});
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, atChange);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            app->type('q');
+            loop.pump(150);
+            app->type(' ');
+            app->typeAfterEdit("a", 1, 0);
+            loop.pump(300);
+            check(app->text().find("hello") != std::string::npos, "stray key: a macro keeps its expansion", app->text());
+        }
+        // After a reset the letter is no longer ours to retype, and a repaired one does not hide the next
+        // cell's letter.
+        for (const bool resetFirst : {true, false}) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, bouncing);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            app->type('d');
+            loop.pump(150);
+            app->type('d');
+            app->typeAfterEdit("i", 2);
+            loop.pump(150);
+            if (resetFirst) {
+                state.reset();
+                app->releaseKey('i');
+                loop.pump(300);
+                check(app->text() == "đi", "stray key: a reset drops the letter seen", app->text());
+                continue;
+            }
+            app->releaseKey('i');
+            loop.pump(150);
+            app->focusNewFieldWith("", 5);
+            loop.pump(50);
+            app->pageTakesKey('i', "i", "");
+            loop.pump(100);
+            app->type('s');
+            loop.pump(300);
+            check(app->text() == "í", "stray key: a repaired letter does not take the next cell's release", app->text());
+        }
+        ngosen::test::AppQuirks steady = bouncing;
+        steady.bouncesEmptyAfterEdit   = false;
+        steady.bounceOnEditMs          = 0;
+        steady.reportsTextAtChange     = true;
+        steady.reportDelayMs           = 5;
+        expect("field that does not refocus", runIn(field, steady, "ngaf", 'y', 1, " ", false, 150, 150, 0), "ngyà ");
     }
 
     // Brave on GNOME 51 bounces focus as soon as it gets our Backspace and applies it only after the
@@ -1495,6 +1841,54 @@ namespace {
             loop.pump(200);
         }
         check(host->commits().empty(), "repeated clicks from one-letter cells: still clicks", join(host->commits()));
+    }
+
+    // A quick switch, right after a first letter, to a field holding only a line break is still a click.
+    void testQuickSwitchToBlankField() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland", true, "brave-origin"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("là ", 3);
+        state.surroundingUpdated();
+        loop.pump(300);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(40);
+        state.deactivate(true);
+        loop.pump(3);
+        state.activate(ngosen::Mode::Sen, true);
+        host->setSurrounding("\n", 0);
+        state.surroundingUpdated();
+        loop.pump(50);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(200);
+        check(host->commits().empty(), "quick switch to a blank field after a first letter: still a click", join(host->commits()));
+    }
+
+    // A cell with text reported soon after the first letter, before that letter shows, is still a click.
+    void testCellWithTextBeforeFirstLetterShows() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true, "google-chrome"));
+        FakeHost*           host  = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        host->setSurrounding("là", 2);
+        state.surroundingUpdated();
+        press(state, ngosen::key::Down);
+        loop.pump(60);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(80);
+        host->setSurrounding("other", 0);
+        state.surroundingUpdated();
+        loop.pump(50);
+        press(state, static_cast<uint32_t>('d'));
+        loop.pump(200);
+        check(host->commits().empty(), "cell with text before the first letter shows: still a click", join(host->commits()));
     }
 
     // After a cell move a sheet can report the new cell empty only after the first letter typed there,
@@ -4078,6 +4472,35 @@ namespace {
         check(has(joined, "\tjoin\t\n") && !has(joined, "\thold\t"), "recorder: notes a joined edit", joined);
     }
 
+    // A link already in the field reads like an address but is not one being filled in.
+    void testFirefoxLinkAfterCursorIsNoAutofill() {
+        realMode                = ngosen::Mode::Sen;
+        const std::string link  = "[typing.log](https://github.com/user-attachments/files/1/typing.log)";
+        const Field       field = makeField("wayland", true, "firefox");
+        for (const auto& [typed, want] : std::vector<std::pair<std::string, std::string>>{{"Gox", "Gõ"}, {"tieesng", "tiếng"}}) {
+            const std::string text = ngosen::test::typeInApp(field, {.textAfterCursor = link}, keysOf(typed), std::vector<int>(typed.size(), 100));
+            check(text == want + link, "Firefox: a link after the cursor keeps the letter before the edit", text);
+        }
+
+        // A click ends the word left open elsewhere; the next word starts at the click.
+        FakeResources       resources;
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.textAfterCursor = link});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        app->type('a');
+        loop.pump(100);
+        app->moveCursor(0);
+        g_mouse_clicked.store(true);
+        loop.pump(100);
+        for (const char c : std::string("Gox")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(100);
+        }
+        check(app->text() == "Gõa" + link, "Firefox: a word typed after a click keeps its letters before a link", app->text());
+    }
+
     // Firefox's address bar drops its autocompletion only for a commit in the deletion's own turn.
     void testAutofillTailCommitsWithDeletion() {
         TailRun url("tieng.lan:8765/", 3);
@@ -4582,13 +5005,25 @@ namespace {
         field.keyEventOrderFix = true;
         const auto keys        = keysOf("tienf nguyenx luanj ");
         const auto run = ngosen::test::typeInAppTraced(resources, field, {.backspaceLagMs = 60, .dropsSurroundingOnDelete = true}, keys, std::vector<int>(keys.size(), 120));
-        check(run.text == "tiền nguyễn luận ", "dbus: a field that stopped declaring its text still deletes through it", run.text);
-        check(run.sent.forwardedBackSpaces == 0, "dbus: no backspace for a field that stopped declaring its text", std::to_string(run.sent.forwardedBackSpaces));
-        check(has(resources.recorder().dump(), "\tpath\tsurrounding: the field stopped declaring"), "recorder: notes the path of an undeclared field", resources.recorder().dump());
+        check(run.text == "tiền nguyễn luận ", "dbus: a backspace for a field that stopped declaring its text lands before the commit", run.text);
         // The key after the deletion arrives while the field declares no text, which is not a field that lost the word.
         const auto ngKeys = keysOf("cuxg nhuwg ");
         const auto ng     = ngosen::test::typeInAppTraced(resources, field, {.dropsSurroundingOnDelete = true}, ngKeys, std::vector<int>(ngKeys.size(), 120));
         check(ng.text == "cũng nhưng ", "dbus: a key while the field declares no text stays in the word", ng.text);
+        // The Firefox Flatpak on GNOME Wayland takes the deletion in that state but drops the commit (#951).
+        const auto duocKeys = keysOf("dduowjc ");
+        const auto duoc =
+            ngosen::test::typeInAppTraced(resources, field, {.dropsSurroundingOnDelete = true, .dropsUndeclaredCommits = true}, duocKeys, std::vector<int>(duocKeys.size(), 100));
+        check(duoc.text == "được ", "dbus: a tone mark while the field declares no text is not lost", duoc.text);
+        // Keys typed while the commit waits for the field to declare its text keep their order, a Backspace too.
+        std::vector<std::string> heldLines;
+        std::vector<int>         heldGaps(8, 120);
+        heldGaps[5] = 20;
+        heldGaps[6] = 10;
+        heldGaps[7] = 400;
+        const std::string held =
+            typedWithBackspaces(field, {.backspaceLagMs = 60, .dropsSurroundingOnDelete = true, .dropsUndeclaredCommits = true}, "dduowjc<", heldGaps, heldLines);
+        check(held == "đượ", "dbus: a Backspace typed while the commit waits comes after it", held);
         // Over IBus the check of our edit stays open for a second, long enough for a click into another cell.
         for (const char* frontend : {"dbus", "ibus"}) {
             realMode                   = ngosen::Mode::Sen;
@@ -4705,29 +5140,6 @@ namespace {
         const auto silentRun = ngosen::test::typeInAppTraced(silentResources, makeField("fcitx4", true, "firefox"),
                                                              {.lagMs = 250, .deletionsSkipLag = true, .silentFromFirstDeletion = true}, silentKeys, silentGaps);
         check(silentRun.text == "a tiếng việt ", "fcitx4: waits that run out do not let a deletion overtake the commit before it", silentRun.text);
-    }
-
-    // A quick focus change can land in another widget of the same context that never had surrounding text.
-    void testUndeclaredFieldAfterFocusChange() {
-        realMode = ngosen::Mode::Sen;
-        realtextLen.store(0);
-        FakeLoop      loop;
-        FakeResources resources;
-        Field         field       = makeField("dbus", true, "firefox");
-        field.keyEventOrderFix    = true;
-        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{.dropsSurroundingOnDelete = true});
-        auto*               app   = owned.get();
-        ngosen::TypingState state(&resources, std::move(owned));
-        app->attach(&state);
-        for (const uint32_t key : keysOf("tienf")) {
-            app->type(key);
-            loop.pump(120);
-        }
-        app->leaveFocus(10);
-        loop.pump(120);
-        app->type(' ');
-        loop.pump(400);
-        check(app->sent().forwardedBackSpaces > 0, "dbus: a focus change ends deleting through undeclared text", std::to_string(app->sent().forwardedBackSpaces));
     }
 
     // Firefox on Hyprland answers after the next key when typing fast, and a report held up past the check
@@ -5924,6 +6336,8 @@ int main() {
     testKeyDuringReplacement();
     testCommitAfterTheReport();
     testCommitAfterFieldRefocus();
+    testEmptiedCellDeletesThroughSurrounding();
+    testDecomposedToneInAnyApp();
     testKeyTypedBeforeCommitArrived();
     testGnomeKeyDuringTimedWaitJoinsCommit();
     testEnterDuringTimedWaitFollowsCommit();
@@ -5935,10 +6349,16 @@ int main() {
     testLateBackspaceAfterBounce();
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();
+    testStrayKeyDuringBounce();
+    testKeyNeverShown();
+    testFirstWordEmptiesBouncingField();
+    testTypeOverSelectionInSteps();
     testQuickSwitchesNoRedrawWait();
     testCellMovesNoRedrawWait();
     testLateEmptyCellAfterFirstLetter();
     testLateEmptyFieldStillClick();
+    testCellWithTextBeforeFirstLetterShows();
+    testQuickSwitchToBlankField();
     testCellOpenedByFirstKey();
     testFirstKeyBeforeFocusMidText();
     testFirstKeyTypedWhileAway();
@@ -5964,7 +6384,6 @@ int main() {
     testFieldDroppingSurroundingAfterDelete();
     testSnapFirefoxReportingLate();
     testFirefoxResetAfterSpaceFix();
-    testUndeclaredFieldAfterFocusChange();
     testLateCopiesRecoverOnWlroots();
     testLockWordNotOnChord();
     testMacroCapitalized();
@@ -6029,6 +6448,7 @@ int main() {
     testCursorPastOnBusyPage();
     testSplitWaitFollowsEchoes();
     testAutofillTailCommitsWithDeletion();
+    testFirefoxLinkAfterCursorIsNoAutofill();
     testRecorderNotesHowEditsWent();
     testSelectedTailGoesFirst();
     testReportRequestIsNotInput();

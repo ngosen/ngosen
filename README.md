@@ -90,7 +90,7 @@ Hoàn tác.
   ra `nhưng`; bấm Backspace ngay sau đó thì trả lại đúng chữ đã gõ.
 - **Gợi ý emoji khi gõ:** tắt sẵn; bật cho từng app bằng **Gợi ý emoji (w)** trong menu `` ` ``. Khi bật, gõ xong
   `cười`, `con mèo` hay `haha` là hiện `Tab: 😂 …` cạnh con trỏ; Tab để đánh số rồi chọn bằng số, Esc giữ
-  nguyên chữ.
+  nguyên chữ. Để yên 4 giây thì danh sách tự ẩn.
 - **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey và bật sẵn tiếng Việt;
   người dùng cũ giữ phím chuyển và trạng thái đang dùng. Mặc định, phím chuyển đổi mọi app cùng lúc.
   Muốn mỗi app nhớ riêng như trước, chọn “Từng app” ở “Phím chuyển áp dụng cho” trên trang Phím tắt.
@@ -424,7 +424,8 @@ Báo ở [Issues](https://github.com/ngosen/ngosen/issues). Không có tài kho�
 
 Nhờ AI tìm lỗi thì gửi nó câu này kèm mô tả lỗi: “Đọc https://github.com/ngosen/ngosen/blob/main/docs/ai-help.md
 rồi giúp tôi sửa lỗi gõ Ngó Sen”. Trang đó dặn AI chỉ chẩn đoán, để bạn tự bấm nút sửa, và nhắc bạn đọc kỹ thông
-tin trước khi dán cho AI.
+tin trước khi dán cho AI. Muốn hỏi AI cách dùng Ngó Sen, chẳng hạn menu phím `` ` ``, hãy đưa nó link
+https://github.com/ngosen/ngosen/blob/main/docs/ai-guide.md.
 
 <a id="go-cai-dat"></a>
 

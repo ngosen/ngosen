@@ -27,6 +27,8 @@ namespace ngosen {
         // The field shows the hint only once typing stops, as a hint that changes under typed keys
         // can reach the app after them.
         constexpr uint64_t PauseUs = 700000;
+        // A list nobody uses goes away instead of covering the text.
+        constexpr uint64_t IdleHideUs = 4000000;
         // Emoji per keyword when a sentence has more than one, and in all, as digits pick them.
         constexpr size_t PerKeyword = 3;
         constexpr size_t MaxOffered = 9;
@@ -257,15 +259,6 @@ namespace ngosen {
         });
     }
 
-    // Where the input method gives a digit a role, as VNI does, Tab comes first.
-    bool TypingState::digitsPickEmoji() {
-        for (uint32_t digit = ngosen::key::Digit1; digit < ngosen::key::Digit1 + MaxOffered; ++digit) {
-            if (EngineComposesWith(bambooEngine_.handle(), digit) != 0U)
-                return false;
-        }
-        return true;
-    }
-
     bool TypingState::offersForSentence() const {
         return engine_->options().emojiAtSentenceEnd || hintsInField(host_->field());
     }
@@ -298,7 +291,7 @@ namespace ngosen {
         if (ended)
             words.back().erase(words.back().find_last_not_of(".!?") + 1);
         const bool                            inField = hintsInField(host_->field());
-        EmojiOffer                            offer{.preview = preview, .digits = !preview && !inField && digitsPickEmoji(), .inField = inField, .afterSpace = afterSpace};
+        EmojiOffer                            offer{.preview = preview, .inField = inField, .afterSpace = afterSpace};
         std::vector<std::vector<std::string>> earlier;
         for (size_t n = words.size(); n > 0; --n) {
             const std::vector<std::string> head(words.begin(), words.begin() + static_cast<std::ptrdiff_t>(n));
@@ -358,6 +351,7 @@ namespace ngosen {
                     i == emojiOffer_->chosen  ? " [" + std::to_string(i + 1) + "." + all[i] + "]" :
                                                 " " + std::to_string(i + 1) + "." + all[i];
             host_->showHint(emojiOffer_->afterSpace ? hint.substr(1) : hint);
+            hideEmojiWhenIdle();
             return;
         }
         if (emojiOffer_->preview) {
@@ -370,17 +364,6 @@ namespace ngosen {
                 [](size_t) {
                     g_mouse_clicked.store(false, std::memory_order_release);
                     needEngineReset.store(false, std::memory_order_release);
-                },
-                ngosen::CandidateLayout::Row);
-        } else if (emojiOffer_->digits && !emojiOffer_->picking) {
-            std::vector<std::string> labels;
-            for (size_t i = 0; i < emoji.size(); ++i)
-                labels.push_back(std::to_string(i + 1) + "." + emoji[i]);
-            host_->showCandidates(
-                labels, static_cast<int>(labels.size()),
-                [this](size_t index) {
-                    if (emojiOffer_ && !replacementPending() && index < offeredEmoji().size())
-                        insertEmoji(index);
                 },
                 ngosen::CandidateLayout::Row);
         } else if (!emojiOffer_->picking) {
@@ -410,6 +393,18 @@ namespace ngosen {
             host_->setStatus(numbers + ": " + host_->translate("pick, or arrows then Enter, Esc: keep the word"));
         }
         host_->refreshPanel();
+        hideEmojiWhenIdle();
+    }
+
+    void TypingState::hideEmojiWhenIdle() {
+        emojiIdle_ = host_->startTimer(ngosen::monotonicUs() + IdleHideUs, RecheckUs, [this](ngosen::Timer& timer) {
+            if (replacementPending()) {
+                timer.rearm(ngosen::monotonicUs() + RecheckUs);
+                return true;
+            }
+            dropHintBeforeKey();
+            return false;
+        });
     }
 
     void TypingState::dropEmojiOffer() {
@@ -466,11 +461,7 @@ namespace ngosen {
         if (emojiOffer_->preview)
             return false;
         const size_t count = offeredEmoji().size();
-        if (emojiOffer_->digits && !emojiOffer_->picking && plain && sym >= ngosen::key::Digit1 && sym < ngosen::key::Digit1 + count) {
-            takeEmojiKey(keyEvent);
-            insertEmoji(sym - ngosen::key::Digit1);
-            return true;
-        }
+        // Digits pick only after Tab, so a number typed after a word stays a number.
         if (!emojiOffer_->picking) {
             if (sym != ngosen::key::Tab || !plain) {
                 dropHintBeforeKey();

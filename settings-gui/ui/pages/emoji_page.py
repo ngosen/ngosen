@@ -543,7 +543,9 @@ class EmojiPage(DynamicSettingsPage):
         self._word_steps = _steps(
             [_pill("cười"), _pill("Tab: 😂 …"), _keys_pill("Tab"), _pill("cười 🤣")]
         )
-        self._sentence_steps = _steps([_pill("cười."), _keys_pill(), _pill("cười. 🤣")])
+        self._sentence_steps = _steps(
+            [_pill("cười."), _pill("Tab: 😂 …"), _keys_pill("Tab"), _pill("cười. 🤣")]
+        )
         layout.addWidget(self._word_steps)
         layout.addWidget(self._sentence_steps)
         return example

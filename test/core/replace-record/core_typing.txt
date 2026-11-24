@@ -119,6 +119,38 @@ Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
+Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
+Replace: method=forwarded backspaces wait=none ended=key arrived after 40 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 40 ms
 Replace: method=forwarded backspaces wait=none ended=key arrived after 40 ms
 Replace: method=forwarded backspaces wait=none ended=key arrived after 40 ms
@@ -169,6 +201,61 @@ Replace: method=forwarded backspaces wait=none ended=event after 28 ms
 Replace: method=forwarded backspaces wait=none ended=event after 28 ms
 Replace: method=forwarded backspaces wait=none ended=event after 28 ms
 Replace: method=forwarded backspaces wait=none ended=event after 28 ms
+Replace: method=forwarded backspaces wait=none ended=event after 28 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 28 ms
+Replace: method=forwarded backspaces wait=none ended=event after 56 ms
+Replace: method=forwarded backspaces wait=none ended=event after 84 ms
+Replace: method=forwarded backspaces wait=none ended=event after 84 ms
+Replace: method=forwarded backspaces wait=none ended=event after 84 ms
+Replace: method=forwarded backspaces wait=none ended=event after 84 ms
+Replace: method=forwarded backspaces wait=none ended=event after 2 ms
+Replace: method=forwarded backspaces wait=none ended=event after 56 ms
+Replace: method=forwarded backspaces wait=none ended=event after 56 ms
+Replace: method=forwarded backspaces wait=none ended=event after 61 ms
+Replace: method=forwarded backspaces wait=none ended=event after 33 ms
+Replace: method=forwarded backspaces wait=none ended=key arrived after 116 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 61 ms
+Replace: method=forwarded backspaces wait=none ended=timeout after 150 ms
+Replace: method=forwarded backspaces wait=none ended=timeout after 150 ms
+Replace: method=forwarded backspaces wait=none ended=event after 104 ms
+Replace: method=forwarded backspaces wait=none ended=event after 132 ms
+Replace: method=forwarded backspaces wait=none ended=event after 28 ms
+Replace: method=forwarded backspaces wait=none ended=event after 84 ms
+Replace: method=forwarded backspaces wait=none ended=event after 28 ms
+Replace: method=forwarded backspaces wait=none ended=event after 2 ms
+Replace: method=forwarded backspaces wait=none ended=event after 33 ms
+Replace: method=forwarded backspaces wait=none ended=event after 2 ms
+Replace: method=forwarded backspaces wait=none ended=event after 2 ms
+Replace: method=forwarded backspaces wait=none ended=event after 2 ms
+Replace: method=forwarded backspaces wait=none ended=event after 33 ms
+Replace: method=forwarded backspaces wait=none ended=event after 68 ms
+Replace: method=forwarded backspaces wait=none ended=event after 68 ms
+Replace: method=forwarded backspaces wait=none ended=timeout after 50 ms
+Replace: method=forwarded backspaces wait=none ended=event after 102 ms
+Replace: method=forwarded backspaces wait=none ended=threshold after 16 ms
+Replace: method=forwarded backspaces wait=none ended=threshold after 16 ms
+Replace: method=forwarded backspaces wait=none ended=threshold after 16 ms
+Replace: method=forwarded backspaces wait=none ended=key arrived after 116 ms
+Replace: method=forwarded backspaces wait=none ended=key arrived after 88 ms
+Replace: method=forwarded backspaces wait=none ended=key arrived after 88 ms
+Replace: method=forwarded backspaces wait=none ended=key arrived after 116 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 116 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 88 ms
+Replace: method=forwarded backspaces wait=none ended=event after 60 ms
+Replace: method=forwarded backspaces wait=none ended=event after 60 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=timer after 15 ms
@@ -443,15 +530,21 @@ Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=forwarded backspaces wait=none ended=timeout after 300 ms
 Replace: method=forwarded backspaces wait=none ended=timeout after 300 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
-Replace: method=surrounding wait=key report ended=committed after 20 ms
+Replace: method=forwarded backspaces wait=key report ended=timer after 81 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
-Replace: method=surrounding wait=key report ended=committed after 20 ms
+Replace: method=forwarded backspaces wait=key report ended=timer after 81 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
-Replace: method=surrounding wait=key report ended=committed after 20 ms
+Replace: method=forwarded backspaces wait=key report ended=timer after 81 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
-Replace: method=surrounding wait=none ended=committed after 0 ms
-Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=key report ended=timer after 81 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
@@ -491,8 +584,6 @@ Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
-Replace: method=surrounding wait=none ended=committed after 0 ms
-Replace: method=forwarded backspaces wait=key report ended=timer after 35 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=copy ended=committed after 100 ms
@@ -837,6 +928,11 @@ Replace: method=surrounding wait=none ended=committed after 8 ms
 Replace: method=surrounding wait=none ended=committed after 8 ms
 Replace: method=surrounding wait=none ended=committed after 8 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
+Replace: method=forwarded backspaces wait=none ended=event after 0 ms
 Replace: method=surrounding wait=none ended=committed after 30 ms
 Replace: method=surrounding wait=none ended=committed after 0 ms
 Replace: method=surrounding wait=none ended=committed after 60 ms

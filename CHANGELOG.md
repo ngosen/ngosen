@@ -10,23 +10,60 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.14.1-1] — 24/11/2026
+
+Trên voz.vn với Brave, KDE Wayland, gõ nhanh và sửa dấu không còn làm chữ chen giữa từ, mất chữ hoặc xoá lố; gõ đè chữ bôi đen không còn ra phím thô, và phím gõ lúc ô vừa xoá trống không còn chạy lên trước (#964, #967, #971, #972, #977). Firefox không còn mất chữ khi gõ ngay trước một link; bản Flatpak trên GNOME Wayland không còn mất dấu thanh khi gõ nhanh sau một lần sửa (#970, #975). Với bảng mã Unicode tổ hợp, terminal bash/fish không còn mất chữ trước dấu thanh như "nhiều" thành "nhều" (#952). Telex gõ "booots" ra đúng "boots"; gõ kéo dài nay chỉ giữ dấu ở chữ đầu, như "afaaa" ra "àaaa" thay vì "àààà", giống UniKey (#976, #852, #980). Emoji nay tắt sẵn ở mọi app, bật từng app bằng `` ` `` rồi `w`; cửa sổ cài đặt có danh sách "App đã bật emoji" (#969). Danh sách emoji tự ẩn sau 4 giây để yên, và số gõ khi danh sách vừa hiện được nhập như thường, phải bấm Tab trước mới chọn bằng số (#973, #968). "Lưu nhật ký gõ" nay giữ khoảng nửa phút gõ gần nhất trong trình duyệt thay vì 7 giây, giúp giữ đủ log khi báo lỗi (#953). Có thêm trang hướng dẫn để hỏi AI cách dùng Ngó Sen, từ menu phím `` ` `` đến các tính năng và cài đặt (#983).
+Tải ở [ngosen-1.14.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.1-1).
+
 ### Thêm
 
 - Gõ Sen: khi sửa từ bằng Backspace, kiểm tra app đã hiện từ mới chưa và ghi vào log (Lưu nhật ký gõ),
   giúp báo lỗi chỉ ra chỗ mất chữ; không đổi cách gõ (#962).
+- Thêm trang hướng dẫn để hỏi AI cách dùng Ngó Sen, từ menu phím `` ` `` đến các tính năng và cài đặt;
+  trang tìm lỗi gõ cũng dặn AI không đọc mã nguồn để tìm cách sửa và có link sang hướng dẫn mới (#983).
 
 ### Thay đổi
 
 - Gợi ý emoji nay tắt sẵn ở mọi app; bấm `` ` `` rồi `w` để bật cho từng app muốn dùng, như Teencode. Danh
   sách app đã tắt emoji trước đây không còn dùng; trong cửa sổ cài đặt, mục Emoji nay liệt kê "App đã bật
-  emoji" (#961).
+  emoji" (#969).
+- Danh sách gợi ý emoji tự ẩn khi để yên 4 giây không bấm phím nào (#973).
+- Gõ kéo dài chữ nay chỉ giữ dấu ở chữ đầu, các chữ lặp sau để trơn cho dễ đọc: `afaaa` ra `àaaa` thay vì
+  `àààà`, như UniKey (#852, #980).
 
 ### Sửa
 
+- Telex: phím dấu gõ ngay sau một phím lặp để bỏ dấu không còn làm hiện lại chữ đã bỏ ("booots" ra "boots" thay
+  vì "booots", "roooms" ra "rooms") (#976).
 - "Lưu nhật ký gõ" nay giữ khoảng nửa phút gõ gần nhất trong trình duyệt thay vì 7 giây, để lỗi vẫn còn trong
-  nhật ký gõ khi lưu ngay sau đó.
+  nhật ký gõ khi lưu ngay sau đó (#953).
 - Gõ Sen: chữ đầu tiên có gợi ý emoji sau khi bật máy không còn sai trong terminal VS Code chạy X11 ("chào" ra
   "chaà"); bảng xem trước emoji nay hiện sau khi chữ đã vào app (#960).
+- Gõ Sen trên voz.vn (Brave, KDE Wayland): chữ gõ nhanh ngay sau phím dấu không còn chen vào giữa từ ("ngyà" ra
+  "ngày", "ngfươi" ra "người") (#964).
+- Gõ Sen trên voz.vn (Brave, KDE Wayland): gõ đè lên chữ đang bôi đen (Ctrl+A rồi gõ) không còn ra phím thô
+  ("nguowfi" ra "người") (#967).
+- Gõ Sen trên voz.vn (Brave, KDE Wayland): từ đầu bài mà sửa dấu phải xoá hết chữ trong ô không còn mất chữ
+  ("đồng" ra "òng") (#971).
+- Gõ Sen trên voz.vn (Brave, KDE Wayland): phím bấm đúng lúc ô vừa bị xoá trống không còn chạy lên trước chữ
+  ("đồng" ra "ođòng") (#972).
+- Gõ Sen trên voz.vn (Brave, KDE Wayland): khi trang làm rơi một chữ gõ lúc phím trước chưa nhả, lần sửa dấu
+  sau không còn xoá lố thêm một chữ ("đi đâu" ra "đi âu", "học" ra "ọc") (#977).
+- Gõ Sen trong Antigravity khi máy bận (màn hình 4K, CPU nặng): từ đang gõ không còn bị bắt đầu lại giữa chừng
+  ("tiếng" ra "tieengs") (#974).
+- Gõ Sen trong Gnumeric (KDE Wayland): bỏ dấu cho chữ đầu tiên của ô không còn sai ("oo" ra "oô" hoặc "o",
+  "ee" ra "eê") và ít phải chờ hơn (#978).
+- Gõ Sen với bảng mã "Unicode tổ hợp": gõ trong terminal chạy bash hay fish không còn mất chữ trước dấu thanh
+  ("nhiều" ra "nhều"). Trong terminal, từ đang gõ hiện ở dạng dựng sẵn, gõ xong từ mới đổi sang dạng tổ hợp;
+  trình soạn thảo vẫn giữ dạng tổ hợp như trước (#952).
+- Gợi ý emoji: số gõ ngay sau khi danh sách emoji hiện ra nay được gõ ra như thường; bấm Tab trước rồi mới chọn
+  emoji bằng số, như sau một từ (#968).
+- Bấm Ctrl+Shift chậm vẫn đổi được Anh/Việt: giữ tới một giây vẫn tính. Trước đây trên fcitx5 bản mới, nhả
+  phím sau quá 1/4 giây là Ctrl+Shift không có tác dụng (#966).
+- Gõ Sen trong Firefox: gõ ngay trước một đường link (như link file đính kèm khi sửa comment trên GitHub) không
+  còn mất chữ trước dấu ("Gõ" ra "õ", "tiếng" ra "tếng") (#970).
+- Gõ Sen trong Firefox Flatpak trên GNOME Wayland: gõ nhanh không còn mất dấu thanh ngay sau một lần sửa chữ
+  ("được" ra "đưc") (#975).
 
 ### Test
 

@@ -160,7 +160,7 @@ namespace ngosen::test {
                 lastBackSpaceAt_ = time;
                 later(quirks_.lagMs, [this] {
                     noteTypedKey();
-                    eraseBefore(1);
+                    eraseBefore(backspaceSpan());
                 });
             } else if ((state & modifier::Ctrl) != 0U || keyText(sym).empty() || sym == key::Delete || sym == key::Escape) {
                 later(quirks_.lagMs, [this, sym, state] { applyFieldKey(sym, state); });
@@ -169,6 +169,21 @@ namespace ngosen::test {
                     if (std::exchange(cellOpensOnKey_, false)) {
                         text_.clear();
                         cursor_ = anchor_ = 0;
+                    }
+                    if (quirks_.redrawsSelectionInSteps && anchor_ != cursor_) {
+                        typeOverSelection(utf8::decode(text));
+                        return;
+                    }
+                    if (++typedTexts_ == quirks_.dropsTypedTextNumber) {
+                        changed();
+                        later(110, [this] { changed(); });
+                        return;
+                    }
+                    if (typedTexts_ == quirks_.stallsTypedTextNumber) {
+                        oldText_        = text_;
+                        oldCursor_      = cursor_;
+                        oldTextUntilUs_ = monotonicUs() + 150000;
+                        later(50, [this] { changed(); });
                     }
                     insert(utf8::decode(text), true);
                 });
@@ -281,6 +296,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::commitText(const std::string& text) {
+        if (quirks_.dropsUndeclaredCommits && surroundingDropped_ && !text.empty() && !std::exchange(commitOfDeletion_, false))
+            return;
         if (!hint_.empty() && !text.empty())
             ++editsUnderHint_;
         if (forwardedAt_ > 0) {
@@ -309,6 +326,8 @@ namespace ngosen::test {
                 });
             return;
         }
+        if (++commits_ == quirks_.dropsCommitNumber)
+            return;
         // Focus and redraws are checked again when the app gets to the commit, which can be after a
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
@@ -334,6 +353,10 @@ namespace ngosen::test {
             }
             later(35, [this, back] { reportMovedCursor(text_, back); });
             later(47, [this, text] { applyHeldEdit(text); });
+            return;
+        }
+        if (quirks_.losesCommitAmidBackspaces && queuedKeys_ > 0) {
+            heldCommit_ += utf8::decode(text);
             return;
         }
         bounceAfterEdit();
@@ -408,17 +431,30 @@ namespace ngosen::test {
         if (forwardedAt_ == 0)
             forwardedAt_ = monotonicUs();
         bounceAfterEdit();
+        bounceEmptyAfterEdit();
         if (quirks_.keyStepMs > 0) {
+            ++backspaceBurst_;
             later(quirks_.keyStepMs * ++queuedKeys_, [this] {
                 --queuedKeys_;
-                eraseBefore(1);
+                eraseBefore(backspaceSpan());
+                if (queuedKeys_ > 0)
+                    return;
+                const bool lost = backspaceBurst_ >= 2;
+                backspaceBurst_ = 0;
+                if (heldCommit_.empty())
+                    return;
+                const std::u32string held = std::move(heldCommit_);
+                heldCommit_.clear();
+                if (!lost)
+                    insert(held);
             });
         } else if (quirks_.handsBackKeys)
             later(quirks_.lagMs, [this] { type(key::BackSpace); });
         else
             later((quirks_.backspacesSkipLag ? 0 : quirks_.lagMs) + quirks_.backspaceLagMs, [this] {
                 noteTypedKey();
-                eraseBefore(1);
+                surroundingDropped_ = false;
+                eraseBefore(backspaceSpan());
             });
     }
 
@@ -433,7 +469,7 @@ namespace ngosen::test {
                 FakeKey down(key::BackSpace, false, i == 0 ? 0 : modifier::Repeat, time);
                 state_->keyEvent(down);
                 if (!down.accepted())
-                    eraseBefore(1);
+                    eraseBefore(backspaceSpan());
                 FakeKey up(key::BackSpace, true, 0, time);
                 state_->keyEvent(up);
             }
@@ -446,6 +482,7 @@ namespace ngosen::test {
             ++editsUnderHint_;
         ++sent_.surroundingDeletes;
         ++deletions_;
+        commitOfDeletion_   = !surroundingDropped_;
         surroundingDropped_ = quirks_.dropsSurroundingOnDelete;
         if (quirks_.oldTextAfterDeleteMs > 0) {
             oldText_        = text_;
@@ -519,6 +556,8 @@ namespace ngosen::test {
         if (leaveIfEmptied())
             return;
         changed();
+        landStrayLetter();
+        bounceEmptyAfterEdit();
         redrawAfterEdit();
     }
 
@@ -661,6 +700,55 @@ namespace ngosen::test {
         state_->keyEvent(up);
     }
 
+    void FakeApp::typeAfterEdit(const std::string& letter, int nth, int delayMs) {
+        strayLetter_      = letter;
+        editsBeforeStray_ = nth;
+        strayDelayMs_     = delayMs;
+    }
+
+    void FakeApp::landStrayLetter() {
+        if (strayLetter_.empty() || --editsBeforeStray_ > 0)
+            return;
+        later(strayDelayMs_, [this, letter = utf8::decode(std::exchange(strayLetter_, std::string()))] {
+            text_.insert(cursor_, letter);
+            cursor_ = anchor_ = cursor_ + letter.size();
+            changed();
+        });
+    }
+
+    void FakeApp::typeOverSelection(const std::u32string& letter) {
+        const std::u32string rest = text_.substr(std::max(anchor_, cursor_));
+        // Each step follows a focus bounce.
+        const auto refocus = [this] {
+            focused_ = false;
+            state_->deactivate(true);
+            focused_ = true;
+            state_->activate(Mode::Sen, true);
+        };
+        later(20, [this, refocus] {
+            refocus();
+            text_.clear();
+            cursor_ = anchor_ = 0;
+            changed();
+        });
+        later(33, [this, refocus] {
+            refocus();
+            text_ = U"\n";
+            changed();
+        });
+        later(50, [this, letter, rest] {
+            noteTypedKey();
+            text_   = letter + rest;
+            cursor_ = anchor_ = letter.size();
+            changed();
+        });
+    }
+
+    void FakeApp::releaseKey(uint32_t sym) {
+        FakeKey up(sym, true, 0, static_cast<uint32_t>(monotonicUs() / 1000));
+        state_->keyEvent(up);
+    }
+
     Surrounding FakeApp::surrounding() const {
         if (!field().surroundingText || quirks_.neverSendsText)
             return {};
@@ -752,6 +840,9 @@ namespace ngosen::test {
         }
         anchor_ = cursor_;
         changed();
+        if (!typed)
+            landStrayLetter();
+        bounceEmptyAfterEdit();
         if (!quirks_.redrawsOnlyOnDeletion)
             redrawAfterEdit();
         if (quirks_.emptiesAfterEditMs > 0)
@@ -783,6 +874,28 @@ namespace ngosen::test {
         });
     }
 
+    void FakeApp::bounceEmptyAfterEdit() {
+        // Edits that come together share one bounce, as in the app's own log; nested ones never happen there.
+        if (!quirks_.bouncesEmptyAfterEdit || emptyBouncePending_)
+            return;
+        emptyBouncePending_ = true;
+        later(1, [this] {
+            emptyBouncePending_ = false;
+            focused_            = false;
+            state_->deactivate(true);
+            later(1, [this] {
+                focused_ = true;
+                state_->activate(Mode::Sen, true);
+                reportsEmptyOnce_ = true;
+                changed();
+                later(1, [this] {
+                    reportsEmptyOnce_ = false;
+                    changed();
+                });
+            });
+        });
+    }
+
     void FakeApp::redrawAfterEdit() {
         if (quirks_.redrawAfterEditMs <= 0)
             return;
@@ -793,6 +906,15 @@ namespace ngosen::test {
             --redraws_;
             changed();
         });
+    }
+
+    size_t FakeApp::backspaceSpan() const {
+        if (!quirks_.erasesMarksWithLetter || anchor_ != cursor_)
+            return 1;
+        size_t marks = 0;
+        while (marks < cursor_ && text_[cursor_ - marks - 1] >= 0x0300 && text_[cursor_ - marks - 1] <= 0x036F)
+            ++marks;
+        return marks < cursor_ ? marks + 1 : std::max<size_t>(marks, 1);
     }
 
     void FakeApp::eraseBefore(size_t count) {
@@ -820,10 +942,16 @@ namespace ngosen::test {
         previousCursor_ = cursor_;
         text_.erase(cursor_ - count, count);
         cursor_ -= count;
+        if (quirks_.marksEmptiedLine && cursor_ == 0) {
+            text_.insert(0, 1, U'\u200b');
+            cursor_ = 1;
+        }
         anchor_ = cursor_;
         if (leaveIfEmptied())
             return;
         changed();
+        landStrayLetter();
+        bounceEmptyAfterEdit();
         redrawAfterEdit();
     }
 

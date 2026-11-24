@@ -93,6 +93,9 @@ namespace ngosen {
     // Wayland text input delivers a commit only to the field that has focus.
     bool dropsCommitsWithoutFocus(const Field& field);
 
+    // A field that keeps focus when a deletion empties it, so the commit after that deletion is safe.
+    bool keepsFocusWhenEmptied(const Field& field);
+
     // LibreOffice runs Backspace as an async shortcut, so committed text overtakes it.
     bool appliesBackspacesLate(const Field& field);
 
@@ -100,11 +103,6 @@ namespace ngosen {
     // Through GNOME's IBus bridge (#362), fcitx5-gtk and the fcitx4 GTK module in Firefox's snap (#770)
     // forwarded backspaces can land after the commit that follows them.
     bool deletesThroughSurroundingFirst(const Field& field);
-
-    // fcitx5-gtk stops declaring surrounding text while Firefox's selection is invalid after a deletion,
-    // though the next deletion still works; a forwarded backspace there waits behind GDK events and can
-    // land after the commit that follows it.
-    bool takesDeletionWhileUndeclared(const Field& field);
 
     // Firefox's GTK modules count a deletion on the page's own text, so a lagging copy cannot make it
     // wrong, while a backspace sent instead can land after the next commit (#770).

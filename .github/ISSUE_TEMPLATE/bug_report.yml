@@ -63,7 +63,7 @@ body:
       label: Nhật ký gõ
       description: |
         Đây là thông tin hữu ích nhất khi Ngó Sen gõ sai chữ. Gõ một câu test; ngay sau khi lỗi xảy ra, chọn "Lưu nhật ký gõ" trong menu Ngó Sen ở khay hệ thống.
-        File `~/.local/state/ngosen/typing-<date>-<time>.log` lưu vài trăm phím gần nhất, những gì Ngó Sen gửi cho app và app báo lại.
+        File `~/.local/state/ngosen/typing-<date>-<time>.log` lưu khoảng nửa phút gõ gần nhất, những gì Ngó Sen gửi cho app và app báo lại.
         File chứa nội dung vừa gõ (không ghi nội dung trong ô mật khẩu). Đọc file trước khi chia sẻ, rồi kéo file vào ô này.
 
   - type: textarea
@@ -77,7 +77,7 @@ body:
     id: version
     attributes:
       label: Version Ngó Sen
-      placeholder: 1.14.0-1
+      placeholder: 1.14.1-1
     validations:
       required: true
 

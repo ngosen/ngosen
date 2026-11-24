@@ -504,7 +504,7 @@ class EmojiPage(DynamicSettingsPage):
 
     def _remember_saved(self):
         self._saved_edits = dict(self.words.edits)
-        self._saved_apps = list(self.words.off_apps)
+        self._saved_apps = list(self.words.on_apps)
         # Defaults write the empty list even when it matches: the keyboard may have added apps.
         self._apps_reset = False
 
@@ -515,7 +515,7 @@ class EmojiPage(DynamicSettingsPage):
         self._example = self._how_it_works()
         self.form.addRow("", self._example)
         self.form.addRow(self._separator())
-        self.form.addRow(_("Apps without emoji") + ":", self._apps_section())
+        self.form.addRow(_("Apps with emoji") + ":", self._apps_section())
         self.form.addRow(self._separator())
         self.form.addRow(_("Emoji and their words") + ":", self._words_section())
         self._apply_locks()
@@ -543,7 +543,9 @@ class EmojiPage(DynamicSettingsPage):
         self._word_steps = _steps(
             [_pill("cười"), _pill("Tab: 😂 …"), _keys_pill("Tab"), _pill("cười 🤣")]
         )
-        self._sentence_steps = _steps([_pill("cười."), _keys_pill(), _pill("cười. 🤣")])
+        self._sentence_steps = _steps(
+            [_pill("cười."), _pill("Tab: 😂 …"), _keys_pill("Tab"), _pill("cười. 🤣")]
+        )
         layout.addWidget(self._word_steps)
         layout.addWidget(self._sentence_steps)
         return example
@@ -566,44 +568,44 @@ class EmojiPage(DynamicSettingsPage):
             widget = self._apps.rows.takeAt(0).widget()
             widget.hide()
             widget.deleteLater()
-        if not self.words.off_apps:
-            empty = QLabel(_("Not turned off in any app."))
+        if not self.words.on_apps:
+            empty = QLabel(_("Not on in any app."))
             empty.searchable = False
             empty.setContentsMargins(10, 8, 10, 8)
             mute(empty)
             self._apps.rows.addWidget(empty)
-        for app in self.words.off_apps:
+        for app in self.words.on_apps:
             row = Row()
             layout = QHBoxLayout(row)
             layout.setContentsMargins(10, 4, 6, 4)
             name = QLabel(app)
             name.searchable = False
             layout.addWidget(name, 1)
-            button = QPushButton(_("Turn back on"))
-            button.setAccessibleName(_("Turn emoji back on in {}").format(app))
-            button.clicked.connect(lambda _checked=False, a=app: self._enable_app(a))
+            button = QPushButton(_("Turn off"))
+            button.setAccessibleName(_("Turn emoji off in {}").format(app))
+            button.clicked.connect(lambda _checked=False, a=app: self._disable_app(a))
             layout.addWidget(button)
             self._apps.rows.addWidget(row)
 
-    def _enable_app(self, app):
-        undo = self.words.enable_app(app)
+    def _disable_app(self, app):
+        undo = self.words.disable_app(app)
         window = self.window()
         if undo is None:
             self._show_message(_("Could not save. Check that fcitx5 is running."), error=True)
             return
-        self._saved_apps = list(self.words.off_apps)
+        self._saved_apps = list(self.words.on_apps)
         self._show_apps()
 
         def take_back():
             done = undo()
             if done:
-                self._saved_apps = list(self.words.off_apps)
+                self._saved_apps = list(self.words.on_apps)
             self._show_apps()
             if hasattr(window, "update_reset_button_state"):
                 window.update_reset_button_state()
             return done
 
-        self._show_message(_("Emoji are back on in {}.").format(app), undo=take_back)
+        self._show_message(_("Emoji are off in {}.").format(app), undo=take_back)
         if hasattr(window, "update_reset_button_state"):
             window.update_reset_button_state()
 
@@ -783,7 +785,7 @@ class EmojiPage(DynamicSettingsPage):
             super().is_modified()
             or self.words.is_modified()
             or self._apps_reset
-            or self.words.off_apps != self._saved_apps
+            or self.words.on_apps != self._saved_apps
         )
 
     def is_modified_from_default(self):
@@ -797,9 +799,9 @@ class EmojiPage(DynamicSettingsPage):
             self.words.edits = dict(self._saved_edits)
             self._redraw_words()
             return False
-        apps_changed = self._apps_reset or self.words.off_apps != self._saved_apps
+        apps_changed = self._apps_reset or self.words.on_apps != self._saved_apps
         if apps_changed and not self.words.save_apps():
-            self.words.off_apps = list(self._saved_apps)
+            self.words.on_apps = list(self._saved_apps)
             self._show_apps()
             return False
         self._remember_saved()

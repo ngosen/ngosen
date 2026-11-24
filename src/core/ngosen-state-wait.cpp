@@ -44,6 +44,13 @@ namespace ngosen {
         if (!s.isValid() || (backspacesForUnseenWord_ && !unseenWordShown_)) {
             return false;
         }
+        // A field that refocuses after edits reports itself empty for a moment each time (voz.vn in
+        // Brave). With no prefix that empty report would pass the checks below.
+        if (fieldBounces_ > 0 && surr_wait_.leavesText && !showsText(s))
+            return false;
+        // Deleting before the cursor keeps what follows it, so a wholly empty report is that refocus too.
+        if (fieldBounces_ > 0 && surr_wait_.textAfterCursor && s.text().empty())
+            return false;
         const std::string& t = s.text();
         // A snapshot identical to the one taken when the backspaces were sent cannot mean "done" by
         // content alone: when the app lags by a couple of keys, the stale snapshot looks exactly like
@@ -168,6 +175,12 @@ namespace ngosen {
                          if (backspacesForUnseenWord_ && waited + 1000 < UnseenWordForwardWaitUs) {
                              NGOSEN_INFO("Copy has not shown the word, wait longer before the commit");
                              t.rearm(surr_wait_.startedAt + UnseenWordForwardWaitUs);
+                             return true;
+                         }
+                         // Behind IBus the lagging-report wait below already covers this.
+                         if (fieldBounces_ > 0 && !ngosen::surroundingTextLags(host_->field()) && waited + 1000 < BouncingFieldWaitUs && !deletionLooksDone()) {
+                             NGOSEN_INFO("Field refocuses after edits, wait longer before the commit");
+                             t.rearm(surr_wait_.startedAt + BouncingFieldWaitUs);
                              return true;
                          }
                          if (deferLaggingCommit("timeout"))
@@ -298,7 +311,26 @@ namespace ngosen {
         }
     }
 
+    // A field that shows letters within a few ms and, as Brave does at every key event, still reports the word
+    // without one twice after its release lost it; a single late report may only be held up.
+    void TypingState::notePassedLetterReport() {
+        constexpr uint64_t LetterShownUs = 40000;
+        constexpr uint64_t LetterLostUs  = 100000;
+        if (!passedLetter_ || passedLetter_->shown)
+            return;
+        const Surrounding s          = host_->surrounding();
+        const uint64_t    sincePress = monotonicUs() - passedLetter_->pressedUs;
+        if (s.isValid() && isEndsWith(oldPreBuffer_, passedLetter_->text) && isEndsWith(textBeforeCursor(s), oldPreBuffer_)) {
+            passedLetter_->shown = true;
+            letterShownFast_     = sincePress < LetterShownUs;
+        } else if (passedLetter_->released) {
+            ++passedLetter_->staleReports;
+            passedLetter_->lostLate = passedLetter_->staleReports >= 2 && sincePress >= LetterLostUs;
+        }
+    }
+
     void TypingState::surroundingUpdated() {
+        notePassedLetterReport();
         // A wait that starts while this report is handled sees only the next report.
         const bool        waiting    = surr_wait_.watching;
         const bool        overtyping = overtype_.watching;
@@ -341,6 +373,8 @@ namespace ngosen {
                 dropEmojiOffer();
         }
         checkSurroundingReport();
+        checkBackspaceReport();
+        noteStrayReport();
         surr_silent_        = false;
         surr_silent_streak_ = 0;
         if (!(host_->surrounding() == reportAtKey_))
@@ -625,23 +659,34 @@ namespace ngosen {
             ngosen::utf8::decode(s.text())[lastSurroundingCursor_] == passed_key_->sym &&
             ((s.anchor() == s.cursor() && sinceInputUs < SuggestionStepUs) || (s.anchor() == lastSurroundingAnchor_ && s.anchor() > s.cursor()));
         const bool settling = sinceInputUs < CaretSettleUs;
-        // Antigravity's editor on GNOME moves the caret one step back well after the key (#362).
-        const bool caretSettling = jumped && s.cursor() == s.anchor() && sinceInputUs < SuggestionStepUs && s.cursor() + 1 == lastSurroundingCursor_;
+        // Antigravity's editor moves the caret one step back after each change to the text (#362), and may
+        // repeat that until the next key. A busy app shows the letter itself late, so the step back can
+        // come well after the key but still right after the letter.
+        const uint64_t now = ngosen::monotonicUs();
+        if (hasLastSurrounding_ && !sameText) {
+            textShownAtUs_    = now;
+            caretSteppedBack_ = false;
+        }
+        const bool caretSettling = jumped && s.cursor() == s.anchor() && s.cursor() + 1 == lastSurroundingCursor_ &&
+            (sinceInputUs < SuggestionStepUs || now - textShownAtUs_ < SuggestionStepUs || caretSteppedBack_);
+        caretSteppedBack_ = caretSettling;
         // A spreadsheet reports a click on another cell only as that cell's text with the cursor at its start.
         const bool lostWord = lostWordAfterBounce(s, settling);
-        const bool newField = (hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() &&
-                               (unreportedCommitLength_ == 0 || textAfterCursorChanged(s)) && !reportTrailsFirstWord(s)) ||
-            lostWord;
+        // Calc reports the new cell empty just before the key we let through lands in it.
+        // Our unreported commits do not matter here: in the same cell the key would follow them.
+        // A sheet can report the new cell empty only after the first letter typed there, and before it shows.
+        const bool firstLetterPending = passed_key_ && sinceInputUs < SuggestionStepUs && oldPreBuffer_ == host_->keyText(passed_key_->sym);
+        // An editor replacing a selection can show an empty line after the empty field, before the letter (voz.vn).
+        const bool letterNotShown = firstLetterPending && cellStartedAtKey_ == keyCount_ && s.text().find_first_not_of('\n') == std::string::npos;
+        const bool newField       = (hasLastSurrounding_ && !sameText && s.cursor() == 0 && s.anchor() == 0 && !oldPreBuffer_.empty() && !letterNotShown &&
+                                     (unreportedCommitLength_ == 0 || textAfterCursorChanged(s)) && !reportTrailsFirstWord(s)) ||
+            (lostWord && !letterNotShown);
         // Firefox repeats the old state before the echo, so only a change ends the wait.
         const std::optional<size_t> deletedTo = !jumped && !sameText ? ownDeletionCursor(s) : std::nullopt;
         if (deletedTo)
             unreportedDeleteLength_ = 0;
         else if ((jumped && !echo) || !sameText)
             unreportedCommitLength_ = unreportedDeleteLength_ = 0;
-        // Calc reports the new cell empty just before the key we let through lands in it.
-        // Our unreported commits do not matter here: in the same cell the key would follow them.
-        // A sheet can report the new cell empty only after the first letter typed there, and before it shows.
-        const bool firstLetterPending = passed_key_ && sinceInputUs < SuggestionStepUs && oldPreBuffer_ == host_->keyText(passed_key_->sym);
         const bool keyStartedCell =
             passed_key_ && !sameText && s.text().empty() && !oldPreBuffer_.empty() && ((settling && ngosen::reportsFieldOnlyOnKey(host_->field())) || firstLetterPending);
         const auto keysInNewCell = hasLastSurrounding_ && !sameText ? keysTakenOverCell(s, textBeforeCursor) : std::nullopt;
@@ -709,6 +754,7 @@ namespace ngosen {
     void TypingState::startWordWithKey(const KeyEntry& key) {
         NGOSEN_INFO("Key went to another cell, starting a new word");
         clearAllBuffers();
+        cellStartedAtKey_ = keyCount_;
         if (EngineProcessKeyEvent(bambooEngine_.handle(), key.sym, key.state) == 0U)
             return;
         ngosen::UniqueCPtr<char> preeditC(EnginePullPreedit(bambooEngine_.handle()));
@@ -734,6 +780,8 @@ namespace ngosen {
             commitNotSeen_ = commitNotSeen_.size() + text.size() > 64 ? text : commitNotSeen_ + text;
         // mutter keeps one commit per turn, so a request's empty commit could replace this one.
         report_requests_left_ = 0;
+        noteBackspaceCommit(text);
+        noteStrayCommit(text);
         if (keepsOnlyCommits() && !text.empty()) {
             // The preedit starts the composition and the commit ends it, a turn later: WebKitGTK and GNOME
             // Shell take both together otherwise.

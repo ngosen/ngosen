@@ -44,12 +44,14 @@ namespace ngosen::test {
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
         bool erasesOnPreedit        = false; // erases a selection when a preedit shows, as GTK 4 does, not on the commit
         int  commitLagMs            = 0;     // applies commits this late but typed keys at once, as Firefox does over D-Bus
+        int  dropsCommitNumber      = 0;     // drops the nth non-empty commit, as voz.vn's editor in Brave drops one amid backspaces
         int  backspaceLagMs         = 0;     // applies forwarded backspaces this late but commits at once, as Antigravity's editor on GNOME sometimes does
         bool backspacesSkipLag      = false; // applies forwarded backspaces ahead of what lagMs holds back, as GNOME Shell's IBus bridge with forward-keys@ngosen.github.io does
         bool deletionsSkipLag       = false; // applies deletions through the text ahead of what lagMs holds back, as Firefox's snap does right after it opens
         bool hidesCursorMoves       = false; // reports no click and shows the cursor where the last edit left it, as GTK 3 on Plasma does
         bool dropsForwardedKeys     = false; // never gets keys the input method sends, as under GNOME Shell's IBus bridge
         bool erasesOnDel            = false; // erases the character before the cursor for each DEL committed, as a terminal does
+        bool erasesMarksWithLetter  = false; // a Backspace erases a letter together with the combining marks after it, as bash's readline and GTK 4 do
         bool reportsTextOnceFilled  = false; // reports surrounding text only once the field has text, as Qt over IBus does
         bool announcesSelection     = false; // makes a selection the X11 primary selection, as Chromium on X11 does
         bool ignoresSurroundingDel  = false; // takes no deletion through its surrounding text, as WPS over D-Bus does
@@ -79,10 +81,12 @@ namespace ngosen::test {
         int              emptyCommitsBeforeReport     = 0;     // empty commits it takes to end repeatsOldTextAfterDelete, as Firefox on GNOME
         std::vector<int> ignoresRequestsOnEdits;               // these deletions get no report for empty commits, as Firefox on GNOME now and then
         bool             reportsOnlyWhenAsked      = false;    // after a deletion, reports typed keys only for an empty commit, as Firefox on Plasma now and then
+        bool             redrawsSelectionInSteps   = false;    // replaces a selection in steps after bounces: empty, an empty line, the letter, as voz.vn's editor does
         bool             keepsLineBreakAfterCommit = false;    // keeps a line break after a commit with the cursor past it until a typed key, as Ace in Firefox does
         bool             reportsOnFocus            = false;    // reports its field, empty or not, when it gets focus, as Firefox over GTK does
         bool             deletesAtReportedCursor   = false;    // deletes at the cursor of its last report and leaves the cursor there, as Firefox over GTK does
         bool             dropsSurroundingOnDelete  = false;    // stops declaring surrounding after a deletion through it until a key or click, as Firefox over fcitx5-gtk does
+        bool             dropsUndeclaredCommits    = false;    // drops the commit after a deletion sent while it declares no surrounding, as Firefox's Flatpak on GNOME does
         int              reportsOnEdit             = 0;        // the nth deletion is reported anyway, as Qt now and then
         bool             showsEnter                = false;    // shows each Enter, typed or forwarded, as a line break, and Shift+Enter as U+2028
         bool             ctrlBackSpaceDeletesWord  = false;    // a BackSpace forwarded before the app saw Ctrl go up deletes the word, as in Chrome
@@ -112,6 +116,19 @@ namespace ngosen::test {
         // CKEditor in Firefox on Plasma does.
         bool        showsDeletionWithCursorPast = false;
         std::string textAfterCursor; // text the field starts with, after the cursor
+        // Leaves focus and comes back reporting an empty field for a moment after each forwarded Backspace
+        // and each edit, as the voz.vn composer does in Brave on Plasma Wayland.
+        bool bouncesEmptyAfterEdit = false;
+        // Applies a commit only after the forwarded Backspaces sent before it, and loses it when there were
+        // two or more, as the voz.vn composer does in Brave on Plasma Wayland. Needs keyStepMs.
+        bool losesCommitAmidBackspaces = false;
+        // Puts a U+200B in the field a deletion empties, as the voz.vn composer does.
+        bool marksEmptiedLine = false;
+        // Never shows the nth text key it gets, though it reports its text then and again a moment later,
+        // as voz.vn's editor in Brave did with a key pressed before the last one was up.
+        int dropsTypedTextNumber = 0;
+        // Shows the nth text key it gets but keeps reporting the text before it for a while.
+        int stallsTypedTextNumber = 0;
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -202,6 +219,11 @@ namespace ngosen::test {
         void pageTakesKey(uint32_t sym, const std::string& before, const std::string& after);
         // Like pageTakesKey, but the field reports the letter only with its next change, as AG Grid does.
         void pageTakesKeyUnreported(uint32_t sym, const std::string& letter);
+        // The page takes this letter right after it applies the nth of our edits from now, as voz.vn's
+        // editor in Brave does with a key pressed while it refocuses. The letter lands delayMs after that edit.
+        void typeAfterEdit(const std::string& letter, int nth, int delayMs = 2);
+        // Only the release of a key whose press the page took while the field was refocusing.
+        void releaseKey(uint32_t sym);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
         void suggest(const std::string& tail, bool selected);
         // How the typing logic asked the app to change its text so far.
@@ -218,9 +240,17 @@ namespace ngosen::test {
         const std::string& hint() const {
             return hint_;
         }
+        // The hint the input method last asked for, which a lagging app may not show yet.
+        const std::string& askedHint() const {
+            return askedHint_;
+        }
         // Commits, deletions and forwarded keys sent while the hint showed.
         int editsUnderHint() const {
             return editsUnderHint_;
+        }
+        // Candidate lists shown between a replacement's first forwarded backspace and its commit.
+        int panelsMidReplacement() const {
+            return panelsMidReplacement_;
         }
         // The longest time from forwarding a replacement's first backspace to its commit.
         int slowestCommitMs() const {
@@ -258,6 +288,7 @@ namespace ngosen::test {
         void showPreedit(const std::string& text, bool /*underline*/) override;
         void clearPreedit() override;
         void showHint(const std::string& text) override {
+            askedHint_ = text;
             if (hintLagMs_ > 0)
                 later(hintLagMs_, [this, text] { hint_ = text; });
             else
@@ -271,6 +302,8 @@ namespace ngosen::test {
         void refreshPanel() override {}
 
         void showCandidates(const std::vector<std::string>& labels, int /*pageSize*/, std::function<void(size_t)> onPick, CandidateLayout layout) override {
+            if (forwardedAt_ > 0)
+                ++panelsMidReplacement_;
             labels_      = labels;
             onPick_      = std::move(onPick);
             inRow_       = layout == CandidateLayout::Row;
@@ -331,6 +364,7 @@ namespace ngosen::test {
         void                                goSilentAfterDelete();
         bool                                eraseSelection();
         void                                eraseBefore(size_t count);
+        size_t                              backspaceSpan() const;
         void                                eraseAround(int offset, unsigned int size);
         bool                                leaveIfEmptied();
         size_t                              reportedBytesBefore(unsigned int size) const;
@@ -338,6 +372,7 @@ namespace ngosen::test {
         void                                changed();
         void                                bounceAfterEdit();
         void                                redrawAfterEdit();
+        void                                bounceEmptyAfterEdit();
         void                                later(int ms, std::function<void()> action);
         void                                startTurn();
         void                                endTurn();
@@ -348,9 +383,17 @@ namespace ngosen::test {
         FakeLoop&                           loop_;
         Field                               field_;
         AppQuirks                           quirks_;
-        TypingState*                        state_      = nullptr;
-        int                                 queuedKeys_ = 0;
-        int                                 redraws_    = 0;
+        TypingState*                        state_          = nullptr;
+        int                                 queuedKeys_     = 0;
+        int                                 redraws_        = 0;
+        int                                 backspaceBurst_ = 0; // forwarded Backspaces queued since the queue was last empty
+        std::u32string                      heldCommit_;         // commits waiting for queued Backspaces
+        bool                                emptyBouncePending_ = false;
+        std::string                         strayLetter_;
+        int                                 editsBeforeStray_ = 0;
+        int                                 strayDelayMs_     = 0;
+        void                                landStrayLetter();
+        void                                typeOverSelection(const std::u32string& letter);
         std::u32string                      ownText_;
         bool                                inReport_        = false;
         bool                                focused_         = true;
@@ -359,6 +402,8 @@ namespace ngosen::test {
         uint32_t                            heldSym_         = 0;
         int                                 slowestCommitMs_ = 0;
         int                                 shortcuts_       = 0;
+
+        int                                 panelsMidReplacement_ = 0;
         std::u32string                      text_;
         std::optional<std::string>          announced_;
         size_t                              cursor_      = 0;
@@ -370,6 +415,8 @@ namespace ngosen::test {
         std::string                         hint_;
         int                                 editsUnderHint_ = 0;
         int                                 hintLagMs_      = 0;
+
+        std::string                         askedHint_;
         std::u32string                      previousText_;
         size_t                              previousCursor_ = 0;
         std::u32string                      reportedText_;
@@ -380,6 +427,7 @@ namespace ngosen::test {
         size_t                              reportedAnchor_     = 0;
         bool                                silentAfterDelete_  = false;
         bool                                surroundingDropped_ = false;
+        bool                                commitOfDeletion_   = false; // the next commit goes with the last deletion
         int                                 keysSinceDelete_    = 0;
         bool                                turnPending_        = false;
         std::optional<size_t>               turnDeleteBytes_;
@@ -392,7 +440,9 @@ namespace ngosen::test {
         bool                                holdsUnreported_  = false;
         bool                                cellOpensOnKey_   = false;
         bool                                ctrlDown_         = false;
+        int                                 typedTexts_       = 0;
         int                                 emptyCommits_     = 0;
+        int                                 commits_          = 0; ///< non-empty commits that reached the app
         int                                 deletions_        = 0;
         Path                                sent_{.surroundingDeletes = 0, .forwardedBackSpaces = 0, .systemKeyPresses = 0, .preedits = 0};
         std::vector<std::unique_ptr<Timer>> timers_;

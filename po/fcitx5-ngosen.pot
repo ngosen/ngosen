@@ -1474,7 +1474,7 @@ msgid "After the word: cười 😂. Instead of the word: 😂. haha and :) are 
 msgstr ""
 
 #: settings-gui/core/catalog.py
-msgid "At the end of a sentence: the emoji of the sentence show while you type. After . ! ? or a short pause, 1–9 picks one, or Tab first where digits type tones, as in VNI; it goes at the cursor. Esc hides them until the next sentence. After each word: the list shows as soon as a keyword is typed."
+msgid "At the end of a sentence: the emoji of the sentence show while you type. After . ! ? or a short pause, press Tab, then 1–9 to pick one; it goes at the cursor. Esc hides them until the next sentence. After each word: the list shows as soon as a keyword is typed."
 msgstr ""
 
 #: settings-gui/core/catalog.py
@@ -2122,7 +2122,7 @@ msgid "Put back the words {} came with"
 msgstr ""
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
-msgid "Apps without emoji"
+msgid "Apps with emoji"
 msgstr ""
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
@@ -2130,19 +2130,11 @@ msgid "Emoji and their words"
 msgstr ""
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
-msgid "Not turned off in any app."
+msgid "Turn emoji off in {}"
 msgstr ""
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
-msgid "Turn back on"
-msgstr ""
-
-#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
-msgid "Turn emoji back on in {}"
-msgstr ""
-
-#: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
-msgid "Emoji are back on in {}."
+msgid "Emoji are off in {}."
 msgstr ""
 
 #: settings-gui/ui/pages/emoji_page.py settings-gui/ui_gtk/emoji.py
@@ -2190,11 +2182,11 @@ msgid "2. Press 2"
 msgstr ""
 
 #: settings-gui/core/emoji_words.py
-msgid "Set a mode menu key and an emoji key on the Keys page to turn suggestions off for one app."
+msgid "Set a mode menu key and an emoji key on the Keys page to turn suggestions on for one app."
 msgstr ""
 
 #: settings-gui/core/emoji_words.py
-msgid "In the app you are typing in, press {menu} then {key} to turn suggestions off or back on for that app. The app keeps its typing mode."
+msgid "Suggestions are off until you turn them on. In the app you are typing in, press {menu} then {key} to turn them on or off for that app. The app keeps its typing mode."
 msgstr ""
 
 #: settings-gui/core/teencode_apps.py
@@ -2205,11 +2197,13 @@ msgstr ""
 msgid "Teencode keeps words like zậy, đag and nhữg instead of restoring the keys typed. In the app you are typing in, press {menu} then {key} to turn it on or off for that app."
 msgstr ""
 
-#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py settings-gui/ui/pages/emoji_page.py
+#: settings-gui/ui_gtk/emoji.py
 msgid "Not on in any app."
 msgstr ""
 
-#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py settings-gui/ui/pages/emoji_page.py
+#: settings-gui/ui_gtk/emoji.py
 msgid "Turn off"
 msgstr ""
 

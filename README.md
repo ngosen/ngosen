@@ -78,7 +78,7 @@ Hoàn tác.
   **Chuyển mã** trong cửa sổ cài đặt; trang này còn có ô để dán chữ vào và chuyển ngay. Đã thử trên GNOME
   với Firefox, Chromium, LibreOffice Writer và GNOME Text Editor; không dùng được trong terminal.
 - **Menu chế độ riêng cho từng app:** nhấn phím `` ` `` để mở menu cạnh con trỏ, chọn **Gõ Sen (1)**,
-  **Gạch chân (q)** hoặc **Tắt (e)**, tắt **Gợi ý emoji (w)** cho app không cần, và bật **Vim mode (v)** cho
+  **Gạch chân (q)** hoặc **Tắt (e)**, bật **Gợi ý emoji (w)** cho app muốn dùng, và bật **Vim mode (v)** cho
   app dùng phím Vim như nvim hay Claude Code. Ngó Sen nhớ lựa chọn riêng cho từng app.
 - **Gõ thẳng không gạch chân (Gõ Sen):** chữ vào app ngay khi gõ; gợi ý ở thanh địa chỉ hay ô tìm kiếm
   hiện theo từng phím.
@@ -88,8 +88,9 @@ Hoàn tác.
 - **Lệnh và đường dẫn:** từ bắt đầu bằng `/` giữ nguyên như gõ (`/cost`, `cd /usr/share`).
 - **Gõ thừa phím vẫn giữ dấu:** `dduowjcd` + Space ra `được`, `coongty` + Space ra `công ty`, `nhuwg` + Space
   ra `nhưng`; bấm Backspace ngay sau đó thì trả lại đúng chữ đã gõ.
-- **Gợi ý emoji khi gõ:** gõ xong `cười`, `con mèo` hay `haha` là hiện `Tab: 😂 …` cạnh con trỏ; Tab để
-  đánh số rồi chọn bằng số, Esc giữ nguyên chữ.
+- **Gợi ý emoji khi gõ:** tắt sẵn; bật cho từng app bằng **Gợi ý emoji (w)** trong menu `` ` ``. Khi bật, gõ xong
+  `cười`, `con mèo` hay `haha` là hiện `Tab: 😂 …` cạnh con trỏ; Tab để đánh số rồi chọn bằng số, Esc giữ
+  nguyên chữ. Để yên 4 giây thì danh sách tự ẩn.
 - **Phím chuyển Anh/Việt riêng:** cài mới dùng `Ctrl + Shift` như UniKey và bật sẵn tiếng Việt;
   người dùng cũ giữ phím chuyển và trạng thái đang dùng. Mặc định, phím chuyển đổi mọi app cùng lúc.
   Muốn mỗi app nhớ riêng như trước, chọn “Từng app” ở “Phím chuyển áp dụng cho” trên trang Phím tắt.
@@ -423,7 +424,8 @@ Báo ở [Issues](https://github.com/ngosen/ngosen/issues). Không có tài kho�
 
 Nhờ AI tìm lỗi thì gửi nó câu này kèm mô tả lỗi: “Đọc https://github.com/ngosen/ngosen/blob/main/docs/ai-help.md
 rồi giúp tôi sửa lỗi gõ Ngó Sen”. Trang đó dặn AI chỉ chẩn đoán, để bạn tự bấm nút sửa, và nhắc bạn đọc kỹ thông
-tin trước khi dán cho AI.
+tin trước khi dán cho AI. Muốn hỏi AI cách dùng Ngó Sen, chẳng hạn menu phím `` ` ``, hãy đưa nó link
+https://github.com/ngosen/ngosen/blob/main/docs/ai-guide.md.
 
 <a id="go-cai-dat"></a>
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// The settings window reads and writes the apps without emoji and the user's emoji words, and a
-// changed list reaches the field being typed in at once (#110).
+// Emoji are off until the user turns them on for an app. The settings window reads and writes those
+// apps and the user's emoji words, and a changed list reaches the field being typed in at once (#110).
 #include "ngosen-engine.h"
 #include "ngosen-utils.h"
 #include "test-input-context.h"
@@ -57,7 +57,7 @@ int main() {
     const auto confDir = std::filesystem::temp_directory_path() / testName / "config/fcitx5/conf";
     std::filesystem::create_directories(confDir);
     std::ofstream(confDir / "ngosen.conf", std::ios::trunc) << "Mode=Sen\nVietnameseOn=True\nInputMethod=Telex\n";
-    std::ofstream(confDir / "ngosen-emoji-off-apps.conf", std::ios::trunc) << "# comment\nkate\n";
+    std::ofstream(confDir / "ngosen-emoji-apps.conf", std::ios::trunc) << "# comment\nkate\n";
     std::ofstream(confDir / "ngosen-emoji-words.conf", std::ios::trunc) << "[Words]\n[Words/0]\nKeyword=sếp\nEmoji=👔\nOn=True\n";
 
     TestInstance        testInstance;
@@ -65,31 +65,31 @@ int main() {
     TestInputContext    kate(&testInstance.instance, "kate");
     TestInputContext    gedit(&testInstance.instance, "gedit");
 
-    const auto          apps = subConfig(engine, "emoji_off_apps");
-    check(valueAt(apps, "Apps/0/App") == "kate" && valueAt(apps, "Apps/1/App") == "(none)", "the window reads the apps without emoji, got " + valueAt(apps, "Apps/0/App"));
+    const auto          apps = subConfig(engine, "emoji_apps");
+    check(valueAt(apps, "Apps/0/App") == "kate" && valueAt(apps, "Apps/1/App") == "(none)", "the window reads the apps with emoji, got " + valueAt(apps, "Apps/0/App"));
     const auto words = subConfig(engine, "emoji_words");
     check(valueAt(words, "Words/0/Keyword") == "sếp" && valueAt(words, "Words/0/Emoji") == "👔", "the window reads the saved words, got " + valueAt(words, "Words/0/Keyword"));
     const auto& edits = engine.options().emojiWordEdits;
     check(edits.size() == 1 && edits.front().keyword == "sếp" && edits.front().on, "the saved words reach the typing logic");
 
     focus(engine, kate);
-    check(!engine.emojiOnIn(&kate), "kate starts without emoji");
+    check(engine.emojiOnIn(&kate), "kate, turned on, has emoji");
     focus(engine, gedit);
-    check(engine.emojiOnIn(&gedit), "gedit has emoji");
+    check(!engine.emojiOnIn(&gedit), "gedit, never turned on, has none");
 
     fcitx::RawConfig onlyGedit;
     onlyGedit.setValueByPath("Apps/0/App", "gedit");
-    engine.setSubConfig("emoji_off_apps", onlyGedit);
-    check(!engine.emojiOnIn(&gedit), "turning gedit off in the window reaches the focused field");
-    check(engine.emojiOnIn(&kate), "turning kate back on reaches its field");
-    const std::string saved = readFile(confDir / "ngosen-emoji-off-apps.conf");
+    engine.setSubConfig("emoji_apps", onlyGedit);
+    check(engine.emojiOnIn(&gedit), "turning gedit on in the window reaches the focused field");
+    check(!engine.emojiOnIn(&kate), "turning kate off reaches its field");
+    const std::string saved = readFile(confDir / "ngosen-emoji-apps.conf");
     check(saved.find("gedit\n") != std::string::npos && saved.find("kate") == std::string::npos, "the list is saved, got " + saved);
 
     focus(engine, gedit);
-    check(!engine.emojiOnIn(&gedit), "gedit is off before the reload");
-    std::ofstream(confDir / "ngosen-emoji-off-apps.conf", std::ios::trunc) << "kate\n";
+    check(engine.emojiOnIn(&gedit), "gedit is on before the reload");
+    std::ofstream(confDir / "ngosen-emoji-apps.conf", std::ios::trunc) << "kate\n";
     engine.reloadConfig();
-    check(engine.emojiOnIn(&gedit), "a reloaded list reaches the focused field");
+    check(!engine.emojiOnIn(&gedit), "a reloaded list reaches the focused field");
 
     fcitx::RawConfig turnedOff;
     turnedOff.setValueByPath("Words/0/Keyword", "cười");
@@ -99,6 +99,16 @@ int main() {
     check(edits.size() == 1 && edits.front().keyword == "cười" && !edits.front().on, "edited words reach the typing logic");
     const std::string savedWords = readFile(confDir / "ngosen-emoji-words.conf");
     check(savedWords.find("Keyword=cười") != std::string::npos && savedWords.find("sếp") == std::string::npos, "the words are saved, got " + savedWords);
+
+    // The panel font grows only once some app has emoji, including an app added to the file by hand.
+    std::filesystem::remove(confDir / "classicui.conf");
+    std::ofstream(confDir / "ngosen-emoji-apps.conf", std::ios::trunc) << "";
+    engine.reloadConfig();
+    check(readFile(confDir / "classicui.conf").find("Font=") == std::string::npos, "no app with emoji leaves the font alone");
+    std::ofstream(confDir / "ngosen-emoji-apps.conf", std::ios::trunc) << "kate\n";
+    engine.reloadConfig();
+    const std::string panel = readFile(confDir / "classicui.conf");
+    check(panel.find("Sans 13") != std::string::npos, "a reloaded app with emoji enlarges the font, got " + panel);
 
     return failures == 0 ? 0 : 1;
 }

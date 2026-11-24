@@ -23,7 +23,7 @@ if CAN_RUN:
     from test_gtk_window import Restarting, isolate
     from ui_gtk import window
 
-OFF_APPS = {"emoji_off_apps": [{"App": "firefox"}]}
+ON_APPS = {"emoji_apps": [{"App": "firefox"}]}
 
 
 def _settle(until=lambda: True, seconds=5):
@@ -50,7 +50,7 @@ class GtkEmojiPageTest(unittest.TestCase):
         self.page = self.window.emoji
 
     def fake(self, values=None):
-        return FakeDBusHandler(values, sub_configs=OFF_APPS)
+        return FakeDBusHandler(values, sub_configs=ON_APPS)
 
     def open(self, dbus):
         w = window.Window(None, dbus)
@@ -82,7 +82,7 @@ class GtkEmojiPageTest(unittest.TestCase):
         self.assertIsNotNone(self.window.toast)
 
     def test_a_word_that_could_not_be_saved_turns_back(self):
-        dbus = Restarting(sub_configs=OFF_APPS)
+        dbus = Restarting(sub_configs=ON_APPS)
         page = self.open(dbus).emoji
         row = self.row("😂", page)
         dbus.down = True
@@ -124,14 +124,14 @@ class GtkEmojiPageTest(unittest.TestCase):
         self.assertEqual([r.get_title() for r in rows], ["firefox"])
         button = next(c for c in _children(rows[0]) if isinstance(c, Gtk.Button))
         button.emit("clicked")
-        self.assertEqual(self.dbus.sub_configs["emoji_off_apps"], [])
+        self.assertEqual(self.dbus.sub_configs["emoji_apps"], [])
         self.assertEqual(
-            [r.get_title() for r in _rows(self.page.apps)], [window._("Not turned off in any app.")]
+            [r.get_title() for r in _rows(self.page.apps)], [window._("Not on in any app.")]
         )
         toast = self.window.toast
-        self.assertEqual(toast.get_title(), window._("Emoji are back on in {}.").format("firefox"))
+        self.assertEqual(toast.get_title(), window._("Emoji are off in {}.").format("firefox"))
         toast.emit("button-clicked")
-        self.assertEqual(self.dbus.sub_configs["emoji_off_apps"], [{"App": "firefox"}])
+        self.assertEqual(self.dbus.sub_configs["emoji_apps"], [{"App": "firefox"}])
         self.assertEqual([r.get_title() for r in _rows(self.page.apps)], ["firefox"])
 
     def test_the_filters_change_the_count(self):

@@ -58,11 +58,11 @@ elif case == "emoji_words":
     words = EmojiWords(dbus)
     words.add("😀", "vui")
     print(words.save())
-elif case == "emoji_off_apps":
+elif case == "emoji_apps":
     from core.emoji_words import EmojiWords
 
     words = EmojiWords(dbus)
-    words.off_apps = ["firefox"]
+    words.on_apps = ["firefox"]
     print(words.save_apps())
 elif case == "backup":
     from core import backup
@@ -78,7 +78,7 @@ BACKUP = """{
   "rules": [{"App": "kate", "Mode": "Preedit"}],
   "switches": [{"App": "kate", "Vietnamese": "True"}],
   "emoji_words": [{"Keyword": "vui", "Emoji": "😀", "On": "True"}],
-  "emoji_off_apps": [{"App": "firefox"}],
+  "emoji_apps": [{"App": "firefox"}],
   "teencode_apps": [{"App": "discord"}],
   "dictionary": "ngosen\\n",
   "meta": {"version": 1, "edition": "ibus"}
@@ -133,9 +133,9 @@ class ListsReachFcitx5Test(unittest.TestCase):
         word = {"Keyword": "vui", "Emoji": "😀", "On": "True"}
         self.assertEqual(saved["emoji_words"], {"Words": {"0": word}})
 
-    def test_emoji_off_apps(self):
-        saved = self.save("emoji_off_apps")
-        self.assertEqual(saved["emoji_off_apps"], {"Apps": {"0": {"App": "firefox"}}})
+    def test_emoji_apps(self):
+        saved = self.save("emoji_apps")
+        self.assertEqual(saved["emoji_apps"], {"Apps": {"0": {"App": "firefox"}}})
 
     def test_restoring_a_backup(self):
         path = os.path.join(self.tmp.name, "backup.json")
@@ -150,7 +150,7 @@ class ListsReachFcitx5Test(unittest.TestCase):
             "app_rules": {"Rules": {"0": {"App": "kate", "Mode": "Preedit"}}},
             "app_switches": {"Switches": {"0": {"App": "kate", "Vietnamese": "True"}}},
             "emoji_words": {"Words": {"0": {"Keyword": "vui", "Emoji": "😀", "On": "True"}}},
-            "emoji_off_apps": {"Apps": {"0": {"App": "firefox"}}},
+            "emoji_apps": {"Apps": {"0": {"App": "firefox"}}},
             "teencode_apps": {"Apps": {"0": {"App": "discord"}}},
         }
         for uri, values in expected.items():

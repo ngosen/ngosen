@@ -60,6 +60,7 @@ namespace {
     constexpr uint32_t Bounce        = 16; // the field loses focus and gets it back 30 ms later
     constexpr uint32_t PanelReset    = 17; // the engine clears the panel, as for a mode notice
     constexpr uint32_t BrowserBounce = 18; // a bounce, a reset and an empty first report, as Brave on Wayland
+    constexpr uint32_t HintAskedAway = 19; // waits until the hint is asked away while the app still shows it
     constexpr uint32_t Backspace     = ngosen::key::BackSpace;
     constexpr uint32_t Left          = ngosen::key::Left;
     constexpr uint32_t Right         = ngosen::key::Right;
@@ -89,8 +90,9 @@ namespace {
         std::vector<std::string> statuses;
         std::vector<std::string> inField;
         std::vector<int>         chosen;
-        int                      editsUnderHint = 0;
-        int                      listsHidden    = 0;
+        int                      editsUnderHint       = 0;
+        int                      listsHidden          = 0;
+        int                      panelsMidReplacement = 0;
     };
 
     AppQuirks chatQuirks() {
@@ -136,6 +138,9 @@ namespace {
                 loop.pump(1000);
             } else if (key == InField) {
                 result.inField.push_back(app->hint());
+            } else if (key == HintAskedAway) {
+                for (int ms = 0; ms < 6000 && !(app->askedHint().empty() && !app->hint().empty()); ++ms)
+                    loop.pump(1);
             } else if (key == Gap) {
                 loop.pump(600);
             } else if (key == Bounce) {
@@ -171,9 +176,10 @@ namespace {
             }
         }
         loop.pump(200);
-        result.text           = app->text();
-        result.editsUnderHint = app->editsUnderHint();
-        result.listsHidden    = app->candidatesHidden();
+        result.text                 = app->text();
+        result.editsUnderHint       = app->editsUnderHint();
+        result.listsHidden          = app->candidatesHidden();
+        result.panelsMidReplacement = app->panelsMidReplacement();
         return result;
     }
 
@@ -398,9 +404,9 @@ namespace {
         auto       r     = type(keysOf("cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints.front() == "😂 🤣 😄 😆 😁", "sentence end: a preview while the sentence goes on", r.hints.front());
         r = type(keysOf("cuwowif.") + std::vector<uint32_t>{Hint, Tab, Tab}, Mode::Sen, makeField(), atEnd);
-        check(r.hints.front() == "1.😂 2.🤣 3.😄 4.😆 5.😁" && r.text == "cười. 😂", "sentence end: a full stop offers the emoji, put after it", r.hints.front() + " / " + r.text);
+        check(r.hints.front() == "Tab: 😂 🤣 😄 😆 😁" && r.text == "cười. 😂", "sentence end: a full stop offers the emoji, put after it", r.hints.front() + " / " + r.text);
         r = type(keysOf("con meof cuwowif quas") + std::vector<uint32_t>{Pause, Hint}, Mode::Sen, makeField(), atEnd);
-        check(r.hints.front() == "1.😂 2.🤣 3.😄 4.🐈 5.🐱", "sentence end: a pause offers the emoji of the sentence", r.hints.front());
+        check(r.hints.front() == "Tab: 😂 🤣 😄 🐈 🐱", "sentence end: a pause offers the emoji of the sentence", r.hints.front());
         r = type(keysOf("con meof cuwowif quas!") + std::vector<uint32_t>{Tab, '4'}, Mode::Sen, makeField(), atEnd);
         check(r.text == "con mèo cười quá! 🐈", "sentence end: an emoji of an earlier word", r.text);
         r = type(keysOf("hahaha!") + std::vector<uint32_t>{Tab, Tab}, Mode::Sen, makeField(), atEnd);
@@ -457,7 +463,10 @@ namespace {
         AppQuirks slow = chatQuirks();
         slow.lagMs     = 60;
         r              = type(watched("con meof cuwowif", 7) + std::vector<uint32_t>{Gap, Hint}, Mode::Sen, makeField(), atEnd, slow);
-        check(allShown(r.hints) && r.hints.back() == "😂 🤣 😄 🐈 🐱", "preview: stays while a slow app takes a tone", joined(r.hints));
+        // The first preview waits for mèo to reach the app, by the c of the next word, then stays through its tones.
+        const auto shown = std::find_if(r.hints.begin(), r.hints.end(), [](const std::string& h) { return h != "(none)"; });
+        check(shown - r.hints.begin() <= 2 && *shown == "🐈 🐱" && allShown({shown, r.hints.end()}) && r.hints.back() == "😂 🤣 😄 🐈 🐱",
+              "preview: stays while a slow app takes a tone", joined(r.hints));
 
         std::vector<uint32_t> firefox;
         for (const uint32_t key : watched("con meof cuwowif", 7)) {
@@ -496,6 +505,20 @@ namespace {
         check(r.hints[0] == "🐈 🐱" && r.text == "con mèo", "preview: a click on it puts nothing", joined(r.hints) + " / " + r.text);
     }
 
+    // fcitx5 sends forwarded keys only after it draws the panel, and its first panel loads every font,
+    // which held a Chromium field's backspaces past the next key: "chào" came out "chaà".
+    void testPreviewAfterReplacement() {
+        Field field            = makeField();
+        field.frontend         = "dbus";
+        field.program          = "electron";
+        field.surroundingText  = false;
+        field.keyEventOrderFix = true;
+        const auto atEnd       = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
+        const auto r           = type(keysOf("xin chaof") + std::vector<uint32_t>{Hint}, Mode::Sen, field, atEnd);
+        check(r.panelsMidReplacement == 0 && r.hints.front() != "(none)" && r.text == "xin chào", "preview: drawn only once the replacement is in",
+              std::to_string(r.panelsMidReplacement) + " mid-replacement, " + r.hints.front() + " / " + r.text);
+    }
+
     // The preview holds no key: everything typed mid-sentence reaches the app.
     void testPreviewKeys() {
         const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
@@ -506,7 +529,7 @@ namespace {
         r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Enter, Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints[0] == "🐈 🐱" && r.hints[1] == "(none)" && r.text == "con mèo\n", "preview: Enter goes to the app and closes it", joined(r.hints) + " / " + r.text);
         r = type(keysOf("con meof") + std::vector<uint32_t>{Pause, Hint, Enter}, Mode::Sen, makeField(), atEnd);
-        check(r.hints[0] == "1.🐈 2.🐱" && r.text == "con mèo\n", "after a pause Enter still sends", r.hints[0] + " / " + r.text);
+        check(r.hints[0] == "Tab: 🐈 🐱" && r.text == "con mèo\n", "after a pause Enter still sends", r.hints[0] + " / " + r.text);
         r = type(keysOf("con meof") + std::vector<uint32_t>{Hint, Esc, Pause, Hint} + keysOf(". cuwowif") + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
         check(r.hints[0] == "🐈 🐱" && r.hints[1] == "(none)" && r.hints[2] == "😂 🤣 😄 😆 😁", "Esc: no emoji for the rest of the sentence", joined(r.hints));
         const std::vector<uint32_t> eraseAll(7, Backspace);
@@ -521,11 +544,13 @@ namespace {
         check(r.text == "con mèo⇥", "a list the engine cleared holds no key", r.text);
     }
 
-    // Where digits type nothing but digits, a digit picks from the list once it can be picked.
+    // A digit picks an emoji only after Tab numbers the list; before that it is typed.
     void testDigitsPick() {
         const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
         auto       r     = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '2'}, Mode::Sen, makeField(), atEnd);
-        check(r.hints[0] == "1.😂 2.🤣 3.😄 4.🐈 5.🐱" && r.text == "con mèo cười 🤣", "a digit picks the emoji", r.hints[0] + " / " + r.text);
+        check(r.hints[0] == "Tab: 😂 🤣 😄 🐈 🐱" && r.text == "con mèo cười2", "a digit before Tab is typed", r.hints[0] + " / " + r.text);
+        r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Tab, '2'}, Mode::Sen, makeField(), atEnd);
+        check(r.text == "con mèo cười 🤣", "Tab then a digit picks the emoji", r.text);
         r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, '7'}, Mode::Sen, makeField(), atEnd);
         check(r.text == "con mèo cười7", "a digit past the list is typed", r.text);
         r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, ngosen::key::KP_0 + 1}, Mode::Sen, makeField(), atEnd);
@@ -533,15 +558,15 @@ namespace {
         r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, PanelReset, '1'}, Mode::Sen, makeField(), atEnd);
         check(r.text == "con mèo cười1", "a list the engine cleared takes no digit", r.text);
         r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Pick}, Mode::Sen, makeField(), atEnd);
-        check(r.text == "con mèo cười 😂", "a click on a numbered emoji picks it", r.text);
+        check(r.text == "con mèo cười 😂", "a click on the list picks the first emoji", r.text);
         r = type(keysOf("con meof gias 3.") + std::vector<uint32_t>{Hint, '5'}, Mode::Sen, makeField(), atEnd);
         check(r.hints[0].rfind("1.", 0) != 0 && r.hints[0].rfind("Tab:", 0) != 0 && r.text == "con mèo giá 3.5", "a dot after a digit ends no sentence",
               r.hints[0] + " / " + r.text);
 
         AppQuirks oldText                 = chatQuirks();
         oldText.repeatsOldTextAfterDelete = true;
-        r                                 = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '2'}, Mode::Sen, makeField(), atEnd, oldText);
-        check(r.hints[0] == "1.😂 2.🤣 3.😄 4.🐈 5.🐱" && r.text == "con mèo cười 🤣", "a field showing its text from before the tone keeps the word", r.hints[0] + " / " + r.text);
+        r                                 = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, Tab, '2'}, Mode::Sen, makeField(), atEnd, oldText);
+        check(r.hints[0] == "Tab: 😂 🤣 😄 🐈 🐱" && r.text == "con mèo cười 🤣", "a field showing its text from before the tone keeps the word", r.hints[0] + " / " + r.text);
 
         const auto vni = [](FakeResources& r) {
             r.mutableOptions().emojiAtSentenceEnd = true;
@@ -559,12 +584,35 @@ namespace {
                 r.setCustomKeymap(keys);
             };
         };
-        r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '2'}, Mode::Sen, makeField(), custom(telexKeys));
-        check(r.hints[0] == "1.😂 2.🤣 3.😄 4.🐈 5.🐱" && r.text == "con mèo cười 🤣", "custom keys without digits: digits pick", r.hints[0] + " / " + r.text);
+        r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, Tab, '2'}, Mode::Sen, makeField(), custom(telexKeys));
+        check(r.hints[0] == "Tab: 😂 🤣 😄 🐈 🐱" && r.text == "con mèo cười 🤣", "custom keys without digits: Tab then a digit picks", r.hints[0] + " / " + r.text);
         auto digitKeys = telexKeys;
         digitKeys.push_back({"2", "DauHuyen"});
         r = type(keysOf("con meof cuwowif") + std::vector<uint32_t>{Pause, Hint, '1'}, Mode::Sen, makeField(), custom(digitKeys));
         check(r.hints[0].rfind("Tab: ", 0) == 0 && r.text.find("😂") == std::string::npos, "custom keys with a digit: digits keep their marks", r.hints[0] + " / " + r.text);
+    }
+
+    // A list left alone for 4 seconds goes away; a key in the meantime keeps it.
+    void testIdleHides() {
+        const std::vector<uint32_t> threeSeconds(3, Pause);
+        const std::vector<uint32_t> twoSeconds(2, Pause);
+        auto                        r = type(keysOf("cuwowif") + threeSeconds + std::vector<uint32_t>{Hint} + twoSeconds + std::vector<uint32_t>{Hint}, Mode::Sen, makeField());
+        check(r.hints == std::vector<std::string>{"Tab: 😂 🤣 😄 😆 😁", "(none)"}, "a list left alone is hidden after 4 s", joined(r.hints));
+        r = type(keysOf("cuwowif") + std::vector<uint32_t>{Tab} + threeSeconds + std::vector<uint32_t>{Right} + threeSeconds + std::vector<uint32_t>{Hint, Status}, Mode::Sen,
+                 makeField());
+        check(r.hints[0] == "1. 😂" && !r.statuses[0].empty(), "a key restarts the wait", r.hints[0] + " / " + r.statuses[0]);
+        r = type(keysOf("cuwowif") + std::vector<uint32_t>{Tab} + threeSeconds + twoSeconds + std::vector<uint32_t>{Hint, Status, '2'}, Mode::Sen, makeField());
+        check(r.hints[0] == "(none)" && r.statuses[0].empty() && r.text == "cười2", "a numbered list is hidden too, and a digit after it is typed",
+              r.hints[0] + " / " + r.statuses[0] + " / " + r.text);
+        const auto atEnd = [](FakeResources& r) { r.mutableOptions().emojiAtSentenceEnd = true; };
+        r                = type(keysOf("cuwowif.") + std::vector<uint32_t>{Hint} + threeSeconds + twoSeconds + std::vector<uint32_t>{Hint}, Mode::Sen, makeField(), atEnd);
+        check(r.hints == std::vector<std::string>{"Tab: 😂 🤣 😄 😆 😁", "(none)"}, "a sentence's list is hidden after 4 s", joined(r.hints));
+
+        Field noPanel           = makeField();
+        noPanel.drawsCandidates = false;
+        r                       = type(std::vector<uint32_t>{SlowHint} + keysOf("cuwowif") + std::vector<uint32_t>{Pause, HintAskedAway, 's', Pause, InField}, Mode::Sen, noPanel);
+        check(r.text == "cưới" && r.inField.front().empty() && r.editsUnderHint == 0, "no panel: a key right after the hint hid waits for it to go",
+              r.text + " / " + std::to_string(r.editsUnderHint));
     }
 
     // The release of a key the list took stays away from the app as well.
@@ -611,7 +659,9 @@ int main() {
     testPickAfterCursorMoved();
     testSentencePreview();
     testPreviewKeys();
+    testPreviewAfterReplacement();
     testDigitsPick();
+    testIdleHides();
     testRelease();
     if (failures)
         std::cerr << failures << " failure(s)\n";

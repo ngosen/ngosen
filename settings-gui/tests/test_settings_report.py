@@ -46,6 +46,7 @@ LISTS = {
     "app_switches": [
         {"App": "kitty", "Vietnamese": "False"},
         {"App": "zalo", "Vietnamese": "True"},
+        {"App": "kitty", "Vietnamese": "True"},
     ],
     "emoji_apps": [{"App": "zalo"}],
     "teencode_apps": [],
@@ -119,17 +120,23 @@ class SettingsReportTest(unittest.TestCase):
     def test_prints_mode_switching_and_macro_format_settings(self):
         text = self.report()
         self.assertIn("(TimeFormat): %H:%M:%S", text)
-        self.assertIn("(ModeOrder): Preedit,Sen", text)
+        self.assertIn("(ModeOrder): Preedit,Sen,Emoji,Teencode,Off,Vim", text)
         self.assertIn("(ShowModeEmoji): off", text)
 
     def test_shows_a_saved_global_off_as_sen_like_the_window(self):
         handler = FakeHandler({"values": {**VALUES, "Mode": "OFF"}, "metadata": METADATA})
         self.assertIn("(Mode): Sen", self.report(handler))
 
-    def test_survives_a_vim_list_that_is_not_utf8(self):
+    def test_shows_what_the_window_shows_for_odd_saved_values(self):
+        values = {**VALUES, "TimeFormat": "%k:%M", "ModeOrder": "Vim,Bogus,Sen"}
+        text = self.report(FakeHandler({"values": values, "metadata": METADATA}))
+        self.assertIn("(TimeFormat): %H:%M", text)
+        self.assertIn("(ModeOrder): Vim,Sen,Preedit,Emoji,Teencode,Off", text)
+
+    def test_keeps_the_good_lines_of_a_vim_list_that_is_not_utf8(self):
         with open(self.vim_conf, "wb") as f:
             f.write(b"kitty\n\xff\n")
-        self.assertIn("[Counts]", self.report())
+        self.assertIn("Vim mode on: kitty", self.report())
 
     def test_says_so_when_fcitx5_does_not_answer(self):
         self.assertIn("cannot be shown", self.report(FakeHandler(config={})))

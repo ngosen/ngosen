@@ -235,6 +235,15 @@ MODE_SHORTCUT_TO_VISIBILITY = {
     "ShortcutVim": "ShowModeVim",
 }
 
+
+def mode_order(saved):
+    """The mode menu order as the window shows it: known modes only, missing ones at the end."""
+    known = list(MODE_KEY_TO_INTERNAL_NAME.values())
+    # An order saved before a mode was dropped still names it.
+    order = [n for n in dict.fromkeys(str(saved).split(",")) if n in known]
+    return order + [n for n in known if n not in order]
+
+
 MODE_KEY_TO_INTERNAL_NAME = {
     "ShortcutSen": "Sen",
     "ShortcutPreedit": "Preedit",

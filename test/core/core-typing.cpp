@@ -1028,6 +1028,40 @@ namespace {
         }
     }
 
+    // voz.vn's editor in Brave can take a key we let through and never show it; the next edit has to start from
+    // the word the field shows, or its Backspaces take a letter too many.
+    void testKeyNeverShown() {
+        ngosen::test::AppQuirks composer;
+        composer.keyStepMs                 = 28;
+        composer.bouncesEmptyAfterEdit     = true;
+        composer.losesCommitAmidBackspaces = true;
+        composer.textAfterCursor           = "\n\n";
+        const auto run                     = [&](const std::string& keys, int dropped, int gapMs, int reportDelayMs = 0) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop                loop;
+            ngosen::test::AppQuirks quirks = composer;
+            quirks.dropsTypedTextNumber    = dropped;
+            quirks.reportDelayMs           = reportDelayMs;
+            auto                owned      = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland", true, "brave-origin"), quirks);
+            auto*               app        = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            for (const char c : keys) {
+                app->type(static_cast<uint32_t>(c));
+                loop.pump(gapMs);
+            }
+            loop.pump(300);
+            return app->text();
+        };
+        const auto expect = [&](const std::string& name, const std::string& got, const std::string& want) { check(got == want, "key never shown: " + name, got); };
+        expect("u of dau", run("di ddaua ", 6, 120), "di đâu \n\n");
+        expect("o of hoc", run("hojc ", 2, 120), "học \n\n");
+        // A report that only comes late must not pass for a lost key.
+        expect("late report", run("di ddaua ", 0, 120, 60), "di đâu \n\n");
+    }
+
     void testStrayKeyDuringBounce() {
         const Field             field = makeField("wayland", true, "brave-origin");
         ngosen::test::AppQuirks bouncing;
@@ -6261,6 +6295,7 @@ int main() {
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();
     testStrayKeyDuringBounce();
+    testKeyNeverShown();
     testFirstWordEmptiesBouncingField();
     testTypeOverSelectionInSteps();
     testQuickSwitchesNoRedrawWait();

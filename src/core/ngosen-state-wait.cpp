@@ -311,7 +311,24 @@ namespace ngosen {
         }
     }
 
+    // A field that shows letters within a few ms and still reports the word without one after its release lost
+    // it; a field whose reports lag is only late.
+    void TypingState::notePassedLetterReport() {
+        constexpr uint64_t LetterShownUs = 40000;
+        if (!passedLetter_ || passedLetter_->shown)
+            return;
+        const Surrounding s          = host_->surrounding();
+        const uint64_t    sincePress = monotonicUs() - passedLetter_->pressedUs;
+        if (s.isValid() && isEndsWith(oldPreBuffer_, passedLetter_->text) && isEndsWith(textBeforeCursor(s), oldPreBuffer_)) {
+            passedLetter_->shown = true;
+            letterShownFast_     = sincePress < LetterShownUs;
+        } else if (passedLetter_->released && sincePress >= LetterShownUs) {
+            passedLetter_->lostLate = true;
+        }
+    }
+
     void TypingState::surroundingUpdated() {
+        notePassedLetterReport();
         // A wait that starts while this report is handled sees only the next report.
         const bool        waiting    = surr_wait_.watching;
         const bool        overtyping = overtype_.watching;

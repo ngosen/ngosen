@@ -786,6 +786,27 @@ namespace ngosen {
         return countSurroundingDeletion(before, prefix, deletedPart, earlierWordsBeforeReplacement()).match == SurroundingDeletion::Match::None;
     }
 
+    // The field reported the word without the letter we let through, long after its key: the app never took it
+    // (voz.vn in Brave), so an edit counted on the word as typed would delete a letter too many.
+    bool TypingState::wordMissesPassedLetter(std::string& shownWord) const {
+        if (!passedLetter_ || !passedLetter_->lostLate || !passedLetter_->freshAtPress || !letterShownFast_ || passedLetter_->key + 1 != keyCount_ ||
+            !isEndsWith(oldPreBuffer_, passedLetter_->text))
+            return false;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || s.cursor() != s.anchor())
+            return false;
+        const std::string word   = oldPreBuffer_.substr(0, oldPreBuffer_.size() - passedLetter_->text.size());
+        const std::string before = textBeforeCursor(s);
+        if (word.empty() || isEndsWith(before, oldPreBuffer_) || !isEndsWith(before, word))
+            return false;
+        // The word must start there, not end a longer one that happens to match.
+        const std::u32string head = utf8::decode(before.substr(0, before.size() - word.size()));
+        if (!head.empty() && head.back() != U'\u200b' && (head.back() >= 0x80 || std::isalnum(static_cast<int>(head.back())) != 0))
+            return false;
+        shownWord = word;
+        return true;
+    }
+
     bool TypingState::keepsWordRaw(const std::string& deletedPart) {
         if (keepsWordRawWhileCursorPast())
             return true;

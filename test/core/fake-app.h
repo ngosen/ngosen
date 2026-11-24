@@ -122,6 +122,9 @@ namespace ngosen::test {
         // Applies a commit only after the forwarded Backspaces sent before it, and loses it when there were
         // two or more, as the voz.vn composer does in Brave on Plasma Wayland. Needs keyStepMs.
         bool losesCommitAmidBackspaces = false;
+        // Never shows the nth text key it gets, though it reports its text then and again a moment later,
+        // as voz.vn's editor in Brave did with a key pressed before the last one was up.
+        int dropsTypedTextNumber = 0;
     };
 
     // An app field that keeps its own text, so a test can compare what the user would see with what
@@ -433,6 +436,7 @@ namespace ngosen::test {
         bool                                holdsUnreported_  = false;
         bool                                cellOpensOnKey_   = false;
         bool                                ctrlDown_         = false;
+        int                                 typedTexts_       = 0;
         int                                 emptyCommits_     = 0;
         int                                 commits_          = 0; ///< non-empty commits that reached the app
         int                                 deletions_        = 0;

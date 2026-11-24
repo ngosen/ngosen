@@ -174,6 +174,11 @@ namespace ngosen::test {
                         typeOverSelection(utf8::decode(text));
                         return;
                     }
+                    if (++typedTexts_ == quirks_.dropsTypedTextNumber) {
+                        changed();
+                        later(80, [this] { changed(); });
+                        return;
+                    }
                     insert(utf8::decode(text), true);
                 });
         }

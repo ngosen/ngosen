@@ -1065,6 +1065,7 @@ namespace {
         composer                     = {};
         composer.reportsTextAtChange = true;
         expect("stalled report, plain field", run("hojc ", 0, 120, 0, 2), "học ");
+        expect("stalled slow report, plain field", run("hojc ", 0, 120, 60, 2), "học ");
 
         // A copy that falls behind while two letters go in must not pass for a lost one either.
         {

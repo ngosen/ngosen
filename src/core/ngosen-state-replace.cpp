@@ -789,7 +789,8 @@ namespace ngosen {
     // The field reported the word without the letter we let through, long after its key: the app never took it
     // (voz.vn in Brave), so an edit counted on the word as typed would delete a letter too many.
     bool TypingState::wordMissesPassedLetter(std::string& shownWord) const {
-        if (!passedLetter_ || !passedLetter_->lostLate || !passedLetter_->freshAtPress || passedLetter_->key + 1 != keyCount_ || !isEndsWith(oldPreBuffer_, passedLetter_->text))
+        if (!passedLetter_ || !passedLetter_->lostLate || !letterShownFast_ || !passedLetter_->freshAtPress || passedLetter_->key + 1 != keyCount_ ||
+            !isEndsWith(oldPreBuffer_, passedLetter_->text))
             return false;
         const Surrounding s = host_->surrounding();
         if (!s.isValid() || s.cursor() != s.anchor())

@@ -678,8 +678,9 @@ namespace ngosen {
             (sinceInputUs < SuggestionStepUs || now - textShownAtUs_ < SuggestionStepUs || caretSteppedBack_);
         caretSteppedBack_ = caretSettling;
         if (caretSettling) {
-            // A busy app reports a Left key late, so only a step back long after one is the app's own.
-            sinceFocus_.stepsCaretBack = sinceFocus_.stepsCaretBack || now - caretKeyAtUs_ > CaretKeyReportUs;
+            // A busy app reports a Left key late, so only a step back long after one is the app's own,
+            // and so is none that our own deletion explains.
+            sinceFocus_.stepsCaretBack = sinceFocus_.stepsCaretBack || (!echo && now - caretKeyAtUs_ > CaretKeyReportUs);
             caretStepBackDue_          = false;
         }
         // A spreadsheet reports a click on another cell only as that cell's text with the cursor at its start.

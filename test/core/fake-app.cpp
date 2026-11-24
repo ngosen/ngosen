@@ -379,6 +379,9 @@ namespace ngosen::test {
             ++shortcuts_;
             if (state == modifier::Ctrl && sym == 'a')
                 select(0, text_.size());
+            // An Emacs-style binding, as GTK and macOS text fields have.
+            if (state == modifier::Ctrl && sym == 'b')
+                moveCursor(cursor_ > 0 ? cursor_ - 1 : 0);
             return true;
         }
         switch (sym) {

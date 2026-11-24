@@ -12,6 +12,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ### Thêm
 
+- Thêm `ngosen-check --settings` để in mọi cài đặt như trong cửa sổ cài đặt, chế độ gõ và các công tắc emoji,
+  Teencode, Vim mode đã đặt cho từng app; gõ tắt và từ điển chỉ in số lượng, không in nội dung. Lệnh không sửa
+  gì, giúp AI hay người báo lỗi biết máy đang bật gì mà không phải mở file cấu hình (#984).
 - Gõ Sen: khi sửa từ bằng Backspace, kiểm tra app đã hiện từ mới chưa và ghi vào log (Lưu nhật ký gõ),
   giúp báo lỗi chỉ ra chỗ mất chữ; không đổi cách gõ (#962).
 - Thêm trang hướng dẫn để hỏi AI cách dùng Ngó Sen, từ menu phím `` ` `` đến các tính năng và cài đặt;

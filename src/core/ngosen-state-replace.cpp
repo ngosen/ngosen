@@ -1015,7 +1015,7 @@ namespace ngosen {
     // The frontend turns a deletion into bytes on its copy of the text, which can still lack what the
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
     TypingState::CopyWait TypingState::copyWaitNeed() const {
-        const auto surrounding = copyAtCaret();
+        const auto surrounding = host_->surrounding();
         if (!surrounding.isValid())
             return CopyWait::No;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_.prefix, surr_wait_.deleted, earlierWords_);
@@ -1044,6 +1044,10 @@ namespace ngosen {
             return CopyWait::No;
         if (unreportedCommitLength_ == 0 && deletion.match != SurroundingDeletion::Match::None)
             return deletion.match == SurroundingDeletion::Match::Fresh ? CopyWait::Fits : CopyWait::No;
+        // A caret report left one step back hides the word from that count, and no wait brings it back.
+        if (unreportedCommitLength_ == 0 && caretSteppedBack_ &&
+            countSurroundingDeletion(textBeforeCursor(copyAtCaret()), surr_wait_.prefix, surr_wait_.deleted, earlierWords_).match == SurroundingDeletion::Match::Fresh)
+            return CopyWait::Fits;
         if (overIbus)
             return copyWaitsRunOut_ < MaxCopyWaitsRunOut ? CopyWait::Yes : CopyWait::No;
         return checksGetAnswered() || copyWaitRetry_ ? CopyWait::Yes : CopyWait::HeldBack;

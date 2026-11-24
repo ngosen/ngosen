@@ -1910,6 +1910,10 @@ fn test_tone_key_after_undone_mark_adds_one_letter() {
         // A word that still composes after a removed tone keeps its marks.
         ("asznhs", "ánh"),
     ] {
-        assert_eq!(finished_word(keys), (word.into(), format!("{word} ")), "{keys}");
+        assert_eq!(
+            finished_word(keys),
+            (word.into(), format!("{word} ")),
+            "{keys}"
+        );
     }
 }

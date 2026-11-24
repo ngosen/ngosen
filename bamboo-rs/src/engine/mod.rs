@@ -945,9 +945,7 @@ impl BambooEngine {
         if repeated && self.tone_count() < tones && self.get_macro_text().is_none() {
             self.drop_last_key(false);
             self.preeditor.process_key(key, Mode::English);
-        } else if undid_mark
-            && self.kept.is_none()
-            && self.get_preedit_string() == self.raw_text()
+        } else if undid_mark && self.kept.is_none() && self.get_preedit_string() == self.raw_text()
         {
             self.drop_last_key(false);
             self.preeditor.process_key(key, Mode::English);

@@ -1511,6 +1511,18 @@ msgid "System Settings → Keyboard → Virtual Keyboard: choose Fcitx 5."
 msgstr "System Settings → Keyboard → Virtual Keyboard: chọn Fcitx 5."
 
 #: settings-gui/core/system_check.py
+msgid "KDE's virtual keyboard is switched off"
+msgstr "Bàn phím ảo của KDE đang tắt"
+
+#: settings-gui/core/system_check.py
+msgid ""
+"KDE stops fcitx5 while it is off. A switch for the on-screen keyboard can "
+"turn it off; turn it back on."
+msgstr ""
+"Khi bàn phím ảo tắt, KDE dừng luôn fcitx5. Công tắc bàn phím trên màn hình "
+"có thể đã tắt nó; hãy bật lại."
+
+#: settings-gui/core/system_check.py
 msgid "GTK_IM_MODULE or QT_IM_MODULE is set on KDE Wayland"
 msgstr "GTK_IM_MODULE hoặc QT_IM_MODULE đang được đặt trên KDE Wayland"
 
@@ -2368,6 +2380,10 @@ msgstr "Đã chọn fcitx5. Đăng xuất rồi đăng nhập lại để dùng.
 #: settings-gui/core/system_check.py
 msgid "Chose Fcitx 5. Log out and back in to use it."
 msgstr "Đã chọn Fcitx 5. Đăng xuất rồi đăng nhập lại để dùng."
+
+#: settings-gui/core/system_check.py
+msgid "Turned KDE's virtual keyboard back on."
+msgstr "Đã bật lại bàn phím ảo của KDE."
 
 #: settings-gui/core/system_check.py
 msgid "Copied the command."

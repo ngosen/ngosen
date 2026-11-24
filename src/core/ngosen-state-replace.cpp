@@ -773,10 +773,19 @@ namespace ngosen {
         return true;
     }
 
+    // Antigravity's editor may leave its caret report one step back until the next key, which still lands
+    // after the letter (#362), so the word ends where the caret stood before that report.
+    Surrounding TypingState::copyAtCaret() const {
+        const Surrounding s = host_->surrounding();
+        if (!caretSteppedBack_ || !s.isValid() || s.cursor() != s.anchor() || s.cursor() + 1 != lastSurroundingCursor_)
+            return s;
+        return {s.text(), lastSurroundingCursor_, lastSurroundingCursor_};
+    }
+
     // The field shows the word after the cursor: the user clicked back before it, and the app told us only
     // in a report that also carried our last edit, as Firefox's snap does.
     bool TypingState::copyShowsWordAfterCursor(const std::string& deletedPart) const {
-        const Surrounding s = host_->surrounding();
+        const Surrounding s = copyAtCaret();
         if (!host_->field().surroundingText || !s.isValid() || s.cursor() != s.anchor() || oldPreBuffer_.empty())
             return false;
         const std::string before = textBeforeCursor(s);
@@ -1006,7 +1015,7 @@ namespace ngosen {
     // The frontend turns a deletion into bytes on its copy of the text, which can still lack what the
     // app holds when keys come faster than the app reports. Other fields take backspaces in that case.
     TypingState::CopyWait TypingState::copyWaitNeed() const {
-        const auto surrounding = host_->surrounding();
+        const auto surrounding = copyAtCaret();
         if (!surrounding.isValid())
             return CopyWait::No;
         const auto deletion = countSurroundingDeletion(textBeforeCursor(surrounding), surr_wait_.prefix, surr_wait_.deleted, earlierWords_);

@@ -160,6 +160,7 @@ add_ngosen_headless_test(ibus_dbus_forward_backspaces
     ibus-dbus-forward-backspaces.cpp "integration;sen")
 add_ngosen_headless_test(cursor_jump_reset
     cursor-jump-reset.cpp "integration;surrounding")
+set_tests_properties(cursor_jump_reset PROPERTIES TIMEOUT 40)
 add_ngosen_headless_test(click_switch_fuzz
     click-switch-fuzz.cpp "integration;surrounding")
 set_tests_properties(click_switch_fuzz PROPERTIES TIMEOUT 120)

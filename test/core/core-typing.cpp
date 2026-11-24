@@ -5324,6 +5324,16 @@ namespace {
         loop.pump(300);
     }
 
+    // The copy ends with the word when the caret report is one step back, so nothing waits for it.
+    void testCaretLeftOneBackNeedsNoCopyWait() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        ngosen::test::Typed run;
+        const auto          lines = logLinesWhileTyping(makeField("wayland", true, "editor"), {.leavesCaretOneBack = true}, "a ddi tieengs vieetj ", "", &run);
+        check(run.text == "a đi tiếng việt ", "a caret report left one step back keeps the words", run.text);
+        check(countHaving(lines, "still short") == 0, "no copy wait for a caret report left one step back", join(lines));
+    }
+
     // A field whose copy never catches up stops waiting after two waits in a row run out, until focus moves on.
     void testCopyWaitsRunOutPerField() {
         realMode = ngosen::Mode::Sen;
@@ -6459,6 +6469,7 @@ int main() {
     testReportRequestKeepsReplayedKey();
     testLateCopyKeepsSurroundingPath();
     testRolledKeysWaitForIbusCopy();
+    testCaretLeftOneBackNeedsNoCopyWait();
     testCopyWaitsRunOutPerField();
     testFocusLossLogsDroppedKeys();
     testStarvedStretchKeepsCopyWait();

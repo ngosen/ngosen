@@ -775,7 +775,8 @@ namespace ngosen::test {
             shown[cursor_ - 1]   = U'\u00a0';
             return Surrounding(encode(shown), static_cast<unsigned int>(cursor_), static_cast<unsigned int>(anchor_));
         }
-        return Surrounding(encode(text_), static_cast<unsigned int>(cursor_ + cursorPastBy_), static_cast<unsigned int>(anchor_ + cursorPastBy_));
+        const size_t back = caretOneBack_ && cursor_ > 0 && anchor_ == cursor_ ? 1 : 0;
+        return Surrounding(encode(text_), static_cast<unsigned int>(cursor_ + cursorPastBy_ - back), static_cast<unsigned int>(anchor_ + cursorPastBy_ - back));
     }
 
     std::string FakeApp::keyText(uint32_t sym) const {
@@ -840,6 +841,13 @@ namespace ngosen::test {
         }
         anchor_ = cursor_;
         changed();
+        if (typed && quirks_.leavesCaretOneBack)
+            later(1, [this, shown = text_] {
+                if (text_ != shown)
+                    return;
+                changed();
+                caretOneBack_ = true;
+            });
         if (!typed)
             landStrayLetter();
         bounceEmptyAfterEdit();
@@ -956,6 +964,7 @@ namespace ngosen::test {
     }
 
     void FakeApp::changed() {
+        caretOneBack_    = false;
         holdsUnreported_ = false;
         shownCursor_     = cursor_;
         shownAnchor_     = anchor_;

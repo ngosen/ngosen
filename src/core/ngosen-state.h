@@ -857,6 +857,8 @@ namespace ngosen {
         bool passesKeyWhileCursorPast(ngosen::KeyPress& keyEvent, uint32_t sym);
         bool belongsToRawWord(uint32_t sym, uint32_t states) const;
         void noteAutofill(const Surrounding& report);
+        // The field's copy with the caret where the app keeps it while its report stays one step back.
+        Surrounding copyAtCaret() const;
         // Why this word cannot be deleted through the surrounding text; chars is what the deletion would ask for.
         std::vector<std::string> surroundingPathFails(const Surrounding& surrounding, unsigned int& chars) const;
         static std::string       joined(const std::vector<std::string>& parts); ///< "none" when empty

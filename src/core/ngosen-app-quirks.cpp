@@ -231,6 +231,13 @@ namespace ngosen {
         return field.frontend == "wayland" || field.frontend == "wayland_v2";
     }
 
+    bool keepsFocusWhenEmptied(const Field& field) {
+        // Gnumeric's cell editor drops a forwarded Backspace while it starts, and reports nothing that
+        // sets it apart. Newer builds name themselves by their app ID.
+        const std::string program = appName(field);
+        return program == "gnumeric" || program == "org.gnumeric.gnumeric";
+    }
+
     bool appliesBackspacesLate(const Field& field) {
         return appName(field) == "soffice";
     }
@@ -238,10 +245,6 @@ namespace ngosen {
     bool deletesThroughSurroundingFirst(const Field& field) {
         // XIM has no surrounding text.
         return field.frontend == "ibus" || field.frontend == "wayland" || field.frontend == "wayland_v2" || field.frontend == "dbus" || field.frontend == "fcitx4";
-    }
-
-    bool takesDeletionWhileUndeclared(const Field& field) {
-        return field.frontend == "dbus";
     }
 
     bool takesDeletionOnStaleCopy(const Field& field) {

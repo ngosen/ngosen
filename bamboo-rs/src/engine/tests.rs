@@ -1769,7 +1769,7 @@ fn test_teencode_keeps_held_letters() {
 fn test_backspace_keeps_the_tone_of_a_stretched_or_teencode_word() {
     for (teencode, keys, after) in [
         (false, "chaiiif", "chàii"),
-        (false, "aaaf", "àà"),
+        (false, "aaaf", "àa"),
         (true, "chaiiif", "chàii"),
         (true, "fair", "fả"),
         (true, "nhuwgx", "nhữ"),
@@ -1868,19 +1868,19 @@ fn finished_word(keys: &str) -> (String, String) {
 }
 
 #[test]
-fn test_held_last_letter_repeats_with_its_marks() {
+fn test_held_last_letter_repeats_without_marks() {
     for (keys, word) in [
-        ("afaaa", "àààà"),
+        ("afaaa", "àaaa"),
         ("ooiiiii", "ôiiiii"),
         ("ddusngggg", "đúngggg"),
-        ("quasaaa", "quáááá"),
+        ("quasaaa", "quáaaa"),
         ("chafooo", "chàooo"),
-        ("AFAAA", "ÀÀÀÀ"),
-        ("Owsoo", "Ớớớ"),
-        ("quasaa", "quááá"),
-        ("aaaaaaaf", "ààààààà"),
+        ("AFAAA", "ÀAAA"),
+        ("Owsoo", "Ớoo"),
+        ("quasaa", "quáaa"),
+        ("aaaaaaaf", "àaaaaaa"),
         ("chaooof", "chàooo"),
-        ("quaaaas", "quáááá"),
+        ("quaaaas", "quáaaa"),
         ("ddungggggs", "đúnggggg"),
     ] {
         let (shown, committed) = finished_word(keys);
@@ -1896,5 +1896,24 @@ fn test_english_words_with_doubled_ends_stay_english() {
         "besttt", "thereee", "cheeseee", "afrooo", "boommm",
     ] {
         assert_eq!(finished_word(keys).1, format!("{keys} "), "{keys}");
+    }
+}
+
+#[test]
+fn test_tone_key_after_undone_mark_adds_one_letter() {
+    // The third o took the circumflex off, so the s after boot must not bring that o back (#959).
+    for (keys, word) in [
+        ("booots", "boots"),
+        ("roooms", "rooms"),
+        ("rooomf", "roomf"),
+        ("Booots", "Boots"),
+        // A word that still composes after a removed tone keeps its marks.
+        ("asznhs", "ánh"),
+    ] {
+        assert_eq!(
+            finished_word(keys),
+            (word.into(), format!("{word} ")),
+            "{keys}"
+        );
     }
 }

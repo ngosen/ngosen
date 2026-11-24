@@ -1,3 +1,9 @@
+fcitx5-ngosen (1:1.14.1-1) unstable; urgency=medium
+
+  * On voz.vn in Brave on KDE Wayland, fast typing and tone changes no longer push letters into a word, lose letters or delete too much (#964, #967, #971, #972, #977); Firefox no longer loses a letter typed just before a link, and Firefox Flatpak on GNOME Wayland keeps tone marks after a correction (#970, #975); decomposed Unicode no longer loses letters in bash and fish terminals (#952); Telex "booots" gives "boots" and stretched words keep the mark only on the first letter (#976, #980); emoji are off until turned on per app, the list hides after 4 seconds, and digits typed as it appears stay digits (#969, #973, #968); a slow Ctrl+Shift tap still switches (#966); the typing log keeps about half a minute of browser typing (#953).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Tue, 24 Nov 2026 14:00:00 +0700
+
 fcitx5-ngosen (1:1.14.0-1) unstable; urgency=medium
 
   * The tray can show vi / en or a picture of your own instead of the icon (#908, #911); in Preedit, a selected word can be retoned with the tone key, as in Sen (#921); a guide for AI assistants and the ngosen-check command (#931, #933); the Spell Check option is gone and Auto Restore always checks the dictionary (#925); a first install on KDE keeps the keyboard layout (#942); letters, numbers and chat shorthand no longer offer emoji (#945); the KDE tray letters are drawn on the pixel grid (#946); Vim mode switched on in an unnamed window no longer carries over to a later window (#949).

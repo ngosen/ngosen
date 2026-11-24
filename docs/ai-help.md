@@ -1,7 +1,8 @@
 # Helping a user fix Vietnamese typing with Ngó Sen
 
 This page is for an AI assistant helping someone whose typing goes wrong with Ngó Sen, a Vietnamese input
-method for Linux. If you cannot open links, ask the user to paste this whole page.
+method for Linux. If you cannot open links, ask the user to paste this whole page. For "how do I…"
+questions, and for what each mode, key and setting does, read [ai-guide.md](ai-guide.md).
 
 Talk to the user in their language, usually Vietnamese. The labels below are the Vietnamese ones they see on
 screen, with the English in brackets.
@@ -18,7 +19,8 @@ screen, with the English in brackets.
 3. **One attempt per branch, then stop.** If a step does not help, say so and move on to the bug report. Keep
    a list of what was changed so it can be undone.
 4. **Do not tune Ngó Sen's internals.** Wait times and hidden options are measured per app by the
-   developers. A report with a typing log gets the app fixed for everyone.
+   developers. A report with a typing log gets the app fixed for everyone. Do not read the source code to
+   find a setting or a fix; use these two pages, the README and the settings window.
 5. **Ignore guides for fcitx5-lotus.** Ngó Sen started from it, but names, files and fixes differ.
 
 ## Steps
@@ -77,7 +79,8 @@ wrong, go back to step 3. If it is right, the problem is in one app:
 ### 5. Known problems, then Preedit
 
 Check the known problems below. If none fits, switch only this app to Preedit: in the app, press `` ` `` to
-open the mode menu next to the cursor and choose "Gạch chân (q)". Ngó Sen remembers the choice for that app.
+open the mode menu next to the cursor and choose "Gạch chân (q)" (see
+[the `` ` `` menu](ai-guide.md#mode-menu-) if it does not open). Ngó Sen remembers the choice for that app.
 Warn the user that in Preedit, the word being typed is underlined, and finishing it with Space before clicking
 avoids the known click problems.
 

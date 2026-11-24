@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-//! A word stretched by holding its last letter (`afaaa` for àààà, `ooiiii` for ôiiii).
+//! A word stretched by holding its last letter (`afaaa` for àaaa, `ooiiii` for ôiiii).
 
 use super::teencode::spends_every_key;
 use super::*;
 
 impl BambooEngine {
-    /// The dictionary word the keys start with, followed by one copy of its last letter, marks
-    /// included, for each key after it that types that letter again. A tone key typed after the
-    /// copies (`aaaf`) marks the word as well.
+    /// The dictionary word the keys start with, followed by the keys after it that type its last
+    /// letter again, unmarked so a long run stays easy to read. A tone key typed after them
+    /// (`aaaf`) marks the word as well.
     pub(super) fn elongated_word(&self) -> Option<String> {
         let raw = self.raw_text();
         if !raw.chars().all(char::is_alphabetic)
@@ -63,21 +63,7 @@ impl BambooEngine {
                 && ends_held
                 && spends_every_key(&lower_keys, &lower)
                 && self.dictionary.contains(&lower))
-            .then(|| word + &repeated(last, copies))
+            .then(|| word + &copies.iter().collect::<String>())
         })
     }
-}
-
-/// `last` once per key in `copies`, in the case of that key.
-fn repeated(last: char, copies: &[char]) -> String {
-    copies
-        .iter()
-        .flat_map(|c| {
-            if c.is_uppercase() {
-                last.to_uppercase().collect::<Vec<_>>()
-            } else {
-                last.to_lowercase().collect()
-            }
-        })
-        .collect()
 }

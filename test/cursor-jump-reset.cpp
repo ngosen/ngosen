@@ -37,6 +37,8 @@ namespace {
                 fcitx::KeyEvent event(context_.get(), fcitx::Key(static_cast<fcitx::KeySym>(c)), false);
                 engine_.keyEvent(entry_, event);
                 if (!event.accepted()) {
+                    if (slowStepBack_)
+                        pumpEventLoop(testInstance_.instance, 110);
                     insert(std::string(1, c));
                     if (resetAfterPassedKeys_) {
                         report();
@@ -56,6 +58,8 @@ namespace {
                     bounceCaret();
                 if (lateStepBack_)
                     stepBackLate();
+                if (slowStepBack_)
+                    stepBackAndStay();
                 pumpEventLoop(testInstance_.instance, 60);
                 // Applies only deletions that end at the cursor, so any other shape shows in the text.
                 for (; deletes_ < context_->deletes().size(); ++deletes_) {
@@ -118,6 +122,12 @@ namespace {
             lateStepBack_ = true;
         }
 
+        // On a busy machine Antigravity shows each letter over 100 ms after its key, then reports the caret
+        // one step back and repeats that until the next key, which still lands at the end.
+        void stepBackAfterSlowLetters() {
+            slowStepBack_ = true;
+        }
+
         // Firefox in some web editors repeats the old state, then reports the cursor after a commit
         // before the committed text.
         // Those editors keep zero-width spaces after the caret, so the early cursor is still in range.
@@ -173,6 +183,17 @@ namespace {
             pumpEventLoop(testInstance_.instance, 120);
             report();
         }
+        void stepBackAndStay() {
+            const auto cursor = fcitx::utf8::length(text_.substr(0, cursor_));
+            if (cursor == 0)
+                return;
+            pumpEventLoop(testInstance_.instance, 20);
+            for (int i = 0; i < 2; ++i) {
+                context_->surroundingText().setText(text_, cursor - 1, cursor - 1);
+                context_->updateSurroundingText();
+                pumpEventLoop(testInstance_.instance, 100);
+            }
+        }
         // advance moves the reported cursor ahead of the text the app has applied so far.
         void report(size_t advance = 0) {
             const auto cursor = fcitx::utf8::length(text_.substr(0, cursor_)) + advance;
@@ -190,6 +211,7 @@ namespace {
         bool                              cursorBeforeText_     = false;
         bool                              caretBounce_          = false;
         bool                              lateStepBack_         = false;
+        bool                              slowStepBack_         = false;
         bool                              holdCommitReport_     = false;
         bool                              resetAfterPassedKeys_ = false;
         size_t                            deletes_              = 0;
@@ -290,6 +312,14 @@ int main() {
         app.stepBackLateAfterKeys();
         app.type("vieetj nhieeuf");
         if (!expectText("type \"vieetj nhieeuf\" with a late caret step back after each key", app, "việt nhiều"))
+            return 1;
+    }
+    // The same when the letter itself shows late, and the step back stays until the next key.
+    {
+        FakeApp app(testInstance, engine, entry);
+        app.stepBackAfterSlowLetters();
+        app.type("vieetj nhieeuf");
+        if (!expectText("type \"vieetj nhieeuf\" with slow letters and a caret step back that stays", app, "việt nhiều"))
             return 1;
     }
     // Those resets must not end a word typed as is after a '/'.

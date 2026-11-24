@@ -47,7 +47,7 @@ Qt version on KDE Plasma:
   The menu only opens while Vietnamese is enabled.
 - Emoji suggestions: off until turned on for an app with "Gợi ý emoji" (w). Then after a word such as
   `cười`, `con mèo` or `haha`, `Tab: 😂 …` appears next to the cursor. Tab numbers the emoji, a number
-  picks one, Esc keeps the text.
+  picks one, Esc keeps the text. Left alone for 4 seconds, the list goes away.
 - Separate English/Vietnamese toggle: new installations start in Vietnamese and use Ctrl+Shift, as in UniKey;
   existing installations keep their switch key and current language setting. By default, the switch changes
   all apps at once, and the choice survives logouts. In English mode, typing works as if no input method were
@@ -412,7 +412,8 @@ word with an incorrect tone mark. To undo this workaround, delete
 
 If you ask an AI assistant for help, send it this along with the problem: "Read
 https://github.com/ngosen/ngosen/blob/main/docs/ai-help.md, then help me fix typing with Ngó Sen". The page
-tells it to diagnose and leave the fixes to you, and to have you read anything before you paste it.
+tells it to diagnose and leave the fixes to you, and to have you read anything before you paste it. To ask an AI assistant how to use Ngó Sen, such as the `` ` `` menu,
+give it this link: https://github.com/ngosen/ngosen/blob/main/docs/ai-guide.md.
 
 Report other problems in [Issues](https://github.com/ngosen/ngosen/issues) on GitHub.
 If you do not have a GitHub account, message the

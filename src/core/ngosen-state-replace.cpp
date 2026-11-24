@@ -318,7 +318,22 @@ namespace ngosen {
         slot = std::move(next);
     }
 
+    bool TypingState::waitsForFieldToDeclare(const char* reason) const {
+        const std::string why = reason;
+        return backspacesToUndeclaredAt_ != 0 && why != "focus lost" && why != "backspaces not sent" && !host_->field().surroundingText && host_->hasFocus() &&
+            ngosen::monotonicUs() - backspacesToUndeclaredAt_ < UndeclaredFieldWaitUs;
+    }
+
     void TypingState::finishReplacement(const char* reason, bool fromTimer) {
+        waitsForDeclaredText_ = waitsForFieldToDeclare(reason);
+        if (waitsForDeclaredText_) {
+            surr_wait_.pending      = true;
+            surr_wait_.timerOnly    = true;
+            surr_wait_.focusRetries = 0;
+            replaceTimer(settle_timer_, startWaitTimer(ngosen::monotonicUs() + 2000, [this](ngosen::Timer& t) { return onTimedWaitTimer(t); }));
+            return;
+        }
+        backspacesToUndeclaredAt_ = 0;
         noteWaitOutcome(reason);
         logReplaceEnd(reason);
         if (backspaceCheck_ && backspaceCheck_->stage == BackspaceCheck::Stage::Deleting) {
@@ -555,9 +570,12 @@ namespace ngosen {
 
     void TypingState::startBackspaces(const ReplaceRequest& request) {
         countBackspaces(request.copy);
+        const bool undeclared     = !host_->field().surroundingText && sinceFocus_.lastPath == "surrounding";
+        backspacesToUndeclaredAt_ = undeclared ? ngosen::monotonicUs() : 0;
         is_deleting_.store(true, std::memory_order_release);
         closeCheckBeforeOtherEdit();
         openBackspaceCheck(request);
+        watchForStrayKey(request);
     }
 
     void TypingState::runForwardedBackspaces(const ReplaceRequest& request) {
@@ -615,6 +633,7 @@ namespace ngosen {
         // count towards "frozen"; a lagging app sends a stale one.
         surr_wait_.sentSnapshotFresh = false;
         surr_wait_.leavesText        = snapshot.isValid() && showsTextAfterDeleting(snapshot, static_cast<unsigned int>(utf8::length(deletedPart)));
+        surr_wait_.textAfterCursor   = snapshot.isValid() && utf8::length(snapshot.text()) > snapshot.cursor();
         if (snapshot.isValid()) {
             const std::string before     = textBeforeCursor(snapshot);
             const std::string expected   = surr_wait_.prefix + surr_wait_.deleted;
@@ -633,6 +652,15 @@ namespace ngosen {
         for (unsigned int i = 0; i < s.cursor() && it != t.end(); ++i)
             it = utf8::nextChar(it, t.end());
         return std::string(t.begin(), it);
+    }
+
+    std::string TypingState::textAfterCursor(const Surrounding& s) {
+        return s.isValid() ? s.text().substr(textBeforeCursor(s).size()) : std::string();
+    }
+
+    void TypingState::noteTailAtWordStart() {
+        const Surrounding s = host_->surrounding();
+        tailAtWordStart_    = s.isValid() ? std::optional<std::string>(textAfterCursor(s)) : std::nullopt;
     }
 
     bool TypingState::showsTextAfterDeleting(const Surrounding& s, unsigned int chars) {
@@ -688,7 +716,7 @@ namespace ngosen {
             fails.emplace_back("address bar");
         // A field the deletion empties can leave focus before the commit lands, and fcitx5 drops commits
         // without focus (Zed, #93); the backspace path waits for focus to come back.
-        if (ngosen::dropsCommitsWithoutFocus(field) && surrounding.isValid() && !showsTextAfterDeleting(surrounding, chars))
+        if (ngosen::dropsCommitsWithoutFocus(field) && !ngosen::keepsFocusWhenEmptied(field) && surrounding.isValid() && !showsTextAfterDeleting(surrounding, chars))
             fails.emplace_back("deletion empties the field");
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
@@ -756,6 +784,27 @@ namespace ngosen {
             return false;
         const std::string prefix = oldPreBuffer_.substr(0, oldPreBuffer_.size() - deletedPart.size());
         return countSurroundingDeletion(before, prefix, deletedPart, earlierWordsBeforeReplacement()).match == SurroundingDeletion::Match::None;
+    }
+
+    // The field reported the word without the letter we let through, long after its key: the app never took it
+    // (voz.vn in Brave), so an edit counted on the word as typed would delete a letter too many.
+    bool TypingState::wordMissesPassedLetter(std::string& shownWord) const {
+        if (!passedLetter_ || !passedLetter_->lostLate || !letterShownFast_ || !passedLetter_->freshAtPress || passedLetter_->key + 1 != keyCount_ ||
+            !isEndsWith(oldPreBuffer_, passedLetter_->text))
+            return false;
+        const Surrounding s = host_->surrounding();
+        if (!s.isValid() || s.cursor() != s.anchor())
+            return false;
+        const std::string word   = oldPreBuffer_.substr(0, oldPreBuffer_.size() - passedLetter_->text.size());
+        const std::string before = textBeforeCursor(s);
+        if (word.empty() || isEndsWith(before, oldPreBuffer_) || !isEndsWith(before, word))
+            return false;
+        // The word must start there, not end a longer one that happens to match.
+        const std::u32string head = utf8::decode(before.substr(0, before.size() - word.size()));
+        if (!head.empty() && head.back() != U'\u200b' && (head.back() >= 0x80 || std::isalnum(static_cast<int>(head.back())) != 0))
+            return false;
+        shownWord = word;
+        return true;
     }
 
     bool TypingState::keepsWordRaw(const std::string& deletedPart) {
@@ -883,8 +932,9 @@ namespace ngosen {
             notePath("surrounding", "the field takes no keys");
             return true;
         }
-        if (!host_->field().surroundingText && sinceFocus_.lastPath == "surrounding" && ngosen::takesDeletionWhileUndeclared(host_->field())) {
-            NGOSEN_INFO("Delete through the surrounding text the field stopped declaring after our edit");
+        // Firefox takes the deletion in that state but can drop the commit, so a field that takes
+        // backspaces gets them instead (#951).
+        if (!host_->field().surroundingText && sinceFocus_.lastPath == "surrounding" && !ngosen::forwardsBackspaces(host_->field())) {
             notePath("surrounding", "the field stopped declaring its text after our edit");
             return true;
         }
@@ -913,7 +963,9 @@ namespace ngosen {
         ++expected_backspaces_;
         // Sen skips the autofill guard except in address bars (#190): the Url flag on Chromium,
         // the autofill shape on Firefox.
-        const bool isFirefoxAddressBar = ngosen::hidesAddressBarFlag(host_->field()) && textAfterCursorLooksLikeUrl(surrounding);
+        // A suggestion appears as the word is typed; text already there, like a link, is not one.
+        const bool tailIsNew           = !tailAtWordStart_ || textAfterCursor(surrounding) != *tailAtWordStart_;
+        const bool isFirefoxAddressBar = ngosen::hidesAddressBarFlag(host_->field()) && textAfterCursorLooksLikeUrl(surrounding) && tailIsNew;
         const bool checkAutofill       = mode() != ngosen::Mode::Sen || host_->field().url || isFirefoxAddressBar;
         if (checkAutofill) {
             // Enable Autofill detection for all frontends (Wayland/IBus).
@@ -1575,6 +1627,8 @@ namespace ngosen {
     }
 
     void TypingState::replayBufferedKeys(std::string committed) {
+        if (fixStrayBeforeCommit())
+            return;
         // Under GNOME, mutter sends one text-input "done" per main-loop turn and clients keep only the
         // last commit_string before it, so back-to-back commits lose all but the last ("đ" then "i"
         // shows "i"). Send the replacement and the replayed keys as one commit.
@@ -1778,9 +1832,10 @@ namespace ngosen {
 
         auto commitF = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
         if (commitF && (*commitF.get() != 0)) {
-            std::string deletedPart;
-            std::string addedPart;
-            ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitF.get(), deletedPart, addedPart);
+            const std::string committed = spelledAtWordEnd(commitF.get());
+            std::string       deletedPart;
+            std::string       addedPart;
+            ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, committed, deletedPart, addedPart);
             const bool replacing = !deletedPart.empty();
             // The engine ends the word on Enter without taking it, so the Enter still has to go out.
             const std::string owed   = !processed && !sent && ngosen::key::isEnter(sym) ? keyUtf8 : std::string();
@@ -1807,7 +1862,7 @@ namespace ngosen {
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             ngosen::UniqueCPtr<char> dropped(EnginePullDroppedWord(bambooEngine_.handle()));
-            rememberWord(commitF.get(), dropped.get());
+            rememberWord(committed, dropped.get());
             if (sent && !replacing)
                 return holdReplayedKey(keys, i, out, *sent);
             if (!replacing)

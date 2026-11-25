@@ -31,6 +31,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Trang "Có gì mới & mẹo" trong cửa sổ cài đặt nay hướng dẫn đúng như version 1.14.1: emoji tắt sẵn, bấm `` ` ``
   rồi `w` để bật cho từng app, bấm Tab trước rồi mới chọn bằng số; ví dụ gõ kéo dài `afaaa` ra `àaaa` thay vì
   `àààà` (#992).
+- Kiểm tra máy trên KDE Wayland nay báo khi bàn phím ảo của KDE bị tắt (vd. bằng công tắc bàn phím trên màn hình
+  của WildOS), thay vì khuyên chạy `fcitx5 -d`, và có nút bật lại; bật lại thì gõ được ngay, kể cả khi đang
+  không gõ được chữ nào (#982).
 
 ## [1.14.1-1] — 24/11/2026
 
@@ -57,9 +60,6 @@ Tải ở [ngosen-1.14.1-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
 
 - Telex: phím dấu gõ ngay sau một phím lặp để bỏ dấu không còn làm hiện lại chữ đã bỏ ("booots" ra "boots" thay
   vì "booots", "roooms" ra "rooms") (#976).
-- Kiểm tra máy trên KDE Wayland nay báo khi bàn phím ảo của KDE bị tắt (vd. bằng công tắc bàn phím trên màn hình
-  của WildOS), thay vì khuyên chạy `fcitx5 -d`, và có nút bật lại; bật lại thì gõ được ngay, kể cả khi đang
-  không gõ được chữ nào (#982).
 - "Lưu nhật ký gõ" nay giữ khoảng nửa phút gõ gần nhất trong trình duyệt thay vì 7 giây, để lỗi vẫn còn trong
   nhật ký gõ khi lưu ngay sau đó (#953).
 - Gõ Sen: chữ đầu tiên có gợi ý emoji sau khi bật máy không còn sai trong terminal VS Code chạy X11 ("chào" ra

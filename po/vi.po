@@ -1967,8 +1967,8 @@ msgid "Drawn-out letters"
 msgstr "Gõ kéo dài chữ"
 
 #: settings-gui/core/whats_new_content.py
-msgid "Repeat the last letter of a marked word to draw it out: the mark stays on the first letter, as in UniKey, instead of bringing back the keys you typed. English words such as besttt stay as typed."
-msgstr "Gõ lặp chữ cái cuối của một từ có dấu để kéo dài chữ: dấu giữ ở chữ cái đầu, như UniKey, thay vì hiện lại các phím đã gõ. Từ tiếng Anh như besttt vẫn giữ nguyên."
+msgid "Repeat the last letter of a marked word to draw it out: the word keeps its marks and the repeated letters have none, as in UniKey, instead of bringing back the keys you typed. English words such as besttt stay as typed."
+msgstr "Gõ lặp chữ cái cuối của một từ có dấu để kéo dài chữ: từ giữ nguyên dấu, các chữ lặp thêm không có dấu, như UniKey, thay vì hiện lại các phím đã gõ. Từ tiếng Anh như besttt vẫn giữ nguyên."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Teencode for chosen apps"
@@ -2039,8 +2039,8 @@ msgid "Emoji in the apps you choose"
 msgstr "Emoji trong app bạn chọn"
 
 #: settings-gui/core/whats_new_content.py
-msgid "Emoji suggestions are off until you turn them on for an app: press ` and then w in it. Press Tab to number the emoji, then a number to pick one; a number typed first stays a number. Left alone for 4 seconds, the list hides."
-msgstr "Gợi ý emoji mặc định tắt, muốn bật cho app nào thì bấm ` rồi w trong app đó. Bấm Tab để đánh số emoji, rồi bấm số để chọn; bấm số trước thì vẫn ra số. Không thao tác trong 4 giây thì danh sách ẩn đi."
+msgid "Emoji suggestions are off until you turn them on for an app: press ` and then w in it. Press Tab to number the emoji, then a number to pick one; before Tab, numbers type as usual. Left alone for 4 seconds, the list hides."
+msgstr "Gợi ý emoji mặc định tắt, muốn bật cho app nào thì bấm ` rồi w trong app đó. Bấm Tab để đánh số emoji, rồi bấm số để chọn; trước khi bấm Tab, phím số gõ như thường. Không thao tác trong 4 giây thì danh sách ẩn đi."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Pick what the tray shows"

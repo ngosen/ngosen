@@ -21,8 +21,8 @@ FEATURES = [
         "title": N_("Emoji in the apps you choose"),
         "how": N_(
             "Emoji suggestions are off until you turn them on for an app: press ` and then w in it. "
-            "Press Tab to number the emoji, then a number to pick one; a number typed first stays a "
-            "number. Left alone for 4 seconds, the list hides."
+            "Press Tab to number the emoji, then a number to pick one; before Tab, numbers type as "
+            "usual. Left alone for 4 seconds, the list hides."
         ),
         "example": "",
         "target": ("page", "emoji"),
@@ -89,9 +89,9 @@ FEATURES = [
         "version": "1.13",
         "title": N_("Drawn-out letters"),
         "how": N_(
-            "Repeat the last letter of a marked word to draw it out: the mark stays on the first "
-            "letter, as in UniKey, instead of bringing back the keys you typed. English words such "
-            "as besttt stay as typed."
+            "Repeat the last letter of a marked word to draw it out: the word keeps its marks and "
+            "the repeated letters have none, as in UniKey, instead of bringing back the keys you "
+            "typed. English words such as besttt stay as typed."
         ),
         "example": "afaaa → àaaa, ddusngggg → đúngggg",
         "target": None,

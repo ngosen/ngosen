@@ -34,6 +34,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Kiểm tra máy trên KDE Wayland nay báo khi bàn phím ảo của KDE bị tắt (vd. bằng công tắc bàn phím trên màn hình
   của WildOS), thay vì khuyên chạy `fcitx5 -d`, và có nút bật lại; bật lại thì gõ được ngay, kể cả khi đang
   không gõ được chữ nào (#982).
+- Gõ Sen trên Sway trong VS Code và các trang web không gửi lại chữ cho bộ gõ: chữ có dấu không còn thỉnh thoảng
+  biến mất ("đây l", "đư không"). Đổi lại, mỗi lần sửa dấu ở các ô này hiện chậm hơn khoảng 25 ms (#997).
 
 ## [1.14.1-1] — 24/11/2026
 

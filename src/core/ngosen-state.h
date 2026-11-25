@@ -413,6 +413,8 @@ namespace ngosen {
         // IBus clients, GNOME Shell above all, get forwarded keys and commits on separate paths, so a
         // commit sent sooner can still reach the app before the backspaces.
         static constexpr uint64_t ShellForwardWaitUs = 40000;
+        // An app's state update follows a forwarded Backspace by about a frame; the commit goes after it.
+        static constexpr uint64_t UpdateForwardWaitUs = 40000;
         // On wayland_v2 the backspaces go through a virtual keyboard, as typed keys, and a Firefox that has
         // not yet shown the word applies commits ahead of them once it catches up.
         static constexpr uint64_t UnseenWordForwardWaitUs = 300000;

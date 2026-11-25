@@ -59,6 +59,9 @@ namespace ngosen::test {
         bool reportsTrailingNbsp    = false; // reports a space right before the cursor as U+00A0, as Firefox contenteditable does
         bool neverSendsText         = false; // declares surrounding text but never sends any, as WPS's own fcitx4 module does
         int  keyHoldMs              = 0;     // how long each typed key stays down before its release
+        // Sends a state update this long after a forwarded Backspace, and loses a commit that crosses it, as an
+        // app that redraws does on a wlroots compositor.
+        int  updateAfterBackspaceMs = 0;
         bool dropsForwardedHeldKey  = false; // drops a forwarded key while the user holds that key down, as GNOME Shell does
         // Shows its own copy of the text, which takes typed text and Backspace but no deletion through the
         // surrounding text, while it reports the browser's copy, which a Backspace leaves alone: Lark Sheets.
@@ -405,6 +408,8 @@ namespace ngosen::test {
         bool                                inReport_          = false;
         bool                                focused_           = true;
         uint64_t                            forwardedAt_       = 0;
+        uint64_t                            updateDueAt_       = 0;
+        static constexpr uint64_t           CrossingUs         = 3000; ///< how close to the update a commit is lost
         uint32_t                            lastBackSpaceAt_   = 0;
         uint32_t                            heldSym_           = 0;
         bool                                backspaceLeftDown_ = false;

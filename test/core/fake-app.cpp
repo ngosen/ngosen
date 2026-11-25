@@ -328,6 +328,9 @@ namespace ngosen::test {
         }
         if (++commits_ == quirks_.dropsCommitNumber)
             return;
+        const uint64_t nowUs = monotonicUs();
+        if (updateDueAt_ > nowUs && updateDueAt_ - nowUs <= CrossingUs)
+            return;
         // Focus and redraws are checked again when the app gets to the commit, which can be after a
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
@@ -440,6 +443,8 @@ namespace ngosen::test {
         }
         if (forwardedAt_ == 0)
             forwardedAt_ = monotonicUs();
+        if (quirks_.updateAfterBackspaceMs > 0)
+            updateDueAt_ = monotonicUs() + static_cast<uint64_t>(quirks_.updateAfterBackspaceMs) * 1000;
         bounceAfterEdit();
         bounceEmptyAfterEdit();
         if (quirks_.keyStepMs > 0) {

@@ -39,6 +39,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ Sen trong ô soạn bài của voz.vn: chữ có dấu hiện sớm hơn khoảng 40 ms mỗi lần sửa (60 ms ở từ đầu tiên).
   Ô này trước đây bị nhận là ô chat Messenger nên chờ thêm khoảng dành cho Messenger; nay ô nào tự lấy lại focus
   trong lúc xoá thì gửi chữ ngay khi báo xoá xong (#995).
+- Gõ Sen trên Sway trong VS Code và các trang web không gửi lại chữ cho bộ gõ: chữ có dấu không còn thỉnh thoảng
+  biến mất ("đây l", "đư không"). Đổi lại, mỗi lần sửa dấu ở các ô này hiện chậm hơn khoảng 25 ms (#997).
 
 ## [1.14.1-1] — 24/11/2026
 

@@ -267,7 +267,12 @@ namespace ngosen {
     }
 
     uint64_t TypingState::forwardWaitUs() const {
-        return ngosen::surroundingTextLags(host_->field()) ? ShellForwardWaitUs : ForwardWaitUs;
+        const Field field = host_->field();
+        if (ngosen::surroundingTextLags(field))
+            return ShellForwardWaitUs;
+        // With no copy nothing reports the deletion, so only time keeps the commit clear of that update.
+        const bool noCopy = !sinceFocus_.seenText && !host_->surrounding().isValid();
+        return noCopy && ngosen::commitCanCrossStateUpdate(field) ? UpdateForwardWaitUs : ForwardWaitUs;
     }
 
     bool TypingState::deferLaggingCommit(const char* reason, uint64_t settleUs) {

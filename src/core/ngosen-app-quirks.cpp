@@ -212,6 +212,10 @@ namespace ngosen {
         return field.frontend == "dbus" || field.frontend == "ibus";
     }
 
+    bool commitCanCrossStateUpdate(const Field& field) {
+        return field.frontend == "wayland_v2" && !field.terminal;
+    }
+
     // Only GNOME Shell sends edits through mutter; nothing else the field reports tells it apart.
     bool keepsLastEditPerTurn(const Field& field) {
         return field.relayedByShell || (field.frontend == "ibus" && (appName(field) == "gnome-shell" || field.reportedProgram == "gnome-shell"));

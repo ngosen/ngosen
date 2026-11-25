@@ -80,6 +80,10 @@ namespace ngosen {
     // after the key's reply, and GNOME Shell's IBus bridge relays the two separately.
     bool keyOvertakesCommit(const Field& field);
 
+    // An app that redraws sends a state update about a frame after a forwarded Backspace, and a wlroots
+    // compositor drops a commit that crosses it. Terminals send no such update.
+    bool commitCanCrossStateUpdate(const Field& field);
+
     // mutter sends GNOME Shell's text-input edits once per main-loop turn, and the client keeps only the
     // last deletion and commit of a turn.
     bool keepsLastEditPerTurn(const Field& field);

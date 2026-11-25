@@ -76,7 +76,7 @@ the menu key and the order of the items are set on the "Phím" (Keys) page, tab 
 
 - In English mode `` ` `` types the character. In an app set to "Tắt", the switch key opens this menu while
   "Phím chuyển áp dụng cho" is "Mọi app" (All apps), so the user can pick Sen or Preedit again; where the menu
-  cannot be drawn, a notification "App này đang ở chế độ tiếng Anh" appears instead. With "Từng app" the
+  cannot be drawn, Ngó Sen tries to show a notification "App này đang ở chế độ tiếng Anh" instead. With "Từng app" the
   switch key turns that app to Vietnamese.
 - On GNOME Wayland without the "Input Method Panel" extension (`kimpanel@kde.org`), apps that GNOME Shell
   relays show no menu, and `` ` `` types the character. The install command adds that extension; "Kiểm tra
@@ -95,8 +95,9 @@ the menu key and the order of the items are set on the "Phím" (Keys) page, tab 
 - **Extra keys:** `dduowjcd` + Space gives `được`, `coongty` + Space gives `công ty`. Backspace right after
   gives back what was typed.
 - **Cứu chữ:** typed `tieengs vieetj` with Vietnamese off? Switch Vietnamese on and it becomes `tiếng việt`.
-  `Tab` or `Esc` gives back what was typed. When the text looks like English typed on purpose, it only
-  offers: "Cứu chữ: Enter để đổi, Tab hoặc Esc để giữ nguyên" shows and `Enter` retypes it. Nothing is kept
+  `Tab` or `Esc` gives back what was typed. It retypes at once when every word changes; when some word
+  would stay as typed (`abc tieengs`), it only offers: "Cứu chữ: Enter để đổi, Tab hoặc Esc để giữ nguyên"
+  shows and `Enter` retypes it. Text that would not change at all (`hello world`) gets nothing. Nothing is kept
   from password fields.
 - **Cứu dấu:** select a word and type a tone key to add, change or remove its mark: `nhanh` + `s` gives
   `nhánh`. The same key again gives back the letter. In Sen, clicking right after the word is enough. It
@@ -122,8 +123,8 @@ the menu key and the order of the items are set on the "Phím" (Keys) page, tab 
 
 Off until turned on for an app with `w` in the `` ` `` menu. With "Gợi ý emoji" set to "Ở cuối câu" (the
 default), the emoji of words like `cười`, `con mèo` or `haha` show while the sentence is typed, and after
-`. ! ?` or a short pause `Tab: 😂 …` shows next to the cursor; with "Sau mỗi từ" it shows after each such word.
-`Tab` numbers the emoji, a number picks one, `Esc` keeps the text; a number typed before `Tab` stays a number.
+`. ! ?` or a short pause `Tab: 😂 …` shows next to the cursor (in Preedit, finish the word first); with "Sau mỗi từ" it shows after each such word.
+Once `Tab:` shows, `Tab` numbers the emoji, a number picks one, `Esc` keeps the text; a number typed before `Tab` stays a number.
 Left alone for 4 seconds, the list hides. The "Emoji" page also sets where the emoji goes, Yahoo
 Messenger codes like `=))`, English keywords and the user's own words, which "Xuất…" and "Nhập…" share. Its
 list "App đã bật emoji" has a "Tắt" button for each app.
@@ -146,8 +147,8 @@ per-app choices of the `` ` `` menu in `ngosen-app-rules.conf` and `ngosen-*-app
 them can answer a question; the settings window writes them and tells Ngó Sen to reload.
 "Sao lưu…" and "Khôi phục…" (Back Up, Restore) keep settings, macros and dictionary; they are at the bottom of
 the settings pages of the Qt window and in the window menu of the GTK one. "Đưa về mặc định…" (Restore
-defaults) resets every setting and also clears macros, added dictionary words, custom keys, emoji words and
-what is remembered for each app, after asking; suggest "Sao lưu…" first. It can be undone right after.
+defaults) resets every setting and, after asking, clears macros, added dictionary words, custom keys, emoji
+words, and the mode, switch choice and emoji choice remembered for each app (Teencode and Vim mode stay); suggest "Sao lưu…" first. It can be undone right after.
 "Tìm cài đặt" finds a setting by name, and a change can be undone from the "Hoàn tác" button on the message
 that confirms it.
 

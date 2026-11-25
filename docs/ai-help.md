@@ -112,11 +112,12 @@ edition report at [ibus-ngosen](https://github.com/ngosen/ibus-ngosen/issues).
 - `oà`, `uý` instead of `òa`, `úy`: "Bỏ dấu kiểu mới (oà, uý)" in the settings window.
 - `--` becomes `—`: "Hai gạch nối thành gạch dài" in the settings window.
 - No emoji since updating to 1.14.1: suggestions are now off until turned on for an app with `` ` `` then `w`.
-  A number typed as soon as the emoji show is typed as a number; press `Tab` first. (The IBus edition still
+  A number typed before `Tab` types as usual; wait for `Tab: 😂 …`, press `Tab`, then the number. (The IBus edition still
   suggests emoji by default and picks with a number, after `Tab` with VNI.)
-- `afaaa` gives `àaaa`: a drawn-out word keeps the mark on its first letter only, as in UniKey.
-- `nhuwg` + Space gives `nhưng`, and `tienf` + Space gives `tiền`: when the word ends, Telex can complete a
-  final `ng` or add a missing circumflex or horn if the result is a known word. Teencode keeps `nhưg`.
+- `afaaa` gives `àaaa`: a drawn-out word keeps its marks and the repeated letters have none, as in UniKey.
+- `nhuwg` + Space gives `nhưng`, and `tienf` + Space gives `tiền`: when the word ends and the result is a known
+  word, Telex can complete a final `ng` (Unicode charset) or add a missing circumflex or horn (with "Tự khôi
+  phục từ gõ sai" and "Gõ tự do" on). Teencode keeps `nhưg`.
 
 ## Known problems
 

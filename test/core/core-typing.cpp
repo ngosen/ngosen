@@ -1180,19 +1180,25 @@ namespace {
         ngosen::test::AppQuirks quirks;
         quirks.keyStepMs              = 4;
         quirks.updateAfterBackspaceMs = 5;
-        FakeResources resources;
-        realMode = ngosen::Mode::Sen;
-        realtextLen.store(0);
-        FakeLoop            loop;
-        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland_v2", true, "chromium"), quirks);
-        auto*               app   = owned.get();
-        ngosen::TypingState state(&resources, std::move(owned));
-        app->attach(&state);
-        for (const char c : std::string("dd")) {
-            app->type(static_cast<uint32_t>(c));
+        for (const bool leavesFocus : {false, true}) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland_v2", true, "chromium"), quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            app->type('d');
             loop.pump(150);
+            app->type('d');
+            loop.pump(5);
+            if (leavesFocus)
+                app->leaveFocus(4);
+            loop.pump(150);
+            const std::string what = leavesFocus ? "focus away behind the report: the commit waits for it" : "update behind the report: the commit does not cross it";
+            check(app->text() == "đ", what, app->text());
         }
-        check(app->text() == "đ", "update behind the report: the commit does not cross it", app->text());
     }
 
     void testStrayKeyDuringBounce() {

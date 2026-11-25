@@ -244,14 +244,10 @@ namespace ngosen {
             // A just-emptied composer is still reloading its placeholder, so the first word waits longer.
             settleMs = std::max(settleMs, engine_->options().waitSurroundingSettleFirstWordMs);
         }
-        uint64_t settleUs = static_cast<uint64_t>(settleMs) * 1000ULL;
-        // The report that ends the wait is the first of a few in a row, and the commit must not cross the rest.
-        if (settleUs == 0 && !fromTimer && ngosen::commitCanCrossStateUpdate(host_->field()))
-            settleUs = ReportBurstUs;
         // A composer drops a commit that lands right after the deletion, also under GNOME (#362).
-        if (deferLaggingCommit(reason, settleUs))
+        if (deferLaggingCommit(reason, static_cast<uint64_t>(settleMs) * 1000ULL))
             return;
-        if (settleUs == 0) {
+        if (settleMs == 0) {
             finishReplacement(reason, fromTimer);
             return;
         }
@@ -261,7 +257,7 @@ namespace ngosen {
         surr_wait_.timerOnly    = true;
         surr_wait_.focusRetries = 0;
         settle_reason_          = reason;
-        surr_wait_.deliverAt    = ngosen::monotonicUs() + settleUs;
+        surr_wait_.deliverAt    = ngosen::monotonicUs() + (static_cast<uint64_t>(settleMs) * 1000ULL);
         replaceTimer(settle_timer_, startWaitTimer(surr_wait_.deliverAt, [this](ngosen::Timer&) {
                          if (!surr_wait_.pending || !surr_wait_.timerOnly || !is_deleting_.load()) {
                              return false;
@@ -357,14 +353,8 @@ namespace ngosen {
         // wlroots drops a commit sent while the app's report is still arriving, as answering an old state.
         // Focus loss is not inside a key event, and the field is going away, so it commits at once.
         const bool defer = (host_->field().frontend == "dbus" || std::string(reason) == "event") && std::string(reason) != "focus lost";
-        if (defer) {
-            deferred_commit_.text    = pending_commit_string_;
-            deferred_commit_.pending = true;
-            deferred_commit_.timer   = host_->startTimer(ngosen::monotonicUs(), 0, [this](ngosen::Timer&) {
-                flushDeferredCommit();
-                return false; // never reset a timer from inside its own callback
-            });
-        }
+        if (defer)
+            deferCommit();
         std::string text         = defer ? std::string() : std::move(pending_commit_string_);
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
@@ -373,6 +363,23 @@ namespace ngosen {
         if (!defer) {
             replayBufferedKeys(std::move(text));
         }
+    }
+
+    void TypingState::deferCommit() {
+        // An app sends a few state updates in a row for one deletion, and the commit has to follow the last.
+        const uint64_t holdUs         = ngosen::commitCanCrossStateUpdate(host_->field()) ? ReportBurstUs : 0;
+        deferred_commit_.text         = pending_commit_string_;
+        deferred_commit_.pending      = true;
+        deferred_commit_.focusRetries = 0;
+        deferred_commit_.timer        = host_->startTimer(ngosen::monotonicUs() + holdUs, 0, [this, holdUs](ngosen::Timer& t) {
+            // A field that left focus during the hold takes the commit once it is back.
+            if (holdUs > 0 && !host_->hasFocus() && ++deferred_commit_.focusRetries <= 5) {
+                t.rearm(ngosen::monotonicUs() + 2000);
+                return true;
+            }
+            flushDeferredCommit();
+            return false; // never reset a timer from inside its own callback
+        });
     }
 
     void TypingState::flushDeferredCommit() {

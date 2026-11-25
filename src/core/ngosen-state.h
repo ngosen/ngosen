@@ -415,7 +415,7 @@ namespace ngosen {
         static constexpr uint64_t ShellForwardWaitUs = 40000;
         // An app's state update follows a forwarded Backspace by about a frame; the commit goes after it.
         static constexpr uint64_t UpdateForwardWaitUs = 40000;
-        // An app sends its state updates for one deletion within about a millisecond of each other.
+        // How long a commit waits for the rest of the state updates an app sends in a row.
         static constexpr uint64_t ReportBurstUs = 3000;
         // On wayland_v2 the backspaces go through a virtual keyboard, as typed keys, and a Firefox that has
         // not yet shown the word applies commits ahead of them once it catches up.
@@ -525,12 +525,14 @@ namespace ngosen {
         // fcitx5-gtk sends text committed while it processes a key event in the reply to that key.
         // The sentinel Backspace is consumed, and some clients (ghostty, foot) then drop the text.
         // Commit on the next event loop turn instead. Upstream fcitx5-lotus 2ca89a5.
+        void deferCommit();
         void flushDeferredCommit();
         // A commit put off to the next turn of the event loop.
         struct DeferredCommit {
             std::unique_ptr<ngosen::Timer> timer;
             std::string                    text;
-            bool                           pending = false;
+            bool                           pending      = false;
+            int                            focusRetries = 0; ///< timer fired while the field had lost focus
         };
         DeferredCommit deferred_commit_;
 

@@ -22,6 +22,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   có một chữ cái đứng đầu từ không còn bị để nguyên phím thô ("ddaay" ra "đây", "dduowcj" ra "được") (#987).
 - Gõ Sen trong editor của Antigravity trên GNOME: khi máy đang bận, chữ không còn bị dính cả phần cũ lẫn phần
   mới ("tiêngếng", "viêtệt", "đuoược") (#990).
+- Trang "Có gì mới & mẹo" trong cửa sổ cài đặt nay hướng dẫn đúng như version 1.14.1: emoji tắt sẵn, bấm `` ` ``
+  rồi `w` để bật cho từng app, bấm Tab trước rồi mới chọn bằng số; ví dụ gõ kéo dài `afaaa` ra `àaaa` thay vì
+  `àààà` (#992).
 
 ## [1.14.1-1] — 24/11/2026
 

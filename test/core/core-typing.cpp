@@ -1110,6 +1110,26 @@ namespace {
         }
     }
 
+    // On Sway, VS Code reports no text and redraws a frame after a Backspace.
+    void testCommitClearOfUpdateAfterBackspace() {
+        ngosen::test::AppQuirks quirks;
+        quirks.neverSendsText         = true;
+        quirks.updateAfterBackspaceMs = 17;
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland_v2", true, "code-oss"), quirks);
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (const char c : std::string("dd")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        check(app->text() == "đ", "update after a Backspace: the commit does not cross it", app->text());
+    }
+
     void testStrayKeyDuringBounce() {
         const Field             field = makeField("wayland", true, "brave-origin");
         ngosen::test::AppQuirks bouncing;
@@ -6409,6 +6429,7 @@ int main() {
     testLateBackspaceAfterBounce();
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();
+    testCommitClearOfUpdateAfterBackspace();
     testStrayKeyDuringBounce();
     testKeyNeverShown();
     testFirstWordEmptiesBouncingField();

@@ -345,7 +345,10 @@ namespace {
         // XIM forwards on the next event loop turn, after its sync reply.
         loop.pump(3);
         const auto& forwarded = host->forwarded();
-        check(forwarded.size() == 2 && forwarded[0].key == ngosen::EditKey::BackSpace && !forwarded[0].release && forwarded[1].release,
+        // wayland_v2 gets a release first, for an app that still has the key down.
+        const size_t first = frontend == "wayland_v2" ? 1 : 0;
+        check(forwarded.size() == first + 2 && forwarded[0].key == ngosen::EditKey::BackSpace && forwarded[0].release == (first == 1) && !forwarded[first].release &&
+                  forwarded[first + 1].release,
               what + "forwards one backspace press and release", std::to_string(forwarded.size()) + " forwarded keys");
         check(host->deletes().empty(), what + "no surrounding text deletion", std::to_string(host->deletes().size()));
 
@@ -1108,6 +1111,24 @@ namespace {
             type(' ', 300);
             expect("copy behind", app->text(), "di học ");
         }
+    }
+
+    // On Hyprland a Backspace whose release was lost when the field refocused stays down for the app.
+    void testForwardedBackspaceAfterLostRelease() {
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland_v2", false, "chromium"), ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        app->leaveBackspaceDown();
+        for (const char c : std::string("dd")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        check(app->text() == "đ", "Backspace left down: the forwarded Backspace still deletes", app->text());
     }
 
     // The voz.vn composer keeps two line breaks after the cursor, as Messenger's does, but it refocuses
@@ -6432,6 +6453,7 @@ int main() {
     testLateBackspaceAfterBounce();
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();
+    testForwardedBackspaceAfterLostRelease();
     testRefocusingComposerCommitsAtOnce();
     testStrayKeyDuringBounce();
     testKeyNeverShown();

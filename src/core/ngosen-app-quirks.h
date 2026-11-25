@@ -72,6 +72,10 @@ namespace ngosen {
     // surrounding text tens of milliseconds late, one edit at a time.
     bool surroundingTextLags(const Field& field);
 
+    // A forwarded key whose release is lost when the field loses focus stays down for the app, and
+    // Hyprland drops the next press of a key it still holds down.
+    bool mayHoldForwardedKeyDown(const Field& field);
+
     // A key passed to the app right after a commit can reach it first: a dbus client gets the commit
     // after the key's reply, and GNOME Shell's IBus bridge relays the two separately.
     bool keyOvertakesCommit(const Field& field);

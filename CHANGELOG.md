@@ -34,6 +34,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Kiểm tra máy trên KDE Wayland nay báo khi bàn phím ảo của KDE bị tắt (vd. bằng công tắc bàn phím trên màn hình
   của WildOS), thay vì khuyên chạy `fcitx5 -d`, và có nút bật lại; bật lại thì gõ được ngay, kể cả khi đang
   không gõ được chữ nào (#982).
+- Chạy lại lệnh cài trên KDE nay bật lại bàn phím ảo của KDE nếu nó đang tắt (vd. bằng Win+Ctrl+O trên WildOS),
+  nên cài lại là có tiếng Việt trở lại; trước đây lệnh cài báo xong mà fcitx5 vẫn không chạy.
 - Gõ Sen trên Hyprland, trong ô tự lấy lại focus sau mỗi lần sửa (ô soạn bài của voz.vn): sau khi bấm Backspace,
   chữ đầu tiên có dấu không còn bị dính chữ cũ ("dd" ra "dđ") (#996).
 - Gõ Sen trong ô soạn bài của voz.vn: chữ có dấu hiện sớm hơn khoảng 40 ms mỗi lần sửa (60 ms ở từ đầu tiên).

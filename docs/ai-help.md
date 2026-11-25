@@ -47,6 +47,9 @@ nothing, and leaves out app names and typed text. If the command is missing, the
 `ngosen-check --settings` also prints the settings as the settings window shows them and what is set for
 each app, by name; use it before asking the user which options are on.
 
+IBus edition: the page is "Kiểm tra" (Check), in the settings window opened by searching "Ngó Sen" in the app
+list, or on GNOME from Settings › Keyboard › "Tiếng Việt (Ngó Sen)". Its `ngosen-check` takes no options.
+
 ### 2. Old version
 
 Compare the version with the
@@ -96,7 +99,9 @@ previous file. The file is `~/.local/state/ngosen/typing-<date>-<time>.log`.
 
 Help the user fill in the [bug report form](https://github.com/ngosen/ngosen/issues/new?template=bug_report.yml):
 keys typed, what appeared, what was expected, the app and how it was installed, the typing mode, and the
-copied result from step 1. The user reads the log, attaches it, and sends the report. Users of the IBus
+copied result from step 1. The user reads the log, attaches it, and sends the report. Without a GitHub
+account, "Nhắn qua Facebook…" on the "Kiểm tra máy" page copies the same result as "Chép kết quả" and opens a
+message to Ngó Sen's Facebook page; rule 2 applies before sending it. Users of the IBus
 edition report at [ibus-ngosen](https://github.com/ngosen/ibus-ngosen/issues).
 
 ## Not bugs
@@ -105,6 +110,12 @@ edition report at [ibus-ngosen](https://github.com/ngosen/ibus-ngosen/issues).
   (Auto restore invalid words) in the settings window.
 - `oà`, `uý` instead of `òa`, `úy`: "Bỏ dấu kiểu mới (oà, uý)" in the settings window.
 - `--` becomes `—`: "Hai gạch nối thành gạch dài" in the settings window.
+- No emoji since updating to 1.14.1: suggestions are now off until turned on for an app with `` ` `` then `w`.
+  A number typed as soon as the emoji show is typed as a number; press `Tab` first. (The IBus edition still
+  suggests emoji by default and picks with a number.)
+- `afaaa` gives `àaaa`: a drawn-out word keeps the mark on its first letter only, as in UniKey.
+- `nhuwg` + Space gives `nhưng`, and `tienf` gives `tiền`: after a marked word a final `g` becomes `ng`, and
+  a missing circumflex or horn is added where the vowel always takes one.
 
 ## Known problems
 
@@ -112,6 +123,8 @@ Details and fixes are in the README under
 ["Khắc phục sự cố thường gặp"](https://github.com/ngosen/ngosen#khac-phuc-su-co) (Common problems):
 
 - GNOME drops keys, or does not remember the typing mode per app: the section on the GNOME extension.
-- Preedit loses the unfinished word on a click in Chrome, Chromium or Electron apps on GNOME Wayland: fixed in
-  fcitx5 5.1.20.
+- Preedit loses the unfinished word on a click in Chrome, Chromium or Electron apps on GNOME Wayland, and in
+  GTK apps using the ibus module on X11 (xed, GNOME Text Editor on Linux Mint 22): fixed in fcitx5 5.1.20.
+- Preedit in LibreOffice on KDE Plasma Wayland shows the underlined word twice after a click: the section on
+  LibreOffice.
 - VS Code from snap types raw Telex (`tieengs`): the section on VS Code.

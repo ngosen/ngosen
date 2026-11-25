@@ -493,6 +493,7 @@ namespace ngosen {
             int                            eventCount        = 0;
             bool                           sawOtherSnapshot  = false; ///< an event differed from the send-time snapshot
             bool                           sentSnapshotFresh = false; ///< send-time snapshot still showed the text to delete
+            bool                           plainAtSend       = false; ///< that snapshot was not shaped like Messenger's composer
             bool                           leavesText        = false; ///< send-time snapshot keeps text once the deletion is done
             bool                           textAfterCursor   = false; ///< send-time snapshot has text after the cursor
         };

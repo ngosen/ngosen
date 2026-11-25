@@ -238,7 +238,9 @@ namespace ngosen {
         int        settleMs         = engine_->options().waitSurroundingSettleMs;
         // A field that refocused during this deletion has redrawn already; Messenger's repaint gives no sign.
         const bool redrawn = bouncedInWait_ == surr_wait_.startedAt;
-        if (settleMs <= 0 || redrawn || !looksLikeMessengerComposer(snapshot)) {
+        // Any emptied contenteditable reads like Messenger's emptied composer; the text it held tells them apart.
+        const bool emptiedPlain = surr_wait_.plainAtSend && snapshot.isValid() && snapshot.text() == "\n";
+        if (settleMs <= 0 || redrawn || emptiedPlain || !looksLikeMessengerComposer(snapshot)) {
             settleMs = 0;
         } else if (isFirstWordOfMessage(snapshot)) {
             // A just-emptied composer is still reloading its placeholder, so the first word waits longer.
@@ -652,6 +654,7 @@ namespace ngosen {
             const std::string expected   = surr_wait_.prefix + surr_wait_.deleted;
             surr_wait_.sentSnapshotFresh = before.size() >= expected.size() && before.compare(before.size() - expected.size(), expected.size(), expected) == 0;
         }
+        surr_wait_.plainAtSend = surr_wait_.sentSnapshotFresh && !looksLikeMessengerComposer(snapshot);
     }
 
     // A plain word after the cursor must keep the split, so the tail needs what only an address holds.

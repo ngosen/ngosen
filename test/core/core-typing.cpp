@@ -442,6 +442,32 @@ namespace {
         }
     }
 
+    // An emptied contenteditable reports one line break, as Messenger's emptied composer does. The text it held
+    // tells them apart: Messenger keeps two line breaks after the cursor.
+    void testEmptiedPlainFieldCommitsAtOnce() {
+        realMode = ngosen::Mode::Sen;
+        for (const bool messenger : {false, true}) {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland_v2", true, "chromium"));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            host->setSurrounding("\n", 0);
+            press(state, 'd');
+            host->setSurrounding(messenger ? "d\n\n" : "d", 1);
+            state.surroundingUpdated();
+            loop.pump(10);
+            press(state, 'd');
+            host->setSurrounding("\n", 0);
+            state.surroundingUpdated();
+            loop.pump(10);
+            const std::string what = messenger ? "emptied Messenger composer: the commit waits" : "emptied plain field: the commit follows the report";
+            check(host->commits().size() == (messenger ? 0U : 1U), what, join(host->commits()));
+            loop.pump(60);
+            check(join(host->commits()) == "['đ']", what + ", one commit in the end", join(host->commits()));
+        }
+    }
+
     // Firefox may report a surrounding edit only after the next key, so its fields keep backspaces.
     void testFirefoxDeletesThroughSurrounding() {
         for (const char* frontend : {"wayland", "wayland_v2", "dbus"}) {
@@ -6482,6 +6508,7 @@ int main() {
         testSenDeletesReportedWord(frontend);
     testFirefoxDeletesThroughSurrounding();
     testMessengerFirstWordWaitsAfterSurroundingDelete();
+    testEmptiedPlainFieldCommitsAtOnce();
     testForwardedKeysNewerThanTyped();
     testKeyDuringReplacement();
     testCommitAfterTheReport();

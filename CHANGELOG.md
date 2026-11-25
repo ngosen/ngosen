@@ -21,6 +21,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Hai trang hướng dẫn cho AI (`docs/ai-guide.md`, `docs/ai-help.md`) bổ sung cách đổi kiểu gõ, bảng mã,
   khác biệt của bản IBus và cách xử lý thêm các lỗi gõ thường gặp, giúp AI trả lời cách dùng và tìm lỗi
   từ các trang này mà không cần đọc mã nguồn (#991).
+- Gỡ hai tài liệu làm việc (`NGHIEN-CUU-BO-GO-KHAC.md`, `PRODUCT.md`) khỏi kho mã; việc gõ và cài đặt không đổi gì
+  (#1002, #1003).
 
 ### Sửa
 

@@ -1511,6 +1511,18 @@ msgid "System Settings → Keyboard → Virtual Keyboard: choose Fcitx 5."
 msgstr "System Settings → Keyboard → Virtual Keyboard: chọn Fcitx 5."
 
 #: settings-gui/core/system_check.py
+msgid "KDE's virtual keyboard is switched off"
+msgstr "Bàn phím ảo của KDE đang tắt"
+
+#: settings-gui/core/system_check.py
+msgid ""
+"KDE stops fcitx5 while it is off. A switch for the on-screen keyboard can "
+"turn it off; turn it back on."
+msgstr ""
+"Khi bàn phím ảo tắt, KDE dừng luôn fcitx5. Công tắc bàn phím trên màn hình "
+"có thể đã tắt nó; hãy bật lại."
+
+#: settings-gui/core/system_check.py
 msgid "GTK_IM_MODULE or QT_IM_MODULE is set on KDE Wayland"
 msgstr "GTK_IM_MODULE hoặc QT_IM_MODULE đang được đặt trên KDE Wayland"
 
@@ -1947,16 +1959,16 @@ msgid "Emoji at the end of a sentence"
 msgstr "Gợi ý emoji ở cuối câu"
 
 #: settings-gui/core/whats_new_content.py
-msgid "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab, or a number in Telex, to pick one. On GNOME without the Input Method Panel extension they show right in the field. English words such as cat or thumbs up count too, and the Emoji page can export and import your words."
-msgstr "Emoji nay chờ tới cuối câu: gõ . ! ? hoặc dừng tay, rồi bấm Tab, hay bấm số khi gõ Telex, để chọn. Trên GNOME không có extension Input Method Panel, gợi ý hiện ngay trong ô. Từ tiếng Anh như cat hay thumbs up cũng có emoji, và trang Emoji xuất, nhập được từ gợi ý của bạn."
+msgid "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab and a number to pick one. On GNOME without the Input Method Panel extension they show right in the field. English words such as cat or thumbs up count too, and the Emoji page can export and import your words."
+msgstr "Emoji nay chờ tới cuối câu: gõ . ! ? hoặc dừng tay, rồi bấm Tab và bấm số để chọn. Trên GNOME không có extension Input Method Panel, gợi ý hiện ngay trong ô. Từ tiếng Anh như cat hay thumbs up cũng có emoji, và trang Emoji xuất, nhập được từ gợi ý của bạn."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Drawn-out letters"
 msgstr "Gõ kéo dài chữ"
 
 #: settings-gui/core/whats_new_content.py
-msgid "Repeat the last letter of a marked word and it repeats with its mark, instead of bringing back the keys you typed. English words such as besttt stay as typed."
-msgstr "Gõ lặp chữ cái cuối của một từ có dấu thì chữ đó lặp lại cùng dấu, thay vì hiện lại các phím đã gõ. Từ tiếng Anh như besttt vẫn giữ nguyên."
+msgid "Repeat the last letter of a marked word to draw it out: the word keeps its marks and the repeated letters have none, as in UniKey, instead of bringing back the keys you typed. English words such as besttt stay as typed."
+msgstr "Gõ lặp chữ cái cuối của một từ có dấu để kéo dài chữ: từ giữ nguyên dấu, các chữ lặp thêm không có dấu, như UniKey, thay vì hiện lại các phím đã gõ. Từ tiếng Anh như besttt vẫn giữ nguyên."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Teencode for chosen apps"
@@ -2021,6 +2033,14 @@ msgstr "Tiếng Việt trong menu khay"
 #: settings-gui/core/whats_new_content.py
 msgid "The tray menu starts with an item that turns Vietnamese on or off, for when Ctrl + Shift does not work."
 msgstr "Đầu menu khay có mục bật hoặc tắt tiếng Việt, dùng khi Ctrl + Shift không chạy."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji in the apps you choose"
+msgstr "Emoji trong app bạn chọn"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji suggestions are off until you turn them on for an app: press ` and then w in it. Press Tab to number the emoji, then a number to pick one; before Tab, numbers type as usual. Left alone for 4 seconds, the list hides."
+msgstr "Gợi ý emoji mặc định tắt, muốn bật cho app nào thì bấm ` rồi w trong app đó. Bấm Tab để đánh số emoji, rồi bấm số để chọn; trước khi bấm Tab, phím số gõ như thường. Không thao tác trong 4 giây thì danh sách ẩn đi."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Pick what the tray shows"
@@ -2368,6 +2388,10 @@ msgstr "Đã chọn fcitx5. Đăng xuất rồi đăng nhập lại để dùng.
 #: settings-gui/core/system_check.py
 msgid "Chose Fcitx 5. Log out and back in to use it."
 msgstr "Đã chọn Fcitx 5. Đăng xuất rồi đăng nhập lại để dùng."
+
+#: settings-gui/core/system_check.py
+msgid "Turned KDE's virtual keyboard back on."
+msgstr "Đã bật lại bàn phím ảo của KDE."
 
 #: settings-gui/core/system_check.py
 msgid "Copied the command."

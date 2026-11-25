@@ -543,7 +543,9 @@ namespace ngosen {
         bool         committing_             = false;
         uint64_t     lastInputAtUs_          = 0;     ///< last key or commit, CLOCK_MONOTONIC us
         uint64_t     textShownAtUs_          = 0;     ///< when a report last showed the text changed
+        uint64_t     caretKeyAtUs_           = 0;     ///< last press of a key that types no text
         bool         caretSteppedBack_       = false; ///< the app reports the caret one step back since then
+        bool         caretStepBackDue_       = false; ///< a field that steps back has not done so since then
         // A bounce after such a key is the app moving on, as a sheet does to the next cell, not a redraw.
         bool lastKeyLeftText_ = false;
         // Text we committed in Gõ Sen mode that the app has not shown before the cursor yet.
@@ -857,6 +859,10 @@ namespace ngosen {
         bool passesKeyWhileCursorPast(ngosen::KeyPress& keyEvent, uint32_t sym);
         bool belongsToRawWord(uint32_t sym, uint32_t states) const;
         void noteAutofill(const Surrounding& report);
+        // The field's copy with the caret where the app keeps it while its report stays one step back.
+        Surrounding copyAtCaret() const;
+        // The app has shown a change and not yet the caret step back it reports after one.
+        bool caretStepBackDue() const;
         // Why this word cannot be deleted through the surrounding text; chars is what the deletion would ask for.
         std::vector<std::string> surroundingPathFails(const Surrounding& surrounding, unsigned int& chars) const;
         static std::string       joined(const std::vector<std::string>& parts); ///< "none" when empty
@@ -969,6 +975,7 @@ namespace ngosen {
             uint64_t    keysAtFocus    = 0;      ///< keyCount_ when it got focus
             bool        autofillMarked = false;  ///< filled in text after the cursor without a key
             bool        untrusted      = false;  ///< the untrusted mark of an app GNOME Shell does not name
+            bool        stepsCaretBack = false;  ///< reported the caret one step back right after a change
             std::string lastPath;                ///< how its last replacement deleted
             bool        checkAnswered   = false; ///< a check came out correct
             bool        copyFitted      = false; ///< a copy wait ended on a copy that fits

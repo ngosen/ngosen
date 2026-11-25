@@ -460,6 +460,65 @@ class KwinParentTest(unittest.TestCase):
         self.assertFalse(system_check._fcitx5_started_by_kwin(self.proc("gnome-session")))
 
 
+class KwinKeyboardOffTest(unittest.TestCase):
+    TITLE = "KDE's virtual keyboard is switched off"
+    LAUNCHER = "/usr/share/applications/fcitx5-wayland-launcher.desktop"
+
+    def kde(self, **kw):
+        kw.setdefault("kwin_input_method", self.LAUNCHER)
+        return facts("wayland", "KDE", {"XMODIFIERS": "@im=fcitx"}, **kw)
+
+    def test_switched_off_explains_why_fcitx5_is_not_running(self):
+        found = system_check.steps(self.kde(fcitx_running=False, kwin_keyboard_on=False))
+        self.assertEqual(titles(found), [self.TITLE])
+        self.assertEqual(found[0].level, FAIL)
+        self.assertEqual(found[0].action, system_check.ENABLE_KWIN_KEYBOARD)
+        self.assertIn("org.kde.kwin.VirtualKeyboard enabled", found[0].command)
+
+    def test_switched_off_with_another_fcitx5_running_needs_no_login(self):
+        f = self.kde(kwin_keyboard_on=False, started_by_kwin=False)
+        found = system_check.evaluate(f)
+        self.assertEqual(titles(found), [self.TITLE])
+        self.assertFalse(found[0].after_login)
+
+    def test_unknown_switch_keeps_the_usual_steps(self):
+        found = system_check.steps(self.kde(fcitx_running=False))
+        self.assertEqual(found[0].action, system_check.START_FCITX)
+        self.assertEqual(system_check.evaluate(self.kde(kwin_keyboard_on=True)), [])
+
+    def test_another_virtual_keyboard_switched_off_is_not_ours(self):
+        f = self.kde(fcitx_running=False, kwin_keyboard_on=False, kwin_input_method="maliit")
+        self.assertEqual(system_check.steps(f)[0].action, system_check.START_FCITX)
+
+    def test_report_says_the_switch_is_off(self):
+        f = self.kde(kwin_keyboard_on=False)
+        self.assertIn("KWin virtual keyboard: off", system_check.report(f, []))
+
+    def test_turning_it_on_asks_kwin(self):
+        ran = []
+
+        def run(cmd, **kw):
+            ran.append(cmd)
+            return subprocess.CompletedProcess(cmd, 0)
+
+        with mock.patch.object(system_check.subprocess, "run", side_effect=run):
+            done = system_check.run_fix(system_check.ENABLE_KWIN_KEYBOARD, FakeDBusHandler())
+        self.assertEqual(done, (True, None))
+        self.assertEqual(ran[0][-3:], ["org.kde.kwin.VirtualKeyboard", "enabled", "<true>"])
+
+    def test_reads_the_switch_from_kwin_on_kde_wayland_only(self):
+        answers = {"(<false>,)\n": False, "(<true>,)\n": True, "": None}
+        env = {"XDG_SESSION_TYPE": "wayland", "XDG_CURRENT_DESKTOP": "KDE"}
+        for out, expected in answers.items():
+            with mock.patch.object(system_check, "_output", return_value=out):
+                self.assertIs(
+                    system_check.collect(FakeDBusHandler(), env=env).kwin_keyboard_on, expected
+                )
+        with mock.patch.object(system_check, "_output", return_value="(<false>,)\n"):
+            gnome = {"XDG_SESSION_TYPE": "wayland", "XDG_CURRENT_DESKTOP": "GNOME"}
+            self.assertIsNone(system_check.collect(FakeDBusHandler(), env=gnome).kwin_keyboard_on)
+
+
 class FixTest(unittest.TestCase):
     def test_ngosen_takes_the_place_of_the_only_keyboard(self):
         self.assertEqual(

@@ -204,6 +204,10 @@ namespace ngosen {
         return field.frontend == "ibus";
     }
 
+    bool mayHoldForwardedKeyDown(const Field& field) {
+        return field.frontend == "wayland_v2";
+    }
+
     bool keyOvertakesCommit(const Field& field) {
         return field.frontend == "dbus" || field.frontend == "ibus";
     }

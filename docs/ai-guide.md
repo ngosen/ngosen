@@ -17,7 +17,7 @@ This page is for the fcitx5 edition, `fcitx5-ngosen`. The IBus edition, `ibus-ng
 its [README](https://github.com/ngosen/ibus-ngosen) lists the differences. The ones users ask about: emoji
 suggestions are on by default and a number picks one (Tab first with VNI); its check page is "Kiểm tra";
 settings live in `~/.config/ngosen/`; "Lưu nhật ký gõ" is in the input source menu; Cứu dấu on a selected word
-works only in X11 apps; Convert works in GTK apps and Firefox. `wl-ngosen`, for niri, Sway and Hyprland, has
+works only in X11 apps; Convert works in GTK apps and Firefox, not in LibreOffice. `wl-ngosen`, for niri, Sway and Hyprland, has
 [its own README](https://github.com/ngosen/wl-ngosen).
 
 Installing, updating, restarting after an update and uninstalling are in the README:
@@ -29,16 +29,17 @@ Installing, updating, restarting after an update and uninstalling are in the REA
 - New installations start in Vietnamese and switch with `Ctrl + Shift`, pressed and released alone, as in
   UniKey. Older installations keep the key they had. The key is set on the "Phím" (Keys) page, tab "Phím tắt"
   (Shortcuts), as "Phím chuyển Anh/Việt".
-- The tray icon shows V while typing Vietnamese. The first entry of the fcitx5 tray menu, "✔ Tiếng Việt" or
+- The tray shows whether Vietnamese is on: an icon, V / E, vi / en or the user's own pictures, as set in "Khay
+  hiện" on the "Giao diện" page. The first entry of the fcitx5 tray menu, "✔ Tiếng Việt" or
   "✖ Tiếng Việt", switches too.
 - By default the switch changes every app at once. "Phím chuyển áp dụng cho" (Switch applies to) set to
   "Từng app" (Each app) makes each app remember its own choice.
-- An app set to "Tắt" in the `` ` `` menu stays English whatever the switch says.
+- An app set to "Tắt" in the `` ` `` menu stays English while the switch applies to "Mọi app".
 
 ## Typing method and charset
 
 "Kiểu gõ" (Input Method: Telex, VNI, VIQR and a few more) and "Bảng mã" (Charset: Unicode, TCVN3, VNI
-Windows and others) are the first settings on the "Gõ chữ" (Typing) page; the window lists every choice.
+Windows and others) are in the first group of the "Gõ chữ" (Typing) page, under "Chế độ gõ"; the window lists every choice.
 Telex is tested every day; the others work but are tested less. The tray menu switches between Telex and VNI.
 
 ## Typing modes
@@ -106,7 +107,7 @@ the menu key and the order of the items are set on the "Phím" (Keys) page, tab 
 ## Typing faster
 
 - **Gõ tắt** (Macros): page "Gõ tắt & Từ điển", tab "Gõ tắt". A macro follows capitals: with `ko` → `không`,
-  `Ko` gives `Không`. The same tab has "Bật gõ tắt", "Gõ tắt chữ hoa" and "Cho phép gõ tắt trong chế độ
+  `Ko` gives `Không`. The same tab has "Bật gõ tắt", "Gõ tắt chữ hoa" and "Gõ tắt trong chế độ
   "Tắt"", and the formats of `$DATE` and `$TIME`, which a macro types as today's date and the time.
 - **Từ điển tuỳ chỉnh** (Custom dictionary), same page, tab "Từ điển": words that keep their marks although
   Auto restore would turn them back into keys, such as chat spellings like `kạ`. Teencode in the `` ` `` menu
@@ -119,10 +120,11 @@ the menu key and the order of the items are set on the "Phím" (Keys) page, tab 
 
 ## Emoji
 
-Off until turned on for an app with `w` in the `` ` `` menu. Then after a word like `cười`, `con mèo` or
-`haha`, `Tab: 😂 …` shows next to the cursor: `Tab` numbers the emoji, a number picks one, `Esc` keeps the
-text. Left alone for 4 seconds, the list hides. A number typed before `Tab` is typed as a number. The "Emoji"
-page sets when the list shows ("Ở cuối câu", the default, or "Sau mỗi từ"), where the emoji goes, Yahoo
+Off until turned on for an app with `w` in the `` ` `` menu. With "Gợi ý emoji" set to "Ở cuối câu" (the
+default), the emoji of words like `cười`, `con mèo` or `haha` show while the sentence is typed, and after
+`. ! ?` or a short pause `Tab: 😂 …` shows next to the cursor; with "Sau mỗi từ" it shows after each such word.
+`Tab` numbers the emoji, a number picks one, `Esc` keeps the text; a number typed before `Tab` stays a number.
+Left alone for 4 seconds, the list hides. The "Emoji" page also sets where the emoji goes, Yahoo
 Messenger codes like `=))`, English keywords and the user's own words, which "Xuất…" and "Nhập…" share. Its
 list "App đã bật emoji" has a "Tắt" button for each app.
 
@@ -143,7 +145,9 @@ Change settings there, not in files. The settings live in `~/.config/fcitx5/conf
 per-app choices of the `` ` `` menu in `ngosen-app-rules.conf` and `ngosen-*-apps.conf` next to it. Reading
 them can answer a question; the settings window writes them and tells Ngó Sen to reload.
 "Sao lưu…" and "Khôi phục…" (Back Up, Restore) keep settings, macros and dictionary; they are at the bottom of
-the Qt window and in the window menu of the GTK one. "Đưa về mặc định…" (Restore defaults) resets every setting after asking,
+the settings pages of the Qt window and in the window menu of the GTK one. "Đưa về mặc định…" (Restore
+defaults) resets every setting and also clears macros, added dictionary words, custom keys, emoji words and
+what is remembered for each app, after asking; suggest "Sao lưu…" first. It can be undone right after.
 "Tìm cài đặt" finds a setting by name, and a change can be undone from the "Hoàn tác" button on the message
 that confirms it.
 
@@ -154,8 +158,8 @@ này dùng bản …" on that page has a button to switch.
 ## Tray menu
 
 Besides switching Vietnamese on and off, the Ngó Sen tray menu switches "Kiểu gõ" between Telex and VNI,
-picks the "Bảng mã", and turns "Gõ tắt", "Gõ tắt chữ hoa", "Tự viết hoa", "Tự khôi phục từ gõ sai" and "Từ
-điển tuỳ chỉnh" on and off. It also opens
+picks the "Bảng mã", and turns "Gõ tắt", "Gõ tắt chữ hoa", "Tự khôi phục từ gõ sai" and "Từ điển tuỳ chỉnh"
+on and off; its "Tự viết hoa" submenu has "Sau dấu . ! ? và Enter" and "Đầu văn bản, đầu dòng". It also opens
 "Cài đặt" and saves the typing log ("Lưu nhật ký gõ").
 
 ## Commands
@@ -163,7 +167,8 @@ picks the "Bảng mã", and turns "Gõ tắt", "Gõ tắt chữ hoa", "Tự vi�
 - `ngosen-check`: the "Kiểm tra máy" check in a terminal; changes nothing.
 - `ngosen-check --settings`: also prints every setting of the settings window, the mode and switches set for
   each app, and how many macros and dictionary words there are. Read it instead of guessing what is on.
-- `ngosen-toggle`: switches English and Vietnamese like the switch key, even when no text field has focus.
-  Bind it to a desktop shortcut; none is set up for it. If it fails, a desktop notification says why.
+- `ngosen-toggle`: switches English and Vietnamese, even when no text field has focus, but without Cứu chữ.
+  Bind it to a desktop shortcut; none is set up for it. When it cannot switch, it tries to show a desktop
+  notification.
 - `ngosen-save-log`: saves the typing log for a bug report, like "Lưu nhật ký gõ" in the tray menu.
 - `fcitx5-ngosen-settings --page check`: opens the settings window on "Kiểm tra máy".

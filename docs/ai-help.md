@@ -44,7 +44,7 @@ versions, the second the distro, desktop and session.
 
 If you can run commands, run `ngosen-check` instead. It prints the same check with each step's fix, changes
 nothing, and leaves out app names and typed text. If the command is missing, the installed version is older.
-`ngosen-check --settings` also prints the settings as the settings window shows them and what is set for
+In the fcitx5 edition, `ngosen-check --settings` also prints the settings as the settings window shows them and what is set for
 each app, by name; use it before asking the user which options are on.
 
 IBus edition: the page is "Kiểm tra" (Check), in the settings window opened by searching "Ngó Sen" in the app
@@ -53,7 +53,8 @@ list, or on GNOME from Settings › Keyboard › "Tiếng Việt (Ngó Sen)". It
 ### 2. Old version
 
 Compare the version with the
-[changelog](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md). If the problem is fixed in a later
+[changelog](https://github.com/ngosen/ngosen/blob/main/CHANGELOG.md), or for the IBus edition with
+[its changelog](https://github.com/ngosen/ibus-ngosen/blob/main/CHANGELOG.md). If the problem is fixed in a later
 release, update from the same source found in step 0. Do not add the Ngó Sen repository or switch sources to
 get an update: the README explains why a machine should follow only one source.
 
@@ -112,10 +113,10 @@ edition report at [ibus-ngosen](https://github.com/ngosen/ibus-ngosen/issues).
 - `--` becomes `—`: "Hai gạch nối thành gạch dài" in the settings window.
 - No emoji since updating to 1.14.1: suggestions are now off until turned on for an app with `` ` `` then `w`.
   A number typed as soon as the emoji show is typed as a number; press `Tab` first. (The IBus edition still
-  suggests emoji by default and picks with a number.)
+  suggests emoji by default and picks with a number, after `Tab` with VNI.)
 - `afaaa` gives `àaaa`: a drawn-out word keeps the mark on its first letter only, as in UniKey.
-- `nhuwg` + Space gives `nhưng`, and `tienf` gives `tiền`: after a marked word a final `g` becomes `ng`, and
-  a missing circumflex or horn is added where the vowel always takes one.
+- `nhuwg` + Space gives `nhưng`, and `tienf` + Space gives `tiền`: when the word ends, Telex can complete a
+  final `ng` or add a missing circumflex or horn if the result is a known word. Teencode keeps `nhưg`.
 
 ## Known problems
 

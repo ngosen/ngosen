@@ -415,6 +415,13 @@ namespace ngosen::test {
             later(quirks_.lagMs, [this] { moveCursor(cursor_ + 1); });
             return;
         }
+        if (key == EditKey::BackSpace && backspaceLeftDown_) {
+            if (release)
+                backspaceLeftDown_ = false;
+            else
+                ++sent_.forwardedBackSpaces;
+            return;
+        }
         if (key != EditKey::BackSpace || release)
             return;
         ++sent_.forwardedBackSpaces;
@@ -712,6 +719,10 @@ namespace ngosen::test {
         strayLetter_      = letter;
         editsBeforeStray_ = nth;
         strayDelayMs_     = delayMs;
+    }
+
+    void FakeApp::leaveBackspaceDown() {
+        backspaceLeftDown_ = true;
     }
 
     void FakeApp::landStrayLetter() {

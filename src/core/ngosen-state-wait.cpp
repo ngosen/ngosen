@@ -297,6 +297,9 @@ namespace ngosen {
             unconfirmedBackspacesUs_ = ngosen::monotonicUs();
         if (sinceFocus_.erasedSinceReport >= 0)
             sinceFocus_.erasedSinceReport += count;
+        // A release costs nothing when the key is up, and lets the press through when it is not.
+        if (count > 0 && ngosen::mayHoldForwardedKeyDown(host_->field()))
+            host_->forwardKey(ngosen::EditKey::BackSpace, true, lastPressTime_ + forwardsSincePress_);
         for (int i = 0; i < count; ++i) {
             forwardTap(ngosen::EditKey::BackSpace);
         }

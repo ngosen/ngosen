@@ -230,6 +230,8 @@ namespace ngosen::test {
         // The page takes this letter right after it applies the nth of our edits from now, as voz.vn's
         // editor in Brave does with a key pressed while it refocuses. The letter lands delayMs after that edit.
         void typeAfterEdit(const std::string& letter, int nth, int delayMs = 2);
+        // The app missed the release of a Backspace, so it drops the next press of that key.
+        void leaveBackspaceDown();
         // Only the release of a key whose press the page took while the field was refocusing.
         void releaseKey(uint32_t sym);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
@@ -403,15 +405,16 @@ namespace ngosen::test {
         void                                landStrayLetter();
         void                                typeOverSelection(const std::u32string& letter);
         std::u32string                      ownText_;
-        bool                                inReport_        = false;
-        bool                                focused_         = true;
-        uint64_t                            forwardedAt_     = 0;
-        uint64_t                            updateDueAt_     = 0;
-        static constexpr uint64_t           CrossingUs       = 3000; ///< how close to the update a commit is lost
-        uint32_t                            lastBackSpaceAt_ = 0;
-        uint32_t                            heldSym_         = 0;
-        int                                 slowestCommitMs_ = 0;
-        int                                 shortcuts_       = 0;
+        bool                                inReport_          = false;
+        bool                                focused_           = true;
+        uint64_t                            forwardedAt_       = 0;
+        uint64_t                            updateDueAt_       = 0;
+        static constexpr uint64_t           CrossingUs         = 3000; ///< how close to the update a commit is lost
+        uint32_t                            lastBackSpaceAt_   = 0;
+        uint32_t                            heldSym_           = 0;
+        bool                                backspaceLeftDown_ = false;
+        int                                 slowestCommitMs_   = 0;
+        int                                 shortcuts_         = 0;
 
         int                                 panelsMidReplacement_ = 0;
         std::u32string                      text_;

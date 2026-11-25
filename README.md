@@ -96,6 +96,8 @@ Hoàn tác.
   Muốn mỗi app nhớ riêng như trước, chọn “Từng app” ở “Phím chuyển áp dụng cho” trên trang Phím tắt.
   App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh.
 - **Phím chốt chữ (Ctrl):** bấm rồi thả `Ctrl` để giữ nguyên từ đang gõ, không thêm dấu hay bung gõ tắt.
+  Ở chế độ Gõ Sen, bấm tiếp thì từ đổi qua lại giữa chữ có dấu và đúng phím đã gõ: `tieengs` + `Ctrl` `Ctrl`
+  ra `tieengs`. Từ tiếng Anh lỡ bị thêm dấu cũng lấy lại được như vậy.
 - **Gõ tắt (macro):** tự theo chữ hoa: `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
   bằng một nút bấm.

@@ -90,8 +90,9 @@ the menu key and the order of the items are set on the "Phím" (Keys) page, tab 
   keys typed, so `windows` stays `windows`. To keep an English word that is also valid Telex, type its tone
   key twice: `thiss` gives `this`. Words starting with `/` stay as typed (`/cost`, `cd /usr/share`).
 - **Phím chốt chữ** (Key to keep the word as typed): tap `Ctrl` alone to keep the word as shown, with no
-  restore or macro: `tunx`, `Ctrl` gives `tũn`. "Vẫn gõ dd ra đ khi tự khôi phục" keeps `đ` when Space
-  would restore `dd`.
+  restore or macro: `tunx`, `Ctrl` gives `tũn`. In Gõ Sen mode each further tap swaps the word between its
+  marked form and the keys typed: `tieengs`, `Ctrl`, `Ctrl` gives `tieengs`. "Vẫn gõ dd ra đ khi tự khôi
+  phục" keeps `đ` when Space would restore `dd`.
 - **Extra keys:** `dduowjcd` + Space gives `được`, `coongty` + Space gives `công ty`. Backspace right after
   gives back what was typed.
 - **Cứu chữ:** typed `tieengs vieetj` with Vietnamese off? Switch Vietnamese on and it becomes `tiếng việt`.

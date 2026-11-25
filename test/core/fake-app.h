@@ -39,6 +39,8 @@ namespace ngosen::test {
         bool takesXTest             = false; // gets backspaces as XTEST presses, which come back to the input method first
         int  redrawAfterEditMs      = 0;     // bounces focus this long after each edit and drops commits until then, as TikTok in Chrome does
         int  bounceOnEditMs         = 0;     // bounces focus this long after a forwarded Backspace or a commit arrives, keeping both, as Brave on GNOME 51 does
+        int  awayAfterDeletionMs    = 0;     // leaves focus this long, leavesAfterDeletionMs after each Backspace or deletion,
+        int  leavesAfterDeletionMs  = 0;     // as voz.vn's editor in Chrome on GNOME does several times in the 100 ms after one
         bool redrawsOnlyOnDeletion  = false; // redraws after deletions but not insertions, as a plain Draft.js box in Chrome on GNOME does
         bool dropsOldKeyPresses     = false; // drops a Backspace press not newer than the last one, as GLFW does under XIM
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
@@ -381,6 +383,7 @@ namespace ngosen::test {
         unsigned int                        charsForBytesBefore(size_t bytes) const;
         void                                changed();
         void                                bounceAfterEdit();
+        void                                refocusAfterDeletion();
         void                                redrawAfterEdit();
         void                                bounceEmptyAfterEdit();
         void                                later(int ms, std::function<void()> action);

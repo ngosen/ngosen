@@ -997,6 +997,39 @@ namespace {
         check(slowest < 60, "redrawing editor: commit once the redraws are done", std::to_string(slowest) + " ms");
     }
 
+    // voz.vn's editor in Chrome on GNOME leaves focus for up to 20 ms at a time after each of our
+    // backspaces, and a commit sent before it is back goes nowhere.
+    void testCommitWaitsForEditorRefocus() {
+        ngosen::test::AppQuirks quirks;
+        quirks.awayAfterDeletionMs        = 20;
+        quirks.leavesAfterDeletionMs      = 30;
+        const std::string           typed = "nguowif ";
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        const std::string           text = ngosen::test::typeInApp(makeField("ibus", true, "chromium"), quirks, keys, std::vector<int>(keys.size(), 80));
+        check(text == "người ", "refocusing editor: no commit is lost", text);
+    }
+
+    // The same editor through GNOME Shell's IBus bridge applies our backspaces one by one, slower than
+    // the bridge's own wait, and loses a commit that comes before the last one. Its reports can come
+    // later still.
+    void testBouncingEditorOverIBusSlowDeletion() {
+        const Field             field = makeField("ibus", true, "gnome-shell");
+        ngosen::test::AppQuirks quirks;
+        quirks.keyStepMs                 = 35;
+        quirks.losesCommitAmidBackspaces = true;
+        quirks.awayAfterDeletionMs       = 10;
+        quirks.leavesAfterDeletionMs     = 5;
+        const std::vector<std::pair<std::string, std::string>> cases{{"tieengs ", "tiếng "}, {"ddoongf ", "đồng "}, {"truowngf ", "trường "}};
+        for (const int reportDelayMs : {0, 150}) {
+            quirks.reportDelayMs = reportDelayMs;
+            for (const auto& [typed, want] : cases) {
+                const std::vector<uint32_t> keys(typed.begin(), typed.end());
+                const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 150));
+                check(text == want, "editor over IBus deleting slowly keeps the edit: " + typed + "reports " + std::to_string(reportDelayMs) + " ms late", text);
+            }
+        }
+    }
+
     // The voz.vn composer in Brave on Plasma Wayland bounces focus and reports an empty field after each
     // Backspace and edit, and loses a commit sent before two Backspaces are applied. A one-Backspace edit
     // survives an early commit, so only edits that delete two characters went wrong.
@@ -6556,6 +6589,8 @@ int main() {
     testDoubleHyphen();
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
+    testCommitWaitsForEditorRefocus();
+    testBouncingEditorOverIBusSlowDeletion();
     testLateBackspaceAfterBounce();
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();

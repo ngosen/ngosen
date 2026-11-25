@@ -308,6 +308,7 @@ namespace ngosen {
         bool                           offersEmojiHere() const;
         bool                           hintsInField(const ngosen::Field& field) const;
         bool                           replacementPending() const;
+        bool                           focusMayReturn() const; ///< focus left too recently to tell a bounce from a switch
         bool                           inAddressBar() const;
         void                           noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore);
         bool                           restoreEmojiTail(std::string& tail);
@@ -426,6 +427,8 @@ namespace ngosen {
         // A field that refocuses after each Backspace (voz.vn in Brave) applies them about 22 ms apart and
         // loses a commit that comes before the last one.
         static constexpr uint64_t BouncingFieldWaitUs = 150000;
+        // Chrome on GNOME applies each backspace after its own refocus.
+        static constexpr uint64_t BouncingFieldPerBackspaceUs = 50000;
         // Firefox declares its text again once a forwarded key reaches it; a commit before that can land
         // ahead of the backspaces.
         static constexpr uint64_t UndeclaredFieldWaitUs     = 100000;

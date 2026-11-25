@@ -177,10 +177,11 @@ namespace ngosen {
                              t.rearm(surr_wait_.startedAt + UnseenWordForwardWaitUs);
                              return true;
                          }
-                         // Behind IBus the lagging-report wait below already covers this.
-                         if (fieldBounces_ > 0 && !ngosen::surroundingTextLags(host_->field()) && waited + 1000 < BouncingFieldWaitUs && !deletionLooksDone()) {
+                         // Also behind IBus: Chrome on GNOME can apply the last backspace, and report any, after its wait.
+                         const uint64_t bounceUs = std::max<uint64_t>(BouncingFieldWaitUs, BouncingFieldPerBackspaceUs * static_cast<uint64_t>(expected_backspaces_));
+                         if (fieldBounces_ > 0 && waited + 1000 < bounceUs && !deletionLooksDone()) {
                              NGOSEN_INFO("Field refocuses after edits, wait longer before the commit");
-                             t.rearm(surr_wait_.startedAt + BouncingFieldWaitUs);
+                             t.rearm(surr_wait_.startedAt + bounceUs);
                              return true;
                          }
                          if (deferLaggingCommit("timeout"))
@@ -247,7 +248,7 @@ namespace ngosen {
         if (!host_->hasFocus()) {
             // Chromium X11 leaves and re-enters the field within ~0.3 ms; a commit in that gap is
             // lost. Give it a moment to come back.
-            if (++surr_wait_.focusRetries <= 5) {
+            if (focusMayReturn() || ++surr_wait_.focusRetries <= 5) {
                 t.rearm(ngosen::monotonicUs() + 2000);
                 return true;
             }
@@ -452,7 +453,7 @@ namespace ngosen {
         key_report_.timer = host_->startTimer(ngosen::monotonicUs() + waitUs, 1000, [this](ngosen::Timer& t) {
             if (!host_->hasFocus()) {
                 // A bounce can span the deadline, so give it a moment to come back.
-                if (++surr_wait_.focusRetries <= 5) {
+                if (focusMayReturn() || ++surr_wait_.focusRetries <= 5) {
                     t.rearm(ngosen::monotonicUs() + 2000);
                     return true;
                 }

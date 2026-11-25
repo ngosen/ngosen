@@ -501,8 +501,8 @@ ported from the original Go [bamboo-core](https://github.com/BambooEngine/bamboo
 [SCOWL](https://wordlist.aspell.net) by Kevin Atkinson.
 
 It includes Cứu chữ to retype what was typed before switching to Vietnamese, and Cứu dấu to change the tone
-mark of a selected word. A convert hotkey turns selected TCVN3 or VNI text into Unicode.
-[The IBus version](https://github.com/ngosen/ibus-ngosen) shares the same typing core and has the same
-features; new features reach it a little later. If you reuse Ngó Sen's code, keep the GPL and its notices, including when
+mark of a selected word. A convert hotkey turns selected TCVN3 or VNI text into the chosen charset, Unicode by default.
+[The IBus version](https://github.com/ngosen/ibus-ngosen) shares the same typing core and has almost
+all the same features; new features reach it a little later. If you reuse Ngó Sen's code, keep the GPL and its notices, including when
 an AI tool rewrites it. If you port its approaches to another input method, credit this repository with a link.
 The rest of this page is in Vietnamese.

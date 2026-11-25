@@ -236,7 +236,9 @@ namespace ngosen {
         sinceFocus_.showedBackspace = true;
         const auto snapshot         = host_->surrounding();
         int        settleMs         = engine_->options().waitSurroundingSettleMs;
-        if (settleMs <= 0 || !looksLikeMessengerComposer(snapshot)) {
+        // A field that refocused during this deletion has redrawn already; Messenger's repaint gives no sign.
+        const bool redrawn = bouncedInWait_ == surr_wait_.startedAt;
+        if (settleMs <= 0 || redrawn || !looksLikeMessengerComposer(snapshot)) {
             settleMs = 0;
         } else if (isFirstWordOfMessage(snapshot)) {
             // A just-emptied composer is still reloading its placeholder, so the first word waits longer.

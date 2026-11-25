@@ -16,6 +16,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Teencode, Vim mode đã đặt cho từng app; gõ tắt và từ điển chỉ in số lượng, không in nội dung. Lệnh không sửa
   gì, giúp AI hay người báo lỗi biết máy đang bật gì mà không phải mở file cấu hình (#984).
 
+### Thay đổi
+
+- Hai trang hướng dẫn cho AI (`docs/ai-guide.md`, `docs/ai-help.md`) bổ sung cách đổi kiểu gõ, bảng mã,
+  khác biệt của bản IBus và cách xử lý thêm các lỗi gõ thường gặp, giúp AI trả lời cách dùng và tìm lỗi
+  từ các trang này mà không cần đọc mã nguồn (#991).
+
 ### Sửa
 
 - Gõ Sen trong editor của Antigravity: phím sửa chữ không còn khựng khoảng 0,2 giây khi máy đang bận, và chữ

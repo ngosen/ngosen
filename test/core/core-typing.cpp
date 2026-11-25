@@ -3629,11 +3629,11 @@ namespace {
                                       bool otherFieldReplacing = false, int lagMs = 150) {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
-        FakeLoop            loop;
-        FakeResources       resources;
-        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(),
-                                                                            ngosen::test::AppQuirks{.lagMs = lagMs, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true});
-        auto*               app   = owned.get();
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(),
+                                                                      ngosen::test::AppQuirks{.lagMs = lagMs, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true});
+        auto*         app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
         for (char c : std::string("viee")) {
@@ -5125,9 +5125,9 @@ namespace {
     void testCopyWaitEndsAfterTheReport() {
         FakeResources resources;
         const auto    keys = keysOf("tieengs vieetj nam ");
-        const auto    run  = ngosen::test::typeInAppTraced(resources, makeField("wayland_v2", true, "firefox"),
-                                                           {.reportDelayMs = 30, .dropsCommitsInReport = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
-                                                           std::vector<int>(keys.size(), 20));
+        const auto run = ngosen::test::typeInAppTraced(resources, makeField("wayland_v2", true, "firefox"),
+                                                       {.reportDelayMs = 30, .dropsCommitsInReport = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
+                                                       std::vector<int>(keys.size(), 20));
         check(run.text == "tiếng việt nam ", "sway: an edit waiting for the copy goes out after the report", run.text);
         check(has(resources.recorder().dump(), "\tcopy\tfits after "), "recorder: notes how the wait for the copy ended", resources.recorder().dump());
     }
@@ -5537,11 +5537,11 @@ namespace {
     void testCopyWaitsRunOutPerField() {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
-        FakeLoop            loop;
-        FakeResources       resources;
-        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "antigravity-ide"),
-                                                                            ngosen::test::AppQuirks{.reportDelayMs = 8, .staleReport = true, .lagMs = 15, .backspacesSkipLag = true});
-        auto*               app   = owned.get();
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "antigravity-ide"),
+                                                                      ngosen::test::AppQuirks{.reportDelayMs = 8, .staleReport = true, .lagMs = 15, .backspacesSkipLag = true});
+        auto*         app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
         ngosen::test::captureLog(true);
@@ -5587,11 +5587,11 @@ namespace {
     void testNoCopyWaitWithoutBackspaces() {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
-        FakeLoop            loop;
-        FakeResources       resources;
-        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "SDL_App"),
-                                                                            ngosen::test::AppQuirks{.reportDelayMs = 8, .staleReport = true, .lagMs = 15, .backspacesSkipLag = true});
-        auto*               app   = owned.get();
+        FakeLoop      loop;
+        FakeResources resources;
+        auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "SDL_App"),
+                                                                      ngosen::test::AppQuirks{.reportDelayMs = 8, .staleReport = true, .lagMs = 15, .backspacesSkipLag = true});
+        auto*         app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
         ngosen::test::captureLog(true);
@@ -5611,7 +5611,7 @@ namespace {
         auto          owned = std::make_unique<ngosen::test::FakeApp>(
             loop, makeField("ibus", true, "antigravity-ide"),
             ngosen::test::AppQuirks{
-                         .reportDelayMs = 8, .lagMs = 15, .backspaceLagMs = 200, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+                .reportDelayMs = 8, .lagMs = 15, .backspaceLagMs = 200, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
         auto*               app = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
@@ -5786,7 +5786,7 @@ namespace {
         auto owned                                     = std::make_unique<ngosen::test::FakeApp>(
             loop, makeField("ibus", true, "antigravity-ide"),
             ngosen::test::AppQuirks{
-                                                    .reportDelayMs = 8, .lagMs = lagMs, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .showsEnter = true});
+                .reportDelayMs = 8, .lagMs = lagMs, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .showsEnter = true});
         auto*               app = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);

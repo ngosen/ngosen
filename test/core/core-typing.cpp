@@ -2105,6 +2105,39 @@ namespace {
         check(press(state, static_cast<uint32_t>('f')), "backspace into word before nbsp: f marks the word", "f went to the app");
     }
 
+    // Chrome on GNOME bounces focus when a rich text editor swaps the space for U+00A0.
+    // fcitx5 resets the field before it deactivates the engine, the IBus edition after.
+    void testBackspaceIntoWordAfterFocusBounce() {
+        for (const bool resetFirst : {true, false}) {
+            for (const bool bounce : {true, false}) {
+                realMode = ngosen::Mode::Sen;
+                FakeLoop            loop;
+                FakeResources       resources;
+                auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true));
+                FakeHost*           host  = owned.get();
+                ngosen::TypingState state(&resources, std::move(owned));
+
+                for (const char c : std::string("ban "))
+                    press(state, static_cast<uint32_t>(c));
+                host->setSurrounding("ban ", 4);
+                state.surroundingUpdated();
+                if (resetFirst)
+                    state.reset(true);
+                state.deactivate(true);
+                if (!resetFirst)
+                    state.resetAfterAppCommit(true);
+                if (!bounce)
+                    loop.pump(150);
+                state.activate(ngosen::Mode::Sen, true);
+                press(state, ngosen::key::BackSpace);
+                host->setSurrounding("ban", 3);
+                state.surroundingUpdated();
+                const std::string what = std::string("backspace into word after focus ") + (bounce ? "bounce" : "move") + (resetFirst ? ", reset first" : ", reset last");
+                check(press(state, static_cast<uint32_t>('f')) == bounce, what, bounce ? "f went to the app" : "f marked an old word");
+            }
+        }
+    }
+
     // xterm.js keeps only the last key typed in its hidden textarea, so the field never shows the word.
     void testBackspaceIntoWordFieldDropped() {
         realMode = ngosen::Mode::Sen;
@@ -3596,11 +3629,11 @@ namespace {
                                       bool otherFieldReplacing = false, int lagMs = 150) {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
-        FakeLoop      loop;
-        FakeResources resources;
-        auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(),
-                                                                      ngosen::test::AppQuirks{.lagMs = lagMs, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true});
-        auto*         app   = owned.get();
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, surroundingOnlyField(),
+                                                                            ngosen::test::AppQuirks{.lagMs = lagMs, .dropsForwardedKeys = true, .convertsDeleteOnReportedCopy = true});
+        auto*               app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
         for (char c : std::string("viee")) {
@@ -5092,9 +5125,9 @@ namespace {
     void testCopyWaitEndsAfterTheReport() {
         FakeResources resources;
         const auto    keys = keysOf("tieengs vieetj nam ");
-        const auto run = ngosen::test::typeInAppTraced(resources, makeField("wayland_v2", true, "firefox"),
-                                                       {.reportDelayMs = 30, .dropsCommitsInReport = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
-                                                       std::vector<int>(keys.size(), 20));
+        const auto    run  = ngosen::test::typeInAppTraced(resources, makeField("wayland_v2", true, "firefox"),
+                                                           {.reportDelayMs = 30, .dropsCommitsInReport = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true}, keys,
+                                                           std::vector<int>(keys.size(), 20));
         check(run.text == "tiếng việt nam ", "sway: an edit waiting for the copy goes out after the report", run.text);
         check(has(resources.recorder().dump(), "\tcopy\tfits after "), "recorder: notes how the wait for the copy ended", resources.recorder().dump());
     }
@@ -5504,11 +5537,11 @@ namespace {
     void testCopyWaitsRunOutPerField() {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
-        FakeLoop      loop;
-        FakeResources resources;
-        auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "antigravity-ide"),
-                                                                      ngosen::test::AppQuirks{.reportDelayMs = 8, .staleReport = true, .lagMs = 15, .backspacesSkipLag = true});
-        auto*         app   = owned.get();
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "antigravity-ide"),
+                                                                            ngosen::test::AppQuirks{.reportDelayMs = 8, .staleReport = true, .lagMs = 15, .backspacesSkipLag = true});
+        auto*               app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
         ngosen::test::captureLog(true);
@@ -5554,11 +5587,11 @@ namespace {
     void testNoCopyWaitWithoutBackspaces() {
         realMode = ngosen::Mode::Sen;
         realtextLen.store(0);
-        FakeLoop      loop;
-        FakeResources resources;
-        auto          owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "SDL_App"),
-                                                                      ngosen::test::AppQuirks{.reportDelayMs = 8, .staleReport = true, .lagMs = 15, .backspacesSkipLag = true});
-        auto*         app   = owned.get();
+        FakeLoop            loop;
+        FakeResources       resources;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("ibus", true, "SDL_App"),
+                                                                            ngosen::test::AppQuirks{.reportDelayMs = 8, .staleReport = true, .lagMs = 15, .backspacesSkipLag = true});
+        auto*               app   = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
         ngosen::test::captureLog(true);
@@ -5578,7 +5611,7 @@ namespace {
         auto          owned = std::make_unique<ngosen::test::FakeApp>(
             loop, makeField("ibus", true, "antigravity-ide"),
             ngosen::test::AppQuirks{
-                .reportDelayMs = 8, .lagMs = 15, .backspaceLagMs = 200, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
+                         .reportDelayMs = 8, .lagMs = 15, .backspaceLagMs = 200, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true});
         auto*               app = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
@@ -5753,7 +5786,7 @@ namespace {
         auto owned                                     = std::make_unique<ngosen::test::FakeApp>(
             loop, makeField("ibus", true, "antigravity-ide"),
             ngosen::test::AppQuirks{
-                .reportDelayMs = 8, .lagMs = lagMs, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .showsEnter = true});
+                                                    .reportDelayMs = 8, .lagMs = lagMs, .backspacesSkipLag = true, .convertsDeleteOnReportedCopy = true, .reportsTextAtChange = true, .showsEnter = true});
         auto*               app = owned.get();
         ngosen::TypingState state(&resources, std::move(owned));
         app->attach(&state);
@@ -6581,6 +6614,7 @@ int main() {
     }
     testBackspaceIntoCommittedText();
     testBackspaceIntoWordBeforeNbsp();
+    testBackspaceIntoWordAfterFocusBounce();
     testBackspaceIntoWordFieldDropped();
     testBackspaceAfterMovingAway();
     testBackspaceAfterCtrlBackspace();

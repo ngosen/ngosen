@@ -201,7 +201,10 @@ namespace ngosen {
         std::string              oldPreBuffer_;
         std::string              lastWord_;                    ///< The word and break we last committed, while only backspaces follow
         std::string              droppedWord_;                 ///< lastWord_ as typed, before Space split it or dropped keys after it
-        uint64_t                 lastWordAtUs_            = 0; ///< When lastWord_ was committed
+        uint64_t                 lastWordAtUs_ = 0;            ///< When lastWord_ was committed
+        std::string              lastWordAtFocusOut_;          ///< lastWord_ when focus left, given back if focus only bounced
+        std::string              droppedWordAtFocusOut_;       ///< droppedWord_ at the same time
+        uint64_t                 lastWordAtFocusOutUs_    = 0; ///< lastWordAtUs_ at the same time
         bool                     hasHistory_              = false;
         bool                     preeditWord_             = false; ///< Sen is on, but this word goes into the preedit
         int                      expected_backspaces_     = 0;     ///< backspaces the key paths still send; XTEST adds one that comes back
@@ -771,6 +774,10 @@ namespace ngosen {
         void dropWaitsAfterFocusMove();
         // Keeps an unfinished replacement for a focus that may only bounce.
         void noteReplacementAtFocusOut();
+        // Keeps the finished word for Backspace to reopen, in case focus only bounces.
+        void keepLastWordAtFocusOut();
+        // Gives the kept word back after a bounce, and forgets it either way.
+        void takeLastWordAtFocusIn(bool bounce);
         // Resets the counts a replacement is checked against.
         void beginReplacement(const std::string& deletedPart, const std::string& addedPart);
         // Remembers what the app showed when the replacement started, to tell when it is done.

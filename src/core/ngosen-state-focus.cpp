@@ -112,6 +112,7 @@ namespace ngosen {
         retype_.reset();
         if (isFocusIn)
             forgetKeysWhileOff();
+        takeLastWordAtFocusIn(bounce);
         return bounce;
     }
 
@@ -126,6 +127,7 @@ namespace ngosen {
             composedWait_ = false;
         }
         if (isFocusOut) {
+            keepLastWordAtFocusOut();
             rememberLeftField();
             keysAtFocusOut_ = keyCount_;
             commitNotSeen_.clear();
@@ -170,6 +172,26 @@ namespace ngosen {
             tail_clear_.timer.reset();
             dropReplacementAfterFocusLoss();
         }
+    }
+
+    void TypingState::keepLastWordAtFocusOut() {
+        // The reset that comes with focus out may run before or after deactivate().
+        if (lastWord_.empty())
+            return;
+        lastWordAtFocusOut_    = lastWord_;
+        droppedWordAtFocusOut_ = droppedWord_;
+        lastWordAtFocusOutUs_  = lastWordAtUs_;
+    }
+
+    void TypingState::takeLastWordAtFocusIn(bool bounce) {
+        if (bounce && lastWord_.empty() && !lastWordAtFocusOut_.empty()) {
+            lastWord_     = lastWordAtFocusOut_;
+            droppedWord_  = droppedWordAtFocusOut_;
+            lastWordAtUs_ = lastWordAtFocusOutUs_;
+        }
+        lastWordAtFocusOut_.clear();
+        droppedWordAtFocusOut_.clear();
+        lastWordAtFocusOutUs_ = 0;
     }
 
     // A selection waiting to be typed over has no backspaces left, but is just as unfinished.

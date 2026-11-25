@@ -2106,7 +2106,7 @@ namespace {
     }
 
     // Chrome on GNOME bounces focus when a rich text editor swaps the space for U+00A0.
-    // fcitx5 resets the field before it deactivates the engine, the IBus edition after.
+    // The reset that comes with focus out may run before or after deactivate().
     void testBackspaceIntoWordAfterFocusBounce() {
         for (const bool resetFirst : {true, false}) {
             for (const bool bounce : {true, false}) {

@@ -1427,10 +1427,14 @@ setup_x11_session() {
 # every login. Asked over D-Bus, KWin starts fcitx5 at once; outside the session only kwinrc can change.
 enable_kwin_virtual_keyboard() {
     [ "$(kreadconfig6 --file kwinrc --group Wayland --key VirtualKeyboardEnabled)" = false ] || return 0
-    dbus-send --session --print-reply --dest=org.kde.KWin /VirtualKeyboard \
+    if dbus-send --session --print-reply --dest=org.kde.KWin /VirtualKeyboard \
         org.freedesktop.DBus.Properties.Set string:org.kde.kwin.VirtualKeyboard string:enabled \
-        variant:boolean:true >/dev/null 2>&1 ||
+        variant:boolean:true >/dev/null 2>&1; then
+        # KWin starts fcitx5 a moment later; configure_fcitx5 must see it as KWin's or it replaces it.
+        wait_for_new_fcitx5 "" || :
+    else
         kwriteconfig6 --file kwinrc --group Wayland --key VirtualKeyboardEnabled true
+    fi
     session_changes+=("bật lại bàn phím ảo của KDE, nơi KDE chạy fcitx5")
 }
 

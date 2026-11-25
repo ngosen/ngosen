@@ -1691,6 +1691,14 @@ msgid "Check that fcitx5 is running."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
+msgid "Emoji in the apps you choose"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Emoji suggestions are off until you turn them on for an app: press ` and then w in it. Press Tab to number the emoji, then a number to pick one; before Tab, numbers type as usual. Left alone for 4 seconds, the list hides."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
 msgid "Pick what the tray shows"
 msgstr ""
 
@@ -1723,7 +1731,7 @@ msgid "Emoji at the end of a sentence"
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
-msgid "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab, or a number in Telex, to pick one. On GNOME without the Input Method Panel extension they show right in the field. English words such as cat or thumbs up count too, and the Emoji page can export and import your words."
+msgid "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab and a number to pick one. On GNOME without the Input Method Panel extension they show right in the field. English words such as cat or thumbs up count too, and the Emoji page can export and import your words."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
@@ -1731,7 +1739,7 @@ msgid "Drawn-out letters"
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py
-msgid "Repeat the last letter of a marked word and it repeats with its mark, instead of bringing back the keys you typed. English words such as besttt stay as typed."
+msgid "Repeat the last letter of a marked word to draw it out: the word keeps its marks and the repeated letters have none, as in UniKey, instead of bringing back the keys you typed. English words such as besttt stay as typed."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py

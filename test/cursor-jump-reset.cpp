@@ -58,7 +58,7 @@ namespace {
                     bounceCaret();
                 if (lateStepBack_)
                     stepBackLate();
-                if (slowStepBack_)
+                if (slowStepBack_ || stayingStepBack_)
                     stepBackAndStay();
                 pumpEventLoop(testInstance_.instance, 60);
                 // Applies only deletions that end at the cursor, so any other shape shows in the text.
@@ -126,6 +126,11 @@ namespace {
         // one step back and repeats that until the next key, which still lands at the end.
         void stepBackAfterSlowLetters() {
             slowStepBack_ = true;
+        }
+
+        // It can also show the letter at once and still leave the caret report one step back.
+        void stepBackAndStayAfterKeys() {
+            stayingStepBack_ = true;
         }
 
         // Firefox in some web editors repeats the old state, then reports the cursor after a commit
@@ -212,6 +217,7 @@ namespace {
         bool                              caretBounce_          = false;
         bool                              lateStepBack_         = false;
         bool                              slowStepBack_         = false;
+        bool                              stayingStepBack_      = false;
         bool                              holdCommitReport_     = false;
         bool                              resetAfterPassedKeys_ = false;
         size_t                            deletes_              = 0;
@@ -320,6 +326,14 @@ int main() {
         app.stepBackAfterSlowLetters();
         app.type("vieetj nhieeuf");
         if (!expectText("type \"vieetj nhieeuf\" with slow letters and a caret step back that stays", app, "việt nhiều"))
+            return 1;
+    }
+    // A step back that stays is not a click before a word of one letter.
+    {
+        FakeApp app(testInstance, engine, entry, "staleCaretApp");
+        app.stepBackAndStayAfterKeys();
+        app.type("a ddi tee");
+        if (!expectText("type \"a ddi tee\" with a caret step back that stays", app, "a đi tê"))
             return 1;
     }
     // Those resets must not end a word typed as is after a '/'.

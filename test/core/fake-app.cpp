@@ -379,6 +379,9 @@ namespace ngosen::test {
             ++shortcuts_;
             if (state == modifier::Ctrl && sym == 'a')
                 select(0, text_.size());
+            // An Emacs-style binding, as GTK and macOS text fields have.
+            if (state == modifier::Ctrl && sym == 'b')
+                moveCursor(cursor_ > 0 ? cursor_ - 1 : 0);
             return true;
         }
         switch (sym) {
@@ -493,7 +496,7 @@ namespace ngosen::test {
         if (quirks_.ignoresSurroundingDel)
             goSilentAfterDelete();
         // A module whose copy of the text is empty finds every deletion out of range.
-        if (quirks_.ignoresSurroundingDel || quirks_.reportsEmptyText)
+        if (quirks_.ignoresSurroundingDel || quirks_.reportsEmptyText || caretBackDue_ || caretOneBack_)
             return;
         if (quirks_.keepsLastEditPerTurn && offset == -static_cast<int>(size)) {
             turnDeleteBytes_ = reportedBytesBefore(size);
@@ -775,7 +778,8 @@ namespace ngosen::test {
             shown[cursor_ - 1]   = U'\u00a0';
             return Surrounding(encode(shown), static_cast<unsigned int>(cursor_), static_cast<unsigned int>(anchor_));
         }
-        return Surrounding(encode(text_), static_cast<unsigned int>(cursor_ + cursorPastBy_), static_cast<unsigned int>(anchor_ + cursorPastBy_));
+        const size_t back = caretOneBack_ && cursor_ > 0 && anchor_ == cursor_ ? 1 : 0;
+        return Surrounding(encode(text_), static_cast<unsigned int>(cursor_ + cursorPastBy_ - back), static_cast<unsigned int>(anchor_ + cursorPastBy_ - back));
     }
 
     std::string FakeApp::keyText(uint32_t sym) const {
@@ -840,6 +844,15 @@ namespace ngosen::test {
         }
         anchor_ = cursor_;
         changed();
+        if (quirks_.leavesCaretOneBack) {
+            caretBackDue_ = true;
+            later(quirks_.caretBackAfterMs, [this, shown = text_] {
+                if (text_ != shown)
+                    return;
+                changed();
+                caretOneBack_ = true;
+            });
+        }
         if (!typed)
             landStrayLetter();
         bounceEmptyAfterEdit();
@@ -956,6 +969,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::changed() {
+        caretOneBack_    = false;
+        caretBackDue_    = false;
         holdsUnreported_ = false;
         shownCursor_     = cursor_;
         shownAnchor_     = anchor_;

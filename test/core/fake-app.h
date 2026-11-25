@@ -102,6 +102,11 @@ namespace ngosen::test {
         // deletion, as Firefox does when the page is busy, until a typed key or another commit moves it.
         int appliesDeletionAfterMs = 0;
         int oldTextAfterDeleteMs   = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
+        // Reports the caret one step back after text it shows and leaves it there until the next edit, which
+        // still lands after the text, and drops a deletion through the text from then on, as Antigravity's
+        // editor does.
+        bool leavesCaretOneBack = false;
+        int  caretBackAfterMs   = 1; // how long after the text that report comes
         // Reports the cursor moving over a deletion and its commit on the old text before the new text, as
         // Slate in Firefox on Plasma does.
         bool movesCursorBeforeText = false;
@@ -437,6 +442,8 @@ namespace ngosen::test {
         size_t                              deletionTurnChars_ = 0;
         std::optional<unsigned int>         heldDelete_;
         bool                                showsMovedCursor_ = false;
+        bool                                caretOneBack_     = false;
+        bool                                caretBackDue_     = false;
         bool                                holdsUnreported_  = false;
         bool                                cellOpensOnKey_   = false;
         bool                                ctrlDown_         = false;

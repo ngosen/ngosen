@@ -372,7 +372,7 @@ namespace ngosen {
         deferred_commit_.pending      = true;
         deferred_commit_.focusRetries = 0;
         deferred_commit_.timer        = host_->startTimer(ngosen::monotonicUs() + holdUs, 0, [this, holdUs](ngosen::Timer& t) {
-            // A field that left focus during the hold takes the commit once it is back.
+            // A commit into a field without focus is lost, and a field that bounces is back within a few ms.
             if (holdUs > 0 && !host_->hasFocus() && ++deferred_commit_.focusRetries <= 5) {
                 t.rearm(ngosen::monotonicUs() + 2000);
                 return true;

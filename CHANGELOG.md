@@ -41,6 +41,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Gõ Sen trong ô soạn thảo có định dạng của Chrome trên GNOME (như ô viết bài voz): gõ "toan", dấu cách, xoá dấu
   cách rồi gõ "s" nay ra "toán" thay vì "toans". Ô soạn thảo đổi dấu cách thành dấu cách không ngắt và Chrome
   lấy lại focus ngay sau đó, làm bộ gõ quên từ vừa gõ (#1004).
+- Gõ Sen nhanh trong ô viết bài voz trên Chrome qua IBus của GNOME không còn mất chữ hay ra "trươngf", "vieetj":
+  ô này rời focus một lúc sau mỗi lần xoá và xoá từng ký tự rất chậm, nên chữ bộ gõ gửi trước khi ô xoá xong
+  hoặc trước khi ô quay lại bị mất. Bộ gõ nay chờ ô quay lại và chờ ô xoá xong rồi mới gửi (#1004).
 - Gõ Sen trên Hyprland, trong ô tự lấy lại focus sau mỗi lần sửa (ô soạn bài của voz.vn): sau khi bấm Backspace,
   chữ đầu tiên có dấu không còn bị dính chữ cũ ("dd" ra "dđ") (#996).
 - Gõ Sen trong ô soạn bài của voz.vn: chữ có dấu hiện sớm hơn khoảng 40 ms mỗi lần sửa (60 ms ở từ đầu tiên).

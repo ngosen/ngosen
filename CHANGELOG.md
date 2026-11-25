@@ -38,6 +38,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   không gõ được chữ nào (#982).
 - Chạy lại lệnh cài trên KDE nay bật lại bàn phím ảo của KDE nếu nó đang tắt (vd. bằng Win+Ctrl+O trên WildOS),
   nên cài lại là có tiếng Việt trở lại; trước đây lệnh cài báo xong mà fcitx5 vẫn không chạy (#1001).
+- Gõ Sen trong ô soạn thảo có định dạng của Chrome trên GNOME (như ô viết bài voz): gõ "toan", dấu cách, xoá dấu
+  cách rồi gõ "s" nay ra "toán" thay vì "toans". Ô soạn thảo đổi dấu cách thành dấu cách không ngắt và Chrome
+  lấy lại focus ngay sau đó, làm bộ gõ quên từ vừa gõ (#1004).
 - Gõ Sen trên Hyprland, trong ô tự lấy lại focus sau mỗi lần sửa (ô soạn bài của voz.vn): sau khi bấm Backspace,
   chữ đầu tiên có dấu không còn bị dính chữ cũ ("dd" ra "dđ") (#996).
 - Gõ Sen trong ô soạn bài của voz.vn: chữ có dấu hiện sớm hơn khoảng 40 ms mỗi lần sửa (60 ms ở từ đầu tiên).

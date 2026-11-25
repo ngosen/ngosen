@@ -997,6 +997,39 @@ namespace {
         check(slowest < 60, "redrawing editor: commit once the redraws are done", std::to_string(slowest) + " ms");
     }
 
+    // voz.vn's editor in Chrome on GNOME leaves focus for up to 20 ms at a time after each of our
+    // backspaces, and a commit sent before it is back goes nowhere.
+    void testCommitWaitsForEditorRefocus() {
+        ngosen::test::AppQuirks quirks;
+        quirks.awayAfterDeletionMs        = 20;
+        quirks.leavesAfterDeletionMs      = 30;
+        const std::string           typed = "nguowif ";
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        const std::string           text = ngosen::test::typeInApp(makeField("ibus", true, "chromium"), quirks, keys, std::vector<int>(keys.size(), 80));
+        check(text == "người ", "refocusing editor: no commit is lost", text);
+    }
+
+    // The same editor through GNOME Shell's IBus bridge applies our backspaces one by one, slower than
+    // the bridge's own wait, and loses a commit that comes before the last one. Its reports can come
+    // later still.
+    void testBouncingEditorOverIBusSlowDeletion() {
+        const Field             field = makeField("ibus", true, "gnome-shell");
+        ngosen::test::AppQuirks quirks;
+        quirks.keyStepMs                 = 35;
+        quirks.losesCommitAmidBackspaces = true;
+        quirks.awayAfterDeletionMs       = 10;
+        quirks.leavesAfterDeletionMs     = 5;
+        const std::vector<std::pair<std::string, std::string>> cases{{"tieengs ", "tiếng "}, {"ddoongf ", "đồng "}, {"truowngf ", "trường "}};
+        for (const int reportDelayMs : {0, 150}) {
+            quirks.reportDelayMs = reportDelayMs;
+            for (const auto& [typed, want] : cases) {
+                const std::vector<uint32_t> keys(typed.begin(), typed.end());
+                const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 150));
+                check(text == want, "editor over IBus deleting slowly keeps the edit: " + typed + "reports " + std::to_string(reportDelayMs) + " ms late", text);
+            }
+        }
+    }
+
     // The voz.vn composer in Brave on Plasma Wayland bounces focus and reports an empty field after each
     // Backspace and edit, and loses a commit sent before two Backspaces are applied. A one-Backspace edit
     // survives an early commit, so only edits that delete two characters went wrong.
@@ -2103,6 +2136,39 @@ namespace {
         host->setSurrounding("ban", 3);
         state.surroundingUpdated();
         check(press(state, static_cast<uint32_t>('f')), "backspace into word before nbsp: f marks the word", "f went to the app");
+    }
+
+    // Chrome on GNOME bounces focus when a rich text editor swaps the space for U+00A0.
+    // The reset that comes with focus out may run before or after deactivate().
+    void testBackspaceIntoWordAfterFocusBounce() {
+        for (const bool resetFirst : {true, false}) {
+            for (const bool bounce : {true, false}) {
+                realMode = ngosen::Mode::Sen;
+                FakeLoop            loop;
+                FakeResources       resources;
+                auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true));
+                FakeHost*           host  = owned.get();
+                ngosen::TypingState state(&resources, std::move(owned));
+
+                for (const char c : std::string("ban "))
+                    press(state, static_cast<uint32_t>(c));
+                host->setSurrounding("ban ", 4);
+                state.surroundingUpdated();
+                if (resetFirst)
+                    state.reset(true);
+                state.deactivate(true);
+                if (!resetFirst)
+                    state.resetAfterAppCommit(true);
+                if (!bounce)
+                    loop.pump(150);
+                state.activate(ngosen::Mode::Sen, true);
+                press(state, ngosen::key::BackSpace);
+                host->setSurrounding("ban", 3);
+                state.surroundingUpdated();
+                const std::string what = std::string("backspace into word after focus ") + (bounce ? "bounce" : "move") + (resetFirst ? ", reset first" : ", reset last");
+                check(press(state, static_cast<uint32_t>('f')) == bounce, what, bounce ? "f went to the app" : "f marked an old word");
+            }
+        }
     }
 
     // xterm.js keeps only the last key typed in its hidden textarea, so the field never shows the word.
@@ -6523,6 +6589,8 @@ int main() {
     testDoubleHyphen();
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
+    testCommitWaitsForEditorRefocus();
+    testBouncingEditorOverIBusSlowDeletion();
     testLateBackspaceAfterBounce();
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();
@@ -6581,6 +6649,7 @@ int main() {
     }
     testBackspaceIntoCommittedText();
     testBackspaceIntoWordBeforeNbsp();
+    testBackspaceIntoWordAfterFocusBounce();
     testBackspaceIntoWordFieldDropped();
     testBackspaceAfterMovingAway();
     testBackspaceAfterCtrlBackspace();

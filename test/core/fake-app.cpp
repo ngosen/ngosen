@@ -447,6 +447,7 @@ namespace ngosen::test {
             updateDueAt_ = monotonicUs() + static_cast<uint64_t>(quirks_.updateAfterBackspaceMs) * 1000;
         bounceAfterEdit();
         bounceEmptyAfterEdit();
+        refocusAfterDeletion();
         if (quirks_.keyStepMs > 0) {
             ++backspaceBurst_;
             later(quirks_.keyStepMs * ++queuedKeys_, [this] {
@@ -497,6 +498,7 @@ namespace ngosen::test {
             ++editsUnderHint_;
         ++sent_.surroundingDeletes;
         ++deletions_;
+        refocusAfterDeletion();
         commitOfDeletion_   = !surroundingDropped_;
         surroundingDropped_ = quirks_.dropsSurroundingOnDelete;
         if (quirks_.oldTextAfterDeleteMs > 0) {
@@ -900,6 +902,15 @@ namespace ngosen::test {
             state_->deactivate(true);
             state_->activate(Mode::Sen, true);
             changed();
+        });
+    }
+
+    void FakeApp::refocusAfterDeletion() {
+        if (quirks_.awayAfterDeletionMs <= 0)
+            return;
+        later(quirks_.leavesAfterDeletionMs, [this] {
+            if (focused_)
+                leaveFocus(quirks_.awayAfterDeletionMs);
         });
     }
 

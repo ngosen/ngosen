@@ -1201,6 +1201,32 @@ namespace {
         check(app->text() == "đ", "update after a Backspace: the commit does not cross it", app->text());
     }
 
+    // On Sway, Chromium reports a finished deletion and sends one more update right behind the report.
+    void testCommitAfterReportBurst() {
+        ngosen::test::AppQuirks quirks;
+        quirks.keyStepMs              = 4;
+        quirks.updateAfterBackspaceMs = 5;
+        for (const bool leavesFocus : {false, true}) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland_v2", true, "chromium"), quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            app->type('d');
+            loop.pump(150);
+            app->type('d');
+            loop.pump(5);
+            if (leavesFocus)
+                app->leaveFocus(4);
+            loop.pump(150);
+            const std::string what = leavesFocus ? "focus away behind the report: the commit waits for it" : "update behind the report: the commit does not cross it";
+            check(app->text() == "đ", what, app->text());
+        }
+    }
+
     void testStrayKeyDuringBounce() {
         const Field             field = makeField("wayland", true, "brave-origin");
         ngosen::test::AppQuirks bouncing;
@@ -6503,6 +6529,7 @@ int main() {
     testForwardedBackspaceAfterLostRelease();
     testRefocusingComposerCommitsAtOnce();
     testCommitClearOfUpdateAfterBackspace();
+    testCommitAfterReportBurst();
     testStrayKeyDuringBounce();
     testKeyNeverShown();
     testFirstWordEmptiesBouncingField();

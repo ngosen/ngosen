@@ -244,10 +244,14 @@ namespace ngosen {
             // A just-emptied composer is still reloading its placeholder, so the first word waits longer.
             settleMs = std::max(settleMs, engine_->options().waitSurroundingSettleFirstWordMs);
         }
+        uint64_t settleUs = static_cast<uint64_t>(settleMs) * 1000ULL;
+        // The report that ends the wait is the first of a few in a row, and the commit must not cross the rest.
+        if (settleUs == 0 && !fromTimer && ngosen::commitCanCrossStateUpdate(host_->field()))
+            settleUs = ReportBurstUs;
         // A composer drops a commit that lands right after the deletion, also under GNOME (#362).
-        if (deferLaggingCommit(reason, static_cast<uint64_t>(settleMs) * 1000ULL))
+        if (deferLaggingCommit(reason, settleUs))
             return;
-        if (settleMs == 0) {
+        if (settleUs == 0) {
             finishReplacement(reason, fromTimer);
             return;
         }
@@ -257,7 +261,7 @@ namespace ngosen {
         surr_wait_.timerOnly    = true;
         surr_wait_.focusRetries = 0;
         settle_reason_          = reason;
-        surr_wait_.deliverAt    = ngosen::monotonicUs() + (static_cast<uint64_t>(settleMs) * 1000ULL);
+        surr_wait_.deliverAt    = ngosen::monotonicUs() + settleUs;
         replaceTimer(settle_timer_, startWaitTimer(surr_wait_.deliverAt, [this](ngosen::Timer&) {
                          if (!surr_wait_.pending || !surr_wait_.timerOnly || !is_deleting_.load()) {
                              return false;

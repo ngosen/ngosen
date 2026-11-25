@@ -16,7 +16,8 @@
 
 ---
 
-Ngó Sen có hai bản, dùng chung lõi gõ nên tính năng hiện tương đương 1:1. Chọn bản nào là tuỳ thích:
+Ngó Sen có hai bản, dùng chung lõi gõ nên gần như mọi tính năng có ở cả hai; hai điểm nhỏ chỉ bản fcitx5 có
+được ghi ở mục cài bản IBus. Chọn bản nào là tuỳ thích:
 
 - **fcitx5**: chạy trên GNOME, KDE Plasma, Xfce, Sway, Hyprland và niri, nhẹ RAM. Tính năng mới có ở bản này
   trước.
@@ -74,7 +75,7 @@ Hoàn tác.
 - **Cứu dấu:** bôi đen chữ rồi bấm phím dấu thanh để thêm, đổi hoặc bỏ dấu (`nhanh` + `s` → `nhánh`). Ở
   chế độ Gõ Sen, chỉ cần bấm chuột ngay sau từ (`nhanh|` + `s`) là sửa được dấu mà không cần bôi đen.
 - **Chuyển mã:** bôi đen đoạn chữ gõ bằng bảng mã cũ (TCVN3, VNI…) rồi bấm phím chuyển mã, chữ được đổi
-  sang Unicode; có thể đổi chữ hoa, chữ thường hoặc bỏ dấu cùng lúc. Đặt phím và bảng mã ở trang
+  sang bảng mã đã chọn (mặc định Unicode); có thể đổi chữ hoa, chữ thường hoặc bỏ dấu cùng lúc. Đặt phím và bảng mã ở trang
   **Chuyển mã** trong cửa sổ cài đặt; trang này còn có ô để dán chữ vào và chuyển ngay. Đã thử trên GNOME
   với Firefox, Chromium, LibreOffice Writer và GNOME Text Editor; không dùng được trong terminal.
 - **Menu chế độ riêng cho từng app:** nhấn phím `` ` `` để mở menu cạnh con trỏ, chọn **Gõ Sen (1)**,
@@ -95,7 +96,8 @@ Hoàn tác.
   người dùng cũ giữ phím chuyển và trạng thái đang dùng. Mặc định, phím chuyển đổi mọi app cùng lúc.
   Muốn mỗi app nhớ riêng như trước, chọn “Từng app” ở “Phím chuyển áp dụng cho” trên trang Phím tắt.
   App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh.
-- **Phím chốt chữ (Ctrl):** bấm rồi thả `Ctrl` để giữ nguyên từ đang gõ, không thêm dấu hay bung gõ tắt.
+- **Phím chốt chữ (Ctrl):** bấm rồi thả `Ctrl` để giữ nguyên từ đang gõ, không tự khôi phục hay bung gõ tắt.
+  Chữ đang hiện đúng phím đã gõ như `tunx` thì bấm `Ctrl` để thêm dấu thành `tũn`.
   Ở chế độ Gõ Sen, bấm tiếp thì từ đổi qua lại giữa chữ có dấu và đúng phím đã gõ: `tieengs` + `Ctrl` `Ctrl`
   ra `tieengs`. Từ tiếng Anh lỡ bị thêm dấu cũng lấy lại được như vậy.
 - **Gõ tắt (macro):** tự theo chữ hoa: `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
@@ -137,7 +139,7 @@ SHA-256, hỏi lại trước khi cài và tự thiết lập theo desktop đang
 mới; cấu hình cũ giữ nguyên. Thiết lập chỉ áp dụng cho tài khoản chạy lệnh.
 
 Cài mới bật sẵn tiếng Việt. Nhấn rồi thả `Ctrl + Shift` để chuyển giữa tiếng Anh và tiếng Việt; biểu
-tượng khay hiện chữ V khi đang gõ tiếng Việt. Bạn cũng có thể bấm “✔ Tiếng Việt” / “✖ Tiếng Việt”,
+tượng khay hiện hai mầm ngó sen hình chữ V khi đang gõ tiếng Việt. Bạn cũng có thể bấm “✔ Tiếng Việt” / “✖ Tiếng Việt”,
 mục luôn hiện ở đầu menu khay fcitx5, để chuyển ngôn ngữ như phím chuyển và giữ lựa chọn sau khi
 khởi động lại. Mặc định, cả hai cách chuyển mọi app cùng lúc; chọn “Từng app” ở “Phím chuyển áp dụng
 cho” trên trang Phím tắt để mỗi app nhớ riêng. App đặt Tắt trong menu `` ` `` vẫn gõ tiếng Anh; bấm

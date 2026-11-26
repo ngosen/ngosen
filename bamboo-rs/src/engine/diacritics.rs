@@ -102,7 +102,8 @@ pub struct Diacritics {
     /// What the last commit put after its last word, until anything else is committed or a key
     /// ends the run: only then can that word's fix be undone.
     tail: Option<String>,
-    fixing: bool,
+    /// How far a fix must score above the rest before it is made; None makes none.
+    fix_margin: Option<f64>,
     reach: Reach,
     style: ToneStyle,
     /// What the field shows of the words committed since the cursor moved, each with the text
@@ -180,7 +181,7 @@ impl Diacritics {
             from_macro: Vec::new(),
             reopened: None,
             tail: None,
-            fixing: true,
+            fix_margin: Some(FIX_MARGIN),
             reach: Reach::Run,
             style: ToneStyle::New,
             field: Vec::new(),
@@ -188,9 +189,10 @@ impl Diacritics {
         }
     }
 
-    /// Whether runs started from now on fix syllables the table does not know.
-    pub fn set_fixing(&mut self, on: bool) {
-        self.fixing = on;
+    /// The margin runs started from now on fix syllables the table does not know by, or None
+    /// for no fixing.
+    pub fn set_fixing(&mut self, margin: Option<f64>) {
+        self.fix_margin = margin;
     }
 
     /// How far back a change may reach.
@@ -210,7 +212,7 @@ impl Diacritics {
     }
 
     fn margin(&self) -> Option<f64> {
-        self.fixing.then_some(FIX_MARGIN)
+        self.fix_margin
     }
 
     /// Whether the last commit ended in a word that was fixed: an undo would take it back.

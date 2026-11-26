@@ -52,6 +52,7 @@ namespace ngosen {
         bool                       rawWordAfterSlash              = true;
         bool                       guessDiacritics                = false;
         bool                       guessFixesTypos                = false;
+        int                        guessFixStrength               = 0; // FixStrength: cautious, medium, strong
         bool                       learnDiacritics                = false;
         bool                       emojiSuggestions               = true;
         bool                       yahooEmoticons                 = true;

@@ -557,10 +557,12 @@ pub extern "C" fn EngineEndWord(engine: usize) {
     handles::with_engine(engine, BambooEngine::end_word);
 }
 
-/// Whether Đoán dấu fixes syllables nothing knows in runs started from now.
+/// The margin Đoán dấu fixes syllables nothing knows by in runs started from now: 4, 3 or 2 from
+/// cautious to strong, or 0 for no fixing.
 #[unsafe(no_mangle)]
-pub extern "C" fn EngineSetFixing(engine: usize, on: u8) {
-    handles::with_engine(engine, |e| e.set_fixing(on != 0));
+pub extern "C" fn EngineSetFixing(engine: usize, margin: u8) {
+    let margin = (margin != 0).then(|| f64::from(margin));
+    handles::with_engine(engine, |e| e.set_fixing(margin));
 }
 
 /// For Backspace right after the key that committed a fixed word: the text the field shows from

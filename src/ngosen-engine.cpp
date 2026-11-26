@@ -799,6 +799,7 @@ namespace fcitx {
         o.rawWordAfterSlash              = config_.rawWordAfterSlash.value();
         o.guessDiacritics                = config_.guessDiacritics.value();
         o.guessFixesTypos                = config_.guessFixesTypos.value();
+        o.guessFixStrength               = static_cast<int>(config_.guessFixStrength.value());
         o.learnDiacritics                = config_.learnDiacritics.value();
         o.emojiSuggestions               = config_.emojiSuggestions.value();
         o.yahooEmoticons                 = config_.yahooEmoticons.value();

@@ -1444,10 +1444,12 @@ impl BambooEngine {
         self.diacritics = None;
     }
 
-    /// Whether Đoán dấu fixes syllables nothing knows (`phmi` to `phím`) in runs started from now.
-    pub fn set_fixing(&mut self, on: bool) {
+    /// The margin Đoán dấu fixes syllables nothing knows (`phmi` to `phím`) by in runs started
+    /// from now, or None for no fixing. A smaller margin fixes more typos and changes more right
+    /// words.
+    pub fn set_fixing(&mut self, margin: Option<f64>) {
         if let Some(d) = &mut self.diacritics {
-            d.set_fixing(on);
+            d.set_fixing(margin);
         }
     }
 

@@ -195,6 +195,22 @@ msgid "Also fix syllables typed wrong"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "How boldly to fix"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Cautious"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Medium"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Strong"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Learn from what you type"
 msgstr ""
 
@@ -2447,4 +2463,8 @@ msgstr ""
 
 #: settings-gui/core/defaults.py
 msgid "What Đoán dấu learned is kept, and so is whether it learns; Forget all on the Word guessing page clears it."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "Stronger fixes more typos, and now and then changes a word that was right. A new level applies from the next thing you type."
 msgstr ""

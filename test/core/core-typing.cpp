@@ -300,6 +300,7 @@ namespace {
         ngosen::test::AppQuirks quirks;
         bool                    doubleSpace = false;
         bool                    fixesTypos  = false;
+        int                     fixStrength = 0;
         bool                    guess       = true;
         std::vector<std::pair<std::string, std::string>> macros;
         int                     keyMs       = 50;
@@ -317,6 +318,7 @@ namespace {
         resources.mutableOptions().guessDiacritics     = run.guess;
         resources.mutableOptions().doubleSpaceToPeriod = run.doubleSpace;
         resources.mutableOptions().guessFixesTypos     = run.fixesTypos;
+        resources.mutableOptions().guessFixStrength    = run.fixStrength;
         if (!run.macros.empty())
             resources.setMacros(run.macros);
         const std::string learned = run.learned != nullptr ? learnedFile() : std::string();
@@ -416,6 +418,11 @@ namespace {
             check(text == "tôi gõ phím ", "Đoán dấu: Backspace after a fix in a field that shows nothing only deletes" + name, text);
             text = typeGuessingInApp(reports, mode, "toi go phmi2 \b ", {.fixesTypos = true});
             check(text.find('2') != std::string::npos, "Đoán dấu: Backspace after a fixed word with a digit keeps the digit" + name, text);
+            // bna wins by between 3 and 4, bihn by between 2 and 3.
+            for (const auto& [strength, fixed] : {std::pair{0, "tôi gõ bna bihn "}, {1, "tôi gõ bạn bihn "}, {2, "tôi gõ bạn bình "}}) {
+                text = typeGuessingInApp(reports, mode, "toi go bna bihn ", {.fixesTypos = true, .fixStrength = strength});
+                check(text == fixed, "Đoán dấu: fixing strength " + std::to_string(strength) + " fixes what wins by its margin" + name, text);
+            }
             text = typeGuessingInApp(reports, mode, "ban \bf ");
             check(text == "bàn ", "Đoán dấu: Backspace reopens a guessed word, so a tone key changes it" + name, text);
             bool learned = false;

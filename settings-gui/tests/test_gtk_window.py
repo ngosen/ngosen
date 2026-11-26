@@ -11,7 +11,7 @@ from urllib.parse import unquote
 
 # isort: off
 import window_display
-from fake_fcitx import DEFAULTS, FakeDBusHandler, OlderFcitx, lock_groups
+from fake_fcitx import DEFAULTS, FakeDBusHandler, OlderFcitx, lock_groups, unlocker
 import ui_gtk
 
 # isort: on
@@ -25,7 +25,6 @@ NARROWEST_WINDOW = 360
 if CAN_RUN:
     from core.brand import MESSENGER_URL
     from core.catalog import (
-        DEPENDS,
         HINTS,
         MODE_BUTTON_ORDER,
         MODE_HINTS,
@@ -697,7 +696,7 @@ class GtkLocksTest(unittest.TestCase):
                 )
                 self.assertFalse(locked.get_sensitive(), key)
                 self.assertTrue(w.open_setting(key), key)
-                self.assertIs(w.get_focus(), page.control_for(DEPENDS[key][0]), key)
+                self.assertIs(w.get_focus(), page.control_for(unlocker(key)), key)
 
     def test_every_setting_is_sensitive_and_opens_itself_when_unlocked(self):
         for _locked, values, keys in lock_groups():
@@ -722,7 +721,7 @@ class GtkLocksTest(unittest.TestCase):
                 while w.results.get_row_at_index(index).found[2] != key:
                     index += 1
                 w.open_result(w.results.get_row_at_index(index))
-                self.assertIs(w.get_focus(), page.control_for(DEPENDS[key][0]), key)
+                self.assertIs(w.get_focus(), page.control_for(unlocker(key)), key)
 
     def test_a_controller_locks_and_unlocks_at_once(self):
         w = self.window({"AutoNonVnRestore": "True", "EnableMacro": "True"})

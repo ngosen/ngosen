@@ -2449,7 +2449,7 @@ fn fixing_switched_off_leaves_the_typo_from_the_next_run() {
     let mut e = engine_on(&shared_dictionary());
     let mut field = Vec::new();
     type_into(&mut e, &mut field, &[("toi", ' '), ("go", ' ')]);
-    e.set_fixing(false);
+    e.set_fixing(None);
     type_into(&mut e, &mut field, &[("phmi", '.')]);
     assert_eq!(field[2], "phím", "the run already open still fixes");
     type_into(
@@ -2461,12 +2461,31 @@ fn fixing_switched_off_leaves_the_typo_from_the_next_run() {
 }
 
 #[test]
+fn each_fixing_margin_fixes_only_what_wins_by_it() {
+    // bna wins by between 3 and 4, bihn by between 2 and 3.
+    for (margin, fixed) in [
+        (Some(4.0), ["bna", "bihn"]),
+        (Some(3.0), ["bạn", "bihn"]),
+        (Some(2.0), ["bạn", "bình"]),
+        (None, ["bna", "bihn"]),
+    ] {
+        for (typo, fixed) in ["bna", "bihn"].into_iter().zip(fixed) {
+            let mut e = engine_on(&shared_dictionary());
+            e.set_fixing(margin);
+            let mut field = Vec::new();
+            type_into(&mut e, &mut field, &[("toi", ' '), ("go", ' '), (typo, '.')]);
+            assert_eq!(field[2], fixed, "{typo} at {margin:?}");
+        }
+    }
+}
+
+#[test]
 fn fixing_switched_off_holds_past_the_cap() {
     for on in [true, false] {
         let mut e = engine_on(&shared_dictionary());
         let mut field = Vec::new();
         type_into(&mut e, &mut field, &vec![("ta", ' '); timsen::MAX_RUN]);
-        e.set_fixing(on);
+        e.set_fixing(on.then_some(timsen::FIX_MARGIN));
         type_into(
             &mut e,
             &mut field,

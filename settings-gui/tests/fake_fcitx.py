@@ -51,6 +51,15 @@ def lock_groups():
     ]
 
 
+def unlocker(key):
+    """The setting at the top of key's chain in DEPENDS: with every lock on, the one to change."""
+    from core.catalog import DEPENDS
+
+    while key in DEPENDS:
+        key = DEPENDS[key][0]
+    return key
+
+
 class FakeDBusHandler:
     """Behaves like fcitx5's Controller1 for the ngosen addon: partial SetConfig, sub configs."""
 

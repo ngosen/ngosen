@@ -130,6 +130,15 @@ namespace fcitx {
 
     FCITX_CONFIG_ENUM_NAME_WITH_I18N(EmojiPlacement, N_("After the word"), N_("Instead of the word"));
 
+    // How sure Đoán dấu must be before it fixes a syllable typed wrong.
+    enum class FixStrength : std::uint8_t {
+        Cautious = 0,
+        Medium   = 1,
+        Strong   = 2,
+    };
+
+    FCITX_CONFIG_ENUM_NAME_WITH_I18N(FixStrength, N_("Cautious"), N_("Medium"), N_("Strong"));
+
     enum class EmojiOfferAt : std::uint8_t {
         EachWord,
         SentenceEnd,
@@ -346,6 +355,8 @@ namespace fcitx {
         Option<bool> rawWordAfterSlash{this, "RawWordAfterSlash", _("Type a word that starts with / as is"), ngosen::defaultOptions.rawWordAfterSlash};
         Option<bool> guessDiacritics{this, "GuessDiacritics", _("Add marks to words typed without them"), ngosen::defaultOptions.guessDiacritics};
         Option<bool> guessFixesTypos{this, "GuessFixesTypos", _("Also fix syllables typed wrong"), ngosen::defaultOptions.guessFixesTypos};
+        OptionWithAnnotation<FixStrength, FixStrengthI18NAnnotation> guessFixStrength{this, "GuessFixStrength", _("How boldly to fix"),
+                                                                                      static_cast<FixStrength>(ngosen::defaultOptions.guessFixStrength)};
         Option<bool> learnDiacritics{this, "LearnDiacritics", _("Learn from what you type"), ngosen::defaultOptions.learnDiacritics};
         Option<bool> emojiSuggestions{this, "EmojiSuggestions", _("Suggest emoji while typing"), ngosen::defaultOptions.emojiSuggestions};
         Option<bool> yahooEmoticons{this, "YahooEmoticons", _("Yahoo Messenger emoticons"), ngosen::defaultOptions.yahooEmoticons};

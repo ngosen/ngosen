@@ -91,7 +91,9 @@ namespace ngosen {
         }
         if (diacritics_ == 0)
             return;
-        EngineSetFixing(bambooEngine_.handle(), engine_->options().guessFixesTypos ? 1 : 0);
+        const ngosen::Options& o = engine_->options();
+        // The margin a fix must win by: 4, 3 or 2 from cautious to strong.
+        EngineSetFixing(bambooEngine_.handle(), o.guessFixesTypos ? static_cast<uint8_t>(4 - std::clamp(o.guessFixStrength, 0, 2)) : 0);
         // Earlier words are replaced only where the field shows they are still there.
         const Surrounding s = host_->surrounding();
         EngineSetWholeRun(bambooEngine_.handle(), reportsTextInTime() && s.isValid() && !s.text().empty() ? 1 : 0);

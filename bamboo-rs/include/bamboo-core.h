@@ -63,7 +63,7 @@ extern void      EngineSetKeepGuard(uintptr_t engine, uintptr_t list);
 extern void      EngineSetDropKeptTail(uintptr_t engine, uint8_t on);
 extern char*     EnginePullDroppedWord(uintptr_t engine);
 extern char*     EnginePullChanges(uintptr_t engine);
-extern void      EngineSetFixing(uintptr_t engine, uint8_t on);
+extern void      EngineSetFixing(uintptr_t engine, uint8_t margin);
 extern char*     EngineUndoFix(uintptr_t engine);
 extern char*     EngineRestoreText(uintptr_t engine, cchar* text);
 extern void      EngineSetDiacritics(uintptr_t engine, uintptr_t diacritics);

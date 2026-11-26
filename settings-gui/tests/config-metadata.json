@@ -356,6 +356,24 @@
     {}
    ],
    [
+    "GuessFixStrength",
+    "Enum",
+    "How boldly to fix",
+    "Cautious",
+    {
+     "EnumI18n": {
+      "0": "Cautious",
+      "1": "Medium",
+      "2": "Strong"
+     },
+     "Enum": {
+      "0": "Cautious",
+      "1": "Medium",
+      "2": "Strong"
+     }
+    }
+   ],
+   [
     "LearnDiacritics",
     "Boolean",
     "Learn from what you type",

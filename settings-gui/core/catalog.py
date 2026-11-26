@@ -73,7 +73,7 @@ SETTINGS_MAP = {
         ],
     },
     SettingsCategory.GUESSING: {
-        N_("Adding marks"): ["GuessDiacritics", "GuessFixesTypos"],
+        N_("Adding marks"): ["GuessDiacritics", "GuessFixesTypos", "GuessFixStrength"],
         LEARNING_GROUP: ["LearnDiacritics"],
     },
     SettingsCategory.EMOJI: {
@@ -184,6 +184,10 @@ HINTS = {
         "Type toi di hoc and get tôi đi học; a word can change again as the next ones come. Backspace right after a word puts it back as typed. Never in password fields."
     ),
     "GuessFixesTypos": N_("phmi becomes phím. Off, a syllable no word matches stays as typed."),
+    "GuessFixStrength": N_(
+        "Stronger fixes more typos, and now and then changes a word that was right. A new level"
+        " applies from the next thing you type."
+    ),
     "LearnDiacritics": N_(
         "Words you type with marks are kept on this computer so guesses fit how you write. Never"
         " in password fields, and never sent anywhere."
@@ -278,6 +282,7 @@ MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
 DEPENDS = {
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
     "GuessFixesTypos": ("GuessDiacritics", "True"),
+    "GuessFixStrength": ("GuessFixesTypos", "True"),
     "LearnDiacritics": ("GuessDiacritics", "True"),
     "IconTheme": ("TrayIconKind", ("V / E", "vi / en")),
     "TrayIconSize": ("TrayIconKind", "Colour icon"),
@@ -331,4 +336,9 @@ def locked_by(key, value_of):
     value_of(name) gives a setting's value, or None when fcitx5 does not report that setting.
     """
     controller, needed = DEPENDS.get(key, (None, None))
-    return controller if controller and not _holds(controller, needed, value_of) else None
+    if controller is None:
+        return None
+    # A controller locked itself cannot be changed, so what locks it comes first.
+    return locked_by(controller, value_of) or (
+        None if _holds(controller, needed, value_of) else controller
+    )

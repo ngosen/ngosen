@@ -419,6 +419,34 @@ namespace {
         }
     }
 
+    // Keys typed in another input method never reach passesHiddenInput, so the switch must check the prompt itself.
+    void testHiddenPromptInOtherInputMethod() {
+        for (const std::string typed : {"abc tieengs", "toi go phim"}) {
+            for (const bool hiddenWhileTyping : {true, false}) {
+                realMode = Mode::Off;
+                FakeLoop      loop;
+                FakeResources resources;
+                resources.mutableOptions().guessDiacritics = true;
+                Field field                                = makeField("wayland", true);
+                field.program                              = "kitty";
+                auto                owned                  = std::make_unique<FakeHost>(loop, field);
+                FakeHost*           host                   = owned.get();
+                ngosen::TypingState state(&resources, std::move(owned));
+                resources.terminalHidesInput = hiddenWhileTyping;
+                noteWhileOff(state, typed);
+                resources.terminalHidesInput = !hiddenWhileTyping;
+                state.activate(Mode::Sen, false);
+                state.offerRetype();
+                loop.pump(150);
+                const std::string offer = !host->candidates() ? "(no offer)" : (host->labels().empty() ? "(empty)" : host->labels()[0]);
+                check(offer == "(no offer)",
+                      hiddenWhileTyping ? "keys typed at a hidden prompt in another input method are not offered later: " + typed :
+                                          "text typed before a prompt is not retyped into it: " + typed,
+                      offer);
+            }
+        }
+    }
+
     void pressInState(ngosen::TypingState& state, uint32_t sym, uint32_t states = 0) {
         FakeKey down(sym, false, states);
         state.keyEvent(down);
@@ -677,6 +705,7 @@ int main() {
     testClickDropsRetype("ibus", true, true);
     testClickBeforeSwitchDropsKeys();
     testHiddenPromptDropsKeys();
+    testHiddenPromptInOtherInputMethod();
     testRetypeInSteppingApp();
     testNoRetypeInGnomeSearch();
     testRetypeRightAfterSwitchKey();

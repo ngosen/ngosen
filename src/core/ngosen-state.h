@@ -355,6 +355,7 @@ namespace ngosen {
         void               dropRetype();
         void               hideOffer();
         bool               reportsTextInTime() const;
+        bool               terminalHidesInput() const;
         bool               typedBeforeCursor(const std::string& typed, bool mayDropStart = false) const;
         static bool        endsBeforeCursor(const Surrounding& s, const std::string& typed, bool mayDropStart);
         static std::string textBeforeCursor(const Surrounding& s);

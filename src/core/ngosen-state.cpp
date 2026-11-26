@@ -71,7 +71,7 @@ namespace ngosen {
     }
 
     void TypingState::syncDiacritics() {
-        const bool hidden = host_->field().hidesText() || hiddenInput_;
+        const bool                     hidden = host_->field().hidesText() || hiddenInput_;
         const ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         const bool                     wordOpen = !oldPreBuffer_.empty() || (preedit && *preedit.get() != 0);
         // The private engine finishes the word it holds; the new one must never get that word back.
@@ -1777,7 +1777,7 @@ namespace ngosen {
     }
 
     bool TypingState::passesHiddenInput() {
-        const bool hidden = runsShellOnPty(host_->field()) && engine_->anyTerminalHidesInput();
+        const bool hidden = terminalHidesInput();
         if (hidden != hiddenInput_) {
             hiddenInput_        = hidden;
             hiddenInputSettled_ = false;

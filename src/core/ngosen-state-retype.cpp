@@ -47,7 +47,8 @@ namespace ngosen {
         if (g_mouse_clicked.exchange(false, std::memory_order_acq_rel))
             typedWhileOff_.clear();
         const uint32_t sym = key.sym();
-        if (host_->field().password || isShortcut(key)) {
+        // Another input method gets these keys, so passesHiddenInput never sees them.
+        if (host_->field().password || isShortcut(key) || terminalHidesInput()) {
             typedWhileOff_.clear();
         } else if (ngosen::key::isBackspace(sym)) {
             if (!typedWhileOff_.empty())
@@ -131,6 +132,10 @@ namespace ngosen {
         return host_->field().surroundingText && !ngosen::surroundingTextLags(host_->field());
     }
 
+    bool TypingState::terminalHidesInput() const {
+        return ngosen::runsShellOnPty(host_->field()) && engine_->anyTerminalHidesInput();
+    }
+
     // mayDropStart also accepts a field that holds only the end of typed.
     bool TypingState::typedBeforeCursor(const std::string& typed, bool mayDropStart) const {
         const Surrounding s = host_->surrounding();
@@ -167,7 +172,8 @@ namespace ngosen {
             return;
         if (!bambooEngine_ || !engine_->options().retypeAfterSwitch || typed.empty() || ngosen::isGnomeSearch(host_->field()))
             return;
-        if (!canReplaceInApp())
+        // The switch comes before the key that would tell a password prompt is showing.
+        if (!canReplaceInApp() || terminalHidesInput())
             return;
         if (!typedBeforeCursor(typed, true))
             return;

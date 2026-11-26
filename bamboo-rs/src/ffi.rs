@@ -19,7 +19,7 @@ use bamboo_core::{BracketMode, Config, InputMethod, ToneStyle, W2uMode};
 
 use crate::convert::{LetterCase, convert};
 use crate::engine::{BambooEngine, Dictionary, INPUT_METHOD_NAMES, WordList, input_method_by_name};
-use crate::handles::{self, Object};
+use crate::handles::{self, DiacriticsStore, Object};
 use crate::macro_table::MacroTable;
 use crate::spelling::VietnameseSpelling;
 
@@ -194,7 +194,7 @@ pub unsafe extern "C" fn EngineSetOption(engine: usize, option: *const EngineOpt
         e.auto_capitalize_macro = o.auto_capitalize_macro;
         e.spell_check_with_dicts = o.spell_check_with_dicts;
         e.teencode = o.teencode;
-        e.output_charset = charset;
+        e.set_output_charset(charset);
         e.preeditor.set_config(config);
         e.time_format = time_format;
         e.date_format = date_format;
@@ -373,16 +373,14 @@ pub extern "C" fn EngineSetDropKeptTail(engine: usize, on: u8) {
     handles::with_engine(engine, |e| e.drop_kept_tail = on != 0);
 }
 
-/// The changes Đoán dấu made since the last call, as one replacement: two texts separated by a
-/// tab. Once the last commit is in the field, the field ends with the first and should end with
-/// the second. Empty when nothing changed. The front end applies it before it forwards the key.
+/// The changes Đoán dấu made since the last call, as one replacement: the byte length of the old
+/// text, a tab, the old text and the new one. Once the last commit is in the field, the field ends
+/// with the old text and should end with the new one. Empty when nothing changed. The front end
+/// applies it before it forwards the key.
 #[unsafe(no_mangle)]
 pub extern "C" fn EnginePullChanges(engine: usize) -> *mut c_char {
-    handles::with_engine(engine, |e| {
-        let change = e.pull_field_change();
-        c_string(&change.map_or_else(String::new, |(old, new)| format!("{old}\t{new}")))
-    })
-    .unwrap_or(std::ptr::null_mut())
+    handles::with_engine(engine, |e| c_string(&e.pull_changes_text()))
+        .unwrap_or(std::ptr::null_mut())
 }
 
 /// Opens the shipped table at `table` and the personal dictionary kept in `dictionary`, for every
@@ -399,14 +397,17 @@ pub unsafe extern "C" fn DiacriticsOpen(table: *const c_char, dictionary: *const
         return 0;
     };
     let dictionary = timsen::Dictionary::open(Arc::new(table), dictionary);
-    handles::new_handle(Object::Diacritics(Arc::new(Mutex::new(dictionary))))
+    handles::new_handle(Object::Diacritics(Arc::new(DiacriticsStore {
+        dictionary: Arc::new(Mutex::new(dictionary)),
+        saving: Mutex::default(),
+    })))
 }
 
 /// Why the personal dictionary file did not load; null when it did.
 #[unsafe(no_mangle)]
 pub extern "C" fn DiacriticsProblem(handle: usize) -> *mut c_char {
-    let dictionary = handles::diacritics(handle);
-    let dictionary = dictionary.as_deref().map(lock_dictionary);
+    let store = handles::diacritics(handle);
+    let dictionary = store.as_deref().map(|s| lock_dictionary(&s.dictionary));
     match dictionary.as_ref().and_then(|d| d.problem()) {
         Some(problem) => c_string(&problem.to_string()),
         None => std::ptr::null_mut(),
@@ -418,34 +419,42 @@ fn lock_dictionary(d: &Mutex<timsen::Dictionary>) -> std::sync::MutexGuard<'_, t
 }
 
 /// Saves what the personal dictionary learned since the last save, writing on another thread so
-/// typing never waits for the disk; with `wait`, returns once the file is written. Returns whether
-/// there was anything to save.
+/// typing never waits for the disk; with `wait`, as at exit, returns once everything learned is
+/// written, a save already running included. Returns whether there was anything to save.
 #[unsafe(no_mangle)]
 pub extern "C" fn DiacriticsSave(handle: usize, wait: u8) -> u8 {
-    let Some(dictionary) = handles::diacritics(handle) else {
-        return 0;
+    handles::diacritics(handle).is_some_and(|store| save_diacritics(&store, wait != 0)) as u8
+}
+
+fn save_diacritics(store: &DiacriticsStore, wait: bool) -> bool {
+    let mut saving = store.saving.lock().unwrap_or_else(|e| e.into_inner());
+    if wait && let Some(running) = saving.take() {
+        let _ = running.join();
+    }
+    let Some(job) = lock_dictionary(&store.dictionary).begin_save() else {
+        return false;
     };
-    let Some(job) = lock_dictionary(&dictionary).begin_save() else {
-        return 0;
-    };
+    let dictionary = Arc::clone(&store.dictionary);
     let save = std::thread::spawn(move || {
         let written = job.write();
         // A failed save leaves the dictionary owing one, so the next save tries again.
         let _ = lock_dictionary(&dictionary).finish_save(job, written);
     });
-    if wait != 0 {
+    if wait {
         let _ = save.join();
+    } else {
+        *saving = Some(save);
     }
-    1
+    true
 }
 
 /// Gives the engine Đoán dấu with the dictionary of `DiacriticsOpen`, or with 0 takes it away,
 /// as when the user switches to English.
 #[unsafe(no_mangle)]
 pub extern "C" fn EngineSetDiacritics(engine: usize, handle: usize) {
-    let dictionary = handles::diacritics(handle);
-    handles::with_engine(engine, |e| match dictionary {
-        Some(dictionary) => e.set_diacritics(dictionary),
+    let store = handles::diacritics(handle);
+    handles::with_engine(engine, |e| match store {
+        Some(store) => e.set_diacritics(Arc::clone(&store.dictionary)),
         None => e.remove_diacritics(),
     });
 }

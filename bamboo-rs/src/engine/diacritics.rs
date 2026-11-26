@@ -147,7 +147,7 @@ impl Diacritics {
         let keys = (words_of(text).len() == 1).then_some(keys);
         let reopened = self.reopened.take();
         let last = text.rfind(char::is_alphabetic);
-        self.tail = last.map(|i| text[i..].chars().skip(1).collect());
+        let tail = last.map(|i| text[i..].chars().skip(1).collect());
         let mut open = false;
         for piece in text.split_inclusive(|c: char| !c.is_alphabetic()) {
             let word = piece.trim_end_matches(|c: char| !c.is_alphabetic());
@@ -169,6 +169,8 @@ impl Diacritics {
         if open {
             self.change(false);
         }
+        // Only now: the run this commit's words started has forgotten the tail of the one before.
+        self.tail = tail;
     }
 
     /// A key the engine forwards (Enter, Tab, a symbol after a space): the run ends where it is,

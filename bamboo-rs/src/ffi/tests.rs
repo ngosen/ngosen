@@ -332,3 +332,25 @@ fn print_vietnamese_phrases() {
         }
     }
 }
+
+#[test]
+fn a_waiting_save_waits_for_the_one_running() {
+    let dir = std::env::temp_dir().join(format!("ngosen-save-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let table = include_bytes!("../engine/tiny.timsen").to_vec();
+    let table = Arc::new(timsen::Table::from_bytes(table).unwrap());
+    let store = DiacriticsStore {
+        dictionary: Arc::new(Mutex::new(timsen::Dictionary::open(
+            table,
+            dir.join("learned"),
+        ))),
+        saving: Mutex::default(),
+    };
+    lock_dictionary(&store.dictionary).learn(&[Some("ngó"), Some("sen")]);
+    assert!(save_diacritics(&store, false));
+    lock_dictionary(&store.dictionary).learn(&[Some("gõ"), Some("phím")]);
+    save_diacritics(&store, true);
+    let dirty = lock_dictionary(&store.dictionary).is_dirty();
+    std::fs::remove_dir_all(&dir).unwrap();
+    assert!(!dirty, "everything learned is in the file");
+}

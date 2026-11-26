@@ -1390,6 +1390,17 @@ impl BambooEngine {
         self.diacritics = Some(Diacritics::new(dictionary));
     }
 
+    /// The field's text changes charset from here, so the run, kept in the old one, ends.
+    pub fn set_output_charset(&mut self, charset: String) {
+        if charset != self.output_charset {
+            self.fix_undoable = false;
+            if let Some(d) = &mut self.diacritics {
+                d.reset();
+            }
+        }
+        self.output_charset = charset;
+    }
+
     /// Ends the run, learning it as the end of a sentence would, and guesses nothing from now.
     pub fn remove_diacritics(&mut self) {
         self.fix_undoable = false;
@@ -1447,6 +1458,15 @@ impl BambooEngine {
     pub fn pull_field_change(&mut self) -> Option<(String, String)> {
         let (old, new) = self.diacritics.as_mut()?.pull_field_change()?;
         Some((self.encode_text(&old), self.encode_text(&new)))
+    }
+
+    /// `pull_field_change` for the C API: the old text's byte length, a tab, then both texts, as
+    /// either can hold a tab a macro committed.
+    pub fn pull_changes_text(&mut self) -> String {
+        self.pull_field_change()
+            .map_or_else(String::new, |(old, new)| {
+                format!("{}\t{old}{new}", old.len())
+            })
     }
 
     /// Whether Đoán dấu may change any word of the run, or only the word that just ended: a

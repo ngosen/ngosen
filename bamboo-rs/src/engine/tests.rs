@@ -2376,6 +2376,36 @@ fn removing_diacritics_learns_the_run_and_guesses_nothing_after() {
 }
 
 #[test]
+fn the_first_fix_after_a_sentence_can_be_undone() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("ta", '.'), ("ngo", ' ')]);
+    assert_eq!(field.last().map(String::as_str), Some("gõ"));
+    assert!(e.undo_fix().is_some());
+}
+
+#[test]
+fn a_charset_change_ends_the_run_kept_in_the_old_one() {
+    let mut e = engine_on(&shared_dictionary());
+    e.output_charset = "VIQR".to_string();
+    let mut field = String::new();
+    type_text(&mut e, &mut field, &[("ban", ' ')]);
+    e.set_output_charset("Unicode".to_string());
+    type_text(&mut e, &mut field, &[("phim", '.')]);
+    assert_eq!(field, format!("{}phím.", encode("VIQR", "bạn ")));
+}
+
+#[test]
+fn changes_as_text_hold_a_tab_a_macro_committed() {
+    let mut e = engine_on(&shared_dictionary());
+    e.diacritics.as_mut().unwrap().committed("toi\tgo. ", "");
+    let text = e.pull_changes_text();
+    let (length, rest) = text.split_once('\t').unwrap();
+    let (old, new) = rest.split_at(length.parse().unwrap());
+    assert_eq!((old, new), ("toi\tgo. ", "tôi\tgỗ. "));
+}
+
+#[test]
 fn ending_a_word_keeps_the_run_that_a_reset_ends() {
     for end_word in [true, false] {
         let mut e = engine_on(&shared_dictionary());

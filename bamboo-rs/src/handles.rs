@@ -17,7 +17,13 @@ pub enum Object {
     MacroTable(Arc<MacroTable>),
     Dictionary(Arc<Dictionary>),
     WordList(Arc<WordList>),
-    Diacritics(Arc<Mutex<timsen::Dictionary>>),
+    Diacritics(Arc<DiacriticsStore>),
+}
+
+/// Đoán dấu's personal dictionary, which every field shares, and the save writing it, if any.
+pub struct DiacriticsStore {
+    pub dictionary: Arc<Mutex<timsen::Dictionary>>,
+    pub saving: Mutex<Option<std::thread::JoinHandle<()>>>,
 }
 
 struct Registry {
@@ -70,9 +76,9 @@ pub fn word_list(handle: usize) -> Option<Arc<WordList>> {
     }
 }
 
-pub fn diacritics(handle: usize) -> Option<Arc<Mutex<timsen::Dictionary>>> {
+pub fn diacritics(handle: usize) -> Option<Arc<DiacriticsStore>> {
     match registry().objects.get(&handle) {
-        Some(Object::Diacritics(dictionary)) => Some(Arc::clone(dictionary)),
+        Some(Object::Diacritics(store)) => Some(Arc::clone(store)),
         _ => None,
     }
 }

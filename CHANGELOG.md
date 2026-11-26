@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.14.3-1] — 26/11/2026
+
+Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz.vn): chữ vừa sửa dấu không còn thỉnh thoảng mất ("người" ra "ời") khi ô quay lại focus chỉ trong chốc lát (#1025).
+Tải ở [ngosen-1.14.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.3-1).
+
 ### Sửa
 
 - Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz): chữ vừa sửa dấu không còn thỉnh thoảng mất

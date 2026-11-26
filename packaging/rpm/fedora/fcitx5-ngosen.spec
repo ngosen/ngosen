@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.14.2
+Version:        1.14.3
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -102,6 +102,9 @@ else
 fi
 
 %changelog
+* Thu Nov 26 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.14.3-1
+- In Chrome's rich text editors on GNOME, such as voz.vn's reply box, Sen no longer loses a corrected word now and then when the editor comes back to focus only briefly (#1025).
+
 * Thu Nov 26 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.14.2-1
 - Fixes for Antigravity, voz.vn, Chrome on GNOME, Sway and Hyprland: Sen no longer loses or doubles corrected letters there and shows them sooner (#987, #990, #995, #996, #997, #998, #999, #1004); the KDE system check and a rerun of the installer switch KDE's virtual keyboard back on (#982, #1001); ngosen-check --settings prints the settings in use (#984); bamboo-core 0.6.1 shows "tiế" at once for "tieesng" and gives "cươ" for "cuow" (#1009).
 

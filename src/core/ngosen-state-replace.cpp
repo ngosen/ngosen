@@ -236,7 +236,11 @@ namespace ngosen {
         sinceFocus_.showedBackspace = true;
         const auto snapshot         = host_->surrounding();
         int        settleMs         = engine_->options().waitSurroundingSettleMs;
-        if (settleMs <= 0 || !looksLikeMessengerComposer(snapshot)) {
+        // A field that refocused during this deletion has redrawn already; Messenger's repaint gives no sign.
+        const bool redrawn = bouncedInWait_ == surr_wait_.startedAt;
+        // Any emptied contenteditable reads like Messenger's emptied composer; the text it held tells them apart.
+        const bool emptiedPlain = surr_wait_.plainAtSend && snapshot.isValid() && snapshot.text() == "\n";
+        if (settleMs <= 0 || redrawn || emptiedPlain || !looksLikeMessengerComposer(snapshot)) {
             settleMs = 0;
         } else if (isFirstWordOfMessage(snapshot)) {
             // A just-emptied composer is still reloading its placeholder, so the first word waits longer.
@@ -351,14 +355,8 @@ namespace ngosen {
         // wlroots drops a commit sent while the app's report is still arriving, as answering an old state.
         // Focus loss is not inside a key event, and the field is going away, so it commits at once.
         const bool defer = (host_->field().frontend == "dbus" || std::string(reason) == "event") && std::string(reason) != "focus lost";
-        if (defer) {
-            deferred_commit_.text    = pending_commit_string_;
-            deferred_commit_.pending = true;
-            deferred_commit_.timer   = host_->startTimer(ngosen::monotonicUs(), 0, [this](ngosen::Timer&) {
-                flushDeferredCommit();
-                return false; // never reset a timer from inside its own callback
-            });
-        }
+        if (defer)
+            deferCommit();
         std::string text         = defer ? std::string() : std::move(pending_commit_string_);
         expected_backspaces_     = 0;
         current_backspace_count_ = 0;
@@ -367,6 +365,23 @@ namespace ngosen {
         if (!defer) {
             replayBufferedKeys(std::move(text));
         }
+    }
+
+    void TypingState::deferCommit() {
+        // An app sends a few state updates in a row for one deletion, and the commit has to follow the last.
+        const uint64_t holdUs         = ngosen::commitCanCrossStateUpdate(host_->field()) ? ReportBurstUs : 0;
+        deferred_commit_.text         = pending_commit_string_;
+        deferred_commit_.pending      = true;
+        deferred_commit_.focusRetries = 0;
+        deferred_commit_.timer        = host_->startTimer(ngosen::monotonicUs() + holdUs, 0, [this, holdUs](ngosen::Timer& t) {
+            // A commit into a field without focus is lost, and a field that bounces is back within a few ms.
+            if (holdUs > 0 && !host_->hasFocus() && ++deferred_commit_.focusRetries <= 5) {
+                t.rearm(ngosen::monotonicUs() + 2000);
+                return true;
+            }
+            flushDeferredCommit();
+            return false; // never reset a timer from inside its own callback
+        });
     }
 
     void TypingState::flushDeferredCommit() {
@@ -639,6 +654,7 @@ namespace ngosen {
             const std::string expected   = surr_wait_.prefix + surr_wait_.deleted;
             surr_wait_.sentSnapshotFresh = before.size() >= expected.size() && before.compare(before.size() - expected.size(), expected.size(), expected) == 0;
         }
+        surr_wait_.plainAtSend = surr_wait_.sentSnapshotFresh && !looksLikeMessengerComposer(snapshot);
     }
 
     // A plain word after the cursor must keep the split, so the tail needs what only an address holds.
@@ -718,6 +734,9 @@ namespace ngosen {
         // without focus (Zed, #93); the backspace path waits for focus to come back.
         if (ngosen::dropsCommitsWithoutFocus(field) && !ngosen::keepsFocusWhenEmptied(field) && surrounding.isValid() && !showsTextAfterDeleting(surrounding, chars))
             fails.emplace_back("deletion empties the field");
+        // Antigravity's editor drops a deletion through its text that reaches it before its own caret step back (#362).
+        if (caretStepBackDue())
+            fails.emplace_back("caret step back due");
         // The backspace path waits for such a field to settle before it commits.
         if (fieldBounces_ > 0)
             fails.emplace_back("field refocuses after edits");
@@ -773,10 +792,19 @@ namespace ngosen {
         return true;
     }
 
+    // Antigravity's editor may leave its caret report one step back until the next key, which still lands
+    // after the letter (#362), so the word ends where the caret stood before that report.
+    Surrounding TypingState::copyAtCaret() const {
+        const Surrounding s = host_->surrounding();
+        if (!caretSteppedBack_ || !s.isValid() || s.cursor() != s.anchor() || s.cursor() + 1 != lastSurroundingCursor_)
+            return s;
+        return {s.text(), lastSurroundingCursor_, lastSurroundingCursor_};
+    }
+
     // The field shows the word after the cursor: the user clicked back before it, and the app told us only
     // in a report that also carried our last edit, as Firefox's snap does.
     bool TypingState::copyShowsWordAfterCursor(const std::string& deletedPart) const {
-        const Surrounding s = host_->surrounding();
+        const Surrounding s = copyAtCaret();
         if (!host_->field().surroundingText || !s.isValid() || s.cursor() != s.anchor() || oldPreBuffer_.empty())
             return false;
         const std::string before = textBeforeCursor(s);
@@ -1035,6 +1063,10 @@ namespace ngosen {
             return CopyWait::No;
         if (unreportedCommitLength_ == 0 && deletion.match != SurroundingDeletion::Match::None)
             return deletion.match == SurroundingDeletion::Match::Fresh ? CopyWait::Fits : CopyWait::No;
+        // A caret report left one step back hides the word from that count, and no wait brings it back.
+        if (unreportedCommitLength_ == 0 && caretSteppedBack_ &&
+            countSurroundingDeletion(textBeforeCursor(copyAtCaret()), surr_wait_.prefix, surr_wait_.deleted, earlierWords_).match == SurroundingDeletion::Match::Fresh)
+            return CopyWait::Fits;
         if (overIbus)
             return copyWaitsRunOut_ < MaxCopyWaitsRunOut ? CopyWait::Yes : CopyWait::No;
         return checksGetAnswered() || copyWaitRetry_ ? CopyWait::Yes : CopyWait::HeldBack;

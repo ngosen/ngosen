@@ -887,6 +887,8 @@ namespace ngosen {
         // Counted first, so a replacement this key starts does not count it as a later key.
         if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             ++keyCount_;
+            if (!typesText(keyEvent, keyEvent.sym()) && !isOwnBackspace(keyEvent.sym()))
+                caretKeyAtUs_ = ngosen::monotonicUs();
             fieldAtKeptReset_.reset();
             if (ngosen::key::isBackspace(keyEvent.sym()))
                 closeCheckBeforeOtherEdit();
@@ -1564,6 +1566,7 @@ namespace ngosen {
         lockedWord_.reset();
         // After focus out a forwarded key may reach the window that took focus.
         if (isFocusOut) {
+            keepLastWordAtFocusOut();
             held_enter_pending_ = false;
             held_enter_timer_.reset();
             emojiAfterHint_ = {};

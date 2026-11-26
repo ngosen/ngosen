@@ -123,9 +123,9 @@ namespace {
     }
 
     void testCommands() {
-        checkTypedAsIs("commands", {"/resume", "/clear",  "/compact", "/cost",    "/model",  "/help",  "/status", "/init",        "/memory", "/login",    "/doctor", "/review",
-                                    "/exit",   "/agents", "/config",  "/context", "/export", "/hooks", "/mcp",    "/permissions", "/plan",   "/rewind",   "/usage",  "/vim",
-                                    "/theme",  "/remind", "/giphy",   "/invite",  "/topic",  "/away",  "/me",     "/nick",        "/shrug",  "/home/pibi"});
+        checkTypedAsIs("commands", {"/resume", "/clear",  "/compact", "/cost",    "/model",  "/help",  "/status", "/init",        "/memory", "/login",  "/doctor", "/review",
+                                    "/exit",   "/agents", "/config",  "/context", "/export", "/hooks", "/mcp",    "/permissions", "/plan",   "/rewind", "/usage",  "/vim",
+                                    "/theme",  "/remind", "/giphy",   "/invite",  "/topic",  "/away",  "/me",     "/nick",        "/shrug",  "/home/pi"});
     }
 
     void testPathsAfterSpace() {

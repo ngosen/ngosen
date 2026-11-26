@@ -345,7 +345,10 @@ namespace {
         // XIM forwards on the next event loop turn, after its sync reply.
         loop.pump(3);
         const auto& forwarded = host->forwarded();
-        check(forwarded.size() == 2 && forwarded[0].key == ngosen::EditKey::BackSpace && !forwarded[0].release && forwarded[1].release,
+        // wayland_v2 gets a release first, for an app that still has the key down.
+        const size_t first = frontend == "wayland_v2" ? 1 : 0;
+        check(forwarded.size() == first + 2 && forwarded[0].key == ngosen::EditKey::BackSpace && forwarded[0].release == (first == 1) && !forwarded[first].release &&
+                  forwarded[first + 1].release,
               what + "forwards one backspace press and release", std::to_string(forwarded.size()) + " forwarded keys");
         check(host->deletes().empty(), what + "no surrounding text deletion", std::to_string(host->deletes().size()));
 
@@ -436,6 +439,32 @@ namespace {
             check(host->deletes().size() == 1 && host->commits().size() == (first ? 0U : 1U), what, std::to_string(host->deletes().size()) + " deletes, " + join(host->commits()));
             loop.pump(60);
             check(join(host->commits()) == "['ê']", what + ", then the commit", join(host->commits()));
+        }
+    }
+
+    // An emptied contenteditable reports one line break, as Messenger's emptied composer does. The text it held
+    // tells them apart: Messenger keeps two line breaks after the cursor.
+    void testEmptiedPlainFieldCommitsAtOnce() {
+        realMode = ngosen::Mode::Sen;
+        for (const bool messenger : {false, true}) {
+            FakeLoop            loop;
+            FakeResources       resources;
+            auto                owned = std::make_unique<FakeHost>(loop, makeField("wayland_v2", true, "chromium"));
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            host->setSurrounding("\n", 0);
+            press(state, 'd');
+            host->setSurrounding(messenger ? "d\n\n" : "d", 1);
+            state.surroundingUpdated();
+            loop.pump(10);
+            press(state, 'd');
+            host->setSurrounding("\n", 0);
+            state.surroundingUpdated();
+            loop.pump(10);
+            const std::string what = messenger ? "emptied Messenger composer: the commit waits" : "emptied plain field: the commit follows the report";
+            check(host->commits().size() == (messenger ? 0U : 1U), what, join(host->commits()));
+            loop.pump(60);
+            check(join(host->commits()) == "['đ']", what + ", one commit in the end", join(host->commits()));
         }
     }
 
@@ -968,6 +997,39 @@ namespace {
         check(slowest < 60, "redrawing editor: commit once the redraws are done", std::to_string(slowest) + " ms");
     }
 
+    // voz.vn's editor in Chrome on GNOME leaves focus for up to 20 ms at a time after each of our
+    // backspaces, and a commit sent before it is back goes nowhere.
+    void testCommitWaitsForEditorRefocus() {
+        ngosen::test::AppQuirks quirks;
+        quirks.awayAfterDeletionMs        = 20;
+        quirks.leavesAfterDeletionMs      = 30;
+        const std::string           typed = "nguowif ";
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        const std::string           text = ngosen::test::typeInApp(makeField("ibus", true, "chromium"), quirks, keys, std::vector<int>(keys.size(), 80));
+        check(text == "người ", "refocusing editor: no commit is lost", text);
+    }
+
+    // The same editor through GNOME Shell's IBus bridge applies our backspaces one by one, slower than
+    // the bridge's own wait, and loses a commit that comes before the last one. Its reports can come
+    // later still.
+    void testBouncingEditorOverIBusSlowDeletion() {
+        const Field             field = makeField("ibus", true, "gnome-shell");
+        ngosen::test::AppQuirks quirks;
+        quirks.keyStepMs                 = 35;
+        quirks.losesCommitAmidBackspaces = true;
+        quirks.awayAfterDeletionMs       = 10;
+        quirks.leavesAfterDeletionMs     = 5;
+        const std::vector<std::pair<std::string, std::string>> cases{{"tieengs ", "tiếng "}, {"ddoongf ", "đồng "}, {"truowngf ", "trường "}};
+        for (const int reportDelayMs : {0, 150}) {
+            quirks.reportDelayMs = reportDelayMs;
+            for (const auto& [typed, want] : cases) {
+                const std::vector<uint32_t> keys(typed.begin(), typed.end());
+                const std::string           text = ngosen::test::typeInApp(field, quirks, keys, std::vector<int>(keys.size(), 150));
+                check(text == want, "editor over IBus deleting slowly keeps the edit: " + typed + "reports " + std::to_string(reportDelayMs) + " ms late", text);
+            }
+        }
+    }
+
     // The voz.vn composer in Brave on Plasma Wayland bounces focus and reports an empty field after each
     // Backspace and edit, and loses a commit sent before two Backspaces are applied. A one-Backspace edit
     // survives an early commit, so only edits that delete two characters went wrong.
@@ -1110,6 +1172,94 @@ namespace {
         }
     }
 
+    // On Hyprland a Backspace whose release was lost when the field refocused stays down for the app.
+    void testForwardedBackspaceAfterLostRelease() {
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland_v2", false, "chromium"), ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        app->leaveBackspaceDown();
+        for (const char c : std::string("dd")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        check(app->text() == "đ", "Backspace left down: the forwarded Backspace still deletes", app->text());
+    }
+
+    // The voz.vn composer keeps two line breaks after the cursor, as Messenger's does, but it refocuses
+    // after each edit and has redrawn by the time it reports the deletion.
+    void testRefocusingComposerCommitsAtOnce() {
+        ngosen::test::AppQuirks quirks;
+        quirks.keyStepMs             = 28;
+        quirks.bouncesEmptyAfterEdit = true;
+        quirks.textAfterCursor       = "\n\n";
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland_v2", true, "chromium"), quirks);
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (const char c : std::string("em tie")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        app->type(static_cast<uint32_t>('e'));
+        loop.pump(45);
+        check(app->text() == "em tiê\n\n", "refocusing composer: the commit follows the reported deletion", app->text());
+    }
+
+    // On Sway, VS Code reports no text and redraws a frame after a Backspace.
+    void testCommitClearOfUpdateAfterBackspace() {
+        ngosen::test::AppQuirks quirks;
+        quirks.neverSendsText         = true;
+        quirks.updateAfterBackspaceMs = 17;
+        FakeResources resources;
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland_v2", true, "code-oss"), quirks);
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        for (const char c : std::string("dd")) {
+            app->type(static_cast<uint32_t>(c));
+            loop.pump(150);
+        }
+        check(app->text() == "đ", "update after a Backspace: the commit does not cross it", app->text());
+    }
+
+    // On Sway, Chromium reports a finished deletion and sends one more update right behind the report.
+    void testCommitAfterReportBurst() {
+        ngosen::test::AppQuirks quirks;
+        quirks.keyStepMs              = 4;
+        quirks.updateAfterBackspaceMs = 5;
+        for (const bool leavesFocus : {false, true}) {
+            FakeResources resources;
+            realMode = ngosen::Mode::Sen;
+            realtextLen.store(0);
+            FakeLoop            loop;
+            auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, makeField("wayland_v2", true, "chromium"), quirks);
+            auto*               app   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            app->attach(&state);
+            app->type('d');
+            loop.pump(150);
+            app->type('d');
+            loop.pump(5);
+            if (leavesFocus)
+                app->leaveFocus(4);
+            loop.pump(150);
+            const std::string what = leavesFocus ? "focus away behind the report: the commit waits for it" : "update behind the report: the commit does not cross it";
+            check(app->text() == "đ", what, app->text());
+        }
+    }
+
     void testStrayKeyDuringBounce() {
         const Field             field = makeField("wayland", true, "brave-origin");
         ngosen::test::AppQuirks bouncing;
@@ -1160,7 +1310,7 @@ namespace {
         ngosen::test::AppQuirks marking = bouncing;
         marking.marksEmptiedLine        = true;
         marking.textAfterCursor         = "\n\n";
-        for (const int delayMs : {2, 20, 40})
+        for (const int delayMs : {0, 2, 20, 40})
             expect("after a U+200B (" + std::to_string(delayMs) + " ms)", runIn(field, marking, "dd", 'o', 1, "fng ", false, 150, 150, delayMs), "\u200bđòng \n\n");
         expect("u after the circumflex", run("naa", 'u', 1, "s "), "nấu ");
         expect("tone key before the commit", run("nguoiw", 'f', 3, " "), "người ");
@@ -1175,11 +1325,10 @@ namespace {
         atChange.reportsTextAtChange     = true;
         atChange.reportDelayMs           = 5;
         expect("letter shown before the commit", runIn(field, atChange, "nguow", 'i', 2, "f ", true, 80, 150, 0), "người ");
-        // voz.vn keeps two line breaks after the cursor, so the commit waits for the editor to settle and
-        // the next key arrives during that wait.
+        // voz.vn keeps two line breaks after the cursor, the shape of Messenger's composer.
         ngosen::test::AppQuirks composer = bouncing;
         composer.textAfterCursor         = "\n\n";
-        expect("next key during the settle wait", runIn(field, composer, "nguow", 'i', 2, "f ", true, 85, 150, 4), "người \n\n");
+        expect("two line breaks after the cursor", runIn(field, composer, "nguow", 'i', 2, "f ", true, 85, 150, 4), "người \n\n");
         // The next key reached us before any report showed the letter, so their order is unknown.
         expect("letter shown after the next key", runIn(field, atChange, "nguow", 'i', 2, "f ", true, 60, 150, 0), "ngiuowf ");
         // A late report from the middle of our deletion holds one letter more than what stays.
@@ -1987,6 +2136,39 @@ namespace {
         host->setSurrounding("ban", 3);
         state.surroundingUpdated();
         check(press(state, static_cast<uint32_t>('f')), "backspace into word before nbsp: f marks the word", "f went to the app");
+    }
+
+    // Chrome on GNOME bounces focus when a rich text editor swaps the space for U+00A0.
+    // The reset that comes with focus out may run before or after deactivate().
+    void testBackspaceIntoWordAfterFocusBounce() {
+        for (const bool resetFirst : {true, false}) {
+            for (const bool bounce : {true, false}) {
+                realMode = ngosen::Mode::Sen;
+                FakeLoop            loop;
+                FakeResources       resources;
+                auto                owned = std::make_unique<FakeHost>(loop, makeField("ibus", true));
+                FakeHost*           host  = owned.get();
+                ngosen::TypingState state(&resources, std::move(owned));
+
+                for (const char c : std::string("ban "))
+                    press(state, static_cast<uint32_t>(c));
+                host->setSurrounding("ban ", 4);
+                state.surroundingUpdated();
+                if (resetFirst)
+                    state.reset(true);
+                state.deactivate(true);
+                if (!resetFirst)
+                    state.resetAfterAppCommit(true);
+                if (!bounce)
+                    loop.pump(150);
+                state.activate(ngosen::Mode::Sen, true);
+                press(state, ngosen::key::BackSpace);
+                host->setSurrounding("ban", 3);
+                state.surroundingUpdated();
+                const std::string what = std::string("backspace into word after focus ") + (bounce ? "bounce" : "move") + (resetFirst ? ", reset first" : ", reset last");
+                check(press(state, static_cast<uint32_t>('f')) == bounce, what, bounce ? "f went to the app" : "f marked an old word");
+            }
+        }
     }
 
     // xterm.js keeps only the last key typed in its hidden textarea, so the field never shows the word.
@@ -3325,7 +3507,7 @@ namespace {
         text = typed({.reportsEmptyText = true}, "tiee");
         check(text == "tieê", "quirk: a field that reports no text drops the deletion", text);
         text = typed({.convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true}, "vieetj nam tieesng");
-        // The copy stays "tie" while the app holds tiê, then tíê: the deletion asks for as many copy
+        // The copy stays "tie" while the app holds tiê, then tiế: the deletion asks for as many copy
         // characters as the real ones have bytes.
         check(text == "việt nam tiếng", "quirk: bytes counted on an old copy delete whole letters", text);
         {
@@ -3646,8 +3828,8 @@ namespace {
         std::vector<std::string> lines;
         ngosen::test::Path       sent;
         for (const auto& quirks : {ngosen::test::AppQuirks{.reportDelayMs = 300}, ngosen::test::AppQuirks{.reportDelayMs = 300, .repeatsOldTextAfterDelete = true}}) {
-            const auto text = typedWithBackspaces(makeField("ibus", true), quirks, "tieesng<<ng", 120, lines, &sent);
-            check(text == "tiếng" && sent.surroundingDeletes > 0 && sent.forwardedBackSpaces > 0, "both paths: one word mixes them and stays right", text + " " + join(lines));
+            const auto text = typedWithBackspaces(makeField("ibus", true), quirks, "tieesng<<nf", 120, lines, &sent);
+            check(text == "tiền" && sent.surroundingDeletes > 0 && sent.forwardedBackSpaces > 0, "both paths: one word mixes them and stays right", text + " " + join(lines));
         }
     }
 
@@ -3676,13 +3858,13 @@ namespace {
     void testLateReportAfterBackspace() {
         const Field              gnome = makeField("ibus", true);
         std::vector<std::string> lines;
-        const std::string        typed = "muoons tieesng<<ng ";
+        const std::string        typed = "muoons tieesng<<nf ";
         std::vector<int>         gapsMs(typed.size(), 500);
         // From the s of the word, so the report of its commit lands just before the key after the Backspaces.
         gapsMs[11] = 20;
-        std::fill(gapsMs.begin() + 12, gapsMs.begin() + 16, 15);
+        std::fill(gapsMs.begin() + 12, gapsMs.begin() + 17, 18);
         auto text = typedWithBackspaces(gnome, {.reportDelayMs = 80, .reportsTextAtChange = true}, typed, gapsMs, lines);
-        check(text == "muốn tiếng " && !lastReplacementDeletedThroughCopy(lines), "late report: the word goes on through backspaces after the user's Backspace",
+        check(text == "muốn tiền " && !lastReplacementDeletedThroughCopy(lines), "late report: the word goes on through backspaces after the user's Backspace",
               text + " " + join(lines));
 
         text = typedWithBackspaces(gnome, {}, "too<oo too ", 400, lines);
@@ -4332,8 +4514,8 @@ namespace {
             qt.preeditFallback = true;
             const auto lines =
                 replaceLines(resources, qt, {.dropsForwardedKeys = true, .reportsTextOnceFilled = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true},
-                             "nam tieesng<<ng ", run);
-            check(run.text == "nam tiếng " && countHaving(lines, "method=surrounding") == 3, "Qt over GNOME Shell: a word typed again after backspaces",
+                             "nam tieesng<<nf ", run);
+            check(run.text == "nam tiền " && countHaving(lines, "method=surrounding") == 3, "Qt over GNOME Shell: a word typed again after backspaces",
                   run.text + " " + join(lines));
         }
         {
@@ -5168,8 +5350,10 @@ namespace {
         typeAt("vieetj tieesng ", 150);
         app->setReportDelay(laterDelayMs);
         ngosen::test::captureLog(true);
-        for (int i = 0; i < laterRounds; ++i)
+        for (int i = 0; i < laterRounds; ++i) {
+            ngosen::test::capturedLog().push_back("Test: round " + std::to_string(i + 1));
             typeAt("nguwx cuar ddeepj nguwowif tieengs vieetj ", laterGapMs);
+        }
         auto lines = ngosen::test::capturedLog();
         ngosen::test::captureLog(false);
         lines.push_back("text=" + app->text());
@@ -5207,7 +5391,9 @@ namespace {
         const auto behind = replacementsAfterLateWords(true, 600, 150, 3);
         check(behind.back() == "text=tiếng việt tiếng ngữ của đệp người tiếng việt ngữ của đệp người tiếng việt ngữ của đệp người tiếng việt ",
               "wlroots copies stay late: the words come out right", behind.back());
-        check(countHaving(behind, "Wait for the copy again") <= 2, "wlroots copies stay late: the copy wait comes back at most twice", join(behind));
+        const auto lastRound = std::find(behind.begin(), behind.end(), "Test: round 3");
+        const auto waitAgain = [](const std::string& line) { return line.find("Wait for the copy again") != std::string::npos; };
+        check(lastRound != behind.end() && std::none_of(lastRound, behind.end(), waitAgain), "wlroots copies stay late: the copy wait stops coming back", join(behind));
     }
 
     // A copy that comes a moment late is no reason to leave the surrounding path.
@@ -5322,6 +5508,66 @@ namespace {
             loop.pump(gaps[i]);
         }
         loop.pump(300);
+    }
+
+    // The copy ends with the word when the caret report is one step back, so nothing waits for it.
+    void testCaretLeftOneBackNeedsNoCopyWait() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        ngosen::test::Typed run;
+        const auto          lines = logLinesWhileTyping(makeField("wayland", true, "editor"), {.leavesCaretOneBack = true}, "a ddi tieengs vieetj ", "", &run);
+        check(run.text == "a đi tiếng việt ", "a caret report left one step back keeps the words", run.text);
+        check(countHaving(lines, "still short") == 0, "no copy wait for a caret report left one step back", join(lines));
+    }
+
+    // The app drops a deletion through its text sent before the caret step back it reports after a letter.
+    void testCaretStepBackDueTakesBackspaces() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        const std::string typed = "a tieengs ";
+        std::vector<int>  gaps(typed.size(), 100);
+        // The second e comes before the step back of the first.
+        gaps[4] = 20;
+        FakeResources resources;
+        ngosen::test::captureLog(true);
+        const auto run = ngosen::test::typeInAppTraced(resources, makeField("wayland", true, "editor"), {.leavesCaretOneBack = true, .caretBackAfterMs = 40}, keysOf(typed), gaps);
+        const auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(run.text == "a tiếng ", "a key before the caret step back of the last letter keeps the word", run.text);
+        check(countHaving(lines, "app dropped the deletion") == 0, "that key's deletion is not one the app drops", join(lines));
+    }
+
+    // A caret one step back that our own deletion or a shortcut put there is not the app's habit.
+    void testOtherStepsBackTeachNothing() {
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeResources    slateResources;
+        const auto       word = keysOf("nguwx ");
+        std::vector<int> gaps(word.size(), 150);
+        gaps[3] = 60;
+        ngosen::test::captureLog(true);
+        const auto slate =
+            ngosen::test::typeInAppTraced(slateResources, makeField("wayland", true, "firefox"), {.movesCursorBeforeText = true, .textAfterCursor = "chào"}, word, gaps);
+        auto lines = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(slate.text == "ngữ chào", "cursor shown over the edit first, then a quick tone: the word keeps its tone", slate.text);
+        check(countHaving(lines, "caret step back due") == 0, "the cursor report of our own deletion is not the app stepping back", join(lines));
+
+        FakeResources resources;
+        auto          keys = keysOf("a");
+        keys.push_back(ngosen::test::WithCtrl | 'b');
+        keys.push_back(ngosen::key::Right);
+        const auto after = keysOf(" tieengs ");
+        keys.insert(keys.end(), after.begin(), after.end());
+        std::vector<int> keyGaps(keys.size(), 30);
+        keyGaps[0] = 10;
+        keyGaps[2] = 1500;
+        ngosen::test::captureLog(true);
+        const auto run = ngosen::test::typeInAppTraced(resources, makeField("wayland", true, "editor"), {}, keys, keyGaps);
+        lines          = ngosen::test::capturedLog();
+        ngosen::test::captureLog(false);
+        check(run.text == "a tiếng ", "a shortcut that moves the caret one step back: the next word is typed", run.text);
+        check(countHaving(lines, "caret step back due") == 0, "a shortcut that moves the caret is not the app stepping back", join(lines));
     }
 
     // A field whose copy never catches up stops waiting after two waits in a row run out, until focus moves on.
@@ -6332,6 +6578,7 @@ int main() {
         testSenDeletesReportedWord(frontend);
     testFirefoxDeletesThroughSurrounding();
     testMessengerFirstWordWaitsAfterSurroundingDelete();
+    testEmptiedPlainFieldCommitsAtOnce();
     testForwardedKeysNewerThanTyped();
     testKeyDuringReplacement();
     testCommitAfterTheReport();
@@ -6346,9 +6593,15 @@ int main() {
     testDoubleHyphen();
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
+    testCommitWaitsForEditorRefocus();
+    testBouncingEditorOverIBusSlowDeletion();
     testLateBackspaceAfterBounce();
     testBackspaceCommitCheck();
     testBouncingComposerTwoCharEdits();
+    testForwardedBackspaceAfterLostRelease();
+    testRefocusingComposerCommitsAtOnce();
+    testCommitClearOfUpdateAfterBackspace();
+    testCommitAfterReportBurst();
     testStrayKeyDuringBounce();
     testKeyNeverShown();
     testFirstWordEmptiesBouncingField();
@@ -6400,6 +6653,7 @@ int main() {
     }
     testBackspaceIntoCommittedText();
     testBackspaceIntoWordBeforeNbsp();
+    testBackspaceIntoWordAfterFocusBounce();
     testBackspaceIntoWordFieldDropped();
     testBackspaceAfterMovingAway();
     testBackspaceAfterCtrlBackspace();
@@ -6459,6 +6713,9 @@ int main() {
     testReportRequestKeepsReplayedKey();
     testLateCopyKeepsSurroundingPath();
     testRolledKeysWaitForIbusCopy();
+    testCaretLeftOneBackNeedsNoCopyWait();
+    testCaretStepBackDueTakesBackspaces();
+    testOtherStepsBackTeachNothing();
     testCopyWaitsRunOutPerField();
     testFocusLossLogsDroppedKeys();
     testStarvedStretchKeepsCopyWait();

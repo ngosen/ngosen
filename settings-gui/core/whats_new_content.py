@@ -18,6 +18,17 @@ from core.brand import AI_HELP_URL
 FEATURES = [
     {
         "version": "1.14",
+        "title": N_("Emoji in the apps you choose"),
+        "how": N_(
+            "Emoji suggestions are off until you turn them on for an app: press ` and then w in it. "
+            "Press Tab to number the emoji, then a number to pick one; before Tab, numbers type as "
+            "usual. Left alone for 4 seconds, the list hides."
+        ),
+        "example": "",
+        "target": ("page", "emoji"),
+    },
+    {
+        "version": "1.14",
         "title": N_("Pick what the tray shows"),
         "how": N_(
             "The tray can show vi / en instead of the icon, or a picture of your own for each "
@@ -66,8 +77,8 @@ FEATURES = [
         "version": "1.13",
         "title": N_("Emoji at the end of a sentence"),
         "how": N_(
-            "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab, or a "
-            "number in Telex, to pick one. On GNOME without the Input Method Panel extension they "
+            "Emoji now wait for the end of a sentence: type . ! ? or pause, then press Tab and a "
+            "number to pick one. On GNOME without the Input Method Panel extension they "
             "show right in the field. English words such as cat or thumbs up count too, and the Emoji "
             "page can export and import your words."
         ),
@@ -78,10 +89,11 @@ FEATURES = [
         "version": "1.13",
         "title": N_("Drawn-out letters"),
         "how": N_(
-            "Repeat the last letter of a marked word and it repeats with its mark, instead of "
-            "bringing back the keys you typed. English words such as besttt stay as typed."
+            "Repeat the last letter of a marked word to draw it out: the word keeps its marks and "
+            "the repeated letters have none, as in UniKey, instead of bringing back the keys you "
+            "typed. English words such as besttt stay as typed."
         ),
-        "example": "afaaa → àààà, ddusngggg → đúngggg",
+        "example": "afaaa → àaaa, ddusngggg → đúngggg",
         "target": None,
     },
     {

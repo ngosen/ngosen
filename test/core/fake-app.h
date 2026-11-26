@@ -39,6 +39,8 @@ namespace ngosen::test {
         bool takesXTest             = false; // gets backspaces as XTEST presses, which come back to the input method first
         int  redrawAfterEditMs      = 0;     // bounces focus this long after each edit and drops commits until then, as TikTok in Chrome does
         int  bounceOnEditMs         = 0;     // bounces focus this long after a forwarded Backspace or a commit arrives, keeping both, as Brave on GNOME 51 does
+        int  awayAfterDeletionMs    = 0;     // leaves focus this long, leavesAfterDeletionMs after each Backspace or deletion,
+        int  leavesAfterDeletionMs  = 0;     // as voz.vn's editor in Chrome on GNOME does several times in the 100 ms after one
         bool redrawsOnlyOnDeletion  = false; // redraws after deletions but not insertions, as a plain Draft.js box in Chrome on GNOME does
         bool dropsOldKeyPresses     = false; // drops a Backspace press not newer than the last one, as GLFW does under XIM
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
@@ -59,6 +61,9 @@ namespace ngosen::test {
         bool reportsTrailingNbsp    = false; // reports a space right before the cursor as U+00A0, as Firefox contenteditable does
         bool neverSendsText         = false; // declares surrounding text but never sends any, as WPS's own fcitx4 module does
         int  keyHoldMs              = 0;     // how long each typed key stays down before its release
+        // Sends a state update this long after a forwarded Backspace, and loses a commit that crosses it, as an
+        // app that redraws does on a wlroots compositor.
+        int  updateAfterBackspaceMs = 0;
         bool dropsForwardedHeldKey  = false; // drops a forwarded key while the user holds that key down, as GNOME Shell does
         // Shows its own copy of the text, which takes typed text and Backspace but no deletion through the
         // surrounding text, while it reports the browser's copy, which a Backspace leaves alone: Lark Sheets.
@@ -102,6 +107,11 @@ namespace ngosen::test {
         // deletion, as Firefox does when the page is busy, until a typed key or another commit moves it.
         int appliesDeletionAfterMs = 0;
         int oldTextAfterDeleteMs   = 0; // for this long after a deletion its reports show the text from before it, as Firefox on GNOME sometimes does
+        // Reports the caret one step back after text it shows and leaves it there until the next edit, which
+        // still lands after the text, and drops a deletion through the text from then on, as Antigravity's
+        // editor does.
+        bool leavesCaretOneBack = false;
+        int  caretBackAfterMs   = 1; // how long after the text that report comes
         // Reports the cursor moving over a deletion and its commit on the old text before the new text, as
         // Slate in Firefox on Plasma does.
         bool movesCursorBeforeText = false;
@@ -222,6 +232,8 @@ namespace ngosen::test {
         // The page takes this letter right after it applies the nth of our edits from now, as voz.vn's
         // editor in Brave does with a key pressed while it refocuses. The letter lands delayMs after that edit.
         void typeAfterEdit(const std::string& letter, int nth, int delayMs = 2);
+        // The app missed the release of a Backspace, so it drops the next press of that key.
+        void leaveBackspaceDown();
         // Only the release of a key whose press the page took while the field was refocusing.
         void releaseKey(uint32_t sym);
         // Adds text after the cursor with no key, as a browser's autofill does, selected or not.
@@ -371,6 +383,7 @@ namespace ngosen::test {
         unsigned int                        charsForBytesBefore(size_t bytes) const;
         void                                changed();
         void                                bounceAfterEdit();
+        void                                refocusAfterDeletion();
         void                                redrawAfterEdit();
         void                                bounceEmptyAfterEdit();
         void                                later(int ms, std::function<void()> action);
@@ -395,13 +408,16 @@ namespace ngosen::test {
         void                                landStrayLetter();
         void                                typeOverSelection(const std::u32string& letter);
         std::u32string                      ownText_;
-        bool                                inReport_        = false;
-        bool                                focused_         = true;
-        uint64_t                            forwardedAt_     = 0;
-        uint32_t                            lastBackSpaceAt_ = 0;
-        uint32_t                            heldSym_         = 0;
-        int                                 slowestCommitMs_ = 0;
-        int                                 shortcuts_       = 0;
+        bool                                inReport_          = false;
+        bool                                focused_           = true;
+        uint64_t                            forwardedAt_       = 0;
+        uint64_t                            updateDueAt_       = 0;
+        static constexpr uint64_t           CrossingUs         = 3000; ///< how close to the update a commit is lost
+        uint32_t                            lastBackSpaceAt_   = 0;
+        uint32_t                            heldSym_           = 0;
+        bool                                backspaceLeftDown_ = false;
+        int                                 slowestCommitMs_   = 0;
+        int                                 shortcuts_         = 0;
 
         int                                 panelsMidReplacement_ = 0;
         std::u32string                      text_;
@@ -437,6 +453,8 @@ namespace ngosen::test {
         size_t                              deletionTurnChars_ = 0;
         std::optional<unsigned int>         heldDelete_;
         bool                                showsMovedCursor_ = false;
+        bool                                caretOneBack_     = false;
+        bool                                caretBackDue_     = false;
         bool                                holdsUnreported_  = false;
         bool                                cellOpensOnKey_   = false;
         bool                                ctrlDown_         = false;

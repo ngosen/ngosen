@@ -328,6 +328,9 @@ namespace ngosen::test {
         }
         if (++commits_ == quirks_.dropsCommitNumber)
             return;
+        const uint64_t nowUs = monotonicUs();
+        if (updateDueAt_ > nowUs && updateDueAt_ - nowUs <= CrossingUs)
+            return;
         // Focus and redraws are checked again when the app gets to the commit, which can be after a
         // deletion sent just before it has emptied the field.
         if ((quirks_.dropsCommitsInReport && inReport_) || !focused_ || redraws_ > 0)
@@ -379,6 +382,9 @@ namespace ngosen::test {
             ++shortcuts_;
             if (state == modifier::Ctrl && sym == 'a')
                 select(0, text_.size());
+            // An Emacs-style binding, as GTK and macOS text fields have.
+            if (state == modifier::Ctrl && sym == 'b')
+                moveCursor(cursor_ > 0 ? cursor_ - 1 : 0);
             return true;
         }
         switch (sym) {
@@ -409,6 +415,13 @@ namespace ngosen::test {
             later(quirks_.lagMs, [this] { moveCursor(cursor_ + 1); });
             return;
         }
+        if (key == EditKey::BackSpace && backspaceLeftDown_) {
+            if (release)
+                backspaceLeftDown_ = false;
+            else
+                ++sent_.forwardedBackSpaces;
+            return;
+        }
         if (key != EditKey::BackSpace || release)
             return;
         ++sent_.forwardedBackSpaces;
@@ -430,8 +443,11 @@ namespace ngosen::test {
         }
         if (forwardedAt_ == 0)
             forwardedAt_ = monotonicUs();
+        if (quirks_.updateAfterBackspaceMs > 0)
+            updateDueAt_ = monotonicUs() + static_cast<uint64_t>(quirks_.updateAfterBackspaceMs) * 1000;
         bounceAfterEdit();
         bounceEmptyAfterEdit();
+        refocusAfterDeletion();
         if (quirks_.keyStepMs > 0) {
             ++backspaceBurst_;
             later(quirks_.keyStepMs * ++queuedKeys_, [this] {
@@ -482,6 +498,7 @@ namespace ngosen::test {
             ++editsUnderHint_;
         ++sent_.surroundingDeletes;
         ++deletions_;
+        refocusAfterDeletion();
         commitOfDeletion_   = !surroundingDropped_;
         surroundingDropped_ = quirks_.dropsSurroundingOnDelete;
         if (quirks_.oldTextAfterDeleteMs > 0) {
@@ -493,7 +510,7 @@ namespace ngosen::test {
         if (quirks_.ignoresSurroundingDel)
             goSilentAfterDelete();
         // A module whose copy of the text is empty finds every deletion out of range.
-        if (quirks_.ignoresSurroundingDel || quirks_.reportsEmptyText)
+        if (quirks_.ignoresSurroundingDel || quirks_.reportsEmptyText || caretBackDue_ || caretOneBack_)
             return;
         if (quirks_.keepsLastEditPerTurn && offset == -static_cast<int>(size)) {
             turnDeleteBytes_ = reportedBytesBefore(size);
@@ -706,6 +723,10 @@ namespace ngosen::test {
         strayDelayMs_     = delayMs;
     }
 
+    void FakeApp::leaveBackspaceDown() {
+        backspaceLeftDown_ = true;
+    }
+
     void FakeApp::landStrayLetter() {
         if (strayLetter_.empty() || --editsBeforeStray_ > 0)
             return;
@@ -775,7 +796,8 @@ namespace ngosen::test {
             shown[cursor_ - 1]   = U'\u00a0';
             return Surrounding(encode(shown), static_cast<unsigned int>(cursor_), static_cast<unsigned int>(anchor_));
         }
-        return Surrounding(encode(text_), static_cast<unsigned int>(cursor_ + cursorPastBy_), static_cast<unsigned int>(anchor_ + cursorPastBy_));
+        const size_t back = caretOneBack_ && cursor_ > 0 && anchor_ == cursor_ ? 1 : 0;
+        return Surrounding(encode(text_), static_cast<unsigned int>(cursor_ + cursorPastBy_ - back), static_cast<unsigned int>(anchor_ + cursorPastBy_ - back));
     }
 
     std::string FakeApp::keyText(uint32_t sym) const {
@@ -840,6 +862,15 @@ namespace ngosen::test {
         }
         anchor_ = cursor_;
         changed();
+        if (quirks_.leavesCaretOneBack) {
+            caretBackDue_ = true;
+            later(quirks_.caretBackAfterMs, [this, shown = text_] {
+                if (text_ != shown)
+                    return;
+                changed();
+                caretOneBack_ = true;
+            });
+        }
         if (!typed)
             landStrayLetter();
         bounceEmptyAfterEdit();
@@ -871,6 +902,15 @@ namespace ngosen::test {
             state_->deactivate(true);
             state_->activate(Mode::Sen, true);
             changed();
+        });
+    }
+
+    void FakeApp::refocusAfterDeletion() {
+        if (quirks_.awayAfterDeletionMs <= 0)
+            return;
+        later(quirks_.leavesAfterDeletionMs, [this] {
+            if (focused_)
+                leaveFocus(quirks_.awayAfterDeletionMs);
         });
     }
 
@@ -956,6 +996,8 @@ namespace ngosen::test {
     }
 
     void FakeApp::changed() {
+        caretOneBack_    = false;
+        caretBackDue_    = false;
         holdsUnreported_ = false;
         shownCursor_     = cursor_;
         shownAnchor_     = anchor_;

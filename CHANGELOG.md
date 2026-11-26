@@ -10,6 +10,61 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.14.2-1] — 26/11/2026
+
+Gõ Sen trong editor của Antigravity, ô soạn bài voz.vn, ô soạn thảo của Chrome trên GNOME, trên Sway và Hyprland không còn mất chữ, dính chữ cũ hay ra phím thô khi sửa dấu, và ở voz.vn cùng các ô soạn thảo trên web chữ có dấu hiện sớm hơn (#987, #990, #995, #996, #997, #998, #999, #1004). Trên KDE, kiểm tra máy báo khi bàn phím ảo của KDE bị tắt và có nút bật lại, chạy lại lệnh cài cũng bật lại nó (#982, #1001). Có thêm lệnh `ngosen-check --settings` in mọi cài đặt đang dùng (#984). Thư viện gõ bamboo-core lên 0.6.1: gõ `tieesng` hiện "tiế" ngay thay vì thoáng hiện "tíê", `cuow` ra "cươ" (#1009).
+Tải ở [ngosen-1.14.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.2-1).
+
+### Thêm
+
+- Thêm `ngosen-check --settings` để in mọi cài đặt như trong cửa sổ cài đặt, chế độ gõ và các công tắc emoji,
+  Teencode, Vim mode đã đặt cho từng app; gõ tắt và từ điển chỉ in số lượng, không in nội dung. Lệnh không sửa
+  gì, giúp AI hay người báo lỗi biết máy đang bật gì mà không phải mở file cấu hình (#984).
+
+### Thay đổi
+
+- Hai trang hướng dẫn cho AI (`docs/ai-guide.md`, `docs/ai-help.md`) bổ sung cách đổi kiểu gõ, bảng mã,
+  khác biệt của bản IBus và cách xử lý thêm các lỗi gõ thường gặp, giúp AI trả lời cách dùng và tìm lỗi
+  từ các trang này mà không cần đọc mã nguồn (#991).
+- Nâng thư viện gõ Rust bamboo-core từ 0.6.0 lên 0.6.1. Với kiểu bỏ dấu mặc định, gõ `tieesng` không còn thoáng
+  hiện "tíê" trước khi ra "tiến" mà hiện "tiế" ngay, nên mỗi từ như vậy bớt một lần sửa chữ trong app; `cuow` ra
+  "cươ" thay vì "cuơ"; `ruowifo` ra "ruồi" thay vì để nguyên phím đã gõ (#1009).
+- Gỡ hai tài liệu làm việc (`NGHIEN-CUU-BO-GO-KHAC.md`, `PRODUCT.md`) khỏi kho mã; việc gõ và cài đặt không đổi gì
+  (#1003).
+
+### Sửa
+
+- Gõ Sen trong editor của Antigravity: phím sửa chữ không còn khựng khoảng 0,2 giây khi máy đang bận, và chữ
+  có một chữ cái đứng đầu từ không còn bị để nguyên phím thô ("ddaay" ra "đây", "dduowcj" ra "được") (#987).
+- Gõ Sen trong editor của Antigravity trên GNOME: khi máy đang bận, chữ không còn bị dính cả phần cũ lẫn phần
+  mới ("tiêngếng", "viêtệt", "đuoược") (#990).
+- Trang "Có gì mới & mẹo" trong cửa sổ cài đặt nay hướng dẫn đúng như version 1.14.1: emoji tắt sẵn, bấm `` ` ``
+  rồi `w` để bật cho từng app, bấm Tab trước rồi mới chọn bằng số; ví dụ gõ kéo dài `afaaa` ra `àaaa` thay vì
+  `àààà` (#992).
+- Kiểm tra máy trên KDE Wayland nay báo khi bàn phím ảo của KDE bị tắt (vd. bằng công tắc bàn phím trên màn hình
+  của WildOS), thay vì khuyên chạy `fcitx5 -d`, và có nút bật lại; bật lại thì gõ được ngay, kể cả khi đang
+  không gõ được chữ nào (#982).
+- Chạy lại lệnh cài trên KDE nay bật lại bàn phím ảo của KDE nếu nó đang tắt (vd. bằng Win+Ctrl+O trên WildOS),
+  nên cài lại là có tiếng Việt trở lại; trước đây lệnh cài báo xong mà fcitx5 vẫn không chạy (#1001).
+- Gõ Sen trong ô soạn thảo có định dạng của Chrome trên GNOME (như ô viết bài voz): gõ "toan", dấu cách, xoá dấu
+  cách rồi gõ "s" nay ra "toán" thay vì "toans". Ô soạn thảo đổi dấu cách thành dấu cách không ngắt và Chrome
+  lấy lại focus ngay sau đó, làm bộ gõ quên từ vừa gõ (#1004).
+- Gõ Sen nhanh trong ô viết bài voz trên Chrome qua IBus của GNOME không còn mất chữ hay ra "trươngf", "vieetj":
+  ô này rời focus một lúc sau mỗi lần xoá và xoá từng ký tự rất chậm, nên chữ bộ gõ gửi trước khi ô xoá xong
+  hoặc trước khi ô quay lại bị mất. Bộ gõ nay chờ ô quay lại và chờ ô xoá xong rồi mới gửi (#1004).
+- Gõ Sen trên Hyprland, trong ô tự lấy lại focus sau mỗi lần sửa (ô soạn bài của voz.vn): sau khi bấm Backspace,
+  chữ đầu tiên có dấu không còn bị dính chữ cũ ("dd" ra "dđ") (#996).
+- Gõ Sen trong ô soạn bài của voz.vn: chữ có dấu hiện sớm hơn khoảng 40 ms mỗi lần sửa (60 ms ở từ đầu tiên).
+  Ô này trước đây bị nhận là ô chat Messenger nên chờ thêm khoảng dành cho Messenger; nay ô nào tự lấy lại focus
+  trong lúc xoá thì gửi chữ ngay khi báo xoá xong (#995).
+- Gõ Sen trong các ô soạn thảo trên web (ô bình luận, ô soạn bài): chữ có dấu đầu tiên gõ vào ô trống hiện sớm hơn
+  khoảng 60 ms. Ô trống nào cũng từng bị chờ thêm khoảng dành cho ô chat Messenger; nay chỉ ô có dáng Messenger mới
+  chờ (#999).
+- Gõ Sen trên Sway trong VS Code và các trang web không gửi lại chữ cho bộ gõ: chữ có dấu không còn thỉnh thoảng
+  biến mất ("đây l", "đư không"). Đổi lại, mỗi lần sửa dấu ở các ô này hiện chậm hơn khoảng 25 ms (#997).
+- Gõ Sen trên Sway trong ô nhập của Chromium: chữ có dấu đầu tiên gõ vào ô trống không còn thỉnh thoảng biến mất
+  ("đây" ra "ây") (#998).
+
 ## [1.14.1-1] — 24/11/2026
 
 Trên voz.vn với Brave, KDE Wayland, gõ nhanh và sửa dấu không còn làm chữ chen giữa từ, mất chữ hoặc xoá lố; gõ đè chữ bôi đen không còn ra phím thô, và phím gõ lúc ô vừa xoá trống không còn chạy lên trước (#964, #967, #971, #972, #977). Firefox không còn mất chữ khi gõ ngay trước một link; bản Flatpak trên GNOME Wayland không còn mất dấu thanh khi gõ nhanh sau một lần sửa (#970, #975). Với bảng mã Unicode tổ hợp, terminal bash/fish không còn mất chữ trước dấu thanh như "nhiều" thành "nhều" (#952). Telex gõ "booots" ra đúng "boots"; gõ kéo dài nay chỉ giữ dấu ở chữ đầu, như "afaaa" ra "àaaa" thay vì "àààà", giống UniKey (#976, #852, #980). Emoji nay tắt sẵn ở mọi app, bật từng app bằng `` ` `` rồi `w`; cửa sổ cài đặt có danh sách "App đã bật emoji" (#969). Danh sách emoji tự ẩn sau 4 giây để yên, và số gõ khi danh sách vừa hiện được nhập như thường, phải bấm Tab trước mới chọn bằng số (#973, #968). "Lưu nhật ký gõ" nay giữ khoảng nửa phút gõ gần nhất trong trình duyệt thay vì 7 giây, giúp giữ đủ log khi báo lỗi (#953). Có thêm trang hướng dẫn để hỏi AI cách dùng Ngó Sen, từ menu phím `` ` `` đến các tính năng và cài đặt (#983).

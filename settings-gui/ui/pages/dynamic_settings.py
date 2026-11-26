@@ -21,6 +21,7 @@ from core.catalog import (
     MODE_SHORTCUT_KEYS,
     MODE_SHORTCUT_TO_VISIBILITY,
     MODE_SWITCHING,
+    PAGE_TITLES,
     SETTINGS_MAP,
     TRAY_ICON,
     TRAY_IMAGE_BUTTONS,
@@ -297,7 +298,8 @@ class DynamicSettingsPage(QWidget):
                 return
 
             if not self.property("inTab"):
-                self.container_layout.addWidget(page_title(_(self.category.name.capitalize())))
+                title = PAGE_TITLES.get(self.category, self.category.name.capitalize())
+                self.container_layout.addWidget(page_title(_(title)))
             if self._tip:
                 line = TipLine(_("Tip: {}").format(_(self._tip["text"])))
                 if self._on_tip:

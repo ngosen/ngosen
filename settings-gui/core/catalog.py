@@ -14,6 +14,7 @@ class SettingsCategory(Enum):
     SHORTCUTS = "shortcuts"
     CONVERT = "convert"
     EMOJI = "emoji"
+    GUESSING = "guessing"
 
 
 TYPING_GROUP = N_("Typing")
@@ -44,6 +45,9 @@ MENU_ICON_FALLBACKS = {
     "format-text-capitalize": "ngosen-auto-capitalize",
 }
 
+# A page whose title is not its category's name.
+PAGE_TITLES = {SettingsCategory.GUESSING: N_("Word guessing")}
+
 # Groups show in this order; the first checkbox of a group carries the group name.
 SETTINGS_MAP = {
     SettingsCategory.TYPING: {
@@ -54,8 +58,6 @@ SETTINGS_MAP = {
             "DdFreeStyle",
             "RetypeAfterSwitch",
             "RetoneSelection",
-            "GuessDiacritics",
-            "GuessFixesTypos",
         ],
         N_("Tone marks"): ["ModernStyle", "FreeMarking", "BackspaceRemovesTone"],
         TYPING_KEYS: ["W2U", "BracketTransform", "LockWordModifier"],
@@ -66,6 +68,9 @@ SETTINGS_MAP = {
             "CapitalizeStartOfText",
             "RawWordAfterSlash",
         ],
+    },
+    SettingsCategory.GUESSING: {
+        N_("Adding marks"): ["GuessDiacritics", "GuessFixesTypos"],
     },
     SettingsCategory.EMOJI: {
         EMOJI_GROUP: [

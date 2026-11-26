@@ -396,6 +396,7 @@ class HintTest(unittest.TestCase):
     def test_every_option_explains_itself(self):
         for category in (
             SettingsCategory.TYPING,
+            SettingsCategory.GUESSING,
             SettingsCategory.SHORTCUTS,
             SettingsCategory.APPEARANCE,
         ):

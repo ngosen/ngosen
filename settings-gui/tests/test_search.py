@@ -70,6 +70,11 @@ class SearchTest(unittest.TestCase):
             self.assertTrue(self.window.open_setting(key), key)
             self.assertIsInstance(self.window.focusWidget(), widget_type, key)
 
+    def test_guessing_settings_open_on_their_own_page(self):
+        for key in ("GuessDiacritics", "GuessFixesTypos"):
+            self.assertTrue(self.window.open_setting(key), key)
+            self.assertEqual(self.window.sidebar.currentItem().text(), "Word guessing", key)
+
     def test_a_mode_key_found_by_name_gets_the_focus(self):
         self.window.search_field.setText("shortcut for sen")
         self.open_result("Shortcut for Sen")

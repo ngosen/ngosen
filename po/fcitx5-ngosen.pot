@@ -962,6 +962,10 @@ msgstr ""
 msgid "Typing"
 msgstr ""
 
+#: settings-gui/ui/main_window.py
+msgid "Word guessing"
+msgstr ""
+
 #: settings-gui/ui/main_window.py:220
 msgid "Dictionary"
 msgstr ""
@@ -1053,6 +1057,10 @@ msgstr ""
 
 #: settings-gui/ui/main_window.py
 msgid "Change undone."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "Adding marks"
 msgstr ""
 
 #: settings-gui/core/catalog.py

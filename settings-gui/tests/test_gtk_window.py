@@ -684,7 +684,7 @@ class GtkLocksTest(unittest.TestCase):
 
     @staticmethod
     def page_with(w, key):
-        pages = (w.typing, w.shortcuts, w.appearance, w.macros, w.emoji)
+        pages = (w.typing, w.guessing, w.shortcuts, w.appearance, w.macros, w.emoji)
         return next(p for p in pages if p.control_for(key) is not None)
 
     def test_every_locked_setting_is_insensitive_and_opens_what_unlocks_it(self):
@@ -1349,6 +1349,13 @@ class GtkSearchTest(unittest.TestCase):
         self.assertEqual(self.window.stack.get_visible_child_name(), "typing")
         self.assertIs(self.window.get_focus(), results[0].found[0])
         self.assertEqual(self.window.side_stack.get_visible_child_name(), "pages")
+
+    def test_guessing_settings_open_on_their_own_page(self):
+        for key in ("GuessDiacritics", "GuessFixesTypos"):
+            self.window.show_page("about")
+            self.assertTrue(self.window.open_setting(key), key)
+            self.assertEqual(self.window.stack.get_visible_child_name(), "guessing", key)
+            self.assertIsNone(self.window.typing.control_for(key), key)
 
     def test_enter_right_after_typing_opens_what_was_typed(self):
         self.search("about")

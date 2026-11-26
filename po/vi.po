@@ -1065,6 +1065,10 @@ msgstr "Tổng quan"
 msgid "Typing"
 msgstr "Gõ chữ"
 
+#: settings-gui/ui/main_window.py
+msgid "Word guessing"
+msgstr "Đoán chữ"
+
 #: settings-gui/ui/main_window.py:220
 msgid "Dictionary"
 msgstr "Từ điển"
@@ -1190,6 +1194,10 @@ msgstr "Không hoàn tác được. Hãy xem fcitx5 có đang chạy không."
 #: settings-gui/ui/main_window.py
 msgid "Change undone."
 msgstr "Đã hoàn tác."
+
+#: settings-gui/core/catalog.py
+msgid "Adding marks"
+msgstr "Thêm dấu"
 
 #: settings-gui/core/catalog.py
 msgid "Fixing words"

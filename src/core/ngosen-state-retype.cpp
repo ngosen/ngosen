@@ -99,7 +99,7 @@ namespace ngosen {
     // alone, so the result is only offered, never applied at once.
     std::string TypingState::guessMarks(const std::string& typed) {
         const uintptr_t diacritics = engine_->diacritics();
-        if (diacritics == 0 || host_->field().hidesText())
+        if (diacritics == 0 || host_->field().hidesText() || !guessesHere())
             return typed;
         CGoObject engine(newBambooEngine());
         setOption(engine.handle());

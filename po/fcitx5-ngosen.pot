@@ -199,6 +199,10 @@ msgid "How boldly to fix"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "Guess in terminals too"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Cautious"
 msgstr ""
 
@@ -2471,6 +2475,10 @@ msgstr ""
 
 #: settings-gui/core/defaults.py
 msgid "What Đoán dấu learned is kept, and so is whether it learns; Forget all on the Word guessing page clears it."
+msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "A terminal does not let Ngó Sen read back what you typed, so guesses there are wrong more often and Backspace cannot bring back what you typed."
 msgstr ""
 
 #: settings-gui/core/catalog.py

@@ -65,7 +65,9 @@ Qt version on KDE Plasma:
   `tunx`, press and release Ctrl, then press Space to keep `tũn`.
 - Đoán dấu (adding marks): typing `toi di hoc` without marks gives `tôi đi học`. Off by default; turn it
   on on the "Đoán chữ" (Word guessing) settings page, which can also fix syllables typed wrong, at three
-  levels of boldness. It learns from what you type; see [What word guessing learns](#what-word-guessing-learns).
+  levels of boldness. In terminals and old X11 apps using XIM it stays off unless "Đoán cả
+  trong terminal" (Guess in terminals too) is on: there it cannot correct earlier words, so it guesses
+  wrong more often. It learns from what you type; see [What word guessing learns](#what-word-guessing-learns).
 - Macros: with "Gõ tắt chữ hoa" enabled, a `ko` → `không` macro expands `Ko` to `Không`.
   Content that already contains uppercase letters stays unchanged: with `ip` → `iPhone`, typing `Ip`
   still produces `iPhone`.
@@ -99,8 +101,9 @@ learns, a desktop notification says so once.
   started and ended. Put together, they can show short sentences you typed.
 - When: when a run of typing ends, that is, you leave the field, click, press Enter, or type 200
   syllables. Text typed and then deleted with Backspace may still have been learned.
-- Never: in password or private fields, nor in a terminal when Ngó Sen can tell it hides what you type
-  (judged from signs, so it can miss). Nothing in Off mode, or with Đoán dấu or learning off.
+- Never: in password or private fields. In a terminal only with "Đoán cả trong terminal" on, and even then
+  not when Ngó Sen can tell it hides what you type (judged from signs, so it can miss). Nothing in Off mode,
+  or with Đoán dấu or learning off.
 - Where: `~/.local/share/ngosen/learned-diacritics`, plain text only you can read, saved every 5 minutes
   when there is something new and when fcitx5 quits. Nothing is sent anywhere.
 - View, forget, turn off: the "Đoán chữ" page has "Xem" (View), "Quên hết" (Forget all) and the "Học từ

@@ -166,7 +166,7 @@ namespace ngosen {
         const std::string name = appName(field);
         if (field.frontend == "xim" && name == "xterm")
             return true;
-        for (const char* terminal : {"org.kde.konsole", "kitty", "Alacritty", "alacritty", "com.mitchellh.ghostty", "gnome-terminal-server", "kgx", "ptyxis"}) {
+        for (const char* terminal : {"org.kde.konsole", "konsole", "kitty", "Alacritty", "alacritty", "com.mitchellh.ghostty", "gnome-terminal-server", "kgx", "ptyxis"}) {
             if (name == terminal)
                 return true;
         }
@@ -198,6 +198,10 @@ namespace ngosen {
         // Terminals, Emacs and Vim also own the primary selection and report the same, but type elsewhere.
         const std::string program = appName(field);
         return isChromiumBrowser(program) || isStartsWith(program, "vivaldi") || isStartsWith(program, "coccoc") || isWps(program);
+    }
+
+    bool showsNoTypedText(const Field& field) {
+        return field.frontend == "xim" || field.terminal || runsShellOnPty(field);
     }
 
     bool surroundingTextLags(const Field& field) {

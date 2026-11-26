@@ -374,6 +374,13 @@
     }
    ],
    [
+    "GuessInTerminals",
+    "Boolean",
+    "Guess in terminals too",
+    "False",
+    {}
+   ],
+   [
     "LearnDiacritics",
     "Boolean",
     "Learn from what you type",

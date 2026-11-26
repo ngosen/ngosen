@@ -1162,6 +1162,7 @@ namespace ngosen {
         // The changes Đoán dấu made at this key, when the field still shows before and wordInField after it.
         std::optional<GuessedCommit> takeGuess(const std::string& commit, const std::string& wordInField);
         bool                         fieldShowsGuessed(const std::string& before, const std::string& wordInField) const;
+        bool                         guessesHere() const;
         void                         dropGuessRun();
         // The word as typed when Backspace may take back the fix Đoán dấu made to the last word.
         std::optional<std::string> takeBackFix();

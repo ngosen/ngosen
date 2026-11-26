@@ -73,7 +73,12 @@ SETTINGS_MAP = {
         ],
     },
     SettingsCategory.GUESSING: {
-        N_("Adding marks"): ["GuessDiacritics", "GuessFixesTypos", "GuessFixStrength"],
+        N_("Adding marks"): [
+            "GuessDiacritics",
+            "GuessFixesTypos",
+            "GuessFixStrength",
+            "GuessInTerminals",
+        ],
         LEARNING_GROUP: ["LearnDiacritics"],
     },
     SettingsCategory.EMOJI: {
@@ -188,6 +193,10 @@ HINTS = {
         "Stronger fixes more typos, and now and then changes a word that was right. A new level"
         " applies from the next thing you type."
     ),
+    "GuessInTerminals": N_(
+        "A terminal does not let Ngó Sen read back what you typed, so guesses there are wrong more"
+        " often and Backspace cannot bring back what you typed."
+    ),
     "LearnDiacritics": N_(
         "Words you type with marks are kept on this computer so guesses fit how you write. Never"
         " in password fields, and never sent anywhere."
@@ -283,6 +292,7 @@ DEPENDS = {
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
     "GuessFixesTypos": ("GuessDiacritics", "True"),
     "GuessFixStrength": ("GuessFixesTypos", "True"),
+    "GuessInTerminals": ("GuessDiacritics", "True"),
     "LearnDiacritics": ("GuessDiacritics", "True"),
     "IconTheme": ("TrayIconKind", ("V / E", "vi / en")),
     "TrayIconSize": ("TrayIconKind", "Colour icon"),

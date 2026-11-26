@@ -256,6 +256,10 @@ msgid "How boldly to fix"
 msgstr "Sửa mạnh tay đến đâu"
 
 #: src/ngosen-config.h
+msgid "Guess in terminals too"
+msgstr "Đoán cả trong terminal"
+
+#: src/ngosen-config.h
 msgid "Cautious"
 msgstr "Thận trọng"
 
@@ -2931,6 +2935,10 @@ msgstr "Học thế nào, lưu ở đâu"
 #: settings-gui/core/defaults.py
 msgid "What Đoán dấu learned is kept, and so is whether it learns; Forget all on the Word guessing page clears it."
 msgstr "Những gì Đoán dấu đã học vẫn được giữ, cùng công tắc học; muốn xoá thì bấm Quên hết ở trang Đoán chữ."
+
+#: settings-gui/core/catalog.py
+msgid "A terminal does not let Ngó Sen read back what you typed, so guesses there are wrong more often and Backspace cannot bring back what you typed."
+msgstr "Terminal không cho Ngó Sen đọc lại chữ đã gõ, nên ở đó Đoán dấu đoán sai nhiều hơn và Backspace không trả lại được chữ như đã gõ."
 
 #: settings-gui/core/catalog.py
 msgid "Stronger fixes more typos, and now and then changes a word that was right. A new level applies from the next thing you type."

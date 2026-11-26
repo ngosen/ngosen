@@ -329,6 +329,19 @@ namespace {
         check(text == "toi go phim", what + "Đoán dấu: Esc after Enter puts the typed words back", text);
         text = typeOff(false, {ngosen::key::Return});
         check(text.rfind("toi go phim", 0) == 0, what + "Đoán dấu off: nothing offered", text);
+        Field konsole   = makeField("wayland", true);
+        konsole.program = "org.kde.konsole";
+        for (const bool inTerminals : {false, true}) {
+            FakeResources resources;
+            resources.mutableOptions().guessDiacritics  = true;
+            resources.mutableOptions().guessInTerminals = inTerminals;
+
+            text = retypeInApp(resources, konsole, mode, "toi go phim", {ngosen::key::Return});
+            if (inTerminals)
+                check(text == "tôi gõ phím", what + "Đoán dấu: Enter takes the offered marks in a terminal when asked to", text);
+            else
+                check(text.rfind("toi go phim", 0) == 0, what + "Đoán dấu: no marks offered in a terminal by default", text);
+        }
     }
 
     // Types prefix and then typed in English, switches on, clicks after the prefix, then presses keys.

@@ -286,9 +286,10 @@ namespace {
         return text + host->preedit();
     }
 
-    std::string typeGuessing(const Field& field, const std::string& typed, bool on = true) {
+    std::string typeGuessing(const Field& field, const std::string& typed, bool on = true, bool inTerminals = false) {
         FakeResources resources;
-        resources.mutableOptions().guessDiacritics = on;
+        resources.mutableOptions().guessDiacritics  = on;
+        resources.mutableOptions().guessInTerminals = inTerminals;
         const std::vector<uint32_t> keys(typed.begin(), typed.end());
         return ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 50));
     }
@@ -302,6 +303,7 @@ namespace {
         bool                                             fixesTypos  = false;
         int                                              fixStrength = 0;
         bool                                             guess       = true;
+        bool                                             inTerminals = false;
         std::vector<std::pair<std::string, std::string>> macros;
         int                                              keyMs   = 50;
         bool*                                            learned = nullptr; // set to whether Đoán dấu learned anything
@@ -319,6 +321,7 @@ namespace {
         resources.mutableOptions().doubleSpaceToPeriod = run.doubleSpace;
         resources.mutableOptions().guessFixesTypos     = run.fixesTypos;
         resources.mutableOptions().guessFixStrength    = run.fixStrength;
+        resources.mutableOptions().guessInTerminals    = run.inTerminals;
         if (!run.macros.empty())
             resources.setMacros(run.macros);
         const std::string learned = run.learned != nullptr ? learnedFile() : std::string();
@@ -363,6 +366,21 @@ namespace {
         check(text == "bàn phím.", "Đoán dấu: an earlier word changes where the field shows it", text);
         text = typeGuessing(makeField("wayland", false), "ban phim.");
         check(text == "bạn phím.", "Đoán dấu: only the last word changes where the field shows nothing", text);
+        text = typeGuessing(makeField("xim", false), "toi go phim ");
+        check(text == "toi go phim ", "Đoán dấu: off by default in an XIM app, which reports no text", text);
+        Field terminal    = reports;
+        terminal.terminal = true;
+        text              = typeGuessing(terminal, "toi go phim ");
+        check(text == "toi go phim ", "Đoán dấu: off by default in a terminal", text);
+        const Field konsole = makeField("wayland", true, "org.kde.konsole");
+        text                = typeGuessing(konsole, "toi go phim ");
+        check(text == "toi go phim ", "Đoán dấu: off by default in a terminal that sets no terminal flag", text);
+        text = typeGuessing(konsole, "toi go phim ", true, true);
+        check(text == "tôi gõ phím ", "Đoán dấu: in a terminal when asked to", text);
+        text = typeGuessing(makeField("wayland", true, "code"), "toi go phim ");
+        check(text == "tôi gõ phím ", "Đoán dấu: on in an editor that may hold a terminal", text);
+        text = typeGuessing(makeField("ibus", true), "toi go phim ");
+        check(text == "tôi gõ phím ", "Đoán dấu: on in a field whose text comes late", text);
         text = typeGuessing(reports, "toi go phim ", false);
         check(text == "toi go phim ", "Đoán dấu: off by default", text);
         Field password    = reports;
@@ -396,6 +414,12 @@ namespace {
         }
         text = typeGuessingInApp(reports, ngosen::Mode::Sen, "toi ", {.pageAt = 3, .pageShows = "XYZ"});
         check(text == "XYZ ", "Đoán dấu: a word the page replaced stays as the page left it", text);
+        text = typeGuessingInApp(makeField("ibus", true, "konsole"), ngosen::Mode::Sen, "toi go phim ", {.quirks = {.reportsEmptyText = true}});
+        check(text == "toi go phim ", "Đoán dấu: off by default in Konsole over IBus", text);
+        for (const auto mode : {ngosen::Mode::Sen, preedit}) {
+            text = typeGuessingInApp(makeField("ibus", true), mode, "toi go phim ", {.quirks = {.reportsTextOnceFilled = true}});
+            check(text == "tôi gõ phím ", std::string("Đoán dấu: the first word in an empty field that reports text once filled") + (mode == preedit ? " (preedit)" : ""), text);
+        }
         text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban phim.", {.quirks = {.reportsEmptyText = true}});
         check(text == "bạn phím.", "Đoán dấu: a field that reports no text changes only the last word", text);
         Field address = reports;
@@ -4299,6 +4323,13 @@ namespace {
         int preedits = -1;
         text         = typeInXterm(dbus, {}, sentence, &preedits);
         check(text == expected && preedits == 0, "a field that shows typed letters gets no preedit", text + " preedits=" + std::to_string(preedits));
+
+        FakeResources guessing;
+        guessing.mutableOptions().guessDiacritics = true;
+        const auto keys                           = keysOf(warmUp + "toi go phim ");
+
+        text = ngosen::test::typeInAppTraced(guessing, dbus, {.keepsOnlyCommits = true}, keys, std::vector<int>(keys.size(), 60)).text;
+        check(isEndsWith(text, "toi go phim "), "Đoán dấu: words typed in xterm.js stay as typed, since it never shows them", text);
     }
 
     // Coming back to a terminal from another window: its hidden textarea still holds what we committed before.

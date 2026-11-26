@@ -15,7 +15,8 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 - Đoán dấu: gõ không dấu `toi di hoc` ra `tôi đi học`, bật ở trang mới **Đoán chữ** trong cửa sổ cài đặt.
   Trang này có thêm lựa chọn sửa cả âm tiết gõ sai, với ba mức thận trọng, vừa, mạnh. Đoán dấu học từ chữ
   bạn gõ để đoán sát cách bạn viết; việc học bật sẵn, báo một lần bằng thông báo, và trang Đoán chữ có nút
-  Xem, Quên hết cùng lời nói rõ học gì, lưu ở đâu. Chữ bung ra từ gõ tắt không bao giờ được học.
+  Xem, Quên hết cùng lời nói rõ học gì, lưu ở đâu. Chữ bung ra từ gõ tắt không bao giờ được học. Trong
+  terminal, Đoán dấu nghỉ trừ khi bật **Đoán cả trong terminal**, vì ở đó nó không sửa lại được chữ trước.
 
 ## [1.14.3-1] — 26/11/2026
 

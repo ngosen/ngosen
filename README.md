@@ -101,8 +101,10 @@ Hoàn tác.
   Ở chế độ Gõ Sen, bấm tiếp thì từ đổi qua lại giữa chữ có dấu và đúng phím đã gõ: `tieengs` + `Ctrl` `Ctrl`
   ra `tieengs`. Từ tiếng Anh lỡ bị thêm dấu cũng lấy lại được như vậy.
 - **Đoán dấu:** gõ không dấu `toi di hoc` thì ra `tôi đi học`. Tắt sẵn; bật ở trang **Đoán chữ** trong
-  cửa sổ cài đặt, nơi có thêm lựa chọn sửa cả âm tiết gõ sai và mức mạnh tay khi sửa. Đoán dấu học từ chữ
-  bạn gõ để đoán sát cách bạn viết; xem [Đoán chữ học gì](#doan-chu-hoc-gi).
+  cửa sổ cài đặt, nơi có thêm lựa chọn sửa cả âm tiết gõ sai và mức mạnh tay khi sửa. Trong terminal và ứng
+  dụng X11 cũ qua XIM, Đoán dấu nghỉ trừ khi bật **Đoán cả trong terminal**: ở đó nó không sửa lại được
+  chữ trước nên đoán sai nhiều hơn. Đoán dấu học từ chữ bạn gõ để đoán sát cách bạn viết; xem
+  [Đoán chữ học gì](#doan-chu-hoc-gi).
 - **Gõ tắt (macro):** tự theo chữ hoa: `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
   bằng một nút bấm.
@@ -122,8 +124,9 @@ báo của desktop.
   Ghép các cụm lại có thể đọc ra những câu ngắn bạn đã gõ.
 - **Khi nào:** khi một đoạn gõ kết thúc: rời ô, bấm chuột, nhấn Enter, hoặc gõ đủ 200 âm tiết. Chữ gõ rồi
   xoá bằng Backspace vẫn có thể đã được học.
-- **Không học:** trong ô mật khẩu hay ô báo là riêng tư, và trong terminal khi Ngó Sen nhận ra terminal
-  đang giấu chữ (đoán theo dấu hiệu nên có thể sót). Không học ở chế độ Off, hay khi tắt Đoán dấu hoặc
+- **Không học:** trong ô mật khẩu hay ô báo là riêng tư. Trong terminal chỉ học khi bật **Đoán cả trong
+  terminal**, và khi đó vẫn không học lúc Ngó Sen nhận ra terminal đang giấu chữ (đoán theo dấu hiệu nên
+  có thể sót). Không học ở chế độ Off, hay khi tắt Đoán dấu hoặc
   tắt học.
 - **Lưu ở đâu:** `~/.local/share/ngosen/learned-diacritics`, dạng văn bản thường, chỉ bạn đọc được. Ghi 5
   phút một lần khi có gì mới, và khi fcitx5 thoát. Không gửi đi đâu.

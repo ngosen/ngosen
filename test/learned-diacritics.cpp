@@ -61,7 +61,7 @@ namespace {
             engine.setConfig(config(true));
             check(engine.diacriticsStatus() == std::pair<std::string, std::string>{"loaded", ""}, "the table loads");
             TestInputContext context(&testInstance.instance, "kate");
-            context.setCapabilityFlags(fcitx::CapabilityFlag::Preedit);
+            context.setCapabilityFlags({fcitx::CapabilityFlag::Preedit, fcitx::CapabilityFlag::SurroundingText});
             context.focusIn();
             fcitx::InputContextEvent focus(&context, fcitx::EventType::InputContextFocusIn);
             engine.activate(fcitx::InputMethodEntry("ngosen", "Ngó Sen", "vi", "ngosen"), focus);

@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+#include "ngosen-app-quirks.h"
 #include "ngosen-log.h"
 #include "ngosen-state.h"
 #include "ngosen-strings.h"
@@ -45,6 +46,10 @@ namespace ngosen {
             return typedBeforeCursor(wordInField);
         const Surrounding s = host_->surrounding();
         return reportsTextInTime() && s.isValid() && !s.text().empty() && s.cursor() == s.anchor() && endsBeforeCursor(s, spelledAtWordEnd(before) + wordInField, false);
+    }
+
+    bool TypingState::guessesHere() const {
+        return engine_->options().guessInTerminals || !ngosen::showsNoTypedText(host_->field());
     }
 
     // The engine believes its changes reached the field; ending the run keeps it from building on them.

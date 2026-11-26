@@ -84,7 +84,7 @@ namespace ngosen {
             EngineSetPrivate(bambooEngine_.handle(), 1);
             privateField_ = true;
         }
-        const uintptr_t wanted = mode() == ngosen::Mode::Off ? 0 : engine_->diacritics();
+        const uintptr_t wanted = mode() == ngosen::Mode::Off || !guessesHere() ? 0 : engine_->diacritics();
         if (wanted != diacritics_) {
             EngineSetDiacritics(bambooEngine_.handle(), wanted);
             diacritics_ = wanted;

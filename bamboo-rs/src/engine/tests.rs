@@ -2673,26 +2673,34 @@ fn a_macro_is_never_learned_whichever_key_expands_it() {
     }
 }
 
-/// Commits `keys` ended by Space, then does what the front end does on Backspace right after: the
-/// app deletes the space, and the word before it is taken back to type on. It is ended by '.'.
-fn take_back_and_end(e: &mut BambooEngine, keys: &str, word: &str) {
+/// Commits `keys` ended by `end`, then does what the front end does on Backspace right after: the
+/// app deletes the last character, and the word before the cursor, `taken`, is taken back to type
+/// on. It is ended by '.'.
+fn take_back_and_end(e: &mut BambooEngine, keys: &str, end: u32, taken: &str) {
     type_keys(e, keys);
-    e.process_key_event(KEY_SPACE, 0);
-    assert_eq!(e.pull_commit(), format!("{word} "));
+    e.process_key_event(end, 0);
+    e.pull_commit();
     assert!(!e.process_key_event(KEY_BACKSPACE, 0));
-    e.rebuild_from_text(word);
+    e.rebuild_from_text(taken);
     e.process_key_event('.' as u32, 0);
     e.reset();
 }
 
 #[test]
 fn a_macro_word_taken_back_by_backspace_is_never_learned() {
-    let dictionary = shared_dictionary();
-    let mut e = engine_on(&dictionary);
-    e.macro_enabled = true;
-    e.macro_table = macro_table(&[("nsen", "ngó")]);
-    take_back_and_end(&mut e, "nsen", "ngó");
-    assert!(dictionary.lock().unwrap().is_empty());
+    // A Space or Tab after the word is deleted; with none, its last letter is.
+    for (expansion, end, taken) in [
+        ("ngó", KEY_SPACE, "ngó"),
+        ("ngó1", KEY_SPACE, "ngó1"),
+        ("ngón", KEY_TAB, "ngó"),
+    ] {
+        let dictionary = shared_dictionary();
+        let mut e = engine_on(&dictionary);
+        e.macro_enabled = true;
+        e.macro_table = macro_table(&[("nsen", expansion)]);
+        take_back_and_end(&mut e, "nsen", end, taken);
+        assert!(dictionary.lock().unwrap().is_empty(), "{expansion}");
+    }
 }
 
 /// A macro's word fixed and the fix undone, as the engine does when the key after it is Backspace.

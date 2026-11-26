@@ -1648,12 +1648,9 @@ impl BambooEngine {
     pub fn rebuild_from_text(&mut self, text: &str) {
         self.fix_undoable = false;
         if self.preedit_text.is_empty() {
-            let taken_from = |m: &String| {
-                m.trim_end_matches(|c: char| !c.is_alphabetic())
-                    .ends_with(text)
-            };
+            // Front ends take back the word before the cursor, or a part of it.
             self.commits_macro |=
-                !text.is_empty() && self.macro_commit.as_ref().is_some_and(taken_from);
+                !text.is_empty() && self.macro_commit.as_ref().is_some_and(|m| m.contains(text));
         }
         if self.preedit_text.is_empty()
             && !self.private_field

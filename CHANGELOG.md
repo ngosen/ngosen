@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.14.2-1] — 26/11/2026
+
+Gõ Sen trong editor của Antigravity, ô soạn bài voz.vn, ô soạn thảo của Chrome trên GNOME, trên Sway và Hyprland không còn mất chữ, dính chữ cũ hay ra phím thô khi sửa dấu, và ở voz.vn cùng các ô soạn thảo trên web chữ có dấu hiện sớm hơn (#987, #990, #995, #996, #997, #998, #999, #1004). Trên KDE, kiểm tra máy báo khi bàn phím ảo của KDE bị tắt và có nút bật lại, chạy lại lệnh cài cũng bật lại nó (#982, #1001). Có thêm lệnh `ngosen-check --settings` in mọi cài đặt đang dùng (#984). Thư viện gõ bamboo-core lên 0.6.1: gõ `tieesng` hiện "tiế" ngay thay vì thoáng hiện "tíê", `cuow` ra "cươ" (#1009).
+Tải ở [ngosen-1.14.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.2-1).
+
 ### Thêm
 
 - Thêm `ngosen-check --settings` để in mọi cài đặt như trong cửa sổ cài đặt, chế độ gõ và các công tắc emoji,
@@ -25,7 +30,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   hiện "tíê" trước khi ra "tiến" mà hiện "tiế" ngay, nên mỗi từ như vậy bớt một lần sửa chữ trong app; `cuow` ra
   "cươ" thay vì "cuơ"; `ruowifo` ra "ruồi" thay vì để nguyên phím đã gõ (#1009).
 - Gỡ hai tài liệu làm việc (`NGHIEN-CUU-BO-GO-KHAC.md`, `PRODUCT.md`) khỏi kho mã; việc gõ và cài đặt không đổi gì
-  (#1002, #1003).
+  (#1003).
 
 ### Sửa
 

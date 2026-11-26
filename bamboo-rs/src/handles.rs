@@ -17,6 +17,7 @@ pub enum Object {
     MacroTable(Arc<MacroTable>),
     Dictionary(Arc<Dictionary>),
     WordList(Arc<WordList>),
+    Diacritics(Arc<Mutex<timsen::Dictionary>>),
 }
 
 struct Registry {
@@ -69,6 +70,13 @@ pub fn word_list(handle: usize) -> Option<Arc<WordList>> {
     }
 }
 
+pub fn diacritics(handle: usize) -> Option<Arc<Mutex<timsen::Dictionary>>> {
+    match registry().objects.get(&handle) {
+        Some(Object::Diacritics(dictionary)) => Some(Arc::clone(dictionary)),
+        _ => None,
+    }
+}
+
 pub fn delete_handle(handle: usize) {
     registry().objects.remove(&handle);
 }
@@ -84,6 +92,7 @@ mod tests {
         assert!(macro_table(0).is_none());
         assert!(dictionary(0).is_none());
         assert!(word_list(0).is_none());
+        assert!(diacritics(0).is_none());
         delete_handle(0);
     }
 

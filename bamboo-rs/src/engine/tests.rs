@@ -2254,29 +2254,144 @@ fn backspace_the_app_gets_ends_the_run() {
     assert_eq!(e.diacritics.as_ref().unwrap().run_len(), 0);
 }
 
+/// What the front end does with a key's commit and changes: the field must end with the old text,
+/// which then makes way for the new.
+fn commit_text_into(e: &mut BambooEngine, field: &mut String) {
+    field.push_str(&e.pull_commit());
+    if let Some((old, new)) = e.pull_field_change() {
+        assert!(field.ends_with(&old), "{field:?} does not end with {old:?}");
+        field.truncate(field.len() - old.len());
+        field.push_str(&new);
+    }
+}
+
+fn type_text(e: &mut BambooEngine, field: &mut String, words: &[(&str, char)]) {
+    for &(keys, after) in words {
+        type_keys(e, keys);
+        e.process_key_event(after as u32, 0);
+        commit_text_into(e, field);
+    }
+}
+
 #[test]
-fn changes_as_text_hold_what_pull_changes_holds_in_the_charset_of_the_field() {
-    let mut e = engine_on(&shared_dictionary());
-    let mut twin = engine_on(&shared_dictionary());
-    e.output_charset = "VIQR".to_string();
-    for engine in [&mut e, &mut twin] {
-        for (keys, after) in [("toi", ' '), ("go", ' '), ("phmi", '.')] {
-            type_keys(engine, keys);
-            engine.process_key_event(after as u32, 0);
-        }
-    }
-    let changes = twin.pull_changes();
-    assert!(!changes.is_empty());
-    let mut expected = String::new();
-    for FieldChange { change, after } in changes {
-        let (old, new) = (change.old.join(" "), change.new.join(" "));
-        expected += &format!(
-            "{after}\t{}\t{}\n",
-            encode("VIQR", &old),
-            encode("VIQR", &new)
+fn changes_as_text_reach_the_words_pull_changes_reaches() {
+    let typed: &[&[(&str, char)]] = &[
+        &[("toi", ' '), ("go", ' '), ("phmi", '.')],
+        &[("ban", ' '), ("thich", ' '), ("go", '.')],
+        &[("toi", ' '), ("go", ' '), ("phim", ' ')],
+    ];
+    for &words in typed {
+        let (mut e, mut twin) = (
+            engine_on(&shared_dictionary()),
+            engine_on(&shared_dictionary()),
         );
+        let (mut text, mut field) = (String::new(), Vec::new());
+        type_text(&mut e, &mut text, words);
+        type_into(&mut twin, &mut field, words);
+        assert_eq!(owned_words(&text), field, "{words:?}");
     }
-    assert_eq!(e.pull_changes_text(), expected);
+}
+
+#[test]
+fn changes_as_text_are_in_the_charset_of_the_field() {
+    let words = [("toi", ' '), ("go", ' '), ("phmi", '.')];
+    let (mut e, mut twin) = (
+        engine_on(&shared_dictionary()),
+        engine_on(&shared_dictionary()),
+    );
+    e.output_charset = "VIQR".to_string();
+    let (mut viqr, mut text) = (String::new(), String::new());
+    type_text(&mut e, &mut viqr, &words);
+    type_text(&mut twin, &mut text, &words);
+    assert_eq!(viqr, encode("VIQR", &text));
+    assert_ne!(viqr, text);
+}
+
+#[test]
+fn a_change_as_text_keeps_what_lies_between_the_words() {
+    let mut d = Diacritics::new(shared_dictionary());
+    let mut field = "ban  thich go. ".to_string();
+    d.committed(&field, "");
+    let (old, new) = d.pull_field_change().unwrap();
+    assert!(field.ends_with(&old));
+    field.truncate(field.len() - old.len());
+    field.push_str(&new);
+    assert_eq!(field, "bạn  thích gỗ. ");
+}
+
+#[test]
+fn a_change_after_the_cap_still_finds_its_text() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = String::new();
+    type_text(&mut e, &mut field, &vec![("ta", ' '); timsen::MAX_RUN + 1]);
+    type_text(
+        &mut e,
+        &mut field,
+        &[("toi", ' '), ("go", ' '), ("phim", '.')],
+    );
+    assert!(field.ends_with("ta tôi gõ phím."), "{field:?}");
+}
+
+#[test]
+fn guessed_words_follow_the_tone_placement_setting() {
+    for (style, shown) in [
+        (ToneStyle::Modern, "hòa bình"),
+        (ToneStyle::Traditional, "hoà bình"),
+    ] {
+        let mut e = engine_on(&shared_dictionary());
+        let config = Config::builder()
+            .free_tone_marking(true)
+            .tone_style(style)
+            .auto_correct(false)
+            .w2u_mode(W2uMode::Everywhere)
+            .build();
+        e.preeditor.set_config(config);
+        let mut field = String::new();
+        type_text(&mut e, &mut field, &[("hoa", ' '), ("binh", '.')]);
+        assert!(field.starts_with(shown), "{style:?}: {field:?}");
+    }
+}
+
+#[test]
+fn only_the_word_that_ended_changes_without_the_whole_run() {
+    for (whole, shown) in [(true, "bàn phím."), (false, "bạn phím.")] {
+        let mut e = engine_on(&shared_dictionary());
+        e.set_whole_run(whole);
+        let mut field = String::new();
+        type_text(&mut e, &mut field, &[("ban", ' '), ("phim", '.')]);
+        assert_eq!(field, shown, "whole run {whole}");
+    }
+}
+
+#[test]
+fn removing_diacritics_learns_the_run_and_guesses_nothing_after() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    let mut field = String::new();
+    type_text(&mut e, &mut field, &[("ngos", ' '), ("sen", ' ')]);
+    e.remove_diacritics();
+    assert!(!dictionary.lock().unwrap().is_empty(), "the run ended");
+    type_text(&mut e, &mut field, &[("toi", ' '), ("go", '.')]);
+    assert_eq!(field, "ngó sen toi go.");
+}
+
+#[test]
+fn ending_a_word_keeps_the_run_that_a_reset_ends() {
+    for end_word in [true, false] {
+        let mut e = engine_on(&shared_dictionary());
+        let mut field = String::new();
+        for (keys, after) in [("toi", ' '), ("go", ' '), ("phmi", ' ')] {
+            type_text(&mut e, &mut field, &[(keys, after)]);
+            if end_word {
+                e.end_word();
+            } else {
+                e.reset();
+            }
+        }
+        let run = e.diacritics.as_ref().unwrap().run_len();
+        assert_eq!(run, if end_word { 3 } else { 0 });
+        assert_eq!(e.undo_fix().is_some(), end_word);
+    }
 }
 
 #[test]

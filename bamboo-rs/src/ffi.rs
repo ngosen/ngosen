@@ -12,7 +12,7 @@ use std::ffi::{CStr, c_char, c_int};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::os::fd::FromRawFd;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use bamboo_core::advanced::charset_names;
 use bamboo_core::{BracketMode, Config, InputMethod, ToneStyle, W2uMode};
@@ -373,12 +373,101 @@ pub extern "C" fn EngineSetDropKeptTail(engine: usize, on: u8) {
     handles::with_engine(engine, |e| e.drop_kept_tail = on != 0);
 }
 
-/// The changes Đoán dấu made to committed words, oldest first, as `pull_changes_text` writes
-/// them; empty when there are none. The front end applies them before it forwards the key.
+/// The changes Đoán dấu made since the last call, as one replacement: two texts separated by a
+/// tab. Once the last commit is in the field, the field ends with the first and should end with
+/// the second. Empty when nothing changed. The front end applies it before it forwards the key.
 #[unsafe(no_mangle)]
 pub extern "C" fn EnginePullChanges(engine: usize) -> *mut c_char {
-    handles::with_engine(engine, |e| c_string(&e.pull_changes_text()))
-        .unwrap_or(std::ptr::null_mut())
+    handles::with_engine(engine, |e| {
+        let change = e.pull_field_change();
+        c_string(&change.map_or_else(String::new, |(old, new)| format!("{old}\t{new}")))
+    })
+    .unwrap_or(std::ptr::null_mut())
+}
+
+/// Opens the shipped table at `table` and the personal dictionary kept in `dictionary`, for every
+/// field to share. Returns 0 when the table does not load. A dictionary file that does not load
+/// leaves it empty and never written over; `DiacriticsProblem` says why.
+///
+/// # Safety
+/// Each pointer is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn DiacriticsOpen(table: *const c_char, dictionary: *const c_char) -> usize {
+    // SAFETY: the caller passes valid C strings or null.
+    let (table, dictionary) = unsafe { (string_from_c(table), string_from_c(dictionary)) };
+    let Ok(table) = timsen::Table::open(&table) else {
+        return 0;
+    };
+    let dictionary = timsen::Dictionary::open(Arc::new(table), dictionary);
+    handles::new_handle(Object::Diacritics(Arc::new(Mutex::new(dictionary))))
+}
+
+/// Why the personal dictionary file did not load; null when it did.
+#[unsafe(no_mangle)]
+pub extern "C" fn DiacriticsProblem(handle: usize) -> *mut c_char {
+    let dictionary = handles::diacritics(handle);
+    let dictionary = dictionary.as_deref().map(lock_dictionary);
+    match dictionary.as_ref().and_then(|d| d.problem()) {
+        Some(problem) => c_string(&problem.to_string()),
+        None => std::ptr::null_mut(),
+    }
+}
+
+fn lock_dictionary(d: &Mutex<timsen::Dictionary>) -> std::sync::MutexGuard<'_, timsen::Dictionary> {
+    d.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Saves what the personal dictionary learned since the last save, writing on another thread so
+/// typing never waits for the disk; with `wait`, returns once the file is written. Returns whether
+/// there was anything to save.
+#[unsafe(no_mangle)]
+pub extern "C" fn DiacriticsSave(handle: usize, wait: u8) -> u8 {
+    let Some(dictionary) = handles::diacritics(handle) else {
+        return 0;
+    };
+    let Some(job) = lock_dictionary(&dictionary).begin_save() else {
+        return 0;
+    };
+    let save = std::thread::spawn(move || {
+        let written = job.write();
+        // A failed save leaves the dictionary owing one, so the next save tries again.
+        let _ = lock_dictionary(&dictionary).finish_save(job, written);
+    });
+    if wait != 0 {
+        let _ = save.join();
+    }
+    1
+}
+
+/// Gives the engine Đoán dấu with the dictionary of `DiacriticsOpen`, or with 0 takes it away,
+/// as when the user switches to English.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetDiacritics(engine: usize, handle: usize) {
+    let dictionary = handles::diacritics(handle);
+    handles::with_engine(engine, |e| match dictionary {
+        Some(dictionary) => e.set_diacritics(dictionary),
+        None => e.remove_diacritics(),
+    });
+}
+
+/// A password or other private field: nothing typed there is guessed or learned.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetPrivate(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.set_private(on != 0));
+}
+
+/// Whether Đoán dấu may change words before the one that just ended: only where the front end
+/// can check them in the field before replacing them.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetWholeRun(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.set_whole_run(on != 0));
+}
+
+/// Ends the word just committed but not the run Đoán dấu is guessing, for a front end that types
+/// each word into the field itself and resets the engine after it.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineEndWord(engine: usize) {
+    handles::with_engine(engine, BambooEngine::end_word);
 }
 
 /// Whether Đoán dấu fixes syllables nothing knows in runs started from now.

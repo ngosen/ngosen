@@ -31,7 +31,9 @@ mod elongated;
 mod packed;
 mod teencode;
 
-pub use diacritics::{Diacritics, FieldChange};
+pub use diacritics::Diacritics;
+#[cfg(test)]
+pub use diacritics::FieldChange;
 
 #[cfg(test)]
 mod options_tests;
@@ -1042,7 +1044,13 @@ impl BambooEngine {
     pub(crate) fn commit_preedit_and_reset(&mut self, s: String) {
         if !self.private_field {
             let keys = self.raw_text();
+            // The settings' "modern" style (hoà) is what bamboo-core calls Traditional.
+            let style = match self.preeditor.config().tone_style() {
+                ToneStyle::Traditional => timsen::ToneStyle::New,
+                ToneStyle::Modern => timsen::ToneStyle::Old,
+            };
             if let Some(d) = &mut self.diacritics {
+                d.set_style(style);
                 d.committed(&s, &keys);
             }
         }
@@ -1378,12 +1386,17 @@ impl BambooEngine {
         })
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "called from the C API once it opens tables")
-    )]
     pub fn set_diacritics(&mut self, dictionary: Arc<std::sync::Mutex<timsen::Dictionary>>) {
         self.diacritics = Some(Diacritics::new(dictionary));
+    }
+
+    /// Ends the run, learning it as the end of a sentence would, and guesses nothing from now.
+    pub fn remove_diacritics(&mut self) {
+        self.fix_undoable = false;
+        if let Some(d) = &mut self.diacritics {
+            d.reset();
+        }
+        self.diacritics = None;
     }
 
     /// Whether Đoán dấu fixes syllables nothing knows (`phmi` to `phím`) in runs started from now.
@@ -1409,10 +1422,6 @@ impl BambooEngine {
 
     /// A field that turns private ends the run and drops what waited to be learned. It stays off
     /// after it turns back, since Backspace and the front end can bring its private words back.
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "called from the C API once it opens tables")
-    )]
     pub fn set_private(&mut self, private: bool) {
         self.fix_undoable &= !private;
         if private && !self.private_field {
@@ -1424,6 +1433,7 @@ impl BambooEngine {
     }
 
     /// The changes Đoán dấu made to committed words since the last call, oldest first.
+    #[cfg(test)]
     pub fn pull_changes(&mut self) -> Vec<FieldChange> {
         self.diacritics
             .as_mut()
@@ -1431,20 +1441,38 @@ impl BambooEngine {
             .unwrap_or_default()
     }
 
-    /// `pull_changes` for the front end: a line per change, holding `after`, the words the field
-    /// shows and the words that replace them, separated by tabs, the words by spaces, in the
-    /// field's charset. Words hold letters only, so neither separator occurs in one.
-    pub fn pull_changes_text(&mut self) -> String {
-        let mut text = String::new();
-        for FieldChange { change, after } in self.pull_changes() {
-            let (old, new) = (change.old.join(" "), change.new.join(" "));
-            text += &format!(
-                "{after}\t{}\t{}\n",
-                self.encode_text(&old),
-                self.encode_text(&new)
-            );
+    /// The changes for the front end, in the field's charset: once the last commit is in the
+    /// field, it ends with the first text, from the first word changed on, and should end with the
+    /// second instead.
+    pub fn pull_field_change(&mut self) -> Option<(String, String)> {
+        let (old, new) = self.diacritics.as_mut()?.pull_field_change()?;
+        Some((self.encode_text(&old), self.encode_text(&new)))
+    }
+
+    /// Whether Đoán dấu may change any word of the run, or only the word that just ended: a
+    /// field that does not report its text cannot have earlier words checked before they go.
+    pub fn set_whole_run(&mut self, on: bool) {
+        if let Some(d) = &mut self.diacritics {
+            d.set_reach(if on {
+                timsen::Reach::Run
+            } else {
+                timsen::Reach::LastWord
+            });
         }
-        text
+    }
+
+    /// Ends the word just committed without ending the run, for a front end that resets the
+    /// engine after each word it types into the field itself.
+    pub fn end_word(&mut self) {
+        if !self.preedit_text.is_empty() {
+            return self.reset();
+        }
+        self.commit_text.clear();
+        self.committed_now = true;
+        self.preeditor.reset();
+        self.keep_marks_until_next_key = false;
+        self.keep_keys_until_next_key = false;
+        self.kept = None;
     }
 
     pub fn pull_commit(&mut self) -> String {

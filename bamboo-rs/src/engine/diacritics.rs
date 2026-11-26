@@ -17,11 +17,16 @@ const RAW_CONFIDENCE: f64 = 0.99;
 /// A change and where it sits in the field: `after` committed words lie between it and the
 /// cursor. The front end checks `change.old` there before it replaces anything, and applies the
 /// changes before it forwards the key that produced them.
+#[cfg(test)]
 #[derive(Debug)]
 pub struct FieldChange {
     pub change: Change,
     pub after: usize,
 }
+
+/// The text the field shows from the first word changed to the cursor, and the text to show
+/// there instead.
+pub type Replacement = (String, String);
 
 pub struct Diacritics {
     dictionary: Arc<Mutex<Dictionary>>,
@@ -45,6 +50,13 @@ pub struct Diacritics {
     /// ends the run: only then can that word's fix be undone.
     tail: Option<String>,
     fixing: bool,
+    reach: Reach,
+    style: ToneStyle,
+    /// What the field shows of the words committed since the cursor moved, each with the text
+    /// committed after it, from word `field_start` on: a change is applied as the text from its
+    /// first word to the cursor.
+    field: Vec<(String, String)>,
+    field_start: usize,
 }
 
 /// A poisoned lock still holds a usable dictionary: a panic elsewhere must not stop typing.
@@ -73,12 +85,26 @@ impl Diacritics {
             reopened: None,
             tail: None,
             fixing: true,
+            reach: Reach::Run,
+            style: ToneStyle::New,
+            field: Vec::new(),
+            field_start: 0,
         }
     }
 
     /// Whether runs started from now on fix syllables the table does not know.
     pub fn set_fixing(&mut self, on: bool) {
         self.fixing = on;
+    }
+
+    /// How far back a change may reach.
+    pub fn set_reach(&mut self, reach: Reach) {
+        self.reach = reach;
+    }
+
+    /// The tone placement the changes follow, as the engine's own words do.
+    pub fn set_style(&mut self, style: ToneStyle) {
+        self.style = style;
     }
 
     fn margin(&self) -> Option<f64> {
@@ -106,6 +132,7 @@ impl Diacritics {
         run.pop();
         let typed = self.typed.pop()?;
         self.words -= 1;
+        self.field.pop();
         self.over = false;
         self.learned = self.learned.min(run.len());
         self.reopened = Some(typed.clone());
@@ -124,10 +151,14 @@ impl Diacritics {
         let mut open = false;
         for piece in text.split_inclusive(|c: char| !c.is_alphabetic()) {
             let word = piece.trim_end_matches(|c: char| !c.is_alphabetic());
+            let after = piece[word.len()..].to_string();
             if !word.is_empty() {
                 let as_typed = !open && reopened.as_deref() == Some(word);
                 self.push(word, keys, as_typed);
+                self.field.push((word.to_string(), after));
                 open = true;
+            } else if let Some((_, last)) = self.field.last_mut() {
+                last.push_str(&after);
             }
             if piece.ends_with(|c: char| !c.is_alphabetic() && c != ' ') {
                 self.change(true);
@@ -156,13 +187,15 @@ impl Diacritics {
         self.forget_run();
         self.changes.clear();
         self.words = 0;
+        self.field.clear();
+        self.field_start = 0;
     }
 
     fn change(&mut self, ended: bool) {
         let Some(run) = self.run.as_mut().filter(|_| !self.over) else {
             return;
         };
-        if let Some(change) = run.change(ended, Reach::Run, ToneStyle::New)
+        if let Some(change) = run.change(ended, self.reach, self.style)
             && run.apply(&change)
         {
             let end = self.words - (run.len() - change.first - change.old.len());
@@ -243,17 +276,74 @@ impl Diacritics {
         self.forget_run();
         self.changes.clear();
         self.words = 0;
+        self.field.clear();
+        self.field_start = 0;
     }
 
     /// The changes made since the last call, oldest first, for the front end to apply.
+    #[cfg(test)]
     pub fn pull_changes(&mut self) -> Vec<FieldChange> {
-        let words = self.words;
-        (self.changes.drain(..))
-            .map(|(change, end)| FieldChange {
-                change,
-                after: words - end,
-            })
+        (self.pull().0.into_iter())
+            .map(|(change, after)| FieldChange { change, after })
             .collect()
+    }
+
+    /// `pull_changes` as one replacement: the text the field shows from the first word changed to
+    /// the end of the last commit, and the text to show there instead.
+    pub fn pull_field_change(&mut self) -> Option<Replacement> {
+        self.pull().1
+    }
+
+    fn pull(&mut self) -> (Vec<(Change, usize)>, Option<Replacement>) {
+        let words = self.words;
+        let changes = std::mem::take(&mut self.changes);
+        let first = (changes.iter())
+            .map(|(change, end)| end.saturating_sub(change.old.len()))
+            .min();
+        let from = first.and_then(|first| first.checked_sub(self.field_start));
+        let old = from.map(|from| self.field_text(from));
+        if from.is_none() && first.is_some()
+            || !changes.iter().all(|(change, end)| self.show(change, *end))
+        {
+            // Never expected: the field would no longer hold what the run shows.
+            self.reset();
+            return (Vec::new(), None);
+        }
+        let replacement = old.zip(from.map(|from| self.field_text(from)));
+        let keep = self.run.as_ref().map_or(0, Run::len);
+        let gone = self.field.len().saturating_sub(keep);
+        self.field.drain(..gone);
+        self.field_start += gone;
+        let changes = (changes.into_iter())
+            .map(|(change, end)| (change, words - end))
+            .collect();
+        (changes, replacement)
+    }
+
+    fn field_text(&self, from: usize) -> String {
+        (self.field.iter().skip(from))
+            .flat_map(|(word, after)| [word.as_str(), after.as_str()])
+            .collect()
+    }
+
+    /// Records in `field` a change ending at word `end`: false when the field does not hold its
+    /// old words there.
+    fn show(&mut self, change: &Change, end: usize) -> bool {
+        let Some(first) = (end.checked_sub(change.old.len()))
+            .and_then(|first| first.checked_sub(self.field_start))
+        else {
+            return false;
+        };
+        let Some(shown) = self.field.get_mut(first..first + change.old.len()) else {
+            return false;
+        };
+        if !shown.iter().map(|(w, _)| w).eq(&change.old) || change.new.len() != change.old.len() {
+            return false;
+        }
+        for ((word, _), new) in shown.iter_mut().zip(&change.new) {
+            *word = new.clone();
+        }
+        true
     }
 
     #[cfg(test)]

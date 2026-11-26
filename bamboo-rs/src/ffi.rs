@@ -276,6 +276,18 @@ pub unsafe extern "C" fn EngineRebuildFromText(engine: usize, text: *const c_cha
     handles::with_engine(engine, |e| e.rebuild_from_text(&text));
 }
 
+/// `EngineRebuildFromText` with text of the last commit, taken back to type on: Đoán dấu never
+/// learns a macro's text, even typed on.
+///
+/// # Safety
+/// `text` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn EngineReopenCommitted(engine: usize, text: *const c_char) {
+    // SAFETY: the caller passes a valid C string or null.
+    let text = unsafe { string_from_c(text) };
+    handles::with_engine(engine, |e| e.reopen_committed(&text));
+}
+
 /// Converts `text` between two charsets named as in GetCharsetNames. `letter_case` is 0 to keep,
 /// 1 upper, 2 lower, 3 sentence or 4 title case. Returns null for an unknown charset or case.
 ///

@@ -2681,7 +2681,7 @@ fn take_back_and_end(e: &mut BambooEngine, keys: &str, end: u32, taken: &str) {
     e.process_key_event(end, 0);
     e.pull_commit();
     assert!(!e.process_key_event(KEY_BACKSPACE, 0));
-    e.rebuild_from_text(taken);
+    e.reopen_committed(taken);
     e.process_key_event('.' as u32, 0);
     e.reset();
 }
@@ -2701,6 +2701,24 @@ fn a_macro_word_taken_back_by_backspace_is_never_learned() {
         take_back_and_end(&mut e, "nsen", end, taken);
         assert!(dictionary.lock().unwrap().is_empty(), "{expansion}");
     }
+}
+
+#[test]
+fn a_letter_taken_back_after_a_macro_is_still_learned() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.macro_enabled = true;
+    e.macro_table = macro_table(&[("nsen", "ngó thư")]);
+    type_keys(&mut e, "nsen");
+    e.process_key_event(KEY_SPACE, 0);
+    e.pull_commit();
+    // A new cell shows the letter whose key went to the app before the field.
+    e.reset();
+    e.rebuild_from_text("n");
+    type_keys(&mut e, "gos");
+    e.process_key_event('.' as u32, 0);
+    e.reset();
+    assert!(!dictionary.lock().unwrap().is_empty());
 }
 
 /// A macro's word fixed and the fix undone, as the engine does when the key after it is Backspace.

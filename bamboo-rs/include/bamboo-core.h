@@ -51,6 +51,7 @@ extern uintptr_t NewMacroTable(char** definition);
 extern void      DeleteObject(uintptr_t handle);
 extern void      ResetEngine(uintptr_t engine);
 extern void      EngineRebuildFromText(uintptr_t engine, cchar* text);
+extern void      EngineReopenCommitted(uintptr_t engine, cchar* text);
 extern char**    GetCharsetNames(void);
 // letterCase: 0 keep, 1 upper, 2 lower, 3 sentence, 4 title. Null for an unknown charset or case.
 extern char*     ConvertText(cchar* text, cchar* from, cchar* to, int letterCase, bool stripDiacritics);

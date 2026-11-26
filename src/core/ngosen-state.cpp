@@ -528,7 +528,7 @@ namespace ngosen {
         if (word.empty())
             return;
         lastWord_.clear();
-        EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
+        EngineReopenCommitted(bambooEngine_.handle(), word.c_str());
     }
 
     void TypingState::notePressOrRelease(const ngosen::KeyPress& keyEvent) {
@@ -698,7 +698,7 @@ namespace ngosen {
             length = static_cast<int>(ngosen::utf8::length(word)) + 1;
         keyEvent.accept();
         deleteBeforeCursor(length);
-        EngineRebuildFromText(bambooEngine_.handle(), word.c_str());
+        EngineReopenCommitted(bambooEngine_.handle(), word.c_str());
         ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
         host_->showPreedit(preedit ? preedit.get() : "", false);
         host_->refreshPreedit();
@@ -787,7 +787,7 @@ namespace ngosen {
             return {};
         ngosen::utf8::compareAndSplitStrings(lastWord_, dropped, deletedPart, addedPart);
         lastWord_.clear();
-        EngineRebuildFromText(bambooEngine_.handle(), dropped.c_str());
+        EngineReopenCommitted(bambooEngine_.handle(), dropped.c_str());
         hasHistory_ = true;
         return dropped;
     }

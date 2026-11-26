@@ -303,7 +303,10 @@ namespace {
         bool                    guess       = true;
         std::vector<std::pair<std::string, std::string>> macros;
         int                     keyMs       = 50;
+        bool*                   learned     = nullptr; // set to whether Đoán dấu learned anything
     };
+
+    std::string learnedFile();
 
     // Types into a FakeApp; \b in `typed` is a Backspace, and ~ after a key sends the next one right after it.
     std::string typeGuessingInApp(const Field& field, ngosen::Mode mode, const std::string& typed, const GuessRun& run = {}) {
@@ -316,6 +319,9 @@ namespace {
         resources.mutableOptions().guessFixesTypos     = run.fixesTypos;
         if (!run.macros.empty())
             resources.setMacros(run.macros);
+        const std::string learned = run.learned != nullptr ? learnedFile() : std::string();
+        if (run.learned != nullptr)
+            resources.learnDiacriticsInto(learned);
         auto                   owned                   = std::make_unique<ngosen::test::FakeApp>(loop, field, run.quirks);
         ngosen::test::FakeApp* app                 = owned.get();
         ngosen::TypingState    state(&resources, std::move(owned));
@@ -335,12 +341,17 @@ namespace {
             loop.pump(i + 1 < typed.size() && typed[i + 1] == '~' ? 2 : run.keyMs);
         }
         loop.pump(300);
+        if (run.learned != nullptr) {
+            // Đoán dấu learns a run when it ends.
+            state.reset(true);
+            *run.learned = resources.learnedDiacritics();
+            std::filesystem::remove(learned);
+        }
         return app->text();
     }
 
-    void        testGuessAfterFieldShowsText();
-    std::string learnedFile();
-    void        testGuessProbeLearnsNothing();
+    void testGuessAfterFieldShowsText();
+    void testGuessProbeLearnsNothing();
 
     void testDiacriticGuess() {
         const Field reports = makeField("wayland", true);
@@ -407,6 +418,11 @@ namespace {
             check(text.find('2') != std::string::npos, "Đoán dấu: Backspace after a fixed word with a digit keeps the digit" + name, text);
             text = typeGuessingInApp(reports, mode, "ban \bf ");
             check(text == "bàn ", "Đoán dấu: Backspace reopens a guessed word, so a tone key changes it" + name, text);
+            bool learned = false;
+            typeGuessingInApp(reports, mode, "ngos \b.", {.learned = &learned});
+            check(learned, "Đoán dấu: learns a word typed, taken back by Backspace and typed on" + name, "nothing");
+            typeGuessingInApp(reports, mode, "nsen \b.", {.macros = {{"nsen", "ngó"}}, .learned = &learned});
+            check(!learned, "Đoán dấu: never learns a macro's word taken back by Backspace" + name, "learned");
             if (mode == ngosen::Mode::Sen) {
                 // The undo finds a whole macro where it looks for one word, and leaves Backspace as it was.
                 text = typeGuessingInApp(reports, mode, "tgp \bf", {.fixesTypos = true, .macros = {{"tgp", "toi go phmi"}}});

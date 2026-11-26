@@ -374,9 +374,9 @@ pub struct BambooEngine {
     committed_now: bool,
     /// The text about to be committed is a macro's, which Đoán dấu never learns.
     commits_macro: bool,
-    /// The last text committed, when a macro put it there: text Backspace takes back from it is
-    /// still the macro's.
-    macro_commit: Option<String>,
+    /// Whether a macro put the last text committed there: text taken back from it is still the
+    /// macro's.
+    last_commit_macro: bool,
     /// A field that has been a password or sensitive field, which never reaches Đoán dấu again.
     pub(crate) private_field: bool,
 }
@@ -413,7 +413,7 @@ impl BambooEngine {
             fix_undoable: false,
             committed_now: false,
             commits_macro: false,
-            macro_commit: None,
+            last_commit_macro: false,
             private_field: false,
         }
     }
@@ -1070,7 +1070,7 @@ impl BambooEngine {
     pub(crate) fn commit_preedit_and_reset(&mut self, s: String) {
         let typed = !std::mem::take(&mut self.commits_macro);
         if !s.is_empty() {
-            self.macro_commit = (!typed).then(|| s.clone());
+            self.last_commit_macro = !typed;
         }
         if !self.private_field {
             let keys = self.raw_text();
@@ -1645,13 +1645,16 @@ impl BambooEngine {
     /// The front end rebuilds the word being typed, or with nothing typed takes `text` back from
     /// the field to type on. The field then no longer holds the run where its changes would go,
     /// so the run ends without changing anything.
+    /// Takes back text of the last commit to type on, as Backspace right after it does: a
+    /// macro's text stays the macro's.
+    pub fn reopen_committed(&mut self, text: &str) {
+        let from_macro = self.last_commit_macro;
+        self.rebuild_from_text(text);
+        self.commits_macro = from_macro;
+    }
+
     pub fn rebuild_from_text(&mut self, text: &str) {
         self.fix_undoable = false;
-        if self.preedit_text.is_empty() {
-            // Front ends take back the word before the cursor, or a part of it.
-            self.commits_macro |=
-                !text.is_empty() && self.macro_commit.as_ref().is_some_and(|m| m.contains(text));
-        }
         if self.preedit_text.is_empty()
             && !self.private_field
             && let Some(d) = &mut self.diacritics

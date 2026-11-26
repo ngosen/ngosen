@@ -96,8 +96,9 @@ pub struct Diacritics {
     undone: Vec<usize>,
     /// Words of the run a macro put there: the user did not type them, so they are never learned.
     from_macro: Vec<usize>,
-    /// The word an undo took back, as typed: committed again unchanged, it stays so.
-    reopened: Option<String>,
+    /// The word an undo took back, as typed, and whether a macro put it there: committed again
+    /// unchanged, it stays so.
+    reopened: Option<(String, bool)>,
     /// What the last commit put after its last word, until anything else is committed or a key
     /// ends the run: only then can that word's fix be undone.
     tail: Option<String>,
@@ -237,11 +238,15 @@ impl Diacritics {
         let shown = run.shown().last()?.clone() + &tail;
         run.pop();
         let typed = self.typed.pop()?;
+        let from_macro = self.from_macro.last() == Some(&self.typed.len());
+        if from_macro {
+            self.from_macro.pop();
+        }
         self.words -= 1;
         self.field.pop();
         self.over = false;
         self.learned = self.learned.min(run.len());
-        self.reopened = Some(typed.clone());
+        self.reopened = Some((typed.clone(), from_macro));
         Some((shown, typed))
     }
 
@@ -261,9 +266,9 @@ impl Diacritics {
             let word = piece.trim_end_matches(|c: char| !c.is_alphabetic());
             let after = piece[word.len()..].to_string();
             if !word.is_empty() {
-                let as_typed = !open && reopened.as_deref() == Some(word);
+                let as_typed = !open && reopened.as_ref().is_some_and(|(w, _)| w == word);
                 self.push(word, keys, as_typed);
-                if !typed {
+                if !typed || as_typed && reopened.as_ref().is_some_and(|(_, m)| *m) {
                     self.from_macro.push(self.typed.len() - 1);
                 }
                 self.field.push((word.to_string(), after));

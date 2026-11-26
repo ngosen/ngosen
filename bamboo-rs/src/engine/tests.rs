@@ -2673,6 +2673,59 @@ fn a_macro_is_never_learned_whichever_key_expands_it() {
     }
 }
 
+/// Commits `keys` ended by Space, then does what the front end does on Backspace right after: the
+/// app deletes the space, and the word before it is taken back to type on. It is ended by '.'.
+fn take_back_and_end(e: &mut BambooEngine, keys: &str, word: &str) {
+    type_keys(e, keys);
+    e.process_key_event(KEY_SPACE, 0);
+    assert_eq!(e.pull_commit(), format!("{word} "));
+    assert!(!e.process_key_event(KEY_BACKSPACE, 0));
+    e.rebuild_from_text(word);
+    e.process_key_event('.' as u32, 0);
+    e.reset();
+}
+
+#[test]
+fn a_macro_word_taken_back_by_backspace_is_never_learned() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.macro_enabled = true;
+    e.macro_table = macro_table(&[("nsen", "ngó")]);
+    take_back_and_end(&mut e, "nsen", "ngó");
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+/// A macro's word fixed and the fix undone, as the engine does when the key after it is Backspace.
+fn undone_macro_word(dictionary: &Arc<std::sync::Mutex<timsen::Dictionary>>) -> Diacritics {
+    let mut d = Diacritics::new(Arc::clone(dictionary), learning_on());
+    let mut field = Vec::new();
+    d.committed("toi ", "toi ", true);
+    field.push("toi".to_string());
+    d.committed("ngo ", "", false);
+    field.push("ngo".to_string());
+    apply_changes(d.pull_changes(), &mut field);
+    assert_eq!(field, ["tôi", "gõ"], "the macro's word is fixed");
+    assert!(d.undo_fix().is_some());
+    d
+}
+
+#[test]
+fn an_undone_macro_word_is_never_learned() {
+    let dictionary = shared_dictionary();
+    let mut d = undone_macro_word(&dictionary);
+    d.committed("ngo.", "ngo.", true);
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn a_word_typed_after_an_undone_macro_word_is_learned() {
+    let dictionary = shared_dictionary();
+    let mut d = undone_macro_word(&dictionary);
+    // The reopened word is erased and another typed in its place.
+    d.committed("ngó.", "ngos.", true);
+    assert!(!dictionary.lock().unwrap().is_empty());
+}
+
 #[test]
 fn words_typed_beside_a_macro_are_still_learned() {
     let dictionary = shared_dictionary();

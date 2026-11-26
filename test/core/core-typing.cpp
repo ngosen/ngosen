@@ -296,13 +296,14 @@ namespace {
     struct GuessRun {
         size_t                  pageAt = 0; // after this many keys the page alone sets the field to pageShows
         std::string             pageShows;
+        std::string             suggests; // or adds this after the cursor, selected, as autofill does
         ngosen::test::AppQuirks quirks;
         bool                    doubleSpace = false;
         bool                    fixesTypos  = false;
         int                     keyMs       = 50;
     };
 
-    // Types into a FakeApp; \b in `typed` is a Backspace.
+    // Types into a FakeApp; \b in `typed` is a Backspace, and ~ after a key sends the next one right after it.
     std::string typeGuessingInApp(const Field& field, ngosen::Mode mode, const std::string& typed, const GuessRun& run = {}) {
         realMode = mode;
         realtextLen.store(0);
@@ -316,12 +317,18 @@ namespace {
         ngosen::TypingState    state(&resources, std::move(owned));
         app->attach(&state);
         for (size_t i = 0; i < typed.size(); ++i) {
+            if (typed[i] == '~')
+                continue;
             if (i == run.pageAt && !run.pageShows.empty()) {
                 app->pageShowsCell(run.pageShows);
                 loop.pump(50);
             }
+            if (i == run.pageAt && !run.suggests.empty()) {
+                app->suggest(run.suggests, true);
+                loop.pump(50);
+            }
             app->type(typed[i] == '\b' ? ngosen::key::BackSpace : static_cast<uint32_t>(typed[i]));
-            loop.pump(run.keyMs);
+            loop.pump(i + 1 < typed.size() && typed[i + 1] == '~' ? 2 : run.keyMs);
         }
         loop.pump(300);
         return app->text();
@@ -380,6 +387,10 @@ namespace {
         check(text == "bạn phím.ab ", "Đoán dấu: a lagging field keeps earlier words, and keys typed after stay in order", text);
         text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban  phim.", {.doubleSpace = true});
         check(text == "bạn. phím.", "Đoán dấu: the word after a double space still gets its marks", text);
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "toi ", {.pageAt = 3, .suggests = "XYZ"});
+        check(text == "toi ", "Đoán dấu: a word with a selected suggestion after it stays as typed", text);
+        text = typeGuessingInApp(address, preedit, "ban phim.~abc ", {.quirks = {.keyStepMs = 30}});
+        check(text == "bàn phím.abc ", "Đoán dấu: a key typed while the preedit changes an earlier word is typed once", text);
         for (const auto mode : {ngosen::Mode::Sen, preedit}) {
             const std::string name = mode == preedit ? " (preedit)" : "";
             text                   = typeGuessingInApp(reports, mode, "toi go phmi ", {.fixesTypos = true});

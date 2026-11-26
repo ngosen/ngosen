@@ -125,7 +125,10 @@ namespace ngosen {
         std::string deletedPart;
         std::string addedPart;
         utf8::compareAndSplitStrings(guess->before, guess->text, deletedPart, addedPart);
-        performReplacement(guess->before, deletedPart, addedPart);
+        // At once, as Backspace into a word does here: a replacement that waits would queue the next
+        // keys, and their replay knows nothing of the preedit.
+        deleteBeforeCursor(utf8::length(deletedPart));
+        commit(addedPart);
         // Undoing the last word alone would take the changed earlier words with it.
         return "";
     }

@@ -23,6 +23,7 @@ MODE_SWITCHING = N_("Mode switching")
 TRAY_ICON = N_("Tray icon")
 CONVERT_CHARSETS = N_("Charsets")
 EMOJI_GROUP = N_("Emoji")
+LEARNING_GROUP = N_("Learning")
 
 # A light and a dark panel, behind the tray icon preview.
 TRAY_PANEL = ("#e6e6e6", "#2d2d2d")
@@ -71,7 +72,7 @@ SETTINGS_MAP = {
     },
     SettingsCategory.GUESSING: {
         N_("Adding marks"): ["GuessDiacritics", "GuessFixesTypos"],
-        N_("Learning"): ["LearnDiacritics"],
+        LEARNING_GROUP: ["LearnDiacritics"],
     },
     SettingsCategory.EMOJI: {
         EMOJI_GROUP: [

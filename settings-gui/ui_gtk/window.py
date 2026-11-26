@@ -12,7 +12,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 from core.brand import APP_ID  # noqa: E402
-from core.catalog import MODE_SHORTCUT_TO_VISIBILITY, SettingsCategory, locked_by  # noqa: E402
+from core.catalog import MODE_SHORTCUT_TO_VISIBILITY, locked_by  # noqa: E402
 from core.cli import parse_args  # noqa: E402
 from core.dbus_handler import NgoSenDBusHandler  # noqa: E402
 from core.dictionary import Dictionary  # noqa: E402
@@ -109,12 +109,8 @@ class Window(Adw.ApplicationWindow):
                 on_tip=self.show_tips,
                 show_message=self.show_check_message,
             )
-            self.guessing = pages.SettingsPage(
-                self.model,
-                self.save,
-                SettingsCategory.GUESSING,
-                _("Word guessing"),
-                "tools-check-spelling-symbolic",
+            self.guessing = pages.GuessingPage(
+                self.model, self.save, show_message=self.show_check_message
             )
             self.appearance = AppearancePage(self.model, self.save)
             self.convert = ConvertPage(self.model, self.save, self.dbus)

@@ -2787,3 +2787,83 @@ msgstr "Bảng mã đang là {charset}, không phải Unicode"
 #: settings-gui/core/system_check.py
 msgid "Most apps expect Unicode. With another charset, terminals and web pages can show stray tone marks or lose letters. Keep it only for an old document or app that needs it; otherwise choose Unicode under Typing › Output Charset."
 msgstr "Hầu hết app cần Unicode. Với bảng mã khác, terminal và trang web có thể hiện dấu lạc hoặc mất chữ. Chỉ giữ bảng mã này cho văn bản hay app cũ cần nó; còn lại hãy chọn Unicode ở Gõ chữ › Bảng mã."
+
+#: settings-gui/core/learned.py
+msgid "(start)"
+msgstr "(đầu đoạn)"
+
+#: settings-gui/core/learned.py
+msgid "(end)"
+msgstr "(cuối đoạn)"
+
+#: settings-gui/core/learned.py
+msgid "Could not save what was learned: {}"
+msgstr "Không lưu được chữ đã học: {}"
+
+#: settings-gui/core/learned.py
+msgid "Could not read what was learned: {}. Forget all starts it over."
+msgstr "Không đọc được chữ đã học: {}. Bấm Quên hết để bắt đầu lại."
+
+#: settings-gui/core/learned.py
+msgid "Could not read what was learned: {}"
+msgstr "Không đọc được chữ đã học: {}"
+
+#: settings-gui/core/learned.py
+msgid "Nothing learned yet."
+msgstr "Chưa học gì."
+
+#: settings-gui/core/learned.py
+msgid "Phrases learned: {}."
+msgstr "Đã học {} cụm chữ."
+
+#: settings-gui/core/learned.py
+msgid "Forgot everything Đoán dấu learned."
+msgstr "Đã quên hết những gì Đoán dấu đã học."
+
+#: settings-gui/core/learned.py
+msgid "Could not forget: {}"
+msgstr "Không quên được: {}"
+
+#: settings-gui/core/learned.py
+msgid "The running Ngó Sen is older than this window. Restart fcitx5, then try again."
+msgstr "Ngó Sen đang chạy là bản cũ hơn cửa sổ này. Khởi động lại fcitx5 rồi thử lại."
+
+#: settings-gui/core/learned.py
+msgid "Ngó Sen did not answer, so it may not have forgotten. Try again."
+msgstr "Ngó Sen không trả lời, nên có thể chưa quên. Thử lại nhé."
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "The guessing table is not installed, so Đoán dấu cannot add marks yet."
+msgstr "Chưa cài bảng đoán dấu, nên Đoán dấu chưa thêm dấu được."
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Learned"
+msgstr "Đã học"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "View"
+msgstr "Xem"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Hide"
+msgstr "Ẩn"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Forget all…"
+msgstr "Quên hết…"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "What Đoán dấu learned"
+msgstr "Những gì Đoán dấu đã học"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Forget what Đoán dấu learned?"
+msgstr "Quên những gì Đoán dấu đã học?"
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Đoán dấu will guess from its table alone, as on a new machine. This cannot be undone."
+msgstr "Đoán dấu sẽ chỉ đoán theo bảng, như trên máy mới cài. Việc này không hoàn tác được."
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Forget all"
+msgstr "Quên hết"

@@ -88,6 +88,18 @@ class FakeDBusHandler:
             text = text.translate(self.TCVN3)
         return text.upper() if letter_case == 1 else text
 
+    def call_ngosen(self, method, *args):
+        """Answers from ngosen_answers; a str answer is the D-Bus error raised. Until a test says
+        otherwise, Ngó Sen is not loaded."""
+        from core.ngosen_call import NOT_LOADED, CallError
+
+        self.ngosen_calls = getattr(self, "ngosen_calls", [])
+        self.ngosen_calls.append(method)
+        answer = getattr(self, "ngosen_answers", {}).get(method, NOT_LOADED[0])
+        if isinstance(answer, str) or answer is None:
+            raise CallError(answer)
+        return answer
+
     def get_sub_config_list(self, path, root_key):
         return copy.deepcopy(self.sub_configs.get(path, []))
 

@@ -2328,3 +2328,83 @@ msgstr ""
 #: settings-gui/core/system_check.py
 msgid "Most apps expect Unicode. With another charset, terminals and web pages can show stray tone marks or lose letters. Keep it only for an old document or app that needs it; otherwise choose Unicode under Typing › Output Charset."
 msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "(start)"
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "(end)"
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Could not save what was learned: {}"
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Could not read what was learned: {}. Forget all starts it over."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Could not read what was learned: {}"
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Nothing learned yet."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Phrases learned: {}."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Forgot everything Đoán dấu learned."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Could not forget: {}"
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "The running Ngó Sen is older than this window. Restart fcitx5, then try again."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Ngó Sen did not answer, so it may not have forgotten. Try again."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "The guessing table is not installed, so Đoán dấu cannot add marks yet."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Learned"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "View"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Hide"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Forget all…"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "What Đoán dấu learned"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Forget what Đoán dấu learned?"
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Đoán dấu will guess from its table alone, as on a new machine. This cannot be undone."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "Forget all"
+msgstr ""

@@ -7,6 +7,7 @@ from core.brand import FEATURE_REQUEST_URL, REPO_URL
 from core.catalog import (
     DEPENDS,
     HINTS,
+    LEARNING_GROUP,
     MODE_BUTTON_ORDER,
     MODE_HINTS,
     SETTINGS_MAP,
@@ -15,6 +16,7 @@ from core.catalog import (
     SettingsCategory,
     shown_mode,
 )
+from core.learned import Learned
 from core.teencode_apps import TeencodeApps, toggle_hint
 from gi.repository import Adw, Gtk
 from i18n import _
@@ -281,6 +283,129 @@ class TypingPage(SettingsPage):
         self.tip_row = row
         group.add(row)
         self.page.add(group)
+
+
+class GuessingPage(SettingsPage):
+    """show_message(text, undo) shows a toast."""
+
+    def __init__(self, model, on_change, show_message=None):
+        self.show_message = show_message
+        self.learned = Learned(model.dbus)
+        super().__init__(
+            model,
+            on_change,
+            SettingsCategory.GUESSING,
+            _("Word guessing"),
+            "tools-check-spelling-symbolic",
+        )
+        # Text typed in this window since, such as on the Typing page, is learned too.
+        self.page.connect("map", lambda _page: self._show_learned())
+        self.refresh_status()
+
+    def _add_header(self):
+        self.table_note = status_row()
+        group = Adw.PreferencesGroup()
+        group.add(self.table_note)
+        self.page.add(group)
+
+    def _add_extras(self, title, group):
+        if title != LEARNING_GROUP:
+            return
+        # Not in DEPENDS: what was learned can be seen and forgotten with guessing off.
+        self.learned_row = Adw.ActionRow(title=_("Learned"), use_markup=False)
+        self.view_button = Gtk.Button(label=_("View"), valign=Gtk.Align.CENTER)
+        self.view_button.connect("clicked", lambda _b: self.toggle_view())
+        forget = Gtk.Button(label=_("Forget all…"), valign=Gtk.Align.CENTER)
+        forget.connect("clicked", lambda _b: self.confirm_forget())
+        self.learned_row.add_suffix(self.view_button)
+        self.learned_row.add_suffix(forget)
+        group.add(self.learned_row)
+        self.learned_text = Gtk.TextView(
+            editable=False,
+            cursor_visible=False,
+            monospace=True,
+            top_margin=8,
+            bottom_margin=8,
+            left_margin=8,
+            right_margin=8,
+        )
+        self.learned_text.update_property(
+            [Gtk.AccessibleProperty.LABEL], [_("What Đoán dấu learned")]
+        )
+        self.learned_view = Gtk.ScrolledWindow(
+            child=self.learned_text,
+            min_content_height=160,
+            max_content_height=320,
+            propagate_natural_height=True,
+            css_classes=["card"],
+            margin_top=12,
+            visible=False,
+        )
+        self.learned_view.searchable = False
+        group.add(self.learned_view)
+
+    def refresh_status(self):
+        super().refresh_status()
+        self._show_learned()
+
+    def _show_learned(self):
+        status = self.learned.status()
+        self.learned_row.set_subtitle(status.line)
+        show_status(
+            self.table_note,
+            _("The guessing table is not installed, so Đoán dấu cannot add marks yet.")
+            if status.table_missing
+            else "",
+        )
+        if self.learned_view.get_visible():
+            self._fill_view()
+
+    def _fill_view(self):
+        text, failed = self.learned.view()
+        if failed:
+            self._hide_view()
+            self._message(failed)
+            return
+        self.learned_text.get_buffer().set_text(text)
+        self.learned_view.set_visible(True)
+        self.view_button.set_label(_("Hide"))
+
+    def _hide_view(self):
+        self.learned_view.set_visible(False)
+        self.learned_text.get_buffer().set_text("")
+        self.view_button.set_label(_("View"))
+
+    def toggle_view(self):
+        if self.learned_view.get_visible():
+            self._hide_view()
+        else:
+            self._fill_view()
+
+    def confirm_forget(self):
+        dialog = Adw.AlertDialog(
+            heading=_("Forget what Đoán dấu learned?"),
+            body=_(
+                "Đoán dấu will guess from its table alone, as on a new machine."
+                " This cannot be undone."
+            ),
+        )
+        dialog.add_response("cancel", _("&Cancel").replace("&", "_"))
+        dialog.add_response("forget", _("Forget all"))
+        dialog.set_response_appearance("forget", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", lambda _d, response: response == "forget" and self.forget())
+        dialog.present(self.page.get_root())
+        return dialog
+
+    def forget(self):
+        _forgot, line = self.learned.forget()
+        self._message(line)
+        self._show_learned()
+
+    def _message(self, text):
+        if self.show_message:
+            self.show_message(text, None)
 
 
 def _label(text, *css, markup=False):

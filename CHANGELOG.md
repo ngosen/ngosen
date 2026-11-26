@@ -10,6 +10,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Sửa
+
+- Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz): chữ vừa sửa dấu không còn thỉnh thoảng mất
+  ("người" ra "ời"). Ô này rời focus vài lần sau mỗi lần xoá và có lúc quay lại chỉ vài ms; chữ gửi đúng lúc đó tới
+  nơi khi ô đã rời đi. Bộ gõ nay chờ ô ở yên rồi mới gửi (#1025).
+
 ## [1.14.2-1] — 26/11/2026
 
 Gõ Sen trong editor của Antigravity, ô soạn bài voz.vn, ô soạn thảo của Chrome trên GNOME, trên Sway và Hyprland không còn mất chữ, dính chữ cũ hay ra phím thô khi sửa dấu, và ở voz.vn cùng các ô soạn thảo trên web chữ có dấu hiện sớm hơn (#987, #990, #995, #996, #997, #998, #999, #1004). Trên KDE, kiểm tra máy báo khi bàn phím ảo của KDE bị tắt và có nút bật lại, chạy lại lệnh cài cũng bật lại nó (#982, #1001). Có thêm lệnh `ngosen-check --settings` in mọi cài đặt đang dùng (#984). Thư viện gõ bamboo-core lên 0.6.1: gõ `tieesng` hiện "tiế" ngay thay vì thoáng hiện "tíê", `cuow` ra "cươ" (#1009).

@@ -41,6 +41,8 @@ namespace ngosen::test {
         int  bounceOnEditMs         = 0;     // bounces focus this long after a forwarded Backspace or a commit arrives, keeping both, as Brave on GNOME 51 does
         int  awayAfterDeletionMs    = 0;     // leaves focus this long, leavesAfterDeletionMs after each Backspace or deletion,
         int  leavesAfterDeletionMs  = 0;     // as voz.vn's editor in Chrome on GNOME does several times in the 100 ms after one
+        int  timesAwayAfterDeletion = 1;     // with awayAfterDeletionMs, leaves this many times in a row,
+        int  backBetweenLeavesMs    = 0;     // coming back this long in between
         bool redrawsOnlyOnDeletion  = false; // redraws after deletions but not insertions, as a plain Draft.js box in Chrome on GNOME does
         bool dropsOldKeyPresses     = false; // drops a Backspace press not newer than the last one, as GLFW does under XIM
         bool hidesSelectionEnd      = false; // reports a selection as the cursor at its start, as Firefox does
@@ -384,6 +386,7 @@ namespace ngosen::test {
         void                                changed();
         void                                bounceAfterEdit();
         void                                refocusAfterDeletion();
+        void                                leaveAgainAfterDeletion();
         void                                redrawAfterEdit();
         void                                bounceEmptyAfterEdit();
         void                                later(int ms, std::function<void()> action);
@@ -402,6 +405,7 @@ namespace ngosen::test {
         int                                 backspaceBurst_ = 0; // forwarded Backspaces queued since the queue was last empty
         std::u32string                      heldCommit_;         // commits waiting for queued Backspaces
         bool                                emptyBouncePending_ = false;
+        int                                 leavesLeft_         = 0;
         std::string                         strayLetter_;
         int                                 editsBeforeStray_ = 0;
         int                                 strayDelayMs_     = 0;

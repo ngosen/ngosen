@@ -308,7 +308,11 @@ namespace ngosen {
         bool                           offersEmojiHere() const;
         bool                           hintsInField(const ngosen::Field& field) const;
         bool                           replacementPending() const;
-        bool                           focusMayReturn() const; ///< focus left too recently to tell a bounce from a switch
+        bool                           focusMayReturn() const;    ///< focus left too recently to tell a bounce from a switch
+        bool                           focusJustReturned() const; ///< a refocusing field came back too recently to stay
+        uint64_t                       bouncingFieldWaitUs() const;
+        bool                           fieldStillSettling() const;
+        bool                           waitsForFieldToSettle(ngosen::Timer& t);
         bool                           inAddressBar() const;
         void                           noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore);
         bool                           restoreEmojiTail(std::string& tail);

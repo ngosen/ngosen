@@ -1009,6 +1009,22 @@ namespace {
         check(text == "người ", "refocusing editor: no commit is lost", text);
     }
 
+    // It can also come back for a few ms between departures, and a commit that reaches it then lands after
+    // it has left again.
+    void testCommitWaitsForEditorToStay() {
+        ngosen::test::AppQuirks quirks;
+        quirks.awayAfterDeletionMs    = 20;
+        quirks.timesAwayAfterDeletion = 4;
+        quirks.backBetweenLeavesMs    = 5;
+        quirks.commitLagMs            = 3;
+        const std::vector<std::pair<std::string, std::string>> cases{{"nguowif ", "người "}, {"tieengs ", "tiếng "}, {"truowngf ", "trường "}};
+        for (const auto& [typed, want] : cases) {
+            const std::vector<uint32_t> keys(typed.begin(), typed.end());
+            const std::string           text = ngosen::test::typeInApp(makeField("ibus", true, "chromium"), quirks, keys, std::vector<int>(keys.size(), 80));
+            check(text == want, "editor that comes back between departures keeps the edit: " + typed, text);
+        }
+    }
+
     // The same editor through GNOME Shell's IBus bridge applies our backspaces one by one, slower than
     // the bridge's own wait, and loses a commit that comes before the last one. Its reports can come
     // later still.
@@ -6594,6 +6610,7 @@ int main() {
     testHeldSpaceReopensWord();
     testCommitAfterEditorRedraw();
     testCommitWaitsForEditorRefocus();
+    testCommitWaitsForEditorToStay();
     testBouncingEditorOverIBusSlowDeletion();
     testLateBackspaceAfterBounce();
     testBackspaceCommitCheck();

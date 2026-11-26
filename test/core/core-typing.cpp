@@ -300,6 +300,8 @@ namespace {
         ngosen::test::AppQuirks quirks;
         bool                    doubleSpace = false;
         bool                    fixesTypos  = false;
+        bool                    guess       = true;
+        std::vector<std::pair<std::string, std::string>> macros;
         int                     keyMs       = 50;
     };
 
@@ -309,9 +311,11 @@ namespace {
         realtextLen.store(0);
         FakeLoop      loop;
         FakeResources resources;
-        resources.mutableOptions().guessDiacritics     = true;
+        resources.mutableOptions().guessDiacritics     = run.guess;
         resources.mutableOptions().doubleSpaceToPeriod = run.doubleSpace;
         resources.mutableOptions().guessFixesTypos     = run.fixesTypos;
+        if (!run.macros.empty())
+            resources.setMacros(run.macros);
         auto                   owned                   = std::make_unique<ngosen::test::FakeApp>(loop, field, run.quirks);
         ngosen::test::FakeApp* app                 = owned.get();
         ngosen::TypingState    state(&resources, std::move(owned));
@@ -399,6 +403,15 @@ namespace {
             check(text == "tôi gõ phmi ", "Đoán dấu: Backspace right after a fix brings back what was typed" + name, text);
             text = typeGuessingInApp(makeField("wayland", false), mode, "toi go phmi \b ", {.fixesTypos = true});
             check(text == "tôi gõ phím ", "Đoán dấu: Backspace after a fix in a field that shows nothing only deletes" + name, text);
+            text = typeGuessingInApp(reports, mode, "toi go phmi2 \b ", {.fixesTypos = true});
+            check(text.find('2') != std::string::npos, "Đoán dấu: Backspace after a fixed word with a digit keeps the digit" + name, text);
+            text = typeGuessingInApp(reports, mode, "ban \bf ");
+            check(text == "bàn ", "Đoán dấu: Backspace reopens a guessed word, so a tone key changes it" + name, text);
+            if (mode == ngosen::Mode::Sen) {
+                // The undo finds a whole macro where it looks for one word, and leaves Backspace as it was.
+                text = typeGuessingInApp(reports, mode, "tgp \bf", {.fixesTypos = true, .macros = {{"tgp", "toi go phmi"}}});
+                check(!isEndsWith(text, "phímf"), "Đoán dấu: Backspace after a macro still reopens its last word", text);
+            }
         }
         testGuessAfterFieldShowsText();
     }

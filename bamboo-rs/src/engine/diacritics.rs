@@ -126,6 +126,11 @@ impl Diacritics {
         if !self.can_undo() || !self.changes.is_empty() {
             return None;
         }
+        // Only the key that ended the word may follow it, since the word reopens as letters alone
+        // and anything else after it (a digit) would be lost.
+        if self.tail.as_ref().is_some_and(|t| t.chars().count() > 1) {
+            return None;
+        }
         let tail = self.tail.take()?;
         let run = self.run.as_mut()?;
         let shown = run.shown().last()?.clone() + &tail;

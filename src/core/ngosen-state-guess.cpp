@@ -63,14 +63,15 @@ namespace ngosen {
         const UniqueCPtr<char> shown(EngineUndoFix(bambooEngine_.handle()));
         if (!shown)
             return std::nullopt;
-        const std::string committed = std::exchange(lastWord_, std::string());
-        droppedWord_.clear();
-        // The engine already reopened the word; it must not stay open over text the field does not show.
-        if (spelledAtWordEnd(shown.get()) != committed) {
+        // The engine already reopened the word; it must not stay open over text the field does not
+        // show. Backspace still reopens the commit as it would without Đoán dấu.
+        if (spelledAtWordEnd(shown.get()) != lastWord_) {
             NGOSEN_INFO("Undo fix: kept, the field shows another word");
             ResetEngine(bambooEngine_.handle());
             return std::nullopt;
         }
+        lastWord_.clear();
+        droppedWord_.clear();
         NGOSEN_INFO("Undo fix");
         const UniqueCPtr<char> typed(EnginePullPreedit(bambooEngine_.handle()));
         return std::string(typed ? typed.get() : "");

@@ -294,17 +294,17 @@ namespace {
     }
 
     struct GuessRun {
-        size_t                  pageAt = 0; // after this many keys the page alone sets the field to pageShows
-        std::string             pageShows;
-        std::string             suggests; // or adds this after the cursor, selected, as autofill does
-        ngosen::test::AppQuirks quirks;
-        bool                    doubleSpace = false;
-        bool                    fixesTypos  = false;
-        int                     fixStrength = 0;
-        bool                    guess       = true;
+        size_t                                           pageAt = 0; // after this many keys the page alone sets the field to pageShows
+        std::string                                      pageShows;
+        std::string                                      suggests; // or adds this after the cursor, selected, as autofill does
+        ngosen::test::AppQuirks                          quirks;
+        bool                                             doubleSpace = false;
+        bool                                             fixesTypos  = false;
+        int                                              fixStrength = 0;
+        bool                                             guess       = true;
         std::vector<std::pair<std::string, std::string>> macros;
-        int                     keyMs       = 50;
-        bool*                   learned     = nullptr; // set to whether Đoán dấu learned anything
+        int                                              keyMs   = 50;
+        bool*                                            learned = nullptr; // set to whether Đoán dấu learned anything
     };
 
     std::string learnedFile();
@@ -324,8 +324,8 @@ namespace {
         const std::string learned = run.learned != nullptr ? learnedFile() : std::string();
         if (run.learned != nullptr)
             resources.learnDiacriticsInto(learned);
-        auto                   owned                   = std::make_unique<ngosen::test::FakeApp>(loop, field, run.quirks);
-        ngosen::test::FakeApp* app                 = owned.get();
+        auto                   owned = std::make_unique<ngosen::test::FakeApp>(loop, field, run.quirks);
+        ngosen::test::FakeApp* app   = owned.get();
         ngosen::TypingState    state(&resources, std::move(owned));
         app->attach(&state);
         for (size_t i = 0; i < typed.size(); ++i) {

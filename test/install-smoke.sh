@@ -1108,6 +1108,15 @@ check_restart_through_kwin() {
     bus=
 }
 
+check_kwin_virtual_keyboard_switched_on() {
+    printf '[Wayland]\nInputMethod=/usr/share/applications/org.fcitx.Fcitx5.desktop\nVirtualKeyboardEnabled=false\n' |
+        as_user tee "$kwinrc" >/dev/null
+    check "an install with KDE's virtual keyboard off succeeds" install_fresh
+    check "it switches the virtual keyboard back on" has_line "$kwinrc" 'VirtualKeyboardEnabled=true'
+    check "it says so" grep -qF 'bật lại bàn phím ảo của KDE' "$install_log"
+    stop_fcitx5
+}
+
 # fcitx5 copies its group layout into kxkbrc at every start, so a wrong one replaces the user's.
 check_kde_layout() {
     local kxkbrc=$home/.config/kxkbrc
@@ -1468,6 +1477,8 @@ main() {
         check_wps_input_method
         echo "== KDE keyboard layout"
         check_kde_layout
+        echo "== KDE virtual keyboard switched off"
+        check_kwin_virtual_keyboard_switched_on
     fi
 
     if [ "$session" = gnome ] && command -v im-config >/dev/null 2>&1; then

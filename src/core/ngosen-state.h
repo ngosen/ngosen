@@ -201,7 +201,10 @@ namespace ngosen {
         std::string              oldPreBuffer_;
         std::string              lastWord_;                    ///< The word and break we last committed, while only backspaces follow
         std::string              droppedWord_;                 ///< lastWord_ as typed, before Space split it or dropped keys after it
-        uint64_t                 lastWordAtUs_            = 0; ///< When lastWord_ was committed
+        uint64_t                 lastWordAtUs_ = 0;            ///< When lastWord_ was committed
+        std::string              lastWordAtFocusOut_;          ///< lastWord_ when focus left, given back if focus only bounced
+        std::string              droppedWordAtFocusOut_;       ///< droppedWord_ at the same time
+        uint64_t                 lastWordAtFocusOutUs_    = 0; ///< lastWordAtUs_ at the same time
         bool                     hasHistory_              = false;
         bool                     preeditWord_             = false; ///< Sen is on, but this word goes into the preedit
         int                      expected_backspaces_     = 0;     ///< backspaces the key paths still send; XTEST adds one that comes back
@@ -305,6 +308,7 @@ namespace ngosen {
         bool                           offersEmojiHere() const;
         bool                           hintsInField(const ngosen::Field& field) const;
         bool                           replacementPending() const;
+        bool                           focusMayReturn() const; ///< focus left too recently to tell a bounce from a switch
         bool                           inAddressBar() const;
         void                           noteTypedForEmoji(const ngosen::KeyPress& keyEvent, const std::string& wordBefore);
         bool                           restoreEmojiTail(std::string& tail);
@@ -413,12 +417,18 @@ namespace ngosen {
         // IBus clients, GNOME Shell above all, get forwarded keys and commits on separate paths, so a
         // commit sent sooner can still reach the app before the backspaces.
         static constexpr uint64_t ShellForwardWaitUs = 40000;
+        // An app's state update follows a forwarded Backspace by about a frame; the commit goes after it.
+        static constexpr uint64_t UpdateForwardWaitUs = 40000;
+        // How long a commit waits for the rest of the state updates an app sends in a row.
+        static constexpr uint64_t ReportBurstUs = 3000;
         // On wayland_v2 the backspaces go through a virtual keyboard, as typed keys, and a Firefox that has
         // not yet shown the word applies commits ahead of them once it catches up.
         static constexpr uint64_t UnseenWordForwardWaitUs = 300000;
         // A field that refocuses after each Backspace (voz.vn in Brave) applies them about 22 ms apart and
         // loses a commit that comes before the last one.
         static constexpr uint64_t BouncingFieldWaitUs = 150000;
+        // Chrome on GNOME applies each backspace after its own refocus.
+        static constexpr uint64_t BouncingFieldPerBackspaceUs = 50000;
         // Firefox declares its text again once a forwarded key reaches it; a commit before that can land
         // ahead of the backspaces.
         static constexpr uint64_t UndeclaredFieldWaitUs     = 100000;
@@ -489,6 +499,7 @@ namespace ngosen {
             int                            eventCount        = 0;
             bool                           sawOtherSnapshot  = false; ///< an event differed from the send-time snapshot
             bool                           sentSnapshotFresh = false; ///< send-time snapshot still showed the text to delete
+            bool                           plainAtSend       = false; ///< that snapshot was not shaped like Messenger's composer
             bool                           leavesText        = false; ///< send-time snapshot keeps text once the deletion is done
             bool                           textAfterCursor   = false; ///< send-time snapshot has text after the cursor
         };
@@ -521,12 +532,14 @@ namespace ngosen {
         // fcitx5-gtk sends text committed while it processes a key event in the reply to that key.
         // The sentinel Backspace is consumed, and some clients (ghostty, foot) then drop the text.
         // Commit on the next event loop turn instead. Upstream fcitx5-lotus 2ca89a5.
+        void deferCommit();
         void flushDeferredCommit();
         // A commit put off to the next turn of the event loop.
         struct DeferredCommit {
             std::unique_ptr<ngosen::Timer> timer;
             std::string                    text;
-            bool                           pending = false;
+            bool                           pending      = false;
+            int                            focusRetries = 0; ///< timer fired while the field had lost focus
         };
         DeferredCommit deferred_commit_;
 
@@ -764,6 +777,10 @@ namespace ngosen {
         void dropWaitsAfterFocusMove();
         // Keeps an unfinished replacement for a focus that may only bounce.
         void noteReplacementAtFocusOut();
+        // Keeps the finished word for Backspace to reopen, in case focus only bounces.
+        void keepLastWordAtFocusOut();
+        // Gives the kept word back after a bounce, and forgets it either way.
+        void takeLastWordAtFocusIn(bool bounce);
         // Resets the counts a replacement is checked against.
         void beginReplacement(const std::string& deletedPart, const std::string& addedPart);
         // Remembers what the app showed when the replacement started, to tell when it is done.

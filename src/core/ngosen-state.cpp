@@ -1566,6 +1566,7 @@ namespace ngosen {
         lockedWord_.reset();
         // After focus out a forwarded key may reach the window that took focus.
         if (isFocusOut) {
+            keepLastWordAtFocusOut();
             held_enter_pending_ = false;
             held_enter_timer_.reset();
             emojiAfterHint_ = {};

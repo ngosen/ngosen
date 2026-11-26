@@ -13,6 +13,8 @@ namespace ngosen {
     namespace {
         // Focus that comes back sooner than this left only for a moment (Chromium on X11 bounces it).
         constexpr int64_t FocusBounceMs = 100;
+        // A rich text editor in Chrome on GNOME leaves focus for a moment after each deletion.
+        constexpr int64_t FocusReturnMs = 40;
         // A field that bounces again and again redraws its editor (Draft.js in Chrome on GNOME) and
         // drops a commit that arrives before the redraw our backspaces cause (#175), so the commit
         // waits until those bounces have come and gone, but no longer than RedrawWaitMs.
@@ -112,6 +114,7 @@ namespace ngosen {
         retype_.reset();
         if (isFocusIn)
             forgetKeysWhileOff();
+        takeLastWordAtFocusIn(bounce);
         return bounce;
     }
 
@@ -126,6 +129,7 @@ namespace ngosen {
             composedWait_ = false;
         }
         if (isFocusOut) {
+            keepLastWordAtFocusOut();
             rememberLeftField();
             keysAtFocusOut_ = keyCount_;
             commitNotSeen_.clear();
@@ -172,6 +176,26 @@ namespace ngosen {
         }
     }
 
+    void TypingState::keepLastWordAtFocusOut() {
+        // The reset that comes with focus out may run before or after deactivate().
+        if (lastWord_.empty())
+            return;
+        lastWordAtFocusOut_    = lastWord_;
+        droppedWordAtFocusOut_ = droppedWord_;
+        lastWordAtFocusOutUs_  = lastWordAtUs_;
+    }
+
+    void TypingState::takeLastWordAtFocusIn(bool bounce) {
+        if (bounce && lastWord_.empty() && !lastWordAtFocusOut_.empty()) {
+            lastWord_     = lastWordAtFocusOut_;
+            droppedWord_  = droppedWordAtFocusOut_;
+            lastWordAtUs_ = lastWordAtFocusOutUs_;
+        }
+        lastWordAtFocusOut_.clear();
+        droppedWordAtFocusOut_.clear();
+        lastWordAtFocusOutUs_ = 0;
+    }
+
     // A selection waiting to be typed over has no backspaces left, but is just as unfinished.
     void TypingState::noteReplacementAtFocusOut() {
         if (mode() == ngosen::Mode::Sen && is_deleting_.load() && (expected_backspaces_ > 0 || overtype_.pending)) {
@@ -192,4 +216,7 @@ namespace ngosen {
         return bounces < deletedChars_ || now - lastBounceAt_ < RedrawSettleMs || !host_->hasFocus();
     }
 
+    bool TypingState::focusMayReturn() const {
+        return lastDeactivateTime_ > 0 && nowMs() - lastDeactivateTime_ < FocusReturnMs;
+    }
 } // namespace ngosen

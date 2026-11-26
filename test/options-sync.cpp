@@ -51,7 +51,7 @@ namespace {
         c.setValueByPath("GuessDiacritics", "True");
         c.setValueByPath("GuessFixesTypos", "True");
         c.setValueByPath("GuessFixStrength", "Strong");
-        c.setValueByPath("LearnDiacritics", "True");
+        c.setValueByPath("LearnDiacritics", "False");
         c.setValueByPath("MessengerSelectOvertype", "False");
         c.setValueByPath("CopyWaitRecovery", "False");
         c.setValueByPath("FoldReplayReplacement", "False");

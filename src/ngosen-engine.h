@@ -126,6 +126,8 @@ namespace fcitx {
         void reloadConfig() override;
         // Shows the one-time "What's new" notification for a feature release.
         void announceRelease(const std::string& release);
+        // Tells, once, that Đoán dấu learns from what the user types.
+        void announceLearning();
 
         /**
          * @brief Gets the current configuration.
@@ -316,6 +318,7 @@ namespace fcitx {
         std::string                      currentConfigureApp_;
         std::unique_ptr<EventSourceTime> cycleModeNotificationTimer_;
         std::unique_ptr<EventSourceTime> announceTimer_;
+        std::unique_ptr<EventSourceTime> announceLearningTimer_;
         std::unique_ptr<EventSourceTime> menuClickTimer_;
         // Instance::eventDispatcher() needs fcitx5 newer than Ubuntu 24.04 and Debian 12 ship.
         EventDispatcher clickDispatcher_;

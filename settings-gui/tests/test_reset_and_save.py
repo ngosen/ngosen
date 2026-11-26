@@ -95,17 +95,17 @@ class ResetTest(unittest.TestCase):
         self.assertEqual(fake.sub_configs["ngosen-macro"], [])
 
     def test_reset_keeps_learning_as_set(self):
-        fake = FakeDBusHandler({"LearnDiacritics": "True", "GuessDiacritics": "True"})
+        fake = FakeDBusHandler({"LearnDiacritics": "False", "GuessDiacritics": "True"})
         window = NgoSenSettingsWindow(dbus_handler=fake)
         with mock.patch("ui.main_window.confirm", return_value=True):
             window.on_restore_defaults()
         window.save_pending()
-        self.assertEqual(fake.values["LearnDiacritics"], "True")
+        self.assertEqual(fake.values["LearnDiacritics"], "False")
         self.assertEqual(fake.values["GuessDiacritics"], DEFAULTS["GuessDiacritics"])
 
     def test_reset_leaves_nothing_unsaved(self):
         # A page left changed would let a later save_pending() replace the Undo snapshot.
-        fake = FakeDBusHandler({"LearnDiacritics": "True"})
+        fake = FakeDBusHandler({"LearnDiacritics": "False"})
         window = NgoSenSettingsWindow(dbus_handler=fake)
         with mock.patch("ui.main_window.confirm", return_value=True):
             window.on_restore_defaults()
@@ -133,17 +133,17 @@ class ResetTest(unittest.TestCase):
     def test_reset_from_the_gtk_window_keeps_learning_as_set(self):
         from core import defaults
 
-        fake = FakeDBusHandler({"LearnDiacritics": "True", "GuessDiacritics": "True"})
+        fake = FakeDBusHandler({"LearnDiacritics": "False", "GuessDiacritics": "True"})
         with (
             tempfile.TemporaryDirectory() as home,
             mock.patch.dict(os.environ, {"XDG_DATA_HOME": home}),
         ):
             defaults.restore(fake)
-        self.assertEqual(fake.values["LearnDiacritics"], "True")
+        self.assertEqual(fake.values["LearnDiacritics"], "False")
         self.assertEqual(fake.values["GuessDiacritics"], DEFAULTS["GuessDiacritics"])
 
     def test_reset_button_off_when_only_learning_differs(self):
-        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler({"LearnDiacritics": "True"}))
+        window = NgoSenSettingsWindow(dbus_handler=FakeDBusHandler({"LearnDiacritics": "False"}))
         app.processEvents()
         self.assertFalse(window.btn_reset.isEnabled())
 

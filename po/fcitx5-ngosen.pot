@@ -439,6 +439,14 @@ msgstr ""
 msgid "Show"
 msgstr ""
 
+#: src/ngosen-engine.cpp
+msgid "Đoán dấu learns how you type"
+msgstr ""
+
+#: src/ngosen-engine.cpp
+msgid "To guess marks better, it keeps the words you type with marks on this computer. See what it learned, forget it or turn learning off on the Word guessing page."
+msgstr ""
+
 
 #: src/ngosen-engine.cpp:1057
 msgid "Type"

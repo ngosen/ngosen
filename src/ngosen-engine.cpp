@@ -720,6 +720,36 @@ namespace fcitx {
 #endif
     }
 
+    void NgoSenEngine::announceLearning() {
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        const bool learning = diacritics_ && options_.guessDiacritics && options_.learnDiacritics;
+        if (!learning || *config_.learningAnnounced || (announceLearningTimer_ && announceLearningTimer_->isEnabled()))
+            return;
+        // Waits like announceRelease, for the desktop to come up.
+        constexpr uint64_t delayUs = 5000000;
+        announceLearningTimer_     = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + delayUs, 0, [this](EventSourceTime*, uint64_t) {
+            // Learning may have been turned off while this waited.
+            if (*config_.learningAnnounced || !options_.guessDiacritics || !options_.learnDiacritics)
+                return false;
+            auto* addon = notifications();
+            if (addon == nullptr) {
+                NGOSEN_WARN("No notifications addon; that Đoán dấu learns is not announced");
+                return false;
+            }
+            constexpr int32_t neverExpire = 0;
+            addon->call<INotifications::sendNotification>(
+                "fcitx", 0, "fcitx-ngosen", _("Đoán dấu learns how you type"),
+                _("To guess marks better, it keeps the words you type with marks on this computer. See what it learned, forget it or "
+                  "turn learning off on the Word guessing page."),
+                std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "guessing"}); }, [](uint32_t) {});
+            // Marked only once sent, so a session without notifications tries again next time.
+            config_.learningAnnounced.setValue(true);
+            saveConfig();
+            return false;
+        });
+#endif
+    }
+
     const Configuration* NgoSenEngine::getSubConfig(const std::string& path) const {
         if (path == "custom_keymap")
             return &customKeymap_;
@@ -835,6 +865,7 @@ namespace fcitx {
         // Kept open while Đoán dấu is off, so it learns nothing then either.
         if (diacritics_)
             DiacriticsSetLearning(diacritics_.handle(), options_.guessDiacritics && options_.learnDiacritics ? 1 : 0);
+        announceLearning();
         refreshEngine();
         refreshOption();
         updateInputMethodAction(nullptr);

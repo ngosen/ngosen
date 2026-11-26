@@ -524,6 +524,14 @@ msgstr "Version 1.14: chọn thứ hiện trên khay, đổi dấu trong Gạch 
 msgid "Show"
 msgstr "Xem"
 
+#: src/ngosen-engine.cpp
+msgid "Đoán dấu learns how you type"
+msgstr "Đoán dấu học cách bạn gõ"
+
+#: src/ngosen-engine.cpp
+msgid "To guess marks better, it keeps the words you type with marks on this computer. See what it learned, forget it or turn learning off on the Word guessing page."
+msgstr "Để đoán dấu đúng hơn, Đoán dấu lưu những chữ có dấu bạn gõ, ngay trên máy này. Xem những gì đã học, quên hết hoặc tắt việc học ở trang Đoán chữ."
+
 
 #: src/ngosen-engine.cpp:1057
 msgid "Type"

@@ -54,11 +54,14 @@ class SettingsModel:
         return {key: item[3] for key, item in self.metadata.items()}
 
     def reset_values(self):
-        """What restoring defaults sets: the defaults, less the settings it keeps."""
+        """Every setting as restoring defaults leaves it: the default, or as now if it is kept."""
         defaults = self.defaults()
         if defaults is None:
             return None
-        return {key: value for key, value in defaults.items() if key not in KEPT_ON_RESET}
+        return {
+            key: self.current[key] if key in KEPT_ON_RESET and key in self.current else value
+            for key, value in defaults.items()
+        }
 
     def default(self, key, fallback=""):
         item = self.metadata.get(key)

@@ -103,6 +103,15 @@ class ResetTest(unittest.TestCase):
         self.assertEqual(fake.values["LearnDiacritics"], "True")
         self.assertEqual(fake.values["GuessDiacritics"], DEFAULTS["GuessDiacritics"])
 
+    def test_reset_leaves_nothing_unsaved(self):
+        # A page left changed would let a later save_pending() replace the Undo snapshot.
+        fake = FakeDBusHandler({"LearnDiacritics": "True"})
+        window = NgoSenSettingsWindow(dbus_handler=fake)
+        with mock.patch("ui.main_window.confirm", return_value=True):
+            window.on_restore_defaults()
+        window.save_pending()
+        self.assertEqual(window._modified_pages(), [])
+
     def test_reset_from_the_gtk_window_keeps_learning_as_set(self):
         from core import defaults
 

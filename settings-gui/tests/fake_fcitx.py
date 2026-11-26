@@ -78,12 +78,12 @@ class FakeDBusHandler:
     TCVN3 = str.maketrans({"Õ": "ế", "Ö": "ệ", "µ": "à", "é": "ộ"})
 
     def convert_text(self, text, from_charset, to_charset, letter_case, strip_diacritics):
-        from core.convert import ConvertError
+        from core.ngosen_call import CallError
 
         self.conversions = getattr(self, "conversions", [])
         self.conversions.append((text, from_charset, to_charset, letter_case, strip_diacritics))
         if hasattr(self, "convert_error"):
-            raise ConvertError(self.convert_error)
+            raise CallError(self.convert_error)
         if from_charset == "TCVN3 (ABC)" and to_charset == "Unicode":
             text = text.translate(self.TCVN3)
         return text.upper() if letter_case == 1 else text

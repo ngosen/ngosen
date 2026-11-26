@@ -5,27 +5,9 @@
 
 from i18n import _
 
-NOT_RUNNING = (
-    "org.freedesktop.DBus.Error.ServiceUnknown",
-    "org.freedesktop.DBus.Error.NameHasNoOwner",
-)
-NOT_LOADED = (
-    "org.freedesktop.DBus.Error.UnknownObject",
-    "org.freedesktop.DBus.Error.UnknownInterface",
-)
-# A Ngó Sen from before this page: the object is there, the method is not.
-TOO_OLD = "org.freedesktop.DBus.Error.UnknownMethod"
+from core.ngosen_call import NOT_LOADED, NOT_RUNNING, TOO_OLD, CallError
 
 SETTING_KEYS = ("ConvertFrom", "ConvertTo", "ConvertCase", "ConvertStripDiacritics")
-
-
-class ConvertError(Exception):
-    """name is the D-Bus error name, or None when there is no session bus."""
-
-    def __init__(self, name, message=""):
-        super().__init__(message or name or "")
-        self.name = name
-        self.message = message
 
 
 def case_index(model, value):
@@ -62,6 +44,6 @@ def convert(dbus_handler, model, text):
             case_index(model, model.value_of("ConvertCase")),
             str(model.value_of("ConvertStripDiacritics")).lower() == "true",
         )
-    except ConvertError as e:
+    except CallError as e:
         return None, explain(e)
     return result, None

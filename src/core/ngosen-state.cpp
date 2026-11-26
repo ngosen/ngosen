@@ -176,11 +176,11 @@ namespace ngosen {
         if (auto pulled = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()))) {
             if (pulled && (*pulled.get() != 0)) {
                 NGOSEN_INFO("Commit: " + logged(pulled.get()));
-                commit(pulled.get());
+                const std::string committed = commitGuessInPreedit(pulled.get(), engineTook);
                 // A key the engine leaves to the app (Enter, Ctrl+A, Tab) acts after the word, so it is not the break to take back.
                 ngosen::UniqueCPtr<char> dropped(EnginePullDroppedWord(bambooEngine_.handle()));
                 if (engineTook && !keyEvent.hasModifier())
-                    rememberWord(pulled.get(), dropped.get());
+                    rememberWord(committed, dropped.get());
                 if (ngosen::key::isEnter(currentSym) && !engineTook && !keyEvent.hasModifier())
                     holdEnterAfterCommit(keyEvent);
             }
@@ -698,13 +698,17 @@ namespace ngosen {
     }
 
     void TypingState::commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& engineCommit) {
-        const std::string        commitStr = spelledAtWordEnd(engineCommit);
+        const auto               guess     = takeGuess(engineCommit, oldPreBuffer_);
+        const std::string        commitStr = spelledAtWordEnd(guess ? guess->text : engineCommit);
+        const std::string        inField   = (guess ? spelledAtWordEnd(guess->before) : "") + oldPreBuffer_;
         ngosen::UniqueCPtr<char> dropped(EnginePullDroppedWord(bambooEngine_.handle()));
         std::string              deletedPart;
         std::string              addedPart;
-        ngosen::utf8::compareAndSplitStrings(oldPreBuffer_, commitStr, deletedPart, addedPart);
+        ngosen::utf8::compareAndSplitStrings(inField, commitStr, deletedPart, addedPart);
 
         if (!deletedPart.empty() && keepsWordRaw(deletedPart)) {
+            if (guess)
+                dropGuessRun();
             // This key ends the word, so the next one starts afresh, and the field never showed the word to reopen.
             rawWord_ = false;
             lastWord_.clear();
@@ -713,7 +717,7 @@ namespace ngosen {
             return;
         }
         if (!deletedPart.empty()) {
-            performReplacement(oldPreBuffer_, deletedPart, addedPart);
+            performReplacement(inField, deletedPart, addedPart);
             keyEvent.accept();
         } else {
             bool wasAutoCapitalized = (currentSym != keyEvent.sym());
@@ -728,7 +732,8 @@ namespace ngosen {
         }
 
         hasHistory_ = false;
-        ResetEngine(bambooEngine_.handle());
+        // The word is in the field; the run Đoán dấu guesses goes on.
+        EngineEndWord(bambooEngine_.handle());
         oldPreBuffer_.clear();
         rememberWord(commitStr, dropped.get());
     }

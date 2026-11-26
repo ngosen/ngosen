@@ -283,6 +283,72 @@ namespace {
         return text + host->preedit();
     }
 
+    std::string typeGuessing(const Field& field, const std::string& typed, bool on = true) {
+        FakeResources resources;
+        resources.mutableOptions().guessDiacritics = on;
+        const std::vector<uint32_t> keys(typed.begin(), typed.end());
+        return ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 50));
+    }
+
+    // Types into a FakeApp; after the first `pageAt` keys the page alone sets the field to `pageShows`.
+    std::string typeGuessingInApp(const Field& field, ngosen::Mode mode, const std::string& typed, size_t pageAt = 0, const std::string& pageShows = "") {
+        realMode = mode;
+        realtextLen.store(0);
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().guessDiacritics = true;
+        auto                   owned               = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{});
+        ngosen::test::FakeApp* app                 = owned.get();
+        ngosen::TypingState    state(&resources, std::move(owned));
+        app->attach(&state);
+        for (size_t i = 0; i < typed.size(); ++i) {
+            if (i == pageAt && !pageShows.empty()) {
+                app->pageShowsCell(pageShows);
+                loop.pump(50);
+            }
+            app->type(static_cast<uint32_t>(typed[i]));
+            loop.pump(50);
+        }
+        loop.pump(300);
+        return app->text();
+    }
+
+    void testDiacriticGuess() {
+        const Field reports = makeField("wayland", true);
+        std::string text    = typeGuessing(reports, "toi go phim ");
+        check(text == "tôi gõ phím ", "Đoán dấu: words typed without marks get them", text);
+        text = typeGuessing(reports, "ban phim.");
+        check(text == "bàn phím.", "Đoán dấu: an earlier word changes where the field shows it", text);
+        text = typeGuessing(makeField("wayland", false), "ban phim.");
+        check(text == "bạn phím.", "Đoán dấu: only the last word changes where the field shows nothing", text);
+        text = typeGuessing(reports, "toi go phim ", false);
+        check(text == "toi go phim ", "Đoán dấu: off by default", text);
+        Field password    = reports;
+        password.password = true;
+        text              = typeGuessing(password, "toi go phim ");
+        check(text == "toi go phim ", "Đoán dấu: never in a password field", text);
+
+        realMode = ngosen::Mode::Preedit;
+        FakeLoop      loop;
+        FakeResources resources;
+        resources.mutableOptions().guessDiacritics = true;
+        auto                owned                  = std::make_unique<FakeHost>(loop, makeField("wayland", false));
+        FakeHost*           host                   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        for (char c : std::string("toi go phim "))
+            press(state, static_cast<uint32_t>(c));
+        check(join(host->commits()) == "['tôi ']['gõ ']['phím ']", "Đoán dấu: the preedit commits each word with its marks", join(host->commits()));
+        const auto preedit = ngosen::Mode::Preedit;
+        text               = typeGuessingInApp(reports, preedit, "ban phim.");
+        check(text == "bàn phím.", "Đoán dấu: the preedit changes an earlier word where the field shows it", text);
+        text = typeGuessingInApp(makeField("wayland", false), preedit, "ban phim.");
+        check(text == "bạn phím.", "Đoán dấu: the preedit changes only the last word where the field shows nothing", text);
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban phim.", 4, "bam ");
+        check(text == "bam phim.", "Đoán dấu: an earlier word the page changed stays as the page left it", text);
+        text = typeGuessingInApp(reports, preedit, "ban phim.", 4, "bam ");
+        check(text == "bam phim.", "Đoán dấu: the preedit leaves an earlier word the page changed", text);
+    }
+
     void testCapitalizeStartOfText() {
         const Field field = makeField("wayland", true);
         std::string text  = typeAtStart(field, "", "xin");
@@ -6587,6 +6653,7 @@ int main() {
     testResetAfterAppCommit();
     testLogHidesPasswords();
     testCapitalizeStartOfText();
+    testDiacriticGuess();
     testSenForwards("wayland", true);
     testSenForwards("wayland_v2", true);
     testSenForwards("xim", false);

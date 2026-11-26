@@ -1152,6 +1152,16 @@ namespace ngosen {
         bool        decomposesAtWordEnd() const;
         std::string spelledAtWordEnd(const std::string& word) const;
         void        syncEngineCharset();
+        // A key's commit as Đoán dấu changed it, with the text before it in the field that changes too.
+        struct GuessedCommit {
+            std::string before; ///< what the field shows before the commit from the first word changed; empty if only the commit changes
+            std::string text;   ///< what replaces before and the commit
+        };
+        // The changes Đoán dấu made at this key, when the field still shows before and wordInField after it.
+        std::optional<GuessedCommit> takeGuess(const std::string& commit, const std::string& wordInField);
+        void                         dropGuessRun();
+        // Commits a word from the preedit with Đoán dấu's changes; returns what the field now ends with.
+        std::string commitGuessInPreedit(const std::string& text, bool keyTaken);
         // The engine finished a word: send what differs from the text already typed.
         void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& engineCommit);
         // The field reports no text where the word stood, as after a click on another cell.

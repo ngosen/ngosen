@@ -9,7 +9,7 @@ use crate::{Error, Personal, Table, Typing};
 mod disk;
 
 use disk::Disk;
-pub use disk::SaveJob;
+pub use disk::{SaveJob, SyncJob};
 
 /// Owns the personal dictionary for one user. Each run reads the snapshot taken when it started:
 /// learning, a clear or a reload makes a new snapshot that only later runs see, so a run never mixes

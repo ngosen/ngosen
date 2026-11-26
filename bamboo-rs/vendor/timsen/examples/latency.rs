@@ -66,9 +66,11 @@ fn personal(table: &Arc<Table>, learned: &str, dir: &Path) -> Dictionary {
     let (saved, save_ms) = timed(|| {
         let job = d.begin_save().expect("a save is owed");
         let written = job.write();
-        d.finish_save(job, written)
+        let sync = d.finish_save(job, written)?.expect("nothing came between");
+        let synced = sync.sync();
+        d.finish_sync(sync, synced)
     });
-    assert!(saved.expect("cannot save"));
+    saved.expect("cannot save");
     let bytes = std::fs::metadata(&path).unwrap().len();
     let (d, load_ms) = timed(|| Dictionary::open(Arc::clone(table), &path));
     assert!(d.problem().is_none());

@@ -38,6 +38,19 @@ impl Disk {
 /// A save taken from the dictionary's counts at one moment. [`SaveJob::write`] needs no access to
 /// the dictionary, so an input method can run it after releasing the lock it keeps the dictionary
 /// behind, then hand the result to [`Dictionary::finish_save`].
+///
+/// A whole save, with the lock held only where the dictionary is passed:
+///
+/// ```no_run
+/// # use std::sync::Mutex;
+/// # fn save(dictionary: &Mutex<timsen::Dictionary>) -> std::io::Result<()> {
+/// let Some(job) = dictionary.lock().unwrap().begin_save() else { return Ok(()) };
+/// let written = job.write();
+/// let Some(sync) = dictionary.lock().unwrap().finish_save(job, written)? else { return Ok(()) };
+/// let synced = sync.sync();
+/// dictionary.lock().unwrap().finish_sync(sync, synced)
+/// # }
+/// ```
 pub struct SaveJob {
     snapshot: Arc<Personal<'static>>,
     path: PathBuf,
@@ -64,6 +77,22 @@ impl SaveJob {
         out.into_inner()
             .map_err(io::IntoInnerError::into_error)?
             .sync_all()
+    }
+}
+
+/// A save renamed into place, still to be made to survive a crash. [`SyncJob::sync`] needs no
+/// access to the dictionary; a directory sync can take tens of milliseconds on a busy disk, so an
+/// input method runs it with the lock released, then hands the result to
+/// [`Dictionary::finish_sync`].
+#[must_use = "the save runs until finish_sync takes it"]
+pub struct SyncJob {
+    path: PathBuf,
+}
+
+impl SyncJob {
+    /// Syncs the directory the file was renamed in.
+    pub fn sync(&self) -> io::Result<()> {
+        sync_directory(&self.path)
     }
 }
 
@@ -227,31 +256,47 @@ impl Dictionary {
     }
 
     /// Puts a written save in place of the file, unless a clear or reload came after the save
-    /// began: then the save is dropped and the file is still owed one. Returns whether the file
-    /// was replaced.
-    pub fn finish_save(&mut self, job: SaveJob, written: io::Result<()>) -> io::Result<bool> {
+    /// began: then the save is dropped and the file is still owed one. The rename happens here,
+    /// under the caller's lock, so a clear or reload can never come between the check and it.
+    ///
+    /// Returns the sync still owed when the file was replaced; the save runs, and
+    /// [`Dictionary::begin_save`] gives nothing, until [`Dictionary::finish_sync`] takes it.
+    pub fn finish_save(
+        &mut self,
+        job: SaveJob,
+        written: io::Result<()>,
+    ) -> io::Result<Option<SyncJob>> {
         let tmp = temporary(&job.path);
         let current = self.disk.as_mut().filter(|d| d.path == job.path);
         let Some(disk) = current.filter(|d| d.saving) else {
             let _ = fs::remove_file(&tmp);
-            return Ok(false);
+            return Ok(None);
         };
-        disk.saving = false;
         if job.generation != self.generation || disk.broken.is_some() {
+            disk.saving = false;
             let _ = fs::remove_file(&tmp);
-            return Ok(false);
+            return Ok(None);
         }
         if let Err(e) = written.and_then(|()| fs::rename(&tmp, &job.path)) {
+            disk.saving = false;
             let _ = fs::remove_file(&tmp);
             return Err(e);
         }
         disk.pending.drain(..job.pending);
         disk.dirty = !disk.pending.is_empty();
-        if let Err(e) = sync_directory(&job.path) {
-            // The rename may not survive a crash, so the file is owed another save.
+        Ok(Some(SyncJob { path: job.path }))
+    }
+
+    /// Ends a save with the result of [`SyncJob::sync`]. A failed sync leaves the file owed
+    /// another save, since the rename may not survive a crash.
+    pub fn finish_sync(&mut self, job: SyncJob, synced: io::Result<()>) -> io::Result<()> {
+        let Some(disk) = self.disk.as_mut().filter(|d| d.path == job.path) else {
+            return synced;
+        };
+        disk.saving = false;
+        if synced.is_err() {
             disk.dirty = true;
-            return Err(e);
         }
-        Ok(true)
+        synced
     }
 }

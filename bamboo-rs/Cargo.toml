@@ -14,7 +14,7 @@ crate-type = ["staticlib", "rlib"]
 [dependencies]
 bamboo-core = ">=0.5.2, <0.7"
 libc = "0.2"
-timsen = { git = "https://github.com/ngosen/timsen", rev = "0cc1becf8861dc1cc8aa95511a626e038554611c" }
+timsen = { git = "https://github.com/ngosen/timsen", rev = "5409844ec5b32ae07179f31ac44a878076ad26ed" }
 
 [profile.release]
 lto = true

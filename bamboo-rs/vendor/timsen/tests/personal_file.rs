@@ -45,10 +45,17 @@ impl Drop for Dir {
     }
 }
 
+/// A save as an input method runs it: only `begin_save`, `finish_save` and `finish_sync` need the
+/// dictionary, so writing and syncing can happen with its lock released.
 fn save(d: &mut Dictionary) -> bool {
     let job = d.begin_save().expect("a save is owed");
     let written = job.write();
-    d.finish_save(job, written).unwrap()
+    let Some(sync) = d.finish_save(job, written).unwrap() else {
+        return false;
+    };
+    let synced = sync.sync();
+    d.finish_sync(sync, synced).unwrap();
+    true
 }
 
 fn learn(d: &mut Dictionary, text: &str) {
@@ -120,7 +127,7 @@ fn a_clear_racing_a_save_leaves_an_empty_dictionary_on_disk() {
     let written = job.write();
     d.clear();
     assert!(
-        !d.finish_save(job, written).unwrap(),
+        d.finish_save(job, written).unwrap().is_none(),
         "the save began before the clear"
     );
     assert!(d.is_dirty());
@@ -174,7 +181,10 @@ fn one_save_runs_at_a_time() {
     assert!(d.begin_save().is_none());
     learn(&mut d, "gỗ quý");
     let written = job.write();
-    assert!(d.finish_save(job, written).unwrap());
+    let sync = d.finish_save(job, written).unwrap().unwrap();
+    assert!(d.begin_save().is_none(), "the save runs until it is synced");
+    let synced = sync.sync();
+    d.finish_sync(sync, synced).unwrap();
     assert!(d.is_dirty(), "learned during the save");
     assert!(save(&mut d));
     assert!(!d.is_dirty());
@@ -289,9 +299,10 @@ fn a_rename_not_synced_still_owes_a_save() {
     }
     let job = d.begin_save().unwrap();
     let written = job.write();
-    let finished = d.finish_save(job, written);
+    let sync = d.finish_save(job, written).unwrap().expect("renamed");
+    let synced = sync.sync();
     fs::set_permissions(&dir.0, fs::Permissions::from_mode(0o700)).unwrap();
-    assert!(finished.is_err());
+    assert!(d.finish_sync(sync, synced).is_err());
     assert!(d.is_dirty(), "the save may not survive a crash");
     d.reload_file().unwrap();
     assert!(

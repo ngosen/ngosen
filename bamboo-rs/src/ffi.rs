@@ -438,7 +438,13 @@ fn save_diacritics(store: &DiacriticsStore, wait: bool) -> bool {
     let save = std::thread::spawn(move || {
         let written = job.write();
         // A failed save leaves the dictionary owing one, so the next save tries again.
-        let _ = lock_dictionary(&dictionary).finish_save(job, written);
+        let Ok(Some(sync)) = lock_dictionary(&dictionary).finish_save(job, written) else {
+            return;
+        };
+        // The directory sync is slow on a busy disk, so it runs without holding the dictionary,
+        // which every typed word needs.
+        let synced = sync.sync();
+        let _ = lock_dictionary(&dictionary).finish_sync(sync, synced);
     });
     if wait {
         let _ = save.join();

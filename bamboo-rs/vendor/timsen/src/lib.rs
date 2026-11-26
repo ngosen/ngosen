@@ -14,7 +14,7 @@ mod table;
 mod tone;
 mod typing;
 
-pub use dictionary::{Dictionary, SaveJob};
+pub use dictionary::{Dictionary, SaveJob, SyncJob};
 pub use personal::{MAX_WEIGHT, Personal};
 pub use run::{Change, MAX_RUN, Reach, Run};
 pub use table::{Error, Table};

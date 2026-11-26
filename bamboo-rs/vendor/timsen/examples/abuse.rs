@@ -365,9 +365,11 @@ fn dictionary_in_any_order(table: &Arc<Table>, path: &Path, rng: &mut Rng) -> us
             _ => {
                 if let Some(j) = job.take() {
                     let written = j.write();
-                    let replaced = d.finish_save(j, written).unwrap();
+                    let sync = d.finish_save(j, written).unwrap();
                     assert!(!tmp.exists(), "a temporary file was left");
-                    if replaced {
+                    if let Some(sync) = sync {
+                        let synced = sync.sync();
+                        d.finish_sync(sync, synced).unwrap();
                         let saved = fs::read(path).unwrap();
                         assert!(Personal::load_shared(Arc::clone(table), saved.as_slice()).is_ok());
                     }

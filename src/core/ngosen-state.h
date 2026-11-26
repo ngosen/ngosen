@@ -1159,8 +1159,9 @@ namespace ngosen {
         };
         // The changes Đoán dấu made at this key, when the field still shows before and wordInField after it.
         std::optional<GuessedCommit> takeGuess(const std::string& commit, const std::string& wordInField);
+        bool                         fieldShowsGuessed(const std::string& before, const std::string& wordInField) const;
         void                         dropGuessRun();
-        // Commits a word from the preedit with Đoán dấu's changes; returns what the field now ends with.
+        // Commits a word from the preedit with Đoán dấu's changes; returns the word Backspace may reopen.
         std::string commitGuessInPreedit(const std::string& text, bool keyTaken);
         // The engine finished a word: send what differs from the text already typed.
         void commitWord(ngosen::KeyPress& keyEvent, uint32_t currentSym, const std::string& keyUtf8, const std::string& engineCommit);

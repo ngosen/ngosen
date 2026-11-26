@@ -93,7 +93,8 @@ namespace ngosen {
             return;
         EngineSetFixing(bambooEngine_.handle(), engine_->options().guessFixesTypos ? 1 : 0);
         // Earlier words are replaced only where the field shows they are still there.
-        EngineSetWholeRun(bambooEngine_.handle(), reportsTextInTime() && host_->surrounding().isValid() ? 1 : 0);
+        const Surrounding s = host_->surrounding();
+        EngineSetWholeRun(bambooEngine_.handle(), reportsTextInTime() && s.isValid() && !s.text().empty() ? 1 : 0);
     }
 
     // An editor deletes exactly through its text, but in a terminal the shell decides what a Backspace
@@ -742,7 +743,8 @@ namespace ngosen {
         // The word is in the field; the run Đoán dấu guesses goes on.
         EngineEndWord(bambooEngine_.handle());
         oldPreBuffer_.clear();
-        rememberWord(commitStr, dropped.get());
+        // Undoing the last word alone would take the changed earlier words with it.
+        rememberWord(guess && !guess->before.empty() ? "" : commitStr, dropped.get());
     }
 
     void TypingState::rememberWord(const std::string& committed, const char* dropped) {

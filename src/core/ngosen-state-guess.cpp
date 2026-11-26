@@ -29,8 +29,7 @@ namespace ngosen {
             return std::nullopt;
         }
         GuessedCommit guess{.before = old.substr(0, old.size() - commit.size()), .text = std::string(texts.substr(old.size()))};
-        // Earlier words are replaced only while the field still shows them.
-        if (!guess.before.empty() && !typedBeforeCursor(spelledAtWordEnd(guess.before) + wordInField)) {
+        if (!fieldShowsGuessed(guess.before, wordInField)) {
             NGOSEN_INFO("Guess: kept as typed, the field no longer shows the words");
             dropGuessRun();
             return std::nullopt;
@@ -39,8 +38,18 @@ namespace ngosen {
         return guess;
     }
 
+    // The last word may change wherever the field could still show it; earlier words only where it does.
+    bool TypingState::fieldShowsGuessed(const std::string& before, const std::string& wordInField) const {
+        if (before.empty())
+            return typedBeforeCursor(wordInField);
+        const Surrounding s = host_->surrounding();
+        return reportsTextInTime() && s.isValid() && !s.text().empty() && s.cursor() == s.anchor() && endsBeforeCursor(s, spelledAtWordEnd(before) + wordInField, false);
+    }
+
     // The engine believes its changes reached the field; ending the run keeps it from building on them.
     void TypingState::dropGuessRun() {
+        if (diacritics_ == 0)
+            return;
         EngineSetDiacritics(bambooEngine_.handle(), 0);
         EngineSetDiacritics(bambooEngine_.handle(), diacritics_);
     }
@@ -65,7 +74,8 @@ namespace ngosen {
         std::string addedPart;
         utf8::compareAndSplitStrings(guess->before, guess->text, deletedPart, addedPart);
         performReplacement(guess->before, deletedPart, addedPart);
-        return guess->text;
+        // Undoing the last word alone would take the changed earlier words with it.
+        return "";
     }
 
 } // namespace ngosen

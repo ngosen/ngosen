@@ -293,24 +293,33 @@ namespace {
         return ngosen::test::typeInApp(resources, field, {}, keys, std::vector<int>(keys.size(), 50));
     }
 
-    // Types into a FakeApp; after the first `pageAt` keys the page alone sets the field to `pageShows`.
-    std::string typeGuessingInApp(const Field& field, ngosen::Mode mode, const std::string& typed, size_t pageAt = 0, const std::string& pageShows = "") {
+    struct GuessRun {
+        size_t                  pageAt = 0; // after this many keys the page alone sets the field to pageShows
+        std::string             pageShows;
+        ngosen::test::AppQuirks quirks;
+        bool                    doubleSpace = false;
+        int                     keyMs       = 50;
+    };
+
+    // Types into a FakeApp; \b in `typed` is a Backspace.
+    std::string typeGuessingInApp(const Field& field, ngosen::Mode mode, const std::string& typed, const GuessRun& run = {}) {
         realMode = mode;
         realtextLen.store(0);
         FakeLoop      loop;
         FakeResources resources;
-        resources.mutableOptions().guessDiacritics = true;
-        auto                   owned               = std::make_unique<ngosen::test::FakeApp>(loop, field, ngosen::test::AppQuirks{});
+        resources.mutableOptions().guessDiacritics     = true;
+        resources.mutableOptions().doubleSpaceToPeriod = run.doubleSpace;
+        auto                   owned                   = std::make_unique<ngosen::test::FakeApp>(loop, field, run.quirks);
         ngosen::test::FakeApp* app                 = owned.get();
         ngosen::TypingState    state(&resources, std::move(owned));
         app->attach(&state);
         for (size_t i = 0; i < typed.size(); ++i) {
-            if (i == pageAt && !pageShows.empty()) {
-                app->pageShowsCell(pageShows);
+            if (i == run.pageAt && !run.pageShows.empty()) {
+                app->pageShowsCell(run.pageShows);
                 loop.pump(50);
             }
-            app->type(static_cast<uint32_t>(typed[i]));
-            loop.pump(50);
+            app->type(typed[i] == '\b' ? ngosen::key::BackSpace : static_cast<uint32_t>(typed[i]));
+            loop.pump(run.keyMs);
         }
         loop.pump(300);
         return app->text();
@@ -350,10 +359,25 @@ namespace {
         check(text == "bàn phím.", "Đoán dấu: the preedit changes an earlier word where the field shows it", text);
         text = typeGuessingInApp(makeField("wayland", false), preedit, "ban phim.");
         check(text == "bạn phím.", "Đoán dấu: the preedit changes only the last word where the field shows nothing", text);
-        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban phim.", 4, "bam ");
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban phim.", {.pageAt = 4, .pageShows = "bam "});
         check(text == "bam phim.", "Đoán dấu: an earlier word the page changed stays as the page left it", text);
-        text = typeGuessingInApp(reports, preedit, "ban phim.", 4, "bam ");
+        text = typeGuessingInApp(reports, preedit, "ban phim.", {.pageAt = 4, .pageShows = "bam "});
         check(text == "bam phim.", "Đoán dấu: the preedit leaves an earlier word the page changed", text);
+        for (const auto mode : {ngosen::Mode::Sen, preedit}) {
+            const std::string name = mode == preedit ? " (preedit)" : "";
+            text                   = typeGuessingInApp(reports, mode, "ban phimsc \b");
+            check(text == "bàn phím", "Đoán dấu: Backspace after a change to an earlier word takes only the space" + name, text);
+        }
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "toi ", {.pageAt = 3, .pageShows = "XYZ"});
+        check(text == "XYZ ", "Đoán dấu: a word the page replaced stays as the page left it", text);
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban phim.", {.quirks = {.reportsEmptyText = true}});
+        check(text == "bạn phím.", "Đoán dấu: a field that reports no text changes only the last word", text);
+        Field address = reports;
+        address.url   = true;
+        text          = typeGuessingInApp(address, preedit, "ban phim.ab ", {.quirks = {.reportDelayMs = 60, .lagMs = 40}, .keyMs = 5});
+        check(text == "bạn phím.ab ", "Đoán dấu: a lagging field keeps earlier words, and keys typed after stay in order", text);
+        text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban  phim.", {.doubleSpace = true});
+        check(text == "bạn. phím.", "Đoán dấu: the word after a double space still gets its marks", text);
         testGuessAfterFieldShowsText();
     }
 

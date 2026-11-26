@@ -100,11 +100,35 @@ Hoàn tác.
   Chữ đang hiện đúng phím đã gõ như `tunx` thì bấm `Ctrl` để thêm dấu thành `tũn`.
   Ở chế độ Gõ Sen, bấm tiếp thì từ đổi qua lại giữa chữ có dấu và đúng phím đã gõ: `tieengs` + `Ctrl` `Ctrl`
   ra `tieengs`. Từ tiếng Anh lỡ bị thêm dấu cũng lấy lại được như vậy.
+- **Đoán dấu:** gõ không dấu `toi di hoc` thì ra `tôi đi học`. Tắt sẵn; bật ở trang **Đoán chữ** trong
+  cửa sổ cài đặt, nơi có thêm lựa chọn sửa cả âm tiết gõ sai và mức mạnh tay khi sửa. Đoán dấu học từ chữ
+  bạn gõ để đoán sát cách bạn viết; xem [Đoán chữ học gì](#doan-chu-hoc-gi).
 - **Gõ tắt (macro):** tự theo chữ hoa: `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
   bằng một nút bấm.
 
 Chi tiết từng version ở [CHANGELOG.md](CHANGELOG.md), những gì sắp làm ở [ROADMAP.md](ROADMAP.md).
+
+<a id="doan-chu-hoc-gi"></a>
+
+### Đoán chữ học gì
+
+Khi Đoán dấu bật, nó học từ chữ bạn gõ. Việc học bật sẵn; lần đầu học, Ngó Sen báo một lần bằng thông
+báo của desktop.
+
+- **Học gì:** chữ có dấu mà Ngó Sen đã đưa vào ô, gồm chữ bạn tự gõ có dấu và chữ bạn bấm Backspace để giữ
+  nguyên như đã gõ sau khi đoán sai. Không học chữ máy tự đoán, không học chữ bung ra từ gõ tắt.
+- **Lưu gì:** các cụm 1, 2 và 3 chữ liền nhau kèm số lần gặp, cả chỗ bắt đầu và kết thúc một đoạn gõ.
+  Ghép các cụm lại có thể đọc ra những câu ngắn bạn đã gõ.
+- **Khi nào:** khi một đoạn gõ kết thúc: rời ô, bấm chuột, nhấn Enter, hoặc gõ đủ 200 âm tiết. Chữ gõ rồi
+  xoá bằng Backspace vẫn có thể đã được học.
+- **Không học:** trong ô mật khẩu hay ô báo là riêng tư, và trong terminal khi Ngó Sen nhận ra terminal
+  đang giấu chữ (đoán theo dấu hiệu nên có thể sót). Không học ở chế độ Off, hay khi tắt Đoán dấu hoặc
+  tắt học.
+- **Lưu ở đâu:** `~/.local/share/ngosen/learned-diacritics`, dạng văn bản thường, chỉ bạn đọc được. Ghi 5
+  phút một lần khi có gì mới, và khi fcitx5 thoát. Không gửi đi đâu.
+- **Xem, quên, tắt:** trang **Đoán chữ** có nút **Xem**, nút **Quên hết** và công tắc **Học từ chữ bạn
+  gõ**. "Khôi phục mặc định" không xoá những gì đã học và giữ nguyên công tắc học.
 
 <a id="che-do-go"></a>
 

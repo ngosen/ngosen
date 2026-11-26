@@ -10,6 +10,13 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+### Thêm
+
+- Đoán dấu: gõ không dấu `toi di hoc` ra `tôi đi học`, bật ở trang mới **Đoán chữ** trong cửa sổ cài đặt.
+  Trang này có thêm lựa chọn sửa cả âm tiết gõ sai, với ba mức thận trọng, vừa, mạnh. Đoán dấu học từ chữ
+  bạn gõ để đoán sát cách bạn viết; việc học bật sẵn, báo một lần bằng thông báo, và trang Đoán chữ có nút
+  Xem, Quên hết cùng lời nói rõ học gì, lưu ở đâu. Chữ bung ra từ gõ tắt không bao giờ được học.
+
 ## [1.14.3-1] — 26/11/2026
 
 Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz.vn): chữ vừa sửa dấu không còn thỉnh thoảng mất ("người" ra "ời") khi ô quay lại focus chỉ trong chốc lát (#1025). Trong WPS Office 12 qua IBus, thêm dấu không còn giữ lại chữ cũ ("tiếng" ra "tieêngếng") và trong bảng tính dấu vừa thêm không còn hay mất (#1027).

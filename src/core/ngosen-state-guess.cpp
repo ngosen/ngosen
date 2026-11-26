@@ -8,6 +8,7 @@
 #include "ngosen-strings.h"
 #include "ngosen-utf8.h"
 #include <string>
+#include <utility>
 
 namespace ngosen {
 
@@ -52,6 +53,57 @@ namespace ngosen {
             return;
         EngineSetDiacritics(bambooEngine_.handle(), 0);
         EngineSetDiacritics(bambooEngine_.handle(), diacritics_);
+    }
+
+    // Backspace right after a fixed word: the field takes the fix back and the word reopens as typed.
+    std::optional<std::string> TypingState::takeBackFix() {
+        const Surrounding s = host_->surrounding();
+        if (diacritics_ == 0 || lastWord_.empty() || !reportsTextInTime() || !s.isValid() || s.cursor() != s.anchor() || !endsBeforeCursor(s, lastWord_, false))
+            return std::nullopt;
+        const UniqueCPtr<char> shown(EngineUndoFix(bambooEngine_.handle()));
+        if (!shown)
+            return std::nullopt;
+        const std::string committed = std::exchange(lastWord_, std::string());
+        droppedWord_.clear();
+        // The engine already reopened the word; it must not stay open over text the field does not show.
+        if (spelledAtWordEnd(shown.get()) != committed) {
+            NGOSEN_INFO("Undo fix: kept, the field shows another word");
+            ResetEngine(bambooEngine_.handle());
+            return std::nullopt;
+        }
+        NGOSEN_INFO("Undo fix");
+        const UniqueCPtr<char> typed(EnginePullPreedit(bambooEngine_.handle()));
+        return std::string(typed ? typed.get() : "");
+    }
+
+    bool TypingState::undoFixInField(ngosen::KeyPress& keyEvent) {
+        if (!oldPreBuffer_.empty() || !canSendBackspaces())
+            return false;
+        const std::string committed = lastWord_;
+        const auto        typed     = takeBackFix();
+        if (!typed)
+            return false;
+        std::string deletedPart;
+        std::string addedPart;
+        utf8::compareAndSplitStrings(committed, *typed, deletedPart, addedPart);
+        is_deleting_.store(false, std::memory_order_release);
+        keyEvent.accept();
+        performReplacement(oldPreBuffer_, deletedPart, addedPart);
+        oldPreBuffer_ = *typed;
+        hasHistory_   = true;
+        return true;
+    }
+
+    bool TypingState::undoFixInPreedit(ngosen::KeyPress& keyEvent) {
+        const size_t length = utf8::length(lastWord_);
+        const auto   typed  = takeBackFix();
+        if (!typed)
+            return false;
+        keyEvent.accept();
+        deleteBeforeCursor(length);
+        host_->showPreedit(*typed, false);
+        host_->refreshPreedit();
+        return true;
     }
 
     std::string TypingState::commitGuessInPreedit(const std::string& text, bool keyTaken) {

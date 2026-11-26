@@ -298,6 +298,7 @@ namespace {
         std::string             pageShows;
         ngosen::test::AppQuirks quirks;
         bool                    doubleSpace = false;
+        bool                    fixesTypos  = false;
         int                     keyMs       = 50;
     };
 
@@ -309,6 +310,7 @@ namespace {
         FakeResources resources;
         resources.mutableOptions().guessDiacritics     = true;
         resources.mutableOptions().doubleSpaceToPeriod = run.doubleSpace;
+        resources.mutableOptions().guessFixesTypos     = run.fixesTypos;
         auto                   owned                   = std::make_unique<ngosen::test::FakeApp>(loop, field, run.quirks);
         ngosen::test::FakeApp* app                 = owned.get();
         ngosen::TypingState    state(&resources, std::move(owned));
@@ -378,6 +380,15 @@ namespace {
         check(text == "bạn phím.ab ", "Đoán dấu: a lagging field keeps earlier words, and keys typed after stay in order", text);
         text = typeGuessingInApp(reports, ngosen::Mode::Sen, "ban  phim.", {.doubleSpace = true});
         check(text == "bạn. phím.", "Đoán dấu: the word after a double space still gets its marks", text);
+        for (const auto mode : {ngosen::Mode::Sen, preedit}) {
+            const std::string name = mode == preedit ? " (preedit)" : "";
+            text                   = typeGuessingInApp(reports, mode, "toi go phmi ", {.fixesTypos = true});
+            check(text == "tôi gõ phím ", "Đoán dấu: a syllable typed wrong is fixed" + name, text);
+            text = typeGuessingInApp(reports, mode, "toi go phmi \b ", {.fixesTypos = true});
+            check(text == "tôi gõ phmi ", "Đoán dấu: Backspace right after a fix brings back what was typed" + name, text);
+            text = typeGuessingInApp(makeField("wayland", false), mode, "toi go phmi \b ", {.fixesTypos = true});
+            check(text == "tôi gõ phím ", "Đoán dấu: Backspace after a fix in a field that shows nothing only deletes" + name, text);
+        }
         testGuessAfterFieldShowsText();
     }
 

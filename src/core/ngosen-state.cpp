@@ -160,7 +160,7 @@ namespace ngosen {
         const bool               startsWord = !shownBefore || *shownBefore.get() == 0;
         // The app may change its text as soon as the preedit shows.
         const Surrounding beforeKey = startsWord ? host_->surrounding() : Surrounding();
-        if (ngosen::key::isBackspace(currentSym) && reopenWordInPreedit(keyEvent))
+        if (ngosen::key::isBackspace(currentSym) && (undoFixInPreedit(keyEvent) || reopenWordInPreedit(keyEvent)))
             return;
         if (ngosen::key::isBackspace(currentSym) && engine_->options().backspaceRemovesTone) {
             ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
@@ -384,7 +384,7 @@ namespace ngosen {
 
         if (ngosen::key::isBackspace(currentSym) || currentSym == ngosen::key::Return) {
             if (ngosen::key::isBackspace(currentSym)) {
-                if (restoreDroppedWord(keyEvent) || replaceKeysShownAsTyped(keyEvent))
+                if (undoFixInField(keyEvent) || restoreDroppedWord(keyEvent) || replaceKeysShownAsTyped(keyEvent))
                     return;
                 dropLetterForBackspace();
             } else {

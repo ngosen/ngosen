@@ -8,7 +8,9 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <dlfcn.h>
+#include <string>
 #include <utility>
 
 namespace {
@@ -131,6 +133,13 @@ namespace {
     using GetFocusFn      = XcbVoidCookie (*)(XcbConnection*);
     using FocusReplyFn    = XcbFocusReply* (*)(XcbConnection*, XcbVoidCookie, XcbGenericError**);
     using SendEventFn     = XcbVoidCookie (*)(XcbConnection*, uint8_t, uint32_t, uint32_t, const char*);
+    using GetPropertyFn   = XcbVoidCookie (*)(XcbConnection*, uint8_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+    using PropReplyFn     = void* (*)(XcbConnection*, XcbVoidCookie, XcbGenericError**);
+    using PropValueFn     = void* (*)(const void*);
+    using PropLengthFn    = int (*)(const void*);
+
+    constexpr uint32_t WmClassAtom = 67;
+    constexpr uint32_t StringAtom  = 31;
 
     constexpr uint32_t KeyPressMask   = 1;
     constexpr uint32_t KeyReleaseMask = 2;
@@ -157,6 +166,10 @@ namespace {
             getFocus_      = reinterpret_cast<GetFocusFn>(dlsym(xcb, "xcb_get_input_focus"));
             focusReply_    = reinterpret_cast<FocusReplyFn>(dlsym(xcb, "xcb_get_input_focus_reply"));
             sendEvent_     = reinterpret_cast<SendEventFn>(dlsym(xcb, "xcb_send_event"));
+            getProperty_   = reinterpret_cast<GetPropertyFn>(dlsym(xcb, "xcb_get_property"));
+            propReply_     = reinterpret_cast<PropReplyFn>(dlsym(xcb, "xcb_get_property_reply"));
+            propValue_     = reinterpret_cast<PropValueFn>(dlsym(xcb, "xcb_get_property_value"));
+            propLength_    = reinterpret_cast<PropLengthFn>(dlsym(xcb, "xcb_get_property_value_length"));
             if (connect_ && hasError_ && flush_ && disconnect_ && getSetup_ && rootsIterator_ && getFocus_ && focusReply_ && sendEvent_) {
                 open();
             } else {
@@ -169,23 +182,8 @@ namespace {
         }
 
         bool send(int count) {
-            // Xwayland restarts when the compositor stops it while no X client is left.
-            if (hasError_(conn_) != 0) {
-                disconnect_(conn_);
-                conn_ = nullptr;
-                open();
-                if (conn_ == nullptr) {
-                    return false;
-                }
-            }
-            XcbFocusReply* reply = focusReply_(conn_, getFocus_(conn_), nullptr);
-            if (reply == nullptr) {
-                return false;
-            }
-            const uint32_t window = reply->focus;
-            std::free(reply);
-            // None (0) and PointerRoot (1) are not client windows.
-            if (window <= 1) {
+            const uint32_t window = focusWindow();
+            if (window == 0) {
                 return false;
             }
             for (int i = 0; i < count; ++i) {
@@ -196,7 +194,47 @@ namespace {
             return true;
         }
 
+        // The instance part of WM_CLASS.
+        std::string focusedClass() {
+            if (getProperty_ == nullptr || propReply_ == nullptr || propValue_ == nullptr || propLength_ == nullptr) {
+                return {};
+            }
+            const uint32_t window = focusWindow();
+            if (window == 0) {
+                return {};
+            }
+            void* reply = propReply_(conn_, getProperty_(conn_, 0, window, WmClassAtom, StringAtom, 0, 64), nullptr);
+            if (reply == nullptr) {
+                return {};
+            }
+            const char*       value = static_cast<const char*>(propValue_(reply));
+            const int         size  = propLength_(reply);
+            const std::string name  = size > 0 ? std::string(value, strnlen(value, static_cast<size_t>(size))) : std::string();
+            std::free(reply);
+            return name;
+        }
+
       private:
+        uint32_t focusWindow() {
+            // Xwayland restarts when the compositor stops it while no X client is left.
+            if (hasError_(conn_) != 0) {
+                disconnect_(conn_);
+                conn_ = nullptr;
+                open();
+                if (conn_ == nullptr) {
+                    return 0;
+                }
+            }
+            XcbFocusReply* reply = focusReply_(conn_, getFocus_(conn_), nullptr);
+            if (reply == nullptr) {
+                return 0;
+            }
+            const uint32_t window = reply->focus;
+            std::free(reply);
+            // None (0) and PointerRoot (1) are not client windows.
+            return window <= 1 ? 0 : window;
+        }
+
         void open() {
             XcbConnection* conn = connect_(nullptr, nullptr);
             if (conn == nullptr || hasError_(conn) != 0) {
@@ -232,6 +270,10 @@ namespace {
         GetFocusFn      getFocus_      = nullptr;
         FocusReplyFn    focusReply_    = nullptr;
         SendEventFn     sendEvent_     = nullptr;
+        GetPropertyFn   getProperty_   = nullptr;
+        PropReplyFn     propReply_     = nullptr;
+        PropValueFn     propValue_     = nullptr;
+        PropLengthFn    propLength_    = nullptr;
     };
 
     const XTest& display() {
@@ -252,6 +294,11 @@ namespace {
     std::function<bool(int)>& testXSender() {
         static std::function<bool(int)> sender;
         return sender;
+    }
+
+    std::function<std::string()>& testXClass() {
+        static std::function<std::string()> source;
+        return source;
     }
 } // namespace
 
@@ -290,4 +337,15 @@ bool xsendKeys(int count) {
 
 void setXSendSenderForTest(std::function<bool(int)> sender) {
     testXSender() = std::move(sender);
+}
+
+std::string xFocusedWindowClass() {
+    if (testXClass()) {
+        return testXClass()();
+    }
+    return xwayland().available() ? xwayland().focusedClass() : std::string();
+}
+
+void setXFocusedClassForTest(std::function<std::string()> source) {
+    testXClass() = std::move(source);
 }

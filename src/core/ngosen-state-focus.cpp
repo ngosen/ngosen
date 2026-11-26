@@ -15,6 +15,8 @@ namespace ngosen {
         constexpr int64_t FocusBounceMs = 100;
         // A rich text editor in Chrome on GNOME leaves focus for a moment after each deletion.
         constexpr int64_t FocusReturnMs = 40;
+        // It can also come back for a moment between two of those departures.
+        constexpr int64_t FocusSettleMs = 15;
         // A field that bounces again and again redraws its editor (Draft.js in Chrome on GNOME) and
         // drops a commit that arrives before the redraw our backspaces cause (#175), so the commit
         // waits until those bounces have come and gone, but no longer than RedrawWaitMs.
@@ -218,5 +220,9 @@ namespace ngosen {
 
     bool TypingState::focusMayReturn() const {
         return lastDeactivateTime_ > 0 && nowMs() - lastDeactivateTime_ < FocusReturnMs;
+    }
+
+    bool TypingState::focusJustReturned() const {
+        return fieldBounces_ > 0 && lastBounceAt_ > 0 && nowMs() - lastBounceAt_ < FocusSettleMs;
     }
 } // namespace ngosen

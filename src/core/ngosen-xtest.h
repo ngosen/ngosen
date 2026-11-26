@@ -6,6 +6,7 @@
 #pragma once
 
 #include <functional>
+#include <string>
 
 // Presses keys through the X server's XTEST extension. They travel like real keys, through the input
 // method and then to the focused window, so the backspace bookkeeping applies unchanged. Only on an X11
@@ -25,3 +26,7 @@ void setXTestSenderForTest(std::function<bool(int)> sender);
 bool xsendAvailable();
 bool xsendKeys(int count);
 void setXSendSenderForTest(std::function<bool(int)> sender);
+
+// Under Xwayland: the WM_CLASS instance of the focused X window, or "" when there is none.
+std::string xFocusedWindowClass();
+void        setXFocusedClassForTest(std::function<std::string()> source);

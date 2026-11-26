@@ -260,10 +260,12 @@ namespace ngosen {
         surr_wait_.focusRetries = 0;
         settle_reason_          = reason;
         surr_wait_.deliverAt    = ngosen::monotonicUs() + (static_cast<uint64_t>(settleMs) * 1000ULL);
-        replaceTimer(settle_timer_, startWaitTimer(surr_wait_.deliverAt, [this](ngosen::Timer&) {
+        replaceTimer(settle_timer_, startWaitTimer(surr_wait_.deliverAt, [this](ngosen::Timer& t) {
                          if (!surr_wait_.pending || !surr_wait_.timerOnly || !is_deleting_.load()) {
                              return false;
                          }
+                         if (waitsForFieldToSettle(t))
+                             return true;
                          finishReplacement(settle_reason_, false);
                          return false;
                      }));

@@ -3507,7 +3507,7 @@ namespace {
         text = typed({.reportsEmptyText = true}, "tiee");
         check(text == "tieê", "quirk: a field that reports no text drops the deletion", text);
         text = typed({.convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true}, "vieetj nam tieesng");
-        // The copy stays "tie" while the app holds tiê, then tíê: the deletion asks for as many copy
+        // The copy stays "tie" while the app holds tiê, then tiế: the deletion asks for as many copy
         // characters as the real ones have bytes.
         check(text == "việt nam tiếng", "quirk: bytes counted on an old copy delete whole letters", text);
         {
@@ -3828,8 +3828,8 @@ namespace {
         std::vector<std::string> lines;
         ngosen::test::Path       sent;
         for (const auto& quirks : {ngosen::test::AppQuirks{.reportDelayMs = 300}, ngosen::test::AppQuirks{.reportDelayMs = 300, .repeatsOldTextAfterDelete = true}}) {
-            const auto text = typedWithBackspaces(makeField("ibus", true), quirks, "tieesng<<ng", 120, lines, &sent);
-            check(text == "tiếng" && sent.surroundingDeletes > 0 && sent.forwardedBackSpaces > 0, "both paths: one word mixes them and stays right", text + " " + join(lines));
+            const auto text = typedWithBackspaces(makeField("ibus", true), quirks, "tieesng<<nf", 120, lines, &sent);
+            check(text == "tiền" && sent.surroundingDeletes > 0 && sent.forwardedBackSpaces > 0, "both paths: one word mixes them and stays right", text + " " + join(lines));
         }
     }
 
@@ -3858,13 +3858,13 @@ namespace {
     void testLateReportAfterBackspace() {
         const Field              gnome = makeField("ibus", true);
         std::vector<std::string> lines;
-        const std::string        typed = "muoons tieesng<<ng ";
+        const std::string        typed = "muoons tieesng<<nf ";
         std::vector<int>         gapsMs(typed.size(), 500);
         // From the s of the word, so the report of its commit lands just before the key after the Backspaces.
         gapsMs[11] = 20;
-        std::fill(gapsMs.begin() + 12, gapsMs.begin() + 16, 15);
+        std::fill(gapsMs.begin() + 12, gapsMs.begin() + 17, 18);
         auto text = typedWithBackspaces(gnome, {.reportDelayMs = 80, .reportsTextAtChange = true}, typed, gapsMs, lines);
-        check(text == "muốn tiếng " && !lastReplacementDeletedThroughCopy(lines), "late report: the word goes on through backspaces after the user's Backspace",
+        check(text == "muốn tiền " && !lastReplacementDeletedThroughCopy(lines), "late report: the word goes on through backspaces after the user's Backspace",
               text + " " + join(lines));
 
         text = typedWithBackspaces(gnome, {}, "too<oo too ", 400, lines);
@@ -4514,8 +4514,8 @@ namespace {
             qt.preeditFallback = true;
             const auto lines =
                 replaceLines(resources, qt, {.dropsForwardedKeys = true, .reportsTextOnceFilled = true, .convertsDeleteOnReportedCopy = true, .reportsNothingAfterDelete = true},
-                             "nam tieesng<<ng ", run);
-            check(run.text == "nam tiếng " && countHaving(lines, "method=surrounding") == 3, "Qt over GNOME Shell: a word typed again after backspaces",
+                             "nam tieesng<<nf ", run);
+            check(run.text == "nam tiền " && countHaving(lines, "method=surrounding") == 3, "Qt over GNOME Shell: a word typed again after backspaces",
                   run.text + " " + join(lines));
         }
         {
@@ -5350,8 +5350,10 @@ namespace {
         typeAt("vieetj tieesng ", 150);
         app->setReportDelay(laterDelayMs);
         ngosen::test::captureLog(true);
-        for (int i = 0; i < laterRounds; ++i)
+        for (int i = 0; i < laterRounds; ++i) {
+            ngosen::test::capturedLog().push_back("Test: round " + std::to_string(i + 1));
             typeAt("nguwx cuar ddeepj nguwowif tieengs vieetj ", laterGapMs);
+        }
         auto lines = ngosen::test::capturedLog();
         ngosen::test::captureLog(false);
         lines.push_back("text=" + app->text());
@@ -5389,7 +5391,9 @@ namespace {
         const auto behind = replacementsAfterLateWords(true, 600, 150, 3);
         check(behind.back() == "text=tiếng việt tiếng ngữ của đệp người tiếng việt ngữ của đệp người tiếng việt ngữ của đệp người tiếng việt ",
               "wlroots copies stay late: the words come out right", behind.back());
-        check(countHaving(behind, "Wait for the copy again") <= 2, "wlroots copies stay late: the copy wait comes back at most twice", join(behind));
+        const auto lastRound = std::find(behind.begin(), behind.end(), "Test: round 3");
+        const auto waitAgain = [](const std::string& line) { return line.find("Wait for the copy again") != std::string::npos; };
+        check(lastRound != behind.end() && std::none_of(lastRound, behind.end(), waitAgain), "wlroots copies stay late: the copy wait stops coming back", join(behind));
     }
 
     // A copy that comes a moment late is no reason to leave the surrounding path.

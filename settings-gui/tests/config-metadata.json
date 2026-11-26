@@ -356,6 +356,13 @@
     {}
    ],
    [
+    "LearnDiacritics",
+    "Boolean",
+    "Learn from what you type",
+    "False",
+    {}
+   ],
+   [
     "RawWordAfterSlash",
     "Boolean",
     "Type a word that starts with / as is",

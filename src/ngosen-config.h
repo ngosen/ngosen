@@ -346,6 +346,7 @@ namespace fcitx {
         Option<bool> rawWordAfterSlash{this, "RawWordAfterSlash", _("Type a word that starts with / as is"), ngosen::defaultOptions.rawWordAfterSlash};
         Option<bool> guessDiacritics{this, "GuessDiacritics", _("Add marks to words typed without them"), ngosen::defaultOptions.guessDiacritics};
         Option<bool> guessFixesTypos{this, "GuessFixesTypos", _("Also fix syllables typed wrong"), ngosen::defaultOptions.guessFixesTypos};
+        Option<bool> learnDiacritics{this, "LearnDiacritics", _("Learn from what you type"), ngosen::defaultOptions.learnDiacritics};
         Option<bool> emojiSuggestions{this, "EmojiSuggestions", _("Suggest emoji while typing"), ngosen::defaultOptions.emojiSuggestions};
         Option<bool> yahooEmoticons{this, "YahooEmoticons", _("Yahoo Messenger emoticons"), ngosen::defaultOptions.yahooEmoticons};
         Option<bool> englishEmojiKeywords{this, "EnglishEmojiKeywords", _("English keywords"), ngosen::defaultOptions.englishEmojiKeywords};

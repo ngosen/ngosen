@@ -5,6 +5,7 @@
 //! Đoán dấu for one field: the run of words since it started, guessed by the personal dictionary
 //! every field shares, and the changes the front end applies to what the field shows.
 
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use timsen::{Change, Dictionary, FIX_MARGIN, Reach, Run, ToneStyle};
@@ -28,8 +29,41 @@ pub struct FieldChange {
 /// there instead.
 pub type Replacement = (String, String);
 
+/// Whether the fields learn, shared by all of them. `epoch` moves on every change, so a run that
+/// was open across one learns nothing, even when learning is back on by its end.
+pub struct Learning {
+    on: AtomicBool,
+    epoch: AtomicU64,
+}
+
+impl Learning {
+    pub fn new(on: bool) -> Learning {
+        Learning {
+            on: AtomicBool::new(on),
+            epoch: AtomicU64::new(0),
+        }
+    }
+
+    pub fn set(&self, on: bool) {
+        if self.on.swap(on, Ordering::SeqCst) != on {
+            self.epoch.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+
+    fn epoch(&self) -> u64 {
+        self.epoch.load(Ordering::SeqCst)
+    }
+
+    fn allows(&self, epoch: u64) -> bool {
+        self.on.load(Ordering::SeqCst) && self.epoch() == epoch
+    }
+}
+
 pub struct Diacritics {
     dictionary: Arc<Mutex<Dictionary>>,
+    learning: Arc<Learning>,
+    /// The learning epoch when the run started.
+    run_epoch: u64,
     run: Option<Run<'static>>,
     /// The run's words as committed: one typed with marks is known to be right and is learned.
     typed: Vec<String>,
@@ -44,6 +78,8 @@ pub struct Diacritics {
     learned: usize,
     /// Words of the run committed again as typed after their fix was undone: learned as typed.
     undone: Vec<usize>,
+    /// Words of the run a macro put there: the user did not type them, so they are never learned.
+    from_macro: Vec<usize>,
     /// The word an undo took back, as typed: committed again unchanged, it stays so.
     reopened: Option<String>,
     /// What the last commit put after its last word, until anything else is committed or a key
@@ -110,9 +146,12 @@ pub(crate) fn words_of(text: &str) -> Vec<&str> {
 }
 
 impl Diacritics {
-    pub fn new(dictionary: Arc<Mutex<Dictionary>>) -> Diacritics {
+    pub fn new(dictionary: Arc<Mutex<Dictionary>>, learning: Arc<Learning>) -> Diacritics {
+        let run_epoch = learning.epoch();
         Diacritics {
             dictionary,
+            learning,
+            run_epoch,
             run: None,
             typed: Vec::new(),
             changes: Vec::new(),
@@ -120,6 +159,7 @@ impl Diacritics {
             over: false,
             learned: 0,
             undone: Vec::new(),
+            from_macro: Vec::new(),
             reopened: None,
             tail: None,
             fixing: true,
@@ -188,9 +228,10 @@ impl Diacritics {
         Some((shown, typed))
     }
 
-    /// What the engine committed at a word end, and its keys. Anything but letters and spaces
-    /// ends the run where it stands, so a macro of two sentences makes two runs.
-    pub fn committed(&mut self, text: &str, keys: &str) {
+    /// What the engine committed at a word end, and its keys; `typed` is false for a macro's text.
+    /// Anything but letters and spaces ends the run where it stands, so a macro of two sentences
+    /// makes two runs.
+    pub fn committed(&mut self, text: &str, keys: &str, typed: bool) {
         // The keys end with the one that ended the word, and read one word only.
         let keys = keys.trim_end_matches(|c: char| !c.is_alphanumeric());
         let keys = (words_of(text).len() == 1).then_some(keys);
@@ -204,6 +245,9 @@ impl Diacritics {
             if !word.is_empty() {
                 let as_typed = !open && reopened.as_deref() == Some(word);
                 self.push(word, keys, as_typed);
+                if !typed {
+                    self.from_macro.push(self.typed.len() - 1);
+                }
                 self.field.push((word.to_string(), after));
                 open = true;
             } else if let Some((_, last)) = self.field.last_mut() {
@@ -265,9 +309,14 @@ impl Diacritics {
             let typing = lock(&self.dictionary).typing();
             let margin = self.margin();
             self.run = self.run.take().map(|full| full.next(typing).fixing(margin));
+            self.run_epoch = self.learning.epoch();
             self.typed.clear();
             self.undone.clear();
+            self.from_macro.clear();
             self.learned = 0;
+        }
+        if self.run.is_none() {
+            self.run_epoch = self.learning.epoch();
         }
         let (dictionary, margin) = (&self.dictionary, self.margin());
         let run = self.run.get_or_insert_with(|| {
@@ -289,16 +338,18 @@ impl Diacritics {
 
     /// Learns the words of the run not learned yet that were typed with marks, or committed again
     /// as typed after an undo, and are still shown so; a guessed word, or one whose raw reading
-    /// replaced it, is not known to be right.
+    /// replaced it, is not known to be right. Nothing when learning is off, or was off at any
+    /// time since the run started.
     fn learn(&mut self) {
         let shown = self.run.as_ref().map_or(&[][..], Run::shown);
         let run: Vec<Option<&str>> = (self.typed.iter().zip(shown).enumerate())
             .map(|(k, (w, s))| {
-                let right = without_diacritics(w) != *w || self.undone.contains(&k);
+                let right = (without_diacritics(w) != *w || self.undone.contains(&k))
+                    && !self.from_macro.contains(&k);
                 (k >= self.learned && right && w == s).then_some(w.as_str())
             })
             .collect();
-        if run.iter().any(Option::is_some) {
+        if self.learning.allows(self.run_epoch) && run.iter().any(Option::is_some) {
             lock(&self.dictionary).learn(&run);
         }
         self.learned = shown.len();
@@ -317,6 +368,7 @@ impl Diacritics {
         self.over = false;
         self.typed.clear();
         self.undone.clear();
+        self.from_macro.clear();
         self.learned = 0;
         self.reopened = None;
         self.tail = None;

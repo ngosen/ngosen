@@ -72,6 +72,7 @@ extern void      EngineEndWord(uintptr_t engine);
 extern uintptr_t DiacriticsOpen(const char* table, const char* dictionary);
 extern char*     DiacriticsProblem(uintptr_t diacritics);
 extern uint8_t   DiacriticsSave(uintptr_t diacritics, uint8_t wait);
+extern void      DiacriticsSetLearning(uintptr_t diacritics, uint8_t on);
 extern uint8_t   EngineKeptAtLastKey(uintptr_t engine);
 extern uint8_t   EngineShownAsTyped(uintptr_t engine);
 // 1 when the input method can compose a word with the key, as VNI does with digits.

@@ -18,7 +18,9 @@ use bamboo_core::advanced::charset_names;
 use bamboo_core::{BracketMode, Config, InputMethod, ToneStyle, W2uMode};
 
 use crate::convert::{LetterCase, convert};
-use crate::engine::{BambooEngine, Dictionary, INPUT_METHOD_NAMES, WordList, input_method_by_name};
+use crate::engine::{
+    BambooEngine, Dictionary, INPUT_METHOD_NAMES, Learning, WordList, input_method_by_name,
+};
 use crate::handles::{self, DiacriticsStore, Object};
 use crate::macro_table::MacroTable;
 use crate::spelling::VietnameseSpelling;
@@ -399,8 +401,18 @@ pub unsafe extern "C" fn DiacriticsOpen(table: *const c_char, dictionary: *const
     let dictionary = timsen::Dictionary::open(Arc::new(table), dictionary);
     handles::new_handle(Object::Diacritics(Arc::new(DiacriticsStore {
         dictionary: Arc::new(Mutex::new(dictionary)),
+        // Nothing is learned until the front end says the user wants it.
+        learning: Arc::new(Learning::new(false)),
         saving: Mutex::default(),
     })))
+}
+
+/// Turns learning on or off in every field; a run open while it changes learns nothing.
+#[unsafe(no_mangle)]
+pub extern "C" fn DiacriticsSetLearning(handle: usize, on: u8) {
+    if let Some(store) = handles::diacritics(handle) {
+        store.learning.set(on != 0);
+    }
 }
 
 /// Why the personal dictionary file did not load; null when it did.
@@ -460,7 +472,7 @@ fn save_diacritics(store: &DiacriticsStore, wait: bool) -> bool {
 pub extern "C" fn EngineSetDiacritics(engine: usize, handle: usize) {
     let store = handles::diacritics(handle);
     handles::with_engine(engine, |e| match store {
-        Some(store) => e.set_diacritics(Arc::clone(&store.dictionary)),
+        Some(store) => e.set_diacritics(Arc::clone(&store.dictionary), Arc::clone(&store.learning)),
         None => e.remove_diacritics(),
     });
 }

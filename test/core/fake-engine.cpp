@@ -103,6 +103,7 @@ namespace ngosen::test {
     void FakeResources::learnDiacriticsInto(const std::string& path) {
         DeleteObject(diacritics_);
         diacritics_ = DiacriticsOpen(NGOSEN_TEST_DIACRITICS, path.c_str());
+        DiacriticsSetLearning(diacritics_, 1);
     }
 
     bool FakeResources::learnedDiacritics() {

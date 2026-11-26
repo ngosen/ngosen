@@ -195,6 +195,10 @@ msgid "Also fix syllables typed wrong"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "Learn from what you type"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Type a word that starts with / as is"
 msgstr ""
 
@@ -1064,6 +1068,10 @@ msgid "Adding marks"
 msgstr ""
 
 #: settings-gui/core/catalog.py
+msgid "Learning"
+msgstr ""
+
+#: settings-gui/core/catalog.py
 msgid "Fixing words"
 msgstr ""
 
@@ -1479,6 +1487,12 @@ msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "phmi becomes phím. Off, a syllable no word matches stays as typed."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid ""
+"Words you type with marks are kept on this computer so guesses fit how you "
+"write. Never in password fields, and never sent anywhere."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py

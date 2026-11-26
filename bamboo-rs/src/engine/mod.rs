@@ -31,9 +31,9 @@ mod elongated;
 mod packed;
 mod teencode;
 
-pub use diacritics::Diacritics;
 #[cfg(test)]
 pub use diacritics::FieldChange;
+pub use diacritics::{Diacritics, Learning};
 
 #[cfg(test)]
 mod options_tests;
@@ -372,6 +372,8 @@ pub struct BambooEngine {
     fix_undoable: bool,
     /// Whether the key being handled committed text.
     committed_now: bool,
+    /// The text about to be committed is a macro's, which Đoán dấu never learns.
+    commits_macro: bool,
     /// A field that has been a password or sensitive field, which never reaches Đoán dấu again.
     pub(crate) private_field: bool,
 }
@@ -407,6 +409,7 @@ impl BambooEngine {
             diacritics: None,
             fix_undoable: false,
             committed_now: false,
+            commits_macro: false,
             private_field: false,
         }
     }
@@ -979,6 +982,7 @@ impl BambooEngine {
         {
             let expanded = self.expand_macro(old_text, macro_val);
             self.preeditor.reset();
+            self.commits_macro = true;
             return (format!("{expanded}{key}"), true);
         }
         if let Some(kept) = &self.kept {
@@ -1060,12 +1064,13 @@ impl BambooEngine {
     }
 
     pub(crate) fn commit_preedit_and_reset(&mut self, s: String) {
+        let typed = !std::mem::take(&mut self.commits_macro);
         if !self.private_field {
             let keys = self.raw_text();
             let style = self.guess_style();
             if let Some(d) = &mut self.diacritics {
                 d.set_style(style);
-                d.committed(&s, &keys);
+                d.committed(&s, &keys, typed);
             }
         }
         self.commit_text = s;
@@ -1263,6 +1268,7 @@ impl BambooEngine {
 
     fn tab(&mut self, old_text: String) -> bool {
         if let Some(macro_text) = self.get_macro_text() {
+            self.commits_macro = true;
             self.commit_preedit_and_reset(macro_text);
             return true;
         }
@@ -1297,7 +1303,10 @@ impl BambooEngine {
                 let enter = (key_val == KEY_RETURN || key_val == KEY_KP_ENTER)
                     && Self::is_valid_state(state);
                 let text = match self.get_macro_text() {
-                    Some(macro_text) if enter => macro_text,
+                    Some(macro_text) if enter => {
+                        self.commits_macro = true;
+                        macro_text
+                    }
                     // Gõ Sen keeps the word as shown on other keys, so Preedit fixes it on Enter only.
                     _ if enter && self.kept.is_none() => self
                         .retoned_word()
@@ -1400,8 +1409,12 @@ impl BambooEngine {
         })
     }
 
-    pub fn set_diacritics(&mut self, dictionary: Arc<std::sync::Mutex<timsen::Dictionary>>) {
-        self.diacritics = Some(Diacritics::new(dictionary));
+    pub fn set_diacritics(
+        &mut self,
+        dictionary: Arc<std::sync::Mutex<timsen::Dictionary>>,
+        learning: Arc<Learning>,
+    ) {
+        self.diacritics = Some(Diacritics::new(dictionary, learning));
     }
 
     /// The field's text changes charset from here, so the run, kept in the old one, ends.

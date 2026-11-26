@@ -345,6 +345,7 @@ fn a_waiting_save_waits_for_the_one_running() {
             dir.join("learned"),
         ))),
         saving: Mutex::default(),
+        learning: Arc::new(crate::engine::Learning::new(true)),
     };
     lock_dictionary(&store.dictionary).learn(&[Some("ngó"), Some("sen")]);
     assert!(save_diacritics(&store, false));

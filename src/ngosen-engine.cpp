@@ -770,6 +770,7 @@ namespace fcitx {
         o.rawWordAfterSlash              = config_.rawWordAfterSlash.value();
         o.guessDiacritics                = config_.guessDiacritics.value();
         o.guessFixesTypos                = config_.guessFixesTypos.value();
+        o.learnDiacritics                = config_.learnDiacritics.value();
         o.emojiSuggestions               = config_.emojiSuggestions.value();
         o.yahooEmoticons                 = config_.yahooEmoticons.value();
         o.englishEmojiKeywords           = config_.englishEmojiKeywords.value();
@@ -801,6 +802,9 @@ namespace fcitx {
         ngosen::setUiVietnamese(*config_.uiLanguage == UiLanguage::Vietnamese);
         syncOptions();
         openDiacritics();
+        // Kept open while Đoán dấu is off, so it learns nothing then either.
+        if (diacritics_)
+            DiacriticsSetLearning(diacritics_.handle(), options_.guessDiacritics && options_.learnDiacritics ? 1 : 0);
         refreshEngine();
         refreshOption();
         updateInputMethodAction(nullptr);

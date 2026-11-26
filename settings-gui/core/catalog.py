@@ -71,6 +71,7 @@ SETTINGS_MAP = {
     },
     SettingsCategory.GUESSING: {
         N_("Adding marks"): ["GuessDiacritics", "GuessFixesTypos"],
+        N_("Learning"): ["LearnDiacritics"],
     },
     SettingsCategory.EMOJI: {
         EMOJI_GROUP: [
@@ -180,6 +181,10 @@ HINTS = {
         "Type toi di hoc and get tôi đi học; a word can change again as the next ones come. Backspace right after a word puts it back as typed. Never in password fields."
     ),
     "GuessFixesTypos": N_("phmi becomes phím. Off, a syllable no word matches stays as typed."),
+    "LearnDiacritics": N_(
+        "Words you type with marks are kept on this computer so guesses fit how you write. Never"
+        " in password fields, and never sent anywhere."
+    ),
     "RawWordAfterSlash": N_(
         "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
     ),
@@ -270,6 +275,7 @@ MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
 DEPENDS = {
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
     "GuessFixesTypos": ("GuessDiacritics", "True"),
+    "LearnDiacritics": ("GuessDiacritics", "True"),
     "IconTheme": ("TrayIconKind", ("V / E", "vi / en")),
     "TrayIconSize": ("TrayIconKind", "Colour icon"),
     "TrayImageVietnamese": ("TrayIconKind", "Custom image"),

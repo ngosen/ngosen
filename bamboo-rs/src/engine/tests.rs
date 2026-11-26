@@ -1918,6 +1918,10 @@ fn test_tone_key_after_undone_mark_adds_one_letter() {
     }
 }
 
+fn learning_on() -> Arc<Learning> {
+    Arc::new(Learning::new(true))
+}
+
 fn shared_dictionary() -> Arc<std::sync::Mutex<timsen::Dictionary>> {
     let table = timsen::Table::from_bytes(include_bytes!("tiny.timsen").to_vec()).unwrap();
     Arc::new(std::sync::Mutex::new(timsen::Dictionary::new(Arc::new(
@@ -1957,7 +1961,7 @@ fn type_into(e: &mut BambooEngine, field: &mut Vec<String>, words: &[(&str, char
 
 fn engine_on(dictionary: &Arc<std::sync::Mutex<timsen::Dictionary>>) -> BambooEngine {
     let mut e = new_test_engine(&[], false);
-    e.set_diacritics(Arc::clone(dictionary));
+    e.set_diacritics(Arc::clone(dictionary), learning_on());
     e
 }
 
@@ -2309,9 +2313,9 @@ fn changes_as_text_are_in_the_charset_of_the_field() {
 
 #[test]
 fn a_change_as_text_keeps_what_lies_between_the_words() {
-    let mut d = Diacritics::new(shared_dictionary());
+    let mut d = Diacritics::new(shared_dictionary(), learning_on());
     let mut field = "ban  thich go. ".to_string();
-    d.committed(&field, "");
+    d.committed(&field, "", true);
     let (old, new) = d.pull_field_change().unwrap();
     assert!(field.ends_with(&old));
     field.truncate(field.len() - old.len());
@@ -2398,7 +2402,10 @@ fn a_charset_change_ends_the_run_kept_in_the_old_one() {
 #[test]
 fn changes_as_text_hold_a_tab_a_macro_committed() {
     let mut e = engine_on(&shared_dictionary());
-    e.diacritics.as_mut().unwrap().committed("toi\tgo. ", "");
+    e.diacritics
+        .as_mut()
+        .unwrap()
+        .committed("toi\tgo. ", "", true);
     let text = e.pull_changes_text();
     let (length, rest) = text.split_once('\t').unwrap();
     let (old, new) = rest.split_at(length.parse().unwrap());
@@ -2598,6 +2605,84 @@ fn what_one_field_learns_the_next_run_in_another_restores() {
     assert_eq!(field, ["ngó", "sen"]);
 }
 
+fn engine_learning(
+    dictionary: &Arc<std::sync::Mutex<timsen::Dictionary>>,
+    learning: &Arc<Learning>,
+) -> BambooEngine {
+    let mut e = new_test_engine(&[], false);
+    e.set_diacritics(Arc::clone(dictionary), Arc::clone(learning));
+    e
+}
+
+#[test]
+fn nothing_is_learned_while_learning_is_off() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_learning(&dictionary, &Arc::new(Learning::new(false)));
+    type_into(&mut e, &mut Vec::new(), &[("ngos", ' '), ("sen", '.')]);
+    e.reset();
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn a_run_open_when_learning_is_turned_off_is_never_learned() {
+    for back_on in [false, true] {
+        let dictionary = shared_dictionary();
+        let learning = Arc::new(Learning::new(true));
+        let mut e = engine_learning(&dictionary, &learning);
+        type_into(&mut e, &mut Vec::new(), &[("ngos", ' ')]);
+        learning.set(false);
+        if back_on {
+            learning.set(true);
+        }
+        type_into(&mut e, &mut Vec::new(), &[("sen", '.')]);
+        assert!(dictionary.lock().unwrap().is_empty(), "back on: {back_on}");
+        // The next run starts after the change and learns again.
+        learning.set(true);
+        type_into(&mut e, &mut Vec::new(), &[("ngos", ' '), ("sen", '.')]);
+        assert!(!dictionary.lock().unwrap().is_empty(), "back on: {back_on}");
+    }
+}
+
+#[test]
+fn a_full_run_typed_while_learning_was_off_is_never_learned() {
+    let dictionary = shared_dictionary();
+    let learning = Arc::new(Learning::new(true));
+    let mut e = engine_learning(&dictionary, &learning);
+    type_into(&mut e, &mut Vec::new(), &[("ngos", ' ')]);
+    learning.set(false);
+    // Past the cap the run goes on as a new one, started while learning was off.
+    let words = vec![("ngos", ' '); timsen::MAX_RUN + 5];
+    type_into(&mut e, &mut Vec::new(), &words);
+    learning.set(true);
+    type_into(&mut e, &mut Vec::new(), &[("sen", '.')]);
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn a_macro_is_never_learned_whichever_key_expands_it() {
+    for key in [KEY_SPACE, '.' as u32, KEY_TAB, KEY_RETURN] {
+        let dictionary = shared_dictionary();
+        let mut e = engine_on(&dictionary);
+        e.macro_enabled = true;
+        e.macro_table = macro_table(&[("nsen", "ngó sen")]);
+        type_keys(&mut e, "nsen");
+        e.process_key_event(key, 0);
+        assert!(e.pull_commit().starts_with("ngó sen"), "{key}");
+        e.reset();
+        assert!(dictionary.lock().unwrap().is_empty(), "{key}");
+    }
+}
+
+#[test]
+fn words_typed_beside_a_macro_are_still_learned() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.macro_enabled = true;
+    e.macro_table = macro_table(&[("nsen", "ngó sen")]);
+    type_into(&mut e, &mut Vec::new(), &[("nsen", ' '), ("ngos", '.')]);
+    assert!(!dictionary.lock().unwrap().is_empty());
+}
+
 #[test]
 fn a_run_goes_on_past_the_cap() {
     let mut e = engine_on(&shared_dictionary());
@@ -2610,14 +2695,14 @@ fn a_run_goes_on_past_the_cap() {
 
 #[test]
 fn a_commit_across_the_cap_restores_both_runs() {
-    let mut d = Diacritics::new(shared_dictionary());
+    let mut d = Diacritics::new(shared_dictionary(), learning_on());
     let mut field = Vec::new();
     for _ in 0..timsen::MAX_RUN - 1 {
-        d.committed("ta ", "ta ");
+        d.committed("ta ", "ta ", true);
         field.push("ta".to_string());
     }
     // A macro can commit several words at once; the first fills the run, the second starts the next.
-    d.committed("toi go ", "toi go ");
+    d.committed("toi go ", "toi go ", true);
     field.extend(["toi".to_string(), "go".to_string()]);
     apply_changes(d.pull_changes(), &mut field);
     assert_eq!(field[timsen::MAX_RUN - 1..], ["tôi", "gõ"]);
@@ -2641,14 +2726,14 @@ fn owned_words(text: &str) -> Vec<String> {
 
 #[test]
 fn a_commit_of_two_sentences_ends_the_run_between_them() {
-    let mut whole = Diacritics::new(shared_dictionary());
-    let mut parts = Diacritics::new(shared_dictionary());
+    let mut whole = Diacritics::new(shared_dictionary(), learning_on());
+    let mut parts = Diacritics::new(shared_dictionary(), learning_on());
     let (mut one, mut two) = (Vec::new(), Vec::new());
-    whole.committed("ban thich go. phim ", "");
+    whole.committed("ban thich go. phim ", "", true);
     one.extend(owned_words("ban thich go. phim "));
     apply_changes(whole.pull_changes(), &mut one);
     for text in ["ban thich go.", " phim "] {
-        parts.committed(text, "");
+        parts.committed(text, "", true);
         two.extend(owned_words(text));
         apply_changes(parts.pull_changes(), &mut two);
     }
@@ -2672,10 +2757,10 @@ fn a_private_word_reopened_after_its_commit_is_never_learned() {
 
 #[test]
 fn a_digit_inside_a_commit_ends_the_run_there() {
-    let mut d = Diacritics::new(shared_dictionary());
+    let mut d = Diacritics::new(shared_dictionary(), learning_on());
     let mut field = Vec::new();
     // A macro can commit a digit inside the text; the run ends at it, as at a period.
-    d.committed("ban thich go1 ", "");
+    d.committed("ban thich go1 ", "", true);
     field.extend(owned_words("ban thich go1 "));
     apply_changes(d.pull_changes(), &mut field);
     assert_eq!(field, ["bạn", "thích", "gỗ"]);
@@ -2686,7 +2771,7 @@ fn a_private_word_rebuilt_by_backspace_is_still_never_learned() {
     let dictionary = shared_dictionary();
     let mut e = new_test_engine(&["tôi"], true);
     e.keep_guard = Arc::new(["zzz".to_string()].into_iter().collect());
-    e.set_diacritics(Arc::clone(&dictionary));
+    e.set_diacritics(Arc::clone(&dictionary), learning_on());
     e.set_private(true);
     e.rebuild_from_text("tôi");
     e.set_private(false);

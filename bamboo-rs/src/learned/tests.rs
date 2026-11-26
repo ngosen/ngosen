@@ -86,8 +86,26 @@ fn forgetting_waits_for_a_save_running() {
     let dir = TempDir::new("forget-saving");
     let s = store(&dir.0);
     learn(&s);
-    assert!(crate::ffi::save_diacritics(&s, false));
-    assert_eq!(s.forget(sync), Ok(()));
+    // A save in the background, held until the test lets it go.
+    let (go, wait) = std::sync::mpsc::channel::<()>();
+    let job = lock(&s.dictionary).begin_save().unwrap();
+    let dictionary = Arc::clone(&s.dictionary);
+    *lock(&s.saving) = Some(std::thread::spawn(move || {
+        wait.recv().unwrap();
+        let written = job.write();
+        let finished = lock(&dictionary).finish_save(job, written);
+        if let Ok(Some(job)) = finished {
+            let synced = job.sync();
+            let _ = lock(&dictionary).finish_sync(job, synced);
+        }
+    }));
+    std::thread::scope(|scope| {
+        let forgetting = scope.spawn(|| s.forget(sync));
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        assert!(!forgetting.is_finished(), "forgetting waits for the save");
+        go.send(()).unwrap();
+        assert_eq!(forgetting.join().unwrap(), Ok(()));
+    });
     assert_eq!(lines(&s.path), 1);
     assert!(!lock(&s.dictionary).is_dirty());
 }

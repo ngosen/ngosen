@@ -19,6 +19,7 @@
 #include "ngosen-xtest.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -26,6 +27,8 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#include <unistd.h>
 
 using ngosen::Field;
 using ngosen::test::FakeHost;
@@ -313,6 +316,10 @@ namespace {
         return app->text();
     }
 
+    void        testGuessAfterFieldShowsText();
+    std::string learnedFile();
+    void        testGuessProbeLearnsNothing();
+
     void testDiacriticGuess() {
         const Field reports = makeField("wayland", true);
         std::string text    = typeGuessing(reports, "toi go phim ");
@@ -347,6 +354,101 @@ namespace {
         check(text == "bam phim.", "Đoán dấu: an earlier word the page changed stays as the page left it", text);
         text = typeGuessingInApp(reports, preedit, "ban phim.", 4, "bam ");
         check(text == "bam phim.", "Đoán dấu: the preedit leaves an earlier word the page changed", text);
+        testGuessAfterFieldShowsText();
+    }
+
+    // A show-password button changes the field without moving focus.
+    void testGuessAfterFieldShowsText() {
+        realMode        = ngosen::Mode::Preedit;
+        Field hidden    = makeField("wayland", true);
+        hidden.password = true;
+        Field shown     = hidden;
+        shown.password  = false;
+        {
+            FakeLoop      loop;
+            FakeResources resources;
+            resources.mutableOptions().guessDiacritics = true;
+            auto                owned                  = std::make_unique<FakeHost>(loop, hidden);
+            FakeHost*           host                   = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            for (const char c : std::string("abc"))
+                press(state, static_cast<uint32_t>(c));
+            const std::string begun = host->preedit() + join(host->commits());
+            host->setField(shown);
+            press(state, static_cast<uint32_t>('d'));
+            check(host->preedit() == "abcd", "Đoán dấu: a word begun in a hidden field goes on once the field shows its text", begun + " -> " + host->preedit());
+        }
+        {
+            FakeLoop      loop;
+            FakeResources resources;
+            resources.mutableOptions().guessDiacritics = true;
+            const std::string learned                  = learnedFile();
+            resources.learnDiacriticsInto(learned);
+            auto                owned = std::make_unique<FakeHost>(loop, hidden);
+            FakeHost*           host  = owned.get();
+            ngosen::TypingState state(&resources, std::move(owned));
+            for (const char c : std::string("goox "))
+                press(state, static_cast<uint32_t>(c));
+            const std::string committed = join(host->commits());
+            host->setField(shown);
+            host->setSurrounding("gỗ ", 3, 3);
+            state.surroundingUpdated();
+            const bool taken = press(state, ngosen::key::BackSpace);
+            check(!taken && host->preedit().empty(), "Đoán dấu: a word typed in a hidden field stays out of reach of Backspace once the field shows its text",
+                  committed + " taken=" + std::to_string(taken) + " preedit=" + host->preedit());
+            press(state, ngosen::key::space);
+            // Đoán dấu learns a run when it ends.
+            state.reset(true);
+            check(!resources.learnedDiacritics(), "Đoán dấu: learns nothing from a word typed in a hidden field", "learned");
+            std::filesystem::remove(learned);
+        }
+        {
+            FakeLoop      loop;
+            FakeResources resources;
+            resources.mutableOptions().guessDiacritics = true;
+            const std::string learned                  = learnedFile();
+            resources.learnDiacriticsInto(learned);
+            ngosen::TypingState state(&resources, std::make_unique<FakeHost>(loop, shown));
+            for (const char c : std::string("goox "))
+                press(state, static_cast<uint32_t>(c));
+            state.reset(true);
+            check(resources.learnedDiacritics(), "Đoán dấu: learns a word typed in a field that shows its text", "nothing");
+            std::filesystem::remove(learned);
+        }
+    }
+
+    std::string learnedFile() {
+        const auto path = std::filesystem::temp_directory_path() / ("ngosen-learned-" + std::to_string(::getpid()));
+        std::filesystem::remove(path);
+        return path.string();
+    }
+
+    // A page shortcut letter is tried with the next key to see whether it starts the word; that try is
+    // not typing.
+    void testGuessProbeLearnsNothing() {
+        Field chromium            = makeField("dbus", false, "chromium.desktop");
+        chromium.keyEventOrderFix = true;
+        FakeResources resources;
+        resources.setMacros({{"s", "gõ phím."}});
+        resources.mutableOptions().guessDiacritics = true;
+        const std::string learned                  = learnedFile();
+        resources.learnDiacriticsInto(learned);
+        realMode = ngosen::Mode::Sen;
+        realtextLen.store(0);
+        FakeLoop            loop;
+        auto                owned = std::make_unique<ngosen::test::FakeApp>(loop, chromium, ngosen::test::AppQuirks{});
+        auto*               app   = owned.get();
+        ngosen::TypingState state(&resources, std::move(owned));
+        app->attach(&state);
+        app->focusNewFieldWith("", 5);
+        loop.pump(50);
+        app->pageTakesKey(static_cast<uint32_t>('s'), "", "");
+        loop.pump(100);
+        app->type(' ');
+        loop.pump(300);
+        check(app->text() == " ", "Đoán dấu: a shortcut letter that names a macro still types only the space", app->text());
+        check(!resources.learnedDiacritics(), "Đoán dấu: learns nothing from trying the shortcut letter", "learned");
+        std::filesystem::remove(learned);
     }
 
     void testCapitalizeStartOfText() {
@@ -6654,6 +6756,7 @@ int main() {
     testLogHidesPasswords();
     testCapitalizeStartOfText();
     testDiacriticGuess();
+    testGuessProbeLearnsNothing();
     testSenForwards("wayland", true);
     testSenForwards("wayland_v2", true);
     testSenForwards("xim", false);

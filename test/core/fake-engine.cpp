@@ -100,6 +100,15 @@ namespace ngosen::test {
         macroTable_ = NewMacroTable(pairs.data());
     }
 
+    void FakeResources::learnDiacriticsInto(const std::string& path) {
+        DeleteObject(diacritics_);
+        diacritics_ = DiacriticsOpen(NGOSEN_TEST_DIACRITICS, path.c_str());
+    }
+
+    bool FakeResources::learnedDiacritics() {
+        return DiacriticsSave(diacritics_, 1) != 0;
+    }
+
     FakeResources::~FakeResources() {
         DeleteObject(macroTable_);
         DeleteObject(dictionary_);

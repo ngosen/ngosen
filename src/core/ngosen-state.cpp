@@ -72,9 +72,14 @@ namespace ngosen {
 
     void TypingState::syncDiacritics() {
         const bool hidden = host_->field().hidesText() || hiddenInput_;
-        // The engine stays private once it saw a private word, as Backspace could bring that word back.
-        if (privateField_ && !hidden)
+        const ngosen::UniqueCPtr<char> preedit(EnginePullPreedit(bambooEngine_.handle()));
+        const bool                     wordOpen = !oldPreBuffer_.empty() || (preedit && *preedit.get() != 0);
+        // The private engine finishes the word it holds; the new one must never get that word back.
+        if (privateField_ && !hidden && !wordOpen) {
+            lastWord_.clear();
+            droppedWord_.clear();
             setEngine();
+        }
         if (hidden && !privateField_) {
             EngineSetPrivate(bambooEngine_.handle(), 1);
             privateField_ = true;
@@ -588,11 +593,13 @@ namespace ngosen {
     void TypingState::guessLetterFieldOpenedWith(const ngosen::KeyPress& keyEvent) {
         const std::string letter(1, static_cast<char>(unseenPress_->first));
         unseenPress_.reset();
-        EngineRebuildFromText(bambooEngine_.handle(), letter.c_str());
-        EngineProcessKeyEvent(bambooEngine_.handle(), keyEvent.sym(), keyEvent.states());
-        const auto shown  = ngosen::UniqueCPtr<char>(EnginePullPreedit(bambooEngine_.handle()));
-        const auto commit = ngosen::UniqueCPtr<char>(EnginePullCommit(bambooEngine_.handle()));
-        ResetEngine(bambooEngine_.handle());
+        // A try on its own engine, so Đoán dấu never learns from it.
+        CGoObject trial(newBambooEngine());
+        setOption(trial.handle());
+        EngineRebuildFromText(trial.handle(), letter.c_str());
+        EngineProcessKeyEvent(trial.handle(), keyEvent.sym(), keyEvent.states());
+        const auto shown  = ngosen::UniqueCPtr<char>(EnginePullPreedit(trial.handle()));
+        const auto commit = ngosen::UniqueCPtr<char>(EnginePullCommit(trial.handle()));
         // A key that ends the word, such as Space expanding a macro named after the letter, changes nothing in it.
         if (!shown || (commit && *commit.get() != 0) || letter + host_->keyText(keyEvent.sym()) == shown.get())
             return;

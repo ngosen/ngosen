@@ -148,6 +148,14 @@ namespace fcitx {
 #endif
         }
 
+        std::filesystem::path userDataDir() {
+#if NGOSEN_USE_MODERN_FCITX_API
+            return StandardPaths::global().userDirectory(StandardPathsType::Data) / "ngosen";
+#else
+            return std::filesystem::path(StandardPath::global().userDirectory(StandardPath::Type::Data)) / "ngosen";
+#endif
+        }
+
         void migrateLegacyMode(RawConfig& config) {
             if (const auto* mode = config.valueByPath("Mode"); mode != nullptr && isFormerSenModeName(*mode)) {
                 config.setValueByPath("Mode", "Sen");
@@ -627,14 +635,14 @@ namespace fcitx {
     void NgoSenEngine::openDiacritics() {
         if (diacritics_ || !options_.guessDiacritics)
             return;
-        const std::string dataHome = getEnv("XDG_DATA_HOME");
-        const auto        dir      = (dataHome.empty() ? std::filesystem::path(getEnv("HOME")) / ".local" / "share" : std::filesystem::path(dataHome)) / "ngosen";
-        std::error_code   error;
+        const auto      dir = userDataDir();
+        std::error_code error;
         std::filesystem::create_directories(dir, error);
         // The dictionary learns from what the user typed; keep it from other users.
         std::filesystem::permissions(dir, std::filesystem::perms::owner_all, error);
         std::string table = (dir / "diacritics.timsen").string();
-        if (!std::filesystem::exists(table)) {
+        // A directory the user cannot read must not stop the settings from loading.
+        if (!std::filesystem::exists(table, error)) {
 #if NGOSEN_USE_MODERN_FCITX_API
             table = StandardPaths::global().locate(StandardPathsType::PkgData, "ngosen/diacritics.timsen").string();
 #else

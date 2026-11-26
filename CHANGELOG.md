@@ -26,6 +26,9 @@ Tải ở [ngosen-1.14.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
 - Hai trang hướng dẫn cho AI (`docs/ai-guide.md`, `docs/ai-help.md`) bổ sung cách đổi kiểu gõ, bảng mã,
   khác biệt của bản IBus và cách xử lý thêm các lỗi gõ thường gặp, giúp AI trả lời cách dùng và tìm lỗi
   từ các trang này mà không cần đọc mã nguồn (#991).
+- Nâng thư viện gõ Rust bamboo-core từ 0.6.0 lên 0.6.1. Với kiểu bỏ dấu mặc định, gõ `tieesng` không còn thoáng
+  hiện "tíê" trước khi ra "tiến" mà hiện "tiế" ngay, nên mỗi từ như vậy bớt một lần sửa chữ trong app; `cuow` ra
+  "cươ" thay vì "cuơ"; `ruowifo` ra "ruồi" thay vì để nguyên phím đã gõ (#1009).
 - Gỡ hai tài liệu làm việc (`NGHIEN-CUU-BO-GO-KHAC.md`, `PRODUCT.md`) khỏi kho mã; việc gõ và cài đặt không đổi gì
   (#1003).
 

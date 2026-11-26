@@ -29,11 +29,14 @@ pub struct FieldChange {
 /// there instead.
 pub type Replacement = (String, String);
 
-/// Whether the fields learn, shared by all of them. `epoch` moves on every change, so a run that
-/// was open across one learns nothing, even when learning is back on by its end.
+/// Whether the fields learn, shared by all of them. `epoch` moves on every change and every
+/// forget, so a run that was open across one learns nothing, even when learning is back on by its
+/// end. `forgets` moves on every forget only: a run open across one is dropped, since it still
+/// guesses with what was forgotten.
 pub struct Learning {
     on: AtomicBool,
     epoch: AtomicU64,
+    forgets: AtomicU64,
 }
 
 impl Learning {
@@ -41,7 +44,18 @@ impl Learning {
         Learning {
             on: AtomicBool::new(on),
             epoch: AtomicU64::new(0),
+            forgets: AtomicU64::new(0),
         }
+    }
+
+    /// Everything learned was just forgotten.
+    pub fn forgot(&self) {
+        self.forgets.fetch_add(1, Ordering::SeqCst);
+        self.epoch.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn forgets(&self) -> u64 {
+        self.forgets.load(Ordering::SeqCst)
     }
 
     pub fn set(&self, on: bool) {
@@ -64,6 +78,8 @@ pub struct Diacritics {
     learning: Arc<Learning>,
     /// The learning epoch when the run started.
     run_epoch: u64,
+    /// The forget count when the run started.
+    run_forgets: u64,
     run: Option<Run<'static>>,
     /// The run's words as committed: one typed with marks is known to be right and is learned.
     typed: Vec<String>,
@@ -147,11 +163,12 @@ pub(crate) fn words_of(text: &str) -> Vec<&str> {
 
 impl Diacritics {
     pub fn new(dictionary: Arc<Mutex<Dictionary>>, learning: Arc<Learning>) -> Diacritics {
-        let run_epoch = learning.epoch();
+        let (run_epoch, run_forgets) = (learning.epoch(), learning.forgets());
         Diacritics {
             dictionary,
             learning,
             run_epoch,
+            run_forgets,
             run: None,
             typed: Vec::new(),
             changes: Vec::new(),
@@ -235,6 +252,7 @@ impl Diacritics {
         // The keys end with the one that ended the word, and read one word only.
         let keys = keys.trim_end_matches(|c: char| !c.is_alphanumeric());
         let keys = (words_of(text).len() == 1).then_some(keys);
+        self.drop_forgotten_run();
         let reopened = self.reopened.take();
         let last = text.rfind(char::is_alphabetic);
         let tail = last.map(|i| text[i..].chars().skip(1).collect());
@@ -269,6 +287,7 @@ impl Diacritics {
     /// A key the engine forwards (Enter, Tab, a symbol after a space): the run ends where it is,
     /// and the key, such as Home, may move the cursor off the last word, so its fix stays.
     pub fn ended_at_key(&mut self) {
+        self.drop_forgotten_run();
         self.change(true);
         self.end_run();
         self.reopened = None;
@@ -310,6 +329,7 @@ impl Diacritics {
             let margin = self.margin();
             self.run = self.run.take().map(|full| full.next(typing).fixing(margin));
             self.run_epoch = self.learning.epoch();
+            self.run_forgets = self.learning.forgets();
             self.typed.clear();
             self.undone.clear();
             self.from_macro.clear();
@@ -317,6 +337,7 @@ impl Diacritics {
         }
         if self.run.is_none() {
             self.run_epoch = self.learning.epoch();
+            self.run_forgets = self.learning.forgets();
         }
         let (dictionary, margin) = (&self.dictionary, self.margin());
         let run = self.run.get_or_insert_with(|| {
@@ -349,8 +370,12 @@ impl Diacritics {
                 (k >= self.learned && right && w == s).then_some(w.as_str())
             })
             .collect();
-        if self.learning.allows(self.run_epoch) && run.iter().any(Option::is_some) {
-            lock(&self.dictionary).learn(&run);
+        if run.iter().any(Option::is_some) {
+            // Checked under the lock a forget takes, so none comes between the check and the learning.
+            let mut dictionary = lock(&self.dictionary);
+            if self.learning.allows(self.run_epoch) {
+                dictionary.learn(&run);
+            }
         }
         self.learned = shown.len();
     }
@@ -372,6 +397,12 @@ impl Diacritics {
         self.learned = 0;
         self.reopened = None;
         self.tail = None;
+    }
+
+    fn drop_forgotten_run(&mut self) {
+        if self.run.is_some() && self.run_forgets != self.learning.forgets() {
+            self.drop_run();
+        }
     }
 
     /// A field that turned private: the run ends, and nothing it held is learned.

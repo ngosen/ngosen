@@ -398,9 +398,11 @@ pub unsafe extern "C" fn DiacriticsOpen(table: *const c_char, dictionary: *const
     let Ok(table) = timsen::Table::open(&table) else {
         return 0;
     };
-    let dictionary = timsen::Dictionary::open(Arc::new(table), dictionary);
+    let path = std::path::PathBuf::from(dictionary);
+    let dictionary = timsen::Dictionary::open(Arc::new(table), &path);
     handles::new_handle(Object::Diacritics(Arc::new(DiacriticsStore {
         dictionary: Arc::new(Mutex::new(dictionary)),
+        path,
         // Nothing is learned until the front end says the user wants it.
         learning: Arc::new(Learning::new(false)),
         saving: Mutex::default(),
@@ -438,7 +440,7 @@ pub extern "C" fn DiacriticsSave(handle: usize, wait: u8) -> u8 {
     handles::diacritics(handle).is_some_and(|store| save_diacritics(&store, wait != 0)) as u8
 }
 
-fn save_diacritics(store: &DiacriticsStore, wait: bool) -> bool {
+pub(crate) fn save_diacritics(store: &DiacriticsStore, wait: bool) -> bool {
     let mut saving = store.saving.lock().unwrap_or_else(|e| e.into_inner());
     if wait && let Some(running) = saving.take() {
         let _ = running.join();
@@ -464,6 +466,52 @@ fn save_diacritics(store: &DiacriticsStore, wait: bool) -> bool {
         *saving = Some(save);
     }
     true
+}
+
+/// Saves what was learned and returns once it is on the disk, for the settings window to read the
+/// file. Returns null and sets `written` to whether anything was new, or returns why it failed.
+///
+/// # Safety
+/// `written` points to a writable byte.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn DiacriticsSaveNow(handle: usize, written: *mut u8) -> *mut c_char {
+    let saved = match handles::diacritics(handle) {
+        Some(store) => store.save_now(timsen::SyncJob::sync),
+        None => Ok(crate::learned::Saved::Unchanged),
+    };
+    match saved {
+        Ok(saved) => {
+            // SAFETY: the caller passes a writable byte.
+            unsafe { *written = u8::from(saved == crate::learned::Saved::Written) };
+            std::ptr::null_mut()
+        }
+        Err(e) => c_string(&e),
+    }
+}
+
+/// Forgets everything learned, in every field and in the file. Returns null, or why it failed.
+#[unsafe(no_mangle)]
+pub extern "C" fn DiacriticsForget(handle: usize) -> *mut c_char {
+    match handles::diacritics(handle).map(|store| store.forget(timsen::SyncJob::sync)) {
+        Some(Ok(())) => std::ptr::null_mut(),
+        Some(Err(e)) => c_string(&e),
+        None => c_string("no Đoán dấu is open"),
+    }
+}
+
+/// Forgets the dictionary kept in `path` while no Đoán dấu has it open. Returns null, or why it
+/// failed.
+///
+/// # Safety
+/// `path` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn DiacriticsRemoveFiles(path: *const c_char) -> *mut c_char {
+    // SAFETY: the caller passes a valid C string or null.
+    let path = unsafe { string_from_c(path) };
+    match crate::learned::remove_files(std::path::Path::new(&path)) {
+        Ok(()) => std::ptr::null_mut(),
+        Err(e) => c_string(&e.to_string()),
+    }
 }
 
 /// Gives the engine Đoán dấu with the dictionary of `DiacriticsOpen`, or with 0 takes it away,

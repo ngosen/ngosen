@@ -2683,6 +2683,76 @@ fn words_typed_beside_a_macro_are_still_learned() {
     assert!(!dictionary.lock().unwrap().is_empty());
 }
 
+/// Types `rest` into `field`, then `last` ended by the key `end`.
+fn type_ending(
+    e: &mut BambooEngine,
+    field: &mut Vec<String>,
+    rest: &[(&str, char)],
+    last: &str,
+    end: u32,
+) {
+    type_into(e, field, rest);
+    type_keys(e, last);
+    e.process_key_event(end, 0);
+    commit_into(e, field);
+    apply_changes(e.pull_changes(), field);
+}
+
+/// A field whose run opened with `opening`, while the dictionary held ngó sen, goes on after
+/// everything learned is forgotten. Returns the field and whether anything was learned.
+fn typed_across_a_forget(
+    opening: &[(&str, char)],
+    go_on: impl FnOnce(&mut BambooEngine, &mut Vec<String>),
+) -> (Vec<String>, bool) {
+    let dictionary = shared_dictionary();
+    let learning = learning_on();
+    let mut teacher = engine_learning(&dictionary, &learning);
+    type_into(
+        &mut teacher,
+        &mut Vec::new(),
+        &[("ngos", ' '), ("sen", '.')],
+    );
+    let mut e = engine_learning(&dictionary, &learning);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, opening);
+    dictionary.lock().unwrap().clear();
+    learning.forgot();
+    go_on(&mut e, &mut field);
+    e.reset();
+    let learned = !dictionary.lock().unwrap().is_empty();
+    (field, learned)
+}
+
+#[test]
+fn a_run_open_across_a_forget_stops_guessing_with_what_was_forgotten() {
+    for end in ['.' as u32, KEY_TAB] {
+        let mut never_learned = Vec::new();
+        let mut e = engine_on(&shared_dictionary());
+        type_ending(
+            &mut e,
+            &mut never_learned,
+            &[("ta", ' '), ("ngo", ' ')],
+            "sen",
+            end,
+        );
+        let (field, _) = typed_across_a_forget(&[("ta", ' ')], |e, field| {
+            type_ending(e, field, &[("ngo", ' ')], "sen", end);
+        });
+        assert_eq!(field, never_learned, "{end}");
+    }
+}
+
+#[test]
+fn a_run_open_across_a_forget_learns_nothing() {
+    let (_, learned) = typed_across_a_forget(&[("ngos", ' ')], |e, field| {
+        type_into(e, field, &[("sen", '.')]);
+    });
+    assert!(!learned, "typing on");
+    // Turning Đoán dấu off ends the run with nothing committed first.
+    let (_, learned) = typed_across_a_forget(&[("ngos", ' ')], |e, _| e.remove_diacritics());
+    assert!(!learned, "turned off");
+}
+
 #[test]
 fn a_run_goes_on_past_the_cap() {
     let mut e = engine_on(&shared_dictionary());

@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <string>
+#include <tuple>
 
 namespace fcitx {
 
@@ -29,6 +30,10 @@ namespace fcitx {
         std::string convertText(const std::string& text, const std::string& from, const std::string& to, int32_t letterCase, bool stripDiacritics);
         // For a desktop shortcut; returns whether Vietnamese is on.
         bool toggleVietnamese();
+        // For the Word guessing page. Results come as values, so the window tells them from a D-Bus error.
+        std::tuple<std::string, std::string> diacriticsStatus();
+        std::tuple<std::string, std::string> saveLearned();
+        std::tuple<bool, std::string>        forgetLearned();
 
       private:
         NgoSenEngine* engine_;
@@ -36,6 +41,9 @@ namespace fcitx {
         FCITX_OBJECT_VTABLE_METHOD(gnomePortalAnswered, "GnomePortalAnswered", "", "b");
         FCITX_OBJECT_VTABLE_METHOD(convertText, "ConvertText", "sssib", "s");
         FCITX_OBJECT_VTABLE_METHOD(toggleVietnamese, "ToggleVietnamese", "", "b");
+        FCITX_OBJECT_VTABLE_METHOD(diacriticsStatus, "DiacriticsStatus", "", "ss");
+        FCITX_OBJECT_VTABLE_METHOD(saveLearned, "SaveLearned", "", "ss");
+        FCITX_OBJECT_VTABLE_METHOD(forgetLearned, "ForgetLearned", "", "bs");
     };
 
 } // namespace fcitx

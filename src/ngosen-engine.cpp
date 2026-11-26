@@ -529,6 +529,35 @@ namespace fcitx {
         return nullptr;
     }
 
+    std::pair<std::string, std::string> NgoSenEngine::diacriticsStatus() const {
+        if (!diacritics_)
+            return {options_.guessDiacritics ? "missing" : "off", ""};
+        const ngosen::UniqueCPtr<char> problem(DiacriticsProblem(diacritics_.handle()));
+        return {"loaded", problem ? problem.get() : ""};
+    }
+
+    std::pair<std::string, std::string> NgoSenEngine::saveLearned() {
+        uint8_t                        written = 0;
+        const ngosen::UniqueCPtr<char> error(DiacriticsSaveNow(diacritics_.handle(), &written));
+        if (error) {
+            NGOSEN_WARN(std::string("Could not save what Đoán dấu learned: ") + error.get());
+            return {"failed", error.get()};
+        }
+        return {written != 0 ? "saved" : "unchanged", ""};
+    }
+
+    std::pair<bool, std::string> NgoSenEngine::forgetLearned() {
+        // Kept while Đoán dấu is off, and saved at exit, so it must forget too.
+        const std::string              learned = (userDataDir() / "learned-diacritics").string();
+        const ngosen::UniqueCPtr<char> error(diacritics_ ? DiacriticsForget(diacritics_.handle()) : DiacriticsRemoveFiles(learned.c_str()));
+        if (error) {
+            NGOSEN_WARN(std::string("Could not forget what Đoán dấu learned: ") + error.get());
+            return {false, error.get()};
+        }
+        NGOSEN_INFO("Đoán dấu forgot what it learned.");
+        return {true, ""};
+    }
+
     bool NgoSenEngine::gnomePortalAnswered() const {
 #ifdef NGOSEN_HAS_DBUS
         if (gnomeShell_)

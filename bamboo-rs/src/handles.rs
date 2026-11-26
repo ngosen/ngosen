@@ -23,6 +23,8 @@ pub enum Object {
 /// Đoán dấu's personal dictionary, which every field shares, and the save writing it, if any.
 pub struct DiacriticsStore {
     pub dictionary: Arc<Mutex<timsen::Dictionary>>,
+    /// The file the dictionary is kept in.
+    pub path: std::path::PathBuf,
     pub learning: Arc<crate::engine::Learning>,
     pub saving: Mutex<Option<std::thread::JoinHandle<()>>>,
 }

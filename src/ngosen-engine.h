@@ -231,6 +231,14 @@ namespace fcitx {
         // Vietnamese is on, or nothing when fcitx5 would not switch the field to Ngó Sen.
         std::optional<bool> toggleFromShortcut();
 
+        // For the settings window. Đoán dấu's table is "off" (never opened), "loaded" or "missing",
+        // with why the file of what it learned did not load, if it did not.
+        std::pair<std::string, std::string> diacriticsStatus() const;
+        // Saves what Đoán dấu learned: "saved", "unchanged" or "failed", with why it failed.
+        std::pair<std::string, std::string> saveLearned();
+        // Forgets what Đoán dấu learned, in memory and on disk; on failure, why.
+        std::pair<bool, std::string> forgetLearned();
+
         // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
         std::string getProgramName(InputContext* ic) const;
         // Takes the app GNOME Shell has focused, empty when unknown, and applies that app's mode.

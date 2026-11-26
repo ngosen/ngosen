@@ -41,6 +41,21 @@ namespace fcitx {
         return *on;
     }
 
+    std::tuple<std::string, std::string> NgoSenDBusObject::diacriticsStatus() {
+        auto [table, problem] = engine_->diacriticsStatus();
+        return {table, problem};
+    }
+
+    std::tuple<std::string, std::string> NgoSenDBusObject::saveLearned() {
+        auto [result, error] = engine_->saveLearned();
+        return {result, error};
+    }
+
+    std::tuple<bool, std::string> NgoSenDBusObject::forgetLearned() {
+        auto [ok, error] = engine_->forgetLearned();
+        return {ok, error};
+    }
+
     std::string NgoSenDBusObject::convertText(const std::string& text, const std::string& from, const std::string& to, int32_t letterCase, bool stripDiacritics) {
         const ngosen::UniqueCPtr<char> converted(ConvertText(text.c_str(), from.c_str(), to.c_str(), letterCase, stripDiacritics));
         if (!converted)

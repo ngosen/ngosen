@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.14.2-1] — 26/11/2026
+
+Gõ Sen trong editor của Antigravity, ô soạn bài voz.vn, ô soạn thảo của Chrome trên GNOME, trên Sway và Hyprland không còn mất chữ, dính chữ cũ hay ra phím thô khi sửa dấu, và ở voz.vn cùng các ô soạn thảo trên web chữ có dấu hiện sớm hơn (#987, #990, #995, #996, #997, #998, #999, #1004). Trên KDE, kiểm tra máy báo khi bàn phím ảo của KDE bị tắt và có nút bật lại, chạy lại lệnh cài cũng bật lại nó (#982, #1001). Có thêm lệnh `ngosen-check --settings` in mọi cài đặt đang dùng (#984).
+Tải ở [ngosen-1.14.2-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.2-1).
+
 ### Thêm
 
 - Thêm `ngosen-check --settings` để in mọi cài đặt như trong cửa sổ cài đặt, chế độ gõ và các công tắc emoji,
@@ -22,7 +27,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   khác biệt của bản IBus và cách xử lý thêm các lỗi gõ thường gặp, giúp AI trả lời cách dùng và tìm lỗi
   từ các trang này mà không cần đọc mã nguồn (#991).
 - Gỡ hai tài liệu làm việc (`NGHIEN-CUU-BO-GO-KHAC.md`, `PRODUCT.md`) khỏi kho mã; việc gõ và cài đặt không đổi gì
-  (#1002, #1003).
+  (#1003).
 
 ### Sửa
 

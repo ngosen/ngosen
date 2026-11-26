@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.14.1
+Version:        1.14.2
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -102,6 +102,9 @@ else
 fi
 
 %changelog
+* Thu Nov 26 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.14.2-1
+- Fixes for Antigravity, voz.vn, Chrome on GNOME, Sway and Hyprland: Sen no longer loses or doubles corrected letters there and shows them sooner (#987, #990, #995, #996, #997, #998, #999, #1004); the KDE system check and a rerun of the installer switch KDE's virtual keyboard back on (#982, #1001); ngosen-check --settings prints the settings in use (#984).
+
 * Tue Nov 24 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.14.1-1
 - On voz.vn in Brave on KDE Wayland, fast typing and tone changes no longer push letters into a word, lose letters or delete too much (#964, #967, #971, #972, #977); Firefox no longer loses a letter typed just before a link, and Firefox Flatpak on GNOME Wayland keeps tone marks after a correction (#970, #975); decomposed Unicode no longer loses letters in bash and fish terminals (#952); Telex "booots" gives "boots" and stretched words keep the mark only on the first letter (#976, #980); emoji are off until turned on per app, the list hides after 4 seconds, and digits typed as it appears stay digits (#969, #973, #968); a slow Ctrl+Shift tap still switches (#966); the typing log keeps about half a minute of browser typing (#953).
 

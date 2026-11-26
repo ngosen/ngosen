@@ -141,6 +141,26 @@ class LearnedTest(unittest.TestCase):
             ],
         )
 
+    def test_only_a_ngosen_not_running_leaves_the_file_as_all_of_it(self):
+        lines = {
+            TOO_OLD: "Restart fcitx5",
+            NO_REPLY: "did not answer",
+            None: "No desktop session bus",
+        }
+        for name, line in lines.items():
+            with self.subTest(name=name):
+                self.answer(SaveLearned=name)
+                status = self.learned.status()
+                self.assertTrue(status.error)
+                self.assertIn(line, status.line)
+                text, failed = self.learned.view()
+                self.assertIsNone(text)
+                self.assertIn(line, failed)
+        for name in NOT_RUNNING + NOT_LOADED:
+            with self.subTest(name=name):
+                self.answer(SaveLearned=name)
+                self.assertEqual(self.learned.status().line, "Phrases learned: 4.")
+
     def test_view_without_anything_learned(self):
         os.remove(self.file)
         self.assertEqual(self.learned.view(), ("Nothing learned yet.", None))

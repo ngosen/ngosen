@@ -2408,3 +2408,7 @@ msgstr ""
 #: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
 msgid "Forget all"
 msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Ngó Sen did not answer, so this may not show all it learned. Try again."
+msgstr ""

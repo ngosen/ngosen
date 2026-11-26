@@ -88,10 +88,18 @@ class Learned:
             return None, e
 
     def _save(self):
-        """A line saying why the running Ngó Sen could not save, or None."""
-        result, _error = self._call("SaveLearned")
-        # Without the call nothing newer than the file is held, or it cannot be had.
-        if result is not None and str(result[0]) == "failed":
+        """A line saying why the file may not hold all that was learned, or None."""
+        result, error = self._call("SaveLearned")
+        if error is not None:
+            # Only with no Ngó Sen running is the file all there is.
+            if error.name in NOT_RUNNING or error.name in NOT_LOADED:
+                return None
+            return _why(
+                error,
+                _("Ngó Sen did not answer, so this may not show all it learned. Try again."),
+                _("Could not save what was learned: {}"),
+            )
+        if str(result[0]) == "failed":
             return _("Could not save what was learned: {}").format(result[1])
         return None
 
@@ -147,12 +155,19 @@ class Learned:
             except OSError as e:
                 return False, _("Could not forget: {}").format(e.strerror)
             return True, _("Forgot everything Đoán dấu learned.")
-        if error.name == TOO_OLD:
-            return False, _(
-                "The running Ngó Sen is older than this window. Restart fcitx5, then try again."
-            )
-        if error.name == NO_REPLY:
-            return False, _("Ngó Sen did not answer, so it may not have forgotten. Try again.")
-        if error.name is None:
-            return False, _("No desktop session bus, so Ngó Sen cannot be reached.")
-        return False, _("Could not forget: {}").format(error.message or error.name)
+        return False, _why(
+            error,
+            _("Ngó Sen did not answer, so it may not have forgotten. Try again."),
+            _("Could not forget: {}"),
+        )
+
+
+def _why(error, no_reply, other):
+    """Why a call to a Ngó Sen that may hold more than the file failed."""
+    if error.name == TOO_OLD:
+        return _("The running Ngó Sen is older than this window. Restart fcitx5, then try again.")
+    if error.name == NO_REPLY:
+        return no_reply
+    if error.name is None:
+        return _("No desktop session bus, so Ngó Sen cannot be reached.")
+    return other.format(error.message or error.name)

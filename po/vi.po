@@ -2867,3 +2867,7 @@ msgstr "Đoán dấu sẽ chỉ đoán theo bảng, như trên máy mới cài. 
 #: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
 msgid "Forget all"
 msgstr "Quên hết"
+
+#: settings-gui/core/learned.py
+msgid "Ngó Sen did not answer, so this may not show all it learned. Try again."
+msgstr "Ngó Sen không trả lời, nên có thể chưa hiện đủ chữ đã học. Thử lại nhé."

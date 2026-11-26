@@ -54,12 +54,14 @@ class SettingsModel:
         return {key: item[3] for key, item in self.metadata.items()}
 
     def reset_values(self):
-        """Every setting as restoring defaults leaves it: the default, or as now if it is kept."""
+        """Every setting as restoring defaults leaves it: the default, or as saved now if kept."""
         defaults = self.defaults()
         if defaults is None:
             return None
+        # Another page may have changed a kept setting since this one loaded.
+        latest = (self.dbus.get_config() or {}).get("values", self.current)
         return {
-            key: self.current[key] if key in KEPT_ON_RESET and key in self.current else value
+            key: latest.get(key, value) if key in KEPT_ON_RESET else value
             for key, value in defaults.items()
         }
 

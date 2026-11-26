@@ -112,6 +112,24 @@ class ResetTest(unittest.TestCase):
         window.save_pending()
         self.assertEqual(window._modified_pages(), [])
 
+    def test_reset_keeps_learning_changed_after_the_pages_opened(self):
+        for before, after in (("True", "False"), ("False", "True")):
+            with self.subTest(after=after):
+                fake = FakeDBusHandler({"LearnDiacritics": before, "GuessDiacritics": "True"})
+                window = NgoSenSettingsWindow(dbus_handler=fake)
+                window._build_all_pages()
+                learn = next(
+                    p.control_for("LearnDiacritics")
+                    for p in window._pages
+                    if isinstance(p, DynamicSettingsPage) and p.control_for("LearnDiacritics")
+                )
+                learn.setChecked(after == "True")
+                window.save_pending()
+                with mock.patch("ui.main_window.confirm", return_value=True):
+                    window.on_restore_defaults()
+                window.save_pending()
+                self.assertEqual(fake.values["LearnDiacritics"], after)
+
     def test_reset_from_the_gtk_window_keeps_learning_as_set(self):
         from core import defaults
 

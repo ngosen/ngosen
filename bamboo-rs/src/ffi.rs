@@ -373,6 +373,30 @@ pub extern "C" fn EngineSetDropKeptTail(engine: usize, on: u8) {
     handles::with_engine(engine, |e| e.drop_kept_tail = on != 0);
 }
 
+/// The changes Đoán dấu made to committed words, oldest first, as `pull_changes_text` writes
+/// them; empty when there are none. The front end applies them before it forwards the key.
+#[unsafe(no_mangle)]
+pub extern "C" fn EnginePullChanges(engine: usize) -> *mut c_char {
+    handles::with_engine(engine, |e| c_string(&e.pull_changes_text()))
+        .unwrap_or(std::ptr::null_mut())
+}
+
+/// Whether Đoán dấu fixes syllables nothing knows in runs started from now.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetFixing(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.set_fixing(on != 0));
+}
+
+/// For Backspace right after the key that committed a fixed word: the text the field shows from
+/// that word to the cursor, for the front end to check and delete, the word now reopened as
+/// typed; null when there is no fix to take back.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineUndoFix(engine: usize) -> *mut c_char {
+    handles::with_engine(engine, |e| e.undo_fix().map(|w| c_string(&w)))
+        .flatten()
+        .unwrap_or(std::ptr::null_mut())
+}
+
 /// The word as shown before the last key split it or dropped its tail; empty otherwise.
 #[unsafe(no_mangle)]
 pub extern "C" fn EnginePullDroppedWord(engine: usize) -> *mut c_char {

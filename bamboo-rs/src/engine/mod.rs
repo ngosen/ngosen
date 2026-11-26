@@ -26,9 +26,12 @@ use crate::text::{
 use crate::time_format::format_time;
 use packed::Packed;
 
+mod diacritics;
 mod elongated;
 mod packed;
 mod teencode;
+
+pub use diacritics::{Diacritics, FieldChange};
 
 #[cfg(test)]
 mod options_tests;
@@ -360,6 +363,15 @@ pub struct BambooEngine {
     pub(crate) keep_marks_until_next_key: bool,
     /// Set by Backspace on English keys shown as typed, so the shorter keys stay as typed too.
     pub(crate) keep_keys_until_next_key: bool,
+    /// Đoán dấu for this field; none leaves typing as it was.
+    pub(crate) diacritics: Option<Diacritics>,
+    /// Set for the next key only, after a commit whose last word Đoán dấu fixed: Backspace then
+    /// takes the fix back.
+    fix_undoable: bool,
+    /// Whether the key being handled committed text.
+    committed_now: bool,
+    /// A field that has been a password or sensitive field, which never reaches Đoán dấu again.
+    pub(crate) private_field: bool,
 }
 
 impl BambooEngine {
@@ -390,6 +402,10 @@ impl BambooEngine {
             date_format: "%d/%m/%Y".to_string(),
             keep_marks_until_next_key: false,
             keep_keys_until_next_key: false,
+            diacritics: None,
+            fix_undoable: false,
+            committed_now: false,
+            private_field: false,
         }
     }
 
@@ -1024,7 +1040,14 @@ impl BambooEngine {
     }
 
     pub(crate) fn commit_preedit_and_reset(&mut self, s: String) {
+        if !self.private_field {
+            let keys = self.raw_text();
+            if let Some(d) = &mut self.diacritics {
+                d.committed(&s, &keys);
+            }
+        }
         self.commit_text = s;
+        self.committed_now = true;
         self.preedit_text.clear();
         self.preeditor.reset();
         self.keep_marks_until_next_key = false;
@@ -1133,6 +1156,12 @@ impl BambooEngine {
 
     fn backspace(&mut self) -> bool {
         if self.preedit_text.is_empty() {
+            // The app deletes the end of the run, which then no longer matches the field.
+            if !self.private_field
+                && let Some(d) = &mut self.diacritics
+            {
+                d.reset();
+            }
             return false;
         }
         if self.rune_count() == 1 {
@@ -1152,7 +1181,7 @@ impl BambooEngine {
                 self.retype_keys(&keys, false);
             } else {
                 // A word taken back from the app has marks no key typed.
-                self.rebuild_from_text(&kept.shown);
+                self.rebuild_preedit(&kept.shown);
             }
             let preedit = self.get_preedit_string();
             self.update_preedit(&preedit);
@@ -1223,8 +1252,13 @@ impl BambooEngine {
     /// Returns whether the key was used; the caller forwards it to the app otherwise.
     pub fn process_key_event(&mut self, key_val: u32, state: u32) -> bool {
         self.dropped_word.clear();
+        self.fix_undoable = false;
+        self.committed_now = false;
         let used = self.handle_key_event(key_val, state);
         self.drop_kept_tail = false;
+        self.fix_undoable = self.committed_now
+            && !self.private_field
+            && self.diacritics.as_ref().is_some_and(Diacritics::can_undo);
         used
     }
 
@@ -1252,6 +1286,11 @@ impl BambooEngine {
                     _ => self.text_of_finished_word(),
                 };
                 self.commit_preedit_and_reset(text);
+            }
+            if !self.private_field
+                && let Some(d) = &mut self.diacritics
+            {
+                d.ended_at_key();
             }
             return false;
         }
@@ -1339,6 +1378,75 @@ impl BambooEngine {
         })
     }
 
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "called from the C API once it opens tables")
+    )]
+    pub fn set_diacritics(&mut self, dictionary: Arc<std::sync::Mutex<timsen::Dictionary>>) {
+        self.diacritics = Some(Diacritics::new(dictionary));
+    }
+
+    /// Whether Đoán dấu fixes syllables nothing knows (`phmi` to `phím`) in runs started from now.
+    pub fn set_fixing(&mut self, on: bool) {
+        if let Some(d) = &mut self.diacritics {
+            d.set_fixing(on);
+        }
+    }
+
+    /// For Backspace right after the key that committed a word Đoán dấu fixed, as for one Space
+    /// shortened: reopens the word as typed and returns what the field shows from it to the
+    /// cursor (`phím ` or `phím.`), for the front end to check and delete. Committed again
+    /// unchanged, the word stays as typed. None on any later key, after a reset, before the
+    /// changes are applied, or in a private field.
+    pub fn undo_fix(&mut self) -> Option<String> {
+        if !std::mem::take(&mut self.fix_undoable) || self.private_field {
+            return None;
+        }
+        let (shown, typed) = self.diacritics.as_mut()?.undo_fix()?;
+        self.rebuild_preedit(&typed);
+        Some(self.encode_text(&shown))
+    }
+
+    /// A field that turns private ends the run and drops what waited to be learned. It stays off
+    /// after it turns back, since Backspace and the front end can bring its private words back.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "called from the C API once it opens tables")
+    )]
+    pub fn set_private(&mut self, private: bool) {
+        self.fix_undoable &= !private;
+        if private && !self.private_field {
+            if let Some(d) = &mut self.diacritics {
+                d.drop_run();
+            }
+            self.private_field = true;
+        }
+    }
+
+    /// The changes Đoán dấu made to committed words since the last call, oldest first.
+    pub fn pull_changes(&mut self) -> Vec<FieldChange> {
+        self.diacritics
+            .as_mut()
+            .map(Diacritics::pull_changes)
+            .unwrap_or_default()
+    }
+
+    /// `pull_changes` for the front end: a line per change, holding `after`, the words the field
+    /// shows and the words that replace them, separated by tabs, the words by spaces, in the
+    /// field's charset. Words hold letters only, so neither separator occurs in one.
+    pub fn pull_changes_text(&mut self) -> String {
+        let mut text = String::new();
+        for FieldChange { change, after } in self.pull_changes() {
+            let (old, new) = (change.old.join(" "), change.new.join(" "));
+            text += &format!(
+                "{after}\t{}\t{}\n",
+                self.encode_text(&old),
+                self.encode_text(&new)
+            );
+        }
+        text
+    }
+
     pub fn pull_commit(&mut self) -> String {
         let text = std::mem::take(&mut self.commit_text);
         self.encode_text(&text)
@@ -1350,7 +1458,11 @@ impl BambooEngine {
     }
 
     pub fn reset(&mut self) {
+        self.fix_undoable = false;
         self.commit_preedit_and_reset(String::new());
+        if let Some(d) = &mut self.diacritics {
+            d.reset();
+        }
     }
 
     /// The keys after a kept word typed as a word of their own, when that is a dictionary word.
@@ -1448,11 +1560,29 @@ impl BambooEngine {
         self.get_preedit_string() == self.raw_text()
     }
 
+    /// The front end rebuilds the word being typed, or with nothing typed takes `text` back from
+    /// the field to type on. The field then no longer holds the run where its changes would go,
+    /// so the run ends without changing anything.
     pub fn rebuild_from_text(&mut self, text: &str) {
+        self.fix_undoable = false;
+        if self.preedit_text.is_empty()
+            && !self.private_field
+            && let Some(d) = &mut self.diacritics
+        {
+            d.reset();
+        }
+        self.rebuild_preedit(text);
+    }
+
+    fn rebuild_preedit(&mut self, text: &str) {
         self.kept = None;
         self.preeditor.rebuild_from_text(text);
         if !self.keep_guard.is_empty() && self.get_preedit_string() != text {
+            // The keys typed again here commit nothing to the field, so Đoán dấu must not see them.
+            let diacritics = self.diacritics.take();
+            let committed_now = self.committed_now;
             self.rebuild_kept_word(text);
+            (self.diacritics, self.committed_now) = (diacritics, committed_now);
         }
         self.keep_marks_until_next_key = false;
         self.keep_keys_until_next_key = false;

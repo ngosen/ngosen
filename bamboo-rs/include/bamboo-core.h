@@ -61,6 +61,9 @@ extern void      EngineSetEnglishWords(uintptr_t engine, uintptr_t list);
 extern void      EngineSetKeepGuard(uintptr_t engine, uintptr_t list);
 extern void      EngineSetDropKeptTail(uintptr_t engine, uint8_t on);
 extern char*     EnginePullDroppedWord(uintptr_t engine);
+extern char*     EnginePullChanges(uintptr_t engine);
+extern void      EngineSetFixing(uintptr_t engine, uint8_t on);
+extern char*     EngineUndoFix(uintptr_t engine);
 extern uint8_t   EngineKeptAtLastKey(uintptr_t engine);
 extern uint8_t   EngineShownAsTyped(uintptr_t engine);
 // 1 when the input method can compose a word with the key, as VNI does with digits.

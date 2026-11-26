@@ -37,6 +37,7 @@ version = "0.1.0"
 dependencies = [
  "bamboo-core",
  "libc",
+ "timsen",
 ]
 
 [[package]]
@@ -162,6 +163,11 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "timsen"
+version = "0.1.0"
+source = "git+https://github.com/ngosen/timsen?rev=0cc1becf8861dc1cc8aa95511a626e038554611c#0cc1becf8861dc1cc8aa95511a626e038554611c"
 
 [[package]]
 name = "unicode-ident"

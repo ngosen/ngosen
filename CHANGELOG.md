@@ -20,6 +20,9 @@ Tải ở [ngosen-1.14.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen
 - Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz): chữ vừa sửa dấu không còn thỉnh thoảng mất
   ("người" ra "ời"). Ô này rời focus vài lần sau mỗi lần xoá và có lúc quay lại chỉ vài ms; chữ gửi đúng lúc đó tới
   nơi khi ô đã rời đi. Bộ gõ nay chờ ô ở yên rồi mới gửi (#1025).
+- Gõ Sen trong WPS Office 12 qua IBus: chữ cũ không còn bị giữ lại khi thêm dấu ("tiếng" ra "tieêngếng"). WPS 12
+  gộp mọi app vào một cửa sổ mang tên khác nên bộ gõ không nhận ra; nay nhận theo tên cửa sổ. Trong bảng tính, dấu
+  vừa thêm cũng không còn hay mất ("thử" ra "thu") (#1027).
 
 ## [1.14.2-1] — 26/11/2026
 

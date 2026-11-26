@@ -195,7 +195,7 @@ namespace {
     // sentinel. SDL takes neither forwarded keys nor surrounding text; XIM clients can hand a forwarded key
     // back after the commit.
     bool pressesBackSpaceThroughXTest(Harness& h, const std::string& program, const std::string& frontend, fcitx::CapabilityFlags caps,
-                                      fcitx::KeyStates sentinelStates = fcitx::KeyStates()) {
+                                      fcitx::KeyStates sentinelStates = fcitx::KeyStates(), uint64_t holdsCommitUs = 0) {
         const std::string where   = frontend + " " + program + ": ";
         auto              context = h.open(program, frontend, caps);
         if (!h.typeTieE(*context))
@@ -212,6 +212,13 @@ namespace {
         const auto    sentinel      = fcitx::Key(FcitxKey_BackSpace, sentinelStates, CodeBackSpace);
         if (!h.key(*context, backSpace, false, false, BurstTime) || !h.key(*context, sentinel, false, true, BurstTime))
             return false;
+        if (holdsCommitUs > 0) {
+            h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + holdsCommitUs);
+            if (!context->commits().empty()) {
+                reportFailure(where + "give the client time to apply the backspace", "no commit yet", joinCommits(*context));
+                return false;
+            }
+        }
         h.pumpUntil([&] { return !context->commits().empty(); }, nowUs() + 500000);
         if (context->commits() != std::vector<std::string>{"ê"}) {
             reportFailure(where + "commit once the sentinel is back", "['ê']", joinCommits(*context));
@@ -433,12 +440,16 @@ int main() {
     });
     if (!pressesBackSpaceThroughXTest(h, "wine-preloader", "xim", fcitx::CapabilityFlags{}, fcitx::KeyStates(fcitx::KeyState::Repeat)))
         return 1;
-    // WPS over IBus ignores forwarded keys and deletions through the surrounding text it claims to support.
-    if (!pressesBackSpaceThroughXTest(h, "wps", "ibus", wpsCaps))
+    // WPS over IBus ignores forwarded keys and deletions through the surrounding text it claims to support,
+    // and a spreadsheet cell can apply a sent backspace after a commit that follows it closely.
+    constexpr uint64_t WpsHoldUs = 10000;
+    if (!pressesBackSpaceThroughXTest(h, "wps", "ibus", wpsCaps, fcitx::KeyStates(), WpsHoldUs))
         return 1;
-    if (!pressesBackSpaceThroughXTest(h, "et", "ibus", wpsCaps))
+    if (!pressesBackSpaceThroughXTest(h, "et", "ibus", wpsCaps, fcitx::KeyStates(), WpsHoldUs))
         return 1;
-    if (!pressesBackSpaceThroughXTest(h, "wpp", "ibus", wpsCaps))
+    if (!pressesBackSpaceThroughXTest(h, "wpp", "ibus", wpsCaps, fcitx::KeyStates(), WpsHoldUs))
+        return 1;
+    if (!pressesBackSpaceThroughXTest(h, "wpsoffice", "ibus", wpsCaps, fcitx::KeyStates(), WpsHoldUs))
         return 1;
     if (!keepsForwarding(h, "qt5app", "ibus", wpsCaps))
         return 1;

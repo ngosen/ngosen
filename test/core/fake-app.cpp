@@ -908,9 +908,30 @@ namespace ngosen::test {
     void FakeApp::refocusAfterDeletion() {
         if (quirks_.awayAfterDeletionMs <= 0)
             return;
+        if (quirks_.timesAwayAfterDeletion > 1) {
+            // A deletion during the departures does not start another round.
+            if (leavesLeft_ > 0)
+                return;
+            leavesLeft_ = quirks_.timesAwayAfterDeletion;
+            later(quirks_.leavesAfterDeletionMs, [this] { leaveAgainAfterDeletion(); });
+            return;
+        }
         later(quirks_.leavesAfterDeletionMs, [this] {
             if (focused_)
                 leaveFocus(quirks_.awayAfterDeletionMs);
+        });
+    }
+
+    void FakeApp::leaveAgainAfterDeletion() {
+        --leavesLeft_;
+        focused_ = false;
+        state_->deactivate(true);
+        later(quirks_.awayAfterDeletionMs, [this] {
+            focused_ = true;
+            state_->activate(Mode::Sen, true);
+            changed();
+            if (leavesLeft_ > 0)
+                later(quirks_.backBetweenLeavesMs, [this] { leaveAgainAfterDeletion(); });
         });
     }
 

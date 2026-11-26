@@ -1423,6 +1423,21 @@ setup_x11_session() {
     report_session_changes
 }
 
+# Switched off (WildOS's on-screen keyboard toggle does this), KWin stops fcitx5 and skips it at
+# every login. Asked over D-Bus, KWin starts fcitx5 at once; outside the session only kwinrc can change.
+enable_kwin_virtual_keyboard() {
+    [ "$(kreadconfig6 --file kwinrc --group Wayland --key VirtualKeyboardEnabled)" = false ] || return 0
+    if dbus-send --session --print-reply --dest=org.kde.KWin /VirtualKeyboard \
+        org.freedesktop.DBus.Properties.Set string:org.kde.kwin.VirtualKeyboard string:enabled \
+        variant:boolean:true >/dev/null 2>&1; then
+        # KWin starts fcitx5 a moment later; configure_fcitx5 must see it as KWin's or it replaces it.
+        wait_for_new_fcitx5 "" || :
+    else
+        kwriteconfig6 --file kwinrc --group Wayland --key VirtualKeyboardEnabled true
+    fi
+    session_changes+=("bật lại bàn phím ảo của KDE, nơi KDE chạy fcitx5")
+}
+
 setup_kde_session() {
     local launcher=/usr/share/applications/org.fcitx.Fcitx5.desktop
     say ""
@@ -1430,6 +1445,7 @@ setup_kde_session() {
         kwriteconfig6 --file kwinrc --group Wayland --key InputMethod "$launcher"
         session_changes+=("KDE tự chạy fcitx5 làm bộ gõ (Virtual Keyboard: Fcitx 5)")
     fi
+    enable_kwin_virtual_keyboard
     set_xim_environment
     set_wps_input_method
     configure_fcitx5

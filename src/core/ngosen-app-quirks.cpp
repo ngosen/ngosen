@@ -204,8 +204,16 @@ namespace ngosen {
         return field.frontend == "ibus";
     }
 
+    bool mayHoldForwardedKeyDown(const Field& field) {
+        return field.frontend == "wayland_v2";
+    }
+
     bool keyOvertakesCommit(const Field& field) {
         return field.frontend == "dbus" || field.frontend == "ibus";
+    }
+
+    bool commitCanCrossStateUpdate(const Field& field) {
+        return field.frontend == "wayland_v2" && !field.terminal;
     }
 
     // Only GNOME Shell sends edits through mutter; nothing else the field reports tells it apart.

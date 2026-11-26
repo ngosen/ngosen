@@ -94,10 +94,13 @@ namespace {
         // Telex "e" again: e -> ê deletes one character.
         if (!type(engine, entry, *context, FcitxKey_e, true))
             return false;
-        const auto& forwarded = context->forwarded();
-        if (forwarded.size() != 2 || forwarded[0].key().sym() != FcitxKey_BackSpace || forwarded[0].isRelease() || forwarded[1].key().sym() != FcitxKey_BackSpace ||
-            !forwarded[1].isRelease()) {
-            reportFailure(frontend + ": forward the backspace for e -> ê", "[BackSpace down][BackSpace up]", describeForwarded(*context));
+        // wayland_v2 gets a release first, for an app that still has the key down.
+        const size_t first     = frontend == "wayland_v2" ? 1 : 0;
+        const auto&  forwarded = context->forwarded();
+        const auto   isTap     = [&](size_t i, bool release) { return forwarded[i].key().sym() == FcitxKey_BackSpace && forwarded[i].isRelease() == release; };
+        if (forwarded.size() != first + 2 || (first == 1 && !isTap(0, true)) || !isTap(first, false) || !isTap(first + 1, true)) {
+            reportFailure(frontend + ": forward the backspace for e -> ê", first == 1 ? "[BackSpace up][BackSpace down][BackSpace up]" : "[BackSpace down][BackSpace up]",
+                          describeForwarded(*context));
             return false;
         }
 

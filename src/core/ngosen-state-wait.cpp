@@ -177,10 +177,11 @@ namespace ngosen {
                              t.rearm(surr_wait_.startedAt + UnseenWordForwardWaitUs);
                              return true;
                          }
-                         // Behind IBus the lagging-report wait below already covers this.
-                         if (fieldBounces_ > 0 && !ngosen::surroundingTextLags(host_->field()) && waited + 1000 < BouncingFieldWaitUs && !deletionLooksDone()) {
+                         // Also behind IBus: Chrome on GNOME can apply the last backspace, and report any, after its wait.
+                         const uint64_t bounceUs = std::max<uint64_t>(BouncingFieldWaitUs, BouncingFieldPerBackspaceUs * static_cast<uint64_t>(expected_backspaces_));
+                         if (fieldBounces_ > 0 && waited + 1000 < bounceUs && !deletionLooksDone()) {
                              NGOSEN_INFO("Field refocuses after edits, wait longer before the commit");
-                             t.rearm(surr_wait_.startedAt + BouncingFieldWaitUs);
+                             t.rearm(surr_wait_.startedAt + bounceUs);
                              return true;
                          }
                          if (deferLaggingCommit("timeout"))
@@ -247,7 +248,7 @@ namespace ngosen {
         if (!host_->hasFocus()) {
             // Chromium X11 leaves and re-enters the field within ~0.3 ms; a commit in that gap is
             // lost. Give it a moment to come back.
-            if (++surr_wait_.focusRetries <= 5) {
+            if (focusMayReturn() || ++surr_wait_.focusRetries <= 5) {
                 t.rearm(ngosen::monotonicUs() + 2000);
                 return true;
             }
@@ -267,7 +268,12 @@ namespace ngosen {
     }
 
     uint64_t TypingState::forwardWaitUs() const {
-        return ngosen::surroundingTextLags(host_->field()) ? ShellForwardWaitUs : ForwardWaitUs;
+        const Field field = host_->field();
+        if (ngosen::surroundingTextLags(field))
+            return ShellForwardWaitUs;
+        // With no copy nothing reports the deletion, so only time keeps the commit clear of that update.
+        const bool noCopy = !sinceFocus_.seenText && !host_->surrounding().isValid();
+        return noCopy && ngosen::commitCanCrossStateUpdate(field) ? UpdateForwardWaitUs : ForwardWaitUs;
     }
 
     bool TypingState::deferLaggingCommit(const char* reason, uint64_t settleUs) {
@@ -292,6 +298,9 @@ namespace ngosen {
             unconfirmedBackspacesUs_ = ngosen::monotonicUs();
         if (sinceFocus_.erasedSinceReport >= 0)
             sinceFocus_.erasedSinceReport += count;
+        // A release costs nothing when the key is up, and lets the press through when it is not.
+        if (count > 0 && ngosen::mayHoldForwardedKeyDown(host_->field()))
+            host_->forwardKey(ngosen::EditKey::BackSpace, true, lastPressTime_ + forwardsSincePress_);
         for (int i = 0; i < count; ++i) {
             forwardTap(ngosen::EditKey::BackSpace);
         }
@@ -444,7 +453,7 @@ namespace ngosen {
         key_report_.timer = host_->startTimer(ngosen::monotonicUs() + waitUs, 1000, [this](ngosen::Timer& t) {
             if (!host_->hasFocus()) {
                 // A bounce can span the deadline, so give it a moment to come back.
-                if (++surr_wait_.focusRetries <= 5) {
+                if (focusMayReturn() || ++surr_wait_.focusRetries <= 5) {
                     t.rearm(ngosen::monotonicUs() + 2000);
                     return true;
                 }

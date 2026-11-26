@@ -16,7 +16,7 @@ from core.catalog import (
     SettingsCategory,
     shown_mode,
 )
-from core.learned import Learned
+from core.learned import Learned, how_it_learns
 from core.teencode_apps import TeencodeApps, toggle_hint
 from gi.repository import Adw, Gtk
 from i18n import _
@@ -343,6 +343,19 @@ class GuessingPage(SettingsPage):
         )
         self.learned_view.searchable = False
         group.add(self.learned_view)
+        self.how_it_learns = Adw.ExpanderRow(
+            title=_("How it learns and where it is kept"), use_markup=False
+        )
+        self.how_it_learns_lines = []
+        for text in how_it_learns():
+            label = Gtk.Label(
+                label=text, wrap=True, xalign=0, selectable=True, margin_top=8, margin_bottom=8
+            )
+            label.set_margin_start(12)
+            label.set_margin_end(12)
+            self.how_it_learns.add_row(label)
+            self.how_it_learns_lines.append(label)
+        group.add(self.how_it_learns)
 
     def refresh_status(self):
         super().refresh_status()

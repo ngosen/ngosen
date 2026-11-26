@@ -24,6 +24,8 @@ TRAY_ICON = N_("Tray icon")
 CONVERT_CHARSETS = N_("Charsets")
 EMOJI_GROUP = N_("Emoji")
 LEARNING_GROUP = N_("Learning")
+# Restoring defaults leaves these as the user set them, since they decide what is kept about them.
+KEPT_ON_RESET = ("LearnDiacritics",)
 
 # A light and a dark panel, behind the tray icon preview.
 TRAY_PANEL = ("#e6e6e6", "#2d2d2d")

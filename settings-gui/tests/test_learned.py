@@ -8,7 +8,7 @@ from unittest import mock
 
 from core.ngosen_call import NO_REPLY, NOT_LOADED, NOT_RUNNING, TOO_OLD
 from learned_sample import SAVED, write
-from qtpy.QtWidgets import QPlainTextEdit, QPushButton
+from qtpy.QtWidgets import QLabel, QPlainTextEdit, QPushButton
 from support import FakeDBusHandler, app  # noqa: F401
 from ui.pages import dynamic_settings
 from ui.pages.dynamic_settings import DynamicSettingsPage, SettingsCategory
@@ -29,6 +29,14 @@ class FileTest(unittest.TestCase):
         self.assertEqual(
             learned.path({"HOME": "/home/a"}), "/home/a/.local/share/ngosen/learned-diacritics"
         )
+
+    def test_how_it_learns_names_where_the_file_is(self):
+        home = os.path.expanduser("~")
+        file = learned.path({"HOME": home})
+        lines = learned.how_it_learns(file)
+        self.assertTrue(any("~/.local/share/ngosen/learned-diacritics" in line for line in lines))
+        self.assertEqual(learned.shown_path("/data/ngosen/x", "/home/a"), "/data/ngosen/x")
+        self.assertEqual(learned.shown_path("/home/ab/x", "/home/a"), "/home/ab/x")
 
     def test_phrases_skip_the_header_and_run_counts(self):
         found = learned.phrases(SAVED + "2\tx\tbad\tcount\n4\t1\ttoo\tlong\n")
@@ -222,6 +230,13 @@ class GuessingPageTest(unittest.TestCase):
             self.button("Forget all…").click()
         self.assertTrue(os.path.exists(self.file))
         self.assertTrue(self.messages[0][1])
+
+    def test_how_it_learns_opens(self):
+        self.assertTrue(self.page._how_it_learns_lines.isHidden())
+        self.page._how_it_learns_toggle.click()
+        self.assertFalse(self.page._how_it_learns_lines.isHidden())
+        shown = [label.text() for label in self.page._how_it_learns_lines.findChildren(QLabel)]
+        self.assertEqual(shown, learned.how_it_learns())
 
     def test_missing_table_note(self):
         self.assertTrue(self.page._table_note.isHidden())

@@ -21,6 +21,46 @@ def path(env=os.environ):
     return os.path.join(data_home, "ngosen", "learned-diacritics")
 
 
+def shown_path(file, home=None):
+    home = home if home is not None else os.path.expanduser("~")
+    return "~" + file[len(home) :] if home and file.startswith(home + os.sep) else file
+
+
+def how_it_learns(file=None):
+    """The lines that say what is learned, what is not, and where it is kept."""
+    return [
+        _(
+            "It learns words with marks that Ngó Sen put into a field: words you typed with"
+            " marks, and words you kept as typed with Backspace after a wrong guess. Not words"
+            " it guessed itself, and not text from macros."
+        ),
+        _(
+            "It keeps runs of one, two and three words with how often each came, and where a"
+            " run of typing started and ended. Put together, they can show short sentences you"
+            " typed."
+        ),
+        _(
+            "It learns when a run of typing ends: you leave the field, click, press Enter, or"
+            " type 200 syllables. Text typed and then deleted with Backspace may still have"
+            " been learned."
+        ),
+        _(
+            "Words are kept in lower case with marks placed the new way, so View can look"
+            " different from what you typed."
+        ),
+        _(
+            "Never in password or private fields, nor in a terminal when Ngó Sen can tell it"
+            " hides what you type, which it judges from signs and can miss. Nothing in Off"
+            " mode, or with Đoán dấu or learning off; turning learning off stops it at once."
+        ),
+        _(
+            "Kept in {} as plain text only you can read, saved every 5 minutes when there is"
+            " something new and when fcitx5 quits. Nothing is sent anywhere."
+        ).format(shown_path(file or path())),
+        _("The typing log is separate: it is written only when you choose Save typing log."),
+    ]
+
+
 def phrases(text):
     """(count, words) for each phrase in a saved file, most seen first."""
     found = []

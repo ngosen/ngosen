@@ -2412,3 +2412,39 @@ msgstr ""
 #: settings-gui/core/learned.py
 msgid "Ngó Sen did not answer, so this may not show all it learned. Try again."
 msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "It learns words with marks that Ngó Sen put into a field: words you typed with marks, and words you kept as typed with Backspace after a wrong guess. Not words it guessed itself, and not text from macros."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "It keeps runs of one, two and three words with how often each came, and where a run of typing started and ended. Put together, they can show short sentences you typed."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "It learns when a run of typing ends: you leave the field, click, press Enter, or type 200 syllables. Text typed and then deleted with Backspace may still have been learned."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Words are kept in lower case with marks placed the new way, so View can look different from what you typed."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Never in password or private fields, nor in a terminal when Ngó Sen can tell it hides what you type, which it judges from signs and can miss. Nothing in Off mode, or with Đoán dấu or learning off; turning learning off stops it at once."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "Kept in {} as plain text only you can read, saved every 5 minutes when there is something new and when fcitx5 quits. Nothing is sent anywhere."
+msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "The typing log is separate: it is written only when you choose Save typing log."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py settings-gui/ui_gtk/pages.py
+msgid "How it learns and where it is kept"
+msgstr ""
+
+#: settings-gui/core/defaults.py
+msgid "What Đoán dấu learned is kept, and so is whether it learns; Forget all on the Word guessing page clears it."
+msgstr ""

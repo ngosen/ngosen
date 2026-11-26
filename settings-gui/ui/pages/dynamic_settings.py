@@ -32,7 +32,7 @@ from core.catalog import (
     shown_mode,
 )
 from core.dbus_handler import NgoSenDBusHandler
-from core.learned import Learned
+from core.learned import Learned, how_it_learns
 from core.settings_model import SettingsModel
 from core.teencode_apps import TeencodeApps, toggle_hint
 from i18n import _
@@ -535,8 +535,40 @@ class DynamicSettingsPage(QWidget):
         self._learned_view.searchable = False
         self._learned_view.hide()
         layout.addWidget(self._learned_view)
+        layout.addWidget(self._how_it_learns())
         self._learned = Learned(self.dbus)
         return section
+
+    def _how_it_learns(self):
+        box = QWidget()
+        layout = QVBoxLayout(box)
+        layout.setContentsMargins(0, 4, 0, 0)
+        toggle = QToolButton()
+        toggle.setText(_("How it learns and where it is kept"))
+        toggle.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        toggle.setArrowType(Qt.RightArrow)
+        toggle.setCheckable(True)
+        toggle.setAutoRaise(True)
+        layout.addWidget(toggle)
+        lines = QWidget()
+        lines_layout = QVBoxLayout(lines)
+        lines_layout.setContentsMargins(toggle.iconSize().width() + 8, 0, 0, 0)
+        for text in how_it_learns():
+            line = HintLabel(text)
+            line.searchable = False
+            line.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            lines_layout.addWidget(line)
+        lines.hide()
+        layout.addWidget(lines)
+
+        def show(on):
+            toggle.setArrowType(Qt.DownArrow if on else Qt.RightArrow)
+            lines.setVisible(on)
+
+        toggle.toggled.connect(show)
+        self._how_it_learns_toggle = toggle
+        self._how_it_learns_lines = lines
+        return box
 
     def _show_learned(self):
         status = self._learned.status()
@@ -1124,7 +1156,7 @@ class DynamicSettingsPage(QWidget):
         """Resets current values to engine defaults."""
         self.blockSignals(True)
         try:
-            defaults = self.model.defaults()
+            defaults = self.model.reset_values()
             if defaults is not None:
                 self.load_config(values=defaults)
         finally:

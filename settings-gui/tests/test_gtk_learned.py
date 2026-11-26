@@ -79,6 +79,10 @@ class GtkLearnedTest(unittest.TestCase):
         self.assertTrue(os.path.exists(self.file))
         self.assertIn("Restart fcitx5", self.messages[0])
 
+    def test_how_it_learns_lists_every_line(self):
+        lines = self.page.how_it_learns_lines
+        self.assertEqual([label.get_label() for label in lines], learned.how_it_learns())
+
     def test_missing_table_note(self):
         self.assertFalse(self.page.table_note.get_visible())
         self.dbus.ngosen_answers = {"DiacriticsStatus": ("missing", "")}

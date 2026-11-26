@@ -178,12 +178,14 @@ namespace ngosen {
                              return true;
                          }
                          // Also behind IBus: Chrome on GNOME can apply the last backspace, and report any, after its wait.
-                         const uint64_t bounceUs = std::max<uint64_t>(BouncingFieldWaitUs, BouncingFieldPerBackspaceUs * static_cast<uint64_t>(expected_backspaces_));
+                         const uint64_t bounceUs = bouncingFieldWaitUs();
                          if (fieldBounces_ > 0 && waited + 1000 < bounceUs && !deletionLooksDone()) {
                              NGOSEN_INFO("Field refocuses after edits, wait longer before the commit");
                              t.rearm(surr_wait_.startedAt + bounceUs);
                              return true;
                          }
+                         if (waitsForFieldToSettle(t))
+                             return true;
                          if (deferLaggingCommit("timeout"))
                              return false;
                          finishReplacement("timeout", true);
@@ -263,8 +265,26 @@ namespace ngosen {
             pending_commit_string_.clear();
             return false;
         }
+        if (waitsForFieldToSettle(t))
+            return true;
         finishReplacement("timer", true);
         return false;
+    }
+
+    uint64_t TypingState::bouncingFieldWaitUs() const {
+        return std::max<uint64_t>(BouncingFieldWaitUs, BouncingFieldPerBackspaceUs * static_cast<uint64_t>(expected_backspaces_));
+    }
+
+    // A commit sent while a refocusing field is only passing through lands after it has left again.
+    bool TypingState::fieldStillSettling() const {
+        return focusJustReturned() && ngosen::monotonicUs() - surr_wait_.startedAt < bouncingFieldWaitUs() + BouncingFieldWaitUs;
+    }
+
+    bool TypingState::waitsForFieldToSettle(ngosen::Timer& t) {
+        if (!fieldStillSettling())
+            return false;
+        t.rearm(ngosen::monotonicUs() + 2000);
+        return true;
     }
 
     uint64_t TypingState::forwardWaitUs() const {

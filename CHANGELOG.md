@@ -12,7 +12,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [1.14.3-1] — 26/11/2026
 
-Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz.vn): chữ vừa sửa dấu không còn thỉnh thoảng mất ("người" ra "ời") khi ô quay lại focus chỉ trong chốc lát (#1025).
+Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz.vn): chữ vừa sửa dấu không còn thỉnh thoảng mất ("người" ra "ời") khi ô quay lại focus chỉ trong chốc lát (#1025). Trong WPS Office 12 qua IBus, thêm dấu không còn giữ lại chữ cũ ("tiếng" ra "tieêngếng") và trong bảng tính dấu vừa thêm không còn hay mất (#1027).
 Tải ở [ngosen-1.14.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.3-1).
 
 ### Sửa

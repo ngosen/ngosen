@@ -310,6 +310,27 @@ namespace {
         check(text == "abc tieengs a ", what + "another key leaves the offered text as typed", text);
     }
 
+    // Words typed while off with no Telex key may still take marks; Đoán dấu can be wrong, so only offer them.
+    void testRetypeGuessedMarks(Mode mode) {
+        const Field       field   = makeField("wayland", true);
+        const std::string what    = mode == Mode::Sen ? "sen: " : "preedit: ";
+        const auto        typeOff = [&](bool guess, const std::vector<uint32_t>& after) {
+            FakeResources resources;
+            resources.mutableOptions().guessDiacritics = guess;
+            return retypeInApp(resources, field, mode, "toi go phim", after);
+        };
+        std::string text = typeOff(true, {});
+        check(text == "toi go phim", what + "Đoán dấu: words typed while off are only offered marks", text);
+        text = typeOff(true, {ngosen::key::Return});
+        check(text == "tôi gõ phím", what + "Đoán dấu: Enter takes the offered marks", text);
+        text = typeOff(true, {ngosen::key::Tab});
+        check(text == "toi go phim", what + "Đoán dấu: Tab keeps the words as typed", text);
+        text = typeOff(true, {ngosen::key::Return, ngosen::key::Escape});
+        check(text == "toi go phim", what + "Đoán dấu: Esc after Enter puts the typed words back", text);
+        text = typeOff(false, {ngosen::key::Return});
+        check(text.rfind("toi go phim", 0) == 0, what + "Đoán dấu off: nothing offered", text);
+    }
+
     // Types prefix and then typed in English, switches on, clicks after the prefix, then presses keys.
     // With appResets the app tells of the click only by a reset, as apps over IBus on GNOME do.
     std::string retypeAfterClick(const Field& field, const std::string& prefix, const std::string& typed, const std::vector<uint32_t>& after, bool appResets = false) {
@@ -644,6 +665,8 @@ int main() {
     testRetypeInApp("wayland", true, Mode::Sen);
     testRetypeInApp("xim", false, Mode::Sen);
     testRetypeInApp("wayland", true, Mode::Preedit);
+    testRetypeGuessedMarks(Mode::Sen);
+    testRetypeGuessedMarks(Mode::Preedit);
     // Deletes through the surrounding text where forwarded keys do not work.
     testRetypeInApp("other", true, Mode::Sen);
     testRetypeOverSelection("vivaldi-bin", 73, false);

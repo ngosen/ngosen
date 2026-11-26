@@ -501,6 +501,20 @@ pub extern "C" fn EngineUndoFix(engine: usize) -> *mut c_char {
         .unwrap_or(std::ptr::null_mut())
 }
 
+/// For Cứu chữ: `text`, typed without marks, with the marks Đoán dấu gives it, in the output
+/// charset; null without Đoán dấu, in a private field, or when no word changes.
+///
+/// # Safety
+/// `text` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn EngineRestoreText(engine: usize, text: *const c_char) -> *mut c_char {
+    // SAFETY: the caller passes a valid C string or null.
+    let text = unsafe { string_from_c(text) };
+    handles::with_engine(engine, |e| e.restore_text(&text).map(|t| c_string(&t)))
+        .flatten()
+        .unwrap_or(std::ptr::null_mut())
+}
+
 /// The word as shown before the last key split it or dropped its tail; empty otherwise.
 #[unsafe(no_mangle)]
 pub extern "C" fn EnginePullDroppedWord(engine: usize) -> *mut c_char {

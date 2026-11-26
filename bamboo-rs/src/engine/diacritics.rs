@@ -64,6 +64,44 @@ fn lock(dictionary: &Mutex<Dictionary>) -> MutexGuard<'_, Dictionary> {
     dictionary.lock().unwrap_or_else(|e| e.into_inner())
 }
 
+/// Restores each stretch of words that only spaces separate as one run, as a sentence reads, and
+/// keeps everything between the words as it is.
+pub(crate) fn restore_runs(text: &str, restore: impl Fn(&[&str]) -> Vec<String>) -> String {
+    let mut out = String::new();
+    let mut words = Vec::new();
+    let mut gaps = Vec::new();
+    let mut rest = text;
+    while !rest.is_empty() {
+        let (word, after) = rest.split_at(
+            rest.find(|c: char| !c.is_alphabetic())
+                .unwrap_or(rest.len()),
+        );
+        let (gap, next) = after.split_at(after.find(char::is_alphabetic).unwrap_or(after.len()));
+        if word.is_empty() {
+            out.push_str(gap);
+        } else {
+            words.push(word);
+            gaps.push(gap);
+        }
+        if !words.is_empty() && (!gap.chars().all(char::is_whitespace) || next.is_empty()) {
+            let restored = restore(&words);
+            let restored = if restored.len() == words.len() {
+                restored
+            } else {
+                words.iter().map(|w| (*w).to_string()).collect()
+            };
+            for (word, gap) in restored.iter().zip(&gaps) {
+                out.push_str(word);
+                out.push_str(gap);
+            }
+            words.clear();
+            gaps.clear();
+        }
+        rest = next;
+    }
+    out
+}
+
 /// The words of committed text: letters only, as a run splits at digits and symbols.
 pub(crate) fn words_of(text: &str) -> Vec<&str> {
     text.split(|c: char| !c.is_alphabetic())
@@ -105,6 +143,12 @@ impl Diacritics {
     /// The tone placement the changes follow, as the engine's own words do.
     pub fn set_style(&mut self, style: ToneStyle) {
         self.style = style;
+    }
+
+    /// Text typed without marks with the marks the dictionary gives it, learning nothing.
+    pub fn restore(&self, text: &str, style: ToneStyle) -> String {
+        let personal = lock(&self.dictionary).snapshot();
+        restore_runs(text, |words| personal.restore(words, style))
     }
 
     fn margin(&self) -> Option<f64> {

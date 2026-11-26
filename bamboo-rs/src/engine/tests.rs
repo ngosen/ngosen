@@ -2699,3 +2699,40 @@ fn a_private_word_rebuilt_by_backspace_is_still_never_learned() {
     );
     assert!(dictionary.lock().unwrap().is_empty());
 }
+
+#[test]
+fn restoring_text_reads_each_stretch_between_punctuation_as_one_run() {
+    let runs = std::cell::RefCell::new(Vec::new());
+    let out = diacritics::restore_runs("Toi, go  phim! 12 ab", |words| {
+        runs.borrow_mut().push(words.join(" "));
+        words.iter().map(|w| w.to_uppercase()).collect()
+    });
+    assert_eq!(
+        out, "TOI, GO  PHIM! 12 AB",
+        "what lies between the words stays"
+    );
+    assert_eq!(runs.into_inner(), ["Toi", "go phim", "ab"]);
+}
+
+#[test]
+fn text_typed_without_marks_gets_them_for_cuu_chu() {
+    let mut e = engine_on(&shared_dictionary());
+    assert_eq!(
+        e.restore_text("toi go phim").as_deref(),
+        Some("tôi gõ phím")
+    );
+    assert_eq!(e.restore_text("ban phim.").as_deref(), Some("bàn phím."));
+    assert_eq!(e.restore_text("tôi"), None, "nothing to change");
+    e.set_private(true);
+    assert_eq!(
+        e.restore_text("toi go phim"),
+        None,
+        "never in a private field"
+    );
+}
+
+#[test]
+fn restoring_text_needs_diacritics() {
+    let e = new_test_engine(&[], false);
+    assert_eq!(e.restore_text("toi go phim"), None);
+}

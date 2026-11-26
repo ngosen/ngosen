@@ -344,6 +344,7 @@ namespace ngosen {
         void                     dropHintBeforeKey();
         // What typed reads as with this field's input method, or typed when it changes nothing.
         std::string        addMarks(const std::string& typed);
+        std::string        guessMarks(const std::string& typed);
         bool               everyWordTakesMarks(const std::string& typed);
         void               applyRetype();
         bool               replaceRetyped(const std::string& from, const std::string& to);

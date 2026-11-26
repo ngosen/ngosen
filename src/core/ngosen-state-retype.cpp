@@ -94,6 +94,22 @@ namespace ngosen {
         return out;
     }
 
+    // Words with no Telex key in them can still take marks from Đoán dấu. Telex leaves each word
+    // alone, so the result is only offered, never applied at once.
+    std::string TypingState::guessMarks(const std::string& typed) {
+        const uintptr_t diacritics = engine_->diacritics();
+        if (diacritics == 0 || host_->field().hidesText())
+            return typed;
+        CGoObject engine(newBambooEngine());
+        setOption(engine.handle());
+        EngineSetDiacritics(engine.handle(), diacritics);
+        const ngosen::UniqueCPtr<char> guessed(EngineRestoreText(engine.handle(), typed.c_str()));
+        if (!guessed)
+            return typed;
+        NGOSEN_INFO("Guess: Cứu chữ offers marks");
+        return guessed.get();
+    }
+
     bool TypingState::everyWordTakesMarks(const std::string& typed) {
         size_t words = 0;
         for (size_t start = 0; start < typed.size();) {
@@ -156,6 +172,8 @@ namespace ngosen {
         if (!typedBeforeCursor(typed, true))
             return;
         std::string marked = addMarks(typed);
+        if (marked == typed)
+            marked = guessMarks(typed);
         if (marked == typed)
             return;
         // A word Telex leaves alone is likely English typed on purpose, so then only offer.

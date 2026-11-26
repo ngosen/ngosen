@@ -1041,14 +1041,28 @@ impl BambooEngine {
         encode(&self.output_charset, text)
     }
 
+    fn guess_style(&self) -> timsen::ToneStyle {
+        // The settings' "modern" style (hoà) is what bamboo-core calls Traditional.
+        match self.preeditor.config().tone_style() {
+            ToneStyle::Traditional => timsen::ToneStyle::New,
+            ToneStyle::Modern => timsen::ToneStyle::Old,
+        }
+    }
+
+    /// Text typed without marks with the marks Đoán dấu gives it, in the output charset, for Cứu
+    /// chữ to offer. `None` without Đoán dấu, in a private field, or when no word changes.
+    pub fn restore_text(&self, text: &str) -> Option<String> {
+        if self.private_field {
+            return None;
+        }
+        let restored = self.diacritics.as_ref()?.restore(text, self.guess_style());
+        (restored != text).then(|| self.encode_text(&restored))
+    }
+
     pub(crate) fn commit_preedit_and_reset(&mut self, s: String) {
         if !self.private_field {
             let keys = self.raw_text();
-            // The settings' "modern" style (hoà) is what bamboo-core calls Traditional.
-            let style = match self.preeditor.config().tone_style() {
-                ToneStyle::Traditional => timsen::ToneStyle::New,
-                ToneStyle::Modern => timsen::ToneStyle::Old,
-            };
+            let style = self.guess_style();
             if let Some(d) = &mut self.diacritics {
                 d.set_style(style);
                 d.committed(&s, &keys);

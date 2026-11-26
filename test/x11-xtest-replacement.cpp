@@ -176,8 +176,8 @@ namespace {
         if (!h.key(*context, fcitx::Key(FcitxKey_s), false, true))
             return false;
         h.pumpUntil([&] { return context->commits().size() >= 2; }, nowUs() + 800000);
-        if (!h.sent.empty() || context->commits().size() != 2 || context->commits()[1] != "íê" || context->forwarded().size() != 8) {
-            reportFailure(where + "no second selection", "no XTEST, íê after two more backspaces", joinCounts(h.sent) + ", " + joinCommits(*context));
+        if (!h.sent.empty() || context->commits().size() != 2 || context->commits()[1] != "ế" || context->forwarded().size() != 6) {
+            reportFailure(where + "no second selection", "no XTEST, ế after one more backspace", joinCounts(h.sent) + ", " + joinCommits(*context));
             return false;
         }
         // Focus may now be in another field, so ask again.
@@ -249,9 +249,8 @@ namespace {
         if (!h.key(*context, backSpace, false, true))
             return false;
         h.pumpUntil([&] { return context->commits().size() > 1; }, nowUs() + 500000);
-        // The core rewrites "iê" for the tone; a lost "ê" leaves only "í".
-        if (context->commits() != std::vector<std::string>{"ê", "íê"}) {
-            reportFailure("xim: keep the word after a handed-back backspace", "['ê']['íê']", joinCommits(*context) + " after " + joinCounts(h.sent));
+        if (context->commits() != std::vector<std::string>{"ê", "ế"}) {
+            reportFailure("xim: keep the word after a handed-back backspace", "['ê']['ế']", joinCommits(*context) + " after " + joinCounts(h.sent));
             return false;
         }
         return true;

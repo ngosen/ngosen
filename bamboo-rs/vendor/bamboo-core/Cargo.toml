@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.88"
 name = "bamboo-core"
-version = "0.6.0"
+version = "0.6.1"
 build = false
 include = [
     "src/**",
@@ -132,6 +132,10 @@ path = "tests/extended_onsets.rs"
 [[test]]
 name = "free_onset_spelling"
 path = "tests/free_onset_spelling.rs"
+
+[[test]]
+name = "hoa_style_tone_open_pair"
+path = "tests/hoa_style_tone_open_pair.rs"
 
 [[test]]
 name = "horn_placement"

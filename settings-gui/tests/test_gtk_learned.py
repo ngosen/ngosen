@@ -18,7 +18,7 @@ from core import learned
 CAN_RUN = ui_gtk.available() and window_display.can_show()
 
 if CAN_RUN:
-    from gi.repository import Adw
+    from gi.repository import Adw, Gtk, Pango
     from test_gtk_emoji import _settle
     from test_gtk_window import isolate
     from ui_gtk import window
@@ -45,6 +45,28 @@ class GtkLearnedTest(unittest.TestCase):
         self.assertFalse(self.page.rows["LearnDiacritics"].get_sensitive())
         self.assertTrue(self.page.learned_row.get_sensitive())
         self.assertEqual(self.page.learned_row.get_subtitle(), "Phrases learned: 4.")
+
+    def test_the_chosen_strength_is_shown_whole(self):
+        row = self.page.rows["GuessFixStrength"]
+
+        def shown(widget):
+            # Labels on the row itself; the list it opens has its own.
+            if isinstance(widget, Gtk.Popover):
+                return []
+            labels = [widget] if isinstance(widget, Gtk.Label) else []
+            child = widget.get_first_child()
+            while child:
+                labels += shown(child)
+                child = child.get_next_sibling()
+            return labels
+
+        for index, name in enumerate(("Cautious", "Medium", "Strong")):
+            row.set_selected(index)
+            _settle()
+            labels = [label for label in shown(row) if label.get_label() == name]
+            self.assertTrue(labels, name)
+            for label in labels:
+                self.assertEqual(label.get_ellipsize(), Pango.EllipsizeMode.NONE, name)
 
     def test_view_shows_and_hides(self):
         self.assertFalse(self.page.learned_view.get_visible())

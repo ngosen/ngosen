@@ -35,6 +35,16 @@ def _hinted(row, key):
     return row
 
 
+def _show_value_whole(row):
+    # Adwaita cuts the value short when a long hint shares the row.
+    whole = Gtk.SignalListItemFactory()
+    whole.connect("setup", lambda _f, item: item.set_child(Gtk.Label(xalign=0)))
+    whole.connect("bind", lambda _f, item: item.get_child().set_label(item.get_item().get_string()))
+    # The list keeps its own look, with the mark on the chosen value.
+    row.set_list_factory(row.get_factory())
+    row.set_factory(whole)
+
+
 class SettingsPage:
     """One category of the catalog as rows; each change goes to on_change(key, value) at once."""
 
@@ -160,6 +170,7 @@ class SettingsPage:
             str(enum[k]) for k in sorted(enum, key=lambda k: int(k) if str(k).isdigit() else k)
         ]
         row = _hinted(Adw.ComboRow(title=_(label)), key)
+        _show_value_whole(row)
         row.set_model(Gtk.StringList.new([self._shown(key, v) for v in values]))
         if self.value(key) in values:
             row.set_selected(values.index(self.value(key)))

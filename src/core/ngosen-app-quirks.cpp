@@ -48,9 +48,9 @@ namespace ngosen {
             return false;
         }
 
-        // WPS Writer, Spreadsheets and Presentation.
+        // WPS Writer, Spreadsheets and Presentation; WPS 12 shows them all in one wpsoffice window.
         bool isWps(const std::string& program) {
-            return program == "wps" || program == "et" || program == "wpp";
+            return program == "wps" || program == "et" || program == "wpp" || program == "wpsoffice";
         }
 
         // GTK4 VTE terminals reach fcitx5 without the terminal purpose: fcitx5-gtk4 and fcitx5's IBus frontend drop it.

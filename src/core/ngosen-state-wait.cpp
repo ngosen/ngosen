@@ -178,12 +178,14 @@ namespace ngosen {
                              return true;
                          }
                          // Also behind IBus: Chrome on GNOME can apply the last backspace, and report any, after its wait.
-                         const uint64_t bounceUs = std::max<uint64_t>(BouncingFieldWaitUs, BouncingFieldPerBackspaceUs * static_cast<uint64_t>(expected_backspaces_));
+                         const uint64_t bounceUs = bouncingFieldWaitUs();
                          if (fieldBounces_ > 0 && waited + 1000 < bounceUs && !deletionLooksDone()) {
                              NGOSEN_INFO("Field refocuses after edits, wait longer before the commit");
                              t.rearm(surr_wait_.startedAt + bounceUs);
                              return true;
                          }
+                         if (waitsForFieldToSettle(t))
+                             return true;
                          if (deferLaggingCommit("timeout"))
                              return false;
                          finishReplacement("timeout", true);
@@ -197,8 +199,10 @@ namespace ngosen {
         // top of, the normal sleep.
         const int perKeyMs = skipFrozenWait ? std::max(sleepTime, engine_->options().waitSurroundingMinPerKeyMs) : sleepTime;
         int       waitMs   = perKeyMs * (expected_backspaces_ - 1);
-        // A backspace the XIM client hands back can come a few ms after the sentinel.
-        if (host_->field().frontend == "xim" && std::string_view(replace_method_) == "system backspaces")
+        // A backspace the client hands back can reach the text a few ms after the sentinel: XIM clients,
+        // and WPS Spreadsheets on its cell after keys sent to its window.
+        const ngosen::Field field = host_->field();
+        if ((field.frontend == "xim" || ngosen::takesSentKeyEvents(field)) && std::string_view(replace_method_) == "system backspaces")
             waitMs = std::max(waitMs, static_cast<int>(ForwardWaitUs / 1000));
         // Validate surr cursor pos should match realtextLen after all BS applied
         const auto surr = host_->surrounding();
@@ -263,8 +267,26 @@ namespace ngosen {
             pending_commit_string_.clear();
             return false;
         }
+        if (waitsForFieldToSettle(t))
+            return true;
         finishReplacement("timer", true);
         return false;
+    }
+
+    uint64_t TypingState::bouncingFieldWaitUs() const {
+        return std::max<uint64_t>(BouncingFieldWaitUs, BouncingFieldPerBackspaceUs * static_cast<uint64_t>(expected_backspaces_));
+    }
+
+    // A commit sent while a refocusing field is only passing through lands after it has left again.
+    bool TypingState::fieldStillSettling() const {
+        return focusJustReturned() && ngosen::monotonicUs() - surr_wait_.startedAt < bouncingFieldWaitUs() + BouncingFieldWaitUs;
+    }
+
+    bool TypingState::waitsForFieldToSettle(ngosen::Timer& t) {
+        if (!fieldStillSettling())
+            return false;
+        t.rearm(ngosen::monotonicUs() + 2000);
+        return true;
     }
 
     uint64_t TypingState::forwardWaitUs() const {

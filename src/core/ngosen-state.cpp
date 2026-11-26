@@ -1379,7 +1379,9 @@ namespace ngosen {
             noteHeldKeyForDoubling(keyEvent, currentSym);
             buffered_keys_.push_back({.sym = currentSym, .state = keyEvent.states(), .code = keyEvent.code(), .actsOnField = actsOnField(keyEvent, currentSym)});
             keyEvent.accept();
-            finishReplacement("key arrived", false);
+            // The wait's own timer commits once the field stays, with this key after it.
+            if (!fieldStillSettling())
+                finishReplacement("key arrived", false);
             return true;
         }
         finishReplacement("key arrived", false);

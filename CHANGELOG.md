@@ -10,6 +10,20 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.14.3-1] — 26/11/2026
+
+Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz.vn): chữ vừa sửa dấu không còn thỉnh thoảng mất ("người" ra "ời") khi ô quay lại focus chỉ trong chốc lát (#1025). Trong WPS Office 12 qua IBus, thêm dấu không còn giữ lại chữ cũ ("tiếng" ra "tieêngếng") và trong bảng tính dấu vừa thêm không còn hay mất (#1027).
+Tải ở [ngosen-1.14.3-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.3-1).
+
+### Sửa
+
+- Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz): chữ vừa sửa dấu không còn thỉnh thoảng mất
+  ("người" ra "ời"). Ô này rời focus vài lần sau mỗi lần xoá và có lúc quay lại chỉ vài ms; chữ gửi đúng lúc đó tới
+  nơi khi ô đã rời đi. Bộ gõ nay chờ ô ở yên rồi mới gửi (#1025).
+- Gõ Sen trong WPS Office 12 qua IBus: chữ cũ không còn bị giữ lại khi thêm dấu ("tiếng" ra "tieêngếng"). WPS 12
+  gộp mọi app vào một cửa sổ mang tên khác nên bộ gõ không nhận ra; nay nhận theo tên cửa sổ. Trong bảng tính, dấu
+  vừa thêm cũng không còn hay mất ("thử" ra "thu") (#1027).
+
 ## [1.14.2-1] — 26/11/2026
 
 Gõ Sen trong editor của Antigravity, ô soạn bài voz.vn, ô soạn thảo của Chrome trên GNOME, trên Sway và Hyprland không còn mất chữ, dính chữ cũ hay ra phím thô khi sửa dấu, và ở voz.vn cùng các ô soạn thảo trên web chữ có dấu hiện sớm hơn (#987, #990, #995, #996, #997, #998, #999, #1004). Trên KDE, kiểm tra máy báo khi bàn phím ảo của KDE bị tắt và có nút bật lại, chạy lại lệnh cài cũng bật lại nó (#982, #1001). Có thêm lệnh `ngosen-check --settings` in mọi cài đặt đang dùng (#984). Thư viện gõ bamboo-core lên 0.6.1: gõ `tieesng` hiện "tiế" ngay thay vì thoáng hiện "tíê", `cuow` ra "cươ" (#1009).

@@ -369,6 +369,15 @@ class ModeHintTest(unittest.TestCase):
         self.assertTrue(self.button(page, "Preedit").isChecked())
         self.assertEqual(page._mode_hint.text(), MODE_HINTS["Preedit"])
 
+    def test_guessing_saved_outside_the_window_shows_and_unlocks(self):
+        fake = FakeDBusHandler({"GuessDiacritics": "False", "GuessFixesTypos": "False"})
+        page = DynamicSettingsPage(fake, category=SettingsCategory.GUESSING)
+        self.addCleanup(page.close)
+        fake.values["GuessDiacritics"] = "True"
+        page.refresh_status()
+        self.assertTrue(page.control_for("GuessDiacritics").isChecked())
+        self.assertTrue(page.control_for("GuessFixesTypos").isEnabled())
+
     def test_a_saved_off_shows_as_the_sen_it_types(self):
         fake = FakeDBusHandler({"Mode": "OFF"})
         page = self.page(fake)

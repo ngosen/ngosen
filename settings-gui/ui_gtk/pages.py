@@ -72,6 +72,13 @@ class SettingsPage:
     def value_of(self, key):
         return self.model.value_of(key)
 
+    def refresh_status(self):
+        """Follows what fcitx5 holds, for a change made elsewhere while the window was open."""
+        model = page_status.read(self.model.dbus)
+        if model and not self.model.modified:
+            self.model.follow(model)
+            self._show_values()
+
     def _apply_locks(self):
         for key in DEPENDS.keys() & self.rows.keys():
             self.rows[key].set_sensitive(self.model.locked_by(key) is None)

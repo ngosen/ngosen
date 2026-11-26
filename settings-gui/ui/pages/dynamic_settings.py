@@ -502,7 +502,9 @@ class DynamicSettingsPage(QWidget):
             if apps != self._teencode.apps:
                 self._teencode.apps = apps
                 self._show_teencode_apps()
-        if self._custom_hint is None and self._retone_note is None:
+        # Guessing can be turned on from another window while this one is open.
+        follows = self.category == SettingsCategory.GUESSING
+        if self._custom_hint is None and self._retone_note is None and not follows:
             return
         model = page_status.read(self.dbus)
         if model is not None:

@@ -200,7 +200,14 @@ class Window(Adw.ApplicationWindow):
         self._show(Adw.Toast(title=_("Change undone.")))
 
     def _refresh_statuses(self):
-        for page in (self.typing, self.macros, self.dictionary, self.keymap, self.emoji):
+        for page in (
+            self.typing,
+            self.guessing,
+            self.macros,
+            self.dictionary,
+            self.keymap,
+            self.emoji,
+        ):
             if page:
                 page.refresh_status()
 

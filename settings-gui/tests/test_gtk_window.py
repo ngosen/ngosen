@@ -816,6 +816,16 @@ class GtkStatusLinesTest(unittest.TestCase):
         self.assertTrue(w.dictionary.switch.get_active())
         self.assertEqual(fake.values, written)
 
+    def test_guessing_saved_outside_the_window_shows_and_unlocks(self):
+        fake = FakeDBusHandler({"GuessDiacritics": "False", "GuessFixesTypos": "False"})
+        w = self.window(fake)
+        fake.values["GuessDiacritics"] = "True"
+        written = dict(fake.values)
+        w._refresh_statuses()
+        self.assertTrue(w.guessing.rows["GuessDiacritics"].get_active())
+        self.assertTrue(w.guessing.rows["GuessFixesTypos"].get_sensitive())
+        self.assertEqual(fake.values, written)
+
     def test_the_custom_note_needs_keys_as_in_the_qt_window(self):
         fake = FakeDBusHandler({"InputMethod": "Custom"})
         w = self.window(fake)

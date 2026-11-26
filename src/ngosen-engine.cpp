@@ -530,6 +530,7 @@ namespace fcitx {
     }
 
     NgoSenEngine::~NgoSenEngine() {
+        DiacriticsSave(diacritics_.handle(), 1);
         stop_flag_monitor.store(true, std::memory_order_release);
         if (mouse_thread.joinable()) {
             mouse_thread.join();
@@ -620,6 +621,42 @@ namespace fcitx {
             list.reset(NewWordList(fd.release()));
         else
             NGOSEN_WARN(std::string("Word list not found: ") + path);
+    }
+
+    // Opened once and kept when turned off: the table is read whole, and a field may still hold it.
+    void NgoSenEngine::openDiacritics() {
+        if (diacritics_ || !options_.guessDiacritics)
+            return;
+        const std::string dataHome = getEnv("XDG_DATA_HOME");
+        const auto        dir      = (dataHome.empty() ? std::filesystem::path(getEnv("HOME")) / ".local" / "share" : std::filesystem::path(dataHome)) / "ngosen";
+        std::error_code   error;
+        std::filesystem::create_directories(dir, error);
+        // The dictionary learns from what the user typed; keep it from other users.
+        std::filesystem::permissions(dir, std::filesystem::perms::owner_all, error);
+        std::string table = (dir / "diacritics.timsen").string();
+        if (!std::filesystem::exists(table)) {
+#if NGOSEN_USE_MODERN_FCITX_API
+            table = StandardPaths::global().locate(StandardPathsType::PkgData, "ngosen/diacritics.timsen").string();
+#else
+            table = StandardPath::global().locate(StandardPath::Type::PkgData, "ngosen/diacritics.timsen");
+#endif
+        }
+        const std::string learned = (dir / "learned-diacritics").string();
+        diacritics_.reset(DiacriticsOpen(table.c_str(), learned.c_str()));
+        if (!diacritics_) {
+            NGOSEN_WARN("Đoán dấu has no table: put one at " + (dir / "diacritics.timsen").string());
+            return;
+        }
+        if (const ngosen::UniqueCPtr<char> problem(DiacriticsProblem(diacritics_.handle())); problem)
+            NGOSEN_WARN("Đoán dấu could not read what it learned, so it learns nothing new: " + std::string(problem.get()));
+        // Saving after every word would wear out the disk for little.
+        constexpr uint64_t saveEveryUs = 5ULL * 60 * 1000 * 1000;
+        saveDiacriticsTimer_ = instance_->eventLoop().addTimeEvent(CLOCK_MONOTONIC, ::fcitx::now(CLOCK_MONOTONIC) + saveEveryUs, 0, [this](EventSourceTime* source, uint64_t) {
+            DiacriticsSave(diacritics_.handle(), 0);
+            source->setNextInterval(saveEveryUs);
+            source->setOneShot();
+            return true;
+        });
     }
 
     void NgoSenEngine::announceRelease(const std::string& release) {
@@ -723,6 +760,8 @@ namespace fcitx {
         o.retypeAfterSwitch              = config_.retypeAfterSwitch.value();
         o.retoneSelection                = config_.retoneSelection.value();
         o.rawWordAfterSlash              = config_.rawWordAfterSlash.value();
+        o.guessDiacritics                = config_.guessDiacritics.value();
+        o.guessFixesTypos                = config_.guessFixesTypos.value();
         o.emojiSuggestions               = config_.emojiSuggestions.value();
         o.yahooEmoticons                 = config_.yahooEmoticons.value();
         o.englishEmojiKeywords           = config_.englishEmojiKeywords.value();
@@ -753,6 +792,7 @@ namespace fcitx {
     void NgoSenEngine::populateConfig() {
         ngosen::setUiVietnamese(*config_.uiLanguage == UiLanguage::Vietnamese);
         syncOptions();
+        openDiacritics();
         refreshEngine();
         refreshOption();
         updateInputMethodAction(nullptr);

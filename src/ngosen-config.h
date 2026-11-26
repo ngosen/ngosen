@@ -344,6 +344,8 @@ namespace fcitx {
         Option<bool> retypeAfterSwitch{this, "RetypeAfterSwitch", _("Retype text typed before switching on"), ngosen::defaultOptions.retypeAfterSwitch};
         Option<bool> retoneSelection{this, "RetoneSelection", _("Change the tone of a selected word"), ngosen::defaultOptions.retoneSelection};
         Option<bool> rawWordAfterSlash{this, "RawWordAfterSlash", _("Type a word that starts with / as is"), ngosen::defaultOptions.rawWordAfterSlash};
+        Option<bool> guessDiacritics{this, "GuessDiacritics", _("Add marks to words typed without them"), ngosen::defaultOptions.guessDiacritics};
+        Option<bool> guessFixesTypos{this, "GuessFixesTypos", _("Also fix syllables typed wrong"), ngosen::defaultOptions.guessFixesTypos};
         Option<bool> emojiSuggestions{this, "EmojiSuggestions", _("Suggest emoji while typing"), ngosen::defaultOptions.emojiSuggestions};
         Option<bool> yahooEmoticons{this, "YahooEmoticons", _("Yahoo Messenger emoticons"), ngosen::defaultOptions.yahooEmoticons};
         Option<bool> englishEmojiKeywords{this, "EnglishEmojiKeywords", _("English keywords"), ngosen::defaultOptions.englishEmojiKeywords};

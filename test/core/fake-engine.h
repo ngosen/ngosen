@@ -50,6 +50,9 @@ namespace ngosen::test {
         uintptr_t keepWords() const override {
             return keepWords_;
         }
+        uintptr_t diacritics() const override {
+            return options_.guessDiacritics ? diacritics_ : 0;
+        }
         // Replaces the macro table; call before building a TypingState.
         void setMacros(const std::vector<std::pair<std::string, std::string>>& macros);
         bool anyTerminalHidesInput() const override {
@@ -73,6 +76,7 @@ namespace ngosen::test {
         uintptr_t                macroTable_   = 0;
         uintptr_t                englishWords_ = 0;
         uintptr_t                keepWords_    = 0;
+        uintptr_t                diacritics_   = 0;
         Recorder                 recorder_;
     };
 

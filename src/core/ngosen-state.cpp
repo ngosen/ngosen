@@ -37,6 +37,8 @@ namespace ngosen {
     void TypingState::setEngine() {
         bambooEngine_.reset();
         bambooEngine_.reset(newBambooEngine());
+        diacritics_   = 0;
+        privateField_ = false;
         setOption();
         tracking_modifier_tap_ = false;
         lock_word_pending_     = false;
@@ -66,6 +68,27 @@ namespace ngosen {
     void TypingState::setOption() {
         if (bambooEngine_)
             setOption(bambooEngine_.handle());
+    }
+
+    void TypingState::syncDiacritics() {
+        const bool hidden = host_->field().hidesText() || hiddenInput_;
+        // The engine stays private once it saw a private word, as Backspace could bring that word back.
+        if (privateField_ && !hidden)
+            setEngine();
+        if (hidden && !privateField_) {
+            EngineSetPrivate(bambooEngine_.handle(), 1);
+            privateField_ = true;
+        }
+        const uintptr_t wanted = mode() == ngosen::Mode::Off ? 0 : engine_->diacritics();
+        if (wanted != diacritics_) {
+            EngineSetDiacritics(bambooEngine_.handle(), wanted);
+            diacritics_ = wanted;
+        }
+        if (diacritics_ == 0)
+            return;
+        EngineSetFixing(bambooEngine_.handle(), engine_->options().guessFixesTypos ? 1 : 0);
+        // Earlier words are replaced only where the field shows they are still there.
+        EngineSetWholeRun(bambooEngine_.handle(), reportsTextInTime() && host_->surrounding().isValid() ? 1 : 0);
     }
 
     // An editor deletes exactly through its text, but in a terminal the shell decides what a Backspace
@@ -997,6 +1020,8 @@ namespace ngosen {
         if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || handleEmojiOfferKey(keyEvent) || skipsKey(keyEvent))
             return;
         settleBeforeKey();
+        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+            syncDiacritics();
         if (!keyEvent.isRelease() && !keyEvent.isModifier() && oldPreBuffer_.empty())
             noteTailAtWordStart();
         const uint32_t currentSym = trackCapitalization(keyEvent);

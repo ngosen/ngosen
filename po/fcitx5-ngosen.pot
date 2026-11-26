@@ -187,6 +187,14 @@ msgid "Change the tone of a selected word"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "Add marks to words typed without them"
+msgstr ""
+
+#: src/ngosen-config.h
+msgid "Also fix syllables typed wrong"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Type a word that starts with / as is"
 msgstr ""
 
@@ -1455,6 +1463,14 @@ msgstr ""
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid ""
 "Select nhanh and type s: nhánh. s again gives back s, as do Tab and Esc in Sen. Only the tone mark changes: nguoi does not become người."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Type toi di hoc and get tôi đi học; a word can change again as the next ones come. Backspace right after a word puts it back as typed. Never in password fields."
+msgstr ""
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "phmi becomes phím. Off, a syllable no word matches stays as typed."
 msgstr ""
 
 #: settings-gui/ui/pages/dynamic_settings.py

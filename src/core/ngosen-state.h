@@ -86,6 +86,8 @@ namespace ngosen {
         void setOption(uintptr_t engine) const;
         // A new engine for this field's input method, which the caller owns.
         uintptr_t newBambooEngine() const;
+        // Gives this field's engine Đoán dấu while it is on, typing Vietnamese, in a field that shows its text.
+        void syncDiacritics();
 
         /**
          * @brief Main key event handler.
@@ -231,6 +233,8 @@ namespace ngosen {
         bool                     tracking_modifier_tap_ = false; ///< Selected modifier held, waiting for consecutive keyup
         bool                     lock_word_pending_     = false; ///< The lock key was tapped during a replacement
         bool                     hiddenInput_           = false; ///< the terminal hid input at the last key
+        uintptr_t                diacritics_            = 0;     ///< Đoán dấu handle the engine has, 0 for none
+        bool                     privateField_          = false; ///< the engine saw a field that hides its text
         bool                     hiddenInputSettled_    = true;  ///< what was open before the last change has been put down
         bool                     keySinceReport_        = false; ///< no changed report since the last key; reportAtKey_ is the text then
         bool                     clickBeforeKey_        = false; ///< the cursor was clicked since the last key

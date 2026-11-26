@@ -1,4 +1,5 @@
 # Tests of the typing logic alone, run against a fake app field. They build without fcitx5.
+set_source_files_properties(fake-engine.cpp PROPERTIES COMPILE_DEFINITIONS NGOSEN_TEST_DIACRITICS="${PROJECT_SOURCE_DIR}/bamboo-rs/src/engine/tiny.timsen")
 # An empty DISPLAY keeps the X server of the session running the tests out of them.
 add_executable(core_typing core-typing.cpp fake-app.cpp fake-host.cpp fake-engine.cpp)
 target_compile_definitions(core_typing PRIVATE NGOSEN_TEST_DICTIONARY="${PROJECT_SOURCE_DIR}/data/dictionaries/vietnamese.cm.dict"

@@ -342,6 +342,20 @@
     {}
    ],
    [
+    "GuessDiacritics",
+    "Boolean",
+    "Add marks to words typed without them",
+    "False",
+    {}
+   ],
+   [
+    "GuessFixesTypos",
+    "Boolean",
+    "Also fix syllables typed wrong",
+    "False",
+    {}
+   ],
+   [
     "RawWordAfterSlash",
     "Boolean",
     "Type a word that starts with / as is",

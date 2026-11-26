@@ -76,19 +76,21 @@ namespace ngosen {
     std::string TypingState::addMarks(const std::string& typed) {
         std::string out;
         ResetEngine(bambooEngine_.handle());
+        // Its own engine, so Đoán dấu never learns keys typed while Vietnamese was off.
+        CGoObject engine(newBambooEngine());
+        setOption(engine.handle());
         for (const char c : typed) {
-            const bool               processed = EngineProcessKeyEvent(bambooEngine_.handle(), static_cast<unsigned char>(c), 0) != 0U;
-            ngosen::UniqueCPtr<char> commit(EnginePullCommit(bambooEngine_.handle()));
+            const bool               processed = EngineProcessKeyEvent(engine.handle(), static_cast<unsigned char>(c), 0) != 0U;
+            ngosen::UniqueCPtr<char> commit(EnginePullCommit(engine.handle()));
             if (commit)
                 out += commit.get();
             if (!processed)
                 out += c;
         }
-        EngineCommitPreedit(bambooEngine_.handle());
-        ngosen::UniqueCPtr<char> rest(EnginePullCommit(bambooEngine_.handle()));
+        EngineCommitPreedit(engine.handle());
+        ngosen::UniqueCPtr<char> rest(EnginePullCommit(engine.handle()));
         if (rest)
             out += rest.get();
-        ResetEngine(bambooEngine_.handle());
         return out;
     }
 

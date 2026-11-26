@@ -244,6 +244,14 @@ msgid "Change the tone of a selected word"
 msgstr "Cứu dấu: sửa dấu chữ đang bôi đen"
 
 #: src/ngosen-config.h
+msgid "Add marks to words typed without them"
+msgstr "Thêm dấu cho chữ gõ không dấu (Đoán dấu)"
+
+#: src/ngosen-config.h
+msgid "Also fix syllables typed wrong"
+msgstr "Sửa cả âm tiết gõ sai"
+
+#: src/ngosen-config.h
 msgid "Type a word that starts with / as is"
 msgstr "Gõ thô sau dấu / đầu từ (lệnh, đường dẫn)"
 
@@ -1676,6 +1684,14 @@ msgid ""
 "Select nhanh and type s: nhánh. s again gives back s, as do Tab and Esc in Sen. Only the tone mark changes: nguoi does not become người."
 msgstr ""
 "Bôi đen nhanh rồi gõ s: nhánh. Gõ s lần nữa để trả lại s; ở Gõ Sen, Tab hoặc Esc cũng trả lại. Chỉ đổi dấu thanh (sắc, huyền, hỏi, ngã, nặng): nguoi không thành người được."
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "Type toi di hoc and get tôi đi học; a word can change again as the next ones come. Backspace right after a word puts it back as typed. Never in password fields."
+msgstr "Gõ toi di hoc ra tôi đi học; một chữ có thể đổi tiếp khi gõ các chữ sau. Bấm Backspace ngay sau chữ thì trả lại chữ như đã gõ. Không chạy trong ô mật khẩu."
+
+#: settings-gui/ui/pages/dynamic_settings.py
+msgid "phmi becomes phím. Off, a syllable no word matches stays as typed."
+msgstr "phmi thành phím. Tắt thì âm tiết không khớp chữ nào giữ nguyên như đã gõ."
 
 #: settings-gui/ui/pages/dynamic_settings.py
 msgid "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."

@@ -50,6 +50,8 @@ namespace ngosen {
         bool                       retypeAfterSwitch              = true;
         bool                       retoneSelection                = true;
         bool                       rawWordAfterSlash              = true;
+        bool                       guessDiacritics                = false;
+        bool                       guessFixesTypos                = false;
         bool                       emojiSuggestions               = true;
         bool                       yahooEmoticons                 = true;
         bool                       englishEmojiKeywords           = true;

@@ -214,6 +214,9 @@ namespace fcitx {
         uintptr_t keepWords() const override {
             return keepWords_.handle();
         }
+        uintptr_t diacritics() const override {
+            return options_.guessDiacritics ? diacritics_.handle() : 0;
+        }
 
         ngosen::Recorder& recorder() override {
             return recorder_;
@@ -287,6 +290,8 @@ namespace fcitx {
         ngosen::CGoObject                           dictionary_;
         ngosen::CGoObject                           englishWords_;
         ngosen::CGoObject                           keepWords_;
+        ngosen::CGoObject                           diacritics_;
+        std::unique_ptr<EventSourceTime>            saveDiacriticsTimer_;
         std::unordered_map<std::string, NgoSenMode> appRules_;
         std::unordered_map<std::string, bool>       ctxSwitches_;
         std::string                                 appRulesPath_;
@@ -429,6 +434,7 @@ namespace fcitx {
         void loadAppRules();
 
         void loadWordList(ngosen::CGoObject& list, const char* path);
+        void openDiacritics();
 
         /**
          * @brief Saves application-specific mode rules.

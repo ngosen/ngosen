@@ -54,6 +54,8 @@ SETTINGS_MAP = {
             "DdFreeStyle",
             "RetypeAfterSwitch",
             "RetoneSelection",
+            "GuessDiacritics",
+            "GuessFixesTypos",
         ],
         N_("Tone marks"): ["ModernStyle", "FreeMarking", "BackspaceRemovesTone"],
         TYPING_KEYS: ["W2U", "BracketTransform", "LockWordModifier"],
@@ -169,6 +171,10 @@ HINTS = {
     "EmojiPlacement": N_(
         "After the word: cười 😂. Instead of the word: 😂. haha and :) are always replaced."
     ),
+    "GuessDiacritics": N_(
+        "Type toi di hoc and get tôi đi học; a word can change again as the next ones come. Backspace right after a word puts it back as typed. Never in password fields."
+    ),
+    "GuessFixesTypos": N_("phmi becomes phím. Off, a syllable no word matches stays as typed."),
     "RawWordAfterSlash": N_(
         "/cost and /usr/share stay as typed, at the start of a line or after a space, so chat commands and file paths work. và/hoặc and @tên still get tones."
     ),
@@ -258,6 +264,7 @@ MODE_SHORTCUT_KEYS = list(MODE_SHORTCUT_TO_VISIBILITY.keys())
 # Settings that do nothing unless another one, shown next to them, holds this value.
 DEPENDS = {
     "DdFreeStyle": ("AutoNonVnRestore", "True"),
+    "GuessFixesTypos": ("GuessDiacritics", "True"),
     "IconTheme": ("TrayIconKind", ("V / E", "vi / en")),
     "TrayIconSize": ("TrayIconKind", "Colour icon"),
     "TrayImageVietnamese": ("TrayIconKind", "Custom image"),

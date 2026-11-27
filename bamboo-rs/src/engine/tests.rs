@@ -3608,3 +3608,57 @@ fn the_engine_counts_plain_words_where_the_front_end_asks() {
     assert_eq!(field, ["khum"; 12]);
     assert!(knows(&dictionary, "khum"));
 }
+
+#[test]
+fn a_word_reopened_and_ended_again_is_left_alone_once() {
+    let dictionary = shared_dictionary();
+    let mut e = engine_on(&dictionary);
+    e.set_counting_plain_words(true);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("khum", '.')]);
+    for _ in 0..2 {
+        // Backspace right after the full stop: the front end deletes it and reopens the word.
+        e.process_key_event(KEY_BACKSPACE, 0);
+        e.reopen_committed("khum");
+        e.process_key_event('.' as u32, 0);
+        commit_into(&mut e, &mut field);
+    }
+    type_into(&mut e, &mut field, &[("khum", '.')]);
+    assert!(
+        dictionary.lock().unwrap().is_empty(),
+        "typed twice, however often it was ended"
+    );
+    type_into(&mut e, &mut field, &[("khum", '.')]);
+    assert!(knows(&dictionary, "khum"));
+}
+
+#[test]
+fn a_macro_word_taken_back_from_its_fix_does_not_count() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let mut d = counting(&dictionary, &learning);
+    for _ in 0..2 {
+        let mut field = Vec::new();
+        d.committed("toi ", "toi ", true, &no_words_near);
+        field.push("toi".to_string());
+        d.committed("ngo ", "", false, &no_words_near);
+        field.push("ngo".to_string());
+        apply_changes(d.pull_changes(), &mut field);
+        assert_eq!(field, ["tôi", "gõ"], "the macro's word is fixed");
+        assert!(d.undo_fix().is_some());
+        d.committed("ngo.", "ngo.", true, &no_words_near);
+    }
+    type_alone(&mut d, "ngo", 1);
+    assert!(dictionary.lock().unwrap().is_empty());
+}
+
+#[test]
+fn only_the_word_that_just_ended_is_taken_back() {
+    let (dictionary, learning) = (shared_dictionary(), learning_on());
+    let mut d = counting(&dictionary, &learning);
+    type_alone(&mut d, "khum", 1);
+    d.committed("ta ", "ta ", true, &no_words_near);
+    // The cursor went back to the earlier word, which had been left alone.
+    d.taken_back("khum");
+    type_alone(&mut d, "khum", 2);
+    assert!(knows(&dictionary, "khum"));
+}

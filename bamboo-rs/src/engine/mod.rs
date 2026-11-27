@@ -1786,6 +1786,9 @@ impl BambooEngine {
         }
         let kept = expanded || self.left_as_typed.as_deref() == Some(text);
         let taken_back = (!text.is_empty() && kept).then(|| text.to_string());
+        if let Some(d) = &mut self.diacritics {
+            d.taken_back(text);
+        }
         self.rebuild_from_text(text);
         self.commits_macro = from_macro;
         self.commits_abbreviation = from_abbreviation;

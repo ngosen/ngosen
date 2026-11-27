@@ -83,6 +83,18 @@ impl Learning {
         meant
     }
 
+    /// Takes back the last count of a word that was reopened: it counts when it ends again.
+    fn uncount(&self, word: &str) {
+        let word = word.to_lowercase();
+        let mut counts = self.left_alone();
+        if let Some(count) = counts.get_mut(&word) {
+            *count -= 1;
+            if *count == 0 {
+                counts.remove(&word);
+            }
+        }
+    }
+
     /// Everything learned was just forgotten.
     pub fn forgot(&self) {
         self.left_alone().clear();
@@ -138,6 +150,9 @@ pub struct Diacritics {
     plain: Vec<usize>,
     /// Whether this field counts those words.
     counts_plain: bool,
+    /// The last word of the run that just ended, when it was counted as left alone: Backspace may
+    /// still reopen it.
+    counted_last: Option<String>,
     /// The word an undo took back, as typed, and whether a macro put it there: committed again
     /// unchanged, it stays so.
     reopened: Option<(String, bool)>,
@@ -225,6 +240,7 @@ impl Diacritics {
             from_macro: Vec::new(),
             plain: Vec::new(),
             counts_plain: false,
+            counted_last: None,
             reopened: None,
             tail: None,
             later_fix: false,
@@ -430,6 +446,13 @@ impl Diacritics {
         self.later_fix = false;
     }
 
+    /// The front end took `word` back from the field to type on, so it was not left alone.
+    pub fn taken_back(&mut self, word: &str) {
+        if self.counted_last.take().as_deref() == Some(word) {
+            self.learning.uncount(word);
+        }
+    }
+
     /// A reset: the cursor moved or the field lost focus, so the field no longer holds the run
     /// where its changes would go. The run ends without changing anything.
     pub fn reset(&mut self) {
@@ -487,7 +510,7 @@ impl Diacritics {
         let raw = letters.filter(|k| *k != word && has_any_vietnamese_rune(word));
         // A word neither reading of which is known was mistyped, or is new.
         let slipped = run.may_fix(word) && raw.is_none_or(|keys| run.may_fix(keys));
-        let typed_plain = near.is_some() && could_be_meant(word);
+        let typed_plain = near.is_some() && !as_typed && could_be_meant(word);
         if typed_plain && self.counts_plain && run.may_fix(word) {
             self.plain.push(run.len());
         }
@@ -510,6 +533,7 @@ impl Diacritics {
         self.later_fix = before.is_some() && run.last_fix() == before && fixed != before;
         self.typed.push(word.to_string());
         self.words += 1;
+        self.counted_last = None;
     }
 
     /// Learns the words of the run not learned yet that were typed with marks, committed again as
@@ -521,9 +545,13 @@ impl Diacritics {
         let shown = self.run.as_ref().map_or(&[][..], Run::shown);
         let left = shown.len().saturating_sub(usize::from(!typed_on));
         let allowed = self.learning.allows(self.run_epoch);
-        let meant: Vec<usize> = (self.plain.iter().copied())
-            .filter(|&k| k >= self.learned && k < left && self.typed[k] == shown[k])
-            .filter(|&k| allowed && self.learning.means(&self.typed[k]))
+        let counted: Vec<usize> = (self.plain.iter().copied())
+            .filter(|&k| allowed && k >= self.learned && k < left && self.typed[k] == shown[k])
+            .collect();
+        self.counted_last =
+            (counted.last().filter(|&&k| k + 1 == shown.len())).map(|&k| self.typed[k].clone());
+        let meant: Vec<usize> = (counted.into_iter())
+            .filter(|&k| self.learning.means(&self.typed[k]))
             .collect();
         let run: Vec<Option<&str>> = (self.typed.iter().zip(shown).enumerate())
             .map(|(k, (w, s))| {

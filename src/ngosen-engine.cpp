@@ -802,7 +802,7 @@ namespace fcitx {
         constexpr int32_t neverExpire = 0;
         addon->call<INotifications::sendNotification>(
             "fcitx", 0, "fcitx-ngosen", title,
-            _("Ngó Sen expanded a chat abbreviation. Press Backspace right after one to get back what you typed. See the list or turn "
+            _("Ngó Sen expanded a chat abbreviation. Press Backspace right after the space to get back what you typed. See the list or turn "
               "this off on the Macros page."),
             std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "macros"}); }, [](uint32_t) {});
         // Marked only once sent, so a session without notifications tries again next time.

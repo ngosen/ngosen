@@ -112,7 +112,8 @@ Hoàn tác.
   desktop. Bung nhầm thì bấm Backspace ngay sau dấu cách để lấy lại chữ đã gõ; chữ nào bạn lấy lại hai lần
   liền thì từ đó Ngó Sen để nguyên. Trang **Gõ tắt** trong cửa sổ cài đặt có danh sách các chữ viết tắt,
   nút **Bung lại** cho chữ đang để nguyên, và công tắc **Bung chữ viết tắt khi chat** để tắt hẳn. Không bung
-  trong terminal, ô mật khẩu và ô địa chỉ.
+  trong terminal, ô mật khẩu, ô địa chỉ (Firefox không báo đâu là ô địa chỉ, nên ở đó thường vẫn bung), và
+  ở kiểu gõ gạch chân trong app không báo chữ cho bộ gõ, vì ở đó Backspace không lấy lại được.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
   bằng một nút bấm.
 

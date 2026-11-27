@@ -2490,7 +2490,7 @@ msgid "Stronger fixes more typos, and now and then changes a word that was right
 msgstr ""
 
 #: settings-gui/core/catalog.py
-msgid "ko gives không, dc gives được. Backspace right after one gives back what you typed."
+msgid "ko gives không, dc gives được. Backspace right after the space gives back what you typed."
 msgstr ""
 
 #: settings-gui/ui/pages/macro_editor.py
@@ -2554,5 +2554,5 @@ msgid "A chat abbreviation you take back with Backspace twice in a row stays as 
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "Ngó Sen expanded a chat abbreviation. Press Backspace right after one to get back what you typed. See the list or turn this off on the Macros page."
+msgid "Ngó Sen expanded a chat abbreviation. Press Backspace right after the space to get back what you typed. See the list or turn this off on the Macros page."
 msgstr ""

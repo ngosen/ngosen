@@ -132,7 +132,7 @@ HINTS = {
     "CapitalizeMacro": N_("kg gives khô gà, Kg gives Khô gà, KG gives KHÔ GÀ."),
     "EnableMacroInOffMode": N_("Abbreviations also expand while the mode is Off."),
     "ChatShorthand": N_(
-        "ko gives không, dc gives được. Backspace right after one gives back what you typed."
+        "ko gives không, dc gives được. Backspace right after the space gives back what you typed."
     ),
     "AutoNonVnRestore": N_("Typing windows still gives windows."),
     "LockWordModifier": N_(

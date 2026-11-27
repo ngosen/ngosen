@@ -129,7 +129,7 @@ class QtPageTest(unittest.TestCase):
         page = MacroEditorPage(FakeDBusHandler())
         hints = [label.text() for label in page.findChildren(QLabel)]
         self.assertIn(
-            "ko gives không, dc gives được. Backspace right after one gives back what you typed.",
+            "ko gives không, dc gives được. Backspace right after the space gives back what you typed.",
             hints,
         )
 
@@ -244,7 +244,7 @@ class QtPageTest(unittest.TestCase):
         with open(po, encoding="utf-8") as f:
             text = f.read()
         for msgid in (
-            "ko gives không, dc gives được. Backspace right after one gives back what you typed.",
+            "ko gives không, dc gives được. Backspace right after the space gives back what you typed.",
             "View the list",
             "Hide the list",
             "Kept as typed",

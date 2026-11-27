@@ -30,7 +30,6 @@ namespace {
         c.setValueByPath("InputMethod", "Telex");
         c.setValueByPath("GuessDiacritics", guess ? "True" : "False");
         c.setValueByPath("LearnDiacritics", learn ? "True" : "False");
-        c.setValueByPath("ChatShorthand", "True");
         return c;
     }
 

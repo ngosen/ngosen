@@ -283,7 +283,7 @@
     "ChatShorthand",
     "Boolean",
     "Expand chat abbreviations",
-    "False",
+    "True",
     {}
    ],
    [

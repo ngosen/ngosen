@@ -23,6 +23,9 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 - Terminal của Xfce (xfce4-terminal) được nhận ra là terminal như Konsole: ở dấu nhắc mật khẩu phím vào
   đúng như gõ, và chữ có dấu tách rời xoá đúng bằng Backspace. (#1034)
+- Trên KDE Plasma (Wayland), WPS Office gõ được tiếng Việt mà không cần tự đặt `QT_IM_MODULE=fcitx`, kể cả khi cài
+  Ngó Sen từ kho gói hay AUR hoặc cài WPS sau: mỗi lần đăng nhập, Ngó Sen tự cho lối tắt WPS (và bản Flatpak) chạy
+  với fcitx5 (#1032).
 
 ## [1.14.3-1] — 26/11/2026
 

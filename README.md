@@ -376,8 +376,8 @@ bước sau (hoặc chạy lệnh cài một dòng ở trên để nó làm giú
 - **KDE Plasma (Wayland):** chọn **Fcitx 5** ở *System Settings → Virtual Keyboard*, rồi đăng xuất và đăng
   nhập lại. App X11 chạy qua XWayland (như Minecraft bản cũ) cần thêm
   `echo 'XMODIFIERS=@im=fcitx' > ~/.config/environment.d/90-ngosen.conf` trước khi đăng xuất. WPS Office
-  bản Flatpak cần `flatpak override --user --env=QT_IM_MODULE=fcitx com.wps.Office`; bản cài từ package thì
-  thêm `env QT_IM_MODULE=fcitx ` vào đầu dòng `Exec=` của từng lối tắt WPS.
+  (cả bản Flatpak) thì Ngó Sen tự cho chạy với `QT_IM_MODULE=fcitx` mỗi lần đăng nhập; cài WPS sau Ngó Sen
+  thì đăng xuất, đăng nhập lại là gõ được.
 - **Xfce, Cinnamon, MATE** (Debian, Ubuntu, Mint): chạy `im-config -n fcitx5`, rồi đăng xuất và đăng nhập lại.
 - **Sway, Hyprland, niri:** chạy lệnh cài một dòng từ terminal trong phiên desktop để được thiết lập sẵn.
 - **Kiểm tra lại:** sau khi đăng nhập lại, mở cửa sổ cài đặt Ngó Sen (`fcitx5-ngosen-settings`). Lần mở đầu

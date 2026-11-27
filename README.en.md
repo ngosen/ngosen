@@ -296,9 +296,8 @@ If Ngó Sen has never been set up on your machine, installing from a repo, a dow
   echo 'XMODIFIERS=@im=fcitx' > ~/.config/environment.d/90-ngosen.conf
   ```
 
-  WPS Office needs `QT_IM_MODULE=fcitx`: for the Flatpak run
-  `flatpak override --user --env=QT_IM_MODULE=fcitx com.wps.Office`; for the package, put
-  `env QT_IM_MODULE=fcitx ` in front of the command on each WPS launcher's `Exec=` line.
+  WPS Office, the Flatpak too, needs `QT_IM_MODULE=fcitx`; Ngó Sen sets it for WPS at each login. If
+  you install WPS after Ngó Sen, log out and back in.
 
 - On Xfce, Cinnamon and MATE on Debian/Ubuntu/Mint, run `im-config -n fcitx5`, then log out and back in.
   If IBus is installed, this step makes fcitx5 start at login and work in XIM apps such as PlanMaker.

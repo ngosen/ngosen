@@ -272,6 +272,12 @@ target_link_libraries(ngosen_migration_test PRIVATE ngosen_migration)
 add_test(NAME ngosen_migration COMMAND ngosen_migration_test)
 set_tests_properties(ngosen_migration PROPERTIES LABELS "unit;config" TIMEOUT 20)
 
+# On Plasma Wayland, WPS launchers start WPS with fcitx5's Qt module.
+add_executable(wps_launcher_test wps-launcher.cpp)
+target_link_libraries(wps_launcher_test PRIVATE ngosen_migration)
+add_test(NAME wps_launcher COMMAND wps_launcher_test)
+set_tests_properties(wps_launcher PROPERTIES LABELS "unit;config" TIMEOUT 20)
+
 # fcitx5 reads the dependencies declared in the generated addon files.
 add_executable(addon_conf_test addon-conf.cpp)
 target_link_libraries(addon_conf_test PRIVATE Fcitx5::Core Fcitx5::Config)

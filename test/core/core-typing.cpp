@@ -315,8 +315,8 @@ namespace {
 
     std::string learnedFile();
 
-    // Types into a FakeApp; \b in `typed` is a Backspace, \x7f a Delete, \x17 a Ctrl+Backspace, and ~
-    // after a key sends the next one right after it.
+    // Types into a FakeApp; \b in `typed` is a Backspace, \n an Enter, \t a Tab, \x7f a Delete, \x17 a
+    // Ctrl+Backspace, and ~ after a key sends the next one right after it.
     std::string typeGuessingInApp(const Field& field, ngosen::Mode mode, const std::string& typed, const GuessRun& run = {}) {
         realMode = mode;
         realtextLen.store(0);
@@ -355,6 +355,10 @@ namespace {
                 app->type(ngosen::key::BackSpace | ngosen::test::WithCtrl);
             else if (typed[i] == '\x7f')
                 app->type(ngosen::key::Delete);
+            else if (typed[i] == '\n')
+                app->type(ngosen::key::Return);
+            else if (typed[i] == '\t')
+                app->type(ngosen::key::Tab);
             else
                 app->type(typed[i] == '\b' ? ngosen::key::BackSpace : static_cast<uint32_t>(typed[i]));
             loop.pump(i + 1 < typed.size() && typed[i + 1] == '~' ? 2 : run.keyMs);
@@ -497,6 +501,12 @@ namespace {
             check(!learned, "Đoán dấu: a plain word typed twice is not learned" + name, "learned");
             typeGuessingInApp(reports, mode, "khum.\b.\b. khum.", {.fixesTypos = true, .learned = &learned});
             check(!learned, "Đoán dấu: a plain word ended again after Backspace is left alone once" + name, "learned");
+            typeGuessingInApp(reports, mode, "khum\nkhum\nkhum\n", {.quirks = {.showsEnter = true}, .fixesTypos = true, .learned = &learned});
+            check(learned, "Đoán dấu: Enter leaves a plain word alone" + name, "nothing");
+            typeGuessingInApp(reports, mode, "khum \nkhum \nkhum \n", {.quirks = {.showsEnter = true}, .fixesTypos = true, .learned = &learned});
+            check(learned, "Đoán dấu: Enter after a space leaves a plain word alone" + name, "nothing");
+            typeGuessingInApp(reports, mode, "khum \tkhum \tkhum \t", {.fixesTypos = true, .learned = &learned});
+            check(learned, "Đoán dấu: Tab after a space leaves a plain word alone" + name, "nothing");
             typeGuessingInApp(makeField("wayland", true, "org.kde.konsole"), mode, "khum. khum. khum.", {.fixesTypos = true, .inTerminals = true, .learned = &learned});
             check(!learned, "Đoán dấu: never learns a plain word on a command line" + name, "learned");
             if (mode == ngosen::Mode::Sen) {

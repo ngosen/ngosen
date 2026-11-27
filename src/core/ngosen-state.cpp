@@ -310,6 +310,8 @@ namespace ngosen {
             current_backspace_count_ = 0;
             pending_commit_string_.clear();
             hasHistory_ = false;
+            if ((currentSym == ngosen::key::Tab || currentSym == ngosen::key::KP_Tab) && !keyEvent.hasModifier())
+                EngineTypedOn(bambooEngine_.handle());
             ResetEngine(bambooEngine_.handle());
             oldPreBuffer_.clear();
             noteVimSpecialKey(keyEvent, currentSym);
@@ -416,6 +418,7 @@ namespace ngosen {
                 if (finishWordBeforeEnter(keyEvent))
                     return;
                 hasHistory_ = false;
+                EngineTypedOn(bambooEngine_.handle());
                 ResetEngine(bambooEngine_.handle());
                 oldPreBuffer_.clear();
             }

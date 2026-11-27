@@ -446,6 +446,12 @@ impl Diacritics {
         self.later_fix = false;
     }
 
+    /// A key the engine never sees typed on from the last word, as Enter after a space does: the
+    /// run ends there with that word left alone.
+    pub fn typed_on(&mut self) {
+        self.end_run(true);
+    }
+
     /// The front end took `word` back from the field to type on, so it was not left alone.
     pub fn taken_back(&mut self, word: &str) {
         if self.counted_last.take().as_deref() == Some(word) {

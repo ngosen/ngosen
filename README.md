@@ -107,6 +107,12 @@ Hoàn tác.
   terminal**: ở đó nó không sửa lại được chữ trước nên đoán sai nhiều hơn. Đoán dấu học từ chữ bạn gõ để
   đoán sát cách bạn viết; xem [Đoán chữ học gì](#doan-chu-hoc-gi).
 - **Gõ tắt (macro):** tự theo chữ hoa: `ko` → `không` thì gõ `Ko` sẽ ra `Không`.
+- **Chữ viết tắt khi chat:** gõ `ko`, `dc`, `cviec` rồi dấu cách hay dấu câu là ra `không`, `được`,
+  `công việc`, không cần tự khai gõ tắt. Bật sẵn, và lần đầu bung Ngó Sen báo một lần bằng thông báo của
+  desktop. Bung nhầm thì bấm Backspace ngay sau dấu cách để lấy lại chữ đã gõ; chữ nào bạn lấy lại hai lần
+  liền thì từ đó Ngó Sen để nguyên. Trang **Gõ tắt** trong cửa sổ cài đặt có danh sách các chữ viết tắt,
+  nút **Bung lại** cho chữ đang để nguyên, và công tắc **Bung chữ viết tắt khi chat** để tắt hẳn. Không bung
+  trong terminal, ô mật khẩu và ô địa chỉ.
 - **Trang "Kiểm tra máy":** tìm lỗi thiết lập của desktop, cho biết còn mấy việc cần sửa và sửa từng việc
   bằng một nút bấm.
 
@@ -133,6 +139,10 @@ báo của desktop.
   phút một lần khi có gì mới, và khi fcitx5 thoát. Không gửi đi đâu.
 - **Xem, quên, tắt:** trang **Đoán chữ** có nút **Xem**, nút **Quên hết** và công tắc **Học từ chữ bạn
   gõ**. "Khôi phục mặc định" không xoá những gì đã học và giữ nguyên công tắc học.
+- **Chữ viết tắt khi chat:** chữ nào bạn lấy lại bằng Backspace hai lần liền thì được để nguyên như gõ.
+  Ngó Sen chỉ ghi tên các chữ ấy kèm số lần, ở `~/.local/share/ngosen/kept-chat-shorthand`, không ghi chữ
+  nào khác bạn gõ. Việc đếm theo công tắc **Học từ chữ bạn gõ**, dù Đoán dấu bật hay tắt; **Quên hết** xoá
+  cả phần này, và trang **Gõ tắt** cho bung lại từng chữ.
 
 <a id="che-do-go"></a>
 

@@ -115,6 +115,9 @@ edition report at [ibus-ngosen](https://github.com/ngosen/ibus-ngosen/issues).
   A number typed before `Tab` types as usual; wait for `Tab: 😂 …`, press `Tab`, then the number. (The IBus edition still
   suggests emoji by default and picks with a number, after `Tab` with VNI.)
 - `afaaa` gives `àaaa`: a drawn-out word keeps its marks and the repeated letters have none, as in UniKey.
+- `ko` + Space gives `không`, `dc` gives `được`: chat abbreviations, on by default. Backspace right after the
+  space gives back what was typed, and one taken back twice in a row stays as typed from then on. "Bung chữ
+  viết tắt khi chat" on the "Gõ tắt" page of the settings window turns it off; that page lists them.
 - `nhuwg` + Space gives `nhưng`, and `tienf` + Space gives `tiền`: when the word ends and the result is a known
   word, Telex can complete a final `ng` (Unicode charset) or add a missing circumflex or horn (with "Tự khôi
   phục từ gõ sai" and "Gõ tự do" on). Teencode keeps `nhưg`.

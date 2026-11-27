@@ -383,8 +383,10 @@ pub struct BambooEngine {
     commits_macro: bool,
     /// That text is a chat abbreviation's, which Đoán dấu leaves as written.
     commits_abbreviation: bool,
-    /// The chat abbreviation the last key expanded, as typed.
+    /// The chat abbreviation the last key expanded with a space, as typed.
     expanded_from: String,
+    /// The one the last commit expanded, until the next key shows the user left it in place.
+    unjudged: String,
     /// A chat abbreviation taken back by Backspace: the open word stays as typed while it is this.
     taken_back: Option<String>,
     /// The one the last commit left as typed: taken back again, it stays so.
@@ -434,6 +436,7 @@ impl BambooEngine {
             commits_macro: false,
             commits_abbreviation: false,
             expanded_from: String::new(),
+            unjudged: String::new(),
             taken_back: None,
             left_as_typed: None,
             last_commit_macro: false,
@@ -1039,6 +1042,9 @@ impl BambooEngine {
             self.preeditor.reset();
             self.commits_macro = true;
             self.commits_abbreviation = abbreviation;
+            if abbreviation {
+                self.unjudged = old_text.to_string();
+            }
             // After a comma or a full stop Backspace takes that key, as it does after any word.
             if abbreviation && key == ' ' {
                 self.dropped_word = old_text.to_string();
@@ -1352,9 +1358,10 @@ impl BambooEngine {
     /// Returns whether the key was used; the caller forwards it to the app otherwise.
     pub fn process_key_event(&mut self, key_val: u32, state: u32) -> bool {
         self.dropped_word.clear();
-        let expanded = std::mem::take(&mut self.expanded_from);
-        if !expanded.is_empty() {
-            self.shorthand.accepted(&expanded);
+        self.expanded_from.clear();
+        let unjudged = std::mem::take(&mut self.unjudged);
+        if !unjudged.is_empty() {
+            self.shorthand.accepted(&unjudged);
         }
         self.fix_undoable = false;
         self.earlier_fix_undoable = false;
@@ -1380,10 +1387,14 @@ impl BambooEngine {
             if has_preedit {
                 let enter = (key_val == KEY_RETURN || key_val == KEY_KP_ENTER)
                     && Self::is_valid_state(state);
-                let text = match self.expansion_of(&self.macro_word()) {
+                let word = self.macro_word();
+                let text = match self.expansion_of(&word) {
                     Some((macro_text, abbreviation)) if enter => {
                         self.commits_macro = true;
                         self.commits_abbreviation = abbreviation;
+                        if abbreviation {
+                            self.unjudged = word;
+                        }
                         macro_text
                     }
                     // Gõ Sen keeps the word as shown on other keys, so Preedit fixes it on Enter only.
@@ -1753,6 +1764,7 @@ impl BambooEngine {
         if expanded {
             self.shorthand.taken_back(text);
             self.expanded_from.clear();
+            self.unjudged.clear();
         }
         let kept = expanded || self.left_as_typed.as_deref() == Some(text);
         let taken_back = (!text.is_empty() && kept).then(|| text.to_string());

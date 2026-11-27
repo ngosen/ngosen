@@ -1352,6 +1352,9 @@ namespace {
             text = typeGuessingInApp(reports, mode, "ko \b ko a ko \b ko ", {.shorthand = true, .keptIn = kept});
             check(text == "ko không a ko không ", "chat shorthand: an expansion left in place starts the count again" + name, text);
             std::filesystem::remove(kept);
+            text = typeGuessingInApp(reports, mode, "ko \b ko. ko \b ko ", {.shorthand = true, .keptIn = kept});
+            check(text == "ko không. ko không ", "chat shorthand: one left in place after a full stop starts the count again" + name, text);
+            std::filesystem::remove(kept);
             text = typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true, .keptIn = kept});
             text = typeGuessingInApp(reports, mode, "ko \b ko ", {.shorthand = true, .keptIn = kept});
             check(text == "ko ko ", "chat shorthand: the count carries over a restart" + name, text);

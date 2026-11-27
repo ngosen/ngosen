@@ -646,8 +646,10 @@ namespace fcitx {
         }
         loadWordList(englishWords_, "ngosen/english-common.txt", NewWordList);
         loadWordList(keepWords_, "ngosen/keep-words.txt", NewWordList);
+        const bool hadShorthand = static_cast<bool>(chatShorthand_);
         loadWordList(chatShorthand_, "ngosen/chat-shorthand.tsv", NewShorthand);
-        if (chatShorthand_)
+        // Read once: a count the file could not take is still held here.
+        if (chatShorthand_ && !hadShorthand)
             ShorthandKeepIn(chatShorthand_.handle(), keptShorthandFile().c_str());
         loadAppRules();
         loadVimApps();

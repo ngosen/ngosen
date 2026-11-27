@@ -13,6 +13,9 @@ from core.ngosen_call import NO_REPLY, NOT_LOADED, NOT_RUNNING, TOO_OLD, CallErr
 # Where a run of typing started and ended, as timsen writes them.
 START, END = "<s>", "</s>"
 
+# Which chat abbreviations the user took back, as the engine names the file.
+KEPT_SHORTHAND = "kept-chat-shorthand"
+
 Status = namedtuple("Status", "line error table_missing")
 
 
@@ -86,10 +89,12 @@ def shown(found):
 
 
 def remove_files(file):
-    """Removes the file, its temporary copy and copies set aside as unreadable, as the engine does."""
+    """Removes the file, its temporary copy and copies set aside as unreadable, as the engine does.
+    The chat abbreviations kept as typed, counted beside it, go too."""
     folder, name = os.path.split(file)
     folder = folder or "."
-    for each in (file, os.path.join(folder, f".{name}.tmp")):
+    kept = os.path.join(folder, KEPT_SHORTHAND)
+    for each in (file, os.path.join(folder, f".{name}.tmp"), kept, kept + ".tmp"):
         try:
             os.remove(each)
         except FileNotFoundError:

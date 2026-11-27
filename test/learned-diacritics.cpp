@@ -133,6 +133,14 @@ namespace {
             engine.setConfig(config(false));
             check(koAfterTwoTakenBack(engine, context) == "ko ", "a key taken back twice in a row stays as typed");
             check(lines(kept) == 1, "the key is in its file");
+            std::filesystem::remove(kept);
+            engine.reloadConfig();
+            type(engine, context, "ko ");
+            check(context.commits().back() == "ko ", "a settings reload keeps a count that is not in the file");
+            type(engine, context, "dc ");
+            backspaceAfter(engine, context, "được ");
+            type(engine, context, " ");
+            check(lines(kept) == 2, "the next change writes every count again");
         }
         TestInstance        testInstance;
         fcitx::NgoSenEngine engine(&testInstance.instance);

@@ -128,9 +128,7 @@ impl Kept {
                 .mode(0o700)
                 .create(dir)?;
         }
-        let mut name = path.as_os_str().to_owned();
-        name.push(".tmp");
-        let unfinished = PathBuf::from(name);
+        let unfinished = unfinished(path);
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create(true)
@@ -145,12 +143,23 @@ impl Kept {
     }
 }
 
-/// Removes the file the counts are kept in; one that is not there is already forgotten.
+/// Where a save writes before it takes the place of `path`.
+fn unfinished(path: &Path) -> PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push(".tmp");
+    PathBuf::from(name)
+}
+
+/// Removes the file the counts are kept in and a save of it left half-way; what is not there is
+/// already forgotten.
 pub fn remove_file(path: &Path) -> io::Result<()> {
-    match fs::remove_file(path) {
-        Err(e) if e.kind() != ErrorKind::NotFound => Err(e),
-        _ => Ok(()),
+    for each in [path, &unfinished(path)] {
+        match fs::remove_file(each) {
+            Err(e) if e.kind() != ErrorKind::NotFound => return Err(e),
+            _ => {}
+        }
     }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -237,8 +246,14 @@ mod tests {
         again.taken_back("dc");
         assert_eq!(again.get("dc"), None);
 
+        let unfinished = dir.0.join("kept.tmp");
+        fs::write(&unfinished, "ko\t2\n").unwrap();
         again.forget().unwrap();
         assert!(!path.exists());
+        assert!(
+            !unfinished.exists(),
+            "a save left half-way is forgotten too"
+        );
         assert_eq!(again.get("ko"), Some("không"));
         again.forget().unwrap();
     }

@@ -996,6 +996,23 @@ fn an_abbreviation_left_in_place_is_counted_from_the_start_again() {
 }
 
 #[test]
+fn an_abbreviation_left_in_place_after_any_key_starts_the_count_again() {
+    for end in ['.' as u32, KEY_RETURN] {
+        let mut e = shorthand_engine("Telex");
+        e.shorthand.set_learning(true);
+        type_keys(&mut e, "ko ");
+        take_back(&mut e, "ko");
+        type_keys(&mut e, " ko");
+        e.process_key_event(end, 0);
+        assert!(e.commit_text.starts_with("không"), "{end}");
+        type_keys(&mut e, " ko ");
+        take_back(&mut e, "ko");
+        type_keys(&mut e, " ko ");
+        assert_eq!(e.commit_text, "không ", "{end}");
+    }
+}
+
+#[test]
 fn reopening_a_kept_key_is_not_counted_again() {
     let mut e = shorthand_engine("Telex");
     e.shorthand.set_learning(true);

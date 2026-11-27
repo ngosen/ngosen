@@ -856,7 +856,13 @@ namespace fcitx {
     void NgoSenEngine::setConfig(const RawConfig& config) {
         RawConfig migrated = config;
         migrateLegacyMode(migrated);
+        // A settings window that read the marks before a notice went out writes the old ones back.
+        const bool toldLearning = *config_.learningAnnounced, toldShorthand = *config_.chatShorthandAnnounced;
         config_.load(migrated, true);
+        if (toldLearning)
+            config_.learningAnnounced.setValue(true);
+        if (toldShorthand)
+            config_.chatShorthandAnnounced.setValue(true);
         saveConfig();
         populateConfig();
     }

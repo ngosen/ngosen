@@ -1,3 +1,9 @@
+fcitx5-ngosen (1:1.14.4-1) unstable; urgency=medium
+
+  * On KDE Plasma Wayland, WPS Office types Vietnamese without QT_IM_MODULE=fcitx set by hand, also when Ngó Sen comes from a package repository or the AUR or WPS is installed later: at each login Ngó Sen makes the WPS launchers and the WPS Flatpak start with fcitx5 (#1032).
+
+ -- Nguyen Phi <nguyenphidt@gmail.com>  Fri, 27 Nov 2026 20:00:00 +0700
+
 fcitx5-ngosen (1:1.14.3-1) unstable; urgency=medium
 
   * In Chrome's rich text editors on GNOME, such as voz.vn's reply box, Sen no longer loses a corrected word now and then when the editor comes back to focus only briefly (#1025). In WPS Office 12 over IBus, adding a mark no longer keeps the old letters, and spreadsheet cells keep it (#1027).

@@ -1,9 +1,9 @@
 [source.crates-io]
 replace-with = "vendored-sources"
 
-[source."git+https://github.com/ngosen/timsen?rev=781f50500d8976b4fd94d55549b34c3ea323fd66"]
+[source."git+https://github.com/ngosen/timsen?rev=3f31e2e8a9349e53f43add821e74227f9352e84b"]
 git = "https://github.com/ngosen/timsen"
-rev = "781f50500d8976b4fd94d55549b34c3ea323fd66"
+rev = "3f31e2e8a9349e53f43add821e74227f9352e84b"
 replace-with = "vendored-sources"
 
 [source.vendored-sources]

@@ -902,13 +902,27 @@ fn shorthand_in_capitals_stays_as_typed() {
 #[test]
 fn every_shipped_abbreviation_can_be_typed() {
     for (method, d_stroke) in [("Telex", "dd"), ("VNI", "d9")] {
+        let mut e = shorthand_engine(method);
         for line in include_str!("../../../data/chat-shorthand.tsv").lines() {
             let (key, text) = line.split_once('\t').unwrap();
-            let mut e = shorthand_engine(method);
-            type_keys(&mut e, &key.replace('đ', d_stroke));
-            e.process_key_event(KEY_SPACE, 0);
-            assert_eq!(e.commit_text, format!("{text} "), "{method} {key}");
+            for end in [' ', '.', ',', '?'] {
+                e.reset();
+                type_keys(&mut e, &key.replace('đ', d_stroke));
+                e.process_key_event(end as u32, 0);
+                assert_eq!(e.commit_text, format!("{text}{end}"), "{method} {key}");
+            }
         }
+    }
+}
+
+#[test]
+fn shorthand_leaves_a_longer_own_macro_reachable() {
+    for (method, keys) in [("Telex", "ddagw "), ("VNI", "d9agw ")] {
+        let mut e = shorthand_engine(method);
+        e.macro_enabled = true;
+        e.macro_table = macro_table(&[("đagw", "working")]);
+        type_keys(&mut e, keys);
+        assert_eq!(e.commit_text, "working ", "{method}");
     }
 }
 
@@ -2963,6 +2977,15 @@ fn a_macro_is_never_learned_whichever_key_expands_it() {
         e.reset();
         assert!(dictionary.lock().unwrap().is_empty(), "{key}");
     }
+}
+
+#[test]
+fn a_chat_abbreviation_is_never_guessed_again() {
+    let mut e = engine_on(&shared_dictionary());
+    e.shorthand = macro_table(&[("bn", "ban")]);
+    let mut field = Vec::new();
+    type_into(&mut e, &mut field, &[("bn", ' '), ("phim", '.')]);
+    assert_eq!(field, ["ban", "phím"]);
 }
 
 #[test]

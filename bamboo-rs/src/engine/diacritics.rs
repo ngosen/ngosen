@@ -326,6 +326,16 @@ impl Diacritics {
     /// Anything but letters and spaces ends the run where it stands, so a macro of two sentences
     /// makes two runs. `near` is asked about a typed word nothing knows.
     pub fn committed(&mut self, text: &str, keys: &str, typed: bool, near: WordsNear) {
+        self.take_in(text, keys, typed.then_some(near), false);
+    }
+
+    /// A chat abbreviation's text: its words are context for the others, never guessed and never
+    /// learned.
+    pub fn committed_as_written(&mut self, text: &str) {
+        self.take_in(text, "", None, true);
+    }
+
+    fn take_in(&mut self, text: &str, keys: &str, near: Option<WordsNear>, written: bool) {
         // The keys end with the one that ended the word, and read one word only.
         let keys = keys.trim_end_matches(|c: char| !c.is_alphanumeric());
         let keys = (words_of(text).len() == 1).then_some(keys);
@@ -339,9 +349,9 @@ impl Diacritics {
             let word = piece.trim_end_matches(|c: char| !c.is_alphabetic());
             let after = piece[word.len()..].to_string();
             if !word.is_empty() {
-                let as_typed = !open && reopened.as_ref().is_some_and(|(w, _)| w == word);
-                self.push(word, keys, as_typed, typed.then_some(near));
-                if !typed || as_typed && reopened.as_ref().is_some_and(|(_, m)| *m) {
+                let taken_back = !open && reopened.as_ref().is_some_and(|(w, _)| w == word);
+                self.push(word, keys, written || taken_back, near);
+                if near.is_none() || taken_back && reopened.as_ref().is_some_and(|(_, m)| *m) {
                     self.from_macro.push(self.typed.len() - 1);
                 }
                 self.field.push((word.to_string(), after));

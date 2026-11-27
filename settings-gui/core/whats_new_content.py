@@ -17,6 +17,18 @@ from core.brand import AI_HELP_URL
 # Newest release first. A release with no entry gets no section.
 FEATURES = [
     {
+        "version": "1.15",
+        "title": N_("Type without marks"),
+        "how": N_(
+            "Type toi di hoc and get tôi đi học. Turn on Đoán dấu on the Word guessing page; it can "
+            "also fix a syllable typed wrong. It learns from what you type, so its guesses follow how "
+            "you write: View shows what it learned, Forget all erases it. In terminals it stays off "
+            "unless you turn on Guess in terminals too."
+        ),
+        "example": "toi di hoc → tôi đi học",
+        "target": ("setting", "GuessDiacritics"),
+    },
+    {
         "version": "1.14",
         "title": N_("Emoji in the apps you choose"),
         "how": N_(

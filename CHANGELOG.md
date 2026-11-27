@@ -10,6 +10,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.15.0-1] — 27/11/2026
+
+Đoán dấu: gõ không dấu `toi di hoc` ra `tôi đi học`, bật ở trang mới **Đoán chữ**; nó sửa được cả âm tiết gõ sai và học theo cách bạn viết, có nút Xem và Quên hết. Bảng đoán dấu có sẵn trong gói, không cần mạng (#1034). Trên KDE Plasma (Wayland), WPS Office gõ được tiếng Việt mà không cần tự đặt `QT_IM_MODULE=fcitx` (#1032). Terminal của Xfce được nhận ra là terminal (#1034).
+Tải ở [ngosen-1.15.0-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.15.0-1).
+
 ### Thêm
 
 - Đoán dấu: gõ không dấu `toi di hoc` ra `tôi đi học`, bật ở trang mới **Đoán chữ** trong cửa sổ cài đặt.

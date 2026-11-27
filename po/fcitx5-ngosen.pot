@@ -436,7 +436,7 @@ msgid "What's new in Ngó Sen?"
 msgstr ""
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.14: pick what the tray shows, change a tone in Preedit, and a guide for AI assistants. See What's new for more."
+msgid "Version 1.15: Đoán dấu adds the marks to words typed without them. Turn it on on the Word guessing page. See What's new for more."
 msgstr ""
 
 #: src/ngosen-engine.cpp
@@ -1754,6 +1754,14 @@ msgstr ""
 
 #: settings-gui/ui/toolkit_switch.py
 msgid "Check that fcitx5 is running."
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Type without marks"
+msgstr ""
+
+#: settings-gui/core/whats_new_content.py
+msgid "Type toi di hoc and get tôi đi học. Turn on Đoán dấu on the Word guessing page; it can also fix a syllable typed wrong. It learns from what you type, so its guesses follow how you write: View shows what it learned, Forget all erases it. In terminals it stays off unless you turn on Guess in terminals too."
 msgstr ""
 
 #: settings-gui/core/whats_new_content.py

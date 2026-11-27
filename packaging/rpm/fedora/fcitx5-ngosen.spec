@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.14.3
+Version:        1.15.0
 Release:        1%{?dist}
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -102,6 +102,9 @@ else
 fi
 
 %changelog
+* Fri Nov 27 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.15.0-1
+- Đoán dấu adds the marks to words typed without them (toi di hoc → tôi đi học), turned on from the new Word guessing page; it can also fix a syllable typed wrong and learns from what you type (#1034). On KDE Plasma Wayland, WPS Office types Vietnamese without setting QT_IM_MODULE by hand (#1032). xfce4-terminal is treated as a terminal (#1034).
+
 * Thu Nov 26 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.14.3-1
 - In Chrome's rich text editors on GNOME, such as voz.vn's reply box, Sen no longer loses a corrected word now and then when the editor comes back to focus only briefly (#1025). In WPS Office 12 over IBus, adding a mark no longer keeps the old letters, and spreadsheet cells keep it (#1027).
 

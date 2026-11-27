@@ -521,8 +521,8 @@ msgid "What's new in Ngó Sen?"
 msgstr "Ngó Sen có gì mới?"
 
 #: src/ngosen-engine.cpp
-msgid "Version 1.14: pick what the tray shows, change a tone in Preedit, and a guide for AI assistants. See What's new for more."
-msgstr "Version 1.14: chọn thứ hiện trên khay, đổi dấu trong Gạch chân, và trang hướng dẫn cho AI. Xem thêm ở trang Có gì mới."
+msgid "Version 1.15: Đoán dấu adds the marks to words typed without them. Turn it on on the Word guessing page. See What's new for more."
+msgstr "Version 1.15: Đoán dấu thêm dấu cho chữ gõ không dấu. Bật ở trang Đoán chữ. Xem thêm ở trang Có gì mới."
 
 #: src/ngosen-engine.cpp
 msgid "Show"
@@ -2101,6 +2101,14 @@ msgstr "Tiếng Việt trong menu khay"
 #: settings-gui/core/whats_new_content.py
 msgid "The tray menu starts with an item that turns Vietnamese on or off, for when Ctrl + Shift does not work."
 msgstr "Đầu menu khay có mục bật hoặc tắt tiếng Việt, dùng khi Ctrl + Shift không chạy."
+
+#: settings-gui/core/whats_new_content.py
+msgid "Type without marks"
+msgstr "Gõ không dấu, ra chữ có dấu"
+
+#: settings-gui/core/whats_new_content.py
+msgid "Type toi di hoc and get tôi đi học. Turn on Đoán dấu on the Word guessing page; it can also fix a syllable typed wrong. It learns from what you type, so its guesses follow how you write: View shows what it learned, Forget all erases it. In terminals it stays off unless you turn on Guess in terminals too."
+msgstr "Gõ toi di hoc ra tôi đi học. Bật Đoán dấu ở trang Đoán chữ; trang này còn có lựa chọn sửa cả âm tiết gõ sai. Đoán dấu học từ chữ bạn gõ để đoán sát cách bạn viết: nút Xem cho thấy nó đã học gì, Quên hết thì xoá sạch. Trong terminal nó nghỉ, trừ khi bật Đoán cả trong terminal."
 
 #: settings-gui/core/whats_new_content.py
 msgid "Emoji in the apps you choose"

@@ -8,6 +8,8 @@ import unittest
 from chat_sample import ChatEngine
 from core.chat_shorthand import ChatShorthand, Entry
 from core.ngosen_call import NO_REPLY, NOT_RUNNING, TOO_OLD
+from qtpy.QtCore import Qt
+from qtpy.QtTest import QTest
 from qtpy.QtWidgets import QLabel, QPushButton
 from support import FakeDBusHandler, app  # noqa: F401
 from ui.pages.macro_editor import MacroEditorPage
@@ -165,6 +167,38 @@ class QtPageTest(unittest.TestCase):
         self.assertTrue(page.chat_table.isHidden())
         self.assertEqual(page.chat_table.rowCount(), 0)
         self.assertEqual(page.chat_view_button.text(), "View the list")
+
+    def test_view_shows_the_line_of_the_list_it_read(self):
+        fake = ChatEngine()
+        page = self.page(fake)
+        # Taken back since the page last asked.
+        fake.kept.add("ko")
+        page.chat_view_button.click()
+        self.assertEqual(self.rows(page)[0], ("ko", "không", True))
+        self.assertEqual(page.chat_line.text(), "Kept as typed: ko.")
+
+    def test_the_macro_switch_does_not_ask_the_engine(self):
+        fake = ChatEngine()
+        page = self.page(fake)
+        asked = len(fake.asked)
+        page.cb_enable.setChecked(False)
+        self.assertEqual(len(fake.asked), asked)
+
+    def test_tab_goes_through_the_list_and_on(self):
+        page = self.page(ChatEngine(kept=["ko", "dc"]))
+        page.show()
+        self.addCleanup(page.close)
+        page.chat_view_button.click()
+        page.activateWindow()
+        page.chat_table.setFocus()
+        app.processEvents()
+        self.assertIs(app.focusWidget(), page.chat_table)
+        for row in (0, 1):
+            QTest.keyClick(app.focusWidget(), Qt.Key_Tab)
+            self.assertIs(app.focusWidget(), page.chat_table.cellWidget(row, 2))
+        QTest.keyClick(app.focusWidget(), Qt.Key_Tab)
+        self.assertFalse(page.chat_table.isAncestorOf(app.focusWidget()))
+        self.assertIsNot(app.focusWidget(), page.chat_table)
 
     def test_a_shown_list_follows_the_engine(self):
         fake = ChatEngine()

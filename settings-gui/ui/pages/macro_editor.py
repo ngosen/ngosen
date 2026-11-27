@@ -64,7 +64,8 @@ class MacroEditorPage(BaseEditorPage):
         self.cb_enable_off_mode = QCheckBox(_("Macro in Off Mode"))
         self.cb_enable.toggled.connect(self._on_item_changed)
         self.cb_enable.toggled.connect(lambda _checked: self._apply_locks())
-        self.cb_enable.toggled.connect(lambda _checked: self.refresh_status())
+        # The chat abbreviations do not follow this switch, so the engine is not asked for them.
+        self.cb_enable.toggled.connect(lambda _checked: BaseEditorPage.refresh_status(self))
         self.cb_capitalize.toggled.connect(self._on_item_changed)
         self.cb_enable_off_mode.toggled.connect(self._on_item_changed)
         toggles_layout.addWidget(self.cb_enable)
@@ -239,6 +240,8 @@ class MacroEditorPage(BaseEditorPage):
         self.chat_table.setShowGrid(False)
         self.chat_table.setSelectionMode(QAbstractItemView.NoSelection)
         self.chat_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        # Tab goes on to the buttons and out of the list; the arrow keys move between cells.
+        self.chat_table.setTabKeyNavigation(False)
         self.chat_table.setAlternatingRowColors(True)
         self.chat_table.setAccessibleName(_("Chat abbreviations"))
         self.chat_table.setMinimumHeight(180)
@@ -249,19 +252,23 @@ class MacroEditorPage(BaseEditorPage):
         card.content_layout.addWidget(self.chat_table)
         return card
 
-    def _show_chat(self):
+    def _show_chat(self, opening=False):
         entries, why = self.chat.entries()
         self.chat_line.setText(why or chat_shorthand.kept_line(entries))
-        if self.chat_table.isHidden():
+        if self.chat_table.isHidden() and not opening:
             return
-        if entries is None:
-            self._hide_chat_list()
-        else:
+        if entries is not None:
             self._fill_chat_list(entries)
+            return
+        self._hide_chat_list()
+        if opening:
+            self._page_message(why, error=True)
 
     def _fill_chat_list(self, entries):
         self.chat_table.setRowCount(0)
         self.chat_table.setRowCount(len(entries))
+        # A new button would be last on the page for Tab.
+        before = self.chat_table
         for row, entry in enumerate(entries):
             self.chat_table.setItem(row, 0, QTableWidgetItem(entry.key))
             self.chat_table.setItem(row, 1, QTableWidgetItem(entry.text))
@@ -271,6 +278,8 @@ class MacroEditorPage(BaseEditorPage):
             button.setAccessibleName(_("Expand {} again").format(entry.key))
             button.clicked.connect(lambda _checked=False, key=entry.key: self._expand_again(key))
             self.chat_table.setCellWidget(row, 2, button)
+            QWidget.setTabOrder(before, button)
+            before = button
         self.chat_table.show()
         self.chat_view_button.setText(_("Hide the list"))
 
@@ -280,14 +289,10 @@ class MacroEditorPage(BaseEditorPage):
         self.chat_view_button.setText(_("View the list"))
 
     def _toggle_chat_list(self):
-        if not self.chat_table.isHidden():
-            self._hide_chat_list()
-            return
-        entries, why = self.chat.entries()
-        if entries is None:
-            self._page_message(why, error=True)
+        if self.chat_table.isHidden():
+            self._show_chat(opening=True)
         else:
-            self._fill_chat_list(entries)
+            self._hide_chat_list()
 
     def _expand_again(self, key):
         # Its button goes with the row.

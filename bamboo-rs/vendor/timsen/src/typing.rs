@@ -10,7 +10,7 @@ const START: [u32; 1] = [BOS];
 
 mod fix;
 
-pub use fix::{FIX_MARGIN, Fix};
+pub use fix::{FIX_MARGIN, Fix, Nearby};
 
 /// Where words and counts come from.
 enum Source<'t> {

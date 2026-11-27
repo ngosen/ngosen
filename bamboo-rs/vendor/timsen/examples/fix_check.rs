@@ -36,7 +36,7 @@ fn main() {
                 widest = widest.max((fix.margin - m).abs());
                 other_side += usize::from((fix.margin >= FIX_MARGIN) != (m >= FIX_MARGIN));
                 made[usize::from(ended)] += usize::from(m >= FIX_MARGIN);
-                fix.plain == want
+                fix.word == want
             }
             _ => false,
         };

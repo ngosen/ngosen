@@ -18,6 +18,11 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   Xem, Quên hết cùng lời nói rõ học gì, lưu ở đâu. Chữ bung ra từ gõ tắt không bao giờ được học. Trong
   terminal, Đoán dấu nghỉ trừ khi bật **Đoán cả trong terminal**, vì ở đó nó không sửa lại được chữ trước.
   Gói cài có sẵn bảng đoán dấu (12 MB), không cần tải gì thêm và không cần mạng. (#1034)
+- Đoán chữ sửa được từ gõ trượt phím khi bật **Sửa cả âm tiết gõ sai**: bấm nhầm phím bên cạnh (`mguoifw`),
+  hai phím ngược thứ tự, bấm đúp một phím (`nguoiwff`) hay thừa một phím (`nguwowpif`) đều ra `người` khi
+  các chữ đứng trước cho thấy đó là chữ bạn định gõ, như sau `mọi`. Mỗi từ chỉ sửa một lần trượt, và chỉ
+  sửa khi rất chắc, nên nhiều từ gõ trượt vẫn giữ nguyên. Backspace ngay sau khi sửa trả lại đúng chữ đã gõ.
+  (#1036)
 
 ### Sửa
 

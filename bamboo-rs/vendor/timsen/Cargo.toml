@@ -46,6 +46,10 @@ name = "mixed_eval"
 path = "examples/mixed_eval.rs"
 
 [[example]]
+name = "nearby_check"
+path = "examples/nearby_check.rs"
+
+[[example]]
 name = "open_cost"
 path = "examples/open_cost.rs"
 

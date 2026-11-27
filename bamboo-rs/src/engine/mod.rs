@@ -28,6 +28,7 @@ use packed::Packed;
 
 mod diacritics;
 mod elongated;
+mod nearby;
 mod packed;
 mod teencode;
 
@@ -1072,13 +1073,13 @@ impl BambooEngine {
         if !s.is_empty() {
             self.last_commit_macro = !typed;
         }
-        if !self.private_field {
-            let keys = self.raw_text();
-            let style = self.guess_style();
-            if let Some(d) = &mut self.diacritics {
-                d.set_style(style);
-                d.committed(&s, &keys, typed);
-            }
+        // Taken out while it asks this engine for the words near the keys.
+        if !self.private_field
+            && let Some(mut d) = self.diacritics.take()
+        {
+            d.set_style(self.guess_style());
+            d.committed(&s, &self.raw_text(), typed, &|keys| self.words_near(keys));
+            self.diacritics = Some(d);
         }
         self.commit_text = s;
         self.committed_now = true;

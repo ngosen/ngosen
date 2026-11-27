@@ -444,9 +444,13 @@ namespace {
             check(text == "tôi gõ phím ", "Đoán dấu: Backspace after a fix in a field that shows nothing only deletes" + name, text);
             text = typeGuessingInApp(reports, mode, "toi go phmi2 \b ", {.fixesTypos = true});
             check(text.find('2') != std::string::npos, "Đoán dấu: Backspace after a fixed word with a digit keeps the digit" + name, text);
-            // bna wins by between 3 and 4, bihn by between 2 and 3.
-            for (const auto& [strength, fixed] : {std::pair{0, "tôi gõ bna bihn "}, {1, "tôi gõ bạn bihn "}, {2, "tôi gõ bạn bình "}}) {
-                text = typeGuessingInApp(reports, mode, "toi go bna bihn ", {.fixesTypos = true, .fixStrength = strength});
+            text = typeGuessingInApp(reports, mode, "mguoifw ", {.fixesTypos = true});
+            check(text == "người ", "Đoán dấu: a word one slip from the keys of another is fixed" + name, text);
+            text = typeGuessingInApp(reports, mode, "mguoifw \b ", {.fixesTypos = true});
+            check(text == "mguoifw ", "Đoán dấu: Backspace right after such a fix brings back what was typed" + name, text);
+            // banfm wins by between 3 and 4 at the start of a run, ggo by between 2 and 3 after tôi gõ.
+            for (const auto& [strength, fixed] : {std::pair{0, "bànm. tôi gõ ggo "}, {1, "bạn. tôi gõ ggo "}, {2, "bạn. tôi gõ gõ "}}) {
+                text = typeGuessingInApp(reports, mode, "banfm. toi go ggo ", {.fixesTypos = true, .fixStrength = strength});
                 check(text == fixed, "Đoán dấu: fixing strength " + std::to_string(strength) + " fixes what wins by its margin" + name, text);
             }
             text = typeGuessingInApp(reports, mode, "ban \bf ");

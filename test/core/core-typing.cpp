@@ -297,7 +297,8 @@ namespace {
     struct GuessRun {
         size_t                                           pageAt = 0; // after this many keys the page alone sets the field to pageShows
         std::string                                      pageShows;
-        std::string                                      suggests; // or adds this after the cursor, selected, as autofill does
+        std::string                                      suggests; // or adds this after the cursor, as autofill does
+        bool                                             suggestsSelected = true;
         ngosen::test::AppQuirks                          quirks;
         bool                                             doubleSpace    = false;
         bool                                             fixesTypos     = false;
@@ -347,7 +348,7 @@ namespace {
                 loop.pump(50);
             }
             if (i == run.pageAt && !run.suggests.empty()) {
-                app->suggest(run.suggests, true);
+                app->suggest(run.suggests, run.suggestsSelected);
                 loop.pump(50);
             }
             if (typed[i] == '\x17')
@@ -1323,8 +1324,13 @@ namespace {
             text = typeGuessingInApp(reports, mode, "Hnay,\b.", {.shorthand = true});
             check(text == "Hôm nay.", "chat shorthand: Backspace after a comma takes the comma" + name, text);
             // A preedit field that shows no text cannot have a word deleted from it.
+            text = typeGuessingInApp(makeField("wayland", false), mode, "ko ", {.shorthand = true});
+            check(text == (mode == ngosen::Mode::Sen ? "không " : "ko "), "chat shorthand: off where Backspace could not give the key back" + name, text);
             text = typeGuessingInApp(makeField("wayland", false), mode, "ko \b.", {.shorthand = true});
-            check(text == (mode == ngosen::Mode::Sen ? "ko." : "không."), "chat shorthand: Backspace where the field shows nothing" + name, text);
+            check(text == "ko.", "chat shorthand: Backspace where the field shows nothing" + name, text);
+            // Firefox sets no address bar flag; what follows the cursor there reads as an address.
+            text = typeGuessingInApp(makeField("wayland", true, "firefox"), mode, "ko ", {.pageAt = 2, .suggests = ".com", .suggestsSelected = false, .shorthand = true});
+            check(text == "ko .com", "chat shorthand: off in an address bar that sets no flag" + name, text);
             text = typeGuessingInApp(reports, mode, "ko \x17", {.shorthand = true});
             check(text == "không", "chat shorthand: Ctrl+Backspace keeps the expansion" + name, text);
             text = typeGuessingInApp(reports, mode, "ko \x7f\b", {.shorthand = true});

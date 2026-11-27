@@ -104,9 +104,11 @@ namespace ngosen {
     void TypingState::syncShorthand() {
         const Field field = host_->field();
         // An editor whose terminal cannot be told from its other fields counts as a command line throughout.
-        const bool      commandLine = field.terminal || ngosen::runsShellOnPty(field) || marksEachField();
-        const bool      here        = engine_->options().chatShorthand && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !field.url && !commandLine;
-        const uintptr_t wanted      = here ? engine_->chatShorthand() : 0;
+        const bool commandLine = field.terminal || ngosen::runsShellOnPty(field) || marksEachField();
+        // Backspace gives the typed key back by deleting the expansion, which a preedit needs the field's text for.
+        const bool givesBack = mode() != ngosen::Mode::Preedit || field.surroundingText;
+        const bool here = engine_->options().chatShorthand && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !inAddressBar() && !commandLine && givesBack;
+        const uintptr_t wanted = here ? engine_->chatShorthand() : 0;
         if (wanted == shorthand_)
             return;
         EngineSetShorthand(bambooEngine_.handle(), wanted);

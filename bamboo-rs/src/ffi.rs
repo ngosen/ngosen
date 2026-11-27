@@ -416,6 +416,37 @@ pub extern "C" fn ShorthandSetLearning(table: usize, on: u8) {
     }
 }
 
+/// The abbreviations of `table`, one per line: the key, a tab, its text, a tab, and "kept" when
+/// the user keeps it as typed. Null without a table.
+#[unsafe(no_mangle)]
+pub extern "C" fn ShorthandList(table: usize) -> *mut c_char {
+    let Some(shorthand) = handles::shorthand(table) else {
+        return std::ptr::null_mut();
+    };
+    let lines: Vec<_> = shorthand
+        .list()
+        .iter()
+        .map(|(key, text, kept)| format!("{key}\t{text}\t{}", if *kept { "kept" } else { "" }))
+        .collect();
+    c_string(&lines.join("\n"))
+}
+
+/// Expands the abbreviation `key` again after the user kept it as typed. Returns null, or why it
+/// failed.
+///
+/// # Safety
+/// `key` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ShorthandExpandAgain(table: usize, key: *const c_char) -> *mut c_char {
+    // SAFETY: the caller passes a valid C string or null.
+    let key = unsafe { string_from_c(key) };
+    match handles::shorthand(table).map(|shorthand| shorthand.expand_again(&key)) {
+        Some(Ok(())) => std::ptr::null_mut(),
+        Some(Err(e)) => c_string(&e.to_string()),
+        None => c_string("the chat abbreviations are not loaded"),
+    }
+}
+
 /// Forgets which abbreviations the user keeps as typed. Returns null, or why it failed.
 #[unsafe(no_mangle)]
 pub extern "C" fn ShorthandForget(table: usize) -> *mut c_char {

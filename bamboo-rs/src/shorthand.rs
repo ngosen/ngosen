@@ -102,6 +102,30 @@ impl Shorthand {
         let _ = kept.save();
     }
 
+    /// Every abbreviation with its text and whether the user keeps it as typed, by key.
+    pub fn list(&self) -> Vec<(String, String, bool)> {
+        let kept = self.kept();
+        let mut list: Vec<_> = self
+            .table
+            .entries()
+            .map(|(key, text)| {
+                let count = kept.taken_back.get(key).copied().unwrap_or(0);
+                (key.to_string(), text.to_string(), count >= KEEP_AFTER)
+            })
+            .collect();
+        list.sort();
+        list
+    }
+
+    /// Expands `word` again, whatever the learning switch says: the user asked for this one.
+    pub fn expand_again(&self, word: &str) -> io::Result<()> {
+        let mut kept = self.kept();
+        if kept.taken_back.remove(&word.to_lowercase()).is_none() {
+            return Ok(());
+        }
+        kept.save()
+    }
+
     /// Forgets every count, in memory and in the file.
     pub fn forget(&self) -> io::Result<()> {
         let mut kept = self.kept();
@@ -256,6 +280,28 @@ mod tests {
         );
         assert_eq!(again.get("ko"), Some("không"));
         again.forget().unwrap();
+    }
+
+    #[test]
+    fn the_list_marks_the_kept_keys_and_one_can_expand_again() {
+        let dir = TempDir::new("kept-list");
+        let path = dir.0.join("kept");
+        let s = shorthand(true);
+        s.keep_in(&path);
+        s.taken_back("ko");
+        s.taken_back("ko");
+        s.taken_back("dc");
+        let row = |key: &str, text: &str, kept| (key.to_string(), text.to_string(), kept);
+        assert_eq!(
+            s.list(),
+            [row("dc", "được", false), row("ko", "không", true)]
+        );
+
+        s.set_learning(false);
+        s.expand_again("Ko").unwrap();
+        assert_eq!(s.get("ko"), Some("không"));
+        assert_eq!(fs::read_to_string(&path).unwrap(), "dc\t1\n");
+        s.expand_again("ko").unwrap();
     }
 
     #[test]

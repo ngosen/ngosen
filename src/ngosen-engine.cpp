@@ -568,6 +568,20 @@ namespace fcitx {
         return {true, ""};
     }
 
+    std::string NgoSenEngine::chatShorthandList() const {
+        const ngosen::UniqueCPtr<char> list(ShorthandList(chatShorthand_.handle()));
+        return list ? list.get() : "";
+    }
+
+    std::pair<bool, std::string> NgoSenEngine::expandShorthandAgain(const std::string& key) {
+        const ngosen::UniqueCPtr<char> error(ShorthandExpandAgain(chatShorthand_.handle(), key.c_str()));
+        if (error) {
+            NGOSEN_WARN(std::string("Could not expand a chat abbreviation again: ") + error.get());
+            return {false, error.get()};
+        }
+        return {true, ""};
+    }
+
     bool NgoSenEngine::gnomePortalAnswered() const {
 #ifdef NGOSEN_HAS_DBUS
         if (gnomeShell_)

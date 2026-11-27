@@ -156,6 +156,17 @@ namespace {
         check(!std::filesystem::exists(kept), "forgetting removes their file");
         type(engine, context, "ko ");
         check(context.commits().back() == "không ", "a forgotten key expands again");
+
+        const std::string keptLine = "ko\tkhông\tkept";
+        check(engine.chatShorthandList().find("ko\tkhông\t") != std::string::npos, "the list holds the abbreviations");
+        check(engine.chatShorthandList().find(keptLine) == std::string::npos, "the list marks no key that expands");
+        check(koAfterTwoTakenBack(engine, context) == "ko ", "the key is kept again");
+        check(engine.chatShorthandList().find(keptLine) != std::string::npos, "the list marks a key kept as typed");
+        check(engine.expandShorthandAgain("ko").first, "expanding a kept key again works");
+        check(engine.chatShorthandList().find(keptLine) == std::string::npos, "the list no longer marks it");
+        check(!std::filesystem::exists(kept), "its count leaves the file");
+        type(engine, context, "ko ");
+        check(context.commits().back() == "không ", "the key expands again");
     }
 
 } // namespace

@@ -66,6 +66,8 @@ extern void      ShorthandKeepIn(uintptr_t table, const char* path);
 extern void      ShorthandSetLearning(uintptr_t table, uint8_t on);
 extern char*     ShorthandForget(uintptr_t table);
 extern char*     ShorthandRemoveFile(const char* path);
+extern char*     ShorthandList(uintptr_t table);
+extern char*     ShorthandExpandAgain(uintptr_t table, const char* key);
 extern void      EngineSetDropKeptTail(uintptr_t engine, uint8_t on);
 extern char*     EnginePullDroppedWord(uintptr_t engine);
 extern char*     EnginePullChanges(uintptr_t engine);

@@ -243,6 +243,11 @@ namespace fcitx {
         std::pair<std::string, std::string> saveLearned();
         // Forgets what Đoán dấu learned, in memory and on disk; on failure, why.
         std::pair<bool, std::string> forgetLearned();
+        // The chat abbreviations, one per line: the key, its text, and "kept" when the user keeps it as
+        // typed, each after a tab. Empty when the list did not load.
+        std::string chatShorthandList() const;
+        // Expands an abbreviation again that the user kept as typed; on failure, why.
+        std::pair<bool, std::string> expandShorthandAgain(const std::string& key);
 
         // The name an app's rule and switch are kept under; ctx_<address> for a window without one.
         std::string getProgramName(InputContext* ic) const;

@@ -17,12 +17,12 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   bạn gõ để đoán sát cách bạn viết; việc học bật sẵn, báo một lần bằng thông báo, và trang Đoán chữ có nút
   Xem, Quên hết cùng lời nói rõ học gì, lưu ở đâu. Chữ bung ra từ gõ tắt không bao giờ được học. Trong
   terminal, Đoán dấu nghỉ trừ khi bật **Đoán cả trong terminal**, vì ở đó nó không sửa lại được chữ trước.
-  Gói cài có sẵn bảng đoán dấu (12 MB), không cần tải gì thêm và không cần mạng.
+  Gói cài có sẵn bảng đoán dấu (12 MB), không cần tải gì thêm và không cần mạng. (#1034)
 
 ### Sửa
 
 - Terminal của Xfce (xfce4-terminal) được nhận ra là terminal như Konsole: ở dấu nhắc mật khẩu phím vào
-  đúng như gõ, và chữ có dấu tách rời xoá đúng bằng Backspace.
+  đúng như gõ, và chữ có dấu tách rời xoá đúng bằng Backspace. (#1034)
 
 ## [1.14.3-1] — 26/11/2026
 

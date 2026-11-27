@@ -50,8 +50,13 @@ impl Shorthand {
     /// What `word` stands for, unless the user keeps it as typed.
     pub fn get(&self, word: &str) -> Option<&str> {
         let text = self.table.get(word)?;
+        (!self.keeps(word)).then_some(text)
+    }
+
+    /// Whether `word` is an abbreviation the user keeps as typed.
+    pub fn keeps(&self, word: &str) -> bool {
         let count = self.kept().taken_back.get(&word.to_lowercase()).copied();
-        (count.unwrap_or(0) < KEEP_AFTER).then_some(text)
+        self.table.get(word).is_some() && count.unwrap_or(0) >= KEEP_AFTER
     }
 
     /// Whether taking an abbreviation back is counted. Those already kept stay so.

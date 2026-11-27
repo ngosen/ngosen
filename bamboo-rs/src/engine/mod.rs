@@ -340,6 +340,8 @@ impl WordFacts<'_> {
 pub struct BambooEngine {
     pub(crate) preeditor: Engine,
     pub(crate) macro_table: Arc<MacroTable>,
+    /// Chat abbreviations expanded for everyone; empty turns them off.
+    pub(crate) shorthand: Arc<MacroTable>,
     pub(crate) dictionary: Arc<Dictionary>,
     pub(crate) english_words: Arc<WordList>,
     /// Words whose keys may break a Vietnamese word on purpose; empty turns keeping words off.
@@ -393,6 +395,7 @@ impl BambooEngine {
         Self {
             preeditor: Engine::with_config(input_method, default_config()),
             macro_table,
+            shorthand: Arc::default(),
             dictionary,
             english_words: Arc::default(),
             keep_guard: Arc::default(),
@@ -441,13 +444,24 @@ impl BambooEngine {
         text
     }
 
-    fn get_macro_text(&self) -> Option<String> {
-        if !self.macro_enabled || self.macro_table.is_empty() {
-            return None;
+    /// What `word` expands to: the user's own entry first, then a chat abbreviation.
+    fn macro_for(&self, word: &str) -> Option<String> {
+        if self.macro_enabled
+            && let Some(text) = self.macro_table.get(word)
+        {
+            return Some(self.expand_macro(word, text));
         }
-        let text = self.macro_word();
-        let macro_val = self.macro_table.get(&text)?;
-        Some(self.expand_macro(&text, macro_val))
+        // An abbreviation in capitals is a name of its own, as KO is.
+        let text = self.shorthand.get(word)?;
+        match determine_macro_case(word) {
+            MacroCase::AllSmall => Some(text.to_string()),
+            MacroCase::Capitalized => Some(capitalize_first(text)),
+            MacroCase::AllCapital | MacroCase::NoChange => None,
+        }
+    }
+
+    fn get_macro_text(&self) -> Option<String> {
+        self.macro_for(&self.macro_word())
     }
 
     fn word_facts(&self) -> WordFacts<'_> {
@@ -466,7 +480,7 @@ impl BambooEngine {
         if vn_seq.is_empty() {
             return false;
         }
-        if self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some() {
+        if self.macro_for(&self.last_spaced_word()).is_some() {
             return false;
         }
         // dd stays đ even outside Vietnamese words, since abbreviations use it a lot.
@@ -517,7 +531,7 @@ impl BambooEngine {
             && self.spell_check_with_dicts
             && !self.dictionary.is_empty()
             && word.is_vietnamese_prefix()
-            && !(self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some())
+            && self.macro_for(&self.last_spaced_word()).is_none()
             && !(self.dd_free_style && vn_seq.contains('đ'))
             && has_any_vietnamese_rune(vn_seq)
             && !self.dictionary.starts_word(vn_seq)
@@ -562,7 +576,7 @@ impl BambooEngine {
             && self
                 .get_processed_string(OutputOptions::LOWER_CASE)
                 .is_empty()
-            && !(self.macro_enabled && self.macro_table.get(&self.last_spaced_word()).is_some())
+            && self.macro_for(&self.last_spaced_word()).is_none()
             && has_any_vietnamese_rune(&self.shown_as_composed())
             && self.must_fallback_to_english()
     }
@@ -985,10 +999,7 @@ impl BambooEngine {
     }
 
     fn word_break_text(&mut self, key: char, old_text: &str) -> (String, bool) {
-        if self.macro_enabled
-            && let Some(macro_val) = self.macro_table.get(old_text)
-        {
-            let expanded = self.expand_macro(old_text, macro_val);
+        if let Some(expanded) = self.macro_for(old_text) {
             self.preeditor.reset();
             self.commits_macro = true;
             return (format!("{expanded}{key}"), true);

@@ -199,6 +199,10 @@ msgid "How boldly to fix"
 msgstr ""
 
 #: src/ngosen-config.h
+msgid "Expand chat abbreviations"
+msgstr ""
+
+#: src/ngosen-config.h
 msgid "Guess in terminals too"
 msgstr ""
 

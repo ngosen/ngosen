@@ -256,6 +256,10 @@ msgid "How boldly to fix"
 msgstr "Sửa mạnh tay đến đâu"
 
 #: src/ngosen-config.h
+msgid "Expand chat abbreviations"
+msgstr "Bung chữ viết tắt khi chat"
+
+#: src/ngosen-config.h
 msgid "Guess in terminals too"
 msgstr "Đoán cả trong terminal"
 

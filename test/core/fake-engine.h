@@ -50,6 +50,9 @@ namespace ngosen::test {
         uintptr_t keepWords() const override {
             return keepWords_;
         }
+        uintptr_t chatShorthand() const override {
+            return chatShorthand_;
+        }
         uintptr_t diacritics() const override {
             return options_.guessDiacritics ? diacritics_ : 0;
         }
@@ -77,11 +80,12 @@ namespace ngosen::test {
       private:
         Options                  options_;
         std::vector<KeymapEntry> customKeymap_;
-        uintptr_t                dictionary_   = 0;
-        uintptr_t                macroTable_   = 0;
-        uintptr_t                englishWords_ = 0;
-        uintptr_t                keepWords_    = 0;
-        uintptr_t                diacritics_   = 0;
+        uintptr_t                dictionary_    = 0;
+        uintptr_t                macroTable_    = 0;
+        uintptr_t                englishWords_  = 0;
+        uintptr_t                keepWords_     = 0;
+        uintptr_t                chatShorthand_ = 0;
+        uintptr_t                diacritics_    = 0;
         Recorder                 recorder_;
     };
 

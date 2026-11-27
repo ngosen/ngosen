@@ -216,6 +216,9 @@ namespace fcitx {
         uintptr_t keepWords() const override {
             return keepWords_.handle();
         }
+        uintptr_t chatShorthand() const override {
+            return chatShorthand_.handle();
+        }
         uintptr_t diacritics() const override {
             return options_.guessDiacritics ? diacritics_.handle() : 0;
         }
@@ -300,6 +303,7 @@ namespace fcitx {
         ngosen::CGoObject                           dictionary_;
         ngosen::CGoObject                           englishWords_;
         ngosen::CGoObject                           keepWords_;
+        ngosen::CGoObject                           chatShorthand_;
         ngosen::CGoObject                           diacritics_;
         std::unique_ptr<EventSourceTime>            saveDiacriticsTimer_;
         std::unordered_map<std::string, NgoSenMode> appRules_;
@@ -444,7 +448,7 @@ namespace fcitx {
          */
         void loadAppRules();
 
-        void loadWordList(ngosen::CGoObject& list, const char* path);
+        void loadWordList(ngosen::CGoObject& list, const char* path, uintptr_t (*read)(uintptr_t fd));
         void openDiacritics();
 
         /**

@@ -42,6 +42,7 @@ namespace ngosen {
         bool                       enableMacro                    = true;
         bool                       enableMacroInOffMode           = false;
         bool                       capitalizeMacro                = true;
+        bool                       chatShorthand                  = false;
         LockWordKey                lockWordKey                    = LockWordKey::Ctrl;
         bool                       autoCapitalizeAfterPunctuation = false;
         bool                       capitalizeStartOfText          = false;

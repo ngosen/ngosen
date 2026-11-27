@@ -345,6 +345,7 @@ namespace fcitx {
 
         Option<bool>                                                                   enableMacro{this, "EnableMacro", _("Enable Macro"), ngosen::defaultOptions.enableMacro};
         Option<bool> capitalizeMacro{this, "CapitalizeMacro", _("Capitalize Macro"), ngosen::defaultOptions.capitalizeMacro};
+        Option<bool> chatShorthand{this, "ChatShorthand", _("Expand chat abbreviations"), ngosen::defaultOptions.chatShorthand};
         OptionWithAnnotation<LockWordModifier, LockWordModifierI18NAnnotation> lockWordModifier{this, "LockWordModifier", _("Key to Keep the Word as Typed"),
                                                                                                 static_cast<LockWordModifier>(ngosen::defaultOptions.lockWordKey)};
         Option<bool> autoCapitalizeAfterPunctuation{this, "AutoCapitalizeAfterPunctuation", _("Auto capitalize after sentence-ending punctuation (. ! ? Enter)"),

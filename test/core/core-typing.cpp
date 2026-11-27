@@ -299,11 +299,13 @@ namespace {
         std::string                                      pageShows;
         std::string                                      suggests; // or adds this after the cursor, selected, as autofill does
         ngosen::test::AppQuirks                          quirks;
-        bool                                             doubleSpace = false;
-        bool                                             fixesTypos  = false;
-        int                                              fixStrength = 0;
-        bool                                             guess       = true;
-        bool                                             inTerminals = false;
+        bool                                             doubleSpace    = false;
+        bool                                             fixesTypos     = false;
+        int                                              fixStrength    = 0;
+        bool                                             guess          = true;
+        bool                                             inTerminals    = false;
+        bool                                             shorthand      = false;
+        bool                                             macrosWhileOff = false;
         std::vector<std::pair<std::string, std::string>> macros;
         int                                              keyMs   = 50;
         bool*                                            learned = nullptr; // set to whether Đoán dấu learned anything
@@ -318,11 +320,13 @@ namespace {
         realtextLen.store(0);
         FakeLoop      loop;
         FakeResources resources;
-        resources.mutableOptions().guessDiacritics     = run.guess;
-        resources.mutableOptions().doubleSpaceToPeriod = run.doubleSpace;
-        resources.mutableOptions().guessFixesTypos     = run.fixesTypos;
-        resources.mutableOptions().guessFixStrength    = run.fixStrength;
-        resources.mutableOptions().guessInTerminals    = run.inTerminals;
+        resources.mutableOptions().guessDiacritics      = run.guess;
+        resources.mutableOptions().doubleSpaceToPeriod  = run.doubleSpace;
+        resources.mutableOptions().guessFixesTypos      = run.fixesTypos;
+        resources.mutableOptions().guessFixStrength     = run.fixStrength;
+        resources.mutableOptions().guessInTerminals     = run.inTerminals;
+        resources.mutableOptions().chatShorthand        = run.shorthand;
+        resources.mutableOptions().enableMacroInOffMode = run.macrosWhileOff;
         if (!run.macros.empty())
             resources.setMacros(run.macros);
         const std::string learned = run.learned != nullptr ? learnedFile() : std::string();
@@ -1272,6 +1276,45 @@ namespace {
             const std::string&          value = spellings[first].second;
             check(text == value + " ", "first macro spelling wins: " + spellings[first].first, text);
         }
+    }
+
+    // Chat abbreviations expand in text written for people, and nowhere a command, an address or a
+    // password is typed.
+    void testChatShorthand() {
+        const Field reports  = makeField("wayland", true);
+        Field       terminal = reports;
+        terminal.terminal    = true;
+        Field password       = reports;
+        password.password    = true;
+        Field address        = reports;
+        address.url          = true;
+        const std::vector<std::pair<std::string, Field>> keptAsTyped{
+            {"a terminal", terminal},
+            {"a terminal that sets no terminal flag", makeField("wayland", true, "org.kde.konsole")},
+            {"an editor whose terminal sets no flag", makeField("wayland", true, "code")},
+            {"a password field", password},
+            {"an address bar", address},
+        };
+        for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Preedit}) {
+            const std::string name = mode == ngosen::Mode::Preedit ? " (preedit)" : "";
+            std::string       text = typeGuessingInApp(reports, mode, "ko dc. Hnay ", {.shorthand = true});
+            check(text == "không được. Hôm nay ", "chat shorthand: expands at a word end" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko dc ");
+            check(text == "ko dc ", "chat shorthand: off unless asked for" + name, text);
+            text = typeGuessingInApp(makeField("wayland", true, "firefox"), mode, "ko ", {.shorthand = true});
+            check(text == "không ", "chat shorthand: on in a browser, though a page may show a terminal" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko ", {.shorthand = true, .macros = {{"ko", "kansas"}}});
+            check(text == "kansas ", "chat shorthand: the user's own macro wins" + name, text);
+            for (const auto& [where, field] : keptAsTyped) {
+                text = typeGuessingInApp(field, mode, "ko ", {.shorthand = true});
+                check(text == "ko ", "chat shorthand: off in " + where + name, text);
+            }
+            bool learned = true;
+            typeGuessingInApp(reports, mode, "hnay.", {.shorthand = true, .learned = &learned});
+            check(!learned, "chat shorthand: Đoán dấu never learns an expansion" + name, "learned");
+        }
+        const std::string text = typeGuessingInApp(reports, ngosen::Mode::Off, "e ko ", {.shorthand = true, .macrosWhileOff = true, .macros = {{"e", "em"}}});
+        check(text == "em ko ", "chat shorthand: off while Vietnamese is off, where the user's macros still expand", text);
     }
 
     // TikTok's comment box in Chrome under GNOME applies our backspaces late and loses a commit that
@@ -6971,6 +7014,7 @@ int main() {
     testLockWordNotOnChord();
     testMacroCapitalized();
     testMacroKeyCase();
+    testChatShorthand();
     testBackspaceIntoLastWord("wayland", true);
     testBackspaceIntoLastWord("wayland", false);
     {

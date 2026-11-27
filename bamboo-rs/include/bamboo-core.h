@@ -60,6 +60,8 @@ extern uintptr_t NewDictionary(uintptr_t fd);
 extern uintptr_t NewWordList(uintptr_t fd);
 extern void      EngineSetEnglishWords(uintptr_t engine, uintptr_t list);
 extern void      EngineSetKeepGuard(uintptr_t engine, uintptr_t list);
+extern uintptr_t NewShorthand(uintptr_t fd);
+extern void      EngineSetShorthand(uintptr_t engine, uintptr_t table);
 extern void      EngineSetDropKeptTail(uintptr_t engine, uint8_t on);
 extern char*     EnginePullDroppedWord(uintptr_t engine);
 extern char*     EnginePullChanges(uintptr_t engine);

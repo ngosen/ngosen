@@ -38,6 +38,7 @@ namespace ngosen {
         bambooEngine_.reset();
         bambooEngine_.reset(newBambooEngine());
         diacritics_   = 0;
+        shorthand_    = 0;
         privateField_ = false;
         setOption();
         tracking_modifier_tap_ = false;
@@ -97,6 +98,19 @@ namespace ngosen {
         // Earlier words are replaced only where the field shows they are still there.
         const Surrounding s = host_->surrounding();
         EngineSetWholeRun(bambooEngine_.handle(), reportsTextInTime() && s.isValid() && !s.text().empty() ? 1 : 0);
+    }
+
+    // Abbreviations belong to text written for people: a command, an address or a password keeps its letters.
+    void TypingState::syncShorthand() {
+        const Field field = host_->field();
+        // An editor whose terminal cannot be told from its other fields counts as a command line throughout.
+        const bool      commandLine = field.terminal || ngosen::runsShellOnPty(field) || marksEachField();
+        const bool      here        = engine_->options().chatShorthand && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !field.url && !commandLine;
+        const uintptr_t wanted      = here ? engine_->chatShorthand() : 0;
+        if (wanted == shorthand_)
+            return;
+        EngineSetShorthand(bambooEngine_.handle(), wanted);
+        shorthand_ = wanted;
     }
 
     // An editor deletes exactly through its text, but in a terminal the shell decides what a Backspace
@@ -1036,8 +1050,10 @@ namespace ngosen {
         if (!bambooEngine_ || (retype_ && handleRetypeKey(keyEvent)) || handleEmojiOfferKey(keyEvent) || skipsKey(keyEvent))
             return;
         settleBeforeKey();
-        if (!keyEvent.isRelease() && !keyEvent.isModifier())
+        if (!keyEvent.isRelease() && !keyEvent.isModifier()) {
             syncDiacritics();
+            syncShorthand();
+        }
         if (!keyEvent.isRelease() && !keyEvent.isModifier() && oldPreBuffer_.empty())
             noteTailAtWordStart();
         const uint32_t currentSym = trackCapitalization(keyEvent);

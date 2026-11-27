@@ -856,6 +856,95 @@ fn test_tab_time_macro() {
     assert!(has_shape(time, "dd:dd"), "got {:?}", e.commit_text);
 }
 
+/// An engine as the apps set it up, expanding the shipped chat abbreviations.
+fn shorthand_engine(method: &str) -> BambooEngine {
+    let mut e = engine_with_default_settings(method);
+    e.english_words = shipped_english_words();
+    let pairs: Vec<_> = include_str!("../../../data/chat-shorthand.tsv")
+        .lines()
+        .filter_map(|line| line.split_once('\t'))
+        .collect();
+    e.shorthand = macro_table(&pairs);
+    e
+}
+
+#[test]
+fn shorthand_expands_at_a_word_end() {
+    for (keys, want) in [
+        ("ko ", "không "),
+        ("Ko ", "Không "),
+        ("hnay?", "hôm nay?"),
+        ("tq,", "Trung Quốc,"),
+        ("Tq ", "Trung Quốc "),
+        ("ddc ", "được "),
+        ("Ddc ", "Được "),
+    ] {
+        let mut e = shorthand_engine("Telex");
+        type_keys(&mut e, keys);
+        assert_eq!(e.commit_text, want, "{keys}");
+    }
+}
+
+#[test]
+fn shorthand_in_capitals_stays_as_typed() {
+    for (keys, want) in [
+        ("KO ", "KO "),
+        ("kO ", "kO "),
+        ("TQ ", "TQ "),
+        ("DDC ", "ĐC "),
+    ] {
+        let mut e = shorthand_engine("Telex");
+        type_keys(&mut e, keys);
+        assert_eq!(e.commit_text, want, "{keys}");
+    }
+}
+
+#[test]
+fn every_shipped_abbreviation_can_be_typed() {
+    for (method, d_stroke) in [("Telex", "dd"), ("VNI", "d9")] {
+        for line in include_str!("../../../data/chat-shorthand.tsv").lines() {
+            let (key, text) = line.split_once('\t').unwrap();
+            let mut e = shorthand_engine(method);
+            type_keys(&mut e, &key.replace('đ', d_stroke));
+            e.process_key_event(KEY_SPACE, 0);
+            assert_eq!(e.commit_text, format!("{text} "), "{method} {key}");
+        }
+    }
+}
+
+#[test]
+fn shorthand_is_off_without_a_table() {
+    let mut e = engine_with_default_settings("Telex");
+    type_keys(&mut e, "ko ");
+    assert_eq!(e.commit_text, "ko ");
+}
+
+#[test]
+fn own_macro_wins_over_shorthand() {
+    let mut e = shorthand_engine("Telex");
+    e.macro_table = macro_table(&[("ko", "Kansas")]);
+    type_keys(&mut e, "ko ");
+    assert_eq!(e.commit_text, "Kansas ");
+
+    // The abbreviations do not need the user's macros turned on.
+    e.macro_enabled = false;
+    type_keys(&mut e, "ko ");
+    assert_eq!(e.commit_text, "không ");
+}
+
+#[test]
+fn enter_commits_shorthand_and_tab_does_not() {
+    let mut e = shorthand_engine("Telex");
+    type_keys(&mut e, "ko");
+    assert!(!e.process_key_event(KEY_RETURN, 0));
+    assert_eq!(e.commit_text, "không");
+
+    let mut e = shorthand_engine("Telex");
+    type_keys(&mut e, "ko");
+    assert!(!e.process_key_event(KEY_TAB, 0), "Tab goes to the app");
+    assert_eq!(e.commit_text, "ko");
+}
+
 #[test]
 fn test_can_process_key() {
     let e = new_test_engine(&[], false);
@@ -2868,6 +2957,20 @@ fn a_macro_is_never_learned_whichever_key_expands_it() {
         let mut e = engine_on(&dictionary);
         e.macro_enabled = true;
         e.macro_table = macro_table(&[("nsen", "ngó sen")]);
+        type_keys(&mut e, "nsen");
+        e.process_key_event(key, 0);
+        assert!(e.pull_commit().starts_with("ngó sen"), "{key}");
+        e.reset();
+        assert!(dictionary.lock().unwrap().is_empty(), "{key}");
+    }
+}
+
+#[test]
+fn a_chat_abbreviation_is_never_learned() {
+    for key in [KEY_SPACE, '.' as u32, KEY_RETURN] {
+        let dictionary = shared_dictionary();
+        let mut e = engine_on(&dictionary);
+        e.shorthand = macro_table(&[("nsen", "ngó sen")]);
         type_keys(&mut e, "nsen");
         e.process_key_event(key, 0);
         assert!(e.pull_commit().starts_with("ngó sen"), "{key}");

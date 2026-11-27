@@ -634,8 +634,9 @@ namespace fcitx {
                 }
             }
         }
-        loadWordList(englishWords_, "ngosen/english-common.txt");
-        loadWordList(keepWords_, "ngosen/keep-words.txt");
+        loadWordList(englishWords_, "ngosen/english-common.txt", NewWordList);
+        loadWordList(keepWords_, "ngosen/keep-words.txt", NewWordList);
+        loadWordList(chatShorthand_, "ngosen/chat-shorthand.tsv", NewShorthand);
         loadAppRules();
         loadVimApps();
         loadWebTerminalApps();
@@ -646,7 +647,7 @@ namespace fcitx {
     }
 
     // The list changes only with the package, so a settings reload keeps it.
-    void NgoSenEngine::loadWordList(ngosen::CGoObject& list, const char* path) {
+    void NgoSenEngine::loadWordList(ngosen::CGoObject& list, const char* path, uintptr_t (*read)(uintptr_t fd)) {
         if (list)
             return;
 #if NGOSEN_USE_MODERN_FCITX_API
@@ -655,7 +656,7 @@ namespace fcitx {
         auto fd = StandardPath::global().open(StandardPath::Type::PkgData, path, O_RDONLY);
 #endif
         if (fd.isValid())
-            list.reset(NewWordList(fd.release()));
+            list.reset(read(fd.release()));
         else
             NGOSEN_WARN(std::string("Word list not found: ") + path);
     }
@@ -820,6 +821,7 @@ namespace fcitx {
         o.enableMacro                    = config_.enableMacro.value();
         o.enableMacroInOffMode           = config_.enableMacroInOffMode.value();
         o.capitalizeMacro                = config_.capitalizeMacro.value();
+        o.chatShorthand                  = config_.chatShorthand.value();
         o.autoCapitalizeAfterPunctuation = config_.autoCapitalizeAfterPunctuation.value();
         o.capitalizeStartOfText          = config_.capitalizeStartOfText.value();
         o.doubleSpaceToPeriod            = config_.doubleSpaceToPeriod.value();

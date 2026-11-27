@@ -43,6 +43,7 @@ namespace {
         c.setValueByPath("EnableMacro", "False");
         c.setValueByPath("EnableMacroInOffMode", "True");
         c.setValueByPath("CapitalizeMacro", "False");
+        c.setValueByPath("ChatShorthand", "True");
         c.setValueByPath("LockWordModifier", "Alt");
         c.setValueByPath("AutoCapitalizeAfterPunctuation", "True");
         c.setValueByPath("DoubleSpaceToPeriod", "True");
@@ -87,6 +88,7 @@ namespace {
         check(step + ": EnableMacro", o.enableMacro == c.enableMacro.value());
         check(step + ": EnableMacroInOffMode", o.enableMacroInOffMode == c.enableMacroInOffMode.value());
         check(step + ": CapitalizeMacro", o.capitalizeMacro == c.capitalizeMacro.value());
+        check(step + ": ChatShorthand", o.chatShorthand == c.chatShorthand.value());
         check(step + ": AutoCapitalizeAfterPunctuation", o.autoCapitalizeAfterPunctuation == c.autoCapitalizeAfterPunctuation.value());
         check(step + ": CapitalizeStartOfText", o.capitalizeStartOfText == c.capitalizeStartOfText.value());
         check(step + ": DoubleSpaceToPeriod", o.doubleSpaceToPeriod == c.doubleSpaceToPeriod.value());
@@ -136,6 +138,7 @@ namespace {
         check("default EnableMacro", o.enableMacro == d.enableMacro);
         check("default EnableMacroInOffMode", o.enableMacroInOffMode == d.enableMacroInOffMode);
         check("default CapitalizeMacro", o.capitalizeMacro == d.capitalizeMacro);
+        check("default ChatShorthand", o.chatShorthand == d.chatShorthand);
         check("default LockWordModifier", o.lockWordKey == d.lockWordKey);
         check("default AutoCapitalizeAfterPunctuation", o.autoCapitalizeAfterPunctuation == d.autoCapitalizeAfterPunctuation);
         check("default CapitalizeStartOfText", o.capitalizeStartOfText == d.capitalizeStartOfText);
@@ -169,6 +172,7 @@ int main() {
     fcitx::NgoSenEngine engine(&testInstance.instance);
     checkMatches("defaults", engine);
     checkCoreDefaults(engine.options());
+    check("the chat abbreviations load", engine.chatShorthand() != 0);
 
     engine.setConfig(changedConfig());
     check("the changed values took effect",

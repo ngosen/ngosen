@@ -327,11 +327,11 @@ pub extern "C" fn GetInputMethodNames() -> *mut *mut c_char {
 }
 
 /// Takes ownership of `fd` and closes it; `None` for a value that is not a descriptor.
-fn read_words(fd: usize) -> Option<Vec<String>> {
+fn read_lines(fd: usize) -> Option<Vec<String>> {
     let fd = i32::try_from(fd).ok()?;
     // SAFETY: the caller hands over an open file descriptor it no longer uses.
     let file = unsafe { File::from_raw_fd(fd) };
-    let words = BufReader::new(file)
+    let lines = BufReader::new(file)
         .split(b'\n')
         .map_while(Result::ok)
         .map(|mut line| {
@@ -341,9 +341,14 @@ fn read_words(fd: usize) -> Option<Vec<String>> {
             line
         })
         .filter(|line| !line.is_empty())
-        .map(|line| String::from_utf8_lossy(&line).to_lowercase())
+        .map(|line| String::from_utf8_lossy(&line).into_owned())
         .collect();
-    Some(words)
+    Some(lines)
+}
+
+fn read_words(fd: usize) -> Option<Vec<String>> {
+    let words = read_lines(fd)?;
+    Some(words.iter().map(|word| word.to_lowercase()).collect())
 }
 
 /// Takes ownership of `fd` and closes it. One word per line; words are matched lowercased.
@@ -364,6 +369,27 @@ pub extern "C" fn NewWordList(fd: usize) -> usize {
     };
     let words: WordList = words.into_iter().collect();
     handles::new_handle(Object::WordList(Arc::new(words)))
+}
+
+/// Takes ownership of `fd` and closes it. One abbreviation per line, a tab, then what it stands
+/// for; a line without a tab is skipped.
+#[unsafe(no_mangle)]
+pub extern "C" fn NewShorthand(fd: usize) -> usize {
+    let Some(lines) = read_lines(fd) else {
+        return 0;
+    };
+    let pairs = lines.iter().filter_map(|line| {
+        let (key, text) = line.split_once('\t')?;
+        Some((key.to_string(), text.to_string()))
+    });
+    handles::new_handle(Object::MacroTable(Arc::new(MacroTable::new(pairs))))
+}
+
+/// Expands the abbreviations of `table`, from `NewShorthand`, in this engine; 0 turns that off.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetShorthand(engine: usize, table: usize) {
+    let table = handles::macro_table(table).unwrap_or_default();
+    handles::with_engine(engine, |e| e.shorthand = table);
 }
 
 /// A Backspace keeps English keys as typed; 0 for `list` means no English words.

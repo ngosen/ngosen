@@ -23,6 +23,10 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   các chữ đứng trước cho thấy đó là chữ bạn định gõ, như sau `mọi`. Mỗi từ chỉ sửa một lần trượt, và chỉ
   sửa khi rất chắc, nên nhiều từ gõ trượt vẫn giữ nguyên. Backspace ngay sau khi sửa trả lại đúng chữ đã gõ.
   (#1036)
+- Đoán chữ sửa được nhiều từ gõ trượt hơn: từ chưa đủ chắc lúc gõ xong thì được xét lại khi bạn gõ xong từ
+  kế tiếp, có thêm từ đó làm căn cứ. Gõ `tooi nois tieegns vieetj` thì `tieegns` thành `tiếng` ngay khi
+  `việt` gõ xong. Vì lúc đó chữ được sửa là từ đứng trước, việc này chỉ chạy ở ô nhập cho bộ gõ xem chữ đang
+  có. Backspace ngay sau từ kế tiếp trả lại đúng chữ đã gõ và từ đó về sau giữ nguyên chữ ấy. (#1037)
 
 ### Sửa
 

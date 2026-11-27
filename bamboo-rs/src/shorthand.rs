@@ -120,10 +120,16 @@ impl Shorthand {
     /// Expands `word` again, whatever the learning switch says: the user asked for this one.
     pub fn expand_again(&self, word: &str) -> io::Result<()> {
         let mut kept = self.kept();
-        if kept.taken_back.remove(&word.to_lowercase()).is_none() {
+        let key = word.to_lowercase();
+        let Some(count) = kept.taken_back.remove(&key) else {
             return Ok(());
+        };
+        let saved = kept.save();
+        // Or the file brings the key back as kept after a restart, with nothing left to retry.
+        if saved.is_err() {
+            kept.taken_back.insert(key, count);
         }
-        kept.save()
+        saved
     }
 
     /// Forgets every count, in memory and in the file.
@@ -302,6 +308,25 @@ mod tests {
         assert_eq!(s.get("ko"), Some("không"));
         assert_eq!(fs::read_to_string(&path).unwrap(), "dc\t1\n");
         s.expand_again("ko").unwrap();
+    }
+
+    #[test]
+    fn a_key_that_could_not_be_expanded_again_stays_kept() {
+        let dir = TempDir::new("kept-retry");
+        let path = dir.0.join("kept");
+        let s = shorthand(true);
+        s.keep_in(&path);
+        s.taken_back("ko");
+        s.taken_back("ko");
+        s.taken_back("dc");
+        fs::create_dir(unfinished(&path)).unwrap();
+        assert!(s.expand_again("ko").is_err());
+        assert_eq!(s.get("ko"), None);
+
+        fs::remove_dir(unfinished(&path)).unwrap();
+        s.expand_again("ko").unwrap();
+        assert_eq!(s.get("ko"), Some("không"));
+        assert_eq!(fs::read_to_string(&path).unwrap(), "dc\t1\n");
     }
 
     #[test]

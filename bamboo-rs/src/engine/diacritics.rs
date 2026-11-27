@@ -106,6 +106,8 @@ pub struct Diacritics {
     /// What the last commit put after its last word, until anything else is committed or a key
     /// ends the run: only then can that word's fix be undone.
     tail: Option<String>,
+    /// The last word committed made the word before it fixed.
+    later_fix: bool,
     /// How far a fix must score above the rest before it is made; None makes none.
     fix_margin: Option<f64>,
     reach: Reach,
@@ -185,6 +187,7 @@ impl Diacritics {
             from_macro: Vec::new(),
             reopened: None,
             tail: None,
+            later_fix: false,
             fix_margin: Some(FIX_MARGIN),
             reach: Reach::Run,
             style: ToneStyle::New,
@@ -252,8 +255,66 @@ impl Diacritics {
         self.field.pop();
         self.over = false;
         self.learned = self.learned.min(run.len());
+        self.later_fix = false;
         self.reopened = Some((typed.clone(), from_macro));
         Some((shown, typed))
+    }
+
+    /// Whether the last commit ended in a word that made the word before it fixed: an undo would
+    /// take that fix back.
+    pub fn can_undo_earlier(&self) -> bool {
+        self.later_fix
+            && self.tail.is_some()
+            && self.reach == Reach::Run
+            && (self.run.as_ref()).is_some_and(|run| run.last_fix() == run.len().checked_sub(2))
+    }
+
+    /// The text the field shows from the word `undo_earlier_fix` would bring back to the cursor.
+    pub fn earlier_fix_shown(&self) -> Option<String> {
+        // Until the front end applies the changes, the field does not show the fix.
+        if !self.can_undo_earlier() || !self.changes.is_empty() {
+            return None;
+        }
+        let from = self.words.checked_sub(2)?.checked_sub(self.field_start)?;
+        Some(self.field_text(from))
+    }
+
+    /// Takes back the fix the last word committed made to the word before it, which stays as
+    /// typed from then on and is learned so. Returns the text the field shows from that word to
+    /// the cursor, and the text to show there instead.
+    pub fn undo_earlier_fix(&mut self) -> Option<Replacement> {
+        self.earlier_fix_shown()?;
+        self.later_fix = false;
+        let run = self.run.as_mut()?;
+        let at = run.len() - 2;
+        run.undo_fix();
+        let change = run.change(self.over, self.reach, self.style)?;
+        if !run.apply(&change) {
+            return None;
+        }
+        let end = self.words - (run.len() - change.first - change.old.len());
+        self.changes.push((change, end));
+        self.learn_as_typed(at);
+        self.pull_field_change()
+    }
+
+    /// Learns word `at` of the run as typed: with the rest of the run when that is still to come,
+    /// alone when the words around it are learned already.
+    fn learn_as_typed(&mut self, at: usize) {
+        if at >= self.learned {
+            self.undone.push(at);
+            return;
+        }
+        if self.from_macro.contains(&at) {
+            return;
+        }
+        let mut run = vec![None; self.typed.len()];
+        run[at] = Some(self.typed[at].as_str());
+        // Checked under the lock a forget takes, as in `learn`.
+        let mut dictionary = lock(&self.dictionary);
+        if self.learning.allows(self.run_epoch) {
+            dictionary.learn(&run);
+        }
     }
 
     /// What the engine committed at a word end, and its keys; `typed` is false for a macro's text.
@@ -264,6 +325,7 @@ impl Diacritics {
         let keys = keys.trim_end_matches(|c: char| !c.is_alphanumeric());
         let keys = (words_of(text).len() == 1).then_some(keys);
         self.drop_forgotten_run();
+        self.later_fix = false;
         let reopened = self.reopened.take();
         let last = text.rfind(char::is_alphabetic);
         let tail = last.map(|i| text[i..].chars().skip(1).collect());
@@ -303,6 +365,7 @@ impl Diacritics {
         self.end_run();
         self.reopened = None;
         self.tail = None;
+        self.later_fix = false;
     }
 
     /// A reset: the cursor moved or the field lost focus, so the field no longer holds the run
@@ -351,15 +414,17 @@ impl Diacritics {
             self.run_forgets = self.learning.forgets();
         }
         let (dictionary, margin) = (&self.dictionary, self.margin());
-        let run = self.run.get_or_insert_with(|| {
-            let typing = lock(dictionary).typing();
-            Run::new(typing, RAW_CONFIDENCE).fixing(margin)
-        });
+        let run = (self.run.take())
+            .unwrap_or_else(|| Run::new(lock(dictionary).typing(), RAW_CONFIDENCE).fixing(margin));
+        // A fix made after the next word changes the word before the last, and a field can start
+        // to show its text during the run.
+        let run = self.run.insert(run.fixing_again(self.reach == Reach::Run));
         let letters = keys.filter(|k| k.chars().all(|c| c.is_ascii_alphabetic()));
         // Keys that differ from the text and are plain letters are the word's second reading.
         let raw = letters.filter(|k| *k != word && has_any_vietnamese_rune(word));
         // A word neither reading of which is known was mistyped, or is new.
         let slipped = run.may_fix(word) && raw.is_none_or(|keys| run.may_fix(keys));
+        let (before, fixed) = (run.len().checked_sub(1), run.last_fix());
         match (raw, letters.filter(|k| !k.is_empty()).zip(near)) {
             _ if as_typed => {
                 self.undone.push(run.len());
@@ -375,6 +440,7 @@ impl Diacritics {
             (Some(keys), _) => run.push_either(word, keys),
             _ => run.push(word),
         }
+        self.later_fix = before.is_some() && run.last_fix() == before && fixed != before;
         self.typed.push(word.to_string());
         self.words += 1;
     }
@@ -419,6 +485,7 @@ impl Diacritics {
         self.learned = 0;
         self.reopened = None;
         self.tail = None;
+        self.later_fix = false;
     }
 
     fn drop_forgotten_run(&mut self) {

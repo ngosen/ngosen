@@ -1168,6 +1168,10 @@ namespace ngosen {
         std::optional<std::string> takeBackFix();
         bool                       undoFixInField(ngosen::KeyPress& keyEvent);
         bool                       undoFixInPreedit(ngosen::KeyPress& keyEvent);
+        // The change that takes back the fix the last word made Đoán dấu make to the word before it.
+        std::optional<std::pair<std::string, std::string>> takeBackEarlierFix();
+        bool                                               undoEarlierFixInField(ngosen::KeyPress& keyEvent);
+        bool                                               undoEarlierFixInPreedit(ngosen::KeyPress& keyEvent);
         // Commits a word from the preedit with Đoán dấu's changes; returns the word Backspace may reopen.
         std::string commitGuessInPreedit(const std::string& text, bool keyTaken);
         // The engine finished a word: send what differs from the text already typed.

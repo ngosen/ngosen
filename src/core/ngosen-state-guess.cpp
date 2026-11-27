@@ -112,6 +112,56 @@ namespace ngosen {
         return true;
     }
 
+    // Backspace right after a word that made Đoán dấu fix the word before it: what the field shows
+    // from the fixed word to the cursor, and what was typed there.
+    std::optional<std::pair<std::string, std::string>> TypingState::takeBackEarlierFix() {
+        if (diacritics_ == 0 || !reportsTextInTime())
+            return std::nullopt;
+        const UniqueCPtr<char> shown(EngineEarlierFixShown(bambooEngine_.handle()));
+        if (!shown)
+            return std::nullopt;
+        const std::string fixed = spelledAtWordEnd(shown.get());
+        const Surrounding s     = host_->surrounding();
+        // Taking the fix back teaches the word as typed, so not when the field shows other words.
+        if (!s.isValid() || s.cursor() != s.anchor() || !endsBeforeCursor(s, fixed, false))
+            return std::nullopt;
+        const UniqueCPtr<char> typed(EngineUndoEarlierFix(bambooEngine_.handle()));
+        if (!typed)
+            return std::nullopt;
+        lastWord_.clear();
+        droppedWord_.clear();
+        NGOSEN_INFO("Undo fix: the word before");
+        return std::pair{fixed, spelledAtWordEnd(typed.get())};
+    }
+
+    bool TypingState::undoEarlierFixInField(ngosen::KeyPress& keyEvent) {
+        if (!oldPreBuffer_.empty() || !canSendBackspaces())
+            return false;
+        const auto change = takeBackEarlierFix();
+        if (!change)
+            return false;
+        std::string deletedPart;
+        std::string addedPart;
+        utf8::compareAndSplitStrings(change->first, change->second, deletedPart, addedPart);
+        is_deleting_.store(false, std::memory_order_release);
+        keyEvent.accept();
+        performReplacement(change->first, deletedPart, addedPart);
+        return true;
+    }
+
+    bool TypingState::undoEarlierFixInPreedit(ngosen::KeyPress& keyEvent) {
+        const auto change = takeBackEarlierFix();
+        if (!change)
+            return false;
+        std::string deletedPart;
+        std::string addedPart;
+        utf8::compareAndSplitStrings(change->first, change->second, deletedPart, addedPart);
+        keyEvent.accept();
+        deleteBeforeCursor(utf8::length(deletedPart));
+        commit(addedPart);
+        return true;
+    }
+
     std::string TypingState::commitGuessInPreedit(const std::string& text, bool keyTaken) {
         auto guess = takeGuess(text, "");
         // A key the app gets would land before the replacement finishes.

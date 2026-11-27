@@ -156,6 +156,11 @@ namespace fcitx {
 #endif
         }
 
+        // Which chat abbreviations the user took back, and how often in a row.
+        std::string keptShorthandFile() {
+            return (userDataDir() / "kept-chat-shorthand").string();
+        }
+
         void migrateLegacyMode(RawConfig& config) {
             if (const auto* mode = config.valueByPath("Mode"); mode != nullptr && isFormerSenModeName(*mode)) {
                 config.setValueByPath("Mode", "Sen");
@@ -554,6 +559,11 @@ namespace fcitx {
             NGOSEN_WARN(std::string("Could not forget what Đoán dấu learned: ") + error.get());
             return {false, error.get()};
         }
+        const ngosen::UniqueCPtr<char> keptError(chatShorthand_ ? ShorthandForget(chatShorthand_.handle()) : ShorthandRemoveFile(keptShorthandFile().c_str()));
+        if (keptError) {
+            NGOSEN_WARN(std::string("Could not forget the chat abbreviations kept as typed: ") + keptError.get());
+            return {false, keptError.get()};
+        }
         NGOSEN_INFO("Đoán dấu forgot what it learned.");
         return {true, ""};
     }
@@ -637,6 +647,8 @@ namespace fcitx {
         loadWordList(englishWords_, "ngosen/english-common.txt", NewWordList);
         loadWordList(keepWords_, "ngosen/keep-words.txt", NewWordList);
         loadWordList(chatShorthand_, "ngosen/chat-shorthand.tsv", NewShorthand);
+        if (chatShorthand_)
+            ShorthandKeepIn(chatShorthand_.handle(), keptShorthandFile().c_str());
         loadAppRules();
         loadVimApps();
         loadWebTerminalApps();
@@ -868,6 +880,8 @@ namespace fcitx {
         // Kept open while Đoán dấu is off, so it learns nothing then either.
         if (diacritics_)
             DiacriticsSetLearning(diacritics_.handle(), options_.guessDiacritics && options_.learnDiacritics ? 1 : 0);
+        if (chatShorthand_)
+            ShorthandSetLearning(chatShorthand_.handle(), options_.learnDiacritics ? 1 : 0);
         announceLearning();
         refreshEngine();
         refreshOption();

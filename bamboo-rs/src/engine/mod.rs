@@ -18,6 +18,7 @@ use bamboo_core::{
 };
 
 use crate::macro_table::MacroTable;
+use crate::shorthand::Shorthand;
 use crate::spelling::VietnameseSpelling;
 use crate::text::{
     Typed, has_any_vietnamese_rune, has_any_vietnamese_vowel, is_word_break_symbol, vowel_count,
@@ -341,7 +342,7 @@ pub struct BambooEngine {
     pub(crate) preeditor: Engine,
     pub(crate) macro_table: Arc<MacroTable>,
     /// Chat abbreviations expanded for everyone; empty turns them off.
-    pub(crate) shorthand: Arc<MacroTable>,
+    pub(crate) shorthand: Arc<Shorthand>,
     pub(crate) dictionary: Arc<Dictionary>,
     pub(crate) english_words: Arc<WordList>,
     /// Words whose keys may break a Vietnamese word on purpose; empty turns keeping words off.
@@ -1351,7 +1352,10 @@ impl BambooEngine {
     /// Returns whether the key was used; the caller forwards it to the app otherwise.
     pub fn process_key_event(&mut self, key_val: u32, state: u32) -> bool {
         self.dropped_word.clear();
-        self.expanded_from.clear();
+        let expanded = std::mem::take(&mut self.expanded_from);
+        if !expanded.is_empty() {
+            self.shorthand.accepted(&expanded);
+        }
         self.fix_undoable = false;
         self.earlier_fix_undoable = false;
         self.committed_now = false;
@@ -1745,7 +1749,12 @@ impl BambooEngine {
     pub fn reopen_committed(&mut self, text: &str) {
         let (from_macro, from_abbreviation) =
             (self.last_commit_macro, self.last_commit_abbreviation);
-        let kept = self.expanded_from == text || self.left_as_typed.as_deref() == Some(text);
+        let expanded = !text.is_empty() && self.expanded_from == text;
+        if expanded {
+            self.shorthand.taken_back(text);
+            self.expanded_from.clear();
+        }
+        let kept = expanded || self.left_as_typed.as_deref() == Some(text);
         let taken_back = (!text.is_empty() && kept).then(|| text.to_string());
         self.rebuild_from_text(text);
         self.commits_macro = from_macro;

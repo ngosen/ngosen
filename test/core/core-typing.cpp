@@ -307,6 +307,7 @@ namespace {
         bool                                             shorthand      = false;
         bool                                             macrosWhileOff = false;
         std::vector<std::pair<std::string, std::string>> macros;
+        std::string                                      keptIn; // the file that counts the chat abbreviations taken back
         int                                              keyMs   = 50;
         bool*                                            learned = nullptr; // set to whether Đoán dấu learned anything
     };
@@ -329,6 +330,8 @@ namespace {
         resources.mutableOptions().enableMacroInOffMode = run.macrosWhileOff;
         if (!run.macros.empty())
             resources.setMacros(run.macros);
+        if (!run.keptIn.empty())
+            resources.keepShorthandIn(run.keptIn);
         const std::string learned = run.learned != nullptr ? learnedFile() : std::string();
         if (run.learned != nullptr)
             resources.learnDiacriticsInto(learned);
@@ -1337,6 +1340,22 @@ namespace {
             check(text == "kansas.", "chat shorthand: the user's own macro is not given back" + name, text);
             typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true, .learned = &learned});
             check(!learned, "chat shorthand: Đoán dấu never learns a key given back" + name, "learned");
+        }
+        for (const auto mode : {ngosen::Mode::Sen, ngosen::Mode::Preedit}) {
+            const std::string name = mode == ngosen::Mode::Preedit ? " (preedit)" : "";
+            const std::string kept = learnedFile();
+            std::string       text = typeGuessingInApp(reports, mode, "ko \b ko \b ko dc ", {.shorthand = true, .keptIn = kept});
+            check(text == "ko ko ko được ", "chat shorthand: taken back twice in a row, a key stays as typed" + name, text);
+            text = typeGuessingInApp(reports, mode, "ko ", {.shorthand = true, .keptIn = kept});
+            check(text == "ko ", "chat shorthand: a key kept as typed stays so after a restart" + name, text);
+            std::filesystem::remove(kept);
+            text = typeGuessingInApp(reports, mode, "ko \b ko a ko \b ko ", {.shorthand = true, .keptIn = kept});
+            check(text == "ko không a ko không ", "chat shorthand: an expansion left in place starts the count again" + name, text);
+            std::filesystem::remove(kept);
+            text = typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true, .keptIn = kept});
+            text = typeGuessingInApp(reports, mode, "ko \b ko ", {.shorthand = true, .keptIn = kept});
+            check(text == "ko ko ", "chat shorthand: the count carries over a restart" + name, text);
+            std::filesystem::remove(kept);
         }
         const std::string text = typeGuessingInApp(reports, ngosen::Mode::Off, "e ko ", {.shorthand = true, .macrosWhileOff = true, .macros = {{"e", "em"}}});
         check(text == "em ko ", "chat shorthand: off while Vietnamese is off, where the user's macros still expand", text);

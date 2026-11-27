@@ -28,6 +28,12 @@ pub fn macro_table(pairs: &[(&str, &str)]) -> Arc<MacroTable> {
     Arc::new(MacroTable::new(table))
 }
 
+/// Chat abbreviations that count nothing until a test turns learning on.
+fn shorthand(pairs: &[(&str, &str)]) -> Arc<Shorthand> {
+    let table = pairs.iter().map(|&(k, v)| (k.to_string(), v.to_string()));
+    Arc::new(Shorthand::new(MacroTable::new(table)))
+}
+
 const SHIFT_MASK: u32 = 1 << 0;
 
 /// Checks `s` against a shape such as "dd:dd", where `d` stands for a digit.
@@ -864,7 +870,7 @@ fn shorthand_engine(method: &str) -> BambooEngine {
         .lines()
         .filter_map(|line| line.split_once('\t'))
         .collect();
-    e.shorthand = macro_table(&pairs);
+    e.shorthand = shorthand(&pairs);
     e
 }
 
@@ -959,6 +965,47 @@ fn a_key_given_back_stays_when_its_word_is_reopened() {
     e.reopen_committed("ko");
     e.process_key_event('.' as u32, 0);
     assert_eq!(e.commit_text, "ko.");
+}
+
+#[test]
+fn an_abbreviation_taken_back_twice_in_a_row_stays_as_typed() {
+    let mut e = shorthand_engine("Telex");
+    e.shorthand.set_learning(true);
+    for _ in 0..2 {
+        type_keys(&mut e, "ko ");
+        assert_eq!(e.commit_text, "không ");
+        take_back(&mut e, "ko");
+        e.process_key_event(KEY_SPACE, 0);
+    }
+    type_keys(&mut e, "ko ");
+    assert_eq!(e.commit_text, "ko ");
+    type_keys(&mut e, "dc ");
+    assert_eq!(e.commit_text, "được ", "the others still expand");
+}
+
+#[test]
+fn an_abbreviation_left_in_place_is_counted_from_the_start_again() {
+    let mut e = shorthand_engine("Telex");
+    e.shorthand.set_learning(true);
+    type_keys(&mut e, "ko ");
+    take_back(&mut e, "ko");
+    type_keys(&mut e, " ko a ko ");
+    take_back(&mut e, "ko");
+    type_keys(&mut e, " ko ");
+    assert_eq!(e.commit_text, "không ");
+}
+
+#[test]
+fn reopening_a_kept_key_is_not_counted_again() {
+    let mut e = shorthand_engine("Telex");
+    e.shorthand.set_learning(true);
+    type_keys(&mut e, "ko ");
+    take_back(&mut e, "ko");
+    e.process_key_event(KEY_SPACE, 0);
+    e.pull_commit();
+    e.reopen_committed("ko");
+    type_keys(&mut e, " ko ");
+    assert_eq!(e.commit_text, "không ");
 }
 
 #[test]
@@ -3035,7 +3082,7 @@ fn a_macro_is_never_learned_whichever_key_expands_it() {
 #[test]
 fn a_chat_abbreviation_is_never_guessed_again() {
     let mut e = engine_on(&shared_dictionary());
-    e.shorthand = macro_table(&[("bn", "ban")]);
+    e.shorthand = shorthand(&[("bn", "ban")]);
     let mut field = Vec::new();
     type_into(&mut e, &mut field, &[("bn", ' '), ("phim", '.')]);
     assert_eq!(field, ["ban", "phím"]);
@@ -3045,7 +3092,7 @@ fn a_chat_abbreviation_is_never_guessed_again() {
 fn an_abbreviation_taken_back_is_not_guessed_or_learned() {
     let dictionary = shared_dictionary();
     let mut e = engine_on(&dictionary);
-    e.shorthand = macro_table(&[("toi", "tao")]);
+    e.shorthand = shorthand(&[("toi", "tao")]);
     type_keys(&mut e, "toi ");
     take_back(&mut e, "toi");
     let mut field = Vec::new();
@@ -3060,7 +3107,7 @@ fn a_chat_abbreviation_is_never_learned() {
     for key in [KEY_SPACE, '.' as u32, KEY_RETURN] {
         let dictionary = shared_dictionary();
         let mut e = engine_on(&dictionary);
-        e.shorthand = macro_table(&[("nsen", "ngó sen")]);
+        e.shorthand = shorthand(&[("nsen", "ngó sen")]);
         type_keys(&mut e, "nsen");
         e.process_key_event(key, 0);
         assert!(e.pull_commit().starts_with("ngó sen"), "{key}");

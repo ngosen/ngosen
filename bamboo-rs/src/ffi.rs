@@ -431,6 +431,24 @@ pub extern "C" fn ShorthandList(table: usize) -> *mut c_char {
     c_string(&lines.join("\n"))
 }
 
+/// Holds the next expansion from `table` for `ShorthandTakeFirstUse`.
+#[unsafe(no_mangle)]
+pub extern "C" fn ShorthandAwaitUse(table: usize) {
+    if let Some(shorthand) = handles::shorthand(table) {
+        shorthand.await_use();
+    }
+}
+
+/// The expansion `ShorthandAwaitUse` asked for, once: what was typed, a tab, what it became. Null
+/// until there is one.
+#[unsafe(no_mangle)]
+pub extern "C" fn ShorthandTakeFirstUse(table: usize) -> *mut c_char {
+    match handles::shorthand(table).and_then(|shorthand| shorthand.take_first_use()) {
+        Some((word, text)) => c_string(&format!("{word}\t{text}")),
+        None => std::ptr::null_mut(),
+    }
+}
+
 /// Expands the abbreviation `key` again after the user kept it as typed. Returns null, or why it
 /// failed.
 ///

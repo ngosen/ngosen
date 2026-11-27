@@ -1044,6 +1044,7 @@ impl BambooEngine {
             self.commits_abbreviation = abbreviation;
             if abbreviation {
                 self.unjudged = old_text.to_string();
+                self.shorthand.expanded(old_text, &expanded);
             }
             // After a comma or a full stop Backspace takes that key, as it does after any word.
             if abbreviation && key == ' ' {
@@ -1393,6 +1394,7 @@ impl BambooEngine {
                         self.commits_macro = true;
                         self.commits_abbreviation = abbreviation;
                         if abbreviation {
+                            self.shorthand.expanded(&word, &macro_text);
                             self.unjudged = word;
                         }
                         macro_text

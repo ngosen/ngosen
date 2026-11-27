@@ -128,6 +128,8 @@ namespace fcitx {
         void announceRelease(const std::string& release);
         // Tells, once, that Đoán dấu learns from what the user types.
         void announceLearning();
+        // Tells, once, what the first chat abbreviation became and how to take it back.
+        void announceShorthand();
 
         /**
          * @brief Gets the current configuration.
@@ -328,6 +330,7 @@ namespace fcitx {
         std::unique_ptr<EventSourceTime> cycleModeNotificationTimer_;
         std::unique_ptr<EventSourceTime> announceTimer_;
         std::unique_ptr<EventSourceTime> announceLearningTimer_;
+        bool                             awaitsShorthandUse_ = false;
         std::unique_ptr<EventSourceTime> menuClickTimer_;
         // Instance::eventDispatcher() needs fcitx5 newer than Ubuntu 24.04 and Debian 12 ship.
         EventDispatcher clickDispatcher_;

@@ -779,6 +779,38 @@ namespace fcitx {
 #endif
     }
 
+    void NgoSenEngine::announceShorthand() {
+#ifdef NGOSEN_HAS_NOTIFICATIONS
+        if (!chatShorthand_ || !options_.chatShorthand || *config_.chatShorthandAnnounced)
+            return;
+        if (!awaitsShorthandUse_) {
+            ShorthandAwaitUse(chatShorthand_.handle());
+            awaitsShorthandUse_ = true;
+        }
+        const ngosen::UniqueCPtr<char> first(ShorthandTakeFirstUse(chatShorthand_.handle()));
+        if (!first)
+            return;
+        awaitsShorthandUse_ = false;
+        auto* addon         = notifications();
+        if (addon == nullptr) {
+            NGOSEN_WARN("No notifications addon; the first chat abbreviation is not announced");
+            return;
+        }
+        std::string title = first.get();
+        if (const auto tab = title.find('\t'); tab != std::string::npos)
+            title.replace(tab, 1, " → ");
+        constexpr int32_t neverExpire = 0;
+        addon->call<INotifications::sendNotification>(
+            "fcitx", 0, "fcitx-ngosen", title,
+            _("Ngó Sen expanded a chat abbreviation. Press Backspace right after one to get back what you typed. See the list or turn "
+              "this off on the Macros page."),
+            std::vector<std::string>{"open", _("Show")}, neverExpire, [](const std::string&) { startProcess({NGOSEN_SETTINGS_PATH, "--page", "macros"}); }, [](uint32_t) {});
+        // Marked only once sent, so a session without notifications tries again next time.
+        config_.chatShorthandAnnounced.setValue(true);
+        saveConfig();
+#endif
+    }
+
     const Configuration* NgoSenEngine::getSubConfig(const std::string& path) const {
         if (path == "custom_keymap")
             return &customKeymap_;
@@ -899,6 +931,7 @@ namespace fcitx {
         if (chatShorthand_)
             ShorthandSetLearning(chatShorthand_.handle(), options_.learnDiacritics ? 1 : 0);
         announceLearning();
+        announceShorthand();
         refreshEngine();
         refreshOption();
         updateInputMethodAction(nullptr);
@@ -1097,6 +1130,8 @@ namespace fcitx {
         auto*                 state = stateFor(keyEvent.inputContext());
         ngosen::FcitxKeyPress press(keyEvent);
         state->keyEvent(press);
+        if (awaitsShorthandUse_)
+            announceShorthand();
     }
 
     bool modeMenuCanDraw(const std::string& currentUi, const std::string& frontend, const std::string& display, bool clientDrawsPanel) {

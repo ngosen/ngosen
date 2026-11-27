@@ -875,6 +875,34 @@ fn shorthand_engine(method: &str) -> BambooEngine {
 }
 
 #[test]
+fn the_first_abbreviation_expanded_is_held_for_the_front_end() {
+    for (keys, want) in [("ko ", ("ko", "không")), ("Dc.", ("Dc", "Được"))] {
+        let mut e = shorthand_engine("Telex");
+        e.shorthand.await_use();
+        type_keys(&mut e, "toi ");
+        assert_eq!(e.shorthand.take_first_use(), None, "{keys}");
+        type_keys(&mut e, keys);
+        type_keys(&mut e, "dc ");
+        let first = Some((want.0.to_string(), want.1.to_string()));
+        assert_eq!(e.shorthand.take_first_use(), first, "{keys}");
+    }
+
+    let mut e = shorthand_engine("Telex");
+    e.shorthand.await_use();
+    type_keys(&mut e, "ko");
+    e.process_key_event(KEY_RETURN, 0);
+    let first = Some(("ko".to_string(), "không".to_string()));
+    assert_eq!(e.shorthand.take_first_use(), first);
+
+    let mut e = shorthand_engine("Telex");
+    e.macro_enabled = true;
+    e.macro_table = macro_table(&[("ko", "khong co")]);
+    e.shorthand.await_use();
+    type_keys(&mut e, "ko ");
+    assert_eq!(e.shorthand.take_first_use(), None);
+}
+
+#[test]
 fn shorthand_expands_at_a_word_end() {
     for (keys, want) in [
         ("ko ", "không "),

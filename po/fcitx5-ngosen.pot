@@ -2548,3 +2548,7 @@ msgstr ""
 #: settings-gui/core/chat_shorthand.py
 msgid "Ngó Sen did not answer. Try again."
 msgstr ""
+
+#: settings-gui/core/learned.py
+msgid "A chat abbreviation you take back with Backspace twice in a row stays as typed. Which ones is kept in {}, counted while learning is on, with Đoán dấu on or off; the Macros page lists them and can make one expand again."
+msgstr ""

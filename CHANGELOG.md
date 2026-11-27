@@ -10,6 +10,17 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
 
 ## [Chưa phát hành]
 
+## [1.14.4-1] — 27/11/2026
+
+Trên KDE Plasma (Wayland), WPS Office gõ được tiếng Việt mà không cần tự đặt `QT_IM_MODULE=fcitx`, kể cả khi cài Ngó Sen từ kho gói hay AUR hoặc cài WPS sau (#1032).
+Tải ở [ngosen-1.14.4-1](https://github.com/ngosen/ngosen/releases/tag/ngosen-1.14.4-1).
+
+### Sửa
+
+- Trên KDE Plasma (Wayland), WPS Office gõ được tiếng Việt mà không cần tự đặt `QT_IM_MODULE=fcitx`, kể cả khi cài
+  Ngó Sen từ kho gói hay AUR hoặc cài WPS sau: mỗi lần đăng nhập, Ngó Sen tự cho lối tắt WPS (và bản Flatpak) chạy
+  với fcitx5 (#1032).
+
 ## [1.14.3-1] — 26/11/2026
 
 Gõ Sen trong ô soạn thảo của Chrome trên GNOME (như ô viết bài voz.vn): chữ vừa sửa dấu không còn thỉnh thoảng mất ("người" ra "ời") khi ô quay lại focus chỉ trong chốc lát (#1025). Trong WPS Office 12 qua IBus, thêm dấu không còn giữ lại chữ cũ ("tiếng" ra "tieêngếng") và trong bảng tính dấu vừa thêm không còn hay mất (#1027).

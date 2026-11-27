@@ -1,7 +1,7 @@
 Name:           fcitx5-ngosen
 # Ngó Sen numbers its own releases from 0.5.0; the epoch keeps them above the 3.5.10 builds.
 Epoch:          1
-Version:        1.14.3
+Version:        1.14.4
 Release:        1
 Summary:        Ngó Sen, a Vietnamese input method for fcitx5
 License:        GPL-3.0-or-later
@@ -102,6 +102,9 @@ else
 fi
 
 %changelog
+* Fri Nov 27 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.14.4-1
+- On KDE Plasma Wayland, WPS Office types Vietnamese without QT_IM_MODULE=fcitx set by hand, also when Ngó Sen comes from a package repository or the AUR or WPS is installed later: at each login Ngó Sen makes the WPS launchers and the WPS Flatpak start with fcitx5 (#1032).
+
 * Thu Nov 26 2026 Nguyen Phi <nguyenphidt@gmail.com> - 1:1.14.3-1
 - In Chrome's rich text editors on GNOME, such as voz.vn's reply box, Sen no longer loses a corrected word now and then when the editor comes back to focus only briefly (#1025). In WPS Office 12 over IBus, adding a mark no longer keeps the old letters, and spreadsheet cells keep it (#1027).
 

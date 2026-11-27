@@ -31,7 +31,7 @@ configure_file(ngosen-addon.conf.in.in ngosen-addon.conf.in)
 fcitx5_translate_desktop_file("${CMAKE_CURRENT_BINARY_DIR}/ngosen-addon.conf.in" ngosen-addon.conf)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/ngosen-addon.conf" RENAME ngosen.conf DESTINATION "${FCITX_INSTALL_PKGDATADIR}/addon")
 
-add_library(ngosen_migration STATIC ngosen-migration.cpp)
+add_library(ngosen_migration STATIC ngosen-migration.cpp ngosen-wps-launcher.cpp)
 set_target_properties(ngosen_migration PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(ngosen_migration PUBLIC Fcitx5::Config)
 target_include_directories(ngosen_migration PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -386,6 +386,8 @@ pub struct BambooEngine {
     expanded_from: String,
     /// A chat abbreviation taken back by Backspace: the open word stays as typed while it is this.
     taken_back: Option<String>,
+    /// The one the last commit left as typed: taken back again, it stays so.
+    left_as_typed: Option<String>,
     /// Whether a macro put the last text committed there: text taken back from it is still the
     /// macro's.
     last_commit_macro: bool,
@@ -432,6 +434,7 @@ impl BambooEngine {
             commits_abbreviation: false,
             expanded_from: String::new(),
             taken_back: None,
+            left_as_typed: None,
             last_commit_macro: false,
             last_commit_abbreviation: false,
             private_field: false,
@@ -1123,8 +1126,9 @@ impl BambooEngine {
     pub(crate) fn commit_preedit_and_reset(&mut self, s: String) {
         let typed = !std::mem::take(&mut self.commits_macro);
         let written = std::mem::take(&mut self.commits_abbreviation);
-        self.taken_back = None;
+        let kept = self.taken_back.take();
         if !s.is_empty() {
+            self.left_as_typed = kept;
             self.last_commit_macro = !typed;
             self.last_commit_abbreviation = written;
         }
@@ -1741,7 +1745,8 @@ impl BambooEngine {
     pub fn reopen_committed(&mut self, text: &str) {
         let (from_macro, from_abbreviation) =
             (self.last_commit_macro, self.last_commit_abbreviation);
-        let taken_back = (!text.is_empty() && self.expanded_from == text).then(|| text.to_string());
+        let kept = self.expanded_from == text || self.left_as_typed.as_deref() == Some(text);
+        let taken_back = (!text.is_empty() && kept).then(|| text.to_string());
         self.rebuild_from_text(text);
         self.commits_macro = from_macro;
         self.commits_abbreviation = from_abbreviation;

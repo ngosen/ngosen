@@ -949,6 +949,19 @@ fn backspace_gives_an_abbreviation_back() {
 }
 
 #[test]
+fn a_key_given_back_stays_when_its_word_is_reopened() {
+    let mut e = shorthand_engine("Telex");
+    type_keys(&mut e, "ko ");
+    take_back(&mut e, "ko");
+    e.process_key_event(KEY_SPACE, 0);
+    e.pull_commit();
+    assert!(!e.process_key_event(KEY_BACKSPACE, 0));
+    e.reopen_committed("ko");
+    e.process_key_event('.' as u32, 0);
+    assert_eq!(e.commit_text, "ko.");
+}
+
+#[test]
 fn an_abbreviation_ended_by_punctuation_is_not_given_back() {
     let mut e = shorthand_engine("Telex");
     type_keys(&mut e, "ko,");

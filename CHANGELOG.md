@@ -22,6 +22,7 @@ Gói có thêm "epoch" 1 để trình quản lý gói vẫn coi `0.5.0` mới h�
   hai phím ngược thứ tự, bấm đúp một phím (`nguoiwff`) hay thừa một phím (`nguwowpif`) đều ra `người` khi
   các chữ đứng trước cho thấy đó là chữ bạn định gõ, như sau `mọi`. Mỗi từ chỉ sửa một lần trượt, và chỉ
   sửa khi rất chắc, nên nhiều từ gõ trượt vẫn giữ nguyên. Backspace ngay sau khi sửa trả lại đúng chữ đã gõ.
+  (#1036)
 
 ### Sửa
 

@@ -1996,7 +1996,7 @@ fn a_syllable_nothing_knows_reaches_the_field_fixed() {
 #[test]
 fn a_word_one_slip_from_the_keys_of_another_is_fixed_to_it() {
     // A neighbouring key, two keys swapped, a key hit twice, and a stray key.
-    for typo in ["mguoiwf", "nguoifw", "nguoiwff", "nguwowpif", "Mguoiwf"] {
+    for typo in ["mguoiwf", "gnuoiwf", "nguoiwff", "nguwowpif", "Mguoiwf"] {
         let mut e = engine_on(&shared_dictionary());
         let mut field = Vec::new();
         type_into(&mut e, &mut field, &[("ta", '.'), (typo, ' ')]);

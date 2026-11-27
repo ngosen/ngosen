@@ -95,19 +95,26 @@ namespace ngosen {
         const ngosen::Options& o = engine_->options();
         // The margin a fix must win by: 4, 3 or 2 from cautious to strong.
         EngineSetFixing(bambooEngine_.handle(), o.guessFixesTypos ? static_cast<uint8_t>(4 - std::clamp(o.guessFixStrength, 0, 2)) : 0);
+        // A command or a file name typed three times is not a word the user means in a sentence.
+        EngineSetCountingPlainWords(bambooEngine_.handle(), mayBeCommandLine() ? 0 : 1);
         // Earlier words are replaced only where the field shows they are still there.
         const Surrounding s = host_->surrounding();
         EngineSetWholeRun(bambooEngine_.handle(), reportsTextInTime() && s.isValid() && !s.text().empty() ? 1 : 0);
     }
 
+    // An editor whose terminal cannot be told from its other fields counts as a command line throughout.
+    bool TypingState::mayBeCommandLine() const {
+        const Field field = host_->field();
+        return field.terminal || ngosen::runsShellOnPty(field) || marksEachField();
+    }
+
     // Abbreviations belong to text written for people: a command, an address or a password keeps its letters.
     void TypingState::syncShorthand() {
         const Field field = host_->field();
-        // An editor whose terminal cannot be told from its other fields counts as a command line throughout.
-        const bool commandLine = field.terminal || ngosen::runsShellOnPty(field) || marksEachField();
         // Backspace gives the typed key back by deleting the expansion, which a preedit needs the field's text for.
         const bool givesBack = mode() != ngosen::Mode::Preedit || field.surroundingText;
-        const bool here = engine_->options().chatShorthand && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !inAddressBar() && !commandLine && givesBack;
+        const bool here =
+            engine_->options().chatShorthand && mode() != ngosen::Mode::Off && !field.hidesText() && !hiddenInput_ && !inAddressBar() && !mayBeCommandLine() && givesBack;
         const uintptr_t wanted = here ? engine_->chatShorthand() : 0;
         if (wanted == shorthand_)
             return;

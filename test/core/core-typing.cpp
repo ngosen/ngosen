@@ -491,6 +491,12 @@ namespace {
             check(learned, "Đoán dấu: learns a word typed, taken back by Backspace and typed on" + name, "nothing");
             typeGuessingInApp(reports, mode, "nsen \b.", {.macros = {{"nsen", "ngó"}}, .learned = &learned});
             check(!learned, "Đoán dấu: never learns a macro's word taken back by Backspace" + name, "learned");
+            typeGuessingInApp(reports, mode, "khum. khum. khum.", {.fixesTypos = true, .learned = &learned});
+            check(learned, "Đoán dấu: learns a plain word typed and left alone three times" + name, "nothing");
+            typeGuessingInApp(reports, mode, "khum. khum.", {.fixesTypos = true, .learned = &learned});
+            check(!learned, "Đoán dấu: a plain word typed twice is not learned" + name, "learned");
+            typeGuessingInApp(makeField("wayland", true, "org.kde.konsole"), mode, "khum. khum. khum.", {.fixesTypos = true, .inTerminals = true, .learned = &learned});
+            check(!learned, "Đoán dấu: never learns a plain word on a command line" + name, "learned");
             if (mode == ngosen::Mode::Sen) {
                 // The undo finds a whole macro where it looks for one word, and leaves Backspace as it was.
                 text = typeGuessingInApp(reports, mode, "tgp \bf", {.fixesTypos = true, .macros = {{"tgp", "toi go phmi"}}});

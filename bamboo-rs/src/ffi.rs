@@ -687,6 +687,13 @@ pub extern "C" fn EngineSetFixing(engine: usize, margin: u8) {
     handles::with_engine(engine, |e| e.set_fixing(margin));
 }
 
+/// Whether a word without marks that nothing knows, typed and left alone three times, is learned
+/// as meant in this field. Off until asked for.
+#[unsafe(no_mangle)]
+pub extern "C" fn EngineSetCountingPlainWords(engine: usize, on: u8) {
+    handles::with_engine(engine, |e| e.set_counting_plain_words(on != 0));
+}
+
 /// For Backspace right after the key that committed a fixed word: the text the field shows from
 /// that word to the cursor, for the front end to check and delete, the word now reopened as
 /// typed; null when there is no fix to take back.

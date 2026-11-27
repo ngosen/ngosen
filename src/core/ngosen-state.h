@@ -1064,6 +1064,7 @@ namespace ngosen {
         bool         keepsOnlyCommits() const;
         bool         mayShowWebTerminal() const;
         bool         marksEachField() const;
+        bool         mayBeCommandLine() const;
         void         checkFirstLetters();
         void         resetLetterCheckOnFieldChange();
         std::string  xtermText_; ///< surrounding text last reported while keepsOnlyCommits() held

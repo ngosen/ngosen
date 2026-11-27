@@ -8,7 +8,7 @@
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use timsen::{Change, Dictionary, FIX_MARGIN, Reach, Run, ToneStyle};
+use timsen::{Change, Dictionary, FIX_MARGIN, Nearby, Reach, Run, ToneStyle};
 
 use crate::text::{has_any_vietnamese_rune, without_diacritics};
 
@@ -28,6 +28,10 @@ pub struct FieldChange {
 /// The text the field shows from the first word changed to the cursor, and the text to show
 /// there instead.
 pub type Replacement = (String, String);
+
+/// Gives, for the keys of a word, the words that keys one slip away would have typed, each with
+/// the cost of that slip in timsen's units.
+pub type WordsNear<'a> = &'a dyn Fn(&str) -> Vec<(String, f64)>;
 
 /// Whether the fields learn, shared by all of them. `epoch` moves on every change and every
 /// forget, so a run that was open across one learns nothing, even when learning is back on by its
@@ -254,8 +258,8 @@ impl Diacritics {
 
     /// What the engine committed at a word end, and its keys; `typed` is false for a macro's text.
     /// Anything but letters and spaces ends the run where it stands, so a macro of two sentences
-    /// makes two runs.
-    pub fn committed(&mut self, text: &str, keys: &str, typed: bool) {
+    /// makes two runs. `near` is asked about a typed word nothing knows.
+    pub fn committed(&mut self, text: &str, keys: &str, typed: bool, near: WordsNear) {
         // The keys end with the one that ended the word, and read one word only.
         let keys = keys.trim_end_matches(|c: char| !c.is_alphanumeric());
         let keys = (words_of(text).len() == 1).then_some(keys);
@@ -269,7 +273,7 @@ impl Diacritics {
             let after = piece[word.len()..].to_string();
             if !word.is_empty() {
                 let as_typed = !open && reopened.as_ref().is_some_and(|(w, _)| w == word);
-                self.push(word, keys, as_typed);
+                self.push(word, keys, as_typed, typed.then_some(near));
                 if !typed || as_typed && reopened.as_ref().is_some_and(|(_, m)| *m) {
                     self.from_macro.push(self.typed.len() - 1);
                 }
@@ -324,7 +328,7 @@ impl Diacritics {
         }
     }
 
-    fn push(&mut self, word: &str, keys: Option<&str>, as_typed: bool) {
+    fn push(&mut self, word: &str, keys: Option<&str>, as_typed: bool, near: Option<WordsNear>) {
         if self.over {
             self.forget_run();
         }
@@ -351,13 +355,24 @@ impl Diacritics {
             let typing = lock(dictionary).typing();
             Run::new(typing, RAW_CONFIDENCE).fixing(margin)
         });
+        let letters = keys.filter(|k| k.chars().all(|c| c.is_ascii_alphabetic()));
         // Keys that differ from the text and are plain letters are the word's second reading.
-        match keys.filter(|k| *k != word && k.chars().all(|c| c.is_ascii_alphabetic())) {
+        let raw = letters.filter(|k| *k != word && has_any_vietnamese_rune(word));
+        // A word neither reading of which is known was mistyped, or is new.
+        let slipped = run.may_fix(word) && raw.is_none_or(|keys| run.may_fix(keys));
+        match (raw, letters.filter(|k| !k.is_empty()).zip(near)) {
             _ if as_typed => {
                 self.undone.push(run.len());
                 run.push_as_typed(word);
             }
-            Some(keys) if has_any_vietnamese_rune(word) => run.push_either(word, keys),
+            (_, Some((keys, near))) if slipped => {
+                let words = near(keys);
+                let nearby: Vec<Nearby> = (words.iter())
+                    .map(|(word, cost)| Nearby { word, cost: *cost })
+                    .collect();
+                run.push_nearby(word, &nearby);
+            }
+            (Some(keys), _) => run.push_either(word, keys),
             _ => run.push(word),
         }
         self.typed.push(word.to_string());

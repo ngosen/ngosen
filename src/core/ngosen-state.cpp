@@ -783,9 +783,12 @@ namespace ngosen {
     bool TypingState::restoreDroppedWord(ngosen::KeyPress& keyEvent) {
         std::string deletedPart;
         std::string addedPart;
-        // A slow app may not show the fix yet; it still applies the edits in the order sent.
-        const bool        inPlace  = typedBeforeCursor(lastWord_, true) || (!droppedWord_.empty() && typedBeforeCursor(droppedWord_, true));
-        const std::string restored = inPlace ? undoSpaceFix(deletedPart, addedPart) : std::string();
+        // A slow app may not show the fix yet; it still applies the edits in the order sent. Later, the
+        // typed word before the cursor is other text: the page's, or where a click put the cursor.
+        constexpr uint64_t FixShownUs  = 250000;
+        const bool         notShownYet = !droppedWord_.empty() && ngosen::monotonicUs() - lastWordAtUs_ < FixShownUs && typedBeforeCursor(droppedWord_, true);
+        const bool         inPlace     = typedBeforeCursor(lastWord_, true) || notShownYet;
+        const std::string  restored    = inPlace ? undoSpaceFix(deletedPart, addedPart) : std::string();
         if (restored.empty()) {
             droppedWord_.clear();
             return false;

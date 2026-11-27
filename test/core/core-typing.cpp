@@ -1328,6 +1328,9 @@ namespace {
             check(text == "không", "chat shorthand: Backspace after another key takes only the space" + name, text);
             text = typeGuessingInApp(reports, mode, "ko \b", {.pageAt = 3, .pageShows = "XYZ ", .shorthand = true});
             check(text == "XYZ", "chat shorthand: Backspace leaves text the page changed" + name, text);
+            // Long after the expansion, a field that shows the key again is not a slow app.
+            text = typeGuessingInApp(reports, mode, "abc ko \b", {.pageAt = 7, .pageShows = "abc ko", .shorthand = true, .keyMs = 300});
+            check(text == "abc k", "chat shorthand: Backspace leaves a key the page put back" + name, text);
             text = typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true, .macros = {{"ko", "kansas"}}});
             check(text == "kansas.", "chat shorthand: the user's own macro is not given back" + name, text);
             typeGuessingInApp(reports, mode, "ko \b.", {.shorthand = true, .learned = &learned});

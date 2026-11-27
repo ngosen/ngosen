@@ -14,6 +14,7 @@
 namespace ngosen {
 
     std::optional<TypingState::GuessedCommit> TypingState::takeGuess(const std::string& commit, const std::string& wordInField) {
+        changedEarlierWords_ = false;
         if (diacritics_ == 0)
             return std::nullopt;
         const UniqueCPtr<char> pulled(EnginePullChanges(bambooEngine_.handle()));
@@ -37,6 +38,7 @@ namespace ngosen {
             return std::nullopt;
         }
         NGOSEN_INFO(guess.before.empty() ? "Guess: the last word" : "Guess: earlier words");
+        changedEarlierWords_ = !guess.before.empty();
         return guess;
     }
 
@@ -115,7 +117,8 @@ namespace ngosen {
     // Backspace right after a word that made Đoán dấu fix the word before it: what the field shows
     // from the fixed word to the cursor, and what was typed there.
     std::optional<std::pair<std::string, std::string>> TypingState::takeBackEarlierFix() {
-        if (diacritics_ == 0 || !reportsTextInTime())
+        // The engine does not see every key, such as Delete, that may come between.
+        if (!std::exchange(changedEarlierWords_, false) || diacritics_ == 0 || !reportsTextInTime())
             return std::nullopt;
         const UniqueCPtr<char> shown(EngineEarlierFixShown(bambooEngine_.handle()));
         if (!shown)

@@ -288,12 +288,17 @@ impl Diacritics {
         let run = self.run.as_mut()?;
         let at = run.len() - 2;
         run.undo_fix();
-        let change = run.change(self.over, self.reach, self.style)?;
+        // Only this word, which is what `earlier_fix_shown` had checked: what the run now reads
+        // otherwise around it changes with the next word, as any guess does.
+        let change = Change {
+            first: at,
+            old: vec![run.shown()[at].clone()],
+            new: vec![self.typed[at].clone()],
+        };
         if !run.apply(&change) {
             return None;
         }
-        let end = self.words - (run.len() - change.first - change.old.len());
-        self.changes.push((change, end));
+        self.changes.push((change, self.words - 1));
         self.learn_as_typed(at);
         self.pull_field_change()
     }

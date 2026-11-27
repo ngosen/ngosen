@@ -2512,6 +2512,18 @@ fn backspace_right_after_a_later_fix_takes_it_back_for_good() {
 }
 
 #[test]
+fn taking_a_later_fix_back_changes_that_word_alone() {
+    let mut e = engine_on(&shared_dictionary());
+    let mut field = Vec::new();
+    let typed = [("ban", ' '), ("phmi", ' '), ("nay", ' ')];
+    type_into(&mut e, &mut field, &typed);
+    assert_eq!(field, ["bàn", "phím", "này"]);
+    assert!(undo_earlier_with_backspace(&mut e, &mut field));
+    // Without phím after it the run reads bạn again, but the field was checked for one word.
+    assert_eq!(field, ["bàn", "phmi", "này"]);
+}
+
+#[test]
 fn a_later_fix_is_taken_back_after_the_key_that_ended_its_run() {
     let dictionary = shared_dictionary();
     let mut e = engine_on(&dictionary);

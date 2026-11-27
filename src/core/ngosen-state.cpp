@@ -1048,8 +1048,10 @@ namespace ngosen {
         // A key typed during the swap ends the word when it replays.
         if (!keyEvent.isRelease() && !keyEvent.isModifier() && !deleting)
             lockedWord_.reset();
-        if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace))
+        if (!ngosen::key::isBackspace(currentSym) || keyEvent.hasModifier() || (deleting && !ownBackspace)) {
             lastWord_.clear();
+            changedEarlierWords_ = false;
+        }
         if (holdKeyBehindHeldKey(keyEvent, currentSym))
             return;
         if (handleKeyDuringReplacement(keyEvent, currentSym) || passesKeyWhileCursorPast(keyEvent, currentSym))

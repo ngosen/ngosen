@@ -2488,3 +2488,63 @@ msgstr ""
 #: settings-gui/core/catalog.py
 msgid "Stronger fixes more typos, and now and then changes a word that was right. A new level applies from the next thing you type."
 msgstr ""
+
+#: settings-gui/core/catalog.py
+msgid "ko gives không, dc gives được. Backspace right after one gives back what you typed."
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Chat abbreviations"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "View the list"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Hide the list"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Kept as typed"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expand again"
+msgstr ""
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expand {} again"
+msgstr ""
+
+#: settings-gui/ui_gtk/macros.py
+msgid "The list"
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Kept as typed: {}."
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "None is kept as typed."
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "{} expands again."
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Could not expand it again: {}"
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Could not read the abbreviations: {}"
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Ngó Sen is not running. Type something with it, then try again."
+msgstr ""
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Ngó Sen did not answer. Try again."
+msgstr ""

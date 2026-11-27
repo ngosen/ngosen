@@ -2947,3 +2947,63 @@ msgstr "Terminal không cho Ngó Sen đọc lại chữ đã gõ, nên ở đó 
 #: settings-gui/core/catalog.py
 msgid "Stronger fixes more typos, and now and then changes a word that was right. A new level applies from the next thing you type."
 msgstr "Mức mạnh hơn sửa được nhiều lỗi gõ hơn, nhưng thỉnh thoảng đổi cả chữ vốn đã đúng. Mức mới có hiệu lực từ chữ gõ tiếp theo."
+
+#: settings-gui/core/catalog.py
+msgid "ko gives không, dc gives được. Backspace right after one gives back what you typed."
+msgstr "ko thành không, dc thành được. Bấm Backspace ngay sau đó để lấy lại chữ đã gõ."
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Chat abbreviations"
+msgstr "Chữ viết tắt khi chat"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "View the list"
+msgstr "Xem danh sách"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Hide the list"
+msgstr "Ẩn danh sách"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Kept as typed"
+msgstr "Giữ nguyên như gõ"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expand again"
+msgstr "Bung lại"
+
+#: settings-gui/ui/pages/macro_editor.py
+msgid "Expand {} again"
+msgstr "Bung lại {}"
+
+#: settings-gui/ui_gtk/macros.py
+msgid "The list"
+msgstr "Danh sách"
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Kept as typed: {}."
+msgstr "Giữ nguyên như gõ: {}."
+
+#: settings-gui/core/chat_shorthand.py
+msgid "None is kept as typed."
+msgstr "Chưa có chữ nào được giữ nguyên như gõ."
+
+#: settings-gui/core/chat_shorthand.py
+msgid "{} expands again."
+msgstr "{} đã bung lại như trước."
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Could not expand it again: {}"
+msgstr "Không bung lại được: {}"
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Could not read the abbreviations: {}"
+msgstr "Không đọc được danh sách chữ viết tắt: {}"
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Ngó Sen is not running. Type something with it, then try again."
+msgstr "Ngó Sen chưa chạy. Gõ thử vài chữ bằng Ngó Sen rồi thử lại."
+
+#: settings-gui/core/chat_shorthand.py
+msgid "Ngó Sen did not answer. Try again."
+msgstr "Ngó Sen không trả lời. Thử lại nhé."

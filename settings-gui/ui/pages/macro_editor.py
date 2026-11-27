@@ -26,10 +26,10 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import macros, page_status
+from core import chat_shorthand, macros, page_status
 from ui.components import NoWheelComboBox
 from ui.pages.base_editor import BaseEditorPage
-from ui.pages.dynamic_settings import CardWidget, with_hint_below
+from ui.pages.dynamic_settings import CardWidget, HintLabel, with_hint_below
 from ui.typography import mute, page_title
 
 
@@ -44,6 +44,7 @@ class MacroEditorPage(BaseEditorPage):
         super().__init__(parent)
         self.dbus = dbus_handler
         self.macros = macros.MacroTable(dbus_handler)
+        self.chat = chat_shorthand.ChatShorthand(dbus_handler)
         self._setup_ui()
         self.load_data()
 
@@ -135,6 +136,7 @@ class MacroEditorPage(BaseEditorPage):
 
         dynamic_card.content_layout.addLayout(dynamic_layout)
         main_layout.addWidget(dynamic_card)
+        main_layout.addWidget(self._chat_card())
         main_layout.addWidget(editor_card)
 
         # 1. Input Row (Top)
@@ -205,9 +207,103 @@ class MacroEditorPage(BaseEditorPage):
             "EnableMacro": self.cb_enable,
             "CapitalizeMacro": self.cb_capitalize,
             "EnableMacroInOffMode": self.cb_enable_off_mode,
+            "ChatShorthand": self.cb_chat,
             "TimeFormat": self.input_time_format,
             "DateFormat": self.input_date_format,
         }
+
+    def _chat_card(self):
+        card = CardWidget()
+        self.cb_chat = QCheckBox(_("Expand chat abbreviations"))
+        self.cb_chat.toggled.connect(self._on_item_changed)
+        self._hinted["ChatShorthand"] = with_hint_below(self.cb_chat, _(HINTS["ChatShorthand"]))[0]
+        card.content_layout.addWidget(self._hinted["ChatShorthand"])
+        line = QHBoxLayout()
+        self.chat_view_button = QPushButton(_("View the list"))
+        self.chat_view_button.clicked.connect(self._toggle_chat_list)
+        line.addWidget(self.chat_view_button)
+        self.chat_line = HintLabel("")
+        self.chat_line.searchable = False
+        mute(self.chat_line)
+        line.addWidget(self.chat_line, 1)
+        card.content_layout.addLayout(line)
+        self.chat_table = QTableWidget(0, 3)
+        self.chat_table.setHorizontalHeaderLabels(
+            [_("Abbreviation"), _("Expanded Text"), _("Kept as typed")]
+        )
+        header = self.chat_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.chat_table.verticalHeader().setVisible(False)
+        self.chat_table.setShowGrid(False)
+        self.chat_table.setSelectionMode(QAbstractItemView.NoSelection)
+        self.chat_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.chat_table.setAlternatingRowColors(True)
+        self.chat_table.setAccessibleName(_("Chat abbreviations"))
+        self.chat_table.setMinimumHeight(180)
+        self.chat_table.setMaximumHeight(260)
+        # The built-in entries are not settings to find.
+        self.chat_table.searchable = False
+        self.chat_table.hide()
+        card.content_layout.addWidget(self.chat_table)
+        return card
+
+    def _show_chat(self):
+        entries, why = self.chat.entries()
+        self.chat_line.setText(why or chat_shorthand.kept_line(entries))
+        if self.chat_table.isHidden():
+            return
+        if entries is None:
+            self._hide_chat_list()
+        else:
+            self._fill_chat_list(entries)
+
+    def _fill_chat_list(self, entries):
+        self.chat_table.setRowCount(0)
+        self.chat_table.setRowCount(len(entries))
+        for row, entry in enumerate(entries):
+            self.chat_table.setItem(row, 0, QTableWidgetItem(entry.key))
+            self.chat_table.setItem(row, 1, QTableWidgetItem(entry.text))
+            if not entry.kept:
+                continue
+            button = QPushButton(_("Expand again"))
+            button.setAccessibleName(_("Expand {} again").format(entry.key))
+            button.clicked.connect(lambda _checked=False, key=entry.key: self._expand_again(key))
+            self.chat_table.setCellWidget(row, 2, button)
+        self.chat_table.show()
+        self.chat_view_button.setText(_("Hide the list"))
+
+    def _hide_chat_list(self):
+        self.chat_table.hide()
+        self.chat_table.setRowCount(0)
+        self.chat_view_button.setText(_("View the list"))
+
+    def _toggle_chat_list(self):
+        if not self.chat_table.isHidden():
+            self._hide_chat_list()
+            return
+        entries, why = self.chat.entries()
+        if entries is None:
+            self._page_message(why, error=True)
+        else:
+            self._fill_chat_list(entries)
+
+    def _expand_again(self, key):
+        # Its button goes with the row.
+        self.chat_view_button.setFocus()
+        done, line = self.chat.expand_again(key)
+        self._page_message(line, error=not done)
+        self._show_chat()
+
+    def _page_message(self, text, error=False):
+        window = self.window()
+        if hasattr(window, "show_page_message"):
+            window.show_page_message(text, error=error)
+
+    def refresh_status(self):
+        super().refresh_status()
+        self._show_chat()
 
     def control_for(self, key):
         """The widget that edits a setting, for the window to scroll to and focus."""
@@ -222,6 +318,7 @@ class MacroEditorPage(BaseEditorPage):
             ("EnableMacro", self.cb_enable),
             ("CapitalizeMacro", self.cb_capitalize),
             ("EnableMacroInOffMode", self.cb_enable_off_mode),
+            ("ChatShorthand", self.cb_chat),
         ):
             with QSignalBlocker(box):
                 box.setChecked(self.macros.options[key])
@@ -258,6 +355,7 @@ class MacroEditorPage(BaseEditorPage):
         self.cb_enable.setChecked(options["EnableMacro"])
         self.cb_capitalize.setChecked(options["CapitalizeMacro"])
         self.cb_enable_off_mode.setChecked(options["EnableMacroInOffMode"])
+        self.cb_chat.setChecked(options["ChatShorthand"])
         for combo, key in (
             (self.input_time_format, "TimeFormat"),
             (self.input_date_format, "DateFormat"),
@@ -270,6 +368,7 @@ class MacroEditorPage(BaseEditorPage):
             "EnableMacro": self.cb_enable.isChecked(),
             "CapitalizeMacro": self.cb_capitalize.isChecked(),
             "EnableMacroInOffMode": self.cb_enable_off_mode.isChecked(),
+            "ChatShorthand": self.cb_chat.isChecked(),
             "TimeFormat": self.input_time_format.currentData(),
             "DateFormat": self.input_date_format.currentData(),
         }

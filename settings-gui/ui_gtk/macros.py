@@ -7,7 +7,7 @@ from core.catalog import HINTS, locked_by
 from gi.repository import Adw, Gtk
 from i18n import N_, _
 
-from core import macros, page_status
+from core import chat_shorthand, macros, page_status
 from ui_gtk.status_row import show_status, status_row
 
 SWITCHES = {
@@ -20,16 +20,20 @@ INVALID_KEY = N_("Macro keys cannot contain spaces or special characters.")
 
 
 class MacroPage:
-    """on_save(write, label) runs every save, so the window can offer to undo it."""
+    """on_save(write, label) runs every save, so the window can offer to undo it.
+    show_message(text, undo) shows a toast."""
 
-    def __init__(self, table, on_save):
+    def __init__(self, table, on_save, show_message=None):
         self.table = table
         self.on_save = on_save
+        self.show_message = show_message
+        self.chat = chat_shorthand.ChatShorthand(table.dbus)
         self._syncing = False
         self.page = Adw.PreferencesPage(
             title=_("Macros"), icon_name="accessories-text-editor-symbolic"
         )
         self.page.add(self._options())
+        self.page.add(self._chat())
         self.page.add(self._editor())
         self.page.add(self._list())
         self.refresh()
@@ -44,14 +48,7 @@ class MacroPage:
         group.add(self.status)
         self.switches = {}
         for key, title in SWITCHES.items():
-            row = Adw.SwitchRow(title=_(title), use_markup=False)
-            if key in HINTS:
-                row.set_subtitle(_(HINTS[key]))
-            row.set_active(self.table.options[key])
-            row.connect("notify::active", self._on_switch, key)
-            row.setting_key = key
-            self.switches[key] = row
-            group.add(row)
+            group.add(self._switch(key, _(title)))
         self.formats = {}
         for key, title in FORMAT_TITLES.items():
             row = Adw.ComboRow(title=_(title).rstrip(":"), use_markup=False)
@@ -62,6 +59,57 @@ class MacroPage:
             self.formats[key] = row
             group.add(row)
         return group
+
+    def _switch(self, key, title):
+        row = Adw.SwitchRow(title=title, use_markup=False)
+        if key in HINTS:
+            row.set_subtitle(_(HINTS[key]))
+        row.set_active(self.table.options[key])
+        row.connect("notify::active", self._on_switch, key)
+        row.setting_key = key
+        self.switches[key] = row
+        return row
+
+    def _chat(self):
+        group = Adw.PreferencesGroup(title=_("Chat abbreviations"))
+        group.add(self._switch("ChatShorthand", _("Expand chat abbreviations")))
+        self.chat_list = Adw.ExpanderRow(title=_("The list"), use_markup=False)
+        # The built-in entries are not settings to find.
+        self.chat_list.searchable = False
+        self.chat_entries = None
+        self.chat_rows = []
+        group.add(self.chat_list)
+        return group
+
+    def _show_chat(self):
+        entries, why = self.chat.entries()
+        self.chat_list.set_subtitle(why or chat_shorthand.kept_line(entries))
+        self.chat_list.set_enable_expansion(bool(entries))
+        if entries == self.chat_entries:
+            return
+        self.chat_entries = entries
+        for row in self.chat_rows:
+            self.chat_list.remove(row)
+        self.chat_rows = [self._chat_row(entry) for entry in entries or []]
+        for row in self.chat_rows:
+            self.chat_list.add_row(row)
+
+    def _chat_row(self, entry):
+        row = Adw.ActionRow(title=entry.key, subtitle=entry.text, use_markup=False)
+        if entry.kept:
+            button = Gtk.Button(label=_("Expand again"), valign=Gtk.Align.CENTER)
+            button.update_property(
+                [Gtk.AccessibleProperty.LABEL], [_("Expand {} again").format(entry.key)]
+            )
+            button.connect("clicked", lambda _b: self.expand_again(entry.key))
+            row.add_suffix(button)
+        return row
+
+    def expand_again(self, key):
+        _done, line = self.chat.expand_again(key)
+        if self.show_message:
+            self.show_message(line, None)
+        self._show_chat()
 
     def control_for(self, key):
         """The row that edits a setting, for the window to show and focus."""
@@ -85,6 +133,7 @@ class MacroPage:
             self._syncing = False
             self._apply_locks()
         show_status(self.status, page_status.macro_line(model) if model else "")
+        self._show_chat()
 
     def _on_switch(self, row, _param, key):
         if not self._syncing:

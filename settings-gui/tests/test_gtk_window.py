@@ -11,6 +11,7 @@ from urllib.parse import unquote
 
 # isort: off
 import window_display
+from chat_sample import ChatEngine
 from fake_fcitx import DEFAULTS, FakeDBusHandler, OlderFcitx, lock_groups, unlocker
 import ui_gtk
 
@@ -287,6 +288,69 @@ class GtkMacroPageTest(unittest.TestCase):
         self.assertEqual(self.dbus.values["EnableMacro"], "False")
         self.page.formats["TimeFormat"].set_selected(1)
         self.assertEqual(self.dbus.values["TimeFormat"], "%H:%M:%S")
+
+    def chat_rows(self, page):
+        return [
+            (
+                row.get_title(),
+                row.get_subtitle(),
+                [b.get_label() for b in _children(row) if isinstance(b, Gtk.Button)],
+            )
+            for row in page.chat_rows
+        ]
+
+    def test_the_chat_switch_saves_and_does_not_wait_for_the_macro_switch(self):
+        row = self.page.switches["ChatShorthand"]
+        self.assertFalse(row.get_active())
+        self.assertIs(self.page.control_for("ChatShorthand"), row)
+        self.assertEqual(row.get_subtitle(), HINTS["ChatShorthand"])
+        self.page.switches["EnableMacro"].set_active(False)
+        self.assertTrue(row.get_sensitive())
+        row.set_active(True)
+        self.assertEqual(self.dbus.values["ChatShorthand"], "True")
+        self.assertTrue(
+            window.Window(None, self.dbus).macros.switches["ChatShorthand"].get_active()
+        )
+
+    def test_the_chat_list_says_why_it_is_empty(self):
+        self.assertEqual(
+            self.page.chat_list.get_subtitle(),
+            "Ngó Sen is not running. Type something with it, then try again.",
+        )
+        self.assertFalse(self.page.chat_list.get_enable_expansion())
+        self.assertEqual(self.page.chat_rows, [])
+
+    def test_the_chat_list_puts_the_kept_keys_first(self):
+        dbus = ChatEngine(kept=["ko"])
+        page = window.Window(None, dbus).macros
+        self.assertEqual(page.chat_list.get_subtitle(), "Kept as typed: ko.")
+        self.assertTrue(page.chat_list.get_enable_expansion())
+        self.assertEqual(
+            self.chat_rows(page),
+            [("ko", "không", ["Expand again"]), ("ae", "anh em", []), ("dc", "được", [])],
+        )
+        # Taken back while the window was in the background.
+        dbus.kept.add("dc")
+        page.refresh_status()
+        self.assertEqual(page.chat_list.get_subtitle(), "Kept as typed: dc, ko.")
+        self.assertEqual([row[0] for row in self.chat_rows(page)], ["dc", "ko", "ae"])
+
+    def test_expand_again_gives_the_key_back_to_the_engine(self):
+        dbus = ChatEngine(kept=["ko"])
+        main = window.Window(None, dbus)
+        page = main.macros
+        button = next(b for b in _children(page.chat_rows[0]) if isinstance(b, Gtk.Button))
+        button.emit("clicked")
+        self.assertIn(("ExpandShorthandAgain", "ko"), dbus.asked)
+        self.assertEqual(main.toast.get_title(), "ko expands again.")
+        self.assertEqual(page.chat_list.get_subtitle(), "None is kept as typed.")
+        self.assertEqual(self.chat_rows(page)[0], ("ae", "anh em", []))
+
+    def test_expand_again_says_why_it_could_not(self):
+        main = window.Window(None, ChatEngine(kept=["ko"], refuses="Permission denied"))
+        main.macros.expand_again("ko")
+        self.assertEqual(main.toast.get_title(), "Could not expand it again: Permission denied")
+        self.assertEqual(self.chat_rows(main.macros)[0][2], ["Expand again"])
 
 
 @unittest.skipUnless(CAN_RUN, "needs GTK 4, libadwaita 1.5 and NGOSEN_WINDOW_TESTS")

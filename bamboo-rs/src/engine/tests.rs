@@ -2473,7 +2473,11 @@ fn each_fixing_margin_fixes_only_what_wins_by_it() {
             let mut e = engine_on(&shared_dictionary());
             e.set_fixing(margin);
             let mut field = Vec::new();
-            type_into(&mut e, &mut field, &[("toi", ' '), ("go", ' '), (typo, '.')]);
+            type_into(
+                &mut e,
+                &mut field,
+                &[("toi", ' '), ("go", ' '), (typo, '.')],
+            );
             assert_eq!(field[2], fixed, "{typo} at {margin:?}");
         }
     }
